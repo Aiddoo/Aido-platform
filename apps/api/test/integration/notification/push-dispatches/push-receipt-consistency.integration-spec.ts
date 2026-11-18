@@ -1,17 +1,19 @@
 import { createHash } from "node:crypto";
 
+import { eq } from "drizzle-orm";
 import { vi } from "vitest";
 
 import type { PushTokenReadModel } from "#api/modules/notification/push-devices/application/read-models/push-token.read-model";
 import { DrizzlePushDeviceRepository } from "#api/modules/notification/push-devices/infrastructure/persistence/drizzle-push-device.repository";
 import { DrizzlePushTokenRepository } from "#api/modules/notification/push-devices/infrastructure/persistence/drizzle-push-token.repository";
-import type { PushReceiptResult } from "#api/modules/notification/push-dispatches/application/ports/push-provider.port";
+import type { PushChannelRegistryPort } from "#api/modules/notification/push-dispatches/application/ports/push-channel-registry.port";
+import type { PushReceiptResult } from "#api/modules/notification/push-dispatches/application/ports/push-channel.port";
 import { ReconcilePushReceiptsUseCase } from "#api/modules/notification/push-dispatches/application/use-cases/reconcile-push-receipts.use-case";
 import { PushDeliveryJobId } from "#api/modules/notification/push-dispatches/domain/push-delivery-job-id.vo";
 import { PushDispatchId } from "#api/modules/notification/push-dispatches/domain/push-dispatch-id.vo";
 import { pushReceiptCheckWindow } from "#api/modules/notification/push-dispatches/domain/push-receipt.domain-service";
 import { PushTicketId } from "#api/modules/notification/push-dispatches/domain/push-ticket-id.vo";
-import { EXPO_PUSH_TIMING } from "#api/modules/notification/push-dispatches/infrastructure/adapters/expo-push-sender.adapter";
+import { EXPO_PUSH_CHANNEL_CONFIG } from "#api/modules/notification/push-dispatches/infrastructure/adapters/expo-push-channel.constants";
 import { DrizzlePushDeliveryOutboxRepository } from "#api/modules/notification/push-dispatches/infrastructure/persistence/drizzle-push-delivery-outbox.repository";
 import { DrizzlePushReceiptRepository } from "#api/modules/notification/push-dispatches/infrastructure/persistence/drizzle-push-receipt.repository";
 import { databaseSqlState, requireRecord } from "#api/platform/database/database-error.util";
@@ -19,9 +21,14 @@ import {
   notification as notificationTable,
   pushDeliveryAttempt,
   pushDispatch,
+  pushToken as pushTokenTable,
   user as userTable,
 } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import {
+  FakePushChannel,
+  pushChannelRegistryOf,
+} from "#test/doubles/notification/fake-push-channel";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { nowInstant } from "#test/fixtures/clock.fixture";
@@ -69,6 +76,15 @@ async function registerToken(
     throw new Error("push token fixture 누락");
   }
   return record;
+}
+
+// receipt 결과만 정해 둔 대역 채널 하나로 레지스트리를 만든다
+function receiptChannel(
+  readReceipts: (ticketIds: readonly PushTicketId[]) => Promise<PushReceiptResult[]>,
+): PushChannelRegistryPort {
+  const channel = new FakePushChannel();
+  channel.receipts = readReceipts;
+  return pushChannelRegistryOf(channel);
 }
 
 describe("receipt 정합성 (실제 PostgreSQL)", () => {
@@ -308,13 +324,42 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     const recent = await fixture("recent");
 
     // When
-    const pending = await old.receipts.findPendingTicketIds(
-      pushReceiptCheckWindow(AT_INSTANT, EXPO_PUSH_TIMING.receipt),
-      1,
-    );
+    const pending = await old.receipts.findPendingTicketIds({
+      channel: "EXPO",
+      window: pushReceiptCheckWindow(AT_INSTANT, EXPO_PUSH_CHANNEL_CONFIG.timing.receipt),
+      limit: 1,
+    });
 
     // Then
     expect(pending.map((ticketId) => ticketId.value)).toEqual([recent.ticketId]);
+  });
+
+  it("receipt 확인과 만료는 그 채널 토큰으로 보낸 ticket만 고른다", async () => {
+    // Given
+    const otherChannel = await fixture("other");
+    await client
+      .update(pushTokenTable)
+      .set({ provider: "WEB_PUSH" })
+      .where(eq(pushTokenTable.id, otherChannel.token.id));
+    const expo = await fixture("expo");
+    const window = pushReceiptCheckWindow(AT_INSTANT, EXPO_PUSH_CHANNEL_CONFIG.timing.receipt);
+
+    // When
+    const pending = await expo.receipts.findPendingTicketIds({
+      channel: "EXPO",
+      window,
+      limit: 900,
+    });
+    const closed = await expo.receipts.expireUnreceipted({
+      channel: "EXPO",
+      acceptedBefore: AT_INSTANT,
+      limit: 100,
+    });
+
+    // Then
+    expect(pending.map((ticketId) => ticketId.value)).toEqual([expo.ticketId]);
+    expect(closed).toBe(1);
+    expect((await readAttempt(otherChannel.ticketId)).status).toBe("TICKET_ACCEPTED");
   });
 
   it("15분 이전 ticket은 대기하고 15분 경계 ticket부터 조회한다", async () => {
@@ -327,10 +372,11 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     });
 
     // When
-    const pending = await waiting.receipts.findPendingTicketIds(
-      pushReceiptCheckWindow(AT_INSTANT, EXPO_PUSH_TIMING.receipt),
-      900,
-    );
+    const pending = await waiting.receipts.findPendingTicketIds({
+      channel: "EXPO",
+      window: pushReceiptCheckWindow(AT_INSTANT, EXPO_PUSH_CHANNEL_CONFIG.timing.receipt),
+      limit: 900,
+    });
 
     // Then
     expect(pending.map((ticketId) => ticketId.value)).toEqual([ready.ticketId]);
@@ -347,13 +393,10 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     const reconciler = new ReconcilePushReceiptsUseCase({
       pushReceiptRepository: f.receipts,
       pushTokenRepository: f.tokens,
-      pushProvider: {
-        timing: EXPO_PUSH_TIMING,
-        async getReceipts(ticketIds) {
-          requests.push(ticketIds.map((ticketId) => ticketId.value));
-          return ticketIds.map((ticketId) => delivered(ticketId.value));
-        },
-      },
+      channels: receiptChannel(async (ticketIds) => {
+        requests.push(ticketIds.map((ticketId) => ticketId.value));
+        return ticketIds.map((ticketId) => delivered(ticketId.value));
+      }),
       unitOfWork: f.uow,
       cache: { async invalidatePushTokens() {} },
       clock,
@@ -387,10 +430,11 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
       results: [],
       checkedAt: AT_INSTANT,
     });
-    const pending = await stuck.receipts.findPendingTicketIds(
-      pushReceiptCheckWindow(AT_INSTANT, EXPO_PUSH_TIMING.receipt),
-      1,
-    );
+    const pending = await stuck.receipts.findPendingTicketIds({
+      channel: "EXPO",
+      window: pushReceiptCheckWindow(AT_INSTANT, EXPO_PUSH_CHANNEL_CONFIG.timing.receipt),
+      limit: 1,
+    });
 
     // Then
     expect(pending.map((ticketId) => ticketId.value)).toEqual([next.ticketId]);
@@ -408,10 +452,12 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     const fresh = await fixture("fresh");
 
     // When
-    const closed = await expired.receipts.expireUnreceipted(
-      pushReceiptCheckWindow(AT_INSTANT, EXPO_PUSH_TIMING.receipt).acceptedAfter,
-      100,
-    );
+    const closed = await expired.receipts.expireUnreceipted({
+      channel: "EXPO",
+      acceptedBefore: pushReceiptCheckWindow(AT_INSTANT, EXPO_PUSH_CHANNEL_CONFIG.timing.receipt)
+        .acceptedAfter,
+      limit: 100,
+    });
 
     // Then
     expect(closed).toBe(1);
@@ -501,13 +547,10 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
           return f.tokens.deactivateInvalidTokens(tokens, deactivatedAt);
         },
       },
-      pushProvider: {
-        timing: EXPO_PUSH_TIMING,
-        async getReceipts(ticketIds) {
-          requests.push(ticketIds.map((ticketId) => ticketId.value));
-          return ticketIds.map((ticketId) => unregistered(ticketId.value));
-        },
-      },
+      channels: receiptChannel(async (ticketIds) => {
+        requests.push(ticketIds.map((ticketId) => ticketId.value));
+        return ticketIds.map((ticketId) => unregistered(ticketId.value));
+      }),
       unitOfWork: f.uow,
       cache: { async invalidatePushTokens() {} },
       clock: new FixedClock(AT_INSTANT),

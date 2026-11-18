@@ -23,6 +23,7 @@ import { NotificationRecipientLocaleReaderPort } from "./application/ports/notif
 import { NotificationRecipientPreferenceReaderPort } from "./application/ports/notification-recipient-preference.reader.port.js";
 import { NotificationRecipientTimezoneReaderPort } from "./application/ports/notification-recipient-timezone.reader.port.js";
 import { PushCampaignOutcomeReaderPort } from "./application/ports/push-campaign-outcome.reader.port.js";
+import { PushChannelRegistryPort } from "./application/ports/push-channel-registry.port.js";
 import { PushDeliveryClaimRepositoryPort } from "./application/ports/push-delivery-claim.repository.port.js";
 import { PushDeliveryFinalizationRepositoryPort } from "./application/ports/push-delivery-finalization.repository.port.js";
 import { PushDeliveryHistoryRepositoryPort } from "./application/ports/push-delivery-history.repository.port.js";
@@ -31,7 +32,6 @@ import { PushDeliveryLeaseRepositoryPort } from "./application/ports/push-delive
 import { PushDeliveryOutboxRepositoryPort } from "./application/ports/push-delivery-outbox.repository.port.js";
 import { PushDispatchRepositoryPort } from "./application/ports/push-dispatch.repository.port.js";
 import { PushNotificationPayloadPort } from "./application/ports/push-notification-payload.port.js";
-import { PushProviderPort } from "./application/ports/push-provider.port.js";
 import { PushQuietHoursReaderPort } from "./application/ports/push-quiet-hours.reader.port.js";
 import { PushRateLimiterPort } from "./application/ports/push-rate-limiter.port.js";
 import { PushReceiptRepositoryPort } from "./application/ports/push-receipt.repository.port.js";
@@ -56,10 +56,12 @@ import { RecoverFailedPushDeliveriesUseCase } from "./application/use-cases/reco
 import { RelayPushDeliveryOutboxUseCase } from "./application/use-cases/relay-push-delivery-outbox.use-case.js";
 import { ReserveBatchPushRateLimitsUseCase } from "./application/use-cases/reserve-batch-push-rate-limits.use-case.js";
 import { SendPushBatchUseCase } from "./application/use-cases/send-push-batch.use-case.js";
+import { SendPushMessagesUseCase } from "./application/use-cases/send-push-messages.use-case.js";
 import { CachedNotificationRecipientPreferenceAdapter } from "./infrastructure/adapters/cached-notification-recipient-preference.adapter.js";
-import { ExpoPushSenderAdapter } from "./infrastructure/adapters/expo-push-sender.adapter.js";
+import { ExpoPushChannelAdapter } from "./infrastructure/adapters/expo-push-channel.adapter.js";
 import { HmacMarketingPushOptOutTokenAdapter } from "./infrastructure/adapters/hmac-marketing-push-opt-out-token.adapter.js";
 import { PostgresPushRateLimiterAdapter } from "./infrastructure/adapters/postgres-push-rate-limiter.adapter.js";
+import { PushChannelRegistryAdapter } from "./infrastructure/adapters/push-channel-registry.adapter.js";
 import { PushNotificationPayloadMapper } from "./infrastructure/adapters/push-notification-payload.mapper.js";
 import { selectPushRateLimiter } from "./infrastructure/adapters/push-rate-limiter-factory.adapter.js";
 import { PushDeliveryQueueAdapter } from "./infrastructure/jobs/push-delivery-queue.adapter.js";
@@ -126,8 +128,16 @@ export const NOTIFICATION_PUSH_DISPATCHES_PERSISTENCE_PROVIDERS = [
   },
 ] satisfies Provider[];
 
+// 새 채널은 어댑터를 inject 목록과 생성자 배열에 더한다
+const pushChannelRegistryProvider = {
+  provide: PushChannelRegistryPort,
+  useFactory: (expo: ExpoPushChannelAdapter) => new PushChannelRegistryAdapter([expo]),
+  inject: [ExpoPushChannelAdapter],
+} satisfies Provider;
+
 const NOTIFICATION_PUSH_DISPATCHES_EXTERNAL_PROVIDERS = [
-  { provide: PushProviderPort, useClass: ExpoPushSenderAdapter },
+  ExpoPushChannelAdapter,
+  pushChannelRegistryProvider,
   postgresPushRateLimiterProvider,
   pushRateLimiterProvider,
   { provide: MarketingPushOptOutTokenPort, useClass: HmacMarketingPushOptOutTokenAdapter },
@@ -174,9 +184,10 @@ export const NOTIFICATION_PUSH_DISPATCHES_USE_CASE_PROVIDERS = [
     unitOfWork: UnitOfWorkPort,
     logger: loggerFor(FinalizeSkippedPushDeliveriesUseCase),
   }),
+  provideUseCase(SendPushMessagesUseCase, { channels: PushChannelRegistryPort }),
   provideUseCase(DispatchPushNotificationUseCase, {
     pushTokenRepository: PushTokenRepositoryPort,
-    pushProvider: PushProviderPort,
+    sendMessages: SendPushMessagesUseCase,
     activePushTokenReader: ActivePushTokenReaderPort,
     pushTokenCache: PushTokenCachePort,
     noActiveTokenReasons: NoActiveTokenReasonReader,
@@ -190,7 +201,7 @@ export const NOTIFICATION_PUSH_DISPATCHES_USE_CASE_PROVIDERS = [
   }),
   provideUseCase(SendPushBatchUseCase, {
     pushTokenRepository: PushTokenRepositoryPort,
-    pushProvider: PushProviderPort,
+    sendMessages: SendPushMessagesUseCase,
     pushTokenCache: PushTokenCachePort,
     clock: ClockPort,
     logger: loggerFor(SendPushBatchUseCase),
@@ -248,13 +259,13 @@ export const NOTIFICATION_PUSH_DISPATCHES_USE_CASE_PROVIDERS = [
     lease: PushDeliveryLeaseRepositoryPort,
     unitOfWork: UnitOfWorkPort,
     publishOutbox: PublishPushDeliveryOutboxUseCase,
-    pushProvider: PushProviderPort,
+    channels: PushChannelRegistryPort,
     clock: ClockPort,
   }),
   provideUseCase(ReconcilePushReceiptsUseCase, {
     pushReceiptRepository: PushReceiptRepositoryPort,
     pushTokenRepository: PushTokenRepositoryPort,
-    pushProvider: PushProviderPort,
+    channels: PushChannelRegistryPort,
     cache: PushTokenCachePort,
     unitOfWork: UnitOfWorkPort,
     clock: ClockPort,

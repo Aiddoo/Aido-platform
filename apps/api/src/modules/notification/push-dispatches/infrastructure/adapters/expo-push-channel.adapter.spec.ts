@@ -6,11 +6,9 @@ import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 
 import { RetryablePushProviderTransportError } from "../../application/push-dispatches.errors.js";
+import { ExpoPushChannelAdapter } from "./expo-push-channel.adapter.js";
+import { EXPO_PUSH_CHANNEL_CONFIG } from "./expo-push-channel.constants.js";
 import { EXPO_PUSH_PAYLOAD_MAX_BYTE_LENGTH } from "./expo-push-message.mapper.js";
-import {
-  EXPO_RATE_EXCEEDED_RETRY_DELAYS_MS,
-  ExpoPushSenderAdapter,
-} from "./expo-push-sender.adapter.js";
 
 vi.hoisted(() => {
   process.env.EXPO_BASE_URL = "https://exp.host";
@@ -21,6 +19,7 @@ const credential = "notification14-synthetic-credential-not-real";
 const body = "notification14-synthetic-private-body";
 const privateMessage = `${credential}; token=${token}; body=${body}`;
 const payload = () => ({
+  channel: "EXPO" as const,
   token,
   title: "fixture notification",
   body,
@@ -28,7 +27,7 @@ const payload = () => ({
   ttlSeconds: 3600,
 });
 const sendPath = "/--/api/v2/push/send";
-let provider: ExpoPushSenderAdapter;
+let provider: ExpoPushChannelAdapter;
 let warn: ReturnType<typeof vi.spyOn>;
 let error: ReturnType<typeof vi.spyOn>;
 let nativeFetch: ReturnType<typeof vi.spyOn>;
@@ -63,7 +62,7 @@ beforeEach(() => {
     expect(new URL(String(input)).pathname).toBe(expected.path);
     return expected.response;
   });
-  provider = new ExpoPushSenderAdapter(
+  provider = new ExpoPushChannelAdapter(
     { expoAccessToken: credential },
     new OutboundPolicyRegistry(new RecordingOperationalAlert()),
   );
@@ -77,7 +76,7 @@ afterEach(() => {
   }
 });
 
-describe("ExpoPushSenderAdapter — 설치된 SDK와 차단된 외부 네트워크", () => {
+describe("ExpoPushChannelAdapter — 설치된 SDK와 차단된 외부 네트워크", () => {
   afterEach(() => {
     vi.useRealTimers();
   });
@@ -159,7 +158,11 @@ describe("ExpoPushSenderAdapter — 설치된 SDK와 차단된 외부 네트워�
     // Given
     vi.useFakeTimers({ toFake: ["setTimeout"] });
     const limited = { status: "error", message: "rate", details: { error: "MessageRateExceeded" } };
-    for (let attempt = 0; attempt <= EXPO_RATE_EXCEEDED_RETRY_DELAYS_MS.length; attempt++) {
+    for (
+      let attempt = 0;
+      attempt <= EXPO_PUSH_CHANNEL_CONFIG.rateExceededRetryDelaysMs.length;
+      attempt++
+    ) {
       reply(sendPath, 200, { data: [limited] });
     }
 
@@ -251,7 +254,7 @@ describe("ExpoPushSenderAdapter — 설치된 SDK와 차단된 외부 네트워�
     });
 
     // When
-    const result = provider.getReceipts([
+    const result = provider.readReceipts([
       PushTicketId.reconstitute("missing"),
       PushTicketId.reconstitute("fresh"),
       PushTicketId.reconstitute("delivered"),

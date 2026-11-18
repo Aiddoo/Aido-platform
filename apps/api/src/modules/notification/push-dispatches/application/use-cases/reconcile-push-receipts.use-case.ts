@@ -9,6 +9,7 @@ import type {
   PushTokenCachePort,
   PushTokenRepositoryPort,
 } from "../../../push-devices/notification-push-devices.public.js";
+import { PUSH_CHANNELS } from "../../../shared/domain/push-channel.constants.js";
 import {
   type PushFailureKind,
   revokesPushToken,
@@ -19,7 +20,8 @@ import {
   pushReceiptCheckWindow,
 } from "../../domain/push-receipt.domain-service.js";
 import type { PushTicketId } from "../../domain/push-ticket-id.vo.js";
-import type { PushProviderPort } from "../ports/push-provider.port.js";
+import type { PushChannelRegistryPort } from "../ports/push-channel-registry.port.js";
+import type { PushChannelPort } from "../ports/push-channel.port.js";
 import type {
   InvalidPushToken,
   PushReceiptRepositoryPort,
@@ -33,7 +35,7 @@ interface ReconcilePushReceiptsDependencies {
     "expireUnreceipted" | "findPendingTicketIds" | "recordPushReceipts"
   >;
   readonly pushTokenRepository: Pick<PushTokenRepositoryPort, "deactivateInvalidTokens">;
-  readonly pushProvider: Pick<PushProviderPort, "getReceipts" | "timing">;
+  readonly channels: Pick<PushChannelRegistryPort, "forChannel">;
   readonly cache: Pick<PushTokenCachePort, "invalidatePushTokens">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly clock: ClockPort;
@@ -41,7 +43,19 @@ interface ReconcilePushReceiptsDependencies {
   readonly alert: Pick<OperationalAlertPort, "raise">;
 }
 
-// 실행 예산 안에서 확인할 ticket이 남지 않을 때까지 receipt를 이어서 반영한다
+interface ReconcileRun {
+  readonly startedAt: Temporal.Instant;
+  readonly totals: {
+    expired: number;
+    requested: number;
+    received: number;
+    invalidCount: number;
+    batches: number;
+  };
+  readonly providerFailures: PushFailureKind[];
+}
+
+// 채널마다 실행 예산 안에서 확인할 ticket이 남지 않을 때까지 receipt를 이어서 반영한다
 export class ReconcilePushReceiptsUseCase {
   readonly #dependencies: ReconcilePushReceiptsDependencies;
 
@@ -50,43 +64,54 @@ export class ReconcilePushReceiptsUseCase {
   }
 
   async execute(): Promise<void> {
-    const startedAt = this.#dependencies.clock.now();
-    const receiptTiming = this.#dependencies.pushProvider.timing.receipt;
-    const expired = await this.#dependencies.unitOfWork.run(() =>
-      this.#dependencies.pushReceiptRepository.expireUnreceipted(
-        pushReceiptCheckWindow(startedAt, receiptTiming).acceptedAfter,
-        PUSH_RECEIPT_POLICY.expireBatchSize,
-      ),
-    );
-    const totals = { requested: 0, received: 0, invalidCount: 0, batches: 0 };
-    const providerFailures: PushFailureKind[] = [];
-    for (;;) {
-      const ticketIds = await this.#dependencies.pushReceiptRepository.findPendingTicketIds(
-        pushReceiptCheckWindow(this.#dependencies.clock.now(), receiptTiming),
-        PUSH_RECEIPT_POLICY.batchSize,
-      );
-      if (ticketIds.length === 0) {
-        break;
-      }
-      const received = await this.#reconcileBatch(ticketIds);
-      totals.batches += 1;
-      totals.requested += ticketIds.length;
-      totals.received += received.received;
-      totals.invalidCount += received.invalidCount;
-      providerFailures.push(...received.providerFailures);
-      const hasMore = ticketIds.length === PUSH_RECEIPT_POLICY.batchSize;
-      const elapsedMs = this.#dependencies.clock.now().since(startedAt).total("milliseconds");
-      if (!hasMore || elapsedMs >= PUSH_RECEIPT_POLICY.runBudgetMs) {
-        break;
-      }
+    const run: ReconcileRun = {
+      startedAt: this.#dependencies.clock.now(),
+      totals: { expired: 0, requested: 0, received: 0, invalidCount: 0, batches: 0 },
+      providerFailures: [],
+    };
+    for (const channel of PUSH_CHANNELS) {
+      await this.#reconcileChannel(this.#dependencies.channels.forChannel(channel), run);
     }
     this.#dependencies.logger.log({
       event: PushDispatchLogEvent.RECONCILE_PUSH_RECEIPTS_RECONCILED,
-      expired,
-      ...totals,
-      providerFailureCount: providerFailures.length,
+      ...run.totals,
+      providerFailureCount: run.providerFailures.length,
     });
-    this.#alertIfProviderFailing(totals.received, providerFailures);
+    this.#alertIfProviderFailing(run.totals.received, run.providerFailures);
+  }
+
+  async #reconcileChannel(channel: PushChannelPort, run: ReconcileRun): Promise<void> {
+    const receiptTiming = channel.timing.receipt;
+    run.totals.expired += await this.#dependencies.unitOfWork.run(() =>
+      this.#dependencies.pushReceiptRepository.expireUnreceipted({
+        channel: channel.channel,
+        acceptedBefore: pushReceiptCheckWindow(run.startedAt, receiptTiming).acceptedAfter,
+        limit: PUSH_RECEIPT_POLICY.expireBatchSize,
+      }),
+    );
+    for (;;) {
+      const elapsedMs = this.#dependencies.clock.now().since(run.startedAt).total("milliseconds");
+      if (elapsedMs >= PUSH_RECEIPT_POLICY.runBudgetMs) {
+        return;
+      }
+      const ticketIds = await this.#dependencies.pushReceiptRepository.findPendingTicketIds({
+        channel: channel.channel,
+        window: pushReceiptCheckWindow(this.#dependencies.clock.now(), receiptTiming),
+        limit: PUSH_RECEIPT_POLICY.batchSize,
+      });
+      if (ticketIds.length === 0) {
+        return;
+      }
+      const received = await this.#reconcileBatch(channel, ticketIds);
+      run.totals.batches += 1;
+      run.totals.requested += ticketIds.length;
+      run.totals.received += received.received;
+      run.totals.invalidCount += received.invalidCount;
+      run.providerFailures.push(...received.providerFailures);
+      if (ticketIds.length < PUSH_RECEIPT_POLICY.batchSize) {
+        return;
+      }
+    }
   }
 
   #alertIfProviderFailing(receivedCount: number, failures: readonly PushFailureKind[]): void {
@@ -101,12 +126,15 @@ export class ReconcilePushReceiptsUseCase {
     });
   }
 
-  async #reconcileBatch(ticketIds: readonly PushTicketId[]): Promise<{
+  async #reconcileBatch(
+    channel: Pick<PushChannelPort, "readReceipts">,
+    ticketIds: readonly PushTicketId[],
+  ): Promise<{
     readonly received: number;
     readonly invalidCount: number;
     readonly providerFailures: readonly PushFailureKind[];
   }> {
-    const receipts = await this.#dependencies.pushProvider.getReceipts(ticketIds);
+    const receipts = await channel.readReceipts(ticketIds);
     // 비활성화 실패 시 terminal receipt도 롤백되어 다음 실행에서 다시 처리할 수 있다.
     const invalidTokens = await this.#dependencies.unitOfWork.run(async () => {
       const invalid = await this.#dependencies.pushReceiptRepository.recordPushReceipts({

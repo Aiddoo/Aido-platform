@@ -6,7 +6,7 @@
 
 알림 기록, `PushDispatch`와 outbox, 외부 공급자 발송은 분리된다. 알림을 만드는 모든 경로(소셜·리마인더·리텐션·관리자 브로드캐스트)는 같은 transaction에서 `Notification`·`PushDispatch`·`PushDispatchOutbox`를 쓰고, commit 뒤 `push-delivery.v1` 작업이 발송한다. worker는 publication generation·job ID·delivery attempt fence로 claim/finalize/retry를 제한한다. stale worker가 새 generation을 끝내지 못하게 하는 내부 원자성은 외부 푸시 exactly-once와 다르다.
 
-공급자 경계는 채널 중립 `PushProviderPort`다(지금 `ExpoPushSenderAdapter`). 공급자 오류 코드는 어댑터 안에서 `PushFailureKind`로 바꾼다.
+공급자 경계는 채널 Strategy다. 채널 하나가 `PushChannelPort`(`channel`·`timing`·`sendBatch`·`readReceipts`·`acceptsToken`) 구현 하나이고(지금 `ExpoPushChannelAdapter`), `PushChannelRegistryPort.forChannel(channel)`(Map 구현 `PushChannelRegistryAdapter`)이 고른다. 채널 이름은 서버 어휘 `PUSH_CHANNELS`(`notification/shared/domain/push-channel.constants.ts`, 지금 `["EXPO"]`)다. 앱은 채널을 모르므로 `@aido/api/vocabulary`에 두지 않는다. 토큰은 `PushToken.provider`(기본값 `'EXPO'`)로 채널이 정해지고, `SendPushMessagesUseCase`가 메시지를 채널마다 나눠 보낸 뒤 결과를 입력 순서로 모은다. 레지스트리는 어휘의 채널 하나라도 구현이 없으면 부팅에서 실패한다. 새 채널(FCM·Web Push)은 어휘 값 + 어댑터 + 레지스트리 생성자 한 줄이고, 발송 판단·기록·receipt UseCase는 바뀌지 않는다. 등록 API v1과 Expo 토큰 정규식은 그대로이고 v1 보고는 늘 `EXPO`다. 다른 채널 토큰은 새 계약 필드로 받는다. 공급자 오류 코드는 어댑터 안에서 `PushFailureKind`로 바꾼다.
 
 | PushFailureKind        | Expo 원본                                                  | 처리                                                    |
 | ---------------------- | ---------------------------------------------------------- | ------------------------------------------------------- |
@@ -21,7 +21,7 @@
 
 `PushDeliveryAttempt.failureKind`가 판단 기준이고 `errorCode`·`errorMessage`는 공급자 원본 진단 기록이다. 코드의 `providerTicketId`는 기존 칼럼 `expoTicketId`를 그대로 쓴다(운영 데이터를 옮기지 않으려고 칼럼 이름은 바꾸지 않는다).
 
-공급자 처리량: Expo 프로젝트 한도는 초당 600건이다. 어댑터가 프로세스 안에서 초당 500건(`EXPO_PUSH_MESSAGES_PER_SECOND` 상수) 토큰 버킷으로 청크(100건) 전송을 직렬화하고, SDK가 HTTP 429를 backoff 재시도하며 동시 요청을 6개로 제한한다. 운영 API는 단일 프로세스라 이 한도가 곧 전체 한도다. 인스턴스를 늘리면 상수를 인스턴스 수로 나눠야 한다.
+공급자 처리량: Expo 프로젝트 한도는 초당 600건이다. 처리량·시간 값은 Expo 채널 설정 `EXPO_PUSH_CHANNEL_CONFIG`(`expo-push-channel.constants.ts`)에 모여 있고, 어댑터가 프로세스 안에서 초당 500건(`messagesPerSecond`) 토큰 버킷으로 청크(`chunkSize` 100건) 전송을 직렬화하고, SDK가 HTTP 429를 backoff 재시도하며 동시 요청을 6개로 제한한다. 운영 API는 단일 프로세스라 이 한도가 곧 전체 한도다. 인스턴스를 늘리면 상수를 인스턴스 수로 나눠야 한다.
 
 보관 시간·우선순위: 메시지마다 Expo `ttl`(초)과 `priority`를 싣는다. 기기가 꺼져 있으면 FCM·APNs가 `ttl`까지만 보관하고 버리므로 늦게 켠 태블릿에 지난 알림이 쌓이지 않는다. 메시지 단위 값이라 등록 토큰에는 영향이 없다. `ttl`은 발송 판단(단건 `EvaluatePushDeliveryEligibilityUseCase`·배치 `EvaluateBatchPushDeliverySettingsUseCase`가 함께 쓰는 `decidePushExpiry`)이 받는 사람 저장 시간대로 `resolvePushExpiry`(`push-delivery-options.domain-service.ts`) 하나에서 정한다. 아래 종류 기본값에서 시작해 더 이른 끝으로 줄인다.
 
@@ -40,7 +40,7 @@
 
 `priority`는 모두 `high`다. `normal`은 Android Doze에서 몇 시간 늦어져 광고성 알림이 야간에 닿을 수 있다. Android 채널은 출시 앱이 만든 `default` 하나뿐이라 모든 알림을 `default`로 보낸다.
 
-receipt 확인은 5분마다 돈다(Expo 권장대로 수락 15분 뒤부터 묻는다). 공급자의 대기·보관 시간과 전송 여유는 어댑터가 `PushProviderPort.timing`(`EXPO_PUSH_TIMING`)으로 주고 도메인·UseCase는 공급자 이름 없이 이 값을 쓴다. 한 실행은 45초 예산 안에서 900건씩 남은 ticket이 없을 때까지 이어서 확인한다. 대상은 수락 뒤 15분~24시간이고 아직 확인하지 않았거나 마지막 확인이 15분 지난 `TICKET_ACCEPTED`이며, 확인 시각이 오래된 순서다. 결과가 아직 없는 ticket은 확인 시각만 남겨 뒤로 보낸다. 24시간이 지나도 결과가 없으면 `UNKNOWN`·`RECEIPT_EXPIRED`로 닫는다.
+receipt 확인은 5분마다 돈다(Expo 권장대로 수락 15분 뒤부터 묻는다). 채널의 대기·보관 시간과 전송 여유는 어댑터가 `PushChannelPort.timing`(`EXPO_PUSH_CHANNEL_CONFIG.timing`)으로 주고 도메인·UseCase는 공급자 이름 없이 이 값을 쓴다. 확인은 채널마다 그 채널 토큰으로 보낸 ticket만 고른다(`PushDeliveryAttempt.pushTokenId` → `PushToken.provider`, 토큰을 지우면 시도 기록도 FK cascade로 지워진다). receipt 모델은 Expo의 늦은 receipt를 전제하지 않는다. 전송 응답이 곧 결과인 채널은 `readyAfterMs` 0으로 두고 `readReceipts`가 그 결과를 바로 돌려준다. 처리 lease는 채널 가운데 가장 긴 전송 여유를 더한다. 한 실행은 45초 예산 안에서 900건씩 남은 ticket이 없을 때까지 이어서 확인한다. 대상은 수락 뒤 15분~24시간이고 아직 확인하지 않았거나 마지막 확인이 15분 지난 `TICKET_ACCEPTED`이며, 확인 시각이 오래된 순서다. 결과가 아직 없는 ticket은 확인 시각만 남겨 뒤로 보낸다. 24시간이 지나도 결과가 없으면 `UNKNOWN`·`RECEIPT_EXPIRED`로 닫는다.
 
 receipt 갱신은 `TICKET_ACCEPTED`에만 원자적으로 적용한다. 이미 DELIVERED/FAILED인 ticket의 중복 응답은 되돌리지 않는다. 토큰을 끄는 실패는 저장된 발송 token SHA256과 현재 token이 같을 때만 비활성화 대상으로 반환한다. receipt 상태와 token 비활성화는 한 UoW에서 처리하고 실패 시 함께 rollback한다([ReconcilePushReceipts](../src/modules/notification/push-dispatches/application/use-cases/reconcile-push-receipts.use-case.ts)). commit 뒤 사용자별 token cache 무효화는 allSettled로 실패를 격리해 기록한다.
 

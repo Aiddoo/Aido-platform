@@ -1,0 +1,1 @@
+ALTER TABLE "PushToken" ADD COLUMN "provider" varchar(20) DEFAULT 'EXPO' NOT NULL;

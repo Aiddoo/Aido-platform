@@ -32,7 +32,7 @@ import {
   NOTIFICATION_PUSH_DEVICES_USE_CASE_PROVIDERS,
 } from "#api/modules/notification/push-devices/notification-push-devices.providers";
 import { MarketingPushOptOutTokenPort } from "#api/modules/notification/push-dispatches/application/ports/marketing-push-opt-out-token.port";
-import { PushProviderPort } from "#api/modules/notification/push-dispatches/application/ports/push-provider.port";
+import { PushChannelRegistryPort } from "#api/modules/notification/push-dispatches/application/ports/push-channel-registry.port";
 import { PushRateLimiterPort } from "#api/modules/notification/push-dispatches/application/ports/push-rate-limiter.port";
 import { OptOutMarketingPushUseCase } from "#api/modules/notification/push-dispatches/application/use-cases/opt-out-marketing-push.use-case";
 import { ReconcilePushReceiptsUseCase } from "#api/modules/notification/push-dispatches/application/use-cases/reconcile-push-receipts.use-case";
@@ -91,7 +91,10 @@ import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { FakePushProvider } from "#test/doubles/notification/fake-push-provider";
+import {
+  FakePushChannel,
+  pushChannelRegistryOf,
+} from "#test/doubles/notification/fake-push-channel";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -121,7 +124,7 @@ export interface CriticalQueueProcessorHarness {
   readonly client: TestDatabaseClient;
   readonly boss: PgBoss;
   readonly jobQueue: JobQueuePort;
-  readonly pushProvider: FakePushProvider;
+  readonly pushProvider: FakePushChannel;
   readonly module: TestingModule;
   readonly retentionRepository: DrizzleRetentionAssignmentRepository;
   readonly daytimeTimezone: string;
@@ -154,7 +157,7 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
     max: 5,
     useListenNotify: false,
   });
-  const pushProvider = new FakePushProvider();
+  const pushProvider = new FakePushChannel();
   const databaseModule = CriticalQueueDatabaseModule.register(client);
   const module = await Test.createTestingModule({
     imports: [
@@ -222,7 +225,7 @@ export async function createCriticalQueueProcessorHarness(): Promise<CriticalQue
   };
 }
 
-function notificationProviders(pushProvider: FakePushProvider): Provider[] {
+function notificationProviders(pushProvider: FakePushChannel): Provider[] {
   return [
     ...NOTIFICATION_NOTIFICATIONS_PROVIDERS,
     ...NOTIFICATION_PUSH_DEVICES_PERSISTENCE_PROVIDERS,
@@ -243,7 +246,7 @@ function notificationProviders(pushProvider: FakePushProvider): Provider[] {
     { provide: UnregisterPushDeviceUseCase, useValue: unexpectedUseCase },
     { provide: OptOutMarketingPushUseCase, useValue: unexpectedUseCase },
     { provide: SendNotificationWithDeduplicationUseCase, useValue: unexpectedUseCase },
-    { provide: PushProviderPort, useValue: pushProvider },
+    { provide: PushChannelRegistryPort, useValue: pushChannelRegistryOf(pushProvider) },
     { provide: PushRateLimiterPort, useClass: InMemoryPushRateLimiterAdapter },
     {
       provide: MarketingPushOptOutTokenPort,

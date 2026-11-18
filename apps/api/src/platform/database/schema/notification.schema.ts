@@ -182,6 +182,8 @@ export const pushToken = pgTable(
       .notNull(),
     payloadVersion: integer().default(1).notNull(),
     platform: platform().notNull(),
+    // 토큰을 받는 발송 채널(PUSH_CHANNELS). 등록 API v1은 Expo 토큰만 받아 기존 행은 기본값으로 채운다
+    provider: varchar({ length: 20 }).default("EXPO").notNull(),
     sessionId: text(),
     token: varchar({ length: 255 }).notNull(),
     // 등록·비활성화 때 저장소가 ClockPort 시각을 명시한다

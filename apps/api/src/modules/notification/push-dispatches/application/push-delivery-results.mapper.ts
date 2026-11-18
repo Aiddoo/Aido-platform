@@ -1,13 +1,13 @@
 import { revokesPushToken } from "../domain/push-failure-kind.constants.js";
-import type { PushResult } from "./ports/push-provider.port.js";
+import type { PushSendResult } from "./ports/push-channel.port.js";
 
-export function tokensToRevoke(results: readonly PushResult[]): string[] {
+export function tokensToRevoke(results: readonly PushSendResult[]): string[] {
   return results.flatMap((result) =>
     result.status === "rejected" && revokesPushToken(result.failure.kind) ? [result.token] : [],
   );
 }
 
-export function countOutcomes(results: readonly PushResult[]): {
+export function countOutcomes(results: readonly PushSendResult[]): {
   readonly successCount: number;
   readonly failureCount: number;
 } {

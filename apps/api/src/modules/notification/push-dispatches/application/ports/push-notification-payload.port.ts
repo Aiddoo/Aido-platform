@@ -5,7 +5,7 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import type { NotificationId } from "../../../shared/domain/notification-id.vo.js";
 import type { PushDispatchId } from "../../domain/push-dispatch-id.vo.js";
-import type { PushPayload } from "./push-provider.port.js";
+import type { PushMessageContent } from "./push-channel.port.js";
 
 export interface CreatePushNotificationPayloadInput {
   readonly data: CreateNotificationData;
@@ -17,7 +17,7 @@ export interface CreatePushNotificationPayloadInput {
   readonly ttlSeconds: number;
 }
 
-export interface BatchPushNotificationPayload extends Omit<PushPayload, "token"> {
+export interface BatchPushNotificationPayload extends PushMessageContent {
   readonly userId: UserId;
   readonly dispatchId: PushDispatchId;
   readonly requiresFeatureCapability: boolean;
@@ -27,6 +27,6 @@ export interface BatchPushNotificationPayload extends Omit<PushPayload, "token">
 
 // 푸시 data는 앱 계약 모양이라 계약 검증을 아는 바깥 매퍼가 만든다
 export abstract class PushNotificationPayloadPort {
-  abstract createSingle(input: CreatePushNotificationPayloadInput): Omit<PushPayload, "token">;
+  abstract createSingle(input: CreatePushNotificationPayloadInput): PushMessageContent;
   abstract createBatch(input: CreatePushNotificationPayloadInput): BatchPushNotificationPayload;
 }

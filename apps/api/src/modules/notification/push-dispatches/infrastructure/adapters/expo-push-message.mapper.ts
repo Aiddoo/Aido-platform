@@ -1,6 +1,6 @@
 import type { ExpoPushMessage } from "expo-server-sdk";
 
-import type { PushPayload } from "../../application/ports/push-provider.port.js";
+import type { PushMessage } from "../../application/ports/push-channel.port.js";
 
 export const EXPO_PUSH_PAYLOAD_MAX_BYTE_LENGTH = 4096;
 
@@ -25,8 +25,8 @@ export function measureExpoPushMessageByteLength(message: ExpoPushMessage): numb
   return new TextEncoder().encode(JSON.stringify(message)).byteLength;
 }
 
-/** PushPayload를 전송 가능한 Expo 메시지로 만들고 provider 한도를 같이 검증한다. */
-export function buildExpoPushMessage(payload: PushPayload): ExpoPushMessageBuildResult {
+/** PushMessage를 전송 가능한 Expo 메시지로 만들고 provider 한도를 같이 검증한다. */
+export function buildExpoPushMessage(payload: PushMessage): ExpoPushMessageBuildResult {
   const message: ExpoPushMessage = {
     to: payload.token,
     title: payload.title,

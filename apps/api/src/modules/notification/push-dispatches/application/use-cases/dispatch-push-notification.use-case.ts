@@ -4,10 +4,12 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type {
-  ActivePushTokenReaderPort,
-  PushTokenCachePort,
-  PushTokenRepositoryPort,
+import {
+  type ActivePushTokenReaderPort,
+  type ActivePushTokenReadModel,
+  type PushTokenCachePort,
+  type PushTokenRepositoryPort,
+  toActivePushTokens,
 } from "../../../push-devices/notification-push-devices.public.js";
 import {
   notificationMinAppVersion,
@@ -19,19 +21,20 @@ import {
   supportsFeatureDiscoveryMarketing,
 } from "../../domain/feature-marketing-capability.domain-service.js";
 import type { NoActiveTokenReasonReader } from "../no-active-token-reason.reader.js";
-import type { PushPayload, PushProviderPort, PushResult } from "../ports/push-provider.port.js";
+import type { PushMessageContent, PushSendResult } from "../ports/push-channel.port.js";
 import { countOutcomes, tokensToRevoke } from "../push-delivery-results.mapper.js";
 import { PushDispatchLogEvent } from "../push-dispatches.log-events.js";
+import type { SendPushMessagesUseCase } from "./send-push-messages.use-case.js";
 
 export interface DispatchPushNotificationCommand {
   readonly data: CreateNotificationData;
-  readonly payload: Omit<PushPayload, "token">;
+  readonly payload: PushMessageContent;
 }
 
 export type SinglePushNotificationDeliveryResult =
   | {
       readonly status: "sent";
-      readonly results: PushResult[];
+      readonly results: PushSendResult[];
     }
   | {
       readonly status: "skipped";
@@ -43,7 +46,7 @@ interface DispatchPushNotificationDependencies {
     PushTokenRepositoryPort,
     "deactivateInvalidTokens" | "findPushTokensByUser"
   >;
-  readonly pushProvider: Pick<PushProviderPort, "sendBatch">;
+  readonly sendMessages: Pick<SendPushMessagesUseCase, "execute">;
   readonly activePushTokenReader: Pick<ActivePushTokenReaderPort, "findByUserId">;
   readonly pushTokenCache: Pick<PushTokenCachePort, "invalidatePushTokens">;
   readonly noActiveTokenReasons: Pick<NoActiveTokenReasonReader, "findReason">;
@@ -67,8 +70,8 @@ export class DispatchPushNotificationUseCase {
       return tokenResolution;
     }
 
-    const results = await this.#dependencies.pushProvider.sendBatch(
-      tokenResolution.tokens.map((token) => ({ ...command.payload, token })),
+    const results = await this.#dependencies.sendMessages.execute(
+      tokenResolution.tokens.map(({ channel, token }) => ({ ...command.payload, channel, token })),
     );
     const revokedTokens = tokensToRevoke(results);
     if (revokedTokens.length > 0) {
@@ -95,7 +98,7 @@ export class DispatchPushNotificationUseCase {
   async #resolveTokens(
     data: CreateNotificationData,
   ): Promise<
-    | { readonly status: "resolved"; readonly tokens: readonly string[] }
+    | { readonly status: "resolved"; readonly tokens: readonly ActivePushTokenReadModel[] }
     | { readonly status: "skipped"; readonly reason: PushDispatchSkipReason }
   > {
     const requiresFeatureCapability = data.campaignKey === FEATURE_DISCOVERY_CAMPAIGN_KEY;
@@ -112,13 +115,13 @@ export class DispatchPushNotificationUseCase {
         };
       }
 
-      const tokens = records
-        .filter(
+      const tokens = toActivePushTokens(
+        records.filter(
           (record) =>
             (!requiresFeatureCapability || supportsFeatureDiscoveryMarketing(record)) &&
             supportsNotificationType(data.type, record.appVersion),
-        )
-        .map((record) => record.token);
+        ),
+      );
       return tokens.length > 0
         ? { status: "resolved", tokens }
         : { status: "skipped", reason: "UNSUPPORTED_APP_CAPABILITY" };

@@ -170,20 +170,20 @@ commit → 캐시 정리
 
 새 어댑터는 "어댑터 파일 + 바인딩 한 줄 + 포트 계약 테스트 통과"로 끝나야 한다. 그 밖이 바뀌면 포트 설계가 틀린 것이다. 공급자 이름은 어댑터 파일·클래스·`*.wire.ts`에만 쓴다. 환경·설정에 따라 어댑터를 고르는 규칙은 [설정](configuration.md#공급자-선택)에 있다.
 
-| 포트                                                      | 지금 어댑터                                         | 고르는 곳                                                            |
-| --------------------------------------------------------- | --------------------------------------------------- | -------------------------------------------------------------------- |
-| `PushProviderPort`                                        | Expo(`ExpoPushSenderAdapter`)                       | `notification-push-dispatches.providers.ts`                          |
-| `EmailSenderPort`                                         | `@nestjs/mail`(Resend), Log                         | `EMAIL_PROVIDER`                                                     |
-| `AdminNotifierPort`                                       | Discord, Log                                        | `ADMIN_NOTIFIER_PROVIDER`                                            |
-| `StoreSubscriptionStatusReaderPort` + 번역기              | RevenueCat                                          | `StoreSubscriptionEvent` 판별 유니온([결제](billing.md#공급자-경계)) |
-| `WeatherReportProviderPort`·`WeatherForecastProviderPort` | WeatherKit, KMA                                     | `weather-weather-reports.providers.ts`                               |
-| `AiGeneratorPort`                                         | AI SDK(Anthropic·Google·OpenAI 체인)                | `AI_PROVIDER_ORDER`([AI](ai.md))                                     |
-| `JobQueuePort`                                            | pg-boss                                             | `platform/jobs`                                                      |
-| `DomainEventPublisherPort`                                | 구독자별 pg-boss 작업(`FanOutDomainEventPublisher`) | `platform/events`                                                    |
-| `CacheStorePort` + slice 의미 캐시 Port                   | lru-cache, Redis                                    | `CACHE_TYPE`([확장](scaling.md))                                     |
-| `MutationLockPort`                                        | PostgreSQL advisory lock                            | `platform/database`                                                  |
-| `OperationalAlertPort`·`ExceptionReporterPort`            | Sentry(운영), 로그(그 밖)                           | 배포 환경([관측](observability.md#환경별-어댑터))                    |
-| Repository Port 전부                                      | Drizzle                                             | slice `*.providers.ts` 한 줄                                         |
+| 포트                                                         | 지금 어댑터                                         | 고르는 곳                                                                                  |
+| ------------------------------------------------------------ | --------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `PushChannelPort`(채널 Strategy) + `PushChannelRegistryPort` | Expo(`ExpoPushChannelAdapter`), Map 레지스트리      | `notification-push-dispatches.providers.ts`([푸시 발송](push-delivery.md#deliveryreceipt)) |
+| `EmailSenderPort`                                            | `@nestjs/mail`(Resend), Log                         | `EMAIL_PROVIDER`                                                                           |
+| `AdminNotifierPort`                                          | Discord, Log                                        | `ADMIN_NOTIFIER_PROVIDER`                                                                  |
+| `StoreSubscriptionStatusReaderPort` + 번역기                 | RevenueCat                                          | `StoreSubscriptionEvent` 판별 유니온([결제](billing.md#공급자-경계))                       |
+| `WeatherReportProviderPort`·`WeatherForecastProviderPort`    | WeatherKit, KMA                                     | `weather-weather-reports.providers.ts`                                                     |
+| `AiGeneratorPort`                                            | AI SDK(Anthropic·Google·OpenAI 체인)                | `AI_PROVIDER_ORDER`([AI](ai.md))                                                           |
+| `JobQueuePort`                                               | pg-boss                                             | `platform/jobs`                                                                            |
+| `DomainEventPublisherPort`                                   | 구독자별 pg-boss 작업(`FanOutDomainEventPublisher`) | `platform/events`                                                                          |
+| `CacheStorePort` + slice 의미 캐시 Port                      | lru-cache, Redis                                    | `CACHE_TYPE`([확장](scaling.md))                                                           |
+| `MutationLockPort`                                           | PostgreSQL advisory lock                            | `platform/database`                                                                        |
+| `OperationalAlertPort`·`ExceptionReporterPort`               | Sentry(운영), 로그(그 밖)                           | 배포 환경([관측](observability.md#환경별-어댑터))                                          |
+| Repository Port 전부                                         | Drizzle                                             | slice `*.providers.ts` 한 줄                                                               |
 
 외부 호출 규칙은 [외부 호출](outbound.md)에 있다.
 

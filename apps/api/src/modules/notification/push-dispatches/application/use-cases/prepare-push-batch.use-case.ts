@@ -3,14 +3,16 @@ import { groupBy, uniq } from "es-toolkit";
 
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type {
-  ActivePushTokenReaderPort,
-  PushTokenRepositoryPort,
+import {
+  type ActivePushTokenReaderPort,
+  type ActivePushTokenReadModel,
+  type PushTokenRepositoryPort,
+  toActivePushTokens,
 } from "../../../push-devices/notification-push-devices.public.js";
 import { supportsFeatureDiscoveryMarketing } from "../../domain/feature-marketing-capability.domain-service.js";
 import type { NoActiveTokenReasonReader } from "../no-active-token-reason.reader.js";
+import type { PushMessage } from "../ports/push-channel.port.js";
 import type { BatchPushNotificationPayload } from "../ports/push-notification-payload.port.js";
-import type { PushPayload } from "../ports/push-provider.port.js";
 
 interface PreparedPushBatchBase {
   readonly attemptedDispatchIds: ReadonlySet<number>;
@@ -25,7 +27,7 @@ export type PreparedPushBatch =
   | (PreparedPushBatchBase & { readonly status: "empty" })
   | (PreparedPushBatchBase & {
       readonly status: "ready";
-      readonly providerPayloads: readonly PushPayload[];
+      readonly messages: readonly PushMessage[];
       readonly dispatchIds: readonly number[];
     });
 
@@ -54,7 +56,7 @@ export class PreparePushBatchUseCase {
     );
     const capabilityTokensByUser = await this.#findCapabilityTokens(payloads);
 
-    const providerPayloads: PushPayload[] = [];
+    const messages: PushMessage[] = [];
     const dispatchIds: number[] = [];
     const attemptedDispatchIds = new Set<number>();
     const skippedDispatches: Array<{ dispatchId: number; reason: PushDispatchSkipReason }> = [];
@@ -77,7 +79,7 @@ export class PreparePushBatchUseCase {
       }
       attemptedDispatchIds.add(dispatchId);
       for (const token of selection.tokens) {
-        providerPayloads.push(toProviderPayload(payload, token));
+        messages.push(toPushMessage(payload, token));
         dispatchIds.push(dispatchId);
       }
     }
@@ -93,10 +95,10 @@ export class PreparePushBatchUseCase {
     }
 
     const base = { attemptedDispatchIds, skippedDispatches, recipientUserIds: userIds };
-    if (providerPayloads.length === 0) {
+    if (messages.length === 0) {
       return { status: "empty", ...base };
     }
-    return { status: "ready", providerPayloads, dispatchIds, ...base };
+    return { status: "ready", messages, dispatchIds, ...base };
   }
 
   async #findCapabilityTokens(
@@ -121,10 +123,10 @@ function requiresCapability(payload: BatchPushNotificationPayload): boolean {
 
 function selectTokens(
   payload: BatchPushNotificationPayload,
-  activeTokens: readonly string[],
+  activeTokens: readonly ActivePushTokenReadModel[],
   capabilityTokensByUser: CapabilityTokensByUser,
 ):
-  | { readonly status: "selected"; readonly tokens: readonly string[] }
+  | { readonly status: "selected"; readonly tokens: readonly ActivePushTokenReadModel[] }
   | { readonly status: "skipped"; readonly reason: PushDispatchSkipReason } {
   const capabilityRecords = capabilityTokensByUser[payload.userId.value] ?? [];
   const { minAppVersion } = payload;
@@ -135,21 +137,25 @@ function selectTokens(
   }
 
   const tokens = needsCapability
-    ? capabilityRecords
-        .filter(
+    ? toActivePushTokens(
+        capabilityRecords.filter(
           (record) =>
             (!payload.requiresFeatureCapability || supportsFeatureDiscoveryMarketing(record)) &&
             (minAppVersion == null || isSemanticVersionAtLeast(record.appVersion, minAppVersion)),
-        )
-        .map((record) => record.token)
+        ),
+      )
     : activeTokens;
   return tokens.length === 0
     ? { status: "skipped", reason: "UNSUPPORTED_APP_CAPABILITY" }
     : { status: "selected", tokens };
 }
 
-function toProviderPayload(payload: BatchPushNotificationPayload, token: string): PushPayload {
+function toPushMessage(
+  payload: BatchPushNotificationPayload,
+  { channel, token }: ActivePushTokenReadModel,
+): PushMessage {
   return {
+    channel,
     token,
     title: payload.title,
     body: payload.body,

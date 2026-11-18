@@ -16,7 +16,7 @@ function report(status: PushPermission["status"], token: string | null) {
     sessionId: "session-a",
     platform: "IOS",
     permission: PushPermission.create({ status, canAskAgain: false }),
-    pushToken: PushToken.create({ token, payloadVersion: 2, appVersion: null }),
+    pushToken: PushToken.create({ token, channel: "EXPO", payloadVersion: 2, appVersion: null }),
     deviceModel: "iPhone 17 Pro",
     osVersion: "26.1",
     now: REPORTED_AT,
@@ -56,7 +56,7 @@ describe("PushDevice — 푸시 기기", () => {
     const change = device.tokenChange;
 
     // Then
-    expect(change).toEqual({ kind: "REGISTER", token });
+    expect(change).toEqual({ kind: "REGISTER", token, channel: "EXPO" });
   });
 
   it.each(["GRANTED", "PROVISIONAL"] as const)(
@@ -97,7 +97,12 @@ describe("PushDevice — 푸시 기기", () => {
       sessionId: null,
       platform: null,
       permission: PushPermission.create({ status: "GRANTED", canAskAgain: false }),
-      pushToken: PushToken.create({ token: null, payloadVersion: 2, appVersion: null }),
+      pushToken: PushToken.create({
+        token: null,
+        channel: "EXPO",
+        payloadVersion: 2,
+        appVersion: null,
+      }),
       deviceModel: null,
       osVersion: null,
       now: REPORTED_AT,

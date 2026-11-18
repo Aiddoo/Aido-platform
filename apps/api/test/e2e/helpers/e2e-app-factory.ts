@@ -41,7 +41,7 @@ import {
   SendUserReportEmailUseCase,
 } from "#api/modules/notification/email-messages/notification-email-messages.public";
 import { NotificationQueueProcessor } from "#api/modules/notification/notifications/infrastructure/jobs/notification-queue.processor";
-import { PushProviderPort } from "#api/modules/notification/push-dispatches/application/ports/push-provider.port";
+import { PushChannelRegistryPort } from "#api/modules/notification/push-dispatches/application/ports/push-channel-registry.port";
 import { TimezoneReminderQueueProcessor } from "#api/modules/notification/reminders/infrastructure/jobs/timezone-reminder-queue.processor";
 import { TimezoneReminderSweepScheduler } from "#api/modules/notification/reminders/infrastructure/jobs/timezone-reminder-sweep.scheduler";
 import { TodoReminderQueueProcessor } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-queue.processor";
@@ -63,7 +63,10 @@ import { DRIZZLE } from "#api/platform/database/database.client";
 import { configureApplication } from "#api/platform/http/configure-application";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
-import { FakePushProvider } from "#test/doubles/notification/fake-push-provider";
+import {
+  FakePushChannel,
+  pushChannelRegistryOf,
+} from "#test/doubles/notification/fake-push-channel";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { StubWeatherReportProvider } from "#test/doubles/weather/stub-weather-report-provider";
@@ -151,7 +154,7 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
   const fakeEmailService = new FakeEmailService();
   const fakeOAuthTokenVerifierService = new FakeOAuthTokenVerifierService();
   const fakeAdminNotifier = new FakeAdminNotifier();
-  const fakePushProvider = new FakePushProvider();
+  const fakePushProvider = new FakePushChannel();
   const fakeAiGenerator = new FakeAiGenerator();
   const fakeWeatherProvider = new FakeWeatherProvider();
   const stubWeatherReportProvider = new StubWeatherReportProvider();
@@ -243,8 +246,8 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
     })
     .overrideProvider(AdminNotifierPort)
     .useValue(fakeAdminNotifier)
-    .overrideProvider(PushProviderPort)
-    .useValue(fakePushProvider)
+    .overrideProvider(PushChannelRegistryPort)
+    .useValue(pushChannelRegistryOf(fakePushProvider))
     .overrideProvider(AiGeneratorPort)
     .useValue(fakeAiGenerator)
     .overrideProvider(WeatherForecastProviderPort)

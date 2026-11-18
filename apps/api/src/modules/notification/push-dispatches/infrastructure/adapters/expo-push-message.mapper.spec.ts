@@ -1,4 +1,4 @@
-import type { PushPayload } from "../../application/ports/push-provider.port.js";
+import type { PushMessage } from "../../application/ports/push-channel.port.js";
 import {
   buildExpoPushMessage,
   EXPO_PUSH_PAYLOAD_MAX_BYTE_LENGTH,
@@ -7,8 +7,9 @@ import {
 
 const VALID_TOKEN = "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]";
 
-function createPayload(overrides: Partial<PushPayload> = {}): PushPayload {
+function createPayload(overrides: Partial<PushMessage> = {}): PushMessage {
   return {
+    channel: "EXPO",
     token: VALID_TOKEN,
     title: "알림",
     body: "본문",

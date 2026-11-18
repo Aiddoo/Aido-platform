@@ -1,0 +1,47 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "abb576f8-bd8c-4c67-8b9e-ab378a4ded7a",
+  "prevIds": [
+    "b0240393-62f1-4400-9dcb-83334c88ff6b"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "PushToken",
+        "provider"
+      ],
+      "writes": [
+        "s|col|public.PushToken.provider",
+        "n|col|public.PushToken.provider",
+        "e|col|public.PushToken.provider"
+      ],
+      "reads": [
+        "n|tbl|public.PushToken",
+        "n|sch|public"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "PushToken",
+        "name": "provider",
+        "type": "varchar(20)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'EXPO'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    }
+  ]
+}

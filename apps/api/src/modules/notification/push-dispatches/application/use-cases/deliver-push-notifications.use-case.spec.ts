@@ -24,12 +24,12 @@ import type {
 import { PushDispatchId } from "../../domain/push-dispatch-id.vo.js";
 import { InMemoryPushRateLimiterAdapter } from "../../infrastructure/adapters/in-memory-push-rate-limiter.adapter.js";
 import { PushNotificationPayloadMapper } from "../../infrastructure/adapters/push-notification-payload.mapper.js";
+import type { PushMessageContent } from "../ports/push-channel.port.js";
 import type { ClaimedPushDelivery } from "../ports/push-delivery-claim.repository.port.js";
 import type {
   BatchPushNotificationPayload,
   PushNotificationPayloadPort,
 } from "../ports/push-notification-payload.port.js";
-import { type PushPayload } from "../ports/push-provider.port.js";
 import type { PushRateLimiterPort } from "../ports/push-rate-limiter.port.js";
 import {
   PushDeliveryRateLimitReservationConflictError,
@@ -250,7 +250,7 @@ class RecordingPayloadFactory implements Pick<
     this.#callOrder = callOrder;
   }
 
-  createSingle(input: CreateSingleInput): Omit<PushPayload, "token"> {
+  createSingle(input: CreateSingleInput): PushMessageContent {
     this.#callOrder.push("createSinglePayload");
     this.singleInputs.push(input);
     return this.#mapper.createSingle(input);
@@ -321,7 +321,8 @@ class StubPushDelivery {
     return {
       status: "ready",
       ...base,
-      providerPayloads: deliverable.map((payload) => ({
+      messages: deliverable.map((payload) => ({
+        channel: "EXPO" as const,
         token: `token-${payload.userId.value}`,
         title: payload.title,
         body: payload.body,

@@ -1,6 +1,20 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, asc, eq, gte, inArray, isNotNull, isNull, lt, lte, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  eq,
+  exists,
+  gte,
+  inArray,
+  isNotNull,
+  isNull,
+  lt,
+  lte,
+  or,
+  type SQL,
+  sql,
+} from "drizzle-orm";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import {
@@ -11,7 +25,8 @@ import {
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { PushReceiptResult } from "../../application/ports/push-provider.port.js";
+import type { PushChannel } from "../../../shared/domain/push-channel.constants.js";
+import type { PushReceiptResult } from "../../application/ports/push-channel.port.js";
 import type {
   InvalidPushToken,
   PushReceiptRepositoryPort,
@@ -35,16 +50,22 @@ export class DrizzlePushReceiptRepository implements PushReceiptRepositoryPort {
     this.#clock = clock;
   }
 
-  async findPendingTicketIds(
-    window: PushReceiptCheckWindow,
-    limit: number,
-  ): Promise<PushTicketId[]> {
+  async findPendingTicketIds({
+    channel,
+    window,
+    limit,
+  }: {
+    readonly channel: PushChannel;
+    readonly window: PushReceiptCheckWindow;
+    readonly limit: number;
+  }): Promise<PushTicketId[]> {
     const rows = await this.#db
       .select({ ticketId: pushDeliveryAttempt.providerTicketId })
       .from(pushDeliveryAttempt)
       .where(
         and(
           eq(pushDeliveryAttempt.status, "TICKET_ACCEPTED"),
+          this.#sentThrough(channel),
           isNotNull(pushDeliveryAttempt.providerTicketId),
           gte(pushDeliveryAttempt.createdAt, window.acceptedAfter),
           lte(pushDeliveryAttempt.createdAt, window.acceptedBefore),
@@ -90,7 +111,15 @@ export class DrizzlePushReceiptRepository implements PushReceiptRepositoryPort {
     return invalidTokens;
   }
 
-  async expireUnreceipted(acceptedBefore: Temporal.Instant, limit: number): Promise<number> {
+  async expireUnreceipted({
+    channel,
+    acceptedBefore,
+    limit,
+  }: {
+    readonly channel: PushChannel;
+    readonly acceptedBefore: Temporal.Instant;
+    readonly limit: number;
+  }): Promise<number> {
     const now = this.#clock.now();
     const unreceipted = this.#db
       .select({ id: pushDeliveryAttempt.id })
@@ -99,6 +128,7 @@ export class DrizzlePushReceiptRepository implements PushReceiptRepositoryPort {
         and(
           eq(pushDeliveryAttempt.status, "TICKET_ACCEPTED"),
           lt(pushDeliveryAttempt.createdAt, acceptedBefore),
+          this.#sentThrough(channel),
         ),
       )
       .orderBy(asc(pushDeliveryAttempt.createdAt), asc(pushDeliveryAttempt.id))
@@ -119,6 +149,18 @@ export class DrizzlePushReceiptRepository implements PushReceiptRepositoryPort {
 
   get #db() {
     return this.#transactionHost.tx;
+  }
+
+  // 발송 시도는 토큰 행에 FK cascade로 묶여 있어 그 토큰의 채널이 ticket을 받은 채널이다
+  #sentThrough(channel: PushChannel): SQL {
+    return exists(
+      this.#db
+        .select({ id: pushToken.id })
+        .from(pushToken)
+        .where(
+          and(eq(pushToken.id, pushDeliveryAttempt.pushTokenId), eq(pushToken.provider, channel)),
+        ),
+    );
   }
 
   async #recordTerminalReceipts(

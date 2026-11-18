@@ -8,7 +8,7 @@ type PushDeviceInsertRow = typeof pushDeviceTable.$inferInsert;
 
 export function toPushDeviceRow(device: PushDevice): PushDeviceInsertRow {
   // 토큰·앱 정보는 PushToken 행에 쓴다
-  const row = omit(device.toPrimitives(), ["token", "payloadVersion", "appVersion"]);
+  const row = omit(device.toPrimitives(), ["token", "channel", "payloadVersion", "appVersion"]);
   // 기기 행은 보고할 때만 바뀌어 보고 시각이 곧 수정 시각이다
   return { ...row, updatedAt: row.reportedAt };
 }

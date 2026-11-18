@@ -1,7 +1,7 @@
 import type { PushDispatchSkipReason } from "@aido/api/vocabulary";
 
 import type { PushDeliveryFenceReadModel } from "../read-models/push-delivery-fence.read-model.js";
-import type { PushResult } from "./push-provider.port.js";
+import type { PushSendResult } from "./push-channel.port.js";
 
 export interface PushDeliveryContext {
   readonly timezone: string;
@@ -17,7 +17,7 @@ export interface FinalizeSkippedPushDeliveryInput {
 export interface FinalizePushDeliveryResultsInput {
   readonly fence: PushDeliveryFenceReadModel;
   readonly context: PushDeliveryContext;
-  readonly results: readonly PushResult[];
+  readonly results: readonly PushSendResult[];
 }
 
 // 담당 표시가 맞는 발송만 끝낸다. 늦은 worker는 0건이다

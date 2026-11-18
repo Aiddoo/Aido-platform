@@ -14,6 +14,7 @@ import type { DrizzleTransactionalAdapter } from "#api/platform/database/databas
 import { pushDevice, pushToken } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import type { PushChannel } from "../../../shared/domain/push-channel.constants.js";
 import {
   PushDeviceRepositoryPort,
   type SavedPushDeviceResult,
@@ -45,8 +46,8 @@ export class DrizzlePushDeviceRepository implements PushDeviceRepositoryPort {
         set: omit(row, ["userId", "deviceId"]),
       });
     const hasActiveToken = await match(device.tokenChange)
-      .with({ kind: "REGISTER" }, async ({ token }) => {
-        await this.#registerToken(device, token);
+      .with({ kind: "REGISTER" }, async (registration) => {
+        await this.#registerToken(device, registration);
         return true;
       })
       .with({ kind: "KEEP" }, () => this.#keepToken(device))
@@ -151,10 +152,14 @@ export class DrizzlePushDeviceRepository implements PushDeviceRepositoryPort {
     return released.map((row) => UserId.reconstitute(row.userId));
   }
 
-  async #registerToken(device: PushDevice, token: string): Promise<void> {
+  async #registerToken(
+    device: PushDevice,
+    { token, channel }: { readonly token: string; readonly channel: PushChannel },
+  ): Promise<void> {
     const { payloadVersion, appVersion } = device.pushToken;
     const values = {
       token,
+      provider: channel,
       platform: device.platform,
       sessionId: device.sessionId,
       isActive: true,

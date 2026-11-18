@@ -36,14 +36,15 @@ import {
   NOTIFICATION_PUSH_DEVICES_USE_CASE_PROVIDERS,
 } from "#api/modules/notification/push-devices/notification-push-devices.providers";
 import { MarketingPushOptOutTokenPort } from "#api/modules/notification/push-dispatches/application/ports/marketing-push-opt-out-token.port";
+import { PushChannelRegistryPort } from "#api/modules/notification/push-dispatches/application/ports/push-channel-registry.port";
 import { PushDeliveryJobEnqueuerPort } from "#api/modules/notification/push-dispatches/application/ports/push-delivery-job-enqueuer.port";
 import { PushDispatchRepositoryPort } from "#api/modules/notification/push-dispatches/application/ports/push-dispatch.repository.port";
-import { PushProviderPort } from "#api/modules/notification/push-dispatches/application/ports/push-provider.port";
 import { PushRateLimiterPort } from "#api/modules/notification/push-dispatches/application/ports/push-rate-limiter.port";
 import { OptOutMarketingPushUseCase } from "#api/modules/notification/push-dispatches/application/use-cases/opt-out-marketing-push.use-case";
 import { PublishPushDeliveryAfterCommitUseCase } from "#api/modules/notification/push-dispatches/application/use-cases/publish-push-delivery-after-commit.use-case";
 import { PushDispatchId } from "#api/modules/notification/push-dispatches/domain/push-dispatch-id.vo";
 import type { PushDispatch } from "#api/modules/notification/push-dispatches/domain/push-dispatch.aggregate";
+import { EXPO_PUSH_CHANNEL_CONFIG } from "#api/modules/notification/push-dispatches/infrastructure/adapters/expo-push-channel.constants";
 import {
   NOTIFICATION_PUSH_DISPATCHES_PERSISTENCE_PROVIDERS,
   NOTIFICATION_PUSH_DISPATCHES_USE_CASE_PROVIDERS,
@@ -132,11 +133,13 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
   let testDatabase: TestDatabase;
   let client: TestDatabaseClient;
   const mockPushProvider = {
-    send: vi.fn(),
+    channel: "EXPO",
+    timing: EXPO_PUSH_CHANNEL_CONFIG.timing,
     sendBatch: vi.fn(),
-    getReceipts: vi.fn(),
+    readReceipts: vi.fn(),
+    acceptsToken: vi.fn(),
   };
-  const mockPushTokenFormat = { isValid: vi.fn() };
+  const mockPushTokenFormat = { accepts: vi.fn() };
 
   const mockMarketingPushOptOutToken = {
     issue: vi.fn((userId: UserId) => `opt-out:${userId.value}`),
@@ -277,8 +280,8 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
           useValue: transaction.transactionHost,
         },
         {
-          provide: PushProviderPort,
-          useValue: mockPushProvider,
+          provide: PushChannelRegistryPort,
+          useValue: { forChannel: () => mockPushProvider },
         },
         { provide: PushTokenFormatPort, useValue: mockPushTokenFormat },
         { provide: NoCacheStore, useValue: new NoCacheStore() },
@@ -403,7 +406,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
   describe("푸시 기기 보고 통합 테스트", () => {
     it("새 푸시 토큰을 등록해야 함", async () => {
       // Given
-      mockPushTokenFormat.isValid.mockReturnValue(true);
+      mockPushTokenFormat.accepts.mockReturnValue(true);
 
       // When
       const registration = facade.reportPushDevice(
@@ -427,7 +430,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
 
     it("같은 사용자·기기가 다시 등록하면 한 행을 갱신한다", async () => {
       // Given
-      mockPushTokenFormat.isValid.mockReturnValue(true);
+      mockPushTokenFormat.accepts.mockReturnValue(true);
       await facade.reportPushDevice(
         createReportPushDeviceCommandFixture({
           permission: GRANTED_PERMISSION,
@@ -465,7 +468,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
     it("이전 사용자의 해제가 실패한 기기에 다른 사용자가 등록하면 토큰 소유가 새 사용자로 옮겨진다", async () => {
       // Given
       // 사용자 A가 등록한 기기에서 A의 해제 요청이 서버에 닿지 않았다
-      mockPushTokenFormat.isValid.mockReturnValue(true);
+      mockPushTokenFormat.accepts.mockReturnValue(true);
       await facade.reportPushDevice(
         createReportPushDeviceCommandFixture({
           permission: GRANTED_PERMISSION,
@@ -498,7 +501,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
 
     it("같은 사용자의 deviceId가 바뀌어도 같은 토큰은 새 기기 행 하나만 남는다", async () => {
       // Given
-      mockPushTokenFormat.isValid.mockReturnValue(true);
+      mockPushTokenFormat.accepts.mockReturnValue(true);
       await facade.reportPushDevice(
         createReportPushDeviceCommandFixture({
           permission: GRANTED_PERMISSION,
@@ -527,7 +530,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
 
     it("유효하지 않은 토큰이면 예외를 발생시켜야 함", async () => {
       // Given
-      mockPushTokenFormat.isValid.mockReturnValue(false);
+      mockPushTokenFormat.accepts.mockReturnValue(false);
 
       // When
       const registration = facade.reportPushDevice(

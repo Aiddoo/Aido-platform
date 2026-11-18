@@ -1,5 +1,8 @@
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { FakePushProvider } from "#test/doubles/notification/fake-push-provider";
+import {
+  FakePushChannel,
+  pushChannelRegistryOf,
+} from "#test/doubles/notification/fake-push-channel";
 import { InMemoryPushTokenRepository } from "#test/doubles/notification/in-memory-push-token.repository";
 import { RecordingPushTokenCache } from "#test/doubles/notification/recording-push-token-cache";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
@@ -16,7 +19,7 @@ import {
   type PushReceiptCheckWindow,
 } from "../../domain/push-receipt.domain-service.js";
 import { PushTicketId } from "../../domain/push-ticket-id.vo.js";
-import type { PushReceiptResult } from "../ports/push-provider.port.js";
+import type { PushReceiptResult } from "../ports/push-channel.port.js";
 import type { InvalidPushToken } from "../ports/push-receipt.repository.port.js";
 import { PushDispatchAlerts } from "../push-dispatches.alerts.js";
 import { ReconcilePushReceiptsUseCase } from "./reconcile-push-receipts.use-case.js";
@@ -35,10 +38,13 @@ class StubReceiptRepository implements ReceiptRepository {
   readonly expiredBefore: Temporal.Instant[] = [];
   expiredCount = 0;
 
-  async findPendingTicketIds(
-    window: PushReceiptCheckWindow,
-    limit: number,
-  ): Promise<PushTicketId[]> {
+  async findPendingTicketIds({
+    window,
+    limit,
+  }: {
+    readonly window: PushReceiptCheckWindow;
+    readonly limit: number;
+  }): Promise<PushTicketId[]> {
     this.windows.push(window);
     return this.pendingTicketIds
       .slice(0, limit)
@@ -59,7 +65,11 @@ class StubReceiptRepository implements ReceiptRepository {
     });
   }
 
-  async expireUnreceipted(acceptedBefore: Temporal.Instant): Promise<number> {
+  async expireUnreceipted({
+    acceptedBefore,
+  }: {
+    readonly acceptedBefore: Temporal.Instant;
+  }): Promise<number> {
     this.expiredBefore.push(acceptedBefore);
     return this.expiredCount;
   }
@@ -68,7 +78,7 @@ class StubReceiptRepository implements ReceiptRepository {
 function setup(
   options: {
     readonly pushTokenRepository?: Pick<PushTokenRepositoryPort, "deactivateInvalidTokens">;
-    readonly pushProvider?: FakePushProvider;
+    readonly pushProvider?: FakePushChannel;
   } = {},
 ) {
   const repository = new StubReceiptRepository();
@@ -84,7 +94,7 @@ function setup(
   const useCase = new ReconcilePushReceiptsUseCase({
     pushReceiptRepository: repository,
     pushTokenRepository: options.pushTokenRepository ?? pushTokenRepository,
-    pushProvider: options.pushProvider ?? new FakePushProvider(),
+    channels: pushChannelRegistryOf(options.pushProvider ?? new FakePushChannel()),
     cache,
     unitOfWork: {
       async run(work) {
@@ -137,7 +147,7 @@ describe("ReconcilePushReceiptsUseCase — receipt 반영", () => {
     const clock = new FixedClock(NOW);
     const repository = new StubReceiptRepository();
     repository.pendingTicketIds = ticketIds(PUSH_RECEIPT_POLICY.batchSize * 3);
-    const pushProvider = new FakePushProvider();
+    const pushProvider = new FakePushChannel();
     let receiptRequests = 0;
     pushProvider.receipts = async (ids) => {
       receiptRequests += 1;
@@ -147,7 +157,7 @@ describe("ReconcilePushReceiptsUseCase — receipt 반영", () => {
     const budgeted = new ReconcilePushReceiptsUseCase({
       pushReceiptRepository: repository,
       pushTokenRepository: new InMemoryPushTokenRepository(),
-      pushProvider,
+      channels: pushChannelRegistryOf(pushProvider),
       cache: new RecordingPushTokenCache(),
       unitOfWork: new ImmediateUnitOfWork(),
       clock,
@@ -235,7 +245,7 @@ describe("ReconcilePushReceiptsUseCase — receipt 반영", () => {
 
 describe("ReconcilePushReceiptsUseCase — 공급자 쪽 실패 비율 경보", () => {
   function receiptsWith(failures: number, total: number, kind: PushFailureKind) {
-    const pushProvider = new FakePushProvider();
+    const pushProvider = new FakePushChannel();
     pushProvider.receipts = async (ids) =>
       ids.map((ticketId, index): PushReceiptResult =>
         index < failures

@@ -9,7 +9,13 @@ import { PushTokenCacheAdapter } from "../cache/push-token-cache.adapter.js";
 import { PUSH_TOKEN_CACHE_TTL_MS, PushTokenCacheKey } from "../cache/push-token-cache.keyspace.js";
 import { CachedActivePushTokenReaderAdapter } from "./cached-active-push-token-reader.adapter.js";
 
-const TOKENS_SCHEMA = z.array(z.string());
+const TOKENS_SCHEMA = z.array(
+  z.object({ token: z.string(), channel: z.literal("EXPO"), appVersion: z.string().nullable() }),
+);
+
+function expoToken(token: string, appVersion: string | null = null) {
+  return { token, channel: "EXPO", appVersion } as const;
+}
 
 function createFixture(tokens: Parameters<typeof createPushTokenFixture>[0][] = []) {
   const cache = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
@@ -45,7 +51,10 @@ describe("CachedActivePushTokenReaderAdapter - 활성 푸시 토큰 cache-aside"
 
     // Then
     const key = PushTokenCacheKey.pushTokens(userId);
-    expect(result).toEqual(["ExponentPushToken[first]", "ExponentPushToken[second]"]);
+    expect(result).toEqual([
+      expoToken("ExponentPushToken[first]"),
+      expoToken("ExponentPushToken[second]"),
+    ]);
     await expect(cache.get(key, TOKENS_SCHEMA)).resolves.toEqual(result);
     expect(await cache.ttl(key)).toBeGreaterThan(PUSH_TOKEN_CACHE_TTL_MS.PUSH_TOKENS - 1000);
     expect(await cache.ttl(key)).toBeLessThanOrEqual(PUSH_TOKEN_CACHE_TTL_MS.PUSH_TOKENS);
@@ -55,13 +64,13 @@ describe("CachedActivePushTokenReaderAdapter - 활성 푸시 토큰 cache-aside"
     // Given
     const userId = "user-cached";
     const { cache, reader } = createFixture([{ userId, token: "ExponentPushToken[db]" }]);
-    await cache.set(PushTokenCacheKey.pushTokens(userId), ["ExponentPushToken[cached]"]);
+    await cache.set(PushTokenCacheKey.pushTokens(userId), [expoToken("ExponentPushToken[cached]")]);
 
     // When
     const result = await reader.findByUserId(UserId.reconstitute(userId));
 
     // Then
-    expect(result).toEqual(["ExponentPushToken[cached]"]);
+    expect(result).toEqual([expoToken("ExponentPushToken[cached]")]);
   });
 
   it("배치는 캐시 누락 사용자만 한 번에 조회하고 묶음 발송이 공용 LRU를 밀어내지 않도록 캐시에 쓰지 않는다", async () => {
@@ -82,7 +91,9 @@ describe("CachedActivePushTokenReaderAdapter - 활성 푸시 토큰 cache-aside"
         token: "ExponentPushToken[loaded-second]",
       },
     ]);
-    await cache.set(PushTokenCacheKey.pushTokens(cachedUserId), ["ExponentPushToken[cached]"]);
+    await cache.set(PushTokenCacheKey.pushTokens(cachedUserId), [
+      expoToken("ExponentPushToken[cached]"),
+    ]);
     const findActive = vi.spyOn(pushTokenRepository, "findActivePushTokensByUsers");
 
     // When
@@ -98,8 +109,14 @@ describe("CachedActivePushTokenReaderAdapter - 활성 푸시 토큰 cache-aside"
       UserId.reconstitute(tokenlessUserId),
     ]);
     expect([...result]).toEqual([
-      [cachedUserId, ["ExponentPushToken[cached]"]],
-      [loadedUserId, ["ExponentPushToken[loaded-first]", "ExponentPushToken[loaded-second]"]],
+      [cachedUserId, [expoToken("ExponentPushToken[cached]")]],
+      [
+        loadedUserId,
+        [
+          expoToken("ExponentPushToken[loaded-first]"),
+          expoToken("ExponentPushToken[loaded-second]"),
+        ],
+      ],
     ]);
     expect(result.has(tokenlessUserId)).toBe(false);
     const missedKeys = [loadedUserId, tokenlessUserId].map((userId) =>
@@ -136,7 +153,9 @@ describe("CachedActivePushTokenReaderAdapter - 활성 푸시 토큰 cache-aside"
     const { cache, pushTokenRepository, reader } = createFixture([
       { userId: "user-without-token", token: "ExponentPushToken[db-only]" },
     ]);
-    await cache.set(PushTokenCacheKey.pushTokens("user-with-token"), ["ExponentPushToken[cached]"]);
+    await cache.set(PushTokenCacheKey.pushTokens("user-with-token"), [
+      expoToken("ExponentPushToken[cached]"),
+    ]);
     await cache.set(PushTokenCacheKey.pushTokens("user-without-token"), []);
     const findActive = vi.spyOn(pushTokenRepository, "findActivePushTokensByUsers");
     const mset = vi.spyOn(cache, "mset");
@@ -148,9 +167,39 @@ describe("CachedActivePushTokenReaderAdapter - 활성 푸시 토큰 cache-aside"
     ]);
 
     // Then
-    expect([...result]).toEqual([["user-with-token", ["ExponentPushToken[cached]"]]]);
+    expect([...result]).toEqual([["user-with-token", [expoToken("ExponentPushToken[cached]")]]]);
     expect(findActive).not.toHaveBeenCalled();
     expect(mset).not.toHaveBeenCalled();
+  });
+
+  it("토큰 문자열만 담은 이전 캐시 값은 미스로 보고 저장소에서 채널·앱 버전과 함께 다시 읽는다", async () => {
+    // Given
+    const userId = "user-legacy-cache";
+    const { cache, reader } = createFixture([
+      { userId, token: "ExponentPushToken[db]", appVersion: "1.15.1" },
+    ]);
+    await cache.set(PushTokenCacheKey.pushTokens(userId), ["ExponentPushToken[db]"]);
+
+    // When
+    const result = await reader.findByUserId(UserId.reconstitute(userId));
+
+    // Then
+    expect(result).toEqual([expoToken("ExponentPushToken[db]", "1.15.1")]);
+  });
+
+  it("이 서버가 모르는 채널의 토큰은 발송 대상에서 뺀다", async () => {
+    // Given
+    const userId = "user-unknown-channel";
+    const { reader } = createFixture([
+      { userId, deviceId: "ios_device-expo", token: "ExponentPushToken[expo]" },
+      { userId, deviceId: "web_device", token: "web-push-endpoint", provider: "WEB_PUSH" },
+    ]);
+
+    // When
+    const result = await reader.findByUserIds([UserId.reconstitute(userId)]);
+
+    // Then
+    expect([...result]).toEqual([[userId, [expoToken("ExponentPushToken[expo]")]]]);
   });
 
   it("빈 배치 입력은 캐시와 저장소를 조회하지 않는다", async () => {

@@ -7,6 +7,8 @@ export interface PushTokenReadModel {
   readonly token: string;
   readonly deviceId: string;
   readonly platform: PushDevicePlatform;
+  // 발송 채널 값. 쓰는 쪽이 toPushChannel로 읽는다
+  readonly provider: string;
   readonly isActive: boolean;
   readonly createdAt: Temporal.Instant;
   readonly updatedAt: Temporal.Instant;

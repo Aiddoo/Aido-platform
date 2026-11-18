@@ -8,6 +8,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { normalizeIanaTimezone } from "#api/shared/domain/time/time-zone-name";
 
 import type { UserNotificationSettingsPort } from "../../../shared/application/ports/user-notification-settings.port.js";
+import type { PushChannel } from "../../../shared/domain/push-channel.constants.js";
 import { PushDeviceId } from "../../domain/push-device-id.vo.js";
 import { PushDevice } from "../../domain/push-device.aggregate.js";
 import { platformFromDeviceId } from "../../domain/push-device.domain-service.js";
@@ -31,6 +32,8 @@ export interface ReportPushDeviceCommand {
   readonly platformHint?: PushDevicePlatform;
   readonly permission: { readonly status: PushPermissionStatus; readonly canAskAgain: boolean };
   readonly token: string | null;
+  // 보고 계약이 정한 토큰의 발송 채널
+  readonly channel: PushChannel;
   readonly payloadVersion: number;
   readonly appVersion: string | null;
   readonly deviceModel: string | null;
@@ -51,7 +54,7 @@ export interface PushDeviceReport {
 interface ReportPushDeviceDependencies {
   readonly pushDeviceRepository: Pick<PushDeviceRepositoryPort, "save">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
-  readonly pushTokenFormat: Pick<PushTokenFormatPort, "isValid">;
+  readonly pushTokenFormat: Pick<PushTokenFormatPort, "accepts">;
   readonly userSettings: Pick<
     UserNotificationSettingsPort,
     "upsertPushLocale" | "upsertPushTimezone"
@@ -77,7 +80,10 @@ export class ReportPushDeviceUseCase {
   }
 
   async execute(command: ReportPushDeviceCommand): Promise<PushDeviceReport> {
-    if (command.token != null && !this.#dependencies.pushTokenFormat.isValid(command.token)) {
+    if (
+      command.token != null &&
+      !this.#dependencies.pushTokenFormat.accepts(command.channel, command.token)
+    ) {
       throw invalidPushToken();
     }
 
@@ -89,6 +95,7 @@ export class ReportPushDeviceUseCase {
       permission: PushPermission.create(command.permission),
       pushToken: PushToken.create({
         token: command.token,
+        channel: command.channel,
         payloadVersion: command.payloadVersion,
         appVersion: command.appVersion,
       }),

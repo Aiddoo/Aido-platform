@@ -15,12 +15,12 @@ import {
 import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import { isActionableTodoReminderStage } from "../../../shared/domain/todo-reminder-stage.constants.js";
 import { type MarketingPushOptOutTokenPort } from "../../application/ports/marketing-push-opt-out-token.port.js";
+import type { PushMessageContent } from "../../application/ports/push-channel.port.js";
 import {
   type BatchPushNotificationPayload,
   type CreatePushNotificationPayloadInput,
   PushNotificationPayloadPort,
 } from "../../application/ports/push-notification-payload.port.js";
-import type { PushPayload } from "../../application/ports/push-provider.port.js";
 import { FEATURE_DISCOVERY_CAMPAIGN_KEY } from "../../domain/feature-marketing-capability.domain-service.js";
 import { PushCategoryId } from "../../domain/push-category-id.vo.js";
 import { PUSH_DELIVERY_PRIORITY } from "../../domain/push-delivery-options.domain-service.js";
@@ -63,7 +63,7 @@ export class PushNotificationPayloadMapper extends PushNotificationPayloadPort {
     this.#dependencies = dependencies;
   }
 
-  createSingle(input: CreatePushNotificationPayloadInput): Omit<PushPayload, "token"> {
+  createSingle(input: CreatePushNotificationPayloadInput): PushMessageContent {
     const { data, notificationId, dispatchId } = input;
     const isMarketing = isMarketingPush(data);
     const categoryId = pushCategoryIdOf(data, isMarketing);

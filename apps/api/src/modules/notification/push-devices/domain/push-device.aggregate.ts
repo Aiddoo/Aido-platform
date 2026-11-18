@@ -3,6 +3,7 @@ import type { PushDevicePlatform, PushPermissionStatus } from "@aido/api/vocabul
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
+import type { PushChannel } from "../../shared/domain/push-channel.constants.js";
 import { PushDeviceId } from "./push-device-id.vo.js";
 import { pushUnavailableDevice } from "./push-devices.errors.js";
 import { PushPermission } from "./push-permission.vo.js";
@@ -16,6 +17,7 @@ export interface PushDevicePrimitives {
   readonly permissionStatus: PushPermissionStatus;
   readonly permissionCanAskAgain: boolean;
   readonly token: string | null;
+  readonly channel: PushChannel;
   readonly payloadVersion: number;
   readonly appVersion: string | null;
   readonly deviceModel: string | null;
@@ -25,7 +27,7 @@ export interface PushDevicePrimitives {
 
 // 보고 하나가 이 기기의 발송 토큰을 어떻게 바꾸는지
 export type PushTokenChange =
-  | { readonly kind: "REGISTER"; readonly token: string }
+  | { readonly kind: "REGISTER"; readonly token: string; readonly channel: PushChannel }
   | { readonly kind: "KEEP" }
   | { readonly kind: "RELEASE" };
 
@@ -90,6 +92,7 @@ export class PushDevice extends AggregateRoot<PushDeviceId, PushDeviceProps> {
       }),
       pushToken: PushToken.reconstitute({
         token: primitives.token,
+        channel: primitives.channel,
         payloadVersion: primitives.payloadVersion,
         appVersion: primitives.appVersion,
       }),
@@ -128,11 +131,11 @@ export class PushDevice extends AggregateRoot<PushDeviceId, PushDeviceProps> {
       return { kind: "RELEASE" };
     }
     // 허용인데 토큰이 없으면 발급이 한 번 실패한 것이라(시간 초과·오프라인) 등록된 토큰을 지우지 않는다
-    const { token } = this.props.pushToken;
+    const { token, channel } = this.props.pushToken;
     if (token == null) {
       return { kind: "KEEP" };
     }
-    return { kind: "REGISTER", token };
+    return { kind: "REGISTER", token, channel };
   }
 
   /**

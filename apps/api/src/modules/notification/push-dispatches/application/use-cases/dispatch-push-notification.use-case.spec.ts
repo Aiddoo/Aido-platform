@@ -2,7 +2,10 @@ import type { PushPermissionStatus } from "@aido/api/vocabulary";
 
 import { PushDispatchId } from "#api/modules/notification/push-dispatches/domain/push-dispatch-id.vo";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { FakePushProvider } from "#test/doubles/notification/fake-push-provider";
+import {
+  FakePushChannel,
+  pushChannelRegistryOf,
+} from "#test/doubles/notification/fake-push-channel";
 import { InMemoryPushDeviceRepository } from "#test/doubles/notification/in-memory-push-device.repository";
 import { InMemoryPushTokenRepository } from "#test/doubles/notification/in-memory-push-token.repository";
 import { RecordingPushTokenCache } from "#test/doubles/notification/recording-push-token-cache";
@@ -23,6 +26,7 @@ import { RetryablePushProviderTransportError } from "../push-dispatches.errors.j
 import { DispatchPushNotificationUseCase } from "./dispatch-push-notification.use-case.js";
 import { PreparePushBatchUseCase } from "./prepare-push-batch.use-case.js";
 import { SendPushBatchUseCase } from "./send-push-batch.use-case.js";
+import { SendPushMessagesUseCase } from "./send-push-messages.use-case.js";
 
 const NOW = Temporal.Instant.from("2026-11-10T00:00:00.000Z");
 let tokenSequence = 0;
@@ -84,7 +88,10 @@ function createDispatchUseCase(
 ) {
   const pushTokenRepository = new InMemoryPushTokenRepository(options.tokens);
   const activePushTokenReader = new StubActivePushTokenReader(options.activeTokens);
-  const pushProvider = new FakePushProvider();
+  const pushProvider = new FakePushChannel();
+  const sendMessages = new SendPushMessagesUseCase({
+    channels: pushChannelRegistryOf(pushProvider),
+  });
   const pushTokenCache = new RecordingPushTokenCache();
   const clock = new FixedClock(NOW);
   const noActiveTokenReasons = new NoActiveTokenReasonReader({
@@ -94,7 +101,7 @@ function createDispatchUseCase(
   const service = {
     dispatchPush: new DispatchPushNotificationUseCase({
       pushTokenRepository,
-      pushProvider,
+      sendMessages,
       activePushTokenReader,
       pushTokenCache,
       noActiveTokenReasons,
@@ -108,7 +115,7 @@ function createDispatchUseCase(
     }),
     sendPushBatch: new SendPushBatchUseCase({
       pushTokenRepository,
-      pushProvider,
+      sendMessages,
       pushTokenCache,
       clock,
       logger: new SilentLogger(),
@@ -260,7 +267,15 @@ describe("푸시 단건 발송·배치 준비·배치 전송 — 토큰 선택�
       // Then
       expect(result.status).toBe("sent");
       expect(pushProvider.sentBatches).toEqual([
-        [{ token: "new-token", title: "친구의 답장", body: "곧 시작해요", ...DELIVERY_OPTIONS }],
+        [
+          {
+            channel: "EXPO",
+            token: "new-token",
+            title: "친구의 답장",
+            body: "곧 시작해요",
+            ...DELIVERY_OPTIONS,
+          },
+        ],
       ]);
       expect(activePushTokenReader.lookedUpUserIds).toEqual([]);
     },
@@ -300,7 +315,15 @@ describe("푸시 단건 발송·배치 준비·배치 전송 — 토큰 선택�
     // Then
     expect(result.status).toBe("sent");
     expect(pushProvider.sentBatches).toEqual([
-      [{ token: "updated-token", title: "초대", body: "본문", ...DELIVERY_OPTIONS }],
+      [
+        {
+          channel: "EXPO",
+          token: "updated-token",
+          title: "초대",
+          body: "본문",
+          ...DELIVERY_OPTIONS,
+        },
+      ],
     ]);
   });
 
@@ -335,8 +358,9 @@ describe("푸시 단건 발송·배치 준비·배치 전송 — 토큰 선택�
     if (prepared.status !== "ready") {
       throw new Error("전송할 알림 배치가 필요합니다");
     }
-    expect(prepared.providerPayloads).toEqual([
+    expect(prepared.messages).toEqual([
       {
+        channel: "EXPO",
         token: "old-token",
         title: "title-1",
         body: "body-1",
@@ -344,6 +368,7 @@ describe("푸시 단건 발송·배치 준비·배치 전송 — 토큰 선택�
         ...DELIVERY_OPTIONS,
       },
       {
+        channel: "EXPO",
         token: "new-token",
         title: "title-1",
         body: "body-1",
@@ -351,6 +376,7 @@ describe("푸시 단건 발송·배치 준비·배치 전송 — 토큰 선택�
         ...DELIVERY_OPTIONS,
       },
       {
+        channel: "EXPO",
         token: "new-token",
         title: "title-2",
         body: "body-2",
@@ -453,6 +479,7 @@ describe("푸시 단건 발송·배치 준비·배치 전송 — 토큰 선택�
     expect(pushProvider.sentBatches).toEqual([
       [
         {
+          channel: "EXPO",
           token: "invalid-token",
           title: "title",
           body: "body",
@@ -517,6 +544,7 @@ describe("푸시 단건 발송·배치 준비·배치 전송 — 토큰 선택�
     expect(pushProvider.sentBatches).toEqual([
       [
         {
+          channel: "EXPO",
           token: "generic-token",
           title: "title-1",
           body: "body-1",
@@ -524,6 +552,7 @@ describe("푸시 단건 발송·배치 준비·배치 전송 — 토큰 선택�
           ...DELIVERY_OPTIONS,
         },
         {
+          channel: "EXPO",
           token: "feature-token",
           title: "title-2",
           body: "body-2",

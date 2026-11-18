@@ -6,16 +6,14 @@ import { match, P } from "ts-pattern";
 
 import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
-import { HOUR_MS, MINUTE_MS } from "#api/shared/domain/time/time-units";
 
 import {
+  type PushChannelPort,
   type PushFailure,
-  type PushPayload,
-  type PushProviderPort,
-  type PushProviderTiming,
+  type PushMessage,
   type PushReceiptResult,
-  type PushResult,
-} from "../../application/ports/push-provider.port.js";
+  type PushSendResult,
+} from "../../application/ports/push-channel.port.js";
 import { retryablePushProviderTransport } from "../../application/push-dispatches.errors.js";
 import {
   PUSH_FAILURE_KIND,
@@ -24,23 +22,13 @@ import {
 import { PushTicketId } from "../../domain/push-ticket-id.vo.js";
 import { notificationPushDispatchesConfig } from "../../notification-push-dispatches.config.js";
 import { EXPO_PUSH_POLICY } from "./expo-outbound.policy.js";
+import { EXPO_PUSH_CHANNEL_CONFIG } from "./expo-push-channel.constants.js";
 import { buildExpoPushMessage } from "./expo-push-message.mapper.js";
 import { PushProviderLogEvent, pushTransportStatusCode } from "./push-provider.log-events.js";
 import { PushThroughputLimiterAdapter } from "./push-throughput-limiter.adapter.js";
 
-/**
- * Expo는 수락 15분 뒤부터 receipt를 물으라고 권하고 receipt를 약 24시간 보관한다.
- * SDK 전송은 abort signal을 받지 않아 정책 timeout 뒤에도 요청이 이어질 수 있어 lease 여유를 둔다.
- */
-export const EXPO_PUSH_TIMING = {
-  receipt: { readyAfterMs: 15 * MINUTE_MS, retentionMs: 24 * HOUR_MS },
-  unabortableSendGraceMs: 10 * MINUTE_MS,
-} as const satisfies PushProviderTiming;
-
-/** Expo 프로젝트 한도(초당 600건)보다 여유를 둔다. 운영 API는 단일 프로세스다. */
-const EXPO_PUSH_MESSAGES_PER_SECOND = 500;
-/** 기기별 MessageRateExceeded는 Expo 안내대로 지수 backoff 뒤 해당 메시지만 다시 보낸다. */
-export const EXPO_RATE_EXCEEDED_RETRY_DELAYS_MS = [1000, 2000, 4000] as const;
+// 로그·transport 오류의 provider 값. 운영 로그 검색이 이 값을 쓴다
+const EXPO_PROVIDER_LOG_NAME = "expo";
 
 function toPushFailureKind(providerCode: string | undefined): PushFailureKind {
   return match(providerCode)
@@ -63,13 +51,13 @@ interface SendableMessage {
 
 /** @see https://docs.expo.dev/push-notifications/sending-notifications/ */
 @Injectable()
-export class ExpoPushSenderAdapter implements PushProviderPort {
-  readonly name = "expo";
-  readonly timing = EXPO_PUSH_TIMING;
-  readonly #logger = new Logger(ExpoPushSenderAdapter.name);
+export class ExpoPushChannelAdapter implements PushChannelPort {
+  readonly channel = "EXPO";
+  readonly timing = EXPO_PUSH_CHANNEL_CONFIG.timing;
+  readonly #logger = new Logger(ExpoPushChannelAdapter.name);
   readonly #expo: Expo;
   readonly #throughput = new PushThroughputLimiterAdapter({
-    messagesPerSecond: EXPO_PUSH_MESSAGES_PER_SECOND,
+    messagesPerSecond: EXPO_PUSH_CHANNEL_CONFIG.messagesPerSecond,
   });
 
   readonly #policy: OutboundPolicy;
@@ -84,7 +72,11 @@ export class ExpoPushSenderAdapter implements PushProviderPort {
     this.#policy = policies.get(EXPO_PUSH_POLICY);
   }
 
-  async getReceipts(ticketIds: readonly PushTicketId[]): Promise<PushReceiptResult[]> {
+  acceptsToken(token: string): boolean {
+    return Expo.isExpoPushToken(token);
+  }
+
+  async readReceipts(ticketIds: readonly PushTicketId[]): Promise<PushReceiptResult[]> {
     const results: PushReceiptResult[] = [];
     for (const receiptBatch of this.#expo.chunkPushNotificationReceiptIds(
       ticketIds.map((ticketId) => ticketId.value),
@@ -115,26 +107,26 @@ export class ExpoPushSenderAdapter implements PushProviderPort {
    * 토큰 형식·payload 크기처럼 확정된 실패는 결과로 돌려준다. 청크 transport 실패는 수락 여부를
    * 알 수 없어 RetryablePushProviderTransportError를 던진다.
    */
-  async sendBatch(payloads: readonly PushPayload[]): Promise<PushResult[]> {
-    const results: Array<PushResult | undefined> = Array.from({ length: payloads.length });
+  async sendBatch(messages: readonly PushMessage[]): Promise<PushSendResult[]> {
+    const results: Array<PushSendResult | undefined> = Array.from({ length: messages.length });
     let pending: SendableMessage[] = [];
-    for (const [index, payload] of payloads.entries()) {
-      if (!Expo.isExpoPushToken(payload.token)) {
-        results[index] = this.#rejected(payload.token, { kind: PUSH_FAILURE_KIND.INVALID_TOKEN });
+    for (const [index, message] of messages.entries()) {
+      if (!this.acceptsToken(message.token)) {
+        results[index] = this.#rejected(message.token, { kind: PUSH_FAILURE_KIND.INVALID_TOKEN });
         continue;
       }
-      const built = buildExpoPushMessage(payload);
+      const built = buildExpoPushMessage(message);
       if (built.status === "rejected") {
-        results[index] = this.#rejected(payload.token, {
+        results[index] = this.#rejected(message.token, {
           kind: PUSH_FAILURE_KIND.PAYLOAD_TOO_LARGE,
         });
         continue;
       }
-      pending.push({ index, token: payload.token, message: built.message });
+      pending.push({ index, token: message.token, message: built.message });
     }
 
     const progress = { resolved: 0, accepted: 0, total: pending.length };
-    const retryDelaysMs = [0, ...EXPO_RATE_EXCEEDED_RETRY_DELAYS_MS];
+    const retryDelaysMs = [0, ...EXPO_PUSH_CHANNEL_CONFIG.rateExceededRetryDelaysMs];
     for (const [round, retryDelayMs] of retryDelaysMs.entries()) {
       if (pending.length === 0) {
         break;
@@ -144,7 +136,7 @@ export class ExpoPushSenderAdapter implements PushProviderPort {
       }
       const canRetry = round < retryDelaysMs.length - 1;
       const rateLimited: SendableMessage[] = [];
-      for (const batch of chunk(pending, Expo.pushNotificationChunkSizeLimit)) {
+      for (const batch of chunk(pending, EXPO_PUSH_CHANNEL_CONFIG.chunkSize)) {
         const tickets = await this.#sendMessages(batch, progress);
         for (const [position, entry] of batch.entries()) {
           const result = this.#toResult(entry.token, tickets[position]);
@@ -181,7 +173,7 @@ export class ExpoPushSenderAdapter implements PushProviderPort {
     } catch (error) {
       const transportError = retryablePushProviderTransport(
         {
-          providerName: this.name,
+          providerName: EXPO_PROVIDER_LOG_NAME,
           resolvedPayloadCountBeforeFailure: progress.resolved,
           acceptedTicketCountBeforeFailure: progress.accepted,
           unconfirmedPayloadCount: batch.length,
@@ -191,7 +183,7 @@ export class ExpoPushSenderAdapter implements PushProviderPort {
       );
       this.#logger.error({
         event: PushProviderLogEvent.TRANSPORT_FAILED,
-        provider: this.name,
+        provider: EXPO_PROVIDER_LOG_NAME,
         statusCode: pushTransportStatusCode(error),
         ...transportError.metadata,
       });
@@ -199,7 +191,7 @@ export class ExpoPushSenderAdapter implements PushProviderPort {
     }
   }
 
-  #toResult(token: string, ticket: ExpoPushTicket | undefined): PushResult {
+  #toResult(token: string, ticket: ExpoPushTicket | undefined): PushSendResult {
     if (ticket == null) {
       return this.#rejected(token, { kind: PUSH_FAILURE_KIND.UNKNOWN });
     }
@@ -209,7 +201,7 @@ export class ExpoPushSenderAdapter implements PushProviderPort {
     const failure = this.#failure(ticket.details?.error, ticket.message);
     this.#logger.warn({
       event: PushProviderLogEvent.TICKET_FAILED,
-      provider: this.name,
+      provider: EXPO_PROVIDER_LOG_NAME,
       failureKind: failure.kind,
     });
     return this.#rejected(token, failure);
@@ -223,7 +215,7 @@ export class ExpoPushSenderAdapter implements PushProviderPort {
     };
   }
 
-  #rejected(token: string, failure: PushFailure): PushResult {
+  #rejected(token: string, failure: PushFailure): PushSendResult {
     return { token, status: "rejected", failure };
   }
 }

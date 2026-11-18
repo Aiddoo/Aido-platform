@@ -94,6 +94,7 @@ export class InMemoryPushTokenRepository extends PushTokenRepositoryPort {
       token,
       deviceId,
       platform: device.platform,
+      provider: device.pushToken.channel,
       sessionId: device.sessionId,
       isActive: true,
       payloadVersion: device.pushToken.payloadVersion,

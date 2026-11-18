@@ -49,7 +49,7 @@ describe("푸시 기기 보고 (실제 PostgreSQL)", () => {
     const reportPushDevice = new ReportPushDeviceUseCase({
       pushDeviceRepository: new DrizzlePushDeviceRepository(transactionHost),
       unitOfWork: uow,
-      pushTokenFormat: { isValid: () => true },
+      pushTokenFormat: { accepts: () => true },
       userSettings: { upsertPushLocale: async () => {}, upsertPushTimezone: async () => {} },
       cache: { invalidatePushTokens: async () => {} },
       preferenceCache: { invalidateUserPreference: async () => {} },

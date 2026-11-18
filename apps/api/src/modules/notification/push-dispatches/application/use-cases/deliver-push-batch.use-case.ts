@@ -10,13 +10,13 @@ import type {
   PushDeliverySettingsDecision,
 } from "../../domain/push-delivery-decision.domain-service.js";
 import { PushDispatchId } from "../../domain/push-dispatch-id.vo.js";
+import type { PushSendResult } from "../ports/push-channel.port.js";
 import type { ClaimedPushDelivery } from "../ports/push-delivery-claim.repository.port.js";
 import type {
   PushDeliveryContext,
   PushDeliveryFinalizationRepositoryPort,
 } from "../ports/push-delivery-finalization.repository.port.js";
 import type { PushNotificationPayloadPort } from "../ports/push-notification-payload.port.js";
-import type { PushResult } from "../ports/push-provider.port.js";
 import { pushDeliveryRecipientMissing } from "../push-dispatches.errors.js";
 import type { EvaluateBatchPushDeliverySettingsUseCase } from "./evaluate-batch-push-delivery-settings.use-case.js";
 import type { FinalizeSkippedPushDeliveriesUseCase } from "./finalize-skipped-push-deliveries.use-case.js";
@@ -162,7 +162,7 @@ export class DeliverPushBatchUseCase {
         ? await this.#dependencies.sendPushBatch.execute(prepared)
         : {
             attemptedDispatchIds: prepared.attemptedDispatchIds,
-            resultsByDispatch: new Map<number, PushResult[]>(),
+            resultsByDispatch: new Map<number, PushSendResult[]>(),
           };
     const finalizations = [...result.attemptedDispatchIds].flatMap((dispatchId) => {
       const candidate = candidateByDispatchId.get(dispatchId);

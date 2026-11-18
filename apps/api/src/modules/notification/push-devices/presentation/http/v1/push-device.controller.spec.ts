@@ -110,6 +110,7 @@ describe("PushDeviceController — 푸시 기기 컨트롤러", () => {
         permissionStatus: "GRANTED",
         permissionCanAskAgain: false,
         token: null,
+        channel: "EXPO",
         payloadVersion: 2,
         appVersion: "1.14.1",
         deviceModel: "SM-S931N",
@@ -118,6 +119,7 @@ describe("PushDeviceController — 푸시 기기 컨트롤러", () => {
       });
       expect(tokens.tokenOf(user.userId, "android_abc")).toMatchObject({
         token: dto.token,
+        provider: "EXPO",
         platform: "ANDROID",
         payloadVersion: 2,
         appVersion: "1.14.1",

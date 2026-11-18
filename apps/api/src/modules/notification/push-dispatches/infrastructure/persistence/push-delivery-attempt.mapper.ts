@@ -1,13 +1,13 @@
 import type { pushDeliveryAttempt } from "#api/platform/database/schema/index";
 
-import type { PushResult } from "../../application/ports/push-provider.port.js";
+import type { PushSendResult } from "../../application/ports/push-channel.port.js";
 
 type PushDeliveryAttemptOutcome = Pick<
   typeof pushDeliveryAttempt.$inferInsert,
   "status" | "providerTicketId" | "failureKind" | "errorCode" | "errorMessage"
 >;
 
-export function toAttemptOutcome(result: PushResult): PushDeliveryAttemptOutcome {
+export function toAttemptOutcome(result: PushSendResult): PushDeliveryAttemptOutcome {
   if (result.status === "accepted") {
     return {
       status: "TICKET_ACCEPTED",

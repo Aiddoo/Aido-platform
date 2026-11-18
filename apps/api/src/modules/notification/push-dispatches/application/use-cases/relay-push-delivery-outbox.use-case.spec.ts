@@ -1,4 +1,8 @@
 import { toIsoString } from "#api/shared/domain/time/instant";
+import {
+  FakePushChannel,
+  pushChannelRegistryOf,
+} from "#test/doubles/notification/fake-push-channel";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 
@@ -47,12 +51,7 @@ function createRelayUseCase(steps: RecordingRelaySteps) {
     lease: steps.lifecycle,
     unitOfWork: new ImmediateUnitOfWork(),
     publishOutbox: steps,
-    pushProvider: {
-      timing: {
-        receipt: { readyAfterMs: 15 * 60_000, retentionMs: 24 * 60 * 60_000 },
-        unabortableSendGraceMs: 10 * 60_000,
-      },
-    },
+    channels: pushChannelRegistryOf(new FakePushChannel()),
     clock: new FixedClock(NOW),
   });
 }

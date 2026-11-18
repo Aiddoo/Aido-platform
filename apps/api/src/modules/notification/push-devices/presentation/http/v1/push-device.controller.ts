@@ -54,8 +54,10 @@ import {
 // 1.14.1 이하 앱이 deviceId 없이 등록할 때 쓰던 값이다
 const LEGACY_DEFAULT_DEVICE_ID = "default";
 
+// v1 계약의 토큰은 Expo 토큰뿐이다(DTO 정규식). 다른 채널은 새 계약 필드로 받는다
 function pushDeviceContext(client: RequestClient) {
   return {
+    channel: "EXPO" as const,
     deviceModel: client.deviceName,
     osVersion: client.osVersion,
     timezone: client.timezone,
