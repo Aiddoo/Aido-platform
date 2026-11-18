@@ -3,6 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { and, asc, desc, eq, inArray, lt } from "drizzle-orm";
 
 import type { SessionId } from "#api/modules/identity/sessions/identity-sessions.public";
+import { inClaimedRows } from "#api/platform/database/claimed-rows";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { pushToken } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -32,7 +33,7 @@ export class DrizzlePushTokenRepository implements PushTokenRepositoryPort {
           params.activeOnly ? eq(pushToken.isActive, true) : undefined,
         ),
       )
-      .orderBy(desc(pushToken.updatedAt));
+      .orderBy(desc(pushToken.updatedAt), desc(pushToken.id));
   }
 
   findActivePushTokensByUsers(userIds: readonly UserId[]): Promise<PushTokenReadModel[]> {
@@ -127,7 +128,7 @@ export class DrizzlePushTokenRepository implements PushTokenRepositoryPort {
     const deactivated = await this.#db
       .update(pushToken)
       .set({ isActive: false, updatedAt: deactivatedAt })
-      .where(and(inArray(pushToken.id, unreported), eq(pushToken.isActive, true)))
+      .where(and(inClaimedRows(pushToken.id, unreported), eq(pushToken.isActive, true)))
       .returning({ userId: pushToken.userId });
     return { userIds: deactivated.map((row) => UserId.reconstitute(row.userId)) };
   }

@@ -62,7 +62,7 @@ export class DrizzleQuotaChargeRepository implements QuotaChargeRepositoryPort {
       .select()
       .from(quotaCharge)
       .where(and(eq(quotaCharge.status, "RESERVED"), lte(quotaCharge.updatedAt, params.cutoff)))
-      .orderBy(asc(quotaCharge.updatedAt))
+      .orderBy(asc(quotaCharge.updatedAt), asc(quotaCharge.id))
       .limit(params.limit);
     return rows.map(toQuotaCharge);
   }

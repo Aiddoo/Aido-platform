@@ -106,6 +106,8 @@ describe("RefundAbandonedQuotaReservationsUseCase — 멈춘 예약 정리", () 
     // Given
     const fixture = setup();
     const failing = await fixture.reserve();
+    // 같은 시각이면 id 순이라 어느 쪽이 먼저인지 정해지지 않으므로 예약 시각을 달리한다
+    fixture.clock.advanceBy({ milliseconds: 1 });
     const next = await fixture.reserve();
     fixture.clock.advanceBy({ milliseconds: QUOTA_RESERVATION_TAKEOVER_AFTER_MS });
     vi.spyOn(fixture.quotaChargeRepository, "saveIfUnchanged").mockRejectedValueOnce(

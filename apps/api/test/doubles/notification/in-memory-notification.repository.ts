@@ -217,7 +217,10 @@ export class InMemoryNotificationRepository
           (createdFrom == null || Temporal.Instant.compare(createdFrom, row.createdAt) <= 0) &&
           !isMilestoneNotification(row),
       )
-      .toSorted((left, right) => Temporal.Instant.compare(left.createdAt, right.createdAt))
+      .toSorted(
+        (left, right) =>
+          Temporal.Instant.compare(left.createdAt, right.createdAt) || left.id - right.id,
+      )
       .slice(0, query.limit);
     for (const row of deleted) {
       this.#rows.delete(row.id);

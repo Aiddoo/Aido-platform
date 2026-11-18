@@ -48,7 +48,11 @@ export class InMemoryQuotaChargeRepository extends QuotaChargeRepositoryPort {
   }): Promise<QuotaCharge[]> {
     return this.all
       .filter((charge) => isReservedBefore(charge, params.cutoff))
-      .toSorted((left, right) => Temporal.Instant.compare(left.updatedAt, right.updatedAt))
+      .toSorted(
+        (left, right) =>
+          Temporal.Instant.compare(left.updatedAt, right.updatedAt) ||
+          Number(left.id > right.id) - Number(left.id < right.id),
+      )
       .slice(0, params.limit)
       .map((charge) => QuotaCharge.reconstitute(charge));
   }

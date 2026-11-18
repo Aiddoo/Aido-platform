@@ -205,7 +205,7 @@ export class DrizzleNotificationRepository implements NotificationRepositoryPort
           not(milestoneNotificationCondition(null)),
         ),
       )
-      .orderBy(asc(notification.createdAt))
+      .orderBy(asc(notification.createdAt), asc(notification.id))
       .limit(query.limit);
     const deleted = await this.#db
       .delete(notification)

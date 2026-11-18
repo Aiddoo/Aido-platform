@@ -43,7 +43,7 @@ export class DrizzlePushDeliveryHistoryRepository implements PushDeliveryHistory
           OUTSIDE_ADMIN_BROADCAST_CAMPAIGN,
         ),
       )
-      .orderBy(asc(pushDispatch.scheduledAt))
+      .orderBy(asc(pushDispatch.scheduledAt), asc(pushDispatch.id))
       .limit(query.limit);
     const deleted = await this.#db
       .delete(pushDispatch)

@@ -3,6 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { and, asc, eq, inArray, lt, lte, type SQL, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
+import { inClaimedRows } from "#api/platform/database/claimed-rows";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import {
   notification,
@@ -219,7 +220,7 @@ export class DrizzlePushDeliveryOutboxRepository implements PushDeliveryOutboxRe
         lastError: null,
         updatedAt: input.lockedAt,
       })
-      .where(inArray(pushDispatchOutbox.dispatchId, candidates))
+      .where(inClaimedRows(pushDispatchOutbox.dispatchId, candidates))
       .returning({
         dispatchId: pushDispatchOutbox.dispatchId,
         publishAttempt: pushDispatchOutbox.publishAttempts,

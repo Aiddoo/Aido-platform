@@ -16,6 +16,7 @@ import {
   sql,
 } from "drizzle-orm";
 
+import { inClaimedRows } from "#api/platform/database/claimed-rows";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import {
   pushDeliveryAttempt,
@@ -142,7 +143,7 @@ export class DrizzlePushReceiptRepository implements PushReceiptRepositoryPort {
         receiptCheckedAt: now,
         updatedAt: now,
       })
-      .where(inArray(pushDeliveryAttempt.id, unreceipted))
+      .where(inClaimedRows(pushDeliveryAttempt.id, unreceipted))
       .returning({ id: pushDeliveryAttempt.id });
     return expired.length;
   }

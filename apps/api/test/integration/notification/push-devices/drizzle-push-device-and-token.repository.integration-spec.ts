@@ -17,6 +17,7 @@ import {
   PUSH_FIXTURE_SESSION_ID,
 } from "#test/fixtures/notification/push-device.fixture";
 import {
+  PUSH_TOKEN_FIXTURE_NOW,
   PUSH_TOKEN_FIXTURE_OTHER_USER_ID,
   PUSH_TOKEN_FIXTURE_USER_ID,
 } from "#test/fixtures/notification/push-token.fixture";
@@ -67,6 +68,36 @@ describe("DrizzlePushDeviceRepository·PushTokenRepository (실제 PostgreSQL)",
   describePushDeviceRepositoryContract(createSubject);
 
   describePushTokenRepositoryContract(createSubject);
+
+  it("통계가 토큰 표를 한 행으로 봐도 한도보다 많이 끄지 않는다", async () => {
+    // Given
+    // 비운 표를 ANALYZE해 통계를 0행으로 만든 뒤 토큰을 다시 채운다
+    const { tokens } = await createSubject();
+    const rows = ["a", "b", "c"].map((name, index) => ({
+      userId: PUSH_TOKEN_FIXTURE_USER_ID,
+      token: `ExponentPushToken[${name}]`,
+      deviceId: `ios_${name}`,
+      platform: "IOS" as const,
+      updatedAt: PUSH_TOKEN_FIXTURE_NOW.add({ minutes: index }),
+    }));
+    await client.insert(pushToken).values(rows);
+    await client.delete(pushToken);
+    await client.execute(sql`ANALYZE "PushToken"`);
+    await client.insert(pushToken).values(rows);
+
+    // When
+    const first = await tokens.deactivateUnreportedSince({
+      reportedBefore: PUSH_TOKEN_FIXTURE_NOW.add({ hours: 1 }),
+      deactivatedAt: PUSH_TOKEN_FIXTURE_NOW.add({ hours: 1 }),
+      limit: 1,
+    });
+
+    // Then
+    expect(first.userIds).toHaveLength(1);
+    expect(await client.select().from(pushToken).where(eq(pushToken.isActive, true))).toHaveLength(
+      2,
+    );
+  });
 
   it("넘겨받은 뒤 다른 연결이 같은 토큰을 먼저 커밋하면 저장이 등록 충돌 오류를 낸다", async () => {
     // Given
