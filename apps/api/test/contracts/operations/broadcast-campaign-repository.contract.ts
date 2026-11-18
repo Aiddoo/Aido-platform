@@ -1,5 +1,5 @@
-import type { BroadcastCampaignRepositoryPort } from "#api/modules/operations/broadcasts/application/ports/broadcast-campaign.repository.port";
-import type { BroadcastCampaignPrimitives } from "#api/modules/operations/broadcasts/domain/broadcast-campaign.aggregate";
+import type { BroadcastCampaignRepositoryPort } from "#api/modules/operations/broadcast-campaigns/application/ports/broadcast-campaign.repository.port";
+import type { BroadcastCampaignPrimitives } from "#api/modules/operations/broadcast-campaigns/domain/broadcast-campaign.aggregate";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   BROADCAST_FIXTURE_NOW,

@@ -3,7 +3,6 @@ import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
-import { getPremiumBenefitAmounts } from '@src/features/billing/subscription/utils/plan-benefit.view-model';
 import { useMyPendingCoachmark } from '@src/features/device/coachmark/hooks/use-my-pending-coachmark';
 import { useSuspenseMyAccountId } from '@src/features/identity/user/hooks/use-suspense-my-account-id';
 import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
@@ -561,7 +560,11 @@ function useVoiceNoteRecordLimit() {
       finish();
       return;
     }
-    const { voiceNoteMinutes: premiumMinutes } = getPremiumBenefitAmounts();
+    const premiumMaxSeconds =
+      snapshot == null
+        ? null
+        : EntitlementPolicy.getPlanMaxSeconds(snapshot, 'VOICE_NOTE', 'premium');
+    const premiumMinutes = Math.round(((premiumMaxSeconds ?? 0) * SECOND_MS) / MINUTE_MS);
     gate.promptLimit({
       title: t('limit.title', { minutes }),
       description: hasText

@@ -1,7 +1,9 @@
+import type {
+  TodoSeriesRepositoryPort,
+  CatchUpTodoSeriesUseCase,
+} from "#api/modules/planning/todo-series/planning-todo-series.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { TodoSeriesRepositoryPort } from "../../../todo-series/application/ports/todo-series.repository.port.js";
-import type { CatchUpTodoSeriesUseCase } from "../../../todo-series/application/use-cases/catch-up-todo-series.use-case.js";
 import type { TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 
 export interface GetTodoOverviewInput {

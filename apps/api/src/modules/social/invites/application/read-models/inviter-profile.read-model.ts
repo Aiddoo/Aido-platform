@@ -1,5 +1,5 @@
 // 로그인 전에도 보이는 초대한 사람 공개 프로필
-export interface InviterProfile {
+export interface InviterProfileReadModel {
   readonly userId: string;
   readonly name: string | null;
   readonly userTag: string;
@@ -11,5 +11,5 @@ export interface InviteWithInviterReadModel {
   readonly inviteId: string;
   readonly inviterId: string;
   readonly isActive: boolean;
-  readonly inviter: InviterProfile;
+  readonly inviter: InviterProfileReadModel;
 }

@@ -89,14 +89,3 @@ export function useGetRemindNudgeCooldownQueryOptions({ userId }: { userId: stri
     meta: { refreshOnBlockChange: true },
   });
 }
-
-export function useGetTodoNudgeLimitQueryOptions() {
-  const todoNudgeApi = useTodoNudgeApi();
-
-  return queryOptions({
-    queryKey: TODO_NUDGE_QUERY_KEYS.limit(),
-    queryFn: async ({ signal }) => unwrap(await todoNudgeApi.getLimitInfo(signal)),
-    staleTime: MINUTE_MS,
-    meta: { refreshOnPremiumChange: true, refreshOnBlockChange: true },
-  });
-}

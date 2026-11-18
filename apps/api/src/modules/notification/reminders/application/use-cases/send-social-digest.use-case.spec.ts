@@ -3,11 +3,11 @@ import { RecordingNotificationPublisher } from "#test/doubles/notification/recor
 import { StubNotificationHistoryReader } from "#test/doubles/notification/stub-notification-history.reader";
 import { StubReEngagementReader } from "#test/doubles/notification/stub-re-engagement.reader";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
-import { TEST_CUID } from "#test/fixtures/index";
+import { TEST_CUID } from "#test/fixtures/identity/user-id.fixture";
 import { createTimezoneContextFixture } from "#test/fixtures/notification/timezone-context.fixture";
 
-import { createSocialDigestNotificationMessage } from "../../../push/application/messages/scheduler-notification.messages.js";
-import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
+import { createSocialDigestNotificationMessage } from "../../../shared/application/messages/scheduler-notification.messages.js";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
 import { SendSocialDigestUseCase } from "./send-social-digest.use-case.js";
 
 describe("SendSocialDigestUseCase — 소셜 다이제스트 전략", () => {
@@ -17,7 +17,7 @@ describe("SendSocialDigestUseCase — 소셜 다이제스트 전략", () => {
   let history: StubNotificationHistoryReader;
   let strategy: SendSocialDigestUseCase;
 
-  const ctx = createTimezoneContextFixture({ date: "2024-01-16", localHour: 20 });
+  const timezoneContext = createTimezoneContextFixture({ date: "2024-01-16", localHour: 20 });
   const VARIANT_CONTEXT = {
     campaignKey: SCHEDULER_CAMPAIGN_KEY.SOCIAL_DIGEST,
     recipientId: TEST_CUID.USER_1,
@@ -33,7 +33,7 @@ describe("SendSocialDigestUseCase — 소셜 다이제스트 전략", () => {
     strategy = new SendSocialDigestUseCase({
       reader,
       preferenceReader: preferences,
-      notificationPublisher: publisher,
+      notificationPublisher: publisher.batch,
       notificationHistoryReader: history,
       logger: new SilentLogger(),
     });
@@ -54,7 +54,7 @@ describe("SendSocialDigestUseCase — 소셜 다이제스트 전략", () => {
     ];
 
     // When
-    const result = await strategy.execute(ctx, [TEST_CUID.USER_1]);
+    const result = await strategy.execute(timezoneContext, [TEST_CUID.USER_1]);
 
     // Then
     expect(result).toEqual({ sent: 1 });
@@ -62,8 +62,8 @@ describe("SendSocialDigestUseCase — 소셜 다이제스트 전략", () => {
       method: "findSocialDigestCandidates",
       params: {
         timezones: ["Asia/Seoul"],
-        today: ctx.today,
-        tomorrow: ctx.tomorrow,
+        today: timezoneContext.today,
+        tomorrow: timezoneContext.tomorrow,
         recipientUserIds: [TEST_CUID.USER_1],
       },
     });
@@ -98,7 +98,7 @@ describe("SendSocialDigestUseCase — 소셜 다이제스트 전략", () => {
     ];
 
     // When
-    const result = await strategy.execute(ctx, [TEST_CUID.USER_1]);
+    const result = await strategy.execute(timezoneContext, [TEST_CUID.USER_1]);
 
     // Then
     expect(result).toEqual({ sent: 1 });
@@ -124,7 +124,7 @@ describe("SendSocialDigestUseCase — 소셜 다이제스트 전략", () => {
     ];
 
     // When
-    const result = await strategy.execute(ctx, [TEST_CUID.USER_1]);
+    const result = await strategy.execute(timezoneContext, [TEST_CUID.USER_1]);
 
     // Then
     expect(result).toEqual({ sent: 0 });
@@ -140,7 +140,7 @@ describe("SendSocialDigestUseCase — 소셜 다이제스트 전략", () => {
     ];
 
     // When
-    const result = await strategy.execute(ctx, [TEST_CUID.USER_1]);
+    const result = await strategy.execute(timezoneContext, [TEST_CUID.USER_1]);
 
     // Then
     expect(result).toEqual({ sent: 0 });
@@ -152,7 +152,7 @@ describe("SendSocialDigestUseCase — 소셜 다이제스트 전략", () => {
     reader.socialDigestCandidates = [{ id: TEST_CUID.USER_1, todos: [{ completed: false }] }];
 
     // When
-    const result = await strategy.execute(ctx, []);
+    const result = await strategy.execute(timezoneContext, []);
 
     // Then
     expect(result).toEqual({ sent: 0 });
@@ -164,7 +164,7 @@ describe("SendSocialDigestUseCase — 소셜 다이제스트 전략", () => {
     reader.socialDigestCandidates = [{ id: TEST_CUID.USER_1, todos: [{ completed: false }] }];
 
     // When
-    const result = await strategy.execute(ctx, [TEST_CUID.USER_1]);
+    const result = await strategy.execute(timezoneContext, [TEST_CUID.USER_1]);
 
     // Then
     expect(result).toEqual({ sent: 0 });
@@ -179,10 +179,10 @@ describe("SendSocialDigestUseCase — 소셜 다이제스트 전략", () => {
     reader.friendsWithTodayTodos = [
       { id: TEST_CUID.USER_2, profile: { name: "친구1" }, todos: [{ completed: true }] },
     ];
-    history.notified("SOCIAL_DIGEST", [TEST_CUID.USER_1], ctx.today);
+    history.notified("SOCIAL_DIGEST", [TEST_CUID.USER_1], timezoneContext.today);
 
     // When
-    const result = await strategy.execute(ctx, [TEST_CUID.USER_1]);
+    const result = await strategy.execute(timezoneContext, [TEST_CUID.USER_1]);
 
     // Then
     expect(result).toEqual({ sent: 0 });
@@ -196,10 +196,10 @@ describe("SendSocialDigestUseCase — 소셜 다이제스트 전략", () => {
     reader.friendsWithTodayTodos = [
       { id: TEST_CUID.USER_2, profile: { name: "친구1" }, todos: [{ completed: true }] },
     ];
-    history.notified("STREAK_AT_RISK", [TEST_CUID.USER_1], ctx.today);
+    history.notified("STREAK_AT_RISK", [TEST_CUID.USER_1], timezoneContext.today);
 
     // When
-    const result = await strategy.execute(ctx, [TEST_CUID.USER_1]);
+    const result = await strategy.execute(timezoneContext, [TEST_CUID.USER_1]);
 
     // Then
     expect(result).toEqual({ sent: 0 });

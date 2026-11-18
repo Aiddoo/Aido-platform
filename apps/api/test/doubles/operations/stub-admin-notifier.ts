@@ -2,11 +2,11 @@ import {
   AdminNotifierPort,
   type AdminNotifyOutcome,
 } from "#api/modules/operations/admin-notices/application/ports/admin-notifier.port";
-import type { AdminNotice } from "#api/modules/operations/admin-notices/application/read-models/admin-notice.read-model";
+import type { AdminNoticePrimitives } from "#api/modules/operations/admin-notices/domain/admin-notice.aggregate";
 import type { AdminNotificationChannel } from "#api/modules/operations/admin-notices/domain/admin-notices.constants";
 
 export class StubAdminNotifier extends AdminNotifierPort {
-  readonly sent: { channel: AdminNotificationChannel; notice: AdminNotice }[] = [];
+  readonly sent: { channel: AdminNotificationChannel; notice: AdminNoticePrimitives }[] = [];
   outcome: AdminNotifyOutcome;
 
   constructor(outcome: AdminNotifyOutcome = { status: "sent" }) {
@@ -14,7 +14,10 @@ export class StubAdminNotifier extends AdminNotifierPort {
     this.outcome = outcome;
   }
 
-  async send(channel: AdminNotificationChannel, notice: AdminNotice): Promise<AdminNotifyOutcome> {
+  async send(
+    channel: AdminNotificationChannel,
+    notice: AdminNoticePrimitives,
+  ): Promise<AdminNotifyOutcome> {
     this.sent.push({ channel, notice });
     return this.outcome;
   }

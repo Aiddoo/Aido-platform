@@ -1,15 +1,15 @@
 import type { SubscriptionStatus, UserRole } from "@aido/api/vocabulary";
 
-import type { AccessStateReaderPort } from "#api/modules/access/entitlements/application/ports/access-state.reader.port";
-import type { FeatureGrantRepositoryPort } from "#api/modules/access/entitlements/application/ports/feature-grant.repository.port";
-import { FeatureGrantId } from "#api/modules/access/entitlements/domain/feature-grant-id.vo";
-import { FeatureGrant } from "#api/modules/access/entitlements/domain/feature-grant.aggregate";
+import type { AccessStateReaderPort } from "#api/modules/access/feature-grants/application/ports/access-state.reader.port";
+import type { FeatureGrantRepositoryPort } from "#api/modules/access/feature-grants/application/ports/feature-grant.repository.port";
+import type { FeatureGrant } from "#api/modules/access/feature-grants/domain/feature-grant.aggregate";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   ACCESS_FIXTURE_NOW,
   ACCESS_FIXTURE_OTHER_USER_ID,
   ACCESS_FIXTURE_USER_ID,
 } from "#test/fixtures/access/access-user.fixture";
+import { createFeatureGrantFixture } from "#test/fixtures/access/feature-grant.fixture";
 
 const USER_ID = UserId.reconstitute(ACCESS_FIXTURE_USER_ID);
 const OTHER_USER_ID = UserId.reconstitute(ACCESS_FIXTURE_OTHER_USER_ID);
@@ -33,16 +33,10 @@ export interface AccessStateReaderHarness {
 }
 
 function friendGrant(params: {
-  readonly userId: UserId;
   readonly quantity: number;
   readonly sourceKey: string;
 }): FeatureGrant {
-  return FeatureGrant.create({
-    ...params,
-    id: FeatureGrantId.generate(),
-    feature: "FRIEND",
-    now: ACCESS_FIXTURE_NOW,
-  });
+  return createFeatureGrantFixture({ ...params, userId: ACCESS_FIXTURE_USER_ID });
 }
 
 export function describeAccessStateReaderContract(
@@ -111,26 +105,39 @@ export function describeAccessStateReaderContract(
       const { featureGrantRepository } = harness;
 
       // When
-      await featureGrantRepository.save(
-        friendGrant({ userId: USER_ID, quantity: 1, sourceKey: "invite:1" }),
-      );
-      await featureGrantRepository.save(
-        friendGrant({ userId: USER_ID, quantity: 2, sourceKey: "invite:2" }),
-      );
-      await featureGrantRepository.save(
-        friendGrant({ userId: USER_ID, quantity: 5, sourceKey: "invite:1" }),
-      );
+      await featureGrantRepository.save(friendGrant({ quantity: 1, sourceKey: "invite:1" }));
+      await featureGrantRepository.save(friendGrant({ quantity: 2, sourceKey: "invite:2" }));
+      await featureGrantRepository.save(friendGrant({ quantity: 5, sourceKey: "invite:1" }));
 
       // Then
-      expect(
-        await Promise.all(
-          ["invite:1", "invite:2", "invite:3"].map((sourceKey) =>
-            featureGrantRepository.existsBySourceKey(sourceKey),
-          ),
+      const stored = await Promise.all(
+        ["invite:1", "invite:2", "invite:3"].map((sourceKey) =>
+          featureGrantRepository.findBySourceKey(sourceKey),
         ),
-      ).toEqual([true, true, false]);
-      expect(await harness.reader.findFeatureGrants(USER_ID)).toEqual({ FRIEND: 3 });
-      expect(await harness.reader.findFeatureGrants(OTHER_USER_ID)).toEqual({});
+      );
+      expect(stored.map((grant) => grant?.toPrimitives().quantity ?? null)).toEqual([1, 2, null]);
+      expect(await harness.reader.sumFeatureGrants(USER_ID)).toEqual({ FRIEND: 3 });
+      expect(await harness.reader.sumFeatureGrants(OTHER_USER_ID)).toEqual({});
+    });
+
+    it("출처 키로 찾은 자리는 저장한 값 그대로 복원한다", async () => {
+      // Given
+      const harness = await createHarness();
+      await harness.seedUser({
+        id: ACCESS_FIXTURE_USER_ID,
+        role: "USER",
+        subscriptionStatus: "FREE",
+        subscriptionExpiresAt: null,
+        isActive: true,
+      });
+      const grant = createFeatureGrantFixture({ quantity: 3, sourceKey: "invite:restore" });
+      await harness.featureGrantRepository.save(grant);
+
+      // When
+      const restored = await harness.featureGrantRepository.findBySourceKey("invite:restore");
+
+      // Then
+      expect(restored?.toPrimitives()).toEqual(grant.toPrimitives());
     });
 
     it("손으로 넣은 0·음수 자리 행은 합계에서 빼서 한도를 줄이지 않는다", async () => {
@@ -151,8 +158,8 @@ export function describeAccessStateReaderContract(
       await harness.seedFriendGrantRow({ userId: ACCESS_FIXTURE_OTHER_USER_ID, quantity: -1 });
 
       // When
-      const grants = await harness.reader.findFeatureGrants(USER_ID);
-      const onlyNegative = await harness.reader.findFeatureGrants(OTHER_USER_ID);
+      const grants = await harness.reader.sumFeatureGrants(USER_ID);
+      const onlyNegative = await harness.reader.sumFeatureGrants(OTHER_USER_ID);
 
       // Then
       expect(grants).toEqual({ FRIEND: 2 });

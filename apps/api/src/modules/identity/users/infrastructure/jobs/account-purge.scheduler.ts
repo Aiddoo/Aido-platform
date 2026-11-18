@@ -1,6 +1,6 @@
 import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
-import { AuthLogEvent } from "#api/modules/identity/auth/application/auth.log-events";
+import { UserLogEvent } from "#api/modules/identity/users/application/users.log-events";
 import { runInBackground } from "#api/platform/jobs/non-blocking-init";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
@@ -32,7 +32,7 @@ export class AccountPurgeScheduler implements OnModuleInit {
       "Account purge scheduler registration",
       async () => {
         await this.#jobQueue.registerSchedules(ACCOUNT_PURGE_QUEUE);
-        this.#logger.log({ event: AuthLogEvent.ACCOUNT_PURGE_SCHEDULER_REGISTERED });
+        this.#logger.log({ event: UserLogEvent.ACCOUNT_PURGE_SCHEDULER_REGISTERED });
         await this.#catchUpIfNeeded();
       },
     );
@@ -50,6 +50,6 @@ export class AccountPurgeScheduler implements OnModuleInit {
       { name: ACCOUNT_PURGE_JOB_NAME },
       { idempotencyKey: AccountPurgeJobKey.catchUp(localDate) },
     );
-    this.#logger.log({ event: AuthLogEvent.ACCOUNT_PURGE_CATCH_UP_DISPATCHED, localDate });
+    this.#logger.log({ event: UserLogEvent.ACCOUNT_PURGE_CATCH_UP_DISPATCHED, localDate });
   }
 }

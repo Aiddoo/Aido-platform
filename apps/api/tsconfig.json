@@ -14,6 +14,7 @@
     },
     "types": ["node", "vitest/globals"],
     "resolveJsonModule": true,
+    "jsx": "react-jsx",
     "erasableSyntaxOnly": true,
     "lib": ["ES2024", "esnext.temporal", "esnext.date"]
   },

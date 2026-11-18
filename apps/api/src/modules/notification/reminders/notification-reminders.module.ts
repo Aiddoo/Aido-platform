@@ -1,37 +1,41 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 
-import { AccessEntitlementsModule } from "#api/modules/access/entitlements/access-entitlements.public";
-import { IdentityUserAccessModule } from "#api/modules/identity/users/identity-users.public";
+import { AccessFeatureGrantsQueriesModule } from "#api/modules/access/feature-grants/access-feature-grants.public";
+import { IdentityUsersQueriesModule } from "#api/modules/identity/users/identity-users.public";
 import { InsightsWeeklyAchievementsModule } from "#api/modules/insights/weekly-achievements/insights-weekly-achievements.public";
-import { PlanningTodoQueriesModule } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { PlanningTodosQueriesModule } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { DatabaseModule } from "#api/platform/database/database.module";
 
-import { WeatherForecastsModule } from "../../weather/forecasts/weather-forecasts.public.js";
-import { NotificationPushModule } from "../push/notification-push.module.js";
-import { notificationRetentionConfig } from "../retention/notification-retention.config.js";
+import { WeatherWeatherReportsModule } from "../../weather/weather-reports/weather-weather-reports.public.js";
+import { NotificationNotificationsModule } from "../notifications/notification-notifications.public.js";
+import { NotificationPushDispatchesModule } from "../push-dispatches/notification-push-dispatches.public.js";
+import { notificationRetentionAssignmentsConfig } from "../retention-assignments/notification-retention-assignments.public.js";
 import { TodoReminderSchedulerPort } from "./application/ports/todo-reminder-scheduler.port.js";
-import { TimezoneReminderQueueModule } from "./infrastructure/jobs/timezone-reminder-queue.module.js";
 import { TimezoneReminderQueueProcessor } from "./infrastructure/jobs/timezone-reminder-queue.processor.js";
 import { TimezoneReminderSweepScheduler } from "./infrastructure/jobs/timezone-reminder-sweep.scheduler.js";
 import { TodoReminderQueueProcessor } from "./infrastructure/jobs/todo-reminder-queue.processor.js";
+import { NotificationRemindersQueriesModule } from "./notification-reminders-queries.module.js";
 import {
   NOTIFICATION_REMINDERS_PERSISTENCE_PROVIDERS,
   NOTIFICATION_REMINDERS_USE_CASE_PROVIDERS,
 } from "./notification-reminders.providers.js";
+import { TodoReminderController } from "./presentation/http/v1/todo-reminder.controller.js";
 
 @Module({
   imports: [
-    TimezoneReminderQueueModule,
+    NotificationRemindersQueriesModule,
     DatabaseModule,
-    NotificationPushModule,
-    WeatherForecastsModule,
+    NotificationNotificationsModule,
+    NotificationPushDispatchesModule,
+    WeatherWeatherReportsModule,
     InsightsWeeklyAchievementsModule,
-    AccessEntitlementsModule,
-    IdentityUserAccessModule,
-    PlanningTodoQueriesModule,
-    ConfigModule.forFeature(notificationRetentionConfig),
+    AccessFeatureGrantsQueriesModule,
+    IdentityUsersQueriesModule,
+    PlanningTodosQueriesModule,
+    ConfigModule.forFeature(notificationRetentionAssignmentsConfig),
   ],
+  controllers: [TodoReminderController],
   providers: [
     ...NOTIFICATION_REMINDERS_PERSISTENCE_PROVIDERS,
     ...NOTIFICATION_REMINDERS_USE_CASE_PROVIDERS,

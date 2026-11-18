@@ -1,6 +1,8 @@
 import { vi } from "vitest";
 
+import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { QueueDefinition } from "#api/shared/application/ports/job-queue.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 
@@ -9,6 +11,7 @@ import { TodoReminderSchedulerAdapter } from "./todo-reminder-scheduler.adapter.
 import { TODO_REMINDER_QUEUE } from "./todo-reminder.queue.js";
 
 const USER_ID = "user-1";
+const USER = UserId.reconstitute(USER_ID);
 const NOW = Temporal.Instant.from("2026-11-10T09:00:00Z");
 
 // 취소한 key를 남겨 한 번에 지웠는지 본다
@@ -25,6 +28,7 @@ class CancelRecordingJobQueue extends InMemoryJobQueue {
 }
 
 const at = (minutes: number) => NOW.add({ minutes });
+const todo = (value: number) => TodoId.reconstitute(value);
 
 describe("TodoReminderSchedulerAdapter — 영속 리마인더 스케줄링", () => {
   let jobQueue: CancelRecordingJobQueue;
@@ -40,9 +44,9 @@ describe("TodoReminderSchedulerAdapter — 영속 리마인더 스케줄링", ()
   it("새 회차 리마인더는 취소 없이 한 번에 등록하고 지난 시각은 건너뛴다", async () => {
     // Given
     const reminders = [
-      { todoId: 1, scheduledTime: at(120), userId: USER_ID },
-      { todoId: 2, scheduledTime: at(-60), userId: USER_ID },
-      { todoId: 3, scheduledTime: at(180), userId: USER_ID },
+      { todoId: todo(1), scheduledTime: at(120), userId: USER },
+      { todoId: todo(2), scheduledTime: at(-60), userId: USER },
+      { todoId: todo(3), scheduledTime: at(180), userId: USER },
     ];
     // When
     await adapter.scheduleReminders(reminders);
@@ -58,14 +62,14 @@ describe("TodoReminderSchedulerAdapter — 영속 리마인더 스케줄링", ()
 
   it("지난 시각만 있으면 큐를 부르지 않는다", async () => {
     // When
-    await adapter.scheduleReminders([{ todoId: 2, scheduledTime: at(-60), userId: USER_ID }]);
+    await adapter.scheduleReminders([{ todoId: todo(2), scheduledTime: at(-60), userId: USER }]);
     // Then
     expect(jobQueue.jobs).toEqual([]);
   });
 
   it("2시간 뒤 마감은 60분·10분 작업을 고유 키와 단계 시각으로 등록한다", async () => {
     // When
-    await adapter.scheduleReminder(1, at(120), USER_ID);
+    await adapter.scheduleReminder(todo(1), at(120), USER);
     // Then
     expect(jobQueue.jobsIn(TODO_REMINDER_QUEUE)).toEqual([
       {
@@ -89,14 +93,14 @@ describe("TodoReminderSchedulerAdapter — 영속 리마인더 스케줄링", ()
 
   it("30분 뒤 마감은 지난 60분 단계를 건너뛰고 10분 단계만 등록한다", async () => {
     // When
-    await adapter.scheduleReminder(1, at(30), USER_ID);
+    await adapter.scheduleReminder(todo(1), at(30), USER);
     // Then
     expect(keys()).toEqual(["reminder_1_10min"]);
   });
 
   it("5분 뒤 마감은 모든 단계가 지나 아무것도 등록하지 않는다", async () => {
     // When
-    await adapter.scheduleReminder(1, at(5), USER_ID);
+    await adapter.scheduleReminder(todo(1), at(5), USER);
     // Then
     expect(jobQueue.jobs).toHaveLength(0);
     expect(jobQueue.cancelledKeys.flat()).toHaveLength(REMINDER_STAGES.length);
@@ -105,7 +109,7 @@ describe("TodoReminderSchedulerAdapter — 영속 리마인더 스케줄링", ()
   it("10분 안쪽으로 시간을 다섯 번 고쳐도 알림 작업은 하나도 생기지 않는다", async () => {
     // When
     for (const minutes of [9, 8, 7, 6, 5]) {
-      await adapter.scheduleReminder(1, at(minutes), USER_ID);
+      await adapter.scheduleReminder(todo(1), at(minutes), USER);
     }
     // Then
     expect(jobQueue.jobs).toHaveLength(0);
@@ -116,7 +120,7 @@ describe("TodoReminderSchedulerAdapter — 영속 리마인더 스케줄링", ()
     const infrastructureError = new Error("postgres unavailable");
     vi.spyOn(jobQueue, "cancel").mockRejectedValueOnce(infrastructureError);
     // When
-    const scheduling = adapter.scheduleReminder(42, at(120), USER_ID);
+    const scheduling = adapter.scheduleReminder(todo(42), at(120), USER);
     // Then
     await expect(scheduling).rejects.toMatchObject({
       message: "Reminder cancellation failed: todoCount=1, runtime=job-runtime",
@@ -130,16 +134,16 @@ describe("TodoReminderSchedulerAdapter — 영속 리마인더 스케줄링", ()
     const infrastructureError = new Error("queue unavailable");
     vi.spyOn(jobQueue, "enqueueMany").mockRejectedValueOnce(infrastructureError);
     // When
-    const scheduling = adapter.scheduleReminder(42, at(120), USER_ID);
+    const scheduling = adapter.scheduleReminder(todo(42), at(120), USER);
     // Then
     await expect(scheduling).rejects.toBe(infrastructureError);
   });
 
   it("같은 할 일을 다시 예약하면 옛 작업을 지우고 새 시각의 작업만 남긴다", async () => {
     // Given
-    await adapter.scheduleReminder(42, at(120), USER_ID);
+    await adapter.scheduleReminder(todo(42), at(120), USER);
     // When
-    await adapter.scheduleReminder(42, at(300), USER_ID);
+    await adapter.scheduleReminder(todo(42), at(300), USER);
     // Then
     expect(jobQueue.jobsIn(TODO_REMINDER_QUEUE).map((job) => job.options.startAfter)).toEqual([
       NOW.add({ minutes: 240 }),
@@ -149,7 +153,7 @@ describe("TodoReminderSchedulerAdapter — 영속 리마인더 스케줄링", ()
 
   it("과거 일정은 기존 키를 취소하고 새 작업을 만들지 않는다", async () => {
     // When
-    await adapter.scheduleReminder(1, at(-1), USER_ID);
+    await adapter.scheduleReminder(todo(1), at(-1), USER);
     // Then
     expect(jobQueue.jobs).toHaveLength(0);
     expect(jobQueue.cancelledKeys.flat()).toHaveLength(REMINDER_STAGES.length);
@@ -160,7 +164,7 @@ describe("TodoReminderSchedulerAdapter — 영속 리마인더 스케줄링", ()
     const infrastructureError = new Error("runtime unavailable");
     vi.spyOn(jobQueue, "cancel").mockRejectedValueOnce(infrastructureError);
     // When
-    const cancellation = adapter.cancelReminders([42]);
+    const cancellation = adapter.cancelReminders([todo(42)]);
     // Then
     await expect(cancellation).rejects.toMatchObject({
       message: "Reminder cancellation failed: todoCount=1, runtime=job-runtime",
@@ -170,7 +174,7 @@ describe("TodoReminderSchedulerAdapter — 영속 리마인더 스케줄링", ()
 
   it("취소는 여러 할 일의 모든 단계 키를 한 번에 지운다", async () => {
     // When
-    await adapter.cancelReminders([42, 43]);
+    await adapter.cancelReminders([todo(42), todo(43)]);
     // Then
     expect(jobQueue.cancelledKeys).toEqual([
       [42, 43].flatMap((todoId) =>

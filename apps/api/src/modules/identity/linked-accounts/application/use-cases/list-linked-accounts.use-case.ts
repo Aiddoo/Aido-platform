@@ -1,0 +1,52 @@
+import { OAUTH_PROVIDERS } from "@aido/api/vocabulary";
+
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import type { LinkedAccountsRepositoryPort } from "../ports/linked-accounts.repository.port.js";
+
+export interface ListLinkedAccountsQuery {
+  readonly userId: string;
+}
+
+export interface LinkedAccountListReadModel {
+  accounts: Array<{
+    provider: (typeof OAUTH_PROVIDERS)[number];
+    linked: boolean;
+    providerAccountId: string | null;
+    linkedAt: Temporal.Instant | null;
+  }>;
+  canUnlink: boolean;
+}
+
+interface ListLinkedAccountsDependencies {
+  readonly accountRepository: Pick<LinkedAccountsRepositoryPort, "findByUserId">;
+}
+
+export class ListLinkedAccountsUseCase {
+  readonly #dependencies: ListLinkedAccountsDependencies;
+
+  constructor(dependencies: ListLinkedAccountsDependencies) {
+    this.#dependencies = dependencies;
+  }
+
+  async execute(input: ListLinkedAccountsQuery): Promise<LinkedAccountListReadModel> {
+    const linkedAccounts = await this.#dependencies.accountRepository.findByUserId(
+      UserId.reconstitute(input.userId),
+    );
+    const accountsByProvider = new Map(
+      (linkedAccounts?.accounts ?? []).map((account) => [account.provider, account]),
+    );
+    return {
+      accounts: OAUTH_PROVIDERS.map((provider) => {
+        const account = accountsByProvider.get(provider);
+        return {
+          provider,
+          linked: account != null,
+          providerAccountId: account?.providerAccountId ?? null,
+          linkedAt: account?.createdAt ?? null,
+        };
+      }),
+      canUnlink: linkedAccounts?.canUnlink() ?? false,
+    };
+  }
+}

@@ -7,17 +7,17 @@ import type { DrizzleTransactionalAdapter } from "./database.client.js";
 
 @Injectable()
 export class ClsSavepointRunner implements SavepointRunnerPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
   run<T>(work: () => Promise<T>): Promise<T> {
-    if (!this.#txHost.isTransactionActive()) {
+    if (!this.#transactionHost.isTransactionActive()) {
       throw new Error("A savepoint requires an active Unit of Work");
     }
 
-    return this.#txHost.withTransaction(Propagation.Nested, work);
+    return this.#transactionHost.withTransaction(Propagation.Nested, work);
   }
 }

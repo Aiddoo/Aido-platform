@@ -19,7 +19,8 @@ describe("Sentry AI span", () => {
   });
 
   it("AI 호출 span에는 모델·토큰만 남고 입력·지시·응답 문장은 없다", async () => {
-    // Given - 운영과 같은 기본 integration 위에 우리 integration 목록을 얹고, 보내는 대신 모은다
+    // Given
+    // 운영과 같은 기본 integration 위에 우리 integration 목록을 얹고, 보내는 대신 모은다
     const aiSpanKeys: string[][] = [];
     let payload = "";
     Sentry.init({
@@ -54,7 +55,9 @@ describe("Sentry AI span", () => {
     );
     await Sentry.flush(2000);
 
-    // Then - AI span이 실제로 생겼는지 먼저 확인해 빈 통과를 막는다
+    // Then
+    // AI span이 실제로 생겼는지 먼저 확인해 빈 통과를 막는다
+
     expect(aiSpanKeys.length).toBeGreaterThan(0);
     expect(aiSpanKeys.flat()).toEqual(expect.arrayContaining(["gen_ai.usage.input_tokens"]));
     expect(aiSpanKeys.flat().filter((key) => CONTENT_ATTRIBUTES.includes(key))).toEqual([]);

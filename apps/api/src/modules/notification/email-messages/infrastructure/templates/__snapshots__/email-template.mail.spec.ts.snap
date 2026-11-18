@@ -1,0 +1,3308 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`EmailTemplateMail — React Email 메일 렌더 > en > inquiry 메일의 제목·HTML·텍스트 1`] = `
+{
+  "html": "<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html dir="ltr" lang="en">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
+    <meta name="x-apple-disable-message-reformatting" />
+    <meta name="color-scheme" content="light" />
+    <meta name="supported-color-schemes" content="light" />
+    <title>
+      결제·구독 &lt;긴급&gt; &amp; &quot;확인&quot; inquiry from
+      o&#x27;brien+test@example.com
+    </title>
+  </head>
+  <body lang="en" dir="ltr" style="background-color:#fff8f2;margin:0;padding:0">
+    <!--$--><!--html--><!--head-->
+    <div
+      style="display:none;overflow:hidden;line-height:1px;opacity:0;max-height:0;max-width:0"
+      data-skip-in-text="true">
+      결제·구독 &lt;긴급&gt; &amp; &quot;확인&quot; inquiry from
+      o&#x27;brien+test@example.com
+      <div>
+         ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿
+      </div>
+    </div>
+    <!--body-->
+    <table
+      border="0"
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      role="presentation"
+      align="center">
+      <tbody>
+        <tr>
+          <td
+            dir="ltr"
+            lang="en"
+            style="margin:0;padding:32px 12px;background-color:#fff8f2;font-family:-apple-system, BlinkMacSystemFont, &#x27;Apple SD Gothic Neo&#x27;, Pretendard, &#x27;Malgun Gothic&#x27;, &#x27;Segoe UI&#x27;, Roboto, sans-serif;color:#222222;-webkit-text-size-adjust:100%">
+            <table
+              align="center"
+              width="100%"
+              border="0"
+              cellpadding="0"
+              cellspacing="0"
+              role="presentation"
+              style="max-width:560px;width:100%">
+              <tbody>
+                <tr style="width:100%">
+                  <td>
+                    <table
+                      align="center"
+                      width="100%"
+                      border="0"
+                      cellpadding="0"
+                      cellspacing="0"
+                      role="presentation"
+                      style="background-color:#ffffff;border:1px solid #f0e4da;border-top:4px solid #ff6b43;border-radius:20px">
+                      <tbody>
+                        <tr>
+                          <td style="padding:28px 28px 32px">
+                            <table
+                              align="center"
+                              width="100%"
+                              border="0"
+                              cellpadding="0"
+                              cellspacing="0"
+                              role="presentation">
+                              <tbody style="width:100%">
+                                <tr style="width:100%">
+                                  <td width="40" data-id="__react-email-column">
+                                    <img
+                                      alt="Aido"
+                                      height="40"
+                                      src="https://aido.kr/logo.png"
+                                      style="display:block;outline:none;border:none;text-decoration:none;border-radius:12px"
+                                      width="40" />
+                                  </td>
+                                  <td data-id="__react-email-column">
+                                    <p
+                                      style="font-size:18px;line-height:24px;margin:0;padding-left:12px;font-weight:700;color:#222222;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                      Aido
+                                    </p>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                            <table
+                              align="center"
+                              width="100%"
+                              border="0"
+                              cellpadding="0"
+                              cellspacing="0"
+                              role="presentation">
+                              <tbody>
+                                <tr>
+                                  <td style="padding-top:24px">
+                                    <p
+                                      style="font-size:13px;line-height:20px;margin:0 0 6px;font-weight:700;color:#c2410c;margin-top:0;margin-right:0;margin-bottom:6px;margin-left:0">
+                                      New inquiry
+                                    </p>
+                                    <h1
+                                      style="margin:0 0 20px;font-size:22px;line-height:30px;font-weight:700;color:#222222">
+                                      A new inquiry has come in
+                                    </h1>
+                                    <table
+                                      align="center"
+                                      width="100%"
+                                      border="0"
+                                      cellpadding="0"
+                                      cellspacing="0"
+                                      role="presentation">
+                                      <tbody>
+                                        <tr>
+                                          <td>
+                                            <table
+                                              align="center"
+                                              width="100%"
+                                              border="0"
+                                              cellpadding="0"
+                                              cellspacing="0"
+                                              role="presentation"
+                                              style="border-bottom:1px solid #f0e4da">
+                                              <tbody style="width:100%">
+                                                <tr style="width:100%">
+                                                  <td
+                                                    width="112"
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 12px 10px 0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      User email
+                                                    </p>
+                                                  </td>
+                                                  <td
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 0;color:#222222;word-break:break-all;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      o&#x27;brien+test@example.com
+                                                    </p>
+                                                  </td>
+                                                </tr>
+                                              </tbody>
+                                            </table>
+                                            <table
+                                              align="center"
+                                              width="100%"
+                                              border="0"
+                                              cellpadding="0"
+                                              cellspacing="0"
+                                              role="presentation"
+                                              style="border-bottom:1px solid #f0e4da">
+                                              <tbody style="width:100%">
+                                                <tr style="width:100%">
+                                                  <td
+                                                    width="112"
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 12px 10px 0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      Category
+                                                    </p>
+                                                  </td>
+                                                  <td
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 0;color:#222222;word-break:break-all;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      결제·구독 &lt;긴급&gt;
+                                                      &amp; &quot;확인&quot;
+                                                    </p>
+                                                  </td>
+                                                </tr>
+                                              </tbody>
+                                            </table>
+                                            <table
+                                              align="center"
+                                              width="100%"
+                                              border="0"
+                                              cellpadding="0"
+                                              cellspacing="0"
+                                              role="presentation"
+                                              style="border-bottom:1px solid #f0e4da">
+                                              <tbody style="width:100%">
+                                                <tr style="width:100%">
+                                                  <td
+                                                    width="112"
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 12px 10px 0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      Received
+                                                    </p>
+                                                  </td>
+                                                  <td
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 0;color:#222222;word-break:break-all;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      2026-10-26 10:00 (KST)
+                                                    </p>
+                                                  </td>
+                                                </tr>
+                                              </tbody>
+                                            </table>
+                                          </td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                    <table
+                                      align="center"
+                                      width="100%"
+                                      border="0"
+                                      cellpadding="0"
+                                      cellspacing="0"
+                                      role="presentation"
+                                      style="margin-top:20px;border-radius:14px;background-color:#fff8f2">
+                                      <tbody>
+                                        <tr>
+                                          <td style="padding:16px 18px">
+                                            <p
+                                              style="font-size:13px;line-height:20px;margin:0 0 6px;font-weight:700;color:#222222;margin-top:0;margin-right:0;margin-bottom:6px;margin-left:0">
+                                              Message
+                                            </p>
+                                            <p
+                                              style="font-size:14px;line-height:22px;margin:0;color:#222222;white-space:pre-wrap;word-break:break-word;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                              <span
+                                                >&lt;script&gt;alert(&quot;x&quot;)
+                                                &amp;
+                                                &#x27;y&#x27;&lt;/script&gt;</span
+                                              ><span><br />둘째 줄</span
+                                              ><span><br /></span
+                                              ><span
+                                                ><br />
+                                                들여쓴 셋째 줄</span
+                                              >
+                                            </p>
+                                          </td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                    <table
+                                      align="center"
+                                      width="100%"
+                                      border="0"
+                                      cellpadding="0"
+                                      cellspacing="0"
+                                      role="presentation"
+                                      style="margin-top:12px;border-radius:14px;background-color:#ffe9df">
+                                      <tbody>
+                                        <tr>
+                                          <td style="padding:16px 18px">
+                                            <p
+                                              style="font-size:13px;line-height:20px;margin:0 0 6px;font-weight:700;color:#222222;margin-top:0;margin-right:0;margin-bottom:6px;margin-left:0">
+                                              Support checklist
+                                            </p>
+                                            <p
+                                              style="font-size:14px;line-height:22px;margin:0;color:#222222;white-space:pre-wrap;word-break:break-word;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                              1) Classify the inquiry
+                                            </p>
+                                            <p
+                                              style="font-size:14px;line-height:22px;margin:0;color:#222222;white-space:pre-wrap;word-break:break-word;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                              2) Decide whether it needs to be
+                                              reproduced or checked
+                                            </p>
+                                            <p
+                                              style="font-size:14px;line-height:22px;margin:0;color:#222222;white-space:pre-wrap;word-break:break-word;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                              3) Draft a reply to the user
+                                            </p>
+                                          </td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <table
+                      align="center"
+                      width="100%"
+                      border="0"
+                      cellpadding="0"
+                      cellspacing="0"
+                      role="presentation"
+                      style="text-align:center">
+                      <tbody>
+                        <tr>
+                          <td style="padding:24px 8px 0">
+                            <p
+                              style="font-size:13px;line-height:20px;margin:0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                              This email was sent from a no-reply address.<!-- -->
+                              <!-- -->Questions?<!-- -->
+                              <a
+                                href="mailto:support@example.com"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >support@example.com</a
+                              >
+                            </p>
+                            <p
+                              style="font-size:13px;line-height:20px;margin:0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                              <a
+                                href="https://aido.kr/en/terms"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >Terms of Service</a
+                              >
+                              ·
+                              <a
+                                href="https://aido.kr/en/privacy"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >Privacy Policy</a
+                              >
+                              ·
+                              <a
+                                href="https://aido.kr/en"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >aido.kr</a
+                              >
+                            </p>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <!--/$-->
+  </body>
+</html>
+",
+  "subject": "[Aido inquiry] [결제·구독 <긴급> & "확인"]",
+  "text": "Aido
+
+New inquiry
+
+
+A new inquiry has come in
+
+User email
+
+o'brien+test@example.com
+
+Category
+
+결제·구독 <긴급> & "확인"
+
+Received
+
+2026-10-26 10:00 (KST)
+
+Message
+
+<script>alert("x") & 'y'</script>
+둘째 줄
+
+들여쓴 셋째 줄
+
+Support checklist
+
+1) Classify the inquiry
+
+2) Decide whether it needs to be reproduced or checked
+
+3) Draft a reply to the user
+
+This email was sent from a no-reply address. Questions? support@example.com
+
+Terms of Service https://aido.kr/en/terms · Privacy Policy https://aido.kr/en/privacy · aido.kr https://aido.kr/en",
+}
+`;
+
+exports[`EmailTemplateMail — React Email 메일 렌더 > en > password-reset 메일의 제목·HTML·텍스트 1`] = `
+{
+  "html": "<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html dir="ltr" lang="en">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
+    <meta name="x-apple-disable-message-reformatting" />
+    <meta name="color-scheme" content="light" />
+    <meta name="supported-color-schemes" content="light" />
+    <title>Enter the code below in the app within 10 minutes.</title>
+  </head>
+  <body lang="en" dir="ltr" style="background-color:#fff8f2;margin:0;padding:0">
+    <!--$--><!--html--><!--head-->
+    <div
+      style="display:none;overflow:hidden;line-height:1px;opacity:0;max-height:0;max-width:0"
+      data-skip-in-text="true">
+      Enter the code below in the app within 10 minutes.
+      <div>
+         ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿
+      </div>
+    </div>
+    <!--body-->
+    <table
+      border="0"
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      role="presentation"
+      align="center">
+      <tbody>
+        <tr>
+          <td
+            dir="ltr"
+            lang="en"
+            style="margin:0;padding:32px 12px;background-color:#fff8f2;font-family:-apple-system, BlinkMacSystemFont, &#x27;Apple SD Gothic Neo&#x27;, Pretendard, &#x27;Malgun Gothic&#x27;, &#x27;Segoe UI&#x27;, Roboto, sans-serif;color:#222222;-webkit-text-size-adjust:100%">
+            <table
+              align="center"
+              width="100%"
+              border="0"
+              cellpadding="0"
+              cellspacing="0"
+              role="presentation"
+              style="max-width:560px;width:100%">
+              <tbody>
+                <tr style="width:100%">
+                  <td>
+                    <table
+                      align="center"
+                      width="100%"
+                      border="0"
+                      cellpadding="0"
+                      cellspacing="0"
+                      role="presentation"
+                      style="background-color:#ffffff;border:1px solid #f0e4da;border-top:4px solid #ff6b43;border-radius:20px">
+                      <tbody>
+                        <tr>
+                          <td style="padding:28px 28px 32px">
+                            <table
+                              align="center"
+                              width="100%"
+                              border="0"
+                              cellpadding="0"
+                              cellspacing="0"
+                              role="presentation">
+                              <tbody style="width:100%">
+                                <tr style="width:100%">
+                                  <td width="40" data-id="__react-email-column">
+                                    <img
+                                      alt="Aido"
+                                      height="40"
+                                      src="https://aido.kr/logo.png"
+                                      style="display:block;outline:none;border:none;text-decoration:none;border-radius:12px"
+                                      width="40" />
+                                  </td>
+                                  <td data-id="__react-email-column">
+                                    <p
+                                      style="font-size:18px;line-height:24px;margin:0;padding-left:12px;font-weight:700;color:#222222;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                      Aido
+                                    </p>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                            <table
+                              align="center"
+                              width="100%"
+                              border="0"
+                              cellpadding="0"
+                              cellspacing="0"
+                              role="presentation">
+                              <tbody>
+                                <tr>
+                                  <td style="padding-top:24px">
+                                    <h1
+                                      style="margin:0 0 12px;font-size:24px;line-height:32px;font-weight:700;color:#222222">
+                                      Reset your password
+                                    </h1>
+                                    <p
+                                      style="font-size:16px;line-height:26px;margin:0 0 24px;color:#222222;margin-top:0;margin-right:0;margin-bottom:24px;margin-left:0">
+                                      Enter this code in the Aido app to choose
+                                      a new password.
+                                    </p>
+                                    <table
+                                      align="center"
+                                      width="100%"
+                                      border="0"
+                                      cellpadding="0"
+                                      cellspacing="0"
+                                      role="presentation"
+                                      style="background-color:#ffe9df;border-radius:16px;text-align:center">
+                                      <tbody>
+                                        <tr>
+                                          <td style="padding:20px 16px 24px">
+                                            <p
+                                              style="font-size:13px;line-height:20px;margin:0 0 8px;font-weight:600;color:#222222;margin-top:0;margin-right:0;margin-bottom:8px;margin-left:0">
+                                              Verification code
+                                            </p>
+                                            <p
+                                              style="font-size:34px;line-height:44px;margin:0;padding-left:8px;font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, &#x27;Liberation Mono&#x27;, monospace;font-weight:700;letter-spacing:8px;color:#222222;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                              730415
+                                            </p>
+                                          </td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                    <p
+                                      style="font-size:14px;line-height:22px;margin:16px 0 0;color:#6b6b6b;margin-top:16px;margin-right:0;margin-bottom:0;margin-left:0">
+                                      This code expires in 10 minutes.
+                                    </p>
+                                    <hr
+                                      style="width:100%;border:none;border-color:transparent;border-top:1px solid #f0e4da;margin:24px 0" />
+                                    <p
+                                      style="font-size:14px;line-height:22px;margin:0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                      If you didn&#x27;t ask for this, ignore
+                                      this email. Your password won&#x27;t
+                                      change unless this code is entered.
+                                    </p>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <table
+                      align="center"
+                      width="100%"
+                      border="0"
+                      cellpadding="0"
+                      cellspacing="0"
+                      role="presentation"
+                      style="text-align:center">
+                      <tbody>
+                        <tr>
+                          <td style="padding:24px 8px 0">
+                            <p
+                              style="font-size:13px;line-height:20px;margin:0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                              This email was sent from a no-reply address.<!-- -->
+                              <!-- -->Questions?<!-- -->
+                              <a
+                                href="mailto:support@example.com"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >support@example.com</a
+                              >
+                            </p>
+                            <p
+                              style="font-size:13px;line-height:20px;margin:0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                              <a
+                                href="https://aido.kr/en/terms"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >Terms of Service</a
+                              >
+                              ·
+                              <a
+                                href="https://aido.kr/en/privacy"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >Privacy Policy</a
+                              >
+                              ·
+                              <a
+                                href="https://aido.kr/en"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >aido.kr</a
+                              >
+                            </p>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <!--/$-->
+  </body>
+</html>
+",
+  "subject": "Your Aido password reset code",
+  "text": "Aido
+
+
+Reset your password
+
+Enter this code in the Aido app to choose a new password.
+
+Verification code
+
+730415
+
+This code expires in 10 minutes.
+
+----------------------------------------
+
+If you didn't ask for this, ignore this email. Your password won't change unless this code is entered.
+
+This email was sent from a no-reply address. Questions? support@example.com
+
+Terms of Service https://aido.kr/en/terms · Privacy Policy https://aido.kr/en/privacy · aido.kr https://aido.kr/en",
+}
+`;
+
+exports[`EmailTemplateMail — React Email 메일 렌더 > en > password-setup 메일의 제목·HTML·텍스트 1`] = `
+{
+  "html": "<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html dir="ltr" lang="en">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
+    <meta name="x-apple-disable-message-reformatting" />
+    <meta name="color-scheme" content="light" />
+    <meta name="supported-color-schemes" content="light" />
+    <title>Enter the code below in the app within 10 minutes.</title>
+  </head>
+  <body lang="en" dir="ltr" style="background-color:#fff8f2;margin:0;padding:0">
+    <!--$--><!--html--><!--head-->
+    <div
+      style="display:none;overflow:hidden;line-height:1px;opacity:0;max-height:0;max-width:0"
+      data-skip-in-text="true">
+      Enter the code below in the app within 10 minutes.
+      <div>
+         ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿
+      </div>
+    </div>
+    <!--body-->
+    <table
+      border="0"
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      role="presentation"
+      align="center">
+      <tbody>
+        <tr>
+          <td
+            dir="ltr"
+            lang="en"
+            style="margin:0;padding:32px 12px;background-color:#fff8f2;font-family:-apple-system, BlinkMacSystemFont, &#x27;Apple SD Gothic Neo&#x27;, Pretendard, &#x27;Malgun Gothic&#x27;, &#x27;Segoe UI&#x27;, Roboto, sans-serif;color:#222222;-webkit-text-size-adjust:100%">
+            <table
+              align="center"
+              width="100%"
+              border="0"
+              cellpadding="0"
+              cellspacing="0"
+              role="presentation"
+              style="max-width:560px;width:100%">
+              <tbody>
+                <tr style="width:100%">
+                  <td>
+                    <table
+                      align="center"
+                      width="100%"
+                      border="0"
+                      cellpadding="0"
+                      cellspacing="0"
+                      role="presentation"
+                      style="background-color:#ffffff;border:1px solid #f0e4da;border-top:4px solid #ff6b43;border-radius:20px">
+                      <tbody>
+                        <tr>
+                          <td style="padding:28px 28px 32px">
+                            <table
+                              align="center"
+                              width="100%"
+                              border="0"
+                              cellpadding="0"
+                              cellspacing="0"
+                              role="presentation">
+                              <tbody style="width:100%">
+                                <tr style="width:100%">
+                                  <td width="40" data-id="__react-email-column">
+                                    <img
+                                      alt="Aido"
+                                      height="40"
+                                      src="https://aido.kr/logo.png"
+                                      style="display:block;outline:none;border:none;text-decoration:none;border-radius:12px"
+                                      width="40" />
+                                  </td>
+                                  <td data-id="__react-email-column">
+                                    <p
+                                      style="font-size:18px;line-height:24px;margin:0;padding-left:12px;font-weight:700;color:#222222;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                      Aido
+                                    </p>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                            <table
+                              align="center"
+                              width="100%"
+                              border="0"
+                              cellpadding="0"
+                              cellspacing="0"
+                              role="presentation">
+                              <tbody>
+                                <tr>
+                                  <td style="padding-top:24px">
+                                    <h1
+                                      style="margin:0 0 12px;font-size:24px;line-height:32px;font-weight:700;color:#222222">
+                                      Set up a password
+                                    </h1>
+                                    <p
+                                      style="font-size:16px;line-height:26px;margin:0 0 24px;color:#222222;margin-top:0;margin-right:0;margin-bottom:24px;margin-left:0">
+                                      Enter this code in the Aido app and choose
+                                      a password so you can also sign in with
+                                      your email.
+                                    </p>
+                                    <table
+                                      align="center"
+                                      width="100%"
+                                      border="0"
+                                      cellpadding="0"
+                                      cellspacing="0"
+                                      role="presentation"
+                                      style="background-color:#ffe9df;border-radius:16px;text-align:center">
+                                      <tbody>
+                                        <tr>
+                                          <td style="padding:20px 16px 24px">
+                                            <p
+                                              style="font-size:13px;line-height:20px;margin:0 0 8px;font-weight:600;color:#222222;margin-top:0;margin-right:0;margin-bottom:8px;margin-left:0">
+                                              Verification code
+                                            </p>
+                                            <p
+                                              style="font-size:34px;line-height:44px;margin:0;padding-left:8px;font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, &#x27;Liberation Mono&#x27;, monospace;font-weight:700;letter-spacing:8px;color:#222222;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                              195372
+                                            </p>
+                                          </td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                    <p
+                                      style="font-size:14px;line-height:22px;margin:16px 0 0;color:#6b6b6b;margin-top:16px;margin-right:0;margin-bottom:0;margin-left:0">
+                                      This code expires in 10 minutes.
+                                    </p>
+                                    <hr
+                                      style="width:100%;border:none;border-color:transparent;border-top:1px solid #f0e4da;margin:24px 0" />
+                                    <p
+                                      style="font-size:14px;line-height:22px;margin:0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                      If you didn&#x27;t ask for this, ignore
+                                      this email. Nothing on your account will
+                                      change.
+                                    </p>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <table
+                      align="center"
+                      width="100%"
+                      border="0"
+                      cellpadding="0"
+                      cellspacing="0"
+                      role="presentation"
+                      style="text-align:center">
+                      <tbody>
+                        <tr>
+                          <td style="padding:24px 8px 0">
+                            <p
+                              style="font-size:13px;line-height:20px;margin:0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                              This email was sent from a no-reply address.<!-- -->
+                              <!-- -->Questions?<!-- -->
+                              <a
+                                href="mailto:support@example.com"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >support@example.com</a
+                              >
+                            </p>
+                            <p
+                              style="font-size:13px;line-height:20px;margin:0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                              <a
+                                href="https://aido.kr/en/terms"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >Terms of Service</a
+                              >
+                              ·
+                              <a
+                                href="https://aido.kr/en/privacy"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >Privacy Policy</a
+                              >
+                              ·
+                              <a
+                                href="https://aido.kr/en"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >aido.kr</a
+                              >
+                            </p>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <!--/$-->
+  </body>
+</html>
+",
+  "subject": "Your Aido password setup code",
+  "text": "Aido
+
+
+Set up a password
+
+Enter this code in the Aido app and choose a password so you can also sign in with your email.
+
+Verification code
+
+195372
+
+This code expires in 10 minutes.
+
+----------------------------------------
+
+If you didn't ask for this, ignore this email. Nothing on your account will change.
+
+This email was sent from a no-reply address. Questions? support@example.com
+
+Terms of Service https://aido.kr/en/terms · Privacy Policy https://aido.kr/en/privacy · aido.kr https://aido.kr/en",
+}
+`;
+
+exports[`EmailTemplateMail — React Email 메일 렌더 > en > user-report 메일의 제목·HTML·텍스트 1`] = `
+{
+  "html": "<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html dir="ltr" lang="en">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
+    <meta name="x-apple-disable-message-reformatting" />
+    <meta name="color-scheme" content="light" />
+    <meta name="supported-color-schemes" content="light" />
+    <title>괴롭힘·혐오 report on TARGET&amp;01</title>
+  </head>
+  <body lang="en" dir="ltr" style="background-color:#fff8f2;margin:0;padding:0">
+    <!--$--><!--html--><!--head-->
+    <div
+      style="display:none;overflow:hidden;line-height:1px;opacity:0;max-height:0;max-width:0"
+      data-skip-in-text="true">
+      괴롭힘·혐오 report on TARGET&amp;01
+      <div>
+         ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿
+      </div>
+    </div>
+    <!--body-->
+    <table
+      border="0"
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      role="presentation"
+      align="center">
+      <tbody>
+        <tr>
+          <td
+            dir="ltr"
+            lang="en"
+            style="margin:0;padding:32px 12px;background-color:#fff8f2;font-family:-apple-system, BlinkMacSystemFont, &#x27;Apple SD Gothic Neo&#x27;, Pretendard, &#x27;Malgun Gothic&#x27;, &#x27;Segoe UI&#x27;, Roboto, sans-serif;color:#222222;-webkit-text-size-adjust:100%">
+            <table
+              align="center"
+              width="100%"
+              border="0"
+              cellpadding="0"
+              cellspacing="0"
+              role="presentation"
+              style="max-width:560px;width:100%">
+              <tbody>
+                <tr style="width:100%">
+                  <td>
+                    <table
+                      align="center"
+                      width="100%"
+                      border="0"
+                      cellpadding="0"
+                      cellspacing="0"
+                      role="presentation"
+                      style="background-color:#ffffff;border:1px solid #f0e4da;border-top:4px solid #ff6b43;border-radius:20px">
+                      <tbody>
+                        <tr>
+                          <td style="padding:28px 28px 32px">
+                            <table
+                              align="center"
+                              width="100%"
+                              border="0"
+                              cellpadding="0"
+                              cellspacing="0"
+                              role="presentation">
+                              <tbody style="width:100%">
+                                <tr style="width:100%">
+                                  <td width="40" data-id="__react-email-column">
+                                    <img
+                                      alt="Aido"
+                                      height="40"
+                                      src="https://aido.kr/logo.png"
+                                      style="display:block;outline:none;border:none;text-decoration:none;border-radius:12px"
+                                      width="40" />
+                                  </td>
+                                  <td data-id="__react-email-column">
+                                    <p
+                                      style="font-size:18px;line-height:24px;margin:0;padding-left:12px;font-weight:700;color:#222222;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                      Aido
+                                    </p>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                            <table
+                              align="center"
+                              width="100%"
+                              border="0"
+                              cellpadding="0"
+                              cellspacing="0"
+                              role="presentation">
+                              <tbody>
+                                <tr>
+                                  <td style="padding-top:24px">
+                                    <p
+                                      style="font-size:13px;line-height:20px;margin:0 0 6px;font-weight:700;color:#c2410c;margin-top:0;margin-right:0;margin-bottom:6px;margin-left:0">
+                                      New user report
+                                    </p>
+                                    <h1
+                                      style="margin:0 0 20px;font-size:22px;line-height:30px;font-weight:700;color:#222222">
+                                      A new report has come in
+                                    </h1>
+                                    <table
+                                      align="center"
+                                      width="100%"
+                                      border="0"
+                                      cellpadding="0"
+                                      cellspacing="0"
+                                      role="presentation">
+                                      <tbody>
+                                        <tr>
+                                          <td>
+                                            <table
+                                              align="center"
+                                              width="100%"
+                                              border="0"
+                                              cellpadding="0"
+                                              cellspacing="0"
+                                              role="presentation"
+                                              style="border-bottom:1px solid #f0e4da">
+                                              <tbody style="width:100%">
+                                                <tr style="width:100%">
+                                                  <td
+                                                    width="112"
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 12px 10px 0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      Report ID
+                                                    </p>
+                                                  </td>
+                                                  <td
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 0;color:#222222;word-break:break-all;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      clz7x5p8k0123qz0z8z8z8z8z
+                                                    </p>
+                                                  </td>
+                                                </tr>
+                                              </tbody>
+                                            </table>
+                                            <table
+                                              align="center"
+                                              width="100%"
+                                              border="0"
+                                              cellpadding="0"
+                                              cellspacing="0"
+                                              role="presentation"
+                                              style="border-bottom:1px solid #f0e4da">
+                                              <tbody style="width:100%">
+                                                <tr style="width:100%">
+                                                  <td
+                                                    width="112"
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 12px 10px 0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      Reason
+                                                    </p>
+                                                  </td>
+                                                  <td
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 0;color:#222222;word-break:break-all;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      괴롭힘·혐오 (HARASSMENT)
+                                                    </p>
+                                                  </td>
+                                                </tr>
+                                              </tbody>
+                                            </table>
+                                            <table
+                                              align="center"
+                                              width="100%"
+                                              border="0"
+                                              cellpadding="0"
+                                              cellspacing="0"
+                                              role="presentation"
+                                              style="border-bottom:1px solid #f0e4da">
+                                              <tbody style="width:100%">
+                                                <tr style="width:100%">
+                                                  <td
+                                                    width="112"
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 12px 10px 0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      Target type
+                                                    </p>
+                                                  </td>
+                                                  <td
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 0;color:#222222;word-break:break-all;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      댓글 (COMMENT)
+                                                    </p>
+                                                  </td>
+                                                </tr>
+                                              </tbody>
+                                            </table>
+                                            <table
+                                              align="center"
+                                              width="100%"
+                                              border="0"
+                                              cellpadding="0"
+                                              cellspacing="0"
+                                              role="presentation"
+                                              style="border-bottom:1px solid #f0e4da">
+                                              <tbody style="width:100%">
+                                                <tr style="width:100%">
+                                                  <td
+                                                    width="112"
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 12px 10px 0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      Content ID
+                                                    </p>
+                                                  </td>
+                                                  <td
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 0;color:#222222;word-break:break-all;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      clz7x5p8k0099qz0z8z8z8z8z
+                                                    </p>
+                                                  </td>
+                                                </tr>
+                                              </tbody>
+                                            </table>
+                                            <table
+                                              align="center"
+                                              width="100%"
+                                              border="0"
+                                              cellpadding="0"
+                                              cellspacing="0"
+                                              role="presentation"
+                                              style="border-bottom:1px solid #f0e4da">
+                                              <tbody style="width:100%">
+                                                <tr style="width:100%">
+                                                  <td
+                                                    width="112"
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 12px 10px 0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      Reported user
+                                                    </p>
+                                                  </td>
+                                                  <td
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 0;color:#222222;word-break:break-all;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      TARGET&amp;01 ·
+                                                      clz7x5p8k0005qz0z8z8z8z8z
+                                                    </p>
+                                                  </td>
+                                                </tr>
+                                              </tbody>
+                                            </table>
+                                            <table
+                                              align="center"
+                                              width="100%"
+                                              border="0"
+                                              cellpadding="0"
+                                              cellspacing="0"
+                                              role="presentation"
+                                              style="border-bottom:1px solid #f0e4da">
+                                              <tbody style="width:100%">
+                                                <tr style="width:100%">
+                                                  <td
+                                                    width="112"
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 12px 10px 0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      Reported by
+                                                    </p>
+                                                  </td>
+                                                  <td
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 0;color:#222222;word-break:break-all;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      REPORTER&lt;1&gt; ·
+                                                      clz7x5p8k0001qz0z8z8z8z8z
+                                                    </p>
+                                                  </td>
+                                                </tr>
+                                              </tbody>
+                                            </table>
+                                            <table
+                                              align="center"
+                                              width="100%"
+                                              border="0"
+                                              cellpadding="0"
+                                              cellspacing="0"
+                                              role="presentation"
+                                              style="border-bottom:1px solid #f0e4da">
+                                              <tbody style="width:100%">
+                                                <tr style="width:100%">
+                                                  <td
+                                                    width="112"
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 12px 10px 0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      Received
+                                                    </p>
+                                                  </td>
+                                                  <td
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 0;color:#222222;word-break:break-all;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      2026-10-26 18:00 (KST)
+                                                    </p>
+                                                  </td>
+                                                </tr>
+                                              </tbody>
+                                            </table>
+                                            <table
+                                              align="center"
+                                              width="100%"
+                                              border="0"
+                                              cellpadding="0"
+                                              cellspacing="0"
+                                              role="presentation"
+                                              style="border-bottom:1px solid #f0e4da">
+                                              <tbody style="width:100%">
+                                                <tr style="width:100%">
+                                                  <td
+                                                    width="112"
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 12px 10px 0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      Resolution API
+                                                    </p>
+                                                  </td>
+                                                  <td
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 0;color:#222222;word-break:break-all;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      POST
+                                                      /v1/admin/reports/clz7x5p8k0123qz0z8z8z8z8z/resolution
+                                                    </p>
+                                                  </td>
+                                                </tr>
+                                              </tbody>
+                                            </table>
+                                          </td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                    <table
+                                      align="center"
+                                      width="100%"
+                                      border="0"
+                                      cellpadding="0"
+                                      cellspacing="0"
+                                      role="presentation"
+                                      style="margin-top:20px;border-radius:14px;background-color:#fff8f2">
+                                      <tbody>
+                                        <tr>
+                                          <td style="padding:16px 18px">
+                                            <p
+                                              style="font-size:13px;line-height:20px;margin:0 0 6px;font-weight:700;color:#222222;margin-top:0;margin-right:0;margin-bottom:6px;margin-left:0">
+                                              Details
+                                            </p>
+                                            <p
+                                              style="font-size:14px;line-height:22px;margin:0;color:#222222;white-space:pre-wrap;word-break:break-word;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                              <span
+                                                >&lt;b&gt;&quot;굵게&quot;&lt;/b&gt;
+                                                &amp; &#x27;quote&#x27;</span
+                                              ><span><br />다음 줄</span>
+                                            </p>
+                                          </td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                    <table
+                                      align="center"
+                                      width="100%"
+                                      border="0"
+                                      cellpadding="0"
+                                      cellspacing="0"
+                                      role="presentation"
+                                      style="margin-top:12px;border-radius:14px;background-color:#ffe9df">
+                                      <tbody>
+                                        <tr>
+                                          <td style="padding:16px 18px">
+                                            <p
+                                              style="font-size:13px;line-height:20px;margin:0 0 6px;font-weight:700;color:#222222;margin-top:0;margin-right:0;margin-bottom:6px;margin-left:0">
+                                              Resolution checklist
+                                            </p>
+                                            <p
+                                              style="font-size:14px;line-height:22px;margin:0;color:#222222;white-space:pre-wrap;word-break:break-word;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                              1) Open the original content by
+                                              its content ID
+                                            </p>
+                                            <p
+                                              style="font-size:14px;line-height:22px;margin:0;color:#222222;white-space:pre-wrap;word-break:break-word;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                              2) If it breaks the terms, remove
+                                              the content or restrict the
+                                              account
+                                            </p>
+                                            <p
+                                              style="font-size:14px;line-height:22px;margin:0;color:#222222;white-space:pre-wrap;word-break:break-word;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                              3) Record the action with the
+                                              resolution API to mark it RESOLVED
+                                            </p>
+                                          </td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                    <table
+                                      align="center"
+                                      width="100%"
+                                      border="0"
+                                      cellpadding="0"
+                                      cellspacing="0"
+                                      role="presentation"
+                                      style="margin-top:24px;text-align:center">
+                                      <tbody>
+                                        <tr>
+                                          <td>
+                                            <a
+                                              href='https://api.example.com/api/admin/docs?a=1&amp;b="2"#/Admin/resolveUserReport'
+                                              style="line-height:20px;text-decoration:none;display:inline-block;max-width:100%;mso-padding-alt:0px;padding:12px 20px;border-radius:12px;background-color:#c2410c;color:#ffffff;font-size:15px;font-weight:600;padding-top:12px;padding-right:20px;padding-bottom:12px;padding-left:20px"
+                                              target="_blank"
+                                              ><span
+                                                ><!--[if mso]><i style="mso-font-width:500%;mso-text-raise:18px" hidden>&#8202;&#8202;</i><![endif]--></span
+                                              ><span
+                                                style="max-width:100%;display:inline-block;line-height:120%;mso-padding-alt:0px;mso-text-raise:9px"
+                                                >Resolve in the admin docs</span
+                                              ><span
+                                                ><!--[if mso]><i style="mso-font-width:500%" hidden>&#8202;&#8202;&#8203;</i><![endif]--></span
+                                              ></a
+                                            >
+                                          </td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <table
+                      align="center"
+                      width="100%"
+                      border="0"
+                      cellpadding="0"
+                      cellspacing="0"
+                      role="presentation"
+                      style="text-align:center">
+                      <tbody>
+                        <tr>
+                          <td style="padding:24px 8px 0">
+                            <p
+                              style="font-size:13px;line-height:20px;margin:0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                              This email was sent from a no-reply address.<!-- -->
+                              <!-- -->Questions?<!-- -->
+                              <a
+                                href="mailto:support@example.com"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >support@example.com</a
+                              >
+                            </p>
+                            <p
+                              style="font-size:13px;line-height:20px;margin:0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                              <a
+                                href="https://aido.kr/en/terms"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >Terms of Service</a
+                              >
+                              ·
+                              <a
+                                href="https://aido.kr/en/privacy"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >Privacy Policy</a
+                              >
+                              ·
+                              <a
+                                href="https://aido.kr/en"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >aido.kr</a
+                              >
+                            </p>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <!--/$-->
+  </body>
+</html>
+",
+  "subject": "[Aido report] [괴롭힘·혐오] 댓글 · TARGET&01",
+  "text": "Aido
+
+New user report
+
+
+A new report has come in
+
+Report ID
+
+clz7x5p8k0123qz0z8z8z8z8z
+
+Reason
+
+괴롭힘·혐오 (HARASSMENT)
+
+Target type
+
+댓글 (COMMENT)
+
+Content ID
+
+clz7x5p8k0099qz0z8z8z8z8z
+
+Reported user
+
+TARGET&01 · clz7x5p8k0005qz0z8z8z8z8z
+
+Reported by
+
+REPORTER<1> · clz7x5p8k0001qz0z8z8z8z8z
+
+Received
+
+2026-10-26 18:00 (KST)
+
+Resolution API
+
+POST /v1/admin/reports/clz7x5p8k0123qz0z8z8z8z8z/resolution
+
+Details
+
+<b>"굵게"</b> & 'quote'
+다음 줄
+
+Resolution checklist
+
+1) Open the original content by its content ID
+
+2) If it breaks the terms, remove the content or restrict the account
+
+3) Record the action with the resolution API to mark it RESOLVED
+
+Resolve in the admin docs https://api.example.com/api/admin/docs?a=1&b="2"#/Admin/resolveUserReport
+
+This email was sent from a no-reply address. Questions? support@example.com
+
+Terms of Service https://aido.kr/en/terms · Privacy Policy https://aido.kr/en/privacy · aido.kr https://aido.kr/en",
+}
+`;
+
+exports[`EmailTemplateMail — React Email 메일 렌더 > en > verification 메일의 제목·HTML·텍스트 1`] = `
+{
+  "html": "<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html dir="ltr" lang="en">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
+    <meta name="x-apple-disable-message-reformatting" />
+    <meta name="color-scheme" content="light" />
+    <meta name="supported-color-schemes" content="light" />
+    <title>Enter the code below in the app within 10 minutes.</title>
+  </head>
+  <body lang="en" dir="ltr" style="background-color:#fff8f2;margin:0;padding:0">
+    <!--$--><!--html--><!--head-->
+    <div
+      style="display:none;overflow:hidden;line-height:1px;opacity:0;max-height:0;max-width:0"
+      data-skip-in-text="true">
+      Enter the code below in the app within 10 minutes.
+      <div>
+         ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿
+      </div>
+    </div>
+    <!--body-->
+    <table
+      border="0"
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      role="presentation"
+      align="center">
+      <tbody>
+        <tr>
+          <td
+            dir="ltr"
+            lang="en"
+            style="margin:0;padding:32px 12px;background-color:#fff8f2;font-family:-apple-system, BlinkMacSystemFont, &#x27;Apple SD Gothic Neo&#x27;, Pretendard, &#x27;Malgun Gothic&#x27;, &#x27;Segoe UI&#x27;, Roboto, sans-serif;color:#222222;-webkit-text-size-adjust:100%">
+            <table
+              align="center"
+              width="100%"
+              border="0"
+              cellpadding="0"
+              cellspacing="0"
+              role="presentation"
+              style="max-width:560px;width:100%">
+              <tbody>
+                <tr style="width:100%">
+                  <td>
+                    <table
+                      align="center"
+                      width="100%"
+                      border="0"
+                      cellpadding="0"
+                      cellspacing="0"
+                      role="presentation"
+                      style="background-color:#ffffff;border:1px solid #f0e4da;border-top:4px solid #ff6b43;border-radius:20px">
+                      <tbody>
+                        <tr>
+                          <td style="padding:28px 28px 32px">
+                            <table
+                              align="center"
+                              width="100%"
+                              border="0"
+                              cellpadding="0"
+                              cellspacing="0"
+                              role="presentation">
+                              <tbody style="width:100%">
+                                <tr style="width:100%">
+                                  <td width="40" data-id="__react-email-column">
+                                    <img
+                                      alt="Aido"
+                                      height="40"
+                                      src="https://aido.kr/logo.png"
+                                      style="display:block;outline:none;border:none;text-decoration:none;border-radius:12px"
+                                      width="40" />
+                                  </td>
+                                  <td data-id="__react-email-column">
+                                    <p
+                                      style="font-size:18px;line-height:24px;margin:0;padding-left:12px;font-weight:700;color:#222222;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                      Aido
+                                    </p>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                            <table
+                              align="center"
+                              width="100%"
+                              border="0"
+                              cellpadding="0"
+                              cellspacing="0"
+                              role="presentation">
+                              <tbody>
+                                <tr>
+                                  <td style="padding-top:24px">
+                                    <h1
+                                      style="margin:0 0 12px;font-size:24px;line-height:32px;font-weight:700;color:#222222">
+                                      Verify your email
+                                    </h1>
+                                    <p
+                                      style="font-size:16px;line-height:26px;margin:0 0 24px;color:#222222;margin-top:0;margin-right:0;margin-bottom:24px;margin-left:0">
+                                      Enter this code in the Aido app to finish
+                                      signing up.
+                                    </p>
+                                    <table
+                                      align="center"
+                                      width="100%"
+                                      border="0"
+                                      cellpadding="0"
+                                      cellspacing="0"
+                                      role="presentation"
+                                      style="background-color:#ffe9df;border-radius:16px;text-align:center">
+                                      <tbody>
+                                        <tr>
+                                          <td style="padding:20px 16px 24px">
+                                            <p
+                                              style="font-size:13px;line-height:20px;margin:0 0 8px;font-weight:600;color:#222222;margin-top:0;margin-right:0;margin-bottom:8px;margin-left:0">
+                                              Verification code
+                                            </p>
+                                            <p
+                                              style="font-size:34px;line-height:44px;margin:0;padding-left:8px;font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, &#x27;Liberation Mono&#x27;, monospace;font-weight:700;letter-spacing:8px;color:#222222;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                              482916
+                                            </p>
+                                          </td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                    <p
+                                      style="font-size:14px;line-height:22px;margin:16px 0 0;color:#6b6b6b;margin-top:16px;margin-right:0;margin-bottom:0;margin-left:0">
+                                      This code expires in 10 minutes.
+                                    </p>
+                                    <hr
+                                      style="width:100%;border:none;border-color:transparent;border-top:1px solid #f0e4da;margin:24px 0" />
+                                    <p
+                                      style="font-size:14px;line-height:22px;margin:0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                      If you didn&#x27;t sign up for Aido, you
+                                      can safely ignore this email.
+                                    </p>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <table
+                      align="center"
+                      width="100%"
+                      border="0"
+                      cellpadding="0"
+                      cellspacing="0"
+                      role="presentation"
+                      style="text-align:center">
+                      <tbody>
+                        <tr>
+                          <td style="padding:24px 8px 0">
+                            <p
+                              style="font-size:13px;line-height:20px;margin:0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                              This email was sent from a no-reply address.<!-- -->
+                              <!-- -->Questions?<!-- -->
+                              <a
+                                href="mailto:support@example.com"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >support@example.com</a
+                              >
+                            </p>
+                            <p
+                              style="font-size:13px;line-height:20px;margin:0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                              <a
+                                href="https://aido.kr/en/terms"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >Terms of Service</a
+                              >
+                              ·
+                              <a
+                                href="https://aido.kr/en/privacy"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >Privacy Policy</a
+                              >
+                              ·
+                              <a
+                                href="https://aido.kr/en"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >aido.kr</a
+                              >
+                            </p>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <!--/$-->
+  </body>
+</html>
+",
+  "subject": "Your Aido verification code",
+  "text": "Aido
+
+
+Verify your email
+
+Enter this code in the Aido app to finish signing up.
+
+Verification code
+
+482916
+
+This code expires in 10 minutes.
+
+----------------------------------------
+
+If you didn't sign up for Aido, you can safely ignore this email.
+
+This email was sent from a no-reply address. Questions? support@example.com
+
+Terms of Service https://aido.kr/en/terms · Privacy Policy https://aido.kr/en/privacy · aido.kr https://aido.kr/en",
+}
+`;
+
+exports[`EmailTemplateMail — React Email 메일 렌더 > ko > inquiry 메일의 제목·HTML·텍스트 1`] = `
+{
+  "html": "<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html dir="ltr" lang="ko">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
+    <meta name="x-apple-disable-message-reformatting" />
+    <meta name="color-scheme" content="light" />
+    <meta name="supported-color-schemes" content="light" />
+    <title>
+      결제·구독 &lt;긴급&gt; &amp; &quot;확인&quot; 문의 ·
+      o&#x27;brien+test@example.com
+    </title>
+  </head>
+  <body lang="ko" dir="ltr" style="background-color:#fff8f2;margin:0;padding:0">
+    <!--$--><!--html--><!--head-->
+    <div
+      style="display:none;overflow:hidden;line-height:1px;opacity:0;max-height:0;max-width:0"
+      data-skip-in-text="true">
+      결제·구독 &lt;긴급&gt; &amp; &quot;확인&quot; 문의 ·
+      o&#x27;brien+test@example.com
+      <div>
+         ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿
+      </div>
+    </div>
+    <!--body-->
+    <table
+      border="0"
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      role="presentation"
+      align="center">
+      <tbody>
+        <tr>
+          <td
+            dir="ltr"
+            lang="ko"
+            style="margin:0;padding:32px 12px;background-color:#fff8f2;font-family:-apple-system, BlinkMacSystemFont, &#x27;Apple SD Gothic Neo&#x27;, Pretendard, &#x27;Malgun Gothic&#x27;, &#x27;Segoe UI&#x27;, Roboto, sans-serif;color:#222222;-webkit-text-size-adjust:100%">
+            <table
+              align="center"
+              width="100%"
+              border="0"
+              cellpadding="0"
+              cellspacing="0"
+              role="presentation"
+              style="max-width:560px;width:100%">
+              <tbody>
+                <tr style="width:100%">
+                  <td>
+                    <table
+                      align="center"
+                      width="100%"
+                      border="0"
+                      cellpadding="0"
+                      cellspacing="0"
+                      role="presentation"
+                      style="background-color:#ffffff;border:1px solid #f0e4da;border-top:4px solid #ff6b43;border-radius:20px">
+                      <tbody>
+                        <tr>
+                          <td style="padding:28px 28px 32px">
+                            <table
+                              align="center"
+                              width="100%"
+                              border="0"
+                              cellpadding="0"
+                              cellspacing="0"
+                              role="presentation">
+                              <tbody style="width:100%">
+                                <tr style="width:100%">
+                                  <td width="40" data-id="__react-email-column">
+                                    <img
+                                      alt="아이두"
+                                      height="40"
+                                      src="https://aido.kr/logo.png"
+                                      style="display:block;outline:none;border:none;text-decoration:none;border-radius:12px"
+                                      width="40" />
+                                  </td>
+                                  <td data-id="__react-email-column">
+                                    <p
+                                      style="font-size:18px;line-height:24px;margin:0;padding-left:12px;font-weight:700;color:#222222;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                      아이두
+                                    </p>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                            <table
+                              align="center"
+                              width="100%"
+                              border="0"
+                              cellpadding="0"
+                              cellspacing="0"
+                              role="presentation">
+                              <tbody>
+                                <tr>
+                                  <td style="padding-top:24px">
+                                    <p
+                                      style="font-size:13px;line-height:20px;margin:0 0 6px;font-weight:700;color:#c2410c;margin-top:0;margin-right:0;margin-bottom:6px;margin-left:0">
+                                      문의 접수 알림
+                                    </p>
+                                    <h1
+                                      style="margin:0 0 20px;font-size:22px;line-height:30px;font-weight:700;color:#222222">
+                                      새로운 문의가 접수되었습니다
+                                    </h1>
+                                    <table
+                                      align="center"
+                                      width="100%"
+                                      border="0"
+                                      cellpadding="0"
+                                      cellspacing="0"
+                                      role="presentation">
+                                      <tbody>
+                                        <tr>
+                                          <td>
+                                            <table
+                                              align="center"
+                                              width="100%"
+                                              border="0"
+                                              cellpadding="0"
+                                              cellspacing="0"
+                                              role="presentation"
+                                              style="border-bottom:1px solid #f0e4da">
+                                              <tbody style="width:100%">
+                                                <tr style="width:100%">
+                                                  <td
+                                                    width="112"
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 12px 10px 0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      사용자 이메일
+                                                    </p>
+                                                  </td>
+                                                  <td
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 0;color:#222222;word-break:break-all;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      o&#x27;brien+test@example.com
+                                                    </p>
+                                                  </td>
+                                                </tr>
+                                              </tbody>
+                                            </table>
+                                            <table
+                                              align="center"
+                                              width="100%"
+                                              border="0"
+                                              cellpadding="0"
+                                              cellspacing="0"
+                                              role="presentation"
+                                              style="border-bottom:1px solid #f0e4da">
+                                              <tbody style="width:100%">
+                                                <tr style="width:100%">
+                                                  <td
+                                                    width="112"
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 12px 10px 0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      카테고리
+                                                    </p>
+                                                  </td>
+                                                  <td
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 0;color:#222222;word-break:break-all;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      결제·구독 &lt;긴급&gt;
+                                                      &amp; &quot;확인&quot;
+                                                    </p>
+                                                  </td>
+                                                </tr>
+                                              </tbody>
+                                            </table>
+                                            <table
+                                              align="center"
+                                              width="100%"
+                                              border="0"
+                                              cellpadding="0"
+                                              cellspacing="0"
+                                              role="presentation"
+                                              style="border-bottom:1px solid #f0e4da">
+                                              <tbody style="width:100%">
+                                                <tr style="width:100%">
+                                                  <td
+                                                    width="112"
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 12px 10px 0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      접수 시각
+                                                    </p>
+                                                  </td>
+                                                  <td
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 0;color:#222222;word-break:break-all;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      2026-10-26 10:00 (KST)
+                                                    </p>
+                                                  </td>
+                                                </tr>
+                                              </tbody>
+                                            </table>
+                                          </td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                    <table
+                                      align="center"
+                                      width="100%"
+                                      border="0"
+                                      cellpadding="0"
+                                      cellspacing="0"
+                                      role="presentation"
+                                      style="margin-top:20px;border-radius:14px;background-color:#fff8f2">
+                                      <tbody>
+                                        <tr>
+                                          <td style="padding:16px 18px">
+                                            <p
+                                              style="font-size:13px;line-height:20px;margin:0 0 6px;font-weight:700;color:#222222;margin-top:0;margin-right:0;margin-bottom:6px;margin-left:0">
+                                              문의 내용
+                                            </p>
+                                            <p
+                                              style="font-size:14px;line-height:22px;margin:0;color:#222222;white-space:pre-wrap;word-break:break-word;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                              <span
+                                                >&lt;script&gt;alert(&quot;x&quot;)
+                                                &amp;
+                                                &#x27;y&#x27;&lt;/script&gt;</span
+                                              ><span><br />둘째 줄</span
+                                              ><span><br /></span
+                                              ><span
+                                                ><br />
+                                                들여쓴 셋째 줄</span
+                                              >
+                                            </p>
+                                          </td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                    <table
+                                      align="center"
+                                      width="100%"
+                                      border="0"
+                                      cellpadding="0"
+                                      cellspacing="0"
+                                      role="presentation"
+                                      style="margin-top:12px;border-radius:14px;background-color:#ffe9df">
+                                      <tbody>
+                                        <tr>
+                                          <td style="padding:16px 18px">
+                                            <p
+                                              style="font-size:13px;line-height:20px;margin:0 0 6px;font-weight:700;color:#222222;margin-top:0;margin-right:0;margin-bottom:6px;margin-left:0">
+                                              CS 처리 체크리스트
+                                            </p>
+                                            <p
+                                              style="font-size:14px;line-height:22px;margin:0;color:#222222;white-space:pre-wrap;word-break:break-word;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                              1) 문의 유형 분류
+                                            </p>
+                                            <p
+                                              style="font-size:14px;line-height:22px;margin:0;color:#222222;white-space:pre-wrap;word-break:break-word;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                              2) 재현·확인 필요 여부 판단
+                                            </p>
+                                            <p
+                                              style="font-size:14px;line-height:22px;margin:0;color:#222222;white-space:pre-wrap;word-break:break-word;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                              3) 사용자 회신 문안 작성
+                                            </p>
+                                          </td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <table
+                      align="center"
+                      width="100%"
+                      border="0"
+                      cellpadding="0"
+                      cellspacing="0"
+                      role="presentation"
+                      style="text-align:center">
+                      <tbody>
+                        <tr>
+                          <td style="padding:24px 8px 0">
+                            <p
+                              style="font-size:13px;line-height:20px;margin:0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                              이 메일은 발신 전용이에요.<!-- -->
+                              <!-- -->문의<!-- -->
+                              <a
+                                href="mailto:support@example.com"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >support@example.com</a
+                              >
+                            </p>
+                            <p
+                              style="font-size:13px;line-height:20px;margin:0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                              <a
+                                href="https://aido.kr/ko/terms"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >이용약관</a
+                              >
+                              ·
+                              <a
+                                href="https://aido.kr/ko/privacy"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >개인정보처리방침</a
+                              >
+                              ·
+                              <a
+                                href="https://aido.kr/ko"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >aido.kr</a
+                              >
+                            </p>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <!--/$-->
+  </body>
+</html>
+",
+  "subject": "[아이두 문의접수] [결제·구독 <긴급> & "확인"]",
+  "text": "아이두
+
+문의 접수 알림
+
+
+새로운 문의가 접수되었습니다
+
+사용자 이메일
+
+o'brien+test@example.com
+
+카테고리
+
+결제·구독 <긴급> & "확인"
+
+접수 시각
+
+2026-10-26 10:00 (KST)
+
+문의 내용
+
+<script>alert("x") & 'y'</script>
+둘째 줄
+
+들여쓴 셋째 줄
+
+CS 처리 체크리스트
+
+1) 문의 유형 분류
+
+2) 재현·확인 필요 여부 판단
+
+3) 사용자 회신 문안 작성
+
+이 메일은 발신 전용이에요. 문의 support@example.com
+
+이용약관 https://aido.kr/ko/terms · 개인정보처리방침 https://aido.kr/ko/privacy · aido.kr https://aido.kr/ko",
+}
+`;
+
+exports[`EmailTemplateMail — React Email 메일 렌더 > ko > password-reset 메일의 제목·HTML·텍스트 1`] = `
+{
+  "html": "<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html dir="ltr" lang="ko">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
+    <meta name="x-apple-disable-message-reformatting" />
+    <meta name="color-scheme" content="light" />
+    <meta name="supported-color-schemes" content="light" />
+    <title>아래 코드를 10분 안에 앱에 입력해주세요.</title>
+  </head>
+  <body lang="ko" dir="ltr" style="background-color:#fff8f2;margin:0;padding:0">
+    <!--$--><!--html--><!--head-->
+    <div
+      style="display:none;overflow:hidden;line-height:1px;opacity:0;max-height:0;max-width:0"
+      data-skip-in-text="true">
+      아래 코드를 10분 안에 앱에 입력해주세요.
+      <div>
+         ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿
+      </div>
+    </div>
+    <!--body-->
+    <table
+      border="0"
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      role="presentation"
+      align="center">
+      <tbody>
+        <tr>
+          <td
+            dir="ltr"
+            lang="ko"
+            style="margin:0;padding:32px 12px;background-color:#fff8f2;font-family:-apple-system, BlinkMacSystemFont, &#x27;Apple SD Gothic Neo&#x27;, Pretendard, &#x27;Malgun Gothic&#x27;, &#x27;Segoe UI&#x27;, Roboto, sans-serif;color:#222222;-webkit-text-size-adjust:100%">
+            <table
+              align="center"
+              width="100%"
+              border="0"
+              cellpadding="0"
+              cellspacing="0"
+              role="presentation"
+              style="max-width:560px;width:100%">
+              <tbody>
+                <tr style="width:100%">
+                  <td>
+                    <table
+                      align="center"
+                      width="100%"
+                      border="0"
+                      cellpadding="0"
+                      cellspacing="0"
+                      role="presentation"
+                      style="background-color:#ffffff;border:1px solid #f0e4da;border-top:4px solid #ff6b43;border-radius:20px">
+                      <tbody>
+                        <tr>
+                          <td style="padding:28px 28px 32px">
+                            <table
+                              align="center"
+                              width="100%"
+                              border="0"
+                              cellpadding="0"
+                              cellspacing="0"
+                              role="presentation">
+                              <tbody style="width:100%">
+                                <tr style="width:100%">
+                                  <td width="40" data-id="__react-email-column">
+                                    <img
+                                      alt="아이두"
+                                      height="40"
+                                      src="https://aido.kr/logo.png"
+                                      style="display:block;outline:none;border:none;text-decoration:none;border-radius:12px"
+                                      width="40" />
+                                  </td>
+                                  <td data-id="__react-email-column">
+                                    <p
+                                      style="font-size:18px;line-height:24px;margin:0;padding-left:12px;font-weight:700;color:#222222;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                      아이두
+                                    </p>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                            <table
+                              align="center"
+                              width="100%"
+                              border="0"
+                              cellpadding="0"
+                              cellspacing="0"
+                              role="presentation">
+                              <tbody>
+                                <tr>
+                                  <td style="padding-top:24px">
+                                    <h1
+                                      style="margin:0 0 12px;font-size:24px;line-height:32px;font-weight:700;color:#222222">
+                                      비밀번호 재설정 코드
+                                    </h1>
+                                    <p
+                                      style="font-size:16px;line-height:26px;margin:0 0 24px;color:#222222;margin-top:0;margin-right:0;margin-bottom:24px;margin-left:0">
+                                      새 비밀번호를 정하려면 아래 코드를 앱에
+                                      입력해주세요.
+                                    </p>
+                                    <table
+                                      align="center"
+                                      width="100%"
+                                      border="0"
+                                      cellpadding="0"
+                                      cellspacing="0"
+                                      role="presentation"
+                                      style="background-color:#ffe9df;border-radius:16px;text-align:center">
+                                      <tbody>
+                                        <tr>
+                                          <td style="padding:20px 16px 24px">
+                                            <p
+                                              style="font-size:13px;line-height:20px;margin:0 0 8px;font-weight:600;color:#222222;margin-top:0;margin-right:0;margin-bottom:8px;margin-left:0">
+                                              인증 코드
+                                            </p>
+                                            <p
+                                              style="font-size:34px;line-height:44px;margin:0;padding-left:8px;font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, &#x27;Liberation Mono&#x27;, monospace;font-weight:700;letter-spacing:8px;color:#222222;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                              730415
+                                            </p>
+                                          </td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                    <p
+                                      style="font-size:14px;line-height:22px;margin:16px 0 0;color:#6b6b6b;margin-top:16px;margin-right:0;margin-bottom:0;margin-left:0">
+                                      코드는 10분 동안 쓸 수 있어요.
+                                    </p>
+                                    <hr
+                                      style="width:100%;border:none;border-color:transparent;border-top:1px solid #f0e4da;margin:24px 0" />
+                                    <p
+                                      style="font-size:14px;line-height:22px;margin:0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                      요청하지 않았다면 이 메일을 무시하세요.
+                                      코드를 입력하지 않으면 비밀번호는 바뀌지
+                                      않아요.
+                                    </p>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <table
+                      align="center"
+                      width="100%"
+                      border="0"
+                      cellpadding="0"
+                      cellspacing="0"
+                      role="presentation"
+                      style="text-align:center">
+                      <tbody>
+                        <tr>
+                          <td style="padding:24px 8px 0">
+                            <p
+                              style="font-size:13px;line-height:20px;margin:0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                              이 메일은 발신 전용이에요.<!-- -->
+                              <!-- -->문의<!-- -->
+                              <a
+                                href="mailto:support@example.com"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >support@example.com</a
+                              >
+                            </p>
+                            <p
+                              style="font-size:13px;line-height:20px;margin:0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                              <a
+                                href="https://aido.kr/ko/terms"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >이용약관</a
+                              >
+                              ·
+                              <a
+                                href="https://aido.kr/ko/privacy"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >개인정보처리방침</a
+                              >
+                              ·
+                              <a
+                                href="https://aido.kr/ko"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >aido.kr</a
+                              >
+                            </p>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <!--/$-->
+  </body>
+</html>
+",
+  "subject": "[아이두] 비밀번호 재설정 코드",
+  "text": "아이두
+
+
+비밀번호 재설정 코드
+
+새 비밀번호를 정하려면 아래 코드를 앱에 입력해주세요.
+
+인증 코드
+
+730415
+
+코드는 10분 동안 쓸 수 있어요.
+
+----------------------------------------
+
+요청하지 않았다면 이 메일을 무시하세요. 코드를 입력하지 않으면 비밀번호는 바뀌지 않아요.
+
+이 메일은 발신 전용이에요. 문의 support@example.com
+
+이용약관 https://aido.kr/ko/terms · 개인정보처리방침 https://aido.kr/ko/privacy · aido.kr https://aido.kr/ko",
+}
+`;
+
+exports[`EmailTemplateMail — React Email 메일 렌더 > ko > password-setup 메일의 제목·HTML·텍스트 1`] = `
+{
+  "html": "<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html dir="ltr" lang="ko">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
+    <meta name="x-apple-disable-message-reformatting" />
+    <meta name="color-scheme" content="light" />
+    <meta name="supported-color-schemes" content="light" />
+    <title>아래 코드를 10분 안에 앱에 입력해주세요.</title>
+  </head>
+  <body lang="ko" dir="ltr" style="background-color:#fff8f2;margin:0;padding:0">
+    <!--$--><!--html--><!--head-->
+    <div
+      style="display:none;overflow:hidden;line-height:1px;opacity:0;max-height:0;max-width:0"
+      data-skip-in-text="true">
+      아래 코드를 10분 안에 앱에 입력해주세요.
+      <div>
+         ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿
+      </div>
+    </div>
+    <!--body-->
+    <table
+      border="0"
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      role="presentation"
+      align="center">
+      <tbody>
+        <tr>
+          <td
+            dir="ltr"
+            lang="ko"
+            style="margin:0;padding:32px 12px;background-color:#fff8f2;font-family:-apple-system, BlinkMacSystemFont, &#x27;Apple SD Gothic Neo&#x27;, Pretendard, &#x27;Malgun Gothic&#x27;, &#x27;Segoe UI&#x27;, Roboto, sans-serif;color:#222222;-webkit-text-size-adjust:100%">
+            <table
+              align="center"
+              width="100%"
+              border="0"
+              cellpadding="0"
+              cellspacing="0"
+              role="presentation"
+              style="max-width:560px;width:100%">
+              <tbody>
+                <tr style="width:100%">
+                  <td>
+                    <table
+                      align="center"
+                      width="100%"
+                      border="0"
+                      cellpadding="0"
+                      cellspacing="0"
+                      role="presentation"
+                      style="background-color:#ffffff;border:1px solid #f0e4da;border-top:4px solid #ff6b43;border-radius:20px">
+                      <tbody>
+                        <tr>
+                          <td style="padding:28px 28px 32px">
+                            <table
+                              align="center"
+                              width="100%"
+                              border="0"
+                              cellpadding="0"
+                              cellspacing="0"
+                              role="presentation">
+                              <tbody style="width:100%">
+                                <tr style="width:100%">
+                                  <td width="40" data-id="__react-email-column">
+                                    <img
+                                      alt="아이두"
+                                      height="40"
+                                      src="https://aido.kr/logo.png"
+                                      style="display:block;outline:none;border:none;text-decoration:none;border-radius:12px"
+                                      width="40" />
+                                  </td>
+                                  <td data-id="__react-email-column">
+                                    <p
+                                      style="font-size:18px;line-height:24px;margin:0;padding-left:12px;font-weight:700;color:#222222;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                      아이두
+                                    </p>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                            <table
+                              align="center"
+                              width="100%"
+                              border="0"
+                              cellpadding="0"
+                              cellspacing="0"
+                              role="presentation">
+                              <tbody>
+                                <tr>
+                                  <td style="padding-top:24px">
+                                    <h1
+                                      style="margin:0 0 12px;font-size:24px;line-height:32px;font-weight:700;color:#222222">
+                                      비밀번호 설정 코드
+                                    </h1>
+                                    <p
+                                      style="font-size:16px;line-height:26px;margin:0 0 24px;color:#222222;margin-top:0;margin-right:0;margin-bottom:24px;margin-left:0">
+                                      이메일로도 로그인하려면 아래 코드를 앱에
+                                      입력하고 비밀번호를 정해주세요.
+                                    </p>
+                                    <table
+                                      align="center"
+                                      width="100%"
+                                      border="0"
+                                      cellpadding="0"
+                                      cellspacing="0"
+                                      role="presentation"
+                                      style="background-color:#ffe9df;border-radius:16px;text-align:center">
+                                      <tbody>
+                                        <tr>
+                                          <td style="padding:20px 16px 24px">
+                                            <p
+                                              style="font-size:13px;line-height:20px;margin:0 0 8px;font-weight:600;color:#222222;margin-top:0;margin-right:0;margin-bottom:8px;margin-left:0">
+                                              인증 코드
+                                            </p>
+                                            <p
+                                              style="font-size:34px;line-height:44px;margin:0;padding-left:8px;font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, &#x27;Liberation Mono&#x27;, monospace;font-weight:700;letter-spacing:8px;color:#222222;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                              195372
+                                            </p>
+                                          </td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                    <p
+                                      style="font-size:14px;line-height:22px;margin:16px 0 0;color:#6b6b6b;margin-top:16px;margin-right:0;margin-bottom:0;margin-left:0">
+                                      코드는 10분 동안 쓸 수 있어요.
+                                    </p>
+                                    <hr
+                                      style="width:100%;border:none;border-color:transparent;border-top:1px solid #f0e4da;margin:24px 0" />
+                                    <p
+                                      style="font-size:14px;line-height:22px;margin:0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                      요청하지 않았다면 이 메일을 무시하세요.
+                                      계정에는 아무것도 바뀌지 않아요.
+                                    </p>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <table
+                      align="center"
+                      width="100%"
+                      border="0"
+                      cellpadding="0"
+                      cellspacing="0"
+                      role="presentation"
+                      style="text-align:center">
+                      <tbody>
+                        <tr>
+                          <td style="padding:24px 8px 0">
+                            <p
+                              style="font-size:13px;line-height:20px;margin:0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                              이 메일은 발신 전용이에요.<!-- -->
+                              <!-- -->문의<!-- -->
+                              <a
+                                href="mailto:support@example.com"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >support@example.com</a
+                              >
+                            </p>
+                            <p
+                              style="font-size:13px;line-height:20px;margin:0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                              <a
+                                href="https://aido.kr/ko/terms"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >이용약관</a
+                              >
+                              ·
+                              <a
+                                href="https://aido.kr/ko/privacy"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >개인정보처리방침</a
+                              >
+                              ·
+                              <a
+                                href="https://aido.kr/ko"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >aido.kr</a
+                              >
+                            </p>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <!--/$-->
+  </body>
+</html>
+",
+  "subject": "[아이두] 비밀번호 설정 인증 코드",
+  "text": "아이두
+
+
+비밀번호 설정 코드
+
+이메일로도 로그인하려면 아래 코드를 앱에 입력하고 비밀번호를 정해주세요.
+
+인증 코드
+
+195372
+
+코드는 10분 동안 쓸 수 있어요.
+
+----------------------------------------
+
+요청하지 않았다면 이 메일을 무시하세요. 계정에는 아무것도 바뀌지 않아요.
+
+이 메일은 발신 전용이에요. 문의 support@example.com
+
+이용약관 https://aido.kr/ko/terms · 개인정보처리방침 https://aido.kr/ko/privacy · aido.kr https://aido.kr/ko",
+}
+`;
+
+exports[`EmailTemplateMail — React Email 메일 렌더 > ko > user-report 메일의 제목·HTML·텍스트 1`] = `
+{
+  "html": "<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html dir="ltr" lang="ko">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
+    <meta name="x-apple-disable-message-reformatting" />
+    <meta name="color-scheme" content="light" />
+    <meta name="supported-color-schemes" content="light" />
+    <title>괴롭힘·혐오 신고 · TARGET&amp;01</title>
+  </head>
+  <body lang="ko" dir="ltr" style="background-color:#fff8f2;margin:0;padding:0">
+    <!--$--><!--html--><!--head-->
+    <div
+      style="display:none;overflow:hidden;line-height:1px;opacity:0;max-height:0;max-width:0"
+      data-skip-in-text="true">
+      괴롭힘·혐오 신고 · TARGET&amp;01
+      <div>
+         ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿
+      </div>
+    </div>
+    <!--body-->
+    <table
+      border="0"
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      role="presentation"
+      align="center">
+      <tbody>
+        <tr>
+          <td
+            dir="ltr"
+            lang="ko"
+            style="margin:0;padding:32px 12px;background-color:#fff8f2;font-family:-apple-system, BlinkMacSystemFont, &#x27;Apple SD Gothic Neo&#x27;, Pretendard, &#x27;Malgun Gothic&#x27;, &#x27;Segoe UI&#x27;, Roboto, sans-serif;color:#222222;-webkit-text-size-adjust:100%">
+            <table
+              align="center"
+              width="100%"
+              border="0"
+              cellpadding="0"
+              cellspacing="0"
+              role="presentation"
+              style="max-width:560px;width:100%">
+              <tbody>
+                <tr style="width:100%">
+                  <td>
+                    <table
+                      align="center"
+                      width="100%"
+                      border="0"
+                      cellpadding="0"
+                      cellspacing="0"
+                      role="presentation"
+                      style="background-color:#ffffff;border:1px solid #f0e4da;border-top:4px solid #ff6b43;border-radius:20px">
+                      <tbody>
+                        <tr>
+                          <td style="padding:28px 28px 32px">
+                            <table
+                              align="center"
+                              width="100%"
+                              border="0"
+                              cellpadding="0"
+                              cellspacing="0"
+                              role="presentation">
+                              <tbody style="width:100%">
+                                <tr style="width:100%">
+                                  <td width="40" data-id="__react-email-column">
+                                    <img
+                                      alt="아이두"
+                                      height="40"
+                                      src="https://aido.kr/logo.png"
+                                      style="display:block;outline:none;border:none;text-decoration:none;border-radius:12px"
+                                      width="40" />
+                                  </td>
+                                  <td data-id="__react-email-column">
+                                    <p
+                                      style="font-size:18px;line-height:24px;margin:0;padding-left:12px;font-weight:700;color:#222222;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                      아이두
+                                    </p>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                            <table
+                              align="center"
+                              width="100%"
+                              border="0"
+                              cellpadding="0"
+                              cellspacing="0"
+                              role="presentation">
+                              <tbody>
+                                <tr>
+                                  <td style="padding-top:24px">
+                                    <p
+                                      style="font-size:13px;line-height:20px;margin:0 0 6px;font-weight:700;color:#c2410c;margin-top:0;margin-right:0;margin-bottom:6px;margin-left:0">
+                                      사용자 신고 접수 알림
+                                    </p>
+                                    <h1
+                                      style="margin:0 0 20px;font-size:22px;line-height:30px;font-weight:700;color:#222222">
+                                      새로운 신고가 접수되었습니다
+                                    </h1>
+                                    <table
+                                      align="center"
+                                      width="100%"
+                                      border="0"
+                                      cellpadding="0"
+                                      cellspacing="0"
+                                      role="presentation">
+                                      <tbody>
+                                        <tr>
+                                          <td>
+                                            <table
+                                              align="center"
+                                              width="100%"
+                                              border="0"
+                                              cellpadding="0"
+                                              cellspacing="0"
+                                              role="presentation"
+                                              style="border-bottom:1px solid #f0e4da">
+                                              <tbody style="width:100%">
+                                                <tr style="width:100%">
+                                                  <td
+                                                    width="112"
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 12px 10px 0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      신고 ID
+                                                    </p>
+                                                  </td>
+                                                  <td
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 0;color:#222222;word-break:break-all;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      clz7x5p8k0123qz0z8z8z8z8z
+                                                    </p>
+                                                  </td>
+                                                </tr>
+                                              </tbody>
+                                            </table>
+                                            <table
+                                              align="center"
+                                              width="100%"
+                                              border="0"
+                                              cellpadding="0"
+                                              cellspacing="0"
+                                              role="presentation"
+                                              style="border-bottom:1px solid #f0e4da">
+                                              <tbody style="width:100%">
+                                                <tr style="width:100%">
+                                                  <td
+                                                    width="112"
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 12px 10px 0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      사유
+                                                    </p>
+                                                  </td>
+                                                  <td
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 0;color:#222222;word-break:break-all;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      괴롭힘·혐오 (HARASSMENT)
+                                                    </p>
+                                                  </td>
+                                                </tr>
+                                              </tbody>
+                                            </table>
+                                            <table
+                                              align="center"
+                                              width="100%"
+                                              border="0"
+                                              cellpadding="0"
+                                              cellspacing="0"
+                                              role="presentation"
+                                              style="border-bottom:1px solid #f0e4da">
+                                              <tbody style="width:100%">
+                                                <tr style="width:100%">
+                                                  <td
+                                                    width="112"
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 12px 10px 0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      대상 종류
+                                                    </p>
+                                                  </td>
+                                                  <td
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 0;color:#222222;word-break:break-all;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      댓글 (COMMENT)
+                                                    </p>
+                                                  </td>
+                                                </tr>
+                                              </tbody>
+                                            </table>
+                                            <table
+                                              align="center"
+                                              width="100%"
+                                              border="0"
+                                              cellpadding="0"
+                                              cellspacing="0"
+                                              role="presentation"
+                                              style="border-bottom:1px solid #f0e4da">
+                                              <tbody style="width:100%">
+                                                <tr style="width:100%">
+                                                  <td
+                                                    width="112"
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 12px 10px 0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      콘텐츠 ID
+                                                    </p>
+                                                  </td>
+                                                  <td
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 0;color:#222222;word-break:break-all;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      clz7x5p8k0099qz0z8z8z8z8z
+                                                    </p>
+                                                  </td>
+                                                </tr>
+                                              </tbody>
+                                            </table>
+                                            <table
+                                              align="center"
+                                              width="100%"
+                                              border="0"
+                                              cellpadding="0"
+                                              cellspacing="0"
+                                              role="presentation"
+                                              style="border-bottom:1px solid #f0e4da">
+                                              <tbody style="width:100%">
+                                                <tr style="width:100%">
+                                                  <td
+                                                    width="112"
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 12px 10px 0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      신고된 사용자
+                                                    </p>
+                                                  </td>
+                                                  <td
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 0;color:#222222;word-break:break-all;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      TARGET&amp;01 ·
+                                                      clz7x5p8k0005qz0z8z8z8z8z
+                                                    </p>
+                                                  </td>
+                                                </tr>
+                                              </tbody>
+                                            </table>
+                                            <table
+                                              align="center"
+                                              width="100%"
+                                              border="0"
+                                              cellpadding="0"
+                                              cellspacing="0"
+                                              role="presentation"
+                                              style="border-bottom:1px solid #f0e4da">
+                                              <tbody style="width:100%">
+                                                <tr style="width:100%">
+                                                  <td
+                                                    width="112"
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 12px 10px 0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      신고한 사용자
+                                                    </p>
+                                                  </td>
+                                                  <td
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 0;color:#222222;word-break:break-all;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      REPORTER&lt;1&gt; ·
+                                                      clz7x5p8k0001qz0z8z8z8z8z
+                                                    </p>
+                                                  </td>
+                                                </tr>
+                                              </tbody>
+                                            </table>
+                                            <table
+                                              align="center"
+                                              width="100%"
+                                              border="0"
+                                              cellpadding="0"
+                                              cellspacing="0"
+                                              role="presentation"
+                                              style="border-bottom:1px solid #f0e4da">
+                                              <tbody style="width:100%">
+                                                <tr style="width:100%">
+                                                  <td
+                                                    width="112"
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 12px 10px 0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      접수 시각
+                                                    </p>
+                                                  </td>
+                                                  <td
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 0;color:#222222;word-break:break-all;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      2026-10-26 18:00 (KST)
+                                                    </p>
+                                                  </td>
+                                                </tr>
+                                              </tbody>
+                                            </table>
+                                            <table
+                                              align="center"
+                                              width="100%"
+                                              border="0"
+                                              cellpadding="0"
+                                              cellspacing="0"
+                                              role="presentation"
+                                              style="border-bottom:1px solid #f0e4da">
+                                              <tbody style="width:100%">
+                                                <tr style="width:100%">
+                                                  <td
+                                                    width="112"
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 12px 10px 0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      처리 API
+                                                    </p>
+                                                  </td>
+                                                  <td
+                                                    valign="top"
+                                                    data-id="__react-email-column">
+                                                    <p
+                                                      style="font-size:14px;line-height:22px;margin:0;padding:10px 0;color:#222222;word-break:break-all;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                                      POST
+                                                      /v1/admin/reports/clz7x5p8k0123qz0z8z8z8z8z/resolution
+                                                    </p>
+                                                  </td>
+                                                </tr>
+                                              </tbody>
+                                            </table>
+                                          </td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                    <table
+                                      align="center"
+                                      width="100%"
+                                      border="0"
+                                      cellpadding="0"
+                                      cellspacing="0"
+                                      role="presentation"
+                                      style="margin-top:20px;border-radius:14px;background-color:#fff8f2">
+                                      <tbody>
+                                        <tr>
+                                          <td style="padding:16px 18px">
+                                            <p
+                                              style="font-size:13px;line-height:20px;margin:0 0 6px;font-weight:700;color:#222222;margin-top:0;margin-right:0;margin-bottom:6px;margin-left:0">
+                                              신고 내용
+                                            </p>
+                                            <p
+                                              style="font-size:14px;line-height:22px;margin:0;color:#222222;white-space:pre-wrap;word-break:break-word;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                              <span
+                                                >&lt;b&gt;&quot;굵게&quot;&lt;/b&gt;
+                                                &amp; &#x27;quote&#x27;</span
+                                              ><span><br />다음 줄</span>
+                                            </p>
+                                          </td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                    <table
+                                      align="center"
+                                      width="100%"
+                                      border="0"
+                                      cellpadding="0"
+                                      cellspacing="0"
+                                      role="presentation"
+                                      style="margin-top:12px;border-radius:14px;background-color:#ffe9df">
+                                      <tbody>
+                                        <tr>
+                                          <td style="padding:16px 18px">
+                                            <p
+                                              style="font-size:13px;line-height:20px;margin:0 0 6px;font-weight:700;color:#222222;margin-top:0;margin-right:0;margin-bottom:6px;margin-left:0">
+                                              처리 체크리스트
+                                            </p>
+                                            <p
+                                              style="font-size:14px;line-height:22px;margin:0;color:#222222;white-space:pre-wrap;word-break:break-word;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                              1) 콘텐츠 ID로 원문 확인
+                                            </p>
+                                            <p
+                                              style="font-size:14px;line-height:22px;margin:0;color:#222222;white-space:pre-wrap;word-break:break-word;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                              2) 약관 위반이면 콘텐츠 삭제·계정
+                                              제한
+                                            </p>
+                                            <p
+                                              style="font-size:14px;line-height:22px;margin:0;color:#222222;white-space:pre-wrap;word-break:break-word;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                              3) 처리 API로 조치 내용을 남겨
+                                              RESOLVED로 변경
+                                            </p>
+                                          </td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                    <table
+                                      align="center"
+                                      width="100%"
+                                      border="0"
+                                      cellpadding="0"
+                                      cellspacing="0"
+                                      role="presentation"
+                                      style="margin-top:24px;text-align:center">
+                                      <tbody>
+                                        <tr>
+                                          <td>
+                                            <a
+                                              href='https://api.example.com/api/admin/docs?a=1&amp;b="2"#/Admin/resolveUserReport'
+                                              style="line-height:20px;text-decoration:none;display:inline-block;max-width:100%;mso-padding-alt:0px;padding:12px 20px;border-radius:12px;background-color:#c2410c;color:#ffffff;font-size:15px;font-weight:600;padding-top:12px;padding-right:20px;padding-bottom:12px;padding-left:20px"
+                                              target="_blank"
+                                              ><span
+                                                ><!--[if mso]><i style="mso-font-width:500%;mso-text-raise:18px" hidden>&#8202;&#8202;</i><![endif]--></span
+                                              ><span
+                                                style="max-width:100%;display:inline-block;line-height:120%;mso-padding-alt:0px;mso-text-raise:9px"
+                                                >관리자 문서에서 처리하기</span
+                                              ><span
+                                                ><!--[if mso]><i style="mso-font-width:500%" hidden>&#8202;&#8202;&#8203;</i><![endif]--></span
+                                              ></a
+                                            >
+                                          </td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <table
+                      align="center"
+                      width="100%"
+                      border="0"
+                      cellpadding="0"
+                      cellspacing="0"
+                      role="presentation"
+                      style="text-align:center">
+                      <tbody>
+                        <tr>
+                          <td style="padding:24px 8px 0">
+                            <p
+                              style="font-size:13px;line-height:20px;margin:0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                              이 메일은 발신 전용이에요.<!-- -->
+                              <!-- -->문의<!-- -->
+                              <a
+                                href="mailto:support@example.com"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >support@example.com</a
+                              >
+                            </p>
+                            <p
+                              style="font-size:13px;line-height:20px;margin:0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                              <a
+                                href="https://aido.kr/ko/terms"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >이용약관</a
+                              >
+                              ·
+                              <a
+                                href="https://aido.kr/ko/privacy"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >개인정보처리방침</a
+                              >
+                              ·
+                              <a
+                                href="https://aido.kr/ko"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >aido.kr</a
+                              >
+                            </p>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <!--/$-->
+  </body>
+</html>
+",
+  "subject": "[아이두 신고접수] [괴롭힘·혐오] 댓글 · TARGET&01",
+  "text": "아이두
+
+사용자 신고 접수 알림
+
+
+새로운 신고가 접수되었습니다
+
+신고 ID
+
+clz7x5p8k0123qz0z8z8z8z8z
+
+사유
+
+괴롭힘·혐오 (HARASSMENT)
+
+대상 종류
+
+댓글 (COMMENT)
+
+콘텐츠 ID
+
+clz7x5p8k0099qz0z8z8z8z8z
+
+신고된 사용자
+
+TARGET&01 · clz7x5p8k0005qz0z8z8z8z8z
+
+신고한 사용자
+
+REPORTER<1> · clz7x5p8k0001qz0z8z8z8z8z
+
+접수 시각
+
+2026-10-26 18:00 (KST)
+
+처리 API
+
+POST /v1/admin/reports/clz7x5p8k0123qz0z8z8z8z8z/resolution
+
+신고 내용
+
+<b>"굵게"</b> & 'quote'
+다음 줄
+
+처리 체크리스트
+
+1) 콘텐츠 ID로 원문 확인
+
+2) 약관 위반이면 콘텐츠 삭제·계정 제한
+
+3) 처리 API로 조치 내용을 남겨 RESOLVED로 변경
+
+관리자 문서에서 처리하기 https://api.example.com/api/admin/docs?a=1&b="2"#/Admin/resolveUserReport
+
+이 메일은 발신 전용이에요. 문의 support@example.com
+
+이용약관 https://aido.kr/ko/terms · 개인정보처리방침 https://aido.kr/ko/privacy · aido.kr https://aido.kr/ko",
+}
+`;
+
+exports[`EmailTemplateMail — React Email 메일 렌더 > ko > verification 메일의 제목·HTML·텍스트 1`] = `
+{
+  "html": "<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html dir="ltr" lang="ko">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
+    <meta name="x-apple-disable-message-reformatting" />
+    <meta name="color-scheme" content="light" />
+    <meta name="supported-color-schemes" content="light" />
+    <title>아래 코드를 10분 안에 앱에 입력해주세요.</title>
+  </head>
+  <body lang="ko" dir="ltr" style="background-color:#fff8f2;margin:0;padding:0">
+    <!--$--><!--html--><!--head-->
+    <div
+      style="display:none;overflow:hidden;line-height:1px;opacity:0;max-height:0;max-width:0"
+      data-skip-in-text="true">
+      아래 코드를 10분 안에 앱에 입력해주세요.
+      <div>
+         ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿ ‌​‍﻿
+      </div>
+    </div>
+    <!--body-->
+    <table
+      border="0"
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      role="presentation"
+      align="center">
+      <tbody>
+        <tr>
+          <td
+            dir="ltr"
+            lang="ko"
+            style="margin:0;padding:32px 12px;background-color:#fff8f2;font-family:-apple-system, BlinkMacSystemFont, &#x27;Apple SD Gothic Neo&#x27;, Pretendard, &#x27;Malgun Gothic&#x27;, &#x27;Segoe UI&#x27;, Roboto, sans-serif;color:#222222;-webkit-text-size-adjust:100%">
+            <table
+              align="center"
+              width="100%"
+              border="0"
+              cellpadding="0"
+              cellspacing="0"
+              role="presentation"
+              style="max-width:560px;width:100%">
+              <tbody>
+                <tr style="width:100%">
+                  <td>
+                    <table
+                      align="center"
+                      width="100%"
+                      border="0"
+                      cellpadding="0"
+                      cellspacing="0"
+                      role="presentation"
+                      style="background-color:#ffffff;border:1px solid #f0e4da;border-top:4px solid #ff6b43;border-radius:20px">
+                      <tbody>
+                        <tr>
+                          <td style="padding:28px 28px 32px">
+                            <table
+                              align="center"
+                              width="100%"
+                              border="0"
+                              cellpadding="0"
+                              cellspacing="0"
+                              role="presentation">
+                              <tbody style="width:100%">
+                                <tr style="width:100%">
+                                  <td width="40" data-id="__react-email-column">
+                                    <img
+                                      alt="아이두"
+                                      height="40"
+                                      src="https://aido.kr/logo.png"
+                                      style="display:block;outline:none;border:none;text-decoration:none;border-radius:12px"
+                                      width="40" />
+                                  </td>
+                                  <td data-id="__react-email-column">
+                                    <p
+                                      style="font-size:18px;line-height:24px;margin:0;padding-left:12px;font-weight:700;color:#222222;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                      아이두
+                                    </p>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                            <table
+                              align="center"
+                              width="100%"
+                              border="0"
+                              cellpadding="0"
+                              cellspacing="0"
+                              role="presentation">
+                              <tbody>
+                                <tr>
+                                  <td style="padding-top:24px">
+                                    <h1
+                                      style="margin:0 0 12px;font-size:24px;line-height:32px;font-weight:700;color:#222222">
+                                      이메일 인증 코드
+                                    </h1>
+                                    <p
+                                      style="font-size:16px;line-height:26px;margin:0 0 24px;color:#222222;margin-top:0;margin-right:0;margin-bottom:24px;margin-left:0">
+                                      아이두 가입을 마치려면 아래 코드를 앱에
+                                      입력해주세요.
+                                    </p>
+                                    <table
+                                      align="center"
+                                      width="100%"
+                                      border="0"
+                                      cellpadding="0"
+                                      cellspacing="0"
+                                      role="presentation"
+                                      style="background-color:#ffe9df;border-radius:16px;text-align:center">
+                                      <tbody>
+                                        <tr>
+                                          <td style="padding:20px 16px 24px">
+                                            <p
+                                              style="font-size:13px;line-height:20px;margin:0 0 8px;font-weight:600;color:#222222;margin-top:0;margin-right:0;margin-bottom:8px;margin-left:0">
+                                              인증 코드
+                                            </p>
+                                            <p
+                                              style="font-size:34px;line-height:44px;margin:0;padding-left:8px;font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, &#x27;Liberation Mono&#x27;, monospace;font-weight:700;letter-spacing:8px;color:#222222;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                              482916
+                                            </p>
+                                          </td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                    <p
+                                      style="font-size:14px;line-height:22px;margin:16px 0 0;color:#6b6b6b;margin-top:16px;margin-right:0;margin-bottom:0;margin-left:0">
+                                      코드는 10분 동안 쓸 수 있어요.
+                                    </p>
+                                    <hr
+                                      style="width:100%;border:none;border-color:transparent;border-top:1px solid #f0e4da;margin:24px 0" />
+                                    <p
+                                      style="font-size:14px;line-height:22px;margin:0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                      아이두에 가입하지 않았다면 이 메일을
+                                      무시해도 돼요.
+                                    </p>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <table
+                      align="center"
+                      width="100%"
+                      border="0"
+                      cellpadding="0"
+                      cellspacing="0"
+                      role="presentation"
+                      style="text-align:center">
+                      <tbody>
+                        <tr>
+                          <td style="padding:24px 8px 0">
+                            <p
+                              style="font-size:13px;line-height:20px;margin:0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                              이 메일은 발신 전용이에요.<!-- -->
+                              <!-- -->문의<!-- -->
+                              <a
+                                href="mailto:support@example.com"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >support@example.com</a
+                              >
+                            </p>
+                            <p
+                              style="font-size:13px;line-height:20px;margin:0;color:#6b6b6b;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                              <a
+                                href="https://aido.kr/ko/terms"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >이용약관</a
+                              >
+                              ·
+                              <a
+                                href="https://aido.kr/ko/privacy"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >개인정보처리방침</a
+                              >
+                              ·
+                              <a
+                                href="https://aido.kr/ko"
+                                style="color:#c2410c;text-decoration-line:underline;display:inline-block;padding:12px 2px"
+                                target="_blank"
+                                >aido.kr</a
+                              >
+                            </p>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <!--/$-->
+  </body>
+</html>
+",
+  "subject": "[아이두] 이메일 인증 코드",
+  "text": "아이두
+
+
+이메일 인증 코드
+
+아이두 가입을 마치려면 아래 코드를 앱에 입력해주세요.
+
+인증 코드
+
+482916
+
+코드는 10분 동안 쓸 수 있어요.
+
+----------------------------------------
+
+아이두에 가입하지 않았다면 이 메일을 무시해도 돼요.
+
+이 메일은 발신 전용이에요. 문의 support@example.com
+
+이용약관 https://aido.kr/ko/terms · 개인정보처리방침 https://aido.kr/ko/privacy · aido.kr https://aido.kr/ko",
+}
+`;

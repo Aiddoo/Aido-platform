@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { notificationNavigationSchema, notificationTypeSchema } from '@aido/api';
+import { notificationTypeSchema } from '@aido/api/common';
+import { notificationNavigationSchema } from '@aido/api/contracts/notification/v1';
 import { z } from 'zod';
 
 /** 서버 spec과 함께 읽는 대조표 한 줄. 앱은 알림 종류와 서버가 고른 navigation만 읽는다 */

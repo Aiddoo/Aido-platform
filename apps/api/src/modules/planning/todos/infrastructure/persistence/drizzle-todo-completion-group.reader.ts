@@ -15,14 +15,10 @@ import { todoDateCondition } from "./drizzle-todo-read.repository.js";
 
 @Injectable()
 export class DrizzleTodoCompletionGroupReader implements TodoCompletionGroupReaderPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
-  }
-
-  get #db() {
-    return this.#txHost.tx;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
   // 하루 조건을 구간 양끝으로 넓힌 것이다
@@ -65,5 +61,9 @@ export class DrizzleTodoCompletionGroupReader implements TodoCompletionGroupRead
       categoryColor: colors.get(group.categoryId) ?? null,
       todoCount: group.todoCount,
     }));
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

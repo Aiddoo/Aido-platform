@@ -4,11 +4,12 @@ import { eq, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 import { PgBoss } from "pg-boss";
 
-import { TODO_REMINDER_QUEUE } from "#api/modules/notification/notification-reminders.public";
 import { TodoReminderSchedulerAdapter } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-scheduler.adapter";
-import { DeleteTodoCategoryUseCase } from "#api/modules/planning/categories/application/use-cases/delete-todo-category.use-case";
-import { DrizzleTodoCategoryRepository } from "#api/modules/planning/categories/infrastructure/persistence/drizzle-todo-category.repository";
+import { TODO_REMINDER_QUEUE } from "#api/modules/notification/reminders/notification-reminders.public";
+import { DeleteTodoCategoryUseCase } from "#api/modules/planning/todo-categories/application/use-cases/delete-todo-category.use-case";
+import { DrizzleTodoCategoryRepository } from "#api/modules/planning/todo-categories/infrastructure/persistence/drizzle-todo-category.repository";
 import { RemoveCategoryTodosUseCase } from "#api/modules/planning/todos/application/use-cases/remove-category-todos.use-case";
+import { TodoId } from "#api/modules/planning/todos/domain/todo-id.vo";
 import { ReminderSchedulerAdapter } from "#api/modules/planning/todos/infrastructure/adapters/todo-reminder-scheduler.adapter";
 import { DrizzleTodoBulkRemoverAdapter } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-bulk-remover.adapter";
 import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
@@ -20,6 +21,7 @@ import {
 } from "#api/platform/database/schema/index";
 import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
 import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { FakeTodoCache } from "#test/doubles/planning/fake-todo-cache";
 import { FakeTodoCategoryCache } from "#test/doubles/planning/fake-todo-category-cache";
@@ -27,8 +29,9 @@ import { RecordingDomainEventPublisher } from "#test/doubles/planning/recording-
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { RecordingAfterCommitRegistry } from "#test/doubles/platform/recording-after-commit-registry";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
-import { TodoCategoryFixture, UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { countTodoRows, insertCategoryTodos } from "#test/fixtures/planning/category-todos.fixture";
+import { createTodoCategoryRowFixture } from "#test/fixtures/planning/todo-row.fixture";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -65,18 +68,23 @@ describe("카테고리 삭제 규모 측정 (할 일 5,000개)", () => {
     await migrator.stop({ graceful: true, timeout: 10_000, close: true });
     boss = new PgBoss({ connectionString, schema: SCHEMA, migrate: false, max: 3 });
     const transaction = createDatabaseTransactionFixture(client);
-    jobQueue = new PgBossJobQueueAdapter(boss, transaction.txHost, new JobQueueRegistry(), {
-      shutdownTimeoutMs: 10_000,
-      workerEnabled: true,
-    });
+    jobQueue = new PgBossJobQueueAdapter(
+      boss,
+      transaction.transactionHost,
+      new JobQueueRegistry(),
+      {
+        shutdownTimeoutMs: 10_000,
+        workerEnabled: true,
+      },
+    );
     await jobQueue.start();
     reminders = new ReminderSchedulerAdapter(
       new TodoReminderSchedulerAdapter(jobQueue, new DateClock()),
     );
     useCase = new DeleteTodoCategoryUseCase({
-      repository: new DrizzleTodoCategoryRepository(transaction.txHost, new DateClock()),
+      repository: new DrizzleTodoCategoryRepository(transaction.transactionHost, new DateClock()),
       categoryTodos: new RemoveCategoryTodosUseCase({
-        bulkRemover: new DrizzleTodoBulkRemoverAdapter(transaction.txHost),
+        bulkRemover: new DrizzleTodoBulkRemoverAdapter(transaction.transactionHost),
         reminderScheduler: reminders,
         todoCache: new FakeTodoCache(),
         afterCommit: new RecordingAfterCommitRegistry(),
@@ -84,7 +92,7 @@ describe("카테고리 삭제 규모 측정 (할 일 5,000개)", () => {
       cache: new FakeTodoCategoryCache(),
       todoCache: new FakeTodoCache(),
       afterCommit: new RecordingAfterCommitRegistry(),
-      mutationLock: new PostgresMutationLockAdapter(transaction.txHost),
+      mutationLock: new PostgresMutationLockAdapter(transaction.transactionHost),
       unitOfWork: transaction.uow,
       clock: new DateClock(),
       eventPublisher: new RecordingDomainEventPublisher(),
@@ -99,7 +107,7 @@ describe("카테고리 삭제 규모 측정 (할 일 5,000개)", () => {
   });
 
   async function insertUser(label: string): Promise<string> {
-    const created = UserFixture.create({
+    const created = createUserRowFixture({
       id: createEntityId(),
       email: `${label}-${createEntityId()}@example.com`,
       userTag: createEntityId().slice(-8).toUpperCase(),
@@ -113,7 +121,7 @@ describe("카테고리 삭제 규모 측정 (할 일 5,000개)", () => {
       .insert(todoCategory)
       .values(
         Array.from({ length: count }, (_, sortOrder) =>
-          omit(TodoCategoryFixture.create({ userId, sortOrder }), ["id"]),
+          omit(createTodoCategoryRowFixture({ userId, sortOrder }), ["id"]),
         ),
       )
       .returning({ id: todoCategory.id });
@@ -150,7 +158,11 @@ describe("카테고리 삭제 규모 측정 (할 일 5,000개)", () => {
       startDate: FUTURE_DATE,
     });
     await reminders.scheduleReminders(
-      seeded.scheduledTodos.map((scheduled) => ({ ...scheduled, userId })),
+      seeded.scheduledTodos.map((scheduled) => ({
+        todoId: TodoId.reconstitute(scheduled.todoId),
+        scheduledTime: scheduled.scheduledTime,
+        userId: UserId.reconstitute(userId),
+      })),
     );
     await client.execute(sql`ANALYZE`);
     return { userId, categoryId, targetId, seeded };

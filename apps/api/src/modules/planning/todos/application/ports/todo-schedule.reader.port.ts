@@ -1,13 +1,6 @@
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-/** 날씨와 겹치는지 볼, 아직 하지 않았고 시각이 정해진 할 일 한 건 */
-export interface TimedTodoView {
-  readonly id: number;
-  readonly userId: string;
-  readonly title: string;
-  /** 그날의 할 일 시각. 전날부터 이어지는 여러 날 할 일은 그날의 벽시계 시각이다 */
-  readonly scheduledAt: Temporal.Instant;
-}
+import type { TimedTodoReadModel } from "../read-models/timed-todo.read-model.js";
 
 export interface TimedTodoQuery {
   readonly userIds: readonly UserId[];
@@ -26,5 +19,5 @@ export abstract class TodoScheduleReaderPort {
    * 저장된 시각을, 전날 이전에 시작해 그날까지 이어지는 여러 날 할 일은 그날의 같은 벽시계 시각을 쓴다.
    * 시각이 이른 순, 같으면 id 순이다.
    */
-  abstract listPendingTimedTodos(query: TimedTodoQuery): Promise<TimedTodoView[]>;
+  abstract listPendingTimedTodos(query: TimedTodoQuery): Promise<TimedTodoReadModel[]>;
 }

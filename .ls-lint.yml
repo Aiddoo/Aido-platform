@@ -16,6 +16,9 @@ ls:
     .*.*.ts: regex:[^\s\S]
     .*.*.*.ts: regex:[^\s\S]
     .*.*.*.*.ts: regex:[^\s\S]
+    .tsx: regex:[^\s\S]
+    .*.tsx: regex:[^\s\S]
+    .*.*.tsx: regex:[^\s\S]
     .d.ts: kebab-case
     .aggregate.ts: kebab-case
     .aggregate.spec.ts: kebab-case
@@ -71,6 +74,9 @@ ls:
     .reader.ts: kebab-case
     .reader.spec.ts: kebab-case
     .reader.integration-spec.ts: kebab-case
+    .query-fragment.ts: kebab-case
+    .query-fragment.spec.ts: kebab-case
+    .query-fragment.integration-spec.ts: kebab-case
     .mapper.ts: kebab-case
     .mapper.spec.ts: kebab-case
     .mapper.integration-spec.ts: kebab-case
@@ -107,6 +113,9 @@ ls:
     .dto.ts: kebab-case
     .dto.spec.ts: kebab-case
     .dto.integration-spec.ts: kebab-case
+    .rate-limits.ts: kebab-case
+    .rate-limits.spec.ts: kebab-case
+    .rate-limits.integration-spec.ts: kebab-case
     .guard.ts: kebab-case
     .guard.spec.ts: kebab-case
     .guard.integration-spec.ts: kebab-case
@@ -128,6 +137,35 @@ ls:
     .config.ts: kebab-case
     .config.spec.ts: kebab-case
     .config.integration-spec.ts: kebab-case
+
+  # 서버에서 .tsx는 메일 템플릿(React Email) 폴더에만 둔다. 메일은 <이름>.email.tsx, 공용 부품은 접미사 없는 .tsx,
+  # @nestjs/mail 메일 클래스는 .mail.ts다
+  apps/api/src/modules/notification/email-messages/infrastructure/templates:
+    .dir: kebab-case
+    .gitkeep: regex:[^\s\S]
+    .ts: regex:[^\s\S]
+    .*.ts: regex:[^\s\S]
+    .*.*.ts: regex:[^\s\S]
+    .*.*.*.ts: regex:[^\s\S]
+    .tsx: kebab-case
+    .*.tsx: regex:[^\s\S]
+    .*.*.tsx: regex:[^\s\S]
+    .email.tsx: kebab-case
+    .mail.ts: kebab-case
+    .mail.spec.ts: kebab-case
+    .constants.ts: kebab-case
+    .messages.ts: kebab-case
+
+  # 언어별 TS 자원(조사·AI 지시문)은 locales/<언어>/에 언어마다 같은 이름의 .messages.ts로 둔다
+  # 폴더는 language[-Script]만 받는다. 지역 폴더는 LOCALE_FALLBACKS 항목과 함께 더하고 테스트는 두지 않는다
+  apps/api/src/modules/**/locales:
+    .dir: regex:(locales|[a-z]{2,3}(-[A-Z][a-z]{3})?)
+    .gitkeep: regex:[^\s\S]
+    .ts: regex:[^\s\S]
+    .*.ts: regex:[^\s\S]
+    .*.*.ts: regex:[^\s\S]
+    .*.*.*.ts: regex:[^\s\S]
+    .messages.ts: kebab-case
 
   packages/api/src:
     .gitkeep: regex:[^\s\S]

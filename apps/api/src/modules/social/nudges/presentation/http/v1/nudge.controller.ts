@@ -16,7 +16,7 @@ import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 import {
   CurrentUser,
   type CurrentUserPayload,
-} from "#api/modules/identity/identity-auth-http.public";
+} from "#api/modules/identity/sessions/identity-sessions.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
 import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
 import { UserIdParamDto } from "#api/platform/http/dtos/user-id-param.dto";
@@ -108,7 +108,7 @@ export class NudgeController {
 - \`message\` (선택): 메시지 (최대 200자)
 
 **제한**
-- 오늘의 할 일에만 콕 찌르기 가능
+- 오늘의, 아직 끝내지 않은 할 일에만 콕 찌르기 가능(끝낸 할 일도 NUDGE_1106)
 - FREE: 일 3회, ACTIVE: 무제한
 - 동일 Todo에 24시간 쿨다운`,
   })

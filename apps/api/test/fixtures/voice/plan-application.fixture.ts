@@ -1,7 +1,7 @@
 import {
   PlanApplication,
   type PlanApplicationPrimitives,
-} from "#api/modules/voice/action-plans/domain/plan-application.aggregate";
+} from "#api/modules/voice/plan-applications/domain/plan-application.aggregate";
 
 export const PLAN_APPLICATION_FIXTURE_NOW = Temporal.Instant.from("2027-01-04T03:00:00Z");
 export const PLAN_APPLICATION_FIXTURE_USER_ID = "clz7x5p8k0011qz0z8z8z8z8z";

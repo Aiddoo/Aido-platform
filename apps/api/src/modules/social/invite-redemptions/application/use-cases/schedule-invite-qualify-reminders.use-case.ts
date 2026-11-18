@@ -14,7 +14,7 @@ import type {
   ScheduledQualifyReminder,
 } from "../ports/invite-qualify-reminder-scheduler.port.js";
 import type { InviteRedemptionReaderPort } from "../ports/invite-redemption.reader.port.js";
-import type { QualifyReminderCandidate } from "../read-models/qualify-reminder-candidate.read-model.js";
+import type { QualifyReminderCandidateReadModel } from "../read-models/qualify-reminder-candidate.read-model.js";
 
 const QUALIFY_REMINDER_SCHEDULING = {
   BATCH_SIZE: 500,
@@ -41,7 +41,7 @@ export interface ScheduleInviteQualifyRemindersDependencies {
 }
 
 function toReminder(
-  candidate: QualifyReminderCandidate,
+  candidate: QualifyReminderCandidateReadModel,
   now: Temporal.Instant,
 ): ScheduledQualifyReminder[] {
   if (!hasOneActiveDayLeft(candidate.activeDayCount)) {
@@ -77,7 +77,7 @@ export class ScheduleInviteQualifyRemindersUseCase {
       return { scheduledCount: 0 };
     }
 
-    let after: QualifyReminderCandidate | null = null;
+    let after: QualifyReminderCandidateReadModel | null = null;
     let scheduledCount = 0;
     for (let batch = 0; batch < QUALIFY_REMINDER_SCHEDULING.MAX_BATCHES_PER_RUN; batch++) {
       const candidates = await inviteRedemptionReader.listQualifyReminderCandidates({

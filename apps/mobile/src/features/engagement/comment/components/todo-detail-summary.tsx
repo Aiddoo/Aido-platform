@@ -17,7 +17,6 @@ import { formatTodoTime } from '@src/features/planning/todo/utils/todo-time.view
 import { ThanksSummaryRow } from '@src/features/social/nudge/components/thanks-summary-row';
 import { TodoNudgeButton } from '@src/features/social/nudge/components/todo-nudge-button';
 import { TodoThanksPolicy } from '@src/features/social/nudge/domains/nudge-interaction.model';
-import { TodoNudgePolicy } from '@src/features/social/nudge/domains/todo-nudge.model';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -228,8 +227,6 @@ TodoDetailSummary.Metrics = function Metrics() {
   const fontScaledSize = useFontScaledSize();
   const [todoId] = useTodoId();
   const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
-  const todayKey = useTodayKey();
-  const canNudge = TodoNudgePolicy.canNudgeTodoInRange(detail, todayKey);
 
   return (
     <HStack gap={16} align="center" wrap="wrap">
@@ -243,7 +240,7 @@ TodoDetailSummary.Metrics = function Metrics() {
         }
         count={detail.metrics.viewCount}
       />
-      {canNudge && (
+      {detail.permissions.canNudge && (
         <TodoNudgeButton
           receiver={{
             id: detail.owner.id,

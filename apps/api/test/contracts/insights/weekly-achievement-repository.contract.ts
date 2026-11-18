@@ -141,19 +141,54 @@ export function describeWeeklyAchievementRepositoryContract(
       });
     });
 
-    it("한 해 전체 목록은 그 사용자·연도만 주 오름차순으로 준다", async () => {
+    it("그해까지 목록은 그 사용자의 그해·앞 해 기록을 연도·주 오름차순으로 주고 다음 해는 뺀다", async () => {
       // Given
       const repository = await createRepository();
       await saveWeeks(repository, [3, 1, 2]);
       await saveWeeks(repository, [5], { userId: OTHER.value });
-      await saveWeeks(repository, [52], { year: 2025 });
+      await saveWeeks(repository, [52, 51], { year: 2025 });
+      await saveWeeks(repository, [1], { year: 2027 });
 
       // When
-      const all = await repository.listAllByYear({ userId: USER, year: 2026 });
+      const all = await repository.listThroughYear({ userId: USER, year: 2026 });
 
       // Then
-      expect(weeksOf(all)).toEqual([1, 2, 3]);
-      expect(all.every((achievement) => achievement.isoWeek.year === 2026)).toBe(true);
+      expect(all.map(({ isoWeek }) => [isoWeek.year, isoWeek.week])).toEqual([
+        [2025, 51],
+        [2025, 52],
+        [2026, 1],
+        [2026, 2],
+        [2026, 3],
+      ]);
+    });
+
+    it("기록이 있는 연도는 그 사용자의 연도만 중복 없이 최근 해부터 준다", async () => {
+      // Given
+      const repository = await createRepository();
+      await saveWeeks(repository, [52, 53], { year: 2026 });
+      await saveWeeks(repository, [1], { year: 2027 });
+      await saveWeeks(repository, [10], { year: 2024 });
+      await saveWeeks(repository, [5], { userId: OTHER.value, year: 2028 });
+
+      // When
+      const years = await repository.listRecordedYears(USER);
+      const foreignYears = await repository.listRecordedYears(OTHER);
+
+      // Then
+      expect(years).toEqual([2027, 2026, 2024]);
+      expect(foreignYears).toEqual([2028]);
+    });
+
+    it("기록이 없는 사용자의 연도는 비어 있다", async () => {
+      // Given
+      const repository = await createRepository();
+      await saveWeeks(repository, [5], { userId: OTHER.value });
+
+      // When
+      const years = await repository.listRecordedYears(USER);
+
+      // Then
+      expect(years).toEqual([]);
     });
   });
 }

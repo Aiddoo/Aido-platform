@@ -1,8 +1,8 @@
-import { WeatherKitUsageMeterAdapter } from "#api/modules/weather/forecasts/infrastructure/adapters/weatherkit-usage-meter.adapter";
+import { WeatherKitUsageMeterAdapter } from "#api/modules/weather/weather-reports/infrastructure/adapters/weatherkit-usage-meter.adapter";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import { InMemoryUsageMeterAdapter } from "#test/mocks/in-memory-usage-meter.adapter";
-import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
+import { InMemoryUsageMeterAdapter } from "#test/doubles/platform/in-memory-usage-meter.adapter";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 
 /**
  * 날씨 공급자 어댑터가 쓰는 공용 회로·계량을 메모리로 만든다.

@@ -25,16 +25,12 @@ const INVITEE_UNIQUE_CONSTRAINT = "InviteRedemption_inviteeId_key";
 
 @Injectable()
 export class DrizzleInviteRedemptionRepository implements InviteRedemptionRepositoryPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
   readonly #clock: ClockPort;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
-    this.#txHost = txHost;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
+    this.#transactionHost = transactionHost;
     this.#clock = clock;
-  }
-
-  get #db() {
-    return this.#txHost.tx;
   }
 
   async save(redemption: InviteRedemption): Promise<void> {
@@ -155,5 +151,9 @@ export class DrizzleInviteRedemptionRepository implements InviteRedemptionReposi
       redemptionRow,
       activeDays.map((day) => day.localDate),
     );
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

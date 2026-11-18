@@ -1,10 +1,10 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import type { FriendshipRepositoryPort } from "#api/modules/social/friends/application/ports/friendship.repository.port";
+import type { FriendshipRepositoryPort } from "#api/modules/social/friendships/application/ports/friendship.repository.port";
 import type {
   Friendship,
   FriendshipPrimitives,
-} from "#api/modules/social/friends/domain/friendship.aggregate";
+} from "#api/modules/social/friendships/domain/friendship.aggregate";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   createFriendshipFixture,

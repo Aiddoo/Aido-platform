@@ -1,9 +1,9 @@
 import { Module } from "@nestjs/common";
 
-import { VoiceActionPlansModule } from "./action-plans/voice-action-plans.module.js";
-import { VoiceVoiceNotesModule } from "./voice-notes/voice-voice-notes.module.js";
+import { VoicePlanApplicationsModule } from "./plan-applications/voice-plan-applications.module.js";
+import { VoiceVoiceDigestsModule } from "./voice-digests/voice-voice-digests.module.js";
 
 @Module({
-  imports: [VoiceActionPlansModule, VoiceVoiceNotesModule],
+  imports: [VoicePlanApplicationsModule, VoiceVoiceDigestsModule],
 })
 export class VoiceModule {}

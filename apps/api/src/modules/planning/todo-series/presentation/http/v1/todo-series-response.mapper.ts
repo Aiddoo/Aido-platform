@@ -1,4 +1,4 @@
-import type { TodoRepeat, TodoSeriesResponse } from "@aido/api";
+import type { TodoRepeat, TodoSeriesResponse } from "@aido/api/contracts/todo/v1";
 import { match } from "ts-pattern";
 
 import type { TodoSeriesReadModel } from "../../../application/read-models/todo-series.read-model.js";

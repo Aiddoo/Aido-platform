@@ -1,6 +1,9 @@
-import { resolveRecipientLocale } from "#api/modules/notification/push/domain/recipient-locale.domain-service";
 import { SchedulerPreferenceReaderPort } from "#api/modules/notification/reminders/application/ports/scheduler-preference-reader.port";
-import type { UserLocaleMap } from "#api/modules/notification/reminders/application/read-models/scheduler.read-model";
+import {
+  type RecipientLocaleOf,
+  recipientLocaleOf,
+} from "#api/modules/notification/shared/domain/recipient-locale.domain-service";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { normalizeIanaTimezone } from "#api/shared/domain/time/time-zone-name";
 
 interface StoredPreference {
@@ -30,22 +33,14 @@ export class InMemorySchedulerPreferenceReader extends SchedulerPreferenceReader
     return [...timezones].filter((timezone) => normalizeIanaTimezone(timezone) != null);
   }
 
-  async findUserLocales(userIds: string[]): Promise<UserLocaleMap> {
-    return new Map(
-      userIds.flatMap((userId) => {
-        const preference = this.#preferences.get(userId);
-        return preference == null
-          ? []
-          : [
-              [
-                userId,
-                resolveRecipientLocale({
-                  storedLocale: preference.locale,
-                  lastRequestLocale: null,
-                }),
-              ] as const,
-            ];
-      }),
+  async getUserLocales(userIds: readonly UserId[]): Promise<RecipientLocaleOf> {
+    return recipientLocaleOf(
+      new Map(
+        userIds.flatMap(({ value: userId }) => {
+          const preference = this.#preferences.get(userId);
+          return preference == null ? [] : [[userId, preference.locale] as const];
+        }),
+      ),
     );
   }
 }

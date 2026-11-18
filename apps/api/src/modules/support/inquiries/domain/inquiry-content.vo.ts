@@ -15,8 +15,4 @@ export class InquiryContent extends ValueObject<string> {
     }
     return new InquiryContent(raw);
   }
-
-  static reconstitute(raw: string): InquiryContent {
-    return new InquiryContent(raw);
-  }
 }

@@ -25,49 +25,49 @@ import { AI_DATA_SHARING_CONSENT, AI_PROVIDER_IDS } from "@aido/api/vocabulary";
 import { omit, uniq } from "es-toolkit";
 import { match } from "ts-pattern";
 
-import { aiAssistanceGenerationConfig } from "#api/modules/ai-assistance/generation/ai-assistance-generation.config";
-import { AiGenerationError } from "#api/modules/ai-assistance/generation/application/ai-generation.errors";
-import { generateWithPrompt } from "#api/modules/ai-assistance/generation/application/messages/prompt-definition.messages";
-import type {
-  AiGenerationMeta,
-  AiGeneratorPort,
-} from "#api/modules/ai-assistance/generation/application/ports/ai-generator.port";
+import { quickPlanPrompt } from "#api/modules/ai-assistance/action-plan-drafts/application/messages/quick-plan-prompt.messages";
+import { voiceNoteDigestPrompt } from "#api/modules/ai-assistance/action-plan-drafts/application/messages/voice-note-digest-prompt.messages";
+import type { NormalizedActionPlan } from "#api/modules/ai-assistance/action-plan-drafts/domain/action-plan-drafts.constants";
+import { aiAssistanceAiGenerationsConfig } from "#api/modules/ai-assistance/ai-generations/ai-assistance-ai-generations.config";
+import { AiGenerationError } from "#api/modules/ai-assistance/ai-generations/application/ai-generations.errors";
+import { generateWithPrompt } from "#api/modules/ai-assistance/ai-generations/application/messages/prompt-definition.messages";
+import type { AiGeneratorPort } from "#api/modules/ai-assistance/ai-generations/application/ports/ai-generator.port";
+import type { AiGenerationMeta } from "#api/modules/ai-assistance/ai-generations/domain/ai-generation.aggregate";
 import {
   type AiProviderAdapter,
   AiProviderCatalog,
-} from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-provider.adapter";
-import { AiSdkGeneratorAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-sdk-generator.adapter";
-import { AiSpendBudgetAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/ai-spend-budget.adapter";
-import { AnthropicProviderAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/anthropic-provider.adapter";
-import { GoogleProviderAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/google-provider.adapter";
-import { OpenAiProviderAdapter } from "#api/modules/ai-assistance/generation/infrastructure/adapters/openai-provider.adapter";
-import { parseMemoPrompt } from "#api/modules/ai-assistance/parsing/application/messages/parse-memo-prompt.messages";
-import { parseTodoPrompt } from "#api/modules/ai-assistance/parsing/application/messages/parse-todo-prompt.messages";
-import { quickPlanPrompt } from "#api/modules/ai-assistance/planning/application/messages/quick-plan-prompt.messages";
-import { voiceNoteDigestPrompt } from "#api/modules/ai-assistance/planning/application/messages/voice-note-digest-prompt.messages";
-import type { NormalizedActionPlan } from "#api/modules/ai-assistance/planning/domain/action-plan-draft.constants";
-import type { ReportDraft } from "#api/modules/ai-assistance/reports/application/messages/report-content.wire";
+} from "#api/modules/ai-assistance/ai-generations/infrastructure/adapters/ai-provider.adapter";
+import { AiSdkGeneratorAdapter } from "#api/modules/ai-assistance/ai-generations/infrastructure/adapters/ai-sdk-generator.adapter";
+import { AiSpendBudgetAdapter } from "#api/modules/ai-assistance/ai-generations/infrastructure/adapters/ai-spend-budget.adapter";
+import { AnthropicProviderAdapter } from "#api/modules/ai-assistance/ai-generations/infrastructure/adapters/anthropic-provider.adapter";
+import { GoogleProviderAdapter } from "#api/modules/ai-assistance/ai-generations/infrastructure/adapters/google-provider.adapter";
+import { OpenAiProviderAdapter } from "#api/modules/ai-assistance/ai-generations/infrastructure/adapters/openai-provider.adapter";
+import { ReportDraftRejectedError } from "#api/modules/ai-assistance/ai-reports/application/ai-reports.errors";
 import {
   buildReportContext,
   type ReportContext,
-} from "#api/modules/ai-assistance/reports/application/messages/report-context.messages";
+} from "#api/modules/ai-assistance/ai-reports/application/messages/report-context.messages";
 import {
   buildReportEvidence,
-  ReportDraftRejectedError,
   type ReportNormalizeContext,
   reportPrompt,
-} from "#api/modules/ai-assistance/reports/application/messages/report-prompt.messages";
+} from "#api/modules/ai-assistance/ai-reports/application/messages/report-prompt.messages";
 import {
   type GeneratedReportContent,
   REPORT_MAX_TIPS,
   REPORT_TEXT_MAX_LENGTH,
-} from "#api/modules/ai-assistance/reports/domain/ai-report.constants";
+} from "#api/modules/ai-assistance/ai-reports/domain/ai-reports.constants";
 import {
   hasOnlyGroundedNames,
   isGroundedTip,
   keepGroundedInsight,
-} from "#api/modules/ai-assistance/reports/domain/report-grounding.domain-service";
-import type { SuggestionDraft } from "#api/modules/ai-assistance/suggestions/application/messages/suggestion-draft.wire";
+} from "#api/modules/ai-assistance/ai-reports/domain/report-grounding.domain-service";
+import { parseMemoPrompt } from "#api/modules/ai-assistance/parsed-drafts/application/messages/parse-memo-prompt.messages";
+import { parseTodoPrompt } from "#api/modules/ai-assistance/parsed-drafts/application/messages/parse-todo-prompt.messages";
+import type {
+  ReportDraft,
+  SuggestionDraft,
+} from "#api/modules/ai-assistance/shared/domain/ai-task-outputs.constants";
 import { suggestionPrompt } from "#api/modules/ai-assistance/suggestions/application/messages/suggestion-prompt.messages";
 import { countGraphemes } from "#api/shared/domain/utils/grapheme.util";
 
@@ -75,6 +75,7 @@ import { AI_THINKING_LEVELS } from "../../src/platform/config/schemas/ai.schema.
 import { OutboundPolicyRegistry } from "../../src/platform/resilience/outbound-policy.registry.js";
 import { SystemClock } from "../../src/platform/time/system-clock.js";
 import type { OperationalAlertPort } from "../../src/shared/application/ports/operational-alert.port.js";
+import { InMemoryUsageMeterAdapter } from "../../test/doubles/platform/in-memory-usage-meter.adapter.js";
 import {
   GOLDEN_MEMO_CATEGORY_ID,
   GOLDEN_TASKS,
@@ -103,7 +104,6 @@ import {
   type VoiceNoteDigestGoldenCase,
   voiceNoteDigestGoldenCaseSchema,
 } from "../../test/fixtures/ai-golden/golden-cases.js";
-import { InMemoryUsageMeterAdapter } from "../../test/mocks/in-memory-usage-meter.adapter.js";
 
 const THRESHOLDS = { date: 0.97, title: 0.9, duplicate: 0.9, noAction: 1 } as const;
 const SUGGESTION_THRESHOLDS = {
@@ -248,11 +248,9 @@ function parseTodoCase(golden: ParseTodoGoldenCase): EvalCase {
         { text: golden.input, timezone: golden.timezone, now, categories: [] },
         golden.locale,
       );
-      const { value, meta } = await generateWithPrompt(
-        generator,
-        parseTodoPrompt,
+      const { value, meta } = await generateWithPrompt(generator, parseTodoPrompt, {
         built,
-        {
+        context: {
           text: golden.input,
           timezone: golden.timezone,
           now,
@@ -260,10 +258,12 @@ function parseTodoCase(golden: ParseTodoGoldenCase): EvalCase {
           ownedCategoryIds: new Set<number>(),
           requestedCategoryId: undefined,
         },
-        options,
-      );
+        ...options,
+      });
       // golden은 출시 응답 칸만 기대값으로 갖는다. 새 선택 칸 repeat은 비교하지 않는다.
-      const { title, categoryId: _categoryId, repeat: _repeat, ...schedule } = value.parsedTodo;
+      const [parsedTodo] = value.draft.todos;
+      const intent = value.draft.hasAction() ? "TASK" : "NO_ACTION";
+      const { title, categoryId: _categoryId, repeat: _repeat, ...schedule } = parsedTodo;
       const {
         title: expectedTitle,
         categoryId: _expectedCategoryId,
@@ -272,13 +272,13 @@ function parseTodoCase(golden: ParseTodoGoldenCase): EvalCase {
       const date = same(schedule, expectedSchedule);
       const titleOk = titleMatches(expectedTitle, title);
       const noAction = golden.draft.intent === "NO_ACTION";
-      const intentOk = value.intent === golden.draft.intent;
+      const intentOk = intent === golden.draft.intent;
       return {
         meta,
         score: {
           metrics: { date, title: titleOk, ...(noAction && { noAction: intentOk }) },
           ...(!(date && titleOk && intentOk) && {
-            diff: { expected: golden.expected, actual: value.parsedTodo, intent: value.intent },
+            diff: { expected: golden.expected, actual: parsedTodo, intent },
           }),
         },
       };
@@ -303,11 +303,9 @@ function parseMemoCase(golden: ParseMemoGoldenCase): EvalCase {
         },
         golden.locale,
       );
-      const { value, meta } = await generateWithPrompt(
-        generator,
-        parseMemoPrompt,
+      const { value, meta } = await generateWithPrompt(generator, parseMemoPrompt, {
         built,
-        {
+        context: {
           content: golden.input,
           timezone: golden.timezone,
           now,
@@ -316,9 +314,9 @@ function parseMemoCase(golden: ParseMemoGoldenCase): EvalCase {
           defaultCategoryId: GOLDEN_MEMO_CATEGORY_ID,
           upcomingTodos: [],
         },
-        options,
-      );
-      const actual = value.parsedMemo.todos;
+        ...options,
+      });
+      const actual = value.draft.todos;
       const expected = golden.expected.todos;
       const sameCount = actual.length === expected.length;
       const toSchedule = (todo: (typeof actual)[number]) =>
@@ -339,7 +337,7 @@ function parseMemoCase(golden: ParseMemoGoldenCase): EvalCase {
         score: {
           metrics: { date, title },
           ...(!(date && title) && {
-            diff: { expected: golden.expected, actual: value.parsedMemo },
+            diff: { expected: golden.expected, actual: { todos: actual } },
           }),
         },
       };
@@ -359,13 +357,11 @@ function quickPlanCase(golden: QuickPlanGoldenCase): EvalCase {
         { text: golden.input, now, timezone: golden.timezone, ...golden.context },
         golden.locale,
       );
-      const { value, meta } = await generateWithPrompt(
-        generator,
-        quickPlanPrompt,
+      const { value, meta } = await generateWithPrompt(generator, quickPlanPrompt, {
         built,
-        planContext(golden),
-        options,
-      );
+        context: planContext(golden),
+        ...options,
+      });
       const clock = { now, timeZone: golden.timezone };
       return { meta, score: scorePlan(golden.expected, toPlanExpectation(value, clock)) };
     },
@@ -400,13 +396,11 @@ function voiceNoteDigestCase(golden: VoiceNoteDigestGoldenCase): EvalCase {
         },
         golden.locale,
       );
-      const { value, meta } = await generateWithPrompt(
-        generator,
-        voiceNoteDigestPrompt,
+      const { value, meta } = await generateWithPrompt(generator, voiceNoteDigestPrompt, {
         built,
-        { ...planContext(golden), sentenceCount: golden.sentences.length },
-        options,
-      );
+        context: { ...planContext(golden), sentenceCount: golden.sentences.length },
+        ...options,
+      });
       const plan: NormalizedActionPlan = value.plan;
       const clock = { now, timeZone: golden.timezone };
       const bookmarked = golden.sentences.flatMap(({ isBookmarked }, index) =>
@@ -476,9 +470,11 @@ function suggestionCase(golden: SuggestionGoldenCase): EvalCase {
       const { value, meta } = await generateWithPrompt(
         generator,
         { ...suggestionPrompt, normalize: (draft: SuggestionDraft) => draft },
-        suggestionPrompt.build(context, golden.locale),
-        { context, locale: golden.locale },
-        options,
+        {
+          built: suggestionPrompt.build(context, golden.locale),
+          context: { context, locale: golden.locale },
+          ...options,
+        },
       );
       return { meta, score: scorePicks(golden, value.picks) };
     },
@@ -612,9 +608,11 @@ function reportCase(golden: ReportGoldenCase): EvalCase {
             content: normalizeReportOrNull(draft, normalizeContext),
           }),
         },
-        reportPrompt.build(context, golden.locale),
-        { context, locale: golden.locale },
-        options,
+        {
+          built: reportPrompt.build(context, golden.locale),
+          context: { context, locale: golden.locale },
+          ...options,
+        },
       );
       return { meta, score: scoreReport(golden, context, value.draft, value.content) };
     },
@@ -677,7 +675,7 @@ const THINKING_ENV = {
 /** --provider·AI_EVAL_THINKING을 운영 설정 env에 덮어 실제 생성 체인을 만든다. */
 function createGenerator(task: GoldenTask, provider: string | undefined) {
   const thinking = AI_THINKING_LEVELS.find((level) => level === process.env.AI_EVAL_THINKING);
-  const config = aiAssistanceGenerationConfig.parse({
+  const config = aiAssistanceAiGenerationsConfig.parse({
     ...process.env,
     ...(provider != null && { AI_PROVIDER_ORDER: provider }),
     ...(thinking != null && { [THINKING_ENV[task]]: thinking }),

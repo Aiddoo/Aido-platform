@@ -1,4 +1,4 @@
-import { blockedUsersResponseSchema } from '@aido/api';
+import { blockedUsersResponseSchema } from '@aido/api/contracts/user-block/v1';
 
 import { blockedUserSchema } from '../domains/user-block.model';
 import { toBlockedUsersPage } from './user-block.mapper';

@@ -1,7 +1,7 @@
 import type { ReminderWeatherReport } from "#api/modules/notification/reminders/application/ports/reminder-weather-report.reader.port";
-import { ReadWeatherReportUseCase } from "#api/modules/weather/forecasts/application/use-cases/read-weather-report.use-case";
-import { ReadWeatherReportsUseCase } from "#api/modules/weather/forecasts/application/use-cases/read-weather-reports.use-case";
-import { WeatherReportCache } from "#api/modules/weather/forecasts/infrastructure/cache/weather-report.cache";
+import { ReadWeatherReportUseCase } from "#api/modules/weather/weather-reports/application/use-cases/read-weather-report.use-case";
+import { ReadWeatherReportsUseCase } from "#api/modules/weather/weather-reports/application/use-cases/read-weather-reports.use-case";
+import { WeatherReportCache } from "#api/modules/weather/weather-reports/infrastructure/cache/weather-report.cache";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
@@ -13,10 +13,14 @@ import { StubWeatherReminderReader } from "#test/doubles/notification/stub-weath
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { StubTimezoneResolver } from "#test/doubles/weather/stub-timezone-resolver";
+import { StubWeatherProviderBudget } from "#test/doubles/weather/stub-weather-provider-budget";
 import { StubWeatherReportProvider } from "#test/doubles/weather/stub-weather-report-provider";
-import { weatherReportFixture } from "#test/fixtures/weather.fixture";
+import { createWeatherReportFixture } from "#test/fixtures/weather/weather-report.fixture";
 
-import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
+import {
+  type TimezoneContext,
+  timezoneContextAt,
+} from "../../domain/local-clock.domain-service.js";
 import type { ReminderWeatherReportReaderPort } from "../ports/reminder-weather-report.reader.port.js";
 import { SendWeatherMorningUseCase } from "./send-weather-morning.use-case.js";
 
@@ -26,10 +30,11 @@ const NOW = new Date("2026-11-01T22:00:00.000Z");
 const SEOUL = { latitude: 37.5665, longitude: 126.978 };
 const TOKYO = { latitude: 35.6762, longitude: 139.6503 };
 
-const ctx = (overrides: Partial<TimezoneContext> = {}): TimezoneContext => ({
+const timezoneContext = (overrides: Partial<TimezoneContext> = {}): TimezoneContext => ({
   timezones: ["Asia/Seoul"],
   localHour: 7,
   localMinute: 0,
+  reminderTimes: [{ hour: 7, minute: 0 }],
   dayOfWeek: 1,
   today: Temporal.PlainDate.from("2026-11-02"),
   tomorrow: Temporal.PlainDate.from("2026-11-03"),
@@ -47,7 +52,7 @@ function seoulReport(
   },
   timezone = "Asia/Seoul",
 ): ReminderWeatherReport {
-  const report = weatherReportFixture(instantFromDate(NOW));
+  const report = createWeatherReportFixture({ fetchedAt: instantFromDate(NOW) });
   return {
     timezone,
     report: {
@@ -85,7 +90,7 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
     strategy = new SendWeatherMorningUseCase({
       reader,
       todoReader,
-      notificationPublisher: publisher,
+      notificationPublisher: publisher.batch,
       notificationHistoryReader: history,
       weatherReportReader: weatherReports,
       clock: new FixedClock(Temporal.Instant.fromEpochMilliseconds(NOW.getTime())),
@@ -93,9 +98,48 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
     });
   });
 
+  it.each([
+    {
+      name: "뉴욕 봄 틈 2027-03-14 02:30은 틈 뒤 첫 분",
+      timezone: "America/New_York",
+      time: { hour: 2, minute: 30 },
+      minutes: ["2027-03-14T07:00:00Z"],
+    },
+    {
+      name: "런던 봄 틈 2027-03-28 01:30은 틈 뒤 첫 분",
+      timezone: "Europe/London",
+      time: { hour: 1, minute: 30 },
+      minutes: ["2027-03-28T01:00:00Z"],
+    },
+    {
+      name: "뉴욕 가을 겹침 2027-11-07 01:30은 앞의 것만",
+      timezone: "America/New_York",
+      time: { hour: 1, minute: 30 },
+      minutes: ["2027-11-07T05:30:00Z", "2027-11-07T06:30:00Z"],
+    },
+    {
+      name: "런던 가을 겹침 2027-10-31 01:30은 앞의 것만",
+      timezone: "Europe/London",
+      time: { hour: 1, minute: 30 },
+      minutes: ["2027-10-31T00:30:00Z", "2027-10-31T01:30:00Z"],
+    },
+  ])("$name에 설정 시각을 한 번만 조회한다", async ({ timezone, time, minutes }) => {
+    // When
+    for (const minute of minutes) {
+      await strategy.execute(timezoneContextAt(Temporal.Instant.from(minute), timezone));
+    }
+
+    // Then
+    expect(
+      reader.userParams.map(({ times }) =>
+        times.some(({ hour, minute }) => hour === time.hour && minute === time.minute),
+      ),
+    ).toEqual([true]);
+  });
+
   it("대상이 없으면 날씨를 조회하지 않고 보내지 않는다", async () => {
     // When
-    const result = await strategy.execute(ctx());
+    const result = await strategy.execute(timezoneContext());
     // Then
     expect(result).toEqual({ sent: 0 });
     expect(weatherReports.requests).toEqual([]);
@@ -108,7 +152,7 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
     ];
     weatherReports.reports.set("abroad", seoulReport(undefined, "Asia/Tokyo"));
     // When
-    const result = await strategy.execute(ctx());
+    const result = await strategy.execute(timezoneContext());
     // Then
     expect(result).toEqual({ sent: 1 });
     expect(weatherReports.requests[0]).toEqual([{ key: "abroad", ...TOKYO, language: "en" }]);
@@ -121,7 +165,8 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
   });
 
   it("묶음으로 보내도 할 일 조회와 문구 시각은 사용자 행의 시간대를 쓴다", async () => {
-    // Given 서울 묶음 안의 상하이 사용자, 서울 15시(상하이 14시) 할 일에 강수 확률 70%
+    // Given
+    // 서울 묶음 안의 상하이 사용자, 서울 15시(상하이 14시) 할 일에 강수 확률 70%
     reader.usersWithLocation = [
       { id: "seoul", timezone: "Asia/Seoul", preference: { locale: "ko" }, location: SEOUL },
       { id: "shanghai", timezone: "Asia/Shanghai", preference: { locale: "ko" }, location: SEOUL },
@@ -132,7 +177,7 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
     weatherReports.reports.set("seoul", seoulReport());
     weatherReports.reports.set("shanghai", seoulReport({ hour: 15, precipitationChance: 70 }));
     // When
-    await strategy.execute(ctx());
+    await strategy.execute(timezoneContext());
     // Then
     expect(todoReader.queries.map(({ timezone, userIds }) => [timezone, userIds])).toEqual([
       ["Asia/Seoul", [UserId.reconstitute("seoul")]],
@@ -144,14 +189,14 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
   });
 
   it("오늘 할 일이 비와 겹치면 그 할 일과 옮기기 링크를 보낸다", async () => {
-    // Given 15시 '한강 산책'에 강수 확률 70%
+    // Given
     reader.usersWithLocation = [
       { id: "u1", timezone: "Asia/Seoul", preference: { locale: "ko" }, location: SEOUL },
     ];
     todoReader.todos = [{ id: 12, userId: "u1", title: "한강 산책", scheduledTime: atKst(15) }];
     weatherReports.reports.set("u1", seoulReport({ hour: 15, precipitationChance: 70 }));
     // When
-    await strategy.execute(ctx());
+    await strategy.execute(timezoneContext());
     // Then
     expect(sent()[0]).toMatchObject({
       title: "오후 3시 ‘한강 산책’ 때 비 소식이 있어요 ☔",
@@ -175,7 +220,7 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
     todoReader.todos = [{ id: 7, userId: "u1", title: "테니스", scheduledTime: atKst(13) }];
     weatherReports.reports.set("u1", seoulReport({ hour: 13, apparentTemperature: 34.6 }));
     // When
-    await strategy.execute(ctx());
+    await strategy.execute(timezoneContext());
     // Then
     expect(sent()[0]).toMatchObject({
       title: "오후 1시 ‘테니스’ 때 체감 35°C예요 ☀️",
@@ -190,7 +235,7 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
     ];
     weatherReports.reports.set("u1", seoulReport());
     // When
-    await strategy.execute(ctx());
+    await strategy.execute(timezoneContext());
     // Then
     const [notification] = sent();
     expect(notification).toMatchObject({
@@ -201,12 +246,12 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
   });
 
   it("예보를 받지 못한 사용자는 틀린 날씨 대신 앱에서 확인하라는 안내를 받는다", async () => {
-    // Given 리포트 없음
+    // Given
     reader.usersWithLocation = [
       { id: "u1", timezone: "Asia/Seoul", preference: { locale: "ko" }, location: SEOUL },
     ];
     // When
-    const result = await strategy.execute(ctx());
+    const result = await strategy.execute(timezoneContext());
     // Then
     expect(result).toEqual({ sent: 1 });
     expect(sent()[0]).toMatchObject({
@@ -226,7 +271,7 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
     reader.fallbackUsers = [{ id: "no-location", preference: null }];
     history.notified("WEATHER_MORNING", ["sent"]);
     // When
-    const result = await strategy.execute(ctx());
+    const result = await strategy.execute(timezoneContext());
     // Then
     expect(weatherReports.requests).toEqual([]);
     expect(todoReader.queries).toEqual([]);
@@ -239,12 +284,11 @@ describe("SendWeatherMorningUseCase — 아침 날씨 알림", () => {
 
   it("catch-up이면 그 사용자만 조회한다", async () => {
     // When
-    await strategy.execute(ctx({ userId: "user-specific" }));
+    await strategy.execute(timezoneContext({ userId: "user-specific" }));
     // Then
     expect(reader.userParams[0]).toMatchObject({
       userId: UserId.reconstitute("user-specific"),
-      hour: 7,
-      minute: 0,
+      times: [{ hour: 7, minute: 0 }],
     });
   });
 });
@@ -270,14 +314,14 @@ describe("SendWeatherMorningUseCase + weather v2 리포트 — 공급자 호출 
     clock = new FixedClock(Temporal.Instant.fromEpochMilliseconds(NOW.getTime()));
     memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
     provider = new StubWeatherReportProvider();
-    provider.report = weatherReportFixture(instantFromDate(NOW));
+    provider.report = createWeatherReportFixture({ fetchedAt: instantFromDate(NOW) });
     reader = new StubWeatherReminderReader();
     todoReader = new StubWeatherBriefingTodoReader();
     publisher = new RecordingNotificationPublisher();
     strategy = new SendWeatherMorningUseCase({
       reader,
       todoReader,
-      notificationPublisher: publisher,
+      notificationPublisher: publisher.batch,
       notificationHistoryReader: new StubNotificationHistoryReader(),
       weatherReportReader: weatherReportReaderAt(
         new ReadWeatherReportsUseCase({
@@ -286,6 +330,7 @@ describe("SendWeatherMorningUseCase + weather v2 리포트 — 공급자 호출 
             weatherReportCache: new WeatherReportCache(
               memory,
               new FixedClock(Temporal.Instant.fromEpochMilliseconds(NOW.getTime())),
+              new StubWeatherProviderBudget(),
             ),
             logger: new SilentLogger(),
           }),
@@ -310,18 +355,19 @@ describe("SendWeatherMorningUseCase + weather v2 리포트 — 공급자 호출 
       location: SEOUL,
     }));
     // When
-    const result = await strategy.execute(ctx());
+    const result = await strategy.execute(timezoneContext());
     // Then
     expect(result).toEqual({ sent: 30 });
     expect(provider.calls).toHaveLength(1);
   });
 
   it("캐시가 지난 뒤 공급자가 실패하면 마지막 스냅샷으로, 그것도 없으면 안내 알림으로 보낸다", async () => {
-    // Given 서울은 7시에 한 번 받아 두고, 9시에 공급자 장애
+    // Given
+    // 서울은 7시에 한 번 받아 두고, 9시에 공급자 장애
     reader.usersWithLocation = [
       { id: "seoul", timezone: "Asia/Seoul", preference: null, location: SEOUL },
     ];
-    await strategy.execute(ctx());
+    await strategy.execute(timezoneContext());
     const later = new Date(NOW.getTime() + 2 * HOUR_MS);
     vi.setSystemTime(later);
     clock.advanceBy({ hours: 2 });
@@ -332,7 +378,7 @@ describe("SendWeatherMorningUseCase + weather v2 리포트 — 공급자 호출 
     ];
     publisher.published.splice(0);
     // When
-    await strategy.execute(ctx({ localHour: 9 }));
+    await strategy.execute(timezoneContext({ localHour: 9 }));
     // Then
     const titles = new Map(publisher.published.map(({ data }) => [data.userId, data.title]));
     expect(titles.get("seoul")).toBe("오늘은 구름 조금, 8~16°C예요");
@@ -340,10 +386,10 @@ describe("SendWeatherMorningUseCase + weather v2 리포트 — 공급자 호출 
   });
 
   it("알림 대상이 아니면 WeatherKit을 부르지 않는다", async () => {
-    // Given 위치 없는 사용자만
+    // Given
     reader.fallbackUsers = [{ id: "no-location", preference: null }];
     // When
-    await strategy.execute(ctx());
+    await strategy.execute(timezoneContext());
     // Then
     expect(provider.calls).toEqual([]);
   });

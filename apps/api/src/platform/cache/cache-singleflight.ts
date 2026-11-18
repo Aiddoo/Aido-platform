@@ -1,7 +1,7 @@
 import {
   type CacheStorePort,
   type CacheValueSchema,
-  type CacheWrapTtlMs,
+  type CacheWrapRequest,
   resolveWrapTtlMs,
 } from "./cache-store.port.js";
 
@@ -14,10 +14,7 @@ export class CacheSingleflight {
 
   async wrap<T>(
     store: Pick<CacheStorePort, "get" | "set">,
-    key: string,
-    schema: CacheValueSchema<T>,
-    factory: () => Promise<T>,
-    ttlMs: CacheWrapTtlMs<T> | undefined,
+    { key, schema, factory, ttlMs }: CacheWrapRequest<T>,
   ): Promise<T> {
     const cached = await store.get(key, schema);
     // oxlint-disable-next-line aido/no-strict-nullish -- undefined는 cache miss, null은 저장해 둔 값이다
@@ -25,22 +22,26 @@ export class CacheSingleflight {
       return cached;
     }
 
+    return this.coalesce(key, schema, async () => {
+      const value = await factory();
+      if (value != null) {
+        await store.set(key, value, resolveWrapTtlMs(ttlMs, value));
+      }
+      return value;
+    });
+  }
+
+  // 같은 key로 진행 중인 load가 있으면 그 결과를 함께 기다린다
+  async coalesce<T>(key: string, schema: CacheValueSchema<T>, load: () => Promise<T>): Promise<T> {
     const pending = this.#loads.get(key);
     if (pending != null) {
       return pending.then((value) => schema.parse(value));
     }
 
-    const load = factory()
-      .then(async (value) => {
-        if (value != null) {
-          await store.set(key, value, resolveWrapTtlMs(ttlMs, value));
-        }
-        return value;
-      })
-      .finally(() => {
-        this.#loads.delete(key);
-      });
-    this.#loads.set(key, load);
-    return load;
+    const started = load().finally(() => {
+      this.#loads.delete(key);
+    });
+    this.#loads.set(key, started);
+    return started;
   }
 }

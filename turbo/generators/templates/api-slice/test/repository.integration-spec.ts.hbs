@@ -1,11 +1,11 @@
 import { Drizzle{{pascalCase aggregate}}Repository } from "#api/modules/{{context}}/{{slice}}/infrastructure/persistence/drizzle-{{aggregate}}.repository";
 import { user } from "#api/platform/database/schema/index";
 import { describe{{pascalCase aggregate}}RepositoryContract } from "#test/contracts/{{context}}/{{aggregate}}-repository.contract";
-import { UserFixture } from "#test/fixtures/index";
 import {
   {{constantCase aggregate}}_FIXTURE_OTHER_USER_ID,
   {{constantCase aggregate}}_FIXTURE_USER_ID,
 } from "#test/fixtures/{{context}}/{{aggregate}}.fixture";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -23,8 +23,8 @@ describe("Drizzle{{pascalCase aggregate}}Repository (실제 PostgreSQL)", () => 
     await client
       .insert(user)
       .values([
-        UserFixture.create({ id: {{constantCase aggregate}}_FIXTURE_USER_ID }),
-        UserFixture.create({ id: {{constantCase aggregate}}_FIXTURE_OTHER_USER_ID }),
+        createUserRowFixture({ id: {{constantCase aggregate}}_FIXTURE_USER_ID }),
+        createUserRowFixture({ id: {{constantCase aggregate}}_FIXTURE_OTHER_USER_ID }),
       ]);
   });
 
@@ -33,7 +33,7 @@ describe("Drizzle{{pascalCase aggregate}}Repository (실제 PostgreSQL)", () => 
   });
 
   describe{{pascalCase aggregate}}RepositoryContract(async () => {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new Drizzle{{pascalCase aggregate}}Repository(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new Drizzle{{pascalCase aggregate}}Repository(transactionHost);
   });
 });

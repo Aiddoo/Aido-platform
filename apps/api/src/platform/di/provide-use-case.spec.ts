@@ -50,11 +50,17 @@ describe("provideUseCase — 타입 검사되는 UseCase 조립", () => {
       logger: LoggerToken;
     };
 
-    // When & Then
-    expectTypeOf<ValidTokens>().toExtend<StampTokens>();
-    expectTypeOf<MissingKey>().not.toExtend<StampTokens>();
-    expectTypeOf<WrongClassToken>().not.toExtend<StampTokens>();
-    expectTypeOf<LoggerInClockSlot>().not.toExtend<StampTokens>();
+    // When
+    const validTokens = expectTypeOf<ValidTokens>();
+    const missingKey = expectTypeOf<MissingKey>();
+    const wrongClassToken = expectTypeOf<WrongClassToken>();
+    const loggerInClockSlot = expectTypeOf<LoggerInClockSlot>();
+
+    // Then
+    validTokens.toExtend<StampTokens>();
+    missingKey.not.toExtend<StampTokens>();
+    wrongClassToken.not.toExtend<StampTokens>();
+    loggerInClockSlot.not.toExtend<StampTokens>();
   });
 
   it("abstract class 토큰과 logger를 이름대로 넣어 UseCase를 만든다", async () => {

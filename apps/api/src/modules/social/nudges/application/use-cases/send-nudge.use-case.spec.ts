@@ -1,8 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { NudgeTargetTodo } from "#api/modules/social/nudges/domain/nudge-target-todo.vo";
-import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
@@ -31,7 +30,7 @@ const SENDER_ID = UserId.reconstitute(NUDGE_FIXTURE_SENDER_ID);
 const DAILY_LIMIT = 3;
 
 // 잠금과 대상 할 일 조회 순서를 남기고, 잠금을 기다리는 동안 시계를 흘린다
-class OrderedLock extends MutationLockPort {
+class OrderedLock extends RecordingMutationLock {
   readonly #events: string[];
   readonly #clock: FixedClock | null;
 
@@ -41,7 +40,7 @@ class OrderedLock extends MutationLockPort {
     this.#clock = clock;
   }
 
-  async acquire(): Promise<void> {
+  override async acquire(): Promise<void> {
     this.#events.push("lock");
     this.#clock?.advanceBy({ milliseconds: 200 });
   }
@@ -118,7 +117,10 @@ describe("SendNudgeUseCase — 친구의 할 일에 콕 보내기", () => {
       createdAt: NUDGE_FIXTURE_NOW,
     });
     expect(mutationLock.acquiredKeys).toEqual([
-      [NudgeLockKeys.dailyQuota(SENDER_ID), NudgeLockKeys.cooldown(SENDER_ID, todoId)],
+      [
+        NudgeLockKeys.dailyQuota(SENDER_ID),
+        NudgeLockKeys.cooldown(SENDER_ID, TodoId.reconstitute(todoId)),
+      ],
     ]);
     expect(countCache.invalidatedUserIds).toEqual([
       NUDGE_FIXTURE_SENDER_ID,
@@ -169,6 +171,13 @@ describe("SendNudgeUseCase — 친구의 할 일에 콕 보내기", () => {
       name: "오늘이 아닌 할 일",
       receiverId: NUDGE_FIXTURE_RECEIVER_ID,
       todo: { startDate: NUDGE_FIXTURE_TODAY.subtract({ days: 1 }) },
+      expected: (todoId: number) => ({ errorCode: ErrorCode.NUDGE_1106, details: { todoId } }),
+    },
+    {
+      // 출시 앱도 아는 NUDGE_1106이고, 저장하지 않으니 오늘 횟수에 세지 않는다
+      name: "이미 끝낸 할 일",
+      receiverId: NUDGE_FIXTURE_RECEIVER_ID,
+      todo: { completed: true },
       expected: (todoId: number) => ({ errorCode: ErrorCode.NUDGE_1106, details: { todoId } }),
     },
   ])("$name에는 보내지 않고 저장·알림도 남기지 않는다", async ({ receiverId, todo, expected }) => {

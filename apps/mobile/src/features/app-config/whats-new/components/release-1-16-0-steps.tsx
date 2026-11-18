@@ -1,4 +1,4 @@
-import { SUGGESTION_ANALYSIS_PERIOD_DAYS } from '@src/features/assistant/suggestion/constants/suggestion.constants';
+import { AI_SUGGESTION_LIMITS } from '@aido/api/vocabulary';
 import { formatDayCountLabel } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
@@ -93,7 +93,10 @@ export function Release1160Steps() {
   });
   const fling = useCompetingGestures(flingNext, flingBack);
 
-  const analysisPeriod = formatDayCountLabel(SUGGESTION_ANALYSIS_PERIOD_DAYS, dateFormatContext);
+  const analysisPeriod = formatDayCountLabel(
+    AI_SUGGESTION_LIMITS.ANALYSIS_PERIOD_DAYS,
+    dateFormatContext,
+  );
 
   return (
     <>

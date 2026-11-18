@@ -1,5 +1,6 @@
 import { type InfiniteData, queryOptions } from '@tanstack/react-query';
 
+import type { AchievementYears } from '../domains/achievement-years.model';
 import type { WeeklyAchievement, WeeklyAchievementPage } from '../domains/achievement.model';
 
 export const ACHIEVEMENT_QUERY_KEYS = {
@@ -8,6 +9,10 @@ export const ACHIEVEMENT_QUERY_KEYS = {
   weeklyList: ({ year }: { year: number }) =>
     queryOptions<InfiniteData<WeeklyAchievementPage, number | undefined>>({
       queryKey: [...ACHIEVEMENT_QUERY_KEYS.weeklyLists(), { year }],
+    }).queryKey,
+  weeklyYears: () =>
+    queryOptions<AchievementYears>({
+      queryKey: [...ACHIEVEMENT_QUERY_KEYS.all, 'weekly-years'],
     }).queryKey,
   weeklyDetail: ({ year, week }: { year: number; week: number }) =>
     queryOptions<WeeklyAchievement>({

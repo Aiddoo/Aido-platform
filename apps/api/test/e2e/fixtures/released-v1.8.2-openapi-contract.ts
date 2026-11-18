@@ -60,7 +60,7 @@ export const RELEASED_V1_8_2_OPENAPI_CONTRACT = {
 	/** 1.15.0: AI 파싱 응답(ParseTodoResponseDto·ParseMemoResponseDto)에 optional featureQuota만 추가. 구버전 Zod는 strip 모드라 모르는 키를 버린다. */
 	preAiFeatureQuotaSchemasFingerprint:
 		"b0f816b4d60b8b4e8e74d15fd9bc41a17e3b3d91ebfe9462961349aaee662fdf",
-	/** 1.15.0: 반복 할 일. CreateTodoDto·ConvertMemoToTodoDto 계열에 optional repeat, CreateTodoResponseDto에 optional series, 파싱 응답(ParseTodoResponseDto·ParseMemoResponseDto)에 optional repeat만 추가. 생략하면 동작이 같고 구버전 Zod는 strip 모드라 모르는 키를 버린다. test/e2e/todo-series.e2e-spec.ts가 출시 앱 요청 모양으로 동작을 증명한다. */
+	/** 1.15.0: 반복 할 일. CreateTodoDto·ConvertMemoToTodoDto 계열에 optional repeat, CreateTodoResponseDto에 optional series, 파싱 응답(ParseTodoResponseDto·ParseMemoResponseDto)에 optional repeat만 추가. 생략하면 동작이 같고 구버전 Zod는 strip 모드라 모르는 키를 버린다. test/e2e/planning/todo-series.e2e-spec.ts가 출시 앱 요청 모양으로 동작을 증명한다. */
 	preTodoRepeatSchemasFingerprint:
 		"7c9e14a775840b14ccebbab573b36a6c4fb463b13d3e16dc00aa3ab0ad91b8c5",
 	/** 1.15.0: 반복 할 일 범위 수정. UpdateTodoDto에 optional scope·repeat·checklist만 추가. 생략하면 THIS_ONLY·변경 없음으로 동작이 같고 구버전 Zod는 strip 모드라 모르는 키를 버린다. */
@@ -134,7 +134,7 @@ export const RELEASED_V1_8_2_OPENAPI_CONTRACT = {
 	/** 1.14.0: 날씨 v1을 Swagger에서 Deprecated(태그 `Weather v1 · Deprecated`, operation `deprecated: true`)로 표시했다. 태그·deprecated는 문서 표시용이라 fingerprint에서 description처럼 제외한다. 제외 전 값이 위 sourceCommit 문서와 같았으므로 같은 문서에서 다시 계산한 값이다. 경로·요청·응답·상태 코드는 같다. */
 	preDocumentationMetadataPathsFingerprint:
 		"e4d5933e1acf6d9839b39f0a1d220c8b33a046af81305306e5ba03cb1fc28369",
-	/** 1.15.0: DELETE /todos/{id}에 선택 query scope(생략 시 THIS_ONLY), POST·PATCH·DELETE /todos 오류 응답 enum에 반복 코드(TODO_0813·0841~0846)만 추가. 생략한 요청의 동작·응답 shape는 같고, 구버전 앱은 모르는 코드를 서버 message로 보여 준다. test/e2e/todo-series.e2e-spec.ts가 출시 앱 요청 모양으로 동작을 증명한다. */
+	/** 1.15.0: DELETE /todos/{id}에 선택 query scope(생략 시 THIS_ONLY), POST·PATCH·DELETE /todos 오류 응답 enum에 반복 코드(TODO_0813·0841~0846)만 추가. 생략한 요청의 동작·응답 shape는 같고, 구버전 앱은 모르는 코드를 서버 message로 보여 준다. test/e2e/planning/todo-series.e2e-spec.ts가 출시 앱 요청 모양으로 동작을 증명한다. */
 	preTodoSeriesScopePathsFingerprint:
 		"04721187159f3c02480c9f884ef2227b54067060af59612da5ab31fee46a1f1f",
 	/** 1.15.0: 친구의 할 일 목록(GET /todos/friends/{userId})의 응답 schema 이름만 TodoListResponseDto에서 FriendTodoListResponseDto로 나눴다. 소유자 응답에만 repeat·occurrenceDate를 더하려고 분리했고, 친구 응답의 필드·타입·상태 코드는 이전과 같다. */

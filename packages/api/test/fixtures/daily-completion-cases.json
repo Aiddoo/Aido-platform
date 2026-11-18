@@ -1,0 +1,180 @@
+{
+  "dayTally": [
+    {
+      "name": "끝낸 할 일과 남은 할 일이 섞인 날은 반올림한 완료율과 중복 없이 정렬한 색이다",
+      "date": "2026-11-05",
+      "todos": [
+        {
+          "startDate": "2026-11-05",
+          "endDate": null,
+          "completed": true,
+          "categoryColor": "#FF0000"
+        },
+        {
+          "startDate": "2026-11-05",
+          "endDate": null,
+          "completed": true,
+          "categoryColor": "#FF0000"
+        },
+        {
+          "startDate": "2026-11-05",
+          "endDate": null,
+          "completed": false,
+          "categoryColor": "#0000FF"
+        }
+      ],
+      "expected": {
+        "totalTodos": 3,
+        "completedTodos": 2,
+        "isComplete": false,
+        "completionRate": 67,
+        "categoryColors": ["#0000FF", "#FF0000"]
+      }
+    },
+    {
+      "name": "199/200처럼 반올림하면 100%여도 하나라도 남은 날은 99다",
+      "date": "2026-11-05",
+      "todos": [
+        {
+          "startDate": "2026-11-05",
+          "endDate": null,
+          "completed": true,
+          "categoryColor": "#FF0000",
+          "count": 199
+        },
+        {
+          "startDate": "2026-11-05",
+          "endDate": null,
+          "completed": false,
+          "categoryColor": "#0000FF"
+        }
+      ],
+      "expected": {
+        "totalTodos": 200,
+        "completedTodos": 199,
+        "isComplete": false,
+        "completionRate": 99,
+        "categoryColors": ["#0000FF", "#FF0000"]
+      }
+    },
+    {
+      "name": "모두 끝낸 날은 달성한 날이고 완료율 100이다",
+      "date": "2026-11-05",
+      "todos": [
+        {
+          "startDate": "2026-11-05",
+          "endDate": null,
+          "completed": true,
+          "categoryColor": "#a0a0a0"
+        },
+        {
+          "startDate": "2026-11-05",
+          "endDate": "2026-11-05",
+          "completed": true,
+          "categoryColor": "#FF0000"
+        }
+      ],
+      "expected": {
+        "totalTodos": 2,
+        "completedTodos": 2,
+        "isComplete": true,
+        "completionRate": 100,
+        "categoryColors": ["#FF0000", "#a0a0a0"]
+      }
+    },
+    {
+      "name": "하나도 끝내지 않은 날은 완료율 0이다",
+      "date": "2026-11-05",
+      "todos": [
+        {
+          "startDate": "2026-11-05",
+          "endDate": null,
+          "completed": false,
+          "categoryColor": "#FF0000"
+        }
+      ],
+      "expected": {
+        "totalTodos": 1,
+        "completedTodos": 0,
+        "isComplete": false,
+        "completionRate": 0,
+        "categoryColors": ["#FF0000"]
+      }
+    },
+    {
+      "name": "여러 날 할 일은 시작일·끝날·가운데 날 모두에 세고 1/3은 33이다",
+      "date": "2026-11-05",
+      "todos": [
+        {
+          "startDate": "2026-11-03",
+          "endDate": "2026-11-07",
+          "completed": false,
+          "categoryColor": "#00FF00"
+        },
+        {
+          "startDate": "2026-11-05",
+          "endDate": "2026-11-09",
+          "completed": false,
+          "categoryColor": "#0000FF"
+        },
+        {
+          "startDate": "2026-11-01",
+          "endDate": "2026-11-05",
+          "completed": true,
+          "categoryColor": "#FF0000"
+        }
+      ],
+      "expected": {
+        "totalTodos": 3,
+        "completedTodos": 1,
+        "isComplete": false,
+        "completionRate": 33,
+        "categoryColors": ["#0000FF", "#00FF00", "#FF0000"]
+      }
+    },
+    {
+      "name": "연말·연초에 걸친 할 일은 해가 바뀐 날에도 센다",
+      "date": "2027-01-01",
+      "todos": [
+        {
+          "startDate": "2026-12-28",
+          "endDate": "2027-01-03",
+          "completed": true,
+          "categoryColor": "#FF0000"
+        }
+      ],
+      "expected": {
+        "totalTodos": 1,
+        "completedTodos": 1,
+        "isComplete": true,
+        "completionRate": 100,
+        "categoryColors": ["#FF0000"]
+      }
+    },
+    {
+      "name": "전날 끝난 할 일·다음 날 시작하는 할 일·전날 하루짜리만 있으면 그날 요약이 없다",
+      "date": "2026-11-05",
+      "todos": [
+        {
+          "startDate": "2026-11-01",
+          "endDate": "2026-11-04",
+          "completed": true,
+          "categoryColor": "#FF0000"
+        },
+        {
+          "startDate": "2026-11-06",
+          "endDate": "2026-11-08",
+          "completed": false,
+          "categoryColor": "#FF0000"
+        },
+        {
+          "startDate": "2026-11-04",
+          "endDate": null,
+          "completed": true,
+          "categoryColor": "#FF0000"
+        }
+      ],
+      "expected": null
+    }
+  ]
+}

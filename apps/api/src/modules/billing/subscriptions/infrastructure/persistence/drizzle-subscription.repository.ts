@@ -15,14 +15,10 @@ import { toSubscription, toSubscriptionRow } from "./subscription-row.mapper.js"
 
 @Injectable()
 export class DrizzleSubscriptionRepository implements SubscriptionRepositoryPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
-  }
-
-  get #db() {
-    return this.#txHost.tx;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
   async nextId(): Promise<SubscriptionId> {
@@ -92,5 +88,9 @@ export class DrizzleSubscriptionRepository implements SubscriptionRepositoryPort
           updatedAt: row.updatedAt,
         },
       });
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

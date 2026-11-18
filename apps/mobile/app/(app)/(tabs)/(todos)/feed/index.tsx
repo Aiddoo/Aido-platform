@@ -2,6 +2,7 @@ import { WhatsNewEntryNotice } from '@src/features/app-config/whats-new/componen
 import { useWhatsNewAutoOpen } from '@src/features/app-config/whats-new/hooks/use-whats-new-auto-open';
 import { useWhatsNewFeed } from '@src/features/app-config/whats-new/hooks/use-whats-new-feed';
 import { SuggestionEntry } from '@src/features/assistant/suggestion/components/suggestion-entry';
+import { invalidateEntitlements } from '@src/features/billing/subscription/queries/entitlement-cache';
 import { ActivationChecklist } from '@src/features/device/activation/components/activation-checklist';
 import { useMyPendingCoachmark } from '@src/features/device/coachmark/hooks/use-my-pending-coachmark';
 import { TodoCommentPane } from '@src/features/engagement/comment/components/todo-comment-pane';
@@ -257,8 +258,13 @@ function FriendFeed({ view }: { view: FriendFeedView }) {
 
   const queryClient = useQueryClient();
 
+  // 콕 남은 횟수는 권한 스냅샷이 원본이라 함께 다시 받는다
   const [isRefreshing, handleRefresh] = useRefresh(() =>
-    Promise.all([refreshFriendTodos(queryClient), refreshNudges(queryClient)]),
+    Promise.all([
+      refreshFriendTodos(queryClient),
+      refreshNudges(queryClient),
+      invalidateEntitlements(queryClient),
+    ]),
   );
 
   return (

@@ -1,7 +1,7 @@
-import type { InviterProgressReaderPort } from "#api/modules/social/invite-redemptions/social-invite-redemption-queries.public";
+import type { InviterProgressReaderPort } from "#api/modules/social/invite-redemptions/social-invite-redemptions.public";
 
 import type { Invite } from "../../domain/invite.aggregate.js";
-import type { MyInvite } from "../read-models/my-invite.read-model.js";
+import type { MyInviteReadModel } from "../read-models/my-invite.read-model.js";
 
 export interface SummarizeMyInviteQuery {
   readonly invite: Invite;
@@ -20,7 +20,7 @@ export class SummarizeMyInviteUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(query: SummarizeMyInviteQuery): Promise<MyInvite> {
+  async execute(query: SummarizeMyInviteQuery): Promise<MyInviteReadModel> {
     const { invite, now } = query;
     const progress = await this.#dependencies.inviterProgressReader.readProgress(
       invite.inviterId,

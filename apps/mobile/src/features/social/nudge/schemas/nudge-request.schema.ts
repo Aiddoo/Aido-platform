@@ -3,7 +3,7 @@ import type {
   createRemindNudgeSchema,
   replyToNudgeSchema,
   sendNudgeThanksSchema,
-} from '@aido/api';
+} from '@aido/api/contracts/nudge/v1';
 import type { z } from 'zod';
 
 export type CreateNudgeInput = z.infer<typeof createNudgeSchema>;

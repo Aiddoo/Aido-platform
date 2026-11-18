@@ -10,7 +10,7 @@ import type {
   DailyCompletionCachePort,
   DailyCompletionCacheRead,
 } from "../../application/ports/daily-completion-cache.port.js";
-import type { DailyCompletionRange } from "../../application/read-models/daily-completion-range.read-model.js";
+import type { DailyCompletionRangeReadModel } from "../../application/read-models/daily-completion-range.read-model.js";
 import type { DateRange } from "../../domain/date-range.vo.js";
 import {
   DAILY_COMPLETION_RANGE_ROW_SCHEMA,
@@ -33,60 +33,50 @@ export class DailyCompletionCache implements DailyCompletionCachePort {
 
   readRange(userId: UserId, range: DateRange): Promise<DailyCompletionCacheRead> {
     return this.#read(userId, (generation) =>
-      DailyCompletionCacheKey.range(
-        userId.value,
-        generation,
-        range.start.toString(),
-        range.end.toString(),
-      ),
+      DailyCompletionCacheKey.range(userId.value, generation, {
+        start: range.start.toString(),
+        end: range.end.toString(),
+      }),
     );
   }
 
   storeRangeIfCurrent(
     userId: UserId,
     generation: string,
-    value: DailyCompletionRange,
+    value: DailyCompletionRangeReadModel,
   ): Promise<void> {
-    return this.#storeIfCurrent(
-      userId,
+    return this.#storeIfCurrent(userId, {
       generation,
-      DailyCompletionCacheKey.range(
-        userId.value,
-        generation,
-        value.range.start.toString(),
-        value.range.end.toString(),
-      ),
+      key: DailyCompletionCacheKey.range(userId.value, generation, {
+        start: value.range.start.toString(),
+        end: value.range.end.toString(),
+      }),
       value,
-    );
+    });
   }
 
   readPublicRange(ownerUserId: UserId, range: DateRange): Promise<DailyCompletionCacheRead> {
     return this.#read(ownerUserId, (generation) =>
-      DailyCompletionCacheKey.publicRange(
-        ownerUserId.value,
-        generation,
-        range.start.toString(),
-        range.end.toString(),
-      ),
+      DailyCompletionCacheKey.publicRange(ownerUserId.value, generation, {
+        start: range.start.toString(),
+        end: range.end.toString(),
+      }),
     );
   }
 
   storePublicRangeIfCurrent(
     ownerUserId: UserId,
     generation: string,
-    value: DailyCompletionRange,
+    value: DailyCompletionRangeReadModel,
   ): Promise<void> {
-    return this.#storeIfCurrent(
-      ownerUserId,
+    return this.#storeIfCurrent(ownerUserId, {
       generation,
-      DailyCompletionCacheKey.publicRange(
-        ownerUserId.value,
-        generation,
-        value.range.start.toString(),
-        value.range.end.toString(),
-      ),
+      key: DailyCompletionCacheKey.publicRange(ownerUserId.value, generation, {
+        start: value.range.start.toString(),
+        end: value.range.end.toString(),
+      }),
       value,
-    );
+    });
   }
 
   async invalidate(userId: UserId): Promise<void> {
@@ -112,14 +102,20 @@ export class DailyCompletionCache implements DailyCompletionCachePort {
     if (verifiedGeneration !== generation) {
       return { generation: verifiedGeneration, value: null };
     }
-    return { generation, value: cached == null ? null : toDailyCompletionRange(userId, cached) };
+    return { generation, value: cached == null ? null : toDailyCompletionRange(cached) };
   }
 
   async #storeIfCurrent(
     userId: UserId,
-    generation: string,
-    key: string,
-    value: DailyCompletionRange,
+    {
+      generation,
+      key,
+      value,
+    }: {
+      readonly generation: string;
+      readonly key: string;
+      readonly value: DailyCompletionRangeReadModel;
+    },
   ): Promise<void> {
     if ((await this.#getGeneration(userId)) !== generation) {
       return;

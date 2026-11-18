@@ -1,6 +1,7 @@
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
+import { DrizzleUserBriefReader } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user-brief.reader";
 import { DrizzleInviteReader } from "#api/modules/social/invites/infrastructure/persistence/drizzle-invite.reader";
 import { DrizzleInviteRepository } from "#api/modules/social/invites/infrastructure/persistence/drizzle-invite.repository";
 import { InviteId } from "#api/modules/social/shared/domain/invite-id.vo";
@@ -40,13 +41,13 @@ describe("DrizzleInviteRepository (실제 PostgreSQL)", () => {
   });
 
   function createRepository(): DrizzleInviteRepository {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleInviteRepository(txHost, new DateClock());
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new DrizzleInviteRepository(transactionHost, new DateClock());
   }
 
   function createReader(): DrizzleInviteReader {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleInviteReader(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new DrizzleInviteReader(transactionHost, new DrizzleUserBriefReader(transactionHost));
   }
 
   describeInviteRepositoryContract(async () => ({

@@ -1,24 +1,25 @@
-import type { CurrentUserPayload } from "@aido/api/contracts/auth";
+import type { CurrentUserPayload } from "@aido/api/contracts/auth/v1";
 import { ErrorCode } from "@aido/api/errors";
 import { Header, Body, Controller, Delete, Get, HttpCode, HttpStatus, Patch } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { Throttle } from "@nestjs/throttler";
 
-import { CurrentUser } from "#api/modules/identity/auth/presentation/http/decorators/current-user.decorator";
+import { CurrentUser } from "#api/modules/identity/sessions/presentation/http/decorators/current-user.decorator";
 import {
   CurrentRequestSource,
   type RequestSource,
-} from "#api/modules/identity/auth/presentation/http/decorators/request-source.decorator";
-import { toRequestMetadata } from "#api/modules/identity/auth/presentation/http/v1/auth-request.mapper";
-import { AuthMapper } from "#api/modules/identity/auth/presentation/http/v1/auth-response.mapper";
-import { AUTH_THROTTLE } from "#api/modules/identity/auth/presentation/http/v1/auth-throttle.constants";
+} from "#api/modules/identity/sessions/presentation/http/decorators/request-source.decorator";
+import { toRequestMetadata } from "#api/modules/identity/sessions/presentation/http/v1/request-metadata.mapper";
+import {
+  toCurrentUserResponse,
+  toUpdateProfileResponse,
+} from "#api/modules/identity/users/presentation/http/v1/user-account-response.mapper";
 import {
   CurrentUserDto,
   DeleteAccountDto,
   DeleteAccountResponseDto,
   UpdateProfileDto,
   UpdateProfileResponseDto,
-} from "#api/modules/identity/auth/presentation/http/v1/auth.dto";
+} from "#api/modules/identity/users/presentation/http/v1/user-account.dto";
 import { API_VERSION } from "#api/platform/http/api-versioning";
 import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
 import { AppVersion } from "#api/platform/http/request-client/request-client.decorator";
@@ -30,11 +31,12 @@ import {
 import { ApiAppVersionHeader } from "#api/platform/http/swagger/decorators/api-header.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
-import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
+import { RateLimit } from "#api/platform/throttle/rate-limits";
 
 import { DeleteAccountUseCase } from "../../../application/use-cases/delete-account.use-case.js";
 import { GetCurrentUserUseCase } from "../../../application/use-cases/get-current-user.use-case.js";
 import { UpdateProfileUseCase } from "../../../application/use-cases/update-profile.use-case.js";
+import { UserRateLimits } from "../users.rate-limits.js";
 
 // 출시 경로 /auth/me·/auth/profile·/auth/account를 그대로 두고 사용자 slice가 맡는다
 @ApiTags(SWAGGER_TAGS.USER_AUTH)
@@ -89,7 +91,7 @@ export class UserAccountController {
       sessionId: user.sessionId,
       timezone,
     });
-    return AuthMapper.toCurrentUserResponse(result, appVersion);
+    return toCurrentUserResponse(result, appVersion);
   }
 
   @Patch("profile")
@@ -120,13 +122,12 @@ export class UserAccountController {
     @AppVersion() appVersion?: string,
   ) {
     const result = await this.#updateProfileUseCase.execute({ ...dto, userId: user.userId });
-    return AuthMapper.toUpdateProfileResponse(result, appVersion);
+    return toUpdateProfileResponse(result, appVersion);
   }
 
   @Delete("account")
   @HttpCode(HttpStatus.OK)
-  @ThrottleByUser()
-  @Throttle({ default: AUTH_THROTTLE.DELETE_ACCOUNT })
+  @RateLimit(UserRateLimits.deleteAccount)
   @ApiDoc({
     summary: "회원 탈퇴",
     operationId: "deleteAccount",

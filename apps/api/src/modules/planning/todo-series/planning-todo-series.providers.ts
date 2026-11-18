@@ -8,19 +8,26 @@ import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port"
 
 import { CategoryOwnershipPort } from "../todos/application/ports/category-ownership.port.js";
 import { TodoCachePort } from "../todos/application/ports/todo-cache.port.js";
+import { TodoOccurrenceWriterPort } from "../todos/application/ports/todo-occurrence-writer.port.js";
 import { TodoReadRepositoryPort } from "../todos/application/ports/todo-read.repository.port.js";
 import { TodoReminderSchedulerPort } from "../todos/application/ports/todo-reminder-scheduler.port.js";
 import { TodoRepositoryPort } from "../todos/application/ports/todo.repository.port.js";
 import { ApplyTodoEventsUseCase } from "../todos/application/use-cases/apply-todo-events.use-case.js";
 import { TodoSeriesOwnerPort } from "./application/ports/todo-series-owner.port.js";
 import { TodoSeriesRepositoryPort } from "./application/ports/todo-series.repository.port.js";
+import { ApplyFollowingTodosUpdateUseCase } from "./application/use-cases/apply-following-todos-update.use-case.js";
 import { CatchUpTodoSeriesUseCase } from "./application/use-cases/catch-up-todo-series.use-case.js";
+import { CheckTodoSeriesStartUseCase } from "./application/use-cases/check-todo-series-start.use-case.js";
+import { DeleteTodoOccurrencesUseCase } from "./application/use-cases/delete-todo-occurrences.use-case.js";
 import { GetTodoSeriesUseCase } from "./application/use-cases/get-todo-series.use-case.js";
 import { MaterializeDueTodoSeriesUseCase } from "./application/use-cases/materialize-due-todo-series.use-case.js";
 import { MaterializeTodoOccurrencesUseCase } from "./application/use-cases/materialize-todo-occurrences.use-case.js";
 import { MaterializeTodoSeriesUseCase } from "./application/use-cases/materialize-todo-series.use-case.js";
-import { PublishTodoCreationUseCase } from "./application/use-cases/publish-todo-creation.use-case.js";
+import { PublishFollowingTodosUpdateUseCase } from "./application/use-cases/publish-following-todos-update.use-case.js";
 import { PublishTodoSeriesEditUseCase } from "./application/use-cases/publish-todo-series-edit.use-case.js";
+import { PublishTodoSeriesStartedUseCase } from "./application/use-cases/publish-todo-series-started.use-case.js";
+import { PublishTodoSeriesStoppedUseCase } from "./application/use-cases/publish-todo-series-stopped.use-case.js";
+import { RemapFollowingOccurrencesUseCase } from "./application/use-cases/remap-following-occurrences.use-case.js";
 import { StartSeriesFromTodoUseCase } from "./application/use-cases/start-series-from-todo.use-case.js";
 import { StopTodoSeriesUseCase } from "./application/use-cases/stop-todo-series.use-case.js";
 import { UpdateFollowingTodosUseCase } from "./application/use-cases/update-following-todos.use-case.js";
@@ -32,9 +39,9 @@ import { DrizzleTodoSeriesRepository } from "./infrastructure/persistence/drizzl
 export const PLANNING_TODO_SERIES_PROVIDERS = [
   { provide: TodoSeriesRepositoryPort, useClass: DrizzleTodoSeriesRepository },
   { provide: TodoSeriesOwnerPort, useClass: TodoSeriesOwnerAdapter },
-  provideUseCase(PublishTodoCreationUseCase, {
+  provideUseCase(PublishTodoSeriesStartedUseCase, {
     todoCache: TodoCachePort,
-    logger: loggerFor(PublishTodoCreationUseCase),
+    logger: loggerFor(PublishTodoSeriesStartedUseCase),
   }),
   provideUseCase(PublishTodoSeriesEditUseCase, {
     todoCache: TodoCachePort,
@@ -42,6 +49,7 @@ export const PLANNING_TODO_SERIES_PROVIDERS = [
   }),
   provideUseCase(MaterializeTodoOccurrencesUseCase, {
     todoRepository: TodoRepositoryPort,
+    occurrenceWriter: TodoOccurrenceWriterPort,
     todoReminder: TodoReminderSchedulerPort,
     applyTodoEvents: ApplyTodoEventsUseCase,
   }),
@@ -49,7 +57,7 @@ export const PLANNING_TODO_SERIES_PROVIDERS = [
     clock: ClockPort,
     seriesRepository: TodoSeriesRepositoryPort,
     materializer: MaterializeTodoOccurrencesUseCase,
-    effects: PublishTodoCreationUseCase,
+    effects: PublishTodoSeriesEditUseCase,
     unitOfWork: UnitOfWorkPort,
     mutationLock: MutationLockPort,
   }),
@@ -71,35 +79,65 @@ export const PLANNING_TODO_SERIES_PROVIDERS = [
   provideUseCase(GetTodoSeriesUseCase, { seriesRepository: TodoSeriesRepositoryPort }),
   provideUseCase(StopTodoSeriesUseCase, {
     todoRepository: TodoRepositoryPort,
+    occurrenceWriter: TodoOccurrenceWriterPort,
     seriesRepository: TodoSeriesRepositoryPort,
     todoReminder: TodoReminderSchedulerPort,
-    effects: PublishTodoSeriesEditUseCase,
     mutationLock: MutationLockPort,
     applyTodoEvents: ApplyTodoEventsUseCase,
-    logger: loggerFor(StopTodoSeriesUseCase),
+  }),
+  provideUseCase(PublishTodoSeriesStoppedUseCase, {
+    effects: PublishTodoSeriesEditUseCase,
+    logger: loggerFor(PublishTodoSeriesStoppedUseCase),
+  }),
+  provideUseCase(CheckTodoSeriesStartUseCase, {
+    todoRepository: TodoRepositoryPort,
+    seriesRepository: TodoSeriesRepositoryPort,
   }),
   provideUseCase(StartSeriesFromTodoUseCase, {
     clock: ClockPort,
     todoRepository: TodoRepositoryPort,
     seriesRepository: TodoSeriesRepositoryPort,
+    checkStart: CheckTodoSeriesStartUseCase,
     materializer: MaterializeTodoOccurrencesUseCase,
     todoReminder: TodoReminderSchedulerPort,
-    effects: PublishTodoCreationUseCase,
     mutationLock: MutationLockPort,
   }),
-  provideUseCase(UpdateFollowingTodosUseCase, {
+  provideUseCase(RemapFollowingOccurrencesUseCase, {
+    occurrenceWriter: TodoOccurrenceWriterPort,
+    mutationLock: MutationLockPort,
+  }),
+  provideUseCase(ApplyFollowingTodosUpdateUseCase, {
     clock: ClockPort,
     todoRepository: TodoRepositoryPort,
-    todoReadRepository: TodoReadRepositoryPort,
+    occurrenceWriter: TodoOccurrenceWriterPort,
+    remapOccurrences: RemapFollowingOccurrencesUseCase,
     seriesRepository: TodoSeriesRepositoryPort,
     categoryOwnership: CategoryOwnershipPort,
     materializer: MaterializeTodoOccurrencesUseCase,
     todoReminder: TodoReminderSchedulerPort,
+    mutationLock: MutationLockPort,
+    applyTodoEvents: ApplyTodoEventsUseCase,
+  }),
+  provideUseCase(PublishFollowingTodosUpdateUseCase, {
+    effects: PublishTodoSeriesEditUseCase,
+    logger: loggerFor(PublishFollowingTodosUpdateUseCase),
+  }),
+  provideUseCase(UpdateFollowingTodosUseCase, {
+    applyUpdate: ApplyFollowingTodosUpdateUseCase,
+    publishUpdate: PublishFollowingTodosUpdateUseCase,
+    todoReadRepository: TodoReadRepositoryPort,
+    unitOfWork: UnitOfWorkPort,
+  }),
+  provideUseCase(DeleteTodoOccurrencesUseCase, {
+    todoRepository: TodoRepositoryPort,
+    occurrenceWriter: TodoOccurrenceWriterPort,
+    seriesRepository: TodoSeriesRepositoryPort,
+    todoReminder: TodoReminderSchedulerPort,
+    applyTodoEvents: ApplyTodoEventsUseCase,
     effects: PublishTodoSeriesEditUseCase,
     unitOfWork: UnitOfWorkPort,
     mutationLock: MutationLockPort,
-    applyTodoEvents: ApplyTodoEventsUseCase,
-    logger: loggerFor(UpdateFollowingTodosUseCase),
+    logger: loggerFor(DeleteTodoOccurrencesUseCase),
   }),
   TodoSeriesMaterializationScheduler,
   TodoSeriesMaterializationProcessor,

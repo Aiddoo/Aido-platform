@@ -1,3 +1,4 @@
+import type { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { MUTATION_KEY_PREFIX } from "#api/shared/application/ports/mutation-lock.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -5,6 +6,6 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 export const NudgeLockKeys = {
   dailyQuota: (senderId: UserId): string =>
     `${MUTATION_KEY_PREFIX}:nudge:daily-quota:${senderId.value}`,
-  cooldown: (senderId: UserId, todoId: number): string =>
-    `${MUTATION_KEY_PREFIX}:nudge:cooldown:${senderId.value}:${todoId}`,
+  cooldown: (senderId: UserId, todoId: TodoId): string =>
+    `${MUTATION_KEY_PREFIX}:nudge:cooldown:${senderId.value}:${todoId.value}`,
 } as const;

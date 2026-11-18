@@ -85,7 +85,7 @@ describe("ChangeMemoPinnedUseCase — 메모 고정", () => {
 
     // Then
     await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.MEMO_2001 });
-    expect((await memoRepository.findByIdAndUserId(foreign.id, foreign.userId))?.isPinned).toBe(
+    expect((await memoRepository.findByIdAndUserId(foreign.id, foreign.userId))?.isPinned()).toBe(
       false,
     );
   });

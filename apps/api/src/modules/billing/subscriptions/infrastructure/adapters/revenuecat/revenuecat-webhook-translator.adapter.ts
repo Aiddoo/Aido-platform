@@ -1,8 +1,3 @@
-import {
-  type RevenueCatWebhookPayload,
-  revenueCatTransferWebhookPayloadSchema,
-  revenueCatWebhookPayloadSchema,
-} from "@aido/api/contracts/subscription";
 import { match } from "ts-pattern";
 
 import { toStorePeriodType } from "../../../../shared/domain/store-period-type.domain-service.js";
@@ -20,6 +15,11 @@ import {
   revenueCatEventTypeSchema,
   revenueCatTestStoreEventSchema,
 } from "./revenuecat-event.wire.js";
+import {
+  type RevenueCatWebhookPayload,
+  revenueCatTransferWebhookPayloadSchema,
+  revenueCatWebhookPayloadSchema,
+} from "./revenuecat-webhook.wire.js";
 
 type RevenueCatEvent = RevenueCatWebhookPayload["event"];
 

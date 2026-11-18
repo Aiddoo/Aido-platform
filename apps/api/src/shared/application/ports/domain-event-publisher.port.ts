@@ -26,11 +26,19 @@ interface DurableEventSubscription<
   readonly queue: QueueDefinition<TPayload>;
 }
 
+/** 같은 커밋에서 `<namespace>:<key>`가 같은 전달은 처음 하나만 보낸다. */
+interface AfterCommitCoalescing<TPayload extends object> {
+  /** 생략하면 구독 이름이라 다른 구독의 일과 합치지 않는다. 같은 namespace의 구독은 같은 일을 해야 한다. */
+  readonly namespace?: string;
+  key(payload: TPayload): string;
+}
+
 /** 캐시 정리 전용. 커밋 뒤 in-process로 `name` 채널에 보내며 실패해도 다시 보내지 않는다. */
 export interface AfterCommitEventSubscription<
   TPayload extends object,
 > extends EventSubscriptionBase<TPayload> {
   readonly delivery: "after-commit";
+  readonly coalesce?: AfterCommitCoalescing<TPayload>;
 }
 
 export type EventSubscription<TPayload extends object> =

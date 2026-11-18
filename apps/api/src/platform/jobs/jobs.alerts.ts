@@ -9,10 +9,10 @@ import type {
 } from "#api/shared/application/ports/operational-alert.port";
 import { toIsoString } from "#api/shared/domain/time/instant";
 
-// 같은 원인이 한 Sentry 이슈로 모이도록 subject에 큐·스케줄·오류 종류만 싣는다(`job.failed:<큐>:<오류 종류>`)
-export const JobAlerts = defineAlerts("job", {
+// 같은 원인이 한 Sentry 이슈로 모이도록 subject에 큐·스케줄·오류 종류만 싣는다(`jobs.job.failed:<큐>:<오류 종류>`)
+export const JobAlerts = defineAlerts("jobs", {
   FAILED: {
-    key: "job.failed",
+    key: "jobs.job.failed",
     severity: "error",
     summary: "작업이 재시도를 모두 쓰고 실패해 DLQ로 옮겨졌다",
     runbook:
@@ -20,32 +20,63 @@ export const JobAlerts = defineAlerts("job", {
   },
 });
 
-export const ScheduleAlerts = defineAlerts("schedule", {
+export const ScheduleAlerts = defineAlerts("jobs", {
   OVERDUE: {
-    key: "schedule.overdue",
+    key: "jobs.schedule.overdue",
     severity: "error",
     summary: "예정 실행 두 번이 지나도록 끝난 실행이 없다",
     runbook:
       "태그 schedule.key의 큐가 pg-boss에 스케줄로 남아 있는지, worker가 살아 있는지(/health jobs, Sentry cron 모니터)를 본다. 배포 직후면 다음 실행을 기다린다.",
   },
   FAILING: {
-    key: "schedule.failing",
+    key: "jobs.schedule.failing",
     severity: "error",
     summary: "최근 예정 실행이 모두 실패했다",
     runbook:
-      "같은 큐의 job.failed 경보와 로그에서 오류 종류를 찾아 고친다. 고친 뒤 다음 예정 실행이 끝나는지 확인한다.",
+      "같은 큐의 jobs.job.failed 경보와 로그에서 오류 종류를 찾아 고친다. 고친 뒤 다음 예정 실행이 끝나는지 확인한다.",
   },
 });
 
-export const QueueAlerts = defineAlerts("queue", {
+export const QueueAlerts = defineAlerts("jobs", {
   DEAD_LETTER: {
-    key: "queue.dead-letter",
+    key: "jobs.dead-letter.queued",
     severity: "warning",
     summary: "DLQ에 작업이 들어왔다",
     runbook:
-      "태그 queue의 원래 큐에서 같은 시각 job.failed 경보를 본다. 원인을 고친 뒤 DLQ 작업을 다시 넣거나 지운다.",
+      "태그 queue의 원래 큐에서 같은 시각 jobs.job.failed 경보를 본다. 원인을 고친 뒤 DLQ 작업을 다시 넣거나 지운다.",
+  },
+  BACKLOGGED: {
+    key: "jobs.queue.backlogged",
+    severity: "warning",
+    summary: "큐의 대기 작업이 경고 기준보다 많이 쌓였다",
+    runbook:
+      "태그 queue의 worker가 살아 있는지와 같은 시각 jobs.job.failed·DB 풀 경보를 본다. 대기 수에는 예약(startAfter) 작업도 들어가므로 대량 예약·발송 직후인지 먼저 확인한다.",
   },
 });
+
+// pg-boss warning 가운데 큐 적체(queue_backlog)만 이 모양이다. 다른 warning은 SQL 값이 섞일 수 있어 읽지 않는다
+const queueBacklogWarningSchema = z.object({
+  name: z.string().min(1),
+  queuedCount: z.coerce.number().int(),
+  // 기준 없이 만든 큐(DLQ)는 null이다. coerce가 null을 0으로 바꾸지 않게 nullish를 먼저 본다
+  warningQueueSize: z.coerce.number().int().nullish(),
+});
+
+export function queueBackloggedAlert(warningData: unknown): OperationalAlert | null {
+  const parsed = queueBacklogWarningSchema.safeParse(warningData);
+  if (!parsed.success) {
+    return null;
+  }
+  const { name, queuedCount, warningQueueSize } = parsed.data;
+  // pg-boss는 큐 기준이 비었거나 0이면 자기 기본 기준을 쓴다. 그 값은 warning에 없어 threshold를 싣지 않는다
+  const hasQueueThreshold = warningQueueSize != null && warningQueueSize > 0;
+  return {
+    ...QueueAlerts.BACKLOGGED,
+    subject: name,
+    tags: { queue: name },
+    details: hasQueueThreshold ? { queuedCount, threshold: warningQueueSize } : { queuedCount },
+  };
+}
 
 // payload가 schema에 맞지 않아 handler에 넘기지 못한 실패의 오류 종류
 export const INVALID_JOB_PAYLOAD_ERROR_TYPE = "InvalidJobPayload";

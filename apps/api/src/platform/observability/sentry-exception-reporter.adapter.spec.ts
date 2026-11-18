@@ -1,5 +1,7 @@
 import { Logger } from "@nestjs/common";
 
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import {
   EXCEPTION_REPORT_THRESHOLD,
   EXCEPTION_REPORT_WINDOW_MS,
@@ -31,7 +33,7 @@ describe("SentryExceptionReporter", () => {
 
     // When
     new SentryExceptionReporter().report(error, {
-      userId: "user-1",
+      userId: UserId.reconstitute("user-1"),
       tags: { "error.code": "SYS_0001" },
       extras: { errorResponse: { success: false } },
     });

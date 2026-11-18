@@ -1,6 +1,9 @@
 import type { Provider } from "@nestjs/common";
 
-import { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
+import {
+  UserMutationLockPort,
+  UserSubscriptionProjectionPort,
+} from "#api/modules/identity/users/identity-users.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
@@ -15,7 +18,6 @@ import { PremiumGrantNotifierPort } from "./application/ports/premium-grant-noti
 import { PremiumGrantRepositoryPort } from "./application/ports/premium-grant.repository.port.js";
 import { PremiumGranterPort } from "./application/ports/premium-granter.port.js";
 import { StoreEntitlementReaderPort } from "./application/ports/store-entitlement.reader.port.js";
-import { UserSubscriptionProjectionRepositoryPort } from "./application/ports/user-subscription-projection.repository.port.js";
 import { GetPremiumAccessUseCase } from "./application/use-cases/get-premium-access.use-case.js";
 import { GetPremiumEntitlementsUseCase } from "./application/use-cases/get-premium-entitlements.use-case.js";
 import { GrantPremiumUseCase } from "./application/use-cases/grant-premium.use-case.js";
@@ -31,15 +33,10 @@ import { QuietHoursReaderAdapter } from "./infrastructure/adapters/quiet-hours-r
 import { DrizzlePremiumGrantEndingNoticeRepository } from "./infrastructure/persistence/drizzle-premium-grant-ending-notice.repository.js";
 import { DrizzlePremiumGrantRepository } from "./infrastructure/persistence/drizzle-premium-grant.repository.js";
 import { DrizzleStoreEntitlementReader } from "./infrastructure/persistence/drizzle-store-entitlement.reader.js";
-import { DrizzleUserSubscriptionProjectionRepository } from "./infrastructure/persistence/drizzle-user-subscription-projection.repository.js";
 
 export const BILLING_PREMIUM_GRANTS_PROVIDERS = [
   { provide: PremiumGrantRepositoryPort, useClass: DrizzlePremiumGrantRepository },
   { provide: StoreEntitlementReaderPort, useClass: DrizzleStoreEntitlementReader },
-  {
-    provide: UserSubscriptionProjectionRepositoryPort,
-    useClass: DrizzleUserSubscriptionProjectionRepository,
-  },
   {
     provide: PremiumGrantEndingNoticeRepositoryPort,
     useClass: DrizzlePremiumGrantEndingNoticeRepository,
@@ -56,7 +53,7 @@ export const BILLING_PREMIUM_GRANTS_PROVIDERS = [
   provideUseCase(ProjectPremiumAccessUseCase, {
     getPremiumEntitlements: GetPremiumEntitlementsUseCase,
     premiumGrantRepository: PremiumGrantRepositoryPort,
-    userSubscriptionProjection: UserSubscriptionProjectionRepositoryPort,
+    userSubscriptionProjection: UserSubscriptionProjectionPort,
   }),
   provideUseCase(GetPremiumAccessUseCase, {
     getPremiumEntitlements: GetPremiumEntitlementsUseCase,
@@ -76,7 +73,7 @@ export const BILLING_PREMIUM_GRANTS_PROVIDERS = [
   }),
   provideUseCase(SweepPremiumGrantsUseCase, {
     premiumGrantRepository: PremiumGrantRepositoryPort,
-    userSubscriptionProjection: UserSubscriptionProjectionRepositoryPort,
+    userSubscriptionProjection: UserSubscriptionProjectionPort,
     projectPremiumAccess: ProjectPremiumAccessUseCase,
     userLock: UserMutationLockPort,
     unitOfWork: UnitOfWorkPort,

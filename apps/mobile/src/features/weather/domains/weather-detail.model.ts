@@ -1,4 +1,4 @@
-import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
+import { HOUR_MS, MINUTE_MS, MINUTES_PER_HOUR } from '@src/shared/constants/time-units';
 import type { DateKey } from '@src/shared/date/date-key';
 import { type Instant, fromEpochMs, toEpochMs } from '@src/shared/date/instant';
 import { toDateKey } from '@src/shared/date/zoned';
@@ -72,8 +72,6 @@ function findNextSunEvent(
   }
   return null;
 }
-
-const MINUTES_PER_HOUR = 60;
 
 interface Duration {
   hours: number;

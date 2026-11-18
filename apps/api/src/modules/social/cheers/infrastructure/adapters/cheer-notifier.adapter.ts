@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { NotificationQueueAdapter } from "#api/modules/notification/notification-delivery-jobs.public";
+import { NotificationQueueAdapter } from "#api/modules/notification/notifications/notification-notifications-jobs.public";
 
 import {
   CheerNotifierPort,
@@ -17,6 +17,12 @@ export class CheerNotifierAdapter extends CheerNotifierPort {
   }
 
   notifyCheerSent(notification: CheerSentNotification): Promise<void> {
-    return this.#queue.enqueueCheerSent(notification);
+    return this.#queue.enqueueCheerSent({
+      cheerId: notification.cheerId.value,
+      senderId: notification.senderId.value,
+      receiverId: notification.receiverId.value,
+      senderName: notification.senderName,
+      message: notification.message,
+    });
   }
 }

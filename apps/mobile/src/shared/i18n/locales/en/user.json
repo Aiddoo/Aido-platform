@@ -35,7 +35,7 @@
   "withdraw": {
     "action": "Delete account",
     "confirmTitle": "Delete account",
-    "confirmDescription": "You can restore your account within 30 days.\nAre you sure you want to delete it?",
+    "confirmDescription": "You can restore your account within {{days}} days.\nAre you sure you want to delete it?",
     "confirmAction": "Delete"
   },
   "profile": {

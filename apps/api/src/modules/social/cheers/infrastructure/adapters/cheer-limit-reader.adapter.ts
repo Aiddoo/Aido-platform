@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
+import { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
@@ -14,14 +14,14 @@ import { CheerLimitReaderPort } from "../../application/ports/cheer-limit.reader
 export class CheerLimitReaderAdapter extends CheerLimitReaderPort {
   readonly #entitlementReader: Pick<
     EntitlementReaderPort,
-    "getFeatureLimit" | "getFeatureLimitInTx" | "getFeatureQuotaInTx"
+    "getFeatureLimit" | "getFeatureLimitInTransaction" | "getFeatureQuotaInTransaction"
   >;
 
   constructor(
     @Inject(EntitlementReaderPort)
     entitlementReader: Pick<
       EntitlementReaderPort,
-      "getFeatureLimit" | "getFeatureLimitInTx" | "getFeatureQuotaInTx"
+      "getFeatureLimit" | "getFeatureLimitInTransaction" | "getFeatureQuotaInTransaction"
     >,
   ) {
     super();
@@ -32,12 +32,15 @@ export class CheerLimitReaderAdapter extends CheerLimitReaderPort {
     return this.#entitlementReader.getFeatureLimit(userId, "CHEER");
   }
 
-  readLimitInTx(userId: UserId): Promise<number | null> {
-    return this.#entitlementReader.getFeatureLimitInTx(userId, "CHEER");
+  readLimitInTransaction(userId: UserId): Promise<number | null> {
+    return this.#entitlementReader.getFeatureLimitInTransaction(userId, "CHEER");
   }
 
-  readFeatureQuotaInTx(userId: UserId, usage: DailySendQuotaUsage): Promise<DailySendFeatureQuota> {
-    return this.#entitlementReader.getFeatureQuotaInTx(userId, "CHEER", {
+  readFeatureQuotaInTransaction(
+    userId: UserId,
+    usage: DailySendQuotaUsage,
+  ): Promise<DailySendFeatureQuota> {
+    return this.#entitlementReader.getFeatureQuotaInTransaction(userId, "CHEER", {
       used: usage.used,
       resetsAt: instantToDate(usage.resetsAt),
     });

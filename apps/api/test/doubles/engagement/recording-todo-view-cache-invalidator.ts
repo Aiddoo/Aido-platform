@@ -1,4 +1,4 @@
-import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import type { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { TodoViewCacheInvalidatorPort } from "#api/modules/planning/todos/planning-todos.public";
 
 export class RecordingTodoViewCacheInvalidator extends TodoViewCacheInvalidatorPort {

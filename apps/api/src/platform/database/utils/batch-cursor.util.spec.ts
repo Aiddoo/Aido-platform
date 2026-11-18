@@ -66,10 +66,11 @@ describe("forEachBatch", () => {
     const fetchPage = vi.fn().mockResolvedValue(items);
     const onBatch = vi.fn().mockRejectedValue(new Error("batch error"));
 
-    // When & Then
-    await expect(forEachBatch({ fetchPage, batchSize: 10, onBatch })).rejects.toThrow(
-      "batch error",
-    );
+    // When
+    const result = forEachBatch({ fetchPage, batchSize: 10, onBatch });
+
+    // Then
+    await expect(result).rejects.toThrow("batch error");
   });
 
   it("정확히 batchSize만큼 반환하면 다음 페이지를 요청해야 한다", async () => {

@@ -1,9 +1,15 @@
 import { Logger } from "@nestjs/common";
 import { vi } from "vitest";
 
-import type { CreateNotificationData } from "#api/modules/notification/inbox/application/ports/notification-draft.port";
-import type { InboxNotification } from "#api/modules/notification/inbox/application/read-models/inbox-notification.read-model";
+import type { InboxNotificationReadModel } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
+import {
+  RecordReminderLateSkipUseCase,
+  REMINDER_LATE_SKIP_THRESHOLD,
+  REMINDER_LATE_SKIP_WINDOW_MS,
+} from "#api/modules/notification/reminders/application/use-cases/record-reminder-late-skip.use-case";
+import type { CreateNotificationData } from "#api/modules/notification/shared/domain/notification-draft.constants";
 import type { JobEnvelope } from "#api/shared/application/ports/job-queue.port";
+import { toIsoString } from "#api/shared/domain/time/instant";
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
 import { StubNotificationRecipientLocaleReader } from "#test/doubles/notification/stub-notification-recipient-locale.reader";
 import { StubTodoReminderReader } from "#test/doubles/notification/stub-todo-reminder.reader";
@@ -12,21 +18,18 @@ import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 
-import { NotificationProviderLogEvent } from "../../../push/infrastructure/adapters/notification-provider.log-events.js";
-import type { ActiveTodo } from "../../application/read-models/scheduler.read-model.js";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
+import type { ActiveTodoReadModel } from "../../application/read-models/scheduler.read-model.js";
 import { ReminderAlerts } from "../../application/reminders.alerts.js";
-import { NotificationRemindersLogEvent } from "../../application/reminders.log-events.js";
-import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
-import {
-  REMINDER_LATE_SKIP_THRESHOLD,
-  REMINDER_LATE_SKIP_WINDOW_MS,
-  TodoReminderQueueProcessor,
-} from "./todo-reminder-queue.processor.js";
+import { ReminderLogEvent } from "../../application/reminders.log-events.js";
+import { ReminderJobLogEvent } from "./reminder-job.log-events.js";
+import { TodoReminderQueueProcessor } from "./todo-reminder-queue.processor.js";
 import {
   type ReminderJobData,
   type TodoReminderRuntimeJob,
   TODO_REMINDER_JOB_NAME,
   TODO_REMINDER_QUEUE,
+  TODO_REMINDER_SNOOZE_JOB_NAME,
   TODO_SERIES_PAUSED_JOB_NAME,
 } from "./todo-reminder.queue.js";
 
@@ -35,7 +38,7 @@ const TODO_TITLE = "Test Todo";
 // 60분 단계가 막 울릴 시각: 할 일은 한 시간 뒤다
 const NOW = Temporal.Instant.from("2026-11-05T00:00:00Z");
 
-const activeTodo = (overrides: Partial<ActiveTodo> = {}): ActiveTodo => ({
+const activeTodo = (overrides: Partial<ActiveTodoReadModel> = {}): ActiveTodoReadModel => ({
   id: 1,
   title: TODO_TITLE,
   seriesId: null,
@@ -53,11 +56,13 @@ class BatchFailingPublisher extends RecordingNotificationPublisher {
     throw new Error("batch insert failed");
   }
 
-  override async publish(data: CreateNotificationData): Promise<InboxNotification | null> {
+  override async publishSingle(
+    data: CreateNotificationData,
+  ): Promise<InboxNotificationReadModel | null> {
     if (data.todoId != null && this.failingTodoIds.has(data.todoId)) {
       throw new Error(`todo ${data.todoId} failed`);
     }
-    return super.publish(data);
+    return super.publishSingle(data);
   }
 }
 
@@ -109,11 +114,15 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
     processor = new TodoReminderQueueProcessor(
       reader,
       seriesOwnerDormancy,
-      publisher,
+      publisher.single,
+      publisher.batch,
       localeReader,
       jobQueue,
       clock,
-      alert,
+      new RecordReminderLateSkipUseCase({
+        logger: new Logger(RecordReminderLateSkipUseCase.name),
+        alert: alert,
+      }),
     );
     reader.todos.set(1, activeTodo());
   });
@@ -136,7 +145,7 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
       expect(seriesOwnerDormancy.askedUserIds).toEqual([USER_ID]);
       expect(publisher.published).toEqual([]);
       expect(log).toHaveBeenCalledExactlyOnceWith({
-        event: NotificationProviderLogEvent.TODO_REMINDER_DORMANT_OWNER_SKIPPED,
+        event: ReminderJobLogEvent.TODO_REMINDER_DORMANT_OWNER_SKIPPED,
         todoId: 1,
         userId: USER_ID,
         stage: "10min",
@@ -166,7 +175,7 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
       { locale: "ko", title: "반복 할 일 알림을 잠시 멈췄어요", body: "앱을 열면 다시 시작돼요" },
       {
         locale: "en",
-        title: "Repeating to-do reminders paused",
+        title: "Repeating reminders paused",
         body: "Open the app to start them again",
       },
     ] as const)(
@@ -183,7 +192,7 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
         // Then
         expect(publisher.published).toEqual([
           {
-            mode: "publish",
+            mode: "single",
             data: expect.objectContaining({
               userId: USER_ID,
               type: "TODO_REMINDER",
@@ -226,14 +235,14 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
       // Then
       expect(publisher.published).toEqual([
         {
-          mode: "publishBatch",
+          mode: "batch",
           data: expect.objectContaining({
             userId: USER_ID,
             type: "TODO_REMINDER",
             campaignKey: SCHEDULER_CAMPAIGN_KEY.TODO_REMINDER,
             variantId: expect.stringMatching(/^todo_reminder_v4\.60min\.v[1-3]$/),
             todoId: 1,
-            metadata: { stage: "60min" },
+            metadata: { stage: "60min", startsAt: toIsoString(NOW.add({ minutes: 60 })) },
           }),
         },
       ]);
@@ -256,11 +265,12 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
     });
 
     it("스케줄링 이후 제목이 변경된 경우 DB의 최신 제목으로 알림을 발송한다", async () => {
-      // Given — DB에는 변경된 제목
+      // Given
       reader.todos.set(1, activeTodo({ title: "밥먹고 약먹기" }));
       // When
       await processor.process(makeJob({ todoId: 1, stageLabel: "60min" }));
-      // Then — DB의 최신 제목은 잠금 화면 길이를 보호하는 본문 preview에 사용됨
+      // Then
+      // DB의 최신 제목은 잠금 화면 길이를 보호하는 본문 preview에 사용됨
       const payload = publisher.published[0]?.data;
       expect(payload?.body).toContain("밥먹고 약먹기");
       expect(`${payload?.title}${payload?.body}`).not.toContain("{todoTitle}");
@@ -269,7 +279,8 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
 
   describe("늦은 리마인더", () => {
     it("울려야 했던 시각보다 15분을 넘게 늦으면 보내지 않고 사유를 남긴다", async () => {
-      // Given: 60분 단계가 16분 전에 울렸어야 했다(배포로 worker가 멈춘 사이)
+      // Given
+      // 60분 단계가 16분 전에 울렸어야 했다(배포로 worker가 멈춘 사이)
       reader.todos.set(1, activeTodo({ scheduledAt: NOW.add({ minutes: 44 }) }));
       const warn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
       // When
@@ -277,7 +288,7 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
       // Then
       expect(publisher.published).toEqual([]);
       expect(warn).toHaveBeenCalledExactlyOnceWith({
-        event: NotificationRemindersLogEvent.TODO_REMINDER_LATE_SKIPPED,
+        event: ReminderLogEvent.TODO_REMINDER_LATE_SKIPPED,
         todoId: 1,
         userId: USER_ID,
         stage: "60min",
@@ -309,7 +320,8 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
     });
 
     it("정확히 15분 늦은 리마인더는 보낸다", async () => {
-      // Given: 60분 단계가 15분 전에 울렸어야 했다
+      // Given
+      // 60분 단계가 15분 전에 울렸어야 했다
       reader.todos.set(1, activeTodo({ scheduledAt: NOW.add({ minutes: 45 }) }));
       // When
       await processor.process(makeJob({ stageLabel: "60min" }));
@@ -318,7 +330,8 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
     });
 
     it("할 일 시각이 지난 10분 단계는 15분 안으로 늦어도 보내지 않고 사유를 남긴다", async () => {
-      // Given: 10분 단계가 11분 늦었다. 할 일은 1분 전에 시작했다
+      // Given
+      // 10분 단계가 11분 늦었다. 할 일은 1분 전에 시작했다
       reader.todos.set(1, activeTodo({ scheduledAt: NOW.subtract({ minutes: 1 }) }));
       const warn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
       // When
@@ -326,7 +339,7 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
       // Then
       expect(publisher.published).toEqual([]);
       expect(warn).toHaveBeenCalledExactlyOnceWith({
-        event: NotificationRemindersLogEvent.TODO_REMINDER_LATE_SKIPPED,
+        event: ReminderLogEvent.TODO_REMINDER_LATE_SKIPPED,
         todoId: 1,
         userId: USER_ID,
         stage: "10min",
@@ -348,7 +361,7 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
 
   describe("투두 유효성 검증", () => {
     it("투두가 완료·삭제되었으면 알림을 발송하지 않는다", async () => {
-      // Given — findActiveTodo가 null 반환
+      // Given
       reader.todos.clear();
       // When
       await processor.process(makeJob());
@@ -381,15 +394,19 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
       await new TodoReminderQueueProcessor(
         reader,
         seriesOwnerDormancy,
-        alreadyNotified,
+        alreadyNotified.single,
+        alreadyNotified.batch,
         localeReader,
         jobQueue,
         clock,
-        alert,
+        new RecordReminderLateSkipUseCase({
+          logger: new Logger(RecordReminderLateSkipUseCase.name),
+          alert: alert,
+        }),
       ).process(makeJob());
       // Then
       expect(log).toHaveBeenCalledExactlyOnceWith({
-        event: NotificationRemindersLogEvent.TODO_REMINDER_BATCH_PUBLISHED,
+        event: ReminderLogEvent.TODO_REMINDER_BATCH_PUBLISHED,
         attempted: 1,
         published: 0,
       });
@@ -411,8 +428,8 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
       expect(failures.size).toBe(0);
       expect(reader.readCount).toBe(1);
       expect(publisher.published.map(({ mode, data }) => [mode, data.todoId])).toEqual([
-        ["publishBatch", 1],
-        ["publishBatch", 2],
+        ["batch", 1],
+        ["batch", 2],
       ]);
     });
 
@@ -439,11 +456,15 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
       const batchProcessor = new TodoReminderQueueProcessor(
         reader,
         seriesOwnerDormancy,
-        failing,
+        failing.single,
+        failing.batch,
         localeReader,
         jobQueue,
         clock,
-        alert,
+        new RecordReminderLateSkipUseCase({
+          logger: new Logger(RecordReminderLateSkipUseCase.name),
+          alert: alert,
+        }),
       );
       // When
       const failures = await batchProcessor.processBatch([
@@ -453,7 +474,7 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
       // Then
       expect([...failures.keys()]).toEqual(["job-2"]);
       expect(failing.published.map(({ mode, data }) => [mode, data.todoId])).toEqual([
-        ["publish", 1],
+        ["single", 1],
       ]);
     });
 
@@ -473,19 +494,137 @@ describe("TodoReminderQueueProcessor — 할 일 리마인더 프로세서", () 
     });
   });
 
+  describe("다시 알림", () => {
+    const NOTIFICATION_ID = 1024;
+    const snoozeJob = (remindAt: Temporal.Instant = NOW): TodoReminderRuntimeJob => ({
+      name: TODO_REMINDER_SNOOZE_JOB_NAME,
+      data: {
+        todoId: 1,
+        userId: USER_ID,
+        notificationId: NOTIFICATION_ID,
+        remindAt: remindAt.toString(),
+      },
+    });
+
+    it.each([
+      { locale: "ko", title: "다시 알려드려요 ⏰", body: `‘${TODO_TITLE}’ 이제 시작해볼까요?` },
+      { locale: "en", title: "Reminding you again ⏰", body: `Ready to start “${TODO_TITLE}”?` },
+    ] as const)(
+      "할 일 시각이 지났어도 $locale 다시 알림을 리마인더와 같은 종류·목적으로 보낸다",
+      async ({ locale, title, body }) => {
+        // Given
+        // 10분 전 알림에서 눌러 할 일이 시작된 뒤에 울린다
+        reader.todos.set(1, activeTodo({ scheduledAt: NOW.subtract({ minutes: 1 }) }));
+        localeReader.locale = locale;
+        // When
+        await processor.process(snoozeJob());
+        // Then
+        expect(publisher.published).toEqual([
+          {
+            mode: "batch",
+            data: expect.objectContaining({
+              userId: USER_ID,
+              type: "TODO_REMINDER",
+              purpose: "SCHEDULED_SERVICE",
+              campaignKey: SCHEDULER_CAMPAIGN_KEY.TODO_REMINDER_SNOOZED,
+              todoId: 1,
+              title,
+              body,
+              metadata: { stage: "snooze", remindAt: toIsoString(NOW) },
+              reminderOccurrenceKey: String(NOTIFICATION_ID),
+            }),
+          },
+        ]);
+      },
+    );
+
+    it.each([
+      { locale: "ko", title: "다시 알려드려요 ⏰", body: `‘${TODO_TITLE}’ 곧 시작이에요` },
+      { locale: "en", title: "Reminding you again ⏰", body: `“${TODO_TITLE}” starts soon` },
+    ] as const)(
+      "할 일 시각 전에 울리면 $locale 곧 시작 문구로 보낸다",
+      async ({ locale, title, body }) => {
+        // Given
+        // 60분 전 알림에서 눌러 할 일 시각 50분 전에 울린다
+        reader.todos.set(1, activeTodo({ scheduledAt: NOW.add({ minutes: 50 }) }));
+        localeReader.locale = locale;
+        // When
+        await processor.process(snoozeJob());
+        // Then
+        expect(publisher.published).toEqual([
+          {
+            mode: "batch",
+            data: expect.objectContaining({
+              campaignKey: SCHEDULER_CAMPAIGN_KEY.TODO_REMINDER_SNOOZED,
+              title,
+              body,
+              copyKey: "scheduler.TODO_REMINDER_SNOOZED_BEFORE_START.v1",
+              metadata: { stage: "snooze", remindAt: toIsoString(NOW) },
+            }),
+          },
+        ]);
+      },
+    );
+
+    it("반복 회차라도 방금 누른 소유자라 휴면을 묻지 않는다", async () => {
+      // Given
+      reader.todos.set(1, activeTodo({ seriesId: "series-1" }));
+      seriesOwnerDormancy.dormantSince = "2026-08-01";
+      // When
+      await processor.process(snoozeJob());
+      // Then
+      expect(seriesOwnerDormancy.askedUserIds).toEqual([]);
+      expect(publisher.published).toHaveLength(1);
+    });
+
+    it("울리기 전에 할 일을 완료·삭제했으면 보내지 않는다", async () => {
+      // Given
+      reader.todos.clear();
+      // When
+      await processor.process(snoozeJob());
+      // Then
+      expect(publisher.published).toEqual([]);
+    });
+
+    it("울릴 시각보다 15분을 넘게 늦으면 보내지 않고 사유를 남긴다", async () => {
+      // Given
+      const warn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
+      // When
+      await processor.process(snoozeJob(NOW.subtract({ minutes: 16 })));
+      // Then
+      expect(publisher.published).toEqual([]);
+      expect(warn).toHaveBeenCalledExactlyOnceWith({
+        event: ReminderLogEvent.TODO_REMINDER_LATE_SKIPPED,
+        todoId: 1,
+        userId: USER_ID,
+        stage: "snooze",
+        reason: "late-over-15m",
+        lateMinutes: 16,
+      });
+    });
+  });
+
   describe("에러 처리", () => {
     it("알림 발송 실패 시 에러가 전파된다 (job runtime 재시도)", async () => {
       // Given
       publisher.failWith = new Error("Push failed");
-      // When & Then
-      await expect(processor.process(makeJob())).rejects.toThrow("Push failed");
+
+      // When
+      const result = processor.process(makeJob());
+
+      // Then
+      await expect(result).rejects.toThrow("Push failed");
     });
 
     it("DB 조회 실패 시 에러가 전파된다 (job runtime 재시도)", async () => {
       // Given
       reader.failWith = new Error("DB connection failed");
-      // When & Then
-      await expect(processor.process(makeJob())).rejects.toThrow("DB connection failed");
+
+      // When
+      const result = processor.process(makeJob());
+
+      // Then
+      await expect(result).rejects.toThrow("DB connection failed");
     });
   });
 });

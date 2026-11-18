@@ -1,8 +1,7 @@
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
 import { TodoCompletionCount } from "../../shared/domain/todo-completion-count.vo.js";
-import { DailyCompletionId } from "./daily-completion-id.vo.js";
 
 export interface DailyCompletionPrimitives {
   readonly userId: string;
@@ -27,47 +26,15 @@ interface CreateDailyCompletionParams {
   readonly categoryColors: readonly string[];
 }
 
-/** 한 사용자의 하루 할 일 완료 현황. 할 일이 있는 날만 만든다. */
-export class DailyCompletion extends AggregateRoot<DailyCompletionId, DailyCompletionProps> {
+// 저장하지 않는다. 조회마다 planning 할 일 묶음을 세어 할 일이 있는 날만 만든다
+export class DailyCompletion extends AggregateRoot<null, DailyCompletionProps> {
   static create(params: CreateDailyCompletionParams): DailyCompletion {
-    return DailyCompletion.#build({
+    return new DailyCompletion(null, {
       userId: params.userId,
       date: params.date,
       todoCount: TodoCompletionCount.create(params.totalTodos, params.completedTodos),
-      categoryColors: params.categoryColors,
+      categoryColors: [...params.categoryColors],
     });
-  }
-
-  static reconstitute(primitives: DailyCompletionPrimitives): DailyCompletion {
-    return DailyCompletion.#build({
-      userId: UserId.reconstitute(primitives.userId),
-      date: primitives.date,
-      todoCount: TodoCompletionCount.reconstitute(primitives.totalTodos, primitives.completedTodos),
-      categoryColors: primitives.categoryColors,
-    });
-  }
-
-  static #build(props: DailyCompletionProps): DailyCompletion {
-    return new DailyCompletion(DailyCompletionId.create(props), {
-      ...props,
-      categoryColors: [...props.categoryColors],
-    });
-  }
-
-  get date(): Temporal.PlainDate {
-    return this.props.date;
-  }
-
-  get totalTodos(): number {
-    return this.props.todoCount.total;
-  }
-
-  get completedTodos(): number {
-    return this.props.todoCount.completed;
-  }
-
-  get categoryColors(): readonly string[] {
-    return this.props.categoryColors;
   }
 
   get completionRate(): number {

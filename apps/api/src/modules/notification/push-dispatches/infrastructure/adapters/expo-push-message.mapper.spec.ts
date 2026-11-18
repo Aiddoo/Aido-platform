@@ -1,0 +1,129 @@
+import type { PushMessage } from "../../application/ports/push-channel.port.js";
+import {
+  buildExpoPushMessage,
+  EXPO_PUSH_PAYLOAD_MAX_BYTE_LENGTH,
+  measureExpoPushMessageByteLength,
+} from "./expo-push-message.mapper.js";
+
+const VALID_TOKEN = "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]";
+
+function createPayload(overrides: Partial<PushMessage> = {}): PushMessage {
+  return {
+    channel: "EXPO",
+    token: VALID_TOKEN,
+    platform: "IOS",
+    title: "알림",
+    body: "본문",
+    priority: "high",
+    ttlSeconds: 3600,
+    ...overrides,
+  };
+}
+
+describe("Expo Push 메시지 변환", () => {
+  it("알림 종류의 보관 시간·우선순위를 Expo ttl·priority로, 채널은 출시 앱이 만든 default로 보낸다", () => {
+    // Given
+    const payload = createPayload({ ttlSeconds: 3600, priority: "high" });
+
+    // When
+    const result = buildExpoPushMessage(payload);
+
+    // Then
+    expect(result).toMatchObject({
+      status: "ready",
+      message: { ttl: 3600, priority: "high", channelId: "default" },
+    });
+  });
+
+  it("iOS 기기에는 같은 알림의 재전송 키를 collapseId와 tag에 함께 싣는다", () => {
+    // Given
+    const payload = createPayload({ platform: "IOS", collapseKey: "notification-42", badge: 3 });
+
+    // When
+    const result = buildExpoPushMessage(payload);
+
+    // Then
+    expect(result).toMatchObject({
+      status: "ready",
+      message: { collapseId: "notification-42", tag: "notification-42", badge: 3 },
+    });
+  });
+
+  it("Android 기기에는 꺼진 동안 4개만 보관되는 collapseId 없이 tag만 싣는다", () => {
+    // Given
+    const payload = createPayload({ platform: "ANDROID", collapseKey: "notification-42" });
+
+    // When
+    const result = buildExpoPushMessage(payload);
+
+    // Then
+    expect(result).toMatchObject({ status: "ready", message: { tag: "notification-42" } });
+    expect(result).not.toHaveProperty("message.collapseId");
+  });
+
+  it("JSON UTF-8 크기가 4096 byte면 전송 가능하다", () => {
+    // Given
+    const basePayload = createPayload({ data: { padding: "" } });
+    const baseResult = buildExpoPushMessage(basePayload);
+    if (baseResult.status !== "ready") {
+      throw new Error("기준 payload는 Expo 한도 이내여야 합니다");
+    }
+    const paddingLength = EXPO_PUSH_PAYLOAD_MAX_BYTE_LENGTH - baseResult.byteLength;
+
+    // When
+    const result = buildExpoPushMessage(
+      createPayload({ data: { padding: "x".repeat(paddingLength) } }),
+    );
+
+    // Then
+    expect(result).toMatchObject({
+      status: "ready",
+      byteLength: EXPO_PUSH_PAYLOAD_MAX_BYTE_LENGTH,
+    });
+  });
+
+  it("JSON UTF-8 크기가 4097 byte면 메시지를 반환하지 않고 거부한다", () => {
+    // Given
+    const basePayload = createPayload({ data: { padding: "" } });
+    const baseResult = buildExpoPushMessage(basePayload);
+    if (baseResult.status !== "ready") {
+      throw new Error("기준 payload는 Expo 한도 이내여야 합니다");
+    }
+    const paddingLength = EXPO_PUSH_PAYLOAD_MAX_BYTE_LENGTH + 1 - baseResult.byteLength;
+
+    // When
+    const result = buildExpoPushMessage(
+      createPayload({ data: { padding: "x".repeat(paddingLength) } }),
+    );
+
+    // Then
+    expect(result).toEqual({
+      status: "rejected",
+      reason: "payload-too-large",
+      byteLength: EXPO_PUSH_PAYLOAD_MAX_BYTE_LENGTH + 1,
+      maxByteLength: EXPO_PUSH_PAYLOAD_MAX_BYTE_LENGTH,
+    });
+  });
+
+  it("한글·emoji·JSON escape 문자를 UTF-8 byte로 측정한다", () => {
+    // Given
+    const result = buildExpoPushMessage(
+      createPayload({
+        title: "고양이 알림 🐾",
+        body: '댓글에 인용부호 " 역슬래시 \\ 줄바꿈\n도착',
+        data: { message: '한글🐾"\\\n' },
+      }),
+    );
+    if (result.status !== "ready") {
+      throw new Error("테스트 payload는 Expo 한도 이내여야 합니다");
+    }
+
+    // When
+    const serializedMessage = JSON.stringify(result.message);
+    const measuredByteLength = measureExpoPushMessageByteLength(result.message);
+
+    // Then
+    expect(measuredByteLength).toBe(Buffer.byteLength(serializedMessage, "utf8"));
+    expect(measuredByteLength).toBeGreaterThan(serializedMessage.length);
+  });
+});

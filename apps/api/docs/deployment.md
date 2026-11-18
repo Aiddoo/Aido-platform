@@ -38,7 +38,12 @@ deploy workflow는 같은 저장소의 main push/dispatch로 끝난 CI run만 �
 
 서버 repository는 `~/apps/Aido-platform`, 배포 상태는 `~/apps/deploy-state`다. workflow와 서버 `flock`이 동시 배포를 막는다. script는 작업 tree SHA·기존 배포 ancestry·운영 env(`apps/api/.env`, 600)를 확인한다. 이미지는 GHCR의 SHA 태그를 pull만 하고(`--pull never`로 준비된 이미지만 기동) 서버에서 빌드하지 않는다. 성공 뒤 현재와 직전 배포 이미지만 남긴다.
 
-API container는 내부 포트 8080, memory 512M/CPU 1, Node heap 384MiB이고 읽기 전용 루트(`/tmp`만 tmpfs)·capability 전부 제거·`no-new-privileges`로 돈다. 공개 경로는 host Nginx→loopback API 한 홉이며 서버는 이 proxy 경계를 따른다.
+API container는 내부 포트 8080, memory 512M/CPU 1, Node heap 384MiB이고 읽기 전용 루트(`/tmp`만 tmpfs)·capability 전부 제거·`no-new-privileges`로 돈다. 공개 경로는 host Nginx→loopback API 한 홉이다. 컨테이너에는 docker bridge 게이트웨이(사설 주소)로 닿아 HTTP 어댑터가 loopback·사설 대역 peer의 `X-Forwarded-For`만 믿고 Nginx가 붙인 클라이언트 IP를 `request.ip`로 쓴다(전제는 [보안](security.md#서버와-네트워크)). 인증 전 요청 한도가 이 값으로 센다. HTTP 어댑터·proxy를 바꾼 배포 뒤에는 다음을 본다.
+
+- 새 `Session`·`LoginAttempt` 행의 `ipAddress`가 게이트웨이·loopback 주소가 아닌 실제 접속 IP다. `X-Forwarded-For`를 꾸며 보낸 로그인 시도도 실제 접속 IP로 남는다.
+- Sentry 트랜잭션 이름이 `GET /v1/todos/:id`처럼 경로 템플릿으로 남는다(실제 id가 든 URL이 아니다).
+
+HTTP 어댑터를 Express에서 `NodeAdapter`(`@nestjs/platform-node` 12.5.1)로 바꾼 커밋은 12.5.1 배포 2주 뒤인 2026-11-30 이후에 운영에 배포한다. 스키마 변화가 없어 되돌리기는 이전 SHA 재배포다.
 
 ## 수동 배포
 
@@ -157,8 +162,8 @@ Swagger는 개발 도구가 켜진 로컬 실행에서만 `/api/docs`, `/api/adm
   - 두 값은 따로 정한다. 한쪽만 공개됐으면 그 플랫폼만 부르고 다른 쪽은 이전 공개값을 둔다.
 - **반영**: 관리자 계정(role `ADMIN`)의 access token으로 플랫폼마다 관리자 API를 한 번 부른다. env를 고치거나 서버를 다시 배포하지 않고 다음 조회부터 바뀐다. 버전은 그 release의 실제 공개값(MAJOR.MINOR.PATCH)이다.
 - **되돌리기**: 이전 공개값으로 다시 부른다. 끄는 방법은 두지 않는다. 1.10.0~1.15.0 앱은 꺼진 응답을 실패로 보고 "버전 정보를 확인하지 못했어요"를 띄운다.
-- **env 대체**: DB에 행이 없는 플랫폼은 env `APP_VERSION_CHECK_*` 값으로 응답한다. 두 플랫폼을 한 번씩 반영한 뒤에는 env 값을 읽지 않는다. 지울 시점은 [호환](../../../docs/conventions/compatibility.md)에 있다.
-- **응답 모양**: `/v1/app-config/app-version` 응답에 칸을 더하지 않는다. 1.10.0 이후 출시 앱이 strict로 읽어 버전 확인이 실패한다([app-config-released-client.e2e-spec.ts](../test/e2e/app-config-released-client.e2e-spec.ts)). 자동·강제 업데이트 안내를 만들면 envelope 응답의 새 endpoint를 연다.
+- **새 DB**: 두 플랫폼 행이 다 있어야 켜진 응답이 나간다. 행이 없는 로컬·개발 DB는 `{ "enabled": false }`로 응답하므로 버전 확인을 보려면 두 플랫폼을 한 번씩 반영한다.
+- **응답 모양**: `/v1/app-config/app-version` 응답에 칸을 더하지 않는다. 1.10.0 이후 출시 앱이 strict로 읽어 버전 확인이 실패한다([app-config-released-client.e2e-spec.ts](../test/e2e/app-config/app-config-released-client.e2e-spec.ts)). 자동·강제 업데이트 안내를 만들면 envelope 응답의 새 endpoint를 연다.
 
 ```sh
 # <플랫폼>은 ios 또는 android

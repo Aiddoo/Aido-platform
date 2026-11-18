@@ -4,9 +4,9 @@ import {
   type EmailTemplate,
   EmailTemplateRendererPort,
   type RenderedEmail,
-} from "#api/modules/notification/email/application/ports/email-template-renderer.port";
+} from "#api/modules/notification/email-messages/application/ports/email-template-renderer.port";
 
-// 템플릿 파일 없이 종류와 데이터가 그대로 보이는 본문을 만들고 받은 렌더 요청을 남긴다
+// 메일 템플릿 없이 종류와 데이터가 그대로 보이는 본문을 만들고 받은 렌더 요청을 남긴다
 export class StubEmailTemplateRenderer extends EmailTemplateRendererPort {
   readonly requests: { readonly template: EmailTemplate; readonly locale: SupportedLocale }[] = [];
 

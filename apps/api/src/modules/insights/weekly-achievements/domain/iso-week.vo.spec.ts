@@ -62,4 +62,33 @@ describe("IsoWeek", () => {
     // Then
     expect(creating).toThrow(expect.objectContaining({ errorCode: ErrorCode.SYS_0002 }));
   });
+
+  it.each([
+    { year: 2027, week: 53 },
+    { year: 2025, week: 53 },
+    { year: 0, week: 1 },
+    { year: 10_000, week: 1 },
+    { year: 2026.5, week: 1 },
+  ])("그해에 없는 주($year년 $week주)는 SYS_0002로 거절한다", ({ year, week }) => {
+    // When
+    const creating = () => IsoWeek.create(year, week);
+
+    // Then
+    expect(creating).toThrow(expect.objectContaining({ errorCode: ErrorCode.SYS_0002 }));
+  });
+
+  it.each([
+    { year: 2020, week: 53, expected: true },
+    { year: 2026, week: 53, expected: true },
+    { year: 2032, week: 53, expected: true },
+    { year: 2027, week: 52, expected: true },
+    { year: 2027, week: 53, expected: false },
+    { year: 2028, week: 53, expected: false },
+  ])("$year년에 $week주가 있는지는 $expected", ({ year, week, expected }) => {
+    // When
+    const exists = IsoWeek.exists(year, week);
+
+    // Then
+    expect(exists).toBe(expected);
+  });
 });

@@ -4,8 +4,8 @@ import { type MutationLockPort } from "#api/shared/application/ports/mutation-lo
 import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { TodoId } from "../../../shared/domain/todo-id.vo.js";
 import { TodoTitle } from "../../../shared/domain/todo-title.vo.js";
+import { TodoId } from "../../domain/todo-id.vo.js";
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";
@@ -20,15 +20,12 @@ export interface AddTodoItemInput {
   readonly todoId: number;
   readonly userId: string;
   readonly title: string;
-  /** 완료를 되돌릴 때 스트릭의 "오늘" 경계 */
+  // 완료를 되돌릴 때 스트릭의 "오늘" 경계
   readonly timezone: string;
 }
 
 interface AddTodoItemDependencies {
-  readonly todoRepository: Pick<
-    TodoRepositoryPort,
-    "findByIdAndUserId" | "nextItemId" | "insertItem" | "updateDetails"
-  >;
+  readonly todoRepository: Pick<TodoRepositoryPort, "lockByIdAndUserId" | "nextItemId" | "save">;
   readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly applyTodoEvents: Pick<ApplyTodoEventsUseCase, "execute">;
@@ -53,7 +50,7 @@ export class AddTodoItemUseCase {
 
     await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([TodoLockKeys.todo(todoId)]);
-      const todo = await this.#dependencies.todoRepository.findByIdAndUserId(targetTodoId, ownerId);
+      const todo = await this.#dependencies.todoRepository.lockByIdAndUserId(targetTodoId, ownerId);
       if (todo == null) {
         throw todoNotFound(todoId);
       }
@@ -61,22 +58,18 @@ export class AddTodoItemUseCase {
       const { todoRepository, clock } = this.#dependencies;
       const itemTitle = TodoTitle.create(title);
       const now = clock.now();
-      const item = todo.addItem({ id: await todoRepository.nextItemId(), title: itemTitle, now });
-      await todoRepository.insertItem(targetTodoId, item);
+      const wasCompleted = todo.isCompleted();
+      todo.addItem({ id: await todoRepository.nextItemId(), title: itemTitle, timezone, now });
+      await todoRepository.save(todo);
 
-      if (!todo.reopenForAddedItem(timezone, now)) {
-        return [];
+      if (wasCompleted) {
+        this.#dependencies.logger.log({
+          event: TodoLogEvent.COMPLETION_CHANGED,
+          todoId,
+          userId,
+          completed: todo.isCompleted(),
+        });
       }
-      await todoRepository.updateDetails(targetTodoId, {
-        completed: todo.completed,
-        completedAt: todo.completedAt,
-      });
-      this.#dependencies.logger.log({
-        event: TodoLogEvent.COMPLETION_CHANGED,
-        todoId,
-        userId,
-        completed: todo.completed,
-      });
       const events = todo.pullDomainEvents();
       await this.#dependencies.applyTodoEvents.execute(events);
       await this.#dependencies.completionEffects.execute(events);

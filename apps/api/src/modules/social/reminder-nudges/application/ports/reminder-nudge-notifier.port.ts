@@ -1,8 +1,12 @@
-// 큐 payload라 id·이름은 문자열 그대로 싣는다. 할 일이 없는 콕 알림(NUDGE)으로 보낸다
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import type { ReminderNudgeId } from "../../domain/reminder-nudge-id.vo.js";
+
+// 할 일이 없는 콕 알림(NUDGE)으로 보낸다
 export interface ReminderNudgeSentNotification {
-  readonly nudgeId: number;
-  readonly senderId: string;
-  readonly receiverId: string;
+  readonly nudgeId: ReminderNudgeId;
+  readonly senderId: UserId;
+  readonly receiverId: UserId;
   readonly senderName: string;
   readonly message?: string;
 }

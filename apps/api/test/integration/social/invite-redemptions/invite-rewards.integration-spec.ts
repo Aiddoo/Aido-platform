@@ -1,9 +1,9 @@
 import { Logger } from "@nestjs/common";
 import { and, count, eq, inArray } from "drizzle-orm";
 
-import { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
+import { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { PremiumAccessReaderPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
-import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
+import { RevenueCatWebhookController } from "#api/modules/billing/subscriptions/presentation/http/v1/revenuecat-webhook.controller";
 import { InviteNotifierPort } from "#api/modules/social/invite-redemptions/application/ports/invite-notifier.port";
 import { InviteRedemptionReaderPort } from "#api/modules/social/invite-redemptions/application/ports/invite-redemption.reader.port";
 import { InviteRedemptionRepositoryPort } from "#api/modules/social/invite-redemptions/application/ports/invite-redemption.repository.port";
@@ -27,7 +27,7 @@ import {
   inviteRedemption,
   notification,
   premiumGrant,
-  resourceBonus,
+  featureGrant,
   rewardGrant,
   user as userTable,
 } from "#api/platform/database/schema/index";
@@ -36,9 +36,9 @@ import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port"
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
-import { SubscriptionEventBuilder } from "#test/builders/index";
+import { createSubscriptionEventFixture } from "#test/fixtures/billing/subscription-event.fixture";
 import { toDateOrNull } from "#test/fixtures/billing/subscription.fixture";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -92,7 +92,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
   async function createUser(userTag: string): Promise<string> {
     const id = createEntityId();
     await client.insert(userTable).values(
-      UserFixture.create({
+      createUserRowFixture({
         id,
         userTag,
         email: `${userTag.toLowerCase()}@example.test`,
@@ -220,9 +220,9 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     ]);
     expect(
       await client
-        .select({ quantity: resourceBonus.quantity })
-        .from(resourceBonus)
-        .where(eq(resourceBonus.userId, inviterId)),
+        .select({ quantity: featureGrant.quantity })
+        .from(featureGrant)
+        .where(eq(featureGrant.userId, inviterId)),
     ).toEqual([{ quantity: 1 }]);
   });
 
@@ -248,7 +248,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     ]);
     const entitlement = context.module.get(EntitlementReaderPort);
     expect(
-      await entitlement.getFeatureLimitInTx(UserId.reconstitute(inviterId), "FRIEND"),
+      await entitlement.getFeatureLimitInTransaction(UserId.reconstitute(inviterId), "FRIEND"),
     ).toBeNull();
     const reader = context.module.get(InviteRedemptionReaderPort);
     expect(await reader.summarizeByInviterId(UserId.reconstitute(inviterId))).toEqual({
@@ -259,9 +259,9 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     });
     expect(
       await client
-        .select({ quantity: resourceBonus.quantity })
-        .from(resourceBonus)
-        .where(eq(resourceBonus.userId, inviterId)),
+        .select({ quantity: featureGrant.quantity })
+        .from(featureGrant)
+        .where(eq(featureGrant.userId, inviterId)),
     ).toEqual([{ quantity: 1 }]);
     expect(await rewardedNotices()).toEqual([
       { userId: inviterId, body: "프리미엄 7일을 받았고, 친구도 1명 더 추가할 수 있어요" },
@@ -365,21 +365,21 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     for (const suffix of ["A", "B", "C"]) {
       scenarios.push(await qualified(`RACEIVR${suffix}`, `RACEIVE${suffix}`));
     }
-    const webhook = context.module.get(RevenueCatWebhookReceiver);
+    const webhook = context.module.get(RevenueCatWebhookController);
 
     // When
     await Promise.all(
       scenarios.flatMap(({ inviterId, redemptionId }) => [
         grantInviteRewards.execute({ redemptionId, countsAttempt: true }),
-        webhook.receive({
-          body: SubscriptionEventBuilder.initialPurchase()
-            .withAppUserId(inviterId)
-            .withOriginalTransactionId(`race-${inviterId}`)
-            .withTransactionId(`race-${inviterId}`)
-            .withEventId(`race-${inviterId}`)
-            .withExpirationAtMs(storeExpiry.getTime())
-            .build(),
-        }),
+        webhook.receive(
+          createSubscriptionEventFixture("INITIAL_PURCHASE", {
+            app_user_id: inviterId,
+            original_transaction_id: `race-${inviterId}`,
+            transaction_id: `race-${inviterId}`,
+            id: `race-${inviterId}`,
+            expiration_at_ms: storeExpiry.getTime(),
+          }),
+        ),
       ]),
     );
 
@@ -392,7 +392,9 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
         periodEndsAt: storeExpiry,
         bankedDays: 7,
       });
-      expect(await entitlement.canInTx(UserId.reconstitute(inviterId), "AI_REPORT")).toBe(true);
+      expect(await entitlement.canInTransaction(UserId.reconstitute(inviterId), "AI_REPORT")).toBe(
+        true,
+      );
       const projection = await client.query.user.findFirst({
         where: { id: inviterId },
         columns: { subscriptionStatus: true, subscriptionExpiresAt: true },
@@ -462,9 +464,9 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     ]);
     expect(
       await client
-        .select({ quantity: resourceBonus.quantity })
-        .from(resourceBonus)
-        .where(eq(resourceBonus.userId, inviterId)),
+        .select({ quantity: featureGrant.quantity })
+        .from(featureGrant)
+        .where(eq(featureGrant.userId, inviterId)),
     ).toEqual([{ quantity: 1 }]);
     expect(await rewardedNotices()).toEqual([{ userId: inviterId, body: expect.any(String) }]);
     expect(
@@ -473,7 +475,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     ).toBe("ADMIN");
     const entitlement = context.module.get(EntitlementReaderPort);
     expect(
-      await entitlement.getFeatureLimitInTx(UserId.reconstitute(inviterId), "FRIEND"),
+      await entitlement.getFeatureLimitInTransaction(UserId.reconstitute(inviterId), "FRIEND"),
     ).toBeNull();
   });
 

@@ -1,6 +1,6 @@
 import { InviteReaderPort } from "#api/modules/social/invites/application/ports/invite.reader.port";
 import type {
-  InviterProfile,
+  InviterProfileReadModel,
   InviteWithInviterReadModel,
 } from "#api/modules/social/invites/application/read-models/inviter-profile.read-model";
 import type { InviteCode } from "#api/modules/social/shared/domain/invite-code.vo";
@@ -8,7 +8,7 @@ import { type InviteFixtureUser, INVITE_FIXTURE_USERS } from "#test/fixtures/soc
 
 import type { InMemoryInviteRepository } from "./in-memory-invite.repository.js";
 
-function toProfile(user: InviteFixtureUser): InviterProfile {
+function toProfile(user: InviteFixtureUser): InviterProfileReadModel {
   return {
     userId: user.id,
     name: user.name,
@@ -20,7 +20,7 @@ function toProfile(user: InviteFixtureUser): InviterProfile {
 // 초대 저장소 대역의 상태를 읽고 초대한 사람 프로필은 fixture 사용자에서 읽는다
 export class InMemoryInviteReader extends InviteReaderPort {
   readonly #invites: InMemoryInviteRepository;
-  readonly #profiles = new Map<string, InviterProfile>();
+  readonly #profiles = new Map<string, InviterProfileReadModel>();
   readonly #withdrawnUserIds = new Set<string>();
 
   constructor(

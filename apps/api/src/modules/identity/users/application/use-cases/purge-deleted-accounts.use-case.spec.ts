@@ -1,33 +1,29 @@
-import { SECURITY_EVENT } from "@aido/api/vocabulary";
-
 import type { AccountTodoCommentCleanupResult } from "#api/modules/identity/users/application/ports/account-cleanup.port";
-import type { IdentityUser } from "#api/modules/identity/users/domain/identity-user.aggregate";
+import type { User } from "#api/modules/identity/users/domain/user.aggregate";
+import { SECURITY_EVENT } from "#api/modules/identity/users/domain/users.constants";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { InMemoryAuthSecurityLogRepository } from "#test/doubles/identity/in-memory-auth-security-log.repository";
-import { InMemoryAuthUserRepository } from "#test/doubles/identity/in-memory-auth-user.repository";
-import { FixedClock } from "#test/doubles/platform/fixed-clock";
-import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
-import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
-import { SilentLogger } from "#test/doubles/platform/silent-logger";
-import {
-  AUTH_FIXTURE_NOW,
-  createIdentityUserFixture,
-} from "#test/fixtures/identity/auth-session.fixture";
+import { InMemorySecurityLogRepository } from "#test/doubles/identity/in-memory-security-log.repository";
+import { InMemoryUserRepository } from "#test/doubles/identity/in-memory-user.repository";
 import {
   StubAccountNotificationCleanup,
   StubAccountTodoCommentCleanup,
   StubAccountUsageCleanup,
-} from "#test/mocks/ports/account-lifecycle.stub";
+} from "#test/doubles/identity/stub-account-lifecycle";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { AUTH_FIXTURE_NOW, createUserFixture } from "#test/fixtures/identity/session.fixture";
 
-import { AuthLogEvent } from "../../../auth/application/auth.log-events.js";
 import { UserAlerts } from "../users.alerts.js";
+import { UserLogEvent } from "../users.log-events.js";
 import { PurgeDeletedAccountsUseCase } from "./purge-deleted-accounts.use-case.js";
 
 // 탈퇴 유예 30일을 하루 넘긴 시각
 const deletedAt = AUTH_FIXTURE_NOW.subtract({ hours: 24 * 31 });
 
-function deletedUser(id: string, at: Temporal.Instant = deletedAt): IdentityUser {
-  return createIdentityUserFixture({
+function deletedUser(id: string, at: Temporal.Instant = deletedAt): User {
+  return createUserFixture({
     id,
     email: `${id}@example.com`,
     status: "SUSPENDED",
@@ -41,7 +37,7 @@ function completion(counts: {
   readonly skippedCount: number;
   readonly failedCount: number;
 }) {
-  return { event: AuthLogEvent.ACCOUNT_PURGE_COMPLETED, ...counts };
+  return { event: UserLogEvent.ACCOUNT_PURGE_COMPLETED, ...counts };
 }
 
 class FailingTodoCommentCleanup extends StubAccountTodoCommentCleanup {
@@ -50,7 +46,7 @@ class FailingTodoCommentCleanup extends StubAccountTodoCommentCleanup {
   }
 }
 
-class FailingHardDeleteUserRepository extends InMemoryAuthUserRepository {
+class FailingHardDeleteUserRepository extends InMemoryUserRepository {
   override async hardDelete(id: UserId): Promise<void> {
     if (id.value === "user-1") {
       throw new Error("Delete failed");
@@ -71,22 +67,22 @@ class ThrowingNotificationSettlement extends StubAccountNotificationCleanup {
   }
 }
 
-class FailingSecurityLogRepository extends InMemoryAuthSecurityLogRepository {
+class FailingSecurityLogRepository extends InMemorySecurityLogRepository {
   override async create(): Promise<void> {
     throw new Error("Audit write failed");
   }
 }
 
 // 후보 조회 뒤 잠그기 전에 복구·재탈퇴·삭제된 경합을 만들려고 조회 시점의 후보를 따로 둔다
-class StaleCandidateUserRepository extends InMemoryAuthUserRepository {
-  readonly #candidates: readonly IdentityUser[];
+class StaleCandidateUserRepository extends InMemoryUserRepository {
+  readonly #candidates: readonly User[];
 
-  constructor(users: readonly IdentityUser[], candidates: readonly IdentityUser[]) {
+  constructor(users: readonly User[], candidates: readonly User[]) {
     super(users);
     this.#candidates = candidates;
   }
 
-  override async listPurgeEligible(): Promise<IdentityUser[]> {
+  override async listPurgeEligible(): Promise<User[]> {
     return [...this.#candidates];
   }
 }
@@ -94,19 +90,20 @@ class StaleCandidateUserRepository extends InMemoryAuthUserRepository {
 describe("PurgeDeletedAccounts — 유예 기간이 지난 계정의 영구 삭제", () => {
   function given(
     options: {
-      readonly userRepository?: InMemoryAuthUserRepository;
+      readonly userRepository?: InMemoryUserRepository;
       readonly notificationCleanup?: StubAccountNotificationCleanup;
       readonly todoCommentCleanup?: StubAccountTodoCommentCleanup;
-      readonly securityLogRepository?: InMemoryAuthSecurityLogRepository;
+      readonly securityLogRepository?: InMemorySecurityLogRepository;
+      readonly batchSize?: number;
     } = {},
   ) {
     const userRepository =
-      options.userRepository ?? new InMemoryAuthUserRepository([deletedUser("user-1")]);
+      options.userRepository ?? new InMemoryUserRepository([deletedUser("user-1")]);
     const notificationCleanup = options.notificationCleanup ?? new StubAccountNotificationCleanup();
     const todoCommentCleanup = options.todoCommentCleanup ?? new StubAccountTodoCommentCleanup();
     const usageCleanup = new StubAccountUsageCleanup();
     const securityLogRepository =
-      options.securityLogRepository ?? new InMemoryAuthSecurityLogRepository();
+      options.securityLogRepository ?? new InMemorySecurityLogRepository();
     const logger = new SilentLogger();
     const alert = new RecordingOperationalAlert();
     const useCase = new PurgeDeletedAccountsUseCase({
@@ -119,6 +116,7 @@ describe("PurgeDeletedAccounts — 유예 기간이 지난 계정의 영구 삭�
       logger,
       alert,
       unitOfWork: new ImmediateUnitOfWork(),
+      ...(options.batchSize != null && { batchSize: options.batchSize }),
     });
     return {
       alert,
@@ -170,7 +168,7 @@ describe("PurgeDeletedAccounts — 유예 기간이 지난 계정의 영구 삭�
     ]);
     // 이메일은 감사 기록에만 남고 운영 로그에는 남지 않는다
     expect(fixture.logger.messages).toEqual([
-      { event: AuthLogEvent.ACCOUNT_PURGED, userId: "user-1" },
+      { event: UserLogEvent.ACCOUNT_PURGED, userId: "user-1" },
       completion({ candidateCount: 1, purgedCount: 1, skippedCount: 0, failedCount: 0 }),
     ]);
   });
@@ -188,7 +186,7 @@ describe("PurgeDeletedAccounts — 유예 기간이 지난 계정의 영구 삭�
     expect(fixture.notificationCleanup.settlements).toEqual([]);
     expect(fixture.todoCommentCleanup.settlements).toEqual([]);
     expect(fixture.logger.messages).toEqual([
-      { event: AuthLogEvent.ACCOUNT_PURGE_FAILED, userId: "user-1", errorType: "Error" },
+      { event: UserLogEvent.ACCOUNT_PURGE_FAILED, userId: "user-1", errorType: "Error" },
       completion({ candidateCount: 1, purgedCount: 0, skippedCount: 0, failedCount: 1 }),
     ]);
   });
@@ -223,6 +221,29 @@ describe("PurgeDeletedAccounts — 유예 기간이 지난 계정의 영구 삭�
     ]);
   });
 
+  it("후보가 묶음 크기를 넘으면 실패한 후보를 지나 다음 묶음까지 모두 처리한다", async () => {
+    // Given
+    const fixture = given({
+      batchSize: 2,
+      userRepository: new FailingHardDeleteUserRepository([
+        deletedUser("user-1"),
+        deletedUser("user-2"),
+        deletedUser("user-3"),
+        deletedUser("user-4"),
+        deletedUser("user-5"),
+      ]),
+    });
+
+    // When
+    await fixture.useCase.execute();
+
+    // Then
+    expect(fixture.userRepository.all.map((user) => user.id)).toEqual(["user-1"]);
+    expect(fixture.logger.messages).toContainEqual(
+      completion({ candidateCount: 5, purgedCount: 4, skippedCount: 0, failedCount: 1 }),
+    );
+  });
+
   it.each([
     { scenario: "비동기 거절", createCleanup: () => new RejectingNotificationSettlement() },
     { scenario: "동기 예외", createCleanup: () => new ThrowingNotificationSettlement() },
@@ -241,9 +262,9 @@ describe("PurgeDeletedAccounts — 유예 기간이 지난 계정의 영구 삭�
       expect(fixture.securityLogRepository.entries).toHaveLength(1);
       expect(fixture.todoCommentCleanup.settlements).toEqual([{ affectedTodoIds: [101] }]);
       expect(fixture.logger.messages).toEqual([
-        { event: AuthLogEvent.ACCOUNT_PURGED, userId: "user-1" },
+        { event: UserLogEvent.ACCOUNT_PURGED, userId: "user-1" },
         {
-          event: AuthLogEvent.ACCOUNT_PURGE_SETTLEMENT_FAILED,
+          event: UserLogEvent.ACCOUNT_PURGE_SETTLEMENT_FAILED,
           userId: "user-1",
           context: "notification",
         },
@@ -269,7 +290,7 @@ describe("PurgeDeletedAccounts — 유예 기간이 지난 계정의 영구 삭�
 
   it("조회 이후 복구·갱신·삭제된 후보는 최신 상태를 확인하고 정리하지 않는다", async () => {
     // Given
-    const restored = createIdentityUserFixture({
+    const restored = createUserFixture({
       id: "restored-user",
       email: "restored@example.com",
     });
@@ -299,7 +320,7 @@ describe("PurgeDeletedAccounts — 유예 기간이 지난 계정의 영구 삭�
 
   it("삭제 대상이 없으면 정리와 감사 기록 없이 완료 수 0을 기록한다", async () => {
     // Given
-    const fixture = given({ userRepository: new InMemoryAuthUserRepository() });
+    const fixture = given({ userRepository: new InMemoryUserRepository() });
 
     // When
     await fixture.useCase.execute();

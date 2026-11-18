@@ -1,5 +1,6 @@
 import type { StorePeriodType, SubscriptionEnvironment } from "@aido/api/vocabulary";
 
+import { ProviderEventId } from "./provider-event-id.vo.js";
 import type {
   StoreSubscriptionEventKind,
   SubscriptionEndReason,
@@ -119,3 +120,10 @@ export type StoreSubscriptionChainEvent = Exclude<
   StoreSubscriptionEvent,
   SubscriptionTransferredEvent
 >;
+
+/** 처리 원장·체인 행에 남기는 공급자 이벤트 ID. 공급자가 보내지 않았으면 비운다. */
+export function providerEventIdOf(event: StoreSubscriptionEvent): ProviderEventId | undefined {
+  return event.providerEventId == null
+    ? undefined
+    : ProviderEventId.reconstitute(event.providerEventId);
+}

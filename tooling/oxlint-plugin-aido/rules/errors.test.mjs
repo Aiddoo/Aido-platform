@@ -29,3 +29,28 @@ tester.run('no-error-field-access', rules['no-error-field-access'], {
     { code: 'apiError.details;', errors: 1 },
   ],
 });
+
+tester.run('error-class-location', rules['error-class-location'], {
+  valid: [
+    'export function memoNotFound(memoId: MemoId) { return new ApplicationException(ErrorCode.MEMO_2001); }',
+    'class MemoRepository extends BaseRepository {}',
+    'throw new Error("boom");',
+    { code: 'throw memoNotFound(memoId);', options: [{ inlineThrow: true }] },
+    { code: 'throw error;', options: [{ inlineThrow: true }] },
+  ],
+  invalid: [
+    {
+      code: 'export class MemoConflictError extends Error {}',
+      errors: [{ message: /MemoConflictError: 오류 클래스\(Error 하위\)는 \*\.errors\.ts에만/ }],
+    },
+    { code: 'class MemoNotFound extends ApplicationException {}', errors: 1 },
+    { code: 'class MemoRetryableError extends MemoConflictError {}', errors: 1 },
+    { code: 'const Invalid = class extends DomainException {};', errors: 1 },
+    {
+      code: 'throw new Error("memo missing");',
+      options: [{ inlineThrow: true }],
+      errors: [{ message: /throw new Error\(…\)를 바로 쓰지 않는다/ }],
+    },
+    { code: 'throw TypeError("bad");', options: [{ inlineThrow: true }], errors: 1 },
+  ],
+});

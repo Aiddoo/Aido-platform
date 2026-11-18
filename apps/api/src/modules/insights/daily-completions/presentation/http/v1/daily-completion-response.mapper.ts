@@ -1,24 +1,28 @@
 import type {
   DailyCompletionSummary,
   DailyCompletionsRangeResponse,
-} from "@aido/api/contracts/daily-completion";
+} from "@aido/api/contracts/daily-completion/v1";
 
-import type { DailyCompletionRange } from "../../../application/read-models/daily-completion-range.read-model.js";
-import type { DailyCompletion } from "../../../domain/daily-completion.aggregate.js";
+import type {
+  DailyCompletionRangeReadModel,
+  DailyCompletionReadModel,
+} from "../../../application/read-models/daily-completion-range.read-model.js";
 
-function toDailyCompletionSummaryResponse(completion: DailyCompletion): DailyCompletionSummary {
+function toDailyCompletionSummaryResponse(
+  completion: DailyCompletionReadModel,
+): DailyCompletionSummary {
   return {
     date: completion.date.toString(),
     totalTodos: completion.totalTodos,
     completedTodos: completion.completedTodos,
-    isComplete: completion.isComplete(),
+    isComplete: completion.isComplete,
     completionRate: completion.completionRate,
     categoryColors: [...completion.categoryColors],
   };
 }
 
 export function toDailyCompletionsRangeResponse(
-  result: DailyCompletionRange,
+  result: DailyCompletionRangeReadModel,
 ): DailyCompletionsRangeResponse {
   return {
     completions: result.completions.map(toDailyCompletionSummaryResponse),

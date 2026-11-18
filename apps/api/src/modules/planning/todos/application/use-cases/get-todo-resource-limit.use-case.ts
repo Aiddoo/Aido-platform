@@ -1,8 +1,8 @@
 import { TODO_LIMITS } from "@aido/api/vocabulary";
 
+import { TodoCategoryId } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 
 export interface TodoResourceLimitResult {

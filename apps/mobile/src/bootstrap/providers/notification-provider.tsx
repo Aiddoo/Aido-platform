@@ -6,7 +6,7 @@ import { useForegroundPushPresentation } from '@src/features/notification/hooks/
 import { useForegroundPushSync } from '@src/features/notification/hooks/use-foreground-push-sync';
 import { useNotificationBadgeSync } from '@src/features/notification/hooks/use-notification-badge-sync';
 import { usePushDeviceSync } from '@src/features/notification/hooks/use-push-device-sync';
-import { useRegisterMarketingNotificationCategory } from '@src/features/notification/hooks/use-register-marketing-notification-category';
+import { useRegisterNotificationCategories } from '@src/features/notification/hooks/use-register-notification-categories';
 import { useTimezoneChangeNotice } from '@src/features/notification/hooks/use-timezone-change-notice';
 import { invalidateNotifications } from '@src/features/notification/queries/notification-cache';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
@@ -32,7 +32,7 @@ export function NotificationProvider({ children }: PropsWithChildren) {
     () => subscribeNotificationsChanged(() => invalidateNotifications(queryClient)),
     [queryClient],
   );
-  useRegisterMarketingNotificationCategory();
+  useRegisterNotificationCategories();
   usePushDeviceSync({
     authStatus: status,
     deviceTimeZone: currentTimeZone,

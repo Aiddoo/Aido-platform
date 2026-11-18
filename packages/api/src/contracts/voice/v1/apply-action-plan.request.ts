@@ -8,7 +8,7 @@ import { plannedMemoActionSchema, plannedTodoFields } from "./action-plan.common
 const applyTodoActionSchema = z
   .object({
     ...plannedTodoFields,
-    categoryId: z.number().int().positive().describe("저장할 카테고리 id"),
+    categoryId: z.int().positive().meta({ description: "저장할 카테고리 id" }),
   })
   .refine((todo) => todo.repeat == null || todo.endDate == null, {
     error: "반복 할 일에는 종료 날짜를 함께 보낼 수 없습니다",
@@ -28,13 +28,10 @@ export type ApplyAction = z.infer<typeof applyActionSchema>;
 
 export const applyActionPlanRequestSchema = z
   .object({
-    source: z.enum(ACTION_PLAN_SOURCES).describe("계획을 만든 흐름"),
-    sourceMemoId: z
-      .number()
-      .int()
-      .positive()
-      .optional()
-      .describe("source가 MEMO일 때만 필수인 원본 메모 id. 저장에 성공하면 이 메모를 지운다"),
+    source: z.enum(ACTION_PLAN_SOURCES).meta({ description: "계획을 만든 흐름" }),
+    sourceMemoId: z.int().positive().optional().meta({
+      description: "source가 MEMO일 때만 필수인 원본 메모 id. 저장에 성공하면 이 메모를 지운다",
+    }),
     actions: z
       .array(applyActionSchema)
       .min(1, "저장할 행동을 하나 이상 골라주세요")
@@ -54,7 +51,7 @@ export const applyActionPlanRequestSchema = z
       .refine((actions) => new Set(actions.map((action) => action.key)).size === actions.length, {
         error: "행동 key가 겹칩니다",
       })
-      .describe("사용자가 확인한 행동. 고친 내용을 그대로 저장한다"),
+      .meta({ description: "사용자가 확인한 행동. 고친 내용을 그대로 저장한다" }),
   })
   .refine((request) => (request.source === "MEMO") === (request.sourceMemoId != null), {
     error: "원본 메모는 메모에서 만든 계획에만, 그리고 반드시 함께 보내야 합니다",

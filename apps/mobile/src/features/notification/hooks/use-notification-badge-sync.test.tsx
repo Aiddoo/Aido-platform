@@ -46,6 +46,21 @@ describe('useNotificationBadgeSync', () => {
     await waitFor(() => expect(gateway.setBadgeCount).toHaveBeenLastCalledWith(1));
   });
 
+  it('서버가 푸시로 바꾼 아이콘 배지는 앱이 앞으로 와서 같은 수를 받아도 다시 맞춘다', async () => {
+    // Given
+    const { gateway } = await setup();
+    gateway.setBadgeCount.mockClear();
+
+    // When
+    await act(async () => {
+      focusManager.setFocused(false);
+      focusManager.setFocused(true);
+    });
+
+    // Then
+    await waitFor(() => expect(gateway.setBadgeCount).toHaveBeenLastCalledWith(3));
+  });
+
   it('알림함이 고친 안 읽은 수 캐시를 그대로 배지에 쓴다', async () => {
     // Given
     const { gateway, queryClient } = await setup();

@@ -4,12 +4,12 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { DomainEvent } from "#api/shared/domain/model/domain-event";
 
 import { localDateAt } from "../../../shared/domain/todo-calendar.domain-service.js";
-import { TodoToggledEvent } from "../../../shared/domain/todo-toggled.event.js";
 import {
   isAllCompletedToday,
   MILESTONE_COMPLETION_COUNT_LIMIT,
   milestoneForCount,
 } from "../../domain/todo-completion.domain-service.js";
+import { TodoToggledEvent } from "../../domain/todo-toggled.event.js";
 import type { FriendPort } from "../ports/friend.port.js";
 import type { StreakPort, TodayCompletionStats } from "../ports/streak.port.js";
 import type { TodoNotificationPort } from "../ports/todo-notification.port.js";
@@ -53,7 +53,12 @@ export class ApplyTodoCompletionEffectsUseCase {
     // 스트릭과 친구 완료 알림이 같은 오늘 현황을 보므로 한 번만 센다
     const todayStats = await this.#readTodayStats(ownerId, timezone);
 
-    await this.#dependencies.streakPort.recordTodoToggle(ownerId, completed, timezone, todayStats);
+    await this.#dependencies.streakPort.recordTodoToggle({
+      userId: ownerId,
+      completed,
+      timezone,
+      todayStats,
+    });
 
     if (completed) {
       await this.#notifyMilestone(ownerId);
@@ -80,9 +85,9 @@ export class ApplyTodoCompletionEffectsUseCase {
       return;
     }
     await this.#dependencies.todoNotification.enqueueFriendCompleted({
-      friendId: ownerId.value,
+      friendId: ownerId,
       friendName: await this.#dependencies.friendPort.getUserDisplayName(ownerId),
-      notifyUserIds: friendIds,
+      notifyUserIds: friendIds.map((friendId) => UserId.reconstitute(friendId)),
       timezone,
     });
     this.#dependencies.logger.log({
@@ -101,7 +106,7 @@ export class ApplyTodoCompletionEffectsUseCase {
     );
     if (milestone != null) {
       await this.#dependencies.todoNotification.enqueueMilestoneReached({
-        userId: ownerId.value,
+        userId: ownerId,
         milestone,
       });
     }

@@ -2,13 +2,13 @@ import { ErrorCode } from "@aido/api/errors";
 import { and, count as countRows, eq, inArray } from "drizzle-orm";
 
 import { PremiumAccessReaderPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
-import { RevenueCatWebhookReceiver } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook-receiver.adapter";
+import { RevenueCatWebhookController } from "#api/modules/billing/subscriptions/presentation/http/v1/revenuecat-webhook.controller";
 import { RedeemInviteUseCase } from "#api/modules/social/invite-redemptions/application/use-cases/redeem-invite.use-case";
 import { InviteConfigPort } from "#api/modules/social/invites/application/ports/invite-config.port";
 import { IssueMyInviteUseCase } from "#api/modules/social/invites/application/use-cases/issue-my-invite.use-case";
 import { RotateInviteCodeUseCase } from "#api/modules/social/invites/application/use-cases/rotate-invite-code.use-case";
 import {
-  follow,
+  friendship as friendshipTable,
   inviteRedemption,
   premiumGrant,
   rewardClaim,
@@ -17,8 +17,8 @@ import {
 } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
-import { SubscriptionEventBuilder } from "#test/builders/index";
-import { UserFixture } from "#test/fixtures/index";
+import { createSubscriptionEventFixture } from "#test/fixtures/billing/subscription-event.fixture";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -63,7 +63,9 @@ describe("초대 수락 동시성 (실제 PostgreSQL)", () => {
     const id = createEntityId();
     await client
       .insert(user)
-      .values(UserFixture.create({ id, userTag, email: `${userTag.toLowerCase()}@example.test` }));
+      .values(
+        createUserRowFixture({ id, userTag, email: `${userTag.toLowerCase()}@example.test` }),
+      );
     return id;
   }
 
@@ -113,14 +115,14 @@ describe("초대 수락 동시성 (실제 PostgreSQL)", () => {
     const inviteeId = await createUser("CONCPUR2");
     const { code } = await issueMyInvite.execute({ inviterId });
     const purchasedAt = Date.now();
-    const purchase = SubscriptionEventBuilder.initialPurchase()
-      .withAppUserId(inviteeId)
-      .withOriginalTransactionId("redeem-purchase-chain")
-      .withTransactionId("redeem-purchase-chain")
-      .withEventId("redeem-purchase")
-      .withPurchasedAtMs(purchasedAt)
-      .withExpirationAtMs(purchasedAt + 30 * 24 * 60 * 60 * 1000)
-      .build();
+    const purchase = createSubscriptionEventFixture("INITIAL_PURCHASE", {
+      app_user_id: inviteeId,
+      original_transaction_id: "redeem-purchase-chain",
+      transaction_id: "redeem-purchase-chain",
+      id: "redeem-purchase",
+      purchased_at_ms: purchasedAt,
+      expiration_at_ms: purchasedAt + 30 * 24 * 60 * 60 * 1000,
+    });
 
     // When
     const [redeemed] = await Promise.all([
@@ -130,7 +132,7 @@ describe("초대 수락 동시성 (실제 PostgreSQL)", () => {
         installationId: "purchase-device",
         timezone: "Asia/Seoul",
       }),
-      context.module.get(RevenueCatWebhookReceiver).receive({ body: purchase }),
+      context.module.get(RevenueCatWebhookController).receive(purchase),
     ]);
 
     // Then
@@ -258,11 +260,11 @@ describe("초대 수락 동시성 (실제 PostgreSQL)", () => {
     const request = { inviteeId, code, installationId: "replay-device", timezone: "Asia/Seoul" };
     const first = await redeemInvite.execute(request);
     await client
-      .delete(follow)
+      .delete(friendshipTable)
       .where(
         and(
-          inArray(follow.followerId, [inviterId, inviteeId]),
-          inArray(follow.followingId, [inviterId, inviteeId]),
+          inArray(friendshipTable.followerId, [inviterId, inviteeId]),
+          inArray(friendshipTable.followingId, [inviterId, inviteeId]),
         ),
       );
 

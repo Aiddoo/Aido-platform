@@ -219,7 +219,42 @@ const noReturnTypeOfHook = {
   },
 };
 
+// 주석은 코드로 알 수 없는 이유만 남긴다(루트 AGENTS 공통 코드 규칙). 타입이 이미 말하는 @param·@returns,
+// 사용법을 되풀이하는 @example, 구역 구분선은 기계적으로 찾을 수 있어 막는다
+const RESTATING_JSDOC_TAG = /^\s*\*\s*@(?:param|returns?|example)\b/mu;
+const DIVIDER_COMMENT = /^\s*(?:[=\-─━#*]\s*){3,}/u;
+
+const noRestatingComment = {
+  meta: { type: 'suggestion' },
+  createOnce(context) {
+    return {
+      Program() {
+        for (const comment of context.sourceCode.getAllComments()) {
+          if (
+            comment.type === 'Block' &&
+            comment.value.startsWith('*') &&
+            RESTATING_JSDOC_TAG.test(comment.value)
+          ) {
+            context.report({
+              node: comment,
+              message:
+                'JSDoc의 @param·@returns·@example은 타입과 코드가 이미 말한다. 코드로 알 수 없는 이유만 한 줄로 남긴다.',
+            });
+          }
+          if (comment.type === 'Line' && DIVIDER_COMMENT.test(comment.value)) {
+            context.report({
+              node: comment,
+              message: '구역 구분선 주석을 쓰지 않는다. 구역이 필요하면 파일·함수로 나눈다.',
+            });
+          }
+        }
+      },
+    };
+  },
+};
+
 export default {
+  'no-restating-comment': noRestatingComment,
   'no-class-method': noClassMethod,
   'no-object-method-shorthand': noObjectMethodShorthand,
   'dto-alias': dtoAlias,

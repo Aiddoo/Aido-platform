@@ -1,4 +1,4 @@
-import { FriendshipCachePort } from "#api/modules/social/friends/application/ports/friendship-cache.port";
+import { FriendshipCachePort } from "#api/modules/social/friendships/application/ports/friendship-cache.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 function pairKey(user: UserId, target: UserId): string {
@@ -13,8 +13,8 @@ export class FakeFriendshipCache extends FriendshipCachePort {
   readonly friendCounts = new Map<string, number>();
   readonly invalidated: string[] = [];
 
-  async getMutualFriend(smallerId: UserId, largerId: UserId): Promise<boolean | undefined> {
-    return this.mutual.get(pairKey(smallerId, largerId));
+  async findMutualFriend(smallerId: UserId, largerId: UserId): Promise<boolean | null> {
+    return this.mutual.get(pairKey(smallerId, largerId)) ?? null;
   }
 
   async setMutualFriend(smallerId: UserId, largerId: UserId, isMutual: boolean): Promise<void> {

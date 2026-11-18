@@ -1,13 +1,14 @@
-import type { SupportedLocale } from "#api/shared/domain/locale";
+import type { SupportedLocale } from "@aido/api/vocabulary";
+
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
 import { StubNotificationHistoryReader } from "#test/doubles/notification/stub-notification-history.reader";
 import { StubReEngagementReader } from "#test/doubles/notification/stub-re-engagement.reader";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createTimezoneContextFixture } from "#test/fixtures/notification/timezone-context.fixture";
 
-import { createStreakAtRiskNotificationMessage } from "../../../push/application/messages/scheduler-notification.messages.js";
-import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
-import type { UserWithTodosAndStreak } from "../read-models/scheduler.read-model.js";
+import { createStreakAtRiskNotificationMessage } from "../../../shared/application/messages/scheduler-notification.messages.js";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
+import type { UserWithTodosAndStreakReadModel } from "../read-models/scheduler.read-model.js";
 import { SendStreakAtRiskUseCase } from "./send-streak-at-risk.use-case.js";
 
 describe("SendStreakAtRiskUseCase — 연속 달성 위험 전략", () => {
@@ -16,12 +17,12 @@ describe("SendStreakAtRiskUseCase — 연속 달성 위험 전략", () => {
   let history: StubNotificationHistoryReader;
   let strategy: SendStreakAtRiskUseCase;
 
-  const ctx = createTimezoneContextFixture({ date: "2024-01-16", localHour: 20 });
+  const timezoneContext = createTimezoneContextFixture({ date: "2024-01-16", localHour: 20 });
   const YESTERDAY = Temporal.PlainDate.from("2024-01-15");
   const sent = () => publisher.published.map(({ data }) => data);
 
   /** 어제까지 이어 왔고 오늘 미완료 1개 → 위기 */
-  const atRiskUser = (id: string, streak = 5, locale = "ko"): UserWithTodosAndStreak => ({
+  const atRiskUser = (id: string, streak = 5, locale = "ko"): UserWithTodosAndStreakReadModel => ({
     id,
     todos: [{ completed: false }],
     preference: { currentStreak: streak, lastCompletedDate: YESTERDAY, locale },
@@ -44,7 +45,7 @@ describe("SendStreakAtRiskUseCase — 연속 달성 위험 전략", () => {
     history = new StubNotificationHistoryReader();
     strategy = new SendStreakAtRiskUseCase({
       reader,
-      notificationPublisher: publisher,
+      notificationPublisher: publisher.batch,
       notificationHistoryReader: history,
       logger: new SilentLogger(),
     });
@@ -55,14 +56,18 @@ describe("SendStreakAtRiskUseCase — 연속 달성 위험 전략", () => {
     reader.streakAtRiskUsers = [atRiskUser("user-1", 5)];
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 1 });
     expect(reader.queries).toEqual([
       {
         method: "findStreakAtRiskUsers",
-        params: { timezones: ["Asia/Seoul"], today: ctx.today, tomorrow: ctx.tomorrow },
+        params: {
+          timezones: ["Asia/Seoul"],
+          today: timezoneContext.today,
+          tomorrow: timezoneContext.tomorrow,
+        },
       },
     ]);
     expect(sent()).toEqual([
@@ -71,11 +76,12 @@ describe("SendStreakAtRiskUseCase — 연속 달성 위험 전략", () => {
   });
 
   it.each([7, 10])("다시 계산한 연속 기록 %i일을 메시지에 쓴다", async (streak) => {
-    // Given 어제 완료 + 오늘 미완료라 연속 기록이 그대로 이어진다
+    // Given
+    // 어제 완료 + 오늘 미완료라 연속 기록이 그대로 이어진다
     reader.streakAtRiskUsers = [atRiskUser("user-1", streak)];
 
     // When
-    await strategy.execute(ctx);
+    await strategy.execute(timezoneContext);
 
     // Then
     const expected = expectedMessage("user-1", streak);
@@ -87,7 +93,7 @@ describe("SendStreakAtRiskUseCase — 연속 달성 위험 전략", () => {
     reader.streakAtRiskUsers = [atRiskUser("user-1", 5, "de")];
 
     // When
-    await strategy.execute(ctx);
+    await strategy.execute(timezoneContext);
 
     // Then
     const expected = expectedMessage("user-1", 5, "en");
@@ -99,7 +105,7 @@ describe("SendStreakAtRiskUseCase — 연속 달성 위험 전략", () => {
     reader.streakAtRiskUsers = [atRiskUser("user-1", 2)];
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 0 });
@@ -117,7 +123,7 @@ describe("SendStreakAtRiskUseCase — 연속 달성 위험 전략", () => {
     ];
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 0 });
@@ -135,7 +141,7 @@ describe("SendStreakAtRiskUseCase — 연속 달성 위험 전략", () => {
     ];
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 0 });
@@ -145,10 +151,10 @@ describe("SendStreakAtRiskUseCase — 연속 달성 위험 전략", () => {
   it("오늘 이미 스트릭 위기 알림을 받은 사용자를 제외한다", async () => {
     // Given
     reader.streakAtRiskUsers = [atRiskUser("user-1"), atRiskUser("user-2")];
-    history.notified("STREAK_AT_RISK", ["user-1"], ctx.today);
+    history.notified("STREAK_AT_RISK", ["user-1"], timezoneContext.today);
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 1 });
@@ -157,7 +163,7 @@ describe("SendStreakAtRiskUseCase — 연속 달성 위험 전략", () => {
 
   it("대상이 없으면 발송 이력도 조회하지 않는다", async () => {
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 0 });

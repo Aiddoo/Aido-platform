@@ -7,6 +7,7 @@ import { AchievementOwnerTimezoneReaderPort } from "./application/ports/achievem
 import { WeeklyAchievementWriterPort } from "./application/ports/weekly-achievement-writer.port.js";
 import { WeeklyAchievementRepositoryPort } from "./application/ports/weekly-achievement.repository.port.js";
 import { GetWeeklyAchievementUseCase } from "./application/use-cases/get-weekly-achievement.use-case.js";
+import { ListWeeklyAchievementYearsUseCase } from "./application/use-cases/list-weekly-achievement-years.use-case.js";
 import { ListWeeklyAchievementsUseCase } from "./application/use-cases/list-weekly-achievements.use-case.js";
 import { RecordWeeklyAchievementsUseCase } from "./application/use-cases/record-weekly-achievements.use-case.js";
 import { AchievementOwnerTimezoneReaderAdapter } from "./infrastructure/adapters/achievement-owner-timezone-reader.adapter.js";
@@ -26,6 +27,9 @@ export const INSIGHTS_WEEKLY_ACHIEVEMENTS_PROVIDERS = [
     weeklyAchievementRepository: WeeklyAchievementRepositoryPort,
     ownerTimezoneReader: AchievementOwnerTimezoneReaderPort,
     clock: ClockPort,
+  }),
+  provideUseCase(ListWeeklyAchievementYearsUseCase, {
+    weeklyAchievementRepository: WeeklyAchievementRepositoryPort,
   }),
   provideUseCase(RecordWeeklyAchievementsUseCase, {
     weeklyAchievementRepository: WeeklyAchievementRepositoryPort,

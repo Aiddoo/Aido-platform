@@ -1,0 +1,104 @@
+import type { Session } from "#api/modules/identity/sessions/domain/session.aggregate";
+import { REVOKE_REASON } from "#api/modules/identity/sessions/domain/sessions.constants";
+import { SECURITY_EVENT } from "#api/modules/identity/users/domain/users.constants";
+import { InMemorySecurityLogRepository } from "#test/doubles/identity/in-memory-security-log.repository";
+import { InMemorySessionRepository } from "#test/doubles/identity/in-memory-session.repository";
+import {
+  StubSessionCache,
+  StubSessionPushDeviceReleaser,
+} from "#test/doubles/identity/stub-auth-session";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import {
+  AUTH_FIXTURE_NOW,
+  AUTH_FIXTURE_USER_ID,
+  createSessionFixture,
+} from "#test/fixtures/identity/session.fixture";
+
+import { REQUEST_ORIGIN_DEFAULTS } from "../../../shared/domain/request-metadata.constants.js";
+import { LogoutAllUseCase } from "./logout-all.use-case.js";
+
+const userId = AUTH_FIXTURE_USER_ID;
+
+describe("LogoutAll — 모든 기기의 세션 종료", () => {
+  function givenSessions(sessions: readonly Session[] = []) {
+    const sessionRepository = new InMemorySessionRepository(sessions);
+    const cacheService = new StubSessionCache(sessions.map((session) => session.id.value));
+    const securityLogRepository = new InMemorySecurityLogRepository();
+    const pushDevices = new StubSessionPushDeviceReleaser();
+    const useCase = new LogoutAllUseCase({
+      pushDevices,
+      sessionRepository,
+      cacheService,
+      securityLogRepository,
+      clock: new FixedClock(AUTH_FIXTURE_NOW),
+      logger: new SilentLogger(),
+    });
+    return { useCase, sessionRepository, cacheService, securityLogRepository, pushDevices };
+  }
+
+  it("만료된 세션을 포함해 내 미폐기 세션과 캐시를 비우고 다른 사용자는 유지한다", async () => {
+    // Given
+    const fixture = givenSessions([
+      createSessionFixture({ id: "session-1" }),
+      createSessionFixture({ id: "session-2" }),
+      createSessionFixture({
+        id: "expired-session",
+        expiresAt: AUTH_FIXTURE_NOW.subtract({ milliseconds: 1 }),
+      }),
+      createSessionFixture({ id: "other-session", userId: "other-user" }),
+    ]);
+    const metadata = { ip: "192.0.2.1", userAgent: "Aido-Test/1.0" };
+
+    // When
+    const result = await fixture.useCase.execute({ userId, metadata });
+
+    // Then
+    expect(result).toEqual({ message: "모든 기기에서 로그아웃되었습니다.", revokedCount: 3 });
+    expect(fixture.sessionRepository.revocationReasons).toEqual(
+      new Map([
+        ["session-1", REVOKE_REASON.USER_LOGOUT_ALL],
+        ["session-2", REVOKE_REASON.USER_LOGOUT_ALL],
+        ["expired-session", REVOKE_REASON.USER_LOGOUT_ALL],
+      ]),
+    );
+    expect(fixture.sessionRepository.stored("session-1")?.revokedAt).toEqual(AUTH_FIXTURE_NOW);
+    expect(fixture.sessionRepository.stored("other-session")?.revokedAt).toBeNull();
+    expect(fixture.cacheService.sessionIds).toEqual(new Set(["other-session"]));
+    expect(fixture.pushDevices.releasedSessionIds).toEqual([
+      "session-1",
+      "session-2",
+      "expired-session",
+    ]);
+    expect(fixture.securityLogRepository.entries).toEqual([
+      {
+        userId,
+        event: SECURITY_EVENT.SESSION_REVOKED_ALL,
+        ipAddress: metadata.ip,
+        userAgent: metadata.userAgent,
+        metadata: { revokedCount: 3 },
+      },
+    ]);
+  });
+
+  it("활성 세션이 없어도 종료 개수 0과 기본 요청 정보로 정상 응답한다", async () => {
+    // Given
+    const fixture = givenSessions();
+
+    // When
+    const result = await fixture.useCase.execute({ userId });
+
+    // Then
+    expect(result.revokedCount).toBe(0);
+    expect(fixture.pushDevices.releasedSessionIds).toEqual([]);
+    expect(fixture.securityLogRepository.entries).toEqual([
+      {
+        userId,
+        event: SECURITY_EVENT.SESSION_REVOKED_ALL,
+        ipAddress: REQUEST_ORIGIN_DEFAULTS.UNKNOWN_IP,
+        userAgent: REQUEST_ORIGIN_DEFAULTS.UNKNOWN_USER_AGENT,
+        metadata: { revokedCount: 0 },
+      },
+    ]);
+  });
+});

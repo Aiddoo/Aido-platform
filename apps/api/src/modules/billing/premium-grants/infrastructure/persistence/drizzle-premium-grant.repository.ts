@@ -3,7 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { and, eq, exists, gt, isNull, lte, notExists, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
-import { validStoreEntitlementCondition } from "#api/modules/access/entitlements/access-entitlements.public";
+import { validStoreEntitlementCondition } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { premiumGrant, subscription } from "#api/platform/database/schema/billing.schema";
 import { premiumGrantStatus } from "#api/platform/database/schema/enums.schema";
@@ -23,29 +23,10 @@ const storeOf = alias(subscription, "store");
 
 @Injectable()
 export class DrizzlePremiumGrantRepository implements PremiumGrantRepositoryPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
-  }
-
-  get #db() {
-    return this.#txHost.tx;
-  }
-
-  // 보상 기간 사용자가 소유한 스토어 행이다. 최종 판단은 resolvePremiumAccess가 같은 규칙으로 다시 한다
-  #storeOfGrantUser() {
-    return and(eq(storeOf.userId, grantOf.userId), isNull(storeOf.deletedAt));
-  }
-
-  // isStoreEntitlementValid와 같은 조건(웹훅 대기 유예·결제 유예 포함). 규칙은 billing shared가 소유한다
-  #validStoreOfGrantUser(at: Temporal.Instant) {
-    return this.#db
-      .select({ one: sql`1` })
-      .from(storeOf)
-      .where(
-        and(this.#storeOfGrantUser(), validStoreEntitlementCondition(storeOf, instantToDate(at))),
-      );
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
   async listOpenByUserId(userId: UserId): Promise<PremiumGrant[]> {
@@ -156,5 +137,24 @@ export class DrizzlePremiumGrantRepository implements PremiumGrantRepositoryPort
       .orderBy(grantOf.userId)
       .limit(params.limit);
     return rows.map((row) => UserId.reconstitute(row.userId));
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
+  }
+
+  // 보상 기간 사용자가 소유한 스토어 행이다. 최종 판단은 resolvePremiumAccess가 같은 규칙으로 다시 한다
+  #storeOfGrantUser() {
+    return and(eq(storeOf.userId, grantOf.userId), isNull(storeOf.deletedAt));
+  }
+
+  // isStoreEntitlementValid와 같은 조건(웹훅 대기 유예·결제 유예 포함). SQL은 subscriptions slice가 소유한다
+  #validStoreOfGrantUser(at: Temporal.Instant) {
+    return this.#db
+      .select({ one: sql`1` })
+      .from(storeOf)
+      .where(
+        and(this.#storeOfGrantUser(), validStoreEntitlementCondition(storeOf, instantToDate(at))),
+      );
   }
 }

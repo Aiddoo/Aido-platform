@@ -10,9 +10,15 @@
       "v2": { "title": "10-minute heads-up", "body": "“{todoTitle}” is almost here" },
       "v3": { "title": "Almost time 🐾", "body": "“{todoTitle}” starts in 10 minutes" }
     },
+    "TODO_REMINDER_SNOOZED": {
+      "v1": { "title": "Reminding you again ⏰", "body": "Ready to start “{todoTitle}”?" }
+    },
+    "TODO_REMINDER_SNOOZED_BEFORE_START": {
+      "v1": { "title": "Reminding you again ⏰", "body": "“{todoTitle}” starts soon" }
+    },
     "TODO_SERIES_PAUSED": {
       "v1": {
-        "title": "Repeating to-do reminders paused",
+        "title": "Repeating reminders paused",
         "body": "Open the app to start them again"
       }
     },
@@ -41,7 +47,7 @@
       },
       "v5": {
         "title": { "one": "Today’s list: {count} to-do", "other": "Today’s list: {count} to-dos" },
-        "body": "Knock out one and you’re rolling"
+        "body": "Knock one out and you’re rolling"
       }
     },
     "EVENING_COMPLETE": {
@@ -49,7 +55,7 @@
       "v2": { "title": "You crushed it today", "body": "Every box checked, nothing left" },
       "v3": { "title": "A perfect day", "body": "Aido is purring with pride 🐾" },
       "v4": { "title": "Your to-do list is clear", "body": "Take a peek at everything you did" },
-      "v5": { "title": "Nice work today", "body": "Your finished to-dos filled the day" }
+      "v5": { "title": "Nice work today", "body": "You made today count" }
     },
     "EVENING_PARTIAL": {
       "v1": {
@@ -64,12 +70,15 @@
         "title": { "one": "{count} to-do to go", "other": "{count} to-dos to go" },
         "body": "Wrap up an easy one first 🐾"
       },
-      "v4": { "title": "{count} left on today’s list", "body": "Do what you can. That’s enough" }
+      "v4": { "title": "{count} left on today’s list", "body": "Whatever you get done is enough" }
     },
     "EVENING_NONE": {
       "v1": { "title": "Check your to-do list? 🌙", "body": "One before bed is plenty" },
       "v2": { "title": "Revisit today’s plan?", "body": "It’s fine to push things to tomorrow" },
-      "v3": { "title": "Just one small thing tonight?", "body": "Start with a 5-minute task" },
+      "v3": {
+        "title": "Just one small thing tonight?",
+        "body": "Pick something that takes 5 minutes"
+      },
       "v4": { "title": "Rest day? That’s okay", "body": "Maybe jot down tomorrow’s plans" }
     },
     "MORNING_NO_TODO": {
@@ -103,7 +112,7 @@
     "EVENING_STREAK_RISK_PARTIAL": {
       "v1": {
         "title": "{streak}-day streak, {remaining} to go",
-        "body": "Finish them all to keep it going"
+        "body": "Wrap up the rest to keep it going"
       },
       "v2": {
         "title": "Finish {remaining} to keep your streak",
@@ -126,7 +135,7 @@
       }
     },
     "LUNCH_NUDGE": {
-      "v1": { "title": "Post-lunch to-do?", "body": "Pick something you can do now" },
+      "v1": { "title": "One to-do after lunch?", "body": "Pick something you can do now" },
       "v2": { "title": "First check of the afternoon?", "body": "Your easiest to-do is enough" },
       "v3": {
         "title": "Peek at your to-do list? 🐾",
@@ -136,7 +145,7 @@
     },
     "STREAK_AT_RISK": {
       "v1": {
-        "title": "Keep your {streak}-day streak alive 🔥",
+        "title": "Keep your {streak}-day streak going 🔥",
         "body": "Check what’s left on your to-do list"
       },
       "v2": {
@@ -160,7 +169,7 @@
     "MORNING_TODO_STORM": {
       "default": {
         "title": "Lightning risk at {time} for “{todoTitle}” ⚡",
-        "body": "Do it indoors or move the time"
+        "body": "Do it indoors or pick a safer time"
       }
     },
     "MORNING_TODO_SNOW": {
@@ -184,7 +193,7 @@
     "MORNING_SNOW_LATER": {
       "default": {
         "title": "Snow from {time} today ❄️",
-        "body": "Roads may be slippery. Dress warm"
+        "body": "Roads may be slippery. Bundle up"
       }
     },
     "MORNING_SUMMARY": {
@@ -206,13 +215,13 @@
         "title": "Snow expected tomorrow ❄️",
         "titleWithDayPart": "Snow starting {dayPart} ❄️",
         "body": "Allow extra travel time",
-        "bodyChilly": "{chillyTemp}°C in the morning. Dress warm and leave early"
+        "bodyChilly": "{chillyTemp}°C in the morning. Bundle up and leave early"
       }
     },
     "EVENING_SUMMARY": {
       "default": {
         "title": "{condition} tomorrow, {tempMin}–{tempMax}°C 🌙",
-        "body": "Plan your day with it",
+        "body": "Handy for planning tomorrow",
         "titleChilly": "Chilly {tempMin}°C tomorrow morning 🌙",
         "bodyChilly": "Bring a jacket. It warms to {tempMax}°C later"
       }
@@ -254,7 +263,7 @@
     "NUDGE_THANKED": {
       "default": {
         "title": "{senderSubject} says thanks 🐾",
-        "body": "“{todoTitle}” is done. Your cheer worked!"
+        "body": "“{todoTitle}” is done. Your nudge helped"
       }
     },
     "FOLLOW_NEW": {
@@ -282,6 +291,12 @@
       },
       "v3": { "title": "You’ve got a new friend", "body": "Say hi to {sender} with a nudge 🐾" }
     },
+    "FOLLOW_NEW_UNNAMED": {
+      "default": { "title": "New friend request", "body": "Accept to cheer each other on" }
+    },
+    "FOLLOW_ACCEPTED_UNNAMED": {
+      "default": { "title": "Friend request accepted", "body": "Now you can cheer each other on" }
+    },
     "INVITE_PROGRESS": {
       "default": {
         "title": "{inviteeSubject} finished day one 🐾",
@@ -291,7 +306,7 @@
     "INVITE_QUALIFY_REMINDER": {
       "default": {
         "title": "Just one more day 🐾",
-        "body": "Finish a to-do today and {inviterActor} gets a paw print"
+        "body": "{inviterActor} gets a paw print when you finish a to-do today"
       }
     },
     "INVITE_JOINED": {
@@ -325,7 +340,7 @@
         "body": "Pick one thing you can do now"
       },
       "v3": {
-        "title": "A friend is cheering you on",
+        "title": "You got a nudge",
         "bodyWithTodo": "{senderSubject} is rooting for “{todoTitle}”",
         "body": "{senderSubject} is rooting for you today"
       }
@@ -339,12 +354,12 @@
     },
     "REMIND_NUDGE_RECEIVED": {
       "v1": {
-        "title": "{senderSubject} wants to get started with you 🐾",
+        "title": "{senderSubject} says let’s get started 🐾",
         "body": "Add one to-do for today?"
       },
       "v2": { "title": "A nudge from {sender}", "body": "Jot down one thing on your mind" },
       "v3": {
-        "title": "A friend is cheering you on",
+        "title": "A nudge to start your day",
         "body": "{senderSubject} sent a little check-in"
       }
     },
@@ -371,7 +386,7 @@
         "title": "{friendActor} is all done for today",
         "body": "A little cheer goes a long way"
       },
-      "v3": { "title": "Your friend wrapped up the day", "body": "Tell {friend} nice job 🐾" }
+      "v3": { "title": "Your friend wrapped up the day", "body": "Tell {friend} they did great 🐾" }
     },
     "SOCIAL_DIGEST_MULTI": {
       "v1": {
@@ -379,7 +394,7 @@
           "one": "{count} friend finished today ✨",
           "other": "{count} friends finished today ✨"
         },
-        "body": "Knock out one too and send a cheer?"
+        "body": "Knock one out too, then send a cheer?"
       },
       "v2": {
         "title": {
@@ -399,7 +414,7 @@
     "SOCIAL_DIGEST_SINGLE": {
       "v1": {
         "title": "{friendSubject} is all done today ✨",
-        "body": "Cheer them on, then knock out one?"
+        "body": "Cheer them on, then knock one out?"
       },
       "v2": { "title": "{friendActor} finished today’s to-dos", "body": "Send a quick congrats?" },
       "v3": {
@@ -409,7 +424,7 @@
     },
     "NUDGE_SUGGEST": {
       "v1": { "title": "Check in on {friend}?", "body": "A quick nudge goes a long way 🐾" },
-      "v2": { "title": "Send a friend some cheer?", "body": "Say hi to {friend} with a nudge" },
+      "v2": { "title": "Thinking of a friend?", "body": "Say hi to {friend} with a nudge" },
       "v3": { "title": "How’s {friendTopic} doing?", "body": "Send a nudge to say hi" }
     },
     "TODO_COMMENT": {
@@ -485,7 +500,7 @@
   "system": {
     "WINBACK_DAY3": {
       "v1": { "title": "Ready to ease back in?", "body": "Add just one to-do for today" },
-      "v2": { "title": "Plan today together?", "body": "One small thing is enough" },
+      "v2": { "title": "Want to plan your day?", "body": "One small thing is enough" },
       "v3": { "title": "One small step with Aido? 🐾", "body": "Pick your first to-do for today" }
     },
     "WINBACK_DAY7": {
@@ -501,7 +516,7 @@
     "WINBACK_DAY21": {
       "v1": { "title": "Come back anytime", "body": "Add one thing you can do now" },
       "v2": { "title": "There’s room for a new plan", "body": "Start with what you need today" },
-      "v3": { "title": "Aido’s still here 🐾", "body": "Let’s pick up with one small plan" }
+      "v3": { "title": "Aido’s still here 🐾", "body": "Let’s start again with one small plan" }
     },
     "WINBACK_DAY30": {
       "v1": { "title": "Plan something new today?", "body": "Start with what matters now" },
@@ -556,7 +571,7 @@
     "BILLING_ISSUE": {
       "default": {
         "title": "Check your payment details",
-        "body": "Update payment to keep your plan active."
+        "body": "Update payment to keep your plan active"
       }
     },
     "PREMIUM_GRANT_ENDING": {
@@ -649,7 +664,7 @@
       "default": { "title": "100 to-dos done 🏆", "body": "One at a time got you here" }
     },
     "MILESTONE_STREAK_3": {
-      "default": { "title": "3 days in a row 🔥", "body": "Nice rhythm. Keep it going tomorrow" }
+      "default": { "title": "3-day streak 🔥", "body": "Nice rhythm. Keep it going tomorrow" }
     },
     "MILESTONE_FIRST_FRIEND": {
       "default": {
@@ -662,7 +677,7 @@
     "D0:d0_no_todo": {
       "v1": { "title": "Start with one tiny to-do 🌱", "body": "Whatever’s on your mind works" },
       "v2": {
-        "title": "Make a first plan with Aido?",
+        "title": "Your first plan with Aido?",
         "body": "Jot down one thing to remember 🐾"
       },
       "v3": { "title": "Create your first to-do", "body": "Even “drink water” counts" }
@@ -674,7 +689,10 @@
     },
     "D1:d1_has_todo_no_completion": {
       "v1": { "title": "Ready for your first check? ✅", "body": "Pick your easiest to-do" },
-      "v2": { "title": "Start with what you wrote", "body": "Choose one to-do from your list" },
+      "v2": {
+        "title": "Start with what’s on your list",
+        "body": "Choose one to-do from your list"
+      },
       "v3": { "title": "Try that first checkmark 🐾", "body": "Finishing one changes the day" }
     },
     "D3:d3_restart": {
@@ -695,7 +713,7 @@
     },
     "D7:d7_restart": {
       "v1": { "title": "A small plan for today?", "body": "Add one thing you can do now" },
-      "v2": { "title": "It’s never too late to restart", "body": "One to-do is all it takes" },
+      "v2": { "title": "Restart whenever you’re ready", "body": "One to-do is all it takes" },
       "v3": { "title": "Plan today with Aido? 🐾", "body": "Pick one to-do to start" }
     }
   },

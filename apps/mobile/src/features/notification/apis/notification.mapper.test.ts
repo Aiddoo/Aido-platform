@@ -1,4 +1,4 @@
-import type { NotificationInboxItem } from '@aido/api';
+import type { NotificationInboxItem } from '@aido/api/contracts/notification/v1';
 
 import { NAVIGATION_CASES } from '../__tests__/notification-navigation-cases';
 import {

@@ -1,4 +1,4 @@
-import type { UpdateProfileResponse } from '@aido/api';
+import type { UpdateProfileResponse } from '@aido/api/contracts/auth/v1';
 import { toInstant, toNullableInstant } from '@src/shared/date/instant';
 import { toPlanType } from '@src/shared/domains/plan-type.model';
 

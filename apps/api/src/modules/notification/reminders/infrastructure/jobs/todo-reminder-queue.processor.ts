@@ -1,102 +1,107 @@
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import { memoize, uniq } from "es-toolkit";
+import { match } from "ts-pattern";
 
-import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
-import { WindowedCounter } from "#api/shared/application/alerts/windowed-counter";
+import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import {
   type JobBatchFailures,
   type JobEnvelope,
   JobQueuePort,
 } from "#api/shared/application/ports/job-queue.port";
-import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import type { SupportedLocale } from "#api/shared/domain/locale";
 
-import type { CreateNotificationData } from "../../../inbox/application/ports/notification-draft.port.js";
 import {
-  createTodoReminderNotificationMessage,
-  createTodoSeriesPausedNotificationMessage,
-} from "../../../push/application/messages/scheduler-notification.messages.js";
-import { NotificationRecipientLocaleReaderPort } from "../../../push/application/ports/notification-recipient-locale.reader.port.js";
-import { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
-import { NotificationProviderLogEvent } from "../../../push/infrastructure/adapters/notification-provider.log-events.js";
-import { todoSeriesPausedJobKey } from "../../../push/infrastructure/jobs/notification-job-keys.constants.js";
+  PublishNotificationBatchUseCase,
+  PublishNotificationUseCase,
+} from "../../../notifications/notification-notifications.public.js";
+import { NotificationRecipientLocaleReaderPort } from "../../../push-dispatches/notification-push-dispatches.public.js";
+import { NotificationJobLogEvent } from "../../../shared/application/notification-job.log-events.js";
+import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
+import type { RecipientLocaleOf } from "../../../shared/domain/recipient-locale.domain-service.js";
+import { REMINDER_LATE_LIMIT_MINUTES } from "../../../shared/domain/reminder-occurrence.domain-service.js";
+import { SNOOZED_TODO_REMINDER_STAGE } from "../../../shared/domain/todo-reminder-stage.constants.js";
 import { TodoReminderReaderPort } from "../../application/ports/todo-reminder-reader.port.js";
 import { TodoSeriesOwnerDormancyPort } from "../../application/ports/todo-series-owner-dormancy.port.js";
-import type { ActiveTodo } from "../../application/read-models/scheduler.read-model.js";
-import { ReminderAlerts } from "../../application/reminders.alerts.js";
-import { NotificationRemindersLogEvent } from "../../application/reminders.log-events.js";
-import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
-import { REMINDER_LATE_LIMIT_MINUTES } from "../../domain/notification-schedule.domain-service.js";
+import type { ActiveTodoReadModel } from "../../application/read-models/scheduler.read-model.js";
+import { ReminderLogEvent } from "../../application/reminders.log-events.js";
 import {
-  createReminderOccurrenceKey,
+  resolveReminderStage,
+  toSnoozedTodoReminderNotification,
+  toTodoReminderNotification,
+  toTodoSeriesPausedNotification,
+} from "../../application/todo-reminder-notification.mapper.js";
+import { RecordReminderLateSkipUseCase } from "../../application/use-cases/record-reminder-late-skip.use-case.js";
+import {
   reminderFireAt,
   reminderLateSkipReason,
 } from "../../domain/reminder-plan.domain-service.js";
+import { snoozedReminderLateSkipReason } from "../../domain/reminder-snooze.domain-service.js";
+import { todoSeriesPausedJobKey } from "./reminder-job-keys.constants.js";
+import { ReminderJobLogEvent } from "./reminder-job.log-events.js";
 import {
   type ReminderJobData,
+  type SnoozedReminderJobData,
   TODO_REMINDER_JOB_NAME,
   TODO_REMINDER_QUEUE,
+  TODO_REMINDER_SNOOZE_JOB_NAME,
   TODO_SERIES_PAUSED_JOB_NAME,
   TODO_SERIES_PAUSED_QUEUE,
   type TodoReminderRuntimeJob,
 } from "./todo-reminder.queue.js";
 
-/**
- * 늦어서 버린 리마인더가 한 시간(REMINDER_LATE_SKIP_WINDOW_MS) 안에 이만큼 쌓이면 경보한다.
- * 배포로 worker가 잠깐 멈춘 뒤 몇 건은 늘 생기므로 그보다 크게 잡는다.
- */
-export const REMINDER_LATE_SKIP_THRESHOLD = 20;
-export const REMINDER_LATE_SKIP_WINDOW_MS = 60 * 60_000;
-const LATE_SKIP_COUNTER_KEY = "late-skip";
-
 // 묶음 작업이 함께 쓰는 조회 결과. 휴면은 반복 회차가 있을 때만 소유자마다 한 번 묻는다
 interface ReminderBatchContext {
-  readonly todos: ReadonlyMap<number, ActiveTodo>;
-  readonly locales: ReadonlyMap<string, SupportedLocale>;
+  readonly todos: ReadonlyMap<number, ActiveTodoReadModel>;
+  readonly localeOf: RecipientLocaleOf;
   readonly dormantSince: (userId: string) => Promise<string | null>;
 }
 
 interface ReminderDraft {
   readonly jobId: string;
-  readonly job: ReminderJobData;
+  readonly todoId: number;
+  readonly userId: string;
+  readonly stage: string;
   readonly notification: CreateNotificationData;
 }
 
 @Injectable()
 export class TodoReminderQueueProcessor implements OnModuleInit {
   readonly #logger = new Logger(TodoReminderQueueProcessor.name);
-  readonly #lateSkips = new WindowedCounter(REMINDER_LATE_SKIP_WINDOW_MS);
 
   readonly #reader: Pick<TodoReminderReaderPort, "findActiveTodos">;
   readonly #seriesOwnerDormancy: Pick<TodoSeriesOwnerDormancyPort, "findDormantSince">;
-  readonly #notificationPublisher: Pick<PublishNotificationUseCase, "publish" | "publishBatch">;
+  readonly #notificationPublisher: Pick<PublishNotificationUseCase, "execute">;
+  readonly #notificationBatchPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
   readonly #recipientLocaleReader: Pick<NotificationRecipientLocaleReaderPort, "getLocales">;
   readonly #jobQueue: Pick<JobQueuePort, "enqueue" | "workBatch">;
   readonly #clock: Pick<ClockPort, "now">;
-  readonly #alert: Pick<OperationalAlertPort, "raise">;
+  readonly #lateSkips: Pick<RecordReminderLateSkipUseCase, "execute">;
 
   constructor(
     @Inject(TodoReminderReaderPort) reader: Pick<TodoReminderReaderPort, "findActiveTodos">,
     @Inject(TodoSeriesOwnerDormancyPort)
     seriesOwnerDormancy: Pick<TodoSeriesOwnerDormancyPort, "findDormantSince">,
     @Inject(PublishNotificationUseCase)
-    notificationPublisher: Pick<PublishNotificationUseCase, "publish" | "publishBatch">,
+    notificationPublisher: Pick<PublishNotificationUseCase, "execute">,
+    @Inject(PublishNotificationBatchUseCase)
+    notificationBatchPublisher: Pick<PublishNotificationBatchUseCase, "execute">,
     @Inject(NotificationRecipientLocaleReaderPort)
     recipientLocaleReader: Pick<NotificationRecipientLocaleReaderPort, "getLocales">,
     @Inject(JobQueuePort) jobQueue: Pick<JobQueuePort, "enqueue" | "workBatch">,
     @Inject(ClockPort) clock: Pick<ClockPort, "now">,
-    @Inject(OperationalAlertPort) alert: Pick<OperationalAlertPort, "raise">,
+    @Inject(RecordReminderLateSkipUseCase)
+    lateSkips: Pick<RecordReminderLateSkipUseCase, "execute">,
   ) {
     this.#reader = reader;
     this.#seriesOwnerDormancy = seriesOwnerDormancy;
     this.#notificationPublisher = notificationPublisher;
+    this.#notificationBatchPublisher = notificationBatchPublisher;
     this.#recipientLocaleReader = recipientLocaleReader;
     this.#jobQueue = jobQueue;
     this.#clock = clock;
-    this.#alert = alert;
+    this.#lateSkips = lateSkips;
   }
 
   async onModuleInit(): Promise<void> {
@@ -126,13 +131,20 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
     const drafts: ReminderDraft[] = [];
     for (const { id, data: job } of jobs) {
       try {
-        if (job.name === TODO_SERIES_PAUSED_JOB_NAME) {
-          await this.#sendSeriesPausedNotice(job.data, context);
-          continue;
-        }
-        const notification = await this.#prepareReminder(job.data, context);
-        if (notification != null) {
-          drafts.push({ jobId: id, job: job.data, notification });
+        const draft = await match(job)
+          .with({ name: TODO_REMINDER_JOB_NAME }, ({ data }) =>
+            this.#prepareReminder(id, data, context),
+          )
+          .with({ name: TODO_REMINDER_SNOOZE_JOB_NAME }, async ({ data }) =>
+            this.#prepareSnoozedReminder(id, data, context),
+          )
+          .with({ name: TODO_SERIES_PAUSED_JOB_NAME }, async ({ data }) => {
+            await this.#sendSeriesPausedNotice(data, context);
+            return null;
+          })
+          .exhaustive();
+        if (draft != null) {
+          drafts.push(draft);
         }
       } catch (error) {
         failures.set(id, error);
@@ -145,18 +157,19 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
   async #loadContext(
     jobs: readonly JobEnvelope<TodoReminderRuntimeJob>[],
   ): Promise<ReminderBatchContext> {
+    // 휴면 안내 문구에는 할 일 제목이 없어 할 일을 읽지 않는다
     const reminderTodoIds = jobs.flatMap(({ data: job }) =>
-      job.name === TODO_REMINDER_JOB_NAME ? [TodoId.reconstitute(job.data.todoId)] : [],
+      job.name === TODO_SERIES_PAUSED_JOB_NAME ? [] : [TodoId.reconstitute(job.data.todoId)],
     );
     const userIds = uniq(jobs.map(({ data: job }) => job.data.userId));
     // 트랜잭션 밖의 서로 다른 읽기라 함께 보낸다
-    const [todos, locales] = await Promise.all([
+    const [todos, localeOf] = await Promise.all([
       this.#reader.findActiveTodos(reminderTodoIds),
       this.#recipientLocaleReader.getLocales(userIds.map((userId) => UserId.reconstitute(userId))),
     ]);
     return {
       todos,
-      locales,
+      localeOf,
       dormantSince: memoize((userId: string): Promise<string | null> =>
         this.#seriesOwnerDormancy.findDormantSince(UserId.reconstitute(userId)),
       ),
@@ -164,16 +177,17 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
   }
 
   async #prepareReminder(
+    jobId: string,
     { todoId, userId, stageLabel }: ReminderJobData,
     context: ReminderBatchContext,
-  ): Promise<CreateNotificationData | null> {
+  ): Promise<ReminderDraft | null> {
     const stage = resolveReminderStage(stageLabel);
-    this.#logger.debug({ event: NotificationProviderLogEvent.JOB_STARTED, todoId, userId, stage });
+    this.#logger.debug({ event: NotificationJobLogEvent.JOB_STARTED, todoId, userId, stage });
 
     const todo = context.todos.get(todoId);
     if (!todo) {
       this.#logger.debug({
-        event: NotificationProviderLogEvent.JOB_SKIPPED,
+        event: NotificationJobLogEvent.JOB_SKIPPED,
         todoId,
         userId,
         reason: "TODO_INACTIVE",
@@ -193,7 +207,7 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
     if (dormantSince != null) {
       // 운영에서 세므로 debug가 아닌 info다. 단계·식별자만 남긴다.
       this.#logger.log({
-        event: NotificationProviderLogEvent.TODO_REMINDER_DORMANT_OWNER_SKIPPED,
+        event: ReminderJobLogEvent.TODO_REMINDER_DORMANT_OWNER_SKIPPED,
         todoId,
         userId,
         stage,
@@ -206,29 +220,67 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
       return null;
     }
 
-    const message = createTodoReminderNotificationMessage({
-      todoTitle: todo.title,
-      stage,
-      locale: context.locales.get(userId),
-      variantContext: {
-        campaignKey: `${SCHEDULER_CAMPAIGN_KEY.TODO_REMINDER}.${stageLabel}`,
-        recipientId: userId,
-        occurrenceKey: `${todoId}:${stageLabel}`,
-      },
-    });
     return {
-      userId,
-      type: "TODO_REMINDER",
-      purpose: "SCHEDULED_SERVICE",
-      campaignKey: SCHEDULER_CAMPAIGN_KEY.TODO_REMINDER,
-      variantId: message.variantId,
-      title: message.title,
-      body: message.body,
-      copyKey: message.copyKey,
-      copyFacts: message.copyFacts,
+      jobId,
       todoId,
-      metadata: { stage: stageLabel },
-      reminderOccurrenceKey: createReminderOccurrenceKey(todo.startDate, todo.scheduledLocalTime),
+      userId,
+      stage,
+      notification: toTodoReminderNotification({
+        todo,
+        todoId,
+        userId,
+        stageLabel,
+        locale: context.localeOf(userId),
+      }),
+    };
+  }
+
+  // 반복 회차라도 휴면을 묻지 않는다. 방금 알림을 누른 소유자라 휴면일 수 없다
+  #prepareSnoozedReminder(
+    jobId: string,
+    { todoId, userId, notificationId, remindAt }: SnoozedReminderJobData,
+    context: ReminderBatchContext,
+  ): ReminderDraft | null {
+    const stage = SNOOZED_TODO_REMINDER_STAGE;
+    this.#logger.debug({ event: NotificationJobLogEvent.JOB_STARTED, todoId, userId, stage });
+
+    const todo = context.todos.get(todoId);
+    if (!todo) {
+      this.#logger.debug({
+        event: NotificationJobLogEvent.JOB_SKIPPED,
+        todoId,
+        userId,
+        reason: "TODO_INACTIVE",
+      });
+      return null;
+    }
+
+    const fireAt = Temporal.Instant.from(remindAt);
+    const now = this.#clock.now();
+    const lateReason = snoozedReminderLateSkipReason({
+      remindAt: fireAt,
+      now,
+      limitMinutes: REMINDER_LATE_LIMIT_MINUTES,
+    });
+    if (lateReason != null) {
+      this.#lateSkips.execute({ todoId, userId, stage, reason: lateReason, fireAt, now });
+      return null;
+    }
+
+    return {
+      jobId,
+      todoId,
+      userId,
+      stage,
+      notification: toSnoozedTodoReminderNotification({
+        todo,
+        todoId,
+        userId,
+        notificationId,
+        fireAt,
+        now,
+        locale: context.localeOf(userId),
+      }),
     };
   }
 
@@ -242,19 +294,19 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
     }
     try {
       // 알림만 함께 넣고 발송은 단건 경로로 둬 설정 행이 없는 사용자도 단건 publish처럼 기본 설정으로 받는다
-      const { count } = await this.#notificationPublisher.publishBatch(
+      const { count } = await this.#notificationBatchPublisher.execute(
         drafts.map((draft) => draft.notification),
         { deliveryMode: "SINGLE" },
       );
       this.#logger.log({
-        event: NotificationRemindersLogEvent.TODO_REMINDER_BATCH_PUBLISHED,
+        event: ReminderLogEvent.TODO_REMINDER_BATCH_PUBLISHED,
         attempted: drafts.length,
         published: count,
       });
     } catch (error) {
       // 묶음은 한 트랜잭션이라 모두 되돌아갔다. 한 건이 막았을 수 있으니 한 건씩 보내 그 작업만 실패시킨다
       this.#logger.warn({
-        event: NotificationRemindersLogEvent.TODO_REMINDER_BATCH_PUBLISH_FAILED,
+        event: ReminderLogEvent.TODO_REMINDER_BATCH_PUBLISH_FAILED,
         attempted: drafts.length,
         errorType: toErrorType(error),
       });
@@ -268,24 +320,18 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
     }
   }
 
-  async #publishOne({ job, notification }: ReminderDraft): Promise<void> {
-    const { todoId, userId, stageLabel } = job;
-    const published = await this.#notificationPublisher.publish(notification);
+  async #publishOne({ todoId, userId, stage, notification }: ReminderDraft): Promise<void> {
+    const published = await this.#notificationPublisher.execute(notification);
     if (published == null) {
       this.#logger.debug({
-        event: NotificationProviderLogEvent.JOB_SKIPPED,
+        event: NotificationJobLogEvent.JOB_SKIPPED,
         todoId,
         userId,
         reason: "ALREADY_NOTIFIED",
       });
       return;
     }
-    this.#logger.log({
-      event: NotificationProviderLogEvent.JOB_COMPLETED,
-      todoId,
-      userId,
-      stage: resolveReminderStage(stageLabel),
-    });
+    this.#logger.log({ event: NotificationJobLogEvent.JOB_COMPLETED, todoId, userId, stage });
   }
 
   // true면 늦어서 보내지 않는다
@@ -303,33 +349,15 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
     if (reason == null) {
       return false;
     }
-    this.#logger.warn({
-      event: NotificationRemindersLogEvent.TODO_REMINDER_LATE_SKIPPED,
+    this.#lateSkips.execute({
       todoId,
       userId,
       stage: resolveReminderStage(stageLabel),
       reason,
-      lateMinutes: reminderFireAt(scheduledAt, stageLabel).until(now, { largestUnit: "minutes" })
-        .minutes,
+      fireAt: reminderFireAt(scheduledAt, stageLabel),
+      now,
     });
-    this.#countLateSkip(now);
     return true;
-  }
-
-  #countLateSkip(now: Temporal.Instant): void {
-    // 창 안에서 기준에 닿는 순간 한 번만 올린다
-    if (
-      this.#lateSkips.add(LATE_SKIP_COUNTER_KEY, now.epochMilliseconds) ===
-      REMINDER_LATE_SKIP_THRESHOLD
-    ) {
-      this.#alert.raise({
-        ...ReminderAlerts.LATE_SKIPS_HIGH,
-        details: {
-          skippedCount: REMINDER_LATE_SKIP_THRESHOLD,
-          windowMinutes: REMINDER_LATE_SKIP_WINDOW_MS / 60_000,
-        },
-      });
-    }
   }
 
   async #sendSeriesPausedNotice(
@@ -337,37 +365,13 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
     context: ReminderBatchContext,
   ) {
     const { todoId, userId } = job;
-    const message = createTodoSeriesPausedNotificationMessage({
-      locale: context.locales.get(userId),
-      variantContext: {
-        campaignKey: SCHEDULER_CAMPAIGN_KEY.TODO_SERIES_PAUSED,
-        recipientId: userId,
-        occurrenceKey: `${todoId}:series-paused`,
-      },
-    });
-    // 리마인더와 같은 종류·목적으로 보내 기존 알림 동의를 그대로 따른다. 탭하면 그 할 일로 간다.
-    await this.#notificationPublisher.publish({
-      userId,
-      type: "TODO_REMINDER",
-      purpose: "SCHEDULED_SERVICE",
-      campaignKey: SCHEDULER_CAMPAIGN_KEY.TODO_SERIES_PAUSED,
-      variantId: message.variantId,
-      title: message.title,
-      body: message.body,
-      copyKey: message.copyKey,
-      copyFacts: message.copyFacts,
-      todoId,
-      metadata: { stage: "series-paused" },
-    });
+    await this.#notificationPublisher.execute(
+      toTodoSeriesPausedNotification({ todoId, userId, locale: context.localeOf(userId) }),
+    );
     this.#logger.log({
-      event: NotificationProviderLogEvent.TODO_SERIES_PAUSED_SENT,
+      event: ReminderJobLogEvent.TODO_SERIES_PAUSED_SENT,
       todoId,
       userId,
     });
   }
-}
-
-/** 알 수 없는 단계 문자열은 가장 이른 단계 문구로 보낸다. */
-function resolveReminderStage(stage: string): "60min" | "10min" {
-  return stage === "10min" ? stage : "60min";
 }

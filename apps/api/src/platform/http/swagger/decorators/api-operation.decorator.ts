@@ -1,5 +1,6 @@
 import { ErrorCode, Errors } from "@aido/api/errors";
 import { applyDecorators, HttpStatus } from "@nestjs/common";
+// route 인자 메타데이터 key는 공개 API가 없다. @nestjs/swagger도 같은 경로에서 읽어 입력 문서를 만든다
 import { ROUTE_ARGS_METADATA } from "@nestjs/common/constants.js";
 import { ApiOperation, ApiResponse, type ApiResponseOptions, DECORATORS } from "@nestjs/swagger";
 
@@ -34,11 +35,11 @@ function ApiResponseIfUndeclared(options: ApiResponseOptions & { status: HttpSta
 
 /** `@Body/@Query/@Param({ schema })`처럼 Zod schema로 검증하는 입력이 있는지 */
 function hasSchemaValidatedInput(target: object, key: string | symbol): boolean {
-  const routeArgs: unknown = Reflect.getMetadata(ROUTE_ARGS_METADATA, target.constructor, key);
-  if (typeof routeArgs !== "object" || routeArgs == null) {
+  const routeArguments: unknown = Reflect.getMetadata(ROUTE_ARGS_METADATA, target.constructor, key);
+  if (typeof routeArguments !== "object" || routeArguments == null) {
     return false;
   }
-  return Object.values(routeArgs).some(
+  return Object.values(routeArguments).some(
     (arg: unknown) =>
       typeof arg === "object" && arg != null && "schema" in arg && arg.schema != null,
   );
@@ -70,8 +71,6 @@ function ApiValidationErrorResponse(): MethodDecorator {
  * - Zod로 검증하는 입력이 있으면 400에 SYS_0002 추가
  * - 공통 에러 응답 (400, 500) 자동 추가 (옵션)
  *
- * @example
- * ```typescript
  * @Get(':id')
  * @ApiDoc({ summary: 'Todo 상세 조회' })
  * findById(@Param('id') id: number) { ... }

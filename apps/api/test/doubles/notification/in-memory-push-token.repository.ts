@@ -1,19 +1,22 @@
+import type { SessionId } from "#api/modules/identity/sessions/identity-sessions.public";
 import {
   type FindPushTokensParams,
-  type KeepPushTokenData,
-  PushTokenRegistrationConflictError,
   PushTokenRepositoryPort,
-  type RegisterPushTokenData,
-} from "#api/modules/notification/push/application/ports/push-token.repository.port";
-import type { PushTokenRecord } from "#api/modules/notification/push/application/read-models/push-token.read-model";
-import type { PushDeviceId } from "#api/modules/notification/push/domain/push-device-id.vo";
-import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+} from "#api/modules/notification/push-devices/application/ports/push-token.repository.port";
+import { pushTokenRegistrationConflict } from "#api/modules/notification/push-devices/application/push-devices.errors";
+import type { PushTokenReadModel } from "#api/modules/notification/push-devices/application/read-models/push-token.read-model";
+import type { PushDeviceId } from "#api/modules/notification/push-devices/domain/push-device-id.vo";
+import type {
+  PushDevice,
+  PushDeviceTakeover,
+} from "#api/modules/notification/push-devices/domain/push-device.aggregate";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-interface StoredPushToken extends PushTokenRecord {
+interface StoredPushToken extends PushTokenReadModel {
   readonly sessionId: string | null;
 }
 
-function toRecord({ sessionId: _sessionId, ...record }: StoredPushToken): PushTokenRecord {
+function toRecord({ sessionId: _sessionId, ...record }: StoredPushToken): PushTokenReadModel {
   return record;
 }
 
@@ -22,14 +25,17 @@ function compareRecentFirst(left: StoredPushToken, right: StoredPushToken): numb
   return Temporal.Instant.compare(right.updatedAt, left.updatedAt) || right.id - left.id;
 }
 
-// (userId, deviceId)와 token이 각각 유일하다. 다른 등록이 가진 토큰을 넣으면 동시 등록 충돌로 본다
+// (userId, deviceId)와 token이 각각 유일하다. 다른 등록이 가진 토큰을 넣으면 동시 등록 충돌로 본다.
+// 기기 보고의 토큰 쓰기(넘겨받기·등록·유지)는 InMemoryPushDeviceRepository.save가 이 저장소의 아래 메서드로 한다
 export class InMemoryPushTokenRepository extends PushTokenRepositoryPort {
   readonly #tokens = new Map<number, StoredPushToken>();
   #sequence: number;
   #conflictsLeft = 0;
   registerAttempts = 0;
 
-  constructor(tokens: readonly (PushTokenRecord & { readonly sessionId?: string | null })[] = []) {
+  constructor(
+    tokens: readonly (PushTokenReadModel & { readonly sessionId?: string | null })[] = [],
+  ) {
     super();
     for (const token of tokens) {
       this.#tokens.set(token.id, { ...token, sessionId: token.sessionId ?? null });
@@ -46,7 +52,7 @@ export class InMemoryPushTokenRepository extends PushTokenRepositoryPort {
     this.#conflictsLeft = count;
   }
 
-  tokenOf(userId: string, deviceId: string): PushTokenRecord | undefined {
+  tokenOf(userId: string, deviceId: string): PushTokenReadModel | undefined {
     const stored = this.#find((row) => row.userId === userId && row.deviceId === deviceId);
     return stored == null ? undefined : toRecord(stored);
   }
@@ -55,11 +61,7 @@ export class InMemoryPushTokenRepository extends PushTokenRepositoryPort {
     return this.#find((row) => row.userId === userId && row.deviceId === deviceId)?.sessionId;
   }
 
-  async releasePushTokenHeldElsewhere(data: {
-    readonly userId: UserId;
-    readonly deviceId: PushDeviceId;
-    readonly token: string | null;
-  }): Promise<{ readonly userIds: readonly string[] }> {
+  releaseHeldElsewhere(data: PushDeviceTakeover): UserId[] {
     const userId = data.userId.value;
     const deviceId = data.deviceId.value;
     const released = [...this.#tokens.values()].filter((row) => {
@@ -70,64 +72,63 @@ export class InMemoryPushTokenRepository extends PushTokenRepositoryPort {
         (row.userId !== userId || row.deviceId !== deviceId);
       return sameDeviceOfOtherUser || sameTokenElsewhere;
     });
-    return { userIds: this.#delete(released) };
+    return this.#delete(released).map((owner) => UserId.reconstitute(owner));
   }
 
-  async registerPushToken(data: RegisterPushTokenData): Promise<PushTokenRecord> {
+  register(device: PushDevice, token: string): void {
     this.registerAttempts += 1;
-    const existing = this.#find(
-      (row) => row.userId === data.userId.value && row.deviceId === data.deviceId.value,
-    );
-    const tokenHolder = this.#find((row) => row.token === data.token);
+    const userId = device.userId.value;
+    const deviceId = device.id.value;
+    const registeredAt = device.reportedAt;
+    const existing = this.#find((row) => row.userId === userId && row.deviceId === deviceId);
+    const tokenHolder = this.#find((row) => row.token === token);
     if (this.#conflictsLeft > 0 || (tokenHolder != null && tokenHolder !== existing)) {
       this.#conflictsLeft = Math.max(0, this.#conflictsLeft - 1);
-      throw new PushTokenRegistrationConflictError();
+      throw pushTokenRegistrationConflict();
     }
     const id = existing?.id ?? this.#sequence + 1;
     this.#sequence = Math.max(this.#sequence, id);
-    const stored: StoredPushToken = {
+    this.#tokens.set(id, {
       id,
-      userId: data.userId.value,
-      token: data.token,
-      deviceId: data.deviceId.value,
-      platform: data.platform,
-      sessionId: data.sessionId,
+      userId,
+      token,
+      deviceId,
+      platform: device.platform,
+      provider: device.pushToken.channel,
+      sessionId: device.sessionId,
       isActive: true,
-      payloadVersion: data.payloadVersion,
-      appVersion: data.appVersion,
-      createdAt: existing?.createdAt ?? data.registeredAt,
-      updatedAt: data.registeredAt,
-      lastUsedAt: existing?.lastUsedAt ?? data.registeredAt,
-    };
-    this.#tokens.set(id, stored);
-    return toRecord(stored);
+      payloadVersion: device.pushToken.payloadVersion,
+      appVersion: device.pushToken.appVersion,
+      createdAt: existing?.createdAt ?? registeredAt,
+      updatedAt: registeredAt,
+    });
   }
 
-  async keepPushToken(data: KeepPushTokenData): Promise<{ readonly hasActiveToken: boolean }> {
+  keep(device: PushDevice): boolean {
     const existing = this.#find(
-      (row) => row.userId === data.userId.value && row.deviceId === data.deviceId.value,
+      (row) => row.userId === device.userId.value && row.deviceId === device.id.value,
     );
     if (existing == null) {
-      return { hasActiveToken: false };
+      return false;
     }
     this.#tokens.set(existing.id, {
       ...existing,
-      sessionId: data.sessionId,
-      payloadVersion: data.payloadVersion,
-      appVersion: data.appVersion,
-      updatedAt: data.keptAt,
+      sessionId: device.sessionId,
+      payloadVersion: device.pushToken.payloadVersion,
+      appVersion: device.pushToken.appVersion,
+      updatedAt: device.reportedAt,
     });
-    return { hasActiveToken: existing.isActive };
+    return existing.isActive;
   }
 
-  async findPushTokensByUser(params: FindPushTokensParams): Promise<PushTokenRecord[]> {
+  async findPushTokensByUser(params: FindPushTokensParams): Promise<PushTokenReadModel[]> {
     return [...this.#tokens.values()]
       .filter((row) => row.userId === params.userId.value && (!params.activeOnly || row.isActive))
       .toSorted(compareRecentFirst)
       .map(toRecord);
   }
 
-  async findActivePushTokensByUsers(users: readonly UserId[]): Promise<PushTokenRecord[]> {
+  async findActivePushTokensByUsers(users: readonly UserId[]): Promise<PushTokenReadModel[]> {
     const userIds = users.map((user) => user.value);
     return [...this.#tokens.values()]
       .filter((row) => userIds.includes(row.userId) && row.isActive)
@@ -152,20 +153,21 @@ export class InMemoryPushTokenRepository extends PushTokenRepositoryPort {
   async deletePushTokenByDeviceAndToken(data: {
     readonly deviceId: PushDeviceId;
     readonly token: string;
-  }): Promise<{ readonly userIds: readonly string[] }> {
+  }): Promise<{ readonly userIds: readonly UserId[] }> {
     const deleted = [...this.#tokens.values()].filter(
       (row) => row.token === data.token && row.deviceId === data.deviceId.value,
     );
-    return { userIds: this.#delete(deleted) };
+    return { userIds: this.#delete(deleted).map((userId) => UserId.reconstitute(userId)) };
   }
 
   async deletePushTokensBySessions(
-    sessionIds: readonly string[],
-  ): Promise<{ readonly userIds: readonly string[] }> {
+    sessions: readonly SessionId[],
+  ): Promise<{ readonly userIds: readonly UserId[] }> {
+    const sessionIds = sessions.map((session) => session.value);
     const deleted = [...this.#tokens.values()].filter(
       (row) => row.sessionId != null && sessionIds.includes(row.sessionId),
     );
-    return { userIds: this.#delete(deleted) };
+    return { userIds: this.#delete(deleted).map((userId) => UserId.reconstitute(userId)) };
   }
 
   async deactivateInvalidTokens(
@@ -177,6 +179,27 @@ export class InMemoryPushTokenRepository extends PushTokenRepositoryPort {
       this.#tokens.set(row.id, { ...row, isActive: false, updatedAt: deactivatedAt });
     }
     return { count: targets.length };
+  }
+
+  async deactivateUnreportedSince(command: {
+    readonly reportedBefore: Temporal.Instant;
+    readonly deactivatedAt: Temporal.Instant;
+    readonly limit: number;
+  }): Promise<{ readonly userIds: readonly UserId[] }> {
+    const targets = [...this.#tokens.values()]
+      .filter(
+        (row) =>
+          row.isActive && Temporal.Instant.compare(row.updatedAt, command.reportedBefore) < 0,
+      )
+      .toSorted(
+        (left, right) =>
+          Temporal.Instant.compare(left.updatedAt, right.updatedAt) || left.id - right.id,
+      )
+      .slice(0, command.limit);
+    for (const row of targets) {
+      this.#tokens.set(row.id, { ...row, isActive: false, updatedAt: command.deactivatedAt });
+    }
+    return { userIds: targets.map((row) => UserId.reconstitute(row.userId)) };
   }
 
   #find(predicate: (row: StoredPushToken) => boolean): StoredPushToken | undefined {

@@ -1,8 +1,8 @@
+import { TodoCategoryId } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
+import type { CatchUpTodoSeriesUseCase } from "#api/modules/planning/todo-series/planning-todo-series.public";
 import { clampPageSize, type CursorPage, toCursorPage } from "#api/shared/application/cursor-page";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";
-import type { CatchUpTodoSeriesUseCase } from "../../../todo-series/application/use-cases/catch-up-todo-series.use-case.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import type { FindTodosParams } from "../ports/todo-read.repository.port.js";
 import type { TodoReadModel } from "../read-models/todo.read-model.js";
@@ -46,7 +46,7 @@ export class ListTodosUseCase {
     const cursor = input.cursor;
     const size = clampPageSize(input.size);
 
-    const repoParams: FindTodosParams = {
+    const repositoryQuery: FindTodosParams = {
       userId: UserId.reconstitute(input.userId),
       cursor,
       size,
@@ -57,7 +57,7 @@ export class ListTodosUseCase {
       endDate: input.endDate,
     };
 
-    const rows = await this.#dependencies.todoReadRepository.findManyByUserId(repoParams);
+    const rows = await this.#dependencies.todoReadRepository.findManyByUserId(repositoryQuery);
 
     return toCursorPage({ rows, size, toCursor: (todo) => todo.id });
   }

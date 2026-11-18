@@ -1,4 +1,4 @@
-import { RepeatingTodoTitleReaderPort } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { RepeatingTodoTitleReaderPort } from "#api/modules/planning/todos/planning-todos-queries.public";
 
 export class StubRepeatingTodoTitleReader extends RepeatingTodoTitleReaderPort {
   titles: string[] = [];

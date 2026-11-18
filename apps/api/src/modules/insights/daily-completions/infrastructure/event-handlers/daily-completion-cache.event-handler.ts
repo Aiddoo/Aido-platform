@@ -5,13 +5,15 @@ import type { z } from "zod";
 import {
   CATEGORY_CHANGE_EVENT_NAMES,
   categoryChangedPayloadSchema,
-} from "#api/modules/planning/categories/planning-categories.public";
+} from "#api/modules/planning/todo-categories/planning-todo-categories.public";
+import {
+  TODO_SERIES_CHANGE_EVENT_NAMES,
+  todoSeriesChangedPayloadSchema,
+} from "#api/modules/planning/todo-series/planning-todo-series.public";
 import {
   TODO_CHANGE_EVENT_NAMES,
-  TODO_SERIES_CHANGE_EVENT_NAMES,
   todoChangedPayloadSchema,
-  todoSeriesChangedPayloadSchema,
-} from "#api/modules/planning/todos/planning-todos.public";
+} from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { defineEventSubscription } from "#api/shared/application/ports/domain-event-publisher.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
@@ -33,6 +35,8 @@ function cacheSubscription<TPayload extends CacheOwnerPayload>(
     eventName,
     delivery: "after-commit",
     payloadSchema,
+    // 한 커밋이 이름이 다른 할 일·회차·카테고리 사실을 여럿 내도 구독 전체에서 사용자 캐시는 한 번만 지운다
+    coalesce: { namespace: "insights.daily-completion-cache", key: ({ userId }) => userId },
   });
 }
 

@@ -1,36 +1,40 @@
-import type { WeatherBriefing, WeatherHourlyForecast, WeatherReportResponse } from '@aido/api';
+import {
+  weatherAttributionSchema,
+  weatherBriefingSchema,
+  type WeatherHourlyForecast,
+  weatherHourlyForecastSchema,
+  type WeatherReportResponse,
+  weatherReportSchema as weatherReportDtoSchema,
+  weatherRescheduleOptionSchema,
+} from '@aido/api/contracts/weather/v2';
 import { fromEpochMs, toInstant } from '@src/shared/date/instant';
+import { defineFixture } from '@src/testing/fixture';
 
 import { toWeatherReport } from '../apis/weather.mapper';
 import type { BriefingTodo, ForecastTodo } from '../domains/weather-briefing.model';
-import type {
-  AirQuality,
-  CurrentWeather,
-  DailyForecastEntry,
-  WeatherReport,
+import {
+  airQualitySchema,
+  type CurrentWeather,
+  type DailyForecastEntry,
+  type WeatherReport,
 } from '../domains/weather-report.model';
 
 const HOUR_MS = 60 * 60_000;
 
-export function createHourlyForecastDto(
-  overrides: Partial<WeatherHourlyForecast> = {},
-): WeatherHourlyForecast {
-  return {
-    startsAt: '2026-11-02T06:00:00.000Z',
-    condition: 'CLOUDY',
-    isDaylight: true,
-    temperature: 12.4,
-    apparentTemperature: 9.1,
-    humidity: 70,
-    uvIndex: 1,
-    windSpeed: 3.2,
-    windDirection: 315,
-    precipitationChance: 10,
-    precipitationAmount: 0,
-    precipitationType: 'NONE',
-    ...overrides,
-  };
-}
+export const createHourlyForecastDto = defineFixture(weatherHourlyForecastSchema, {
+  startsAt: '2026-11-02T06:00:00.000Z',
+  condition: 'CLOUDY',
+  isDaylight: true,
+  temperature: 12.4,
+  apparentTemperature: 9.1,
+  humidity: 70,
+  uvIndex: 1,
+  windSpeed: 3.2,
+  windDirection: 315,
+  precipitationChance: 10,
+  precipitationAmount: 0,
+  precipitationType: 'NONE',
+});
 
 /** 시작 시각부터 1시간 간격의 예보. chances[i]가 i번째 시간의 강수 확률이다. */
 export function createHourlySeries(startsAt: string, chances: readonly number[]) {
@@ -46,104 +50,101 @@ export function createHourlySeries(startsAt: string, chances: readonly number[])
 
 const LOGO_BASE_URL = 'https://weatherkit.apple.com/assets/branding/ko/Apple_Weather';
 
-export function createAttributionDto(
-  overrides: Partial<WeatherReportResponse['attribution']> = {},
-): WeatherReportResponse['attribution'] {
-  return {
-    provider: 'APPLE_WEATHER',
-    serviceName: 'Apple Weather',
-    legalPageUrl: 'https://developer.apple.com/weatherkit/data-source-attribution/',
-    logo: {
-      light: {
-        '1x': `${LOGO_BASE_URL}_blk_ko_1X_090122.png`,
-        '2x': `${LOGO_BASE_URL}_blk_ko_2X_090122.png`,
-        '3x': `${LOGO_BASE_URL}_blk_ko_3X_090122.png`,
-      },
-      dark: {
-        '1x': `${LOGO_BASE_URL}_wht_ko_1X_090122.png`,
-        '2x': `${LOGO_BASE_URL}_wht_ko_2X_090122.png`,
-        '3x': `${LOGO_BASE_URL}_wht_ko_3X_090122.png`,
-      },
+export const createAttributionDto = defineFixture(weatherAttributionSchema, {
+  provider: 'APPLE_WEATHER',
+  serviceName: 'Apple Weather',
+  legalPageUrl: 'https://developer.apple.com/weatherkit/data-source-attribution/',
+  logo: {
+    light: {
+      '1x': `${LOGO_BASE_URL}_blk_ko_1X_090122.png`,
+      '2x': `${LOGO_BASE_URL}_blk_ko_2X_090122.png`,
+      '3x': `${LOGO_BASE_URL}_blk_ko_3X_090122.png`,
     },
-    ...overrides,
-  };
-}
+    dark: {
+      '1x': `${LOGO_BASE_URL}_wht_ko_1X_090122.png`,
+      '2x': `${LOGO_BASE_URL}_wht_ko_2X_090122.png`,
+      '3x': `${LOGO_BASE_URL}_wht_ko_3X_090122.png`,
+    },
+  },
+});
 
 /** 서버가 판단한 브리핑. 기본은 날씨와 겹친 할 일이 없다. */
-export function createBriefingDto(overrides: Partial<WeatherBriefing> = {}): WeatherBriefing {
-  return { reason: null, affectedTodoIds: [], rescheduleOptions: [], ...overrides };
-}
+export const createBriefingDto = defineFixture(weatherBriefingSchema, {
+  reason: null,
+  affectedTodoIds: [],
+  rescheduleOptions: [],
+});
+
+const rescheduleOption = defineFixture(weatherRescheduleOptionSchema, {
+  startsAt: '2026-11-02T10:00:00.000Z',
+  precipitationChance: 10,
+  apparentTemperature: 9.1,
+  isRecommended: false,
+});
 
 /** 서버가 고른 옮길 시각 후보 한 칸. 첫 후보가 추천이다. */
 export function createRescheduleOptionDto(
   startsAt: string,
-  overrides: Partial<WeatherBriefing['rescheduleOptions'][number]['options'][number]> = {},
+  overrides: Parameters<typeof rescheduleOption>[0] = {},
 ) {
-  return {
-    startsAt,
-    precipitationChance: 10,
-    apparentTemperature: 9.1,
-    isRecommended: false,
-    ...overrides,
-  };
+  return rescheduleOption({ startsAt, ...overrides });
 }
 
-export function createWeatherReportDto(
-  overrides: Partial<WeatherReportResponse> = {},
-): WeatherReportResponse {
-  return {
-    location: { latitude: 37.5636, longitude: 126.9976, timezone: 'Asia/Seoul' },
-    current: {
-      observedAt: '2026-11-02T06:26:00.000Z',
+export const createWeatherReportDto = defineFixture(weatherReportDtoSchema, {
+  location: { latitude: 37.5636, longitude: 126.9976, timezone: 'Asia/Seoul' },
+  current: {
+    observedAt: '2026-11-02T06:26:00.000Z',
+    condition: 'CLOUDY',
+    isDaylight: true,
+    temperature: 12.4,
+    apparentTemperature: 9.1,
+    dewPoint: 10.5,
+    humidity: 88,
+    cloudCover: 100,
+    uvIndex: 1,
+    windSpeed: 4.6,
+    windGust: 9.2,
+    windDirection: 315,
+    visibility: 8000,
+    pressure: 1012.3,
+    pressureTrend: 'FALLING',
+    precipitationIntensity: 0,
+  },
+  nextHour: null,
+  hourly: createHourlySeries('2026-11-02T06:00:00.000Z', [10, 10, 10, 10]),
+  daily: [
+    {
+      date: '2026-11-02',
       condition: 'CLOUDY',
-      isDaylight: true,
-      temperature: 12.4,
-      apparentTemperature: 9.1,
-      dewPoint: 10.5,
-      humidity: 88,
-      cloudCover: 100,
-      uvIndex: 1,
-      windSpeed: 4.6,
-      windGust: 9.2,
-      windDirection: 315,
-      visibility: 8000,
-      pressure: 1012.3,
-      pressureTrend: 'FALLING',
-      precipitationIntensity: 0,
+      temperatureMin: 8,
+      temperatureMax: 14,
+      precipitationChance: 20,
+      precipitationAmount: 0,
+      precipitationType: 'NONE',
+      snowfallAmount: 0,
+      uvIndexMax: 2,
+      windSpeedMax: 6.1,
+      windGustMax: 11.4,
+      sunrise: '2026-11-01T21:51:00.000Z',
+      sunset: '2026-11-02T08:28:00.000Z',
+      moonPhase: 'THIRD_QUARTER',
+      moonrise: null,
+      moonset: '2026-11-02T04:50:15.000Z',
+      restOfDay: null,
+      daytime: null,
+      overnight: null,
     },
-    nextHour: null,
-    hourly: createHourlySeries('2026-11-02T06:00:00.000Z', [10, 10, 10, 10]),
-    daily: [
-      {
-        date: '2026-11-02',
-        condition: 'CLOUDY',
-        temperatureMin: 8,
-        temperatureMax: 14,
-        precipitationChance: 20,
-        precipitationAmount: 0,
-        precipitationType: 'NONE',
-        snowfallAmount: 0,
-        uvIndexMax: 2,
-        windSpeedMax: 6.1,
-        windGustMax: 11.4,
-        sunrise: '2026-11-01T21:51:00.000Z',
-        sunset: '2026-11-02T08:28:00.000Z',
-        moonPhase: 'THIRD_QUARTER',
-        moonrise: null,
-        moonset: '2026-11-02T04:50:15.000Z',
-        restOfDay: null,
-        daytime: null,
-        overnight: null,
-      },
-    ],
-    alerts: [],
-    airQuality: { pm10: 32, pm25: 18, source: 'AIRKOREA' },
-    attribution: createAttributionDto(),
-    fetchedAt: '2026-11-02T06:20:00.000Z',
-    briefing: createBriefingDto(),
-    ...overrides,
-  };
-}
+  ],
+  alerts: [],
+  airQuality: { pm10: 32, pm25: 18, source: 'AIRKOREA' },
+  attribution: createAttributionDto(),
+  fetchedAt: '2026-11-02T06:20:00.000Z',
+  // 서버가 30분 둔다
+  expiresAt: '2026-11-02T06:50:00.000Z',
+  briefing: createBriefingDto(),
+  // 서버 머리글. 기본은 알릴 날씨가 없다
+  headline: { kind: 'calm' },
+});
 
 export function createWeatherReport(overrides: Partial<WeatherReportResponse> = {}): WeatherReport {
   return toWeatherReport(createWeatherReportDto(overrides));
@@ -202,16 +203,6 @@ export function createTokyoReportDto(): WeatherReportResponse {
   });
 }
 
-/** 베트남: 분 단위 예보와 대기질이 없다. */
-export function createHanoiReportDto(): WeatherReportResponse {
-  return createWeatherReportDto({
-    location: { latitude: 21.0278, longitude: 105.8342, timezone: 'Asia/Bangkok' },
-    nextHour: null,
-    airQuality: null,
-    alerts: [],
-  });
-}
-
 /** 06:00Z부터 1시간 간격 예보. 각 항목이 그 시간의 값을 덮어쓴다. */
 export function createHourlyForecasts(rows: readonly Partial<WeatherHourlyForecast>[]) {
   return rows.map((row, index) =>
@@ -243,9 +234,11 @@ export function createDailyForecast(
   return { ...today, ...overrides };
 }
 
-export function createAirQuality(overrides: Partial<AirQuality> = {}): AirQuality {
-  return { pm10: null, pm25: null, source: 'AIRKOREA', ...overrides };
-}
+export const createAirQuality = defineFixture(airQualitySchema, {
+  pm10: null,
+  pm25: null,
+  source: 'AIRKOREA',
+});
 
 export function createForecastTodo(overrides: Partial<ForecastTodo> = {}): ForecastTodo {
   const [hour] = createWeatherReport().hourly;
@@ -255,6 +248,8 @@ export function createForecastTodo(overrides: Partial<ForecastTodo> = {}): Forec
   return {
     todoId: 1,
     title: '산책',
+    // 기본 예보 첫 칸(서울 15시)이다
+    localTime: '15:00',
     scheduledAt: hour.startsAt,
     completed: false,
     subTodoProgress: null,
@@ -267,6 +262,7 @@ export function createBriefingTodo(overrides: Partial<BriefingTodo> = {}): Brief
   return {
     id: 1,
     title: '산책',
+    localTime: '16:30',
     scheduledAt: toInstant('2026-11-02T07:30:00.000Z'),
     completed: false,
     subTodoProgress: null,

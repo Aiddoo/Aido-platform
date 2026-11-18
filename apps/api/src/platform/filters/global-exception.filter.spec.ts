@@ -1,4 +1,4 @@
-import { errorEnvelopeSchema } from "@aido/api";
+import { errorEnvelopeSchema } from "@aido/api/common";
 import { ErrorCode, Errors } from "@aido/api/errors";
 import {
   BadRequestException,
@@ -8,26 +8,28 @@ import {
   NotFoundException,
   ServiceUnavailableException,
 } from "@nestjs/common";
+import { HttpAdapterHost } from "@nestjs/core";
 import { ExecutionContextHost } from "@nestjs/core/helpers/execution-context-host.js";
 import { Test } from "@nestjs/testing";
 import { vi, type Mock } from "vitest";
 
 import { resolveDevTools } from "#api/platform/config/app.config";
+import { createHttpAdapter } from "#api/platform/http/http-adapter";
 import { ErrorMessageTranslator } from "#api/platform/i18n/error-message.translator";
 import { AppI18nModule } from "#api/platform/i18n/i18n.module";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { sqlQueryError } from "#test/doubles/platform/fake-database";
 import { RecordingExceptionReporter } from "#test/doubles/platform/recording-exception-reporter";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { RecordingPinoLogger } from "#test/doubles/platform/recording-pino-logger";
-import { sqlQueryError } from "#test/mocks/drizzle.mock";
 
 import { GlobalExceptionFilter } from "./global-exception.filter.js";
 
 describe("GlobalExceptionFilter — 전역 예외 필터", () => {
   let filter: GlobalExceptionFilter;
   let logger: RecordingPinoLogger;
-  let mockResponse: { status: Mock; json: Mock };
+  let mockResponse: { statusCode: number; json: Mock; getHeader: Mock };
   let mockRequest: {
     method: string;
     url: string;
@@ -44,7 +46,9 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
     const devTools = resolveDevTools({ isLocalRun: exposeErrorDetails, nodeEnv: "development" });
     reporter = new RecordingExceptionReporter();
     alerts = new RecordingOperationalAlert();
-    return new GlobalExceptionFilter(logger, { devTools }, messages, reporter, alerts);
+    const adapterHost = new HttpAdapterHost();
+    adapterHost.httpAdapter = createHttpAdapter();
+    return new GlobalExceptionFilter(adapterHost, logger, { devTools }, messages, reporter, alerts);
   };
 
   beforeAll(async () => {
@@ -57,8 +61,9 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
     logger = new RecordingPinoLogger();
 
     mockResponse = {
-      status: vi.fn().mockReturnThis(),
+      statusCode: HttpStatus.OK,
       json: vi.fn(),
+      getHeader: vi.fn(),
     };
 
     mockRequest = {
@@ -81,7 +86,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       filter.catch(error, host);
 
       // Then
-      expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.CONFLICT);
+      expect(mockResponse.statusCode).toBe(HttpStatus.CONFLICT);
       const jsonArg = mockResponse.json.mock.calls[0]?.[0];
       expect(jsonArg?.error.code).toBe(ErrorCode.SYS_0004);
       expect(logger.warnings).toContainEqual([
@@ -103,7 +108,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       filter.catch(error, host);
 
       // Then
-      expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+      expect(mockResponse.statusCode).toBe(HttpStatus.BAD_REQUEST);
       const jsonArg = mockResponse.json.mock.calls[0]?.[0];
       expect(jsonArg?.error.code).toBe(ErrorCode.SYS_0002);
     });
@@ -121,7 +126,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       filter.catch(error, host);
 
       // Then
-      expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.SERVICE_UNAVAILABLE);
+      expect(mockResponse.statusCode).toBe(HttpStatus.SERVICE_UNAVAILABLE);
       const body = errorEnvelopeSchema.parse(mockResponse.json.mock.calls[0]?.[0]);
       expect(body.error.code).toBe(ErrorCode.SYS_0005);
       expect(body.error.message).toBe(Errors[ErrorCode.SYS_0005].message);
@@ -136,7 +141,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       filter.catch(error, host);
 
       // Then
-      expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+      expect(mockResponse.statusCode).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
       const jsonArg = mockResponse.json.mock.calls[0]?.[0];
       expect(jsonArg?.error.code).toBe(ErrorCode.SYS_0001);
     });
@@ -151,7 +156,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       filter.catch(exception, host);
 
       // Then
-      expect(mockResponse.status).toHaveBeenCalledWith(Errors[exception.errorCode].httpStatus);
+      expect(mockResponse.statusCode).toBe(Errors[exception.errorCode].httpStatus);
       const jsonArg = mockResponse.json.mock.calls[0]?.[0];
       expect(jsonArg?.error.code).toBe(ErrorCode.TODO_CATEGORY_0851);
     });
@@ -164,7 +169,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       filter.catch(exception, host);
 
       // Then
-      expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+      expect(mockResponse.statusCode).toBe(HttpStatus.BAD_REQUEST);
       const jsonArg = mockResponse.json.mock.calls[0]?.[0];
       expect(jsonArg?.error.code).toBe(ErrorCode.SYS_0002);
     });
@@ -192,7 +197,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       filter.catch(exception, host);
 
       // Then
-      expect(mockResponse.status).toHaveBeenCalledWith(status);
+      expect(mockResponse.statusCode).toBe(status);
       const body = errorEnvelopeSchema.parse(mockResponse.json.mock.calls[0]?.[0]);
       expect(body.error.code).toBe(code);
     });
@@ -205,7 +210,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       filter.catch(exception, host);
 
       // Then
-      expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+      expect(mockResponse.statusCode).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
       const jsonArg = mockResponse.json.mock.calls[0]?.[0];
       expect(jsonArg?.error.code).toBe(ErrorCode.SYS_0001);
     });
@@ -247,7 +252,10 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       filter.catch(new Error("boom"), host);
 
       // Then
-      expect(reporter.reports.map((report) => report.context.userId)).toEqual(["user-1", null]);
+      expect(reporter.reports.map((report) => report.context.userId?.value ?? null)).toEqual([
+        "user-1",
+        null,
+      ]);
       expect(JSON.stringify(reporter.reports)).not.toContain("ip_address");
     });
 
@@ -431,8 +439,8 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       // When
       filter.catch(exception, host);
 
-      // Then - 동일 ErrorCode의 업무 오류과 상태/바디가 동일
-      expect(mockResponse.status).toHaveBeenCalledWith(Errors[expected.errorCode].httpStatus);
+      // Then
+      expect(mockResponse.statusCode).toBe(Errors[expected.errorCode].httpStatus);
       const jsonArg = mockResponse.json.mock.calls[0]?.[0];
       expect(jsonArg?.error.code).toBe(expected.errorCode);
       expect(jsonArg?.error.message).toBe(expected.message);
@@ -493,7 +501,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
     filter.catch(exception, host);
 
     // Then
-    expect(mockResponse.status).toHaveBeenCalledWith(500);
+    expect(mockResponse.statusCode).toBe(500);
     expect(mockResponse.json).toHaveBeenCalledWith(
       expect.objectContaining({
         error: expect.objectContaining({ code: ErrorCode.SYS_0001, details: exception.message }),
@@ -524,8 +532,12 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 
     it.each(Object.entries(exceptions))("%s 응답이 envelope 스키마를 만족한다", (_name, create) => {
       for (const exposeErrorDetails of [true, false]) {
+        // When
         createFilter(exposeErrorDetails).catch(create(), host);
+
+        // Then
         const body = mockResponse.json.mock.lastCall?.[0];
+
         expect(errorEnvelopeSchema.safeParse(body).success).toBe(true);
       }
     });

@@ -13,6 +13,12 @@ export const ACTION_PLAN_REJECTION_REASONS = ["CATEGORY_NOT_OWNED"] as const;
 
 export const IDEMPOTENCY_KEY_HEADER = "Idempotency-Key";
 
+/**
+ * 앱이 말로 메모를 기기에 두는 기간. 적용 요청(Idempotency-Key)도 메모와 함께 남아 이 기간 안에 다시 보낼 수 있어,
+ * 서버는 계획 적용 기록을 같은 기간 남겨 재시도가 할 일을 두 번 만들지 않게 한다.
+ */
+export const VOICE_NOTE_RETENTION_DAYS = 30;
+
 /** QuotaCharge·PlanApplication 키 열 길이와 같다. */
 export const IDEMPOTENCY_KEY_MAX_LENGTH = 128;
 

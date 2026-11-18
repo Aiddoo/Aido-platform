@@ -7,9 +7,8 @@ import {
   nudgeInteractionAvailabilityResponseSchema,
   nudgeInteractionResponseSchema,
   nudgeInteractionsResponseSchema,
-  nudgeLimitInfoSchema,
   sendNudgeThanksResponseSchema,
-} from '@aido/api';
+} from '@aido/api/contracts/nudge/v1';
 import type { ApiError } from '@src/core/errors/api-error';
 import { err, type Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http-client';
@@ -26,7 +25,6 @@ import {
   isMessageTooLong,
   normalizeMessage,
   type NudgeCooldownInfo,
-  type NudgeLimitInfo,
   type SendTodoNudgeResult,
 } from '../domains/todo-nudge.model';
 import type {
@@ -43,7 +41,6 @@ import {
 } from './nudge-interaction.mapper';
 import {
   toNudgeCooldownInfo,
-  toNudgeLimitInfo,
   toSendNudgeResult,
   toSendRemindNudgeResult,
 } from './todo-nudge.mapper';
@@ -75,14 +72,6 @@ export class TodoNudgeApi {
       '[TodoNudgeApi] Invalid sendNudge response',
     );
   };
-
-  getLimitInfo = async (signal?: AbortSignal): Promise<Result<NudgeLimitInfo, ApiError>> =>
-    parseApiResponse(
-      await this.#httpClient.get('v1/nudges/limit', { signal }),
-      nudgeLimitInfoSchema,
-      toNudgeLimitInfo,
-      '[TodoNudgeApi] Invalid getLimitInfo response',
-    );
 
   sendRemindNudge = async (
     input: CreateRemindNudgeInput,

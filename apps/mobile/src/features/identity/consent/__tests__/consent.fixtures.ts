@@ -1,58 +1,27 @@
-import { toInstant } from '@src/shared/date/instant';
+import { defineFixture } from '@src/testing/fixture';
 
-import { type Consent, consentSchema } from '../domains/consent.model';
+import { consentSchema } from '../domains/consent.model';
 import {
-  type ConsentEnvelope,
   consentEnvelopeSchema,
-  type UpdateMarketingConsentEnvelope,
+  updateMarketingConsentEnvelopeSchema,
 } from '../schemas/consent-response.schema';
 
-function generateConsentDto(): ConsentEnvelope {
-  return {
-    termsAgreedAt: '2026-01-01T00:00:00.000Z',
-    privacyAgreedAt: '2026-01-01T00:00:00.000Z',
-    agreedTermsVersion: '1.0.0',
-    marketingAgreedAt: '2026-02-01T00:00:00.000Z',
-    marketingPushAgreedAt: null,
-    aiDataSharingDecision: 'UNDECIDED',
-    aiDataSharingAgreedAt: null,
-    aiDataSharingConsentVersion: null,
-  };
-}
+const CONSENT = {
+  termsAgreedAt: '2026-01-01T00:00:00.000Z',
+  privacyAgreedAt: '2026-01-01T00:00:00.000Z',
+  agreedTermsVersion: '1.0.0',
+  marketingAgreedAt: '2026-02-01T00:00:00.000Z',
+  marketingPushAgreedAt: null,
+  aiDataSharingDecision: 'UNDECIDED',
+  aiDataSharingAgreedAt: null,
+  aiDataSharingConsentVersion: null,
+} as const;
 
-export function createConsentDto(overrides?: Partial<ConsentEnvelope>): ConsentEnvelope {
-  return consentEnvelopeSchema.parse({ ...generateConsentDto(), ...overrides });
-}
+export const createConsentDto = defineFixture(consentEnvelopeSchema, CONSENT);
 
-function generateConsent(): Consent {
-  return {
-    termsAgreedAt: toInstant('2026-01-01T00:00:00.000Z'),
-    privacyAgreedAt: toInstant('2026-01-01T00:00:00.000Z'),
-    agreedTermsVersion: '1.0.0',
-    marketingAgreedAt: toInstant('2026-02-01T00:00:00.000Z'),
-    marketingPushAgreedAt: null,
-    aiDataSharingDecision: 'UNDECIDED',
-    aiDataSharingAgreedAt: null,
-    aiDataSharingConsentVersion: null,
-  };
-}
+export const createConsent = defineFixture(consentSchema, CONSENT);
 
-export function createConsent(overrides?: Partial<Consent>): Consent {
-  return consentSchema.parse({ ...generateConsent(), ...overrides });
-}
-
-function generateUpdateMarketingConsentDto(): UpdateMarketingConsentEnvelope {
-  return {
-    marketingAgreedAt: '2026-02-01T00:00:00.000Z',
-    marketingWithdrawnAt: null,
-  };
-}
-
-export function createUpdateMarketingConsentDto(
-  overrides?: Partial<UpdateMarketingConsentEnvelope>,
-): UpdateMarketingConsentEnvelope {
-  return {
-    ...generateUpdateMarketingConsentDto(),
-    ...overrides,
-  };
-}
+export const createUpdateMarketingConsentDto = defineFixture(updateMarketingConsentEnvelopeSchema, {
+  marketingAgreedAt: '2026-02-01T00:00:00.000Z',
+  marketingWithdrawnAt: null,
+});

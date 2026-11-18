@@ -1,5 +1,6 @@
 import type { NudgeReplyKind } from "@aido/api/vocabulary";
 
+import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
@@ -24,7 +25,7 @@ export interface NudgePrimitives {
 interface NudgeProps {
   readonly senderId: UserId;
   readonly receiverId: UserId;
-  readonly todoId: number;
+  readonly todoId: TodoId;
   readonly message: NudgeMessage | null;
   readAt: Temporal.Instant | null;
   readonly createdAt: Temporal.Instant;
@@ -38,7 +39,7 @@ interface CreateNudgeParams {
   readonly id: NudgeId;
   readonly senderId: UserId;
   readonly receiverId: UserId;
-  readonly todoId: number;
+  readonly todoId: TodoId;
   readonly message: NudgeMessage | null;
   readonly now: Temporal.Instant;
 }
@@ -66,7 +67,7 @@ export class Nudge extends AggregateRoot<NudgeId, NudgeProps> {
     return new Nudge(NudgeId.reconstitute(primitives.id), {
       senderId: UserId.reconstitute(primitives.senderId),
       receiverId: UserId.reconstitute(primitives.receiverId),
-      todoId: primitives.todoId,
+      todoId: TodoId.reconstitute(primitives.todoId),
       message: primitives.message == null ? null : NudgeMessage.reconstitute(primitives.message),
       readAt: primitives.readAt,
       createdAt: primitives.createdAt,
@@ -85,7 +86,7 @@ export class Nudge extends AggregateRoot<NudgeId, NudgeProps> {
     return this.props.receiverId;
   }
 
-  get todoId(): number {
+  get todoId(): TodoId {
     return this.props.todoId;
   }
 
@@ -158,7 +159,7 @@ export class Nudge extends AggregateRoot<NudgeId, NudgeProps> {
       id: this.id.value,
       senderId: this.props.senderId.value,
       receiverId: this.props.receiverId.value,
-      todoId: this.props.todoId,
+      todoId: this.props.todoId.value,
       message: this.props.message?.value ?? null,
       readAt: this.props.readAt,
       createdAt: this.props.createdAt,

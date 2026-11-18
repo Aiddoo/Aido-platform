@@ -1,3 +1,6 @@
+import { StoreProductId } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import type { SubscriptionNoticeEvent } from "../../domain/admin-notices.constants.js";
 import type { SubscriptionNoticeInput } from "../ports/admin-event-notifier.port.js";
 import {
@@ -7,10 +10,10 @@ import {
 } from "./admin-notice.messages.js";
 
 const base: SubscriptionNoticeInput = {
-  userId: "user-1",
+  userId: UserId.reconstitute("user-1"),
   email: "user@example.com",
   kind: "STARTED",
-  productId: "com.aido.pro.monthly",
+  productId: StoreProductId.reconstitute("com.aido.pro.monthly"),
   store: "APP_STORE",
 };
 
@@ -65,8 +68,11 @@ describe("subscriptionNoticeEventOf — 운영자가 구분할 구독 이벤트"
     { label: "이전", payload: { kind: "TRANSFERRED" }, expected: "transferred" },
     { label: "연장", payload: { kind: "EXTENDED" }, expected: "extended" },
   ])("$label → $expected", ({ payload, expected }) => {
-    // When / Then
-    expect(subscriptionNoticeEventOf({ ...base, ...payload })).toBe(expected);
+    // When
+    const event = subscriptionNoticeEventOf({ ...base, ...payload });
+
+    // Then
+    expect(event).toBe(expected);
   });
 });
 
@@ -79,7 +85,7 @@ describe("buildSubscriptionNotice — 결제 블록", () => {
       endReason: "BILLING_ERROR",
       expiresAt: "2027-01-01T00:00:00.000Z",
       gracePeriodEndsAt: "2027-01-17T00:00:00.000Z",
-      newProductId: "com.aido.pro.yearly",
+      newProductId: StoreProductId.reconstitute("com.aido.pro.yearly"),
       newPlanType: "ANNUAL",
       transfer: { from: ["old"], to: ["new"] },
       premium: { source: "STORE", periodEndsAt: null, bankedDays: 0, isTrial: false },
@@ -109,7 +115,7 @@ describe("buildSubscriptionNotice — 결제 블록", () => {
   it("이전 이벤트는 상품이 없으므로 상품 칸을 비운다", () => {
     // When
     const notice = buildSubscriptionNotice(
-      { ...base, kind: "TRANSFERRED", productId: "-" },
+      { ...base, kind: "TRANSFERRED", productId: StoreProductId.reconstitute("-") },
       { userId: "user-1", email: "u@example.com" },
     );
 
@@ -128,7 +134,7 @@ describe("registeredNoticeUserOf — 가입 요청으로 채우는 사용자 블
   ] as const)("%s 가입은 %s 가입 방식이다", (provider, signupMethod) => {
     // When
     const user = registeredNoticeUserOf({
-      userId: "user-1",
+      userId: UserId.reconstitute("user-1"),
       email: "u@example.com",
       provider,
       registeredAt: "2026-03-07T12:00:00.000Z",

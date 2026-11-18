@@ -13,7 +13,7 @@ import { memo as memoTable } from "#api/platform/database/schema/notes.schema";
 import { nextSequenceValue } from "#api/platform/database/sequence";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { MemoIdempotencyKeyTakenError } from "../../application/memos.errors.js";
+import { memoIdempotencyKeyTaken } from "../../application/memos.errors.js";
 import { MemoRepositoryPort } from "../../application/ports/memo.repository.port.js";
 import { MemoId } from "../../domain/memo-id.vo.js";
 import type { SortOrderShift } from "../../domain/memo-ordering.domain-service.js";
@@ -24,14 +24,10 @@ const IDEMPOTENCY_KEY_CONSTRAINT = "Memo_userId_idempotencyKey_key";
 
 @Injectable()
 export class DrizzleMemoRepository implements MemoRepositoryPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
-  }
-
-  get #db() {
-    return this.#txHost.tx;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
   async nextId(): Promise<MemoId> {
@@ -138,7 +134,7 @@ export class DrizzleMemoRepository implements MemoRepositoryPort {
         isUniqueConstraintViolation(error) &&
         databaseConstraint(error) === IDEMPOTENCY_KEY_CONSTRAINT
       ) {
-        throw new MemoIdempotencyKeyTakenError();
+        throw memoIdempotencyKeyTaken();
       }
       throw error;
     }
@@ -150,5 +146,9 @@ export class DrizzleMemoRepository implements MemoRepositoryPort {
       .where(eq(memoTable.id, memo.id.value))
       .returning({ id: memoTable.id });
     requireRecord(deleted);
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

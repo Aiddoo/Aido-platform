@@ -9,6 +9,7 @@ import {
 import { z } from "zod";
 
 import { defineQueue, JOB_POLLING_SECONDS } from "#api/shared/application/ports/job-queue.port";
+import { DAY_SECONDS } from "#api/shared/domain/time/time-units";
 
 import {
   ADMIN_NOTIFICATION_CHANNELS,
@@ -132,8 +133,6 @@ const adminNotificationJobSchema = z.discriminatedUnion("name", [
 ]);
 
 export type AdminNotificationJob = z.output<typeof adminNotificationJobSchema>;
-
-const DAY_SECONDS = 24 * 60 * 60;
 
 // 일시 실패(429·5xx·연결 실패)만 2번 다시 시도한다. 거절은 다시 보내지 않고 운영 경보를 올린다
 export const ADMIN_NOTIFICATION_QUEUE = defineQueue({

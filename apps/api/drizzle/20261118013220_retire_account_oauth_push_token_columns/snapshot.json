@@ -1,0 +1,189 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "0fc960e5-fbd1-40e8-ad03-e5ab5723c19c",
+  "prevIds": [
+    "abb576f8-bd8c-4c67-8b9e-ab378a4ded7a"
+  ],
+  "footprints": [
+    {
+      "statementType": "drop_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "Account",
+        "accessToken"
+      ],
+      "writes": [
+        "s|col|public.Account.accessToken",
+        "n|col|public.Account.accessToken",
+        "e|col|public.Account.accessToken"
+      ],
+      "reads": [
+        "n|tbl|public.Account",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "drop_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "Account",
+        "accessTokenExpiresAt"
+      ],
+      "writes": [
+        "s|col|public.Account.accessTokenExpiresAt",
+        "n|col|public.Account.accessTokenExpiresAt",
+        "e|col|public.Account.accessTokenExpiresAt"
+      ],
+      "reads": [
+        "n|tbl|public.Account",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "drop_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "Account",
+        "refreshToken"
+      ],
+      "writes": [
+        "s|col|public.Account.refreshToken",
+        "n|col|public.Account.refreshToken",
+        "e|col|public.Account.refreshToken"
+      ],
+      "reads": [
+        "n|tbl|public.Account",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "drop_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "Account",
+        "scope"
+      ],
+      "writes": [
+        "s|col|public.Account.scope",
+        "n|col|public.Account.scope",
+        "e|col|public.Account.scope"
+      ],
+      "reads": [
+        "n|tbl|public.Account",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "drop_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "OAuthState",
+        "codeVerifier"
+      ],
+      "writes": [
+        "s|col|public.OAuthState.codeVerifier",
+        "n|col|public.OAuthState.codeVerifier",
+        "e|col|public.OAuthState.codeVerifier"
+      ],
+      "reads": [
+        "n|tbl|public.OAuthState",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "drop_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "OAuthState",
+        "ipAddress"
+      ],
+      "writes": [
+        "s|col|public.OAuthState.ipAddress",
+        "n|col|public.OAuthState.ipAddress",
+        "e|col|public.OAuthState.ipAddress"
+      ],
+      "reads": [
+        "n|tbl|public.OAuthState",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "drop_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "OAuthState",
+        "userAgent"
+      ],
+      "writes": [
+        "s|col|public.OAuthState.userAgent",
+        "n|col|public.OAuthState.userAgent",
+        "e|col|public.OAuthState.userAgent"
+      ],
+      "reads": [
+        "n|tbl|public.OAuthState",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "drop_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "PushToken",
+        "lastUsedAt"
+      ],
+      "writes": [
+        "s|col|public.PushToken.lastUsedAt",
+        "n|col|public.PushToken.lastUsedAt",
+        "e|col|public.PushToken.lastUsedAt"
+      ],
+      "reads": [
+        "n|tbl|public.PushToken",
+        "n|sch|public"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"Account\",\"accessToken\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"Account\",\"accessTokenExpiresAt\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"Account\",\"refreshToken\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"Account\",\"scope\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"OAuthState\",\"codeVerifier\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"OAuthState\",\"ipAddress\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"OAuthState\",\"userAgent\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"PushToken\",\"lastUsedAt\"]"
+    }
+  ]
+}

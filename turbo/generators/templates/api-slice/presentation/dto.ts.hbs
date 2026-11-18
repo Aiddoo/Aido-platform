@@ -3,7 +3,7 @@ import {
   get{{pascalCase slice}}QuerySchema,
   {{camelCase aggregate}}DetailResponseSchema,
   {{camelCase aggregate}}ListResponseSchema,
-} from "@aido/api/contracts/{{aggregate}}";
+} from "@aido/api/contracts/{{aggregate}}/v1";
 import type { z } from "zod";
 
 export const Create{{pascalCase aggregate}}Dto = create{{pascalCase aggregate}}Schema.meta({ id: "Create{{pascalCase aggregate}}Dto" });

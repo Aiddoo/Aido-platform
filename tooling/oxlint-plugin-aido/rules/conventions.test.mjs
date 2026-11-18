@@ -36,15 +36,18 @@ tester.run('no-object-method-shorthand', rules['no-object-method-shorthand'], {
 
 tester.run('dto-alias', rules['dto-alias'], {
   valid: [
-    "import type { TodoResponse } from '@aido/api/contracts';",
-    "import type { TodoResponse as TodoResponseDto } from '@aido/api/contracts';",
-    "import type { TodoSchema as TodoRequestSchema } from '@aido/api';",
+    "import type { TodoResponse } from '@aido/api/contracts/todo/v1';",
+    "import type { TodoResponse as TodoResponseDto } from '@aido/api/contracts/todo/v1';",
+    "import type { TodoSchema as TodoRequestSchema } from '@aido/api/contracts/todo/v1';",
     "import { x as y } from 'other';",
-    "import { todoSchema as remoteTodo } from '@aido/api';",
+    "import { todoSchema as remoteTodo } from '@aido/api/contracts/todo/v1';",
   ],
   invalid: [
-    { code: "import type { TodoResponse as TodoDTO } from '@aido/api/contracts';", errors: 1 },
-    { code: "import { type TodoResponse as Todo } from '@aido/api';", errors: 1 },
+    {
+      code: "import type { TodoResponse as TodoDTO } from '@aido/api/contracts/todo/v1';",
+      errors: 1,
+    },
+    { code: "import { type TodoResponse as Todo } from '@aido/api/contracts/todo/v1';", errors: 1 },
   ],
 });
 
@@ -88,5 +91,24 @@ tester.run('no-return-type-of-hook', rules['no-return-type-of-hook'], {
   invalid: [
     { code: 'type Picker = ReturnType<typeof useDatePicker>;', errors: 1 },
     { code: 'function f(picker: ReturnType<typeof useVoiceCaptureSession>) {}', errors: 1 },
+  ],
+});
+
+tester.run('no-restating-comment', rules['no-restating-comment'], {
+  valid: [
+    '// 잠금 순서가 바뀌면 교착이 난다\nconst x = 1;',
+    '/** 출시 앱 1.14 이하가 이 칸을 필수로 읽는다 */\nconst y = 2;',
+    'const email = "user@example.com";',
+    '// a - b 비교\nconst z = 3;',
+  ],
+  invalid: [
+    {
+      code: '/**\n * 메모를 만든다\n * @param input 입력\n */\nfunction create(input) {}',
+      errors: 1,
+    },
+    { code: '/**\n * @returns 결과\n */\nfunction read() {}', errors: 1 },
+    { code: '/**\n * @example\n * create()\n */\nfunction create() {}', errors: 1 },
+    { code: '// ========================\nconst a = 1;', errors: 1 },
+    { code: '// ─── 조회 ───\nconst b = 1;', errors: 1 },
   ],
 });

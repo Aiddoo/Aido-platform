@@ -4,7 +4,7 @@
 
 ## 공통 발송 조건
 
-서버 발송에는 활성 Expo 토큰과 `pushEnabled=true`가 필요하다. OS 알림 권한과 실제 기기 도착은 서버 ticket/receipt만으로 보장하지 못한다. 알림 레코드 생성과 실제 푸시 전송은 분리되어 있으므로, 푸시가 차단돼도 앱 안 알림함 기록은 남을 수 있다.
+서버 발송에는 활성 토큰(지금 채널은 Expo뿐)과 `pushEnabled=true`가 필요하다. 사용자의 활성 기기 모두로 보내고, 같은 알림의 재전송은 한 기기에 한 번만 보이며, 1.17.0 이상 앱 기기에는 아이콘 배지로 안 읽은 수를 싣는다([배지와 중복 배너](push-delivery.md#배지와-중복-배너)). OS 알림 권한과 실제 기기 도착은 서버 ticket/receipt만으로 보장하지 못한다. 알림 레코드 생성과 실제 푸시 전송은 분리되어 있으므로, 푸시가 차단돼도 앱 안 알림함 기록은 남을 수 있다.
 
 | 정책             | 기준                                                                                                                                                                                                                                                                |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -15,7 +15,7 @@
 | 광고성 푸시 표기 | 참여 유도 대상의 푸시는 제목 앞 "(광고) "(en "(Ad) ")와 본문 끝 줄 "수신 거부: 설정 > 알림"을 붙인다. 알림함 기록은 원래 문구다(`marketing-push-label.messages.ts`, `PushNotificationPayloadMapper`)                                                                |
 | AI 제안·리포트   | `aiPushEnabled=false`면 `AI_SUGGESTION`·`WEEKLY_REPORT`·`MONTHLY_REPORT` 푸시만 `AI_PUSH_DISABLED`로 건너뛴다(`isAiPushDisabled`, `pushEnabled` 다음·일반 한도 예약 전). 알림함 기록은 남는다                                                                       |
 | 야간 시간        | 21:00 이상 08:00 미만                                                                                                                                                                                                                                               |
-| 야간 참여 유도   | 동의 여부와 관계없이 발송하지 않음                                                                                                                                                                                                                                  |
+| 야간 참여 유도   | 동의 여부와 관계없이 발송하지 않음. 21:00까지 1분 미만이면 보내지 않고, 보낸 푸시도 받는 사람 21:00에 공급자 보관이 끝난다([보관 시간](push-delivery.md#deliveryreceipt))                                                                                           |
 | 야간 일반 푸시   | `nightPushEnabled=true`일 때 발송                                                                                                                                                                                                                                   |
 | 야간 예외        | 사용자가 시각을 정한 `TODO_REMINDER`(할 일 시각 60·10분 전), `MORNING_REMINDER`·`EVENING_REMINDER`(프리미엄이 고른 시각, 무료 08:00·19:00은 야간 밖), `WEATHER_MORNING`, `WEATHER_EVENING`. `nightPushEnabled=false`여도 보낸다. 광고성·소셜·재방문은 예외가 아니다 |
 | Redis 장애       | 기존 정책대로 fail-open. 비정상 배치 결과도 타입 검증 후 전체 허용                                                                                                                                                                                                  |
@@ -37,8 +37,8 @@
 | 월요일 11:30                 | `WEEKLY_REPORT`            |         - |               O | 지난주 활동이 있을 때                                                                                                                                                                                                         |
 | 매월 1일 11:30               | `MONTHLY_REPORT`           |         - |               O | 지난달 활동이 있을 때. 같은 날 주간 리포트를 대체                                                                                                                                                                             |
 | 12:30                        | `LUNCH_NUDGE`              |         O |               O | 오늘 할 일은 있으나 완료가 0개                                                                                                                                                                                                |
-| 15:00                        | `NUDGE_SUGGEST`            |         O |               O | 2~7일 비활성 맞팔 친구, 동일 조합 주 1회                                                                                                                                                                                      |
-| 16:00                        | `WINBACK`                  |         O |               O | 3·7·14·21·30일 비활성 단계별 1회                                                                                                                                                                                              |
+| 15:00                        | `NUDGE_SUGGEST`            |         O |               O | 2~7일 비활성 맞팔 친구, 같은 친구는 ISO 주(월요일 시작)에 1회(그 주 `NUDGE_SUGGEST` 알림 행으로 판단)                                                                                                                         |
+| 16:00                        | `WINBACK`                  |         O |               O | 3·7·14·21·30일 비활성, 쉬는 동안 단계마다 1회(마지막 활동 뒤 같은 단계 `WINBACK` 알림 행으로 판단, 배포에 영향 없음)                                                                                                          |
 | 기본 17:30, 사용자 설정 가능 | `WEATHER_EVENING`          |         O |               O | 내일 비·눈 시작과 쌀쌀함(v2 리포트). 위치가 없으면 위치 설정 안내                                                                                                                                                             |
 | 19:00                        | `EVENING_REMINDER`         |         O |               - | 오늘 할 일이 있는 사용자, 하루 1회                                                                                                                                                                                            |
 | 사용자 설정 오후 시각        | `EVENING_REMINDER`         |         - |               O | 시간·분 커스텀, 하루 1회                                                                                                                                                                                                      |
@@ -51,7 +51,7 @@
 
 월간 리포트와 주간 리포트는 같은 11:30 슬롯에서 동시에 보내지 않는다. 무료 주간 달성 요약은 프리미엄 리포트와 대상이 다르므로 별도로 집계한다. 일일 스케줄은 `notificationDate`나 pg-boss `singletonKey`로 중복 생성·예약을 제한한다.
 
-AI 제안 분석은 매시 정각 dispatch가 사용자 현지 09시대(따라잡기 12시 전까지)인 사용자만 등록하고(`AI_SUGGESTION`은 구독한 서비스의 결과라 광고성 동의 없이 보내는 서비스 알림이다. 야간 21~08시 수신을 끈 사용자에게도 닿고 08:00 기본 아침 알림과 겹치지 않게 한다), 같은 사용자의 같은 현지 날짜는 한 번만 분석한다(`suggestion_<userId>_<현지 날짜>` 키). 배포로 빠진 실행은 한 번만 보정한다(`missed: "once"`). 대상은 활성·미삭제 프리미엄과 관리자(`premiumAccessCondition`)이며 최근 14일에 반복이 아닌 할 일 기록이 있어야 한다. 분석 시작과 저장 transaction에서 `canInTx(userId, "AI_SUGGESTION")`으로 권한을 다시 확인하고, 실제 저장한 제안이 있을 때만 `AI_SUGGESTION`을 발행한다. 제안은 기록 기반 반복 설정·시작 단계 재시도·보완 제안을 포함한다. AI 할 일 만들기의 월간 횟수와 제안·리포트의 premium 권한 검사는 별도 정책이다.
+AI 제안 분석은 매시 정각 dispatch가 사용자 현지 09시대(따라잡기 12시 전까지)인 사용자만 등록하고(`AI_SUGGESTION`은 구독한 서비스의 결과라 광고성 동의 없이 보내는 서비스 알림이다. 야간 21~08시 수신을 끈 사용자에게도 닿고 08:00 기본 아침 알림과 겹치지 않게 한다), 같은 사용자의 같은 현지 날짜는 한 번만 분석한다(`suggestion_<userId>_<현지 날짜>` 키). 배포로 빠진 실행은 한 번만 보정한다(`missed: "once"`). 대상은 활성·미삭제 프리미엄과 관리자(`premiumAccessCondition`)이며 최근 14일에 반복이 아닌 할 일 기록이 있어야 한다. 분석 시작과 저장 transaction에서 `canInTransaction(userId, "AI_SUGGESTION")`으로 권한을 다시 확인하고, 실제 저장한 제안이 있을 때만 `AI_SUGGESTION`을 발행한다. 제안은 기록 기반 반복 설정·시작 단계 재시도·보완 제안을 포함한다. AI 할 일 만들기의 월간 횟수와 제안·리포트의 premium 권한 검사는 별도 정책이다.
 
 사용자가 앱에서 지금 분석 받기로 요청한 분석(`trigger = ON_DEMAND`)은 결과를 앱 안에서 기다리므로 제안을 만들어도 `AI_SUGGESTION` 푸시·알림함 항목을 만들지 않는다. 발행은 아침 배치(`SCHEDULED`)가 제안을 만든 때(`SUGGESTIONS_CREATED`)만이다([AI](ai.md#제안-분석-실행과-지금-받기)).
 
@@ -62,6 +62,7 @@ AI 제안 분석은 매시 정각 dispatch가 사용자 현지 09시대(따라�
 `목적`이 `참여`인 항목만 광고성 푸시 동의와 참여 유도 일일 한도를 적용한다. `서비스`와 `거래`는 일반 시간당 한도와 야간 설정을 적용한다(사용자가 시각을 정한 위 야간 예외는 빼고, `TODO_REMINDER`는 시간당 한도도 빼고).
 
 목적 분류 근거: 정보통신망법 제50조는 영리목적 광고성 정보에 명시적 사전 동의를, 21~08시에는 별도 동의를 요구한다. 「불법스팸 방지를 위한 정보통신망법 안내서」(방송미디어통신위원회·KISA, KISA-GD-2025-0037, 2025.12) 11쪽은 계약·거래 관계로 반드시 전할 정보를 광고성의 예외로 보고, 51쪽 Q&A 01-05는 돈을 내고 받는 정보 제공을 계약에 따른 서비스로 본다. 그래서 프리미엄이 구독한 AI 제안·주간·월간 리포트의 도착 알림은 `서비스`다. 같은 11쪽은 광고가 부수적으로 섞이면 전체를 광고로 보므로 이 문구에 할인·업그레이드 권유를 넣지 않는다. Apple App Review Guidelines 4.5.4와 HIG(Managing notifications)는 광고성 푸시의 명시적 동의와 앱 안 설정을, Android 알림 채널 가이드는 종류마다 채널을 권한다. 서비스 알림도 사용자가 종류별로 끌 수 있게 `aiPushEnabled`를 둔다. Android 채널은 `default` 하나다(분리는 [1.16.0 다음 버전 후보](../../../docs/releases/1.16.0/README.md#다음-버전-후보)).
+리마인드 알림 버튼(완료·10분 뒤 다시, `categoryId: TODO_REMINDER`, 단계 `ACTIONABLE_TODO_REMINDER_STAGES`의 60·10분·다시 알림에만 붙고 반복 알림 멈춤 안내에는 없다)과 다시 알림(`POST /v1/todo-reminders/{todoId}/snoozes`, 누른 알림마다 한 번)은 동의를 더 받지 않는다. 사용자가 정한 할 일의 서비스 알림을 사용자가 버튼으로 직접 다시 청한 것이라 광고성 정보가 아니기 때문이다. 그래서 같은 `TODO_REMINDER`·`SCHEDULED_SERVICE`로 보내 푸시 켜짐·기기 권한·야간 예외를 그대로 따르고 광고 표기·`MARKETING` 카테고리를 붙이지 않는다. 푸시 보관은 울릴 시각 + 15분까지다([보관 시간](push-delivery.md)). 보낼 때 완료·삭제를 다시 보고 15분 넘게 늦으면 버린다.
 
 | 타입                       | 발생 조건/생성 주체                                                                      | 목적         | 기본 이동                              |
 | -------------------------- | ---------------------------------------------------------------------------------------- | ------------ | -------------------------------------- |
@@ -107,7 +108,7 @@ AI 제안 분석은 매시 정각 dispatch가 사용자 현지 09시대(따라�
 
 ### 푸시 navigation (1.14.1+)
 
-push data의 `navigation`은 알림을 눌렀을 때 열 화면을 `kind`로 판별하는 유니온이다(`@aido/api`의 `notificationNavigationSchema`, kind 값은 `@aido/api/vocabulary`의 `NOTIFICATION_NAVIGATION_KIND`). 서버는 `toNotificationNavigation`(`push/infrastructure/adapters/notification-navigation.mapper.ts`, 판정은 `push/domain/notification-navigation.domain-service.ts`) 하나에서 kind별로 만들고, 앱은 `match(navigation).exhaustive()`로 목적지를 고른다.
+push data의 `navigation`은 알림을 눌렀을 때 열 화면을 `kind`로 판별하는 유니온이다(`@aido/api`의 `notificationNavigationSchema`, kind 값은 `@aido/api/vocabulary`의 `NOTIFICATION_NAVIGATION_KIND`). 서버는 `toNotificationNavigation`(`push-dispatches/infrastructure/adapters/notification-navigation.mapper.ts`, 판정은 `shared/domain/notification-navigation.domain-service.ts`) 하나에서 kind별로 만들고, 앱은 `match(navigation).exhaustive()`로 목적지를 고른다.
 
 | kind                 | 싣는 값                                                                                                                        | 알림                                                                                                                                                                  |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -152,7 +153,7 @@ push data의 `navigation`은 알림을 눌렀을 때 열 화면을 `kind`로 판
 `SendWeatherMorningUseCase`·`SendWeatherEveningUseCase`는 앱 날씨 화면과 같은 v2(WeatherKit) 리포트를 weather의 공개 `WeatherReportReaderPort`(notification 쪽 `ReminderWeatherReportReaderPort`)로 읽는다. v1 KMA 격자 예보는 쓰지 않으므로 격자가 없는 해외 위치(1.14.0+)도 날씨 알림을 받는다.
 
 1. 대상: 설정 시각이 맞고 날씨 알림을 켠 활성 사용자 중 위치가 있고 오늘 같은 알림을 받지 않은 사용자만. 이 단계 뒤에만 리포트·할 일을 조회하므로 대상이 아닌 사용자로 WeatherKit을 부르지 않는다. 날씨 알림은 야간 예외 타입이다.
-2. 리포트: `GetWeatherReport`와 같은 `WeatherReportReader.readReport`(geohash5 칸 캐시 `weather:v2:report:<칸>:<scope>`, `CacheStorePort.wrap` single-flight, 평소 30분·2시간 안 강수 10분 TTL → 실패 시 6시간 latest 스냅샷 → 칸별 1분 공급자 실패 캐시)를 쓴다. 같은 칸·언어 요청은 한 번만 읽고 칸은 4개씩 동시에 읽는다. 화면과 캐시를 공유하므로 **리포트용 WeatherKit `weather` 호출은 칸·scope(특보가 있는 칸만 언어별, 나머지는 공유)마다 리포트 TTL당 최대 1회(프로세스별 single-flight)**이며 알림 사용자 수에 비례하지 않는다. 이와 별도로 가용성 조회는 칸마다 7일, 출처 표기(attribution)는 언어마다 7일 캐시하고, 둘 다 실패하면 1분 동안 다시 부르지 않는다(가용성은 기본 dataset, 표기는 로고 없이 진행).
+2. 리포트: `GetWeatherReport`와 같은 `WeatherReportReader.readReport`(geohash5 칸 캐시 `weather:v2:report:<칸>:<scope>`, `CacheStorePort.wrap` single-flight, 공급자 예보 만료까지 10~30분, 분 단위 예보가 있는 칸의 곧 강수 10분, 월 예산 절약 중 2시간 TTL → 실패 시 6시간 latest 스냅샷 → 칸별 1분 공급자 실패 캐시)를 쓴다. 같은 칸·언어 요청은 한 번만 읽고 칸은 4개씩 동시에 읽는다. 화면과 캐시를 공유하므로 **리포트용 WeatherKit `weather` 호출은 칸·scope(특보가 있는 칸만 언어별, 나머지는 공유)마다 리포트 TTL당 최대 1회(프로세스별 single-flight)**이며 알림 사용자 수에 비례하지 않는다. 이와 별도로 가용성 조회는 칸마다 7일, 출처 표기(attribution)는 언어마다 7일 캐시하고, 둘 다 실패하면 1분 동안 다시 부르지 않는다(가용성은 기본 dataset, 표기는 로고 없이 진행).
 3. 할 일(아침만): planning 조회 포트(`TodoScheduleReaderPort`)로 오늘(알림 시간대) 남은 시각 지정·미완료·종일 아님 할 일을 읽는다(`scheduledTime ∈ [지금, 오늘 자정)`, 어제 이전에 시작해 오늘까지 이어지는 여러 날 할 일은 오늘의 같은 벽시계 시각). 날씨 화면 브리핑과 같은 조회다.
 4. 판단(weather Context의 `weather-notification-briefing.domain-service.ts`. 할 일과 겹친 날씨는 날씨 화면 브리핑과 같은 `planWeatherBriefing`이 정하고, 기준값은 `@aido/api/vocabulary`의 `WEATHER_BRIEFING_RULES`): 시간별 강수 확률 50% 이상 = 비, 낮 체감 33°C 이상 = 더위, `THUNDERSTORMS` = 뇌우, 눈·진눈깨비·우박 = 눈, 최저 10°C 이하 = 쌀쌀. 아침은 할 일과 겹친 비·뇌우·눈 → 할 일과 겹친 더위 → 오늘 늦게 오는 비·눈 → 오늘 요약(상태·최고/최저·강수 확률) 순, 저녁은 내일 비·눈이 시작하는 때(새벽·오전·오후·저녁) 또는 내일 요약에 쌀쌀함을 더한다. 시각과 오늘·내일은 알림 시간대(기기), 일별 예보는 위치 시간대 날짜로 찾는다.
 5. 폴백: 캐시·latest 스냅샷까지 없으면 틀린 날씨 대신 "앱에서 확인" 안내(`weather.*.unavailable`)를 보낸다. KMA로 다시 읽지 않는다.
@@ -162,11 +163,11 @@ push data의 `navigation`은 알림을 눌렀을 때 열 화면을 `kind`로 판
 ## 문구와 변형 선택
 
 - 한국어와 영어 카탈로그는 키, variant 수, 플레이스홀더가 항상 같아야 한다.
-- 한국어 푸시는 모든 카탈로그가 앱 화면과 같은 해요체를 쓴다. 보조 용언은 붙여 쓰고(`해볼까요`, `적어봐요`), 합니다체와 섞지 않는다. 사람 이름에는 `님`을 붙이고 이름을 모르면 `친구`를 쓴다. 죄책감·조롱·가짜 긴급함·과한 유행어는 쓰지 않는다.
+- 한국어 푸시는 모든 카탈로그가 앱 화면과 같은 해요체를 쓴다. 보조 용언은 붙여 쓰고(`해볼까요`, `적어봐요`), 합니다체와 섞지 않는다. 사람 이름에는 `님`을 붙이고 이름을 모르면 `친구`를 쓴다. 친구 요청·수락은 "친구가 친구 요청을…"처럼 겹치므로 보낸 사람 이름이 비었거나(공백뿐 포함) 그 언어의 대체 이름(`친구`·`A friend`)과 같을 때만 이름 없는 문구(`FOLLOW_NEW_UNNAMED`·`FOLLOW_ACCEPTED_UNNAMED`, variant `default`)를 쓴다. 프로필 이름이 없는 사용자는 Aido ID(userTag)로 부르므로 이름 있는 문구다. 이름 없는 문구는 무작위 v1~v3 arm이 아니라 templateKey `follow.request.unnamed`·`follow.accepted.unnamed`로 따로 집계한다. 죄책감·조롱·가짜 긴급함·과한 유행어는 쓰지 않는다.
 - 친구가 앱에서 고른 콕 답장(`replyKind`, 카탈로그 `nudgeReply`)처럼 사용자가 보낸 말은 앱 버튼 문구 그대로 인용한다.
 - 영어는 sentence case와 축약형을 쓰는 자연스러운 표현으로 쓰고 한국어를 직역하지 않는다. 문장 중간에서 이름을 모르는 친구는 `your friend`로 부른다.
 - 결제·계정·보안 알림은 농담 없이 명확하게 쓴다.
-- 카피를 바꾸면 `NOTIFICATION_COPY_REVISION`을 해당 릴리스 버전으로 올려 `metadata.copyRevision`으로 이전 문구와 성과를 나눈다.
+- 카피를 바꾸면 `NOTIFICATION_COPY_REVISION`을 바꾼 날짜(`YYYY-MM-DD`)로 올려 `metadata.copyRevision`으로 이전 문구와 성과를 나눈다. 서버는 버전 번호 없이 배포마다 나가므로([버전](../../../docs/conventions/git.md#버전)) 앱 릴리스 버전을 쓰지 않는다.
 - 제목은 60자, 본문은 120자 이하이며 한 줄의 이모지는 최대 1개다.
 - 반복 캠페인은 `campaignKey + templateKey + recipientId + occurrenceKey`로 variant를 결정한다. 같은 사용자·같은 발생 건은 재시도나 서버 재시작 뒤에도 문구가 바뀌지 않는다.
 - `templateKey`는 아침 할 일 유무, 저녁 진행 상태, 날씨 조건처럼 한 캠페인 안의 의미상 다른 카피 풀을 구분한다. `variantId`에도 포함되므로 서로 다른 문구가 같은 ID로 집계되지 않는다.
@@ -183,6 +184,8 @@ push data의 `navigation`은 알림을 눌렀을 때 열 화면을 `kind`로 판
 - 과거에 잘못 저장된 값은 활성 스케줄 타임존 목록에서 제외하고, 날짜 계산이 필요한 방어 경로에서는 `UTC`로 폴백한다.
 - 과거에 저장된 유효한 IANA 별칭은 원래 저장값으로 스윕해 조회 조건과 일치시킨다. 이를 정규 이름으로만 합치면 기존 별칭 사용자가 누락되므로, 신규 입력부터 점진적으로 정규화한다.
 - 모든 고정 시각, 로컬 날짜 중복 키, 참여 유도 일일 한도는 IANA 타임존과 DST를 반영한다.
+- 사용자가 고른 아침·저녁 리마인더와 아침·저녁 날씨 알림 시각은 그 분에만 울린다(멈춘 사이 놓친 분은 sweep의 15분 따라잡기가 보낸다). 같은 현지 날짜에는 한 번이다. 봄 DST로 없는 시각(뉴욕 3월 02:30)은 틈 바로 뒤 첫 분(03:00)에, 가을에 두 번 오는 시각(뉴욕 11월 01:30)은 앞의 것에만 보낸다(`reminderTimesDueAt`).
+- 온보딩 Day·윈백 비활성 일수·찔러보기 친구 쉰 날은 시간대 묶음의 현지 달력 날짜로 센다(`localDaysSince`). 2026-11 이전에는 UTC 자정 기준 24시간 단위로 세어, 서울 19시 가입자가 Day 1 안내를 현지 셋째 날에 받는 등 가입 시각에 따라 하루씩 밀렸다.
 
 ## 구버전 클라이언트 호환성
 
@@ -190,8 +193,8 @@ v1.0.0~v1.4.0이 요구한 푸시 data 필드 `notificationId`, `type`, `action`
 
 호환성 테스트는 Git 릴리스 이력의 실제 알림 타입 enum을 반영한 v1.0–v1.1, v1.2–v1.4 스키마와 현재 `pushNotificationDataSchema`로 같은 서버 payload를 각각 파싱한다. OpenAPI paths/components 스냅샷도 별도로 고정한다.
 
-앱 계약 enum(`@aido/api` `NOTIFICATION_TYPE`)에 없는 서버 전용 타입(`PREMIUM_TRIAL_ENDING`·`PREMIUM_RENEWAL_UPCOMING`)은 `push/domain/notification-client-capability.domain-service.ts`의 `toWireNotificationType` 한 곳에서 푸시 `type`과 알림함 `type`을 `SYSTEM_NOTICE`로 바꿔 보낸다. 저장·중복 방지·카테고리(`NOTICE`)·`navigation`(`SUBSCRIPTION`)은 서버 타입으로 정하고, `DEEP_LINK` url `/settings/subscription`을 함께 실어 1.13.0+ 앱도 구독 화면을 연다. 그래서 최소 앱 버전이 없고 모든 앱이 받는다.
+앱 계약 enum(`@aido/api` `NOTIFICATION_TYPE`)에 없는 서버 전용 타입(`PREMIUM_TRIAL_ENDING`·`PREMIUM_RENEWAL_UPCOMING`)은 `shared/domain/notification-client-capability.domain-service.ts`의 `toWireNotificationType` 한 곳에서 푸시 `type`과 알림함 `type`을 `SYSTEM_NOTICE`로 바꿔 보낸다. 저장·중복 방지·카테고리(`NOTICE`)·`navigation`(`SUBSCRIPTION`)은 서버 타입으로 정하고, `DEEP_LINK` url `/settings/subscription`을 함께 실어 1.13.0+ 앱도 구독 화면을 연다. 그래서 최소 앱 버전이 없고 모든 앱이 받는다.
 
-새 알림 타입의 최소 앱 버전은 `push/domain/notification-client-capability.domain-service.ts`의 `NOTIFICATION_MIN_APP_VERSION` 한 곳에서 정한다(`NUDGE_REPLIED`·`NUDGE_THANKED` 1.11.0, `INVITE_JOINED`·`INVITE_REWARDED`·`INVITE_PROGRESS`·`INVITE_QUALIFY_REMINDER`·`PREMIUM_GRANT_ENDING` 1.13.0). 알림함 조회·미읽음 수·전체 읽음과 푸시 토큰 필터가 같은 함수를 쓰므로 그보다 낮은 `X-App-Version`(또는 헤더 없음)에는 해당 알림이 보이지 않고 그 버전 미만 기기로 푸시하지 않는다. 미읽음 수 캐시는 지원 단계(`legacy`·`since-1.11.0`·`all`)마다 나눈다.
+새 알림 타입의 최소 앱 버전은 `shared/domain/notification-client-capability.domain-service.ts`의 `NOTIFICATION_MIN_APP_VERSION` 한 곳에서 정한다(`NUDGE_REPLIED`·`NUDGE_THANKED` 1.11.0, `INVITE_JOINED`·`INVITE_REWARDED`·`INVITE_PROGRESS`·`INVITE_QUALIFY_REMINDER`·`PREMIUM_GRANT_ENDING` 1.13.0). 알림함 조회·미읽음 수·전체 읽음과 푸시 토큰 필터가 같은 함수를 쓰므로 그보다 낮은 `X-App-Version`(또는 헤더 없음)에는 해당 알림이 보이지 않고 그 버전 미만 기기로 푸시하지 않는다. 미읽음 수 캐시는 지원 단계(`legacy`·`since-1.11.0`·`all`)마다 나눈다.
 
 소셜 다이제스트 지연 잡은 직전 저녁 리마인더의 알림 생성 대상 사용자 CUID 목록을 함께 저장한다. 배포 전에 생성되어 대상 목록이 없는 구형 지연 잡은 타임존 전체로 확대 발송하지 않고 안전하게 건너뛴다.

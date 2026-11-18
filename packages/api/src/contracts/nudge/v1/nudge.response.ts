@@ -7,15 +7,21 @@ import { TODO_LIMITS } from "../../../vocabulary/todo.constants.js";
 
 export const nudgeSchema = z
   .object({
-    id: z.number().int().positive().describe("찌르기 ID (양의 정수)"),
-    senderId: entityIdSchema.describe("보낸 사용자 ID"),
-    receiverId: entityIdSchema.describe("받은 사용자 ID"),
-    todoId: z.number().int().positive().describe("대상 할 일 ID (양의 정수)"),
-    message: z.string().max(200).nullable().describe("응원 메시지 (최대 200자, 미설정 시 null)"),
-    createdAt: datetimeSchema.describe("생성 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z)"),
-    readAt: nullableDatetimeSchema.describe(
-      "읽은 시각 (ISO 8601 UTC, 예: 2026-01-17T10:30:00.000Z, 미읽음 시 null)",
-    ),
+    id: z.int().positive().meta({ description: "찌르기 ID (양의 정수)" }),
+    senderId: entityIdSchema.meta({ description: "보낸 사용자 ID" }),
+    receiverId: entityIdSchema.meta({ description: "받은 사용자 ID" }),
+    todoId: z.int().positive().meta({ description: "대상 할 일 ID (양의 정수)" }),
+    message: z
+      .string()
+      .max(200)
+      .nullable()
+      .meta({ description: "응원 메시지 (최대 200자, 미설정 시 null)" }),
+    createdAt: datetimeSchema.meta({
+      description: "생성 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z)",
+    }),
+    readAt: nullableDatetimeSchema.meta({
+      description: "읽은 시각 (ISO 8601 UTC, 예: 2026-01-17T10:30:00.000Z, 미읽음 시 null)",
+    }),
   })
   .meta({
     example: {
@@ -33,13 +39,13 @@ export type Nudge = z.infer<typeof nudgeSchema>;
 
 export const nudgeSenderSchema = z
   .object({
-    id: entityIdSchema.describe("사용자 ID"),
+    id: entityIdSchema.meta({ description: "사용자 ID" }),
     userTag: z
       .string()
       .length(USER_TAG_LENGTH)
-      .describe("사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)"),
-    name: z.string().nullable().describe("사용자 이름 (미설정 시 null)"),
-    profileImage: z.string().nullable().describe("프로필 이미지 URL (미설정 시 null)"),
+      .meta({ description: "사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)" }),
+    name: z.string().nullable().meta({ description: "사용자 이름 (미설정 시 null)" }),
+    profileImage: z.string().nullable().meta({ description: "프로필 이미지 URL (미설정 시 null)" }),
   })
   .meta({
     example: {
@@ -54,9 +60,12 @@ export type NudgeSender = z.infer<typeof nudgeSenderSchema>;
 
 export const nudgeTodoSchema = z
   .object({
-    id: z.number().int().positive().describe("할 일 ID (양의 정수)"),
-    title: z.string().max(TODO_LIMITS.TITLE_MAX_LENGTH).describe("할 일 제목 (최대 200자)"),
-    completed: z.boolean().describe("완료 여부"),
+    id: z.int().positive().meta({ description: "할 일 ID (양의 정수)" }),
+    title: z
+      .string()
+      .max(TODO_LIMITS.TITLE_MAX_LENGTH)
+      .meta({ description: "할 일 제목 (최대 200자)" }),
+    completed: z.boolean().meta({ description: "완료 여부" }),
   })
   .meta({
     example: {
@@ -65,8 +74,6 @@ export const nudgeTodoSchema = z
       completed: false,
     },
   });
-
-export type NudgeTodo = z.infer<typeof nudgeTodoSchema>;
 
 export const nudgeDetailSchema = nudgeSchema
   .extend({
@@ -100,10 +107,13 @@ export type NudgeDetail = z.infer<typeof nudgeDetailSchema>;
 
 export const receivedNudgesResponseSchema = z
   .object({
-    nudges: z.array(nudgeDetailSchema).describe("받은 찌르기 목록"),
-    totalCount: z.number().int().nonnegative().describe("전체 받은 찌르기 수 (음이 아닌 정수)"),
-    unreadCount: z.number().int().nonnegative().describe("읽지 않은 찌르기 수 (음이 아닌 정수)"),
-    hasMore: z.boolean().describe("다음 페이지 존재 여부"),
+    nudges: z.array(nudgeDetailSchema).meta({ description: "받은 찌르기 목록" }),
+    totalCount: z.int().nonnegative().meta({ description: "전체 받은 찌르기 수 (음이 아닌 정수)" }),
+    unreadCount: z
+      .int()
+      .nonnegative()
+      .meta({ description: "읽지 않은 찌르기 수 (음이 아닌 정수)" }),
+    hasMore: z.boolean().meta({ description: "다음 페이지 존재 여부" }),
   })
   .meta({
     example: {
@@ -139,9 +149,9 @@ export type ReceivedNudgesResponse = z.infer<typeof receivedNudgesResponseSchema
 
 export const sentNudgesResponseSchema = z
   .object({
-    nudges: z.array(nudgeDetailSchema).describe("보낸 찌르기 목록"),
-    totalCount: z.number().int().nonnegative().describe("전체 보낸 찌르기 수 (음이 아닌 정수)"),
-    hasMore: z.boolean().describe("다음 페이지 존재 여부"),
+    nudges: z.array(nudgeDetailSchema).meta({ description: "보낸 찌르기 목록" }),
+    totalCount: z.int().nonnegative().meta({ description: "전체 보낸 찌르기 수 (음이 아닌 정수)" }),
+    hasMore: z.boolean().meta({ description: "다음 페이지 존재 여부" }),
   })
   .meta({
     example: {
@@ -176,8 +186,8 @@ export type SentNudgesResponse = z.infer<typeof sentNudgesResponseSchema>;
 
 export const createNudgeResponseSchema = z
   .object({
-    message: z.string().describe("응답 메시지"),
-    nudge: nudgeSchema.describe("생성된 찌르기 정보"),
+    message: z.string().meta({ description: "응답 메시지" }),
+    nudge: nudgeSchema.meta({ description: "생성된 찌르기 정보" }),
   })
   .meta({
     example: {
@@ -198,8 +208,11 @@ export type CreateNudgeResponse = z.infer<typeof createNudgeResponseSchema>;
 
 export const markNudgeReadResponseSchema = z
   .object({
-    message: z.string().describe("응답 메시지"),
-    readCount: z.number().int().nonnegative().describe("읽음 처리된 찌르기 수 (음이 아닌 정수)"),
+    message: z.string().meta({ description: "응답 메시지" }),
+    readCount: z
+      .int()
+      .nonnegative()
+      .meta({ description: "읽음 처리된 찌르기 수 (음이 아닌 정수)" }),
   })
   .meta({
     example: {
@@ -213,19 +226,20 @@ export type MarkNudgeReadResponse = z.infer<typeof markNudgeReadResponseSchema>;
 export const nudgeLimitInfoSchema = z
   .object({
     dailyLimit: z
-      .number()
       .int()
       .nonnegative()
       .nullable()
-      .describe("일일 찌르기 제한 (음이 아닌 정수, 무제한 시 null)"),
-    usedToday: z.number().int().nonnegative().describe("오늘 사용한 찌르기 수 (음이 아닌 정수)"),
+      .meta({ description: "일일 찌르기 제한 (음이 아닌 정수, 무제한 시 null)" }),
+    usedToday: z
+      .int()
+      .nonnegative()
+      .meta({ description: "오늘 사용한 찌르기 수 (음이 아닌 정수)" }),
     remainingToday: z
-      .number()
       .int()
       .nonnegative()
       .nullable()
-      .describe("오늘 남은 찌르기 수 (음이 아닌 정수, 무제한 시 null)"),
-    isUnlimited: z.boolean().describe("무제한 여부"),
+      .meta({ description: "오늘 남은 찌르기 수 (음이 아닌 정수, 무제한 시 null)" }),
+    isUnlimited: z.boolean().meta({ description: "무제한 여부" }),
   })
   .meta({
     example: {
@@ -240,16 +254,16 @@ export type NudgeLimitInfo = z.infer<typeof nudgeLimitInfoSchema>;
 
 export const nudgeCooldownInfoSchema = z
   .object({
-    canNudge: z.boolean().describe("찌르기 가능 여부"),
-    cooldownEndsAt: nullableDatetimeSchema.describe(
-      "쿨다운 종료 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z, 쿨다운 없으면 null)",
-    ),
+    canNudge: z.boolean().meta({ description: "찌르기 가능 여부" }),
+    cooldownEndsAt: nullableDatetimeSchema.meta({
+      description:
+        "쿨다운 종료 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z, 쿨다운 없으면 null)",
+    }),
     remainingSeconds: z
-      .number()
       .int()
       .nonnegative()
       .nullable()
-      .describe("남은 쿨다운 시간 (초 단위, 음이 아닌 정수, 쿨다운 없으면 null)"),
+      .meta({ description: "남은 쿨다운 시간 (초 단위, 음이 아닌 정수, 쿨다운 없으면 null)" }),
   })
   .meta({
     example: {
@@ -263,11 +277,15 @@ export type NudgeCooldownInfo = z.infer<typeof nudgeCooldownInfoSchema>;
 
 export const remindNudgeSchema = z
   .object({
-    id: z.number().int().positive().describe("리마인드 찌르기 ID (양의 정수)"),
-    senderId: entityIdSchema.describe("보낸 사용자 ID"),
-    receiverId: entityIdSchema.describe("받은 사용자 ID"),
-    message: z.string().max(200).nullable().describe("독촉 메시지 (최대 200자, 미설정 시 null)"),
-    createdAt: datetimeSchema.describe("생성 시각 (ISO 8601 UTC)"),
+    id: z.int().positive().meta({ description: "리마인드 찌르기 ID (양의 정수)" }),
+    senderId: entityIdSchema.meta({ description: "보낸 사용자 ID" }),
+    receiverId: entityIdSchema.meta({ description: "받은 사용자 ID" }),
+    message: z
+      .string()
+      .max(200)
+      .nullable()
+      .meta({ description: "독촉 메시지 (최대 200자, 미설정 시 null)" }),
+    createdAt: datetimeSchema.meta({ description: "생성 시각 (ISO 8601 UTC)" }),
   })
   .meta({
     example: {
@@ -283,8 +301,8 @@ export type RemindNudge = z.infer<typeof remindNudgeSchema>;
 
 export const createRemindNudgeResponseSchema = z
   .object({
-    message: z.string().describe("응답 메시지"),
-    remindNudge: remindNudgeSchema.describe("생성된 리마인드 찌르기 정보"),
+    message: z.string().meta({ description: "응답 메시지" }),
+    remindNudge: remindNudgeSchema.meta({ description: "생성된 리마인드 찌르기 정보" }),
   })
   .meta({
     example: {

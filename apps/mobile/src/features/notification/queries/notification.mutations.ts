@@ -7,12 +7,14 @@ import {
 import { unwrap } from '@src/core/errors/result';
 import { useConsentResultToast } from '@src/features/identity/consent/hooks/use-consent-result-toast';
 import { invalidateConsent } from '@src/features/identity/consent/queries/consent-cache';
+import { isTodoUnavailableError } from '@src/features/planning/todo/domains/todo.error';
 import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage, isConnectivityError, ServerError, toError } from '@src/shared/errors';
 import { isLastMutation } from '@src/shared/query/is-last-mutation';
 import { mutationOptions, type QueryClient, useQueryClient } from '@tanstack/react-query';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
+import { isTodoAlreadyCompletedError } from '../domains/notification.error';
 import {
   invalidateNotifications,
   optimisticallyMarkNotificationsRead,
@@ -149,5 +151,34 @@ export function useOptOutMarketingPushMutationOptions() {
     onSettled: (_result, _error, _token, context) =>
       sessionEpoch.current() === context?.epoch ? invalidateConsent(queryClient) : undefined,
     meta: { errorFeedback: false },
+  });
+}
+
+interface SnoozeTodoReminderVariables {
+  todoId: number;
+  /** 다시 알림 버튼을 누른 알림. 서버가 이 알림마다 한 번만 예약한다 */
+  notificationId: number;
+}
+
+/**
+ * 리마인드 알림의 [10분 뒤 다시]. 이미 끝낸 할 일은 오류가 아니라 부르는 쪽이 부드럽게 알리고,
+ * 지운 할 일은 방금 연 할 일 화면이 볼 수 없음 안내 하나로 보인다
+ */
+export function useSnoozeTodoReminderMutationOptions() {
+  const notificationApi = useNotificationApi();
+
+  return mutationOptions({
+    // 멈췄다가 연결된 뒤 보내면 누른 때가 아니라 연결된 때부터 10분 뒤라 바로 실패시켜 알린다
+    networkMode: 'always',
+    mutationFn: async ({ todoId, notificationId }: SnoozeTodoReminderVariables) =>
+      unwrap(await notificationApi.snoozeTodoReminder(todoId, notificationId)),
+    meta: {
+      errorFeedback: {
+        feature: 'notification',
+        fallbackKey: 'notification:reminderActions.snoozeFailed',
+        isHandledByFeature: (error) =>
+          isTodoAlreadyCompletedError(error) || isTodoUnavailableError(error),
+      },
+    },
   });
 }

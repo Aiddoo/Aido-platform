@@ -1,12 +1,11 @@
 import { ErrorCode } from "@aido/api/errors";
 import { Body, Controller, Post } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { Throttle } from "@nestjs/throttler";
 
 import {
   CurrentUser,
   type CurrentUserPayload,
-} from "#api/modules/identity/identity-auth-http.public";
+} from "#api/modules/identity/sessions/identity-sessions.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
@@ -15,13 +14,12 @@ import {
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiCreatedSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
-import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
+import { RateLimit } from "#api/platform/throttle/rate-limits";
 
 import { CreateInquiryUseCase } from "../../../application/use-cases/create-inquiry.use-case.js";
+import { InquiryRateLimits } from "../inquiries.rate-limits.js";
 import { toCreateInquiryResponse } from "./inquiry-response.mapper.js";
 import { CreateInquiryDto, CreateInquiryResponseDto } from "./inquiry.dto.js";
-
-const INQUIRY_THROTTLE = { ttl: 60_000, limit: 5 } as const;
 
 @ApiTags(SWAGGER_TAGS.INQUIRIES)
 @ApiBearerAuth()
@@ -34,8 +32,7 @@ export class InquiryController {
   }
 
   @Post()
-  @ThrottleByUser()
-  @Throttle({ default: INQUIRY_THROTTLE })
+  @RateLimit(InquiryRateLimits.submit)
   @ApiDoc({
     summary: "문의 접수",
     operationId: "createInquiry",

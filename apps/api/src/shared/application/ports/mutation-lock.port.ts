@@ -7,6 +7,8 @@
  */
 export abstract class MutationLockPort {
   abstract acquire(keys: readonly string[]): Promise<void>;
+  // 기다리지 않는다. false면 일부 키가 잡혔을 수 있어 호출자는 경합 오류를 던져 트랜잭션을 끝낸다
+  abstract tryAcquire(keys: readonly string[]): Promise<boolean>;
 }
 
 export const MUTATION_KEY_PREFIX = "mutation:v1";

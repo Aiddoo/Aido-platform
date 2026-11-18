@@ -1,7 +1,7 @@
 import {
   todoCategoryListResponseSchema,
   todoCategorySchema as todoCategoryDtoSchema,
-} from '@aido/api';
+} from '@aido/api/contracts/todo-category/v1';
 
 import {
   createTodoCategoryDto,

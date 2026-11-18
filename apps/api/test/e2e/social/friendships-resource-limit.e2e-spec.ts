@@ -1,0 +1,253 @@
+import { friendQuotaErrorDetailsSchema } from "@aido/api/errors";
+import { PLAN_CATALOG } from "@aido/api/vocabulary";
+import { eq } from "drizzle-orm";
+import request from "supertest";
+/**
+ * Follow 리소스 제한 E2E 테스트
+ *
+ * @description
+ * Free 유저의 친구 5명 제한 테스트.
+ * Testcontainers를 사용하여 독립적인 PostgreSQL 환경에서 테스트합니다.
+ */
+
+import { SweepPremiumGrantsUseCase } from "#api/modules/billing/premium-grants/application/use-cases/sweep-premium-grants.use-case";
+import { PremiumGranterPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
+import { requireRecord } from "#api/platform/database/database-error.util";
+import { featureGrant, user as userTable } from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { instantFromDate } from "#api/shared/domain/time/instant";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
+
+import type { VerifiedUser } from "../helpers/e2e-helpers.js";
+
+const FREE_LIMIT = PLAN_CATALOG.FRIEND.free;
+
+describe("팔로우 리소스 제한 E2E", () => {
+  let testContext: E2eTestContext;
+
+  beforeAll(async () => {
+    testContext = await createE2eApp();
+  }, 60_000);
+
+  afterAll(async () => {
+    await destroyE2eApp(testContext);
+  });
+
+  beforeEach(async () => {
+    await testContext.reset();
+  });
+
+  const password = "Test1234!";
+
+  describe("Free 유저 친구 제한", () => {
+    it(`친구 ${FREE_LIMIT}명 도달 후 추가 요청 시 403 에러, 리소스 제한 조회 확인`, async () => {
+      // Given
+      const freeUser = await testContext.helpers.createVerifiedUser(
+        "follow-limit-free@test.com",
+        password,
+      );
+      const friends: VerifiedUser[] = [];
+
+      for (let i = 0; i < FREE_LIMIT + 1; i++) {
+        const friend = await testContext.helpers.createVerifiedUser(
+          `follow-friend-${i}@test.com`,
+          password,
+        );
+        friends.push(friend);
+      }
+
+      // FREE_LIMIT명과 친구 관계 성립
+      for (const friend of friends.slice(0, FREE_LIMIT)) {
+        await testContext.helpers.createFriendship(freeUser, friend);
+      }
+
+      // When
+      const extraFriend = friends[FREE_LIMIT];
+      expect(extraFriend).toBeDefined();
+
+      const response = await request(testContext.app.getHttpServer())
+        .post(`/v1/follows/${extraFriend?.userTag}`)
+        .set("Authorization", `Bearer ${freeUser.accessToken}`)
+        .expect(403);
+
+      // Then
+      expect(response.body.success).toBe(false);
+      expect(response.body.error.code).toBe("FOLLOW_0909");
+      expect(friendQuotaErrorDetailsSchema.parse(response.body.error.details)).toEqual({
+        current: FREE_LIMIT,
+        limit: FREE_LIMIT,
+        charged: false,
+        featureQuota: {
+          feature: "FRIEND",
+          allowed: true,
+          limit: FREE_LIMIT,
+          used: FREE_LIMIT,
+          remaining: 0,
+          period: null,
+          resetsAt: null,
+          isFairUse: false,
+          perUse: null,
+        },
+      });
+
+      // When
+      const limitResponse = await request(testContext.app.getHttpServer())
+        .get("/v1/follows/resource-limit")
+        .set("Authorization", `Bearer ${freeUser.accessToken}`)
+        .expect(200);
+
+      // Then
+      expect(limitResponse.body.data.friendCount).toBe(FREE_LIMIT);
+      expect(limitResponse.body.data.maxCount).toBe(FREE_LIMIT);
+    });
+  });
+
+  describe("초대 보상 친구 자리", () => {
+    it("친구 자리 보너스만큼 한도가 늘고, 넘으면 FOLLOW_0909 details에 보너스를 더한 한도를 싣는다", async () => {
+      // Given
+      const user = await testContext.helpers.createVerifiedUser(
+        "follow-limit-bonus@test.com",
+        password,
+      );
+      await testContext.testDatabase.getClient().insert(featureGrant).values({
+        userId: user.userId,
+        resource: "FRIEND",
+        quantity: 1,
+        sourceKey: "invite:follow-limit-bonus",
+      });
+      const friends: VerifiedUser[] = [];
+      for (let i = 0; i < FREE_LIMIT + 2; i++) {
+        friends.push(
+          await testContext.helpers.createVerifiedUser(
+            `follow-bonus-friend-${i}@test.com`,
+            password,
+          ),
+        );
+      }
+      for (const friend of friends.slice(0, FREE_LIMIT + 1)) {
+        await testContext.helpers.createFriendship(user, friend);
+      }
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .post(`/v1/follows/${friends[FREE_LIMIT + 1]?.userTag}`)
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .expect(403);
+
+      // Then
+      expect(response.body.error.code).toBe("FOLLOW_0909");
+      expect(friendQuotaErrorDetailsSchema.parse(response.body.error.details)).toMatchObject({
+        current: FREE_LIMIT + 1,
+        limit: FREE_LIMIT + 1,
+        charged: false,
+        featureQuota: { limit: FREE_LIMIT + 1, used: FREE_LIMIT + 1, remaining: 0 },
+      });
+    });
+  });
+
+  describe("보상 기간과 친구 자리 보너스", () => {
+    it("보상 기간 중에는 친구 자리 보너스가 있어도 무제한이고 끝나면 무료 한도에 보너스를 더한다", async () => {
+      // Given
+      vi.useFakeTimers({ toFake: ["Date"] });
+      try {
+        const email = "follow-limit-grant@test.com";
+        const user = await testContext.helpers.createVerifiedUser(email, password);
+        await testContext.testDatabase.getClient().insert(featureGrant).values({
+          userId: user.userId,
+          resource: "FRIEND",
+          quantity: 1,
+          sourceKey: "invite:follow-limit-grant",
+        });
+        await testContext.module.get<PremiumGranterPort>(PremiumGranterPort).grant({
+          userId: UserId.reconstitute(user.userId),
+          source: "INVITE",
+          sourceKey: "invite:limit",
+          durationDays: 7,
+        });
+        const endsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+        const maxCountAt = async (at: Date) => {
+          vi.setSystemTime(at);
+          await testContext.module
+            .get(SweepPremiumGrantsUseCase)
+            .execute({ now: instantFromDate(at) });
+          const { accessToken } = await testContext.helpers.loginUser(email, password);
+          const response = await request(testContext.app.getHttpServer())
+            .get("/v1/follows/resource-limit")
+            .set("Authorization", `Bearer ${accessToken}`)
+            .expect(200);
+          return response.body.data.maxCount;
+        };
+
+        // When
+        const duringGrant = await maxCountAt(new Date(endsAt.getTime() - 1));
+        const afterGrant = await maxCountAt(endsAt);
+
+        // Then
+        expect(duringGrant).toBeNull();
+        expect(afterGrant).toBe(FREE_LIMIT + 1);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+  });
+
+  describe("Premium 유저 무제한", () => {
+    it("Free 한도 초과해도 친구 요청 성공하고 maxCount가 null (무제한)", async () => {
+      // Given
+      const premiumUser = await testContext.helpers.createVerifiedUser(
+        "follow-limit-premium@test.com",
+        password,
+      );
+
+      requireRecord(
+        (
+          await testContext.testDatabase
+            .getClient()
+            .update(userTable)
+            .set({ subscriptionStatus: "ACTIVE" })
+            .where(eq(userTable.id, premiumUser.userId))
+            .returning({ id: userTable.id })
+        )[0],
+      );
+
+      const friends: VerifiedUser[] = [];
+      for (let i = 0; i < FREE_LIMIT + 1; i++) {
+        const friend = await testContext.helpers.createVerifiedUser(
+          `follow-premium-friend-${i}@test.com`,
+          password,
+        );
+        friends.push(friend);
+      }
+
+      for (const friend of friends.slice(0, FREE_LIMIT)) {
+        await testContext.helpers.createFriendship(premiumUser, friend);
+      }
+
+      // When
+      const extraFriend = friends[FREE_LIMIT];
+      expect(extraFriend).toBeDefined();
+
+      const response = await request(testContext.app.getHttpServer())
+        .post(`/v1/follows/${extraFriend?.userTag}`)
+        .set("Authorization", `Bearer ${premiumUser.accessToken}`)
+        .expect(201);
+
+      // Then
+      expect(response.body.data.autoAccepted).toBe(false);
+
+      // When
+      const limitResponse = await request(testContext.app.getHttpServer())
+        .get("/v1/follows/resource-limit")
+        .set("Authorization", `Bearer ${premiumUser.accessToken}`)
+        .expect(200);
+
+      // Then
+      expect(limitResponse.body.data.maxCount).toBeNull();
+      expect(limitResponse.body.data.friendCount).toBe(FREE_LIMIT);
+    });
+  });
+});

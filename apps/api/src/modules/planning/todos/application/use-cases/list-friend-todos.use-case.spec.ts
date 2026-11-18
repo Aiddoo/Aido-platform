@@ -5,9 +5,8 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   createPlanningTodoFixture,
   createPlanningTodo,
-  PLANNING_TIME,
 } from "#test/fixtures/planning/planning-todos.fixture";
-import { createTodoReadModelFromRecord } from "#test/fixtures/todo-response.fixture";
+import { createTodoReadModelFromRecord } from "#test/fixtures/planning/todo-response.fixture";
 
 import { ListFriendTodosUseCase } from "./list-friend-todos.use-case.js";
 
@@ -15,13 +14,10 @@ describe("친구 할 일 목록 조회", () => {
   let fixture: ReturnType<typeof createPlanningTodoFixture>;
   let useCase: ListFriendTodosUseCase;
   beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(PLANNING_TIME);
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
     useCase = new ListFriendTodosUseCase(fixture);
   });
   afterEach(() => {
-    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -41,12 +37,12 @@ describe("친구 할 일 목록 조회", () => {
     expect(cached.items[0]?.userId).toBe("friend-user");
     expect(
       (
-        await fixture.todoCache.readFriendTodosFirstPage(
-          UserId.reconstitute("friend-user"),
-          "-",
-          "-",
-          20,
-        )
+        await fixture.todoCache.readFriendTodosFirstPage({
+          ownerUserId: UserId.reconstitute("friend-user"),
+          startDate: "-",
+          endDate: "-",
+          size: 20,
+        })
       ).page,
     ).toEqual(first);
   });
@@ -56,8 +52,10 @@ describe("친구 할 일 목록 조회", () => {
     const input = { userId: fixture.userId, friendUserId: "friend-user" };
     await useCase.execute(input);
     fixture.friendIds.clear();
-    // When / Then
-    await expect(useCase.execute(input)).rejects.toMatchObject({
+    // When
+    const result = useCase.execute(input);
+    // Then
+    await expect(result).rejects.toMatchObject({
       errorCode: ErrorCode.FOLLOW_0906,
       details: { targetUserId: "friend-user" },
     });
@@ -81,38 +79,38 @@ describe("친구 할 일 목록 조회", () => {
     ];
     // When
     const cursorPage = await useCase.execute({ ...input, cursor: 3 });
-    const stored = await fixture.todoCache.readFriendTodosFirstPage(
-      UserId.reconstitute("friend-user"),
-      "2026-05-01",
-      "2026-05-31",
-      2,
-    );
+    const stored = await fixture.todoCache.readFriendTodosFirstPage({
+      ownerUserId: UserId.reconstitute("friend-user"),
+      startDate: "2026-05-01",
+      endDate: "2026-05-31",
+      size: 2,
+    });
     // Then
     expect(cursorPage.items[0]?.id).toBe(2);
     expect(stored.page?.items[0]?.id).toBe(3);
     expect(
       (
-        await fixture.todoCache.readFriendTodosFirstPage(
-          UserId.reconstitute("friend-user"),
-          "-",
-          "-",
-          2,
-        )
+        await fixture.todoCache.readFriendTodosFirstPage({
+          ownerUserId: UserId.reconstitute("friend-user"),
+          startDate: "-",
+          endDate: "-",
+          size: 2,
+        })
       ).page,
     ).toBeUndefined();
   });
   it("잘못된 날짜는 친구 권한 오류보다 먼저 반환한다", async () => {
     // Given
     const permission = vi.spyOn(fixture.friendPort, "isMutualFriend");
-    // When / Then
-    await expect(
-      useCase.execute({
-        userId: fixture.userId,
-        friendUserId: "friend-user",
-        startDate: Temporal.PlainDate.from("2026-05-16"),
-        endDate: Temporal.PlainDate.from("2026-05-15"),
-      }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
+    // When
+    const result = useCase.execute({
+      userId: fixture.userId,
+      friendUserId: "friend-user",
+      startDate: Temporal.PlainDate.from("2026-05-16"),
+      endDate: Temporal.PlainDate.from("2026-05-15"),
+    });
+    // Then
+    await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
     expect(permission).not.toHaveBeenCalled();
   });
 });

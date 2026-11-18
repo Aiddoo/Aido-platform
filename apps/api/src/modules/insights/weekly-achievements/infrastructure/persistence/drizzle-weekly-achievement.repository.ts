@@ -1,6 +1,6 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { sql } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { weeklyAchievement as weeklyAchievementTable } from "#api/platform/database/schema/insights.schema";
@@ -25,14 +25,10 @@ const ROW_COLUMNS = {
 
 @Injectable()
 export class DrizzleWeeklyAchievementRepository implements WeeklyAchievementRepositoryPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
-  }
-
-  get #db() {
-    return this.#txHost.tx;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
   async nextIds(count: number): Promise<WeeklyAchievementId[]> {
@@ -67,16 +63,25 @@ export class DrizzleWeeklyAchievementRepository implements WeeklyAchievementRepo
     return rows.map(toWeeklyAchievement);
   }
 
-  async listAllByYear(params: {
+  async listThroughYear(params: {
     readonly userId: UserId;
     readonly year: number;
   }): Promise<WeeklyAchievement[]> {
     const rows = await this.#db.query.weeklyAchievement.findMany({
       columns: ROW_COLUMNS,
-      where: { userId: params.userId.value, year: params.year },
-      orderBy: { week: "asc" },
+      where: { userId: params.userId.value, year: { lte: params.year } },
+      orderBy: { year: "asc", week: "asc" },
     });
     return rows.map(toWeeklyAchievement);
+  }
+
+  async listRecordedYears(userId: UserId): Promise<number[]> {
+    const rows = await this.#db
+      .selectDistinct({ year: weeklyAchievementTable.year })
+      .from(weeklyAchievementTable)
+      .where(eq(weeklyAchievementTable.userId, userId.value))
+      .orderBy(desc(weeklyAchievementTable.year));
+    return rows.map((row) => row.year);
   }
 
   async findByWeek(params: {
@@ -122,5 +127,9 @@ export class DrizzleWeeklyAchievementRepository implements WeeklyAchievementRepo
           achievedAt: sql`excluded."achievedAt"`,
         },
       });
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

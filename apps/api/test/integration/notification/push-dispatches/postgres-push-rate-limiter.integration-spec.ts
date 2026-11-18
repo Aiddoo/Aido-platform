@@ -1,0 +1,239 @@
+import { and, count, eq, type SQL } from "drizzle-orm";
+
+import { PushDispatchId } from "#api/modules/notification/push-dispatches/domain/push-dispatch-id.vo";
+import { PostgresPushRateLimiterAdapter } from "#api/modules/notification/push-dispatches/infrastructure/adapters/postgres-push-rate-limiter.adapter";
+import {
+  notification,
+  pushDispatch,
+  pushRateLimitReservation,
+  user,
+} from "#api/platform/database/schema/index";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { DateClock } from "#test/doubles/platform/date-clock";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { nowInstant } from "#test/fixtures/platform/clock.fixture";
+import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
+
+describe("PostgresPushRateLimiterAdapter (실제 PostgreSQL)", () => {
+  let testDatabase: TestDatabase;
+  let client: TestDatabaseClient;
+  let limiter: PostgresPushRateLimiterAdapter;
+
+  beforeAll(async () => {
+    testDatabase = new TestDatabase();
+    client = await testDatabase.start();
+    limiter = new PostgresPushRateLimiterAdapter(client, new DateClock());
+  });
+
+  afterAll(async () => testDatabase?.stop());
+  beforeEach(async () => testDatabase.cleanup());
+
+  async function createUser(suffix: string): Promise<string> {
+    const [created] = await client
+      .insert(user)
+      .values({
+        email: `rate-limit-${suffix}@example.com`,
+        userTag: suffix.padEnd(8, "X").slice(0, 8),
+        updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+        status: "ACTIVE",
+      })
+      .returning({ id: user.id });
+    if (created === undefined) {
+      throw new Error("user was not created");
+    }
+    return created.id;
+  }
+
+  async function createDispatch(userId: string, suffix: string): Promise<number> {
+    const [createdNotification] = await client
+      .insert(notification)
+      .values({ userId, type: "SYSTEM_NOTICE", title: suffix, body: suffix })
+      .returning({ id: notification.id });
+    if (createdNotification === undefined) {
+      throw new Error("notification was not created");
+    }
+    const [dispatch] = await client
+      .insert(pushDispatch)
+      .values({
+        notificationId: createdNotification.id,
+        userId,
+        purpose: "ENGAGEMENT",
+        updatedAt: nowInstant(),
+      })
+      .returning({ id: pushDispatch.id });
+    if (dispatch === undefined) {
+      throw new Error("dispatch was not created");
+    }
+    return dispatch.id;
+  }
+
+  async function countReservations(where?: SQL): Promise<number> {
+    const [row] = await client
+      .select({ total: count() })
+      .from(pushRateLimitReservation)
+      .where(where);
+    return row?.total ?? 0;
+  }
+
+  it("재시작 후 같은 dispatch를 재시도해도 quota를 한 번만 예약한다", async () => {
+    // Given
+    const userId = await createUser("retry");
+    const dispatchId = await createDispatch(userId, "retry");
+
+    // When
+    const firstDecision = await limiter.reserveGeneral({
+      dispatchId: PushDispatchId.reconstitute(dispatchId),
+      userId: UserId.reconstitute(userId),
+    });
+    const restarted = new PostgresPushRateLimiterAdapter(client, new DateClock());
+    const retriedDecision = await restarted.reserveGeneral({
+      dispatchId: PushDispatchId.reconstitute(dispatchId),
+      userId: UserId.reconstitute(userId),
+    });
+
+    // Then
+    expect(firstDecision).toBe(false);
+    expect(retriedDecision).toBe(false);
+    await expect(
+      countReservations(
+        and(
+          eq(pushRateLimitReservation.dispatchId, dispatchId),
+          eq(pushRateLimitReservation.phase, "GENERAL"),
+        ),
+      ),
+    ).resolves.toBe(1);
+  });
+
+  it("동일 사용자의 경계 동시 요청을 Serializable 재시도로 정확히 한 건만 허용한다", async () => {
+    // Given
+    const userId = await createUser("race");
+    const dispatchIds = await Promise.all(
+      Array.from({ length: 16 }, (_, index) => createDispatch(userId, `race-${index}`)),
+    );
+    for (const dispatchId of dispatchIds.slice(0, 14)) {
+      await expect(
+        limiter.reserveGeneral({
+          dispatchId: PushDispatchId.reconstitute(dispatchId),
+          userId: UserId.reconstitute(userId),
+        }),
+      ).resolves.toBe(false);
+    }
+
+    // When
+    const decisions = await Promise.all(
+      dispatchIds.slice(14).map((dispatchId) =>
+        limiter.reserveGeneral({
+          dispatchId: PushDispatchId.reconstitute(dispatchId),
+          userId: UserId.reconstitute(userId),
+        }),
+      ),
+    );
+
+    // Then
+    expect(decisions.toSorted()).toEqual([false, true]);
+    await expect(
+      countReservations(
+        and(
+          eq(pushRateLimitReservation.userId, userId),
+          eq(pushRateLimitReservation.phase, "GENERAL"),
+        ),
+      ),
+    ).resolves.toBe(15);
+  });
+
+  it("참여 유도 최소 간격은 주입한 시계로 재고 간격이 지나면 다시 예약한다", async () => {
+    // Given
+    const clock = new FixedClock(Temporal.Instant.from("2026-08-29T03:00:00Z"));
+    const clockedLimiter = new PostgresPushRateLimiterAdapter(client, clock);
+    const userId = await createUser("interval");
+    const first = await createDispatch(userId, "interval-a");
+    const second = await createDispatch(userId, "interval-b");
+    const third = await createDispatch(userId, "interval-c");
+    await clockedLimiter.reserveEngagement({
+      dispatchId: PushDispatchId.reconstitute(first),
+      userId: UserId.reconstitute(userId),
+      localDate: "2026-08-29",
+    });
+
+    // When
+    clock.advanceBy({ hours: 3 });
+    const withinInterval = await clockedLimiter.reserveEngagement({
+      dispatchId: PushDispatchId.reconstitute(second),
+      userId: UserId.reconstitute(userId),
+      localDate: "2026-08-29",
+    });
+    clock.advanceBy({ hours: 1 });
+    const afterInterval = await clockedLimiter.reserveEngagement({
+      dispatchId: PushDispatchId.reconstitute(third),
+      userId: UserId.reconstitute(userId),
+      localDate: "2026-08-29",
+    });
+
+    // Then
+    expect(withinInterval).toBe(true);
+    expect(afterInterval).toBe(false);
+  });
+
+  it("배치 예약은 서로 다른 사용자를 한 트랜잭션에서 일반·engagement로 저장한다", async () => {
+    // Given
+    const firstUserId = await createUser("batch-a");
+    const secondUserId = await createUser("batch-b");
+    const firstDispatchId = await createDispatch(firstUserId, "batch-a");
+    const secondDispatchId = await createDispatch(secondUserId, "batch-b");
+
+    // When
+    const decisions = await limiter.reserveBatch([
+      {
+        dispatchId: PushDispatchId.reconstitute(firstDispatchId),
+        userId: UserId.reconstitute(firstUserId),
+        engagementLocalDate: "2026-08-29",
+      },
+      {
+        dispatchId: PushDispatchId.reconstitute(secondDispatchId),
+        userId: UserId.reconstitute(secondUserId),
+      },
+    ]);
+
+    // Then
+    expect(decisions).toEqual([false, false]);
+    await expect(countReservations()).resolves.toBe(3);
+  });
+
+  it("배치에 같은 사용자 요청이 여럿이면 앞 요청의 예약까지 세어 차례로 판단한다", async () => {
+    // Given
+    const userId = await createUser("same-user");
+    const dispatchIds = await Promise.all(
+      Array.from({ length: 17 }, (_, index) => createDispatch(userId, `same-user-${index}`)),
+    );
+    for (const dispatchId of dispatchIds.slice(0, 13)) {
+      await limiter.reserveGeneral({
+        dispatchId: PushDispatchId.reconstitute(dispatchId),
+        userId: UserId.reconstitute(userId),
+      });
+    }
+    const engagementRequestCount = 2;
+
+    // When
+    const decisions = await limiter.reserveBatch(
+      dispatchIds.slice(13).map((dispatchId, index) => ({
+        dispatchId: PushDispatchId.reconstitute(dispatchId),
+        userId: UserId.reconstitute(userId),
+        ...(index < engagementRequestCount && { engagementLocalDate: "2026-08-29" }),
+      })),
+    );
+
+    // Then
+    expect(decisions).toEqual([false, true, false, true]);
+    await expect(
+      countReservations(
+        and(
+          eq(pushRateLimitReservation.userId, userId),
+          eq(pushRateLimitReservation.phase, "GENERAL"),
+        ),
+      ),
+    ).resolves.toBe(15);
+    await expect(countReservations(eq(pushRateLimitReservation.phase, "ENGAGEMENT"))).resolves.toBe(
+      1,
+    );
+  });
+});

@@ -5,7 +5,6 @@ import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { InquiryContent } from "../../domain/inquiry-content.vo.js";
-import { InquiryId } from "../../domain/inquiry-id.vo.js";
 import { Inquiry } from "../../domain/inquiry.aggregate.js";
 import { inquiryDeliveryFailed } from "../inquiries.errors.js";
 import { InquiryLogEvent } from "../inquiries.log-events.js";
@@ -36,7 +35,6 @@ export class CreateInquiryUseCase {
   async execute(command: CreateInquiryCommand): Promise<Inquiry> {
     const { clock, mailer, logger } = this.#dependencies;
     const inquiry = Inquiry.create({
-      id: InquiryId.generate(),
       userId: UserId.reconstitute(command.userId),
       userEmail: command.userEmail,
       category: command.category,

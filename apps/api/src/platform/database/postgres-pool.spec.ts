@@ -57,6 +57,19 @@ describe("createPostgresPoolConfig", () => {
     expect(config.ssl).toEqual({ rejectUnauthorized: false });
   });
 
+  it("문장 시간 제한을 넘기면 그 값으로 세션 옵션을 싣고 나머지 세션 옵션은 같다", () => {
+    // Given
+    const url = "postgresql://user:pass@localhost:5432/aido";
+
+    // When
+    const config = createPostgresPoolConfig(url, { statementTimeoutMs: 60_000 });
+
+    // Then
+    expect(config.options).toBe(
+      "-c TimeZone=UTC -c statement_timeout=60000 -c lock_timeout=5000 -c idle_in_transaction_session_timeout=60000",
+    );
+  });
+
   it("풀 크기·유휴·연결 대기·쿼리 응답 시간을 넘긴 값만 싣는다", () => {
     // Given
     const url = "postgresql://user:pass@localhost:5432/aido";

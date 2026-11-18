@@ -1,3 +1,5 @@
+import { TodoCategoryLockKeys } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
+import type { TodoSeriesRepositoryPort } from "#api/modules/planning/todo-series/planning-todo-series.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
@@ -5,10 +7,8 @@ import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { resolveWallClockTimezone } from "#api/shared/domain/time/time-zone-name";
 
-import { TodoCategoryLockKeys } from "../../../categories/application/categories.lock-keys.js";
 import { resolveScheduledInstant } from "../../../shared/domain/todo-calendar.domain-service.js";
-import { TodoId } from "../../../shared/domain/todo-id.vo.js";
-import type { TodoSeriesRepositoryPort } from "../../../todo-series/application/ports/todo-series.repository.port.js";
+import type { TodoId } from "../../domain/todo-id.vo.js";
 import type { TodoCachePort } from "../ports/todo-cache.port.js";
 import type { TodoOwnerTimezonePort } from "../ports/todo-owner-timezone.port.js";
 import type { TodoReminderSchedulerPort } from "../ports/todo-reminder-scheduler.port.js";
@@ -100,13 +100,13 @@ export class RebaseTodoTimezoneUseCase {
       return seriesRepository.updateTimezoneByUserId(UserId.reconstitute(userId), timezone);
     });
 
-    let afterId: number | null = null;
+    let afterId: TodoId | null = null;
     let scannedCount = 0;
     let rebasedCount = 0;
     let skippedCount = 0;
     for (;;) {
       const batch: RebasedBatch = await unitOfWork.run(() =>
-        this.#rebaseBatch(userId, timezone, afterId, batchSize),
+        this.#rebaseBatch(userId, timezone, { afterId, limit: batchSize }),
       );
       if (batch.superseded) {
         return { outcome: "SUPERSEDED", seriesCount, scannedCount, rebasedCount, skippedCount };
@@ -124,9 +124,9 @@ export class RebaseTodoTimezoneUseCase {
   async #rebaseBatch(
     userId: string,
     timezone: string,
-    afterId: number | null,
-    limit: number,
+    page: { readonly afterId: TodoId | null; readonly limit: number },
   ): Promise<RebasedBatch> {
+    const { afterId, limit } = page;
     const { todoRepository, ownerTimezone, todoReminder } = this.#dependencies;
     await this.#acquireLocks(userId);
     const ownerId = UserId.reconstitute(userId);
@@ -136,7 +136,7 @@ export class RebaseTodoTimezoneUseCase {
     }
     const candidates = await todoRepository.lockRebaseCandidates({
       userId: ownerId,
-      afterId: afterId == null ? null : TodoId.reconstitute(afterId),
+      afterId,
       limit,
     });
     const rebased = candidates.flatMap((candidate) => rebaseInstant(candidate, timezone));
@@ -144,13 +144,9 @@ export class RebaseTodoTimezoneUseCase {
     const now = this.#dependencies.clock.now();
     const reminders = rebased.filter((row) => hasPendingReminder(row, now));
     // 행과 함께 커밋한다. 실패하면 행도 그대로라 재시도가 같은 행을 다시 본다.
-    await todoReminder.cancelReminders(reminders.map(({ todoId }) => todoId.value));
+    await todoReminder.cancelReminders(reminders.map(({ todoId }) => todoId));
     await todoReminder.scheduleReminders(
-      reminders.map(({ todoId, scheduledTime }) => ({
-        todoId: todoId.value,
-        scheduledTime,
-        userId,
-      })),
+      reminders.map(({ todoId, scheduledTime }) => ({ todoId, scheduledTime, userId: ownerId })),
     );
     return {
       superseded: false,
@@ -175,7 +171,7 @@ interface RebasedBatch {
   readonly scannedCount: number;
   readonly rebasedCount: number;
   readonly skippedCount: number;
-  readonly lastId: number | null;
+  readonly lastId: TodoId | null;
 }
 
 const EMPTY_BATCH: RebasedBatch = {
@@ -191,13 +187,13 @@ const EMPTY_RESULT = { scannedCount: 0, rebasedCount: 0, skippedCount: 0, series
 /** 순간이 그대로면(이름만 다른 같은 시각) 쓰기와 재예약을 하지 않는다. */
 function rebaseInstant(candidate: RebaseCandidate, timezone: string) {
   const { todoId, startDate, scheduledLocalTime, scheduledTime, completed } = candidate;
-  const next = resolveScheduledInstant(startDate, scheduledLocalTime, timezone);
+  const next = resolveScheduledInstant(startDate.toString(), scheduledLocalTime, timezone);
   if (next == null || next.equals(scheduledTime)) {
     return [];
   }
   return [
     {
-      todoId: TodoId.reconstitute(todoId),
+      todoId,
       scheduledTime: next,
       previousTime: scheduledTime,
       completed,

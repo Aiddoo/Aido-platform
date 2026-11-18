@@ -5,7 +5,10 @@ import { ExecutionContextHost } from "@nestjs/core/helpers/execution-context-hos
 import { firstValueFrom, throwError } from "rxjs";
 
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
-import { createRequestClientReader, runWithRequestHeaders } from "#test/mocks/request-client";
+import {
+  createRequestClientReader,
+  runWithRequestHeaders,
+} from "#test/doubles/platform/stub-request-client";
 
 import {
   nudgeInteractionDisabled,

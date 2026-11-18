@@ -3,10 +3,8 @@ import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import {
-  addDaysToKey,
-  localDateKeyAt,
-} from "../../../shared/domain/todo-calendar.domain-service.js";
+import { localDateAt } from "../../../shared/domain/todo-calendar.domain-service.js";
+import type { TodoSeriesId } from "../../domain/todo-series-id.vo.js";
 import type { TodoSeriesOwnerPort } from "../ports/todo-series-owner.port.js";
 import type { TodoSeriesRepositoryPort } from "../ports/todo-series.repository.port.js";
 import { TodoSeriesLogEvent } from "../todo-series.log-events.js";
@@ -49,7 +47,8 @@ export class CatchUpTodoSeriesUseCase {
   execute(userId: string): Promise<void> {
     const at = this.#dependencies.clock.now();
     // 날짜가 바뀌는 기준은 지금처럼 UTC 달력이다
-    const today = localDateKeyAt(at, "UTC");
+    const todayDate = localDateAt(at, "UTC");
+    const today = todayDate.toString();
     if (today !== this.#checkedDate) {
       this.#checkedDate = today;
       this.#nextCheckAt.clear();
@@ -61,14 +60,14 @@ export class CatchUpTodoSeriesUseCase {
     if ((this.#nextCheckAt.get(userId) ?? 0) > at.epochMilliseconds) {
       return Promise.resolve();
     }
-    const run = this.#catchUp(userId, addDaysToKey(today, 1)).finally(() => {
+    const run = this.#catchUp(userId, todayDate.add({ days: 1 })).finally(() => {
       this.#inFlight.delete(userId);
     });
     this.#inFlight.set(userId, run);
     return run;
   }
 
-  async #catchUp(userId: string, through: string): Promise<void> {
+  async #catchUp(userId: string, through: Temporal.PlainDate): Promise<void> {
     const startedAt = performance.now();
     const { seriesRepository, seriesOwner, logger } = this.#dependencies;
     try {
@@ -113,7 +112,7 @@ export class CatchUpTodoSeriesUseCase {
     }
   }
 
-  async #materializeAll(userId: string, seriesIds: readonly string[]) {
+  async #materializeAll(userId: string, seriesIds: readonly TodoSeriesId[]) {
     const { dueRunner, logger } = this.#dependencies;
     const deadlineMs = this.#dependencies.deadlineMs ?? TODO_SERIES_CATCH_UP_BUDGET.DEADLINE_MS;
     const startedAt = performance.now();
@@ -125,13 +124,16 @@ export class CatchUpTodoSeriesUseCase {
       }
       try {
         // 다른 기기의 복귀가 먼저 잡았으면 기다려야 이 요청의 목록에도 오늘 회차가 있다.
-        createdCount += await dueRunner.execute({ id, userId }, { skipLocked: false });
+        createdCount += await dueRunner.execute({
+          due: { id, userId: UserId.reconstitute(userId) },
+          skipLocked: false,
+        });
       } catch (error) {
         failedCount += 1;
         logger.warn({
           event: TodoSeriesLogEvent.CATCH_UP_FAILED,
           userId,
-          seriesId: id,
+          seriesId: id.value,
           errorType: toErrorType(error),
         });
       }

@@ -9,19 +9,23 @@ import {
   snapshotTodoRecord,
 } from "#test/fixtures/planning/planning-todos.fixture";
 
+import { TodoToggledEvent } from "../../domain/todo-toggled.event.js";
+import { ApplyTodoUpdateUseCase } from "./apply-todo-update.use-case.js";
+import { PublishTodoUpdateUseCase } from "./publish-todo-update.use-case.js";
 import { UpdateTodoUseCase } from "./update-todo.use-case.js";
 
 describe("할 일 부분 수정", () => {
   let fixture: ReturnType<typeof createPlanningTodoFixture>;
   let useCase: UpdateTodoUseCase;
   beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(PLANNING_TIME);
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
-    useCase = new UpdateTodoUseCase(fixture);
+    useCase = new UpdateTodoUseCase({
+      ...fixture,
+      applyUpdate: new ApplyTodoUpdateUseCase(fixture),
+      publishUpdate: new PublishTodoUpdateUseCase(fixture),
+    });
   });
   afterEach(() => {
-    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -100,7 +104,7 @@ describe("할 일 부분 수정", () => {
     });
   });
   it("시간만 수정하면 저장된 날짜와 사용자 timezone으로 변환한다", async () => {
-    // Given / When
+    // When
     const result = await useCase.execute({
       id: 1,
       userId: fixture.userId,
@@ -184,21 +188,27 @@ describe("할 일 부분 수정", () => {
     expect(result).toMatchObject({ isAllDay: false, scheduledTime: expect.any(String) });
     expect(fixture.records.get(1)?.isAllDay).toBe(false);
   });
-  it("완료 상태가 바뀔 때만 completedAt을 바꾼다", async () => {
+  it("완료 칸은 전용 완료 경로와 같은 완료·되돌리기 사실과 완료 효과를 내고 바뀔 때만 completedAt을 바꾼다", async () => {
     // Given
     const input = { id: 1, userId: fixture.userId, timezone: "UTC", data: { completed: true } };
     // When
     const completed = await useCase.execute(input);
-    vi.setSystemTime(Temporal.Instant.from("2026-05-15T04:00:00Z"));
+    fixture.clock.advanceBy({ hours: 1 });
     const repeated = await useCase.execute(input);
     const uncompleted = await useCase.execute({ ...input, data: { completed: false } });
     // Then
     expect(completed.completedAt).toBe(PLANNING_TIME.toISOString());
     expect(repeated.completedAt).toBe(PLANNING_TIME.toISOString());
     expect(uncompleted).toMatchObject({ completed: false, completedAt: null });
+    expect(fixture.eventPublisher.publishedEvents.map(({ eventName }) => eventName)).toEqual([
+      "planning.todo.completed",
+      "planning.todo.reopened",
+    ]);
     expect(
-      new Set(fixture.eventPublisher.publishedEvents.map(({ eventName }) => eventName)),
-    ).toEqual(new Set(["planning.todo.updated"]));
+      fixture.completionEffects.events.map((event) =>
+        event instanceof TodoToggledEvent ? event.completed : null,
+      ),
+    ).toEqual([true, false]);
   });
   it("일반 PATCH는 카테고리 소유권만 확인하고 전용 이동의 활성 한도를 적용하지 않는다", async () => {
     // Given
@@ -223,31 +233,35 @@ describe("할 일 부분 수정", () => {
     // Given
     const before = snapshotTodoRecord(fixture.records.get(1));
     fixture.categoryOwners.set(1, "other-user");
-    // When / Then
-    await expect(
-      useCase.execute({
-        id: 1,
-        userId: fixture.userId,
-        timezone: "UTC",
-        data: { categoryId: 1, title: "변경" },
-      }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_CATEGORY_0851 });
-    await expect(
-      useCase.execute({
-        id: 1,
-        userId: fixture.userId,
-        timezone: "UTC",
-        data: { endDate: Temporal.PlainDate.from("2026-05-14") },
-      }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
-    await expect(
-      useCase.execute({
-        id: 999,
-        userId: fixture.userId,
-        timezone: "UTC",
-        data: { title: "변경" },
-      }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
+    // When
+    const otherOwnerCategoryResult = useCase.execute({
+      id: 1,
+      userId: fixture.userId,
+      timezone: "UTC",
+      data: { categoryId: 1, title: "변경" },
+    });
+    // Then
+    await expect(otherOwnerCategoryResult).rejects.toMatchObject({
+      errorCode: ErrorCode.TODO_CATEGORY_0851,
+    });
+    // When
+    const reversedPeriodResult = useCase.execute({
+      id: 1,
+      userId: fixture.userId,
+      timezone: "UTC",
+      data: { endDate: Temporal.PlainDate.from("2026-05-14") },
+    });
+    // Then
+    await expect(reversedPeriodResult).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
+    // When
+    const missingTodoResult = useCase.execute({
+      id: 999,
+      userId: fixture.userId,
+      timezone: "UTC",
+      data: { title: "변경" },
+    });
+    // Then
+    await expect(missingTodoResult).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
     expect(fixture.records.get(1)).toEqual(before);
   });
 });

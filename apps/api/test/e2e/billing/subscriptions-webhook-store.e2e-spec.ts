@@ -1,0 +1,257 @@
+import { currentUserSchema } from "@aido/api/contracts/auth/v1";
+import { Logger } from "@nestjs/common";
+import request from "supertest";
+import { z } from "zod";
+
+import {
+  type BillingSubscriptionsConfig,
+  billingSubscriptionsConfig,
+} from "#api/modules/billing/subscriptions/billing-subscriptions.config";
+import type { RevenueCatWebhookPayload } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook.wire";
+import type { AppEnvironment } from "#api/platform/config/schemas/app.schema";
+import { subscription, subscriptionEventReceipt } from "#api/platform/database/schema/index";
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
+import { createSubscriptionEventFixture } from "#test/fixtures/billing/subscription-event.fixture";
+
+const webhookSecret = "subscription-store-e2e-webhook-secret";
+const at = new Date("2027-01-04T12:00:00.000Z");
+const expiresAt = new Date("2027-02-04T12:00:00.000Z");
+const loggedEventSchema = z.object({ event: z.string() });
+
+function billingIn(environment: AppEnvironment): BillingSubscriptionsConfig {
+  return billingSubscriptionsConfig.parse({
+    NODE_ENV: "production",
+    APP_ENV: environment,
+    REVENUECAT_WEBHOOK_SECRET: webhookSecret,
+  });
+}
+
+describe("RevenueCat 웹훅의 스토어·환경별 처리 (실제 PostgreSQL)", () => {
+  let context: E2eTestContext;
+  const alert = new RecordingOperationalAlert();
+  const billing = billingIn("production");
+
+  beforeAll(async () => {
+    context = await createE2eApp({
+      customizeBuilder: (builder) =>
+        builder
+          .overrideProvider(OperationalAlertPort)
+          .useValue(alert)
+          .overrideProvider(billingSubscriptionsConfig.KEY)
+          .useValue(billing),
+      additionalResetters: [() => alert.alerts.splice(0)],
+    });
+  });
+
+  // 배포 환경은 시작할 때 한 번 읽으므로 앱이 받은 billing 설정 값을 테스트마다 바꾼다
+  function deployTo(environment: AppEnvironment): void {
+    Object.assign(billing, billingIn(environment));
+  }
+
+  beforeEach(async () => {
+    deployTo("production");
+    vi.spyOn(Logger.prototype, "log").mockImplementation(() => undefined);
+    await context.reset();
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(at);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  afterAll(async () => {
+    await destroyE2eApp(context);
+  });
+
+  function webhook(body: object) {
+    return request(context.app.getHttpServer())
+      .post("/v1/webhooks/revenuecat")
+      .set("Authorization", `Bearer ${webhookSecret}`)
+      .send(body);
+  }
+
+  function purchase(
+    appUserId: string,
+    eventId: string,
+    overrides: Partial<RevenueCatWebhookPayload["event"]> = {},
+  ) {
+    return createSubscriptionEventFixture("INITIAL_PURCHASE", {
+      app_user_id: appUserId,
+      id: eventId,
+      original_transaction_id: `${eventId}-chain`,
+      purchased_at_ms: at.getTime(),
+      expiration_at_ms: expiresAt.getTime(),
+      ...overrides,
+    });
+  }
+
+  async function currentUser(accessToken: string) {
+    const response = await request(context.app.getHttpServer())
+      .get("/v1/auth/me")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .expect(200);
+    return currentUserSchema.parse(response.body.data);
+  }
+
+  async function storedRows() {
+    const database = context.testDatabase.getClient();
+    return {
+      subscriptions: await database.select().from(subscription),
+      receipts: await database.select().from(subscriptionEventReceipt),
+    };
+  }
+
+  function webhookLogEvents(): string[] {
+    return vi
+      .mocked(Logger.prototype.log)
+      .mock.calls.flatMap(([message]) => {
+        const logged = loggedEventSchema.safeParse(message);
+        return logged.success ? [logged.data.event] : [];
+      })
+      .filter((event) => event.startsWith("billing.subscription.webhook."));
+  }
+
+  it("운영은 Test Store 구매를 200으로 받고 구독·원장·프리미엄을 바꾸지 않으며 경보 없이 로그 한 건만 남긴다", async () => {
+    // Given
+    const user = await context.helpers.createVerifiedUser("test-store@example.com", "Test1234!");
+
+    // When
+    const response = await webhook(
+      purchase(user.userId, "test-store-purchase", { store: "TEST_STORE", environment: "SANDBOX" }),
+    ).expect(200);
+
+    // Then
+    expect(response.body.data).toEqual({ received: true });
+    expect(await storedRows()).toEqual({ subscriptions: [], receipts: [] });
+    expect(await currentUser(user.accessToken)).toMatchObject({
+      subscriptionStatus: "FREE",
+      premiumSource: null,
+    });
+    expect(alert.alerts).toEqual([]);
+    expect(webhookLogEvents()).toEqual(["billing.subscription.webhook.skipped"]);
+  });
+
+  it.each([
+    {
+      name: "App Store SANDBOX(App Review)",
+      store: "APP_STORE",
+      environment: "SANDBOX",
+      productId: "com.aido.pro.monthly",
+      planType: "MONTHLY",
+    },
+    {
+      name: "Play Store PRODUCTION 기본 요금제",
+      store: "PLAY_STORE",
+      environment: "PRODUCTION",
+      productId: "com.aido.pro.yearly:yearly-base",
+      planType: "ANNUAL",
+    },
+  ] as const)(
+    "운영은 $name 구매를 반영하고 /me에 요금제를 보여 준다",
+    async ({ store, environment, productId, planType }) => {
+      // Given
+      const user = await context.helpers.createVerifiedUser("store@example.com", "Test1234!");
+
+      // When
+      await webhook(
+        purchase(user.userId, `${store}-purchase`, {
+          store,
+          environment,
+          product_id: productId,
+        }),
+      ).expect(200);
+
+      // Then
+      expect(await currentUser(user.accessToken)).toMatchObject({
+        subscriptionStatus: "ACTIVE",
+        premiumSource: "STORE",
+        premiumPlanType: planType,
+      });
+      expect((await storedRows()).subscriptions).toMatchObject([
+        { userId: user.userId, environment },
+      ]);
+      expect(alert.alerts).toEqual([]);
+    },
+  );
+
+  it("운영 PRODUCTION 구매의 사용자를 찾지 못하면 200으로 받고 경보를 한 번 올린다", async () => {
+    // Given
+    const body = purchase("unknown-production-user", "unknown-user-purchase");
+
+    // When
+    await webhook(body).expect(200);
+
+    // Then
+    expect(alert.alerts).toMatchObject([
+      {
+        key: "billing.subscription.webhook.processing.failed",
+        severity: "error",
+        tags: { storeEnvironment: "PRODUCTION" },
+      },
+    ]);
+    expect(await storedRows()).toEqual({ subscriptions: [], receipts: [] });
+  });
+
+  it("대시보드 TEST 이벤트는 우리 사용자가 아니어도 200으로 받고 원장·경보 없이 로그 한 건만 남긴다", async () => {
+    // Given
+    const body = createSubscriptionEventFixture("TEST", {
+      app_user_id: "dashboard-test-user",
+      id: "dashboard-test-event",
+    });
+
+    // When
+    const response = await webhook(body).expect(200);
+
+    // Then
+    expect(response.body.data).toEqual({ received: true });
+    expect(await storedRows()).toEqual({ subscriptions: [], receipts: [] });
+    expect(alert.alerts).toEqual([]);
+    expect(webhookLogEvents()).toEqual(["billing.subscription.webhook.ignored"]);
+  });
+
+  it("같은 이벤트 ID를 다시 받으면 한 번만 반영한다", async () => {
+    // Given
+    const user = await context.helpers.createVerifiedUser("duplicate@example.com", "Test1234!");
+    const body = purchase(user.userId, "duplicate-purchase");
+    await webhook(body).expect(200);
+
+    // When
+    await webhook(body).expect(200);
+
+    // Then
+    const rows = await storedRows();
+    expect(rows.subscriptions).toHaveLength(1);
+    expect(rows.receipts).toHaveLength(1);
+    expect(alert.alerts).toEqual([]);
+  });
+
+  it("운영이 아닌 서버는 Test Store 구매를 지금처럼 반영한다", async () => {
+    // Given
+    deployTo("development");
+    const user = await context.helpers.createVerifiedUser("local@example.com", "Test1234!");
+
+    // When
+    await webhook(
+      purchase(user.userId, "local-test-store-purchase", {
+        store: "TEST_STORE",
+        environment: "SANDBOX",
+      }),
+    ).expect(200);
+
+    // Then
+    expect(await currentUser(user.accessToken)).toMatchObject({
+      subscriptionStatus: "ACTIVE",
+      premiumSource: "STORE",
+    });
+    const rows = await storedRows();
+    expect(rows.subscriptions).toMatchObject([{ userId: user.userId, environment: "SANDBOX" }]);
+    expect(rows.receipts).toHaveLength(1);
+  });
+});

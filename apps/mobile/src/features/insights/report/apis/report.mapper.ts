@@ -1,4 +1,7 @@
-import type { AiReport as AiReportDto, ReportStatus as ReportStatusDto } from '@aido/api';
+import type {
+  AiReport as AiReportDto,
+  ReportStatus as ReportStatusDto,
+} from '@aido/api/contracts/ai/v1';
 import { dateKeySchema } from '@src/shared/date/date-key';
 import { toInstant } from '@src/shared/date/instant';
 import { pick } from 'es-toolkit';
@@ -37,7 +40,6 @@ export function toAiReport(dto: AiReportDto): AiReport {
 
 export function toReportStatus(dto: ReportStatusDto): ReportStatus {
   return {
-    ...pick(dto, ['daysUntilWeekly', 'daysUntilMonthly']),
     nextWeeklyAt: toInstant(dto.nextWeeklyAt),
     nextMonthlyAt: toInstant(dto.nextMonthlyAt),
   };

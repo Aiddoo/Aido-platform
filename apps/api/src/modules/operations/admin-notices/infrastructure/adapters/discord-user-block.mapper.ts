@@ -1,5 +1,5 @@
 import { accountProviderLabel } from "../../application/messages/provider-labels.messages.js";
-import type { AdminNoticeUser } from "../../application/read-models/admin-notice.read-model.js";
+import type { AdminNoticeUser } from "../../domain/admin-notice.aggregate.js";
 import {
   type DiscordEmbedField,
   field,

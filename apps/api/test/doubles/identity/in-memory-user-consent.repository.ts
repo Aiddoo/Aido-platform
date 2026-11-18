@@ -1,17 +1,15 @@
 import { minBy } from "es-toolkit";
 
 import {
-  type ConsentSeedInput,
   type FindMarketingReconfirmTargetsParams,
   type MarketingReconfirmTarget,
-  type UserConsentRecordWithId,
   UserConsentRepositoryPort,
-} from "#api/modules/identity/preferences/application/ports/user-consent.repository.port";
-import { AiDataSharingConsent } from "#api/modules/identity/preferences/domain/ai-data-sharing-consent.entity";
-import type { UserConsentRecord } from "#api/modules/identity/preferences/domain/user-consent.constants";
-import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+} from "#api/modules/identity/user-preferences/application/ports/user-consent.repository.port";
+import type { UserConsentReadModel } from "#api/modules/identity/user-preferences/application/read-models/consent.read-model";
+import { AiDataSharingConsent } from "#api/modules/identity/user-preferences/domain/ai-data-sharing-consent.entity";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-const EMPTY_CONSENT: UserConsentRecord = {
+const EMPTY_CONSENT: Omit<UserConsentReadModel, "userId"> = {
   termsAgreedAt: null,
   privacyAgreedAt: null,
   agreedTermsVersion: null,
@@ -22,20 +20,20 @@ const EMPTY_CONSENT: UserConsentRecord = {
   marketingReconfirmedAt: null,
 };
 
-function copyOf(record: UserConsentRecordWithId): UserConsentRecordWithId {
+function copyOf(record: UserConsentReadModel): UserConsentReadModel {
   return { ...record };
 }
 
-function toTarget(record: UserConsentRecordWithId): MarketingReconfirmTarget {
+function toTarget(record: UserConsentReadModel): MarketingReconfirmTarget {
   return {
-    userId: record.userId,
+    userId: UserId.reconstitute(record.userId),
     marketingAgreedAt: record.marketingAgreedAt,
     marketingPushAgreedAt: record.marketingPushAgreedAt,
   };
 }
 
 // Drizzle 저장소의 COALESCE(재확인 시각, LEAST(두 동의 시각)) <= cutoff와 같다
-function isReconfirmDue(record: UserConsentRecord, cutoff: Temporal.Instant): boolean {
+function isReconfirmDue(record: UserConsentReadModel, cutoff: Temporal.Instant): boolean {
   const earliestAgreedAt = minBy(
     [record.marketingAgreedAt, record.marketingPushAgreedAt].flatMap((instant) =>
       instant == null ? [] : [instant],
@@ -49,13 +47,13 @@ function isReconfirmDue(record: UserConsentRecord, cutoff: Temporal.Instant): bo
 }
 
 export class InMemoryUserConsentRepository extends UserConsentRepositoryPort {
-  readonly #records = new Map<string, UserConsentRecordWithId>();
+  readonly #records = new Map<string, UserConsentReadModel>();
   // Drizzle 저장소는 User 행과 조인해 탈퇴·비활성 사용자를 재확인 대상에서 뺀다
   readonly #inactiveUserIds: ReadonlySet<string>;
 
   constructor(
     options: {
-      readonly records?: readonly UserConsentRecordWithId[];
+      readonly records?: readonly UserConsentReadModel[];
       readonly inactiveUserIds?: readonly string[];
     } = {},
   ) {
@@ -66,20 +64,20 @@ export class InMemoryUserConsentRepository extends UserConsentRepositoryPort {
     this.#inactiveUserIds = new Set(options.inactiveUserIds ?? []);
   }
 
-  get all(): readonly UserConsentRecordWithId[] {
+  get all(): readonly UserConsentReadModel[] {
     return [...this.#records.values()].map(copyOf);
   }
 
-  stored(userId: string): UserConsentRecordWithId | undefined {
+  stored(userId: string): UserConsentReadModel | undefined {
     const record = this.#records.get(userId);
     return record == null ? undefined : copyOf(record);
   }
 
-  async findByUserId(userId: UserId): Promise<UserConsentRecordWithId | null> {
+  async findByUserId(userId: UserId): Promise<UserConsentReadModel | null> {
     return this.stored(userId.value) ?? null;
   }
 
-  async findAiDataSharingConsent(userId: UserId): Promise<AiDataSharingConsent> {
+  async getAiDataSharingConsent(userId: UserId): Promise<AiDataSharingConsent> {
     const record = this.#records.get(userId.value);
     return AiDataSharingConsent.reconstitute({
       userId: userId.value,
@@ -88,37 +86,8 @@ export class InMemoryUserConsentRepository extends UserConsentRepositoryPort {
     });
   }
 
-  async findByUserIds(userIds: readonly UserId[]): Promise<UserConsentRecordWithId[]> {
+  async findByUserIds(userIds: readonly UserId[]): Promise<UserConsentReadModel[]> {
     return this.all.filter((record) => userIds.some((userId) => userId.value === record.userId));
-  }
-
-  async create(userId: UserId, data: ConsentSeedInput): Promise<UserConsentRecordWithId> {
-    if (this.#records.has(userId.value)) {
-      throw new Error(`UserConsent already exists for ${userId.value}`);
-    }
-    return this.#write({
-      ...EMPTY_CONSENT,
-      userId: userId.value,
-      termsAgreedAt: data.termsAgreedAt ?? null,
-      privacyAgreedAt: data.privacyAgreedAt ?? null,
-      agreedTermsVersion: data.agreedTermsVersion ?? null,
-      marketingAgreedAt: data.marketingAgreedAt ?? null,
-      marketingPushAgreedAt: data.marketingPushAgreedAt ?? null,
-    });
-  }
-
-  async upsertMarketingConsent(
-    userId: UserId,
-    data: { agreedAt: Temporal.Instant | null },
-  ): Promise<UserConsentRecordWithId> {
-    return this.#upsert(userId.value, { marketingAgreedAt: data.agreedAt });
-  }
-
-  async upsertMarketingPushConsent(
-    userId: UserId,
-    data: { agreedAt: Temporal.Instant | null },
-  ): Promise<UserConsentRecordWithId> {
-    return this.#upsert(userId.value, { marketingPushAgreedAt: data.agreedAt });
   }
 
   async findMarketingReconfirmTargets(
@@ -152,24 +121,22 @@ export class InMemoryUserConsentRepository extends UserConsentRepositoryPort {
     return claimed.map(toTarget);
   }
 
-  async upsertAiDataSharingConsent(
-    userId: UserId,
-    data: { agreedAt: Temporal.Instant | null; version: string },
-  ): Promise<UserConsentRecordWithId> {
-    return this.#upsert(userId.value, {
-      aiDataSharingAgreedAt: data.agreedAt,
-      aiDataSharingVersion: data.version,
-    });
+  // UserPreference 저장이 바꾼 동의 칸을 넣거나 바꾼다(Drizzle의 UserConsent upsert와 같다)
+  merge(userId: string, patch: Partial<Omit<UserConsentReadModel, "userId">>): void {
+    this.#upsert(userId, patch);
   }
 
-  #upsert(userId: string, patch: Partial<UserConsentRecord>): UserConsentRecordWithId {
+  #upsert(
+    userId: string,
+    patch: Partial<Omit<UserConsentReadModel, "userId">>,
+  ): UserConsentReadModel {
     return this.#write({
       ...(this.#records.get(userId) ?? { ...EMPTY_CONSENT, userId }),
       ...patch,
     });
   }
 
-  #write(record: UserConsentRecordWithId): UserConsentRecordWithId {
+  #write(record: UserConsentReadModel): UserConsentReadModel {
     this.#records.set(record.userId, copyOf(record));
     return copyOf(record);
   }

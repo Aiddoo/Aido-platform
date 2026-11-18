@@ -1,4 +1,4 @@
-import { suggestionIdParamSchema } from '@aido/api';
+import { suggestionIdParamSchema } from '@aido/api/contracts/ai/v1';
 import { routeIntegerStringSchema } from '@src/shared/schemas/route-params.schema';
 import { z } from 'zod';
 

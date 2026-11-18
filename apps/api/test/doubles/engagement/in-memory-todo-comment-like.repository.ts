@@ -1,6 +1,6 @@
-import { TodoCommentLikeRepositoryPort } from "#api/modules/engagement/comments/application/ports/todo-comment-like.repository.port";
-import type { TodoCommentId } from "#api/modules/engagement/comments/domain/todo-comment-id.vo";
-import { TodoCommentLike } from "#api/modules/engagement/comments/domain/todo-comment-like.aggregate";
+import type { TodoCommentId } from "#api/modules/engagement/shared/domain/todo-comment-id.vo";
+import { TodoCommentLikeRepositoryPort } from "#api/modules/engagement/todo-comment-likes/application/ports/todo-comment-like.repository.port";
+import { TodoCommentLike } from "#api/modules/engagement/todo-comment-likes/domain/todo-comment-like.aggregate";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 function copyOf(like: TodoCommentLike): TodoCommentLike {
@@ -51,9 +51,9 @@ export class InMemoryTodoCommentLikeRepository extends TodoCommentLikeRepository
   }
 
   /** 계정 정리 대역이 사용자의 좋아요 행을 지울 때 쓴다 */
-  removeByUserId(userId: string): void {
+  removeByUserId(userId: UserId): void {
     for (const like of this.#likes.values()) {
-      if (like.userId.value === userId) {
+      if (like.userId.equals(userId)) {
         this.#likes.delete(like.id.value);
       }
     }

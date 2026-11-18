@@ -1,6 +1,7 @@
-import { STORE_PERIOD_TYPE, type StorePeriodType } from "@aido/api/vocabulary";
+import { type StorePeriodType } from "@aido/api/vocabulary";
 import { match, P } from "ts-pattern";
 
+import { STORE_PERIOD_TYPE } from "../../shared/domain/store-period-type.domain-service.js";
 import type { StoreSubscriptionChainEvent } from "./store-subscription.event.js";
 import type { StoreSubscriptionEventKind } from "./subscriptions.constants.js";
 

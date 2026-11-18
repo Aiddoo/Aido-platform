@@ -1,8 +1,8 @@
-import type { TodoCommentLikeRepositoryPort } from "#api/modules/engagement/comments/application/ports/todo-comment-like.repository.port";
-import { TodoCommentId } from "#api/modules/engagement/comments/domain/todo-comment-id.vo";
+import { TodoCommentId } from "#api/modules/engagement/shared/domain/todo-comment-id.vo";
+import type { TodoCommentLikeRepositoryPort } from "#api/modules/engagement/todo-comment-likes/application/ports/todo-comment-like.repository.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createTodoCommentLikeFixture } from "#test/fixtures/engagement/todo-comment-like.fixture";
 import {
-  createTodoCommentLikeFixture,
   TODO_COMMENT_FIXTURE_FRIEND_ID,
   TODO_COMMENT_FIXTURE_NOW,
   TODO_COMMENT_FIXTURE_VIEWER_ID,
@@ -86,13 +86,13 @@ export function describeTodoCommentLikeRepositoryContract(
             TodoCommentId.reconstitute(commentId),
             UserId.reconstitute(userId),
           );
-          return { isActive: like?.isActive, wasEverNotified: like?.wasEverNotified };
+          return { isActive: like?.isActive(), hasBeenNotified: like?.hasBeenNotified() };
         }),
       );
       expect(states).toEqual([
-        { isActive: false, wasEverNotified: true },
-        { isActive: false, wasEverNotified: false },
-        { isActive: true, wasEverNotified: false },
+        { isActive: false, hasBeenNotified: true },
+        { isActive: false, hasBeenNotified: false },
+        { isActive: true, hasBeenNotified: false },
       ]);
     });
   });

@@ -1,4 +1,4 @@
-import type { DetectedPattern } from "./suggestion.constants.js";
+import type { DetectedPattern } from "./suggestions.constants.js";
 
 /**
  * 제목 앞 2어절 + daysOfWeek 세트가 같으면 실질 동일 제안으로 간주해 중복 제거.

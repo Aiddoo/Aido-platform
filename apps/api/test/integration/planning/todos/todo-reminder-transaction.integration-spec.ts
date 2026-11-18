@@ -2,12 +2,13 @@ import { sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 import { PgBoss } from "pg-boss";
 
-import { TODO_REMINDER_QUEUE } from "#api/modules/notification/notification-reminders.public";
 import { TodoReminderSchedulerAdapter } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-scheduler.adapter";
+import { TODO_REMINDER_QUEUE } from "#api/modules/notification/reminders/notification-reminders.public";
 import { ApplyTodoEventsUseCase } from "#api/modules/planning/todos/application/use-cases/apply-todo-events.use-case";
 import { ResolveTodoTimezoneUseCase } from "#api/modules/planning/todos/application/use-cases/resolve-todo-timezone.use-case";
 import { SetTodoCompletedUseCase } from "#api/modules/planning/todos/application/use-cases/set-todo-completed.use-case";
 import { UpdateTodoScheduleUseCase } from "#api/modules/planning/todos/application/use-cases/update-todo-schedule.use-case";
+import { TodoId } from "#api/modules/planning/todos/domain/todo-id.vo";
 import { ReminderSchedulerAdapter } from "#api/modules/planning/todos/infrastructure/adapters/todo-reminder-scheduler.adapter";
 import { DrizzleTodoReadRepository } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-read.repository";
 import { DrizzleTodoRepository } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo.repository";
@@ -19,12 +20,17 @@ import type {
   DomainEventPublisherPort,
   PublishedDomainEvent,
 } from "#api/shared/application/ports/domain-event-publisher.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
-import { wallClockInstant } from "#test/fixtures/clock.fixture";
-import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import {
+  createTodoCategoryRowFixture,
+  createTodoRowFixture,
+} from "#test/fixtures/planning/todo-row.fixture";
+import { wallClockInstant } from "#test/fixtures/platform/clock.fixture";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -65,8 +71,8 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
     await migrator.start();
     await migrator.stop({ graceful: true, timeout: 10_000, close: true });
     boss = new PgBoss({ connectionString, schema: SCHEMA, migrate: false, max: 3 });
-    const { txHost, uow } = createDatabaseTransactionFixture(client);
-    jobQueue = new PgBossJobQueueAdapter(boss, txHost, new JobQueueRegistry(), {
+    const { transactionHost, uow } = createDatabaseTransactionFixture(client);
+    jobQueue = new PgBossJobQueueAdapter(boss, transactionHost, new JobQueueRegistry(), {
       shutdownTimeoutMs: 10_000,
       workerEnabled: true,
     });
@@ -78,9 +84,9 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
       ),
     );
     publisher = new SwitchablePublisher();
-    const todoRepository = new DrizzleTodoRepository(txHost, new DateClock());
-    const todoReadRepository = new DrizzleTodoReadRepository(txHost);
-    const mutationLock = new PostgresMutationLockAdapter(txHost);
+    const todoRepository = new DrizzleTodoRepository(transactionHost, new DateClock());
+    const todoReadRepository = new DrizzleTodoReadRepository(transactionHost);
+    const mutationLock = new PostgresMutationLockAdapter(transactionHost);
     const todoCache = { invalidateFriendTodos: async () => undefined };
     const applyTodoEvents = new ApplyTodoEventsUseCase({
       reminderScheduler: reminderAdapter,
@@ -120,7 +126,7 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
     );
     publisher.failsOnPublish = false;
     publisher.published.length = 0;
-    const user = UserFixture.create({
+    const user = createUserRowFixture({
       id: createEntityId(),
       email: "reminder-tx@example.com",
       userTag: "REMTX001",
@@ -129,7 +135,7 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
     userId = user.id;
     const [category] = await client
       .insert(todoCategory)
-      .values(omit(TodoCategoryFixture.create({ userId, sortOrder: 0 }), ["id"]))
+      .values(omit(createTodoCategoryRowFixture({ userId, sortOrder: 0 }), ["id"]))
       .returning();
     categoryId = category?.id ?? 0;
   });
@@ -143,7 +149,7 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
     const [row] = await client
       .insert(todo)
       .values({
-        ...omit(TodoFixture.create({ userId, categoryId }), ["id"]),
+        ...omit(createTodoRowFixture({ userId, categoryId }), ["id"]),
         startDate: Temporal.PlainDate.from(FUTURE_DATE),
         scheduledLocalTime: scheduled ? "10:00" : null,
         scheduledTime: scheduled ? wallClockInstant(FUTURE_DATE, "10:00", SEOUL) : null,
@@ -215,9 +221,9 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
     const todoId = await seedTodo(true);
     await reminderAdapter.scheduleReminders([
       {
-        todoId,
+        todoId: TodoId.reconstitute(todoId),
         scheduledTime: wallClockInstant(FUTURE_DATE, "10:00", SEOUL),
-        userId,
+        userId: UserId.reconstitute(userId),
       },
     ]);
     publisher.failsOnPublish = true;
@@ -242,9 +248,9 @@ describe("할 일 리마인더를 같은 트랜잭션에서 예약·취소한다
     const todoId = await seedTodo(true);
     await reminderAdapter.scheduleReminders([
       {
-        todoId,
+        todoId: TodoId.reconstitute(todoId),
         scheduledTime: wallClockInstant(FUTURE_DATE, "10:00", SEOUL),
-        userId,
+        userId: UserId.reconstitute(userId),
       },
     ]);
 

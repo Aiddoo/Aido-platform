@@ -1,3 +1,5 @@
+import { defineFixture } from '@src/testing/fixture';
+
 import {
   type TodoComment,
   type TodoCommentThread,
@@ -5,41 +7,37 @@ import {
   todoCommentThreadSchema,
 } from '../domains/todo-comment.model';
 
-const CREATED_AT = '2026-08-15T09:00:00.000Z';
 export const TODO_ID = 42;
 
-export function createTodoComment(overrides?: Partial<TodoComment>): TodoComment {
-  return todoCommentSchema.parse({
-    id: 'comment-1',
-    todoId: TODO_ID,
-    threadCommentId: null,
-    replyTo: null,
-    author: {
-      id: 'user-1',
-      name: '김철수',
-      userTag: 'WNTQJEEE',
-      profileImage: null,
-      isTodoOwner: true,
-    },
-    content: '오늘 운동 완료!',
-    likeCount: 0,
-    replyCount: 0,
-    isDeleted: false,
-    isAuthorBlocked: false,
-    isEdited: false,
-    viewer: {
-      isLiked: false,
-      canEdit: true,
-      canDelete: true,
-      canReply: true,
-      canReport: false,
-      canBlock: false,
-    },
-    createdAt: CREATED_AT,
-    editedAt: null,
-    ...overrides,
-  });
-}
+export const createTodoComment = defineFixture(todoCommentSchema, {
+  id: 'comment-1',
+  todoId: TODO_ID,
+  threadCommentId: null,
+  replyTo: null,
+  author: {
+    id: 'user-1',
+    name: '김철수',
+    userTag: 'WNTQJEEE',
+    profileImage: null,
+    isTodoOwner: true,
+  },
+  content: '오늘 운동 완료!',
+  likeCount: 0,
+  replyCount: 0,
+  isDeleted: false,
+  isAuthorBlocked: false,
+  isEdited: false,
+  viewer: {
+    isLiked: false,
+    canEdit: true,
+    canDelete: true,
+    canReply: true,
+    canReport: false,
+    canBlock: false,
+  },
+  createdAt: '2026-08-15T09:00:00.000Z',
+  editedAt: null,
+});
 
 export function createTodoCommentReply(
   head: TodoComment,

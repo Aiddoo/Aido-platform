@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { z } from "zod";
 
-import { cursorPageSchema } from "../src/index.js";
+import { cursorPageSchema } from "../src/common/index.js";
 
 const itemSchema = z.object({ id: z.number().int() });
 

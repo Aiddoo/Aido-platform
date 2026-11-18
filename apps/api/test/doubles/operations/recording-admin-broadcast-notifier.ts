@@ -1,15 +1,15 @@
-import { AdminBroadcastNotifierPort } from "#api/modules/operations/broadcasts/application/ports/admin-broadcast-notifier.port";
-import type { AdminBroadcastMessage } from "#api/modules/operations/broadcasts/application/read-models/broadcast-message.read-model";
+import { AdminBroadcastNotifierPort } from "#api/modules/operations/broadcast-campaigns/application/ports/admin-broadcast-notifier.port";
+import type { BroadcastMessageReadModel } from "#api/modules/operations/broadcast-campaigns/application/read-models/broadcast-message.read-model";
 
 // 알림을 만들지 않고 배치로 받은 메시지만 기록한다
 export class RecordingAdminBroadcastNotifier extends AdminBroadcastNotifierPort {
-  readonly batches: (readonly AdminBroadcastMessage[])[] = [];
+  readonly batches: (readonly BroadcastMessageReadModel[])[] = [];
 
-  get messages(): AdminBroadcastMessage[] {
+  get messages(): BroadcastMessageReadModel[] {
     return this.batches.flat();
   }
 
-  async sendBatch(messages: readonly AdminBroadcastMessage[]): Promise<{ count: number }> {
+  async sendBatch(messages: readonly BroadcastMessageReadModel[]): Promise<{ count: number }> {
     this.batches.push(messages);
     return { count: messages.length };
   }

@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import { afterEach, beforeEach, expect, vi } from "vitest";
 
-import { resetAllFixtures } from "../fixtures/index.js";
+import { resetFixtureSequences } from "#test/fixtures/platform/fixture-sequence";
 
 // Temporal 값은 열거 가능한 속성이 없어 toMatchObject가 값이 달라도 통과시킨다. 같은 종류끼리 equals로 비교한다
 expect.addEqualityTesters([
@@ -44,7 +44,7 @@ expect.addEqualityTesters([
 ]);
 
 beforeEach(() => {
-  resetAllFixtures();
+  resetFixtureSequences();
 });
 
 afterEach(() => {

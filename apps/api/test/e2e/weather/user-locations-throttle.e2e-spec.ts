@@ -1,0 +1,61 @@
+import request from "supertest";
+
+import { UserLocationRateLimits } from "#api/modules/weather/user-locations/presentation/http/user-locations.rate-limits";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
+
+describe("날씨 v2 위치 변경 요청 제한 E2E (실제 throttler, 직렬 실행)", () => {
+  let testContext: E2eTestContext;
+  const limit = UserLocationRateLimits.update.limitPerMinute;
+
+  beforeAll(async () => {
+    testContext = await createE2eApp({ withRealThrottler: true });
+  }, 60_000);
+
+  afterAll(async () => {
+    await destroyE2eApp(testContext);
+  });
+
+  beforeEach(async () => {
+    await testContext.reset();
+  });
+
+  function updateLocation(accessToken: string, attempt: number) {
+    return request(testContext.app.getHttpServer())
+      .put("/v2/weather/location")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .set("X-Forwarded-For", "198.51.100.60")
+      .send({ latitude: 10 + attempt, longitude: 100 + attempt });
+  }
+
+  it("같은 사용자는 분당 10회까지 위치를 바꾸고 11번째는 429다", async () => {
+    // Given
+    const user = await testContext.helpers.createVerifiedUser("v2-throttle@test.com", "Test1234!");
+    for (let attempt = 0; attempt < limit; attempt += 1) {
+      expect((await updateLocation(user.accessToken, attempt)).status).toBe(200);
+    }
+    // When
+    const throttled = await updateLocation(user.accessToken, limit);
+    // Then
+    expect(limit).toBe(10);
+    expect(throttled.status).toBe(429);
+  });
+
+  it("같은 IP를 쓰는 다른 사용자의 한도는 서로 독립이다", async () => {
+    // Given
+    const first = await testContext.helpers.createVerifiedUser("v2-first@test.com", "Test1234!");
+    const second = await testContext.helpers.createVerifiedUser("v2-second@test.com", "Test1234!");
+    for (let attempt = 0; attempt < limit; attempt += 1) {
+      expect((await updateLocation(first.accessToken, attempt)).status).toBe(200);
+    }
+    // When
+    const throttled = await updateLocation(first.accessToken, limit);
+    const otherUser = await updateLocation(second.accessToken, 0);
+    // Then
+    expect(throttled.status).toBe(429);
+    expect(otherUser.status).toBe(200);
+  });
+});

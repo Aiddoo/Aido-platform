@@ -5,11 +5,11 @@ import {
   JOB_POLLING_SECONDS,
   type JobRetryPolicy,
 } from "#api/shared/application/ports/job-queue.port";
+import { DAY_SECONDS } from "#api/shared/domain/time/time-units";
 
 export const TODO_REMINDER_JOB_NAME = "send-reminder";
 export const TODO_SERIES_PAUSED_JOB_NAME = "send-series-paused-notice";
-
-const DAY_SECONDS = 24 * 60 * 60;
+export const TODO_REMINDER_SNOOZE_JOB_NAME = "send-snoozed-reminder";
 
 const reminderJobDataSchema = z.object({
   todoId: z.number(),
@@ -17,17 +17,29 @@ const reminderJobDataSchema = z.object({
   stageLabel: z.string(),
 });
 
-/** 휴면이 시작될 때 한 번 보내는 안내. 옛 서버는 모르는 이름이라 경고만 남기고 버린다. */
+const snoozedReminderJobDataSchema = z.object({
+  todoId: z.number(),
+  userId: z.string(),
+  notificationId: z.number(),
+  remindAt: z.iso.datetime(),
+});
+
+/**
+ * 휴면 안내와 다시 알림은 리마인더 뒤에 더한 작업이다. 배포가 겹치는 동안 옛 서버가 꺼내면
+ * 모르는 이름이라 그 작업만 실패하고 재시도를 새 서버가 받는다.
+ */
 export const todoReminderJobSchema = z.discriminatedUnion("name", [
   z.object({ name: z.literal(TODO_REMINDER_JOB_NAME), data: reminderJobDataSchema }),
   z.object({
     name: z.literal(TODO_SERIES_PAUSED_JOB_NAME),
     data: z.object({ todoId: z.number(), userId: z.string() }),
   }),
+  z.object({ name: z.literal(TODO_REMINDER_SNOOZE_JOB_NAME), data: snoozedReminderJobDataSchema }),
 ]);
 
 export type TodoReminderRuntimeJob = z.output<typeof todoReminderJobSchema>;
 export type ReminderJobData = z.output<typeof reminderJobDataSchema>;
+export type SnoozedReminderJobData = z.output<typeof snoozedReminderJobDataSchema>;
 
 const TODO_REMINDER_RETRY = {
   retryLimit: 2,
@@ -57,6 +69,8 @@ export const TODO_REMINDER_QUEUE = defineQueue({
     batchSize: 20,
     burstWhenBatchFull: true,
   },
+  // 앞으로 울릴 리마인더가 모두 예약 작업으로 대기 수에 들어간다. 늦은 발송은 notification.reminder.late-skips.high가 본다
+  backlogWarningSize: 100_000,
 });
 
 // 같은 큐에 작업별 보존 기간만 다르게 넣는다. pg-boss는 작업 행의 deleteAfterSeconds를 큐 기본값보다 먼저 쓴다

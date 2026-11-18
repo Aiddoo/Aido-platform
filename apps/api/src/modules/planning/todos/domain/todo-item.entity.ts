@@ -1,0 +1,114 @@
+import { Entity } from "#api/shared/domain/model/entity";
+
+import { TodoTitle } from "../../shared/domain/todo-title.vo.js";
+import { TodoItemId } from "./todo-item-id.vo.js";
+
+export interface TodoItemPrimitives {
+  readonly id: number;
+  readonly title: string;
+  readonly completed: boolean;
+  readonly sortOrder: number;
+  readonly createdAt: Temporal.Instant;
+  readonly updatedAt: Temporal.Instant;
+}
+
+interface TodoItemProps {
+  title: TodoTitle;
+  completed: boolean;
+  sortOrder: number;
+  readonly createdAt: Temporal.Instant;
+  updatedAt: Temporal.Instant;
+}
+
+export interface TodoItemChange {
+  readonly title?: string;
+  readonly completed?: boolean;
+}
+
+interface CreateTodoItemParams {
+  readonly id: TodoItemId;
+  readonly title: TodoTitle;
+  readonly sortOrder: number;
+  readonly now: Temporal.Instant;
+}
+
+export class TodoItem extends Entity<TodoItemId, TodoItemProps> {
+  static create(params: CreateTodoItemParams): TodoItem {
+    return new TodoItem(params.id, {
+      title: params.title,
+      completed: false,
+      sortOrder: params.sortOrder,
+      createdAt: params.now,
+      updatedAt: params.now,
+    });
+  }
+
+  static reconstitute(primitives: TodoItemPrimitives): TodoItem {
+    return new TodoItem(TodoItemId.reconstitute(primitives.id), {
+      title: TodoTitle.reconstitute(primitives.title),
+      completed: primitives.completed,
+      sortOrder: primitives.sortOrder,
+      createdAt: primitives.createdAt,
+      updatedAt: primitives.updatedAt,
+    });
+  }
+
+  get title(): TodoTitle {
+    return this.props.title;
+  }
+
+  get completed(): boolean {
+    return this.props.completed;
+  }
+
+  get sortOrder(): number {
+    return this.props.sortOrder;
+  }
+
+  rename(title: TodoTitle, now: Temporal.Instant): boolean {
+    if (this.props.title.equals(title)) {
+      return false;
+    }
+    this.props.title = title;
+    this.props.updatedAt = now;
+    return true;
+  }
+
+  changeCompleted(completed: boolean, now: Temporal.Instant): boolean {
+    if (this.props.completed === completed) {
+      return false;
+    }
+    this.props.completed = completed;
+    this.props.updatedAt = now;
+    return true;
+  }
+
+  // 제목을 먼저 검증해 실패하면 아무 값도 바꾸지 않는다
+  edit(change: TodoItemChange, now: Temporal.Instant): boolean {
+    const title = change.title == null ? null : TodoTitle.create(change.title);
+    const renamed = title != null && this.rename(title, now);
+    const completionChanged =
+      change.completed != null && this.changeCompleted(change.completed, now);
+    return renamed || completionChanged;
+  }
+
+  moveTo(sortOrder: number, now: Temporal.Instant): boolean {
+    if (this.props.sortOrder === sortOrder) {
+      return false;
+    }
+    this.props.sortOrder = sortOrder;
+    this.props.updatedAt = now;
+    return true;
+  }
+
+  toPrimitives(): TodoItemPrimitives {
+    return {
+      id: this.id.value,
+      title: this.props.title.value,
+      completed: this.props.completed,
+      sortOrder: this.props.sortOrder,
+      createdAt: this.props.createdAt,
+      updatedAt: this.props.updatedAt,
+    };
+  }
+}

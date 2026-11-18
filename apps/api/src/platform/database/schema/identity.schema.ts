@@ -79,11 +79,10 @@ export const user = pgTable(
   ],
 );
 
-export const account = pgTable(
+export const linkedAccount = pgTable(
   "Account",
   {
-    accessToken: text(),
-    accessTokenExpiresAt: instant(),
+    // DB에는 accessToken·accessTokenExpiresAt·refreshToken·scope가 남아 있다(1.16.0 이미지가 SELECT). 1.18.0에서 지운다(compatibility.md)
     createdAt: instant()
       .default(sql`now()`)
       .notNull(),
@@ -91,8 +90,6 @@ export const account = pgTable(
     password: varchar({ length: 128 }),
     provider: accountProvider().notNull(),
     providerAccountId: varchar({ length: 255 }).notNull(),
-    refreshToken: text(),
-    scope: varchar({ length: 500 }),
     // 저장소가 ClockPort 값으로 insert·update마다 명시한다
     updatedAt: instant().notNull(),
     userId: text().notNull(),
@@ -143,6 +140,10 @@ export const session = pgTable(
       .onUpdate("cascade")
       .onDelete("cascade"),
     index("Session_expiresAt_idx").using("btree", table.expiresAt.asc().nullsLast()),
+    // 만료 기록 정리가 폐기 30일 지난 세션을 고른다. 이 색인이 없으면 OR 조건 전체가 순차 읽기다
+    index("Session_revokedAt_idx")
+      .using("btree", table.revokedAt.asc().nullsLast())
+      .where(sql`("revokedAt" IS NOT NULL)`),
     index("Session_tokenFamily_idx").using("btree", table.tokenFamily.asc().nullsLast()),
     index("Session_userId_idx").using("btree", table.userId.asc().nullsLast()),
     unique("Session_refreshTokenHash_key").on(table.refreshTokenHash),
@@ -219,7 +220,7 @@ export const oAuthState = pgTable(
   {
     accessToken: varchar({ length: 1000 }),
     accountRestored: boolean(),
-    codeVerifier: varchar({ length: 128 }),
+    // DB에는 codeVerifier·ipAddress·userAgent가 남아 있다(1.16.0 이미지가 SELECT). 1.18.0에서 지운다(compatibility.md)
     createdAt: instant()
       .default(sql`now()`)
       .notNull(),
@@ -228,7 +229,6 @@ export const oAuthState = pgTable(
     expiresAt: instant().notNull(),
     id: serial().primaryKey(),
     initiatingUserId: varchar({ length: 36 }),
-    ipAddress: varchar({ length: 45 }),
     isNewUser: boolean(),
     mode: varchar({ length: 10 }),
     profileImage: varchar({ length: 500 }),
@@ -236,7 +236,6 @@ export const oAuthState = pgTable(
     redirectUri: varchar({ length: 500 }).notNull(),
     refreshToken: varchar({ length: 1000 }),
     state: varchar({ length: 64 }).notNull(),
-    userAgent: varchar({ length: 500 }),
     userId: varchar({ length: 255 }),
     userName: varchar({ length: 20 }),
   },
@@ -268,6 +267,8 @@ export const securityLog = pgTable(
     })
       .onUpdate("cascade")
       .onDelete("set null"),
+    // 만료 기록 정리가 1년 지난 행을 고른다. 다른 색인은 createdAt이 앞 칸이 아니라 쓰지 못한다
+    index("SecurityLog_createdAt_idx").using("btree", table.createdAt.asc().nullsLast()),
     index("SecurityLog_event_createdAt_idx").using(
       "btree",
       table.event.asc().nullsLast(),

@@ -53,7 +53,9 @@ describe("invite-qualification — 사용 시작 판정", () => {
   });
 
   it("마감은 수락 순간에서 14×24시간 뒤라 서머타임 날짜에도 시각이 밀리지 않는다", () => {
-    // Given 미국 서머타임 시작(2028-03-12)을 지나는 수락
+    // Given
+    // 미국 서머타임 시작(2028-03-12)을 지나는 수락
+
     const joinedAt = Temporal.Instant.from("2028-03-01T03:00:00Z");
 
     // When

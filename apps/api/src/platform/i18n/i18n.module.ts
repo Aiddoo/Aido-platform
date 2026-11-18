@@ -1,4 +1,4 @@
-import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from "@aido/api/vocabulary";
+import { DEFAULT_LOCALE, LOCALE_FALLBACKS, SUPPORTED_LOCALES } from "@aido/api/vocabulary";
 import { Global, Module } from "@nestjs/common";
 import { I18nModule, JsonI18nLoader } from "@nestjs/i18n";
 
@@ -18,6 +18,7 @@ import { RequestClientLocaleResolver } from "./request-client-locale.resolver.js
       resolvers: [new RequestClientLocaleResolver()],
       defaultLocale: DEFAULT_LOCALE,
       supportedLocales: [...SUPPORTED_LOCALES],
+      fallbacks: { ...LOCALE_FALLBACKS },
       missingKey: "fallback",
       // 출시 응답 헤더(Content-Language·Vary)를 바꾸지 않는다
       responseHeaders: false,

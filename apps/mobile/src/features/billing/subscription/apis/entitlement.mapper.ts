@@ -1,8 +1,8 @@
 import {
   type FeatureQuota as FeatureQuotaDto,
   type EntitlementSnapshot as EntitlementSnapshotDto,
-  PLAN_FEATURE_KEYS,
-} from '@aido/api';
+} from '@aido/api/contracts/entitlement/v1';
+import { PLAN_FEATURE_KEYS } from '@aido/api/vocabulary';
 import { toNullableInstant } from '@src/shared/date/instant';
 import { mapValues, pick } from 'es-toolkit';
 
@@ -38,6 +38,7 @@ export function toEntitlementSnapshot(dto: EntitlementSnapshotDto): EntitlementS
     isPremium: dto.isPremium,
     tier: dto.tier,
     features: mapValues(pick(dto.features, PLAN_FEATURE_KEYS), toFeatureQuota),
+    plans: pick(dto.plans, PLAN_FEATURE_KEYS),
   } satisfies Record<keyof EntitlementSnapshotDto, unknown>);
 }
 

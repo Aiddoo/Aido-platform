@@ -1,5 +1,5 @@
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
   resolvePremiumAccess,
@@ -9,7 +9,7 @@ import type { PremiumGrantRepositoryPort } from "../ports/premium-grant.reposito
 import type { GetPremiumEntitlementsUseCase } from "./get-premium-entitlements.use-case.js";
 
 export interface GetPremiumAccessQuery {
-  readonly userId: string;
+  readonly userId: UserId;
 }
 
 export interface GetPremiumAccessDependencies {
@@ -28,7 +28,7 @@ export class GetPremiumAccessUseCase {
 
   async execute(query: GetPremiumAccessQuery): Promise<PremiumAccess> {
     const { getPremiumEntitlements, premiumGrantRepository, clock } = this.#dependencies;
-    const userId = UserId.reconstitute(query.userId);
+    const { userId } = query;
     const [{ entitlements }, lastEndedGrantAt] = await Promise.all([
       getPremiumEntitlements.execute({ userId }),
       premiumGrantRepository.findLastEndedAt(userId),

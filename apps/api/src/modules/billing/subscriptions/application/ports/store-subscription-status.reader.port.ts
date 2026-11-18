@@ -1,5 +1,5 @@
 import type { StoreSubscriptionId } from "../../domain/store-subscription-id.vo.js";
-import type { StoreSubscriptionState } from "../../domain/subscription.aggregate.js";
+import type { StoreSubscriptionState } from "../../domain/store-subscription-reconcile.domain-service.js";
 
 export abstract class StoreSubscriptionStatusReaderPort {
   /**

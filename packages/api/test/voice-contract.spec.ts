@@ -4,7 +4,7 @@ import {
   applyActionPlanRequestSchema,
   plannedActionSchema,
   voiceNoteDigestRequestSchema,
-} from "../src/contracts/voice/index.js";
+} from "../src/contracts/voice/v1/index.js";
 import { ErrorCode } from "../src/errors/errors.js";
 import { toPublicErrorDetails } from "../src/errors/public-details.js";
 import { ACTION_PLAN_LIMITS } from "../src/vocabulary/ai.constants.js";

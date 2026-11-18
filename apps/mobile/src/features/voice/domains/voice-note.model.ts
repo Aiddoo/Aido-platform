@@ -1,4 +1,4 @@
-import { ACTION_PLAN_LIMITS, MEMO_LIMITS } from '@aido/api/vocabulary';
+import { ACTION_PLAN_LIMITS, MEMO_LIMITS, VOICE_NOTE_RETENTION_DAYS } from '@aido/api/vocabulary';
 import { SPEECH_LOCALES, type SpeechLocale } from '@src/core/ports/speech-recognizer';
 import { DAY_MS, SECOND_MS } from '@src/shared/constants/time-units';
 import { type Instant, instantSchema, toEpochMs } from '@src/shared/date/instant';
@@ -14,8 +14,6 @@ import {
   VoicePlanPolicy,
 } from './voice-plan.model';
 import { createVoiceTranscript } from './voice-transcript.model';
-
-const VOICE_NOTE_RETENTION_DAYS = 30;
 
 export const speechLocaleSchema = z.enum(SPEECH_LOCALES);
 
@@ -46,7 +44,6 @@ export const voiceNoteDigestSchema = z.object({
   summary: z.string(),
   keyPoints: z.array(voiceNoteKeyPointSchema),
 });
-export type VoiceNoteDigest = z.infer<typeof voiceNoteDigestSchema>;
 
 // 멈췄다 이어 들으면 인식기가 파일을 새로 써서 조각마다 노트 시계의 시작을 든다
 const voiceNoteRecordingSchema = z.object({

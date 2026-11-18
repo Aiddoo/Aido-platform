@@ -1,11 +1,10 @@
 import { Module } from "@nestjs/common";
 
 import { OperationsAdminNoticesModule } from "./admin-notices/operations-admin-notices.module.js";
-import { OperationsBroadcastsModule } from "./broadcasts/operations-broadcasts.module.js";
-import { OperationsMetricsModule } from "./metrics/operations-metrics.module.js";
+import { OperationsBroadcastCampaignsModule } from "./broadcast-campaigns/operations-broadcast-campaigns.module.js";
 
 @Module({
-  imports: [OperationsBroadcastsModule, OperationsAdminNoticesModule, OperationsMetricsModule],
+  imports: [OperationsBroadcastCampaignsModule, OperationsAdminNoticesModule],
   exports: [OperationsAdminNoticesModule],
 })
 export class OperationsModule {}

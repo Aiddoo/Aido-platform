@@ -35,7 +35,7 @@ export class InMemoryTodoSeriesRepository extends TodoSeriesRepositoryPort {
   async insert(series: TodoSeries): Promise<void> {
     this.store.set(series.id.value, this.#copy(series));
   }
-  async update(series: TodoSeries): Promise<void> {
+  async save(series: TodoSeries): Promise<void> {
     this.store.set(series.id.value, this.#copy(series));
   }
   async lockFamilyIds(
@@ -54,7 +54,7 @@ export class InMemoryTodoSeriesRepository extends TodoSeriesRepositoryPort {
         (segment) =>
           segment.userId.value === series.userId.value &&
           segment.originSeriesId.value === series.originSeriesId.value &&
-          segment.startDate >= series.startDate &&
+          Temporal.PlainDate.compare(segment.startDate, series.startDate) >= 0 &&
           segment.id.value !== series.id.value,
       )
       .map((segment) => this.#copy(segment));
@@ -66,12 +66,12 @@ export class InMemoryTodoSeriesRepository extends TodoSeriesRepositoryPort {
   }
   async countActiveByUserId(userId: UserId): Promise<number> {
     return [...this.store.values()].filter(
-      (series) => series.userId.equals(userId) && series.isActive,
+      (series) => series.userId.equals(userId) && series.isActive(),
     ).length;
   }
   async existsActiveByUserId(userId: UserId): Promise<boolean> {
     return [...this.store.values()].some(
-      (series) => series.userId.equals(userId) && series.isActive,
+      (series) => series.userId.equals(userId) && series.isActive(),
     );
   }
   async findDueBatch(query: DueTodoSeriesQuery): Promise<readonly TodoSeriesRef[]> {
@@ -80,24 +80,28 @@ export class InMemoryTodoSeriesRepository extends TodoSeriesRepositoryPort {
         const next = series.nextOccurrenceDate;
         return (
           next !== null &&
-          next <= query.through &&
+          Temporal.PlainDate.compare(next, query.through) <= 0 &&
           (query.afterId === null || series.id.value > query.afterId.value)
         );
       })
-      .map((series) => ({
-        id: series.id.value,
-        userId: series.userId.value,
-      }))
-      .sort((left, right) => left.id.localeCompare(right.id))
+      .map((series) => ({ id: series.id, userId: series.userId }))
+      .sort((left, right) => left.id.value.localeCompare(right.id.value))
       .slice(0, query.limit);
   }
-  async findIdsBehind(userId: UserId, through: string): Promise<readonly string[]> {
+  async findIdsBehind(
+    userId: UserId,
+    through: Temporal.PlainDate,
+  ): Promise<readonly TodoSeriesId[]> {
     return [...this.store.values()]
       .filter((series) => {
         const next = series.nextOccurrenceDate;
-        return series.userId.equals(userId) && next !== null && next <= through;
+        return (
+          series.userId.equals(userId) &&
+          next !== null &&
+          Temporal.PlainDate.compare(next, through) <= 0
+        );
       })
-      .map((series) => series.id.value);
+      .map((series) => series.id);
   }
   #copy(series: TodoSeries): TodoSeries {
     return TodoSeries.reconstitute(series.toPrimitives());

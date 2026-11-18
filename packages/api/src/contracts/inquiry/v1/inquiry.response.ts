@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const createInquiryResponseSchema = z
   .object({
-    message: z.string().describe("처리 결과 메시지"),
+    message: z.string().meta({ description: "처리 결과 메시지" }),
   })
   .meta({
     example: {

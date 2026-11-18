@@ -1,7 +1,7 @@
 {
   "mypage": {
     "empty": {
-      "title": "메뉴를 골라 주세요",
+      "title": "메뉴를 골라주세요",
       "description": "고른 메뉴가 여기에 보여요"
     },
     "header": "내 정보",
@@ -35,7 +35,7 @@
   "withdraw": {
     "action": "탈퇴하기",
     "confirmTitle": "회원 탈퇴",
-    "confirmDescription": "탈퇴 후 30일 이내에 복구할 수 있어요.\n정말 탈퇴하시겠어요?",
+    "confirmDescription": "탈퇴 후 {{days}}일 이내에 복구할 수 있어요.\n정말 탈퇴하시겠어요?",
     "confirmAction": "탈퇴하기"
   },
   "profile": {

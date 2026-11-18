@@ -4,19 +4,20 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { and, count, eq, gte, isNotNull, lt } from "drizzle-orm";
 
-import type { AggregateParams } from "#api/modules/ai-assistance/reports/domain/ai-report.constants";
-import { assembleAggregatedData } from "#api/modules/ai-assistance/reports/domain/report-aggregation.domain-service";
-import { DrizzleTodoStatsReader } from "#api/modules/ai-assistance/reports/infrastructure/persistence/drizzle-todo-stats.reader";
+import type { AggregateParams } from "#api/modules/ai-assistance/ai-reports/domain/ai-reports.constants";
+import { assembleAggregatedData } from "#api/modules/ai-assistance/ai-reports/domain/report-aggregation.domain-service";
+import { DrizzleTodoStatsReader } from "#api/modules/ai-assistance/ai-reports/infrastructure/persistence/drizzle-todo-stats.reader";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import { todo, todoCategory, user as userTable } from "#api/platform/database/schema/index";
 import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 import { plainDateFromDate, plainDateToDate } from "#api/shared/domain/time/plain-date";
-import { nowInstant, wallClockInstant } from "#test/fixtures/clock.fixture";
+import { nowInstant, wallClockInstant } from "#test/fixtures/platform/clock.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase } from "#test/setup/test-database";
 
 /** 수동 측정 전용. 일반 unit/integration/E2E와 CI에는 포함하지 않는다. */
 it("같은 PostgreSQL·pool·데이터에서 기존 8쿼리와 준비된 ORM 집계 5쿼리를 교차 측정한다", async () => {
+  // Given
   let module: TestingModule | undefined;
   let recordedStatements: number | undefined;
   const onStatement = () => {
@@ -210,13 +211,17 @@ it("같은 PostgreSQL·pool·데이터에서 기존 8쿼리와 준비된 ORM 집
         prevEndDate: instantToDate(wallClockInstant("2026-02-23", "00:00", "Asia/Seoul")),
         timezone: "Asia/Seoul",
       };
+
+      // When
       const legacy = await baseline(params);
       const current = await reader.fetchAggregationInputs(params);
-      expect(
-        assembleAggregatedData(current, params.startDate, params.endDate, params.timezone, "기타"),
-      ).toEqual(
-        assembleAggregatedData(legacy, params.startDate, params.endDate, params.timezone, "기타"),
+
+      // Then
+      expect(assembleAggregatedData(current, params, "기타")).toEqual(
+        assembleAggregatedData(legacy, params, "기타"),
       );
+
+      // When
       const beforeRounds: Awaited<ReturnType<typeof measure>>[] = [];
       const afterRounds: Awaited<ReturnType<typeof measure>>[] = [];
       for (let warmup = 0; warmup < 5; warmup++) {
@@ -225,8 +230,11 @@ it("같은 PostgreSQL·pool·데이터에서 기존 8쿼리와 준비된 ORM 집
       }
       const beforeStatements = await countStatements(() => baseline(params));
       const afterStatements = await countStatements(() => reader.fetchAggregationInputs(params));
+
+      // Then
       expect(beforeStatements).toBe(8);
       expect(afterStatements).toBe(5);
+
       // 실행 순서와 공유 프로세스의 GC 영향을 줄이도록 6회 교차 측정한다.
       // RSS는 seed와 두 측정이 공유하는 프로세스 값이므로 특정 조회의 사용량으로 표시하지 않는다.
       let sharedPeakRssMiB = process.memoryUsage().rss / 1024 / 1024;

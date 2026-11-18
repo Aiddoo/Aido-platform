@@ -1,10 +1,10 @@
 import { GRANTABLE_FEATURE_KEYS, type GrantableFeature } from "@aido/api/vocabulary";
 
-import { FeatureGrantRepositoryPort } from "#api/modules/access/entitlements/application/ports/feature-grant.repository.port";
-import type {
+import { FeatureGrantRepositoryPort } from "#api/modules/access/feature-grants/application/ports/feature-grant.repository.port";
+import {
   FeatureGrant,
-  FeatureGrantPrimitives,
-} from "#api/modules/access/entitlements/domain/feature-grant.aggregate";
+  type FeatureGrantPrimitives,
+} from "#api/modules/access/feature-grants/domain/feature-grant.aggregate";
 import type { FeatureGrants } from "#api/modules/access/shared/domain/access.constants";
 
 export class InMemoryFeatureGrantRepository extends FeatureGrantRepositoryPort {
@@ -15,13 +15,14 @@ export class InMemoryFeatureGrantRepository extends FeatureGrantRepositoryPort {
     return [...this.#grants.values()];
   }
 
-  async existsBySourceKey(sourceKey: string): Promise<boolean> {
-    return this.all.some((stored) => stored.sourceKey === sourceKey);
+  async findBySourceKey(sourceKey: string): Promise<FeatureGrant | null> {
+    const stored = this.all.find((grant) => grant.sourceKey === sourceKey);
+    return stored == null ? null : FeatureGrant.reconstitute(stored);
   }
 
   async save(grant: FeatureGrant): Promise<void> {
     const primitives = grant.toPrimitives();
-    if (await this.existsBySourceKey(primitives.sourceKey)) {
+    if ((await this.findBySourceKey(primitives.sourceKey)) != null) {
       return;
     }
     this.#grants.set(primitives.id, primitives);

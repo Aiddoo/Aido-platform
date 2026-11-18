@@ -47,8 +47,11 @@ describe("SigningKeyRing", () => {
     // Given
     const configured = `k1:short`;
 
-    // When / Then
-    expect(() => SigningKeyRing.fromEnv({ configured, legacySecret })).toThrow();
+    // When
+    const createRing = () => SigningKeyRing.fromEnv({ configured, legacySecret });
+
+    // Then
+    expect(createRing).toThrow();
   });
 });
 

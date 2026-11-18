@@ -76,12 +76,12 @@ export class Memo extends AggregateRoot<MemoId, MemoProps> {
     return this.props.content;
   }
 
-  get isPinned(): boolean {
-    return this.props.isPinned;
-  }
-
   get sortOrder(): number {
     return this.props.sortOrder;
+  }
+
+  isPinned(): boolean {
+    return this.props.isPinned;
   }
 
   rewrite(content: MemoContent, now: Temporal.Instant): boolean {

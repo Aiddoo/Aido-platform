@@ -9,7 +9,7 @@ import {
   nudgeInteractionsResponseSchema,
   nudgeThanksPreviewResponseSchema,
   sendNudgeThanksResponseSchema,
-} from "@aido/api";
+} from "@aido/api/contracts/nudge/v1";
 import type { z } from "zod";
 
 export const GetNudgeInteractionsQueryDto = getNudgeInteractionsQuerySchema.meta({

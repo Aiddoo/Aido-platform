@@ -3,6 +3,7 @@ import {
   WEATHER_ALERT_SEVERITIES,
   WEATHER_BRIEFING_RULES,
   WEATHER_CONDITIONS,
+  WEATHER_DAY_PARTS,
   WEATHER_FROZEN_PRECIPITATION_TYPES,
   WEATHER_MOON_PHASES,
   WEATHER_NEXT_HOUR_CONDITIONS,
@@ -10,12 +11,20 @@ import {
   WEATHER_PRESSURE_TRENDS,
   WEATHER_PROVIDERS,
   WEATHER_RESCHEDULE_REASONS,
+  WEATHER_WET_HAZARDS,
   type WeatherPrecipitationType,
 } from '@aido/api/vocabulary';
-import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
+import { DAY_MS, HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
 import { dateKeySchema, type DateKey } from '@src/shared/date/date-key';
-import { type Instant, fromEpochMs, instantSchema, toEpochMs } from '@src/shared/date/instant';
+import {
+  type Instant,
+  diffMs,
+  fromEpochMs,
+  instantSchema,
+  toEpochMs,
+} from '@src/shared/date/instant';
 import { toDateKey } from '@src/shared/date/zoned';
+import { clamp } from 'es-toolkit';
 import { z } from 'zod';
 
 const weatherConditionSchema = z.enum(WEATHER_CONDITIONS);
@@ -130,7 +139,7 @@ const weatherAlertSchema = z.object({
 });
 export type WeatherAlert = z.infer<typeof weatherAlertSchema>;
 
-const airQualitySchema = z.object({
+export const airQualitySchema = z.object({
   pm10: z.number().nullable(),
   pm25: z.number().nullable(),
   source: z.enum(WEATHER_AIR_QUALITY_SOURCES),
@@ -165,6 +174,39 @@ const weatherReportBriefingSchema = z.object({
 });
 export type WeatherReportBriefing = z.infer<typeof weatherReportBriefingSchema>;
 
+const hourWindowSchema = z.object({ startsAt: instantSchema, endsAt: instantSchema });
+export type HourWindow = z.infer<typeof hourWindowSchema>;
+
+/** 브리핑 카드가 알릴 것. 날씨 알림과 같은 서버 판단이고 앱은 그대로 그린다 */
+const weatherHeadlineSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('todoWet'),
+    hazard: z.enum(WEATHER_WET_HAZARDS),
+    precipitationChance: z.number(),
+    window: hourWindowSchema,
+  }),
+  z.object({
+    kind: z.literal('todoHot'),
+    peakApparentTemperature: z.number(),
+    window: hourWindowSchema,
+  }),
+  z.object({ kind: z.literal('wetLater'), startsAt: instantSchema, isSnow: z.boolean() }),
+  z.object({
+    kind: z.literal('wetTomorrow'),
+    dayPart: z.enum(WEATHER_DAY_PARTS).nullable(),
+    isSnow: z.boolean(),
+  }),
+  z.object({ kind: z.literal('clear'), window: hourWindowSchema }),
+  z.object({
+    kind: z.literal('tomorrow'),
+    temperatureMin: z.number(),
+    temperatureMax: z.number(),
+    isChilly: z.boolean(),
+  }),
+  z.object({ kind: z.literal('calm') }),
+]);
+export type WeatherHeadline = z.infer<typeof weatherHeadlineSchema>;
+
 export const weatherReportSchema = z.object({
   location: registeredLocationSchema,
   current: currentWeatherSchema,
@@ -175,13 +217,18 @@ export const weatherReportSchema = z.object({
   airQuality: airQualitySchema.nullable(),
   attribution: attributionSchema,
   fetchedAt: instantSchema,
+  // 서버가 이 리포트를 공급자에서 다시 받기 시작하는 순간. 공급자 장애로 마지막 리포트를 주면 null이다
+  expiresAt: instantSchema.nullable(),
   // 서버가 오늘 할 일을 읽지 못하면 null이다
   briefing: weatherReportBriefingSchema.nullable(),
+  // 서버가 판단하지 못했거나 이 앱이 모르는 종류면 null이다
+  headline: weatherHeadlineSchema.nullable(),
 });
 export type WeatherReport = z.infer<typeof weatherReportSchema>;
 
 const NEXT_HOUR_RANGE_MS = HOUR_MS;
-const STALE_AFTER_MS = 30 * MINUTE_MS;
+// 기기 시계가 서버보다 조금 빨라 만료 직후 같은 리포트를 한 번 더 받아도 1분 뒤 다시 받으므로 그 사이는 안내하지 않는다
+const STALE_NOTICE_GRACE_MS = 2 * MINUTE_MS;
 const NOWCAST_EXPIRES_AFTER_MS = 6 * HOUR_MS;
 /** 시간별 예보에서 이 확률 이상이면 비가 오는 시간으로 본다. 서버 날씨 알림과 같은 기준이다. */
 const WET_HOUR_CHANCE = WEATHER_BRIEFING_RULES.WET_HOUR_CHANCE;
@@ -339,8 +386,41 @@ function findHourlyPrecipitationOutlook(
   return { hour, isOngoing: toEpochMs(hour.startsAt) <= toEpochMs(now) };
 }
 
-export function isReportStale(report: Pick<WeatherReport, 'fetchedAt'>, now: Instant): boolean {
-  return toEpochMs(now) - toEpochMs(report.fetchedAt) > STALE_AFTER_MS;
+/** 서버가 같은 리포트를 주는 남은 시간. 공급자 장애로 받은 마지막 리포트와 이미 지난 만료는 0이다 */
+export function getReportFreshForMs(report: Pick<WeatherReport, 'expiresAt'>, at: Instant): number {
+  return report.expiresAt == null ? 0 : Math.max(0, diffMs(report.expiresAt, at));
+}
+
+/** 만료가 지난 리포트는 이만큼 뒤에 다시 묻는다. 서버도 공급자 실패를 1분 기억한다 */
+const REPORT_MIN_REFRESH_MS = MINUTE_MS;
+/** 공급자 장애로 받은 마지막 리포트(expiresAt 없음)는 모든 기기가 1분마다 묻지 않게 더 길게 기다린다 */
+const REPORT_NO_EXPIRY_REFRESH_MS = 5 * MINUTE_MS;
+
+/** 만료 순간까지 기다리되 위·아래 한도를 둔다. 상한은 먼 만료가 타이머 최대치(2^31-1ms)를 넘지 않게 한다 */
+function getReportRefreshMs(report: Pick<WeatherReport, 'expiresAt'>, at: Instant): number {
+  const floorMs = report.expiresAt == null ? REPORT_NO_EXPIRY_REFRESH_MS : REPORT_MIN_REFRESH_MS;
+  return clamp(getReportFreshForMs(report, at), floorMs, DAY_MS);
+}
+
+/** 서버가 리포트를 다시 받기 시작하는 순간(expiresAt)까지는 같은 리포트라 묻지 않는다. 받은 때부터 센다. 리포트가 없으면 0이다 */
+export function getReportStaleTimeMs(
+  report: Pick<WeatherReport, 'expiresAt'> | undefined,
+  dataUpdatedAt: Instant,
+): number {
+  return report == null ? 0 : getReportRefreshMs(report, dataUpdatedAt);
+}
+
+/** 화면을 켜 둔 동안에도 서버가 새 리포트를 받기 시작하는 순간에 다시 받는다. 리포트가 없으면 간격이 없다 */
+export function getReportRefetchIntervalMs(
+  report: Pick<WeatherReport, 'expiresAt'> | undefined,
+  now: Instant,
+): number | false {
+  return report == null ? false : getReportRefreshMs(report, now);
+}
+
+/** 서버가 새 리포트를 받기 시작한 뒤에도 새것을 받지 못했다. 공급자 장애로 받은 마지막 리포트는 처음부터 오래된 정보다 */
+export function isReportStale(report: Pick<WeatherReport, 'expiresAt'>, now: Instant): boolean {
+  return report.expiresAt == null || diffMs(now, report.expiresAt) > STALE_NOTICE_GRACE_MS;
 }
 
 /** 6시간 넘게 갱신되지 않은 데이터로는 곧 올 비나 할 일 브리핑을 안내하지 않는다. */

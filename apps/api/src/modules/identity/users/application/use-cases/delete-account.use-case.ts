@@ -1,26 +1,27 @@
-import { ACCOUNT_DELETION, REVOKE_REASON, SECURITY_EVENT } from "@aido/api/vocabulary";
+import { ACCOUNT_DELETION } from "@aido/api/vocabulary";
 
+import { REVOKE_REASON } from "#api/modules/identity/sessions/domain/sessions.constants";
+import { SECURITY_EVENT } from "#api/modules/identity/users/domain/users.constants";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { toIsoString } from "#api/shared/domain/time/instant";
 
-import { accountDeleted } from "../../../auth/application/auth.errors.js";
-import { AuthLogEvent } from "../../../auth/application/auth.log-events.js";
-import type { AuthAccountRepositoryPort } from "../../../auth/application/ports/auth-account.repository.port.js";
-import type { AuthCachePort } from "../../../auth/application/ports/auth-collaboration.port.js";
-import type { AuthPasswordHasherPort } from "../../../auth/application/ports/auth-crypto.port.js";
-import type { AuthSecurityLogRepositoryPort } from "../../../auth/application/ports/auth-security-log.repository.port.js";
-import type { AuthSessionRepositoryPort } from "../../../auth/application/ports/auth-session.repository.port.js";
-import type { AuthUserRepositoryPort } from "../../../auth/application/ports/auth-user.repository.port.js";
-import type { SessionPushDeviceReleaserPort } from "../../../auth/application/ports/session-push-device-releaser.port.js";
-import type {
-  DeleteAccountResult,
-  RequestMetadata,
-} from "../../../auth/application/read-models/auth-result.read-model.js";
-import { AUTH_DEFAULTS } from "../../../auth/domain/auth.constants.js";
+import type { LinkedAccountsRepositoryPort } from "../../../linked-accounts/application/ports/linked-accounts.repository.port.js";
+import type { PasswordHasherPort } from "../../../linked-accounts/application/ports/password-hasher.port.js";
+import type { SessionCachePort } from "../../../sessions/application/ports/session-cache.port.js";
+import type { SessionPushDeviceReleaserPort } from "../../../sessions/application/ports/session-push-device-releaser.port.js";
+import type { SessionRepositoryPort } from "../../../sessions/application/ports/session.repository.port.js";
+import type { RequestMetadata } from "../../../shared/domain/request-metadata.constants.js";
+import { REQUEST_ORIGIN_DEFAULTS } from "../../../shared/domain/request-metadata.constants.js";
+import type { SecurityLogRepositoryPort } from "../ports/security-log.repository.port.js";
+import type { UserProfileInvalidatorPort } from "../ports/user-profile-invalidator.port.js";
+import type { UserRepositoryPort } from "../ports/user.repository.port.js";
+import type { AccountDeletionReadModel } from "../read-models/user-account.read-model.js";
+import { accountDeleted } from "../users.errors.js";
 import { deletionPasswordRequired, invalidCredentials, userNotFound } from "../users.errors.js";
+import { UserLogEvent } from "../users.log-events.js";
 
 export interface DeleteAccountCommand {
   readonly userId: string;
@@ -30,13 +31,14 @@ export interface DeleteAccountCommand {
 }
 
 interface DeleteAccountDependencies {
-  readonly userRepository: Pick<AuthUserRepositoryPort, "findById" | "saveAccountStatus">;
-  readonly accountRepository: Pick<AuthAccountRepositoryPort, "findAllByUserId">;
-  readonly sessionRepository: Pick<AuthSessionRepositoryPort, "revokeAllByUserId">;
-  readonly passwordService: Pick<AuthPasswordHasherPort, "verify">;
-  readonly securityLogRepository: Pick<AuthSecurityLogRepositoryPort, "create">;
+  readonly userRepository: Pick<UserRepositoryPort, "findById" | "save">;
+  readonly accountRepository: Pick<LinkedAccountsRepositoryPort, "findByUserId">;
+  readonly sessionRepository: Pick<SessionRepositoryPort, "revokeAllByUserId">;
+  readonly passwordService: Pick<PasswordHasherPort, "verify">;
+  readonly securityLogRepository: Pick<SecurityLogRepositoryPort, "create">;
   readonly unitOfWork: UnitOfWorkPort;
-  readonly cacheService: Pick<AuthCachePort, "invalidateSession" | "invalidateUserProfile">;
+  readonly cacheService: Pick<SessionCachePort, "invalidateSession">;
+  readonly userProfileCache: Pick<UserProfileInvalidatorPort, "invalidateUserProfile">;
   readonly pushDevices: Pick<SessionPushDeviceReleaserPort, "releaseSessions">;
   readonly clock: ClockPort;
   readonly logger: ApplicationLoggerPort;
@@ -49,29 +51,26 @@ export class DeleteAccountUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: DeleteAccountCommand): Promise<DeleteAccountResult> {
+  async execute(input: DeleteAccountCommand): Promise<AccountDeletionReadModel> {
     const userId = UserId.reconstitute(input.userId);
     const user = await this.#dependencies.userRepository.findById(userId);
     if (user == null) {
       throw userNotFound(input.userId);
     }
-    if (user.isDeleted) {
+    if (user.isDeleted()) {
       throw accountDeleted(user.id.value);
     }
 
-    const accounts = await this.#dependencies.accountRepository.findAllByUserId(userId);
-    const credentialAccount = accounts.find((account) => account.provider === "CREDENTIAL");
-    if (credentialAccount != null) {
+    const accounts = await this.#dependencies.accountRepository.findByUserId(userId);
+    if (accounts?.hasCredentialAccount()) {
       if (!input.password) {
         throw deletionPasswordRequired();
       }
-      if (!credentialAccount.password) {
+      const passwordHash = accounts.passwordHash;
+      if (passwordHash == null || !accounts.hasPassword()) {
         throw invalidCredentials();
       }
-      const isValid = await this.#dependencies.passwordService.verify(
-        credentialAccount.password,
-        input.password,
-      );
+      const isValid = await this.#dependencies.passwordService.verify(passwordHash, input.password);
       if (!isValid) {
         throw invalidCredentials();
       }
@@ -81,7 +80,7 @@ export class DeleteAccountUseCase {
     const identityUser = user;
     identityUser.requestDeletion(deletedAt);
     const revokedSessionIds = await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.userRepository.saveAccountStatus(identityUser);
+      await this.#dependencies.userRepository.save(identityUser);
       const revokedSessionIds = await this.#dependencies.sessionRepository.revokeAllByUserId({
         userId: identityUser.id,
         reason: REVOKE_REASON.ACCOUNT_DELETION,
@@ -90,12 +89,12 @@ export class DeleteAccountUseCase {
       await this.#dependencies.securityLogRepository.create({
         userId: identityUser.id,
         event: SECURITY_EVENT.ACCOUNT_DELETION_REQUESTED,
-        ipAddress: input.metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP,
-        userAgent: input.metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT,
+        ipAddress: input.metadata?.ip ?? REQUEST_ORIGIN_DEFAULTS.UNKNOWN_IP,
+        userAgent: input.metadata?.userAgent ?? REQUEST_ORIGIN_DEFAULTS.UNKNOWN_USER_AGENT,
         metadata: {
           reason: input.reason ?? null,
           gracePeriodDays: ACCOUNT_DELETION.GRACE_PERIOD_DAYS,
-          providers: accounts.map((account) => account.provider),
+          providers: (accounts?.accounts ?? []).map((account) => account.provider),
         },
       });
       return revokedSessionIds;
@@ -107,9 +106,9 @@ export class DeleteAccountUseCase {
       ),
     );
     await this.#dependencies.pushDevices.releaseSessions(revokedSessionIds);
-    await this.#dependencies.cacheService.invalidateUserProfile(identityUser.id);
+    await this.#dependencies.userProfileCache.invalidateUserProfile(identityUser.id);
     this.#dependencies.logger.log({
-      event: AuthLogEvent.ACCOUNT_DELETION_REQUESTED,
+      event: UserLogEvent.ACCOUNT_DELETION_REQUESTED,
       userId: identityUser.id.value,
     });
     return {

@@ -12,24 +12,24 @@ import {
 } from "../../../shared/domain/todo-calendar.domain-service.js";
 import {
   type TimedTodoQuery,
-  type TimedTodoView,
   TodoScheduleReaderPort,
 } from "../../application/ports/todo-schedule.reader.port.js";
+import type { TimedTodoReadModel } from "../../application/read-models/timed-todo.read-model.js";
 
 @Injectable()
 export class DrizzleTodoScheduleReader implements TodoScheduleReaderPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
-  async listPendingTimedTodos(query: TimedTodoQuery): Promise<TimedTodoView[]> {
+  async listPendingTimedTodos(query: TimedTodoQuery): Promise<TimedTodoReadModel[]> {
     const { userIds, date, timezone, from, until } = query;
     if (userIds.length === 0) {
       return [];
     }
-    const rows = await this.#txHost.tx
+    const rows = await this.#transactionHost.tx
       .select({
         id: todo.id,
         userId: todo.userId,

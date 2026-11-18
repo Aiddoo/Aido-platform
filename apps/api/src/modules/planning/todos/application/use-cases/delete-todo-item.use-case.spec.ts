@@ -4,24 +4,20 @@ import { vi } from "vitest";
 import {
   createPlanningTodoFixture,
   createPlanningTodo,
-  PLANNING_TIME,
   snapshotTodoRecord,
 } from "#test/fixtures/planning/planning-todos.fixture";
 
-import { TodoId } from "../../../shared/domain/todo-id.vo.js";
+import { TodoId } from "../../domain/todo-id.vo.js";
 import { DeleteTodoItemUseCase } from "./delete-todo-item.use-case.js";
 
 describe("하위 항목 삭제", () => {
   let fixture: ReturnType<typeof createPlanningTodoFixture>;
   let useCase: DeleteTodoItemUseCase;
   beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(PLANNING_TIME);
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
     useCase = new DeleteTodoItemUseCase(fixture);
   });
   afterEach(() => {
-    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -41,13 +37,14 @@ describe("하위 항목 삭제", () => {
     // Given
     await fixture.todoRepository.seedItem(1, { title: "기존 항목", sortOrder: 0 });
     const before = snapshotTodoRecord(fixture.records.get(1));
-    // When / Then
-    await expect(
-      useCase.execute({ todoId: 1, itemId: 999, userId: fixture.userId }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0822 });
-    await expect(
-      useCase.execute({ todoId: 1, itemId: 1, userId: "other-user" }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
+    // When
+    const missingItemResult = useCase.execute({ todoId: 1, itemId: 999, userId: fixture.userId });
+    // Then
+    await expect(missingItemResult).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0822 });
+    // When
+    const otherUserResult = useCase.execute({ todoId: 1, itemId: 1, userId: "other-user" });
+    // Then
+    await expect(otherUserResult).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
     expect(fixture.records.get(1)).toEqual(before);
   });
 });

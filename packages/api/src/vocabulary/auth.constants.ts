@@ -1,3 +1,6 @@
+/** 같은 refresh 토큰이 이 시간 안에 다시 오면 서버는 재사용 공격이 아니라 응답을 못 받은 앱의 재시도로 본다. 앱 갱신 요청 시간 제한은 이보다 짧아야 한다 */
+export const REFRESH_TOKEN_REUSE_GRACE_MS = 10_000;
+
 // 비밀번호에 쓸 수 있는 특수문자의 원본이다. PATTERN과 판정이 모두 여기서 만들어진다
 export const PASSWORD_ALLOWED_SYMBOLS = "@$!%*#?&";
 
@@ -26,14 +29,6 @@ function escapeCharacterClass(characters: string): string {
   return characters.replace(/[\\\]^-]/g, "\\$&");
 }
 
-// Argon2id 해싱 설정 (OWASP 권장: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html)
-export const ARGON2_CONFIG = {
-  MEMORY_COST: 65_536, // 64MB
-  TIME_COST: 3,
-  PARALLELISM: 4,
-  HASH_LENGTH: 32,
-} as const;
-
 export const VERIFICATION_CODE = {
   LENGTH: 6,
   EXPIRY_MINUTES: 10,
@@ -41,21 +36,10 @@ export const VERIFICATION_CODE = {
   RESEND_COOLDOWN_SECONDS: 60,
 } as const;
 
-export const LOGIN_ATTEMPT = {
-  MAX_FAILURES: 5,
-  LOCKOUT_MINUTES: 15,
-} as const;
-
-export const JWT_CONFIG = {
-  ACCESS_EXPIRES_IN: "15m",
-  REFRESH_EXPIRES_IN: "7d",
-} as const;
-
 export const DEVICE_TYPES = ["IOS", "ANDROID", "WEB"] as const;
 export type DeviceType = (typeof DEVICE_TYPES)[number];
 
 export const USER_STATUS = ["ACTIVE", "LOCKED", "SUSPENDED", "PENDING_VERIFY"] as const;
-export type UserStatus = (typeof USER_STATUS)[number];
 
 export const USER_ROLE = {
   USER: "USER",
@@ -63,55 +47,7 @@ export const USER_ROLE = {
 } as const;
 export type UserRole = (typeof USER_ROLE)[keyof typeof USER_ROLE];
 
-export const REVOKE_REASON = {
-  USER_LOGOUT: "USER_LOGOUT",
-  USER_LOGOUT_ALL: "USER_LOGOUT_ALL",
-  USER_REVOKE: "USER_REVOKE",
-  TOKEN_REUSE_DETECTED: "TOKEN_REUSE_DETECTED",
-  PASSWORD_RESET: "PASSWORD_RESET",
-  PASSWORD_CHANGED: "PASSWORD_CHANGED",
-  ACCOUNT_DELETION: "ACCOUNT_DELETION",
-} as const;
-
-export type RevokeReason = (typeof REVOKE_REASON)[keyof typeof REVOKE_REASON];
-
-export const SECURITY_EVENT = {
-  REGISTRATION: "REGISTRATION",
-  LOGIN_SUCCESS: "LOGIN_SUCCESS",
-  LOGIN_FAILURE: "LOGIN_FAILURE",
-  LOGOUT: "LOGOUT",
-  TOKEN_REFRESH: "TOKEN_REFRESH",
-  TOKEN_REVOKED: "TOKEN_REVOKED",
-  PASSWORD_CHANGED: "PASSWORD_CHANGED",
-  PASSWORD_RESET_REQUESTED: "PASSWORD_RESET_REQUESTED",
-  EMAIL_VERIFIED: "EMAIL_VERIFIED",
-  TWO_FACTOR_ENABLED: "TWO_FACTOR_ENABLED",
-  TWO_FACTOR_DISABLED: "TWO_FACTOR_DISABLED",
-  SUSPICIOUS_ACTIVITY: "SUSPICIOUS_ACTIVITY",
-  ACCOUNT_LOCKED: "ACCOUNT_LOCKED",
-  ACCOUNT_UNLOCKED: "ACCOUNT_UNLOCKED",
-  SESSION_REVOKED: "SESSION_REVOKED",
-  SESSION_REVOKED_ALL: "SESSION_REVOKED_ALL",
-  OAUTH_LINKED: "OAUTH_LINKED",
-  OAUTH_UNLINKED: "OAUTH_UNLINKED",
-  OAUTH_AUTO_LINKED: "OAUTH_AUTO_LINKED",
-  OAUTH_LINK_REQUIRED: "OAUTH_LINK_REQUIRED",
-  ACCOUNT_DELETION_REQUESTED: "ACCOUNT_DELETION_REQUESTED",
-  ACCOUNT_HARD_DELETED: "ACCOUNT_HARD_DELETED",
-  ACCOUNT_RESTORED: "ACCOUNT_RESTORED",
-  PASSWORD_SETUP: "PASSWORD_SETUP",
-} as const;
-
-export type SecurityEvent = (typeof SECURITY_EVENT)[keyof typeof SECURITY_EVENT];
-
-export const VERIFICATION_TYPE = {
-  EMAIL_VERIFY: "EMAIL_VERIFY",
-  PASSWORD_RESET: "PASSWORD_RESET",
-  PASSWORD_SETUP: "PASSWORD_SETUP",
-} as const;
-
-export type VerificationTypeValue = (typeof VERIFICATION_TYPE)[keyof typeof VERIFICATION_TYPE];
-
+/** 서버가 복구를 받는 기간이고 앱 탈퇴 안내 문구가 같은 날 수를 보여 준다 */
 export const ACCOUNT_DELETION = {
   GRACE_PERIOD_DAYS: 30,
 } as const;
@@ -127,8 +63,6 @@ export const PROFILE_ICON_KEYS = [
   "cream_cat",
   "tuxedo_cat",
 ] as const;
-
-export type ProfileIconKey = (typeof PROFILE_ICON_KEYS)[number];
 
 export const OAUTH_PROVIDERS = ["APPLE", "GOOGLE", "KAKAO", "NAVER"] as const;
 

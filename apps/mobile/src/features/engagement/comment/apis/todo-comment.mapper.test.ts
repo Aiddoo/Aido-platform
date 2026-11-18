@@ -1,8 +1,8 @@
 import {
-  type TodoCommentV2,
+  type TodoComment as TodoCommentDto,
+  todoCommentSchema as todoCommentDtoSchema,
   todoCommentThreadsResponseSchema,
-  todoCommentV2Schema,
-} from '@aido/api';
+} from '@aido/api/contracts/todo-comment/v2';
 
 import { todoCommentSchema, todoCommentThreadPageSchema } from '../domains/todo-comment.model';
 import { writtenTodoCommentMutationResponseSchema } from '../schemas/todo-comment-response.schema';
@@ -17,8 +17,8 @@ const HEAD_ID = 'cm12345678901234567890123';
 const REPLY_ID = 'cm22345678901234567890123';
 
 /** 계약 스키마로 검증해 서버가 실제로 보낼 수 있는 모양만 fixture로 쓴다 */
-function createV2Dto(overrides: Partial<TodoCommentV2> = {}): TodoCommentV2 {
-  return todoCommentV2Schema.parse({
+function createTodoCommentDto(overrides: Partial<TodoCommentDto> = {}): TodoCommentDto {
+  return todoCommentDtoSchema.parse({
     id: HEAD_ID,
     todoId: 42,
     threadCommentId: null,
@@ -56,8 +56,8 @@ describe('todo comment mapper', () => {
     const dto = todoCommentThreadsResponseSchema.parse({
       items: [
         {
-          comment: createV2Dto(),
-          previewReply: createV2Dto({
+          comment: createTodoCommentDto(),
+          previewReply: createTodoCommentDto({
             id: REPLY_ID,
             threadCommentId: HEAD_ID,
             replyCount: 0,
@@ -91,7 +91,7 @@ describe('todo comment mapper', () => {
     const dto = todoCommentThreadsResponseSchema.parse({
       items: [
         {
-          comment: createV2Dto(),
+          comment: createTodoCommentDto(),
           previewReply: null,
           replySummary: { totalCount: 0, hiddenCount: 0, participantAuthors: [] },
         },

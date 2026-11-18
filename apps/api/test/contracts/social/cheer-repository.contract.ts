@@ -30,8 +30,8 @@ async function saveCheer(
   return cheer;
 }
 
-function idsOf(cheers: readonly { readonly id: number }[]): number[] {
-  return cheers.map((cheer) => cheer.id);
+function idsOf(page: { readonly items: readonly { readonly id: number }[] }): number[] {
+  return page.items.map((cheer) => cheer.id);
 }
 
 export function describeCheerRepositoryContract(
@@ -155,12 +155,12 @@ export function describeCheerRepositoryContract(
       const firstPage = await reader.listReceived({
         userId: RECEIVER_ID,
         afterCheerId: null,
-        limit: 2,
+        size: 2,
       });
       const nextPage = await reader.listReceived({
         userId: RECEIVER_ID,
         afterCheerId: tiedOlder.id,
-        limit: 5,
+        size: 5,
       });
       const counts = {
         received: await reader.countReceived(RECEIVER_ID),
@@ -170,7 +170,7 @@ export function describeCheerRepositoryContract(
       // Then
       expect(idsOf(firstPage)).toEqual([tiedNewer.id.value, tiedOlder.id.value]);
       expect(idsOf(nextPage)).toEqual([oldest.id.value]);
-      expect(firstPage[0]).toMatchObject({
+      expect(firstPage.items[0]).toMatchObject({
         senderId: CHEER_FIXTURE_SENDER_ID,
         receiverId: CHEER_FIXTURE_RECEIVER_ID,
         sender: { id: CHEER_FIXTURE_SENDER_ID },
@@ -193,18 +193,18 @@ export function describeCheerRepositoryContract(
       });
 
       // When
-      const sent = await reader.listSent({ userId: SENDER_ID, afterCheerId: null, limit: 5 });
+      const sent = await reader.listSent({ userId: SENDER_ID, afterCheerId: null, size: 5 });
       const afterMissing = await reader.listSent({
         userId: SENDER_ID,
         afterCheerId: await repository.nextId(),
-        limit: 5,
+        size: 5,
       });
 
       // Then
       expect(idsOf(sent)).toEqual([second.id.value, first.id.value]);
       expect(await reader.countSent(SENDER_ID)).toBe(2);
       expect(await reader.countSent(OTHER_USER_ID)).toBe(1);
-      expect(afterMissing).toEqual([]);
+      expect(afterMissing.items).toEqual([]);
     });
   });
 }

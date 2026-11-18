@@ -1,7 +1,77 @@
+import { addDaysToDateKey } from '@src/shared/date/date-key';
 import { createDateKey } from '@src/testing/date-key';
+import { z } from 'zod';
 
+import dailyCompletionCases from '../../../../../../../packages/api/test/fixtures/daily-completion-cases.json';
 import { createParentTodo } from '../__tests__/sub-todo.fixtures';
 import { DailyCompletionPolicy, type DailyCompletionsResult } from './daily-completion.model';
+
+/**
+ * 서버 tallyDailyCompletions도 같은 표를 읽는다. 앱은 하루짜리 쓰기 뒤 이 계산으로 달력을 고치고 다시 받지 않으므로
+ * 두 계산이 어긋나면 어느 한쪽 테스트가 깨진다
+ */
+const SHARED_DAY_TALLY_CASES = z
+  .object({
+    dayTally: z.array(
+      z.object({
+        name: z.string(),
+        date: z.iso.date(),
+        todos: z.array(
+          z.object({
+            startDate: z.iso.date(),
+            endDate: z.iso.date().nullable(),
+            completed: z.boolean(),
+            categoryColor: z.string(),
+            // 같은 할 일 여러 개(199/200 같은 날)를 한 줄로 적는다
+            count: z.int().positive().default(1),
+          }),
+        ),
+        expected: z
+          .object({
+            totalTodos: z.int(),
+            completedTodos: z.int(),
+            isComplete: z.boolean(),
+            completionRate: z.number(),
+            categoryColors: z.array(z.string()),
+          })
+          .nullable(),
+      }),
+    ),
+  })
+  .parse(dailyCompletionCases).dayTally;
+
+describe('withTodoDailyCompletion — 서버와 같은 하루 집계 표', () => {
+  it.each(SHARED_DAY_TALLY_CASES)('$name', ({ date, todos, expected }) => {
+    // Given
+    const dateKey = createDateKey(date);
+    const empty: DailyCompletionsResult = {
+      completions: [],
+      totalCompleteDays: 0,
+      dateRange: {
+        startDate: addDaysToDateKey(dateKey, -7),
+        endDate: addDaysToDateKey(dateKey, 7),
+      },
+    };
+    const dayTodos = todos
+      .flatMap((todo) => Array.from({ length: todo.count }, () => todo))
+      .map((todo, index) =>
+        createParentTodo({
+          id: index + 1,
+          startDate: createDateKey(todo.startDate),
+          endDate: todo.endDate == null ? null : createDateKey(todo.endDate),
+          completed: todo.completed,
+          category: { id: index + 1, name: `카테고리 ${index + 1}`, color: todo.categoryColor },
+        }),
+      );
+
+    // When
+    const result = DailyCompletionPolicy.withTodoDailyCompletion(empty, dateKey, dayTodos);
+
+    // Then
+    expect(result.completions).toEqual(expected == null ? [] : [{ date, ...expected }]);
+    expect(result.totalCompleteDays).toBe(expected?.isComplete === true ? 1 : 0);
+  });
+});
 
 describe('withTodoDailyCompletion', () => {
   const DATE = createDateKey('2026-11-05');

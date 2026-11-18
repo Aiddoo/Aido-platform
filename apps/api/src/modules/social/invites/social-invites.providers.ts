@@ -1,7 +1,7 @@
 import type { Provider } from "@nestjs/common";
 import type { ConfigType } from "@nestjs/config";
 
-import { InviterProgressReaderPort } from "#api/modules/social/invite-redemptions/social-invite-redemption-queries.public";
+import { InviterProgressReaderPort } from "#api/modules/social/invite-redemptions/social-invite-redemptions.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";

@@ -1,4 +1,4 @@
-import { createTodoSchema } from '@aido/api';
+import { createTodoSchema } from '@aido/api/contracts/todo/v1';
 import { dateKeyFieldSchema } from '@src/shared/date/date-key';
 import { trimmed } from '@src/shared/schemas/trimmed.schema';
 import { z } from 'zod';

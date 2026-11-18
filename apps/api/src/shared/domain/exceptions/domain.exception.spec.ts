@@ -42,7 +42,7 @@ describe("DomainException — 도메인 예외", () => {
   });
 
   it("ErrorCodedException과 Error의 인스턴스이다", () => {
-    // Given & When
+    // When
     const exception = new DomainException(ErrorCode.SYS_0001);
 
     // Then

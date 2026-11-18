@@ -1,12 +1,11 @@
 import { ErrorCode } from "@aido/api/errors";
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
-import { Throttle } from "@nestjs/throttler";
 
 import {
   CurrentUser,
   type CurrentUserPayload,
-} from "#api/modules/identity/identity-auth-http.public";
+} from "#api/modules/identity/sessions/identity-sessions.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
 import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
@@ -21,11 +20,12 @@ import {
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
+import { RateLimit } from "#api/platform/throttle/rate-limits";
 import { THROTTLED_DESCRIPTION } from "#api/platform/throttle/throttle.constants";
-import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
 
 import { GetInvitedFriendsUseCase } from "../../../application/use-cases/get-invited-friends.use-case.js";
 import { RedeemInviteUseCase } from "../../../application/use-cases/redeem-invite.use-case.js";
+import { InviteRedemptionRateLimits } from "../invite-redemptions.rate-limits.js";
 import {
   toInvitedFriendsListResponse,
   toRedeemInviteResponse,
@@ -37,8 +37,6 @@ import {
   RedeemInviteDto,
   RedeemInviteResponseDto,
 } from "./invite-redemption.dto.js";
-
-const INVITE_REDEEM_THROTTLE = { ttl: 60_000, limit: 10 } as const;
 
 // 경로는 초대 코드 slice와 같은 /invites다. me/invitees·:code/redeem은 경로 조각이 둘이라 :code와 겹치지 않는다
 @ApiTags(SWAGGER_TAGS.INVITES)
@@ -82,8 +80,7 @@ export class InviteRedemptionController {
   @Post(":code/redeem")
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
-  @ThrottleByUser()
-  @Throttle({ default: INVITE_REDEEM_THROTTLE })
+  @RateLimit(InviteRedemptionRateLimits.redeem)
   @ApiHeader({
     name: "X-Timezone",
     required: false,

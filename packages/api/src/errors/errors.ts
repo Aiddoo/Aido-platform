@@ -185,6 +185,7 @@ export const ErrorCode = {
   NOTIFICATION_1004: "NOTIFICATION_1004",
   NOTIFICATION_1005: "NOTIFICATION_1005",
   NOTIFICATION_1006: "NOTIFICATION_1006",
+  NOTIFICATION_1007: "NOTIFICATION_1007",
 
   // 콕 찌르기 (NUDGE_1100-1199)
   NUDGE_1101: "NUDGE_1101",
@@ -310,6 +311,9 @@ export const ErrorCode = {
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
+
+/** 콕 답장·감사를 쓸 수 없는 404다. 없거나 내 것이 아닌 콕과 서버 설정으로 꺼진 기능이라 다시 시도해도 같다. */
+export const NUDGE_UNAVAILABLE_ERROR_CODES = [ErrorCode.NUDGE_1105, ErrorCode.NUDGE_1111] as const;
 
 export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
   // 시스템/공통 (SYS_0001-0099)
@@ -768,7 +772,7 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
   [ErrorCode.SESSION_0704]: {
     code: "SESSION_0704",
     message: "보안상의 이유로 모든 세션이 종료되었습니다. 다시 로그인해주세요.",
-    description: "토큰 재사용이 감지되어 보안을 위해 모든 세션이 무효화되었습니다.",
+    description: "토큰 재사용이 감지되어 그 토큰 묶음(tokenFamily)의 세션을 무효화했습니다.",
     httpStatus: HttpStatus.UNAUTHORIZED,
   },
 
@@ -1053,6 +1057,12 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     description: "deviceId가 ios_ 또는 android_로 시작하지 않아 기기 플랫폼을 알 수 없습니다.",
     httpStatus: HttpStatus.BAD_REQUEST,
   },
+  [ErrorCode.NOTIFICATION_1007]: {
+    code: "NOTIFICATION_1007",
+    message: "이미 완료한 할 일입니다.",
+    description: "완료한 할 일은 리마인드 알림을 다시 예약하지 않습니다.",
+    httpStatus: HttpStatus.CONFLICT,
+  },
 
   // 콕 찌르기 (NUDGE_1100-1199)
   [ErrorCode.NUDGE_1101]: {
@@ -1088,7 +1098,7 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
   [ErrorCode.NUDGE_1106]: {
     code: "NUDGE_1106",
     message: "오늘의 할 일에만 콕 찌를 수 있습니다.",
-    description: "콕 찌르기는 오늘 날짜에 해당하는 할 일에만 가능합니다.",
+    description: "콕 찌르기는 오늘 날짜에 해당하고 아직 끝내지 않은 할 일에만 가능합니다.",
     httpStatus: HttpStatus.BAD_REQUEST,
   },
   [ErrorCode.NUDGE_1107]: {

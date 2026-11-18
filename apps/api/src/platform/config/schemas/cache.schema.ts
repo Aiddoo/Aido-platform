@@ -9,7 +9,8 @@ const CACHE_TYPES = ["memory", "redis"] as const;
 export const cacheSchema = z.object({
   CACHE_TYPE: z.enum(CACHE_TYPES).default("memory"),
   CACHE_DEFAULT_TTL_MS: z.coerce.number().int().positive().default(60_000),
-  CACHE_MAX_ITEMS: z.coerce.number().int().positive().default(1000),
+  // 활성 사용자 키(세션·권한·설정 등)와 활성 칸 날씨 키를 함께 담는 크기다(docs/scaling.md)
+  CACHE_MAX_ITEMS: z.coerce.number().int().positive().default(10_000),
   REDIS_COMMAND_TIMEOUT_MS: z.coerce.number().int().positive().default(1500),
   REDIS_CONNECT_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
 });

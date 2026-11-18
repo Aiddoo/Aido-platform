@@ -1,5 +1,5 @@
-import { PlanningContextReaderPort } from "#api/modules/voice/action-plans/application/ports/planning-context.reader.port";
-import type { PlanningContextReadModel } from "#api/modules/voice/action-plans/application/read-models/planning-context.read-model";
+import { PlanningContextReaderPort } from "#api/modules/voice/plan-applications/application/ports/planning-context.reader.port";
+import type { PlanningContextReadModel } from "#api/modules/voice/plan-applications/application/read-models/planning-context.read-model";
 
 const STUB_PLANNING_CONTEXT: PlanningContextReadModel = {
   categories: [{ id: 1, name: "업무" }],

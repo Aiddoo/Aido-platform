@@ -7,8 +7,12 @@ const safeParse = (job: unknown) => ADMIN_NOTIFICATION_QUEUE.payloadSchema.safeP
 
 describe("관리자 알림 큐 정의", () => {
   it("queue 이름·재시도·worker·스케줄 key를 기존 운영 계약으로 유지한다", () => {
-    expect(ADMIN_NOTIFICATION_QUEUE.name).toBe("admin-notification.v1");
-    expect(ADMIN_NOTIFICATION_QUEUE.retry).toEqual({
+    // When
+    const { name, retry, worker, schedules } = ADMIN_NOTIFICATION_QUEUE;
+
+    // Then
+    expect(name).toBe("admin-notification.v1");
+    expect(retry).toEqual({
       retryLimit: 2,
       retryDelaySeconds: 5,
       retryBackoff: true,
@@ -17,11 +21,11 @@ describe("관리자 알림 큐 정의", () => {
       deleteAfterSeconds: 86_400,
     });
     // 관리자 공지는 사람이 기다리지 않는다 — 폴링은 예약 작업 주기를 따른다
-    expect(ADMIN_NOTIFICATION_QUEUE.worker).toEqual({
+    expect(worker).toEqual({
       localConcurrency: 3,
       pollingIntervalSeconds: JOB_POLLING_SECONDS.SCHEDULED,
     });
-    expect(ADMIN_NOTIFICATION_QUEUE.schedules).toEqual([
+    expect(schedules).toEqual([
       {
         key: "daily-signup-summary-scheduler",
         cron: "10 0 * * *",
@@ -53,8 +57,11 @@ describe("관리자 알림 큐 정의", () => {
       },
     };
 
+    // When
+    const parsed = parse(job);
+
     // Then
-    expect(parse(job)).toEqual(job);
+    expect(parsed).toEqual(job);
   });
 
   it("표시용 값이 모르는 값이면 잡을 버리지 않고 그 칸만 비운다", () => {
@@ -71,8 +78,11 @@ describe("관리자 알림 큐 정의", () => {
       },
     };
 
+    // When
+    const parsed = parse(job);
+
     // Then
-    expect(parse(job).data).toEqual({
+    expect(parsed.data).toEqual({
       channel: "payment",
       notice: {
         type: "subscription_event",
@@ -139,7 +149,6 @@ describe("관리자 알림 큐 정의", () => {
       },
     });
 
-    // Then
     for (const job of [
       ...events.map((event) => subscriptionJob({ event })),
       ...stores.map((store) => subscriptionJob({ store })),
@@ -147,7 +156,11 @@ describe("관리자 알림 큐 정의", () => {
       ...signupMethods.map((signupMethod) => subscriptionJob({}, signupMethod)),
       ...["info", "success", "warning", "critical"].map(messageJob),
     ]) {
-      expect(parse(job)).toEqual(job);
+      // When
+      const parsed = parse(job);
+
+      // Then
+      expect(parsed).toEqual(job);
     }
   });
 
@@ -164,7 +177,11 @@ describe("관리자 알림 큐 정의", () => {
         },
       },
     ]) {
-      expect(safeParse({ name: AdminNotificationJobName.SEND, data }).success).toBe(false);
+      // When
+      const result = safeParse({ name: AdminNotificationJobName.SEND, data });
+
+      // Then
+      expect(result.success).toBe(false);
     }
   });
 });

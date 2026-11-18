@@ -63,7 +63,7 @@ export function describeTodoSeriesRepositoryContract(
           end: { type: "UNTIL", date: "2027-03-31" },
         },
         checklistTemplate: [{ title: "물병 채우기" }],
-        nextOccurrenceDate: "2026-11-12",
+        nextOccurrenceDate: Temporal.PlainDate.from("2026-11-12"),
         generatedCount: 3,
       });
 
@@ -87,10 +87,10 @@ export function describeTodoSeriesRepositoryContract(
       const context = await createContext();
       const series = await insertSeries(context, { id: SERIES_IDS[0] });
       series.applyDetails({ title: "물 두 잔", visibility: "PRIVATE" });
-      series.stopAfter("2026-11-20");
+      series.stopAfter(Temporal.PlainDate.from("2026-11-20"));
 
       // When
-      await context.seriesRepository.update(series);
+      await context.seriesRepository.save(series);
       const locked = await context.seriesRepository.lockForUpdate(series.id);
 
       // Then
@@ -104,7 +104,7 @@ export function describeTodoSeriesRepositoryContract(
         await insertSeries(context, {
           id,
           originSeriesId: id,
-          nextOccurrenceDate: `2026-11-1${index}`,
+          nextOccurrenceDate: Temporal.PlainDate.from(`2026-11-1${index}`),
         });
       }
       await insertSeries(context, {
@@ -118,25 +118,29 @@ export function describeTodoSeriesRepositoryContract(
         UserId.reconstitute(TODO_FIXTURE_USER_ID),
       );
       const firstBatch = await context.seriesRepository.findDueBatch({
-        through: "2026-11-11",
+        through: Temporal.PlainDate.from("2026-11-11"),
         afterId: null,
         limit: 1,
       });
       const nextBatch = await context.seriesRepository.findDueBatch({
-        through: "2026-11-11",
-        afterId: firstBatch.map(({ id }) => TodoSeriesId.reconstitute(id)).at(-1) ?? null,
+        through: Temporal.PlainDate.from("2026-11-11"),
+        afterId: firstBatch.at(-1)?.id ?? null,
         limit: 5,
       });
       const behind = await context.seriesRepository.findIdsBehind(
         UserId.reconstitute(TODO_FIXTURE_USER_ID),
-        "2026-11-10",
+        Temporal.PlainDate.from("2026-11-10"),
       );
 
       // Then
       expect(active).toBe(3);
-      expect(firstBatch).toEqual([{ id: SERIES_IDS[0], userId: TODO_FIXTURE_USER_ID }]);
-      expect(nextBatch).toEqual([{ id: SERIES_IDS[1], userId: TODO_FIXTURE_USER_ID }]);
-      expect(behind).toEqual([SERIES_IDS[0]]);
+      const refOf = (id: string) => ({
+        id: TodoSeriesId.reconstitute(id),
+        userId: UserId.reconstitute(TODO_FIXTURE_USER_ID),
+      });
+      expect(firstBatch).toEqual([refOf(SERIES_IDS[0])]);
+      expect(nextBatch).toEqual([refOf(SERIES_IDS[1])]);
+      expect(behind).toEqual([TodoSeriesId.reconstitute(SERIES_IDS[0])]);
     });
 
     it("진행 중 반복은 다음 회차가 남은 자기 규칙만 있다고 답한다", async () => {
@@ -171,10 +175,18 @@ export function describeTodoSeriesRepositoryContract(
       const source = await insertSeries(context, {
         id: origin,
         originSeriesId: origin,
-        startDate: "2026-11-01",
+        startDate: Temporal.PlainDate.from("2026-11-01"),
       });
-      await insertSeries(context, { id: middle, originSeriesId: origin, startDate: "2026-11-10" });
-      await insertSeries(context, { id: last, originSeriesId: origin, startDate: "2026-11-20" });
+      await insertSeries(context, {
+        id: middle,
+        originSeriesId: origin,
+        startDate: Temporal.PlainDate.from("2026-11-10"),
+      });
+      await insertSeries(context, {
+        id: last,
+        originSeriesId: origin,
+        startDate: Temporal.PlainDate.from("2026-11-20"),
+      });
 
       // When
       const family = await context.seriesRepository.lockFamilyIds(

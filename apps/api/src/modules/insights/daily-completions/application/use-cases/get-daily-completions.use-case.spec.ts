@@ -1,6 +1,6 @@
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { InMemoryDailyCompletionRepository } from "#test/doubles/insights/in-memory-daily-completion.repository";
+import { InMemoryCompletionGroupReader } from "#test/doubles/insights/in-memory-completion-group.reader";
 import {
   calendarDate,
   createDateRangeFixture,
@@ -10,7 +10,7 @@ import {
 } from "#test/fixtures/insights/daily-completion.fixture";
 
 import { DailyCompletionCache } from "../../infrastructure/cache/daily-completion.cache.js";
-import type { DailyCompletionRange } from "../read-models/daily-completion-range.read-model.js";
+import type { DailyCompletionRangeReadModel } from "../read-models/daily-completion-range.read-model.js";
 import { GetDailyCompletionsUseCase } from "./get-daily-completions.use-case.js";
 
 const QUERY = {
@@ -19,34 +19,34 @@ const QUERY = {
   endDate: calendarDate("2028-02-29"),
 };
 
-function summariesOf(result: DailyCompletionRange) {
+function summariesOf(result: DailyCompletionRangeReadModel) {
   return result.completions.map((completion) => ({
     date: completion.date.toString(),
     totalTodos: completion.totalTodos,
     completedTodos: completion.completedTodos,
-    isComplete: completion.isComplete(),
+    isComplete: completion.isComplete,
     completionRate: completion.completionRate,
     categoryColors: completion.categoryColors,
   }));
 }
 
 function setup() {
-  const dailyCompletionRepository = new InMemoryDailyCompletionRepository();
+  const completionGroupReader = new InMemoryCompletionGroupReader();
   const dailyCompletionCache = new DailyCompletionCache(
     new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 }),
   );
   const useCase = new GetDailyCompletionsUseCase({
-    dailyCompletionRepository,
+    completionGroupReader,
     dailyCompletionCache,
   });
-  return { dailyCompletionRepository, dailyCompletionCache, useCase };
+  return { completionGroupReader, dailyCompletionCache, useCase };
 }
 
 describe("GetDailyCompletionsUseCase — 일일 완료 조회", () => {
   it("구간 양끝 날짜를 포함해 날짜별 완료율·색상과 완료일 수를 날짜 오름차순으로 돌려준다", async () => {
     // Given
-    const { dailyCompletionRepository, useCase } = setup();
-    dailyCompletionRepository.add(
+    const { completionGroupReader, useCase } = setup();
+    completionGroupReader.add(
       createTodoSeedFixture({ startDate: calendarDate("2028-02-29"), completed: true }),
       createTodoSeedFixture({
         startDate: calendarDate("2028-02-29"),
@@ -89,10 +89,10 @@ describe("GetDailyCompletionsUseCase — 일일 완료 조회", () => {
 
   it("첫 조회를 캐시에 담아 무효화 전에는 할 일이 바뀌어도 같은 결과를 주고 다른 사용자와 섞지 않는다", async () => {
     // Given
-    const { dailyCompletionRepository, dailyCompletionCache, useCase } = setup();
-    dailyCompletionRepository.add(createTodoSeedFixture({ completed: true }));
+    const { completionGroupReader, dailyCompletionCache, useCase } = setup();
+    completionGroupReader.add(createTodoSeedFixture({ completed: true }));
     const first = await useCase.execute(QUERY);
-    dailyCompletionRepository.clear();
+    completionGroupReader.clear();
 
     // When
     const cached = await useCase.execute(QUERY);
@@ -108,8 +108,8 @@ describe("GetDailyCompletionsUseCase — 일일 완료 조회", () => {
 
   it("구간 앞에서 시작한 여러 날 할 일도 구간 안 기간의 모든 날에 세어 완료일 수에 넣는다", async () => {
     // Given
-    const { dailyCompletionRepository, useCase } = setup();
-    dailyCompletionRepository.add(
+    const { completionGroupReader, useCase } = setup();
+    completionGroupReader.add(
       createTodoSeedFixture({
         startDate: calendarDate("2028-01-30"),
         endDate: calendarDate("2028-02-02"),
@@ -141,16 +141,16 @@ describe("GetDailyCompletionsUseCase — 일일 완료 조회", () => {
 
   it("무효화 전에 시작한 늦은 조회는 캐시에 남지 않아 다음 조회가 새 완료 상태를 받는다", async () => {
     // Given
-    const { dailyCompletionRepository, dailyCompletionCache, useCase } = setup();
-    dailyCompletionRepository.add(createTodoSeedFixture({ completed: false }));
-    const held = dailyCompletionRepository.holdNextRead();
+    const { completionGroupReader, dailyCompletionCache, useCase } = setup();
+    completionGroupReader.add(createTodoSeedFixture({ completed: false }));
+    const held = completionGroupReader.holdNextRead();
     const staleRead = useCase.execute(QUERY);
     await held.entered;
 
     // When
     await dailyCompletionCache.invalidate(UserId.reconstitute(DAILY_COMPLETION_FIXTURE_USER_ID));
-    dailyCompletionRepository.clear();
-    dailyCompletionRepository.add(createTodoSeedFixture({ completed: true }));
+    completionGroupReader.clear();
+    completionGroupReader.add(createTodoSeedFixture({ completed: true }));
     held.release();
     const stale = await staleRead;
     const fresh = await useCase.execute(QUERY);

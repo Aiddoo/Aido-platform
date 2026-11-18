@@ -79,4 +79,27 @@ describe("GetWeeklyAchievementUseCase", () => {
       details: { year: 2026, week: 10 },
     });
   });
+
+  it("52주인 해의 53주는 기록이 없는 주라 출시 응답처럼 ACHIEVEMENT_1801로 거절한다", async () => {
+    // Given
+    const useCase = new GetWeeklyAchievementUseCase({
+      weeklyAchievementRepository: new InMemoryWeeklyAchievementRepository([
+        createWeeklyAchievementFixture({ year: 2028, week: 1 }),
+      ]),
+      ...OWNER_CALENDAR,
+    });
+
+    // When
+    const execution = useCase.execute({
+      userId: WEEKLY_ACHIEVEMENT_FIXTURE_USER_ID,
+      year: 2027,
+      week: 53,
+    });
+
+    // Then
+    await expect(execution).rejects.toMatchObject({
+      errorCode: ErrorCode.ACHIEVEMENT_1801,
+      details: { year: 2027, week: 53 },
+    });
+  });
 });

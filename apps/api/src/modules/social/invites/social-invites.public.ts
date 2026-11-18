@@ -7,7 +7,7 @@ export { InviteLockKeys } from "./application/invites.lock-keys.js";
 export { InviteConfigPort } from "./application/ports/invite-config.port.js";
 export { InviteReaderPort } from "./application/ports/invite.reader.port.js";
 export type {
-  InviterProfile,
+  InviterProfileReadModel,
   InviteWithInviterReadModel,
 } from "./application/read-models/inviter-profile.read-model.js";
 export { type SocialInvitesConfig, socialInvitesConfig } from "./social-invites.config.js";

@@ -2,8 +2,8 @@ import { FakeUserMutationLock } from "#test/doubles/billing/fake-user-mutation-l
 import { InMemoryPremiumGrantRepository } from "#test/doubles/billing/in-memory-premium-grant.repository";
 import { InMemoryStoreEntitlementReader } from "#test/doubles/billing/in-memory-store-entitlement.reader";
 import { InMemorySubscriptionRepository } from "#test/doubles/billing/in-memory-subscription.repository";
-import { InMemoryUserSubscriptionProjectionRepository } from "#test/doubles/billing/in-memory-user-subscription-projection.repository";
 import { RecordingPremiumAccessCache } from "#test/doubles/billing/recording-premium-access-cache";
+import { InMemoryUserSubscriptionProjection } from "#test/doubles/identity/in-memory-user-subscription-projection";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import {
@@ -26,9 +26,7 @@ const DAY = 24 * 60 * 60 * 1000;
 
 function setup(grants: PremiumGrant[]) {
   const premiumGrantRepository = new InMemoryPremiumGrantRepository(grants);
-  const projection = new InMemoryUserSubscriptionProjectionRepository([
-    SUBSCRIPTION_FIXTURE_USER_ID,
-  ]);
+  const projection = new InMemoryUserSubscriptionProjection([SUBSCRIPTION_FIXTURE_USER_ID]);
   const cache = new RecordingPremiumAccessCache();
   const getPremiumEntitlements = new GetPremiumEntitlementsUseCase({
     storeEntitlementReader: new InMemoryStoreEntitlementReader(

@@ -1,6 +1,5 @@
 import { timeOfDaySchema } from '@aido/api/common';
-
-const MINUTES_PER_HOUR = 60;
+import { MINUTES_PER_HOUR } from '@src/shared/constants/time-units';
 
 /** 시간대와 무관한 하루 중 시각 (0-23시, 0-59분). 서버 `HH:mm`은 `toTimeOfDay`로 읽는다 */
 export interface TimeOfDay {

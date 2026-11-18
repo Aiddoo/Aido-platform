@@ -1,13 +1,13 @@
-import type { TodoCommentLikeRepositoryPort } from "#api/modules/engagement/comments/application/ports/todo-comment-like.repository.port";
-import type { TodoCommentPurgeRepositoryPort } from "#api/modules/engagement/comments/application/ports/todo-comment-purge.repository.port";
-import type { TodoCommentRepositoryPort } from "#api/modules/engagement/comments/application/ports/todo-comment.repository.port";
-import { DELETED_COMMENT_AUTHOR } from "#api/modules/engagement/comments/domain/comments.constants";
-import type { TodoCommentPrimitives } from "#api/modules/engagement/comments/domain/todo-comment.aggregate";
-import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import type { TodoCommentLikeRepositoryPort } from "#api/modules/engagement/todo-comment-likes/application/ports/todo-comment-like.repository.port";
+import type { TodoCommentPurgeRepositoryPort } from "#api/modules/engagement/todo-comments/application/ports/todo-comment-purge.repository.port";
+import type { TodoCommentRepositoryPort } from "#api/modules/engagement/todo-comments/application/ports/todo-comment.repository.port";
+import type { TodoCommentPrimitives } from "#api/modules/engagement/todo-comments/domain/todo-comment.aggregate";
+import { DELETED_COMMENT_AUTHOR } from "#api/modules/engagement/todo-comments/domain/todo-comments.constants";
+import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createTodoCommentLikeFixture } from "#test/fixtures/engagement/todo-comment-like.fixture";
 import {
   createTodoCommentFixture,
-  createTodoCommentLikeFixture,
   TODO_COMMENT_FIXTURE_FRIEND_ID,
   TODO_COMMENT_FIXTURE_NOW,
   TODO_COMMENT_FIXTURE_OWNER_ID,
@@ -89,7 +89,10 @@ export function describeTodoCommentPurgeRepositoryContract(
       const plan = await repositories.purge.planPurge(PURGED);
 
       // Then
-      expect(plan).toEqual({
+      expect({
+        affectedTodoIds: plan.affectedTodoIds.map((todoId) => todoId.value),
+        commentIdsToLock: plan.commentIdsToLock.map((commentId) => commentId.value),
+      }).toEqual({
         affectedTodoIds: [TODO_ID, OTHER_TODO_ID],
         commentIdsToLock: [IDS.head, IDS.purgedReply, IDS.friendReply, IDS.likedOnly].toSorted(),
       });
@@ -112,8 +115,8 @@ export function describeTodoCommentPurgeRepositoryContract(
         );
       const purgedReply = (await find(IDS.purgedReply))?.toPrimitives();
       expect(counts).toEqual([
-        { todoId: TODO_ID, commentCount: 2 },
-        { todoId: OTHER_TODO_ID, commentCount: 1 },
+        { todoId: TodoId.reconstitute(TODO_ID), commentCount: 2 },
+        { todoId: TodoId.reconstitute(OTHER_TODO_ID), commentCount: 1 },
       ]);
       expect(purgedReply).toMatchObject({
         authorId: DELETED_COMMENT_AUTHOR.id,

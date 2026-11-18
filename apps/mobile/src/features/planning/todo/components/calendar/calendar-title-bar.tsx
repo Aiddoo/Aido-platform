@@ -1,3 +1,4 @@
+import { MONTHS_PER_YEAR } from '@src/shared/constants/time-units';
 import { addMonthsToDateKey, getMonthStartDateKey } from '@src/shared/date/date-key';
 import { formatDateKeyLabel } from '@src/shared/date/format/date-format';
 import {
@@ -39,7 +40,6 @@ import {
 } from '../../utils/calendar-title-bar.geometry';
 
 const HEADER_GAP = 8;
-const MONTHS_PER_YEAR = 12;
 // 29~31일에 시작하는 주가 5주차라 주 번호는 5를 넘지 않는다
 const LAST_WEEK_OF_MONTH = 5;
 // 견본과 보이는 제목이 같은 글자 모양이어야 잰 폭이 맞는다

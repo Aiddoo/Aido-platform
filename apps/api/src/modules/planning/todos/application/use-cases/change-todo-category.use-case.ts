@@ -1,14 +1,16 @@
 import { TODO_LIMITS } from "@aido/api/vocabulary";
 
+import {
+  TodoCategoryLockKeys,
+  TodoCategoryId,
+} from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { TodoCategoryLockKeys } from "../../../categories/application/categories.lock-keys.js";
-import { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";
-import { TodoId } from "../../../shared/domain/todo-id.vo.js";
+import { TodoId } from "../../domain/todo-id.vo.js";
 import { type CategoryOwnershipPort } from "../ports/category-ownership.port.js";
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
@@ -28,7 +30,7 @@ export interface ChangeTodoCategoryInput {
 interface ChangeTodoCategoryDependencies {
   readonly todoRepository: Pick<
     TodoRepositoryPort,
-    "findByIdAndUserId" | "countCategoryUsage" | "updateCategory"
+    "lockByIdAndUserId" | "countCategoryUsage" | "save"
   >;
   readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId">;
   readonly unitOfWork: UnitOfWorkPort;
@@ -60,15 +62,15 @@ export class ChangeTodoCategoryUseCase {
       ]);
       await this.#dependencies.categoryOwnership.validateOwnership(targetCategoryId, ownerId);
 
-      const todo = await this.#dependencies.todoRepository.findByIdAndUserId(todoId, ownerId);
+      const todo = await this.#dependencies.todoRepository.lockByIdAndUserId(todoId, ownerId);
       if (todo == null) {
         throw todoNotFound(id);
       }
 
-      const changed = todo.changeCategory(categoryId, this.#dependencies.clock.now());
+      const changed = todo.changeCategory(targetCategoryId, this.#dependencies.clock.now());
 
       // 같은 카테고리여도 한도를 먼저 본다. 회차 하나를 옮겨도 규칙 1개로 세는 사용량은 그대로다.
-      if (!todo.completed && todo.seriesId == null) {
+      if (!todo.isCompleted() && !todo.isOccurrence()) {
         const activeInTarget = await this.#dependencies.todoRepository.countCategoryUsage(
           ownerId,
           targetCategoryId,
@@ -80,7 +82,7 @@ export class ChangeTodoCategoryUseCase {
       if (!changed) {
         return;
       }
-      await this.#dependencies.todoRepository.updateCategory(todoId, targetCategoryId);
+      await this.#dependencies.todoRepository.save(todo);
       await this.#dependencies.applyTodoEvents.execute(todo.pullDomainEvents());
     });
 

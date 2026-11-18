@@ -77,6 +77,9 @@ export function createPushNotificationGatewayStub(
       async (_count: number) => {},
     ),
     dismissDelivered: mockMethod<PushNotificationGateway['dismissDelivered']>(async () => {}),
+    dismissNotification: mockMethod<PushNotificationGateway['dismissNotification']>(
+      async (_identifier: string) => {},
+    ),
     setForegroundPresentation: mockMethod<PushNotificationGateway['setForegroundPresentation']>(
       (decide: (notification: ReceivedPushNotification) => ForegroundPushPresentation) => {
         decideForegroundPresentation = decide;

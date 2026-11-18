@@ -1,4 +1,4 @@
-import type { MutualFriendReaderPort } from "#api/modules/social/friends/social-friends.public";
+import type { MutualFriendReaderPort } from "#api/modules/social/friendships/social-friendships.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
@@ -36,7 +36,10 @@ export interface SendCheerDependencies {
     CheerRepositoryPort,
     "nextId" | "countSentBetween" | "findLastSent" | "save"
   >;
-  readonly limitReader: Pick<CheerLimitReaderPort, "readLimitInTx" | "readFeatureQuotaInTx">;
+  readonly limitReader: Pick<
+    CheerLimitReaderPort,
+    "readLimitInTransaction" | "readFeatureQuotaInTransaction"
+  >;
   readonly mutualFriendReader: Pick<
     MutualFriendReaderPort,
     "isMutualFriend" | "getUserDisplayName"
@@ -86,11 +89,14 @@ export class SendCheerUseCase {
         CheerLockKeys.cooldown(senderId, receiverId),
       ]);
 
-      const dailyLimit = await limitReader.readLimitInTx(senderId);
+      const dailyLimit = await limitReader.readLimitInTransaction(senderId);
       const used = await cheerRepository.countSentBetween(senderId, window);
       if (dailyLimit != null && used >= dailyLimit) {
         throw cheerDailyLimitReached(
-          await limitReader.readFeatureQuotaInTx(senderId, { used, resetsAt: window.endsAt }),
+          await limitReader.readFeatureQuotaInTransaction(senderId, {
+            used,
+            resetsAt: window.endsAt,
+          }),
         );
       }
 
@@ -112,9 +118,9 @@ export class SendCheerUseCase {
       });
       await cheerRepository.save(created);
       await notifier.notifyCheerSent({
-        cheerId: created.id.value,
-        senderId: senderId.value,
-        receiverId: receiverId.value,
+        cheerId: created.id,
+        senderId,
+        receiverId,
         senderName: await mutualFriendReader.getUserDisplayName(senderId),
         message: message?.value,
       });

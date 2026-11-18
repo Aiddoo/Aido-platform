@@ -1,9 +1,9 @@
-import { PushDeliveryJobEnqueuerPort } from "#api/modules/notification/push/application/ports/push-delivery-job-enqueuer.port";
-import type { PushDeliveryPublication } from "#api/modules/notification/push/application/read-models/push-delivery.read-model";
-import type { PushDeliveryLane } from "#api/modules/notification/push/domain/push-delivery-lane.domain-service";
+import { PushDeliveryJobEnqueuerPort } from "#api/modules/notification/push-dispatches/application/ports/push-delivery-job-enqueuer.port";
+import type { PushDeliveryPublicationReadModel } from "#api/modules/notification/push-dispatches/application/read-models/push-delivery.read-model";
+import type { PushDeliveryLane } from "#api/modules/notification/push-dispatches/domain/push-delivery-lane.domain-service";
 
 export interface RecordedPushDeliveryJob {
-  readonly publications: readonly PushDeliveryPublication[];
+  readonly publications: readonly PushDeliveryPublicationReadModel[];
   readonly lane: PushDeliveryLane;
 }
 
@@ -13,7 +13,7 @@ export class RecordingPushDeliveryJobEnqueuer extends PushDeliveryJobEnqueuerPor
   rejection: { readonly reason: unknown } | null = null;
 
   async enqueueDeliveries(
-    publications: readonly PushDeliveryPublication[],
+    publications: readonly PushDeliveryPublicationReadModel[],
     lane: PushDeliveryLane,
   ): Promise<void> {
     if (this.rejection != null) {

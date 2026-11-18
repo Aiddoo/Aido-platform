@@ -15,14 +15,10 @@ import { toCheer, toCheerRow } from "./cheer-row.mapper.js";
 
 @Injectable()
 export class DrizzleCheerRepository implements CheerRepositoryPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
-  }
-
-  get #db() {
-    return this.#txHost.tx;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
   async nextId(): Promise<CheerId> {
@@ -87,5 +83,9 @@ export class DrizzleCheerRepository implements CheerRepositoryPort {
       )
       .returning({ id: cheerTable.id });
     return updated.length;
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

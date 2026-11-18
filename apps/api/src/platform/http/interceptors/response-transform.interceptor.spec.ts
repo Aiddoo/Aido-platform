@@ -1,7 +1,8 @@
 import { Reflector } from "@nestjs/core";
 import { lastValueFrom, of } from "rxjs";
 
-import { createMockExecutionContext } from "../../../../test/mocks/execution-context.mock.js";
+import { createStubExecutionContext } from "#test/doubles/platform/stub-execution-context";
+
 import { RawResponse } from "../decorators/raw-response.decorator.js";
 import { ResponseTransformInterceptor } from "./response-transform.interceptor.js";
 
@@ -15,7 +16,7 @@ class ResponseFixture {
 describe("ResponseTransformInterceptor", () => {
   it("raw 응답을 명시한 handler만 성공 envelope를 적용하지 않는다", async () => {
     // Given
-    const { context } = createMockExecutionContext({ handler: ResponseFixture.prototype.raw });
+    const { context } = createStubExecutionContext({ handler: ResponseFixture.prototype.raw });
     const interceptor = new ResponseTransformInterceptor<{ enabled: false }>(new Reflector());
 
     // When
@@ -29,7 +30,7 @@ describe("ResponseTransformInterceptor", () => {
 
   it("raw 응답을 명시하지 않은 handler에는 성공 envelope를 적용한다", async () => {
     // Given
-    const { context } = createMockExecutionContext({ handler: ResponseFixture.prototype.wrapped });
+    const { context } = createStubExecutionContext({ handler: ResponseFixture.prototype.wrapped });
     const interceptor = new ResponseTransformInterceptor<{ value: string }>(new Reflector());
 
     // When

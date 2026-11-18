@@ -3,7 +3,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import {
   EntitlementReaderPort,
   isExemptFromDormancy,
-} from "#api/modules/access/entitlements/access-entitlements.public";
+} from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { UserActivityReaderPort } from "#api/modules/identity/users/identity-users.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -32,7 +32,7 @@ export class TodoSeriesOwnerAdapter implements TodoSeriesOwnerPort {
     const accounts = await this.#activityReader.findActiveAccounts(userIds);
     return new Map(
       accounts.map((account) => [
-        account.userId,
+        account.userId.value,
         {
           lastActiveAt: account.lastActiveAt,
           signedUpAt: account.signedUpAt,

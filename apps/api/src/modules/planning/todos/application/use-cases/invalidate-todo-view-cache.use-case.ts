@@ -1,6 +1,6 @@
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { TodoId } from "../../../shared/domain/todo-id.vo.js";
+import type { TodoId } from "../../domain/todo-id.vo.js";
 import type { TodoCachePort } from "../ports/todo-cache.port.js";
 import type { TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 

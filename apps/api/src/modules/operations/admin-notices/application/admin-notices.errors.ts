@@ -1,8 +1,15 @@
 import type { AdminNotificationChannel } from "../domain/admin-notices.constants.js";
 
-// 일시 실패라 큐가 다시 시도하게 하는 오류. HTTP로 나가지 않아 오류 코드가 없다
-export function adminNotificationRetryable(channel: AdminNotificationChannel): Error {
-  const error = new Error(`Admin notification delivery failed: ${channel}`);
-  error.name = "AdminNotificationRetryableError";
-  return error;
+/** 채널의 일시 실패(429·5xx·연결 실패)라 큐가 다시 시도하게 한다. HTTP로 나가지 않아 오류 코드가 없다 */
+export class AdminNotificationRetryableError extends Error {
+  constructor(channel: AdminNotificationChannel) {
+    super(`Admin notification delivery failed: ${channel}`);
+    this.name = AdminNotificationRetryableError.name;
+  }
+}
+
+export function adminNotificationRetryable(
+  channel: AdminNotificationChannel,
+): AdminNotificationRetryableError {
+  return new AdminNotificationRetryableError(channel);
 }

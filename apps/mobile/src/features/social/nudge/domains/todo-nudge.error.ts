@@ -1,4 +1,4 @@
-import { ErrorCode } from '@aido/api/errors';
+import { ErrorCode, NUDGE_UNAVAILABLE_ERROR_CODES } from '@aido/api/errors';
 import { type ApiError, isApiError } from '@src/shared/errors';
 
 export const TODO_NUDGE_ERROR_CODE = {
@@ -7,11 +7,8 @@ export const TODO_NUDGE_ERROR_CODE = {
 
 export type TodoNudgeErrorCode = (typeof TODO_NUDGE_ERROR_CODE)[keyof typeof TODO_NUDGE_ERROR_CODE];
 
-/** 없거나 내 것이 아닌 콕(NUDGE_1105)과 서버 설정으로 꺼진 답장·감사(NUDGE_1111). 다시 시도해도 같다 */
-const NUDGE_UNAVAILABLE_CODES = [ErrorCode.NUDGE_1105, ErrorCode.NUDGE_1111] as const;
-
 export function isNudgeUnavailableError(error: unknown): error is ApiError {
-  return isApiError(error) && NUDGE_UNAVAILABLE_CODES.some((code) => error.hasCode(code));
+  return isApiError(error) && NUDGE_UNAVAILABLE_ERROR_CODES.some((code) => error.hasCode(code));
 }
 
 /** 서버 설정으로 답장·감사 기능이 꺼졌다(NUDGE_1111) */

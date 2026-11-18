@@ -1,7 +1,8 @@
+import type { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 export interface AccountNotificationCleanupResult {
-  affectedUserIds: string[];
+  readonly affectedUserIds: readonly UserId[];
 }
 
 export abstract class AccountNotificationCleanupPort {
@@ -10,7 +11,7 @@ export abstract class AccountNotificationCleanupPort {
 }
 
 export interface AccountTodoCommentCleanupResult {
-  readonly affectedTodoIds: readonly number[];
+  readonly affectedTodoIds: readonly TodoId[];
 }
 
 export abstract class AccountTodoCommentCleanupPort {

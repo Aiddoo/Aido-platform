@@ -1,43 +1,71 @@
 import { DrizzleQueryError } from "drizzle-orm/errors";
 
-import { postgresError, sqlQueryError } from "#test/mocks/drizzle.mock";
+import { postgresError, sqlQueryError } from "#test/doubles/platform/fake-database";
 
 import {
   classifyDatabaseError,
   databaseConstraint,
-  DatabaseRecordNotFoundError,
   databaseSqlState,
   isRecordNotFoundError,
   isTransactionWriteConflict,
   isUniqueConstraintViolation,
   uniqueConstraintTargets,
 } from "./database-error.util.js";
+import { DatabaseRecordNotFoundError } from "./database.errors.js";
 
 describe("PostgreSQL 오류 변환 경계", () => {
   it.each(["40001", "40P01"])("transaction 오류 %s는 재시도한다", (state) => {
-    expect(isTransactionWriteConflict(sqlQueryError(state))).toBe(true);
+    // When
+    const retryable = isTransactionWriteConflict(sqlQueryError(state));
+
+    // Then
+    expect(retryable).toBe(true);
   });
   it.each(["23503", "23505", "XX000"])(
     "transaction과 무관한 오류 %s는 재시도하지 않는다",
     (state) => {
-      expect(isTransactionWriteConflict(sqlQueryError(state))).toBe(false);
+      // When
+      const retryable = isTransactionWriteConflict(sqlQueryError(state));
+
+      // Then
+      expect(retryable).toBe(false);
     },
   );
   it("정규화되지 않은 유사 오류를 DB 오류로 취급하지 않는다", () => {
-    expect(databaseSqlState(Object.assign(new Error("plain"), { code: "40001" }))).toBeUndefined();
-    expect(isTransactionWriteConflict(new Error("TransactionWriteConflict"))).toBe(false);
+    // When
+    const state = databaseSqlState(Object.assign(new Error("plain"), { code: "40001" }));
+    const retryable = isTransactionWriteConflict(new Error("TransactionWriteConflict"));
+
+    // Then
+    expect(state).toBeUndefined();
+    expect(retryable).toBe(false);
   });
   it("스키마에서 unique constraint의 컬럼을 조회한다", () => {
+    // Given
     const error = sqlQueryError("23505", "User_email_key");
-    expect(isUniqueConstraintViolation(error)).toBe(true);
-    expect(databaseConstraint(error)).toBe("User_email_key");
-    expect(uniqueConstraintTargets(error)).toEqual(["email"]);
-    expect(uniqueConstraintTargets(sqlQueryError("23505", "unmanaged_index"))).toBeUndefined();
+
+    // When
+    const isUnique = isUniqueConstraintViolation(error);
+    const constraint = databaseConstraint(error);
+    const targets = uniqueConstraintTargets(error);
+    const unmanagedTargets = uniqueConstraintTargets(sqlQueryError("23505", "unmanaged_index"));
+
+    // Then
+    expect(isUnique).toBe(true);
+    expect(constraint).toBe("User_email_key");
+    expect(targets).toEqual(["email"]);
+    expect(unmanagedTargets).toBeUndefined();
   });
   it("명시적인 record-not-found 오류를 유지한다", () => {
-    expect(isRecordNotFoundError(new DatabaseRecordNotFoundError())).toBe(true);
-    expect(isRecordNotFoundError(new Error("missing"))).toBe(false);
+    // When
+    const explicitError = isRecordNotFoundError(new DatabaseRecordNotFoundError());
+    const plainError = isRecordNotFoundError(new Error("missing"));
+
+    // Then
+    expect(explicitError).toBe(true);
+    expect(plainError).toBe(false);
   });
+
   it.each(["40001", "40P01"])(
     "커밋 wrapper의 cause 안 SQLSTATE %s를 재시도 대상으로 판정한다",
     (state) => {

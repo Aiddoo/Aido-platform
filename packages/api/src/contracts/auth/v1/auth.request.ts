@@ -16,53 +16,55 @@ export const emailSchema = z
   .toLowerCase()
   .pipe(z.email("올바른 이메일 형식이 아닙니다"))
   .pipe(z.string().max(255, "이메일은 255자 이내여야 합니다"))
-  .describe("이메일 주소 (소문자 자동 변환, 예: user@example.com)");
+  .meta({ description: "이메일 주소 (소문자 자동 변환, 예: user@example.com)" });
 
 export const passwordSchema = z
   .string()
   .min(PASSWORD_RULES.MIN_LENGTH, `비밀번호는 ${PASSWORD_RULES.MIN_LENGTH}자 이상이어야 합니다`)
   .max(PASSWORD_RULES.MAX_LENGTH, `비밀번호는 ${PASSWORD_RULES.MAX_LENGTH}자 이내여야 합니다`)
   .regex(PASSWORD_RULES.PATTERN, PASSWORD_RULES.ERROR_MESSAGE)
-  .describe("비밀번호 (8자 이상, 영문+숫자 필수, 예: Password123)");
+  .meta({ description: "비밀번호 (8자 이상, 영문+숫자 필수, 예: Password123)" });
 
-export const deviceTypeSchema = z.enum(DEVICE_TYPES).describe("디바이스 타입 (IOS, ANDROID, WEB)");
+export const deviceTypeSchema = z
+  .enum(DEVICE_TYPES)
+  .meta({ description: "디바이스 타입 (IOS, ANDROID, WEB)" });
 
 export const registerSchema = z
   .object({
     email: emailSchema,
     password: passwordSchema,
-    passwordConfirm: z.string().describe("비밀번호 확인 (password 필드와 일치 필수)"),
+    passwordConfirm: z.string().meta({ description: "비밀번호 확인 (password 필드와 일치 필수)" }),
     name: z
       .string()
       .trim()
       .min(1, "이름을 입력해주세요")
       .max(20, "이름은 20자 이내여야 합니다")
       .optional()
-      .describe("사용자 이름 (선택, 최대 20자, 예: 홍길동)"),
+      .meta({ description: "사용자 이름 (선택, 최대 20자, 예: 홍길동)" }),
     termsAgreed: z
       .literal(true, {
         error: "서비스 이용약관에 동의해주세요",
       })
-      .describe("서비스 이용약관 동의 (필수, true만 허용)"),
+      .meta({ description: "서비스 이용약관 동의 (필수, true만 허용)" }),
     privacyAgreed: z
       .literal(true, {
         error: "개인정보처리방침에 동의해주세요",
       })
-      .describe("개인정보처리방침 동의 (필수, true만 허용)"),
+      .meta({ description: "개인정보처리방침 동의 (필수, true만 허용)" }),
     marketingAgreed: z
       .boolean()
       .default(false)
-      .describe("마케팅 정보 수신 동의 (선택, 기본값: false)"),
+      .meta({ description: "마케팅 정보 수신 동의 (선택, 기본값: false)" }),
     marketingPushAgreed: z
       .boolean()
       .default(false)
-      .describe("광고성 앱 푸시 수신 동의 (선택, 기본값: false)"),
+      .meta({ description: "광고성 앱 푸시 수신 동의 (선택, 기본값: false)" }),
   })
   .refine((data) => data.password === data.passwordConfirm, {
     error: "비밀번호가 일치하지 않습니다",
     path: ["passwordConfirm"],
   })
-  .describe("회원가입 요청");
+  .meta({ description: "회원가입 요청" });
 
 /** 기본값 적용 전의 HTTP 입력 타입 — 선택 동의 필드는 생략 가능 */
 export type RegisterInput = z.input<typeof registerSchema>;
@@ -70,17 +72,17 @@ export type RegisterInput = z.input<typeof registerSchema>;
 export const loginSchema = z
   .object({
     email: emailSchema,
-    password: z.string().min(1, "비밀번호를 입력해주세요").describe("비밀번호"),
+    password: z.string().min(1, "비밀번호를 입력해주세요").meta({ description: "비밀번호" }),
     deviceName: z
       .string()
       .max(100)
       .optional()
-      .describe("기기 이름 (선택, 세션 구분용, 예: iPhone 15 Pro)"),
+      .meta({ description: "기기 이름 (선택, 세션 구분용, 예: iPhone 15 Pro)" }),
     deviceType: deviceTypeSchema
       .optional()
-      .describe("디바이스 타입 (선택, IOS | ANDROID | WEB, 세션 구분용)"),
+      .meta({ description: "디바이스 타입 (선택, IOS | ANDROID | WEB, 세션 구분용)" }),
   })
-  .describe("로그인 요청");
+  .meta({ description: "로그인 요청" });
 
 export type LoginInput = z.infer<typeof loginSchema>;
 
@@ -91,52 +93,63 @@ export const verifyEmailSchema = z
       .string()
       .length(VERIFICATION_CODE.LENGTH, `인증 코드는 ${VERIFICATION_CODE.LENGTH}자리입니다`)
       .regex(/^\d+$/, "인증 코드는 숫자만 입력 가능합니다")
-      .describe("이메일로 발송된 6자리 인증 코드"),
+      .meta({ description: "이메일로 발송된 6자리 인증 코드" }),
   })
-  .describe("이메일 인증 요청");
+  .meta({ description: "이메일 인증 요청" });
 
 export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
 
 export const resendVerificationSchema = z
   .object({
-    email: emailSchema.describe("인증 코드를 재발송할 이메일 주소"),
+    email: emailSchema.meta({ description: "인증 코드를 재발송할 이메일 주소" }),
   })
-  .describe("인증 코드 재발송 요청");
+  .meta({ description: "인증 코드 재발송 요청" });
 
 export type ResendVerificationInput = z.infer<typeof resendVerificationSchema>;
 
 export const forgotPasswordSchema = z
   .object({
-    email: emailSchema.describe("비밀번호를 재설정할 계정의 이메일 주소"),
+    email: emailSchema.meta({ description: "비밀번호를 재설정할 계정의 이메일 주소" }),
   })
-  .describe("비밀번호 찾기 요청");
+  .meta({ description: "비밀번호 찾기 요청" });
 
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 
 export const resetPasswordSchema = z
   .object({
-    email: emailSchema.describe("비밀번호를 재설정할 계정의 이메일 주소"),
-    code: z.string().length(VERIFICATION_CODE.LENGTH).describe("이메일로 발송된 6자리 인증 코드"),
-    newPassword: passwordSchema.describe(
-      "새 비밀번호 (8자 이상, 영문자 1개 이상, 숫자 1개 이상 포함 필수)",
-    ),
-    newPasswordConfirm: z.string().describe("새 비밀번호 확인 (newPassword와 동일해야 함)"),
+    email: emailSchema.meta({ description: "비밀번호를 재설정할 계정의 이메일 주소" }),
+    code: z
+      .string()
+      .length(VERIFICATION_CODE.LENGTH)
+      .meta({ description: "이메일로 발송된 6자리 인증 코드" }),
+    newPassword: passwordSchema.meta({
+      description: "새 비밀번호 (8자 이상, 영문자 1개 이상, 숫자 1개 이상 포함 필수)",
+    }),
+    newPasswordConfirm: z
+      .string()
+      .meta({ description: "새 비밀번호 확인 (newPassword와 동일해야 함)" }),
   })
   .refine((data) => data.newPassword === data.newPasswordConfirm, {
     error: "비밀번호가 일치하지 않습니다",
     path: ["newPasswordConfirm"],
   })
-  .describe("비밀번호 재설정 요청");
+  .meta({ description: "비밀번호 재설정 요청" });
 
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 
 export const changePasswordSchema = z
   .object({
-    currentPassword: z.string().min(1, "현재 비밀번호를 입력해주세요").describe("현재 비밀번호"),
-    newPassword: passwordSchema.describe(
-      "새 비밀번호 (8자 이상, 영문자 1개 이상, 숫자 1개 이상 포함 필수, 현재 비밀번호와 달라야 함)",
-    ),
-    newPasswordConfirm: z.string().describe("새 비밀번호 확인 (newPassword와 동일해야 함)"),
+    currentPassword: z
+      .string()
+      .min(1, "현재 비밀번호를 입력해주세요")
+      .meta({ description: "현재 비밀번호" }),
+    newPassword: passwordSchema.meta({
+      description:
+        "새 비밀번호 (8자 이상, 영문자 1개 이상, 숫자 1개 이상 포함 필수, 현재 비밀번호와 달라야 함)",
+    }),
+    newPasswordConfirm: z
+      .string()
+      .meta({ description: "새 비밀번호 확인 (newPassword와 동일해야 함)" }),
   })
   .refine((data) => data.newPassword === data.newPasswordConfirm, {
     error: "비밀번호가 일치하지 않습니다",
@@ -146,7 +159,7 @@ export const changePasswordSchema = z
     error: "새 비밀번호는 현재 비밀번호와 달라야 합니다",
     path: ["newPassword"],
   })
-  .describe("비밀번호 변경 요청");
+  .meta({ description: "비밀번호 변경 요청" });
 
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 
@@ -156,37 +169,27 @@ export const setPasswordSchema = z
       .string()
       .length(VERIFICATION_CODE.LENGTH, `인증 코드는 ${VERIFICATION_CODE.LENGTH}자리입니다`)
       .regex(/^\d+$/, "인증 코드는 숫자만 입력 가능합니다")
-      .describe("이메일로 발송된 6자리 인증 코드"),
-    newPassword: passwordSchema.describe(
-      "새 비밀번호 (8자 이상, 영문자 1개 이상, 숫자 1개 이상 포함 필수)",
-    ),
-    newPasswordConfirm: z.string().describe("새 비밀번호 확인 (newPassword와 동일해야 함)"),
+      .meta({ description: "이메일로 발송된 6자리 인증 코드" }),
+    newPassword: passwordSchema.meta({
+      description: "새 비밀번호 (8자 이상, 영문자 1개 이상, 숫자 1개 이상 포함 필수)",
+    }),
+    newPasswordConfirm: z
+      .string()
+      .meta({ description: "새 비밀번호 확인 (newPassword와 동일해야 함)" }),
   })
   .refine((data) => data.newPassword === data.newPasswordConfirm, {
     error: "비밀번호가 일치하지 않습니다",
     path: ["newPasswordConfirm"],
   })
-  .describe("비밀번호 설정 요청 (소셜 전용 사용자)");
-
-export type SetPasswordInput = z.infer<typeof setPasswordSchema>;
-
-export const refreshTokenSchema = z
-  .object({
-    refreshToken: z.string().min(1, "리프레시 토큰이 필요합니다").describe("리프레시 토큰"),
-  })
-  .describe("토큰 갱신 요청");
-
-export type RefreshTokenInput = z.infer<typeof refreshTokenSchema>;
+  .meta({ description: "비밀번호 설정 요청 (소셜 전용 사용자)" });
 
 export const revokeSessionSchema = z
   .object({
-    sessionId: entityIdSchemaWithMessage("유효하지 않은 세션 ID입니다").describe(
-      "해제할 세션 ID (예: clz7x5p8k0002qz0z8z8z8z8z)",
-    ),
+    sessionId: entityIdSchemaWithMessage("유효하지 않은 세션 ID입니다").meta({
+      description: "해제할 세션 ID (예: clz7x5p8k0002qz0z8z8z8z8z)",
+    }),
   })
-  .describe("세션 해제 요청");
-
-export type RevokeSessionInput = z.infer<typeof revokeSessionSchema>;
+  .meta({ description: "세션 해제 요청" });
 
 export const updateProfileSchema = z
   .object({
@@ -196,7 +199,7 @@ export const updateProfileSchema = z
       .min(1, "이름을 입력해주세요")
       .max(20, "이름은 20자 이내여야 합니다")
       .optional()
-      .describe("사용자 이름"),
+      .meta({ description: "사용자 이름" }),
     profileImage: z
       .union([
         profileIconKeySchema,
@@ -204,47 +207,45 @@ export const updateProfileSchema = z
       ])
       .optional()
       .nullable()
-      .describe("프로필 이미지 (아이콘 키 또는 URL, null로 설정 시 삭제)"),
+      .meta({ description: "프로필 이미지 (아이콘 키 또는 URL, null로 설정 시 삭제)" }),
   })
   // oxlint-disable-next-line aido/no-strict-nullish -- profileImage null(삭제)도 수정 입력이다
   .refine((data) => data.name != null || data.profileImage !== undefined, {
     error: "최소 하나의 필드를 입력해주세요",
   })
-  .describe("프로필 수정 요청");
+  .meta({ description: "프로필 수정 요청" });
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 
-export const oauthProviderSchema = z.enum(OAUTH_PROVIDERS).describe("소셜 로그인 제공자");
-
-export type OAuthProvider = z.infer<typeof oauthProviderSchema>;
+export const oauthProviderSchema = z
+  .enum(OAUTH_PROVIDERS)
+  .meta({ description: "소셜 로그인 제공자" });
 
 export const appleMobileCallbackSchema = z
   .object({
     idToken: z
       .string()
       .min(1, "Apple ID 토큰이 필요합니다")
-      .describe("Apple에서 발급받은 ID Token (서버에서 JWKS로 검증)"),
-    nonce: z
-      .string()
-      .min(1)
-      .optional()
-      .describe("Apple Sign-In 시 사용한 원본 nonce (서버에서 SHA256 후 토큰의 nonce와 비교)"),
+      .meta({ description: "Apple에서 발급받은 ID Token (서버에서 JWKS로 검증)" }),
+    nonce: z.string().min(1).optional().meta({
+      description: "Apple Sign-In 시 사용한 원본 nonce (서버에서 SHA256 후 토큰의 nonce와 비교)",
+    }),
     userName: z
       .string()
       .max(20, "이름은 20자 이내여야 합니다")
       .trim()
       .optional()
-      .describe("Apple에서 제공한 사용자 이름 (첫 로그인 시에만 제공)"),
+      .meta({ description: "Apple에서 제공한 사용자 이름 (첫 로그인 시에만 제공)" }),
     deviceName: z
       .string()
       .max(100)
       .optional()
-      .describe("기기 이름 (선택, 세션 구분용, 예: iPhone 15 Pro)"),
+      .meta({ description: "기기 이름 (선택, 세션 구분용, 예: iPhone 15 Pro)" }),
     deviceType: deviceTypeSchema
       .optional()
-      .describe("디바이스 타입 (선택, IOS | ANDROID | WEB, 세션 구분용)"),
+      .meta({ description: "디바이스 타입 (선택, IOS | ANDROID | WEB, 세션 구분용)" }),
   })
-  .describe("Apple 모바일 로그인 콜백 요청");
+  .meta({ description: "Apple 모바일 로그인 콜백 요청" });
 
 export type AppleMobileCallbackInput = z.infer<typeof appleMobileCallbackSchema>;
 
@@ -253,94 +254,104 @@ export const googleMobileCallbackSchema = z
     idToken: z
       .string()
       .min(1, "Google ID 토큰이 필요합니다")
-      .describe("Google에서 발급받은 ID Token (서버에서 google-auth-library로 검증)"),
+      .meta({ description: "Google에서 발급받은 ID Token (서버에서 google-auth-library로 검증)" }),
     userName: z
       .string()
       .max(20, "이름은 20자 이내여야 합니다")
       .trim()
       .optional()
-      .describe("사용자 이름 (프로필에서 가져온 이름 대신 사용할 경우)"),
+      .meta({ description: "사용자 이름 (프로필에서 가져온 이름 대신 사용할 경우)" }),
     deviceName: z
       .string()
       .max(100)
       .optional()
-      .describe("기기 이름 (선택, 세션 구분용, 예: iPhone 15 Pro)"),
+      .meta({ description: "기기 이름 (선택, 세션 구분용, 예: iPhone 15 Pro)" }),
     deviceType: deviceTypeSchema
       .optional()
-      .describe("디바이스 타입 (선택, IOS | ANDROID | WEB, 세션 구분용)"),
+      .meta({ description: "디바이스 타입 (선택, IOS | ANDROID | WEB, 세션 구분용)" }),
   })
-  .describe("Google 모바일 로그인 콜백 요청");
-
-export type GoogleMobileCallbackInput = z.infer<typeof googleMobileCallbackSchema>;
+  .meta({ description: "Google 모바일 로그인 콜백 요청" });
 
 export const kakaoMobileCallbackSchema = z
   .object({
     accessToken: z
       .string()
       .min(1, "Kakao Access Token이 필요합니다")
-      .describe("Kakao에서 발급받은 Access Token (서버에서 /v2/user/me API로 검증)"),
+      .meta({ description: "Kakao에서 발급받은 Access Token (서버에서 /v2/user/me API로 검증)" }),
     userName: z
       .string()
       .max(20, "이름은 20자 이내여야 합니다")
       .trim()
       .optional()
-      .describe("사용자 이름 (프로필에서 가져온 이름 대신 사용할 경우)"),
+      .meta({ description: "사용자 이름 (프로필에서 가져온 이름 대신 사용할 경우)" }),
     deviceName: z
       .string()
       .max(100)
       .optional()
-      .describe("기기 이름 (선택, 세션 구분용, 예: iPhone 15 Pro)"),
+      .meta({ description: "기기 이름 (선택, 세션 구분용, 예: iPhone 15 Pro)" }),
     deviceType: deviceTypeSchema
       .optional()
-      .describe("디바이스 타입 (선택, IOS | ANDROID | WEB, 세션 구분용)"),
+      .meta({ description: "디바이스 타입 (선택, IOS | ANDROID | WEB, 세션 구분용)" }),
   })
-  .describe("Kakao 모바일 로그인 콜백 요청");
-
-export type KakaoMobileCallbackInput = z.infer<typeof kakaoMobileCallbackSchema>;
+  .meta({ description: "Kakao 모바일 로그인 콜백 요청" });
 
 export const naverMobileCallbackSchema = z
   .object({
     accessToken: z
       .string()
       .min(1, "Naver Access Token이 필요합니다")
-      .describe("Naver에서 발급받은 Access Token (서버에서 /v1/nid/me API로 검증)"),
+      .meta({ description: "Naver에서 발급받은 Access Token (서버에서 /v1/nid/me API로 검증)" }),
     userName: z
       .string()
       .max(20, "이름은 20자 이내여야 합니다")
       .trim()
       .optional()
-      .describe("사용자 이름 (프로필에서 가져온 이름 대신 사용할 경우)"),
+      .meta({ description: "사용자 이름 (프로필에서 가져온 이름 대신 사용할 경우)" }),
     deviceName: z
       .string()
       .max(100)
       .optional()
-      .describe("기기 이름 (선택, 세션 구분용, 예: iPhone 15 Pro)"),
+      .meta({ description: "기기 이름 (선택, 세션 구분용, 예: iPhone 15 Pro)" }),
     deviceType: deviceTypeSchema
       .optional()
-      .describe("디바이스 타입 (선택, IOS | ANDROID | WEB, 세션 구분용)"),
+      .meta({ description: "디바이스 타입 (선택, IOS | ANDROID | WEB, 세션 구분용)" }),
   })
-  .describe("Naver 모바일 로그인 콜백 요청");
-
-export type NaverMobileCallbackInput = z.infer<typeof naverMobileCallbackSchema>;
+  .meta({ description: "Naver 모바일 로그인 콜백 요청" });
 
 export const deleteAccountSchema = z
   .object({
-    password: z.string().min(1).optional().describe("현재 비밀번호 (이메일 가입 계정만 필수)"),
-    reason: z.string().max(500).trim().optional().describe("탈퇴 사유 (선택, 최대 500자)"),
+    password: z
+      .string()
+      .min(1)
+      .optional()
+      .meta({ description: "현재 비밀번호 (이메일 가입 계정만 필수)" }),
+    reason: z
+      .string()
+      .max(500)
+      .trim()
+      .optional()
+      .meta({ description: "탈퇴 사유 (선택, 최대 500자)" }),
   })
-  .describe("회원 탈퇴 요청");
+  .meta({ description: "회원 탈퇴 요청" });
 
 export type DeleteAccountInput = z.infer<typeof deleteAccountSchema>;
 
 export const linkSocialAccountSchema = z
   .object({
-    provider: oauthProviderSchema.describe("연동할 소셜 로그인 제공자"),
-    idToken: z.string().optional().describe("ID Token (Apple, Google용 - provider에 따라 필수)"),
+    provider: oauthProviderSchema.meta({ description: "연동할 소셜 로그인 제공자" }),
+    idToken: z
+      .string()
+      .optional()
+      .meta({ description: "ID Token (Apple, Google용 - provider에 따라 필수)" }),
     accessToken: z
       .string()
       .optional()
-      .describe("Access Token (Kakao, Naver용 - provider에 따라 필수)"),
-    nonce: z.string().min(1).optional().describe("Apple Sign-In nonce (Apple 연동 시 사용)"),
+      .meta({ description: "Access Token (Kakao, Naver용 - provider에 따라 필수)" }),
+    nonce: z
+      .string()
+      .min(1)
+      .optional()
+      .meta({ description: "Apple Sign-In nonce (Apple 연동 시 사용)" }),
   })
   .refine(
     (data) => {
@@ -359,46 +370,44 @@ export const linkSocialAccountSchema = z
       path: ["idToken"],
     },
   )
-  .describe("소셜 계정 연동 요청");
+  .meta({ description: "소셜 계정 연동 요청" });
 
 export type LinkSocialAccountInput = z.infer<typeof linkSocialAccountSchema>;
 
 export const unlinkAccountSchema = z
   .object({
-    provider: oauthProviderSchema.describe("연결 해제할 소셜 로그인 제공자"),
+    provider: oauthProviderSchema.meta({ description: "연결 해제할 소셜 로그인 제공자" }),
   })
-  .describe("소셜 계정 연결 해제 요청");
-
-export type UnlinkAccountInput = z.infer<typeof unlinkAccountSchema>;
+  .meta({ description: "소셜 계정 연결 해제 요청" });
 
 export const exchangeCodeSchema = z
   .object({
     code: z
       .string()
       .min(1, "교환 코드가 필요합니다")
-      .describe("OAuth 인증 후 발급된 일회용 교환 코드 (base64url 인코딩)"),
+      .meta({ description: "OAuth 인증 후 발급된 일회용 교환 코드 (base64url 인코딩)" }),
   })
-  .describe("OAuth 토큰 교환 요청");
+  .meta({ description: "OAuth 토큰 교환 요청" });
 
 export type ExchangeCodeInput = z.infer<typeof exchangeCodeSchema>;
 
 /** 브라우저로 여는 웹 OAuth 시작. 앱은 redirect_uri·mode만 보내고 state는 생략하면 서버가 만든다 */
 export const oauthStartQuerySchema = z
   .object({
-    state: z.string().optional().describe("CSRF 방지용 상태 값 (생략하면 서버가 만든다)"),
-    redirect_uri: z
+    state: z
       .string()
       .optional()
-      .describe("인증 완료 후 리다이렉트될 URI (허용 목록 밖이면 aido://auth/callback)"),
+      .meta({ description: "CSRF 방지용 상태 값 (생략하면 서버가 만든다)" }),
+    redirect_uri: z.string().optional().meta({
+      description: "인증 완료 후 리다이렉트될 URI (허용 목록 밖이면 aido://auth/callback)",
+    }),
     mode: z
       .enum(OAUTH_MODES)
       .optional()
-      .describe("OAuth 모드 (login: 로그인, link: 계정 연동). 기본값은 login"),
-    user_hint: entityIdSchema.optional().describe("계정 연동을 시작한 사용자 ID"),
+      .meta({ description: "OAuth 모드 (login: 로그인, link: 계정 연동). 기본값은 login" }),
+    user_hint: entityIdSchema.optional().meta({ description: "계정 연동을 시작한 사용자 ID" }),
   })
-  .describe("웹 OAuth 시작 요청");
-
-export type OAuthStartQuery = z.infer<typeof oauthStartQuerySchema>;
+  .meta({ description: "웹 OAuth 시작 요청" });
 
 /**
  * 공급자가 인증 뒤 붙여 보내는 query. 사용자가 공급자 화면에서 취소하면 code 없이 error만 오므로
@@ -406,9 +415,7 @@ export type OAuthStartQuery = z.infer<typeof oauthStartQuerySchema>;
  */
 export const oauthWebCallbackQuerySchema = z
   .object({
-    code: z.string().optional().describe("공급자 authorization code (취소하면 없다)"),
-    state: z.string().optional().describe("시작할 때 보낸 CSRF 검증용 state"),
+    code: z.string().optional().meta({ description: "공급자 authorization code (취소하면 없다)" }),
+    state: z.string().optional().meta({ description: "시작할 때 보낸 CSRF 검증용 state" }),
   })
-  .describe("웹 OAuth 콜백 요청");
-
-export type OAuthWebCallbackQuery = z.infer<typeof oauthWebCallbackQuerySchema>;
+  .meta({ description: "웹 OAuth 콜백 요청" });

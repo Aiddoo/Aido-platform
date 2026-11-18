@@ -4,7 +4,16 @@
     "description": "{{time}} 할 일은 여기서도 {{time}}예요"
   },
   "actions": {
-    "marketingOptOut": "광고성 푸시 그만 받기"
+    "marketingOptOut": "광고성 푸시 그만 받기",
+    "todoReminderComplete": "완료",
+    "todoReminderSnooze": "{{minutes}}분 뒤 다시"
+  },
+  "reminderActions": {
+    "completed": "‘{{title}}’ 완료했어요",
+    "alreadyCompleted": "이미 완료한 할 일이에요",
+    "snoozed": "{{minutes}}분 뒤 다시 알려드릴게요",
+    "snoozedAt": "{{time}}에 알려드려요",
+    "snoozeFailed": "다시 알림을 예약하지 못했어요"
   },
   "marketingOptIn": {
     "title": "혜택·소식도 알림으로 받을까요?",
@@ -45,7 +54,7 @@
     "markAllRead": "모두 읽음",
     "premiumDescription": "구독하면 AI 리포트와 제안을 확인할 수 있어요",
     "loadError": "알림을 불러오지 못했어요",
-    "markAllReadFailed": "모두 읽음으로 바꾸지 못했어요. 잠시 후 다시 시도해 주세요"
+    "markAllReadFailed": "모두 읽음으로 바꾸지 못했어요. 잠시 후 다시 시도해주세요"
   },
   "directions": {
     "received": "받은 알림",
@@ -64,7 +73,7 @@
     "pushLabel": "푸시 알림",
     "pushDescription": "할 일·결제 알림을 이 계정의 모든 기기에서 받아요. 광고성 알림은 따로 동의해요",
     "nightPushLabel": "야간 푸시 알림",
-    "nightPushDescription": "21:00 - 08:00에도 혜택·친구 알림을 받아요. 직접 정한 리마인드는 꺼도 제시간에 와요",
+    "nightPushDescription": "{{start}}부터 {{end}}까지도 혜택·친구 알림을 받아요. 직접 정한 리마인드는 꺼도 제시간에 와요",
     "aiPushLabel": "AI 제안·리포트 알림",
     "aiPushDescription": "새 AI 제안과 주간·월간 리포트가 준비되면 알려줘요. 꺼도 앱의 알림에서 볼 수 있어요",
     "marketingLabel": "마케팅 수신 동의",
@@ -115,8 +124,8 @@
       "granted": "허용됨"
     },
     "toasts": {
-      "requestFailed": "알림 권한을 묻지 못했어요. 기기 설정에서 켜 주세요",
-      "settingsOpenFailed": "설정을 열지 못했어요. 기기 설정에서 직접 켜 주세요"
+      "requestFailed": "알림 권한을 묻지 못했어요. 기기 설정에서 켜주세요",
+      "settingsOpenFailed": "설정을 열지 못했어요. 기기 설정에서 직접 켜주세요"
     }
   },
   "bell": {

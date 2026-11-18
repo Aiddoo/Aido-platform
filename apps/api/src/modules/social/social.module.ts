@@ -1,37 +1,37 @@
 import { Module } from "@nestjs/common";
 
-import { SocialBlocksModule } from "./blocks/social-blocks.module.js";
 import { SocialCheersModule } from "./cheers/social-cheers.module.js";
-import { SocialFriendsModule } from "./friends/social-friends.module.js";
+import { SocialFriendshipsModule } from "./friendships/social-friendships.module.js";
 import { SocialInviteRedemptionsModule } from "./invite-redemptions/social-invite-redemptions.module.js";
 import { SocialInvitesModule } from "./invites/social-invites.module.js";
 import { SocialNudgesModule } from "./nudges/social-nudges.module.js";
 import { SocialReminderNudgesModule } from "./reminder-nudges/social-reminder-nudges.module.js";
-import { SocialReportsAdminModule } from "./reports/social-reports-admin.module.js";
-import { SocialReportsModule } from "./reports/social-reports.module.js";
+import { SocialUserBlocksModule } from "./user-blocks/social-user-blocks.module.js";
+import { SocialUserReportsAdminModule } from "./user-reports/social-user-reports-admin.module.js";
+import { SocialUserReportsModule } from "./user-reports/social-user-reports.module.js";
 
 @Module({
   imports: [
-    SocialBlocksModule,
+    SocialUserBlocksModule,
     SocialCheersModule,
-    SocialFriendsModule,
+    SocialFriendshipsModule,
     SocialNudgesModule,
     SocialReminderNudgesModule,
     SocialInvitesModule,
     SocialInviteRedemptionsModule,
-    SocialReportsModule,
-    SocialReportsAdminModule,
+    SocialUserReportsModule,
+    SocialUserReportsAdminModule,
   ],
   exports: [
-    SocialBlocksModule,
+    SocialUserBlocksModule,
     SocialCheersModule,
-    SocialFriendsModule,
+    SocialFriendshipsModule,
     SocialNudgesModule,
     SocialReminderNudgesModule,
     SocialInvitesModule,
     SocialInviteRedemptionsModule,
-    SocialReportsModule,
-    SocialReportsAdminModule,
+    SocialUserReportsModule,
+    SocialUserReportsAdminModule,
   ],
 })
 export class SocialModule {}

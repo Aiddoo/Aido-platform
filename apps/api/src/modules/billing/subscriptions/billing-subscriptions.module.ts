@@ -3,8 +3,9 @@ import { ConfigModule } from "@nestjs/config";
 import { HttpClientModule } from "@nestjs/http-client";
 
 import { BillingPremiumGrantsModule } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
-import { IdentityUserAccessModule } from "#api/modules/identity/users/identity-users.public";
-import { NotificationPushModule } from "#api/modules/notification/notification-delivery.public";
+import { IdentityUsersQueriesModule } from "#api/modules/identity/users/identity-users.public";
+import { NotificationNotificationsModule } from "#api/modules/notification/notifications/notification-notifications.public";
+import { NotificationPushDispatchesModule } from "#api/modules/notification/push-dispatches/notification-push-dispatches.public";
 import { OperationsAdminNoticesModule } from "#api/modules/operations/admin-notices/operations-admin-notices.public";
 
 import { billingSubscriptionsConfig } from "./billing-subscriptions.config.js";
@@ -18,9 +19,10 @@ import { RevenueCatWebhookController } from "./presentation/http/v1/revenuecat-w
 @Module({
   imports: [
     BillingPremiumGrantsModule,
-    IdentityUserAccessModule,
+    IdentityUsersQueriesModule,
     OperationsAdminNoticesModule,
-    NotificationPushModule,
+    NotificationNotificationsModule,
+    NotificationPushDispatchesModule,
     ConfigModule.forFeature(billingSubscriptionsConfig),
     HttpClientModule.register({
       name: REVENUECAT_HTTP_CLIENT,

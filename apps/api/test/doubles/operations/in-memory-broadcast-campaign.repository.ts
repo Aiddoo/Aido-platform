@@ -1,6 +1,6 @@
-import { BroadcastCampaignRepositoryPort } from "#api/modules/operations/broadcasts/application/ports/broadcast-campaign.repository.port";
-import { BroadcastCampaignId } from "#api/modules/operations/broadcasts/domain/broadcast-campaign-id.vo";
-import { BroadcastCampaign } from "#api/modules/operations/broadcasts/domain/broadcast-campaign.aggregate";
+import { BroadcastCampaignRepositoryPort } from "#api/modules/operations/broadcast-campaigns/application/ports/broadcast-campaign.repository.port";
+import { BroadcastCampaignId } from "#api/modules/operations/broadcast-campaigns/domain/broadcast-campaign-id.vo";
+import { BroadcastCampaign } from "#api/modules/operations/broadcast-campaigns/domain/broadcast-campaign.aggregate";
 
 // 저장 사본을 두어 save 없이 바꾼 Aggregate가 저장소 상태로 새지 않게 한다
 function copyOf(campaign: BroadcastCampaign): BroadcastCampaign {

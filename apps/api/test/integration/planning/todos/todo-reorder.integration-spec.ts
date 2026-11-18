@@ -9,7 +9,11 @@ import { todo, todoCategory, user } from "#api/platform/database/schema/index";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
-import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import {
+  createTodoCategoryRowFixture,
+  createTodoRowFixture,
+} from "#test/fixtures/planning/todo-row.fixture";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -48,12 +52,13 @@ describe("할 일 순서 바꾸기 — 간격 정수 (실제 PostgreSQL)", () =>
 
   beforeAll(async () => {
     client = await database.start();
-    const { txHost, uow } = createDatabaseTransactionFixture(client);
+    const { transactionHost, uow } = createDatabaseTransactionFixture(client);
     useCase = new ReorderTodoUseCase({
-      todoRepository: new DrizzleTodoRepository(txHost, new DateClock()),
-      todoReadRepository: new DrizzleTodoReadRepository(txHost),
+      clock: new DateClock(),
+      todoRepository: new DrizzleTodoRepository(transactionHost, new DateClock()),
+      todoReadRepository: new DrizzleTodoReadRepository(transactionHost),
       unitOfWork: uow,
-      mutationLock: new PostgresMutationLockAdapter(txHost),
+      mutationLock: new PostgresMutationLockAdapter(transactionHost),
       todoCache: { invalidateFriendTodos: async () => undefined },
       logger: new SilentLogger(),
     });
@@ -63,23 +68,23 @@ describe("할 일 순서 바꾸기 — 간격 정수 (실제 PostgreSQL)", () =>
     recording = null;
     await database.cleanup();
     userId = createEntityId();
-    await client.insert(user).values(UserFixture.create({ id: userId, userTag: "REORDER1" }));
+    await client.insert(user).values(createUserRowFixture({ id: userId, userTag: "REORDER1" }));
     otherUserId = createEntityId();
     await client
       .insert(user)
       .values(
-        UserFixture.create({ id: otherUserId, email: "other@example.com", userTag: "REORDER2" }),
+        createUserRowFixture({ id: otherUserId, email: "other@example.com", userTag: "REORDER2" }),
       );
-    const category = TodoCategoryFixture.create({ userId });
+    const category = createTodoCategoryRowFixture({ userId });
     await client.insert(todoCategory).values(category);
     categoryId = category.id;
-    const otherCategory = TodoCategoryFixture.create({ userId: otherUserId });
+    const otherCategory = createTodoCategoryRowFixture({ userId: otherUserId });
     await client.insert(todoCategory).values(otherCategory);
     await client
       .insert(todo)
       .values(
         omit(
-          TodoFixture.create({ userId: otherUserId, categoryId: otherCategory.id, sortOrder: 1 }),
+          createTodoRowFixture({ userId: otherUserId, categoryId: otherCategory.id, sortOrder: 1 }),
           ["id"],
         ),
       );
@@ -94,7 +99,7 @@ describe("할 일 순서 바꾸기 — 간격 정수 (실제 PostgreSQL)", () =>
       .insert(todo)
       .values(
         sortOrders.map((sortOrder) =>
-          omit(TodoFixture.create({ userId, categoryId, sortOrder }), ["id"]),
+          omit(createTodoRowFixture({ userId, categoryId, sortOrder }), ["id"]),
         ),
       )
       .returning({ id: todo.id });

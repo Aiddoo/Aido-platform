@@ -7,25 +7,25 @@ import {
 
 export const userPreferenceSchema = z
   .object({
-    pushEnabled: z.boolean().describe("푸시 알림 전체 활성화 여부"),
-    nightPushEnabled: z.boolean().describe("야간 푸시 알림 활성화 여부 (21:00-08:00)"),
-    timezone: z.string().describe("IANA 타임존"),
-    morningReminderHour: z.number().int().describe("아침 리마인더 시간 (0-11)"),
-    morningReminderMinute: z.number().int().describe("아침 리마인더 분 (0-59)"),
-    eveningReminderHour: z.number().int().describe("저녁 리마인더 시간 (12-23)"),
-    eveningReminderMinute: z.number().int().describe("저녁 리마인더 분 (0-59)"),
+    pushEnabled: z.boolean().meta({ description: "푸시 알림 전체 활성화 여부" }),
+    nightPushEnabled: z.boolean().meta({ description: "야간 푸시 알림 활성화 여부 (21:00-08:00)" }),
+    timezone: z.string().meta({ description: "IANA 타임존" }),
+    morningReminderHour: z.int().meta({ description: "아침 리마인더 시간 (0-11)" }),
+    morningReminderMinute: z.int().meta({ description: "아침 리마인더 분 (0-59)" }),
+    eveningReminderHour: z.int().meta({ description: "저녁 리마인더 시간 (12-23)" }),
+    eveningReminderMinute: z.int().meta({ description: "저녁 리마인더 분 (0-59)" }),
     timeFormat: z
       .enum(TIME_FORMATS)
-      .describe("시간 표시 형식 (TWELVE_HOUR: 12시간제, TWENTY_FOUR_HOUR: 24시간제)"),
-    weatherMorningEnabled: z.boolean().describe("오전 날씨 알림 활성화 여부"),
-    weatherMorningHour: z.number().int().describe("오전 날씨 알림 시간 (0-23)"),
-    weatherMorningMinute: z.number().int().describe("오전 날씨 알림 분 (0-59)"),
-    weatherEveningEnabled: z.boolean().describe("오후 날씨 알림 활성화 여부"),
-    weatherEveningHour: z.number().int().describe("오후 날씨 알림 시간 (0-23)"),
-    weatherEveningMinute: z.number().int().describe("오후 날씨 알림 분 (0-59)"),
-    aiPushEnabled: z
-      .boolean()
-      .describe("AI 제안·주간·월간 리포트 푸시 활성화 여부 (1.16.0+, 알림함 기록은 그대로 남음)"),
+      .meta({ description: "시간 표시 형식 (TWELVE_HOUR: 12시간제, TWENTY_FOUR_HOUR: 24시간제)" }),
+    weatherMorningEnabled: z.boolean().meta({ description: "오전 날씨 알림 활성화 여부" }),
+    weatherMorningHour: z.int().meta({ description: "오전 날씨 알림 시간 (0-23)" }),
+    weatherMorningMinute: z.int().meta({ description: "오전 날씨 알림 분 (0-59)" }),
+    weatherEveningEnabled: z.boolean().meta({ description: "오후 날씨 알림 활성화 여부" }),
+    weatherEveningHour: z.int().meta({ description: "오후 날씨 알림 시간 (0-23)" }),
+    weatherEveningMinute: z.int().meta({ description: "오후 날씨 알림 분 (0-59)" }),
+    aiPushEnabled: z.boolean().meta({
+      description: "AI 제안·주간·월간 리포트 푸시 활성화 여부 (1.16.0+, 알림함 기록은 그대로 남음)",
+    }),
   })
   .meta({
     example: {
@@ -46,8 +46,6 @@ export const userPreferenceSchema = z
       aiPushEnabled: true,
     },
   });
-
-export type UserPreference = z.infer<typeof userPreferenceSchema>;
 
 export const preferenceResponseSchema = userPreferenceSchema.meta({
   example: {
@@ -90,5 +88,3 @@ export const updatePreferenceResponseSchema = userPreferenceSchema.meta({
     aiPushEnabled: true,
   },
 });
-
-export type UpdatePreferenceResponse = z.infer<typeof updatePreferenceResponseSchema>;

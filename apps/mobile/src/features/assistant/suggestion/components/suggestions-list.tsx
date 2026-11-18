@@ -23,7 +23,6 @@ import {
 import { useMutation, usePrefetchQuery, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { router, useIsFocused } from 'expo-router';
 
-import { SUGGESTION_ANALYSIS_PERIOD_DAYS } from '../constants/suggestion.constants';
 import { isSuggestionsPremiumRequiredError } from '../domains/suggestion.error';
 import type { AiSuggestion } from '../domains/suggestion.model';
 import { useActOnSuggestionMutationOptions } from '../queries/suggestion.mutations';
@@ -210,7 +209,7 @@ SuggestionsList.Free = function Free() {
               evidence: {
                 recordedCount: 14,
                 completedCount: 13,
-                periodDays: SUGGESTION_ANALYSIS_PERIOD_DAYS,
+                periodDays: AI_SUGGESTION_LIMITS.ANALYSIS_PERIOD_DAYS,
               },
             }}
             timeFormat={timeFormat}
@@ -225,7 +224,7 @@ SuggestionsList.Free = function Free() {
               evidence: {
                 recordedCount: 6,
                 completedCount: 5,
-                periodDays: SUGGESTION_ANALYSIS_PERIOD_DAYS,
+                periodDays: AI_SUGGESTION_LIMITS.ANALYSIS_PERIOD_DAYS,
               },
             }}
             timeFormat={timeFormat}
@@ -240,7 +239,7 @@ SuggestionsList.Free = function Free() {
               evidence: {
                 recordedCount: 4,
                 completedCount: 3,
-                periodDays: SUGGESTION_ANALYSIS_PERIOD_DAYS,
+                periodDays: AI_SUGGESTION_LIMITS.ANALYSIS_PERIOD_DAYS,
               },
             }}
             timeFormat={timeFormat}
@@ -255,7 +254,7 @@ SuggestionsList.Free = function Free() {
               evidence: {
                 recordedCount: 2,
                 completedCount: 2,
-                periodDays: SUGGESTION_ANALYSIS_PERIOD_DAYS,
+                periodDays: AI_SUGGESTION_LIMITS.ANALYSIS_PERIOD_DAYS,
               },
             }}
             timeFormat={timeFormat}

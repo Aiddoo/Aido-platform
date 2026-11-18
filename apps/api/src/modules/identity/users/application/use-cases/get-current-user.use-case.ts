@@ -1,18 +1,18 @@
 import { PREMIUM_FEATURE_KEYS } from "@aido/api/vocabulary";
 import { pick } from "es-toolkit";
 
-import type { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
-import type { QuotaLedgerPort } from "#api/modules/access/quotas/access-quotas.public";
+import type { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
+import type { QuotaLedgerPort } from "#api/modules/access/quota-charges/access-quota-charges.public";
 import type { PremiumAccessReaderPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 import type { DailySendUsageReaderPort } from "#api/modules/social/cheers/social-cheers.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
 
-import type { AuthCachePort } from "../../../auth/application/ports/auth-collaboration.port.js";
-import type { AuthUserRepositoryPort } from "../../../auth/application/ports/auth-user.repository.port.js";
+import type { UserProfileCachePort } from "../ports/user-profile-cache.port.js";
+import type { UserRepositoryPort } from "../ports/user.repository.port.js";
 import type {
-  CurrentUserEntitlements,
-  CurrentUserResult,
+  CurrentUserEntitlementsReadModel,
+  CurrentUserReadModel,
 } from "../read-models/current-user.read-model.js";
 import { userNotFound } from "../users.errors.js";
 
@@ -24,8 +24,8 @@ export interface GetCurrentUserQuery {
 }
 
 interface GetCurrentUserDependencies {
-  readonly userRepository: Pick<AuthUserRepositoryPort, "findByIdWithProfile">;
-  readonly cacheService: Pick<AuthCachePort, "wrapUserProfile">;
+  readonly userRepository: Pick<UserRepositoryPort, "findByIdWithProfile">;
+  readonly cacheService: Pick<UserProfileCachePort, "wrapUserProfile">;
   readonly premiumAccessReader: Pick<PremiumAccessReaderPort, "getPremiumAccess">;
   readonly entitlementReader: Pick<EntitlementReaderPort, "getEntitlements">;
   readonly quotaLedger: Pick<QuotaLedgerPort, "read">;
@@ -45,7 +45,7 @@ export class GetCurrentUserUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GetCurrentUserQuery): Promise<CurrentUserResult> {
+  async execute(input: GetCurrentUserQuery): Promise<CurrentUserReadModel> {
     const { sessionId } = input;
     const userId = UserId.reconstitute(input.userId);
     const cachedProfile = await this.#dependencies.cacheService.wrapUserProfile(
@@ -53,13 +53,13 @@ export class GetCurrentUserUseCase {
       async () => {
         const user = await this.#dependencies.userRepository.findByIdWithProfile(userId);
         if (user == null) {
-          return undefined;
+          return null;
         }
         // 없는 사용자에게 보상·구독 조회를 더 하지 않는다
         const premiumAccess = await this.#dependencies.premiumAccessReader.getPremiumAccess(userId);
 
         return {
-          id: user.id,
+          id: userId,
           email: user.email,
           role: user.role,
           userTag: user.userTag,
@@ -91,7 +91,7 @@ export class GetCurrentUserUseCase {
     const { isPremium, entitlements } = await this.#entitlements(userId, input.timezone);
 
     return {
-      userId: cachedProfile.id,
+      userId: cachedProfile.id.value,
       email: cachedProfile.email,
       sessionId,
       role: cachedProfile.role,
@@ -121,7 +121,7 @@ export class GetCurrentUserUseCase {
   async #entitlements(
     userId: UserId,
     timezone: string,
-  ): Promise<{ isPremium: boolean; entitlements: CurrentUserEntitlements }> {
+  ): Promise<{ isPremium: boolean; entitlements: CurrentUserEntitlementsReadModel }> {
     const { entitlementReader, quotaLedger, cheerUsageReader, nudgeUsageReader } =
       this.#dependencies;
     const [userEntitlements, aiUsage, cheerUsage, nudgeUsage] = await Promise.all([

@@ -1,0 +1,74 @@
+{
+  "layout": {
+    "brandName": "아이두",
+    "logoAlt": "아이두",
+    "noReply": "이 메일은 발신 전용이에요.",
+    "contact": "문의",
+    "terms": "이용약관",
+    "privacy": "개인정보처리방침"
+  },
+  "code": {
+    "label": "인증 코드",
+    "expiry": "코드는 {duration} 동안 쓸 수 있어요.",
+    "verification": {
+      "subject": "[아이두] 이메일 인증 코드",
+      "preview": "아래 코드를 {duration} 안에 앱에 입력해주세요.",
+      "title": "이메일 인증 코드",
+      "intro": "아이두 가입을 마치려면 아래 코드를 앱에 입력해주세요.",
+      "ignore": "아이두에 가입하지 않았다면 이 메일을 무시해도 돼요."
+    },
+    "password-reset": {
+      "subject": "[아이두] 비밀번호 재설정 코드",
+      "preview": "아래 코드를 {duration} 안에 앱에 입력해주세요.",
+      "title": "비밀번호 재설정 코드",
+      "intro": "새 비밀번호를 정하려면 아래 코드를 앱에 입력해주세요.",
+      "ignore": "요청하지 않았다면 이 메일을 무시하세요. 코드를 입력하지 않으면 비밀번호는 바뀌지 않아요."
+    },
+    "password-setup": {
+      "subject": "[아이두] 비밀번호 설정 인증 코드",
+      "preview": "아래 코드를 {duration} 안에 앱에 입력해주세요.",
+      "title": "비밀번호 설정 코드",
+      "intro": "이메일로도 로그인하려면 아래 코드를 앱에 입력하고 비밀번호를 정해주세요.",
+      "ignore": "요청하지 않았다면 이 메일을 무시하세요. 계정에는 아무것도 바뀌지 않아요."
+    }
+  },
+  "inquiry": {
+    "subject": "[아이두 문의접수] [{categoryLabel}]",
+    "preview": "{categoryLabel} 문의 · {userEmail}",
+    "eyebrow": "문의 접수 알림",
+    "title": "새로운 문의가 접수되었습니다",
+    "userEmail": "사용자 이메일",
+    "category": "카테고리",
+    "submittedAt": "접수 시각",
+    "content": "문의 내용",
+    "checklistTitle": "CS 처리 체크리스트",
+    "checklist": {
+      "classify": "문의 유형 분류",
+      "reproduce": "재현·확인 필요 여부 판단",
+      "reply": "사용자 회신 문안 작성"
+    }
+  },
+  "user-report": {
+    "subject": "[아이두 신고접수] [{reasonLabel}] {targetTypeLabel} · {targetUserTag}",
+    "preview": "{reasonLabel} 신고 · {targetUserTag}",
+    "eyebrow": "사용자 신고 접수 알림",
+    "title": "새로운 신고가 접수되었습니다",
+    "reportId": "신고 ID",
+    "reason": "사유",
+    "targetType": "대상 종류",
+    "targetId": "콘텐츠 ID",
+    "targetUser": "신고된 사용자",
+    "reporter": "신고한 사용자",
+    "submittedAt": "접수 시각",
+    "resolutionEndpoint": "처리 API",
+    "detail": "신고 내용",
+    "noDetail": "(상세 내용 없음)",
+    "checklistTitle": "처리 체크리스트",
+    "checklist": {
+      "review": "콘텐츠 ID로 원문 확인",
+      "act": "약관 위반이면 콘텐츠 삭제·계정 제한",
+      "resolve": "처리 API로 조치 내용을 남겨 RESOLVED로 변경"
+    },
+    "openDocs": "관리자 문서에서 처리하기"
+  }
+}

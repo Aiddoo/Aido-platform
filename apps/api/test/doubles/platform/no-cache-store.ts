@@ -3,17 +3,16 @@ import {
   type CacheStats,
   CacheStorePort,
   type CacheValueSchema,
-  type CacheWrapTtlMs,
+  type CacheWrapRequest,
 } from "#api/platform/cache/cache-store.port";
 
-// 아무것도 저장하지 않고 늘 미스로 읽는다. 무효화 계약을 확인하도록 wrap·del 키만 남긴다
+// 아무것도 저장하지 않고 늘 미스로 읽는다. 키·TTL 계약을 확인하도록 set·del 키만 남긴다
 export class NoCacheStore extends CacheStorePort {
-  readonly wrapped: { readonly key: string; readonly ttlMs: number | "by-value" | undefined }[] =
-    [];
+  readonly stored: { readonly key: string; readonly ttlMs: number | undefined }[] = [];
   readonly deletedKeys: string[] = [];
 
   forgetRecords(): void {
-    this.wrapped.length = 0;
+    this.stored.length = 0;
     this.deletedKeys.length = 0;
   }
 
@@ -21,7 +20,9 @@ export class NoCacheStore extends CacheStorePort {
     return undefined;
   }
 
-  async set(): Promise<void> {}
+  async set<T>(key: string, _value: T, ttlMs?: number): Promise<void> {
+    this.stored.push({ key, ttlMs });
+  }
 
   async del(key: string): Promise<void> {
     this.deletedKeys.push(key);
@@ -37,14 +38,8 @@ export class NoCacheStore extends CacheStorePort {
     return 0;
   }
 
-  wrap<T>(
-    key: string,
-    _schema: CacheValueSchema<T>,
-    factory: () => Promise<T>,
-    ttlMs?: CacheWrapTtlMs<T>,
-  ): Promise<T> {
-    this.wrapped.push({ key, ttlMs: typeof ttlMs === "function" ? "by-value" : ttlMs });
-    return factory();
+  wrap<T>(request: CacheWrapRequest<T>): Promise<T> {
+    return request.factory();
   }
 
   async has(): Promise<boolean> {

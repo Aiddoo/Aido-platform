@@ -16,11 +16,11 @@ import { runInBackground } from "./non-blocking-init.js";
 
 describe("runInBackground — 부팅 논블로킹 초기화", () => {
   it("작업이 pending이어도 즉시 프로미스를 반환한다 (블로킹 없음)", () => {
-    // Given — 작업 저장소 장애: 영원히 pending인 작업
+    // Given
     const logger = { error: vi.fn() };
     const neverResolves = () => new Promise<void>(() => {});
 
-    // When — 동기적으로 반환되는지 (await 없이)
+    // When
     const result = runInBackground(logger, "test", neverResolves);
 
     // Then
@@ -41,16 +41,19 @@ describe("runInBackground — 부팅 논블로킹 초기화", () => {
   });
 
   it("동기 throw도 호출부로 전파하지 않고 로그만 남긴다 (부트스트랩 크래시 방지)", async () => {
-    // Given — 프로미스를 반환하기 전에 동기적으로 터지는 작업
+    // Given
     const logger = { error: vi.fn() };
     const task = (): Promise<void> => {
       throw new Error("sync boom");
     };
 
-    // When / Then — 호출 자체가 throw하면 안 된다
-    await expect(runInBackground(logger, "Scheduler registration", task)).resolves.toBeUndefined();
+    // When
+    const result = runInBackground(logger, "Scheduler registration", task);
+
+    // Then
+    await expect(result).resolves.toBeUndefined();
     expect(logger.error).toHaveBeenCalledWith({
-      event: "bootstrap.background-init.failed",
+      event: "server.background-initialization.failed",
       task: "Scheduler registration",
       errorType: "Error",
     });
@@ -62,8 +65,12 @@ describe("runInBackground — 부팅 논블로킹 초기화", () => {
     const logger = { error: vi.fn() };
     const task = () => Promise.reject(new Error("Connection is closed."));
 
-    // When / Then — reject되지 않아야 한다
-    await expect(runInBackground(logger, "Scheduler registration", task)).resolves.toBeUndefined();
+    // When
+    const result = runInBackground(logger, "Scheduler registration", task);
+
+    // Then
+    await expect(result).resolves.toBeUndefined();
+
     expect(logger.error).toHaveBeenCalledWith(
       expect.objectContaining({ task: "Scheduler registration", errorType: "Error" }),
     );

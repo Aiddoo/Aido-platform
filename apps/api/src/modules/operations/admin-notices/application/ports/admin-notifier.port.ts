@@ -1,5 +1,5 @@
+import type { AdminNoticePrimitives } from "../../domain/admin-notice.aggregate.js";
 import type { AdminNotificationChannel } from "../../domain/admin-notices.constants.js";
-import type { AdminNotice } from "../read-models/admin-notice.read-model.js";
 
 export type AdminNotifyOutcome =
   | { readonly status: "sent" }
@@ -13,6 +13,6 @@ export type AdminNotifyOutcome =
 export abstract class AdminNotifierPort {
   abstract send(
     channel: AdminNotificationChannel,
-    notice: AdminNotice,
+    notice: AdminNoticePrimitives,
   ): Promise<AdminNotifyOutcome>;
 }

@@ -3,19 +3,18 @@ import type {
   WeatherPrecipitationType,
   WeatherRescheduleReason,
 } from '@aido/api/vocabulary';
-import { type Instant } from '@src/shared/date/instant';
+import { type Instant, toEpochMs } from '@src/shared/date/instant';
 import type { ParseKeys } from 'i18next';
-import { match } from 'ts-pattern';
+import { match, P } from 'ts-pattern';
 
 import type { BriefingRowTone } from '../constants/weather-colors.constants';
 import {
   type AffectedTodo,
   type BriefingResult,
   type ForecastTodo,
-  type HourRange,
   WeatherBriefingPolicy,
 } from '../domains/weather-briefing.model';
-import type { HourlyForecastEntry } from '../domains/weather-report.model';
+import type { HourlyForecastEntry, HourWindow } from '../domains/weather-report.model';
 import { WeatherReschedulePolicy } from '../domains/weather-reschedule.model';
 import { getWeatherConditionLabelKey } from './weather-labels.view-model';
 
@@ -62,19 +61,21 @@ export interface BriefingView {
   mascotCondition: WeatherCondition;
 }
 
-/** 시각·기온 글자는 화면의 시간 형식·온도 단위를 따르므로 바깥에서 받는다. 시각은 할 일과 같은 기기 시간대다. */
+/** 시각·기온 글자는 화면의 시간 형식·온도 단위를 따르므로 바깥에서 받는다. 예보 시각은 기기 시간대, 할 일 시각은 벽시계 그대로다. */
 export interface BriefingViewPorts {
   hourly: readonly HourlyForecastEntry[];
   now: Instant;
   formatClock: (date: Instant) => string;
+  formatTodoTime: (localTime: string) => string;
   formatHour: (date: Instant) => string;
   formatTemperature: (celsius: number) => string;
   formatChance: (percent: number) => string;
 }
 
 export function toBriefingView(briefing: BriefingResult, deps: BriefingViewPorts): BriefingView {
-  const { hourly, now, formatClock, formatHour, formatTemperature, formatChance } = deps;
-  const range = (hours: HourRange): BriefingCopy => ({
+  const { hourly, now, formatClock, formatTodoTime, formatHour, formatTemperature, formatChance } =
+    deps;
+  const range = (hours: HourWindow): BriefingCopy => ({
     key: 'briefing.range',
     values: { start: formatHour(hours.startsAt), end: formatHour(hours.endsAt) },
   });
@@ -137,7 +138,7 @@ export function toBriefingView(briefing: BriefingResult, deps: BriefingViewPorts
         headline: { key: 'briefing.snowy.title' },
         body: {
           key: 'briefing.snowy.body',
-          values: { time: first == null ? '' : formatClock(first.scheduledAt) },
+          values: { time: first == null ? '' : formatTodoTime(first.localTime) },
         },
         rows: todos.map((todo): BriefingRow => ({
           todo,
@@ -183,55 +184,60 @@ export function toBriefingView(briefing: BriefingResult, deps: BriefingViewPorts
         mascotCondition: 'HOT',
       };
     })
-    .with(
-      { kind: 'rainLater' },
-      ({ todos, startsAt, day, dayPart, isSnow, isOvercast }): BriefingView => {
-        const dayPartLabel: BriefingCopy = { key: `briefing.dayPart.${dayPart}` };
-        return {
-          headline: {
-            key: isOvercast ? 'briefing.rainLater.titleGray' : 'briefing.rainLater.title',
-          },
-          body: match({ day, isSnow })
-            .returnType<BriefingCopy>()
-            .with({ day: 'today' }, () => ({
-              key: 'briefing.rainLater.todayBody',
+    .with({ kind: 'rainLater' }, ({ todos, timing, isSnow, isOvercast }): BriefingView => {
+      const isTomorrow = timing.day === 'tomorrow';
+      return {
+        headline: {
+          key: isOvercast ? 'briefing.rainLater.titleGray' : 'briefing.rainLater.title',
+        },
+        body: match(timing)
+          .returnType<BriefingCopy>()
+          .with({ day: 'today' }, ({ startsAt }) => {
+            if (toEpochMs(startsAt) <= toEpochMs(now)) {
+              return {
+                key: isSnow ? 'briefing.rainLater.nowSnowBody' : 'briefing.rainLater.nowBody',
+              };
+            }
+            return {
+              key: isSnow ? 'briefing.rainLater.todaySnowBody' : 'briefing.rainLater.todayBody',
               values: { time: formatHour(startsAt) },
-            }))
-            .with({ day: 'tomorrow', isSnow: true }, () => ({
-              key: 'briefing.rainLater.tomorrowSnowBody',
-              values: { dayPart: dayPartLabel },
-            }))
-            .with({ day: 'tomorrow', isSnow: false }, () => ({
-              key: 'briefing.rainLater.tomorrowRainBody',
-              values: { dayPart: dayPartLabel },
-            }))
-            .exhaustive(),
-          rows: todos.map((todo): BriefingRow => ({
-            todo,
-            advice: {
-              key:
-                day === 'today'
-                  ? 'briefing.rainLater.beforeRain'
-                  : 'briefing.rainLater.beforeTomorrowRain',
-            },
-            tone: 'calm',
-            chipCondition: todo.hour.condition,
-            chipLabel: formatTemperature(todo.hour.temperature),
-          })),
-          action:
-            day === 'tomorrow'
-              ? {
-                  kind: 'suggestTodo',
-                  reason: 'rain_later',
-                  label: { key: 'briefing.rainLater.action' },
-                  title: { key: 'briefing.rainLater.suggestion' },
-                  scheduledAt: null,
-                }
-              : null,
-          mascotCondition: 'CLOUDY',
-        };
-      },
-    )
+            };
+          })
+          .with({ day: 'tomorrow', dayPart: null }, () => ({
+            key: isSnow
+              ? 'briefing.rainLater.tomorrowSnowDayBody'
+              : 'briefing.rainLater.tomorrowRainDayBody',
+          }))
+          .with({ day: 'tomorrow', dayPart: P.nonNullable }, ({ dayPart }) => ({
+            key: isSnow
+              ? 'briefing.rainLater.tomorrowSnowBody'
+              : 'briefing.rainLater.tomorrowRainBody',
+            values: { dayPart: { key: `briefing.dayPart.${dayPart}` } },
+          }))
+          .exhaustive(),
+        rows: todos.map((todo): BriefingRow => ({
+          todo,
+          advice: {
+            key: isTomorrow
+              ? 'briefing.rainLater.beforeTomorrowRain'
+              : 'briefing.rainLater.beforeRain',
+          },
+          tone: 'calm',
+          chipCondition: todo.hour.condition,
+          chipLabel: formatTemperature(todo.hour.temperature),
+        })),
+        action: isTomorrow
+          ? {
+              kind: 'suggestTodo',
+              reason: 'rain_later',
+              label: { key: 'briefing.rainLater.action' },
+              title: { key: 'briefing.rainLater.suggestion' },
+              scheduledAt: null,
+            }
+          : null,
+        mascotCondition: 'CLOUDY',
+      };
+    })
     .with({ kind: 'clear' }, ({ todos, range: hours }): BriefingView => {
       const suggestedAt = WeatherBriefingPolicy.getSuggestedStartAt(hours, hourly, now);
       const isInRange = (todo: ForecastTodo) =>

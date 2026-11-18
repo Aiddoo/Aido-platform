@@ -145,9 +145,12 @@ describe("env 예시에 운영 값을 넣어 시작하는 설정", () => {
   }
 
   it("src의 defineConfig 설정을 빠짐없이 모은다", () => {
+    // When
+    const namespaceNames = namespaces.map((namespace) => namespace.namespace);
+
     // Then
     expect(namespaces).toHaveLength(countDefineConfigCalls());
-    expect(namespaces.map((namespace) => namespace.namespace)).toEqual(
+    expect(namespaceNames).toEqual(
       expect.arrayContaining(["app", "database", "job", "billingSubscriptions"]),
     );
   });
@@ -194,7 +197,8 @@ describe("env 예시에 운영 값을 넣어 시작하는 설정", () => {
       expect.objectContaining({
         connectionString: appPool.connectionString,
         ssl: appPool.ssl,
-        options: appPool.options,
+        options: appPool.options?.replace("statement_timeout=15000", "statement_timeout=60000"),
+        query_timeout: 65_000,
         application_name: "aido-pg-boss",
         max: 3,
         schema: env.JOB_SCHEMA,

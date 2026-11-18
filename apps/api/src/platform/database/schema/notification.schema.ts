@@ -177,11 +177,11 @@ export const pushToken = pgTable(
     deviceId: varchar({ length: 255 }).notNull(),
     id: serial().primaryKey(),
     isActive: boolean().default(true).notNull(),
-    lastUsedAt: instant()
-      .default(sql`now()`)
-      .notNull(),
+    // DB에는 lastUsedAt(기본값 now())이 남아 있다(1.16.0 이미지가 SELECT). 1.18.0에서 지운다(compatibility.md)
     payloadVersion: integer().default(1).notNull(),
     platform: platform().notNull(),
+    // 토큰을 받는 발송 채널(PUSH_CHANNELS). 등록 API v1은 Expo 토큰만 받아 기존 행은 기본값으로 채운다
+    provider: varchar({ length: 20 }).default("EXPO").notNull(),
     sessionId: text(),
     token: varchar({ length: 255 }).notNull(),
     // 등록·비활성화 때 저장소가 ClockPort 시각을 명시한다
@@ -325,6 +325,10 @@ export const pushDispatch = pgTable(
       table.status.asc().nullsLast(),
       table.scheduledAt.asc().nullsLast(),
     ),
+    // 30일 발송 정리가 180일 남기는 관리자 캠페인 발송을 건너뛰고 지울 행만 읽는다(ADMIN_BROADCAST_CAMPAIGN_KEY_PREFIX)
+    index("PushDispatch_status_scheduledAt_outside_broadcast_idx")
+      .using("btree", table.status.asc().nullsLast(), table.scheduledAt.asc().nullsLast())
+      .where(sql`(("campaignKey" IS NULL) OR ("campaignKey" NOT LIKE 'admin-broadcast:%'))`),
     index("PushDispatch_userId_localDate_purpose_idx").using(
       "btree",
       table.userId.asc().nullsLast(),

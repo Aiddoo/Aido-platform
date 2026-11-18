@@ -3,9 +3,12 @@ import { Injectable } from "@nestjs/common";
 import { and, eq, getTableName, gte, lt, type SQL, sql } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 
-import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import {
+  TodoBriefReaderPort,
+  type TodoId,
+} from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { nudge as nudgeTable, todo as todoTable } from "#api/platform/database/schema/index";
+import { nudge as nudgeTable } from "#api/platform/database/schema/index";
 import { nextSequenceValue } from "#api/platform/database/sequence";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -18,16 +21,13 @@ import type { NudgeInteractionTodoReadModel } from "../../application/read-model
 import { NudgeId } from "../../domain/nudge-id.vo.js";
 import type { NudgeTargetTodo } from "../../domain/nudge-target-todo.vo.js";
 import type { Nudge } from "../../domain/nudge.aggregate.js";
-import { listThanksCandidateIds, toNudgeInteractionTodoReadModel } from "./drizzle-nudge.reader.js";
-import { toNudge, toNudgeRow, toNudgeTargetTodo } from "./nudge-row.mapper.js";
-
-const INTERACTION_TODO_COLUMNS = {
-  id: todoTable.id,
-  userId: todoTable.userId,
-  title: todoTable.title,
-  completed: todoTable.completed,
-  visibility: todoTable.visibility,
-};
+import { listThanksCandidateIds } from "./drizzle-nudge.reader.js";
+import {
+  toNudge,
+  toNudgeInteractionTodoReadModel,
+  toNudgeRow,
+  toNudgeTargetTodo,
+} from "./nudge-row.mapper.js";
 
 // 동시에 읽음·감사가 저장돼도 먼저 남은 시각을 덮어쓰지 않는다
 function keepStoredInstant(column: AnyPgColumn): SQL {
@@ -50,14 +50,15 @@ const NUDGE_UPSERT_SET = {
 
 @Injectable()
 export class DrizzleNudgeRepository implements NudgeRepositoryPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #todoBriefReader: TodoBriefReaderPort;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
-  }
-
-  get #db() {
-    return this.#txHost.tx;
+  constructor(
+    transactionHost: TransactionHost<DrizzleTransactionalAdapter>,
+    todoBriefReader: TodoBriefReaderPort,
+  ) {
+    this.#transactionHost = transactionHost;
+    this.#todoBriefReader = todoBriefReader;
   }
 
   async nextId(): Promise<NudgeId> {
@@ -100,7 +101,11 @@ export class DrizzleNudgeRepository implements NudgeRepositoryPort {
   }
 
   async listThanksCandidates(query: NudgeThanksCandidateQuery): Promise<Nudge[]> {
-    const ids = await listThanksCandidateIds(this.#db, query);
+    const ids = await listThanksCandidateIds({
+      db: this.#db,
+      todoBriefReader: this.#todoBriefReader,
+      query,
+    });
     if (ids.length === 0) {
       return [];
     }
@@ -126,23 +131,19 @@ export class DrizzleNudgeRepository implements NudgeRepositoryPort {
   }
 
   async findTargetTodo(todoId: TodoId): Promise<NudgeTargetTodo | null> {
-    const row = await this.#db.query.todo.findFirst({
-      columns: { userId: true, title: true, visibility: true, startDate: true, endDate: true },
-      where: { id: todoId.value },
-    });
-    return row == null ? null : toNudgeTargetTodo(row);
+    const [todo] = await this.#todoBriefReader.findByIds([todoId]);
+    return todo == null ? null : toNudgeTargetTodo(todo);
   }
 
   async lockInteractionTodo(
     todoId: TodoId,
     ownerId: UserId,
   ): Promise<NudgeInteractionTodoReadModel | null> {
-    const [row] = await this.#db
-      .select(INTERACTION_TODO_COLUMNS)
-      .from(todoTable)
-      .where(and(eq(todoTable.id, todoId.value), eq(todoTable.userId, ownerId.value)))
-      .limit(1)
-      .for("update");
-    return row == null ? null : toNudgeInteractionTodoReadModel(row);
+    const todo = await this.#todoBriefReader.lockOwnedTodo(todoId, ownerId);
+    return todo == null ? null : toNudgeInteractionTodoReadModel(todo);
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

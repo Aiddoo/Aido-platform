@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createUserReportSchema } from "../src/index.js";
+import { createUserReportSchema } from "../src/contracts/user-report/v1/index.js";
 
 const targetUserId = "clz7x5p8k0005qz0z8z8z8z8z";
 

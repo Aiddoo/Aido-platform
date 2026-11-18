@@ -1,9 +1,9 @@
+import type { Localized, SupportedLocale } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
-import type { SupportedLocale } from "#api/shared/domain/locale";
-
-import type { PromptDefinition } from "../../../generation/application/messages/prompt-definition.messages.js";
-import { wrapUntrusted } from "../../../generation/application/messages/untrusted-input.messages.js";
+import type { PromptDefinition } from "../../../ai-generations/application/messages/prompt-definition.messages.js";
+import { wrapUntrusted } from "../../../ai-generations/application/messages/untrusted-input.messages.js";
+import type { SuggestionDraft } from "../../../shared/domain/ai-task-outputs.constants.js";
 import { dedupeByTitlePrefixAndDays } from "../../domain/pattern-filter.domain-service.js";
 import type { SuggestionAnalysisTrigger } from "../../domain/suggestion-analysis.constants.js";
 import {
@@ -11,20 +11,19 @@ import {
   resolveSuggestionPicks,
   suggestionModeOf,
 } from "../../domain/suggestion-candidates.domain-service.js";
-import type { DetectedPattern } from "../../domain/suggestion.constants.js";
-import type { SuggestionContext } from "../read-models/suggestion-context.read-model.js";
+import type { DetectedPattern } from "../../domain/suggestions.constants.js";
+import type { SuggestionContextReadModel } from "../read-models/suggestion-context.read-model.js";
+import { SUGGESTION_SYSTEM_EN } from "./locales/en/suggestion-system.messages.js";
+import { SUGGESTION_SYSTEM_KO } from "./locales/ko/suggestion-system.messages.js";
 import { buildSuggestionData } from "./suggestion-data.messages.js";
-import { type SuggestionDraft, suggestionDraftSchema } from "./suggestion-draft.wire.js";
 import { suggestionReasonCopy } from "./suggestion-reason.messages.js";
-import { SUGGESTION_SYSTEM_EN } from "./suggestion-system-en.messages.js";
-import { SUGGESTION_SYSTEM_KO } from "./suggestion-system-ko.messages.js";
 
 export interface SuggestionNormalizeContext {
-  readonly context: SuggestionContext;
+  readonly context: SuggestionContextReadModel;
   readonly locale: SupportedLocale;
 }
 
-const SYSTEM: Readonly<Record<SupportedLocale, string>> = {
+const SYSTEM: Localized<string> = {
   ko: SUGGESTION_SYSTEM_KO,
   en: SUGGESTION_SYSTEM_EN,
 };
@@ -68,8 +67,8 @@ function normalizeSuggestions(
 }
 
 export const suggestionPrompt: PromptDefinition<
-  SuggestionContext,
-  SuggestionDraft,
+  "suggestion",
+  SuggestionContextReadModel,
   DetectedPattern[],
   SuggestionNormalizeContext
 > = {
@@ -78,7 +77,6 @@ export const suggestionPrompt: PromptDefinition<
   taskClass: "background",
   // 후보 30개(제목 80·카테고리 50자, 요일 7개)와 이력 30개(제목 80자)의 최대 user 턴이 약 33,700자다.
   maxInputChars: 36_000,
-  schema: suggestionDraftSchema,
   build: (context, locale) => ({
     system: SYSTEM[locale],
     prompt: wrapUntrusted("suggestion_data", buildSuggestionData(context)),

@@ -1,4 +1,4 @@
-import { TodoCategoryLockKeys } from "#api/modules/planning/categories/planning-categories.public";
+import { TodoCategoryLockKeys } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import type {
   CreateTodoData,
   StagedTodoCreation,

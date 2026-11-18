@@ -33,6 +33,15 @@ export function useGetWeeklyAchievementQueryOptions({
   });
 }
 
+export function useGetAchievementYearsQueryOptions() {
+  const achievementApi = useAchievementApi();
+
+  return queryOptions({
+    queryKey: ACHIEVEMENT_QUERY_KEYS.weeklyYears(),
+    queryFn: async ({ signal }) => unwrap(await achievementApi.getWeeklyAchievementYears(signal)),
+  });
+}
+
 export function useGetWeeklyAchievementsInfiniteQueryOptions({ year }: { year: number }) {
   const achievementApi = useAchievementApi();
 

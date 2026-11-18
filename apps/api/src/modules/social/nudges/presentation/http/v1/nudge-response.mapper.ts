@@ -8,7 +8,7 @@ import type {
   NudgeSender,
   ReceivedNudgesResponse,
   SentNudgesResponse,
-} from "@aido/api";
+} from "@aido/api/contracts/nudge/v1";
 
 import { resolveProfileImage } from "#api/platform/http/profile/profile-image.resolver";
 import { toIsoString } from "#api/shared/domain/time/instant";

@@ -26,12 +26,12 @@ const whereUsageKey = (key: UsageKey) =>
 /** 기간별 한 행을 `ON CONFLICT DO UPDATE … RETURNING`으로 원자적으로 더한다(QuotaUsage와 같은 방식). */
 @Injectable()
 export class DrizzleUsageMeterAdapter extends UsageMeterPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
   readonly #clock: ClockPort;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
     super();
-    this.#txHost = txHost;
+    this.#transactionHost = transactionHost;
     this.#clock = clock;
   }
 
@@ -49,7 +49,7 @@ export class DrizzleUsageMeterAdapter extends UsageMeterPort {
       });
     }
     const at = this.#clock.now();
-    const rows = await this.#txHost.tx
+    const rows = await this.#transactionHost.tx
       .insert(outboundUsage)
       .values(
         [...merged.values()].map(({ key, amount }) => ({ ...key, used: amount, updatedAt: at })),
@@ -74,7 +74,7 @@ export class DrizzleUsageMeterAdapter extends UsageMeterPort {
       return { isAccepted: false, total: current ?? 0 };
     }
     const at = this.#clock.now();
-    const [reserved] = await this.#txHost.tx
+    const [reserved] = await this.#transactionHost.tx
       .insert(outboundUsage)
       .values({ ...key, used: amount, updatedAt: at })
       .onConflictDoUpdate({
@@ -91,7 +91,7 @@ export class DrizzleUsageMeterAdapter extends UsageMeterPort {
   }
 
   async release(key: UsageKey, amount: number): Promise<void> {
-    await this.#txHost.tx
+    await this.#transactionHost.tx
       .update(outboundUsage)
       .set({
         used: sql`greatest(${outboundUsage.used} - ${amount}, 0)`,
@@ -104,7 +104,7 @@ export class DrizzleUsageMeterAdapter extends UsageMeterPort {
     if (keys.length === 0) {
       return [];
     }
-    const rows = await this.#txHost.tx
+    const rows = await this.#transactionHost.tx
       .select({
         meter: outboundUsage.meter,
         periodKey: outboundUsage.periodKey,
@@ -118,7 +118,7 @@ export class DrizzleUsageMeterAdapter extends UsageMeterPort {
   }
 
   async prune(cutoff: Temporal.Instant): Promise<number> {
-    const deleted = await this.#txHost.tx
+    const deleted = await this.#transactionHost.tx
       .delete(outboundUsage)
       .where(lt(outboundUsage.updatedAt, cutoff))
       .returning({ meter: outboundUsage.meter });
@@ -126,7 +126,7 @@ export class DrizzleUsageMeterAdapter extends UsageMeterPort {
   }
 
   async deleteSubject(subject: string): Promise<number> {
-    const deleted = await this.#txHost.tx
+    const deleted = await this.#transactionHost.tx
       .delete(outboundUsage)
       .where(eq(outboundUsage.subject, subject))
       .returning({ meter: outboundUsage.meter });

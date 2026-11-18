@@ -1,0 +1,142 @@
+import {
+  getTodoCommentViewerPermissions,
+  getTodoDetailsPermissions,
+} from "./todo-comment-permission.domain-service.js";
+
+describe("할 일 댓글 접근 권한", () => {
+  it("작성자는 살아 있는 댓글을 수정하고 삭제할 수 있다", () => {
+    // When
+    const permissions = getTodoCommentViewerPermissions({
+      isDeleted: false,
+      isLiked: true,
+      authorId: "author-1",
+      viewerId: "author-1",
+      todoOwnerId: "owner-1",
+    });
+
+    // Then
+    expect(permissions).toEqual({
+      isLiked: true,
+      canEdit: true,
+      canDelete: true,
+      canReply: true,
+      canReport: false,
+      canBlock: false,
+    });
+  });
+
+  it("남의 살아 있는 댓글은 신고하고 작성자를 차단할 수 있지만 수정·삭제는 못 한다", () => {
+    // When
+    const permissions = getTodoCommentViewerPermissions({
+      isDeleted: false,
+      isLiked: false,
+      authorId: "author-1",
+      viewerId: "viewer-1",
+      todoOwnerId: "owner-1",
+    });
+
+    // Then
+    expect(permissions).toEqual({
+      isLiked: false,
+      canEdit: false,
+      canDelete: false,
+      canReply: true,
+      canReport: true,
+      canBlock: true,
+    });
+  });
+
+  it("할 일 주인은 자기 할 일에 달린 남의 댓글을 지울 수 있지만 수정은 못 한다", () => {
+    // When
+    const permissions = getTodoCommentViewerPermissions({
+      isDeleted: false,
+      isLiked: false,
+      authorId: "author-1",
+      viewerId: "owner-1",
+      todoOwnerId: "owner-1",
+    });
+
+    // Then
+    expect(permissions).toMatchObject({
+      canEdit: false,
+      canDelete: true,
+      canReport: true,
+      canBlock: true,
+    });
+  });
+
+  it("할 일 주인도 이미 지워졌거나 가려진 댓글은 지울 수 없다", () => {
+    // When
+    const permissions = getTodoCommentViewerPermissions({
+      isDeleted: true,
+      isLiked: false,
+      authorId: "author-1",
+      viewerId: "owner-1",
+      todoOwnerId: "owner-1",
+    });
+
+    // Then
+    expect(permissions.canDelete).toBe(false);
+  });
+
+  it("삭제된 댓글은 작성자에게도 상호작용을 허용하지 않는다", () => {
+    // When
+    const permissions = getTodoCommentViewerPermissions({
+      isDeleted: true,
+      isLiked: true,
+      authorId: "author-1",
+      viewerId: "author-1",
+      todoOwnerId: "owner-1",
+    });
+
+    // Then
+    expect(permissions).toEqual({
+      isLiked: false,
+      canEdit: false,
+      canDelete: false,
+      canReply: false,
+      canReport: false,
+      canBlock: false,
+    });
+  });
+
+  it.each([
+    {
+      name: "내 할 일",
+      isOwner: true,
+      isMutualFriend: false,
+      isNudgeableToday: true,
+      canNudge: false,
+    },
+    {
+      name: "끝내지 않은 맞팔 친구의 오늘 할 일",
+      isOwner: false,
+      isMutualFriend: true,
+      isNudgeableToday: true,
+      canNudge: true,
+    },
+    {
+      name: "한쪽만 수락한 친구의 오늘 할 일",
+      isOwner: false,
+      isMutualFriend: false,
+      isNudgeableToday: true,
+      canNudge: false,
+    },
+    {
+      name: "끝냈거나 오늘이 아닌 맞팔 친구의 할 일",
+      isOwner: false,
+      isMutualFriend: true,
+      isNudgeableToday: false,
+      canNudge: false,
+    },
+  ])(
+    "$name은 콕 보내기 규칙대로 canNudge가 $canNudge다",
+    ({ isOwner, isMutualFriend, isNudgeableToday, canNudge }) => {
+      // When
+      const permissions = getTodoDetailsPermissions({ isOwner, isMutualFriend, isNudgeableToday });
+
+      // Then
+      expect(permissions).toEqual({ canEdit: isOwner, canComment: true, canNudge });
+    },
+  );
+});

@@ -2,7 +2,7 @@ import { REWARD_TYPE } from "@aido/api/vocabulary";
 import { Inject, Injectable } from "@nestjs/common";
 import { match } from "ts-pattern";
 
-import { FeatureGranterPort } from "#api/modules/access/entitlements/access-entitlements.public";
+import { FeatureGranterPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import { PremiumGranterPort } from "#api/modules/billing/premium-grants/billing-premium-grants.public";
 
 import { inviteUserNotFound } from "../../application/invite-redemptions.errors.js";

@@ -3,13 +3,14 @@ import { TODO_ITEM_LIMITS } from "@aido/api/vocabulary";
 
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { addDaysToKey } from "../../shared/domain/todo-calendar.domain-service.js";
 import { TodoTitle } from "../../shared/domain/todo-title.vo.js";
+import type { ChecklistTemplateItem } from "./checklist-template.vo.js";
 import { RepeatRule } from "./repeat-rule.vo.js";
 import { TodoSeriesId } from "./todo-series-id.vo.js";
-import { type ChecklistTemplateItem, TodoSeries } from "./todo-series.aggregate.js";
+import { TodoSeries } from "./todo-series.aggregate.js";
 
 const AT = Temporal.Instant.from("2026-11-05T01:00:00.000Z");
+const day = (value: string) => Temporal.PlainDate.from(value);
 
 interface StartOverrides {
   readonly rule?: RepeatRule;
@@ -30,7 +31,7 @@ function start(overrides: StartOverrides = {}): TodoSeries {
     scheduledLocalTime: overrides.scheduledLocalTime ?? null,
     timezone: overrides.timezone ?? "Asia/Seoul",
     rule: overrides.rule ?? RepeatRule.create({ frequency: "DAILY", end: { type: "NEVER" } }),
-    startDate: overrides.startDate ?? "2026-11-05",
+    startDate: day(overrides.startDate ?? "2026-11-05"),
     checklistTemplate: overrides.checklistTemplate ?? [],
     now: overrides.now ?? AT,
   });
@@ -49,8 +50,8 @@ describe("TodoSeries — 반복 할 일", () => {
       // When
       const series = start({ rule });
       // Then
-      expect(series.nextOccurrenceDate).toBe("2026-11-06");
-      expect(series.generatedCount).toBe(0);
+      expect(series.nextOccurrenceDate?.toString()).toBe("2026-11-06");
+      expect(series.toPrimitives().generatedCount).toBe(0);
     });
 
     it("만들 수 있는 날짜가 없으면 TODO_0843이고 입력을 상세에 담는다", () => {
@@ -59,8 +60,10 @@ describe("TodoSeries — 반복 할 일", () => {
         frequency: "DAILY",
         end: { type: "UNTIL", date: "2026-11-04" },
       });
-      // When / Then
-      expect(() => start({ rule })).toThrow(
+      // When
+      const startSeries = () => start({ rule });
+      // Then
+      expect(startSeries).toThrow(
         expect.objectContaining({
           errorCode: ErrorCode.TODO_0843,
           details: { startDate: "2026-11-05", repeat: rule.toSpec() },
@@ -73,10 +76,10 @@ describe("TodoSeries — 반복 할 일", () => {
       const checklistTemplate = Array.from({ length: TODO_ITEM_LIMITS.MAX_PER_TODO + 1 }, () => ({
         title: "항목",
       }));
-      // When / Then
-      expect(() => start({ checklistTemplate })).toThrow(
-        expect.objectContaining({ errorCode: ErrorCode.TODO_0821 }),
-      );
+      // When
+      const startSeries = () => start({ checklistTemplate });
+      // Then
+      expect(startSeries).toThrow(expect.objectContaining({ errorCode: ErrorCode.TODO_0821 }));
     });
   });
 
@@ -85,17 +88,17 @@ describe("TodoSeries — 반복 할 일", () => {
       // Given
       const series = start();
       // When
-      const first = series.planOccurrences("2026-11-07");
-      const second = series.planOccurrences("2026-11-08");
+      const first = series.planOccurrences(day("2026-11-07"));
+      const second = series.planOccurrences(day("2026-11-08"));
       // Then
-      expect(first.map((draft) => draft.occurrenceDate)).toEqual([
+      expect(first.map((draft) => draft.occurrenceDate.toString())).toEqual([
         "2026-11-05",
         "2026-11-06",
         "2026-11-07",
       ]);
-      expect(second.map((draft) => draft.occurrenceDate)).toEqual(["2026-11-08"]);
-      expect(series.nextOccurrenceDate).toBe("2026-11-09");
-      expect(series.generatedCount).toBe(4);
+      expect(second.map((draft) => draft.occurrenceDate.toString())).toEqual(["2026-11-08"]);
+      expect(series.nextOccurrenceDate?.toString()).toBe("2026-11-09");
+      expect(series.toPrimitives().generatedCount).toBe(4);
     });
 
     it("횟수를 다 채우면 다음 회차가 null이 되고 더 만들지 않는다", () => {
@@ -104,12 +107,12 @@ describe("TodoSeries — 반복 할 일", () => {
         rule: RepeatRule.create({ frequency: "DAILY", end: { type: "COUNT", count: 2 } }),
       });
       // When
-      const drafts = series.planOccurrences("2026-12-31");
+      const drafts = series.planOccurrences(day("2026-12-31"));
       // Then
       expect(drafts).toHaveLength(2);
       expect(series.nextOccurrenceDate).toBeNull();
-      expect(series.isActive).toBe(false);
-      expect(series.planOccurrences("2027-12-31")).toEqual([]);
+      expect(series.isActive()).toBe(false);
+      expect(series.planOccurrences(day("2027-12-31"))).toEqual([]);
     });
 
     it("기간 안에 회차가 없으면 커서를 그대로 둔다", () => {
@@ -118,17 +121,17 @@ describe("TodoSeries — 반복 할 일", () => {
         rule: RepeatRule.create({ frequency: "MONTHLY", monthDay: 31, end: { type: "NEVER" } }),
       });
       // When
-      const drafts = series.planOccurrences("2026-11-20");
+      const drafts = series.planOccurrences(day("2026-11-20"));
       // Then
       expect(drafts).toEqual([]);
-      expect(series.nextOccurrenceDate).toBe("2026-11-30");
+      expect(series.nextOccurrenceDate?.toString()).toBe("2026-11-30");
     });
 
     it("회차는 규칙의 createdAt을 물려받고 종일이면 시간이 없다", () => {
       // Given
       const series = start();
       // When
-      const [draft] = series.planOccurrences("2026-11-05");
+      const [draft] = series.planOccurrences(day("2026-11-05"));
       // Then
       expect(draft).toMatchObject({
         createdAt: AT,
@@ -172,7 +175,7 @@ describe("TodoSeries — 반복 할 일", () => {
         timezone: "America/New_York",
       });
       // When
-      const [draft] = series.planOccurrences(date);
+      const [draft] = series.planOccurrences(day(date));
       // Then
       expect(draft?.scheduledTime).toEqual(Temporal.Instant.from(expected));
       expect(draft?.isAllDay).toBe(false);
@@ -184,8 +187,8 @@ describe("TodoSeries — 반복 할 일", () => {
       // Given
       const series = start();
       // When
-      const first = series.stopAfter("2026-11-10");
-      const second = series.stopAfter("2026-11-10");
+      const first = series.stopAfter(day("2026-11-10"));
+      const second = series.stopAfter(day("2026-11-10"));
       // Then
       expect(first).toBe(true);
       expect(second).toBe(false);
@@ -198,9 +201,9 @@ describe("TodoSeries — 반복 할 일", () => {
       const series = start({
         rule: RepeatRule.create({ frequency: "DAILY", end: { type: "COUNT", count: 5 } }),
       });
-      series.planOccurrences("2026-12-31");
+      series.planOccurrences(day("2026-12-31"));
       // When
-      const stopped = series.stopAfter("2026-11-06");
+      const stopped = series.stopAfter(day("2026-11-06"));
       // Then
       expect(stopped).toBe(true);
     });
@@ -223,7 +226,7 @@ describe("TodoSeries — 반복 할 일", () => {
       ({ rule }) => {
         // Given
         const series = start({ rule });
-        const dayBeforeStart = addDaysToKey(series.startDate, -1);
+        const dayBeforeStart = series.startDate.subtract({ days: 1 });
         // When
         const first = series.stopAfter(dayBeforeStart);
         const second = series.stopAfter(dayBeforeStart);
@@ -232,7 +235,7 @@ describe("TodoSeries — 반복 할 일", () => {
         expect(second).toBe(false);
         expect(series.rule.toSpec().end).toEqual({
           type: "UNTIL",
-          date: series.startDate,
+          date: series.startDate.toString(),
         });
         expect(series.nextOccurrenceDate).toBeNull();
       },
@@ -243,9 +246,9 @@ describe("TodoSeries — 반복 할 일", () => {
       const series = start({
         rule: RepeatRule.create({ frequency: "DAILY", end: { type: "COUNT", count: 2 } }),
       });
-      series.planOccurrences("2026-12-31");
+      series.planOccurrences(day("2026-12-31"));
       // When
-      const stopped = series.stopAfter("2026-11-06");
+      const stopped = series.stopAfter(day("2026-11-06"));
       // Then
       expect(stopped).toBe(false);
     });
@@ -261,10 +264,10 @@ describe("TodoSeries — 반복 할 일", () => {
             end: { type: "UNTIL", date: "2026-11-10" },
           }),
         }).toPrimitives(),
-        nextOccurrenceDate: "2026-11-08",
+        nextOccurrenceDate: day("2026-11-08"),
       });
       // When
-      const stopped = series.stopAfter("2026-11-12");
+      const stopped = series.stopAfter(day("2026-11-12"));
       // Then
       expect(stopped).toBe(true);
       expect(series.nextOccurrenceDate).toBeNull();
@@ -331,13 +334,13 @@ describe("TodoSeries — 반복 할 일", () => {
       expect(series.originSeriesId.value).toBe("series-1");
       // When
       const second = series.splitFrom({
-        pivotDate: "2026-11-08",
+        pivotDate: day("2026-11-08"),
         changes: { title: "둘째" },
         id: TodoSeriesId.reconstitute("series-2"),
         now: AT,
       });
       const third = second.splitFrom({
-        pivotDate: "2026-11-10",
+        pivotDate: day("2026-11-10"),
         changes: { title: "셋째" },
         id: TodoSeriesId.reconstitute("series-3"),
         now: AT,
@@ -352,22 +355,22 @@ describe("TodoSeries — 반복 할 일", () => {
       const series = start({
         rule: RepeatRule.create({ frequency: "DAILY", end: { type: "COUNT", count: 10 } }),
       });
-      series.planOccurrences("2026-11-10");
+      series.planOccurrences(day("2026-11-10"));
       // When
       const next = series.splitFrom({
-        pivotDate: "2026-11-08",
+        pivotDate: day("2026-11-08"),
         changes: { title: "새 제목" },
         id: TodoSeriesId.reconstitute("series-2"),
         now: AT,
       });
       // Then
       expect(series.rule.toSpec().end).toEqual({ type: "UNTIL", date: "2026-11-07" });
-      expect(series.isActive).toBe(false);
+      expect(series.isActive()).toBe(false);
       expect(next.id.value).toBe("series-2");
       expect(next.title.value).toBe("새 제목");
-      expect(next.startDate).toBe("2026-11-08");
+      expect(next.startDate?.toString()).toBe("2026-11-08");
       expect(next.rule.toSpec().end).toEqual({ type: "COUNT", count: 7 });
-      expect(next.nextOccurrenceDate).toBe("2026-11-08");
+      expect(next.nextOccurrenceDate?.toString()).toBe("2026-11-08");
     });
 
     it("규칙을 새로 주면 그 규칙으로 잇는다", () => {
@@ -381,14 +384,14 @@ describe("TodoSeries — 반복 할 일", () => {
       });
       // When
       const next = series.splitFrom({
-        pivotDate: "2026-11-08",
+        pivotDate: day("2026-11-08"),
         changes: { rule },
         id: TodoSeriesId.reconstitute("series-2"),
         now: AT,
       });
       // Then
       expect(next.rule.equals(rule)).toBe(true);
-      expect(next.nextOccurrenceDate).toBe("2026-11-09");
+      expect(next.nextOccurrenceDate?.toString()).toBe("2026-11-09");
     });
   });
 
@@ -396,7 +399,7 @@ describe("TodoSeries — 반복 할 일", () => {
     it("규칙을 바꾸면 처음부터 다시 세고 같은 규칙이면 false다", () => {
       // Given
       const series = start();
-      series.planOccurrences("2026-11-10");
+      series.planOccurrences(day("2026-11-10"));
       const rule = RepeatRule.create({
         frequency: "WEEKLY",
         weekdays: ["FRI"],
@@ -416,33 +419,37 @@ describe("TodoSeries — 반복 할 일", () => {
       // Then
       expect(changed).toBe(true);
       expect(same).toBe(false);
-      expect(series.generatedCount).toBe(0);
-      expect(series.nextOccurrenceDate).toBe("2026-11-06");
+      expect(series.toPrimitives().generatedCount).toBe(0);
+      expect(series.nextOccurrenceDate?.toString()).toBe("2026-11-06");
     });
 
     it("맞는 날짜가 없는 규칙으로는 바꿀 수 없다", () => {
       // Given
       const series = start();
-      // When / Then
-      expect(() =>
+      // When
+      const replaceRule = () =>
         series.replaceRule(
           RepeatRule.create({ frequency: "DAILY", end: { type: "UNTIL", date: "2026-11-01" } }),
-        ),
-      ).toThrow(expect.objectContaining({ errorCode: ErrorCode.TODO_0843 }));
-      expect(series.nextOccurrenceDate).toBe("2026-11-05");
+        );
+      // Then
+      expect(replaceRule).toThrow(expect.objectContaining({ errorCode: ErrorCode.TODO_0843 }));
+      expect(series.nextOccurrenceDate?.toString()).toBe("2026-11-05");
     });
 
     it("체크리스트는 같으면 false이고 상한을 넘으면 거부한다", () => {
       // Given
       const series = start({ checklistTemplate: [{ title: "항목" }] });
-      // When / Then
-      expect(series.replaceChecklist([{ title: "항목" }])).toBe(false);
-      expect(series.replaceChecklist([{ title: "새 항목" }])).toBe(true);
-      expect(() =>
+      // When
+      const same = series.replaceChecklist([{ title: "항목" }]);
+      const changed = series.replaceChecklist([{ title: "새 항목" }]);
+      const replaceOverLimit = () =>
         series.replaceChecklist(
           Array.from({ length: TODO_ITEM_LIMITS.MAX_PER_TODO + 1 }, () => ({ title: "x" })),
-        ),
-      ).toThrow(expect.objectContaining({ errorCode: ErrorCode.TODO_0821 }));
+        );
+      // Then
+      expect(same).toBe(false);
+      expect(changed).toBe(true);
+      expect(replaceOverLimit).toThrow(expect.objectContaining({ errorCode: ErrorCode.TODO_0821 }));
     });
   });
 
@@ -486,7 +493,7 @@ describe("TodoSeries — 반복 할 일", () => {
           timezone: "UTC",
           now: LAST_MOVED_AT,
         }).toPrimitives(),
-        nextOccurrenceDate,
+        nextOccurrenceDate: day(nextOccurrenceDate),
         generatedCount,
       });
     }
@@ -500,12 +507,12 @@ describe("TodoSeries — 반복 할 일", () => {
       );
       // When
       const skipped = series.skipDormantGap(RETURNED_AT);
-      const drafts = series.planOccurrences("2027-02-03");
+      const drafts = series.planOccurrences(day("2027-02-03"));
       // Then
       expect(skipped).toBe(true);
-      expect(drafts.at(0)?.occurrenceDate).toBe("2026-11-05");
+      expect(drafts.at(0)?.occurrenceDate.toString()).toBe("2026-11-05");
       expect(drafts).toHaveLength(91);
-      expect(series.nextOccurrenceDate).toBe("2027-02-04");
+      expect(series.nextOccurrenceDate?.toString()).toBe("2027-02-04");
     });
 
     it("다시 불러도 바뀌지 않는다", () => {
@@ -519,7 +526,7 @@ describe("TodoSeries — 반복 할 일", () => {
       const again = series.skipDormantGap(RETURNED_AT);
       // Then
       expect(again).toBe(false);
-      expect(series.nextOccurrenceDate).toBe("2026-11-05");
+      expect(series.nextOccurrenceDate?.toString()).toBe("2026-11-05");
     });
 
     it("커서가 오늘이면 옮길 것이 없다", () => {
@@ -532,7 +539,7 @@ describe("TodoSeries — 반복 할 일", () => {
       const skipped = series.skipDormantGap(RETURNED_AT);
       // Then
       expect(skipped).toBe(false);
-      expect(series.nextOccurrenceDate).toBe("2026-11-05");
+      expect(series.nextOccurrenceDate?.toString()).toBe("2026-11-05");
     });
 
     it("규칙을 방금 고쳐 updatedAt이 최근이어도 뒤처진 커서면 지난 날을 건너뛴다", () => {
@@ -548,7 +555,7 @@ describe("TodoSeries — 반복 할 일", () => {
       const skipped = series.skipDormantGap(RETURNED_AT);
       // Then
       expect(skipped).toBe(true);
-      expect(series.nextOccurrenceDate).toBe("2026-11-05");
+      expect(series.nextOccurrenceDate?.toString()).toBe("2026-11-05");
     });
 
     it("규칙 시간대의 오늘로 잰다", () => {
@@ -572,8 +579,8 @@ describe("TodoSeries — 반복 할 일", () => {
       seoul.skipDormantGap(at);
       newYork.skipDormantGap(at);
       // Then
-      expect(seoul.nextOccurrenceDate).toBe("2026-11-06");
-      expect(newYork.nextOccurrenceDate).toBe("2026-11-05");
+      expect(seoul.nextOccurrenceDate?.toString()).toBe("2026-11-06");
+      expect(newYork.nextOccurrenceDate?.toString()).toBe("2026-11-05");
     });
 
     it("UNTIL이 지났으면 끝난 규칙이고 새 규칙을 만들지 않는다", () => {
@@ -587,8 +594,8 @@ describe("TodoSeries — 반복 할 일", () => {
       // Then
       expect(skipped).toBe(true);
       expect(series.nextOccurrenceDate).toBeNull();
-      expect(series.isActive).toBe(false);
-      expect(series.planOccurrences("2027-02-03")).toEqual([]);
+      expect(series.isActive()).toBe(false);
+      expect(series.planOccurrences(day("2027-02-03"))).toEqual([]);
     });
 
     it("UNTIL이 오늘이면 오늘 회차 하나만 남는다", () => {
@@ -599,9 +606,9 @@ describe("TodoSeries — 반복 할 일", () => {
       );
       // When
       series.skipDormantGap(RETURNED_AT);
-      const drafts = series.planOccurrences("2027-02-03");
+      const drafts = series.planOccurrences(day("2027-02-03"));
       // Then
-      expect(drafts.map((draft) => draft.occurrenceDate)).toEqual(["2026-11-05"]);
+      expect(drafts.map((draft) => draft.occurrenceDate.toString())).toEqual(["2026-11-05"]);
       expect(series.nextOccurrenceDate).toBeNull();
     });
 
@@ -616,7 +623,7 @@ describe("TodoSeries — 반복 할 일", () => {
       series.skipDormantGap(RETURNED_AT);
       // Then
       expect(series.nextOccurrenceDate).toBeNull();
-      expect(series.generatedCount).toBe(100);
+      expect(series.toPrimitives().generatedCount).toBe(100);
     });
 
     it("COUNT가 남았으면 지난 날짜를 횟수에 넣고 남은 만큼만 만든다", () => {
@@ -628,10 +635,10 @@ describe("TodoSeries — 반복 할 일", () => {
       );
       // When
       series.skipDormantGap(RETURNED_AT);
-      const drafts = series.planOccurrences("2027-02-03");
+      const drafts = series.planOccurrences(day("2027-02-03"));
       // Then
-      expect(series.generatedCount).toBe(250);
-      expect(drafts.at(0)?.occurrenceDate).toBe("2026-11-05");
+      expect(series.toPrimitives().generatedCount).toBe(250);
+      expect(drafts.at(0)?.occurrenceDate.toString()).toBe("2026-11-05");
       expect(drafts).toHaveLength(250 - 249);
     });
 
@@ -650,12 +657,12 @@ describe("TodoSeries — 반복 할 일", () => {
           timezone: "UTC",
           now: LAST_MOVED_AT,
         }).toPrimitives(),
-        nextOccurrenceDate: "2026-08-17",
+        nextOccurrenceDate: day("2026-08-17"),
       });
       // When
       series.skipDormantGap(RETURNED_AT);
       // Then
-      expect(series.nextOccurrenceDate).toBe("2026-11-09");
+      expect(series.nextOccurrenceDate?.toString()).toBe("2026-11-09");
     });
 
     it("매월 31일은 짧은 달의 말일로 이어진다", () => {
@@ -669,7 +676,21 @@ describe("TodoSeries — 반복 할 일", () => {
       // When
       series.skipDormantGap(RETURNED_AT);
       // Then
-      expect(series.nextOccurrenceDate).toBe("2026-11-30");
+      expect(series.nextOccurrenceDate?.toString()).toBe("2026-11-30");
+    });
+  });
+
+  describe("회차 변경 이벤트", () => {
+    it("이벤트를 비운 뒤에는 같은 인스턴스가 다시 회차 변경을 낼 수 있다", () => {
+      // Given
+      const series = start();
+      series.replaceChecklist([{ title: "하나" }]);
+      const first = series.pullDomainEvents();
+      // When
+      series.replaceChecklist([{ title: "둘" }]);
+      // Then
+      expect(first).toHaveLength(1);
+      expect(series.pullDomainEvents()).toHaveLength(1);
     });
   });
 });

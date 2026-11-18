@@ -1,13 +1,13 @@
 import type { Provider } from "@nestjs/common";
 import type { ConfigType } from "@nestjs/config";
 
-import { EntitlementReaderPort } from "#api/modules/access/entitlements/access-entitlements.public";
-import { UserTimezoneReaderPort } from "#api/modules/identity/identity-settings.public";
+import { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
+import { UserTimezoneReaderPort } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
 import {
   RepeatingTodoTitleReaderPort,
   SingleTodoCountReaderPort,
-} from "#api/modules/planning/todos/planning-todo-queries.public";
+} from "#api/modules/planning/todos/planning-todos-queries.public";
 import { StagedTodoCreatorPort } from "#api/modules/planning/todos/planning-todos.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
@@ -15,9 +15,9 @@ import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
-import { AiGeneratorPort } from "../generation/application/ports/ai-generator.port.js";
-import { UserLocalePreferenceReaderPort } from "../generation/application/ports/user-locale-preference.reader.port.js";
-import { ScheduledAiConsentReader } from "../generation/application/scheduled-ai-consent.reader.js";
+import { AiGeneratorPort } from "../ai-generations/application/ports/ai-generator.port.js";
+import { UserLocalePreferenceReaderPort } from "../ai-generations/application/ports/user-locale-preference.reader.port.js";
+import { ScheduledAiConsentReader } from "../ai-generations/application/scheduled-ai-consent.reader.js";
 import { aiAssistanceSuggestionsConfig } from "./ai-assistance-suggestions.config.js";
 import { OnDemandSuggestionAnalysisConfigPort } from "./application/ports/on-demand-suggestion-analysis-config.port.js";
 import { SuggestionActivityReaderPort } from "./application/ports/suggestion-activity.reader.port.js";

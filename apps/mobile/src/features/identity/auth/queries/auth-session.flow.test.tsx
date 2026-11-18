@@ -32,7 +32,7 @@ import {
   createErrorReporterStub,
   createAppLoggerStub,
   createMemoryTokenStore,
-  createHttpClientStub,
+  createTestDi,
   createAnalyticsStub,
   createPendingResponse,
   respondByPath,
@@ -49,11 +49,10 @@ import {
   createAuthTokensDto,
   createDeleteAccountDto,
 } from '../__tests__/auth.fixtures';
-import { AuthApi } from '../apis/auth.api';
 import { AUTH_LOG_EVENT } from '../constants/auth-log-events';
 import { useAuthSession } from '../hooks/use-auth-session';
 import { useAuthStatus } from '../hooks/use-auth-status';
-import { LOGOUT_REQUEST_TIMEOUT_MS, LogOutDeviceService } from '../services/log-out-device.service';
+import { LOGOUT_REQUEST_TIMEOUT_MS } from '../services/log-out-device.service';
 import {
   useDeleteAccountMutationOptions,
   useEmailLoginMutationOptions,
@@ -942,7 +941,8 @@ describe('로그아웃과 늦은 갱신', () => {
   it('갱신 중에 로그아웃이 시간 초과로 끝나고 갱신 응답이 늦게 와도 토큰이 되살아나지 않는다', async () => {
     // Given
     const sessionEpoch = createSessionEpoch();
-    const tokenStore = withSessionEpoch(createMemoryTokenStore(ACCOUNT_A_TOKENS), sessionEpoch);
+    const memoryTokenStore = createMemoryTokenStore(ACCOUNT_A_TOKENS);
+    const tokenStore = withSessionEpoch(memoryTokenStore, sessionEpoch);
     const lateRefresh = createPendingResponse(
       new Response(
         JSON.stringify({ data: { accessToken: 'access-late', refreshToken: 'refresh-late' } }),
@@ -972,23 +972,20 @@ describe('로그아웃과 늦은 갱신', () => {
         errorReporter: createErrorReporterStub(),
       }),
     );
-    const authApi = new AuthApi({ publicHttpClient: createHttpClientStub(), authHttpClient: http });
+    // 운영처럼 같은 저장소와 세대를 DI도 쓴다(createTestPorts가 세대로 감싼다)
+    const di = createTestDi({
+      ports: { authHttpClient: http, tokenStore: memoryTokenStore, sessionEpoch },
+    });
     const todosRequest = http.get('v1/todos').catch(() => undefined);
     await act(async () => {
       await jest.advanceTimersByTimeAsync(0);
     });
-    const logout = new LogOutDeviceService({
-      authApi,
-      pushRegistrationService: { unregister: async () => ok(undefined), requestRelease: () => {} },
-      tokenStore,
-      sessionRevocationService: { record: async () => undefined },
-      sessionEpoch,
-      logger: createAppLoggerStub(),
-    }).logOut({ isOnline: true });
+    const logout = di.logOutDeviceService.logOut({ isOnline: true });
 
     // When
     await act(async () => {
-      await jest.advanceTimersByTimeAsync(LOGOUT_REQUEST_TIMEOUT_MS);
+      // 기기 해제와 로그아웃 요청이 차례로 시간 초과로 끝난다
+      await jest.advanceTimersByTimeAsync(LOGOUT_REQUEST_TIMEOUT_MS * 2);
     });
     await logout;
     await expect(tokenStore.getRefreshToken()).resolves.toBeNull();

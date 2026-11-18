@@ -1,5 +1,5 @@
-import { GetResolvedAccessUseCase } from "#api/modules/access/entitlements/application/use-cases/get-resolved-access.use-case";
-import { EntitlementReaderAdapter } from "#api/modules/access/entitlements/infrastructure/adapters/entitlement-reader.adapter";
+import { GetResolvedAccessUseCase } from "#api/modules/access/feature-grants/application/use-cases/get-resolved-access.use-case";
+import { EntitlementReaderAdapter } from "#api/modules/access/feature-grants/infrastructure/adapters/entitlement-reader.adapter";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {

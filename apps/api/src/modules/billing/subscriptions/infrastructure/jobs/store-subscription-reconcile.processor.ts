@@ -9,7 +9,7 @@ import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { SubscriptionAlerts } from "../../application/subscriptions.alerts.js";
 import { SubscriptionLogEvent } from "../../application/subscriptions.log-events.js";
 import { ReconcileStoreSubscriptionsUseCase } from "../../application/use-cases/reconcile-store-subscriptions.use-case.js";
-import type { SubscriptionReconcileField } from "../../domain/subscription.aggregate.js";
+import type { SubscriptionReconcileField } from "../../domain/store-subscription-reconcile.domain-service.js";
 import {
   STORE_SUBSCRIPTION_RECONCILE_QUEUE,
   type StoreSubscriptionReconcilePayload,

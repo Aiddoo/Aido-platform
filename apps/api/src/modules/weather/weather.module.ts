@@ -1,10 +1,10 @@
 import { Module } from "@nestjs/common";
 
-import { WeatherForecastsModule } from "./forecasts/weather-forecasts.module.js";
-import { WeatherLocationsModule } from "./locations/weather-locations.module.js";
+import { WeatherUserLocationsModule } from "./user-locations/weather-user-locations.module.js";
+import { WeatherWeatherReportsModule } from "./weather-reports/weather-weather-reports.module.js";
 
 @Module({
-  imports: [WeatherLocationsModule, WeatherForecastsModule],
-  exports: [WeatherForecastsModule],
+  imports: [WeatherUserLocationsModule, WeatherWeatherReportsModule],
+  exports: [WeatherWeatherReportsModule],
 })
 export class WeatherModule {}

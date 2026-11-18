@@ -1,16 +1,17 @@
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import type { ReminderTime } from "../../domain/local-clock.domain-service.js";
 import type {
-  EveningReminderUser,
-  ReminderCountUser,
-  UserIdRow,
+  EveningReminderUserReadModel,
+  ReminderCountUserReadModel,
+  UserIdReadModel,
 } from "../read-models/scheduler.read-model.js";
 
 export interface CustomTimeReminderParams {
   /** 이 분에 현지 날짜·시·분이 같은 시간대들 */
   readonly timezones: readonly string[];
-  readonly hour: number;
-  readonly minute: number;
+  /** 이 분에 울릴 시:분들(봄 DST 틈 뒤 첫 분이면 틈 안의 시각도 함께다) */
+  readonly times: readonly ReminderTime[];
   readonly today: Temporal.PlainDate;
   readonly tomorrow: Temporal.PlainDate;
   /** 리마인더 시간을 바꾼 직후 그 사용자만 볼 때 */
@@ -33,20 +34,20 @@ export interface PeriodReportParams {
 export abstract class ScheduledReminderReaderPort {
   abstract findPremiumMorningReminderUsers(
     params: CustomTimeReminderParams,
-  ): Promise<ReminderCountUser[]>;
+  ): Promise<ReminderCountUserReadModel[]>;
   abstract findFreeMorningReminderUsers(
     params: FixedTimeReminderParams,
-  ): Promise<ReminderCountUser[]>;
+  ): Promise<ReminderCountUserReadModel[]>;
   /** 오늘 할 일이 있는 사용자만 */
   abstract findPremiumEveningReminderUsers(
     params: CustomTimeReminderParams,
-  ): Promise<EveningReminderUser[]>;
+  ): Promise<EveningReminderUserReadModel[]>;
   /** 오늘 할 일이 있는 사용자만 */
   abstract findFreeEveningReminderUsers(
     params: FixedTimeReminderParams,
-  ): Promise<EveningReminderUser[]>;
+  ): Promise<EveningReminderUserReadModel[]>;
   /** 오늘 할 일이 있지만 하나도 끝내지 않은 사용자 */
-  abstract findLunchNudgeUsers(params: FixedTimeReminderParams): Promise<UserIdRow[]>;
-  abstract findWeeklyReportRecipients(params: PeriodReportParams): Promise<UserIdRow[]>;
-  abstract findMonthlyReportRecipients(params: PeriodReportParams): Promise<UserIdRow[]>;
+  abstract findLunchNudgeUsers(params: FixedTimeReminderParams): Promise<UserIdReadModel[]>;
+  abstract findWeeklyReportRecipients(params: PeriodReportParams): Promise<UserIdReadModel[]>;
+  abstract findMonthlyReportRecipients(params: PeriodReportParams): Promise<UserIdReadModel[]>;
 }

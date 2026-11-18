@@ -1,14 +1,13 @@
 import '@src/shared/i18n/init';
-import type { AccessTier } from '@aido/api';
 import { ErrorCode } from '@aido/api/errors';
+import type { AccessTier } from '@aido/api/vocabulary';
 import { PLAN_CATALOG } from '@aido/api/vocabulary';
 import { ok } from '@src/core/errors/result';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { readStoredValue } from '@src/shared/storage/define-stored-value';
-import { Button } from '@src/shared/ui';
-import { OverlayProvider } from '@src/shared/ui';
+import { Button, OverlayProvider } from '@src/shared/ui';
 import {
   createAnalyticsStub,
   createErrorReporterStub,
@@ -27,8 +26,7 @@ import {
   createFeatureQuotaDto,
   createLimitApiError,
 } from '../__tests__/entitlement.fixtures';
-import { type EntitlementSnapshot } from '../domains/entitlement.model';
-import { EntitlementPolicy } from '../domains/entitlement.model';
+import { type EntitlementSnapshot, EntitlementPolicy } from '../domains/entitlement.model';
 import { ENTITLEMENT_QUERY_KEYS } from '../queries/entitlement-query-keys';
 import { upsellDismissalStoredValue } from '../schemas/upsell-dismissal-storage.schema';
 import { useEntitlementGate } from './use-entitlement-gate';

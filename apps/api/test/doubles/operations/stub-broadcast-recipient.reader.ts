@@ -1,7 +1,7 @@
 import type { SupportedLocale } from "@aido/api/vocabulary";
 
-import { BroadcastRecipientReaderPort } from "#api/modules/operations/broadcasts/application/ports/broadcast-recipient.reader.port";
-import type { BroadcastRecipient } from "#api/modules/operations/broadcasts/application/read-models/broadcast-recipient.read-model";
+import { BroadcastRecipientReaderPort } from "#api/modules/operations/broadcast-campaigns/application/ports/broadcast-recipient.reader.port";
+import type { BroadcastRecipientReadModel } from "#api/modules/operations/broadcast-campaigns/application/read-models/broadcast-recipient.read-model";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
 
@@ -21,7 +21,7 @@ export class StubBroadcastRecipientReader extends BroadcastRecipientReaderPort {
 
   async listRecipients(
     userIds: readonly UserId[],
-  ): Promise<ReadonlyMap<string, BroadcastRecipient>> {
+  ): Promise<ReadonlyMap<string, BroadcastRecipientReadModel>> {
     return new Map(
       userIds.map(({ value }) => {
         const setting = this.#settings.get(value);

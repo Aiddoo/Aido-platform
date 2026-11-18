@@ -1,8 +1,9 @@
 import { Module } from "@nestjs/common";
 
-import { AccessEntitlementsModule } from "#api/modules/access/entitlements/access-entitlements.public";
-import { NotificationPushModule } from "#api/modules/notification/notification-delivery.public";
-import { SocialFriendsModule } from "#api/modules/social/friends/social-friends.public";
+import { AccessFeatureGrantsQueriesModule } from "#api/modules/access/feature-grants/access-feature-grants.public";
+import { IdentityUsersQueriesModule } from "#api/modules/identity/users/identity-users.public";
+import { NotificationQueueModule } from "#api/modules/notification/notifications/notification-notifications-jobs.public";
+import { SocialFriendshipsModule } from "#api/modules/social/friendships/social-friendships.public";
 
 import { CheerCountCachePort } from "./application/ports/cheer-count-cache.port.js";
 import { CheerUsageReaderPort } from "./application/ports/cheer-usage.reader.port.js";
@@ -10,7 +11,12 @@ import { CheerController } from "./presentation/http/v1/cheer.controller.js";
 import { SOCIAL_CHEERS_PROVIDERS } from "./social-cheers.providers.js";
 
 @Module({
-  imports: [AccessEntitlementsModule, SocialFriendsModule, NotificationPushModule],
+  imports: [
+    AccessFeatureGrantsQueriesModule,
+    IdentityUsersQueriesModule,
+    SocialFriendshipsModule,
+    NotificationQueueModule,
+  ],
   controllers: [CheerController],
   providers: [...SOCIAL_CHEERS_PROVIDERS],
   exports: [CheerUsageReaderPort, CheerCountCachePort],

@@ -13,9 +13,9 @@ import { AiAssistanceModule } from "#api/modules/ai-assistance/ai-assistance.mod
 import { AppConfigModule as AppConfigContextModule } from "#api/modules/app-config/app-config.module";
 import { BillingModule } from "#api/modules/billing/billing.module";
 import { EngagementModule } from "#api/modules/engagement/engagement.module";
-import { JwtAuthGuard } from "#api/modules/identity/auth/identity-auth.public";
-import { TimezoneSelfHealInterceptor } from "#api/modules/identity/identity-settings.public";
 import { IdentityModule } from "#api/modules/identity/identity.module";
+import { JwtAuthGuard } from "#api/modules/identity/sessions/identity-sessions.public";
+import { TimezoneSelfHealInterceptor } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import { LastActiveInterceptor } from "#api/modules/identity/users/identity-users.public";
 import { InsightsModule } from "#api/modules/insights/insights.module";
 import { NotesModule } from "#api/modules/notes/notes.module";
@@ -39,19 +39,16 @@ import { RequestClientModule } from "#api/platform/http/request-client/request-c
 import { REQUEST_CLIENT_CLS_MIDDLEWARE } from "#api/platform/http/request-client/request-client.store";
 import { AppI18nModule } from "#api/platform/i18n/i18n.module";
 import { JobQueueModule } from "#api/platform/jobs/job-queue.module";
-import { LockModule } from "#api/platform/lock/lock.module";
 import { LoggerModule } from "#api/platform/logging/logger.module";
 import { MeteringModule } from "#api/platform/metering/metering.module";
 import { AlertingModule } from "#api/platform/observability/alerting.module";
 import { RedisModule } from "#api/platform/redis/redis.module";
 import { ResilienceModule } from "#api/platform/resilience/resilience.module";
 import { SharedKernelModule } from "#api/platform/shared-kernel.module";
+import { DAILY_THROTTLER_OPTIONS } from "#api/platform/throttle/rate-limits";
 import { THROTTLER_STORAGE } from "#api/platform/throttle/throttle.constants";
 import { ThrottleModule } from "#api/platform/throttle/throttle.module";
-import {
-  DAILY_THROTTLER_OPTIONS,
-  UserAwareThrottlerGuard,
-} from "#api/platform/throttle/user-aware-throttler.guard";
+import { UserAwareThrottlerGuard } from "#api/platform/throttle/user-aware-throttler.guard";
 import { TimeModule } from "#api/platform/time/time.module";
 
 @Module({
@@ -82,7 +79,6 @@ import { TimeModule } from "#api/platform/time/time.module";
     RedisModule.forRoot(),
     CacheModule.forRoot(),
     DedupModule.forRoot(),
-    LockModule.forRoot(),
     JobQueueModule,
     AlertingModule,
     ResilienceModule,

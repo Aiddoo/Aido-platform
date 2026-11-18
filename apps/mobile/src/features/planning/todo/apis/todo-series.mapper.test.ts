@@ -1,4 +1,4 @@
-import { todoSeriesResponseSchema } from '@aido/api';
+import { todoSeriesResponseSchema } from '@aido/api/contracts/todo/v1';
 
 import { todoSeriesSchema } from '../domains/todo-series.model';
 import {

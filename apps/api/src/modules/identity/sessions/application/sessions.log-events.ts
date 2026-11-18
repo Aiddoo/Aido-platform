@@ -1,0 +1,17 @@
+export const SessionLogEvent = {
+  EMAIL_VERIFIED: "identity.email.verified",
+  USER_LOGGED_IN: "identity.user.login.succeeded",
+  SESSION_LOGGED_OUT: "identity.session.logout.completed",
+  ALL_SESSIONS_LOGGED_OUT: "identity.session.logout-all.completed",
+  SESSION_PUSH_DEVICE_RELEASE_FAILED: "identity.session.push-device-release.failed",
+  SESSION_REVOKED: "identity.session.revoked",
+  SESSION_TOKENS_REFRESHED: "identity.session.tokens.refreshed",
+  SESSION_ROTATION_CONFLICT: "identity.session.rotation.conflict",
+  SESSION_REFRESH_ROLE_FALLBACK: "identity.session.refresh-role.fallback",
+  SESSION_TOKEN_REUSE_DETECTED: "identity.session.token-reuse.detected",
+  OAUTH_ACCOUNT_AUTO_LINKING: "identity.oauth.account.auto.linking",
+  OAUTH_ACCOUNT_LINK_REQUIRED: "identity.oauth.account.link.required",
+  OAUTH_EXISTING_USER_AUTHENTICATED: "identity.oauth.user.authenticated",
+  SESSION_CACHE_READ_FAILED: "identity.session-cache.read.failed",
+  SESSION_CACHE_WRITE_FAILED: "identity.session-cache.write.failed",
+} as const;

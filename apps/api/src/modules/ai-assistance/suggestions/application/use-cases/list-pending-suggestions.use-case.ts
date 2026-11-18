@@ -1,15 +1,15 @@
 import {
   type EntitlementReaderPort,
   premiumFeatureDenied,
-} from "#api/modules/access/entitlements/access-entitlements.public";
+} from "#api/modules/access/feature-grants/access-feature-grants.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { AiSuggestionLogEvent } from "../ai-suggestion.log-events.js";
 import type { SuggestionRepositoryPort } from "../ports/suggestion.repository.port.js";
 import type { PendingSuggestionsReadModel } from "../read-models/suggestion-analysis.read-model.js";
 import type { SuggestionAnalysisStateReader } from "../suggestion-analysis-state.reader.js";
+import { SuggestionLogEvent } from "../suggestions.log-events.js";
 
 export interface ListPendingSuggestionsQuery {
   readonly userId: string;
@@ -34,7 +34,7 @@ export class ListPendingSuggestionsUseCase {
     const userId = UserId.reconstitute(query.userId);
     if (!(await this.#dependencies.entitlementReader.can(userId, "AI_SUGGESTION"))) {
       this.#dependencies.logger.warn({
-        event: AiSuggestionLogEvent.PREMIUM_DENIED,
+        event: SuggestionLogEvent.PREMIUM_DENIED,
         userId: query.userId,
       });
       throw premiumFeatureDenied("AI_SUGGESTION");

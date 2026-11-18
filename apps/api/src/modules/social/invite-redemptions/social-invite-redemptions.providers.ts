@@ -1,14 +1,14 @@
 import type { Provider } from "@nestjs/common";
 
-import { UserBlockReaderPort } from "#api/modules/social/blocks/social-block-queries.public";
 import {
   FriendshipEstablisherPort,
   MutualFriendReaderPort,
-} from "#api/modules/social/friends/social-friends.public";
+} from "#api/modules/social/friendships/social-friendships.public";
 import {
   InviteConfigPort,
   InviteReaderPort,
 } from "#api/modules/social/invites/social-invites.public";
+import { UserBlockReaderPort } from "#api/modules/social/user-blocks/social-user-blocks.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
@@ -22,6 +22,7 @@ import { InviteRedemptionReaderPort } from "./application/ports/invite-redemptio
 import { InviteRedemptionRepositoryPort } from "./application/ports/invite-redemption.repository.port.js";
 import { InviteRewardSchedulerPort } from "./application/ports/invite-reward-scheduler.port.js";
 import { InviteUserReaderPort } from "./application/ports/invite-user.reader.port.js";
+import { InvitedFriendReaderPort } from "./application/ports/invited-friend.reader.port.js";
 import { RewardApplierPort } from "./application/ports/reward-applier.port.js";
 import { RewardClaimRepositoryPort } from "./application/ports/reward-claim.repository.port.js";
 import { RewardGrantRepositoryPort } from "./application/ports/reward-grant.repository.port.js";
@@ -29,17 +30,19 @@ import { CheckInvitePairReachabilityUseCase } from "./application/use-cases/chec
 import { ExpireStaleRedemptionsUseCase } from "./application/use-cases/expire-stale-redemptions.use-case.js";
 import { GetInvitedFriendsUseCase } from "./application/use-cases/get-invited-friends.use-case.js";
 import { GrantInviteRewardsUseCase } from "./application/use-cases/grant-invite-rewards.use-case.js";
+import { RecordInviteRedemptionUseCase } from "./application/use-cases/record-invite-redemption.use-case.js";
 import { RecordInviteeActivityUseCase } from "./application/use-cases/record-invitee-activity.use-case.js";
 import { RedeemInviteUseCase } from "./application/use-cases/redeem-invite.use-case.js";
 import { ScheduleInviteQualifyRemindersUseCase } from "./application/use-cases/schedule-invite-qualify-reminders.use-case.js";
 import { SendInviteQualifyReminderUseCase } from "./application/use-cases/send-invite-qualify-reminder.use-case.js";
 import { HmacClaimHasherAdapter } from "./infrastructure/adapters/hmac-claim-hasher.adapter.js";
 import { InviteNotifierAdapter } from "./infrastructure/adapters/invite-notifier.adapter.js";
+import { InviteUserReaderAdapter } from "./infrastructure/adapters/invite-user-reader.adapter.js";
 import { RewardApplierAdapter } from "./infrastructure/adapters/reward-applier.adapter.js";
 import { InviteQualifyReminderSchedulerAdapter } from "./infrastructure/jobs/invite-qualify-reminder-scheduler.adapter.js";
 import { InviteRewardSchedulerAdapter } from "./infrastructure/jobs/invite-reward-scheduler.adapter.js";
 import { DrizzleInviteRedemptionRepository } from "./infrastructure/persistence/drizzle-invite-redemption.repository.js";
-import { DrizzleInviteUserReader } from "./infrastructure/persistence/drizzle-invite-user.reader.js";
+import { DrizzleInvitedFriendReader } from "./infrastructure/persistence/drizzle-invited-friend.reader.js";
 import { DrizzleRewardClaimRepository } from "./infrastructure/persistence/drizzle-reward-claim.repository.js";
 import { DrizzleRewardGrantRepository } from "./infrastructure/persistence/drizzle-reward-grant.repository.js";
 
@@ -47,7 +50,8 @@ export const SOCIAL_INVITE_REDEMPTIONS_PROVIDERS = [
   { provide: InviteRedemptionRepositoryPort, useClass: DrizzleInviteRedemptionRepository },
   { provide: RewardGrantRepositoryPort, useClass: DrizzleRewardGrantRepository },
   { provide: RewardClaimRepositoryPort, useClass: DrizzleRewardClaimRepository },
-  { provide: InviteUserReaderPort, useClass: DrizzleInviteUserReader },
+  { provide: InviteUserReaderPort, useClass: InviteUserReaderAdapter },
+  { provide: InvitedFriendReaderPort, useClass: DrizzleInvitedFriendReader },
   { provide: ClaimHasherPort, useClass: HmacClaimHasherAdapter },
   { provide: InviteNotifierPort, useClass: InviteNotifierAdapter },
   { provide: RewardApplierPort, useClass: RewardApplierAdapter },
@@ -58,11 +62,19 @@ export const SOCIAL_INVITE_REDEMPTIONS_PROVIDERS = [
   },
   provideUseCase(GetInvitedFriendsUseCase, {
     inviteRedemptionReader: InviteRedemptionReaderPort,
+    invitedFriendReader: InvitedFriendReaderPort,
     inviteConfig: InviteConfigPort,
   }),
   provideUseCase(CheckInvitePairReachabilityUseCase, {
     mutualFriendReader: MutualFriendReaderPort,
     blockReader: UserBlockReaderPort,
+  }),
+  provideUseCase(RecordInviteRedemptionUseCase, {
+    inviteRedemptionRepository: InviteRedemptionRepositoryPort,
+    rewardClaimRepository: RewardClaimRepositoryPort,
+    rewardGrantRepository: RewardGrantRepositoryPort,
+    rewardApplier: RewardApplierPort,
+    rewardScheduler: InviteRewardSchedulerPort,
   }),
   provideUseCase(RedeemInviteUseCase, {
     unitOfWork: UnitOfWorkPort,
@@ -71,14 +83,13 @@ export const SOCIAL_INVITE_REDEMPTIONS_PROVIDERS = [
     inviteRedemptionRepository: InviteRedemptionRepositoryPort,
     rewardClaimRepository: RewardClaimRepositoryPort,
     rewardGrantRepository: RewardGrantRepositoryPort,
+    recordInviteRedemption: RecordInviteRedemptionUseCase,
     userReader: InviteUserReaderPort,
-    rewardApplier: RewardApplierPort,
     mutualFriendReader: MutualFriendReaderPort,
     blockReader: UserBlockReaderPort,
     friendshipEstablisher: FriendshipEstablisherPort,
     claimHasher: ClaimHasherPort,
     notifier: InviteNotifierPort,
-    rewardScheduler: InviteRewardSchedulerPort,
     inviteConfig: InviteConfigPort,
     clock: ClockPort,
     logger: loggerFor(RedeemInviteUseCase),

@@ -1,4 +1,4 @@
-import { calculateRemainingLimit } from "#api/modules/access/entitlements/access-entitlements.public";
+import { calculateRemainingLimit } from "#api/modules/access/feature-grants/access-feature-grants.public";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 

@@ -2,7 +2,7 @@ import { FakeTodoCache } from "#test/doubles/planning/fake-todo-cache";
 import { InMemoryTodoReadRepository } from "#test/doubles/planning/in-memory-todo-read.repository";
 import { createPlanningTodo } from "#test/fixtures/planning/planning-todos.fixture";
 
-import { TodoId } from "../../../shared/domain/todo-id.vo.js";
+import { TodoId } from "../../domain/todo-id.vo.js";
 import { InvalidateTodoViewCacheUseCase } from "./invalidate-todo-view-cache.use-case.js";
 
 function setUp() {
@@ -23,7 +23,8 @@ function setUp() {
 
 describe("InvalidateTodoViewCacheUseCase", () => {
   it("할 일의 소유자를 찾아 그 사람의 친구 목록 캐시를 버린다", async () => {
-    // Given - 캐시 키는 소유자 기준이므로 todoId만으로는 지울 수 없다
+    // Given
+    // 캐시 키는 소유자 기준이므로 todoId만으로는 지울 수 없다
     const { cache, invalidator } = setUp();
 
     // When

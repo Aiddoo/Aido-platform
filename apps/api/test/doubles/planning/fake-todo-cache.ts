@@ -1,4 +1,7 @@
-import { TodoCachePort } from "#api/modules/planning/todos/application/ports/todo-cache.port";
+import {
+  type FriendTodosFirstPageKey,
+  TodoCachePort,
+} from "#api/modules/planning/todos/application/ports/todo-cache.port";
 import type { FriendTodoReadModel } from "#api/modules/planning/todos/application/read-models/todo.read-model";
 import type { CursorPage } from "#api/shared/application/cursor-page";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -10,23 +13,20 @@ export class FakeTodoCache extends TodoCachePort {
   async invalidateTodoCategories(userId: UserId): Promise<void> {
     this.categoryUsers.delete(userId.value);
   }
-  async readFriendTodosFirstPage(owner: UserId, start: string, end: string, size: number) {
-    const page = this.pages.get(this.#key(owner.value, start, end, size));
+  async readFriendTodosFirstPage(key: FriendTodosFirstPageKey) {
+    const page = this.pages.get(this.#key(key));
     return {
-      generation: String(this.generations.get(owner.value) ?? 0),
+      generation: String(this.generations.get(key.ownerUserId.value) ?? 0),
       page: page === undefined ? undefined : structuredClone(page),
     };
   }
   async storeFriendTodosFirstPageIfCurrent(
-    owner: UserId,
-    start: string,
-    end: string,
-    size: number,
+    key: FriendTodosFirstPageKey,
     generation: string,
     page: CursorPage<FriendTodoReadModel, number>,
   ): Promise<void> {
-    if (generation === String(this.generations.get(owner.value) ?? 0)) {
-      this.pages.set(this.#key(owner.value, start, end, size), structuredClone(page));
+    if (generation === String(this.generations.get(key.ownerUserId.value) ?? 0)) {
+      this.pages.set(this.#key(key), structuredClone(page));
     }
   }
   async invalidateFriendTodos(owner: UserId): Promise<void> {
@@ -38,7 +38,7 @@ export class FakeTodoCache extends TodoCachePort {
       }
     }
   }
-  #key(userId: string, start: string, end: string, size: number): string {
-    return `${userId}:${start}:${end}:${size}`;
+  #key({ ownerUserId, startDate, endDate, size }: FriendTodosFirstPageKey): string {
+    return `${ownerUserId.value}:${startDate}:${endDate}:${size}`;
   }
 }

@@ -1,4 +1,5 @@
-import type { SupportedLocale } from "#api/shared/domain/locale";
+import type { SupportedLocale } from "@aido/api/vocabulary";
+
 import { InMemorySchedulerPreferenceReader } from "#test/doubles/notification/in-memory-scheduler-preference.reader";
 import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
 import { StubNotificationHistoryReader } from "#test/doubles/notification/stub-notification-history.reader";
@@ -6,8 +7,8 @@ import { StubScheduledReminderReader } from "#test/doubles/notification/stub-sch
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createTimezoneContextFixture } from "#test/fixtures/notification/timezone-context.fixture";
 
-import { createLunchNudgeNotificationMessage } from "../../../push/application/messages/scheduler-notification.messages.js";
-import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
+import { createLunchNudgeNotificationMessage } from "../../../shared/application/messages/scheduler-notification.messages.js";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
 import { SendLunchNudgeUseCase } from "./send-lunch-nudge.use-case.js";
 
 describe("SendLunchNudgeUseCase — 점심 찔러보기 전략", () => {
@@ -17,7 +18,11 @@ describe("SendLunchNudgeUseCase — 점심 찔러보기 전략", () => {
   let history: StubNotificationHistoryReader;
   let strategy: SendLunchNudgeUseCase;
 
-  const ctx = createTimezoneContextFixture({ date: "2024-01-16", localHour: 12, localMinute: 30 });
+  const timezoneContext = createTimezoneContextFixture({
+    date: "2024-01-16",
+    localHour: 12,
+    localMinute: 30,
+  });
   const sent = () => publisher.published.map(({ data }) => data);
 
   beforeEach(() => {
@@ -28,7 +33,7 @@ describe("SendLunchNudgeUseCase — 점심 찔러보기 전략", () => {
     strategy = new SendLunchNudgeUseCase({
       reader,
       preferenceReader: preferences,
-      notificationPublisher: publisher,
+      notificationPublisher: publisher.batch,
       notificationHistoryReader: history,
       logger: new SilentLogger(),
     });
@@ -39,14 +44,18 @@ describe("SendLunchNudgeUseCase — 점심 찔러보기 전략", () => {
     reader.lunchNudgeUsers = [{ id: "user-1" }, { id: "user-2" }];
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 2 });
     expect(reader.queries).toEqual([
       {
         method: "findLunchNudgeUsers",
-        params: { timezones: ["Asia/Seoul"], today: ctx.today, tomorrow: ctx.tomorrow },
+        params: {
+          timezones: ["Asia/Seoul"],
+          today: timezoneContext.today,
+          tomorrow: timezoneContext.tomorrow,
+        },
       },
     ]);
     expect(sent()).toEqual([
@@ -61,7 +70,7 @@ describe("SendLunchNudgeUseCase — 점심 찔러보기 전략", () => {
     await preferences.givenPreference({ timezone: "Asia/Seoul", locale: "en" }, "user-2");
 
     // When
-    await strategy.execute(ctx);
+    await strategy.execute(timezoneContext);
 
     // Then
     const expectedFor = (recipientId: string, locale: SupportedLocale) =>
@@ -89,10 +98,10 @@ describe("SendLunchNudgeUseCase — 점심 찔러보기 전략", () => {
   it("오늘 이미 점심 넛지를 받은 사용자를 제외한다", async () => {
     // Given
     reader.lunchNudgeUsers = [{ id: "user-1" }, { id: "user-2" }];
-    history.notified("LUNCH_NUDGE", ["user-1"], ctx.today);
+    history.notified("LUNCH_NUDGE", ["user-1"], timezoneContext.today);
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 1 });
@@ -102,10 +111,10 @@ describe("SendLunchNudgeUseCase — 점심 찔러보기 전략", () => {
   it("모든 사용자가 이미 받았으면 발송하지 않는다", async () => {
     // Given
     reader.lunchNudgeUsers = [{ id: "user-1" }];
-    history.notified("LUNCH_NUDGE", ["user-1"], ctx.today);
+    history.notified("LUNCH_NUDGE", ["user-1"], timezoneContext.today);
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 0 });
@@ -114,7 +123,7 @@ describe("SendLunchNudgeUseCase — 점심 찔러보기 전략", () => {
 
   it("대상이 없으면 발송 이력도 조회하지 않는다", async () => {
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 0 });

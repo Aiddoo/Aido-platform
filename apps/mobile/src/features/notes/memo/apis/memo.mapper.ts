@@ -5,7 +5,7 @@ import {
   type Memo as MemoDto,
   type MemoListResponse,
   type MemoResourceLimitResponse,
-} from '@aido/api';
+} from '@aido/api/contracts/memo/v1';
 import { toRepeat } from '@src/features/planning/todo/apis/todo-repeat.mapper';
 import { toCreateTodoRequest } from '@src/features/planning/todo/apis/todo.mapper';
 import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';

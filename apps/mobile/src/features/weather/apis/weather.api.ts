@@ -2,7 +2,7 @@ import {
   type UpdateWeatherLocationInput,
   weatherLocationSchema,
   weatherReportSchema,
-} from '@aido/api';
+} from '@aido/api/contracts/weather/v2';
 import type { ApiError } from '@src/core/errors/api-error';
 import type { Result } from '@src/core/errors/result';
 import type { AppLogger } from '@src/core/ports/app-logger';
@@ -11,8 +11,7 @@ import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
 import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
 import type { Coordinates } from '../domains/weather-location.model';
-import type { RegisteredLocation } from '../domains/weather-report.model';
-import type { WeatherReport } from '../domains/weather-report.model';
+import type { RegisteredLocation, WeatherReport } from '../domains/weather-report.model';
 import { isLocationNotRegisteredError } from '../domains/weather.error';
 import { getFallbackFieldPaths, toRegisteredLocation, toWeatherReport } from './weather.mapper';
 

@@ -1,11 +1,16 @@
-import { AI_SUGGESTION_LIMITS, DAY_OF_WEEK_ORDER, type DayOfWeek } from "@aido/api/vocabulary";
+import {
+  AI_SUGGESTION_LIMITS,
+  completionRate,
+  DAYS_OF_WEEK,
+  type DayOfWeek,
+} from "@aido/api/vocabulary";
 
 import {
   collectRecordedActivities,
   selectRecordedDays,
   toActivityKey,
 } from "./recorded-activity-evidence.domain-service.js";
-import type { TodoSummaryForAnalysis } from "./suggestion.constants.js";
+import type { TodoSummaryForAnalysis } from "./suggestions.constants.js";
 
 /** 프롬프트에 넣는 후보 수 상한 */
 export const MAX_SUGGESTION_CANDIDATES = 30;
@@ -78,7 +83,7 @@ export function buildSuggestionCandidates(
       title: activity.title,
       occurrences: activity.occurrences,
       completed: activity.completedOccurrences,
-      completionRate: Math.round((activity.completedOccurrences / activity.occurrences) * 100),
+      completionRate: completionRate(activity.completedOccurrences, activity.occurrences),
       days: activity.days,
       recordedTime: activity.recordedTime,
       categoryName: activity.categoryName,
@@ -119,7 +124,7 @@ export function resolveSuggestionPicks(
     }
     seen.add(candidate.id);
     const recordedDays = new Set(candidate.days.map((day) => day.day));
-    const chosen = DAY_OF_WEEK_ORDER.filter(
+    const chosen = DAYS_OF_WEEK.filter(
       (day) => recordedDays.has(day) && pick.daysOfWeek.includes(day),
     );
     resolved.push({

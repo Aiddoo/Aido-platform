@@ -38,11 +38,11 @@ export class StubCheerLimitReader extends CheerLimitReaderPort {
     return this.dailyLimit;
   }
 
-  async readLimitInTx(_userId: UserId): Promise<number | null> {
+  async readLimitInTransaction(_userId: UserId): Promise<number | null> {
     return this.dailyLimit;
   }
 
-  async readFeatureQuotaInTx(
+  async readFeatureQuotaInTransaction(
     _userId: UserId,
     usage: DailySendQuotaUsage,
   ): Promise<DailySendFeatureQuota> {

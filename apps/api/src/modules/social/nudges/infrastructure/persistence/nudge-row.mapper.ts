@@ -1,11 +1,17 @@
-import type { nudge as nudgeTable, todo as todoTable } from "#api/platform/database/schema/index";
+import type { UserBriefReadModel } from "#api/modules/identity/users/identity-users.public";
+import type { TodoBriefReadModel } from "#api/modules/planning/todos/planning-todos-queries.public";
+import type { nudge as nudgeTable } from "#api/platform/database/schema/index";
 
+import type { NudgeInteractionTodoReadModel } from "../../application/read-models/nudge-interaction.read-model.js";
+import type {
+  NudgeReadModel,
+  NudgeUserReadModel,
+} from "../../application/read-models/nudge.read-model.js";
 import { NudgeTargetTodo } from "../../domain/nudge-target-todo.vo.js";
 import { Nudge } from "../../domain/nudge.aggregate.js";
 
 type NudgeRow = typeof nudgeTable.$inferSelect;
 type NudgeInsertRow = typeof nudgeTable.$inferInsert;
-type TodoRow = typeof todoTable.$inferSelect;
 
 export function toNudge(row: NudgeRow): Nudge {
   return Nudge.reconstitute(row);
@@ -15,14 +21,61 @@ export function toNudgeRow(nudge: Nudge): NudgeInsertRow {
   return nudge.toPrimitives();
 }
 
-export function toNudgeTargetTodo(
-  row: Pick<TodoRow, "userId" | "title" | "visibility" | "startDate" | "endDate">,
-): NudgeTargetTodo {
+// 콕 대상 할 일은 planning 조회 포트가 준 요약에서 복원한다
+export function toNudgeTargetTodo(todo: TodoBriefReadModel): NudgeTargetTodo {
   return NudgeTargetTodo.reconstitute({
-    ownerId: row.userId,
-    title: row.title,
-    visibility: row.visibility,
-    startDate: row.startDate,
-    endDate: row.endDate,
+    ownerId: todo.ownerId.value,
+    title: todo.title,
+    visibility: todo.visibility,
+    completed: todo.completed,
+    startDate: todo.startDate,
+    endDate: todo.endDate,
   });
+}
+
+export function toNudgeInteractionTodoReadModel(
+  todo: TodoBriefReadModel,
+): NudgeInteractionTodoReadModel {
+  return {
+    id: todo.todoId.value,
+    ownerId: todo.ownerId.value,
+    title: todo.title,
+    completed: todo.completed,
+    visibility: todo.visibility,
+  };
+}
+
+export function toNudgeUserReadModel(brief: UserBriefReadModel): NudgeUserReadModel {
+  return {
+    id: brief.userId.value,
+    userTag: brief.userTag,
+    name: brief.name,
+    profileImage: brief.profileImage,
+  };
+}
+
+export function toNudgeReadModel(
+  row: NudgeRow,
+  related: {
+    readonly sender: UserBriefReadModel;
+    readonly receiver: UserBriefReadModel;
+    readonly todo: TodoBriefReadModel;
+  },
+): NudgeReadModel {
+  return {
+    id: row.id,
+    senderId: row.senderId,
+    receiverId: row.receiverId,
+    todoId: row.todoId,
+    message: row.message,
+    readAt: row.readAt,
+    createdAt: row.createdAt,
+    replyKind: row.replyKind,
+    repliedAt: row.repliedAt,
+    replyUpdatedAt: row.replyUpdatedAt,
+    thankedAt: row.thankedAt,
+    sender: toNudgeUserReadModel(related.sender),
+    receiver: toNudgeUserReadModel(related.receiver),
+    todo: toNudgeInteractionTodoReadModel(related.todo),
+  };
 }

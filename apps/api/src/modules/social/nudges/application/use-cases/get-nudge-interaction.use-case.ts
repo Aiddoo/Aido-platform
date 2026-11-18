@@ -1,4 +1,4 @@
-import type { MutualFriendReaderPort } from "#api/modules/social/friends/social-friends.public";
+import type { MutualFriendReaderPort } from "#api/modules/social/friendships/social-friendships.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { NudgeId } from "../../domain/nudge-id.vo.js";
@@ -45,7 +45,7 @@ export class GetNudgeInteractionUseCase {
       ...nudge,
       isAvailable: isNudgeInteractionAvailable({
         receiverId: nudge.receiverId,
-        isMutualFriend: friendIds.includes(counterpartId),
+        isMutualFriend: friendIds.some((friendId) => friendId.value === counterpartId),
         todoOwnerId: nudge.todo.ownerId,
         todoVisibility: nudge.todo.visibility,
       }),

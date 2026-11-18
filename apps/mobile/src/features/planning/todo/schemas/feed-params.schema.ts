@@ -1,4 +1,6 @@
-import { TODO_COMMENT_SORT, todoCommentIdSchema, userIdParamSchema } from '@aido/api';
+import { userIdParamSchema } from '@aido/api/contracts/follow/v1';
+import { todoCommentIdSchema } from '@aido/api/contracts/todo-comment/v1';
+import { TODO_COMMENT_SORT } from '@aido/api/vocabulary';
 import { dateKeySchema } from '@src/shared/date/date-key';
 import { routeIdSchema } from '@src/shared/schemas/route-params.schema';
 import { z } from 'zod';

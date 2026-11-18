@@ -42,7 +42,7 @@
     "temperatureBelowZero_one": "minus {{count}} degree",
     "temperatureBelowZero_other": "minus {{count}} degrees",
     "restOfDay": "Rest of the day: {{condition}} · {{chance}}% chance of precipitation",
-    "stale": "Data from {{relative}}"
+    "stale": "Last updated: {{relative}}"
   },
   "alerts": {
     "issuedBy": "Issued by {{source}}",
@@ -335,8 +335,13 @@
       "title": "No rain during your to-dos",
       "titleGray": "Gray skies, but no rain for your to-dos",
       "todayBody": "Rain starts at {{time}}. Finish outdoor errands before then",
+      "todaySnowBody": "Snow starts at {{time}}. Finish outdoor errands before then",
+      "nowBody": "It's raining now. Take an umbrella when you head out",
+      "nowSnowBody": "It's snowing now. Watch your step when you head out",
       "tomorrowRainBody": "Rain starts tomorrow {{dayPart}}. Do laundry or a car wash today",
       "tomorrowSnowBody": "Snow starts tomorrow {{dayPart}}. Shop or wash the car today",
+      "tomorrowRainDayBody": "Rain is expected tomorrow. Do laundry or a car wash today",
+      "tomorrowSnowDayBody": "Snow is expected tomorrow. Shop or wash the car today",
       "beforeRain": "Before the rain",
       "beforeTomorrowRain": "Before tomorrow's rain",
       "suggestion": "Laundry",

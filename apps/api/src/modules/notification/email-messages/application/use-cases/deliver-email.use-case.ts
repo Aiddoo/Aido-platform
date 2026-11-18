@@ -1,0 +1,78 @@
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
+
+import type { EmailMessage } from "../../domain/email-message.aggregate.js";
+import { EmailMessageAlerts } from "../email-messages.alerts.js";
+import { emailDeliveryRetryable } from "../email-messages.errors.js";
+import { EmailMessageLogEvent } from "../email-messages.log-events.js";
+import type { EmailBudgetPort } from "../ports/email-budget.port.js";
+import type { EmailSenderPort } from "../ports/email-sender.port.js";
+
+export interface DeliverEmailInput {
+  readonly deliveryId: string;
+  readonly message: EmailMessage;
+  /** 마지막 시도라 더 이상 큐가 다시 부르지 않는다 */
+  readonly isFinalAttempt: boolean;
+}
+
+interface DeliverEmailDependencies {
+  readonly sender: Pick<EmailSenderPort, "send">;
+  readonly budget: Pick<EmailBudgetPort, "release" | "settleProviderQuotaExhausted">;
+  readonly alert: Pick<OperationalAlertPort, "raise">;
+  readonly logger: Pick<ApplicationLoggerPort, "log" | "warn">;
+}
+
+/**
+ * 큐에서 꺼낸 이메일 한 통을 공급자로 보낸다. 예약한 예산은 보내졌거나 다시 시도할 때는 그대로 두고,
+ * 보내지 못하고 끝날 때만 돌려준다. 재시도는 큐(pg-boss)가 하므로 여기서는 던지기만 한다.
+ */
+export class DeliverEmailUseCase {
+  readonly #dependencies: DeliverEmailDependencies;
+
+  constructor(dependencies: DeliverEmailDependencies) {
+    this.#dependencies = dependencies;
+  }
+
+  async execute(input: DeliverEmailInput): Promise<void> {
+    const { deliveryId, message, isFinalAttempt } = input;
+    const outcome = await this.#dependencies.sender.send(message);
+    const fields = { kind: message.kind, deliveryId };
+
+    if (outcome.status === "sent") {
+      this.#dependencies.logger.log({ event: EmailMessageLogEvent.DELIVERY_SENT, ...fields });
+      return;
+    }
+
+    if (outcome.reason === "quota_exhausted") {
+      await this.#dependencies.budget.settleProviderQuotaExhausted(outcome.scope);
+      this.#dependencies.logger.warn({
+        event: EmailMessageLogEvent.DELIVERY_DROPPED,
+        ...fields,
+        reason: outcome.reason,
+      });
+      return;
+    }
+
+    if (outcome.retryable && !isFinalAttempt) {
+      this.#dependencies.logger.warn({
+        event: EmailMessageLogEvent.DELIVERY_RETRY_SCHEDULED,
+        ...fields,
+        reason: outcome.reason,
+      });
+      throw emailDeliveryRetryable(message.kind, outcome.reason);
+    }
+
+    await this.#dependencies.budget.release();
+    this.#dependencies.logger.warn({
+      event: EmailMessageLogEvent.DELIVERY_DROPPED,
+      ...fields,
+      reason: outcome.reason,
+    });
+    this.#dependencies.alert.raise({
+      ...(outcome.retryable
+        ? EmailMessageAlerts.DELIVERY_RETRY_EXHAUSTED
+        : EmailMessageAlerts.DELIVERY_REJECTED),
+      tags: { kind: message.kind, reason: outcome.reason },
+    });
+  }
+}

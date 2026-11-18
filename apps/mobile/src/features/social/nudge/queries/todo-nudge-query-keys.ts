@@ -6,7 +6,7 @@ import type {
   NudgeThanksCursor,
   NudgeThanksPreview,
 } from '../domains/nudge-interaction.model';
-import type { NudgeCooldownInfo, NudgeLimitInfo } from '../domains/todo-nudge.model';
+import type { NudgeCooldownInfo } from '../domains/todo-nudge.model';
 import type { NudgeDirection } from '../schemas/nudge-interaction-query-key.schema';
 
 export const TODO_NUDGE_QUERY_KEYS = {
@@ -29,8 +29,6 @@ export const TODO_NUDGE_QUERY_KEYS = {
     queryOptions<InfiniteData<NudgeThanksPreview, NudgeThanksCursor | undefined>>({
       queryKey: [...TODO_NUDGE_QUERY_KEYS.interactions(), 'thanks', { todoId }],
     }).queryKey,
-  limit: () =>
-    queryOptions<NudgeLimitInfo>({ queryKey: [...TODO_NUDGE_QUERY_KEYS.all, 'limit'] }).queryKey,
   remindCooldown: ({ userId }: { userId: string }) =>
     queryOptions<NudgeCooldownInfo>({
       queryKey: [...TODO_NUDGE_QUERY_KEYS.all, 'remind-cooldown', { userId }],

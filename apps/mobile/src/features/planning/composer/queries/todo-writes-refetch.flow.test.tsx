@@ -1,4 +1,4 @@
-import type { FriendTodo, Todo as TodoDto, TodoItemResponse } from '@aido/api';
+import type { FriendTodo, Todo as TodoDto, TodoItemResponse } from '@aido/api/contracts/todo/v1';
 import type { ApiError } from '@src/core/errors/api-error';
 import { err, ok, type Result } from '@src/core/errors/result';
 import { createTodoCategoryListDto } from '@src/features/planning/category/__tests__/todo-category.fixtures';

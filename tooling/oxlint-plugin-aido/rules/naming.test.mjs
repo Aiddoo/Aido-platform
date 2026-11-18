@@ -142,3 +142,69 @@ tester.run('namespace-function-name', rules['namespace-function-name'], {
     { code: 'TodoList.Error = function TodoListError() { return null; };', errors: 1 },
   ],
 });
+
+tester.run('no-abbreviation', rules['no-abbreviation'], {
+  valid: [
+    'const timezoneContext = read();',
+    'function send(request, response) {}',
+    'try { run(); } catch (error) { report(error); }',
+    'class Repository { #transactionHost; constructor(transactionHost) { this.#transactionHost = transactionHost; } }',
+    'const { userId, items } = command;',
+    'import { ctx } from "library"; use(ctx);',
+    'const payload = { ctx: 1 };',
+    'items.map((item, index) => item + index);',
+    'const userE = createUser();',
+    { code: 'const params = read();', options: [{ allow: ['params'] }] },
+  ],
+  invalid: [
+    { code: 'async function execute(ctx) {}', errors: 1 },
+    { code: 'const txHost = host();', errors: 1 },
+    { code: 'try { run(); } catch (e) { report(e); }', errors: 1 },
+    { code: 'class Adapter { #repo; }', errors: 1 },
+    { code: 'const { a: res } = call();', errors: 1 },
+    { code: 'items.map((val, idx) => val + idx);', errors: 2 },
+    { code: 'interface Options { errorMsg: string }', errors: 1 },
+    { code: 'function handle(...args) {}', errors: 1 },
+    {
+      code: 'const params = read();',
+      options: [{ abbreviations: { params: 'parameters' } }],
+      errors: 1,
+    },
+  ],
+});
+
+tester.run('read-model-suffix', rules['read-model-suffix'], {
+  valid: [
+    'export interface TodoCommentThreadReadModel { readonly total: number }',
+    'interface CreateMemoDependencies { readonly clock: ClockPort }',
+    'type UserRecordWithId = { readonly id: string };',
+    {
+      code: 'export type TodoSummaryReadModel = { readonly count: number };\nexport const LIMIT = 3;',
+      options: [{ exportSuffix: 'ReadModel' }],
+    },
+  ],
+  invalid: [
+    {
+      code: 'export interface PreferenceSnapshot { readonly locale: string }',
+      errors: [
+        {
+          message:
+            /PreferenceSnapshot: application 타입 이름에 Record·Row·View·Snapshot 접미사를 쓰지 않는다/,
+        },
+      ],
+    },
+    { code: 'type TodoRow = { readonly id: number };', errors: 1 },
+    { code: 'export type UserConsentRecord = { readonly agreed: boolean };', errors: 1 },
+    { code: 'class FriendView {}', errors: 1 },
+    {
+      code: 'export interface TodoSummary { readonly count: number }',
+      options: [{ exportSuffix: 'ReadModel' }],
+      errors: [{ message: /TodoSummary: \*\.read-model\.ts가 내보내는 타입은 ReadModel로 끝낸다/ }],
+    },
+    {
+      code: 'export type FriendSnapshot = { readonly id: string };',
+      options: [{ exportSuffix: 'ReadModel' }],
+      errors: [{ message: /Snapshot 접미사를 쓰지 않는다/ }],
+    },
+  ],
+});

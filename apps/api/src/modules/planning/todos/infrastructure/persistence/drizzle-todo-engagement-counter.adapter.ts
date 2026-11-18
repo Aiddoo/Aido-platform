@@ -8,26 +8,23 @@ import { todo, todoView } from "#api/platform/database/schema/index";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { TodoId } from "../../../shared/domain/todo-id.vo.js";
 import type {
   TodoCommentCount,
   TodoEngagementCounterPort,
-  TodoViewRecord,
+  TodoViewRecording,
 } from "../../application/ports/todo-engagement-counter.port.js";
+import type { TodoId } from "../../domain/todo-id.vo.js";
 
 // 숫자 칸만 바꾸는 update도 지금처럼 Todo의 updatedAt을 ClockPort 값으로 함께 바꾼다
 @Injectable()
 export class DrizzleTodoEngagementCounterAdapter implements TodoEngagementCounterPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
+
   readonly #clock: ClockPort;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
-    this.#txHost = txHost;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
+    this.#transactionHost = transactionHost;
     this.#clock = clock;
-  }
-
-  get #db() {
-    return this.#txHost.tx;
   }
 
   async increaseCommentCount(todoId: TodoId, amount: number): Promise<void> {
@@ -48,7 +45,7 @@ export class DrizzleTodoEngagementCounterAdapter implements TodoEngagementCounte
     return changed.length === 1;
   }
 
-  async recordView(todoId: TodoId, viewerId: UserId): Promise<TodoViewRecord> {
+  async recordView(todoId: TodoId, viewerId: UserId): Promise<TodoViewRecording> {
     const inserted = await this.#db
       .insert(todoView)
       .values({ todoId: todoId.value, viewerId: viewerId.value })
@@ -93,7 +90,9 @@ export class DrizzleTodoEngagementCounterAdapter implements TodoEngagementCounte
       return;
     }
     const rows = sql.join(
-      counts.map(({ todoId, commentCount }) => sql`(${todoId}::integer, ${commentCount}::integer)`),
+      counts.map(
+        ({ todoId, commentCount }) => sql`(${todoId.value}::integer, ${commentCount}::integer)`,
+      ),
       sql`, `,
     );
     const desired = sql`(values ${rows}) as desired("todoId", "commentCount")`;
@@ -104,5 +103,9 @@ export class DrizzleTodoEngagementCounterAdapter implements TodoEngagementCounte
       .where(
         and(eq(todo.id, sql`desired."todoId"`), ne(todo.commentCount, sql`desired."commentCount"`)),
       );
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

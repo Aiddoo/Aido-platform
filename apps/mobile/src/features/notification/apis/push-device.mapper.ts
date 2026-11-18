@@ -1,4 +1,7 @@
-import type { PushDeviceResponse, ReportPushDeviceInput } from '@aido/api';
+import type {
+  PushDeviceResponse,
+  ReportPushDeviceInput,
+} from '@aido/api/contracts/notification/v1';
 import { toInstant } from '@src/shared/date/instant';
 
 import type { PushDevice, PushPermission } from '../domains/push-permission.model';

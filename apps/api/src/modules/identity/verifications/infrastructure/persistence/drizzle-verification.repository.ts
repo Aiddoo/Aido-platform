@@ -1,0 +1,142 @@
+import { VERIFICATION_CODE } from "@aido/api/vocabulary";
+import { TransactionHost } from "@nestjs-cls/transactional";
+import { Inject, Injectable } from "@nestjs/common";
+import { and, eq, gt, inArray, isNull, lt, sql } from "drizzle-orm";
+
+import { VerificationRepositoryPort } from "#api/modules/identity/verifications/application/ports/verification.repository.port";
+import { VerificationId } from "#api/modules/identity/verifications/domain/verification-id.vo";
+import type { Verification } from "#api/modules/identity/verifications/domain/verification.aggregate";
+import type { VerificationType } from "#api/modules/identity/verifications/domain/verifications.constants";
+import {
+  type Database,
+  DRIZZLE,
+  type DrizzleTransactionalAdapter,
+} from "#api/platform/database/database.client";
+import { verification } from "#api/platform/database/schema/index";
+import { nextSequenceValue } from "#api/platform/database/sequence";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import { toVerification, toVerificationRow } from "./verification-row.mapper.js";
+
+@Injectable()
+export class DrizzleVerificationRepository extends VerificationRepositoryPort {
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
+  // incrementAttempts는 활성 트랜잭션을 우회해야 하므로 베이스 클라이언트를 별도 주입한다
+  readonly #baseDb: Database;
+
+  constructor(
+    transactionHost: TransactionHost<DrizzleTransactionalAdapter>,
+    @Inject(DRIZZLE) baseDb: Database,
+  ) {
+    super();
+    this.#transactionHost = transactionHost;
+    this.#baseDb = baseDb;
+  }
+
+  async nextId(): Promise<VerificationId> {
+    return VerificationId.reconstitute(await nextSequenceValue(this.#db, verification.id));
+  }
+
+  async findValidByUserIdAndType(
+    userId: UserId,
+    type: VerificationType,
+    now: Temporal.Instant,
+  ): Promise<Verification | null> {
+    const row = await this.#db.query.verification.findFirst({
+      where: { userId: userId.value, type, usedAt: { isNull: true }, expiresAt: { gt: now } },
+      orderBy: { createdAt: "desc", id: "desc" },
+    });
+    return row == null ? null : toVerification(row);
+  }
+
+  async findLatestIssuedAtByUserIdAndType(
+    userId: UserId,
+    type: VerificationType,
+    since: Temporal.Instant,
+  ): Promise<Temporal.Instant | null> {
+    const row = await this.#db.query.verification.findFirst({
+      columns: { createdAt: true },
+      where: { userId: userId.value, type, createdAt: { gt: since } },
+      orderBy: { createdAt: "desc" },
+    });
+    return row?.createdAt ?? null;
+  }
+
+  async save(entity: Verification): Promise<boolean> {
+    if (!entity.isPersisted()) {
+      await this.#db.insert(verification).values(toVerificationRow(entity));
+      return true;
+    }
+    const usedAt = entity.usedAt;
+    if (usedAt == null || !entity.hasBeenConsumedSinceLoad()) {
+      return false;
+    }
+    // 읽은 뒤 다른 요청이 쓰거나 만료시키거나 시도를 다 썼으면 소비하지 않는다
+    const saved = await this.#db
+      .update(verification)
+      .set({ usedAt })
+      .where(
+        and(
+          eq(verification.id, entity.id.value),
+          isNull(verification.usedAt),
+          eq(verification.token, entity.tokenHash),
+          gt(verification.expiresAt, usedAt),
+          lt(verification.attempts, VERIFICATION_CODE.MAX_ATTEMPTS),
+        ),
+      )
+      .returning({ id: verification.id });
+    return saved.length > 0;
+  }
+
+  async invalidateAllByUserIdAndType(
+    userId: UserId,
+    type: VerificationType,
+    now: Temporal.Instant,
+  ): Promise<number> {
+    const invalidated = await this.#db
+      .update(verification)
+      .set({ expiresAt: now })
+      .where(
+        and(
+          eq(verification.userId, userId.value),
+          eq(verification.type, type),
+          isNull(verification.usedAt),
+          gt(verification.expiresAt, now),
+        ),
+      )
+      .returning({ id: verification.id });
+    return invalidated.length;
+  }
+
+  // 브루트포스 보호를 위해 호출자 트랜잭션(CLS)에 참여하지 않고 베이스 클라이언트로 독립 커밋한다
+  async saveFailedAttempt(entity: Verification): Promise<void> {
+    const verificationId = entity.id;
+    await this.#baseDb
+      .update(verification)
+      .set({ attempts: sql`${verification.attempts} + 1` })
+      .where(
+        and(
+          eq(verification.id, verificationId.value),
+          isNull(verification.usedAt),
+          lt(verification.attempts, VERIFICATION_CODE.MAX_ATTEMPTS),
+        ),
+      );
+  }
+
+  async deleteExpiredBefore(cutoff: Temporal.Instant, limit: number): Promise<number> {
+    const expiredCodes = this.#db
+      .select({ id: verification.id })
+      .from(verification)
+      .where(lt(verification.expiresAt, cutoff))
+      .limit(limit);
+    const deleted = await this.#db
+      .delete(verification)
+      .where(inArray(verification.id, expiredCodes))
+      .returning({ id: verification.id });
+    return deleted.length;
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
+  }
+}

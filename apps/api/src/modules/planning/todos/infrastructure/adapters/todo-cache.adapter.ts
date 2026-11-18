@@ -1,16 +1,17 @@
 import { randomUUID } from "node:crypto";
 
-import { friendTodoSchema } from "@aido/api";
-import { Injectable } from "@nestjs/common";
+import { friendTodoSchema } from "@aido/api/contracts/todo/v1";
+import { Inject, Injectable } from "@nestjs/common";
 import { z } from "zod";
 
-import { TodoCategoryCacheKey } from "#api/modules/planning/categories/infrastructure/cache/todo-category-cache.keyspace";
+import { TodoCategoryCachePort } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import type { CursorPage } from "#api/shared/application/cursor-page";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
   FriendTodosFirstPageCacheRead,
+  FriendTodosFirstPageKey,
   TodoCachePort,
 } from "../../application/ports/todo-cache.port.js";
 import type { FriendTodoReadModel } from "../../application/read-models/todo.read-model.js";
@@ -40,30 +41,34 @@ const FRIEND_TODOS_PAGE_SCHEMA = z.object({
 @Injectable()
 export class TodoCacheAdapter implements TodoCachePort {
   readonly #cacheService: CacheStorePort;
+  readonly #categoryCache: Pick<TodoCategoryCachePort, "invalidate">;
 
-  constructor(cacheService: CacheStorePort) {
+  constructor(
+    cacheService: CacheStorePort,
+    @Inject(TodoCategoryCachePort) categoryCache: Pick<TodoCategoryCachePort, "invalidate">,
+  ) {
     this.#cacheService = cacheService;
+    this.#categoryCache = categoryCache;
   }
 
+  // 카테고리 목록의 todoCount가 바뀌므로 카테고리 slice의 세대 무효화를 거친다
   async invalidateTodoCategories(userId: UserId): Promise<void> {
-    await this.#cacheService.del(TodoCategoryCacheKey.list(userId.value));
+    await this.#categoryCache.invalidate(userId);
   }
 
   async readFriendTodosFirstPage(
-    ownerUserId: UserId,
-    startDate: string,
-    endDate: string,
-    size: number,
+    key: FriendTodosFirstPageKey,
   ): Promise<FriendTodosFirstPageCacheRead> {
+    const { ownerUserId, startDate, endDate, size } = key;
     const generation = await this.#getFriendTodosGeneration(ownerUserId);
     const page = await this.#cacheService.get(
-      TodoCacheKey.friendTodosFirstPageVersioned(
-        ownerUserId.value,
+      TodoCacheKey.friendTodosFirstPageVersioned({
+        ownerUserId: ownerUserId.value,
         generation,
         startDate,
         endDate,
         size,
-      ),
+      }),
       FRIEND_TODOS_PAGE_SCHEMA,
     );
     // page GET이 끝난 뒤 다시 읽어야 둘 사이의 invalidate를 반드시 관측한다.
@@ -78,13 +83,11 @@ export class TodoCacheAdapter implements TodoCachePort {
   }
 
   async storeFriendTodosFirstPageIfCurrent(
-    ownerUserId: UserId,
-    startDate: string,
-    endDate: string,
-    size: number,
+    key: FriendTodosFirstPageKey,
     generation: string,
     page: CursorPage<FriendTodoReadModel, number>,
   ): Promise<void> {
+    const { ownerUserId, startDate, endDate, size } = key;
     const currentGeneration = await this.#getFriendTodosGeneration(ownerUserId);
     if (currentGeneration !== generation) {
       return;
@@ -92,13 +95,13 @@ export class TodoCacheAdapter implements TodoCachePort {
 
     // 확인 직후 invalidate가 와도 이전 generation 키에만 저장되어 새 reader에는 보이지 않는다.
     await this.#cacheService.set(
-      TodoCacheKey.friendTodosFirstPageVersioned(
-        ownerUserId.value,
+      TodoCacheKey.friendTodosFirstPageVersioned({
+        ownerUserId: ownerUserId.value,
         generation,
         startDate,
         endDate,
         size,
-      ),
+      }),
       page,
       TODO_CACHE_TTL_MS.FRIEND_VIEW,
     );

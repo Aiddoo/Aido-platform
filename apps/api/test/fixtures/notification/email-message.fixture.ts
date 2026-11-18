@@ -1,15 +1,17 @@
+import { EmailMessageId } from "#api/modules/notification/email-messages/domain/email-message-id.vo";
 import {
+  type CreateEmailMessageParams,
   EmailMessage,
-  type EmailMessageProps,
-} from "#api/modules/notification/email/domain/email-message.vo";
+} from "#api/modules/notification/email-messages/domain/email-message.aggregate";
 
 export const EMAIL_MESSAGE_FIXTURE_RECIPIENT = "private@example.com";
 export const EMAIL_MESSAGE_FIXTURE_CODE = "987654";
 
 export function createEmailMessageFixture(
-  overrides: Partial<EmailMessageProps> = {},
+  overrides: Partial<CreateEmailMessageParams> = {},
 ): EmailMessage {
   return EmailMessage.create({
+    id: EmailMessageId.reconstitute("email-message-fixture"),
     kind: "verification",
     to: EMAIL_MESSAGE_FIXTURE_RECIPIENT,
     subject: "인증 코드",

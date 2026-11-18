@@ -1,4 +1,4 @@
-import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { NudgeReaderPort } from "#api/modules/social/nudges/application/ports/nudge.reader.port";
 import type { NudgeRepositoryPort } from "#api/modules/social/nudges/application/ports/nudge.repository.port";
 import type { Nudge, NudgePrimitives } from "#api/modules/social/nudges/domain/nudge.aggregate";
@@ -35,8 +35,8 @@ async function saveNudge(
   return nudge;
 }
 
-function idsOf(items: readonly { readonly id: number }[]): number[] {
-  return items.map((item) => item.id);
+function idsOf(page: { readonly items: readonly { readonly id: number }[] }): number[] {
+  return page.items.map((item) => item.id);
 }
 
 export function describeNudgeRepositoryContract(
@@ -140,11 +140,12 @@ export function describeNudgeRepositoryContract(
       expect(used).toBe(2);
     });
 
-    it("대상 할 일은 소유자·제목·공개 범위·날짜를 읽고 없으면 null이다", async () => {
+    it("대상 할 일은 소유자·제목·공개 범위·완료·날짜를 읽고 없으면 null이다", async () => {
       // Given
       const { repository, addTodo } = await createSubject();
       const seed = createNudgeTodoSeed({
         visibility: "PRIVATE",
+        completed: true,
         startDate: NUDGE_FIXTURE_TODAY.subtract({ days: 1 }),
         endDate: NUDGE_FIXTURE_TODAY.add({ days: 1 }),
       });
@@ -159,6 +160,7 @@ export function describeNudgeRepositoryContract(
         ownerId: seed.ownerId,
         title: seed.title,
         visibility: seed.visibility,
+        completed: true,
         startDate: seed.startDate,
         endDate: seed.endDate,
       });
@@ -208,26 +210,26 @@ export function describeNudgeRepositoryContract(
       const firstPage = await reader.listReceived({
         userId: RECEIVER_ID,
         afterNudgeId: null,
-        limit: 2,
+        size: 2,
       });
       const nextPage = await reader.listReceived({
         userId: RECEIVER_ID,
         afterNudgeId: tiedOlder.id,
-        limit: 5,
+        size: 5,
       });
-      const sent = await reader.listSent({ userId: SENDER_ID, afterNudgeId: null, limit: 5 });
+      const sent = await reader.listSent({ userId: SENDER_ID, afterNudgeId: null, size: 5 });
       const afterMissing = await reader.listSent({
         userId: SENDER_ID,
         afterNudgeId: await repository.nextId(),
-        limit: 5,
+        size: 5,
       });
 
       // Then
       expect(idsOf(firstPage)).toEqual([tiedNewer.id.value, tiedOlder.id.value]);
       expect(idsOf(nextPage)).toEqual([oldest.id.value]);
       expect(idsOf(sent)).toEqual([tiedNewer.id.value, tiedOlder.id.value, oldest.id.value]);
-      expect(afterMissing).toEqual([]);
-      expect(firstPage[0]).toMatchObject({
+      expect(afterMissing.items).toEqual([]);
+      expect(firstPage.items[0]).toMatchObject({
         sender: { id: NUDGE_FIXTURE_SENDER_ID },
         receiver: { id: NUDGE_FIXTURE_RECEIVER_ID },
         todo: {
@@ -264,13 +266,13 @@ export function describeNudgeRepositoryContract(
         viewerId: RECEIVER_ID,
         direction: "received",
         afterNudgeId: third.id,
-        limit: 5,
+        size: 5,
       });
       const sentByReceiver = await reader.listInteractions({
         viewerId: RECEIVER_ID,
         direction: "sent",
         afterNudgeId: null,
-        limit: 5,
+        size: 5,
       });
 
       // Then
@@ -282,7 +284,7 @@ export function describeNudgeRepositoryContract(
       expect(asSender?.id).toBe(second.id.value);
       expect(asStranger).toBeNull();
       expect(idsOf(received)).toEqual([second.id.value, first.id.value]);
-      expect(sentByReceiver).toEqual([]);
+      expect(sentByReceiver.items).toEqual([]);
     });
 
     it("감사 요약은 감사한 친구 수와 마지막 감사 시각, 마지막으로 받은 콕 id를 준다", async () => {
@@ -347,12 +349,12 @@ export function describeNudgeRepositoryContract(
       const firstPage = await reader.listThanksRecipients({
         ...query,
         afterNudgeId: null,
-        limit: 1,
+        size: 1,
       });
       const nextPage = await reader.listThanksRecipients({
         ...query,
         afterNudgeId: otherNudge.id,
-        limit: 1,
+        size: 1,
       });
       const total = await reader.countThanksRecipients(query);
       const notFriends = await reader.countThanksRecipients({ ...query, friendIds: [] });
@@ -362,10 +364,10 @@ export function describeNudgeRepositoryContract(
         otherNudge.id.value,
         senderLatest.id.value,
       ]);
-      expect(firstPage).toMatchObject([
+      expect(firstPage.items).toMatchObject([
         { nudgeId: otherNudge.id.value, sender: { id: NUDGE_FIXTURE_OTHER_USER_ID } },
       ]);
-      expect(nextPage).toMatchObject([
+      expect(nextPage.items).toMatchObject([
         { nudgeId: senderLatest.id.value, sender: { id: NUDGE_FIXTURE_SENDER_ID } },
       ]);
       expect({ total, notFriends }).toEqual({ total: 2, notFriends: 0 });

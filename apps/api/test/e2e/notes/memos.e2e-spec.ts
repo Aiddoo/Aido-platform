@@ -1,0 +1,919 @@
+import { convertMemoToTodosResponseSchema } from "@aido/api/contracts/memo/v1";
+import { todoSchema } from "@aido/api/contracts/todo/v1";
+import { IDEMPOTENCY_KEY_HEADER } from "@aido/api/vocabulary";
+import request from "supertest";
+
+import { memo } from "#api/platform/database/schema/index";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
+import type { VerifiedUser } from "#test/e2e/helpers/e2e-helpers";
+
+describe("메모 E2E", () => {
+  let testContext: E2eTestContext;
+
+  beforeAll(async () => {
+    testContext = await createE2eApp();
+  }, 60_000);
+
+  afterAll(async () => {
+    await destroyE2eApp(testContext);
+  });
+
+  beforeEach(async () => {
+    await testContext.reset();
+  });
+
+  const password = "Test1234!";
+
+  /** 메모를 생성하고 생성된 메모 객체를 반환하는 헬퍼 */
+  async function createMemo(
+    user: VerifiedUser,
+    content: string,
+  ): Promise<{ id: number; sortOrder: number; isPinned: boolean }> {
+    const response = await request(testContext.app.getHttpServer())
+      .post("/v1/memos")
+      .set("Authorization", `Bearer ${user.accessToken}`)
+      .send({ content })
+      .expect(201);
+    return response.body.data.memo;
+  }
+
+  describe("GET /memos/resource-limit - 리소스 제한 조회", () => {
+    it("초기 상태에서 현재 개수 0과 최대 한도 20을 반환한다", async () => {
+      // Given
+      const user = await testContext.helpers.createVerifiedUser("memo-limit@test.com", password);
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .get("/v1/memos/resource-limit")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .expect(200);
+
+      // Then
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.currentCount).toBe(0);
+      expect(response.body.data.maxPerUser).toBe(20);
+    });
+
+    it("메모 생성 후 currentCount가 증가한다", async () => {
+      // Given
+      const user = await testContext.helpers.createVerifiedUser("memo-limit2@test.com", password);
+      await createMemo(user, "메모 1");
+      await createMemo(user, "메모 2");
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .get("/v1/memos/resource-limit")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .expect(200);
+
+      // Then
+      expect(response.body.data.currentCount).toBe(2);
+    });
+
+    it("인증 없이 요청 시 401 에러 반환", async () => {
+      // When
+      const response = await request(testContext.app.getHttpServer()).get(
+        "/v1/memos/resource-limit",
+      );
+
+      // Then
+      expect(response.status).toBe(401);
+    });
+  });
+
+  describe("POST /memos - 메모 생성", () => {
+    it("메모를 생성하고 생성 결과를 반환한다", async () => {
+      // Given
+      const user = await testContext.helpers.createVerifiedUser("memo-create@test.com", password);
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .post("/v1/memos")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .send({ content: "장보기: 우유, 계란" })
+        .expect(201);
+
+      // Then
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.message).toBeDefined();
+      expect(response.body.data.memo.id).toBeDefined();
+      expect(response.body.data.memo.content).toBe("장보기: 우유, 계란");
+      expect(response.body.data.memo.isPinned).toBe(false);
+      expect(response.body.data.memo.userId).toBe(user.userId);
+    });
+
+    it("같은 Idempotency-Key로 다시 보내면 처음 만든 메모를 201로 돌려주고 하나만 남는다", async () => {
+      // Given
+      const user = await testContext.helpers.createVerifiedUser(
+        "memo-create-retry@test.com",
+        password,
+      );
+      const send = () =>
+        request(testContext.app.getHttpServer())
+          .post("/v1/memos")
+          .set("Authorization", `Bearer ${user.accessToken}`)
+          .set(IDEMPOTENCY_KEY_HEADER, "memo-create-retry-1")
+          .send({ content: "시간 초과된 메모" })
+          .expect(201);
+      const first = await send();
+
+      // When
+      const retried = await send();
+
+      // Then
+      const list = await request(testContext.app.getHttpServer())
+        .get("/v1/memos")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .expect(200);
+      expect(retried.body.data.memo).toEqual(first.body.data.memo);
+      expect(retried.body.data.memo).not.toHaveProperty("idempotencyKey");
+      expect(list.body.data.items).toHaveLength(1);
+    });
+
+    it("같은 Idempotency-Key로 글이 다른 저장은 409 MEMO_2004다", async () => {
+      // Given
+      const user = await testContext.helpers.createVerifiedUser(
+        "memo-create-mismatch@test.com",
+        password,
+      );
+      const send = (content: string) =>
+        request(testContext.app.getHttpServer())
+          .post("/v1/memos")
+          .set("Authorization", `Bearer ${user.accessToken}`)
+          .set(IDEMPOTENCY_KEY_HEADER, "memo-create-mismatch-1")
+          .send({ content });
+      await send("처음 글").expect(201);
+
+      // When
+      const response = await send("고친 글").expect(409);
+
+      // Then
+      expect(response.body.error.code).toBe("MEMO_2004");
+    });
+
+    it("빈 내용으로 생성 시 400 에러 반환 (SYS_0002)", async () => {
+      // Given
+      const user = await testContext.helpers.createVerifiedUser(
+        "memo-create-empty@test.com",
+        password,
+      );
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .post("/v1/memos")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .send({ content: "" })
+        .expect(400);
+
+      // Then
+      expect(response.body.success).toBe(false);
+    });
+
+    it("5000자 초과 내용으로 생성 시 400 에러 반환", async () => {
+      // Given
+      const user = await testContext.helpers.createVerifiedUser(
+        "memo-create-long@test.com",
+        password,
+      );
+      const longContent = "가".repeat(5001);
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .post("/v1/memos")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .send({ content: longContent })
+        .expect(400);
+
+      // Then
+      expect(response.body.success).toBe(false);
+    });
+
+    it("최대 한도(20개) 도달 시 403 에러 반환 (MEMO_2003)", async () => {
+      // Given
+      const user = await testContext.helpers.createVerifiedUser(
+        "memo-create-limit@test.com",
+        password,
+      );
+      const client = testContext.testDatabase.getClient();
+      await client.insert(memo).values(
+        Array.from({ length: 20 }, (_, i) => ({
+          userId: user.userId,
+          content: `시딩 메모 ${i + 1}`,
+          sortOrder: i,
+          updatedAt: Temporal.Now.instant(),
+        })),
+      );
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .post("/v1/memos")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .send({ content: "한도 초과 메모" })
+        .expect(403);
+
+      // Then
+      expect(response.body.success).toBe(false);
+      expect(response.body.error.code).toBe("MEMO_2003");
+    });
+
+    it("인증 없이 요청 시 401 에러 반환", async () => {
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .post("/v1/memos")
+        .send({ content: "메모" });
+
+      // Then
+      expect(response.status).toBe(401);
+    });
+  });
+
+  describe("GET /memos - 메모 목록 조회", () => {
+    it("고정 메모가 먼저, 나머지는 sortOrder→id 내림차순으로 정렬된다", async () => {
+      // Given
+      const user = await testContext.helpers.createVerifiedUser(
+        "memo-list-order@test.com",
+        password,
+      );
+      const m1 = await createMemo(user, "첫 번째");
+      const m2 = await createMemo(user, "두 번째");
+      const m3 = await createMemo(user, "세 번째");
+
+      // m1을 고정 (목록 최상단으로 이동해야 함)
+      await request(testContext.app.getHttpServer())
+        .patch(`/v1/memos/${m1.id}/pin`)
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .send({ isPinned: true })
+        .expect(200);
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .get("/v1/memos")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .expect(200);
+
+      // Then
+      const items = response.body.data.items;
+      expect(items).toHaveLength(3);
+      expect(items[0].id).toBe(m1.id);
+      expect(items[0].isPinned).toBe(true);
+      expect(items[1].id).toBe(m3.id);
+      expect(items[2].id).toBe(m2.id);
+    });
+
+    it("커서 기반 페이지네이션으로 나누어 조회한다", async () => {
+      // Given
+      const user = await testContext.helpers.createVerifiedUser(
+        "memo-list-cursor@test.com",
+        password,
+      );
+      const m1 = await createMemo(user, "메모 1");
+      const m2 = await createMemo(user, "메모 2");
+      const m3 = await createMemo(user, "메모 3");
+
+      // When
+      const page1 = await request(testContext.app.getHttpServer())
+        .get("/v1/memos")
+        .query({ size: 2 })
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .expect(200);
+
+      // Then
+      expect(page1.body.data.items).toHaveLength(2);
+      expect(page1.body.data.pagination.hasNext).toBe(true);
+      expect(page1.body.data.pagination.nextCursor).not.toBeNull();
+
+      // When
+      const page2 = await request(testContext.app.getHttpServer())
+        .get("/v1/memos")
+        .query({ size: 2, cursor: page1.body.data.pagination.nextCursor })
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .expect(200);
+
+      // Then
+      expect(page2.body.data.items).toHaveLength(1);
+      expect(page2.body.data.pagination.hasNext).toBe(false);
+
+      const allIds = [
+        ...page1.body.data.items.map((it: { id: number }) => it.id),
+        ...page2.body.data.items.map((it: { id: number }) => it.id),
+      ];
+      expect(new Set(allIds).size).toBe(3);
+      expect(new Set(allIds)).toEqual(new Set([m1.id, m2.id, m3.id]));
+    });
+
+    it("다른 사용자의 메모는 조회되지 않는다 (사용자 격리)", async () => {
+      // Given
+      const userA = await testContext.helpers.createVerifiedUser("memo-iso-a@test.com", password);
+      const userB = await testContext.helpers.createVerifiedUser("memo-iso-b@test.com", password);
+      await createMemo(userA, "A의 메모");
+      await createMemo(userB, "B의 메모");
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .get("/v1/memos")
+        .set("Authorization", `Bearer ${userA.accessToken}`)
+        .expect(200);
+
+      // Then
+      expect(response.body.data.items).toHaveLength(1);
+      expect(response.body.data.items[0].content).toBe("A의 메모");
+    });
+
+    it("인증 없이 요청 시 401 에러 반환", async () => {
+      // When
+      const response = await request(testContext.app.getHttpServer()).get("/v1/memos");
+
+      // Then
+      expect(response.status).toBe(401);
+    });
+  });
+
+  describe("GET /memos/:id - 메모 상세 조회", () => {
+    it("메모 ID로 단일 메모를 조회한다", async () => {
+      // Given
+      const user = await testContext.helpers.createVerifiedUser("memo-detail@test.com", password);
+      const memo = await createMemo(user, "상세 조회 대상");
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .get(`/v1/memos/${memo.id}`)
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .expect(200);
+
+      // Then
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.memo.id).toBe(memo.id);
+      expect(response.body.data.memo.content).toBe("상세 조회 대상");
+    });
+
+    it("존재하지 않는 메모 조회 시 404 에러 반환 (MEMO_2001)", async () => {
+      // Given
+      const user = await testContext.helpers.createVerifiedUser(
+        "memo-detail-404@test.com",
+        password,
+      );
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .get("/v1/memos/999999")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .expect(404);
+
+      // Then
+      expect(response.body.success).toBe(false);
+      expect(response.body.error.code).toBe("MEMO_2001");
+    });
+
+    it("다른 사용자의 메모 조회 시 404 에러 반환 (사용자 격리)", async () => {
+      // Given
+      const userA = await testContext.helpers.createVerifiedUser(
+        "memo-detail-iso-a@test.com",
+        password,
+      );
+      const userB = await testContext.helpers.createVerifiedUser(
+        "memo-detail-iso-b@test.com",
+        password,
+      );
+      const memoB = await createMemo(userB, "B의 비밀 메모");
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .get(`/v1/memos/${memoB.id}`)
+        .set("Authorization", `Bearer ${userA.accessToken}`)
+        .expect(404);
+
+      // Then
+      // 존재하지 않는 것처럼 처리
+      expect(response.body.error.code).toBe("MEMO_2001");
+    });
+  });
+
+  describe("PATCH /memos/:id - 메모 수정", () => {
+    it("메모 내용을 수정한다", async () => {
+      // Given
+      const user = await testContext.helpers.createVerifiedUser("memo-update@test.com", password);
+      const memo = await createMemo(user, "수정 전");
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .patch(`/v1/memos/${memo.id}`)
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .send({ content: "수정 후" })
+        .expect(200);
+
+      // Then
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.memo.content).toBe("수정 후");
+    });
+
+    it("존재하지 않는 메모 수정 시 404 에러 반환 (MEMO_2001)", async () => {
+      // Given
+      const user = await testContext.helpers.createVerifiedUser(
+        "memo-update-404@test.com",
+        password,
+      );
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .patch("/v1/memos/999999")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .send({ content: "수정" })
+        .expect(404);
+
+      // Then
+      expect(response.body.error.code).toBe("MEMO_2001");
+    });
+
+    it("인증 없이 요청 시 401 에러 반환", async () => {
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .patch("/v1/memos/1")
+        .send({ content: "수정" });
+
+      // Then
+      expect(response.status).toBe(401);
+    });
+  });
+
+  describe("PATCH /memos/:id/pin - 메모 고정/해제", () => {
+    it("메모를 고정한다", async () => {
+      // Given
+      const user = await testContext.helpers.createVerifiedUser("memo-pin@test.com", password);
+      const memo = await createMemo(user, "고정 대상");
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .patch(`/v1/memos/${memo.id}/pin`)
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .send({ isPinned: true })
+        .expect(200);
+
+      // Then
+      expect(response.body.data.memo.isPinned).toBe(true);
+    });
+
+    it("고정된 메모를 해제한다", async () => {
+      // Given
+      const user = await testContext.helpers.createVerifiedUser("memo-unpin@test.com", password);
+      const memo = await createMemo(user, "고정 해제 대상");
+      await request(testContext.app.getHttpServer())
+        .patch(`/v1/memos/${memo.id}/pin`)
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .send({ isPinned: true })
+        .expect(200);
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .patch(`/v1/memos/${memo.id}/pin`)
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .send({ isPinned: false })
+        .expect(200);
+
+      // Then
+      expect(response.body.data.memo.isPinned).toBe(false);
+    });
+
+    it("존재하지 않는 메모 고정 시 404 에러 반환 (MEMO_2001)", async () => {
+      // Given
+      const user = await testContext.helpers.createVerifiedUser("memo-pin-404@test.com", password);
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .patch("/v1/memos/999999/pin")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .send({ isPinned: true })
+        .expect(404);
+
+      // Then
+      expect(response.body.error.code).toBe("MEMO_2001");
+    });
+  });
+
+  describe("PATCH /memos/:id/reorder - 메모 순서 변경", () => {
+    it("메모 순서를 변경한다", async () => {
+      // Given
+      const user = await testContext.helpers.createVerifiedUser("memo-reorder@test.com", password);
+      const m1 = await createMemo(user, "메모 1");
+      await createMemo(user, "메모 2");
+      const m3 = await createMemo(user, "메모 3");
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .patch(`/v1/memos/${m3.id}/reorder`)
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .send({ targetMemoId: m1.id, position: "after" })
+        .expect(200);
+
+      // Then
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.memo.id).toBe(m3.id);
+    });
+
+    it("존재하지 않는 대상 메모로 순서 변경 시 404 에러 반환 (MEMO_2002)", async () => {
+      // Given
+      const user = await testContext.helpers.createVerifiedUser(
+        "memo-reorder-404@test.com",
+        password,
+      );
+      const memo = await createMemo(user, "순서 변경 대상");
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .patch(`/v1/memos/${memo.id}/reorder`)
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .send({ targetMemoId: 999_999, position: "after" })
+        .expect(404);
+
+      // Then
+      expect(response.body.error.code).toBe("MEMO_2002");
+    });
+  });
+
+  describe("DELETE /memos/:id - 메모 삭제", () => {
+    it("메모를 삭제한다", async () => {
+      // Given
+      const user = await testContext.helpers.createVerifiedUser("memo-delete@test.com", password);
+      const memo = await createMemo(user, "삭제 대상");
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .delete(`/v1/memos/${memo.id}`)
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .expect(200);
+
+      // Then
+      expect(response.body.success).toBe(true);
+      await request(testContext.app.getHttpServer())
+        .get(`/v1/memos/${memo.id}`)
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .expect(404);
+    });
+
+    it("존재하지 않는 메모 삭제 시 404 에러 반환 (MEMO_2001)", async () => {
+      // Given
+      const user = await testContext.helpers.createVerifiedUser(
+        "memo-delete-404@test.com",
+        password,
+      );
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .delete("/v1/memos/999999")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .expect(404);
+
+      // Then
+      expect(response.body.error.code).toBe("MEMO_2001");
+    });
+
+    it("인증 없이 요청 시 401 에러 반환", async () => {
+      // When
+      const response = await request(testContext.app.getHttpServer()).delete("/v1/memos/1");
+
+      // Then
+      expect(response.status).toBe(401);
+    });
+  });
+
+  describe("POST /memos/:id/convert-to-todo - 메모를 할 일로 변환", () => {
+    it("메모를 할 일로 변환하고 원본 메모를 삭제한다", async () => {
+      // Given
+      const user = await testContext.helpers.createVerifiedUser("memo-convert@test.com", password);
+      const categoryId = await testContext.helpers.getDefaultCategoryId(user.accessToken);
+      const memo = await createMemo(user, "회의 준비하기");
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .post(`/v1/memos/${memo.id}/convert-to-todo`)
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .send({ categoryId, startDate: "2026-02-01" })
+        .expect(201);
+
+      // Then
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.todo.id).toBeDefined();
+      expect(response.body.data.todo.title).toBe("회의 준비하기");
+      expect(response.body.data.todo.startDate).toBe("2026-02-01");
+
+      await request(testContext.app.getHttpServer())
+        .get(`/v1/memos/${memo.id}`)
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .expect(404);
+    });
+
+    it("scheduledTime + X-Timezone(Asia/Seoul)이 UTC로 변환된다", async () => {
+      // Given
+      const user = await testContext.helpers.createVerifiedUser(
+        "memo-convert-tz@test.com",
+        password,
+      );
+      const categoryId = await testContext.helpers.getDefaultCategoryId(user.accessToken);
+      const memo = await createMemo(user, "아침 운동");
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .post(`/v1/memos/${memo.id}/convert-to-todo`)
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .set("X-Timezone", "Asia/Seoul")
+        .send({
+          categoryId,
+          startDate: "2026-02-01",
+          scheduledTime: "09:00",
+          isAllDay: false,
+        })
+        .expect(201);
+
+      // Then
+      // 09:00 KST = 00:00 UTC
+      expect(response.body.data.todo.scheduledTime).toBe("2026-02-01T00:00:00.000Z");
+      expect(response.body.data.todo.isAllDay).toBe(false);
+    });
+
+    it("items로 체크리스트를 함께 생성한다", async () => {
+      // Given
+      const user = await testContext.helpers.createVerifiedUser(
+        "memo-convert-items@test.com",
+        password,
+      );
+      const categoryId = await testContext.helpers.getDefaultCategoryId(user.accessToken);
+      const memo = await createMemo(user, "장보기");
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .post(`/v1/memos/${memo.id}/convert-to-todo`)
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .send({
+          categoryId,
+          startDate: "2026-02-01",
+          items: [{ title: "우유" }, { title: "계란" }],
+        })
+        .expect(201);
+
+      // Then
+      expect(response.body.data.todo.items).toHaveLength(2);
+      expect(response.body.data.todo.itemStats.total).toBe(2);
+    });
+
+    it("존재하지 않는 카테고리로 변환 시 404 에러 반환 (TODO_CATEGORY_0851)", async () => {
+      // Given
+      const user = await testContext.helpers.createVerifiedUser(
+        "memo-convert-cat-a@test.com",
+        password,
+      );
+      const other = await testContext.helpers.createVerifiedUser(
+        "memo-convert-cat-b@test.com",
+        password,
+      );
+      const foreignCategoryId = await testContext.helpers.getDefaultCategoryId(other.accessToken);
+      const memo = await createMemo(user, "변환 대상");
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .post(`/v1/memos/${memo.id}/convert-to-todo`)
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .send({ categoryId: foreignCategoryId, startDate: "2026-02-01" })
+        .expect(404);
+
+      // Then
+      expect(response.body.error.code).toBe("TODO_CATEGORY_0851");
+    });
+
+    it("200자 초과 메모 내용은 할 일 제목으로 앞 200자만 사용된다", async () => {
+      // Given
+      const user = await testContext.helpers.createVerifiedUser(
+        "memo-convert-trunc@test.com",
+        password,
+      );
+      const categoryId = await testContext.helpers.getDefaultCategoryId(user.accessToken);
+      const longContent = "가".repeat(250);
+      const memo = await createMemo(user, longContent);
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .post(`/v1/memos/${memo.id}/convert-to-todo`)
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .send({ categoryId, startDate: "2026-02-01" })
+        .expect(201);
+
+      // Then
+      expect(response.body.data.todo.title).toHaveLength(200);
+      expect(response.body.data.todo.title).toBe("가".repeat(200));
+    });
+
+    it("존재하지 않는 메모 변환 시 404 에러 반환 (MEMO_2001)", async () => {
+      // Given
+      const user = await testContext.helpers.createVerifiedUser(
+        "memo-convert-404@test.com",
+        password,
+      );
+      const categoryId = await testContext.helpers.getDefaultCategoryId(user.accessToken);
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .post("/v1/memos/999999/convert-to-todo")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .send({ categoryId, startDate: "2026-02-01" })
+        .expect(404);
+
+      // Then
+      expect(response.body.error.code).toBe("MEMO_2001");
+    });
+
+    it("인증 없이 요청 시 401 에러 반환", async () => {
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .post("/v1/memos/1/convert-to-todo")
+        .send({ categoryId: 1, startDate: "2026-02-01" });
+
+      // Then
+      expect(response.status).toBe(401);
+    });
+  });
+
+  describe("POST /memos/:id/convert-to-todos - 메모를 여러 할 일로 일괄 변환", () => {
+    it("반복 변환은 수정한 제목과 체크리스트를 각 날짜에 저장하고 항목을 독립적으로 관리한다", async () => {
+      // Given
+      const user = await testContext.helpers.createVerifiedUser(
+        "memo-recurring-items@test.com",
+        password,
+      );
+      const categoryId = await testContext.helpers.getDefaultCategoryId(user.accessToken);
+      const memo = await createMemo(user, "원본 메모 제목");
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .post(`/v1/memos/${memo.id}/convert-to-todos`)
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .set("X-Timezone", "Asia/Seoul")
+        .send({
+          todos: [
+            {
+              title: "수정한 반복 제목",
+              categoryId,
+              startDate: "2026-04-06",
+              isRecurring: true,
+              recurrence: { daysOfWeek: ["MON", "WED"], endDate: "2026-04-08" },
+              items: [{ title: "우유" }, { title: "계란" }],
+            },
+          ],
+        })
+        .expect(201);
+
+      // Then
+      const { todos } = convertMemoToTodosResponseSchema.parse(response.body.data);
+      expect(todos.map((todo) => todo.startDate)).toEqual(["2026-04-06", "2026-04-08"]);
+      for (const todo of todos) {
+        expect(todo.title).toBe("수정한 반복 제목");
+        expect(todo.items.map((item) => item.title)).toEqual(["우유", "계란"]);
+        expect(todo.items.map((item) => item.sortOrder)).toEqual([0, 1]);
+        expect(todo.itemStats).toEqual({ total: 2, completed: 0 });
+      }
+      const [first, second] = todos;
+      expect(first).toBeDefined();
+      expect(second).toBeDefined();
+      if (!first || !second || !first.items[0]) {
+        throw new Error("Expected two recurring todos with checklist items");
+      }
+      expect(new Set(todos.flatMap((todo) => todo.items.map((item) => item.id))).size).toBe(4);
+
+      // When
+      await request(testContext.app.getHttpServer())
+        .patch(`/v1/todos/${first.id}/items/${first.items[0].id}`)
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .send({ completed: true })
+        .expect(200);
+
+      // Then
+      const unchanged = await request(testContext.app.getHttpServer())
+        .get(`/v1/todos/${second.id}`)
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .expect(200);
+      expect(todoSchema.parse(unchanged.body.data).items.map((item) => item.completed)).toEqual([
+        false,
+        false,
+      ]);
+      await request(testContext.app.getHttpServer())
+        .get(`/v1/memos/${memo.id}`)
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .expect(404);
+    });
+
+    it("여러 할 일로 일괄 변환하고 원본 메모를 삭제한다 (반복 일정 포함)", async () => {
+      // Given
+      const user = await testContext.helpers.createVerifiedUser(
+        "memo-convert-batch@test.com",
+        password,
+      );
+      const categoryId = await testContext.helpers.getDefaultCategoryId(user.accessToken);
+      const memo = await createMemo(user, "이번 주 할 일들");
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .post(`/v1/memos/${memo.id}/convert-to-todos`)
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .set("X-Timezone", "Asia/Seoul")
+        .send({
+          todos: [
+            {
+              title: "보고서 작성",
+              categoryId,
+              startDate: "2026-02-02",
+            },
+            {
+              title: "주간 회의",
+              categoryId,
+              startDate: "2026-02-02",
+              isRecurring: true,
+              recurrence: {
+                daysOfWeek: ["MON", "WED", "FRI"],
+                endDate: "2026-02-15",
+              },
+            },
+          ],
+        })
+        .expect(201);
+
+      // Then
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.todos.length).toBeGreaterThanOrEqual(2);
+      const titles = response.body.data.todos.map((t: { title: string }) => t.title);
+      expect(titles).toContain("보고서 작성");
+      expect(titles).toContain("주간 회의");
+
+      await request(testContext.app.getHttpServer())
+        .get(`/v1/memos/${memo.id}`)
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .expect(404);
+    });
+
+    it("빈 todos 배열(0개)로 요청 시 400 에러 반환", async () => {
+      // Given
+      const user = await testContext.helpers.createVerifiedUser(
+        "memo-convert-batch-0@test.com",
+        password,
+      );
+      const memo = await createMemo(user, "변환 대상");
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .post(`/v1/memos/${memo.id}/convert-to-todos`)
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .send({ todos: [] })
+        .expect(400);
+
+      // Then
+      expect(response.body.success).toBe(false);
+    });
+
+    it("todos 6개로 요청 시 400 에러 반환 (최대 5개)", async () => {
+      // Given
+      const user = await testContext.helpers.createVerifiedUser(
+        "memo-convert-batch-6@test.com",
+        password,
+      );
+      const categoryId = await testContext.helpers.getDefaultCategoryId(user.accessToken);
+      const memo = await createMemo(user, "변환 대상");
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .post(`/v1/memos/${memo.id}/convert-to-todos`)
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .send({
+          todos: Array.from({ length: 6 }, (_, i) => ({
+            title: `할 일 ${i + 1}`,
+            categoryId,
+            startDate: "2026-02-02",
+          })),
+        })
+        .expect(400);
+
+      // Then
+      expect(response.body.success).toBe(false);
+    });
+
+    it("존재하지 않는 메모 일괄 변환 시 404 에러 반환 (MEMO_2001)", async () => {
+      // Given
+      const user = await testContext.helpers.createVerifiedUser(
+        "memo-convert-batch-404@test.com",
+        password,
+      );
+      const categoryId = await testContext.helpers.getDefaultCategoryId(user.accessToken);
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .post("/v1/memos/999999/convert-to-todos")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .send({
+          todos: [{ title: "할 일", categoryId, startDate: "2026-02-02" }],
+        })
+        .expect(404);
+
+      // Then
+      expect(response.body.error.code).toBe("MEMO_2001");
+    });
+  });
+});

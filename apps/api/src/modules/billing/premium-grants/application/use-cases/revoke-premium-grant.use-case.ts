@@ -78,13 +78,13 @@ export class RevokePremiumGrantUseCase {
       await this.#dependencies.cache.invalidate(userId);
     } catch (error) {
       logger.warn({
-        event: PremiumGrantLogEvent.PREMIUM_GRANT_CACHE_INVALIDATION_FAILED,
+        event: PremiumGrantLogEvent.CACHE_INVALIDATION_FAILED,
         userId: userId.value,
         errorType: toErrorType(error),
       });
     }
     logger.log({
-      event: PremiumGrantLogEvent.PREMIUM_GRANT_REVOKED,
+      event: PremiumGrantLogEvent.REVOKED,
       userId: userId.value,
       revokedGrantCount,
     });

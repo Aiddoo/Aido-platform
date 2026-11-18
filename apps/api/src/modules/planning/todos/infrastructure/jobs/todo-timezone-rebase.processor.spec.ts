@@ -51,7 +51,7 @@ describe("시간대 재계산 작업", () => {
     await expect(run).rejects.toBe(rebase.failure);
     expect(alert.alerts).toEqual([
       expect.objectContaining({
-        key: "planning.todo-timezone-rebase-failed",
+        key: "planning.todo-timezone-rebase.failed",
         severity: "error",
         details: { userId: "user-1", attempt: LAST_ATTEMPT, errorType: "Error" },
       }),

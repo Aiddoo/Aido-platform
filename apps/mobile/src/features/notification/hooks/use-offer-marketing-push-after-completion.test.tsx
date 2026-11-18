@@ -12,7 +12,6 @@ import { OverlayProvider } from '@src/shared/ui';
 import {
   createAnalyticsStub,
   createHttpClientStub,
-  createMemoryObservableSyncStorage,
   createPendingResponse,
   createTestQueryClient,
   setupFakeTimersPerTest,
@@ -23,7 +22,6 @@ import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 
 import { PUSH_PERMISSION_QUERY_KEYS } from '../queries/push-permission-query-keys';
-import { createMarketingPushPromptRepository } from '../repositories/marketing-push-prompt.repository';
 import { useOfferMarketingPushAfterCompletion } from './use-offer-marketing-push-after-completion';
 
 const OFFER_DELAY_MS = 700;
@@ -49,27 +47,19 @@ async function renderOffer() {
   const httpClient = createHttpClientStub();
   httpClient.get.mockResolvedValue(ok(createPreferenceDto({ pushEnabled: true })));
   const analytics = createAnalyticsStub();
-  const syncStorage = createMemoryObservableSyncStorage();
   const sessionEpoch = createSessionEpoch();
   // 앱처럼 Overlay 호스트를 LocalDateProvider 안에 둔다(제안 시트가 날짜 형식을 쓴다)
-  await renderScreen(
+  const { di } = await renderScreen(
     <LocalDateProvider>
       <OverlayProvider>
         <OfferProbe />
       </OverlayProvider>
     </LocalDateProvider>,
     {
-      di: createTestDi({
-        ports: { httpClient, analytics, syncStorage, sessionEpoch, queryClient },
-      }),
+      di: createTestDi({ ports: { httpClient, analytics, sessionEpoch, queryClient } }),
     },
   );
-  return {
-    analytics,
-    httpClient,
-    sessionEpoch,
-    prompts: createMarketingPushPromptRepository(syncStorage),
-  };
+  return { analytics, httpClient, sessionEpoch, prompts: di.marketingPushPromptRepository };
 }
 
 describe('useOfferMarketingPushAfterCompletion', () => {

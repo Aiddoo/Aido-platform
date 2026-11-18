@@ -3,10 +3,8 @@ import { Injectable } from "@nestjs/common";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
-import type {
-  PremiumAccess,
-  PremiumAccessReaderPort,
-} from "../../application/ports/premium-access.reader.port.js";
+import type { PremiumAccessReaderPort } from "../../application/ports/premium-access.reader.port.js";
+import type { PremiumAccessReadModel } from "../../application/read-models/premium-access.read-model.js";
 import { GetPremiumAccessUseCase } from "../../application/use-cases/get-premium-access.use-case.js";
 
 function toDateOrNull(instant: Temporal.Instant | null): Date | null {
@@ -22,8 +20,8 @@ export class PremiumAccessReaderAdapter implements PremiumAccessReaderPort {
     this.#getPremiumAccess = getPremiumAccess;
   }
 
-  async getPremiumAccess(userId: UserId): Promise<PremiumAccess> {
-    const access = await this.#getPremiumAccess.execute({ userId: userId.value });
+  async getPremiumAccess(userId: UserId): Promise<PremiumAccessReadModel> {
+    const access = await this.#getPremiumAccess.execute({ userId });
     return {
       ...access,
       endsAt: toDateOrNull(access.endsAt),

@@ -1,43 +1,60 @@
 import { isPlainObject, uniq } from "es-toolkit";
 
-import type { CreateNotificationData } from "#api/modules/notification/inbox/application/ports/notification-draft.port";
+import { duplicateNotification } from "#api/modules/notification/notifications/application/notifications.errors";
 import type {
   ExistsRecentNotificationQuery,
   FindAlreadyNotifiedUserIdsQuery,
+  FindNudgeSuggestedFriendsQuery,
+  FindWinbackStagesSinceQuery,
   NotificationHistoryReaderPort,
-} from "#api/modules/notification/inbox/application/ports/notification-history.reader.port";
+} from "#api/modules/notification/notifications/application/ports/notification-history.reader.port";
 import type {
   ListInboxNotificationsQuery,
   NotificationInboxReaderPort,
-} from "#api/modules/notification/inbox/application/ports/notification-inbox.reader.port";
+} from "#api/modules/notification/notifications/application/ports/notification-inbox.reader.port";
 import {
-  DuplicateNotificationError,
+  type DeletedNotificationHistory,
   NotificationRepositoryPort,
-} from "#api/modules/notification/inbox/application/ports/notification.repository.port";
-import type { InboxNotification } from "#api/modules/notification/inbox/application/read-models/inbox-notification.read-model";
-import type { NotificationId } from "#api/modules/notification/inbox/domain/notification-id.vo";
-import type { NotificationType } from "#api/modules/notification/inbox/domain/notification-type.constants";
-import { Notification } from "#api/modules/notification/inbox/domain/notification.aggregate";
-import type { NotificationMilestone } from "#api/modules/notification/push/domain/notification-milestone.constants";
-import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+} from "#api/modules/notification/notifications/application/ports/notification.repository.port";
+import type { UnreadNotificationCountReaderPort } from "#api/modules/notification/notifications/application/ports/unread-notification-count.reader.port";
+import type { InboxNotificationReadModel } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
+import { Notification } from "#api/modules/notification/notifications/domain/notification.aggregate";
+import type { CreateNotificationData } from "#api/modules/notification/shared/domain/notification-draft.constants";
+import type { NotificationId } from "#api/modules/notification/shared/domain/notification-id.vo";
+import {
+  MILESTONE_NOTIFICATION_TYPE,
+  type NotificationMilestone,
+} from "#api/modules/notification/shared/domain/notification-milestone.constants";
+import type { NotificationType } from "#api/modules/notification/shared/domain/notification-type.constants";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 
 // Drizzle 저장소와 같은 순서(createdAt·id 내림차순)로 나열한다
-function compareListOrder(left: InboxNotification, right: InboxNotification): number {
+function compareListOrder(
+  left: InboxNotificationReadModel,
+  right: InboxNotificationReadModel,
+): number {
   return Temporal.Instant.compare(right.createdAt, left.createdAt) || right.id - left.id;
 }
 
-function isOfTypes(row: InboxNotification, types: readonly NotificationType[] | undefined) {
+function isOfTypes(
+  row: InboxNotificationReadModel,
+  types: readonly NotificationType[] | undefined,
+) {
   return types == null || types.includes(row.type);
 }
 
-function metadataField(row: InboxNotification, key: string): unknown {
+function metadataField(row: InboxNotificationReadModel, key: string): unknown {
   return isPlainObject(row.metadata) ? row.metadata[key] : undefined;
+}
+
+function isMilestoneNotification(row: InboxNotificationReadModel): boolean {
+  return row.type === MILESTONE_NOTIFICATION_TYPE && metadataField(row, "milestone") != null;
 }
 
 // Notification_todo_reminder_occurrence_dedup 유니크 인덱스와 같은 키다
 function reminderOccurrenceKeyOf(
-  row: InboxNotification,
+  row: InboxNotificationReadModel,
   occurrenceKey: string | null | undefined,
 ): string | null {
   if (row.type !== "TODO_REMINDER" || row.todoId == null) {
@@ -49,14 +66,20 @@ function reminderOccurrenceKeyOf(
 // 알림함 행과 같은 모양으로 저장해 쓰기 뒤 목록·미읽음 수·이력을 그대로 읽어 볼 수 있게 한다
 export class InMemoryNotificationRepository
   extends NotificationRepositoryPort
-  implements NotificationInboxReaderPort, NotificationHistoryReaderPort
+  implements
+    NotificationInboxReaderPort,
+    NotificationHistoryReaderPort,
+    UnreadNotificationCountReaderPort
 {
-  readonly #rows = new Map<number, InboxNotification>();
+  readonly #rows = new Map<number, InboxNotificationReadModel>();
   readonly #reminderOccurrenceKeys = new Set<string>();
   readonly #now: () => Date;
   #sequence: number;
 
-  constructor(rows: readonly InboxNotification[] = [], now: () => Date = () => new Date()) {
+  constructor(
+    rows: readonly InboxNotificationReadModel[] = [],
+    now: () => Date = () => new Date(),
+  ) {
     super();
     for (const row of rows) {
       this.#rows.set(row.id, row);
@@ -69,11 +92,11 @@ export class InMemoryNotificationRepository
     return this.#rows.size;
   }
 
-  rowOf(id: number): InboxNotification | undefined {
+  rowOf(id: number): InboxNotificationReadModel | undefined {
     return this.#rows.get(id);
   }
 
-  rows(): InboxNotification[] {
+  rows(): InboxNotificationReadModel[] {
     return [...this.#rows.values()].toSorted((left, right) => left.id - right.id);
   }
 
@@ -97,18 +120,24 @@ export class InMemoryNotificationRepository
     });
   }
 
-  async createNotification(data: CreateNotificationData): Promise<InboxNotification> {
+  async findInboxNotification(
+    notificationId: NotificationId,
+  ): Promise<InboxNotificationReadModel | null> {
+    return this.#rows.get(notificationId.value) ?? null;
+  }
+
+  async createNotification(data: CreateNotificationData): Promise<InboxNotificationReadModel> {
     const created = this.#insert(data);
     if (created == null) {
-      throw new DuplicateNotificationError();
+      throw duplicateNotification();
     }
     return created;
   }
 
   async createManyNotificationsAndReturn(
     dataList: CreateNotificationData[],
-  ): Promise<InboxNotification[]> {
-    const created: InboxNotification[] = [];
+  ): Promise<InboxNotificationReadModel[]> {
+    const created: InboxNotificationReadModel[] = [];
     for (const data of dataList) {
       const row = this.#insert(data);
       if (row != null) {
@@ -118,7 +147,7 @@ export class InMemoryNotificationRepository
     return created;
   }
 
-  async markAsRead(notification: Notification): Promise<boolean> {
+  async save(notification: Notification): Promise<boolean> {
     const { id, userId, isRead, readAt } = notification.toPrimitives();
     const row = this.#rows.get(id);
     if (row == null || row.userId !== userId || row.isRead) {
@@ -159,7 +188,7 @@ export class InMemoryNotificationRepository
 
   async deleteNotificationsByActorId(
     actor: UserId,
-  ): Promise<{ count: number; affectedUserIds: string[] }> {
+  ): Promise<{ count: number; affectedUserIds: UserId[] }> {
     const actorId = actor.value;
     const deleted = [...this.#rows.values()].filter(
       (row) => row.friendId === actorId || metadataField(row, "senderId") === actorId,
@@ -167,10 +196,45 @@ export class InMemoryNotificationRepository
     for (const row of deleted) {
       this.#rows.delete(row.id);
     }
-    return { count: deleted.length, affectedUserIds: uniq(deleted.map((row) => row.userId)) };
+    return {
+      count: deleted.length,
+      affectedUserIds: uniq(deleted.map((row) => row.userId)).map((userId) =>
+        UserId.reconstitute(userId),
+      ),
+    };
   }
 
-  async listByUser(query: ListInboxNotificationsQuery): Promise<InboxNotification[]> {
+  async deleteCreatedBefore(query: {
+    readonly createdBefore: Temporal.Instant;
+    readonly createdFrom: Temporal.Instant | null;
+    readonly limit: number;
+  }): Promise<DeletedNotificationHistory> {
+    const { createdBefore, createdFrom } = query;
+    const deleted = [...this.#rows.values()]
+      .filter(
+        (row) =>
+          Temporal.Instant.compare(row.createdAt, createdBefore) < 0 &&
+          (createdFrom == null || Temporal.Instant.compare(createdFrom, row.createdAt) <= 0) &&
+          !isMilestoneNotification(row),
+      )
+      .toSorted(
+        (left, right) =>
+          Temporal.Instant.compare(left.createdAt, right.createdAt) || left.id - right.id,
+      )
+      .slice(0, query.limit);
+    for (const row of deleted) {
+      this.#rows.delete(row.id);
+    }
+    return {
+      deletedCount: deleted.length,
+      lastCreatedAt: deleted.at(-1)?.createdAt ?? null,
+      unreadOwnerIds: uniq(deleted.filter((row) => !row.isRead).map((row) => row.userId)).map(
+        (userId) => UserId.reconstitute(userId),
+      ),
+    };
+  }
+
+  async listByUser(query: ListInboxNotificationsQuery): Promise<InboxNotificationReadModel[]> {
     const visible = [...this.#rows.values()]
       .filter(
         (row) =>
@@ -196,16 +260,25 @@ export class InMemoryNotificationRepository
     ).length;
   }
 
+  async countUnreadByUsers(users: readonly UserId[]): Promise<ReadonlyMap<string, number>> {
+    const counts = new Map<string, number>();
+    for (const user of users) {
+      const unread = await this.countUnread(user);
+      if (unread > 0) {
+        counts.set(user.value, unread);
+      }
+    }
+    return counts;
+  }
+
   async existsRecentNotification(query: ExistsRecentNotificationQuery): Promise<boolean> {
     return [...this.#rows.values()].some(
       (row) =>
-        row.userId === query.userId &&
+        row.userId === query.userId.value &&
         row.type === query.type &&
         Temporal.Instant.compare(row.createdAt, query.since) >= 0 &&
-        (query.friendId == null || row.friendId === query.friendId) &&
-        (query.todoId == null || row.todoId === query.todoId) &&
-        (query.nudgeId == null || row.nudgeId === query.nudgeId) &&
-        (query.cheerId == null || row.cheerId === query.cheerId),
+        (query.friendId == null || row.friendId === query.friendId.value) &&
+        (query.todoId == null || row.todoId === query.todoId.value),
     );
   }
 
@@ -215,31 +288,76 @@ export class InMemoryNotificationRepository
       [...this.#rows.values()]
         .filter(
           (row) =>
-            query.userIds.includes(row.userId) &&
+            query.userIds.some((userId) => userId.value === row.userId) &&
             row.type === query.type &&
             row.notificationDate != null &&
             row.notificationDate.equals(notificationDate) &&
-            (query.friendId == null || row.friendId === query.friendId),
+            (query.friendId == null || row.friendId === query.friendId.value),
         )
         .map((row) => row.userId),
     );
   }
 
+  async findWinbackStagesSince(
+    query: FindWinbackStagesSinceQuery,
+  ): Promise<ReadonlyMap<string, ReadonlySet<string>>> {
+    const stagesByUserId = new Map<string, Set<string>>();
+    for (const { userId, since } of query.recipients) {
+      const stages = [...this.#rows.values()]
+        .filter(
+          (row) =>
+            row.userId === userId.value &&
+            row.type === "WINBACK" &&
+            Temporal.Instant.compare(row.createdAt, since) >= 0,
+        )
+        .map((row) => metadataField(row, "stage"))
+        .filter((stage) => typeof stage === "string");
+      if (stages.length > 0) {
+        stagesByUserId.set(userId.value, new Set(stages));
+      }
+    }
+    return stagesByUserId;
+  }
+
+  async findNudgeSuggestedFriends(
+    query: FindNudgeSuggestedFriendsQuery,
+  ): Promise<ReadonlyMap<string, ReadonlySet<string>>> {
+    const friendsByUserId = new Map<string, Set<string>>();
+    for (const row of this.#rows.values()) {
+      const inWeek =
+        row.notificationDate != null &&
+        Temporal.PlainDate.compare(query.start, row.notificationDate) <= 0 &&
+        Temporal.PlainDate.compare(row.notificationDate, query.end) < 0;
+      if (
+        row.type !== "NUDGE_SUGGEST" ||
+        row.friendId == null ||
+        !inWeek ||
+        !query.userIds.some((userId) => userId.value === row.userId)
+      ) {
+        continue;
+      }
+      const friends = friendsByUserId.get(row.userId) ?? new Set<string>();
+      friends.add(row.friendId);
+      friendsByUserId.set(row.userId, friends);
+    }
+    return friendsByUserId;
+  }
+
   async hasMilestoneNotification(
-    userId: string,
+    userId: UserId,
     milestone: NotificationMilestone,
   ): Promise<boolean> {
     return [...this.#rows.values()].some(
       (row) =>
-        row.userId === userId &&
-        row.type === "WEEKLY_ACHIEVEMENT" &&
+        row.userId === userId.value &&
+        isMilestoneNotification(row) &&
         metadataField(row, "milestone") === milestone,
     );
   }
 
   // 유니크 인덱스에 걸리면 저장하지 않고 null을 준다
-  #insert(data: CreateNotificationData): InboxNotification | null {
-    const row: InboxNotification = {
+  #insert(data: CreateNotificationData): InboxNotificationReadModel | null {
+    const row: InboxNotificationReadModel = {
       id: this.#sequence + 1,
       userId: data.userId,
       type: data.type,

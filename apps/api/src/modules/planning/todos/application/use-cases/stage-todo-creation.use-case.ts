@@ -1,5 +1,6 @@
-import { toTodoSeriesReadModel } from "../../../todo-series/application/read-models/todo-series.read-model.js";
-import type { PublishTodoCreationUseCase } from "../../../todo-series/application/use-cases/publish-todo-creation.use-case.js";
+import { toTodoSeriesReadModel } from "#api/modules/planning/todo-series/planning-todo-series.public";
+import type { PublishTodoSeriesStartedUseCase } from "#api/modules/planning/todo-series/planning-todo-series.public";
+
 import type {
   CreateTodoData,
   ResolvedCreateTodoData,
@@ -7,12 +8,16 @@ import type {
 } from "../ports/staged-todo-creator.port.js";
 import type { TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { todoNotFound } from "../todos.errors.js";
+import type { PublishTodoCreatedUseCase } from "./publish-todo-created.use-case.js";
 import type { ResolveTodoTimezoneUseCase } from "./resolve-todo-timezone.use-case.js";
-import { toSingleTodoSpec, type WriteTodoCreationUseCase } from "./write-todo-creation.use-case.js";
+import { toSingleTodoSpec, type WriteSingleTodoUseCase } from "./write-single-todo.use-case.js";
+import type { WriteTodoSeriesUseCase } from "./write-todo-series.use-case.js";
 
 interface StagedTodoCreatorDependencies {
-  readonly writer: Pick<WriteTodoCreationUseCase, "createSingle" | "startSeries">;
-  readonly effects: Pick<PublishTodoCreationUseCase, "publishSingle" | "publishSeriesStarted">;
+  readonly writeSingle: Pick<WriteSingleTodoUseCase, "execute">;
+  readonly writeSeries: Pick<WriteTodoSeriesUseCase, "execute">;
+  readonly publishCreated: Pick<PublishTodoCreatedUseCase, "execute">;
+  readonly publishSeriesStarted: Pick<PublishTodoSeriesStartedUseCase, "execute">;
   readonly todoReadRepository: Pick<
     TodoReadRepositoryPort,
     "findByIdAndUserId" | "findManyBySeriesId"
@@ -39,10 +44,10 @@ export class StageTodoCreationUseCase {
   }
 
   async #stageSingle(input: ResolvedCreateTodoData): Promise<StagedTodoCreation> {
-    const created = await this.#dependencies.writer.createSingle(
-      toSingleTodoSpec(input),
-      input.items,
-    );
+    const created = await this.#dependencies.writeSingle.execute({
+      spec: toSingleTodoSpec(input),
+      items: input.items,
+    });
     const response = await this.#dependencies.todoReadRepository.findByIdAndUserId(
       created.todo.id,
       input.userId,
@@ -53,7 +58,7 @@ export class StageTodoCreationUseCase {
     return {
       todos: [response],
       series: null,
-      afterCommit: () => this.#dependencies.effects.publishSingle(created.todo),
+      afterCommit: () => this.#dependencies.publishCreated.execute(created.todo),
     };
   }
 
@@ -61,15 +66,15 @@ export class StageTodoCreationUseCase {
     input: ResolvedCreateTodoData,
     repeat: NonNullable<CreateTodoData["repeat"]>,
   ): Promise<StagedTodoCreation> {
-    const { series, occurrences } = await this.#dependencies.writer.startSeries(input, repeat);
+    const started = await this.#dependencies.writeSeries.execute({ data: input, repeat });
     const todos = await this.#dependencies.todoReadRepository.findManyBySeriesId(
       input.userId,
-      series.id,
+      started.series.id,
     );
     return {
       todos,
-      series: toTodoSeriesReadModel(series),
-      afterCommit: () => this.#dependencies.effects.publishSeriesStarted(series, occurrences),
+      series: toTodoSeriesReadModel(started.series),
+      afterCommit: () => this.#dependencies.publishSeriesStarted.execute(started),
     };
   }
 }

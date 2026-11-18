@@ -1,26 +1,31 @@
 import { USER_PREFERENCE_DEFAULTS } from "@aido/api/vocabulary";
 
-import { computeEffectiveStreak } from "#api/modules/identity/identity-settings.public";
+import { computeEffectiveStreak } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
-import { createEveningReminderNotificationMessage } from "../../../push/application/messages/scheduler-notification.messages.js";
-import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
-import { resolveRecipientLocale } from "../../../push/domain/recipient-locale.domain-service.js";
-import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
-import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
+import type {
+  NotificationHistoryReader,
+  PublishNotificationBatchUseCase,
+} from "../../../notifications/notification-notifications.public.js";
+import { createEveningReminderNotificationMessage } from "../../../shared/application/messages/scheduler-notification.messages.js";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
+import { resolveRecipientLocale } from "../../../shared/domain/recipient-locale.domain-service.js";
+import {
+  isReminderTimeDue,
+  type TimezoneContext,
+} from "../../domain/local-clock.domain-service.js";
 import { type ScheduledReminderReaderPort } from "../ports/scheduled-reminder-reader.port.js";
 import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
-import type { EveningReminderUser } from "../read-models/scheduler.read-model.js";
-import { NotificationRemindersLogEvent } from "../reminders.log-events.js";
+import type { EveningReminderUserReadModel } from "../read-models/scheduler.read-model.js";
+import { ReminderLogEvent } from "../reminders.log-events.js";
 
 interface EveningReminderStrategyDependencies {
   readonly reader: Pick<
     ScheduledReminderReaderPort,
     "findFreeEveningReminderUsers" | "findPremiumEveningReminderUsers"
   >;
-  readonly notificationPublisher: Pick<PublishNotificationUseCase, "publishBatch">;
+  readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
@@ -37,28 +42,35 @@ export class SendEveningReminderUseCase implements TimezoneReminderStrategyPort 
     this.#dependencies = dependencies;
   }
 
-  async execute(ctx: TimezoneContext): Promise<{
+  async execute(timezoneContext: TimezoneContext): Promise<{
     sent: number;
     recipients: EveningReminderRecipient[];
   }> {
-    const { timezones, localHour, localMinute, userId, today, tomorrow } = ctx;
+    const { timezones, localHour, localMinute, reminderTimes, userId, today, tomorrow } =
+      timezoneContext;
 
     // 프리미엄 사용자: 커스텀 시간에 리마인더 발송
-    const premiumUsers = await this.#dependencies.reader.findPremiumEveningReminderUsers({
-      timezones,
-      hour: localHour,
-      minute: localMinute,
-      today,
-      tomorrow,
-      userId: userId == null ? undefined : UserId.reconstitute(userId),
-    });
+    // 가을 DST로 두 번째 오는 시각처럼 울릴 시각이 없는 분은 조회하지 않는다
+    const premiumUsers =
+      reminderTimes.length === 0
+        ? []
+        : await this.#dependencies.reader.findPremiumEveningReminderUsers({
+            timezones,
+            times: reminderTimes,
+            today,
+            tomorrow,
+            userId: userId == null ? undefined : UserId.reconstitute(userId),
+          });
 
     // 무료 사용자: 고정 시간(19:00)에만 발송
     const defaultHour = USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR;
     const defaultMinute = USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_MINUTE;
-    const isFreeReminderTime = localHour === defaultHour && localMinute === defaultMinute;
+    const isFreeReminderTime = isReminderTimeDue(timezoneContext, {
+      hour: defaultHour,
+      minute: defaultMinute,
+    });
 
-    let freeUsers: EveningReminderUser[] = [];
+    let freeUsers: EveningReminderUserReadModel[] = [];
     if (!userId && isFreeReminderTime) {
       freeUsers = await this.#dependencies.reader.findFreeEveningReminderUsers({
         timezones,
@@ -76,7 +88,7 @@ export class SendEveningReminderUseCase implements TimezoneReminderStrategyPort 
     // 중복 방지
     const alreadyNotified =
       await this.#dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds({
-        userIds: users.map((u) => u.id),
+        userIds: users.map((u) => UserId.reconstitute(u.id)),
         type: "EVENING_REMINDER",
         notificationDate: today,
       });
@@ -87,52 +99,11 @@ export class SendEveningReminderUseCase implements TimezoneReminderStrategyPort 
       return { sent: 0, recipients: [] };
     }
 
-    const notifications = filteredUsers.map((user) => {
-      const total = user.todos.length;
-      const completed = user.todos.filter((t) => t.completed).length;
+    const notifications = filteredUsers.map((user) => toEveningReminderNotification(user, today));
 
-      // 스트릭 정보 계산 (StreakService 순수 함수에 위임)
-      const { streak, isAtRisk: isStreakAtRisk } = computeEffectiveStreak({
-        currentStreak: user.preference?.currentStreak ?? 0,
-        lastCompletedDate: user.preference?.lastCompletedDate ?? null,
-        todosCompleted: completed,
-        todosTotal: total,
-        today,
-      });
-
-      const message = createEveningReminderNotificationMessage({
-        completed,
-        total,
-        streak,
-        isStreakAtRisk,
-        locale: resolveRecipientLocale({
-          storedLocale: user.preference?.locale ?? null,
-          lastRequestLocale: null,
-        }),
-        variantContext: {
-          campaignKey: SCHEDULER_CAMPAIGN_KEY.EVENING_REMINDER,
-          recipientId: user.id,
-          occurrenceKey: today.toString(),
-        },
-      });
-
-      return {
-        userId: user.id,
-        type: "EVENING_REMINDER" as const,
-        purpose: "SCHEDULED_SERVICE" as const,
-        campaignKey: SCHEDULER_CAMPAIGN_KEY.EVENING_REMINDER,
-        variantId: message.variantId,
-        title: message.title,
-        body: message.body,
-        copyKey: message.copyKey,
-        copyFacts: message.copyFacts,
-        notificationDate: today,
-      };
-    });
-
-    await this.#dependencies.notificationPublisher.publishBatch(notifications);
+    await this.#dependencies.notificationPublisher.execute(notifications);
     this.#dependencies.logger.log({
-      event: NotificationRemindersLogEvent.EVENING_REMINDER_SENT,
+      event: ReminderLogEvent.EVENING_REMINDER_SENT,
       timezones,
       localHour,
       localMinute,
@@ -146,3 +117,49 @@ export class SendEveningReminderUseCase implements TimezoneReminderStrategyPort 
 }
 
 // identity의 스트릭 판정은 아직 UTC 자정 Date로 계산한다
+
+function toEveningReminderNotification(
+  user: EveningReminderUserReadModel,
+  today: Temporal.PlainDate,
+) {
+  const total = user.todos.length;
+  const completed = user.todos.filter((t) => t.completed).length;
+
+  // 스트릭 정보 계산 (StreakService 순수 함수에 위임)
+  const { streak, isAtRisk: isStreakAtRisk } = computeEffectiveStreak({
+    currentStreak: user.preference?.currentStreak ?? 0,
+    lastCompletedDate: user.preference?.lastCompletedDate ?? null,
+    todosCompleted: completed,
+    todosTotal: total,
+    today,
+  });
+
+  const message = createEveningReminderNotificationMessage({
+    completed,
+    total,
+    streak,
+    isStreakAtRisk,
+    locale: resolveRecipientLocale({
+      storedLocale: user.preference?.locale ?? null,
+      lastRequestLocale: null,
+    }),
+    variantContext: {
+      campaignKey: SCHEDULER_CAMPAIGN_KEY.EVENING_REMINDER,
+      recipientId: user.id,
+      occurrenceKey: today.toString(),
+    },
+  });
+
+  return {
+    userId: user.id,
+    type: "EVENING_REMINDER" as const,
+    purpose: "SCHEDULED_SERVICE" as const,
+    campaignKey: SCHEDULER_CAMPAIGN_KEY.EVENING_REMINDER,
+    variantId: message.variantId,
+    title: message.title,
+    body: message.body,
+    copyKey: message.copyKey,
+    copyFacts: message.copyFacts,
+    notificationDate: today,
+  };
+}

@@ -2,10 +2,7 @@ import { ApiError, ParseError, unwrap } from '@src/shared/errors';
 import { createHttpClientStub } from '@src/testing/core';
 
 import { createNudgeInteractionDto } from '../__tests__/nudge-interaction.fixtures';
-import {
-  createNudgeLimitInfoDto,
-  createSendNudgeResponseDto,
-} from '../__tests__/todo-nudge.fixtures';
+import { createSendNudgeResponseDto } from '../__tests__/todo-nudge.fixtures';
 import { TodoNudgeApi } from './todo-nudge.api';
 
 describe('TodoNudgeApi', () => {
@@ -69,21 +66,6 @@ describe('TodoNudgeApi', () => {
         todoId: 1,
         message: undefined,
       });
-    });
-  });
-
-  describe('getLimitInfo', () => {
-    it('응답을 받으면 콕 한도 정보를 반환한다', async () => {
-      // Given
-      const dto = createNudgeLimitInfoDto();
-      httpClient.get.mockResolvedValue({ ok: true, value: dto });
-
-      // When
-      const result = await service.getLimitInfo();
-
-      // Then
-      expect(httpClient.get).toHaveBeenCalledWith('v1/nudges/limit', { signal: undefined });
-      expect(result).toMatchObject({ ok: true, value: { dailyLimit: 5, remainingToday: 3 } });
     });
   });
 });

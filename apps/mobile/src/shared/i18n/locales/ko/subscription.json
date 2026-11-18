@@ -254,19 +254,19 @@
   "benefitSlides": {
     "aiParse": {
       "title": "AI 할 일 만들기 넉넉하게",
-      "description": "말이나 글을 할 일 여러 개로 나눠 줘요"
+      "description": "말이나 글을 할 일 여러 개로 나눠줘요"
     },
     "aiReport": {
       "title": "AI 주간·월간 리포트",
-      "description": "달성률과 날마다 끝낸 할 일을 차트로 보여 줘요"
+      "description": "달성률과 날마다 끝낸 할 일을 차트로 보여줘요"
     },
     "aiSuggestion": {
       "title": "AI 반복 제안",
-      "description": "자주 하는 일을 반복 할 일로 제안해 줘요"
+      "description": "자주 하는 일을 반복 할 일로 제안해줘요"
     },
     "voiceNote": {
       "title": "말로 메모 AI 요약",
-      "description": "녹음하면 요약과 해야 할 일을 찾아 줘요"
+      "description": "녹음하면 요약과 해야 할 일을 찾아줘요"
     }
   },
   "planComparison": {
@@ -283,19 +283,19 @@
     "rows": {
       "aiParse": {
         "label": "AI 할 일 만들기",
-        "term": "말이나 글을 할 일 여러 개로 나눠 줘요. 날짜와 시간도 함께 넣어요."
+        "term": "말이나 글을 할 일 여러 개로 나눠줘요. 날짜와 시간도 함께 넣어요."
       },
       "aiReport": {
         "label": "AI 주간·월간 리포트",
-        "term": "달성률과 자주 끝내는 요일·시간을 정리해 줘요."
+        "term": "달성률과 자주 끝내는 요일·시간을 정리해줘요."
       },
       "aiSuggestion": {
         "label": "AI 반복 제안",
-        "term": "자주 하는 일을 찾아 반복 할 일로 제안해 줘요."
+        "term": "자주 하는 일을 찾아 반복 할 일로 제안해줘요."
       },
       "voiceNote": {
         "label": "말로 메모 AI 요약",
-        "term": "녹음하면 요약과 해야 할 일을 찾아 줘요. 녹음 파일은 기기에만 남아요."
+        "term": "녹음하면 요약과 해야 할 일을 찾아줘요. 녹음 파일은 기기에만 남아요."
       },
       "friend": {
         "label": "친구",
@@ -321,7 +321,7 @@
   },
   "welcome": {
     "title": "프리미엄을 시작했어요",
-    "subtitle": "모든 기능을 넉넉하게 써 보세요",
+    "subtitle": "모든 기능을 넉넉하게 써보세요",
     "subtitleTrial": "{{date}} 전까지 모든 기능을 무료로 써요",
     "done": "확인",
     "rows": {
@@ -330,10 +330,10 @@
       "firstCharge": "첫 결제"
     },
     "quickstart": {
-      "title": "이것부터 해 보세요",
+      "title": "이것부터 해보세요",
       "voiceNote": {
         "title": "말로 메모 남기기",
-        "description": "길게 말해도 요약과 할 일을 찾아 줘요"
+        "description": "길게 말해도 요약과 할 일을 찾아줘요"
       },
       "aiReport": {
         "title": "AI 리포트 보기",

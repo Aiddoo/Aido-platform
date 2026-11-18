@@ -6,6 +6,7 @@ import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queri
 import { useTrack, useTrackView } from '@src/shared/analytics';
 import {
   formatClockTime,
+  formatHHmmTime,
   formatInstantHour,
   type TimeFormat,
 } from '@src/shared/date/format/date-format';
@@ -99,7 +100,7 @@ export function WeatherBriefing() {
     todoList.todos.map((todo) =>
       WeatherBriefingPolicy.toBriefingTodo(todo, { date: todayKey, timeZone: deviceTimeZone }),
     ),
-    { now, timeZone: deviceTimeZone },
+    { now },
   );
   if (briefing == null) {
     return <WeatherBriefing.Empty />;
@@ -135,6 +136,7 @@ WeatherBriefing.Card = function Card({
     hourly,
     now,
     formatClock: (date) => formatClockTime(date, timeFormat, dateFormat),
+    formatTodoTime: (localTime) => formatHHmmTime(localTime, timeFormat, dateFormat),
     formatHour: (date) => formatInstantHour(date, timeFormat, dateFormat),
     formatTemperature: (celsius) => formatTemperature(celsius, unit),
     formatChance: (percent) => t('details.percentValue', { value: percent }),
@@ -211,7 +213,7 @@ WeatherBriefing.Card = function Card({
   );
 };
 
-/** 할 일 시각은 기기 시간대로 저장돼 있어 기기 시간대로 보여 준다 */
+/** 할 일 시각은 어디서든 그 시각이라 벽시계 그대로 보인다. 서머타임 시작일 02:30도 02:30이다 */
 WeatherBriefing.Item = function Item({
   row,
   timeFormat,
@@ -228,7 +230,7 @@ WeatherBriefing.Item = function Item({
   const toggleTodo = useMutation(useToggleTodoMutationOptions());
   const isChipStacked = useFontScale().fontScale === 'xlarge';
   const { todo, tone } = row;
-  const time = formatClockTime(todo.scheduledAt, timeFormat, dateFormat);
+  const time = formatHHmmTime(todo.localTime, timeFormat, dateFormat);
   const advice = translate(row.advice);
   const openActions = () =>
     push({ pathname: '/todo/[todoId]/actions', params: { todoId: todo.todoId, date: todayKey } });

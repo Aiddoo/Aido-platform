@@ -9,8 +9,7 @@ const KNOWN_FEATURE = `^src/features/(?:${Object.keys(FEATURE_LAYERS).join('|')}
 // 다른 층 어디서든 가져와도 되는 것: 타입(규칙에서 type-only로 뺀다), Policy가 있는 모델, 캐시 무효화 함수
 const ANY_LAYER = '/domains/[^/]+\\.model\\.tsx?$|/queries/[^/]+-cache\\.tsx?$';
 const DOMAIN_MODEL = '^src/.*/domains/[^/]+\\.model\\.ts$';
-const WIRE_CONTRACT =
-  '^\\.\\./\\.\\./packages/api/(?:dist|src)/(?:index\\.|contracts/)|^@aido/api(?:$|/contracts/)';
+const WIRE_CONTRACT = '^\\.\\./\\.\\./packages/api/(?:dist|src)/contracts/|^@aido/api/contracts/';
 
 function npm(names) {
   return `(?:^|/node_modules/)(?:${names.join('|')})(?:/|$)`;
@@ -138,6 +137,14 @@ const upwardRules = [1, 2, 3].map((layer) => ({
 /** @type {import('dependency-cruiser').IConfiguration} */
 module.exports = {
   forbidden: [
+    {
+      name: 'aido-api-subpath-only',
+      comment:
+        '@aido/api는 subpath(contracts/<기능>/v<n>·vocabulary·common·errors)로만 import한다. 루트 진입 파일은 없다.',
+      severity: 'error',
+      from: {},
+      to: { path: '^@aido/api$' },
+    },
     {
       name: 'core-layer',
       comment:
@@ -269,7 +276,7 @@ module.exports = {
     {
       name: 'domain-model-contract',
       comment:
-        '도메인 모델은 요청·응답 계약(@aido/api 루트·contracts)을 import하지 않는다. 모델이 자기 Zod 스키마를 갖고 apis/*.mapper.ts가 DTO를 모델로 바꾼다. 용어 튜플·상수는 @aido/api/vocabulary, 오류 코드는 @aido/api/errors에서 가져온다.',
+        '도메인 모델은 요청·응답 계약(@aido/api/contracts)을 import하지 않는다. 모델이 자기 Zod 스키마를 갖고 apis/*.mapper.ts가 DTO를 모델로 바꾼다. 용어 튜플·상수는 @aido/api/vocabulary, 오류 코드는 @aido/api/errors에서 가져온다.',
       severity: 'error',
       from: { path: DOMAIN_MODEL },
       to: { path: WIRE_CONTRACT },
@@ -290,7 +297,7 @@ module.exports = {
     {
       name: 'client-model-contract',
       comment:
-        '요청·응답 계약(@aido/api 루트·contracts)은 기능의 apis/(Api·mapper)와 schemas/(계약에서 유도한 요청 타입·폼 스키마)만 안다. 그 밖은 schemas/의 타입이나 모델을 쓴다. 용어 튜플·상수는 @aido/api/vocabulary, 오류 코드는 @aido/api/errors에서 가져온다.',
+        '요청·응답 계약(@aido/api/contracts)은 기능의 apis/(Api·mapper)와 schemas/(계약에서 유도한 요청 타입·폼 스키마)만 안다. 그 밖은 schemas/의 타입이나 모델을 쓴다. 용어 튜플·상수는 @aido/api/vocabulary, 오류 코드는 @aido/api/errors에서 가져온다.',
       severity: 'error',
       from: { path: '^src/features/', pathNot: [TEST, '/apis/', '/schemas/', DOMAIN_MODEL] },
       to: { path: WIRE_CONTRACT },

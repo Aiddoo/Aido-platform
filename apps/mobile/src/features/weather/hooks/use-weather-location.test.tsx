@@ -1,4 +1,4 @@
-import { updateWeatherLocationSchema } from '@aido/api';
+import { updateWeatherLocationSchema } from '@aido/api/contracts/weather/v2';
 import { ApiError } from '@src/core/errors/api-error';
 import {
   type LocationCoordinates,

@@ -1,5 +1,5 @@
 import type { WeatherRescheduleReason } from '@aido/api/vocabulary';
-import { formatClockTime, type TimeFormat } from '@src/shared/date/format/date-format';
+import { formatHHmmTime, type TimeFormat } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, Text, TextButton, VStack } from '@src/shared/ui';
@@ -41,7 +41,7 @@ export function WeatherRescheduleTodo({
           {todo.title}
         </Text>
         <Text size="b4" shade={6}>
-          {formatClockTime(todo.scheduledAt, timeFormat, dateFormat)}
+          {formatHHmmTime(todo.localTime, timeFormat, dateFormat)}
         </Text>
       </HStack>
       {recommended == null ? (

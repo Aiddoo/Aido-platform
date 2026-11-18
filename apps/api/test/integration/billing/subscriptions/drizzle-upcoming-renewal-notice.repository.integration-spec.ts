@@ -6,7 +6,7 @@ import {
   SUBSCRIPTION_FIXTURE_OTHER_USER_ID,
   SUBSCRIPTION_FIXTURE_USER_ID,
 } from "#test/fixtures/billing/subscription.fixture";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -22,12 +22,12 @@ describe("DrizzleUpcomingRenewalNoticeRepository (실제 PostgreSQL)", () => {
   beforeEach(async () => {
     await database.cleanup();
     await client.insert(user).values([
-      UserFixture.create({
+      createUserRowFixture({
         id: SUBSCRIPTION_FIXTURE_USER_ID,
         email: "owner@example.com",
         userTag: "RNWOWN01",
       }),
-      UserFixture.create({
+      createUserRowFixture({
         id: SUBSCRIPTION_FIXTURE_OTHER_USER_ID,
         email: "other@example.com",
         userTag: "RNWOTH01",
@@ -40,10 +40,10 @@ describe("DrizzleUpcomingRenewalNoticeRepository (실제 PostgreSQL)", () => {
   });
 
   describeUpcomingRenewalNoticeRepositoryContract(async () => {
-    const { txHost } = createDatabaseTransactionFixture(client);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
     return {
-      repository: new DrizzleUpcomingRenewalNoticeRepository(txHost),
-      subscriptions: new DrizzleSubscriptionRepository(txHost),
+      repository: new DrizzleUpcomingRenewalNoticeRepository(transactionHost),
+      subscriptions: new DrizzleSubscriptionRepository(transactionHost),
     };
   });
 });

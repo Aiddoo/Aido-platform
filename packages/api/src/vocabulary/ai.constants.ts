@@ -38,7 +38,8 @@ export const AI_SUGGESTION_LIMITS = {
   /** 단순 반복(같은 제목) 패턴 인정 최소 매치 수 */
   MIN_REPEAT_OCCURRENCES: 2,
   MIN_ANALYSIS_RECORDS: 1,
-  ANALYSIS_WEEKS: 2,
+  /** 제안을 찾으려고 읽는 최근 기간. 앱 안내 문구도 같은 기간을 보여 준다 */
+  ANALYSIS_PERIOD_DAYS: 14,
   /** 분석에 읽는 최근 할 일 상한. 입력 토큰과 응답 잘림을 막는다. */
   MAX_ANALYSIS_TODOS: 300,
   CONTEXT_WEEKS: 4,
@@ -48,6 +49,12 @@ export const AI_SUGGESTION_LIMITS = {
 } as const;
 
 export const AI_REPORT_TYPES = ["WEEKLY", "MONTHLY"] as const;
+
+/** 리포트 목록 페이지 크기. 앱 목록은 더 보기 없이 기본 크기만큼 보여 준다. */
+export const AI_REPORT_PAGE_SIZE = {
+  DEFAULT: 10,
+  MAX: 50,
+} as const;
 
 // TEMPLATE은 AI 없이 통계로 채운 글이다(폴백·AI 동의 없음 포함)
 export const AI_REPORT_CONTENT_SOURCES = ["AI", "TEMPLATE"] as const;

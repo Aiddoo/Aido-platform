@@ -1,0 +1,663 @@
+/**
+ * Follow E2E 테스트
+ *
+ * @description
+ * 친구 요청 시스템 전체 플로우 테스트
+ * Testcontainers를 사용하여 독립적인 PostgreSQL 환경에서 테스트합니다.
+ *
+ * 테스트 시나리오:
+ * 1. 친구 요청 보내기/철회
+ * 2. 친구 요청 수락/거절
+ * 3. 친구 목록 조회
+ * 4. 친구 삭제
+ * 5. 친구 투두 조회
+ */
+
+import request from "supertest";
+import { match } from "ts-pattern";
+
+import {
+  NOTIFICATION_QUEUE,
+  NotificationJobName,
+  NotificationRuntimeJobSchema,
+} from "#api/modules/notification/notifications/infrastructure/jobs/notification.queue";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
+import type { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
+import type { VerifiedUser } from "#test/e2e/helpers/e2e-helpers";
+
+describe("팔로우 E2E", () => {
+  let testContext: E2eTestContext;
+
+  beforeAll(async () => {
+    testContext = await createE2eApp();
+  }, 60_000);
+
+  afterAll(async () => {
+    await destroyE2eApp(testContext);
+  });
+
+  beforeEach(async () => {
+    await testContext.reset();
+  });
+
+  describe("친구 요청 플로우", () => {
+    const password = "Test1234!";
+
+    it("친구 요청부터 수락까지 전체 플로우", async () => {
+      // Given
+      const userA = await testContext.helpers.createVerifiedUser("user-a@example.com", password);
+      const userB = await testContext.helpers.createVerifiedUser("user-b@example.com", password);
+
+      // When
+      const requestResponse = await request(testContext.app.getHttpServer())
+        .post(`/v1/follows/${userB.userTag}`)
+        .set("Authorization", `Bearer ${userA.accessToken}`)
+        .expect(201);
+
+      // Then
+      expect(requestResponse.body.success).toBe(true);
+      expect(requestResponse.body.data.follow).toBeDefined();
+      expect(requestResponse.body.data.follow.status).toBe("PENDING");
+      expect(requestResponse.body.data.autoAccepted).toBe(false);
+
+      // When
+      const sentResponse = await request(testContext.app.getHttpServer())
+        .get("/v1/follows/requests/sent")
+        .set("Authorization", `Bearer ${userA.accessToken}`)
+        .expect(200);
+
+      // Then
+      expect(sentResponse.body.success).toBe(true);
+      expect(sentResponse.body.data.requests).toBeInstanceOf(Array);
+      expect(sentResponse.body.data.requests.length).toBeGreaterThan(0);
+      expect(sentResponse.body.data.requests[0].id).toBeDefined();
+
+      // When
+      const receivedResponse = await request(testContext.app.getHttpServer())
+        .get("/v1/follows/requests/received")
+        .set("Authorization", `Bearer ${userB.accessToken}`)
+        .expect(200);
+
+      // Then
+      expect(receivedResponse.body.success).toBe(true);
+      expect(receivedResponse.body.data.requests).toBeInstanceOf(Array);
+      expect(receivedResponse.body.data.requests.length).toBeGreaterThan(0);
+      expect(receivedResponse.body.data.requests[0].id).toBeDefined();
+
+      // When
+      const acceptResponse = await request(testContext.app.getHttpServer())
+        .patch(`/v1/follows/${userA.userId}/accept`)
+        .set("Authorization", `Bearer ${userB.accessToken}`)
+        .expect(200);
+
+      // Then
+      expect(acceptResponse.body.success).toBe(true);
+
+      // When
+      const friendsResponse = await request(testContext.app.getHttpServer())
+        .get("/v1/follows/friends")
+        .set("Authorization", `Bearer ${userA.accessToken}`)
+        .expect(200);
+
+      // Then
+      expect(friendsResponse.body.success).toBe(true);
+      expect(friendsResponse.body.data.friends).toBeInstanceOf(Array);
+    });
+
+    it("이미 요청을 보낸 경우 409 에러 반환", async () => {
+      // Given
+      const userA = await testContext.helpers.createVerifiedUser(
+        "user-a-dup@example.com",
+        password,
+      );
+      const userB = await testContext.helpers.createVerifiedUser(
+        "user-b-dup@example.com",
+        password,
+      );
+
+      await request(testContext.app.getHttpServer())
+        .post(`/v1/follows/${userB.userTag}`)
+        .set("Authorization", `Bearer ${userA.accessToken}`)
+        .expect(201);
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .post(`/v1/follows/${userB.userTag}`)
+        .set("Authorization", `Bearer ${userA.accessToken}`)
+        .expect(409);
+
+      // Then
+      expect(response.body.success).toBe(false);
+      expect(response.body.error.code).toBe("FOLLOW_0901");
+    });
+
+    it("자기 자신에게 요청 시 400 에러 반환", async () => {
+      // Given
+      const userA = await testContext.helpers.createVerifiedUser(
+        "user-a-self@example.com",
+        password,
+      );
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .post(`/v1/follows/${userA.userTag}`)
+        .set("Authorization", `Bearer ${userA.accessToken}`)
+        .expect(400);
+
+      // Then
+      expect(response.body.success).toBe(false);
+      expect(response.body.error.code).toBe("FOLLOW_0904");
+    });
+
+    it("존재하지 않는 사용자에게 요청 시 404 에러 반환", async () => {
+      // Given
+      const userA = await testContext.helpers.createVerifiedUser(
+        "user-a-404@example.com",
+        password,
+      );
+      const nonExistentUserTag = "ZZZZ9999";
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .post(`/v1/follows/${nonExistentUserTag}`)
+        .set("Authorization", `Bearer ${userA.accessToken}`)
+        .expect(404);
+
+      // Then
+      expect(response.body.success).toBe(false);
+      expect(response.body.error.code).toBe("FOLLOW_0905");
+    });
+
+    it("인증 없이 요청 시 401 에러 반환", async () => {
+      // Given
+      const userB = await testContext.helpers.createVerifiedUser(
+        "user-b-401@example.com",
+        password,
+      );
+
+      // When
+      const response = await request(testContext.app.getHttpServer()).post(
+        `/v1/follows/${userB.userTag}`,
+      );
+
+      // Then
+      expect(response.status).toBe(401);
+    });
+  });
+
+  describe("친구 삭제 및 요청 철회 플로우", () => {
+    const password = "Test1234!";
+
+    it("친구 요청을 철회한다", async () => {
+      // Given
+      const userC = await testContext.helpers.createVerifiedUser("user-c@example.com", password);
+      const userD = await testContext.helpers.createVerifiedUser("user-d@example.com", password);
+
+      await request(testContext.app.getHttpServer())
+        .post(`/v1/follows/${userD.userTag}`)
+        .set("Authorization", `Bearer ${userC.accessToken}`)
+        .expect(201);
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .delete(`/v1/follows/${userD.userId}`)
+        .set("Authorization", `Bearer ${userC.accessToken}`)
+        .expect(200);
+
+      // Then
+      expect(response.body.success).toBe(true);
+
+      const sentRequests = await request(testContext.app.getHttpServer())
+        .get("/v1/follows/requests/sent")
+        .set("Authorization", `Bearer ${userC.accessToken}`)
+        .expect(200);
+
+      const hasPendingRequest = sentRequests.body.data.requests.some(
+        (item: { id: string }) => item.id === userD.userId,
+      );
+      expect(hasPendingRequest).toBe(false);
+    });
+  });
+
+  describe("친구 요청 거절 플로우", () => {
+    const password = "Test1234!";
+
+    it("친구 요청을 거절한다", async () => {
+      // Given
+      const userE = await testContext.helpers.createVerifiedUser("user-e@example.com", password);
+      const userF = await testContext.helpers.createVerifiedUser("user-f@example.com", password);
+
+      await request(testContext.app.getHttpServer())
+        .post(`/v1/follows/${userF.userTag}`)
+        .set("Authorization", `Bearer ${userE.accessToken}`)
+        .expect(201);
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .patch(`/v1/follows/${userE.userId}/reject`)
+        .set("Authorization", `Bearer ${userF.accessToken}`)
+        .expect(200);
+
+      // Then
+      expect(response.body.success).toBe(true);
+
+      const receivedRequests = await request(testContext.app.getHttpServer())
+        .get("/v1/follows/requests/received")
+        .set("Authorization", `Bearer ${userF.accessToken}`)
+        .expect(200);
+
+      const hasPendingRequest = receivedRequests.body.data.requests.some(
+        (item: { id: string }) => item.id === userE.userId,
+      );
+      expect(hasPendingRequest).toBe(false);
+    });
+  });
+
+  describe("자동 수락 플로우 (상대방이 먼저 요청)", () => {
+    const password = "Test1234!";
+
+    it("상대방이 먼저 요청한 경우 자동으로 친구가 된다", async () => {
+      // Given
+      const userG = await testContext.helpers.createVerifiedUser("user-g@example.com", password);
+      const userH = await testContext.helpers.createVerifiedUser("user-h@example.com", password);
+
+      await request(testContext.app.getHttpServer())
+        .post(`/v1/follows/${userH.userTag}`)
+        .set("Authorization", `Bearer ${userG.accessToken}`)
+        .expect(201);
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .post(`/v1/follows/${userG.userTag}`)
+        .set("Authorization", `Bearer ${userH.accessToken}`)
+        .expect(201);
+
+      // Then
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.autoAccepted).toBe(true);
+      expect(response.body.data.follow.status).toBe("ACCEPTED");
+
+      const gFriends = await request(testContext.app.getHttpServer())
+        .get("/v1/follows/friends")
+        .set("Authorization", `Bearer ${userG.accessToken}`)
+        .expect(200);
+
+      const hFriends = await request(testContext.app.getHttpServer())
+        .get("/v1/follows/friends")
+        .set("Authorization", `Bearer ${userH.accessToken}`)
+        .expect(200);
+
+      const gHasFriendH = gFriends.body.data.friends.some(
+        (item: { id: string }) => item.id === userH.userId,
+      );
+      const hHasFriendG = hFriends.body.data.friends.some(
+        (item: { id: string }) => item.id === userG.userId,
+      );
+
+      expect(gHasFriendH).toBe(true);
+      expect(hHasFriendG).toBe(true);
+    });
+  });
+
+  describe("친구 투두 조회 플로우", () => {
+    const password = "Test1234!";
+
+    it("친구가 아니면 투두 조회 시 403 에러 반환", async () => {
+      // Given
+      const userI = await testContext.helpers.createVerifiedUser("user-i@example.com", password);
+      const userJ = await testContext.helpers.createVerifiedUser("user-j@example.com", password);
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .get(`/v1/todos/friends/${userJ.userId}`)
+        .set("Authorization", `Bearer ${userI.accessToken}`)
+        .expect(403);
+
+      // Then
+      expect(response.body.success).toBe(false);
+      expect(response.body.error.code).toBe("FOLLOW_0906");
+    });
+
+    it("친구가 되면 PUBLIC 투두만 조회 가능", async () => {
+      // Given
+      const userI = await testContext.helpers.createVerifiedUser(
+        "user-i-pub@example.com",
+        password,
+      );
+      const userJ = await testContext.helpers.createVerifiedUser(
+        "user-j-pub@example.com",
+        password,
+      );
+
+      await request(testContext.app.getHttpServer())
+        .post(`/v1/follows/${userJ.userTag}`)
+        .set("Authorization", `Bearer ${userI.accessToken}`)
+        .expect(201);
+
+      await request(testContext.app.getHttpServer())
+        .post(`/v1/follows/${userI.userTag}`)
+        .set("Authorization", `Bearer ${userJ.accessToken}`)
+        .expect(201);
+
+      const categoryId = await testContext.helpers.getDefaultCategoryId(userJ.accessToken);
+      const rangeStart = new Date();
+      rangeStart.setUTCDate(rangeStart.getUTCDate() - 1);
+      const rangeEnd = new Date();
+      rangeEnd.setUTCDate(rangeEnd.getUTCDate() + 1);
+      const activeDateRange = {
+        startDate: rangeStart.toISOString().split("T")[0],
+        endDate: rangeEnd.toISOString().split("T")[0],
+      };
+
+      await request(testContext.app.getHttpServer())
+        .post("/v1/todos")
+        .set("Authorization", `Bearer ${userJ.accessToken}`)
+        .send({
+          title: "J의 공개 할 일",
+          ...activeDateRange,
+          visibility: "PUBLIC",
+          categoryId,
+        })
+        .expect(201);
+
+      await request(testContext.app.getHttpServer())
+        .post("/v1/todos")
+        .set("Authorization", `Bearer ${userJ.accessToken}`)
+        .send({
+          title: "J의 비공개 할 일",
+          ...activeDateRange,
+          visibility: "PRIVATE",
+          categoryId,
+        })
+        .expect(201);
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .get(`/v1/todos/friends/${userJ.userId}`)
+        .set("Authorization", `Bearer ${userI.accessToken}`)
+        .expect(200);
+
+      // Then
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.items).toBeInstanceOf(Array);
+      expect(response.body.data.items.length).toBe(1);
+      expect(response.body.data.items[0].title).toBe("J의 공개 할 일");
+      expect(response.body.data.items[0].visibility).toBe("PUBLIC");
+    });
+  });
+
+  describe("친구 목록 페이지네이션", () => {
+    const password = "Test1234!";
+
+    it("친구 목록을 페이지네이션하여 조회하고 커서로 다음 페이지를 조회한다", async () => {
+      // Given
+      const mainUser = await testContext.helpers.createVerifiedUser(
+        "main-user@example.com",
+        password,
+      );
+      const friendUsers: VerifiedUser[] = [];
+
+      for (let i = 0; i < 5; i++) {
+        const friend = await testContext.helpers.createVerifiedUser(
+          `friend-${i}@example.com`,
+          password,
+        );
+        friendUsers.push(friend);
+
+        // 상호 친구 요청 (자동 수락)
+        await request(testContext.app.getHttpServer())
+          .post(`/v1/follows/${friend.userTag}`)
+          .set("Authorization", `Bearer ${mainUser.accessToken}`)
+          .expect(201);
+
+        await request(testContext.app.getHttpServer())
+          .post(`/v1/follows/${mainUser.userTag}`)
+          .set("Authorization", `Bearer ${friend.accessToken}`)
+          .expect(201);
+      }
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .get("/v1/follows/friends")
+        .query({ limit: 3 })
+        .set("Authorization", `Bearer ${mainUser.accessToken}`)
+        .expect(200);
+
+      // Then
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.friends.length).toBe(3);
+      expect(response.body.data.hasMore).toBe(true);
+
+      // When
+      const lastFriend = response.body.data.friends[response.body.data.friends.length - 1];
+      const cursor = lastFriend.followId;
+      expect(cursor).toBeDefined();
+
+      const secondPage = await request(testContext.app.getHttpServer())
+        .get("/v1/follows/friends")
+        .query({ limit: 3, cursor })
+        .set("Authorization", `Bearer ${mainUser.accessToken}`)
+        .expect(200);
+
+      // Then
+      expect(secondPage.body.success).toBe(true);
+      expect(secondPage.body.data.friends.length).toBe(2);
+      expect(secondPage.body.data.hasMore).toBe(false);
+    });
+  });
+
+  describe("친구 목록 검색 (userTag)", () => {
+    const password = "Test1234!";
+
+    it("userTag로 검색하면 해당 친구만 반환된다", async () => {
+      // Given
+      const searchUser = await testContext.helpers.createVerifiedUser(
+        "search-main@example.com",
+        password,
+      );
+      const searchFriend = await testContext.helpers.createVerifiedUser(
+        "search-friend@example.com",
+        password,
+      );
+
+      await request(testContext.app.getHttpServer())
+        .post(`/v1/follows/${searchFriend.userTag}`)
+        .set("Authorization", `Bearer ${searchUser.accessToken}`)
+        .expect(201);
+
+      await request(testContext.app.getHttpServer())
+        .post(`/v1/follows/${searchUser.userTag}`)
+        .set("Authorization", `Bearer ${searchFriend.accessToken}`)
+        .expect(201);
+
+      const allFriends = await request(testContext.app.getHttpServer())
+        .get("/v1/follows/friends")
+        .set("Authorization", `Bearer ${searchUser.accessToken}`)
+        .expect(200);
+
+      const friendUserTag = allFriends.body.data.friends[0]?.userTag;
+      expect(friendUserTag).toBeDefined();
+
+      const searchTerm = friendUserTag.slice(0, 3);
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .get("/v1/follows/friends")
+        .query({ search: searchTerm })
+        .set("Authorization", `Bearer ${searchUser.accessToken}`)
+        .expect(200);
+
+      // Then
+      expect(response.body.success).toBe(true);
+      expect(
+        response.body.data.friends.every((f: { userTag: string }) =>
+          f.userTag.toUpperCase().includes(searchTerm.toUpperCase()),
+        ),
+      ).toBe(true);
+    });
+
+    it("대소문자 구분 없이 검색된다", async () => {
+      // Given
+      const searchUser = await testContext.helpers.createVerifiedUser(
+        "search-main-case@example.com",
+        password,
+      );
+      const searchFriend = await testContext.helpers.createVerifiedUser(
+        "search-friend-case@example.com",
+        password,
+      );
+
+      await request(testContext.app.getHttpServer())
+        .post(`/v1/follows/${searchFriend.userTag}`)
+        .set("Authorization", `Bearer ${searchUser.accessToken}`)
+        .expect(201);
+
+      await request(testContext.app.getHttpServer())
+        .post(`/v1/follows/${searchUser.userTag}`)
+        .set("Authorization", `Bearer ${searchFriend.accessToken}`)
+        .expect(201);
+
+      // 친구 목록 조회하여 userTag 획득
+      const allFriends = await request(testContext.app.getHttpServer())
+        .get("/v1/follows/friends")
+        .set("Authorization", `Bearer ${searchUser.accessToken}`)
+        .expect(200);
+
+      const friendUserTag = allFriends.body.data.friends[0]?.userTag;
+      expect(friendUserTag).toBeDefined();
+
+      const searchTerm = friendUserTag.slice(0, 3).toLowerCase();
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .get("/v1/follows/friends")
+        .query({ search: searchTerm })
+        .set("Authorization", `Bearer ${searchUser.accessToken}`)
+        .expect(200);
+
+      // Then
+      expect(response.body.data.friends.length).toBeGreaterThan(0);
+    });
+
+    it("검색 결과가 없으면 빈 배열 반환", async () => {
+      // Given
+      const searchUser = await testContext.helpers.createVerifiedUser(
+        "search-main-empty@example.com",
+        password,
+      );
+      const searchFriend = await testContext.helpers.createVerifiedUser(
+        "search-friend-empty@example.com",
+        password,
+      );
+
+      await request(testContext.app.getHttpServer())
+        .post(`/v1/follows/${searchFriend.userTag}`)
+        .set("Authorization", `Bearer ${searchUser.accessToken}`)
+        .expect(201);
+
+      await request(testContext.app.getHttpServer())
+        .post(`/v1/follows/${searchUser.userTag}`)
+        .set("Authorization", `Bearer ${searchFriend.accessToken}`)
+        .expect(201);
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .get("/v1/follows/friends")
+        .query({ search: "ZZZZZ999" })
+        .set("Authorization", `Bearer ${searchUser.accessToken}`)
+        .expect(200);
+
+      // Then
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.friends).toHaveLength(0);
+    });
+
+    it("검색과 페이지네이션이 함께 동작한다", async () => {
+      // Given
+      const searchUser = await testContext.helpers.createVerifiedUser(
+        "search-main-page@example.com",
+        password,
+      );
+      const searchFriend = await testContext.helpers.createVerifiedUser(
+        "search-friend-page@example.com",
+        password,
+      );
+
+      await request(testContext.app.getHttpServer())
+        .post(`/v1/follows/${searchFriend.userTag}`)
+        .set("Authorization", `Bearer ${searchUser.accessToken}`)
+        .expect(201);
+
+      await request(testContext.app.getHttpServer())
+        .post(`/v1/follows/${searchUser.userTag}`)
+        .set("Authorization", `Bearer ${searchFriend.accessToken}`)
+        .expect(201);
+
+      // 친구 목록을 조회하여 검색어 획득
+      const allFriends = await request(testContext.app.getHttpServer())
+        .get("/v1/follows/friends")
+        .set("Authorization", `Bearer ${searchUser.accessToken}`)
+        .expect(200);
+
+      const friendUserTag = allFriends.body.data.friends[0]?.userTag;
+      const searchTerm = friendUserTag?.slice(0, 2) || "";
+
+      // When
+      const response = await request(testContext.app.getHttpServer())
+        .get("/v1/follows/friends")
+        .query({ search: searchTerm, limit: 5 })
+        .set("Authorization", `Bearer ${searchUser.accessToken}`)
+        .expect(200);
+
+      // Then
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.friends.length).toBeLessThanOrEqual(5);
+    });
+  });
+
+  describe("알림 보낸 사람 표시 이름", () => {
+    it("이름이 없는 사용자가 보낸 친구 요청·응원 알림 작업은 보낸 사람 이름이 Aido ID다", async () => {
+      // Given
+      const nameless = await testContext.helpers.createVerifiedUser(
+        "nameless-sender@example.com",
+        "Test1234!",
+      );
+      const receiver = await testContext.helpers.createVerifiedUser(
+        "named-receiver@example.com",
+        "Test1234!",
+        { name: "받는 사람" },
+      );
+      await request(testContext.app.getHttpServer())
+        .post(`/v1/follows/${receiver.userTag}`)
+        .set("Authorization", `Bearer ${nameless.accessToken}`)
+        .expect(201);
+      await request(testContext.app.getHttpServer())
+        .patch(`/v1/follows/${nameless.userId}/accept`)
+        .set("Authorization", `Bearer ${receiver.accessToken}`)
+        .expect(200);
+
+      // When
+      await request(testContext.app.getHttpServer())
+        .post("/v1/cheers")
+        .set("Authorization", `Bearer ${nameless.accessToken}`)
+        .send({ receiverId: receiver.userId })
+        .expect(201);
+      const jobQueue = testContext.module.get<typeof JobQueuePort, InMemoryJobQueue>(JobQueuePort);
+
+      // Then
+      const senderNames = jobQueue.jobsIn(NOTIFICATION_QUEUE).flatMap((job) => {
+        const notification = NotificationRuntimeJobSchema.parse(job.payload);
+        return match(notification)
+          .with({ name: NotificationJobName.FOLLOW_NEW }, ({ data }) => [data.followerName])
+          .with({ name: NotificationJobName.CHEER_SENT }, ({ data }) => [data.senderName])
+          .otherwise(() => []);
+      });
+      expect(senderNames).toEqual([nameless.userTag, nameless.userTag]);
+    });
+  });
+});

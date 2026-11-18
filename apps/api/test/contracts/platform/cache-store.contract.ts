@@ -138,8 +138,8 @@ export function describeCacheStoreContract(context: {
       };
 
       // When
-      const first = await cache.wrap("contract:wrap", z.string(), factory);
-      const second = await cache.wrap("contract:wrap", z.string(), factory);
+      const first = await cache.wrap({ key: "contract:wrap", schema: z.string(), factory });
+      const second = await cache.wrap({ key: "contract:wrap", schema: z.string(), factory });
 
       // Then
       expect([first, second]).toEqual(["fresh", "fresh"]);
@@ -157,8 +157,8 @@ export function describeCacheStoreContract(context: {
 
       // When
       const results = await Promise.all([
-        cache.wrap("contract:flight", z.number(), factory),
-        cache.wrap("contract:flight", z.number(), factory),
+        cache.wrap({ key: "contract:flight", schema: z.number(), factory }),
+        cache.wrap({ key: "contract:flight", schema: z.number(), factory }),
       ]);
 
       // Then
@@ -171,7 +171,12 @@ export function describeCacheStoreContract(context: {
       const ttlOf = (value: string) => (value.length < 5 ? 60_000 : 3_600_000);
 
       // When
-      await cache.wrap("contract:wrap-ttl", z.string(), async () => "rain", ttlOf);
+      await cache.wrap({
+        key: "contract:wrap-ttl",
+        schema: z.string(),
+        factory: async () => "rain",
+        ttlMs: ttlOf,
+      });
 
       // Then
       expect(await cache.ttl("contract:wrap-ttl")).toBeLessThanOrEqual(60_000);

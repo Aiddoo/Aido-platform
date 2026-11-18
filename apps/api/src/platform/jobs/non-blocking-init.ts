@@ -9,8 +9,6 @@ import { toErrorType } from "#api/shared/application/utils/error-message.util";
  * 작업 스케줄러 등록처럼 작업 저장소에 의존하는 부트 작업을 onModuleInit에서
  * await하면 저장소 장애 중 앱 기동 자체가 멈춘다. 이 헬퍼는 작업을
  * 백그라운드로 넘기고 실패는 로그로만 남긴다.
- *
- * @returns 절대 reject하지 않는 프로미스 — 테스트에서 완료 대기용
  */
 export async function runInBackground(
   logger: Pick<Logger, "error">,

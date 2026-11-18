@@ -11,7 +11,7 @@ import { inviteActiveDay, inviteRedemption, user } from "#api/platform/database/
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { instantFromDate } from "#api/shared/domain/time/instant";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -73,7 +73,7 @@ describe("초대 첫날·사용 시작 알림의 중복 방지 (실제 PostgreSQ
   async function createUser(userTag: string): Promise<string> {
     const id = createEntityId();
     await client.insert(user).values(
-      UserFixture.create({
+      createUserRowFixture({
         id,
         userTag,
         email: `${userTag.toLowerCase()}@example.test`,

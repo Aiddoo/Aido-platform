@@ -1,0 +1,79 @@
+import { Module } from "@nestjs/common";
+
+import { AccessFeatureGrantsQueriesModule } from "#api/modules/access/feature-grants/access-feature-grants.public";
+import { NotificationQueueModule } from "#api/modules/notification/notifications/notification-notifications-jobs.public";
+import { NotificationRemindersQueriesModule } from "#api/modules/notification/reminders/notification-reminders-queries.public";
+import { PlanningTodosQueriesModule } from "#api/modules/planning/todos/planning-todos-queries.public";
+
+import { AiDataSharingConsentReaderPort } from "./application/ports/ai-data-sharing-consent.reader.port.js";
+import { ReminderScheduleEnqueuerPort } from "./application/ports/reminder-schedule-enqueuer.port.js";
+import { StreakMilestoneNotifierPort } from "./application/ports/streak-milestone-notifier.port.js";
+import { TodoCompletionStatsReaderPort } from "./application/ports/todo-completion-stats.reader.port.js";
+import { TodoTimezoneRebaseEnqueuerPort } from "./application/ports/todo-timezone-rebase-enqueuer.port.js";
+import { UserConsentRepositoryPort } from "./application/ports/user-consent.repository.port.js";
+import { UserPreferenceReaderPort } from "./application/ports/user-preference.reader.port.js";
+import { UserPreferenceRepositoryPort } from "./application/ports/user-preference.repository.port.js";
+import {
+  UserNotificationSettingsAccessPort,
+  UserSettingsProvisionerPort,
+  UserStreakAccessPort,
+  UserTimezoneReaderPort,
+} from "./application/ports/user-settings-access.port.js";
+import { UserSettingsCachePort } from "./application/ports/user-settings-cache.port.js";
+import { IDENTITY_USER_PREFERENCES_PROVIDERS } from "./identity-user-preferences.providers.js";
+import { AiDataSharingConsentReaderAdapter } from "./infrastructure/adapters/ai-data-sharing-consent-reader.adapter.js";
+import { StreakMilestoneNotifierAdapter } from "./infrastructure/adapters/streak-milestone-notifier.adapter.js";
+import { TimezoneReminderEnqueuerAdapter } from "./infrastructure/adapters/timezone-reminder-enqueuer.adapter.js";
+import { TodoTimezoneRebaseEnqueuerAdapter } from "./infrastructure/adapters/todo-timezone-rebase-enqueuer.adapter.js";
+import { UserPreferenceReaderAdapter } from "./infrastructure/adapters/user-preference-reader.adapter.js";
+import { UserSettingsAccessAdapter } from "./infrastructure/adapters/user-settings-access.adapter.js";
+import { UserSettingsCacheAdapter } from "./infrastructure/adapters/user-settings-cache.adapter.js";
+import { DrizzleTodoCompletionStatsReader } from "./infrastructure/persistence/drizzle-todo-completion-stats.reader.js";
+import { DrizzleUserConsentRepository } from "./infrastructure/persistence/drizzle-user-consent.repository.js";
+import { DrizzleUserPreferenceRepository } from "./infrastructure/persistence/drizzle-user-preference.repository.js";
+import { TimezoneSelfHealInterceptor } from "./presentation/http/interceptors/timezone-self-heal.interceptor.js";
+import { SettingsController } from "./presentation/http/v1/user-settings.controller.js";
+
+// 리마인더 시각 변경·3일 달성 알림 작업을 notification 큐에 바로 넣어 그 큐 Module을 import한다. 큐 Module만 연 jobs public과
+// 포트만 연 queries public이라 notification 기능 Module을 거쳐 이 Module로 돌아오는 순환은 없다(durable 이벤트로 바꾸려면 새 큐가 필요하다)
+@Module({
+  imports: [
+    AccessFeatureGrantsQueriesModule,
+    NotificationQueueModule,
+    NotificationRemindersQueriesModule,
+    PlanningTodosQueriesModule,
+  ],
+  controllers: [SettingsController],
+  providers: [
+    ...IDENTITY_USER_PREFERENCES_PROVIDERS,
+    UserSettingsAccessAdapter,
+    { provide: UserPreferenceReaderPort, useClass: UserPreferenceReaderAdapter },
+    { provide: AiDataSharingConsentReaderPort, useClass: AiDataSharingConsentReaderAdapter },
+    TimezoneSelfHealInterceptor,
+    DrizzleUserPreferenceRepository,
+    DrizzleUserConsentRepository,
+    DrizzleTodoCompletionStatsReader,
+    { provide: UserPreferenceRepositoryPort, useExisting: DrizzleUserPreferenceRepository },
+    { provide: UserConsentRepositoryPort, useExisting: DrizzleUserConsentRepository },
+    { provide: TodoCompletionStatsReaderPort, useExisting: DrizzleTodoCompletionStatsReader },
+    { provide: ReminderScheduleEnqueuerPort, useClass: TimezoneReminderEnqueuerAdapter },
+    { provide: TodoTimezoneRebaseEnqueuerPort, useClass: TodoTimezoneRebaseEnqueuerAdapter },
+    { provide: StreakMilestoneNotifierPort, useClass: StreakMilestoneNotifierAdapter },
+    { provide: UserSettingsCachePort, useClass: UserSettingsCacheAdapter },
+    { provide: UserSettingsProvisionerPort, useExisting: UserSettingsAccessAdapter },
+    { provide: UserStreakAccessPort, useExisting: UserSettingsAccessAdapter },
+    { provide: UserTimezoneReaderPort, useExisting: UserSettingsAccessAdapter },
+    { provide: UserNotificationSettingsAccessPort, useExisting: UserSettingsAccessAdapter },
+  ],
+  exports: [
+    UserSettingsCachePort,
+    UserPreferenceReaderPort,
+    UserSettingsProvisionerPort,
+    UserStreakAccessPort,
+    UserTimezoneReaderPort,
+    UserNotificationSettingsAccessPort,
+    AiDataSharingConsentReaderPort,
+    TimezoneSelfHealInterceptor,
+  ],
+})
+export class IdentityUserPreferencesModule {}

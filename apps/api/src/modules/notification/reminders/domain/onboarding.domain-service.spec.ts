@@ -11,6 +11,10 @@ describe("resolveOnboardingDeepLinkPath", () => {
     [7, 0, "/achievements"],
     [7, 4, "/achievements"],
   ])("Day %i 완료 %i개는 %s를 연다", (day, completedCount, path) => {
-    expect(resolveOnboardingDeepLinkPath(day, completedCount)).toBe(path);
+    // When
+    const result = resolveOnboardingDeepLinkPath(day, completedCount);
+
+    // Then
+    expect(result).toBe(path);
   });
 });

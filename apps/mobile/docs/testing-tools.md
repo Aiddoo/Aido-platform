@@ -88,7 +88,12 @@ expect(screen.getByRole('textbox', { name: '문의 내용' })).toHaveDisplayValu
 
 ## Fixture
 
-`defineFixture(schema, defaults)`가 기본값을 스키마로 검증해 모델과 어긋난 fixture로 통과하는 테스트를 막는다. 필드가 늘면 한 곳만 고친다. Mapper의 DTO는 계약 스키마로 검증해 만든다(`memoListResponseSchema.parse({ … })`). 서버 계약이 바뀌면 테스트가 먼저 깨지게 하기 위해서다.
+`defineFixture(schema, defaults)`가 기본값을 스키마로 한 번 검증해 모델과 어긋난 fixture로 통과하는 테스트를 막는다. 필드가 늘면 한 곳만 고친다. 호출마다 기본값을 깊은 복사한 뒤 넘긴 칸만 얕게 덮어쓰고, 덮어쓴 칸은 타입만 확인한다.
+
+- 앱 모델 fixture는 `domains/*.model.ts`의 모델 스키마로 만든다. 스키마가 모듈 안에만 있으면 export한다.
+- Mapper·HTTP stub에 넣는 DTO는 `@aido/api` 계약 스키마(계약에서 유도한 `schemas/*-response.schema.ts` 포함)로 만든다. 서버 계약이 바뀌면 테스트가 먼저 깨지게 하기 위해서다. 모델과 DTO 기본값이 같으면 상수 하나를 둘이 나눠 쓴다(`consent.fixtures.ts`).
+- 기본값이 인자에서 나오는 fixture(`createFriendUser(id)`, `createWidgetSnapshot(today, tomorrow)`)는 `defineFixture` 결과를 감싸는 얇은 함수다. 상태마다 필수 칸이 다른 유니온(`createCaptureState`)처럼 덮어쓴 값까지 검증해야 하면 호출마다 `schema.parse`한다.
+- 스키마가 없는 포트 값·interface(`LocalFileEntry`, `PushNotificationResponse`)와 `ApiError`는 손으로 만든다.
 
 ```ts
 // features/notes/memo/__tests__/memo.fixtures.ts
@@ -100,6 +105,9 @@ export const createMemo = defineFixture(memoSchema, {
   updatedAt: '2026-11-06T00:00:00.000Z',
 });
 // 사용: createMemo({ content: ' 장보기 \n우유\n계란' })
+
+// features/assistant/suggestion/__tests__/suggestion.fixtures.ts
+export const createSuggestionDto = defineFixture(recurringSuggestionSchema, { … });
 ```
 
 ## Jest 설정
@@ -108,7 +116,7 @@ export const createMemo = defineFixture(memoSchema, {
 - 유지: `randomize`+`showSeed`, `workerIdleMemoryLimit`, `maxWorkers` 50%(`AIDO_TEST_WORKERS`로 조절, `@aido/test-config`의 `resolveTestWorkers`), `clearMocks`·`restoreMocks`, 테스트에서도 React Compiler.
 - 추가한 것: 프로젝트마다 `cacheDirectory`(`node_modules/.cache/jest`), 전역 `testTimeout` 15초·`errorOnDeprecated`(지원 중단 Jest API를 바로 실패시킨다), CI(`CI=true`)에서 `logHeapUsage`(`--ci`는 Jest가 CI 환경에서 스스로 켠다), `test:handles`(`--runInBand --detectOpenHandles`), RNTL `asyncUtilTimeout` 3초, 테스트마다 `clearTestQueryClients`.
 - Node 내장 러너 테스트(`scripts/**/__tests__`, `plugins/**/__tests__`, 스토어 그림 `store-metadata/art`)는 `pnpm test:node`가 돌리고 turbo `test:node` 태스크로 CI에 걸린다. `store-listing.test.mjs`는 릴리스 `release.json`이 있어야 해 `test:store-listing`으로 따로 돈다.
-- `moduleNameMapper`의 `@aido/api*`는 한 줄이다. `jest.resolver.cjs`는 RN 0.88 preset의 경로 해석을 유지하고 실제 Reanimated·Worklets 패키지 경로만 공식 resolver로 보낸다. pnpm peer suffix에 `react-native-worklets`가 있다는 이유로 ExpoModulesCore까지 웹 구현으로 바꾸면 안 된다([Reanimated 4 Jest testing](https://docs.swmansion.com/react-native-reanimated/docs/guides/testing/)).
+- `moduleNameMapper`의 `@aido/api/*`는 한 줄이다. `jest.resolver.cjs`는 RN 0.88 preset의 경로 해석을 유지하고 실제 Reanimated·Worklets 패키지 경로만 공식 resolver로 보낸다. pnpm peer suffix에 `react-native-worklets`가 있다는 이유로 ExpoModulesCore까지 웹 구현으로 바꾸면 안 된다([Reanimated 4 Jest testing](https://docs.swmansion.com/react-native-reanimated/docs/guides/testing/)).
 - 기기 시간대에 기대는 테스트(피커·자정·서머타임)는 파일 docblock에 `@jest-environment <rootDir>/jest.time-zone-environment.cjs`와 `@time-zone America/New_York`을 적는다. 테스트 안의 `process.env.TZ`는 사본이라 Date·Intl이 따르지 않고, 이 환경이 그 파일 동안만 worker의 시간대를 바꾸고 되돌린다(`time-picker.test.tsx`).
 - `jest.setup.ts`는 Hermes에 없는 `toSorted`·`Array.fromAsync`를 Node에서 지워 앱에서만 죽는 호출을 테스트에서도 드러낸다.
 - jest는 앱과 달리 렌더 중 컴파일러 버그(`getValues()` 등)를 잡지 못한다. 시뮬레이터에서만 보인다.

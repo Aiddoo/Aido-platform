@@ -3,33 +3,35 @@ import { groupBy } from "es-toolkit";
 import {
   decideMorningWeatherBriefing,
   type MorningWeatherBriefing,
-} from "#api/modules/weather/forecasts/weather-forecasts.public";
+} from "#api/modules/weather/weather-reports/weather-weather-reports.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
 import { resolveTimezone } from "#api/shared/domain/time/time-zone-name";
 
-import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
-import type { NotificationAction } from "../../../inbox/application/ports/notification-draft.port.js";
-import { formatWeatherNotificationTime } from "../../../push/application/messages/notification-copy-format.messages.js";
+import type {
+  NotificationHistoryReader,
+  PublishNotificationBatchUseCase,
+} from "../../../notifications/notification-notifications.public.js";
+import { formatWeatherNotificationTime } from "../../../shared/application/messages/notification-copy-format.messages.js";
 import {
   createWeatherMorningFallbackNotificationMessage,
   createWeatherMorningNotificationMessage,
   createWeatherMorningUnavailableNotificationMessage,
   createWeatherRescheduleAction,
-} from "../../../push/application/messages/weather-notification.messages.js";
-import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
-import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
+} from "../../../shared/application/messages/weather-notification.messages.js";
+import type { NotificationAction } from "../../../shared/domain/notification-draft.constants.js";
+import type { TimezoneContext } from "../../domain/local-clock.domain-service.js";
 import type { ReminderWeatherReportReaderPort } from "../ports/reminder-weather-report.reader.port.js";
 import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
 import type { WeatherBriefingTodoReaderPort } from "../ports/weather-briefing-todo.reader.port.js";
 import { type WeatherReminderReaderPort } from "../ports/weather-reminder-reader.port.js";
 import type {
-  WeatherReminderTodo,
-  WeatherReminderUser,
+  WeatherReminderTodoReadModel,
+  WeatherReminderUserReadModel,
 } from "../read-models/scheduler.read-model.js";
-import { NotificationRemindersLogEvent } from "../reminders.log-events.js";
+import { ReminderLogEvent } from "../reminders.log-events.js";
 import {
   buildWeatherNotification,
   filterUnnotifiedWeatherUsers,
@@ -47,7 +49,7 @@ interface WeatherMorningStrategyDependencies {
     "findWeatherMorningFallbackUsers" | "findWeatherMorningUsersWithLocation"
   >;
   readonly todoReader: Pick<WeatherBriefingTodoReaderPort, "listTodayTodos">;
-  readonly notificationPublisher: Pick<PublishNotificationUseCase, "publishBatch">;
+  readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
   readonly weatherReportReader: Pick<ReminderWeatherReportReaderPort, "readReports">;
   readonly clock: Pick<ClockPort, "now">;
@@ -65,19 +67,23 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
     this.#dependencies = dependencies;
   }
 
-  async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
-    const { timezones, localHour, localMinute, today } = ctx;
+  async execute(timezoneContext: TimezoneContext): Promise<{ sent: number }> {
+    // 가을 DST로 두 번째 오는 시각처럼 울릴 시각이 없는 분은 조회하지 않는다
+    if (timezoneContext.reminderTimes.length === 0) {
+      return { sent: 0 };
+    }
+    const { timezones, localHour, localMinute, today } = timezoneContext;
 
     // 1단계: 위치 있는 유저 → 날씨 알림 (예보를 받지 못하면 안내 알림)
-    const weather = await this.#sendWeatherNotifications(ctx, today);
+    const weather = await this.#sendWeatherNotifications(timezoneContext, today);
 
     // 2단계: 위치 없는 유저 → 폴백 알림
-    const fallbackSent = await this.#sendFallbackNotifications(ctx, today);
+    const fallbackSent = await this.#sendFallbackNotifications(timezoneContext, today);
 
     const total = weather.sent + fallbackSent;
     if (total > 0) {
       this.#dependencies.logger.log({
-        event: NotificationRemindersLogEvent.WEATHER_MORNING_SENT,
+        event: ReminderLogEvent.WEATHER_MORNING_SENT,
         timezones,
         localHour,
         localMinute,
@@ -90,21 +96,10 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
   }
 
   async #sendWeatherNotifications(
-    ctx: TimezoneContext,
+    timezoneContext: TimezoneContext,
     today: Temporal.PlainDate,
   ): Promise<{ sent: number; unavailable: number }> {
-    const rows = await this.#dependencies.reader.findWeatherMorningUsersWithLocation({
-      timezones: ctx.timezones,
-      hour: ctx.localHour,
-      minute: ctx.localMinute,
-      userId: ctx.userId == null ? undefined : UserId.reconstitute(ctx.userId),
-    });
-    const targets = await filterUnnotifiedWeatherUsers(
-      this.#dependencies.notificationHistoryReader,
-      withWeatherLocation(rows),
-      NOTIFICATION_TYPE,
-      today,
-    );
+    const targets = await this.#findTargets(timezoneContext, today);
     if (targets.length === 0) {
       return { sent: 0, unavailable: 0 };
     }
@@ -167,15 +162,29 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
       });
     });
 
-    await this.#dependencies.notificationPublisher.publishBatch(notifications);
+    await this.#dependencies.notificationPublisher.execute(notifications);
     return { sent: notifications.length, unavailable };
+  }
+
+  async #findTargets(timezoneContext: TimezoneContext, today: Temporal.PlainDate) {
+    const rows = await this.#dependencies.reader.findWeatherMorningUsersWithLocation({
+      timezones: timezoneContext.timezones,
+      times: timezoneContext.reminderTimes,
+      userId:
+        timezoneContext.userId == null ? undefined : UserId.reconstitute(timezoneContext.userId),
+    });
+    return filterUnnotifiedWeatherUsers(this.#dependencies.notificationHistoryReader, {
+      users: withWeatherLocation(rows),
+      type: NOTIFICATION_TYPE,
+      today,
+    });
   }
 
   // 오늘·다음 자정은 시간대마다 정한다. 지금 현지 시각이 같아도 자정 전 서머타임 전환은 다를 수 있다
   async #listTodayTodos(
-    targets: readonly WeatherReminderUser[],
+    targets: readonly WeatherReminderUserReadModel[],
     now: Temporal.Instant,
-  ): Promise<WeatherReminderTodo[]> {
+  ): Promise<WeatherReminderTodoReadModel[]> {
     const targetsByTimezone = groupBy(targets, (user) => user.timezone);
     const todosByTimezone = await Promise.all(
       Object.entries(targetsByTimezone).map(([timezone, users]) => {
@@ -194,14 +203,14 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
   }
 
   async #sendFallbackNotifications(
-    ctx: TimezoneContext,
+    timezoneContext: TimezoneContext,
     today: Temporal.PlainDate,
   ): Promise<number> {
     const users = await this.#dependencies.reader.findWeatherMorningFallbackUsers({
-      timezones: ctx.timezones,
-      hour: ctx.localHour,
-      minute: ctx.localMinute,
-      userId: ctx.userId == null ? undefined : UserId.reconstitute(ctx.userId),
+      timezones: timezoneContext.timezones,
+      times: timezoneContext.reminderTimes,
+      userId:
+        timezoneContext.userId == null ? undefined : UserId.reconstitute(timezoneContext.userId),
     });
     return sendWeatherFallbackNotifications(this.#dependencies, {
       users,

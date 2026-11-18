@@ -12,14 +12,14 @@ import {
 
 @Injectable()
 export class DrizzleSingleTodoCountReader implements SingleTodoCountReaderPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
   countSingleTodos(query: SingleTodoCountQuery): Promise<number> {
-    return this.#txHost.tx.$count(
+    return this.#transactionHost.tx.$count(
       todo,
       and(
         eq(todo.userId, query.userId.value),

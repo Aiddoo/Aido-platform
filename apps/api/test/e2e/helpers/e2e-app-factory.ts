@@ -17,27 +17,31 @@ import { vi } from "vitest";
 
 import { setupApiDocs } from "#api/api-docs";
 import { AppModule } from "#api/app.module";
-import { AiGeneratorPort } from "#api/modules/ai-assistance/generation/ai-assistance-generation.public";
-import { ReportGenerationProcessor } from "#api/modules/ai-assistance/reports/infrastructure/jobs/report-generation.processor";
-import { ReportGenerationScheduler } from "#api/modules/ai-assistance/reports/infrastructure/jobs/report-generation.scheduler";
+import { AiGeneratorPort } from "#api/modules/ai-assistance/ai-generations/ai-assistance-ai-generations.public";
+import { ReportGenerationProcessor } from "#api/modules/ai-assistance/ai-reports/infrastructure/jobs/report-generation.processor";
+import { ReportGenerationScheduler } from "#api/modules/ai-assistance/ai-reports/infrastructure/jobs/report-generation.scheduler";
 import { SuggestionAnalysisProcessor } from "#api/modules/ai-assistance/suggestions/infrastructure/jobs/suggestion-analysis.processor";
 import { SuggestionAnalysisScheduler } from "#api/modules/ai-assistance/suggestions/infrastructure/jobs/suggestion-analysis.scheduler";
 import {
   type OAuthIdentityProviderPort,
   OAuthIdentityProviderRegistryPort,
-} from "#api/modules/identity/auth/application/ports/oauth-identity-provider.port";
-import type { AccountProvider } from "#api/modules/identity/auth/domain/auth.constants";
-import { AppleOAuthIdentityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/apple-oauth-identity.adapter";
-import { Argon2PasswordHasherAdapter } from "#api/modules/identity/auth/infrastructure/adapters/argon2-password-hasher.adapter";
-import { GoogleOAuthIdentityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/google-oauth-identity.adapter";
-import { KakaoOAuthIdentityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/kakao-oauth-identity.adapter";
-import { NaverOAuthIdentityAdapter } from "#api/modules/identity/auth/infrastructure/adapters/naver-oauth-identity.adapter";
+} from "#api/modules/identity/linked-accounts/application/ports/oauth-identity-provider.port";
+import { PasswordHasherPort } from "#api/modules/identity/linked-accounts/application/ports/password-hasher.port";
+import type { AccountProvider } from "#api/modules/identity/linked-accounts/domain/linked-accounts.constants";
+import { AppleOAuthIdentityAdapter } from "#api/modules/identity/linked-accounts/infrastructure/adapters/apple-oauth-identity.adapter";
+import { GoogleOAuthIdentityAdapter } from "#api/modules/identity/linked-accounts/infrastructure/adapters/google-oauth-identity.adapter";
+import { KakaoOAuthIdentityAdapter } from "#api/modules/identity/linked-accounts/infrastructure/adapters/kakao-oauth-identity.adapter";
+import { NaverOAuthIdentityAdapter } from "#api/modules/identity/linked-accounts/infrastructure/adapters/naver-oauth-identity.adapter";
 import { AccountPurgeProcessor } from "#api/modules/identity/users/infrastructure/jobs/account-purge.processor";
 import { AccountPurgeScheduler } from "#api/modules/identity/users/infrastructure/jobs/account-purge.scheduler";
-import { EmailDeliveryQueueProcessor } from "#api/modules/notification/email/infrastructure/jobs/email-delivery-queue.processor";
-import { SendTransactionalEmailUseCase } from "#api/modules/notification/notification-email.public";
-import { PushProviderPort } from "#api/modules/notification/push/application/ports/push-provider.port";
-import { NotificationQueueProcessor } from "#api/modules/notification/push/infrastructure/jobs/notification-queue.processor";
+import { VerificationCodeEmailSenderPort } from "#api/modules/identity/verifications/application/ports/verification-code-email-sender.port";
+import { EmailDeliveryQueueProcessor } from "#api/modules/notification/email-messages/infrastructure/jobs/email-delivery-queue.processor";
+import {
+  SendInquiryEmailUseCase,
+  SendUserReportEmailUseCase,
+} from "#api/modules/notification/email-messages/notification-email-messages.public";
+import { NotificationQueueProcessor } from "#api/modules/notification/notifications/infrastructure/jobs/notification-queue.processor";
+import { PushChannelRegistryPort } from "#api/modules/notification/push-dispatches/application/ports/push-channel-registry.port";
 import { TimezoneReminderQueueProcessor } from "#api/modules/notification/reminders/infrastructure/jobs/timezone-reminder-queue.processor";
 import { TimezoneReminderSweepScheduler } from "#api/modules/notification/reminders/infrastructure/jobs/timezone-reminder-sweep.scheduler";
 import { TodoReminderQueueProcessor } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-queue.processor";
@@ -46,35 +50,39 @@ import { AdminNotificationProcessor } from "#api/modules/operations/admin-notice
 import { DailySignupSummaryScheduler } from "#api/modules/operations/admin-notices/infrastructure/jobs/daily-signup-summary.scheduler";
 import { TodoSeriesMaterializationProcessor } from "#api/modules/planning/todo-series/infrastructure/jobs/todo-series-materialization.processor";
 import { TodoSeriesMaterializationScheduler } from "#api/modules/planning/todo-series/infrastructure/jobs/todo-series-materialization.scheduler";
-import { PlanApplicationCleanupProcessor } from "#api/modules/voice/action-plans/infrastructure/jobs/plan-application-cleanup.processor";
-import { PlanApplicationCleanupScheduler } from "#api/modules/voice/action-plans/infrastructure/jobs/plan-application-cleanup.scheduler";
-import { AirQualityProviderPort } from "#api/modules/weather/forecasts/application/ports/air-quality-provider.port";
-import { LifestyleIndexProviderPort } from "#api/modules/weather/forecasts/application/ports/lifestyle-index-provider.port";
-import { SunTimeProviderPort } from "#api/modules/weather/forecasts/application/ports/sun-time-provider.port";
-import { WeatherForecastProviderPort } from "#api/modules/weather/forecasts/application/ports/weather-forecast-provider.port";
-import { WeatherReportProviderPort } from "#api/modules/weather/forecasts/application/ports/weather-report-provider.port";
+import { PlanApplicationCleanupProcessor } from "#api/modules/voice/plan-applications/infrastructure/jobs/plan-application-cleanup.processor";
+import { PlanApplicationCleanupScheduler } from "#api/modules/voice/plan-applications/infrastructure/jobs/plan-application-cleanup.scheduler";
+import { AirQualityProviderPort } from "#api/modules/weather/weather-reports/application/ports/air-quality-provider.port";
+import { LifestyleIndexProviderPort } from "#api/modules/weather/weather-reports/application/ports/lifestyle-index-provider.port";
+import { SunTimeProviderPort } from "#api/modules/weather/weather-reports/application/ports/sun-time-provider.port";
+import { WeatherForecastProviderPort } from "#api/modules/weather/weather-reports/application/ports/weather-forecast-provider.port";
+import { WeatherReportProviderPort } from "#api/modules/weather/weather-reports/application/ports/weather-report-provider.port";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { DRIZZLE } from "#api/platform/database/database.client";
 import { configureApplication } from "#api/platform/http/configure-application";
+import { createHttpAdapter } from "#api/platform/http/http-adapter";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
-import { FakePushProvider } from "#test/doubles/notification/fake-push-provider";
+import { FakeAiGenerator } from "#test/doubles/ai-assistance/fake-ai.generator";
+import { FakeOAuthProviderRegistry } from "#test/doubles/identity/fake-oauth-provider-registry";
+import { FakeOAuthTokenVerifier } from "#test/doubles/identity/fake-oauth-token-verifier";
+import { FakePasswordHasher } from "#test/doubles/identity/fake-password-hasher";
+import { FakeEmailSender } from "#test/doubles/notification/fake-email-sender";
+import {
+  FakePushChannel,
+  pushChannelRegistryOf,
+} from "#test/doubles/notification/fake-push-channel";
+import { FakeAdminNotifier } from "#test/doubles/operations/fake-admin-notifier";
 import { DateClock } from "#test/doubles/platform/date-clock";
+import { FakeLogger } from "#test/doubles/platform/fake-logger";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
+import { FakeAirQualityProvider } from "#test/doubles/weather/fake-air-quality.provider";
+import { FakeLifestyleIndexProvider } from "#test/doubles/weather/fake-lifestyle-index.provider";
+import { FakeSunTimeProvider } from "#test/doubles/weather/fake-sun-time.provider";
+import { FakeWeatherProvider } from "#test/doubles/weather/fake-weather.provider";
 import { StubWeatherReportProvider } from "#test/doubles/weather/stub-weather-report-provider";
 
-import { FakeAdminNotifier } from "../../mocks/fake-admin-notifier.js";
-import { FakeAiGenerator } from "../../mocks/fake-ai.generator.js";
-import { FakeAirQualityProvider } from "../../mocks/fake-air-quality.provider.js";
-import { FakeEmailService } from "../../mocks/fake-email.service.js";
-import { FakeLifestyleIndexProvider } from "../../mocks/fake-lifestyle-index.provider.js";
-import { FakeLogger } from "../../mocks/fake-logger.service.js";
-import { FakeOAuthProviderRegistry } from "../../mocks/fake-oauth-provider-registry.js";
-import { FakeOAuthTokenVerifierService } from "../../mocks/fake-oauth-token-verifier.service.js";
-import { FakePasswordHasher } from "../../mocks/fake-password-hasher.js";
-import { FakeSunTimeProvider } from "../../mocks/fake-sun-time.provider.js";
-import { FakeWeatherProvider } from "../../mocks/fake-weather.provider.js";
 import { TestDatabase } from "../../setup/test-database.js";
 import { E2eHelpers } from "./e2e-helpers.js";
 import { createE2eTestStateResetter, type TestStateResetter } from "./e2e-test-state.js";
@@ -108,8 +116,8 @@ export interface E2eTestContext {
   app: INestApplication<App>;
   module: TestingModule;
   testDatabase: TestDatabase;
-  fakeEmailService: FakeEmailService;
-  fakeOAuthTokenVerifierService: FakeOAuthTokenVerifierService;
+  fakeEmailService: FakeEmailSender;
+  fakeOAuthTokenVerifierService: FakeOAuthTokenVerifier;
   fakeOAuthProviderRegistry: FakeOAuthProviderRegistry;
   helpers: E2eHelpers;
   reset(): Promise<void>;
@@ -144,10 +152,10 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
     await testDatabase.start();
   }
 
-  const fakeEmailService = new FakeEmailService();
-  const fakeOAuthTokenVerifierService = new FakeOAuthTokenVerifierService();
+  const fakeEmailService = new FakeEmailSender();
+  const fakeOAuthTokenVerifierService = new FakeOAuthTokenVerifier();
   const fakeAdminNotifier = new FakeAdminNotifier();
-  const fakePushProvider = new FakePushProvider();
+  const fakePushProvider = new FakePushChannel();
   const fakeAiGenerator = new FakeAiGenerator();
   const fakeWeatherProvider = new FakeWeatherProvider();
   const stubWeatherReportProvider = new StubWeatherReportProvider();
@@ -203,10 +211,14 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
     .useValue(cacheAdapter)
     .overrideProvider(DRIZZLE)
     .useValue(testDatabase.getClient())
-    .overrideProvider(Argon2PasswordHasherAdapter)
+    .overrideProvider(PasswordHasherPort)
     .useClass(FakePasswordHasher)
-    .overrideProvider(SendTransactionalEmailUseCase)
+    .overrideProvider(VerificationCodeEmailSenderPort)
     .useValue(fakeEmailService)
+    .overrideProvider(SendInquiryEmailUseCase)
+    .useValue(fakeEmailService.inquiry)
+    .overrideProvider(SendUserReportEmailUseCase)
+    .useValue(fakeEmailService.userReport)
     .overrideProvider(OAuthIdentityProviderRegistryPort)
     .useFactory({
       inject: [
@@ -235,8 +247,8 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
     })
     .overrideProvider(AdminNotifierPort)
     .useValue(fakeAdminNotifier)
-    .overrideProvider(PushProviderPort)
-    .useValue(fakePushProvider)
+    .overrideProvider(PushChannelRegistryPort)
+    .useValue(pushChannelRegistryOf(fakePushProvider))
     .overrideProvider(AiGeneratorPort)
     .useValue(fakeAiGenerator)
     .overrideProvider(WeatherForecastProviderPort)
@@ -272,11 +284,8 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
 
   try {
     module = await builder.compile();
-    app = module.createNestApplication();
-    configureApplication(app, {
-      corsOrigins: ["http://localhost:3000"],
-      enableShutdownHooks: false,
-    });
+    app = module.createNestApplication(createHttpAdapter());
+    configureApplication(app, { corsOrigins: ["http://localhost:3000"] });
     // main.ts와 같은 순서로 문서를 붙여, 개발 도구가 꺼진 설정에서 문서 경로가 열리지 않는지 E2E가 본다
     setupApiDocs(app);
     // Supertest의 요청별 임시 서버 재시작 대신 suite 전체에서 같은 HTTP 서버를 사용한다.
@@ -299,7 +308,6 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
         () => fakeAiGenerator.clear(),
         () => fakeWeatherProvider.clear(),
         () => stubWeatherReportProvider.clear(),
-        () => fakeAirQualityProvider.clear(),
         () => fakeLifestyleIndexProvider.clear(),
         () => fakeSunTimeProvider.clear(),
         () => inMemoryJobQueue.clear(),
@@ -325,13 +333,13 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
   }
 }
 
-export async function destroyE2eApp(ctx: E2eTestContext): Promise<void> {
-  await ctx.closeTestResources();
+export async function destroyE2eApp(testContext: E2eTestContext): Promise<void> {
+  await testContext.closeTestResources();
 }
 
 export async function restartE2eAppPreservingDatabase(
-  ctx: E2eTestContext,
+  testContext: E2eTestContext,
 ): Promise<E2eTestContext> {
-  await ctx.closeApplicationResources();
-  return createE2eApp({ testDatabase: ctx.testDatabase });
+  await testContext.closeApplicationResources();
+  return createE2eApp({ testDatabase: testContext.testDatabase });
 }

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { defineQueue, JOB_POLLING_SECONDS } from "#api/shared/application/ports/job-queue.port";
+import { DAY_SECONDS } from "#api/shared/domain/time/time-units";
 
 const TODO_SERIES_MATERIALIZATION_JOB_NAME = "materialize-due-series";
 
@@ -31,8 +32,8 @@ export const TODO_SERIES_MATERIALIZATION_QUEUE = defineQueue({
     retryDelaySeconds: 30,
     retryBackoff: true,
     expireInSeconds: 10 * 60,
-    retentionSeconds: 7 * 24 * 60 * 60,
-    deleteAfterSeconds: 24 * 60 * 60,
+    retentionSeconds: 7 * DAY_SECONDS,
+    deleteAfterSeconds: DAY_SECONDS,
   },
   worker: { localConcurrency: 1, pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND },
   schedules: [

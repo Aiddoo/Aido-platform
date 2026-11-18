@@ -3,7 +3,7 @@ import {
   type GeneralPushRateLimitRequest,
   type PushRateLimitRequest,
   PushRateLimiterPort,
-} from "#api/modules/notification/push/application/ports/push-rate-limiter.port";
+} from "#api/modules/notification/push-dispatches/application/ports/push-rate-limiter.port";
 
 // 정한 사용자만 제한에 걸린 것으로 답하고 받은 예약 요청을 남긴다
 export class StubPushRateLimiter extends PushRateLimiterPort {
@@ -20,16 +20,16 @@ export class StubPushRateLimiter extends PushRateLimiterPort {
 
   async reserveGeneral(request: GeneralPushRateLimitRequest): Promise<boolean> {
     this.generalRequests.push(request);
-    return this.limitedGeneralUserIds.has(request.userId);
+    return this.limitedGeneralUserIds.has(request.userId.value);
   }
 
   async reserveEngagement(request: EngagementPushRateLimitRequest): Promise<boolean> {
     this.engagementRequests.push(request);
-    return this.limitedEngagementUserIds.has(request.userId);
+    return this.limitedEngagementUserIds.has(request.userId.value);
   }
 
   async reserveBatch(requests: readonly PushRateLimitRequest[]): Promise<readonly boolean[]> {
     this.batchRequests.push([...requests]);
-    return requests.map((request) => this.limitedBatchUserIds.has(request.userId));
+    return requests.map((request) => this.limitedBatchUserIds.has(request.userId.value));
   }
 }

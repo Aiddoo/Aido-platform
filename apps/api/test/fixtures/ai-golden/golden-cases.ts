@@ -1,30 +1,34 @@
 import { readFileSync } from "node:fs";
 
-import { parsedMemoDataSchema, parsedTodoDataSchema } from "@aido/api";
+import { parsedMemoDataSchema, parsedTodoDataSchema } from "@aido/api/contracts/ai/v1";
 import {
   AI_REPORT_TYPES,
   AI_SUGGESTION_STATUSES,
   DAYS_OF_WEEK,
+  SUPPORTED_LOCALES,
   TODO_VISIBILITIES,
 } from "@aido/api/vocabulary";
 import { z } from "zod";
 
-import { memoDraftSchema } from "#api/modules/ai-assistance/parsing/application/messages/parse-memo-draft.wire";
-import { todoDraftSchema } from "#api/modules/ai-assistance/parsing/application/messages/parse-todo-draft.wire";
-import { PLAN_REPEAT_PATTERNS } from "#api/modules/ai-assistance/parsing/application/messages/schedule-expression.wire";
-import { quickPlanDraftSchema } from "#api/modules/ai-assistance/planning/application/messages/quick-plan-draft.wire";
-import { voiceNoteDigestDraftSchema } from "#api/modules/ai-assistance/planning/application/messages/voice-note-digest-draft.wire";
-import type { NormalizedActionPlan } from "#api/modules/ai-assistance/planning/domain/action-plan-draft.constants";
-import { reportDraftSchema } from "#api/modules/ai-assistance/reports/application/messages/report-content.wire";
+import type { NormalizedActionPlan } from "#api/modules/ai-assistance/action-plan-drafts/domain/action-plan-drafts.constants";
+import { memoDraftSchema } from "#api/modules/ai-assistance/ai-generations/infrastructure/adapters/parse-memo-draft.wire";
+import { todoDraftSchema } from "#api/modules/ai-assistance/ai-generations/infrastructure/adapters/parse-todo-draft.wire";
+import { quickPlanDraftSchema } from "#api/modules/ai-assistance/ai-generations/infrastructure/adapters/quick-plan-draft.wire";
+import { reportDraftSchema } from "#api/modules/ai-assistance/ai-generations/infrastructure/adapters/report-draft.wire";
+import { PLAN_REPEAT_PATTERNS } from "#api/modules/ai-assistance/ai-generations/infrastructure/adapters/schedule-expression.wire";
+import { suggestionDraftSchema } from "#api/modules/ai-assistance/ai-generations/infrastructure/adapters/suggestion-draft.wire";
+import { voiceNoteDigestDraftSchema } from "#api/modules/ai-assistance/ai-generations/infrastructure/adapters/voice-note-digest-draft.wire";
+import type { ScheduleClock } from "#api/modules/ai-assistance/shared/domain/schedule-time.domain-service";
 import {
   resolvePlanSchedule,
   resolveTodoSchedule,
-  type ScheduleClock,
 } from "#api/modules/ai-assistance/shared/domain/todo-schedule.domain-service";
-import { suggestionDraftSchema } from "#api/modules/ai-assistance/suggestions/application/messages/suggestion-draft.wire";
-import type { SuggestionContext } from "#api/modules/ai-assistance/suggestions/application/read-models/suggestion-context.read-model";
+import type { SuggestionContextReadModel } from "#api/modules/ai-assistance/suggestions/application/read-models/suggestion-context.read-model";
 import { SUGGESTION_MODES } from "#api/modules/ai-assistance/suggestions/domain/suggestion-candidates.domain-service";
-import { repeatRefFixture, scheduleDraftFixture } from "#test/fixtures/ai-response.fixture";
+import {
+  createRepeatRefFixture,
+  createScheduleDraftFixture,
+} from "#test/fixtures/ai-assistance/ai-response.fixture";
 
 /** golden 묶음. mixed는 한국어·영어를 섞어 말한 입력이고 locale은 앱 언어다. */
 export const GOLDEN_VARIANTS = ["ko", "en", "mixed"] as const;
@@ -42,7 +46,7 @@ export type GoldenTask = (typeof GOLDEN_TASKS)[number];
 
 const goldenBase = {
   id: z.string(),
-  locale: z.enum(["ko", "en"]),
+  locale: z.enum(SUPPORTED_LOCALES),
   timezone: z.string(),
   now: z.iso.datetime(),
 };
@@ -165,7 +169,7 @@ export const suggestionGoldenCaseSchema = z.object({
 export type SuggestionGoldenCase = z.infer<typeof suggestionGoldenCaseSchema>;
 
 /** 카테고리 id는 이름 순서로 붙인다. 제안 카테고리는 같은 이름의 기록에서 고른다. */
-export function toSuggestionContext(golden: SuggestionGoldenCase): SuggestionContext {
+export function toSuggestionContext(golden: SuggestionGoldenCase): SuggestionContextReadModel {
   const categoryNames = [...new Set(golden.todos.map(({ categoryName }) => categoryName))];
   return {
     todos: golden.todos.map((todo) => ({
@@ -182,7 +186,7 @@ const rateItem = { total: z.number().int(), completed: z.number().int(), rate: z
 /** 리포트 golden 한 줄. input은 서버 집계(ReportPromptInput), draft는 이상적인 모델 출력이다. */
 export const reportGoldenCaseSchema = z.object({
   id: z.string(),
-  locale: z.enum(["ko", "en"]),
+  locale: z.enum(SUPPORTED_LOCALES),
   input: z.object({
     type: z.enum(AI_REPORT_TYPES),
     periodLabel: z.string(),
@@ -250,14 +254,15 @@ export function toPlanExpectation(plan: NormalizedActionPlan, clock: ScheduleClo
       const repeats = planned.repeat != null;
       const resolved = repeats
         ? resolveTodoSchedule(
-            { ...todo.schedule, repeat: repeatRefFixture({ pattern: "NONE" }) },
+            { ...todo.schedule, repeat: createRepeatRefFixture({ pattern: "NONE" }) },
             clock,
           )
         : planned;
       const until =
         repeat.until == null || repeat.until.kind === "NONE"
           ? null
-          : resolveTodoSchedule(scheduleDraftFixture({ date: repeat.until }), clock).startDate;
+          : resolveTodoSchedule(createScheduleDraftFixture({ date: repeat.until }), clock)
+              .startDate;
       return {
         title: todo.title,
         categoryId: todo.categoryId,

@@ -4,7 +4,7 @@ import {
   resolveSuggestionPicks,
   suggestionConfidence,
 } from "./suggestion-candidates.domain-service.js";
-import type { TodoSummaryForAnalysis } from "./suggestion.constants.js";
+import type { TodoSummaryForAnalysis } from "./suggestions.constants.js";
 
 function todo(
   title: string,
@@ -64,12 +64,15 @@ describe("buildSuggestionCandidates", () => {
   it("후보는 최대 30개다", () => {
     // Given
     const many = Array.from({ length: 40 }, (_, index) => todo(`활동 ${index}`, "2026-10-05"));
-    // When / Then
-    expect(buildSuggestionCandidates(many, "STARTER", [])).toHaveLength(MAX_SUGGESTION_CANDIDATES);
+    // When
+    const candidates = buildSuggestionCandidates(many, "STARTER", []);
+    // Then
+    expect(candidates).toHaveLength(MAX_SUGGESTION_CANDIDATES);
   });
 
   it("표시 제목은 묶음에서 가장 많이 쓴 제목이고 기록·완료·요일·시각은 묶음 전체로 센다", () => {
-    // Given - 2026-10-15 목요일
+    // Given
+    // 2026-10-15 목요일
     const variant = todo("러닝 5KM 🏃", "2026-10-15", { scheduledTime: "07:00" });
     // When
     const [candidate] = buildSuggestionCandidates([variant, ...runs], "PATTERN", []);
@@ -126,7 +129,8 @@ describe("resolveSuggestionPicks", () => {
       mode: "STARTER",
       excludedTitles: [],
     });
-    // Then - 2026-10-10은 토요일이다
+    // Then
+    // 2026-10-10은 토요일이다
     expect(starter).toMatchObject({ daysOfWeek: ["SAT"], scheduledTime: null, confidence: 0.55 });
   });
 
@@ -147,11 +151,18 @@ describe("suggestionConfidence", () => {
   const [run] = buildSuggestionCandidates(runs, "PATTERN", []);
 
   it("3회 이상·완료율 0.6 이상이면 0.8 + 0.15×완료율이다", () => {
-    // Then
+    // Given
     if (run == null) {
       throw new Error("candidate missing");
     }
-    expect(suggestionConfidence(run, "PATTERN")).toBe(0.91);
-    expect(suggestionConfidence({ ...run, occurrences: 2, completed: 2 }, "PATTERN")).toBe(0.65);
+    // When
+    const confidence = suggestionConfidence(run, "PATTERN");
+    const twoOccurrenceConfidence = suggestionConfidence(
+      { ...run, occurrences: 2, completed: 2 },
+      "PATTERN",
+    );
+    // Then
+    expect(confidence).toBe(0.91);
+    expect(twoOccurrenceConfidence).toBe(0.65);
   });
 });

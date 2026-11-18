@@ -1,4 +1,4 @@
-import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import type { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { DailySendWindow } from "../../../shared/domain/daily-send-window.domain-service.js";
@@ -34,7 +34,7 @@ export abstract class NudgeRepositoryPort {
   // 감사처럼 여러 콕을 한 문장으로 저장한다. 칸마다 규칙은 save와 같다
   abstract saveAll(nudges: readonly Nudge[]): Promise<void>;
 
-  // 대상 할 일은 planning이 소유한 행을 읽기만 한다
+  // 대상 할 일은 planning 조회 포트로 읽기만 한다
   abstract findTargetTodo(todoId: TodoId): Promise<NudgeTargetTodo | null>;
   // 완료·공개 변경과 읽음·답장·감사 저장을 같은 행 잠금으로 직렬화한다
   abstract lockInteractionTodo(

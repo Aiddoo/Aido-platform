@@ -1,0 +1,106 @@
+import { Test, type TestingModule } from "@nestjs/testing";
+/**
+ * GetTodoSummaryUseCase 통합 테스트 (Mock DB)
+ *
+ * @description
+ * 오늘의 할 일 요약 use-case가 실제 NestJS DI 컨테이너에서
+ * StreakAdapter(StreakPort 구현) → user-settings capability 체인과 함께
+ * 올바르게 조립·작동하는지 검증합니다. DB는 포트 수준에서 모킹합니다.
+ *
+ * 통합 테스트의 목적:
+ * - 신규 쿼리 use-case의 NestJS 의존성 주입 정합성 검증
+ * - StreakPort.getCurrentStreak → UserStreakAccessPort 조회 위임 검증
+ * - 요약 합성(진행률/스트릭/상위 할 일) 통합 동작 검증
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/server test todo-summary.integration-spec
+ * ```
+ */
+import { vi } from "vitest";
+
+import { UserStreakAccessPort } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
+import { CatchUpTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/catch-up-todo-series.use-case";
+import { StreakPort } from "#api/modules/planning/todos/application/ports/streak.port";
+import { TodoReadRepositoryPort } from "#api/modules/planning/todos/application/ports/todo-read.repository.port";
+import { GetTodoSummaryUseCase } from "#api/modules/planning/todos/application/use-cases/get-todo-summary.use-case";
+import { StreakAdapter } from "#api/modules/planning/todos/infrastructure/adapters/streak.adapter";
+import { provideUseCase } from "#api/platform/di/provide-use-case";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { InMemoryTodoReadRepository } from "#test/doubles/planning/in-memory-todo-read.repository";
+import { suppressLogger } from "#test/setup/suppress-logger";
+
+describe("GetTodoSummaryUseCase 통합 테스트 (Mock DB)", () => {
+  let module: TestingModule;
+  let useCase: GetTodoSummaryUseCase;
+
+  const todoReadRepository = new InMemoryTodoReadRepository(new Map(), new Map());
+
+  const mockUserStreakAccess = {
+    findPreferenceReadModel: vi.fn(),
+  };
+
+  const today = Temporal.PlainDate.from("2026-07-12");
+
+  beforeAll(async () => {
+    suppressLogger();
+
+    module = await Test.createTestingModule({
+      providers: [
+        provideUseCase(GetTodoSummaryUseCase, {
+          todoReadRepository: TodoReadRepositoryPort,
+          streakPort: StreakPort,
+          seriesCatchUp: CatchUpTodoSeriesUseCase,
+        }),
+        { provide: TodoReadRepositoryPort, useValue: todoReadRepository },
+        { provide: StreakPort, useClass: StreakAdapter },
+        { provide: UserStreakAccessPort, useValue: mockUserStreakAccess },
+        { provide: CatchUpTodoSeriesUseCase, useValue: { execute: vi.fn() } },
+      ],
+    }).compile();
+
+    useCase = module.get(GetTodoSummaryUseCase);
+  });
+
+  afterAll(async () => {
+    await module.close();
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("실제 DI 체인(use-case → StreakAdapter → user-settings capability)으로 요약을 합성한다", async () => {
+    // Given
+    todoReadRepository.dayStats = { total: 2, completed: 2 };
+    // lastCompletedDate = 오늘: 스트릭 쓰기가 이미 착지한 상태 → 저장값 그대로
+    mockUserStreakAccess.findPreferenceReadModel.mockResolvedValue({
+      currentStreak: 7,
+      lastCompletedDate: Temporal.PlainDate.from("2026-07-12"),
+    });
+
+    // When
+    const result = await useCase.execute({ userId: "user-123", today });
+
+    // Then
+    expect(result.date).toBe("2026-07-12");
+    expect(result.isComplete).toBe(true);
+    expect(result.completionRate).toBe(100);
+    expect(result.currentStreak).toBe(7);
+    expect(mockUserStreakAccess.findPreferenceReadModel).toHaveBeenCalledWith(
+      UserId.reconstitute("user-123"),
+    );
+  });
+
+  it("선호 레코드가 없는 사용자는 스트릭 0으로 응답한다", async () => {
+    // Given
+    todoReadRepository.dayStats = { total: 0, completed: 0 };
+    mockUserStreakAccess.findPreferenceReadModel.mockResolvedValue(null);
+
+    // When
+    const result = await useCase.execute({ userId: "user-없음", today });
+
+    // Then
+    expect(result.currentStreak).toBe(0);
+  });
+});

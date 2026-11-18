@@ -1,7 +1,10 @@
+// 값을 바꾸지 않고 감싸기만 하는 식: `x as T`, `x satisfies T`, `(x)`, `a?.b`, `x!`
 const WRAPPER_TYPES = new Set([
   'TSAsExpression',
   'TSSatisfiesExpression',
   'ParenthesizedExpression',
+  'ChainExpression',
+  'TSNonNullExpression',
 ]);
 
 export function unwrap(node) {

@@ -1,3 +1,5 @@
+import { completionRate } from "@aido/api/vocabulary";
+
 // 알림 문구 키와 같아야 해 값은 그대로 둔다
 const TODO_COMPLETION_MILESTONES = ["FIRST_COMPLETE", "COUNT_10", "COUNT_50", "COUNT_100"] as const;
 
@@ -30,17 +32,13 @@ export function isAllCompletedToday(stats: { total: number; completed: number })
   return stats.total > 0 && stats.total === stats.completed;
 }
 
-/**
- * 오늘 완료 진행 요약 (홈 위젯 요약 규칙).
- * daily-completion 도메인과 동일 규칙: 완료율 = round(완료/전체 × 100),
- * 할 일이 없는 날은 완료율 0이며 완료로 치지 않습니다.
- */
+// 홈·위젯 요약. 할 일이 없는 날은 완료로 치지 않는다
 export function summarizeCompletion(stats: { total: number; completed: number }): {
   completionRate: number;
   isComplete: boolean;
 } {
   return {
-    completionRate: stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0,
+    completionRate: completionRate(stats.completed, stats.total),
     isComplete: isAllCompletedToday(stats),
   };
 }

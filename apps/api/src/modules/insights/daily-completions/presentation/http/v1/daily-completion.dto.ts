@@ -1,7 +1,7 @@
 import {
   dailyCompletionsRangeResponseSchema,
   getDailyCompletionsRangeSchema,
-} from "@aido/api/contracts/daily-completion";
+} from "@aido/api/contracts/daily-completion/v1";
 import type { z } from "zod";
 
 export const GetDailyCompletionsRangeDto = getDailyCompletionsRangeSchema.meta({

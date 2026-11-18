@@ -1,14 +1,14 @@
 import { Mailer, MailModule, type MailTransport } from "@nestjs/mail";
 import { Test } from "@nestjs/testing";
 
-import { createEmailTemplateEngine } from "#api/modules/notification/email/infrastructure/adapters/nest-mail-module.config";
+import { EmailTemplateMail } from "#api/modules/notification/email-messages/infrastructure/templates/email-template.mail";
 
 export interface TestMailer {
   readonly mailer: Mailer;
   close(): Promise<void>;
 }
 
-// 운영과 같은 템플릿 파일에 전송만 바꿔 끼운 Mailer. moduleRetry는 어댑터가 send마다 재시도를 끄는지 보려고 켠다
+// 운영과 같은 메일 클래스에 전송만 바꿔 끼운 Mailer. moduleRetry는 어댑터가 send마다 재시도를 끄는지 보려고 켠다
 export async function createTestMailer(
   transport: MailTransport,
   moduleRetry: number | false = false,
@@ -17,10 +17,12 @@ export async function createTestMailer(
     imports: [
       MailModule.forRoot({
         transport,
-        templates: createEmailTemplateEngine(),
         from: { name: "Aido", address: "noreply@example.com" },
         retry: moduleRetry,
       }),
+    ],
+    providers: [
+      { provide: EmailTemplateMail, useValue: new EmailTemplateMail("support@example.com") },
     ],
   }).compile();
   return { mailer: module.get(Mailer), close: () => module.close() };

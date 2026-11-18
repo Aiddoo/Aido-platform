@@ -1,9 +1,10 @@
 import type { IncomingHttpHeaders } from "node:http";
 
 import {
-  parseAcceptLanguage,
   parseRequestClient,
   type RequestClient,
+  requestedAppLocale,
+  resolvePreI18nAppLocale,
   resolveResponseLocale,
 } from "./request-client.js";
 import { requestTimezoneIfSent, requestTimezoneOrUtc } from "./request-timezone.js";
@@ -73,7 +74,7 @@ describe("parseRequestClient — 요청 헤더를 한 번 정규화한다", () =
     ["빈 시간대", { "x-timezone": "  " }, "timezone"],
     ["중복 헤더(배열)", { "x-device-name": ["a", "b"] }, "deviceName"],
   ])("%s는 null로 둔다", (_name, headers, field) => {
-    // Given / When
+    // When
     const client = parseRequestClient(headers, REQUEST_ID);
 
     // Then
@@ -94,7 +95,7 @@ describe("parseRequestClient — 요청 헤더를 한 번 정규화한다", () =
   it.each(["ja", "ja-JP", "fr,en;q=0.9", "zh-CN"])(
     "지원하지 않는 언어 '%s'는 기존 @Locale처럼 ko로 둔다",
     (acceptLanguage) => {
-      // Given / When
+      // When
       const client = parseRequestClient({ "accept-language": acceptLanguage }, REQUEST_ID);
 
       // Then
@@ -103,7 +104,7 @@ describe("parseRequestClient — 요청 헤더를 한 번 정규화한다", () =
   );
 });
 
-describe("parseAcceptLanguage", () => {
+describe("requestedAppLocale — 저장하는 앱 언어", () => {
   it.each([
     ["ko", "ko"],
     ["en", "en"],
@@ -112,16 +113,53 @@ describe("parseAcceptLanguage", () => {
     ["en-US,en;q=0.9,ko;q=0.8", "en"],
     ["ko-KR,ko;q=0.9", "ko"],
     ["EN-us", "en"],
-  ])("'%s' 헤더는 %s로 파싱된다", (header, expected) => {
-    expect(parseAcceptLanguage(header)).toBe(expected);
+    ["ja-JP,ja;q=0.9", "en"],
+  ])("1.4.0 이상 앱의 '%s' 헤더는 %s다", (header, expected) => {
+    // When
+    const locale = requestedAppLocale(header, "1.4.0");
+
+    // Then
+    expect(locale).toBe(expected);
   });
 
-  it.each([undefined, null, "", 123, ["en"]])(
-    "헤더 미전송/비정상 값(%s)은 undefined — 저장된 locale을 덮어쓰지 않는다",
+  it.each([
+    ["ja-JP,ja;q=0.9", null, "ko"],
+    ["ja-JP", "1.3.9", "ko"],
+    ["en-US", null, "en"],
+    ["ko-KR", "1.3.0", "ko"],
+  ])("1.4.0 전 앱의 '%s' 헤더(앱 버전 %s)는 %s다", (header, appVersion, expected) => {
+    // When
+    const locale = requestedAppLocale(header, appVersion);
+
+    // Then
+    expect(locale).toBe(expected);
+  });
+
+  it.each([undefined, null, "", " , en", 123, ["en"]])(
+    "헤더 미전송/비정상 값(%s)은 null — 저장된 locale을 덮어쓰지 않는다",
     (header) => {
-      expect(parseAcceptLanguage(header)).toBeUndefined();
+      // When
+      const locale = requestedAppLocale(header, "1.16.0");
+
+      // Then
+      expect(locale).toBeNull();
     },
   );
+});
+
+describe("resolvePreI18nAppLocale — 1.4.0 전 앱의 언어", () => {
+  it.each([
+    ["ja-JP", "ko"],
+    ["zh_CN", "ko"],
+    ["en-US", "en"],
+    ["ko", "ko"],
+  ])("'%s'는 %s다", (tag, expected) => {
+    // When
+    const locale = resolvePreI18nAppLocale(tag);
+
+    // Then
+    expect(locale).toBe(expected);
+  });
 });
 
 describe("resolveResponseLocale — 응답 문구 언어", () => {
@@ -144,13 +182,23 @@ describe("resolveResponseLocale — 응답 문구 언어", () => {
 
 describe("요청 시간대 규칙", () => {
   it("날짜 경계 계산은 시간대가 없으면 UTC를 쓴다", () => {
-    expect(requestTimezoneOrUtc({ timezone: null })).toBe("UTC");
-    expect(requestTimezoneOrUtc({ timezone: "Asia/Seoul" })).toBe("Asia/Seoul");
+    // When
+    const missing = requestTimezoneOrUtc({ timezone: null });
+    const sent = requestTimezoneOrUtc({ timezone: "Asia/Seoul" });
+
+    // Then
+    expect(missing).toBe("UTC");
+    expect(sent).toBe("Asia/Seoul");
   });
 
   it("저장값을 쓰는 경로는 보낸 시간대만 넘기고 없으면 undefined로 저장값을 유지한다", () => {
-    expect(requestTimezoneIfSent({ timezone: null })).toBeUndefined();
-    expect(requestTimezoneIfSent({ timezone: "Asia/Seoul" })).toBe("Asia/Seoul");
+    // When
+    const missing = requestTimezoneIfSent({ timezone: null });
+    const sent = requestTimezoneIfSent({ timezone: "Asia/Seoul" });
+
+    // Then
+    expect(missing).toBeUndefined();
+    expect(sent).toBe("Asia/Seoul");
   });
 
   it.each([

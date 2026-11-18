@@ -1,0 +1,2 @@
+# 서버 전용 로컬 산출물. email:preview가 tmp/email-previews에 메일 미리보기를 쓴다
+/tmp/

@@ -1,11 +1,11 @@
-import { AiReportRepositoryPort } from "#api/modules/ai-assistance/reports/application/ports/ai-report.repository.port";
-import { DuplicateAiReportError } from "#api/modules/ai-assistance/reports/application/reports.errors";
-import { AiReportId } from "#api/modules/ai-assistance/reports/domain/ai-report-id.vo";
+import { duplicateAiReport } from "#api/modules/ai-assistance/ai-reports/application/ai-reports.errors";
+import { AiReportRepositoryPort } from "#api/modules/ai-assistance/ai-reports/application/ports/ai-report.repository.port";
+import { AiReportId } from "#api/modules/ai-assistance/ai-reports/domain/ai-report-id.vo";
 import {
   AiReport,
   type AiReportPrimitives,
-} from "#api/modules/ai-assistance/reports/domain/ai-report.aggregate";
-import type { ReportType } from "#api/modules/ai-assistance/reports/domain/ai-report.constants";
+} from "#api/modules/ai-assistance/ai-reports/domain/ai-report.aggregate";
+import type { ReportType } from "#api/modules/ai-assistance/ai-reports/domain/ai-reports.constants";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 function copyOf(report: AiReport): AiReport {
@@ -61,7 +61,7 @@ export class InMemoryAiReportRepository extends AiReportRepositoryPort {
       );
     });
     if (duplicate) {
-      throw new DuplicateAiReportError();
+      throw duplicateAiReport();
     }
     this.saved.push(saved);
     this.#reports.set(saved.id, copyOf(report));

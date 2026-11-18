@@ -1,4 +1,4 @@
-import type { SuccessResponse } from "@aido/api";
+import type { SuccessResponse } from "@aido/api/common";
 import {
   type CallHandler,
   type ExecutionContext,

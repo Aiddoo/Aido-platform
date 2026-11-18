@@ -1,4 +1,4 @@
-import type { UpdateAiDataSharingConsentResponse } from '@aido/api';
+import type { UpdateAiDataSharingConsentResponse } from '@aido/api/contracts/user-consent/v1';
 import { toNullableInstant } from '@src/shared/date/instant';
 
 import {

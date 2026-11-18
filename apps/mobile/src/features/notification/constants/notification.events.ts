@@ -1,6 +1,10 @@
 import type { TimezoneOffsetBucket } from '../domains/device-timezone.model';
 import type { Notification } from '../domains/notification.model';
-import type { PushOpenAppState } from '../domains/push-notification-response.model';
+import type {
+  PushOpenAppState,
+  TodoReminderAction,
+  TodoReminderActionOutcome,
+} from '../domains/push-notification-response.model';
 import type { PushNotification } from '../domains/push-notification.model';
 import type { PushPermission, PushPermissionStep } from '../domains/push-permission.model';
 import type { NotificationDestination } from '../utils/notification-destination.view-model';
@@ -24,6 +28,11 @@ declare module '@src/shared/analytics/event-map' {
       campaign_key?: NonNullable<PushNotification['campaignKey']>;
       variant_id?: NonNullable<PushNotification['variantId']>;
       purpose?: NonNullable<PushNotification['purpose']>;
+    };
+    /** 리마인드 알림의 버튼(완료·10분 뒤 다시)을 눌러 앱을 연 뒤의 결과. 열림은 push_notification_opened가 따로 센다 */
+    todo_reminder_action_tapped: {
+      action: TodoReminderAction;
+      outcome: TodoReminderActionOutcome;
     };
     notification_center_opened: {
       type: Notification['type'];

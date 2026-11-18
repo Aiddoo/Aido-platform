@@ -1,4 +1,4 @@
-import { todoItemResponseSchema } from '@aido/api';
+import { todoItemResponseSchema } from '@aido/api/contracts/todo/v1';
 
 import { createTodoItemResponseDto } from '../__tests__/todo.fixtures';
 import { subTodoSchema } from '../domains/sub-todo.model';

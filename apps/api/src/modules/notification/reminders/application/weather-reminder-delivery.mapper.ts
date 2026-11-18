@@ -1,20 +1,24 @@
-import type { SupportedLocale } from "#api/shared/domain/locale";
+import type { SupportedLocale } from "@aido/api/vocabulary";
 
-import type { NotificationHistoryReader } from "../../inbox/application/notification-history.reader.js";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import type {
-  CreateNotificationData,
-  NotificationAction,
-} from "../../inbox/application/ports/notification-draft.port.js";
+  NotificationHistoryReader,
+  PublishNotificationBatchUseCase,
+} from "../../notifications/notification-notifications.public.js";
 import type {
   NotificationMessage,
   NotificationVariantContext,
-} from "../../push/application/messages/notification-copy-catalog.messages.js";
-import type { PublishNotificationUseCase } from "../../push/application/use-cases/publish-notification.use-case.js";
-import { resolveRecipientLocale } from "../../push/domain/recipient-locale.domain-service.js";
-import { SCHEDULER_CAMPAIGN_KEY } from "../domain/notification-campaign.constants.js";
+} from "../../shared/application/messages/notification-copy-catalog.messages.js";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../shared/domain/notification-campaign.constants.js";
 import type {
-  WeatherFallbackUser,
-  WeatherReminderUser,
+  CreateNotificationData,
+  NotificationAction,
+} from "../../shared/domain/notification-draft.constants.js";
+import { resolveRecipientLocale } from "../../shared/domain/recipient-locale.domain-service.js";
+import type {
+  WeatherFallbackUserReadModel,
+  WeatherReminderUserReadModel,
 } from "./read-models/scheduler.read-model.js";
 
 /** 아침·저녁 날씨 알림이 함께 쓰는 수신자 필터·기록 조립·위치 없음 안내 발송. */
@@ -22,7 +26,7 @@ import type {
 export type WeatherNotificationType = "WEATHER_MORNING" | "WEATHER_EVENING";
 
 export interface WeatherReminderDeliveryDependencies {
-  readonly notificationPublisher: Pick<PublishNotificationUseCase, "publishBatch">;
+  readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
 }
 
@@ -50,13 +54,13 @@ export function weatherVariantContext(
   };
 }
 
-type LocatedWeatherReminderUser = WeatherReminderUser & {
-  readonly location: NonNullable<WeatherReminderUser["location"]>;
+type LocatedWeatherReminderUser = WeatherReminderUserReadModel & {
+  readonly location: NonNullable<WeatherReminderUserReadModel["location"]>;
 };
 
 /** 1.14.0부터 해외 위치도 저장되며 v2 리포트는 격자 없이 좌표로 읽으므로 위치만 있으면 대상이다. */
 export function withWeatherLocation(
-  rows: readonly WeatherReminderUser[],
+  rows: readonly WeatherReminderUserReadModel[],
 ): LocatedWeatherReminderUser[] {
   return rows.flatMap(({ location, ...user }) => (location == null ? [] : [{ ...user, location }]));
 }
@@ -64,15 +68,21 @@ export function withWeatherLocation(
 /** 오늘 같은 종류의 날씨 알림을 이미 받은 사용자를 뺀다. */
 export async function filterUnnotifiedWeatherUsers<TUser extends { readonly id: string }>(
   historyReader: WeatherReminderDeliveryDependencies["notificationHistoryReader"],
-  users: readonly TUser[],
-  type: WeatherNotificationType,
-  today: Temporal.PlainDate,
+  {
+    users,
+    type,
+    today,
+  }: {
+    readonly users: readonly TUser[];
+    readonly type: WeatherNotificationType;
+    readonly today: Temporal.PlainDate;
+  },
 ): Promise<TUser[]> {
   if (users.length === 0) {
     return [];
   }
   const alreadyNotified = await historyReader.findAlreadyNotifiedUserIds({
-    userIds: users.map((user) => user.id),
+    userIds: users.map((user) => UserId.reconstitute(user.id)),
     type,
     notificationDate: today,
   });
@@ -106,7 +116,7 @@ export function buildWeatherNotification(input: {
 export async function sendWeatherFallbackNotifications(
   dependencies: WeatherReminderDeliveryDependencies,
   input: {
-    readonly users: readonly WeatherFallbackUser[];
+    readonly users: readonly WeatherFallbackUserReadModel[];
     readonly type: WeatherNotificationType;
     readonly today: Temporal.PlainDate;
     readonly createMessage: (input: {
@@ -116,12 +126,11 @@ export async function sendWeatherFallbackNotifications(
   },
 ): Promise<number> {
   const { users, type, today, createMessage } = input;
-  const targets = await filterUnnotifiedWeatherUsers(
-    dependencies.notificationHistoryReader,
+  const targets = await filterUnnotifiedWeatherUsers(dependencies.notificationHistoryReader, {
     users,
     type,
     today,
-  );
+  });
   if (targets.length === 0) {
     return 0;
   }
@@ -138,6 +147,6 @@ export async function sendWeatherFallbackNotifications(
       today,
     }),
   );
-  await dependencies.notificationPublisher.publishBatch(notifications);
+  await dependencies.notificationPublisher.execute(notifications);
   return notifications.length;
 }

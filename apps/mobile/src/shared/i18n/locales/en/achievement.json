@@ -31,5 +31,9 @@
     "emptyRecordDescription": "Your weekly completed to-dos are recorded here",
     "periodWithCompletedRatio": "{{period}} · {{completed}}/{{total}} done",
     "openCertificate": "View certificate"
+  },
+  "yearBar": {
+    "previousYear": "Previous year",
+    "nextYear": "Next year"
   }
 }

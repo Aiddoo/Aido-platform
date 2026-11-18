@@ -13,14 +13,10 @@ import { toTrialEndingNotice } from "./trial-ending-notice-row.mapper.js";
 
 @Injectable()
 export class DrizzleTrialEndingNoticeRepository implements TrialEndingNoticeRepositoryPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
-  }
-
-  get #db() {
-    return this.#txHost.tx;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
   async listDue(
@@ -80,5 +76,9 @@ export class DrizzleTrialEndingNoticeRepository implements TrialEndingNoticeRepo
       .returning({ id: subscription.id });
     const claimedIds = new Set(claimed.map((row) => row.id));
     return notices.filter((notice) => claimedIds.has(notice.id.value));
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

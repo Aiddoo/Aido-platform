@@ -1,5 +1,7 @@
 import { omit } from "es-toolkit";
 
+import { DrizzleUserBriefReader } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user-brief.reader";
+import { DrizzleTodoBriefReader } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-brief.reader";
 import { MarkNudgeReadUseCase } from "#api/modules/social/nudges/application/use-cases/mark-nudge-read.use-case";
 import { ReplyToNudgeUseCase } from "#api/modules/social/nudges/application/use-cases/reply-to-nudge.use-case";
 import { DrizzleNudgeReader } from "#api/modules/social/nudges/infrastructure/persistence/drizzle-nudge.reader";
@@ -13,8 +15,12 @@ import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { PassThroughCountCache } from "#test/doubles/social/pass-through-count-cache";
 import { RecordingNudgeNotifier } from "#test/doubles/social/recording-nudge-notifier";
 import { StubMutualFriendReader } from "#test/doubles/social/stub-mutual-friend-reader";
-import { nowInstant } from "#test/fixtures/clock.fixture";
-import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import {
+  createTodoCategoryRowFixture,
+  createTodoRowFixture,
+} from "#test/fixtures/planning/todo-row.fixture";
+import { nowInstant } from "#test/fixtures/platform/clock.fixture";
 import {
   createNudgeFixture,
   createNudgeTodoSeed,
@@ -45,9 +51,9 @@ describe("DrizzleNudgeRepository·DrizzleNudgeReader (실제 PostgreSQL)", () =>
     await client
       .insert(user)
       .values([
-        UserFixture.create({ id: NUDGE_FIXTURE_SENDER_ID }),
-        UserFixture.create({ id: NUDGE_FIXTURE_RECEIVER_ID }),
-        UserFixture.create({ id: NUDGE_FIXTURE_OTHER_USER_ID }),
+        createUserRowFixture({ id: NUDGE_FIXTURE_SENDER_ID }),
+        createUserRowFixture({ id: NUDGE_FIXTURE_RECEIVER_ID }),
+        createUserRowFixture({ id: NUDGE_FIXTURE_OTHER_USER_ID }),
       ]);
   });
 
@@ -56,26 +62,30 @@ describe("DrizzleNudgeRepository·DrizzleNudgeReader (실제 PostgreSQL)", () =>
   });
 
   function createRepository(): DrizzleNudgeRepository {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleNudgeRepository(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new DrizzleNudgeRepository(transactionHost, new DrizzleTodoBriefReader(transactionHost));
   }
 
   function createReader(): DrizzleNudgeReader {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleNudgeReader(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new DrizzleNudgeReader(
+      transactionHost,
+      new DrizzleUserBriefReader(transactionHost),
+      new DrizzleTodoBriefReader(transactionHost),
+    );
   }
 
   // DATE 컬럼은 UTC 자정 Date로 넣는다
   async function addTodo(seed: NudgeTodoSeed): Promise<number> {
     const [category] = await client
       .insert(todoCategory)
-      .values(omit(TodoCategoryFixture.create({ userId: seed.ownerId }), ["id"]))
+      .values(omit(createTodoCategoryRowFixture({ userId: seed.ownerId }), ["id"]))
       .returning({ id: todoCategory.id });
     const [created] = await client
       .insert(todo)
       .values(
         omit(
-          TodoFixture.create({
+          createTodoRowFixture({
             userId: seed.ownerId,
             categoryId: requireRecord(category).id,
             title: seed.title,
@@ -114,13 +124,13 @@ describe("DrizzleNudgeRepository·DrizzleNudgeReader (실제 PostgreSQL)", () =>
     const received = await reader.listReceived({
       userId: RECEIVER_ID,
       afterNudgeId: null,
-      limit: 5,
+      size: 5,
     });
     const interactions = await reader.listInteractions({
       viewerId: SENDER_ID,
       direction: "sent",
       afterNudgeId: null,
-      limit: 5,
+      size: 5,
     });
     const single = await reader.findInteraction(nudge.id, RECEIVER_ID);
     const counts = {
@@ -130,7 +140,7 @@ describe("DrizzleNudgeRepository·DrizzleNudgeReader (실제 PostgreSQL)", () =>
     };
 
     // Then
-    expect({ received, interactions, single }).toEqual({
+    expect({ received: received.items, interactions: interactions.items, single }).toEqual({
       received: [],
       interactions: [],
       single: null,
@@ -164,8 +174,11 @@ describe("DrizzleNudgeRepository·DrizzleNudgeReader (실제 PostgreSQL)", () =>
 
   it("답장 전에 읽기 시작한 읽음 처리가 답장 뒤에 끝나도 답장을 지우지 않는다", async () => {
     // Given
-    const { txHost, uow } = createDatabaseTransactionFixture(client);
-    const repository = new DrizzleNudgeRepository(txHost);
+    const { transactionHost, uow } = createDatabaseTransactionFixture(client);
+    const repository = new DrizzleNudgeRepository(
+      transactionHost,
+      new DrizzleTodoBriefReader(transactionHost),
+    );
     const todoId = await addTodo(createNudgeTodoSeed());
     const nudge = createNudgeFixture({ id: (await repository.nextId()).value, todoId });
     await repository.save(nudge);
@@ -175,7 +188,11 @@ describe("DrizzleNudgeRepository·DrizzleNudgeReader (실제 PostgreSQL)", () =>
     const reply = new ReplyToNudgeUseCase({
       unitOfWork: uow,
       nudgeRepository: repository,
-      nudgeReader: new DrizzleNudgeReader(txHost),
+      nudgeReader: new DrizzleNudgeReader(
+        transactionHost,
+        new DrizzleUserBriefReader(transactionHost),
+        new DrizzleTodoBriefReader(transactionHost),
+      ),
       interactionConfig: { isEnabled: true },
       mutualFriendReader,
       notifier: new RecordingNudgeNotifier(),

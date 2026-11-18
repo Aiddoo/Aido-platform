@@ -69,7 +69,7 @@ export const aiReport = pgTable(
   ],
 );
 
-export const recurringSuggestion = pgTable(
+export const suggestion = pgTable(
   "RecurringSuggestion",
   {
     confidence: doublePrecision().notNull(),

@@ -46,6 +46,16 @@ export const JOB_POLLING_SECONDS = {
   BACKGROUND: 30,
 } as const;
 
+/**
+ * 대기(created·retry) 작업이 이 수를 넘으면 경보한다. 폴링 종류마다 기본값이고 사람이 기다리는 큐일수록 작다.
+ * pg-boss는 startAfter가 남은 예약 작업도 대기로 세므로 예약을 많이 쌓는 큐는 정의에서 따로 정한다.
+ */
+export const JOB_BACKLOG_WARNING_SIZE = {
+  INTERACTIVE: 1000,
+  SCHEDULED: 5000,
+  BACKGROUND: 10_000,
+} as const;
+
 // skip은 배포로 내려간 사이의 실행을 버리고, once는 놓친 실행 중 마지막 하나만 보낸다
 type ScheduleMissedPolicy = "skip" | "once";
 
@@ -76,12 +86,30 @@ export interface QueueDefinition<TPayload extends object> {
   readonly deadLetter?: DeadLetterQueue;
   readonly worker: QueueWorkerOptions;
   readonly schedules?: readonly QueueSchedule<TPayload>[];
+  // 없으면 worker 폴링 종류의 JOB_BACKLOG_WARNING_SIZE
+  readonly backlogWarningSize?: number;
 }
 
 export function defineQueue<TPayload extends object>(
   definition: QueueDefinition<TPayload>,
 ): QueueDefinition<TPayload> {
   return definition;
+}
+
+export function resolveBacklogWarningSize(
+  queue: Pick<QueueDefinition<object>, "backlogWarningSize" | "worker">,
+): number {
+  if (queue.backlogWarningSize != null) {
+    return queue.backlogWarningSize;
+  }
+  const pollingSeconds = queue.worker.pollingIntervalSeconds;
+  if (pollingSeconds <= JOB_POLLING_SECONDS.INTERACTIVE) {
+    return JOB_BACKLOG_WARNING_SIZE.INTERACTIVE;
+  }
+  if (pollingSeconds <= JOB_POLLING_SECONDS.SCHEDULED) {
+    return JOB_BACKLOG_WARNING_SIZE.SCHEDULED;
+  }
+  return JOB_BACKLOG_WARNING_SIZE.BACKGROUND;
 }
 
 export interface EnqueueOptions {
@@ -130,6 +158,11 @@ export abstract class JobQueuePort {
     queue: QueueDefinition<TPayload>,
     jobs: readonly EnqueueManyJob<TPayload>[],
   ): Promise<void>;
+  /** 같은 idempotencyKey로 등록해 아직 남은 작업의 payload. 없거나 schema에 맞지 않으면 null이다. */
+  abstract findPayload<TPayload extends object>(
+    queue: QueueDefinition<TPayload>,
+    idempotencyKey: string,
+  ): Promise<TPayload | null>;
   /** 작업을 상태와 상관없이 지워 같은 key로 다시 등록할 수 있게 한다. 없는 key는 무시한다. */
   abstract cancel(
     queue: QueueDefinition<object>,

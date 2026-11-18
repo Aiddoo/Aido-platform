@@ -9,7 +9,7 @@
 import type { INestApplication } from "@nestjs/common";
 import request from "supertest";
 
-import type { FakeEmailService } from "../../mocks/fake-email.service.js";
+import type { FakeEmailSender } from "#test/doubles/notification/fake-email-sender";
 
 export interface VerifiedUser {
   accessToken: string;
@@ -19,9 +19,9 @@ export interface VerifiedUser {
 
 export class E2eHelpers {
   readonly #app: INestApplication;
-  readonly #fakeEmailService: FakeEmailService;
+  readonly #fakeEmailService: FakeEmailSender;
 
-  constructor(app: INestApplication, fakeEmailService: FakeEmailService) {
+  constructor(app: INestApplication, fakeEmailService: FakeEmailSender) {
     this.#app = app;
     this.#fakeEmailService = fakeEmailService;
   }

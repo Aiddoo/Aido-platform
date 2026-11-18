@@ -1,4 +1,4 @@
-import { ErrorCode } from "@aido/api/errors";
+import { ErrorCode, NUDGE_UNAVAILABLE_ERROR_CODES } from "@aido/api/errors";
 import {
   Body,
   Controller,
@@ -11,12 +11,11 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { Throttle } from "@nestjs/throttler";
 
 import {
   CurrentUser,
   type CurrentUserPayload,
-} from "#api/modules/identity/identity-auth-http.public";
+} from "#api/modules/identity/sessions/identity-sessions.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
 import { AppVersion } from "#api/platform/http/request-client/request-client.decorator";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
@@ -29,8 +28,8 @@ import {
 import { ApiAppVersionHeader } from "#api/platform/http/swagger/decorators/api-header.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
+import { RateLimit } from "#api/platform/throttle/rate-limits";
 import { THROTTLED_DESCRIPTION } from "#api/platform/throttle/throttle.constants";
-import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
 
 import { GetNudgeInteractionAvailabilityUseCase } from "../../../application/use-cases/get-nudge-interaction-availability.use-case.js";
 import { GetNudgeInteractionUseCase } from "../../../application/use-cases/get-nudge-interaction.use-case.js";
@@ -39,6 +38,7 @@ import { GetNudgeThanksPreviewUseCase } from "../../../application/use-cases/get
 import { ReplyToNudgeUseCase } from "../../../application/use-cases/reply-to-nudge.use-case.js";
 import { SendNudgeThanksUseCase } from "../../../application/use-cases/send-nudge-thanks.use-case.js";
 import { ReleasedAppNudgeErrorInterceptor } from "../interceptors/released-app-nudge-error.interceptor.js";
+import { NudgeRateLimits } from "../nudges.rate-limits.js";
 import {
   toNudgeInteractionResponse,
   toNudgeInteractionsResponse,
@@ -57,10 +57,6 @@ import {
   SendNudgeThanksResponseDto,
 } from "./nudge-interaction.dto.js";
 import { NudgeIdParamDto } from "./nudge.dto.js";
-
-const NUDGE_INTERACTION_THROTTLE = { ttl: 60_000, limit: 30 } as const;
-
-const DISABLED_NOT_FOUND_CODES = [ErrorCode.NUDGE_1105, ErrorCode.NUDGE_1111] as const;
 
 @ApiTags(SWAGGER_TAGS.NUDGES)
 @ApiBearerAuth()
@@ -114,7 +110,7 @@ export class NudgeInteractionController {
   })
   @ApiSuccessResponse({ type: NudgeInteractionsResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, DISABLED_NOT_FOUND_CODES)
+  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, NUDGE_UNAVAILABLE_ERROR_CODES)
   async getInteractions(
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetNudgeInteractionsQueryDto }) query: GetNudgeInteractionsQueryDto,
@@ -140,7 +136,7 @@ export class NudgeInteractionController {
   })
   @ApiSuccessResponse({ type: NudgeInteractionResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, DISABLED_NOT_FOUND_CODES)
+  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, NUDGE_UNAVAILABLE_ERROR_CODES)
   async getInteraction(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: NudgeIdParamDto }) params: NudgeIdParamDto,
@@ -154,8 +150,7 @@ export class NudgeInteractionController {
   }
 
   @Put(":id/reply")
-  @ThrottleByUser()
-  @Throttle({ default: NUDGE_INTERACTION_THROTTLE })
+  @RateLimit(NudgeRateLimits.interact)
   @Header("Vary", "Origin, X-App-Version")
   @ApiAppVersionHeader()
   @ApiDoc({
@@ -166,7 +161,7 @@ export class NudgeInteractionController {
   })
   @ApiSuccessResponse({ type: NudgeInteractionResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, DISABLED_NOT_FOUND_CODES)
+  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, NUDGE_UNAVAILABLE_ERROR_CODES)
   @ApiConflictError(ErrorCode.NUDGE_1109)
   @ApiTooManyRequestsError(ErrorCode.SYS_0001, THROTTLED_DESCRIPTION)
   async reply(
@@ -194,7 +189,10 @@ export class NudgeInteractionController {
   })
   @ApiSuccessResponse({ type: NudgeThanksPreviewResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.TODO_0801, ...DISABLED_NOT_FOUND_CODES])
+  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [
+    ErrorCode.TODO_0801,
+    ...NUDGE_UNAVAILABLE_ERROR_CODES,
+  ])
   async getThanksPreview(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: NudgeTodoIdParamDto }) params: NudgeTodoIdParamDto,
@@ -210,8 +208,7 @@ export class NudgeInteractionController {
   }
 
   @Put("todos/:todoId/thanks")
-  @ThrottleByUser()
-  @Throttle({ default: NUDGE_INTERACTION_THROTTLE })
+  @RateLimit(NudgeRateLimits.interact)
   @ApiDoc({
     summary: "완료한 할 일의 콕에 감사 전하기",
     operationId: "sendNudgeThanks",
@@ -220,7 +217,10 @@ export class NudgeInteractionController {
   })
   @ApiSuccessResponse({ type: SendNudgeThanksResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.TODO_0801, ...DISABLED_NOT_FOUND_CODES])
+  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [
+    ErrorCode.TODO_0801,
+    ...NUDGE_UNAVAILABLE_ERROR_CODES,
+  ])
   @ApiErrorCodesResponse(HttpStatus.CONFLICT, [ErrorCode.NUDGE_1109, ErrorCode.NUDGE_1110])
   @ApiTooManyRequestsError(ErrorCode.SYS_0001, THROTTLED_DESCRIPTION)
   sendThanks(

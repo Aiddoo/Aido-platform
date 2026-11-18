@@ -9,12 +9,17 @@ import type {
   ApiSuccessResponseOptions,
 } from "../interfaces/swagger.interface.js";
 
-function describeSuccess(
-  status: number,
-  description: string,
-  type: z.ZodType | Type<unknown>,
+function describeSuccess({
+  status,
+  description,
+  type,
   isArray = false,
-): MethodDecorator {
+}: {
+  readonly status: number;
+  readonly description: string;
+  readonly type: z.ZodType | Type<unknown>;
+  readonly isArray?: boolean;
+}): MethodDecorator {
   if (type instanceof z.ZodType) {
     return ApiResponse({ status, description, standardSchema: createSuccessSchema(type, isArray) });
   }
@@ -53,15 +58,15 @@ export function ApiSuccessResponse<T>(options: ApiSuccessResponseOptions<T>): Me
     isArray = false,
   } = options;
 
-  return describeSuccess(status, description, type, isArray);
+  return describeSuccess({ status, description, type, isArray });
 }
 
 export function ApiCreatedSuccessResponse<T>(
   options: ApiCreatedSuccessResponseOptions<T>,
 ): MethodDecorator {
-  return describeSuccess(
-    HttpStatus.CREATED,
-    options.description ?? SWAGGER_DESCRIPTION.CREATED_201,
-    options.type,
-  );
+  return describeSuccess({
+    status: HttpStatus.CREATED,
+    description: options.description ?? SWAGGER_DESCRIPTION.CREATED_201,
+    type: options.type,
+  });
 }

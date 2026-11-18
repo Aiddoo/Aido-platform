@@ -1,5 +1,5 @@
-import type { UserBlockReaderPort } from "#api/modules/social/blocks/social-block-queries.public";
-import type { MutualFriendReaderPort } from "#api/modules/social/friends/social-friends.public";
+import type { MutualFriendReaderPort } from "#api/modules/social/friendships/social-friendships.public";
+import type { UserBlockReaderPort } from "#api/modules/social/user-blocks/social-user-blocks.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 export interface CheckInvitePairReachabilityQuery {
@@ -9,7 +9,7 @@ export interface CheckInvitePairReachabilityQuery {
 
 export interface CheckInvitePairReachabilityDependencies {
   readonly mutualFriendReader: Pick<MutualFriendReaderPort, "isCurrentMutualFriend">;
-  readonly blockReader: Pick<UserBlockReaderPort, "findRelation">;
+  readonly blockReader: Pick<UserBlockReaderPort, "getRelation">;
 }
 
 /**
@@ -27,7 +27,7 @@ export class CheckInvitePairReachabilityUseCase {
     const { inviteeId, inviterId } = query;
     const [areFriends, relation] = await Promise.all([
       this.#dependencies.mutualFriendReader.isCurrentMutualFriend(inviteeId, inviterId),
-      this.#dependencies.blockReader.findRelation(inviteeId, inviterId),
+      this.#dependencies.blockReader.getRelation(inviteeId, inviterId),
     ]);
     return areFriends && !relation.isBlocking && !relation.isBlockedBy;
   }

@@ -1,11 +1,12 @@
-import { TodoCommentIdempotencyRace } from "#api/modules/engagement/comments/application/comments.errors";
-import type { TodoCommentRepositoryPort } from "#api/modules/engagement/comments/application/ports/todo-comment.repository.port";
-import { TodoCommentId } from "#api/modules/engagement/comments/domain/todo-comment-id.vo";
+import { TodoCommentId } from "#api/modules/engagement/shared/domain/todo-comment-id.vo";
+import type { TodoCommentRepositoryPort } from "#api/modules/engagement/todo-comments/application/ports/todo-comment.repository.port";
+import { TodoCommentIdempotencyRaceError } from "#api/modules/engagement/todo-comments/application/todo-comments.errors";
+import { TodoCommentRequestId } from "#api/modules/engagement/todo-comments/domain/todo-comment-request-id.vo";
 import type {
   TodoComment,
   TodoCommentPrimitives,
-} from "#api/modules/engagement/comments/domain/todo-comment.aggregate";
-import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+} from "#api/modules/engagement/todo-comments/domain/todo-comment.aggregate";
+import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   createTodoCommentFixture,
@@ -94,8 +95,8 @@ export function describeTodoCommentRepositoryContract(
 
       // When
       const found = await repository.listByAuthorIdAndClientRequestIds(VIEWER, [
-        mine.clientRequestId,
-        other.clientRequestId,
+        TodoCommentRequestId.reconstitute(mine.clientRequestId),
+        TodoCommentRequestId.reconstitute(other.clientRequestId),
       ]);
       const none = await repository.listByAuthorIdAndClientRequestIds(VIEWER, []);
 
@@ -142,7 +143,7 @@ export function describeTodoCommentRepositoryContract(
       expect((await repository.findByIdAndTodoId(reply.id, todoId))?.toPrimitives()).toEqual(
         reply.toPrimitives(),
       );
-      expect(duplicating).toBeInstanceOf(TodoCommentIdempotencyRace);
+      expect(duplicating).toBeInstanceOf(TodoCommentIdempotencyRaceError);
       expect(await repository.findByIdAndTodoId(fresh.id, todoId)).toBeNull();
     });
 
@@ -158,7 +159,7 @@ export function describeTodoCommentRepositoryContract(
       });
 
       // Then
-      await expect(duplicating).rejects.toBeInstanceOf(TodoCommentIdempotencyRace);
+      await expect(duplicating).rejects.toBeInstanceOf(TodoCommentIdempotencyRaceError);
     });
   });
 }

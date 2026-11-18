@@ -55,6 +55,7 @@ describe("Workspace 의존성 경계", () => {
     );
     const visited = new Set<string>();
     const visit = (name: string, ancestors: readonly string[]): void => {
+      // Then
       expect(ancestors, `순환 의존: ${[...ancestors, name].join(" → ")}`).not.toContain(name);
       expect(graph.has(name), `존재하지 않는 workspace: ${name}`).toBe(true);
       if (visited.has(name)) {
@@ -65,7 +66,8 @@ describe("Workspace 의존성 경계", () => {
       }
       visited.add(name);
     };
-    // When & Then
+
+    // When
     for (const name of graph.keys()) {
       visit(name, []);
     }

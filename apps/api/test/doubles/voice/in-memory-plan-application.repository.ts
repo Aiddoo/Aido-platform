@@ -1,6 +1,6 @@
-import { planApplicationInProgress } from "#api/modules/voice/action-plans/application/action-plans.errors";
-import { PlanApplicationRepositoryPort } from "#api/modules/voice/action-plans/application/ports/plan-application.repository.port";
-import { PlanApplication } from "#api/modules/voice/action-plans/domain/plan-application.aggregate";
+import { planApplicationInProgress } from "#api/modules/voice/plan-applications/application/plan-applications.errors";
+import { PlanApplicationRepositoryPort } from "#api/modules/voice/plan-applications/application/ports/plan-application.repository.port";
+import { PlanApplication } from "#api/modules/voice/plan-applications/domain/plan-application.aggregate";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 function copyOf(application: PlanApplication): PlanApplication {

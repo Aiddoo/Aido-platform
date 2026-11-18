@@ -1,6 +1,9 @@
 import { mapAsync, sum } from "es-toolkit";
 
-import type { UserMutationLockPort } from "#api/modules/identity/users/identity-users.public";
+import type {
+  UserMutationLockPort,
+  UserSubscriptionProjectionPort,
+} from "#api/modules/identity/users/identity-users.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
@@ -8,7 +11,6 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { PremiumAccessCachePort } from "../ports/premium-access-cache.port.js";
 import type { PremiumGrantRepositoryPort } from "../ports/premium-grant.repository.port.js";
-import type { UserSubscriptionProjectionRepositoryPort } from "../ports/user-subscription-projection.repository.port.js";
 import { PremiumGrantLogEvent } from "../premium-grants.log-events.js";
 import type { ProjectPremiumAccessUseCase } from "./project-premium-access.use-case.js";
 
@@ -55,7 +57,7 @@ type ListUserIdsPage = (page: {
 export interface SweepPremiumGrantsDependencies {
   readonly premiumGrantRepository: Pick<PremiumGrantRepositoryPort, "listUserIdsToReconcile">;
   readonly userSubscriptionProjection: Pick<
-    UserSubscriptionProjectionRepositoryPort,
+    UserSubscriptionProjectionPort,
     "listLapsedPremiumUserIds"
   >;
   readonly projectPremiumAccess: Pick<ProjectPremiumAccessUseCase, "execute">;
@@ -82,7 +84,7 @@ export class SweepPremiumGrantsUseCase {
       premiumGrantRepository.listUserIdsToReconcile(page),
     );
     logger.log({
-      event: PremiumGrantLogEvent.PREMIUM_GRANT_SWEPT,
+      event: PremiumGrantLogEvent.SWEPT,
       userCount: grants.userCount,
       changedGrantCount: grants.changedGrantCount,
       failedUserCount: grants.failedUserCount,
@@ -154,7 +156,7 @@ export class SweepPremiumGrantsUseCase {
       });
     } catch (error) {
       this.#dependencies.logger.error({
-        event: PremiumGrantLogEvent.PREMIUM_GRANT_RECONCILE_FAILED,
+        event: PremiumGrantLogEvent.RECONCILE_FAILED,
         userId: userId.value,
         errorType: toErrorType(error),
       });
@@ -165,7 +167,7 @@ export class SweepPremiumGrantsUseCase {
       await this.#dependencies.cache.invalidate(userId);
     } catch (error) {
       this.#dependencies.logger.warn({
-        event: PremiumGrantLogEvent.PREMIUM_GRANT_CACHE_INVALIDATION_FAILED,
+        event: PremiumGrantLogEvent.CACHE_INVALIDATION_FAILED,
         userId: userId.value,
         errorType: toErrorType(error),
       });

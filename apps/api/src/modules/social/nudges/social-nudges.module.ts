@@ -1,9 +1,12 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 
-import { AccessEntitlementsModule } from "#api/modules/access/entitlements/access-entitlements.public";
-import { NotificationPushModule } from "#api/modules/notification/notification-delivery.public";
-import { SocialFriendsModule } from "#api/modules/social/friends/social-friends.public";
+import { AccessFeatureGrantsQueriesModule } from "#api/modules/access/feature-grants/access-feature-grants.public";
+import { IdentityUsersQueriesModule } from "#api/modules/identity/users/identity-users.public";
+import { NotificationNotificationsModule } from "#api/modules/notification/notifications/notification-notifications.public";
+import { NotificationPushDispatchesModule } from "#api/modules/notification/push-dispatches/notification-push-dispatches.public";
+import { PlanningTodosQueriesModule } from "#api/modules/planning/todos/planning-todos-queries.public";
+import { SocialFriendshipsModule } from "#api/modules/social/friendships/social-friendships.public";
 
 import { NudgeCountCachePort } from "./application/ports/nudge-count-cache.port.js";
 import { NudgeUsageReaderPort } from "./application/ports/nudge-usage.reader.port.js";
@@ -14,9 +17,12 @@ import { SOCIAL_NUDGES_PROVIDERS } from "./social-nudges.providers.js";
 
 @Module({
   imports: [
-    AccessEntitlementsModule,
-    SocialFriendsModule,
-    NotificationPushModule,
+    AccessFeatureGrantsQueriesModule,
+    IdentityUsersQueriesModule,
+    PlanningTodosQueriesModule,
+    SocialFriendshipsModule,
+    NotificationNotificationsModule,
+    NotificationPushDispatchesModule,
     ConfigModule.forFeature(socialNudgesConfig),
   ],
   controllers: [NudgeController, NudgeInteractionController],

@@ -2,12 +2,13 @@ import {
   type ClaimPushDeliveryOutboxInput,
   type DeferPushDeliveryPublicationsInput,
   PushDeliveryOutboxRepositoryPort,
-} from "#api/modules/notification/push/application/ports/push-delivery-outbox.repository.port";
+} from "#api/modules/notification/push-dispatches/application/ports/push-delivery-outbox.repository.port";
 import type {
-  ClaimedPushDeliveryPublication,
-  PushDeliveryPublication,
-} from "#api/modules/notification/push/application/read-models/push-delivery.read-model";
-import type { PushDeliveryLane } from "#api/modules/notification/push/domain/push-delivery-lane.domain-service";
+  ClaimedPushDeliveryPublicationReadModel,
+  PushDeliveryPublicationReadModel,
+} from "#api/modules/notification/push-dispatches/application/read-models/push-delivery.read-model";
+import type { PushDeliveryLane } from "#api/modules/notification/push-dispatches/domain/push-delivery-lane.domain-service";
+import type { PushDispatchId } from "#api/modules/notification/push-dispatches/domain/push-dispatch-id.vo";
 
 const PUSH_DELIVERY_OUTBOX_STATUSES = ["PENDING", "PROCESSING", "PUBLISHED"] as const;
 type PushDeliveryOutboxStatus = (typeof PUSH_DELIVERY_OUTBOX_STATUSES)[number];
@@ -55,11 +56,12 @@ export class InMemoryPushDeliveryOutboxRepository extends PushDeliveryOutboxRepo
   }
 
   async claimByDispatchIds(
-    dispatchIds: readonly number[],
+    dispatchIds: readonly PushDispatchId[],
     lockedAt: Temporal.Instant,
-  ): Promise<readonly ClaimedPushDeliveryPublication[]> {
+  ): Promise<readonly ClaimedPushDeliveryPublicationReadModel[]> {
+    const requested = new Set(dispatchIds.map((dispatchId) => dispatchId.value));
     return this.#claim(
-      [...this.#rows.values()].filter((row) => dispatchIds.includes(row.dispatchId)),
+      [...this.#rows.values()].filter((row) => requested.has(row.dispatchId)),
       lockedAt,
       dispatchIds.length,
     );
@@ -67,12 +69,12 @@ export class InMemoryPushDeliveryOutboxRepository extends PushDeliveryOutboxRepo
 
   async claimAvailable(
     input: ClaimPushDeliveryOutboxInput,
-  ): Promise<readonly ClaimedPushDeliveryPublication[]> {
+  ): Promise<readonly ClaimedPushDeliveryPublicationReadModel[]> {
     return this.#claim([...this.#rows.values()], input.lockedAt, input.limit);
   }
 
   async markPublished(
-    publications: readonly PushDeliveryPublication[],
+    publications: readonly PushDeliveryPublicationReadModel[],
     _publishedAt: Temporal.Instant,
   ): Promise<number> {
     if (this.markPublishedError != null) {
@@ -113,7 +115,7 @@ export class InMemoryPushDeliveryOutboxRepository extends PushDeliveryOutboxRepo
     candidates: readonly InMemoryPushDeliveryOutboxRow[],
     lockedAt: Temporal.Instant,
     limit: number,
-  ): ClaimedPushDeliveryPublication[] {
+  ): ClaimedPushDeliveryPublicationReadModel[] {
     const claimable = candidates
       .filter(
         (row) =>
@@ -144,7 +146,7 @@ export class InMemoryPushDeliveryOutboxRepository extends PushDeliveryOutboxRepo
 
   // 같은 generation(publishAttempt)이 아직 PROCESSING일 때만 바꾼다
   #transition(
-    publications: readonly PushDeliveryPublication[],
+    publications: readonly PushDeliveryPublicationReadModel[],
     next: (row: InMemoryPushDeliveryOutboxRow) => InMemoryPushDeliveryOutboxRow,
   ): number {
     let count = 0;

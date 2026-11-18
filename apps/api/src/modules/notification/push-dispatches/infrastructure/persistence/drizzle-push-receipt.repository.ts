@@ -1,0 +1,235 @@
+import { TransactionHost } from "@nestjs-cls/transactional";
+import { Injectable } from "@nestjs/common";
+import {
+  and,
+  asc,
+  eq,
+  exists,
+  gte,
+  inArray,
+  isNotNull,
+  isNull,
+  lt,
+  lte,
+  or,
+  type SQL,
+  sql,
+} from "drizzle-orm";
+
+import { inClaimedRows } from "#api/platform/database/claimed-rows";
+import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
+import {
+  pushDeliveryAttempt,
+  pushDeliveryStatus,
+  pushToken,
+} from "#api/platform/database/schema/index";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import type { PushChannel } from "../../../shared/domain/push-channel.constants.js";
+import type { PushReceiptResult } from "../../application/ports/push-channel.port.js";
+import type {
+  InvalidPushToken,
+  PushReceiptRepositoryPort,
+} from "../../application/ports/push-receipt.repository.port.js";
+import { PUSH_FAILURE_KIND, revokesPushToken } from "../../domain/push-failure-kind.constants.js";
+import type { PushReceiptCheckWindow } from "../../domain/push-receipt.domain-service.js";
+import { PushTicketId } from "../../domain/push-ticket-id.vo.js";
+import { pushTokenFingerprint } from "./push-token-fingerprint.mapper.js";
+
+const TOKEN_REVOKING_FAILURE_KINDS: ReadonlySet<string> = new Set(
+  Object.values(PUSH_FAILURE_KIND).filter(revokesPushToken),
+);
+
+@Injectable()
+export class DrizzlePushReceiptRepository implements PushReceiptRepositoryPort {
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #clock: ClockPort;
+
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
+    this.#transactionHost = transactionHost;
+    this.#clock = clock;
+  }
+
+  async findPendingTicketIds({
+    channel,
+    window,
+    limit,
+  }: {
+    readonly channel: PushChannel;
+    readonly window: PushReceiptCheckWindow;
+    readonly limit: number;
+  }): Promise<PushTicketId[]> {
+    const rows = await this.#db
+      .select({ ticketId: pushDeliveryAttempt.providerTicketId })
+      .from(pushDeliveryAttempt)
+      .where(
+        and(
+          eq(pushDeliveryAttempt.status, "TICKET_ACCEPTED"),
+          this.#sentThrough(channel),
+          isNotNull(pushDeliveryAttempt.providerTicketId),
+          gte(pushDeliveryAttempt.createdAt, window.acceptedAfter),
+          lte(pushDeliveryAttempt.createdAt, window.acceptedBefore),
+          or(
+            isNull(pushDeliveryAttempt.receiptCheckedAt),
+            lte(pushDeliveryAttempt.receiptCheckedAt, window.checkedBefore),
+          ),
+        ),
+      )
+      .orderBy(
+        asc(
+          sql`COALESCE(${pushDeliveryAttempt.receiptCheckedAt}, ${pushDeliveryAttempt.createdAt})`,
+        ),
+        asc(pushDeliveryAttempt.id),
+      )
+      .limit(limit);
+    return rows.flatMap((row) =>
+      row.ticketId == null ? [] : [PushTicketId.reconstitute(row.ticketId)],
+    );
+  }
+
+  async recordPushReceipts(input: {
+    readonly requestedTicketIds: readonly PushTicketId[];
+    readonly results: readonly PushReceiptResult[];
+    readonly checkedAt: Temporal.Instant;
+  }): Promise<InvalidPushToken[]> {
+    if (input.requestedTicketIds.length === 0) {
+      return [];
+    }
+    const invalidTokens = await this.#recordTerminalReceipts(input.results, input.checkedAt);
+    await this.#db
+      .update(pushDeliveryAttempt)
+      .set({ receiptCheckedAt: input.checkedAt, updatedAt: input.checkedAt })
+      .where(
+        and(
+          inArray(
+            pushDeliveryAttempt.providerTicketId,
+            input.requestedTicketIds.map((ticketId) => ticketId.value),
+          ),
+          eq(pushDeliveryAttempt.status, "TICKET_ACCEPTED"),
+        ),
+      );
+    return invalidTokens;
+  }
+
+  async expireUnreceipted({
+    channel,
+    acceptedBefore,
+    limit,
+  }: {
+    readonly channel: PushChannel;
+    readonly acceptedBefore: Temporal.Instant;
+    readonly limit: number;
+  }): Promise<number> {
+    const now = this.#clock.now();
+    const unreceipted = this.#db
+      .select({ id: pushDeliveryAttempt.id })
+      .from(pushDeliveryAttempt)
+      .where(
+        and(
+          eq(pushDeliveryAttempt.status, "TICKET_ACCEPTED"),
+          lt(pushDeliveryAttempt.createdAt, acceptedBefore),
+          this.#sentThrough(channel),
+        ),
+      )
+      .orderBy(asc(pushDeliveryAttempt.createdAt), asc(pushDeliveryAttempt.id))
+      .limit(limit)
+      .for("update", { skipLocked: true });
+    const expired = await this.#db
+      .update(pushDeliveryAttempt)
+      .set({
+        status: "UNKNOWN",
+        failureKind: PUSH_FAILURE_KIND.RECEIPT_EXPIRED,
+        receiptCheckedAt: now,
+        updatedAt: now,
+      })
+      .where(inClaimedRows(pushDeliveryAttempt.id, unreceipted))
+      .returning({ id: pushDeliveryAttempt.id });
+    return expired.length;
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
+  }
+
+  // 발송 시도는 토큰 행에 FK cascade로 묶여 있어 그 토큰의 채널이 ticket을 받은 채널이다
+  #sentThrough(channel: PushChannel): SQL {
+    return exists(
+      this.#db
+        .select({ id: pushToken.id })
+        .from(pushToken)
+        .where(
+          and(eq(pushToken.id, pushDeliveryAttempt.pushTokenId), eq(pushToken.provider, channel)),
+        ),
+    );
+  }
+
+  async #recordTerminalReceipts(
+    results: readonly PushReceiptResult[],
+    checkedAt: Temporal.Instant,
+  ): Promise<InvalidPushToken[]> {
+    if (results.length === 0) {
+      return [];
+    }
+    const values = results.map((result) => {
+      const failure = result.status === "failed" ? result.failure : undefined;
+      return sql`(
+        ${result.ticketId.value}::VARCHAR(100),
+        ${result.status === "delivered" ? "DELIVERED" : "FAILED"}::${pushDeliveryStatus},
+        ${failure?.kind ?? null}::VARCHAR(40),
+        ${failure?.providerCode ?? null}::VARCHAR(100),
+        ${failure?.message?.slice(0, 500) ?? null}::VARCHAR(500)
+      )`;
+    });
+    // 이미 끝난 ticket의 중복 응답은 되돌리지 않도록 TICKET_ACCEPTED인 행만 ticket마다 다른 결과로 닫는다
+    const closed = await this.#db
+      .update(pushDeliveryAttempt)
+      .set({
+        status: sql`receipt."status"`,
+        failureKind: sql`receipt."failureKind"`,
+        errorCode: sql`receipt."errorCode"`,
+        errorMessage: sql`receipt."errorMessage"`,
+        receiptCheckedAt: checkedAt,
+        updatedAt: checkedAt,
+      })
+      .from(
+        sql`(VALUES ${sql.join(values, sql`, `)}) AS receipt("ticketId", "status", "failureKind", "errorCode", "errorMessage")`,
+      )
+      .where(
+        and(
+          eq(pushDeliveryAttempt.providerTicketId, sql`receipt."ticketId"`),
+          eq(pushDeliveryAttempt.status, "TICKET_ACCEPTED"),
+        ),
+      )
+      .returning({
+        pushTokenId: pushDeliveryAttempt.pushTokenId,
+        tokenFingerprint: pushDeliveryAttempt.tokenFingerprint,
+        failureKind: pushDeliveryAttempt.failureKind,
+      });
+    const revoking = closed.filter(
+      (attempt) =>
+        attempt.failureKind != null && TOKEN_REVOKING_FAILURE_KINDS.has(attempt.failureKind),
+    );
+    if (revoking.length === 0) {
+      return [];
+    }
+    const tokens = await this.#db
+      .select({ id: pushToken.id, userId: pushToken.userId, token: pushToken.token })
+      .from(pushToken)
+      .where(
+        inArray(
+          pushToken.id,
+          revoking.map(({ pushTokenId }) => pushTokenId),
+        ),
+      );
+    const tokenById = new Map(tokens.map((token) => [token.id, token]));
+    return revoking.flatMap((attempt) => {
+      const token = tokenById.get(attempt.pushTokenId);
+      return token != null &&
+        attempt.tokenFingerprint != null &&
+        attempt.tokenFingerprint === pushTokenFingerprint(token.token)
+        ? [{ userId: UserId.reconstitute(token.userId), token: token.token }]
+        : [];
+    });
+  }
+}

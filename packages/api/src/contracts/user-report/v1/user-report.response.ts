@@ -6,21 +6,19 @@ import { USER_REPORT_STATUSES } from "../../../vocabulary/user-report.constants.
 
 export const userReportStatusSchema = z
   .enum(USER_REPORT_STATUSES)
-  .describe("신고 처리 상태 (OPEN: 접수 | RESOLVED: 처리 완료)");
+  .meta({ description: "신고 처리 상태 (OPEN: 접수 | RESOLVED: 처리 완료)" });
 
 export const userReportSchema = z
   .object({
-    id: entityIdSchema.describe("신고 ID"),
+    id: entityIdSchema.meta({ description: "신고 ID" }),
     status: userReportStatusSchema,
-    createdAt: datetimeSchema.describe("신고 접수 시각 (ISO 8601 UTC)"),
+    createdAt: datetimeSchema.meta({ description: "신고 접수 시각 (ISO 8601 UTC)" }),
   })
-  .describe("접수된 신고");
-
-export type UserReport = z.infer<typeof userReportSchema>;
+  .meta({ description: "접수된 신고" });
 
 export const createUserReportResponseSchema = z
   .object({
-    message: z.string().describe("결과 메시지"),
+    message: z.string().meta({ description: "결과 메시지" }),
     report: userReportSchema,
   })
   .meta({
@@ -38,14 +36,19 @@ export type CreateUserReportResponse = z.infer<typeof createUserReportResponseSc
 
 export const resolvedUserReportSchema = userReportSchema
   .extend({
-    resolvedAt: nullableDatetimeSchema.describe("처리 완료 시각 (ISO 8601 UTC, 접수 상태면 null)"),
-    resolutionNote: z.string().nullable().describe("운영자가 남긴 조치 내용 (접수 상태면 null)"),
+    resolvedAt: nullableDatetimeSchema.meta({
+      description: "처리 완료 시각 (ISO 8601 UTC, 접수 상태면 null)",
+    }),
+    resolutionNote: z
+      .string()
+      .nullable()
+      .meta({ description: "운영자가 남긴 조치 내용 (접수 상태면 null)" }),
   })
-  .describe("운영자가 처리한 신고");
+  .meta({ description: "운영자가 처리한 신고" });
 
 export const resolveUserReportResponseSchema = z
   .object({
-    message: z.string().describe("결과 메시지"),
+    message: z.string().meta({ description: "결과 메시지" }),
     report: resolvedUserReportSchema,
   })
   .meta({

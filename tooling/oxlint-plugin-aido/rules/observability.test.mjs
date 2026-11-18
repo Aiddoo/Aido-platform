@@ -131,3 +131,79 @@ tester.run('no-tracking-in-effect', rules['no-tracking-in-effect'], {
     { code: "useFocusEffect(useCallback(() => { trackEvent('x'); }, []));", errors: 1 },
   ],
 });
+
+const serverRoot = mkdtempSync(join(tmpdir(), 'aido-server-log-event-key-'));
+after(() => rmSync(serverRoot, { recursive: true, force: true }));
+writeFileSync(join(serverRoot, 'package.json'), '{}');
+mkdirSync(join(serverRoot, 'src/modules/notes/memos/application'), { recursive: true });
+const memoLogFile = join(serverRoot, 'src/modules/notes/memos/application/memos.log-events.ts');
+const SERVER = {
+  constantPattern: 'LogEvent$',
+  minSegments: 3,
+  maxSegments: 5,
+  singleWordOutcome: true,
+  contextFromPath: true,
+};
+
+tester.run('log-event-key (서버)', rules['log-event-key'], {
+  valid: [
+    {
+      code: 'export const MemoLogEvent = { CREATED: "notes.memo.created", PIN_CHANGED: "notes.memo.pin.changed" } as const;\nexport function build() { return { errorType: "INVALID_OUTPUT" }; }',
+      filename: memoLogFile,
+      options: [SERVER],
+    },
+  ],
+  invalid: [
+    {
+      code: 'export const MemoLogEvent = { CREATE_REPLAYED: "notes.memo.create-replayed" } as const;',
+      filename: memoLogFile,
+      options: [SERVER],
+      errors: 1,
+    },
+    {
+      code: 'export const MemoLogEvent = { CREATED: "memo.created.ok" } as const;',
+      filename: memoLogFile,
+      options: [SERVER],
+      errors: 1,
+    },
+    {
+      code: 'export const MemoLogEvent = { A: "notes.memo.a.b.c.created" } as const;',
+      filename: memoLogFile,
+      options: [SERVER],
+      errors: 1,
+    },
+    {
+      code: 'export const MemoLogEvent = { A: "notes.memo.created" } as const;\nexport const OtherLogEvent = { B: "notes.memo.deleted" } as const;',
+      filename: memoLogFile,
+      options: [SERVER],
+      errors: 1,
+    },
+  ],
+});
+
+tester.run('logger-event-constant (서버)', rules['logger-event-constant'], {
+  valid: [
+    {
+      code: 'class Service { #logger; run() { this.#logger.log({ event: MemoLogEvent.CREATED, memoId }); } }',
+      options: [
+        { eventProperty: 'event', methods: ['log', 'debug', 'warn', 'error', 'verbose', 'fatal'] },
+      ],
+    },
+    {
+      code: 'class Service { #dependencies; run() { this.#dependencies.logger.warn({ event: MemoLogEvent.FAILED }); } }',
+      options: [{ eventProperty: 'event', methods: ['log', 'warn'] }],
+    },
+  ],
+  invalid: [
+    {
+      code: 'class Service { #logger; run() { this.#logger.log({ event: "notes.memo.created" }); } }',
+      options: [{ eventProperty: 'event', methods: ['log'] }],
+      errors: 1,
+    },
+    {
+      code: 'class Service { #dependencies; run() { this.#dependencies.logger.warn({ event: `notes.memo.${kind}` }); } }',
+      options: [{ eventProperty: 'event', methods: ['warn'] }],
+      errors: 1,
+    },
+  ],
+});

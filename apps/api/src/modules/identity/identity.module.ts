@@ -1,11 +1,23 @@
 import { Module } from "@nestjs/common";
 
-import { IdentityAuthModule } from "./auth/identity-auth.module.js";
-import { IdentityPreferencesModule } from "./preferences/identity-preferences.module.js";
+import { IdentityLinkedAccountsModule } from "./linked-accounts/identity-linked-accounts.module.js";
+import { IdentityOAuthStatesModule } from "./oauth-states/identity-oauth-states.module.js";
+import { IdentitySessionsModule } from "./sessions/identity-sessions.module.js";
+import { IdentityUserPreferencesModule } from "./user-preferences/identity-user-preferences.module.js";
+import { IdentityUsersAdminModule } from "./users/identity-users-admin.module.js";
 import { IdentityUsersModule } from "./users/identity-users.module.js";
+import { IdentityVerificationsModule } from "./verifications/identity-verifications.module.js";
 
 @Module({
-  imports: [IdentityAuthModule, IdentityUsersModule, IdentityPreferencesModule],
-  exports: [IdentityAuthModule, IdentityUsersModule, IdentityPreferencesModule],
+  imports: [
+    IdentitySessionsModule,
+    IdentityVerificationsModule,
+    IdentityOAuthStatesModule,
+    IdentityLinkedAccountsModule,
+    IdentityUsersModule,
+    IdentityUsersAdminModule,
+    IdentityUserPreferencesModule,
+  ],
+  exports: [IdentitySessionsModule, IdentityUsersModule, IdentityUserPreferencesModule],
 })
 export class IdentityModule {}

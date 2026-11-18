@@ -1,13 +1,12 @@
 import { ErrorCode } from "@aido/api/errors";
 import { Controller, Get, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { Throttle } from "@nestjs/throttler";
 
 import {
   CurrentUser,
   type CurrentUserPayload,
   Public,
-} from "#api/modules/identity/identity-auth-http.public";
+} from "#api/modules/identity/sessions/identity-sessions.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
 import {
@@ -19,13 +18,14 @@ import {
 } from "#api/platform/http/swagger/decorators/api-error.decorator";
 import { ApiDoc } from "#api/platform/http/swagger/decorators/api-operation.decorator";
 import { ApiSuccessResponse } from "#api/platform/http/swagger/decorators/api-response.decorator";
+import { RateLimit } from "#api/platform/throttle/rate-limits";
 import { THROTTLED_DESCRIPTION } from "#api/platform/throttle/throttle.constants";
-import { ThrottleByUser } from "#api/platform/throttle/user-aware-throttler.guard";
 
 import { GetInviteAvailabilityUseCase } from "../../../application/use-cases/get-invite-availability.use-case.js";
 import { IssueMyInviteUseCase } from "../../../application/use-cases/issue-my-invite.use-case.js";
 import { PreviewInviteUseCase } from "../../../application/use-cases/preview-invite.use-case.js";
 import { RotateInviteCodeUseCase } from "../../../application/use-cases/rotate-invite-code.use-case.js";
+import { InviteRateLimits } from "../invites.rate-limits.js";
 import {
   toInviteAvailabilityResponse,
   toInvitePreviewResponse,
@@ -37,11 +37,6 @@ import {
   InvitePreviewResponseDto,
   MyInviteResponseDto,
 } from "./invite.dto.js";
-
-const INVITE_THROTTLE = {
-  ROTATE: { ttl: 3_600_000, limit: 3 },
-  PREVIEW: { ttl: 60_000, limit: 20 },
-} as const;
 
 // 정적 경로를 :code보다 먼저 선언해 me·availability가 코드로 해석되지 않게 한다.
 // 수락 slice의 me/invitees·:code/redeem은 경로 조각 수가 달라 :code와 겹치지 않는다
@@ -97,8 +92,7 @@ export class InviteController {
   @Post("me/rotate")
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
-  @ThrottleByUser()
-  @Throttle({ default: INVITE_THROTTLE.ROTATE })
+  @RateLimit(InviteRateLimits.rotate)
   @ApiDoc({
     summary: "초대 링크 새로 만들기",
     operationId: "rotateInviteCode",
@@ -116,7 +110,7 @@ export class InviteController {
 
   @Get(":code")
   @Public()
-  @Throttle({ default: INVITE_THROTTLE.PREVIEW })
+  @RateLimit(InviteRateLimits.preview)
   @ApiDoc({
     summary: "초대 미리보기",
     operationId: "getInvitePreview",

@@ -1,0 +1,755 @@
+/**
+ * CacheModule 통합 테스트 단위 테스트
+ *
+ * @description
+ * CacheModule 통합 테스트의 개별 메서드를 격리 테스트합니다.
+ *
+ * 실행 명령:
+ * ```bash
+ * pnpm --filter @aido/server test:integration -- cache
+ * ```
+ */
+import { ConfigModule, registerAs } from "@nestjs/config";
+import { Test, TestingModule } from "@nestjs/testing";
+import { vi } from "vitest";
+import { z } from "zod";
+
+import {
+  EntitlementCacheKey,
+  ENTITLEMENT_CACHE_TTL_MS,
+} from "#api/modules/access/feature-grants/infrastructure/cache/entitlement-cache.keyspace";
+import {
+  SESSION_CACHE_TTL_MS,
+  SessionCacheKey,
+} from "#api/modules/identity/sessions/infrastructure/cache/session-cache.keyspace";
+import {
+  USER_PROFILE_CACHE_TTL_MS,
+  UserProfileCacheKey,
+} from "#api/modules/identity/users/infrastructure/cache/user-profile-cache.keyspace";
+import {
+  FriendshipCacheKey,
+  FRIENDSHIP_CACHE_TTL_MS,
+} from "#api/modules/social/friendships/infrastructure/cache/friendship-cache.keyspace";
+import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
+import { CacheStorePort } from "#api/platform/cache/cache-store.port";
+import { CacheModule } from "#api/platform/cache/cache.module";
+import { cachePattern } from "#api/platform/cache/keyspace/cache-key";
+import { cacheConfig } from "#api/platform/config/cache.config";
+import { createCachedUserProfileFixture } from "#test/fixtures/identity/cached-user-profile.fixture";
+
+describe("CacheModule 통합 테스트", () => {
+  describe("인메모리 어댑터 (기본 설정)", () => {
+    let module: TestingModule;
+    let cacheService: CacheStorePort;
+
+    beforeAll(async () => {
+      module = await Test.createTestingModule({
+        imports: [
+          ConfigModule.forRoot({
+            isGlobal: true,
+            load: [
+              registerAs(cacheConfig.namespace, () =>
+                cacheConfig.parse({
+                  CACHE_TYPE: "memory",
+                  CACHE_DEFAULT_TTL_MS: 60_000,
+                  CACHE_MAX_ITEMS: 1000,
+                }),
+              ),
+            ],
+          }),
+          CacheModule.forRoot(),
+        ],
+      }).compile();
+
+      cacheService = module.get(CacheStorePort);
+    });
+
+    afterAll(async () => {
+      await module.close();
+    });
+
+    afterEach(async () => {
+      await cacheService.reset();
+    });
+
+    describe("모듈 설정", () => {
+      it("CacheStorePort가 제공된다", () => {
+        // Given
+        // 모듈이 컴파일되었음
+
+        // When
+        const service = cacheService;
+
+        // Then
+        expect(service).toBeDefined();
+      });
+    });
+
+    describe("세션 캐시 작업", () => {
+      it("세션을 저장하고 조회하고 무효화할 수 있다", async () => {
+        // Given
+        const sessionId = "sess_1";
+        const session = {
+          userId: "u1",
+          expiresAt: new Date(),
+          revokedAt: null,
+        };
+
+        // When
+        await cacheService.set(SessionCacheKey.session(sessionId), session, SESSION_CACHE_TTL_MS);
+
+        // Then
+        const cached = await cacheService.get(SessionCacheKey.session(sessionId), z.unknown());
+        expect(cached).toEqual(session);
+
+        // When
+        await cacheService.del(SessionCacheKey.session(sessionId));
+
+        // Then
+        const afterInvalidate = await cacheService.get(
+          SessionCacheKey.session(sessionId),
+          z.unknown(),
+        );
+        expect(afterInvalidate).toBeUndefined();
+      });
+
+      it("TTL이 만료되면 캐시가 삭제된다", async () => {
+        // Given
+        const baseTime = Date.now();
+        const now = vi.spyOn(Date, "now").mockReturnValue(baseTime);
+        const shortTtlModule = await Test.createTestingModule({
+          imports: [
+            ConfigModule.forRoot({
+              isGlobal: true,
+              load: [
+                registerAs(cacheConfig.namespace, () =>
+                  cacheConfig.parse({
+                    CACHE_TYPE: "memory",
+                    CACHE_DEFAULT_TTL_MS: 50,
+                    CACHE_MAX_ITEMS: 100,
+                  }),
+                ),
+              ],
+            }),
+            CacheModule.forRoot(),
+          ],
+        }).compile();
+
+        try {
+          const shortTtlService = shortTtlModule.get(CacheStorePort);
+          await shortTtlService.set("test-key", "test-value");
+          const beforeExpiry = await shortTtlService.get("test-key", z.unknown());
+          expect(beforeExpiry).toBe("test-value");
+
+          // When
+          now.mockReturnValue(baseTime + 100);
+
+          // Then
+          const afterExpiry = await shortTtlService.get("test-key", z.unknown());
+          expect(afterExpiry).toBeUndefined();
+        } finally {
+          now.mockRestore();
+          await shortTtlModule.close();
+        }
+      });
+    });
+
+    describe("사용자 프로필 캐시 작업", () => {
+      it("사용자 프로필을 캐시하고 조회할 수 있다", async () => {
+        // Given
+        const userId = "user_1";
+        const profile = createCachedUserProfileFixture({
+          id: userId,
+          email: "test@example.com",
+          name: "Test User",
+          userTag: "testuser#1234",
+        });
+
+        // When
+        await cacheService.set(
+          UserProfileCacheKey.userProfile(userId),
+          profile,
+          USER_PROFILE_CACHE_TTL_MS,
+        );
+        const cached = await cacheService.get(UserProfileCacheKey.userProfile(userId), z.unknown());
+
+        // Then
+        expect(cached).toEqual(profile);
+      });
+
+      it("사용자 프로필을 무효화할 수 있다", async () => {
+        // Given
+        const userId = "user_2";
+        const profile = createCachedUserProfileFixture({
+          id: userId,
+          email: "test2@example.com",
+          name: "Test User 2",
+          userTag: "testuser2#5678",
+        });
+        await cacheService.set(
+          UserProfileCacheKey.userProfile(userId),
+          profile,
+          USER_PROFILE_CACHE_TTL_MS,
+        );
+
+        // When
+        await cacheService.del(UserProfileCacheKey.userProfile(userId));
+
+        // Then
+        const cached = await cacheService.get(UserProfileCacheKey.userProfile(userId), z.unknown());
+        expect(cached).toBeUndefined();
+      });
+    });
+
+    describe("구독 캐시 작업", () => {
+      it("구독 정보를 캐시하고 조회할 수 있다", async () => {
+        // Given
+        const userId = "user_1";
+        const subscription = {
+          status: "ACTIVE" as const,
+        };
+
+        // When
+        await cacheService.set(
+          EntitlementCacheKey.subscription(userId),
+          subscription,
+          ENTITLEMENT_CACHE_TTL_MS,
+        );
+        const cached = await cacheService.get(
+          EntitlementCacheKey.subscription(userId),
+          z.unknown(),
+        );
+
+        // Then
+        expect(cached).toEqual(subscription);
+      });
+    });
+
+    describe("친구 관계 캐시 작업", () => {
+      it("상호 친구 상태를 캐시하고 조회할 수 있다", async () => {
+        // Given
+        const userId = "user_1";
+
+        // When
+        await cacheService.set(
+          FriendshipCacheKey.mutual(userId, "user_2"),
+          true,
+          FRIENDSHIP_CACHE_TTL_MS.MUTUAL,
+        );
+        await cacheService.set(
+          FriendshipCacheKey.mutual(userId, "user_3"),
+          false,
+          FRIENDSHIP_CACHE_TTL_MS.MUTUAL,
+        );
+
+        // Then
+        expect(
+          await cacheService.get(FriendshipCacheKey.mutual(userId, "user_2"), z.unknown()),
+        ).toBe(true);
+        expect(
+          await cacheService.get(FriendshipCacheKey.mutual(userId, "user_3"), z.unknown()),
+        ).toBe(false);
+        expect(
+          await cacheService.get(FriendshipCacheKey.mutual(userId, "user_4"), z.unknown()),
+        ).toBeUndefined();
+      });
+
+      it("패턴으로 친구 관계를 일괄 무효화할 수 있다", async () => {
+        // Given
+        await cacheService.set(
+          FriendshipCacheKey.mutual("user_1", "user_2"),
+          true,
+          FRIENDSHIP_CACHE_TTL_MS.MUTUAL,
+        );
+        await cacheService.set(
+          FriendshipCacheKey.mutual("user_1", "user_3"),
+          true,
+          FRIENDSHIP_CACHE_TTL_MS.MUTUAL,
+        );
+        await cacheService.set(
+          FriendshipCacheKey.mutual("user_2", "user_3"),
+          true,
+          FRIENDSHIP_CACHE_TTL_MS.MUTUAL,
+        );
+
+        // When
+        const count = await cacheService.delByPattern(cachePattern("follow", "mutual", "user_1"));
+
+        // Then
+        expect(count).toBe(2);
+        expect(
+          await cacheService.get(FriendshipCacheKey.mutual("user_1", "user_2"), z.unknown()),
+        ).toBeUndefined();
+        expect(
+          await cacheService.get(FriendshipCacheKey.mutual("user_1", "user_3"), z.unknown()),
+        ).toBeUndefined();
+        expect(
+          await cacheService.get(FriendshipCacheKey.mutual("user_2", "user_3"), z.unknown()),
+        ).toBe(true);
+      });
+    });
+
+    describe("동시성 처리", () => {
+      it("100개의 동시 쓰기 작업을 처리할 수 있다", async () => {
+        // Given
+        const operations = Array.from({ length: 100 }, (_, i) =>
+          cacheService.set(`key_${i}`, `value_${i}`),
+        );
+
+        // When
+        await Promise.all(operations);
+
+        // Then
+        const stats = cacheService.getStats();
+        expect(stats.keys).toBe(100);
+      });
+
+      it("읽기/쓰기/삭제 혼합 동시 작업을 처리할 수 있다", async () => {
+        // Given
+        await Promise.all([
+          cacheService.set("key_1", "value_1"),
+          cacheService.set("key_2", "value_2"),
+          cacheService.set("key_3", "value_3"),
+        ]);
+
+        // When
+        const results = await Promise.all([
+          cacheService.get("key_1", z.unknown()),
+          cacheService.get("key_2", z.unknown()),
+          cacheService.set("key_4", "value_4"),
+          cacheService.del("key_3"),
+          cacheService.get("key_5", z.unknown()),
+        ]);
+
+        // Then
+        expect(results[0]).toBe("value_1");
+        expect(results[1]).toBe("value_2");
+        expect(results[4]).toBeUndefined();
+      });
+    });
+
+    describe("통계 추적", () => {
+      it("히트와 미스를 정확하게 추적한다", async () => {
+        // Given
+        await cacheService.set("key_1", "value_1");
+        await cacheService.set("key_2", "value_2");
+
+        // When
+        await cacheService.get("key_1", z.unknown());
+        await cacheService.get("key_2", z.unknown());
+        await cacheService.get("key_1", z.unknown());
+        await cacheService.get("non_existent_1", z.unknown());
+        await cacheService.get("non_existent_2", z.unknown());
+
+        // Then
+        const stats = cacheService.getStats();
+        expect(stats.hits).toBe(3);
+        expect(stats.misses).toBe(2);
+        expect(stats.keys).toBe(2);
+      });
+    });
+
+    describe("리셋 작업", () => {
+      it("모든 데이터와 통계를 초기화한다", async () => {
+        // Given
+        await cacheService.set("key_1", "value_1");
+        await cacheService.set("key_2", "value_2");
+        await cacheService.get("key_1", z.unknown());
+        await cacheService.get("non_existent", z.unknown());
+
+        // When
+        await cacheService.reset();
+
+        // Then
+        const stats = cacheService.getStats();
+        expect(stats.keys).toBe(0);
+        expect(stats.hits).toBe(0);
+        expect(stats.misses).toBe(0);
+        expect(await cacheService.get("key_1", z.unknown())).toBeUndefined();
+        expect(await cacheService.get("key_2", z.unknown())).toBeUndefined();
+      });
+    });
+
+    describe("wrap 메서드", () => {
+      it("캐시 미스 시 factory를 호출하고 결과를 캐싱한다", async () => {
+        // Given
+        const key = "wrap-test";
+        const factory = vi.fn().mockResolvedValue("factory-value");
+
+        // When
+        const result = await cacheService.wrap({ key, schema: z.unknown(), factory });
+
+        // Then
+        expect(result).toBe("factory-value");
+        expect(factory).toHaveBeenCalledTimes(1);
+
+        // 캐시 히트 확인
+        const cachedResult = await cacheService.wrap({ key, schema: z.unknown(), factory });
+        expect(cachedResult).toBe("factory-value");
+        expect(factory).toHaveBeenCalledTimes(1); // factory는 다시 호출되지 않음
+      });
+
+      it("wrapSession이 실제로 캐시에 저장한다", async () => {
+        // Given
+        const sessionId = "wrap-session-test";
+        const session = {
+          userId: "u1",
+          expiresAt: new Date(),
+          revokedAt: null,
+        };
+        const factory = vi.fn().mockResolvedValue(session);
+
+        // When
+        const result = await cacheService.wrap({
+          key: SessionCacheKey.session(sessionId),
+          schema: z.unknown(),
+          factory,
+          ttlMs: SESSION_CACHE_TTL_MS,
+        });
+
+        // Then
+        expect(result).toEqual(session);
+        expect(factory).toHaveBeenCalledTimes(1);
+
+        // 캐시에서 직접 조회
+        const cached = await cacheService.get(SessionCacheKey.session(sessionId), z.unknown());
+        expect(cached).toEqual(session);
+      });
+
+      it("wrapUserProfile이 실제로 캐시에 저장한다", async () => {
+        // Given
+        const userId = "wrap-profile-test";
+        const profile = createCachedUserProfileFixture({
+          id: userId,
+          email: "test@example.com",
+          name: "Test",
+          userTag: "test#1234",
+        });
+        const factory = vi.fn().mockResolvedValue(profile);
+
+        // When
+        const result = await cacheService.wrap({
+          key: UserProfileCacheKey.userProfile(userId),
+          schema: z.unknown(),
+          factory,
+          ttlMs: USER_PROFILE_CACHE_TTL_MS,
+        });
+
+        // Then
+        expect(result).toEqual(profile);
+        expect(factory).toHaveBeenCalledTimes(1);
+
+        // 캐시에서 직접 조회
+        const cached = await cacheService.get(UserProfileCacheKey.userProfile(userId), z.unknown());
+        expect(cached).toEqual(profile);
+      });
+
+      it("wrapMutualFriend가 실제로 캐시에 저장한다", async () => {
+        // Given
+        const userId = "wrap-friend-test-1";
+        const targetUserId = "wrap-friend-test-2";
+        const factory = vi.fn().mockResolvedValue(true);
+
+        // When
+        const result = await cacheService.wrap({
+          key: FriendshipCacheKey.mutual(userId, targetUserId),
+          schema: z.unknown(),
+          factory,
+          ttlMs: FRIENDSHIP_CACHE_TTL_MS.MUTUAL,
+        });
+
+        // Then
+        expect(result).toBe(true);
+        expect(factory).toHaveBeenCalledTimes(1);
+
+        // 캐시에서 직접 조회
+        const cached = await cacheService.get(
+          FriendshipCacheKey.mutual(userId, targetUserId),
+          z.unknown(),
+        );
+        expect(cached).toBe(true);
+      });
+    });
+
+    describe("배치 연산 (mget/mset)", () => {
+      it("mset으로 여러 키를 한 번에 저장한다", async () => {
+        // Given
+        const entries = [
+          { key: "mset-1", value: "value-1" },
+          { key: "mset-2", value: "value-2" },
+          { key: "mset-3", value: "value-3" },
+        ];
+
+        // When
+        await cacheService.mset(entries);
+
+        // Then
+        expect(await cacheService.get("mset-1", z.unknown())).toBe("value-1");
+        expect(await cacheService.get("mset-2", z.unknown())).toBe("value-2");
+        expect(await cacheService.get("mset-3", z.unknown())).toBe("value-3");
+      });
+
+      it("mget으로 여러 키를 한 번에 조회한다", async () => {
+        // Given
+        await cacheService.set("mget-1", "value-1");
+        await cacheService.set("mget-2", "value-2");
+
+        // When
+        const results = await cacheService.mget(
+          ["mget-1", "mget-2", "mget-nonexistent"],
+          z.unknown(),
+        );
+
+        // Then
+        expect(results).toEqual(["value-1", "value-2", undefined]);
+      });
+    });
+
+    describe("TTL 관리 메서드 (has/ttl/touch)", () => {
+      it("has로 키 존재 여부를 확인한다", async () => {
+        // Given
+        await cacheService.set("has-test", "value");
+
+        // When
+        const existing = await cacheService.has("has-test");
+        const missing = await cacheService.has("nonexistent");
+
+        // Then
+        expect(existing).toBe(true);
+        expect(missing).toBe(false);
+      });
+
+      it("ttl로 남은 TTL을 조회한다", async () => {
+        // Given
+        await cacheService.set("ttl-test", "value", 5000);
+
+        // When
+        const remainingTtl = await cacheService.ttl("ttl-test");
+
+        // Then
+        expect(remainingTtl).toBeGreaterThan(0);
+        expect(remainingTtl).toBeLessThanOrEqual(5000);
+      });
+
+      it("ttl이 존재하지 않는 키에 대해 -2를 반환한다", async () => {
+        // When
+        const result = await cacheService.ttl("nonexistent-key");
+
+        // Then
+        expect(result).toBe(-2);
+      });
+
+      it("touch로 TTL을 갱신한다", async () => {
+        // Given
+        await cacheService.set("touch-test", "value", 1000);
+
+        // When
+        const success = await cacheService.touch("touch-test", 10_000);
+
+        // Then
+        expect(success).toBe(true);
+        const newTtl = await cacheService.ttl("touch-test");
+        expect(newTtl).toBeGreaterThan(5000); // 새 TTL이 적용됨
+      });
+
+      it("touch가 존재하지 않는 키에 대해 false를 반환한다", async () => {
+        // When
+        const result = await cacheService.touch("nonexistent", 5000);
+
+        // Then
+        expect(result).toBe(false);
+      });
+    });
+  });
+
+  describe("forTesting 헬퍼", () => {
+    it("커스텀 어댑터를 주입할 수 있다", async () => {
+      // Given
+      const mockAdapter = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 10 });
+      const module = await Test.createTestingModule({
+        imports: [CacheModule.forTesting(mockAdapter)],
+      }).compile();
+      const service = module.get(CacheStorePort);
+
+      try {
+        // When
+        await service.set("key", "value");
+        const result = await service.get("key", z.unknown());
+
+        // Then
+        expect(result).toBe("value");
+        expect(await mockAdapter.has("key")).toBe(true);
+      } finally {
+        await module.close();
+      }
+    });
+
+    it("Jest 모킹된 어댑터를 사용할 수 있다", async () => {
+      // Given
+      const mockAdapter: CacheStorePort = {
+        get: vi.fn().mockResolvedValue("mocked-value"),
+        set: vi.fn(),
+        del: vi.fn(),
+        delByPattern: vi.fn(),
+        reset: vi.fn(),
+        getStats: vi.fn().mockReturnValue({ hits: 0, misses: 0, keys: 0 }),
+        wrap: vi.fn().mockImplementation((_key, factory) => factory()),
+        mget: vi.fn().mockResolvedValue([]),
+        mset: vi.fn(),
+        has: vi.fn().mockResolvedValue(false),
+        ttl: vi.fn().mockResolvedValue(-2),
+        touch: vi.fn().mockResolvedValue(false),
+      };
+      const module = await Test.createTestingModule({
+        imports: [CacheModule.forTesting(mockAdapter)],
+      }).compile();
+      const service = module.get(CacheStorePort);
+
+      try {
+        // When
+        const result = await service.get("any", z.unknown());
+
+        // Then
+        expect(result).toBe("mocked-value");
+        expect(mockAdapter.get).toHaveBeenCalledWith("any", expect.anything());
+      } finally {
+        await module.close();
+      }
+    });
+
+    it("모킹된 wrap 메서드를 사용할 수 있다", async () => {
+      // Given
+      const mockAdapter: CacheStorePort = {
+        get: vi.fn(),
+        set: vi.fn(),
+        del: vi.fn(),
+        delByPattern: vi.fn(),
+        reset: vi.fn(),
+        getStats: vi.fn().mockReturnValue({ hits: 0, misses: 0, keys: 0 }),
+        wrap: vi.fn().mockResolvedValue("wrapped-value"),
+        mget: vi.fn(),
+        mset: vi.fn(),
+        has: vi.fn(),
+        ttl: vi.fn(),
+        touch: vi.fn(),
+      };
+      const module = await Test.createTestingModule({
+        imports: [CacheModule.forTesting(mockAdapter)],
+      }).compile();
+      const service = module.get(CacheStorePort);
+
+      try {
+        // When
+        const factory = vi.fn();
+        const result = await service.wrap({
+          key: "key",
+          schema: z.unknown(),
+          factory,
+          ttlMs: 300_000,
+        });
+
+        // Then
+        expect(result).toBe("wrapped-value");
+        expect(mockAdapter.wrap).toHaveBeenCalledWith({
+          key: "key",
+          schema: expect.anything(),
+          factory,
+          ttlMs: 300_000,
+        });
+      } finally {
+        await module.close();
+      }
+    });
+  });
+
+  describe("설정", () => {
+    it("환경 변수가 없으면 기본값을 사용한다", async () => {
+      // Given
+      const module = await Test.createTestingModule({
+        imports: [
+          ConfigModule.forRoot({
+            isGlobal: true,
+            load: [registerAs(cacheConfig.namespace, () => cacheConfig.parse({}))],
+          }),
+          CacheModule.forRoot(),
+        ],
+      }).compile();
+      const service = module.get(CacheStorePort);
+
+      try {
+        // When
+        await service.set("key", "value");
+        const result = await service.get("key", z.unknown());
+
+        // Then
+        expect(result).toBe("value");
+      } finally {
+        await module.close();
+      }
+    });
+
+    it("커스텀 설정을 적용한다", async () => {
+      // Given
+      const module = await Test.createTestingModule({
+        imports: [
+          ConfigModule.forRoot({
+            isGlobal: true,
+            load: [
+              registerAs(cacheConfig.namespace, () =>
+                cacheConfig.parse({
+                  CACHE_TYPE: "memory",
+                  CACHE_DEFAULT_TTL_MS: 100,
+                  CACHE_MAX_ITEMS: 5,
+                }),
+              ),
+            ],
+          }),
+          CacheModule.forRoot(),
+        ],
+      }).compile();
+      const service = module.get(CacheStorePort);
+
+      try {
+        // When
+        for (let i = 0; i < 10; i++) {
+          await service.set(`key_${i}`, `value_${i}`);
+        }
+
+        // Then
+        const stats = service.getStats();
+        expect(stats.keys).toBeLessThanOrEqual(5);
+      } finally {
+        await module.close();
+      }
+    });
+  });
+
+  describe("글로벌 모듈 동작", () => {
+    it("import 없이 전역으로 사용 가능하다", async () => {
+      // Given
+      const module = await Test.createTestingModule({
+        imports: [
+          ConfigModule.forRoot({
+            isGlobal: true,
+            load: [
+              registerAs(cacheConfig.namespace, () => cacheConfig.parse({ CACHE_TYPE: "memory" })),
+            ],
+          }),
+          CacheModule.forRoot(),
+        ],
+      }).compile();
+
+      try {
+        // When
+        const service = module.get(CacheStorePort);
+        const adapter = module.get(CacheStorePort);
+
+        // Then
+        expect(service).toBeDefined();
+        expect(adapter).toBeDefined();
+      } finally {
+        await module.close();
+      }
+    });
+  });
+});

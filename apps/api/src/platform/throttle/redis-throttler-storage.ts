@@ -96,12 +96,9 @@ export class RedisThrottlerStorage implements ThrottlerStorage {
     this.#redis = redis;
   }
 
+  // 인자 다섯은 @nestjs/throttler ThrottlerStorage가 정한 순서라 그 타입을 그대로 받는다
   async increment(
-    key: string,
-    ttl: number,
-    limit: number,
-    blockDuration: number,
-    throttlerName: string,
+    ...[key, ttl, limit, blockDuration, throttlerName]: Parameters<ThrottlerStorage["increment"]>
   ): Promise<ThrottlerStorageRecord> {
     const hitKey = `${this.#keyPrefix}${throttlerName}:${key}`;
     const blockKey = `${hitKey}:blocked`;

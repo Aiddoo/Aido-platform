@@ -13,13 +13,14 @@ import {
   billingSubscriptionsConfig,
 } from "../../../billing-subscriptions.config.js";
 import type { StoreSubscriptionId } from "../../../domain/store-subscription-id.vo.js";
-import type { StoreSubscriptionState } from "../../../domain/subscription.aggregate.js";
+import type { StoreSubscriptionState } from "../../../domain/store-subscription-reconcile.domain-service.js";
 import { REVENUECAT_API_POLICY } from "./revenuecat-outbound.policy.js";
 import {
   type RevenueCatSubscription,
   revenueCatProductSchema,
   revenueCatSubscriptionListSchema,
 } from "./revenuecat-subscription.wire.js";
+import { revenueCatRequestFailed } from "./revenuecat.errors.js";
 import { RevenueCatLogEvent } from "./revenuecat.log-events.js";
 
 const REVENUECAT_API_BASE_URL = "https://api.revenuecat.com/v2";
@@ -33,23 +34,6 @@ const RENEWING_STATUSES: ReadonlySet<string> = new Set([
   "requires_price_increase_consent",
   "has_already_renewed",
 ]);
-
-const REVENUECAT_REQUEST_ERROR_REASONS = ["http", "invalid_response"] as const;
-
-type RevenueCatRequestErrorReason = (typeof REVENUECAT_REQUEST_ERROR_REASONS)[number];
-
-/** RevenueCat이 실패로 응답했다. 응답 본문은 담지 않는다. */
-export class RevenueCatRequestError extends Error {
-  readonly reason: RevenueCatRequestErrorReason;
-  readonly statusCode: number | null;
-
-  constructor(reason: RevenueCatRequestErrorReason, statusCode: number | null) {
-    super(`RevenueCat request failed: ${reason}`);
-    this.name = "RevenueCatRequestError";
-    this.reason = reason;
-    this.statusCode = statusCode;
-  }
-}
 
 /**
  * RevenueCat REST v2로 체인 상태를 읽는다. 우리 체인 키(원 거래 ID)로 찾는 검색은 App Store의 어떤 거래 ID나
@@ -143,14 +127,16 @@ export class RevenueCatStoreSubscriptionStatusAdapter implements StoreSubscripti
     schema: TSchema,
   ): Promise<z.infer<TSchema>> {
     const outcome = await this.#policy.execute((signal) =>
-      requestVendorJson(this.#http, `${REVENUECAT_API_BASE_URL}${path}`, query, {
+      requestVendorJson(this.#http, {
+        url: `${REVENUECAT_API_BASE_URL}${path}`,
+        query,
         headers: { authorization: `Bearer ${this.#config.revenuecat.apiV2SecretKey ?? ""}` },
         signal,
         timeoutMs: REVENUECAT_TIMEOUT_MS,
       }),
     );
     if (outcome.kind === "http_failure") {
-      throw new RevenueCatRequestError("http", outcome.statusCode);
+      throw revenueCatRequestFailed("http", outcome.statusCode);
     }
     const parsed = schema.safeParse(outcome.body);
     if (!parsed.success) {
@@ -158,7 +144,7 @@ export class RevenueCatStoreSubscriptionStatusAdapter implements StoreSubscripti
         event: RevenueCatLogEvent.RESPONSE_INVALID,
         issueCount: parsed.error.issues.length,
       });
-      throw new RevenueCatRequestError("invalid_response", null);
+      throw revenueCatRequestFailed("invalid_response", null);
     }
     return parsed.data;
   }

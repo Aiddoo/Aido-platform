@@ -2,7 +2,7 @@ import type {
   AdminNotifierPort,
   AdminNotifyOutcome,
 } from "../../../src/modules/operations/admin-notices/application/ports/admin-notifier.port.js";
-import type { AdminNotice } from "../../../src/modules/operations/admin-notices/application/read-models/admin-notice.read-model.js";
+import type { AdminNoticePrimitives } from "../../../src/modules/operations/admin-notices/domain/admin-notice.aggregate.js";
 
 const ADMIN_NOTIFIER_CONTRACT_SCENARIOS = [
   "sent",
@@ -14,7 +14,7 @@ const ADMIN_NOTIFIER_CONTRACT_SCENARIOS = [
 ] as const;
 export type AdminNotifierContractScenario = (typeof ADMIN_NOTIFIER_CONTRACT_SCENARIOS)[number];
 
-export const CONTRACT_NOTICE: AdminNotice = {
+export const CONTRACT_NOTICE: AdminNoticePrimitives = {
   type: "message",
   message: {
     title: "contract-private-title",
@@ -29,7 +29,7 @@ export const CONTRACT_NOTICE: AdminNotice = {
 };
 
 /** 사용자 블록이 있는 구독 알림도 같은 계약을 지킨다. */
-const CONTRACT_SUBSCRIPTION_NOTICE: AdminNotice = {
+const CONTRACT_SUBSCRIPTION_NOTICE: AdminNoticePrimitives = {
   type: "subscription_event",
   user: {
     userId: "contract-private-user",

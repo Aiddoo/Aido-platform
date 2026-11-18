@@ -2,6 +2,8 @@ import { invalidateTodoCategories } from '@src/features/planning/category/querie
 import { addDaysToDateKey, type DateKey } from '@src/shared/date/date-key';
 import { isLastMutation } from '@src/shared/query/is-last-mutation';
 import type {
+  DefaultError,
+  FetchQueryOptions,
   InvalidateQueryFilters,
   MutationFilters,
   Query,
@@ -19,6 +21,7 @@ import {
   getTodoDateSpan,
   type Todo,
   type TodoDateSpan,
+  type TodoDetails,
   type TodoListResult,
   type TodoOverview,
   TodoPolicy,
@@ -139,6 +142,22 @@ export function snapshotTodo(
   }
 
   return { date, todo, index };
+}
+
+/** 조회 함수가 DI Api를 써서 `useGetTodoDetailsQueryOptionsFactory`가 만든다 */
+type TodoDetailsQueryOptions = FetchQueryOptions<
+  TodoDetails,
+  DefaultError,
+  TodoDetails,
+  ReturnType<typeof TODO_QUERY_KEYS.detail>
+>;
+
+/**
+ * 서버의 지금 상세. 다른 기기가 바꿨을 수 있어 캐시가 신선해도 다시 받고,
+ * 같은 상세를 받는 중이면(방금 연 화면) 그 요청을 함께 기다린다
+ */
+export function fetchFreshTodoDetails(queryClient: QueryClient, options: TodoDetailsQueryOptions) {
+  return queryClient.fetchQuery({ ...options, staleTime: 0 });
 }
 
 /**
@@ -441,7 +460,7 @@ export function settleTodoWrite(
     }
   }
   if (isCompletionAffected) {
-    // 하루짜리를 다 불러온 목록에서 계산했으면 달력 값이 서버와 같다
+    // 하루짜리를 다 불러온 목록에서 계산했으면 달력 값이 서버와 같다(daily-completion-cases.json이 두 계산을 고정한다)
     const list = queryClient.getQueryData(TODO_QUERY_KEYS.listByDate({ date: target.date }));
     const isSingleDay = target.span.startDate === target.span.endDate;
     if (needsReconcile || !isSingleDay || list == null || list.hasNext) {

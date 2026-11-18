@@ -1,10 +1,10 @@
-import type { TodoCategoryId } from "#api/modules/planning/categories/domain/todo-category-id.vo";
-import { TodoId } from "#api/modules/planning/shared/domain/todo-id.vo";
+import type { TodoCategoryId } from "#api/modules/planning/todo-categories/domain/todo-category-id.vo";
 import {
   type RemovedCategoryTodos,
   type RemovedTodo,
   TodoBulkRemoverPort,
 } from "#api/modules/planning/todos/application/ports/todo-bulk-remover.port";
+import { TodoId } from "#api/modules/planning/todos/domain/todo-id.vo";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { InMemoryPlanningStores } from "./in-memory-todo-category.repository.js";

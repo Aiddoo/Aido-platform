@@ -3,8 +3,8 @@ import { type MutationLockPort } from "#api/shared/application/ports/mutation-lo
 import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { TodoId } from "../../../shared/domain/todo-id.vo.js";
-import { TodoItemId } from "../../../shared/domain/todo-item-id.vo.js";
+import { TodoId } from "../../domain/todo-id.vo.js";
+import { TodoItemId } from "../../domain/todo-item-id.vo.js";
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";
@@ -20,7 +20,7 @@ export interface DeleteTodoItemInput {
 }
 
 interface DeleteTodoItemDependencies {
-  readonly todoRepository: Pick<TodoRepositoryPort, "findByIdAndUserId" | "deleteItem">;
+  readonly todoRepository: Pick<TodoRepositoryPort, "lockByIdAndUserId" | "save">;
   readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
@@ -42,14 +42,13 @@ export class DeleteTodoItemUseCase {
 
     await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([TodoLockKeys.todo(todoId)]);
-      const todo = await this.#dependencies.todoRepository.findByIdAndUserId(targetTodoId, ownerId);
+      const todo = await this.#dependencies.todoRepository.lockByIdAndUserId(targetTodoId, ownerId);
       if (todo == null) {
         throw todoNotFound(todoId);
       }
 
-      todo.removeItem(itemId);
-
-      await this.#dependencies.todoRepository.deleteItem(TodoItemId.reconstitute(itemId));
+      todo.removeItem(TodoItemId.reconstitute(itemId));
+      await this.#dependencies.todoRepository.save(todo);
     });
 
     this.#dependencies.logger.log({

@@ -31,7 +31,7 @@ const DSN = "https://key@o0.ingest.sentry.io/0";
 
 describe("resolveSentryOptions — Sentry 환경 게이트", () => {
   it("개발서버(production 빌드 + APP_ENV=development)에서는 비활성화된다", () => {
-    // Given — 배포된 개발서버: production 빌드지만 개발 환경
+    // When
     const options = resolveSentryOptions({
       APP_ENV: "development",
       NODE_ENV: "production",
@@ -57,13 +57,13 @@ describe("resolveSentryOptions — Sentry 환경 게이트", () => {
   });
 
   it("APP_ENV 미설정 시 NODE_ENV=production이면 production으로 폴백한다 (기존 프로덕션 하위호환)", () => {
-    // Given — 기존 프로덕션 배포는 APP_ENV를 설정하지 않음
+    // When
     const options = resolveSentryOptions({
       NODE_ENV: "production",
       SENTRY_DSN: DSN,
     });
 
-    // Then — 배포 인프라 변경 없이 기존 알림 유지
+    // Then
     expect(options.enabled).toBe(true);
     expect(options.environment).toBe("production");
   });
@@ -120,7 +120,11 @@ describe("resolveSentryOptions — Sentry 환경 게이트", () => {
       }).tracePropagationTargets.some((target) => target.test(url));
 
     it("우리 API로 나가는 요청에는 추적 헤더를 전파한다", () => {
-      expect(matches("https://api.aido.kr/v1/todos")).toBe(true);
+      // When
+      const propagated = matches("https://api.aido.kr/v1/todos");
+
+      // Then
+      expect(propagated).toBe(true);
     });
 
     // 회귀 방지: Sentry가 붙이는 baggage 헤더를 data.go.kr 게이트웨이가
@@ -142,7 +146,11 @@ describe("resolveSentryOptions — Sentry 환경 게이트", () => {
       ["Resend 메일", "https://api.resend.com/emails"],
       ["Expo 푸시", "https://exp.host/--/api/v2/push/send"],
     ])("%s 요청에는 추적 헤더를 전파하지 않는다", (_label, url) => {
-      expect(matches(url)).toBe(false);
+      // When
+      const propagated = matches(url);
+
+      // Then
+      expect(propagated).toBe(false);
     });
   });
 
@@ -324,7 +332,8 @@ describe("beforeSendError — 업무 거부는 어느 경로에서도 오류로 
   });
 
   it("@OnEvent handler·작업에서 자동 수집된 4xx 업무 거부는 버리고 장애는 보낸다", async () => {
-    // Given - @sentry/nestjs가 이벤트 handler 예외를 잡는 것과 같은 captureException 경로다
+    // Given
+    // @sentry/nestjs가 이벤트 handler 예외를 잡는 것과 같은 captureException 경로다
     const passed: unknown[] = [];
     Sentry.init({
       dsn: "https://public@o0.ingest.sentry.io/0",
@@ -345,13 +354,16 @@ describe("beforeSendError — 업무 거부는 어느 경로에서도 오류로 
     }
     await Sentry.flush(1000);
 
-    // Then - 이벤트 처리는 비동기라 순서는 보지 않는다
+    // Then
+    // 이벤트 처리는 비동기라 순서는 보지 않는다
     expect(passed).toHaveLength(2);
     expect(passed).toEqual(expect.arrayContaining([outage, bug]));
   });
 
   it("cause로 이어 보낸 DB 오류의 바인딩 값과 이메일은 예외 메시지에서 지운다", async () => {
-    // Given - userTagCollided처럼 DrizzleQueryError를 cause로 실은 장애다
+    // Given
+    // userTagCollided처럼 DrizzleQueryError를 cause로 실은 장애다
+
     const events: Sentry.ErrorEvent[] = [];
     Sentry.init({
       dsn: "https://public@o0.ingest.sentry.io/0",

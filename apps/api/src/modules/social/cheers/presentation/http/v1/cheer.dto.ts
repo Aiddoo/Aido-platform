@@ -9,7 +9,7 @@ import {
   getCheersQuerySchema,
   createCheerSchema,
   markCheersReadSchema,
-} from "@aido/api";
+} from "@aido/api/contracts/cheer/v1";
 import type { z } from "zod";
 
 export const CheerCooldownResponseDto = cheerCooldownInfoSchema.meta({

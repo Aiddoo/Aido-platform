@@ -19,8 +19,6 @@ describe('invalidateAiSuggestions', () => {
     queryClient.setQueryData(REPORT_QUERY_KEYS.status(), {
       nextWeeklyAt: toInstant('2026-03-09T02:30:00.000Z'),
       nextMonthlyAt: toInstant('2026-04-01T02:30:00.000Z'),
-      daysUntilWeekly: 1,
-      daysUntilMonthly: 1,
     });
 
     // When

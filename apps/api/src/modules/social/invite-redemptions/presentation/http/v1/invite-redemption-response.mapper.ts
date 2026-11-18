@@ -3,14 +3,16 @@ import { match } from "ts-pattern";
 
 import { toIsoString } from "#api/shared/domain/time/instant";
 
-import type { InviteRedeemResult } from "../../../application/read-models/invite-redeem-result.read-model.js";
-import type { InvitedFriendsPage } from "../../../application/read-models/invited-friend.read-model.js";
+import type { InviteRedeemResultReadModel } from "../../../application/read-models/invite-redeem-result.read-model.js";
+import type { InvitedFriendsPageReadModel } from "../../../application/read-models/invited-friend.read-model.js";
 import type {
   InvitedFriendsListResponseDto,
   RedeemInviteResponseDto,
 } from "./invite-redemption.dto.js";
 
-export function toRedeemInviteResponse(result: InviteRedeemResult): RedeemInviteResponseDto {
+export function toRedeemInviteResponse(
+  result: InviteRedeemResultReadModel,
+): RedeemInviteResponseDto {
   return match(result)
     .returnType<RedeemInviteResponseDto>()
     .with({ outcome: REDEEM_OUTCOME.REDEEMED }, (redeemed) => ({
@@ -34,7 +36,7 @@ export function toRedeemInviteResponse(result: InviteRedeemResult): RedeemInvite
 
 // 출시 앱이 읽는 친구 목록 모양({ items, totalCount, hasMore })을 그대로 만든다
 export function toInvitedFriendsListResponse(
-  page: InvitedFriendsPage,
+  page: InvitedFriendsPageReadModel,
 ): InvitedFriendsListResponseDto {
   return {
     items: page.items.map((friend) => ({

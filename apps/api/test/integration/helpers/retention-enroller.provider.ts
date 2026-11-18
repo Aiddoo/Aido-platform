@@ -1,6 +1,6 @@
 import type { Provider } from "@nestjs/common";
 
-import { RetentionEnrollerPort } from "#api/modules/identity/auth/application/ports/retention-enroller.port";
+import { RetentionEnrollerPort } from "#api/modules/identity/users/application/ports/retention-enroller.port";
 
 const retentionEnrollerTestDouble: RetentionEnrollerPort = {
   enrollNewUser: () => Promise.resolve(),

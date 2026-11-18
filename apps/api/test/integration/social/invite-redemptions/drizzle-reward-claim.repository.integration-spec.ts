@@ -24,8 +24,8 @@ describe("DrizzleRewardClaimRepository (실제 PostgreSQL)", () => {
   });
 
   function createRepository(): DrizzleRewardClaimRepository {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleRewardClaimRepository(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new DrizzleRewardClaimRepository(transactionHost);
   }
 
   describeRewardClaimRepositoryContract(async () => createRepository());

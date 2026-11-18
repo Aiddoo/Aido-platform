@@ -4,24 +4,20 @@ import { vi } from "vitest";
 import {
   createPlanningTodoFixture,
   createPlanningTodo,
-  PLANNING_TIME,
   snapshotTodoRecord,
 } from "#test/fixtures/planning/planning-todos.fixture";
 
-import { TodoId } from "../../../shared/domain/todo-id.vo.js";
+import { TodoId } from "../../domain/todo-id.vo.js";
 import { ReorderTodoItemsUseCase } from "./reorder-todo-items.use-case.js";
 
 describe("하위 항목 순서 변경", () => {
   let fixture: ReturnType<typeof createPlanningTodoFixture>;
   let useCase: ReorderTodoItemsUseCase;
   beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(PLANNING_TIME);
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
     useCase = new ReorderTodoItemsUseCase(fixture);
   });
   afterEach(() => {
-    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -53,16 +49,16 @@ describe("하위 항목 순서 변경", () => {
       { title: "둘째 항목" },
     ]);
     const before = snapshotTodoRecord(fixture.records.get(1));
-    // When / Then
-    await expect(
-      useCase.execute({ todoId: 1, userId: fixture.userId, itemIds: ids }),
-    ).rejects.toMatchObject({ errorCode });
+    // When
+    const result = useCase.execute({ todoId: 1, userId: fixture.userId, itemIds: ids });
+    // Then
+    await expect(result).rejects.toMatchObject({ errorCode });
     expect(fixture.records.get(1)).toEqual(before);
   });
   it("다른 사용자의 할 일은 재정렬하지 않는다", async () => {
-    // Given / When / Then
-    await expect(
-      useCase.execute({ todoId: 1, userId: "other-user", itemIds: [] }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
+    // When
+    const result = useCase.execute({ todoId: 1, userId: "other-user", itemIds: [] });
+    // Then
+    await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
   });
 });

@@ -4,8 +4,8 @@ import { type MutationLockPort } from "#api/shared/application/ports/mutation-lo
 import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { TodoId } from "../../../shared/domain/todo-id.vo.js";
 import { TodoTitle } from "../../../shared/domain/todo-title.vo.js";
+import { TodoId } from "../../domain/todo-id.vo.js";
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
 import { type TodoRepositoryPort } from "../ports/todo.repository.port.js";
@@ -22,7 +22,7 @@ export interface UpdateTodoTitleInput {
 }
 
 interface UpdateTodoTitleDependencies {
-  readonly todoRepository: Pick<TodoRepositoryPort, "findByIdAndUserId" | "updateTitle">;
+  readonly todoRepository: Pick<TodoRepositoryPort, "lockByIdAndUserId" | "save">;
   readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly applyTodoEvents: Pick<ApplyTodoEventsUseCase, "execute">;
@@ -46,7 +46,7 @@ export class UpdateTodoTitleUseCase {
 
     await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([TodoLockKeys.todo(id)]);
-      const todo = await this.#dependencies.todoRepository.findByIdAndUserId(todoId, ownerId);
+      const todo = await this.#dependencies.todoRepository.lockByIdAndUserId(todoId, ownerId);
       if (todo == null) {
         throw todoNotFound(id);
       }
@@ -54,7 +54,7 @@ export class UpdateTodoTitleUseCase {
       if (!todo.rename(TodoTitle.create(title), this.#dependencies.clock.now())) {
         return;
       }
-      await this.#dependencies.todoRepository.updateTitle(todoId, todo.title.value);
+      await this.#dependencies.todoRepository.save(todo);
       await this.#dependencies.applyTodoEvents.execute(todo.pullDomainEvents());
     });
 

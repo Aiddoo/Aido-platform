@@ -1,22 +1,30 @@
 import type { Provider } from "@nestjs/common";
 
+import {
+  ApplyFollowingTodosUpdateUseCase,
+  CatchUpTodoSeriesUseCase,
+  CheckTodoSeriesStartUseCase,
+  DeleteTodoOccurrencesUseCase,
+  MaterializeTodoOccurrencesUseCase,
+  PublishFollowingTodosUpdateUseCase,
+  PublishTodoSeriesStartedUseCase,
+  PublishTodoSeriesStoppedUseCase,
+  StartSeriesFromTodoUseCase,
+  StopTodoSeriesUseCase,
+  TodoSeriesRepositoryPort,
+  UpdateFollowingTodosUseCase,
+} from "#api/modules/planning/todo-series/planning-todo-series.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
+import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
-import { TodoSeriesRepositoryPort } from "../todo-series/application/ports/todo-series.repository.port.js";
-import { CatchUpTodoSeriesUseCase } from "../todo-series/application/use-cases/catch-up-todo-series.use-case.js";
-import { MaterializeTodoOccurrencesUseCase } from "../todo-series/application/use-cases/materialize-todo-occurrences.use-case.js";
-import { PublishTodoCreationUseCase } from "../todo-series/application/use-cases/publish-todo-creation.use-case.js";
-import { PublishTodoSeriesEditUseCase } from "../todo-series/application/use-cases/publish-todo-series-edit.use-case.js";
-import { StartSeriesFromTodoUseCase } from "../todo-series/application/use-cases/start-series-from-todo.use-case.js";
-import { StopTodoSeriesUseCase } from "../todo-series/application/use-cases/stop-todo-series.use-case.js";
-import { UpdateFollowingTodosUseCase } from "../todo-series/application/use-cases/update-following-todos.use-case.js";
 import { CategoryOwnershipPort } from "./application/ports/category-ownership.port.js";
 import { FriendPort } from "./application/ports/friend.port.js";
 import { StagedTodoCreatorPort } from "./application/ports/staged-todo-creator.port.js";
 import { StreakPort } from "./application/ports/streak.port.js";
+import { TodoBulkRemoverPort } from "./application/ports/todo-bulk-remover.port.js";
 import { TodoCachePort } from "./application/ports/todo-cache.port.js";
 import { TodoEngagementCounterPort } from "./application/ports/todo-engagement-counter.port.js";
 import { TodoNotificationPort } from "./application/ports/todo-notification.port.js";
@@ -28,6 +36,7 @@ import { TodoRepositoryPort } from "./application/ports/todo.repository.port.js"
 import { AddTodoItemUseCase } from "./application/use-cases/add-todo-item.use-case.js";
 import { ApplyTodoCompletionEffectsUseCase } from "./application/use-cases/apply-todo-completion-effects.use-case.js";
 import { ApplyTodoEventsUseCase } from "./application/use-cases/apply-todo-events.use-case.js";
+import { ApplyTodoUpdateUseCase } from "./application/use-cases/apply-todo-update.use-case.js";
 import { ChangeTodoCategoryUseCase } from "./application/use-cases/change-todo-category.use-case.js";
 import { CreateTodoUseCase } from "./application/use-cases/create-todo.use-case.js";
 import { DeleteTodoItemUseCase } from "./application/use-cases/delete-todo-item.use-case.js";
@@ -40,7 +49,10 @@ import { GetTodoUseCase } from "./application/use-cases/get-todo.use-case.js";
 import { InvalidateTodoViewCacheUseCase } from "./application/use-cases/invalidate-todo-view-cache.use-case.js";
 import { ListFriendTodosUseCase } from "./application/use-cases/list-friend-todos.use-case.js";
 import { ListTodosUseCase } from "./application/use-cases/list-todos.use-case.js";
+import { PublishTodoCreatedUseCase } from "./application/use-cases/publish-todo-created.use-case.js";
+import { PublishTodoUpdateUseCase } from "./application/use-cases/publish-todo-update.use-case.js";
 import { RebaseTodoTimezoneUseCase } from "./application/use-cases/rebase-todo-timezone.use-case.js";
+import { RemoveCategoryTodosUseCase } from "./application/use-cases/remove-category-todos.use-case.js";
 import { ReorderTodoItemsUseCase } from "./application/use-cases/reorder-todo-items.use-case.js";
 import { ReorderTodoUseCase } from "./application/use-cases/reorder-todo.use-case.js";
 import { ResolveTodoTimezoneUseCase } from "./application/use-cases/resolve-todo-timezone.use-case.js";
@@ -51,13 +63,15 @@ import { UpdateTodoScheduleUseCase } from "./application/use-cases/update-todo-s
 import { UpdateTodoTitleUseCase } from "./application/use-cases/update-todo-title.use-case.js";
 import { UpdateTodoVisibilityUseCase } from "./application/use-cases/update-todo-visibility.use-case.js";
 import { UpdateTodoUseCase } from "./application/use-cases/update-todo.use-case.js";
-import { WriteTodoCreationUseCase } from "./application/use-cases/write-todo-creation.use-case.js";
+import { WriteSingleTodoUseCase } from "./application/use-cases/write-single-todo.use-case.js";
+import { WriteTodoSeriesUseCase } from "./application/use-cases/write-todo-series.use-case.js";
 import { FriendAdapter } from "./infrastructure/adapters/friend.adapter.js";
 import { StagedTodoCreatorAdapter } from "./infrastructure/adapters/staged-todo-creator.adapter.js";
 import { StreakAdapter } from "./infrastructure/adapters/streak.adapter.js";
 import { TodoNotificationAdapter } from "./infrastructure/adapters/todo-notification.adapter.js";
 import { TodoViewCacheInvalidatorAdapter } from "./infrastructure/adapters/todo-view-cache-invalidator.adapter.js";
 import { TodoTimezoneRebaseProcessor } from "./infrastructure/jobs/todo-timezone-rebase.processor.js";
+import { DrizzleTodoBulkRemoverAdapter } from "./infrastructure/persistence/drizzle-todo-bulk-remover.adapter.js";
 import { DrizzleTodoEngagementCounterAdapter } from "./infrastructure/persistence/drizzle-todo-engagement-counter.adapter.js";
 
 const MUTATION = {
@@ -70,17 +84,35 @@ export const PLANNING_TODOS_PROVIDERS = [
   { provide: StreakPort, useClass: StreakAdapter },
   { provide: TodoNotificationPort, useClass: TodoNotificationAdapter },
   { provide: TodoEngagementCounterPort, useClass: DrizzleTodoEngagementCounterAdapter },
-  provideUseCase(WriteTodoCreationUseCase, {
+  { provide: TodoBulkRemoverPort, useClass: DrizzleTodoBulkRemoverAdapter },
+  provideUseCase(RemoveCategoryTodosUseCase, {
+    bulkRemover: TodoBulkRemoverPort,
+    reminderScheduler: TodoReminderSchedulerPort,
+    todoCache: TodoCachePort,
+    afterCommit: AfterCommitTaskRegistryPort,
+  }),
+  provideUseCase(WriteSingleTodoUseCase, {
+    clock: ClockPort,
+    todoRepository: TodoRepositoryPort,
+    categoryOwnership: CategoryOwnershipPort,
+    applyTodoEvents: ApplyTodoEventsUseCase,
+  }),
+  provideUseCase(WriteTodoSeriesUseCase, {
     clock: ClockPort,
     todoRepository: TodoRepositoryPort,
     todoSeriesRepository: TodoSeriesRepositoryPort,
     occurrenceMaterializer: MaterializeTodoOccurrencesUseCase,
     categoryOwnership: CategoryOwnershipPort,
-    applyTodoEvents: ApplyTodoEventsUseCase,
+  }),
+  provideUseCase(PublishTodoCreatedUseCase, {
+    todoCache: TodoCachePort,
+    logger: loggerFor(PublishTodoCreatedUseCase),
   }),
   provideUseCase(StageTodoCreationUseCase, {
-    writer: WriteTodoCreationUseCase,
-    effects: PublishTodoCreationUseCase,
+    writeSingle: WriteSingleTodoUseCase,
+    writeSeries: WriteTodoSeriesUseCase,
+    publishCreated: PublishTodoCreatedUseCase,
+    publishSeriesStarted: PublishTodoSeriesStartedUseCase,
     todoReadRepository: TodoReadRepositoryPort,
     timezoneResolver: ResolveTodoTimezoneUseCase,
   }),
@@ -93,33 +125,47 @@ export const PLANNING_TODOS_PROVIDERS = [
   provideUseCase(CreateTodoUseCase, { todoCreator: StagedTodoCreatorPort, ...MUTATION }),
   provideUseCase(DeleteTodoUseCase, {
     todoRepository: TodoRepositoryPort,
-    seriesRepository: TodoSeriesRepositoryPort,
-    seriesEffects: PublishTodoSeriesEditUseCase,
-    todoReminder: TodoReminderSchedulerPort,
+    deleteOccurrences: DeleteTodoOccurrencesUseCase,
     todoCache: TodoCachePort,
     ...MUTATION,
     applyTodoEvents: ApplyTodoEventsUseCase,
     logger: loggerFor(DeleteTodoUseCase),
   }),
-  provideUseCase(UpdateTodoUseCase, {
+  provideUseCase(ApplyTodoUpdateUseCase, {
     clock: ClockPort,
     todoRepository: TodoRepositoryPort,
-    todoReadRepository: TodoReadRepositoryPort,
-    ...MUTATION,
-    applyTodoEvents: ApplyTodoEventsUseCase,
+    mutationLock: MutationLockPort,
     categoryOwnership: CategoryOwnershipPort,
+  }),
+  provideUseCase(PublishTodoUpdateUseCase, {
     todoCache: TodoCachePort,
-    logger: loggerFor(UpdateTodoUseCase),
+    logger: loggerFor(PublishTodoUpdateUseCase),
+  }),
+  provideUseCase(UpdateTodoUseCase, {
+    applyUpdate: ApplyTodoUpdateUseCase,
+    publishUpdate: PublishTodoUpdateUseCase,
+    todoReadRepository: TodoReadRepositoryPort,
+    unitOfWork: UnitOfWorkPort,
+    applyTodoEvents: ApplyTodoEventsUseCase,
+    completionEffects: ApplyTodoCompletionEffectsUseCase,
   }),
   provideUseCase(EditTodoUseCase, {
     updateTodo: UpdateTodoUseCase,
+    applyTodoUpdate: ApplyTodoUpdateUseCase,
+    publishTodoUpdate: PublishTodoUpdateUseCase,
     updateFollowingTodos: UpdateFollowingTodosUseCase,
+    applyFollowingTodosUpdate: ApplyFollowingTodosUpdateUseCase,
+    publishFollowingTodosUpdate: PublishFollowingTodosUpdateUseCase,
+    checkTodoSeriesStart: CheckTodoSeriesStartUseCase,
     startSeriesFromTodo: StartSeriesFromTodoUseCase,
+    publishTodoSeriesStarted: PublishTodoSeriesStartedUseCase,
     stopTodoSeries: StopTodoSeriesUseCase,
+    publishTodoSeriesStopped: PublishTodoSeriesStoppedUseCase,
     todoReadRepository: TodoReadRepositoryPort,
     ...MUTATION,
     timezoneResolver: ResolveTodoTimezoneUseCase,
     applyTodoEvents: ApplyTodoEventsUseCase,
+    completionEffects: ApplyTodoCompletionEffectsUseCase,
   }),
   provideUseCase(ApplyTodoCompletionEffectsUseCase, {
     todoReadRepository: TodoReadRepositoryPort,
@@ -157,6 +203,7 @@ export const PLANNING_TODOS_PROVIDERS = [
     logger: loggerFor(DeleteTodoItemUseCase),
   }),
   provideUseCase(ReorderTodoUseCase, {
+    clock: ClockPort,
     todoRepository: TodoRepositoryPort,
     todoReadRepository: TodoReadRepositoryPort,
     ...MUTATION,
@@ -164,6 +211,7 @@ export const PLANNING_TODOS_PROVIDERS = [
     logger: loggerFor(ReorderTodoUseCase),
   }),
   provideUseCase(ReorderTodoItemsUseCase, {
+    clock: ClockPort,
     todoRepository: TodoRepositoryPort,
     todoReadRepository: TodoReadRepositoryPort,
     ...MUTATION,

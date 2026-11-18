@@ -21,7 +21,6 @@ import {
   invalidateNudgeInteraction,
   invalidateNudgeInteractionLists,
   invalidateNudgeInteractions,
-  invalidateNudgeLimit,
   invalidateRemindNudgeCooldown,
   setNudgeInteractionInCache,
 } from './todo-nudge-cache';
@@ -114,7 +113,6 @@ export function useSendTodoNudgeMutationOptions() {
     // 남은 횟수는 보낸 뒤에만 바뀐다. 한도에 막힌 실패는 한도 시트가 받은 한도로 스냅샷을 맞춘다
     onSuccess: () => {
       haptics.notify('success');
-      invalidateNudgeLimit(queryClient);
       invalidateEntitlements(queryClient);
       toast.success(t('todo:toast.nudgeSent'));
       trackEvent('nudge_sent');

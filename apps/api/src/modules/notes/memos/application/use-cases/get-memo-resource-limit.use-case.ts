@@ -3,14 +3,10 @@ import { MEMO_LIMITS } from "@aido/api/vocabulary";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { MemoRepositoryPort } from "../ports/memo.repository.port.js";
+import type { MemoResourceLimitReadModel } from "../read-models/memo-resource-limit.read-model.js";
 
 export interface GetMemoResourceLimitQuery {
   readonly userId: string;
-}
-
-export interface MemoResourceLimit {
-  readonly currentCount: number;
-  readonly maxPerUser: number;
 }
 
 export interface GetMemoResourceLimitDependencies {
@@ -24,7 +20,7 @@ export class GetMemoResourceLimitUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(query: GetMemoResourceLimitQuery): Promise<MemoResourceLimit> {
+  async execute(query: GetMemoResourceLimitQuery): Promise<MemoResourceLimitReadModel> {
     const currentCount = await this.#dependencies.memoRepository.countByUserId(
       UserId.reconstitute(query.userId),
     );

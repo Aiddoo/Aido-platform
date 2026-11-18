@@ -2,10 +2,11 @@ import { ErrorCode, Errors } from "@aido/api/errors";
 import type { INestApplication } from "@nestjs/common";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 
-import { AppConfigAppVersionsAdminModule } from "#api/modules/app-config/app-versions/app-config-app-versions.public";
-import { OperationsBroadcastsModule } from "#api/modules/operations/broadcasts/operations-broadcasts.public";
-import { OperationsMetricsModule } from "#api/modules/operations/metrics/operations-metrics.public";
-import { SocialReportsAdminModule } from "#api/modules/social/reports/social-reports.public";
+import { AppConfigAppReleasesAdminModule } from "#api/modules/app-config/app-releases/app-config-app-releases.public";
+// identity-users.public이 이 Module을 열면 사용자 providers가 social·operations public을 거쳐 그 public으로 돌아와 파일 순환이다
+import { IdentityUsersAdminModule } from "#api/modules/identity/users/identity-users-admin.module";
+import { OperationsBroadcastCampaignsModule } from "#api/modules/operations/broadcast-campaigns/operations-broadcast-campaigns.public";
+import { SocialUserReportsAdminModule } from "#api/modules/social/user-reports/social-user-reports.public";
 import { appConfig, type AppSettings } from "#api/platform/config/app.config";
 import {
   SWAGGER_TAG_DESCRIPTIONS,
@@ -33,21 +34,7 @@ function adminErrorCodeTable(): string {
   return ["| 코드 | HTTP | 설명 |", "|------|------|------|", ...rows].join("\n");
 }
 
-/**
- * 앱·관리자 Swagger UI를 연다. 개발 도구(devTools.swaggerUi)가 꺼진 환경에서는 아무 경로도 열지 않는다.
- * 연 앱 문서 경로를 돌려준다(닫혔으면 undefined).
- */
-export function setupApiDocs(app: INestApplication): string | undefined {
-  const { devTools } = app.get<AppSettings>(appConfig.KEY);
-  if (!devTools.swaggerUi) {
-    return undefined;
-  }
-
-  // Swagger는 로컬 실행에서만 뜬다. 서버는 버전 번호 없이 커밋 SHA로 식별한다(docs/conventions/git.md)
-  const apiVersion = "local";
-  const config = new DocumentBuilder()
-    .setTitle("Aido API")
-    .setDescription(`AI TodoList 앱을 위한 백엔드 API
+const APP_DOCS_DESCRIPTION = `AI TodoList 앱을 위한 백엔드 API
 
 ## 공통 응답 형식
 
@@ -82,11 +69,35 @@ export function setupApiDocs(app: INestApplication): string | undefined {
 ## API 버저닝
 - 경로에 버전을 둡니다(\`/v1\`, \`/v2\`). Deprecated 표시된 작업은 설명에 적힌 앱 버전까지만 지원합니다.
 - Health 체크만 예외: \`GET /health\`
-`)
-    .setVersion(apiVersion)
+`;
+
+function adminDocsDescription(): string {
+  return `관리자 전용 API
+
+## 인증
+- **Bearer Token 방식** (JWT)
+- **ADMIN 역할 필수**: role이 ADMIN인 사용자만 접근 가능
+- 헤더: \`Authorization: Bearer {token}\`
+
+## 에러 코드
+${adminErrorCodeTable()}
+`;
+}
+
+function withServers(builder: DocumentBuilder): DocumentBuilder {
+  return builder
     .addServer("http://localhost:8080", "Local Development")
     .addServer("https://api-staging.aido.kr", "Staging")
-    .addServer("https://api.aido.kr", "Production")
+    .addServer("https://api.aido.kr", "Production");
+}
+
+function setupAppDocs(app: INestApplication, apiVersion: string): void {
+  const config = withServers(
+    new DocumentBuilder()
+      .setTitle("Aido API")
+      .setDescription(APP_DOCS_DESCRIPTION)
+      .setVersion(apiVersion),
+  )
     .addBearerAuth({
       type: "http",
       scheme: "bearer",
@@ -96,7 +107,7 @@ export function setupApiDocs(app: INestApplication): string | undefined {
     .addTag(SWAGGER_TAGS.USER_AUTH, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.USER_AUTH])
     .addTag(SWAGGER_TAGS.TODOS, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.TODOS])
     .addTag(SWAGGER_TAGS.TODO_CATEGORIES, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.TODO_CATEGORIES])
-    .addTag(SWAGGER_TAGS.TODO_COMMENTS_V2, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.TODO_COMMENTS_V2])
+    .addTag(SWAGGER_TAGS.TODO_COMMENTS, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.TODO_COMMENTS])
     .addTag(SWAGGER_TAGS.AI, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.AI])
     .addTag(SWAGGER_TAGS.ENTITLEMENTS, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.ENTITLEMENTS])
     .addTag(SWAGGER_TAGS.FOLLOWS, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.FOLLOWS])
@@ -109,8 +120,11 @@ export function setupApiDocs(app: INestApplication): string | undefined {
       SWAGGER_TAGS.DAILY_COMPLETIONS,
       SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.DAILY_COMPLETIONS],
     )
-    .addTag(SWAGGER_TAGS.WEATHER_V1, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.WEATHER_V1])
-    .addTag(SWAGGER_TAGS.WEATHER_V2, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.WEATHER_V2])
+    .addTag(
+      SWAGGER_TAGS.WEATHER_DEPRECATED,
+      SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.WEATHER_DEPRECATED],
+    )
+    .addTag(SWAGGER_TAGS.WEATHER, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.WEATHER])
     .addTag(SWAGGER_TAGS.COMMON_HEALTH, SWAGGER_TAG_DESCRIPTIONS[SWAGGER_TAGS.COMMON_HEALTH])
     .build();
 
@@ -147,24 +161,15 @@ export function setupApiDocs(app: INestApplication): string | undefined {
       },
     },
   });
+}
 
-  // Admin API 문서 (관리자 전용)
-  const adminConfig = new DocumentBuilder()
-    .setTitle("Aido Admin API")
-    .setDescription(`관리자 전용 API
-
-## 인증
-- **Bearer Token 방식** (JWT)
-- **ADMIN 역할 필수**: role이 ADMIN인 사용자만 접근 가능
-- 헤더: \`Authorization: Bearer {token}\`
-
-## 에러 코드
-${adminErrorCodeTable()}
-`)
-    .setVersion(apiVersion)
-    .addServer("http://localhost:8080", "Local Development")
-    .addServer("https://api-staging.aido.kr", "Staging")
-    .addServer("https://api.aido.kr", "Production")
+function setupAdminDocs(app: INestApplication, apiVersion: string): void {
+  const adminConfig = withServers(
+    new DocumentBuilder()
+      .setTitle("Aido Admin API")
+      .setDescription(adminDocsDescription())
+      .setVersion(apiVersion),
+  )
     .addBearerAuth({
       type: "http",
       scheme: "bearer",
@@ -182,10 +187,10 @@ ${adminErrorCodeTable()}
 
   const adminDocument = SwaggerModule.createDocument(app, adminConfig, {
     include: [
-      AppConfigAppVersionsAdminModule,
-      OperationsBroadcastsModule,
-      OperationsMetricsModule,
-      SocialReportsAdminModule,
+      AppConfigAppReleasesAdminModule,
+      IdentityUsersAdminModule,
+      OperationsBroadcastCampaignsModule,
+      SocialUserReportsAdminModule,
     ],
     standardSchemaConverter: convertStandardSchema,
   });
@@ -211,6 +216,21 @@ ${adminErrorCodeTable()}
       },
     },
   });
+}
 
+/**
+ * 앱·관리자 Swagger UI를 연다. 개발 도구(devTools.swaggerUi)가 꺼진 환경에서는 아무 경로도 열지 않는다.
+ * 연 앱 문서 경로를 돌려준다(닫혔으면 undefined).
+ */
+export function setupApiDocs(app: INestApplication): string | undefined {
+  const { devTools } = app.get<AppSettings>(appConfig.KEY);
+  if (!devTools.swaggerUi) {
+    return undefined;
+  }
+
+  // Swagger는 로컬 실행에서만 뜬다. 서버는 버전 번호 없이 커밋 SHA로 식별한다(docs/conventions/git.md)
+  const apiVersion = "local";
+  setupAppDocs(app, apiVersion);
+  setupAdminDocs(app, apiVersion);
   return `/${APP_DOCS_PATH}`;
 }

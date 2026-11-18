@@ -2,11 +2,6 @@ import { z } from "zod";
 
 import { type AiSuggestionConfig, aiSuggestionSchema } from "./ai-suggestion.schema.js";
 import { type AiConfig, aiSchema } from "./ai.schema.js";
-import {
-  type AppVersionConfig,
-  appVersionSchema,
-  validateAppVersionConfig,
-} from "./app-version.schema.js";
 import { type AppConfig, appSchema } from "./app.schema.js";
 import { type CacheEnvConfig, cacheSchema, validateCacheConfig } from "./cache.schema.js";
 import { type DatabaseConfig, databaseSchema } from "./database.schema.js";
@@ -23,7 +18,7 @@ import {
 } from "./feature-discovery.schema.js";
 import { type InviteConfig, inviteSchema, validateInviteConfig } from "./invite.schema.js";
 import { type JobConfig, jobSchema } from "./job.schema.js";
-import { type JwtConfig, jwtSchema } from "./jwt.schema.js";
+import { type JwtConfig, jwtSchema, validateJwtLifetimes } from "./jwt.schema.js";
 import { type NudgeConfig, nudgeSchema } from "./nudge.schema.js";
 import { type OAuthConfig, oauthSchema } from "./oauth.schema.js";
 import { validateProductionReadiness } from "./production-readiness.js";
@@ -40,7 +35,6 @@ import { type WebhookConfig, webhookSchema } from "./webhook.schema.js";
 export const envSchema = z
   .object({
     ...appSchema.shape,
-    ...appVersionSchema.shape,
     ...cacheSchema.shape,
     ...databaseSchema.shape,
     ...emailSchema.shape,
@@ -59,16 +53,15 @@ export const envSchema = z
     ...inviteSchema.shape,
   })
   .check(validateFeatureDiscoveryConfig)
-  .check(validateAppVersionConfig)
   .check(validateInviteConfig)
   .check(validateWeatherKitConfig)
-  .check(validateCacheConfig);
+  .check(validateCacheConfig)
+  .check(validateJwtLifetimes);
 
 /**
  * 환경변수 전체 타입
  */
 export type EnvConfig = AppConfig &
-  AppVersionConfig &
   CacheEnvConfig &
   DatabaseConfig &
   EmailConfig &

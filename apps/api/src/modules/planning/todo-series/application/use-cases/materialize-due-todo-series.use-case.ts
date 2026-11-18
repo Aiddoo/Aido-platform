@@ -1,5 +1,5 @@
 import { TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
-import { memoize, uniq } from "es-toolkit";
+import { memoize, uniqBy } from "es-toolkit";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
@@ -7,12 +7,9 @@ import type { OperationalAlertPort } from "#api/shared/application/ports/operati
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import {
-  addDaysToKey,
-  localDateKeyAt,
-} from "../../../shared/domain/todo-calendar.domain-service.js";
+import { localDateAt } from "../../../shared/domain/todo-calendar.domain-service.js";
 import { isSeriesOwnerDormant } from "../../domain/series-dormancy.domain-service.js";
-import { TodoSeriesId } from "../../domain/todo-series-id.vo.js";
+import type { TodoSeriesId } from "../../domain/todo-series-id.vo.js";
 import type { TodoSeriesOwnerPort } from "../ports/todo-series-owner.port.js";
 import type {
   TodoSeriesRef,
@@ -38,6 +35,14 @@ export interface MaterializeDueTodoSeriesResult {
   readonly dormantCount: number;
   readonly timedOut: boolean;
 }
+
+const EMPTY_RESULT: MaterializeDueTodoSeriesResult = {
+  processedCount: 0,
+  createdCount: 0,
+  failedCount: 0,
+  dormantCount: 0,
+  timedOut: false,
+};
 
 interface MaterializeDueTodoSeriesDependencies {
   readonly seriesRepository: Pick<TodoSeriesRepositoryPort, "findDueBatch">;
@@ -65,87 +70,100 @@ export class MaterializeDueTodoSeriesUseCase {
   }
 
   async execute(): Promise<MaterializeDueTodoSeriesResult> {
-    const { logger, alert, seriesRepository, seriesOwner, dueRunner } = this.#dependencies;
+    const { logger, alert, seriesRepository } = this.#dependencies;
     const batchSize = this.#dependencies.batchSize ?? TODO_SERIES_MATERIALIZATION_BUDGET.BATCH_SIZE;
     const deadlineMs =
       this.#dependencies.deadlineMs ?? TODO_SERIES_MATERIALIZATION_BUDGET.DEADLINE_MS;
     const startedAt = performance.now();
-    const through = addDaysToKey(
-      localDateKeyAt(this.#dependencies.clock.now(), "UTC"),
-      TODO_SERIES_MATERIALIZATION_BUDGET.DUE_SCAN_AHEAD_DAYS,
-    );
+    const isPastDeadline = () => performance.now() - startedAt >= deadlineMs;
+    const through = localDateAt(this.#dependencies.clock.now(), "UTC").add({
+      days: TODO_SERIES_MATERIALIZATION_BUDGET.DUE_SCAN_AHEAD_DAYS,
+    });
     let afterId: TodoSeriesId | null = null;
-    let processedCount = 0;
-    let createdCount = 0;
-    let failedCount = 0;
-    let dormantCount = 0;
-    let timedOut = false;
+    let totals: MaterializeDueTodoSeriesResult = EMPTY_RESULT;
 
-    while (!timedOut) {
+    while (!totals.timedOut) {
       const dueBatch: readonly TodoSeriesRef[] = await seriesRepository.findDueBatch({
         through,
         afterId,
         limit: batchSize,
       });
-      const owners = await seriesOwner.findOperatingOwners(
-        uniq(dueBatch.map(({ userId }) => userId)).map((userId) => UserId.reconstitute(userId)),
-      );
-      // 휴면 제외 등급은 소유자 단위라 같은 묶음의 여러 규칙이 한 번만 묻는다
-      const isExempt = memoize((userId: string): Promise<boolean> =>
-        seriesOwner.isExemptFromDormancy(UserId.reconstitute(userId)),
-      );
-      for (const due of dueBatch) {
-        if (performance.now() - startedAt >= deadlineMs) {
-          timedOut = true;
-          break;
-        }
-        const owner = owners.get(due.userId);
-        if (owner == null) {
-          continue;
-        }
-        if (
-          isSeriesOwnerDormant(owner, this.#dependencies.clock.now()) &&
-          !(await isExempt(due.userId))
-        ) {
-          dormantCount += 1;
-          continue;
-        }
-        processedCount += 1;
-        try {
-          // 사용자 수정이나 다른 실행이 규칙 행을 잡고 있으면 기다리지 않는다. 다음 실행이 커서로 이어받는다.
-          createdCount += await dueRunner.execute(due, { skipLocked: true });
-        } catch (error) {
-          failedCount += 1;
-          logger.warn({
-            event: TodoSeriesLogEvent.MATERIALIZE_FAILED,
-            seriesId: due.id,
-            errorType: toErrorType(error),
-          });
-        }
-      }
-      const lastDue = dueBatch.at(-1);
-      afterId = lastDue == null ? null : TodoSeriesId.reconstitute(lastDue.id);
+      totals = addResults(totals, await this.#runBatch(dueBatch, isPastDeadline));
+      afterId = dueBatch.at(-1)?.id ?? null;
       if (dueBatch.length < batchSize) {
         break;
       }
     }
 
     const durationMs = performance.now() - startedAt;
-    logger.log({
-      event: TodoSeriesLogEvent.MATERIALIZED,
-      processedCount,
-      createdCount,
-      failedCount,
-      dormantCount,
-      timedOut,
-      durationMs,
-    });
+    const { processedCount, createdCount, failedCount, timedOut } = totals;
+    logger.log({ event: TodoSeriesLogEvent.MATERIALIZED, ...totals, durationMs });
     if (failedCount > 0 || timedOut) {
       alert.raise({
         ...TodoSeriesAlerts.MATERIALIZE_FAILED,
         details: { processedCount, createdCount, failedCount, timedOut, durationMs },
       });
     }
-    return { processedCount, createdCount, failedCount, dormantCount, timedOut };
+    return totals;
   }
+
+  async #runBatch(
+    dueBatch: readonly TodoSeriesRef[],
+    isPastDeadline: () => boolean,
+  ): Promise<MaterializeDueTodoSeriesResult> {
+    const { logger, seriesOwner, dueRunner } = this.#dependencies;
+    const owners = await seriesOwner.findOperatingOwners(
+      uniqBy(
+        dueBatch.map(({ userId }) => userId),
+        (userId) => userId.value,
+      ),
+    );
+    // 휴면 제외 등급은 소유자 단위라 같은 묶음의 여러 규칙이 한 번만 묻는다
+    const isExempt = memoize((userId: string): Promise<boolean> =>
+      seriesOwner.isExemptFromDormancy(UserId.reconstitute(userId)),
+    );
+    const result = { processedCount: 0, createdCount: 0, failedCount: 0, dormantCount: 0 };
+    for (const due of dueBatch) {
+      if (isPastDeadline()) {
+        return { ...result, timedOut: true };
+      }
+      const owner = owners.get(due.userId.value);
+      if (owner == null) {
+        continue;
+      }
+      if (
+        isSeriesOwnerDormant(owner, this.#dependencies.clock.now()) &&
+        !(await isExempt(due.userId.value))
+      ) {
+        result.dormantCount += 1;
+        continue;
+      }
+      result.processedCount += 1;
+      try {
+        // 사용자 수정이나 다른 실행이 규칙 행을 잡고 있으면 기다리지 않는다. 다음 실행이 커서로 이어받는다.
+        result.createdCount += await dueRunner.execute({ due, skipLocked: true });
+      } catch (error) {
+        result.failedCount += 1;
+        logger.warn({
+          event: TodoSeriesLogEvent.MATERIALIZE_FAILED,
+          seriesId: due.id.value,
+          errorType: toErrorType(error),
+        });
+      }
+    }
+    return { ...result, timedOut: false };
+  }
+}
+
+function addResults(
+  left: MaterializeDueTodoSeriesResult,
+  right: MaterializeDueTodoSeriesResult,
+): MaterializeDueTodoSeriesResult {
+  return {
+    processedCount: left.processedCount + right.processedCount,
+    createdCount: left.createdCount + right.createdCount,
+    failedCount: left.failedCount + right.failedCount,
+    dormantCount: left.dormantCount + right.dormantCount,
+    timedOut: left.timedOut || right.timedOut,
+  };
 }

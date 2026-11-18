@@ -29,10 +29,6 @@ export function invalidateNudgeInteractions(queryClient: QueryClient) {
   return queryClient.invalidateQueries({ queryKey: TODO_NUDGE_QUERY_KEYS.interactions() });
 }
 
-export function invalidateNudgeLimit(queryClient: QueryClient) {
-  return queryClient.invalidateQueries({ queryKey: TODO_NUDGE_QUERY_KEYS.limit() });
-}
-
 export function invalidateRemindNudgeCooldown(
   queryClient: QueryClient,
   { userId }: { userId: string },

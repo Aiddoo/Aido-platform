@@ -1,9 +1,11 @@
+import { AI_REPORT_PAGE_SIZE } from '@aido/api/vocabulary';
 import { getPremiumGateAnalyticsFeature } from '@src/features/billing/subscription/utils/subscription-analytics';
 import { useGetWeeklyAchievementsInfiniteQueryOptions } from '@src/features/insights/achievement/queries/achievement.queries';
 import { useTrack, useTrackView } from '@src/shared/analytics';
 import { formatDateKeyRange, formatIsoWeekLabel } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useLocaleContext } from '@src/shared/hooks/use-locale-context';
+import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -59,8 +61,6 @@ import { ThisWeekRecord } from './this-week-record';
 
 const LOADING_CARD_COUNT = 3;
 const LOADING_STAT_COUNT = 3;
-/** 서버 기본 페이지 크기와 같다. 목록에는 더 보기가 없어 개수가 이 값으로 묶인다 */
-const REPORT_LIST_LIMIT = 10;
 /** 예시 목록 맨 위 최근 리포트 카드는 지난주·지난달이다 */
 const LATEST_SAMPLE_PERIODS_AGO = 1;
 
@@ -80,7 +80,7 @@ export function ReportList() {
     useGetWeeklyAchievementsInfiniteQueryOptions({ year: trendYears.startYear }),
   );
   const { data: reports } = useSuspenseQuery(
-    useGetReportsQueryOptions({ type: reportType, limit: REPORT_LIST_LIMIT }),
+    useGetReportsQueryOptions({ type: reportType, limit: AI_REPORT_PAGE_SIZE.DEFAULT }),
   );
 
   const [latestReport, ...pastReports] = reports;
@@ -411,6 +411,8 @@ ReportList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
 ReportList.Empty = function Empty() {
   const { t } = useTranslation('ai');
   const [reportType] = useReportType();
+  const { timeZone } = useDateFormatContext();
+  const now = useMinuteNow();
   // 상태 쿼리의 로딩·오류는 ReportStatusBanner 경계가 맡는다. 여기서 읽으면 한 오류가 두 곳에 뜬다
   const { data: status } = useQuery(useGetReportStatusQueryOptions());
   const reportLabel = t(getReportTypeLabelKey(reportType));
@@ -427,7 +429,7 @@ ReportList.Empty = function Empty() {
         <TextSkeleton size="b3" className="mx-auto w-48" />
       ) : (
         <Text size="b3" shade={7} align="center">
-          {match(ReportStatusPolicy.getDaysUntilReport(status, reportType))
+          {match(ReportStatusPolicy.getDaysUntilReport(status, reportType, { now, timeZone }))
             .with(0, () => t('report.list.arrivalToday', { type: reportLabel }))
             .otherwise((count) => t('report.list.arrivalInDays', { count, type: reportLabel }))}
         </Text>

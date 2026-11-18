@@ -1,7 +1,7 @@
 import {
   inviteCodeSchema as inviteCodeContractSchema,
   normalizeInviteCode as normalizeInviteCodeContract,
-} from '@aido/api';
+} from '@aido/api/contracts/invite/v1';
 
 import {
   findInvalidCharacters,

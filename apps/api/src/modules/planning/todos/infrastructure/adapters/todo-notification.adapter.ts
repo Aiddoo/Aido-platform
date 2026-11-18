@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { NotificationQueueAdapter } from "#api/modules/notification/notification-delivery-jobs.public";
+import { NotificationQueueAdapter } from "#api/modules/notification/notifications/notification-notifications-jobs.public";
 
 import type {
   FriendCompletedPayload,
@@ -8,11 +8,7 @@ import type {
   TodoNotificationPort,
 } from "../../application/ports/todo-notification.port.js";
 
-/**
- * Todo 알림 포트 어댑터 — NotificationQueueAdapter에 위임
- *
- * 포트 소유 페이로드는 notification의 JobData와 구조 호환이라 그대로 전달합니다.
- */
+// 포트 페이로드의 id VO를 notification 작업 데이터의 원시값으로 바꿔 넘긴다
 @Injectable()
 export class TodoNotificationAdapter implements TodoNotificationPort {
   readonly #notificationQueueService: NotificationQueueAdapter;
@@ -22,10 +18,18 @@ export class TodoNotificationAdapter implements TodoNotificationPort {
   }
 
   enqueueFriendCompleted(payload: FriendCompletedPayload): Promise<void> {
-    return this.#notificationQueueService.enqueueFriendCompleted(payload);
+    return this.#notificationQueueService.enqueueFriendCompleted({
+      friendId: payload.friendId.value,
+      friendName: payload.friendName,
+      notifyUserIds: payload.notifyUserIds.map((userId) => userId.value),
+      timezone: payload.timezone,
+    });
   }
 
   enqueueMilestoneReached(payload: MilestoneReachedPayload): Promise<void> {
-    return this.#notificationQueueService.enqueueMilestoneReached(payload);
+    return this.#notificationQueueService.enqueueMilestoneReached({
+      userId: payload.userId.value,
+      milestone: payload.milestone,
+    });
   }
 }

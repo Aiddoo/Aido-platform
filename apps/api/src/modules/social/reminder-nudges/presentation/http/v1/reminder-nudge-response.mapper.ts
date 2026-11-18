@@ -1,4 +1,4 @@
-import type { CreateRemindNudgeResponse, RemindNudge } from "@aido/api";
+import type { CreateRemindNudgeResponse, RemindNudge } from "@aido/api/contracts/nudge/v1";
 
 import { toIsoString } from "#api/shared/domain/time/instant";
 

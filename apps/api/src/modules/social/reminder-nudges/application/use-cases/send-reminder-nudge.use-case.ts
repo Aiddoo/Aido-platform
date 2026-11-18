@@ -1,4 +1,4 @@
-import type { MutualFriendReaderPort } from "#api/modules/social/friends/social-friends.public";
+import type { MutualFriendReaderPort } from "#api/modules/social/friendships/social-friendships.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
@@ -104,9 +104,9 @@ export class SendReminderNudgeUseCase {
       await reminderNudgeRepository.save(created);
       // 알림 작업은 리마인드 저장과 같은 트랜잭션에 넣어 커밋 직후 프로세스가 멈춰도 잃지 않는다
       await notifier.notifyNudgeSent({
-        nudgeId: created.id.value,
-        senderId: senderId.value,
-        receiverId: receiverId.value,
+        nudgeId: created.id,
+        senderId,
+        receiverId,
         senderName: await mutualFriendReader.getUserDisplayName(senderId),
         message: message?.value,
       });

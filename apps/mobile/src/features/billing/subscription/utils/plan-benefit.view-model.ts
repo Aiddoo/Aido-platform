@@ -1,4 +1,4 @@
-import { PLAN_CATALOG, type PlanLimitFeatureKey } from '@aido/api/vocabulary';
+import type { PlanLimitFeatureKey } from '@aido/api/vocabulary';
 import { match } from 'ts-pattern';
 
 import { type EntitlementFeature, type EntitlementSnapshot } from '../domains/entitlement.model';
@@ -6,12 +6,19 @@ import { EntitlementPolicy } from '../domains/entitlement.model';
 
 const SECONDS_PER_MINUTE = 60;
 
-export function getPremiumBenefitAmounts() {
+/** 숫자는 모두 서버 요금제 값이다. null은 무제한이고 화면은 "무제한"으로 쓴다 */
+function toMinutes(seconds: number | null): number | null {
+  return seconds == null ? null : seconds / SECONDS_PER_MINUTE;
+}
+
+export function getPremiumBenefitAmounts(snapshot: EntitlementSnapshot) {
   return {
-    aiParse: PLAN_CATALOG.AI_PARSE.fairUse.premium,
-    voiceNote: PLAN_CATALOG.VOICE_NOTE.fairUse.premium,
-    voiceNoteMinutes: PLAN_CATALOG.VOICE_NOTE.perUse.maxSeconds.premium / SECONDS_PER_MINUTE,
-    category: PLAN_CATALOG.TODO_CATEGORY.premium,
+    aiParse: EntitlementPolicy.getPlanLimit(snapshot, 'AI_PARSE', 'premium'),
+    voiceNote: EntitlementPolicy.getPlanLimit(snapshot, 'VOICE_NOTE', 'premium'),
+    voiceNoteMinutes: toMinutes(
+      EntitlementPolicy.getPlanMaxSeconds(snapshot, 'VOICE_NOTE', 'premium'),
+    ),
+    category: EntitlementPolicy.getPlanLimit(snapshot, 'TODO_CATEGORY', 'premium'),
   } as const;
 }
 
@@ -21,68 +28,42 @@ export function getPlanBenefitAmounts(snapshot: EntitlementSnapshot) {
     free: {
       aiParse: EntitlementPolicy.getFreeLimit(snapshot, 'AI_PARSE'),
       voiceNote: EntitlementPolicy.getFreeLimit(snapshot, 'VOICE_NOTE'),
-      voiceNoteMinutes: PLAN_CATALOG.VOICE_NOTE.perUse.maxSeconds.free / SECONDS_PER_MINUTE,
+      voiceNoteMinutes: toMinutes(
+        EntitlementPolicy.getPlanMaxSeconds(snapshot, 'VOICE_NOTE', 'free'),
+      ),
       nudge: EntitlementPolicy.getFreeLimit(snapshot, 'NUDGE'),
       cheer: EntitlementPolicy.getFreeLimit(snapshot, 'CHEER'),
       friend: EntitlementPolicy.getFreeLimit(snapshot, 'FRIEND'),
       category: EntitlementPolicy.getFreeLimit(snapshot, 'TODO_CATEGORY'),
     },
-    premium: getPremiumBenefitAmounts(),
+    premium: getPremiumBenefitAmounts(snapshot),
   } as const;
 }
 
 interface PlanComparison {
   unit: 'perMonth' | 'perDay' | 'people' | 'items';
-  free: number;
+  /** null은 무제한이다 */
+  free: number | null;
   /** null은 무제한이다 */
   premium: number | null;
 }
 
-/** 막힌 기능 하나의 "무료 → 프리미엄" 숫자 */
+/** 막힌 기능 하나의 "무료 → 프리미엄" 숫자. 프리미엄은 공정 사용 상한까지 서버가 집행하는 값이다 */
 export function getPlanComparison(
   snapshot: EntitlementSnapshot,
   feature: PlanLimitFeatureKey,
 ): PlanComparison {
-  return match(feature)
-    .with(
-      'AI_PARSE',
-      'VOICE_NOTE',
-      (quotaFeature) =>
-        ({
-          unit: 'perMonth',
-          free: EntitlementPolicy.getFreeLimit(snapshot, quotaFeature),
-          premium: PLAN_CATALOG[quotaFeature].fairUse.premium,
-        }) satisfies PlanComparison,
-    )
-    .with(
-      'CHEER',
-      'NUDGE',
-      (quotaFeature) =>
-        ({
-          unit: 'perDay',
-          free: EntitlementPolicy.getFreeLimit(snapshot, quotaFeature),
-          premium: PLAN_CATALOG[quotaFeature].premium,
-        }) satisfies PlanComparison,
-    )
-    .with(
-      'FRIEND',
-      (resourceFeature) =>
-        ({
-          unit: 'people',
-          free: EntitlementPolicy.getFreeLimit(snapshot, resourceFeature),
-          premium: PLAN_CATALOG[resourceFeature].premium,
-        }) satisfies PlanComparison,
-    )
-    .with(
-      'TODO_CATEGORY',
-      (resourceFeature) =>
-        ({
-          unit: 'items',
-          free: EntitlementPolicy.getFreeLimit(snapshot, resourceFeature),
-          premium: PLAN_CATALOG[resourceFeature].premium,
-        }) satisfies PlanComparison,
-    )
-    .exhaustive();
+  return {
+    unit: match(feature)
+      .returnType<PlanComparison['unit']>()
+      .with('AI_PARSE', 'VOICE_NOTE', () => 'perMonth')
+      .with('CHEER', 'NUDGE', () => 'perDay')
+      .with('FRIEND', () => 'people')
+      .with('TODO_CATEGORY', () => 'items')
+      .exhaustive(),
+    free: EntitlementPolicy.getFreeLimit(snapshot, feature),
+    premium: EntitlementPolicy.getPlanLimit(snapshot, feature, 'premium'),
+  };
 }
 
 export type PlanValue =
@@ -100,14 +81,18 @@ function toPlanValue(unit: PlanComparison['unit'], amount: number | null): PlanV
   return amount == null ? { type: 'unlimited' } : { type: 'amount', unit, amount };
 }
 
+function toFlagPlanValue(canUse: boolean): PlanValue {
+  return canUse ? { type: 'included' } : { type: 'excluded' };
+}
+
 export function toPlanFeatureComparison(
   snapshot: EntitlementSnapshot,
   feature: EntitlementFeature,
 ): PlanFeatureComparison {
   return match(feature)
-    .with('AI_REPORT', 'AI_SUGGESTION', 'CUSTOM_REMINDER_TIME', 'APP_ICON', () => ({
-      free: { type: 'excluded' } as const,
-      premium: { type: 'included' } as const,
+    .with('AI_REPORT', 'AI_SUGGESTION', 'CUSTOM_REMINDER_TIME', 'APP_ICON', (flagFeature) => ({
+      free: toFlagPlanValue(EntitlementPolicy.canUseOnPlan(snapshot, flagFeature, 'free')),
+      premium: toFlagPlanValue(EntitlementPolicy.canUseOnPlan(snapshot, flagFeature, 'premium')),
     }))
     .with('AI_PARSE', 'VOICE_NOTE', 'CHEER', 'NUDGE', 'FRIEND', 'TODO_CATEGORY', (limitFeature) => {
       const { unit, free, premium } = getPlanComparison(snapshot, limitFeature);

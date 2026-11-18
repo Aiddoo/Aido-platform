@@ -15,15 +15,11 @@ import {
 
 @Injectable()
 export class DrizzleSuggestionAnalysisRunRepository extends SuggestionAnalysisRunRepositoryPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
     super();
-    this.#txHost = txHost;
-  }
-
-  get #db() {
-    return this.#txHost.tx;
+    this.#transactionHost = transactionHost;
   }
 
   async findByUserId(userId: UserId): Promise<SuggestionAnalysisRun | null> {
@@ -78,5 +74,9 @@ export class DrizzleSuggestionAnalysisRunRepository extends SuggestionAnalysisRu
           finishedAt: sql`excluded."finishedAt"`,
         },
       });
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

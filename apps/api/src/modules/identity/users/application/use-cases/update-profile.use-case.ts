@@ -1,10 +1,10 @@
-import type { UpdateProfileResult } from "#api/modules/identity/auth/application/read-models/auth-result.read-model";
+import type { UpdatedProfileReadModel } from "#api/modules/identity/users/application/read-models/user-account.read-model";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { AuthLogEvent } from "../../../auth/application/auth.log-events.js";
-import type { AuthCachePort } from "../../../auth/application/ports/auth-collaboration.port.js";
-import type { AuthUserRepositoryPort } from "../../../auth/application/ports/auth-user.repository.port.js";
+import type { UserProfileInvalidatorPort } from "../ports/user-profile-invalidator.port.js";
+import type { UserRepositoryPort } from "../ports/user.repository.port.js";
+import { UserLogEvent } from "../users.log-events.js";
 
 export interface UpdateProfileCommand {
   readonly userId: string;
@@ -14,8 +14,8 @@ export interface UpdateProfileCommand {
 }
 
 interface UpdateProfileDependencies {
-  readonly userRepository: Pick<AuthUserRepositoryPort, "updateProfile">;
-  readonly cacheService: Pick<AuthCachePort, "invalidateUserProfile">;
+  readonly userRepository: Pick<UserRepositoryPort, "updateProfile">;
+  readonly cacheService: Pick<UserProfileInvalidatorPort, "invalidateUserProfile">;
   readonly logger: ApplicationLoggerPort;
 }
 
@@ -26,14 +26,14 @@ export class UpdateProfileUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: UpdateProfileCommand): Promise<UpdateProfileResult> {
+  async execute(input: UpdateProfileCommand): Promise<UpdatedProfileReadModel> {
     const { userId: rawUserId, ...data } = input;
     const userId = UserId.reconstitute(rawUserId);
     const profile = await this.#dependencies.userRepository.updateProfile(userId, data);
 
     await this.#dependencies.cacheService.invalidateUserProfile(userId);
 
-    this.#dependencies.logger.log({ event: AuthLogEvent.PROFILE_UPDATED, userId: rawUserId });
+    this.#dependencies.logger.log({ event: UserLogEvent.PROFILE_UPDATED, userId: rawUserId });
 
     return {
       message: "프로필이 수정되었습니다.",

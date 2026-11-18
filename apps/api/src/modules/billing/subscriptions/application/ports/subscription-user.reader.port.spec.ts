@@ -10,12 +10,7 @@ describeSubscriptionUserReaderContract(async () => {
   return {
     reader: new InMemorySubscriptionUserReader(users),
     seedUser: async ({ id, email, name, appUserAlias }) => {
-      users.push({
-        id,
-        email,
-        profile: name == null ? null : { name },
-        ...(appUserAlias != null && { appUserAlias }),
-      });
+      users.push({ id, email, name, ...(appUserAlias != null && { appUserAlias }) });
     },
   };
 });

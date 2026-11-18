@@ -1,0 +1,126 @@
+import type {
+  WeatherBriefing as WeatherBriefingResponse,
+  WeatherDayPartForecast,
+  WeatherHeadline as WeatherHeadlineResponse,
+  WeatherReportResponse,
+} from "@aido/api/contracts/weather/v2";
+import { match } from "ts-pattern";
+
+import { toIsoString } from "#api/shared/domain/time/instant";
+
+import type { WeatherReportResult } from "../../../application/use-cases/get-weather-report.use-case.js";
+import type {
+  WeatherBriefing,
+  WeatherHourWindow,
+} from "../../../domain/weather-briefing.domain-service.js";
+import type { WeatherHeadline } from "../../../domain/weather-headline.domain-service.js";
+import type { WeatherReportDayPart } from "../../../domain/weather-report.aggregate.js";
+
+/** v2 대기질은 한국 위치에서 에어코리아로만 채운다. */
+const AIR_QUALITY_SOURCE = "AIRKOREA";
+
+function toIsoStringOrNull(instant: Temporal.Instant | null): string | null {
+  return instant == null ? null : toIsoString(instant);
+}
+
+function toDayPartResponse(part: WeatherReportDayPart | null): WeatherDayPartForecast | null {
+  return part == null ? null : { ...part };
+}
+
+function toBriefingResponse(briefing: WeatherBriefing): WeatherBriefingResponse {
+  return {
+    reason: briefing.reason,
+    affectedTodoIds: [...briefing.affectedTodoIds],
+    rescheduleOptions: briefing.rescheduleOptions.map(({ todoId, options }) => ({
+      todoId,
+      options: options.map((option) => ({ ...option, startsAt: toIsoString(option.startsAt) })),
+    })),
+  };
+}
+
+function toHourWindowResponse(window: WeatherHourWindow) {
+  return { startsAt: toIsoString(window.startsAt), endsAt: toIsoString(window.endsAt) };
+}
+
+function toHeadlineResponse(headline: WeatherHeadline): WeatherHeadlineResponse {
+  return match(headline)
+    .returnType<WeatherHeadlineResponse>()
+    .with({ kind: "todoWet" }, ({ window, ...facts }) => ({
+      ...facts,
+      window: toHourWindowResponse(window),
+    }))
+    .with({ kind: "todoHot" }, ({ window, ...facts }) => ({
+      ...facts,
+      window: toHourWindowResponse(window),
+    }))
+    .with({ kind: "wetLater" }, ({ startsAt, ...facts }) => ({
+      ...facts,
+      startsAt: toIsoString(startsAt),
+    }))
+    .with({ kind: "clear" }, ({ window }) => ({
+      kind: "clear",
+      window: toHourWindowResponse(window),
+    }))
+    .with({ kind: "wetTomorrow" }, { kind: "tomorrow" }, { kind: "calm" }, (facts) => ({
+      ...facts,
+    }))
+    .exhaustive();
+}
+
+/** 시각은 UTC ISO 문자열로, 일별 date는 이미 위치 시간대 달력 날짜다. */
+export function toWeatherReportResponse(result: WeatherReportResult): WeatherReportResponse {
+  const { location, report, expiresAt, airQuality, attribution, briefing, headline } = result;
+  return {
+    location: { ...location },
+    current: { ...report.current, observedAt: toIsoString(report.current.observedAt) },
+    nextHour:
+      report.nextHour == null
+        ? null
+        : {
+            periods: report.nextHour.periods.map((period) => ({
+              ...period,
+              startsAt: toIsoString(period.startsAt),
+              endsAt: toIsoStringOrNull(period.endsAt),
+            })),
+            minutes: report.nextHour.minutes.map((minute) => ({
+              ...minute,
+              startsAt: toIsoString(minute.startsAt),
+            })),
+          },
+    hourly: report.hourly.map((hour) => ({ ...hour, startsAt: toIsoString(hour.startsAt) })),
+    daily: report.daily.map((day) => ({
+      ...day,
+      date: day.date.toString(),
+      sunrise: toIsoStringOrNull(day.sunrise),
+      sunset: toIsoStringOrNull(day.sunset),
+      moonrise: toIsoStringOrNull(day.moonrise),
+      moonset: toIsoStringOrNull(day.moonset),
+      restOfDay: toDayPartResponse(day.restOfDay),
+      daytime: toDayPartResponse(day.daytime),
+      overnight: toDayPartResponse(day.overnight),
+    })),
+    alerts: report.alerts.map((alert) => ({
+      ...alert,
+      effectiveAt: toIsoString(alert.effectiveAt),
+      expiresAt: toIsoString(alert.expiresAt),
+    })),
+    airQuality:
+      airQuality == null
+        ? null
+        : { pm10: airQuality.pm10, pm25: airQuality.pm25, source: AIR_QUALITY_SOURCE },
+    attribution: {
+      ...attribution,
+      logo:
+        attribution.logo == null
+          ? null
+          : {
+              light: { ...attribution.logo.light },
+              dark: { ...attribution.logo.dark },
+            },
+    },
+    fetchedAt: toIsoString(report.fetchedAt),
+    expiresAt: expiresAt == null ? undefined : toIsoString(expiresAt),
+    briefing: briefing == null ? undefined : toBriefingResponse(briefing),
+    headline: headline == null ? null : toHeadlineResponse(headline),
+  };
+}

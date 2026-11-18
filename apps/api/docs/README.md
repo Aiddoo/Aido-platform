@@ -16,7 +16,7 @@
 | 무엇을 어느 층에서 테스트하나, 실행·격리      | [테스트](testing.md)                |
 | 로그 키·경보·예외 보고·환경별 전달·지연       | [관측](observability.md)            |
 | 경보 key·조건·첫 대응                         | [경보 카탈로그](alerts.md)          |
-| JWT·서명 키·TLS·웹훅·AI 데이터 처리           | [보안](security.md)                 |
+| JWT·서명 키·TLS·웹훅·AI 데이터 처리·보관 기한 | [보안](security.md)                 |
 | 배포 환경·공급자 선택·부팅 검증·운영 env      | [설정](configuration.md)            |
 | 캐시·잠금·메모리 상한·인스턴스·DB 확장        | [확장](scaling.md)                  |
 | 외부 공급자 호출 정책·체크리스트              | [외부 호출](outbound.md)            |

@@ -1,4 +1,4 @@
-import type { PreferenceResponse } from '@aido/api';
+import type { PreferenceResponse } from '@aido/api/contracts/user-preference/v1';
 import { pick } from 'es-toolkit';
 
 import type { Preference } from '../domains/preference.model';

@@ -1,4 +1,5 @@
 import { PLAN_CATALOG } from '@aido/api/vocabulary';
+import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
 import { toInstant } from '@src/shared/date/instant';
 
 import {
@@ -188,6 +189,28 @@ describe('getQuotaStatus', () => {
     expect(status).toEqual({ type: 'untracked' });
   });
 
+  it('남은 횟수가 있어도 초기화 시각이 지났으면 지난 "1번 남음"을 보이지 않는다', () => {
+    // Given
+    // 하루 한도 중 하나만 남은 스냅샷을 받은 뒤 자정(11-05 15:00Z)을 넘겼다
+    const snapshot = createEntitlementSnapshot({ used: { NUDGE: PLAN_CATALOG.NUDGE.free - 1 } });
+
+    // When
+    const beforeReset = EntitlementPolicy.getQuotaStatus(
+      snapshot,
+      'NUDGE',
+      toInstant('2026-11-05T14:59:00.000Z'),
+    );
+    const afterReset = EntitlementPolicy.getQuotaStatus(
+      snapshot,
+      'NUDGE',
+      toInstant('2026-11-05T15:00:00.000Z'),
+    );
+
+    // Then
+    expect(beforeReset).toEqual({ type: 'remaining', count: 1, period: 'day' });
+    expect(afterReset).toEqual({ type: 'untracked' });
+  });
+
   it('하루 횟수를 다 쓰면 오늘 다 쓴 상태다', () => {
     // Given
     const snapshot = createEntitlementSnapshot({ used: { NUDGE: PLAN_CATALOG.NUDGE.free } });
@@ -337,7 +360,7 @@ describe('getFreeLimit', () => {
     expect(limit).toBe(7);
   });
 
-  it.each(['PREMIUM', 'ADMIN'] as const)('%s는 카탈로그의 무료 한도를 쓴다', (tier) => {
+  it.each(['PREMIUM', 'ADMIN'] as const)('%s는 서버의 무료 요금제 한도를 쓴다', (tier) => {
     // Given
     const snapshot = createEntitlementSnapshot({ tier });
 
@@ -396,5 +419,68 @@ describe('shouldOfferPremium', () => {
 
     // Then
     expect(shouldOffer).toBe(expected);
+  });
+});
+
+describe('getRefetchIntervalMs', () => {
+  // 콕(하루)은 11-05 15:00Z, AI 정리(한 달)는 11-30 15:00Z에 초기화된다
+  const snapshot = createEntitlementSnapshot();
+
+  it('가장 먼저 오는 초기화(콕 하루 한도의 자정) 순간에 다시 받는다', () => {
+    // When
+    const intervalMs = EntitlementPolicy.getRefetchIntervalMs(
+      snapshot,
+      toInstant('2026-11-05T14:30:00.000Z'),
+    );
+
+    // Then
+    expect(intervalMs).toBe(30 * MINUTE_MS);
+  });
+
+  it('초기화가 하루보다 멀면 타이머 상한을 넘지 않게 하루 뒤 다시 잰다', () => {
+    // When
+    const intervalMs = EntitlementPolicy.getRefetchIntervalMs(
+      snapshot,
+      toInstant('2026-11-01T00:00:00.000Z'),
+    );
+
+    // Then
+    expect(intervalMs).toBe(24 * HOUR_MS);
+  });
+
+  it('이미 지난 초기화와 올 초기화가 섞여 있으면 올 초기화에 맞춘다', () => {
+    // When
+    const intervalMs = EntitlementPolicy.getRefetchIntervalMs(
+      snapshot,
+      toInstant('2026-11-30T14:30:00.000Z'),
+    );
+
+    // Then
+    expect(intervalMs).toBe(30 * MINUTE_MS);
+  });
+
+  it('초기화가 모두 지났으면 1분마다 묻지 않고 시각으로 다시 묻지 않는다', () => {
+    // When
+    const intervalMs = EntitlementPolicy.getRefetchIntervalMs(
+      snapshot,
+      toInstant('2026-11-30T15:00:05.000Z'),
+    );
+
+    // Then
+    expect(intervalMs).toBe(false);
+  });
+
+  it('초기화가 없는 스냅샷(관리자)은 시각으로 다시 묻지 않는다', () => {
+    // Given
+    const admin = createEntitlementSnapshot({ tier: 'ADMIN' });
+
+    // When
+    const intervalMs = EntitlementPolicy.getRefetchIntervalMs(
+      admin,
+      toInstant('2026-11-05T14:30:00.000Z'),
+    );
+
+    // Then
+    expect(intervalMs).toBe(false);
   });
 });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { deleteTodoCategoryQuerySchema } from "../src/index.js";
+import { deleteTodoCategoryQuerySchema } from "../src/contracts/todo-category/v1/index.js";
 
 describe("카테고리 삭제 query", () => {
   it.each([

@@ -1,11 +1,13 @@
 import { randomUUID } from "node:crypto";
 
+import { TodoCommentId } from "#api/modules/engagement/shared/domain/todo-comment-id.vo";
 import {
   type TodoCommentPurgePlan,
   TodoCommentPurgeRepositoryPort,
-} from "#api/modules/engagement/comments/application/ports/todo-comment-purge.repository.port";
-import { DELETED_COMMENT_AUTHOR } from "#api/modules/engagement/comments/domain/comments.constants";
-import { TodoComment } from "#api/modules/engagement/comments/domain/todo-comment.aggregate";
+} from "#api/modules/engagement/todo-comments/application/ports/todo-comment-purge.repository.port";
+import { TodoComment } from "#api/modules/engagement/todo-comments/domain/todo-comment.aggregate";
+import { DELETED_COMMENT_AUTHOR } from "#api/modules/engagement/todo-comments/domain/todo-comments.constants";
+import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { TodoCommentCount } from "#api/modules/planning/todos/planning-todos.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -40,14 +42,17 @@ export class InMemoryTodoCommentPurgeRepository extends TodoCommentPurgeReposito
           .filter(
             (comment) => comment.isAuthoredBy(userId) || likedCommentIds.has(comment.id.value),
           )
-          .map((comment) => comment.todoId),
+          .map((comment) => comment.todoId.value),
       ),
     ].toSorted(byNumber);
     const commentIdsToLock = comments
-      .filter((comment) => affectedTodoIds.includes(comment.todoId))
+      .filter((comment) => affectedTodoIds.includes(comment.todoId.value))
       .map((comment) => comment.id.value)
       .toSorted();
-    return { affectedTodoIds, commentIdsToLock };
+    return {
+      affectedTodoIds: affectedTodoIds.map((todoId) => TodoId.reconstitute(todoId)),
+      commentIdsToLock: commentIdsToLock.map((commentId) => TodoCommentId.reconstitute(commentId)),
+    };
   }
 
   async purge(
@@ -58,7 +63,8 @@ export class InMemoryTodoCommentPurgeRepository extends TodoCommentPurgeReposito
     if (plan.affectedTodoIds.length === 0) {
       return [];
     }
-    this.#likes.removeByUserId(userId.value);
+    const affectedTodoIds = plan.affectedTodoIds.map((todoId) => todoId.value);
+    this.#likes.removeByUserId(userId);
     for (const comment of this.#comments.list()) {
       if (comment.isAuthoredBy(userId)) {
         await this.#likes.unlikeAllByCommentId(comment.id, now);
@@ -82,30 +88,32 @@ export class InMemoryTodoCommentPurgeRepository extends TodoCommentPurgeReposito
         }),
       );
     }
-    const activeLikes = this.#likes.list().filter((like) => like.isActive);
+    const activeLikes = this.#likes.list().filter((like) => like.isActive());
     const tombstoned = this.#comments.list();
     for (const comment of tombstoned) {
-      if (!plan.affectedTodoIds.includes(comment.todoId)) {
+      if (!affectedTodoIds.includes(comment.todoId.value)) {
         continue;
       }
       const stored = comment.toPrimitives();
       const likeCount = activeLikes.filter((like) => like.commentId.equals(comment.id)).length;
       const replyCount = tombstoned.filter(
-        (reply) => reply.isReply && reply.threadCommentId.equals(comment.id) && !reply.isDeleted,
+        (reply) =>
+          reply.isReply() && reply.threadCommentId.equals(comment.id) && !reply.isDeleted(),
       ).length;
       this.#comments.replace(
         TodoComment.reconstitute({
           ...stored,
           likeCount,
-          replyCount: comment.isReply ? stored.replyCount : replyCount,
+          replyCount: comment.isReply() ? stored.replyCount : replyCount,
         }),
       );
     }
     const remaining = this.#comments.list();
-    return plan.affectedTodoIds.map((todoId) => ({
-      todoId,
-      commentCount: remaining.filter((comment) => comment.todoId === todoId && !comment.isDeleted)
-        .length,
+    return affectedTodoIds.map((todoId) => ({
+      todoId: TodoId.reconstitute(todoId),
+      commentCount: remaining.filter(
+        (comment) => comment.todoId.value === todoId && !comment.isDeleted(),
+      ).length,
     }));
   }
 }

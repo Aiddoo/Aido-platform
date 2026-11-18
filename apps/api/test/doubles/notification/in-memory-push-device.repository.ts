@@ -1,9 +1,15 @@
 import type { PushPermissionStatus } from "@aido/api/vocabulary";
+import { match } from "ts-pattern";
 
-import { PushDeviceRepositoryPort } from "#api/modules/notification/push/application/ports/push-device.repository.port";
-import type { PushDeviceId } from "#api/modules/notification/push/domain/push-device-id.vo";
-import { PushDevice } from "#api/modules/notification/push/domain/push-device.aggregate";
+import type { SessionId } from "#api/modules/identity/sessions/identity-sessions.public";
+import {
+  PushDeviceRepositoryPort,
+  type SavedPushDeviceResult,
+} from "#api/modules/notification/push-devices/application/ports/push-device.repository.port";
+import type { PushDeviceId } from "#api/modules/notification/push-devices/domain/push-device-id.vo";
+import { PushDevice } from "#api/modules/notification/push-devices/domain/push-device.aggregate";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { InMemoryPushTokenRepository } from "#test/doubles/notification/in-memory-push-token.repository";
 
 type DeviceKey = `${string}:${string}`;
 
@@ -16,12 +22,17 @@ function copyOf(device: PushDevice): PushDevice {
   return PushDevice.reconstitute(device.toPrimitives());
 }
 
-// (userId, deviceId)마다 한 행이다. Drizzle처럼 토큰은 기기 행에 남기지 않는다
+// (userId, deviceId)마다 한 행이다. Drizzle처럼 토큰은 기기 행에 남기지 않고 함께 넘긴 토큰 저장소에 쓴다
 export class InMemoryPushDeviceRepository extends PushDeviceRepositoryPort {
   readonly #devices = new Map<DeviceKey, PushDevice>();
+  readonly #tokens: InMemoryPushTokenRepository;
 
-  constructor(devices: readonly PushDevice[] = []) {
+  constructor(
+    devices: readonly PushDevice[] = [],
+    tokens: InMemoryPushTokenRepository = new InMemoryPushTokenRepository(),
+  ) {
     super();
+    this.#tokens = tokens;
     for (const device of devices) {
       this.#devices.set(keyOf(device.userId.value, device.id.value), copyOf(device));
     }
@@ -36,18 +47,28 @@ export class InMemoryPushDeviceRepository extends PushDeviceRepositoryPort {
     return device == null ? undefined : copyOf(device);
   }
 
-  async releasePushDeviceHeldElsewhere(
-    userId: UserId,
-    deviceId: PushDeviceId,
-  ): Promise<{ readonly userIds: readonly string[] }> {
-    return this.#deleteWhere(
-      (device) => device.id.equals(deviceId) && !device.userId.equals(userId),
+  async save(device: PushDevice): Promise<SavedPushDeviceResult> {
+    const { takeover } = device;
+    const releasedDevices = await this.#deleteWhere(
+      (stored) => stored.id.equals(takeover.deviceId) && !stored.userId.equals(takeover.userId),
     );
-  }
-
-  async savePushDevice(device: PushDevice): Promise<void> {
-    const stored = PushDevice.reconstitute({ ...device.toPrimitives(), token: null });
-    this.#devices.set(keyOf(device.userId.value, device.id.value), stored);
+    const releasedTokens = this.#tokens.releaseHeldElsewhere(takeover);
+    this.#devices.set(
+      keyOf(device.userId.value, device.id.value),
+      PushDevice.reconstitute({ ...device.toPrimitives(), token: null }),
+    );
+    const hasActiveToken = await match(device.tokenChange)
+      .with({ kind: "REGISTER" }, async ({ token }) => {
+        this.#tokens.register(device, token);
+        return true;
+      })
+      .with({ kind: "KEEP" }, async () => this.#tokens.keep(device))
+      .with({ kind: "RELEASE" }, async () => {
+        await this.#tokens.deletePushTokensByDevice(device.userId, device.id);
+        return false;
+      })
+      .exhaustive();
+    return { previousOwnerIds: [...releasedDevices.userIds, ...releasedTokens], hasActiveToken };
   }
 
   async deletePushDevice(user: UserId, device: PushDeviceId): Promise<void> {
@@ -62,8 +83,9 @@ export class InMemoryPushDeviceRepository extends PushDeviceRepositoryPort {
   }
 
   async deletePushDevicesBySessions(
-    sessionIds: readonly string[],
-  ): Promise<{ readonly userIds: readonly string[] }> {
+    sessions: readonly SessionId[],
+  ): Promise<{ readonly userIds: readonly UserId[] }> {
+    const sessionIds = sessions.map((session) => session.value);
     return this.#deleteWhere(
       (device) => device.sessionId != null && sessionIds.includes(device.sessionId),
     );
@@ -92,11 +114,11 @@ export class InMemoryPushDeviceRepository extends PushDeviceRepositoryPort {
 
   async #deleteWhere(
     predicate: (device: PushDevice) => boolean,
-  ): Promise<{ readonly userIds: readonly string[] }> {
+  ): Promise<{ readonly userIds: readonly UserId[] }> {
     const deleted = [...this.#devices.entries()].filter(([, device]) => predicate(device));
     for (const [key] of deleted) {
       this.#devices.delete(key);
     }
-    return { userIds: deleted.map(([, device]) => device.userId.value) };
+    return { userIds: deleted.map(([, device]) => device.userId) };
   }
 }

@@ -1,11 +1,13 @@
 import type { TodoVisibility } from "@aido/api/vocabulary";
 
+import type { TodoCategoryId } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
+import type {
+  TodoSeriesReadModel,
+  RepeatSpec,
+} from "#api/modules/planning/todo-series/planning-todo-series.public";
 import type { AfterCommitTask } from "#api/shared/application/ports/after-commit-task.registry.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";
-import type { TodoSeriesReadModel } from "../../../todo-series/application/read-models/todo-series.read-model.js";
-import type { RepeatSpec } from "../../../todo-series/domain/repeat-rule.vo.js";
 import type { TodoReadModel } from "../read-models/todo.read-model.js";
 
 /**

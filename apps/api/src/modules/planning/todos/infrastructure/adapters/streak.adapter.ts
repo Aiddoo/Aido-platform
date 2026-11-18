@@ -1,9 +1,9 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import { UserStreakAccessPort } from "#api/modules/identity/identity-settings.public";
+import { UserStreakAccessPort } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { StreakPort, TodayCompletionStats } from "../../application/ports/streak.port.js";
+import type { StreakPort, TodoToggle } from "../../application/ports/streak.port.js";
 
 /**
  * todo의 스트릭 포트를 user-settings의 공개 capability에 연결한다.
@@ -19,20 +19,15 @@ export class StreakAdapter implements StreakPort {
     this.#userStreakAccess = userStreakAccess;
   }
 
-  async recordTodoToggle(
-    userId: UserId,
-    completed: boolean,
-    timezone: string,
-    todayStats: TodayCompletionStats | null,
-  ): Promise<void> {
-    await this.#userStreakAccess.recordTodoToggle(userId, completed, timezone, todayStats);
+  async recordTodoToggle(toggle: TodoToggle): Promise<void> {
+    await this.#userStreakAccess.recordTodoToggle(toggle);
   }
 
   async getStreakContext(userId: UserId): Promise<{
     currentStreak: number;
     lastCompletedDate: Temporal.PlainDate | null;
   }> {
-    const record = await this.#userStreakAccess.getPreferenceRecord(userId);
+    const record = await this.#userStreakAccess.findPreferenceReadModel(userId);
     return {
       currentStreak: record?.currentStreak ?? 0,
       lastCompletedDate: record?.lastCompletedDate ?? null,

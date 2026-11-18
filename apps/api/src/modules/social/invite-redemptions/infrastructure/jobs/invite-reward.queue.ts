@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { defineQueue, JOB_POLLING_SECONDS } from "#api/shared/application/ports/job-queue.port";
 import { toIsoString } from "#api/shared/domain/time/instant";
+import { DAY_SECONDS } from "#api/shared/domain/time/time-units";
 
 import type { InviteRewardTrigger } from "../../application/ports/invite-reward-scheduler.port.js";
 import type { InviteRedemptionId } from "../../domain/invite-redemption-id.vo.js";
@@ -16,8 +17,8 @@ export const INVITE_REWARD_QUEUE = defineQueue({
     retryDelaySeconds: 30,
     retryBackoff: true,
     expireInSeconds: 5 * 60,
-    retentionSeconds: 7 * 24 * 60 * 60,
-    deleteAfterSeconds: 7 * 24 * 60 * 60,
+    retentionSeconds: 7 * DAY_SECONDS,
+    deleteAfterSeconds: 7 * DAY_SECONDS,
   },
   worker: { localConcurrency: 2, pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND },
 });
@@ -60,8 +61,8 @@ export const INVITE_MAINTENANCE_QUEUE = defineQueue({
     retryDelaySeconds: 60,
     retryBackoff: true,
     expireInSeconds: 30 * 60,
-    retentionSeconds: 7 * 24 * 60 * 60,
-    deleteAfterSeconds: 24 * 60 * 60,
+    retentionSeconds: 7 * DAY_SECONDS,
+    deleteAfterSeconds: DAY_SECONDS,
   },
   worker: { localConcurrency: 1, pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND },
   schedules: [

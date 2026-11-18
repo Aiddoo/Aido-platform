@@ -1,3 +1,5 @@
+import { HOUR_MS, MINUTE_MS } from "#api/shared/domain/time/time-units";
+
 import { REMINDER_LATE_SKIP_REASON } from "./notification-schedule.domain-service.js";
 
 /**
@@ -14,12 +16,12 @@ export interface ReminderStage {
 
 /** 리마인더 단계 (큰 leadTime부터 정렬) */
 export const REMINDER_STAGES: readonly ReminderStage[] = [
-  { leadTimeMs: 60 * 60 * 1000, label: "60min" },
-  { leadTimeMs: 10 * 60 * 1000, label: "10min" },
+  { leadTimeMs: HOUR_MS, label: "60min" },
+  { leadTimeMs: 10 * MINUTE_MS, label: "10min" },
 ] as const;
 
 /** 최대 리드 타임 (복구/크론 범위 계산용) */
-const REMINDER_MAX_LEAD_TIME_MS = REMINDER_STAGES[0]?.leadTimeMs ?? 60 * 60 * 1000;
+const REMINDER_MAX_LEAD_TIME_MS = REMINDER_STAGES[0]?.leadTimeMs ?? HOUR_MS;
 
 /** 예약할 단일 리마인더 잡 (label + 지연 ms) */
 export interface PlannedReminderJob {
@@ -78,17 +80,4 @@ export function reminderLateSkipReason(params: {
 /** 특정 todoId의 모든 단계 잡 라벨(취소 시 순회용) */
 export function allReminderLabels(): string[] {
   return REMINDER_STAGES.map((stage) => stage.label);
-}
-
-/**
- * 같은 할 일의 같은 단계를 한 번만 보내는 회차 값. 날짜와 벽시계로 만든다.
- *
- * 시간대 재계산은 날짜와 벽시계를 바꾸지 않아 값이 그대로이고, 사용자가 날짜나 시간을 고치면 값이 달라진다.
- * 벽시계가 빈 행(롤백 중 옛 서버가 쓴 행)은 날짜만 쓴다.
- */
-export function createReminderOccurrenceKey(
-  startDate: string,
-  scheduledLocalTime: string | null,
-): string {
-  return scheduledLocalTime == null ? startDate : `${startDate}T${scheduledLocalTime}`;
 }

@@ -32,7 +32,10 @@ function timedTodo(id: number, date: string, overrides: object = {}) {
 describe("시간대 재계산", () => {
   let fixture: ReturnType<typeof createPlanningTodoFixture>;
   const setUp = (todos: ReturnType<typeof timedTodo>[], timezone: string, batchSize?: number) => {
-    fixture = createPlanningTodoFixture({ todos });
+    fixture = createPlanningTodoFixture({
+      todos,
+      now: Temporal.Instant.fromEpochMilliseconds(NOW.getTime()),
+    });
     fixture.ownerTimezone.timezones.set(fixture.userId, timezone);
     return new RebaseTodoTimezoneUseCase({ ...fixture, batchSize });
   };
@@ -40,14 +43,6 @@ describe("시간대 재계산", () => {
     const scheduledTime = fixture.records.get(id)?.scheduledTime;
     return scheduledTime == null ? undefined : toIsoString(scheduledTime);
   };
-
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(NOW);
-  });
-  afterEach(() => {
-    vi.useRealTimers();
-  });
 
   it.each([
     { name: "서울 → 뉴욕", date: "2026-11-10", to: NEW_YORK, instant: "2026-11-10T15:00:00.000Z" },
@@ -289,14 +284,16 @@ describe("시간대 재계산", () => {
         scheduledLocalTime: "10:00",
         timezone: SEOUL,
         rule: RepeatRule.create({ frequency: "DAILY", end: { type: "NEVER" } }),
-        startDate: "2026-11-10",
+        startDate: Temporal.PlainDate.from("2026-11-10"),
         checklistTemplate: [],
         now: Temporal.Instant.fromEpochMilliseconds(NOW.getTime()),
       }),
     );
     // When
     const result = await useCase.execute({ userId: "planning-user" });
-    const drafts = fixture.seriesStore.get("series-1")?.planOccurrences("2026-11-10");
+    const drafts = fixture.seriesStore
+      .get("series-1")
+      ?.planOccurrences(Temporal.PlainDate.from("2026-11-10"));
     // Then
     expect(result.seriesCount).toBe(1);
     expect(drafts?.[0]?.scheduledTime).toEqual(Temporal.Instant.from("2026-11-10T15:00:00.000Z"));

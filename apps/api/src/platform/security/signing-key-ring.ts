@@ -38,14 +38,6 @@ export function parseSigningKeys(configured: string): SigningKeysParseResult {
 
 /** HMAC 서명 키 묶음. 새 키가 없으면 기존 비밀값 하나로 지금과 같이 서명한다. */
 export class SigningKeyRing {
-  readonly #keys: readonly SigningKey[];
-  readonly #legacy: SigningKey;
-
-  constructor(keys: readonly SigningKey[], legacy: SigningKey) {
-    this.#keys = keys;
-    this.#legacy = legacy;
-  }
-
   static fromEnv(params: {
     readonly configured: string | undefined;
     readonly legacySecret: string;
@@ -60,6 +52,14 @@ export class SigningKeyRing {
       throw new Error(`서명 키 설정이 올바르지 않습니다: ${parsed.reason}`);
     }
     return new SigningKeyRing(parsed.keys, legacy);
+  }
+
+  readonly #keys: readonly SigningKey[];
+  readonly #legacy: SigningKey;
+
+  constructor(keys: readonly SigningKey[], legacy: SigningKey) {
+    this.#keys = keys;
+    this.#legacy = legacy;
   }
 
   get current(): SigningKey {

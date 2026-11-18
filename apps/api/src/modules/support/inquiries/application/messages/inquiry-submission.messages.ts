@@ -1,7 +1,7 @@
 import type { InquiryCategory } from "@aido/api/vocabulary";
 
 import type { Inquiry } from "../../domain/inquiry.aggregate.js";
-import type { InquirySubmission } from "../read-models/inquiry-submission.read-model.js";
+import type { InquirySubmissionReadModel } from "../read-models/inquiry-submission.read-model.js";
 
 const SUPPORT_TIME_ZONE = "Asia/Seoul";
 
@@ -22,12 +22,13 @@ export function formatSubmittedAtKst(instant: Temporal.Instant): string {
   return `${kst.toString({ smallestUnit: "minute" }).replace("T", " ")} (KST)`;
 }
 
-export function toInquirySubmission(inquiry: Inquiry): InquirySubmission {
+export function toInquirySubmission(inquiry: Inquiry): InquirySubmissionReadModel {
+  const { userEmail, category, content, submittedAt } = inquiry.toPrimitives();
   return {
-    userEmail: inquiry.userEmail,
-    category: inquiry.category,
-    categoryLabel: categoryLabel(inquiry.category),
-    content: inquiry.content.value,
-    submittedAt: formatSubmittedAtKst(inquiry.submittedAt),
+    userEmail,
+    category,
+    categoryLabel: categoryLabel(category),
+    content,
+    submittedAt: formatSubmittedAtKst(submittedAt),
   };
 }

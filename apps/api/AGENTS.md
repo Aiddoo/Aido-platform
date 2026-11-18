@@ -12,7 +12,8 @@
 
 **레이어·slice**([구조](docs/architecture.md))
 
-- [ ] `modules/<context>/<slice>/{domain,application,infrastructure,presentation}`. slice 하나 = Nest Module 하나 = Aggregate Root 하나.
+- [ ] `modules/<context>/<slice>/{domain,application,infrastructure,presentation}`. slice 하나 = Aggregate Root 하나, slice 폴더는 그 Aggregate의 kebab 복수형(`Memo` → `memos`). `<context>/shared`에는 Aggregate를 두지 않는다.
+- [ ] Module은 기능 `<context>-<slice>.module.ts` 하나. 다른 Context가 읽는 포트만 import 없는 `-queries` Module, 관리자 HTTP는 `-admin` Module에 둔다. 공개 면은 slice당 `<context>-<slice>.public.ts` 하나다(순환을 끊을 때만 `-queries.public.ts`).
 - [ ] presentation → application → domain, infrastructure → application(ports)·domain. 다른 Context는 `*.public.ts`로만, 그 Context 테이블을 직접 읽지 않는다.
 - [ ] Domain·Application은 Nest·ORM·SDK·platform·`@aido/api` 계약을 모른다(`/vocabulary`·`/errors`만).
 - [ ] 재수출은 slice public·`@aido/api` 진입 파일·Drizzle schema 묶음에서만. barrel·`export *` 금지.
@@ -24,12 +25,14 @@
 - [ ] UseCase는 `CreateMemoUseCase.execute(command)`. 구현은 `DrizzleMemoRepository`(`Impl` 금지).
 - [ ] 팩토리는 `create`·`generate`·`reconstitute`뿐, 값 꺼내기는 `toPrimitives()`/`<Noun>Primitives`.
 - [ ] 순수 판단은 `*.domain-service.ts` 함수. `.policy`는 `<vendor>-outbound.policy.ts`에만. static만 있는 클래스 금지.
-- [ ] 쓰기는 Entity·VO, 조회는 Read Model, HTTP는 Dto. 비공개는 `#`.
+- [ ] 쓰기는 Entity·VO, 조회는 Read Model(`<Noun>ReadModel`), HTTP는 Dto. 비공개는 `#`.
+- [ ] 축약어를 쓰지 않는다(`ctx`·`tx`·`req`·`res`·`err`·`val`·`args`·`opts`·`repo` → `timezoneContext`·`transaction`·`request`…). UseCase 공개 메서드는 `execute` 하나, 응답 매퍼는 `to<Noun>Response()` 함수다.
 
 **모델**([도메인 모델](docs/domain-modeling.md))
 
-- [ ] 베이스는 `shared/domain/model`. 상태 전이는 바뀌면 `true`, `false`면 저장·발송을 건너뛴다.
-- [ ] 복원은 `*-row.mapper.ts` 한 곳. 시퀀스 id는 `nextId()`. 포트의 식별자는 id VO.
+- [ ] 베이스는 `shared/domain/model`. Aggregate는 저장(`create`·`reconstitute`·`toPrimitives` + `save`)과 생성만(`create`·`toPrimitives`, 저장소 없음) 두 종류다. 읽기만 하는 slice는 두지 않고 데이터 주인 slice의 조회 UseCase로 둔다.
+- [ ] 상태 전이는 바뀌면 `true`, 이미 그 상태면 `false`(저장·발송을 건너뛴다). 이벤트는 Aggregate가 `raise`하고 UseCase가 `pullDomainEvents()`를 publish한다.
+- [ ] 복원은 `*-row.mapper.ts` 한 곳, 저장은 `save(aggregate)`. 시퀀스 id는 `nextId()`. 포트·Props의 식별자는 id VO, `find*`는 `T | null`.
 - [ ] 업무 오류는 `<slice>.errors.ts`의 이름 있는 생성 함수. 거부는 `application/`의 `ApplicationException`, 불변식은 `domain/`의 `DomainException`. 그 밖에서 바로 만들지 않는다(Oxlint `aido/no-inline-coded-exception`).
 
 **포트·조립**
@@ -54,10 +57,12 @@
 - [ ] DTO는 `http/v1/<noun>.dto.ts` 한 파일에 `schema.meta({ id })`. component id·operationId 유지.
 - [ ] 응답 문구·계약 타입은 응답 매퍼가 만든다. 새 목록은 `cursorPageSchema`. 운영 밖에서는 응답이 선언 schema와 다르면 500이다.
 - [ ] 앱 헤더는 `RequestClient`로. 출시 계약은 추가만, released fixture를 재생성하지 않는다.
+- [ ] 버전은 폴더(`http/v2/`)로만 나눈다. 클래스·Swagger 태그·상수 이름에 `V2`를 넣지 않고 버전끼리 import하지 않는다.
+- [ ] 요청 한도는 `presentation/http/<slice>.rate-limits.ts`의 `defineRateLimits`와 `@RateLimit(…)`이다. 인증한 요청은 사용자 id, 인증 전은 IP로 센다.
 
 **관측·보안·설정**
 
-- [ ] 로그 키는 `<context>.<subject>.<outcome>`, 상수는 `<slice>.log-events.ts`. 토큰·키·할 일 제목·전사·AI 입출력 금지([관측](docs/observability.md)).
+- [ ] 로그 키는 `<context>.<subject>[.<detail>].<outcome>`, 상수는 `<slice>.log-events.ts`의 `<Aggregate>LogEvent.<SUBJECT_OUTCOME>`, 필드는 `event`. 토큰·키·할 일 제목·전사·AI 입출력 금지([관측](docs/observability.md)).
 - [ ] 경보는 `<slice>.alerts.ts` 카탈로그 + `OperationalAlertPort`, 5xx는 `ExceptionReporterPort`. 업무 코드에서 Sentry 직접 호출 금지.
 - [ ] 설정은 `defineConfig` namespace(`*.config.ts`). 운영 여부는 배포 환경 설정 하나로 판단하고 `NODE_ENV`를 직접 읽지 않는다. 운영에서 위험한 조합은 시작 검증에 더한다([설정](docs/configuration.md)).
 - [ ] 캐시는 `CacheStorePort`(`ttlMs`) + `<noun>.keyspace.ts`. 프로세스 안 저장소는 `lru-cache` 상한·TTL([확장](docs/scaling.md)).
@@ -65,6 +70,7 @@
 **테스트**([테스트](docs/testing.md))
 
 - [ ] 행동 하나를 가장 싼 층에서 한 번. UseCase는 InMemory 포트 + `FixedClock`, SQL 의미는 Testcontainers PG + 포트 계약 suite, 계약은 E2E.
+- [ ] 본문은 `// Given`·`// When`·`// Then` 한 줄 주석으로 나눈다(합본·꼬리 설명 금지). 데이터는 `create<Aggregate>Fixture(overrides)`다.
 - [ ] 전달만 하는 코드·조립·필드 복사 매퍼·상수·mock 호출 횟수는 테스트하지 않는다. mock 라이브러리 대신 작은 double.
 - [ ] 기다림은 `vi.waitFor`·`expect.poll`, 시각은 비교마다 출처 하나, 경쟁 순서는 lock·barrier. `retry` 금지([flake](docs/testing.md#실행-자원과-flake)).
 

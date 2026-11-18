@@ -1,8 +1,7 @@
 import { match } from "ts-pattern";
 
-import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
-import type { MutualFriendReaderPort } from "#api/modules/social/friends/social-friends.public";
-import { toCursorPage } from "#api/shared/application/cursor-page";
+import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
+import type { MutualFriendReaderPort } from "#api/modules/social/friendships/social-friendships.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { NudgeId } from "../../domain/nudge-id.vo.js";
@@ -34,6 +33,7 @@ export interface GetNudgeThanksPreviewDependencies {
     | "findLastReceivedNudgeId"
     | "countThankedRecipients"
     | "findLastThankedAt"
+    | "listAllThanksRecipients"
     | "listThanksRecipients"
     | "countThanksRecipients"
   >;
@@ -114,14 +114,10 @@ export class GetNudgeThanksPreviewUseCase {
       ownerId,
       todoId,
       throughNudgeId,
-      friendIds: friendIds.map((friendId) => UserId.reconstitute(friendId)),
+      friendIds,
     };
     if (query.limit == null) {
-      const recipients = await nudgeReader.listThanksRecipients({
-        ...candidateQuery,
-        afterNudgeId: null,
-        limit: null,
-      });
+      const recipients = await nudgeReader.listAllThanksRecipients(candidateQuery);
       return {
         ...preview,
         throughNudgeId: throughNudgeId.value,
@@ -130,15 +126,14 @@ export class GetNudgeThanksPreviewUseCase {
       };
     }
 
-    const [rows, totalRecipients] = await Promise.all([
+    const [page, totalRecipients] = await Promise.all([
       nudgeReader.listThanksRecipients({
         ...candidateQuery,
         afterNudgeId: query.cursor == null ? null : NudgeId.reconstitute(query.cursor),
-        limit: query.limit + 1,
+        size: query.limit,
       }),
       nudgeReader.countThanksRecipients(candidateQuery),
     ]);
-    const page = toCursorPage({ rows, size: query.limit, toCursor: (row) => row.nudgeId });
     return {
       ...preview,
       throughNudgeId: throughNudgeId.value,

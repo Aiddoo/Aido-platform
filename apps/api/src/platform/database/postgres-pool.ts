@@ -13,17 +13,23 @@ export interface PostgresPoolOptions {
   readonly idleTimeoutMs?: number;
   readonly connectionTimeoutMs?: number;
   readonly queryTimeoutMs?: number;
+  readonly statementTimeoutMs?: number;
   readonly allowUnverifiedTls?: boolean;
 }
 
+// HTTP 요청이 연결을 오래 붙잡지 않게 앱 풀의 문장 하나를 이 시간에서 끊는다
+const APP_STATEMENT_TIMEOUT_MS = 15_000;
+
 // TimeZone을 UTC로 고정해 now()·timestamp 비교가 서버 TZ에 흔들리지 않게 한다.
 // 트랜잭션 모드 풀러(PgBouncer·RDS Proxy)는 시작 옵션을 넘기지 않으므로 그때 DB·역할 기본값으로 옮긴다.
-const SESSION_OPTIONS = [
-  "-c TimeZone=UTC",
-  "-c statement_timeout=15000",
-  "-c lock_timeout=5000",
-  "-c idle_in_transaction_session_timeout=60000",
-].join(" ");
+function sessionOptions(statementTimeoutMs: number): string {
+  return [
+    "-c TimeZone=UTC",
+    `-c statement_timeout=${statementTimeoutMs}`,
+    "-c lock_timeout=5000",
+    "-c idle_in_transaction_session_timeout=60000",
+  ].join(" ");
+}
 
 /**
  * sslmode는 URL에서 떼어 ssl 옵션으로 옮긴다. pg는 URL 값이 ssl 옵션을 덮어쓰기 때문이다.
@@ -40,7 +46,7 @@ export function createPostgresPoolConfig(
   return {
     connectionString: url.toString(),
     application_name: options.applicationName ?? "aido-api",
-    options: SESSION_OPTIONS,
+    options: sessionOptions(options.statementTimeoutMs ?? APP_STATEMENT_TIMEOUT_MS),
     ...(usesTls && { ssl: { rejectUnauthorized: options.allowUnverifiedTls !== true } }),
     ...(options.max != null && { max: options.max }),
     ...(options.idleTimeoutMs != null && { idleTimeoutMillis: options.idleTimeoutMs }),

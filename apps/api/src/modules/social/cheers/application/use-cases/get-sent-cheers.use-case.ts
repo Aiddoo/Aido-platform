@@ -1,4 +1,4 @@
-import { clampPageSize, toCursorPage } from "#api/shared/application/cursor-page";
+import { clampPageSize } from "#api/shared/application/cursor-page";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -31,15 +31,14 @@ export class GetSentCheersUseCase {
     const { cheerReader, countCache, logger } = this.#dependencies;
     const userId = UserId.reconstitute(query.userId);
     const size = clampPageSize(query.size);
-    const [rows, totalCount] = await Promise.all([
+    const [page, totalCount] = await Promise.all([
       cheerReader.listSent({
         userId,
         afterCheerId: query.cursor == null ? null : CheerId.reconstitute(query.cursor),
-        limit: size + 1,
+        size,
       }),
       countCache.wrapSentCount(userId, () => cheerReader.countSent(userId)),
     ]);
-    const page = toCursorPage({ rows, size, toCursor: (cheer) => cheer.id });
     logger.debug({
       event: CheerLogEvent.SENT_LISTED,
       userId: query.userId,

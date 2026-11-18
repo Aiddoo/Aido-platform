@@ -1,12 +1,17 @@
 import {
   weeklyAchievementDetailResponseSchema,
   weeklyAchievementListResponseSchema,
-} from '@aido/api';
+  weeklyAchievementYearsResponseSchema,
+} from '@aido/api/contracts/weekly-achievement/v1';
 import type { HttpClient } from '@src/core/ports/http-client';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
 import type { GetAchievementsQuery } from '../schemas/achievement-list-request.schema';
-import { toWeeklyAchievement, toWeeklyAchievementPage } from './achievement.mapper';
+import {
+  toAchievementYears,
+  toWeeklyAchievement,
+  toWeeklyAchievementPage,
+} from './achievement.mapper';
 
 export class AchievementApi {
   readonly #httpClient: HttpClient;
@@ -27,6 +32,14 @@ export class AchievementApi {
       weeklyAchievementListResponseSchema,
       toWeeklyAchievementPage,
       '[AchievementApi] Invalid getWeeklyAchievements response',
+    );
+
+  getWeeklyAchievementYears = async (signal?: AbortSignal) =>
+    parseApiResponse(
+      await this.#httpClient.get('v1/weekly-achievements/years', { signal }),
+      weeklyAchievementYearsResponseSchema,
+      toAchievementYears,
+      '[AchievementApi] Invalid getWeeklyAchievementYears response',
     );
 
   getWeeklyAchievement = async (year: number, week: number, signal?: AbortSignal) =>

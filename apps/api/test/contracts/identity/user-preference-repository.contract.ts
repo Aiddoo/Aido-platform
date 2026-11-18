@@ -1,230 +1,234 @@
-import type { UserPreferenceRepositoryPort } from "#api/modules/identity/preferences/application/ports/user-preference.repository.port";
-import type { StreakState } from "#api/modules/identity/preferences/domain/streak.vo";
-import type { UserPreferenceRecord } from "#api/modules/identity/preferences/domain/user-preference.constants";
+import { AI_DATA_SHARING_CONSENT } from "@aido/api/vocabulary";
+
+import type { UserPreferenceRepositoryPort } from "#api/modules/identity/user-preferences/application/ports/user-preference.repository.port";
+import type { UserPreferenceReadModel } from "#api/modules/identity/user-preferences/application/read-models/preference.read-model";
+import type { ConsentAgreement } from "#api/modules/identity/user-preferences/domain/user-consent.entity";
+import {
+  DEFAULT_USER_PREFERENCE_SETTINGS,
+  UserPreference,
+} from "#api/modules/identity/user-preferences/domain/user-preference.aggregate";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
+  USER_SETTINGS_FIXTURE_NOW,
   USER_SETTINGS_FIXTURE_OTHER_USER_ID,
   USER_SETTINGS_FIXTURE_USER_ID,
 } from "#test/fixtures/identity/user-settings.fixture";
 
-const USER_ID = USER_SETTINGS_FIXTURE_USER_ID;
-const OTHER_USER_ID = USER_SETTINGS_FIXTURE_OTHER_USER_ID;
+const USER = UserId.reconstitute(USER_SETTINGS_FIXTURE_USER_ID);
+const OTHER_USER = UserId.reconstitute(USER_SETTINGS_FIXTURE_OTHER_USER_ID);
+const NOW = USER_SETTINGS_FIXTURE_NOW;
+const TODAY = Temporal.PlainDate.from("2026-11-10");
+const YESTERDAY = TODAY.subtract({ days: 1 });
 
-const COLUMN_DEFAULTS: UserPreferenceRecord = {
-  pushEnabled: true,
-  nightPushEnabled: true,
-  timezone: "UTC",
-  locale: "ko",
-  morningReminderHour: 8,
-  morningReminderMinute: 0,
-  eveningReminderHour: 19,
-  eveningReminderMinute: 0,
-  timeFormat: "TWELVE_HOUR",
-  weatherMorningEnabled: true,
-  weatherMorningHour: 7,
-  weatherMorningMinute: 0,
-  weatherEveningEnabled: true,
-  weatherEveningHour: 17,
-  weatherEveningMinute: 30,
-  aiPushEnabled: true,
+// UserPreference 테이블의 열 기본값과 같다
+const COLUMN_DEFAULTS: Omit<UserPreferenceReadModel, "userId"> = {
+  ...DEFAULT_USER_PREFERENCE_SETTINGS,
   currentStreak: 0,
   longestStreak: 0,
   lastCompletedDate: null,
 };
 
-const INITIAL_STREAK: StreakState = { currentStreak: 0, longestStreak: 0, lastCompletedDate: null };
-const SAVED_STREAK: StreakState = {
-  currentStreak: 2,
-  longestStreak: 5,
-  lastCompletedDate: Temporal.PlainDate.from("2026-11-09"),
-};
-
 export function describeUserPreferenceRepositoryContract(
   createRepository: () => Promise<UserPreferenceRepositoryPort>,
 ): void {
+  async function seed(
+    repository: UserPreferenceRepositoryPort,
+    userId: UserId,
+    consent: ConsentAgreement = {},
+  ): Promise<void> {
+    await repository.save(UserPreference.create({ userId, consent }));
+  }
+
+  // 어제까지 연속 완료가 1인 사용자를 만든다
+  async function seedWithStreak(repository: UserPreferenceRepositoryPort): Promise<void> {
+    await seed(repository, USER);
+    const preference = await repository.getByUserId(USER);
+    preference.recordAllTodosCompleted(YESTERDAY);
+    await repository.save(preference);
+  }
+
   describe("사용자 설정 저장소 계약", () => {
-    it("설정이 없는 사용자는 찾지 못한다", async () => {
+    it("설정·동의 행이 없으면 기본값으로 읽고 읽기 모델은 null이다", async () => {
       // Given
       const repository = await createRepository();
 
       // When
-      const record = await repository.findByUserId(UserId.reconstitute(USER_ID));
-      const streak = await repository.findStreakByUserId(UserId.reconstitute(USER_ID));
+      const preference = await repository.getByUserId(USER);
+      const readModel = await repository.findReadModelByUserId(USER);
 
       // Then
-      expect({ record, streak }).toEqual({ record: null, streak: null });
+      expect(preference.toPrimitives()).toMatchObject({
+        settings: null,
+        streak: null,
+        consent: { termsAgreedAt: null, marketingAgreedAt: null, aiDataSharingVersion: null },
+      });
+      expect(preference.settings).toEqual(DEFAULT_USER_PREFERENCE_SETTINGS);
+      expect(readModel).toBeNull();
     });
 
-    it("값 없이 만든 설정은 DB 열 기본값으로 채우고 같은 값을 다시 읽는다", async () => {
+    it("가입 저장은 기본 설정과 받은 동의로 두 행을 만들고 다시 읽는다", async () => {
       // Given
       const repository = await createRepository();
 
       // When
-      const created = await repository.create(UserId.reconstitute(USER_ID));
-      const found = await repository.findByUserId(UserId.reconstitute(USER_ID));
+      await seed(repository, USER, { termsAgreedAt: NOW, agreedTermsVersion: "2.0" });
+      const readModel = await repository.findReadModelByUserId(USER);
+      const preference = await repository.getByUserId(USER);
 
       // Then
-      expect(created).toMatchObject(COLUMN_DEFAULTS);
-      expect(found).toMatchObject(COLUMN_DEFAULTS);
+      expect(readModel).toEqual({ ...COLUMN_DEFAULTS, userId: USER.value });
+      expect(preference.consent.toPrimitives()).toMatchObject({
+        termsAgreedAt: NOW,
+        agreedTermsVersion: "2.0",
+        marketingAgreedAt: null,
+      });
     });
 
-    it("만들 때 준 값은 그대로 쓰고 빠진 값은 기본값을 쓴다", async () => {
+    it("설정 행이 없는 사용자의 설정 변경은 기본값 위에 행을 만들고 동의 행은 만들지 않는다", async () => {
       // Given
       const repository = await createRepository();
-      const data = {
-        pushEnabled: false,
-        nightPushEnabled: false,
-        timezone: "Asia/Seoul",
-        timeFormat: "TWENTY_FOUR_HOUR",
-        weatherMorningMinute: 15,
-      } as const;
+      const preference = await repository.getByUserId(USER);
 
       // When
-      await repository.create(UserId.reconstitute(USER_ID), data);
+      const changed = preference.changeTimezone(DEFAULT_USER_PREFERENCE_SETTINGS.timezone);
+      await repository.save(preference);
 
       // Then
-      expect(await repository.findByUserId(UserId.reconstitute(USER_ID))).toMatchObject({
+      expect(changed).toBe(true);
+      expect(await repository.findReadModelByUserId(USER)).toEqual({
         ...COLUMN_DEFAULTS,
-        ...data,
+        userId: USER.value,
+      });
+      expect((await repository.getByUserId(USER)).consent.toPrimitives()).toMatchObject({
+        termsAgreedAt: null,
       });
     });
 
-    it("이미 설정이 있는 사용자에게 다시 만들면 실패한다", async () => {
+    it("설정 변경은 준 칸(false·0 포함)만 바꾸고 다른 칸과 연속 완료는 둔다", async () => {
       // Given
       const repository = await createRepository();
-      await repository.create(UserId.reconstitute(USER_ID));
+      await seedWithStreak(repository);
+      const preference = await repository.getByUserId(USER);
 
       // When
-      const duplicated = repository.create(UserId.reconstitute(USER_ID), {
-        timezone: "Asia/Seoul",
-      });
-
-      // Then
-      await expect(duplicated).rejects.toThrow();
-      expect((await repository.findByUserId(UserId.reconstitute(USER_ID)))?.timezone).toBe("UTC");
-    });
-
-    it("upsert는 설정이 없으면 기본값 위에 준 값으로 만든다", async () => {
-      // Given
-      const repository = await createRepository();
-
-      // When
-      const written = await repository.upsert(UserId.reconstitute(USER_ID), {
-        nightPushEnabled: false,
-        morningReminderHour: 9,
-        weatherEveningEnabled: false,
-      });
-
-      // Then
-      const expected = {
-        ...COLUMN_DEFAULTS,
-        nightPushEnabled: false,
-        morningReminderHour: 9,
-        weatherEveningEnabled: false,
-      };
-      expect(written).toMatchObject(expected);
-      expect(await repository.findByUserId(UserId.reconstitute(USER_ID))).toMatchObject(expected);
-    });
-
-    it("upsert는 준 값(false·0 포함)만 바꾸고 undefined·빠진 값과 연속 완료는 둔다", async () => {
-      // Given
-      const repository = await createRepository();
-      await repository.create(UserId.reconstitute(USER_ID), {
-        timezone: "Asia/Seoul",
-        weatherMorningMinute: 17,
-      });
-      await repository.updateStreakIfUnchanged(
-        UserId.reconstitute(USER_ID),
-        INITIAL_STREAK,
-        SAVED_STREAK,
-      );
-
-      // When
-      const written = await repository.upsert(UserId.reconstitute(USER_ID), {
+      preference.changeSettings({
         pushEnabled: false,
-        aiPushEnabled: false,
-        weatherMorningHour: 0,
-        weatherMorningMinute: undefined,
-        timezone: undefined,
-      });
-
-      // Then
-      const expected = {
-        ...COLUMN_DEFAULTS,
-        ...SAVED_STREAK,
+        morningReminderMinute: 0,
         timezone: "Asia/Seoul",
+      });
+      await repository.save(preference);
+
+      // Then
+      expect(await repository.findReadModelByUserId(USER)).toEqual({
+        ...COLUMN_DEFAULTS,
+        userId: USER.value,
         pushEnabled: false,
-        aiPushEnabled: false,
-        weatherMorningHour: 0,
-        weatherMorningMinute: 17,
-      };
-      expect(written).toMatchObject(expected);
-      expect(await repository.findByUserId(UserId.reconstitute(USER_ID))).toMatchObject(expected);
+        timezone: "Asia/Seoul",
+        currentStreak: 1,
+        longestStreak: 1,
+        lastCompletedDate: YESTERDAY,
+      });
     });
 
-    it("upsert에 바꿀 값이 없으면 기존 설정을 그대로 돌려준다", async () => {
+    it("설정 변경은 읽은 뒤 다른 요청이 저장한 연속 완료를 덮지 않는다", async () => {
       // Given
       const repository = await createRepository();
-      await repository.create(UserId.reconstitute(USER_ID), { timezone: "Europe/Paris" });
+      await seedWithStreak(repository);
+      const settingsRequest = await repository.getByUserId(USER);
+      const completion = await repository.getByUserId(USER);
+      completion.recordAllTodosCompleted(TODAY);
+      await repository.save(completion);
 
       // When
-      const written = await repository.upsert(UserId.reconstitute(USER_ID), {});
+      settingsRequest.changeSettings({ nightPushEnabled: false });
+      const saved = await repository.save(settingsRequest);
 
       // Then
-      expect(written).toMatchObject({ ...COLUMN_DEFAULTS, timezone: "Europe/Paris" });
+      expect(saved).toBe(true);
+      expect(await repository.findReadModelByUserId(USER)).toMatchObject({
+        nightPushEnabled: false,
+        currentStreak: 2,
+        longestStreak: 2,
+        lastCompletedDate: TODAY,
+      });
     });
 
-    it("여러 사용자 조회는 설정이 있는 사용자만 userId와 함께 주고 빈 목록이면 빈 배열이다", async () => {
+    it("연속 완료는 읽은 값이 그대로일 때만 저장하고 늦은 저장은 false다", async () => {
       // Given
       const repository = await createRepository();
-      await repository.create(UserId.reconstitute(USER_ID), { timezone: "Asia/Seoul" });
-      await repository.create(UserId.reconstitute(OTHER_USER_ID), { timezone: "America/New_York" });
+      await seed(repository, USER);
+      const first = await repository.getByUserId(USER);
+      const late = await repository.getByUserId(USER);
+      first.recordAllTodosCompleted(TODAY);
+      late.recordAllTodosCompleted(TODAY);
 
       // When
-      const found = await repository.findByUserIds([
-        UserId.reconstitute(OTHER_USER_ID),
-        UserId.reconstitute("missing-user"),
-        UserId.reconstitute(OTHER_USER_ID),
-      ]);
-      const both = await repository.findByUserIds([
-        UserId.reconstitute(USER_ID),
-        UserId.reconstitute(OTHER_USER_ID),
-      ]);
-      const none = await repository.findByUserIds([]);
+      const firstSaved = await repository.save(first);
+      const lateSaved = await repository.save(late);
 
       // Then
-      expect(found).toMatchObject([
-        { ...COLUMN_DEFAULTS, userId: OTHER_USER_ID, timezone: "America/New_York" },
-      ]);
-      expect(both.map((record) => [record.userId, record.timezone]).toSorted()).toEqual([
-        [USER_ID, "Asia/Seoul"],
-        [OTHER_USER_ID, "America/New_York"],
-      ]);
+      expect({ firstSaved, lateSaved }).toEqual({ firstSaved: true, lateSaved: false });
+      expect(await repository.findReadModelByUserId(USER)).toMatchObject({
+        currentStreak: 1,
+        lastCompletedDate: TODAY,
+      });
+    });
+
+    it("동의 변경은 자기 칸만 바꾸고 다른 동의를 둔다", async () => {
+      // Given
+      const repository = await createRepository();
+      await seed(repository, USER, { termsAgreedAt: NOW, marketingAgreedAt: NOW });
+      const preference = await repository.getByUserId(USER);
+      const later = NOW.add({ hours: 1 });
+
+      // When
+      preference.changeMarketingPushConsent(true, later);
+      await repository.save(preference);
+
+      // Then
+      expect((await repository.getByUserId(USER)).consent.toPrimitives()).toMatchObject({
+        termsAgreedAt: NOW,
+        marketingAgreedAt: NOW,
+        marketingPushAgreedAt: later,
+      });
+    });
+
+    it("동의 행이 없는 사용자의 동의 변경은 그 칸만 가진 행을 만들고 설정 행은 만들지 않는다", async () => {
+      // Given
+      const repository = await createRepository();
+      const preference = await repository.getByUserId(USER);
+
+      // When
+      preference.answerAiDataSharing({
+        agreed: true,
+        version: AI_DATA_SHARING_CONSENT.VERSION,
+        now: NOW,
+      });
+      await repository.save(preference);
+
+      // Then
+      const reloaded = await repository.getByUserId(USER);
+      expect(reloaded.consent.aiDataSharing().status().decision).toBe("AGREED");
+      expect(reloaded.consent.toPrimitives()).toMatchObject({
+        aiDataSharingAgreedAt: NOW,
+        aiDataSharingVersion: AI_DATA_SHARING_CONSENT.VERSION,
+        termsAgreedAt: null,
+      });
+      expect(await repository.findReadModelByUserId(USER)).toBeNull();
+    });
+
+    it("여러 사용자 읽기 모델은 설정 행이 있는 사용자만 주고 빈 목록이면 빈 배열이다", async () => {
+      // Given
+      const repository = await createRepository();
+      await seed(repository, OTHER_USER);
+
+      // When
+      const found = await repository.findReadModelsByUserIds([USER, OTHER_USER]);
+      const none = await repository.findReadModelsByUserIds([]);
+
+      // Then
+      expect(found).toEqual([{ ...COLUMN_DEFAULTS, userId: OTHER_USER.value }]);
       expect(none).toEqual([]);
-    });
-
-    it("upsertTimezone은 새로 만들거나 값을 바꾸면 true, 같은 값이면 false다", async () => {
-      // Given
-      const repository = await createRepository();
-
-      // When
-      const created = await repository.upsertTimezone(UserId.reconstitute(USER_ID), "Asia/Seoul");
-      const unchanged = await repository.upsertTimezone(UserId.reconstitute(USER_ID), "Asia/Seoul");
-      const changed = await repository.upsertTimezone(
-        UserId.reconstitute(USER_ID),
-        "America/New_York",
-      );
-
-      // Then
-      expect({ created, unchanged, changed }).toEqual({
-        created: true,
-        unchanged: false,
-        changed: true,
-      });
-      expect(await repository.findByUserId(UserId.reconstitute(USER_ID))).toMatchObject({
-        ...COLUMN_DEFAULTS,
-        timezone: "America/New_York",
-      });
     });
 
     it("refreshTimezoneIfChanged는 설정이 없으면 만들지 않고 0, 같으면 0, 다르면 1을 준다", async () => {
@@ -232,20 +236,14 @@ export function describeUserPreferenceRepositoryContract(
       const repository = await createRepository();
 
       // When
-      const missing = await repository.refreshTimezoneIfChanged(
-        UserId.reconstitute(USER_ID),
-        "Asia/Seoul",
-      );
-      const created = await repository.findByUserId(UserId.reconstitute(USER_ID));
-      await repository.create(UserId.reconstitute(USER_ID), { timezone: "Asia/Seoul" });
+      const missing = await repository.refreshTimezoneIfChanged(USER, "Asia/Seoul");
+      const created = await repository.findReadModelByUserId(USER);
+      await seed(repository, USER);
       const unchanged = await repository.refreshTimezoneIfChanged(
-        UserId.reconstitute(USER_ID),
-        "Asia/Seoul",
+        USER,
+        DEFAULT_USER_PREFERENCE_SETTINGS.timezone,
       );
-      const changed = await repository.refreshTimezoneIfChanged(
-        UserId.reconstitute(USER_ID),
-        "Europe/London",
-      );
+      const changed = await repository.refreshTimezoneIfChanged(USER, "Europe/London");
 
       // Then
       expect({ missing, created, unchanged, changed }).toEqual({
@@ -254,93 +252,7 @@ export function describeUserPreferenceRepositoryContract(
         unchanged: 0,
         changed: 1,
       });
-      expect((await repository.findByUserId(UserId.reconstitute(USER_ID)))?.timezone).toBe(
-        "Europe/London",
-      );
-    });
-
-    it("upsertLocale은 설정이 없으면 기본값으로 만들고 있으면 언어만 바꾼다", async () => {
-      // Given
-      const repository = await createRepository();
-      await repository.create(UserId.reconstitute(OTHER_USER_ID), {
-        timezone: "Asia/Tokyo",
-        pushEnabled: false,
-      });
-
-      // When
-      await repository.upsertLocale(UserId.reconstitute(USER_ID), "en");
-      await repository.upsertLocale(UserId.reconstitute(OTHER_USER_ID), "en-US");
-
-      // Then
-      expect(await repository.findByUserId(UserId.reconstitute(USER_ID))).toMatchObject({
-        ...COLUMN_DEFAULTS,
-        locale: "en",
-      });
-      expect(await repository.findByUserId(UserId.reconstitute(OTHER_USER_ID))).toMatchObject({
-        ...COLUMN_DEFAULTS,
-        timezone: "Asia/Tokyo",
-        pushEnabled: false,
-        locale: "en-US",
-      });
-    });
-
-    it("연속 완료는 기대한 상태와 같을 때만 바꾸고 Aggregate로 다시 읽는다", async () => {
-      // Given
-      const repository = await createRepository();
-      await repository.create(UserId.reconstitute(USER_ID));
-      const next = {
-        currentStreak: 3,
-        longestStreak: 5,
-        lastCompletedDate: Temporal.PlainDate.from("2026-11-10"),
-      };
-
-      // When
-      const first = await repository.updateStreakIfUnchanged(
-        UserId.reconstitute(USER_ID),
-        INITIAL_STREAK,
-        SAVED_STREAK,
-      );
-      const stale = await repository.updateStreakIfUnchanged(
-        UserId.reconstitute(USER_ID),
-        INITIAL_STREAK,
-        next,
-      );
-      const advanced = await repository.updateStreakIfUnchanged(
-        UserId.reconstitute(USER_ID),
-        SAVED_STREAK,
-        next,
-      );
-      const streak = await repository.findStreakByUserId(UserId.reconstitute(USER_ID));
-
-      // Then
-      expect({ first, stale, advanced }).toEqual({ first: true, stale: false, advanced: true });
-      expect(streak?.streakState).toEqual(next);
-      expect(await repository.findByUserId(UserId.reconstitute(USER_ID))).toMatchObject(next);
-    });
-
-    it("연속 완료 CAS는 마지막 완료일이 비어 있는지도 비교하고 설정이 없으면 false다", async () => {
-      // Given
-      const repository = await createRepository();
-      await repository.create(UserId.reconstitute(USER_ID));
-
-      // When
-      const mismatchedDate = await repository.updateStreakIfUnchanged(
-        UserId.reconstitute(USER_ID),
-        { ...INITIAL_STREAK, lastCompletedDate: SAVED_STREAK.lastCompletedDate },
-        SAVED_STREAK,
-      );
-      const missing = await repository.updateStreakIfUnchanged(
-        UserId.reconstitute(OTHER_USER_ID),
-        INITIAL_STREAK,
-        SAVED_STREAK,
-      );
-
-      // Then
-      expect({ mismatchedDate, missing }).toEqual({ mismatchedDate: false, missing: false });
-      expect(
-        (await repository.findStreakByUserId(UserId.reconstitute(USER_ID)))?.streakState,
-      ).toEqual(INITIAL_STREAK);
-      expect(await repository.findByUserId(UserId.reconstitute(OTHER_USER_ID))).toBeNull();
+      expect((await repository.findReadModelByUserId(USER))?.timezone).toBe("Europe/London");
     });
   });
 }

@@ -9,13 +9,14 @@ import {
   type JobInsert,
   type JobWithMetadata,
   type PreviewScheduleOptions,
-  type QueueOptions,
+  type Queue,
   type QueueResult,
   type Schedule,
   type ScheduleOptions,
   type SendOptions,
   type StopOptions,
   type UpdateQueueOptions,
+  type Warning,
   type WorkOptions,
 } from "pg-boss";
 
@@ -32,17 +33,31 @@ export type PgBossQueueCounts = Pick<
   "name" | "queuedCount" | "activeCount" | "failedCount"
 >;
 
+// pg-boss 유지보수(큐 통계 집계·만료 정리)와 스케줄 감시 집계는 job 표를 넓게 읽어 앱 풀 상한(15초)을 넘을 수 있다.
+// pg-boss 느린 쿼리 경고(30초)보다 길게 둔다
+const PG_BOSS_STATEMENT_TIMEOUT_MS = 60_000;
+// 평소에는 서버 statement_timeout이 먼저 취소하고 DB가 응답하지 않을 때만 클라이언트가 끊는다
+const PG_BOSS_QUERY_TIMEOUT_MS = PG_BOSS_STATEMENT_TIMEOUT_MS + 5000;
+
+export type PgBossQueueOptions = Omit<Queue, "name">;
+
+export type PgBossListener =
+  | readonly [event: "error", listener: (error: Error) => void]
+  | readonly [event: "warning", listener: (warning: Warning) => void];
+
 export interface PgBossClient {
   start(): Promise<unknown>;
   stop(options?: StopOptions): Promise<void>;
   on(event: "error", listener: (error: Error) => void): unknown;
-  createQueue(name: string, options?: QueueOptions): Promise<void>;
+  on(event: "warning", listener: (warning: Warning) => void): unknown;
+  createQueue(name: string, options?: PgBossQueueOptions): Promise<void>;
   updateQueue(name: string, options: UpdateQueueOptions): Promise<void>;
   send(name: string, data: object, options: SendOptions): Promise<string | null>;
   insert(name: string, jobs: JobInsert[], options: InsertOptions): Promise<string[] | null>;
   schedule(name: string, cron: string, data: object, options: ScheduleOptions): Promise<void>;
   unschedule(name: string, key?: string): Promise<void>;
   deleteJob(name: string, ids: string[], options?: { db?: Db }): Promise<unknown>;
+  getJobById(name: string, id: string, options?: { db?: Db }): Promise<JobWithMetadata | null>;
   work(
     name: string,
     options: WorkOptions & { includeMetadata: true },
@@ -52,6 +67,16 @@ export interface PgBossClient {
   getSchedules(): Promise<Schedule[]>;
   // pg-boss는 동기 계산이지만 지연 시작 client는 시작을 기다린 뒤 계산한다
   previewSchedule(cron: string, options: PreviewScheduleOptions): Date[] | Promise<Date[]>;
+  // pg-boss 풀에서 쿼리를 돌린다. 지연 시작 client는 시작을 기다린 뒤 준다
+  getDb(): Db | Promise<Db>;
+}
+
+function attachListener(client: PgBossClient, registration: PgBossListener): void {
+  if (registration[0] === "error") {
+    client.on(registration[0], registration[1]);
+    return;
+  }
+  client.on(registration[0], registration[1]);
 }
 
 type PgBossClientLoader = () => PgBossClient | Promise<PgBossClient>;
@@ -59,7 +84,7 @@ type PgBossClientLoader = () => PgBossClient | Promise<PgBossClient>;
 export class LazyPgBossClient implements PgBossClient {
   #client?: PgBossClient;
   #starting?: Promise<PgBossClient>;
-  readonly #errorListeners = new Set<(error: Error) => void>();
+  readonly #listeners = new Set<PgBossListener>();
   #stopped = false;
   readonly #load: PgBossClientLoader;
 
@@ -80,13 +105,17 @@ export class LazyPgBossClient implements PgBossClient {
     this.#starting = undefined;
   }
 
-  on(event: "error", listener: (error: Error) => void): unknown {
-    this.#errorListeners.add(listener);
-    this.#client?.on(event, listener);
+  on(event: "error", listener: (error: Error) => void): unknown;
+  on(event: "warning", listener: (warning: Warning) => void): unknown;
+  on(...registration: PgBossListener): unknown {
+    this.#listeners.add(registration);
+    if (this.#client) {
+      attachListener(this.#client, registration);
+    }
     return this;
   }
 
-  async createQueue(name: string, options?: QueueOptions): Promise<void> {
+  async createQueue(name: string, options?: PgBossQueueOptions): Promise<void> {
     await (await this.#ensureStarted()).createQueue(name, options);
   }
 
@@ -102,13 +131,9 @@ export class LazyPgBossClient implements PgBossClient {
     return (await this.#ensureStarted()).insert(name, jobs, options);
   }
 
-  async schedule(
-    name: string,
-    cron: string,
-    data: object,
-    options: ScheduleOptions,
-  ): Promise<void> {
-    await (await this.#ensureStarted()).schedule(name, cron, data, options);
+  // pg-boss schedule 인자 넷을 그대로 넘긴다
+  async schedule(...pgBossArguments: Parameters<PgBossClient["schedule"]>): Promise<void> {
+    await (await this.#ensureStarted()).schedule(...pgBossArguments);
   }
 
   async unschedule(name: string, key?: string): Promise<void> {
@@ -117,6 +142,14 @@ export class LazyPgBossClient implements PgBossClient {
 
   async deleteJob(name: string, ids: string[], options?: { db?: Db }): Promise<unknown> {
     return (await this.#ensureStarted()).deleteJob(name, ids, options);
+  }
+
+  async getJobById(
+    name: string,
+    id: string,
+    options?: { db?: Db },
+  ): Promise<JobWithMetadata | null> {
+    return (await this.#ensureStarted()).getJobById(name, id, options);
   }
 
   async work(
@@ -139,6 +172,10 @@ export class LazyPgBossClient implements PgBossClient {
     return (await this.#ensureStarted()).previewSchedule(cron, options);
   }
 
+  async getDb(): Promise<Db> {
+    return (await this.#ensureStarted()).getDb();
+  }
+
   async #ensureStarted(): Promise<PgBossClient> {
     if (this.#client) {
       return this.#client;
@@ -156,8 +193,8 @@ export class LazyPgBossClient implements PgBossClient {
 
   async #loadAndStart(): Promise<PgBossClient> {
     const client = await this.#load();
-    for (const listener of this.#errorListeners) {
-      client.on("error", listener);
+    for (const registration of this.#listeners) {
+      attachListener(client, registration);
     }
     try {
       await client.start();
@@ -181,14 +218,15 @@ export const pgBossClientProvider: FactoryProvider<PgBossClient> = {
   provide: PG_BOSS_CLIENT,
   inject: [databaseConfig.KEY, jobConfig.KEY],
   useFactory: (database: ConfigType<typeof databaseConfig>, job: ConfigType<typeof jobConfig>) => {
-    // pg-boss가 이 설정을 pg Pool에 그대로 넘겨 앱 풀과 같은 세션 옵션·TLS·유휴 정리를 쓴다(pg 전용 칸은 PoolConfig 타입으로 받는다)
+    // pg-boss가 이 설정을 pg Pool에 그대로 넘겨 앱 풀과 같은 TLS·유휴 정리를 쓴다(pg 전용 칸은 PoolConfig 타입으로 받는다)
     const options: ConstructorOptions & PoolConfig = {
       ...createPostgresPoolConfig(database.url, {
         applicationName: "aido-pg-boss",
         max: job.poolMax,
         idleTimeoutMs: database.idleTimeoutMs,
         connectionTimeoutMs: database.connectionTimeoutMs,
-        queryTimeoutMs: database.queryTimeoutMs,
+        queryTimeoutMs: PG_BOSS_QUERY_TIMEOUT_MS,
+        statementTimeoutMs: PG_BOSS_STATEMENT_TIMEOUT_MS,
         allowUnverifiedTls: database.allowUnverifiedTls,
       }),
       schema: job.schema,

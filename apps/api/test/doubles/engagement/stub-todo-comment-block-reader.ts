@@ -1,4 +1,4 @@
-import { TodoCommentBlockReaderPort } from "#api/modules/engagement/comments/application/ports/todo-comment-block-reader.port";
+import { TodoCommentBlockReaderPort } from "#api/modules/engagement/todo-comments/application/ports/todo-comment-block-reader.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 /** 차단 쌍을 방향과 상관없이 기억한다 */

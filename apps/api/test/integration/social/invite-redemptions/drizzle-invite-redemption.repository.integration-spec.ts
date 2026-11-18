@@ -1,9 +1,11 @@
 import { eq } from "drizzle-orm";
 
+import { DrizzleUserBriefReader } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user-brief.reader";
 import { SummarizeInviterProgressUseCase } from "#api/modules/social/invite-redemptions/application/use-cases/summarize-inviter-progress.use-case";
 import { InviteRedemptionId } from "#api/modules/social/invite-redemptions/domain/invite-redemption-id.vo";
 import { DrizzleInviteRedemptionReader } from "#api/modules/social/invite-redemptions/infrastructure/persistence/drizzle-invite-redemption.reader";
 import { DrizzleInviteRedemptionRepository } from "#api/modules/social/invite-redemptions/infrastructure/persistence/drizzle-invite-redemption.repository";
+import { DrizzleInvitedFriendReader } from "#api/modules/social/invite-redemptions/infrastructure/persistence/drizzle-invited-friend.reader";
 import {
   inviteActiveDay,
   inviteRedemption,
@@ -15,6 +17,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { describeInviteRedemptionRepositoryContract } from "#test/contracts/social/invite-redemption-repository.contract";
 import { DateClock } from "#test/doubles/platform/date-clock";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createInviteRedemptionFixture } from "#test/fixtures/social/invite-redemption.fixture";
 import {
   INVITE_FIXTURE_ID,
@@ -23,7 +26,6 @@ import {
   INVITE_FIXTURE_NOW,
   insertInviteFixtureRows,
 } from "#test/fixtures/social/invite.fixture";
-import { UserFixture } from "#test/fixtures/user.fixture";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -57,12 +59,17 @@ describe("DrizzleInviteRedemptionRepository (실제 PostgreSQL)", () => {
   function createRepositories(): {
     readonly redemptions: DrizzleInviteRedemptionRepository;
     readonly reader: DrizzleInviteRedemptionReader;
+    readonly invitedFriendReader: DrizzleInvitedFriendReader;
     readonly unitOfWork: UnitOfWorkPort;
   } {
-    const { txHost, uow } = createDatabaseTransactionFixture(client);
+    const { transactionHost, uow } = createDatabaseTransactionFixture(client);
     return {
-      redemptions: new DrizzleInviteRedemptionRepository(txHost, new DateClock()),
-      reader: new DrizzleInviteRedemptionReader(txHost),
+      redemptions: new DrizzleInviteRedemptionRepository(transactionHost, new DateClock()),
+      reader: new DrizzleInviteRedemptionReader(transactionHost),
+      invitedFriendReader: new DrizzleInvitedFriendReader(
+        transactionHost,
+        new DrizzleUserBriefReader(transactionHost),
+      ),
       unitOfWork: uow,
     };
   }
@@ -71,7 +78,7 @@ describe("DrizzleInviteRedemptionRepository (실제 PostgreSQL)", () => {
     const ids = Array.from({ length: count }, () => createEntityId());
     await client.insert(userTable).values(
       ids.map((id, index) =>
-        UserFixture.create({
+        createUserRowFixture({
           id,
           userTag: `BLK${String(index).padStart(5, "0")}`,
           email: `blk${index}@example.test`,
@@ -82,12 +89,13 @@ describe("DrizzleInviteRedemptionRepository (실제 PostgreSQL)", () => {
   }
 
   describeInviteRedemptionRepositoryContract(async () => {
-    const { redemptions, reader } = createRepositories();
-    return { repository: redemptions, reader };
+    const { redemptions, reader, invitedFriendReader } = createRepositories();
+    return { repository: redemptions, reader, invitedFriendReader };
   });
 
   it("활동일은 DATE 칸에 그 날짜 그대로 남고 다시 읽어도 하루 밀리지 않는다", async () => {
-    // Given 서울 2/29 00:01 완료
+    // Given
+    // 서울 2/29 00:01 완료
     const { redemptions } = createRepositories();
     const redemption = createInviteRedemptionFixture({ id: InviteRedemptionId.generate().value });
     await redemptions.save(redemption);
@@ -126,9 +134,9 @@ describe("DrizzleInviteRedemptionRepository (실제 PostgreSQL)", () => {
     });
   });
 
-  it("페이지 크기와 관계없이 SQL 한 번으로 프로필·활동일 수를 함께 읽는다", async () => {
+  it("페이지 크기와 관계없이 수락·활동일 수 한 문장과 프로필 한 문장으로 읽는다", async () => {
     // Given
-    const { redemptions, reader } = createRepositories();
+    const { redemptions, invitedFriendReader } = createRepositories();
     const inviteeIds = await insertInvitees(5);
     for (const [index, inviteeId] of inviteeIds.entries()) {
       await redemptions.save(
@@ -142,26 +150,26 @@ describe("DrizzleInviteRedemptionRepository (실제 PostgreSQL)", () => {
 
     // When
     statements = [];
-    await reader.listInvitedFriends({
+    await invitedFriendReader.listInvitedFriends({
       inviterId: INVITER_ID,
       afterInviteeId: null,
       status: null,
-      limit: 2,
+      size: 2,
     });
     const smallPageStatements = statements.length;
     statements = [];
-    const everyone = await reader.listInvitedFriends({
+    const everyone = await invitedFriendReader.listInvitedFriends({
       inviterId: INVITER_ID,
       afterInviteeId: null,
       status: null,
-      limit: 5,
+      size: 5,
     });
     const fullPageStatements = statements.length;
     statements = null;
 
     // Then
-    expect([smallPageStatements, fullPageStatements]).toEqual([1, 1]);
-    expect(everyone.map((friend) => friend.userId)).toEqual([...inviteeIds].reverse());
+    expect([smallPageStatements, fullPageStatements]).toEqual([2, 2]);
+    expect(everyone.items.map((friend) => friend.userId)).toEqual([...inviteeIds].reverse());
   });
 
   it("마감 정비가 동시에 돌아도 SKIP LOCKED로 나눠 잡아 같은 수락을 두 번 거절하지 않는다", async () => {
@@ -188,9 +196,9 @@ describe("DrizzleInviteRedemptionRepository (실제 PostgreSQL)", () => {
     });
   });
 
-  it("수락이 1천 건이어도 내 초대 요약은 문장 네 개, 상태별 목록은 한 문장이다", async () => {
+  it("수락이 1천 건이어도 내 초대 요약은 문장 네 개, 상태별 목록은 수락 한 문장과 프로필 한 문장이다", async () => {
     // Given
-    const { reader } = createRepositories();
+    const { reader, invitedFriendReader } = createRepositories();
     const inviteeIds = await insertInvitees(1000);
     const now = Temporal.Instant.from("2028-03-10T00:00:00Z");
     const rows = inviteeIds.map((inviteeId, index) => ({
@@ -229,23 +237,24 @@ describe("DrizzleInviteRedemptionRepository (실제 PostgreSQL)", () => {
     const myInvite = await summarizeInviterProgress.execute({ inviterId: INVITER_ID, now });
     const summaryStatements = statements.length;
     statements = [];
-    const waiting = await reader.listInvitedFriends({
+    const waiting = await invitedFriendReader.listInvitedFriends({
       inviterId: INVITER_ID,
       afterInviteeId: null,
       status: "JOINED",
-      limit: 21,
+      size: 20,
     });
     const listStatements = statements.length;
     statements = null;
 
     // Then
-    expect([summaryStatements, listStatements]).toEqual([4, 1]);
+    expect([summaryStatements, listStatements]).toEqual([4, 2]);
     expect(myInvite).toMatchObject({
       waitingCount: 750,
       qualifiedCount: 250,
       rewardsEarned: [{ rewardType: "FRIEND_SLOT", quantity: 250 }],
     });
-    expect(waiting).toHaveLength(21);
-    expect(waiting.every((friend) => friend.status === "JOINED")).toBe(true);
+    expect(waiting.items).toHaveLength(20);
+    expect(waiting.pagination.hasNext).toBe(true);
+    expect(waiting.items.every((friend) => friend.status === "JOINED")).toBe(true);
   });
 });

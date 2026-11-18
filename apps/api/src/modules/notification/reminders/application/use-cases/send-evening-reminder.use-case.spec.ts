@@ -2,13 +2,13 @@ import { RecordingNotificationPublisher } from "#test/doubles/notification/recor
 import { StubNotificationHistoryReader } from "#test/doubles/notification/stub-notification-history.reader";
 import { StubScheduledReminderReader } from "#test/doubles/notification/stub-scheduled-reminder.reader";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
-import { TEST_CUID } from "#test/fixtures/index";
+import { TEST_CUID } from "#test/fixtures/identity/user-id.fixture";
 import { createTimezoneContextFixture } from "#test/fixtures/notification/timezone-context.fixture";
 
-import { createEveningReminderNotificationMessage } from "../../../push/application/messages/scheduler-notification.messages.js";
-import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
-import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
-import type { EveningReminderUser } from "../read-models/scheduler.read-model.js";
+import { createEveningReminderNotificationMessage } from "../../../shared/application/messages/scheduler-notification.messages.js";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
+import type { TimezoneContext } from "../../domain/local-clock.domain-service.js";
+import type { EveningReminderUserReadModel } from "../read-models/scheduler.read-model.js";
 import { SendEveningReminderUseCase } from "./send-evening-reminder.use-case.js";
 
 describe("SendEveningReminderUseCase — 저녁 리마인더 전략", () => {
@@ -23,14 +23,14 @@ describe("SendEveningReminderUseCase — 저녁 리마인더 전략", () => {
     occurrenceKey: "2024-01-16",
   } as const;
 
-  const makeCtx = (overrides: Partial<TimezoneContext> = {}): TimezoneContext =>
+  const makeTimezoneContext = (overrides: Partial<TimezoneContext> = {}): TimezoneContext =>
     createTimezoneContextFixture({ date: "2024-01-16", localHour: 18, ...overrides });
 
   const user = (
     id: string,
     todos: readonly boolean[],
-    preference: Partial<NonNullable<EveningReminderUser["preference"]>> = {},
-  ): EveningReminderUser => ({
+    preference: Partial<NonNullable<EveningReminderUserReadModel["preference"]>> = {},
+  ): EveningReminderUserReadModel => ({
     id,
     timezone: "Asia/Seoul",
     todos: todos.map((completed) => ({ completed })),
@@ -45,7 +45,7 @@ describe("SendEveningReminderUseCase — 저녁 리마인더 전략", () => {
     history = new StubNotificationHistoryReader();
     strategy = new SendEveningReminderUseCase({
       reader,
-      notificationPublisher: publisher,
+      notificationPublisher: publisher.batch,
       notificationHistoryReader: history,
       logger: new SilentLogger(),
     });
@@ -53,12 +53,12 @@ describe("SendEveningReminderUseCase — 저녁 리마인더 전략", () => {
 
   it("프리미엄 사용자에게 고른 시각에 저녁 리마인더를 발송하고 무료 사용자는 조회하지 않는다", async () => {
     // Given
-    const ctx = makeCtx({ localHour: 20, localMinute: 30 });
+    const timezoneContext = makeTimezoneContext({ localHour: 20, localMinute: 30 });
     reader.premiumEveningUsers = [user(TEST_CUID.USER_1, [true, false])];
     reader.freeEveningUsers = [user(TEST_CUID.USER_2, [false])];
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({
@@ -68,25 +68,28 @@ describe("SendEveningReminderUseCase — 저녁 리마인더 전략", () => {
     expect(reader.queries).toEqual([
       {
         method: "findPremiumEveningReminderUsers",
-        params: expect.objectContaining({ timezones: ["Asia/Seoul"], hour: 20, minute: 30 }),
+        params: expect.objectContaining({
+          timezones: ["Asia/Seoul"],
+          times: [{ hour: 20, minute: 30 }],
+        }),
       },
     ]);
     expect(sent()).toEqual([
       expect.objectContaining({
         userId: TEST_CUID.USER_1,
         type: "EVENING_REMINDER",
-        notificationDate: ctx.today,
+        notificationDate: timezoneContext.today,
       }),
     ]);
   });
 
   it("무료 사용자에게는 19:00에 저녁 리마인더를 발송한다", async () => {
     // Given
-    const ctx = makeCtx({ localHour: 19, localMinute: 0 });
+    const timezoneContext = makeTimezoneContext({ localHour: 19, localMinute: 0 });
     reader.freeEveningUsers = [user(TEST_CUID.USER_2, [false])];
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({
@@ -101,11 +104,15 @@ describe("SendEveningReminderUseCase — 저녁 리마인더 전략", () => {
 
   it("특정 사용자만 다시 보는 catch-up에서는 19:00이어도 무료 사용자를 조회하지 않는다", async () => {
     // Given
-    const ctx = makeCtx({ localHour: 19, localMinute: 0, userId: TEST_CUID.USER_1 });
+    const timezoneContext = makeTimezoneContext({
+      localHour: 19,
+      localMinute: 0,
+      userId: TEST_CUID.USER_1,
+    });
     reader.freeEveningUsers = [user(TEST_CUID.USER_2, [false])];
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 0, recipients: [] });
@@ -113,8 +120,9 @@ describe("SendEveningReminderUseCase — 저녁 리마인더 전략", () => {
   });
 
   it("어제 완료하고 오늘도 전체 완료한 사용자는 이어진 연속 기록으로 완료 메시지를 받는다", async () => {
-    // Given 어제(2024-01-15)까지 5일 연속 → 오늘 완료로 6일
-    const ctx = makeCtx();
+    // Given
+    // 어제(2024-01-15)까지 5일 연속 → 오늘 완료로 6일
+    const timezoneContext = makeTimezoneContext();
     reader.premiumEveningUsers = [
       user(TEST_CUID.USER_1, [true, true], {
         currentStreak: 5,
@@ -123,7 +131,7 @@ describe("SendEveningReminderUseCase — 저녁 리마인더 전략", () => {
     ];
 
     // When
-    await strategy.execute(ctx);
+    await strategy.execute(timezoneContext);
 
     // Then
     const expected = createEveningReminderNotificationMessage({
@@ -145,11 +153,11 @@ describe("SendEveningReminderUseCase — 저녁 리마인더 전략", () => {
 
   it("전체 완료 시 완료 메시지를 발송한다", async () => {
     // Given
-    const ctx = makeCtx();
+    const timezoneContext = makeTimezoneContext();
     reader.premiumEveningUsers = [user(TEST_CUID.USER_1, [true, true])];
 
     // When
-    await strategy.execute(ctx);
+    await strategy.execute(timezoneContext);
 
     // Then
     const expected = createEveningReminderNotificationMessage({
@@ -170,11 +178,11 @@ describe("SendEveningReminderUseCase — 저녁 리마인더 전략", () => {
 
   it("일부 완료 시 남은 개수 메시지를 발송한다", async () => {
     // Given
-    const ctx = makeCtx();
+    const timezoneContext = makeTimezoneContext();
     reader.premiumEveningUsers = [user(TEST_CUID.USER_1, [true, false, false])];
 
     // When
-    await strategy.execute(ctx);
+    await strategy.execute(timezoneContext);
 
     // Then
     const expected = createEveningReminderNotificationMessage({
@@ -188,11 +196,11 @@ describe("SendEveningReminderUseCase — 저녁 리마인더 전략", () => {
 
   it("하나도 안 했을 때 해당 메시지를 발송한다", async () => {
     // Given
-    const ctx = makeCtx();
+    const timezoneContext = makeTimezoneContext();
     reader.premiumEveningUsers = [user(TEST_CUID.USER_1, [false, false])];
 
     // When
-    await strategy.execute(ctx);
+    await strategy.execute(timezoneContext);
 
     // Then
     const expected = createEveningReminderNotificationMessage({
@@ -206,11 +214,11 @@ describe("SendEveningReminderUseCase — 저녁 리마인더 전략", () => {
 
   it("저장한 언어가 지원하지 않는 언어면 영어로 보낸다", async () => {
     // Given
-    const ctx = makeCtx();
+    const timezoneContext = makeTimezoneContext();
     reader.premiumEveningUsers = [user(TEST_CUID.USER_1, [false, false], { locale: "fr" })];
 
     // When
-    await strategy.execute(ctx);
+    await strategy.execute(timezoneContext);
 
     // Then
     const expected = createEveningReminderNotificationMessage({
@@ -224,13 +232,13 @@ describe("SendEveningReminderUseCase — 저녁 리마인더 전략", () => {
 
   it("오늘 이미 저녁 리마인더를 받은 사용자를 제외한다", async () => {
     // Given
-    const ctx = makeCtx();
+    const timezoneContext = makeTimezoneContext();
     reader.premiumEveningUsers = [user(TEST_CUID.USER_1, [false]), user(TEST_CUID.USER_2, [false])];
-    history.notified("EVENING_REMINDER", [TEST_CUID.USER_1], ctx.today);
-    history.notified("MORNING_REMINDER", [TEST_CUID.USER_2], ctx.today);
+    history.notified("EVENING_REMINDER", [TEST_CUID.USER_1], timezoneContext.today);
+    history.notified("MORNING_REMINDER", [TEST_CUID.USER_2], timezoneContext.today);
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({
@@ -242,10 +250,10 @@ describe("SendEveningReminderUseCase — 저녁 리마인더 전략", () => {
 
   it("대상이 없으면 발송하지 않는다", async () => {
     // Given
-    const ctx = makeCtx();
+    const timezoneContext = makeTimezoneContext();
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 0, recipients: [] });

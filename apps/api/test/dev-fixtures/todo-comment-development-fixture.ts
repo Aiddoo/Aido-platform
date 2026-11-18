@@ -14,22 +14,22 @@
 import { createHash, createHmac } from "node:crypto";
 import { parseArgs } from "node:util";
 
+import { currentUserSchema } from "@aido/api/contracts/auth/v1";
 import {
-  currentUserSchema,
   deleteTodoCommentResponseSchema,
   todoCommentChainResponseSchema,
   todoCommentLikeResponseSchema,
   todoCommentOverviewResponseSchema,
   todoConversationResponseSchema,
   todoDetailsResponseSchema,
-  z,
-} from "@aido/api";
+} from "@aido/api/contracts/todo-comment/v1";
 import { ErrorCode, type ErrorCodeType, HttpStatus } from "@aido/api/errors";
 import { and, count, eq, inArray, isNull, or } from "drizzle-orm";
+import { z } from "zod";
 
 import { requireRecord } from "#api/platform/database/database-error.util";
 import {
-  follow,
+  friendship as friendshipTable,
   session,
   todoComment,
   user,
@@ -283,10 +283,10 @@ async function provisionFixtureActor(input: {
     ];
     for (const { followerId, followingId } of friendshipDirections) {
       await transaction
-        .insert(follow)
+        .insert(friendshipTable)
         .values({ followerId, followingId, status: "ACCEPTED", updatedAt: now })
         .onConflictDoUpdate({
-          target: [follow.followerId, follow.followingId],
+          target: [friendshipTable.followerId, friendshipTable.followingId],
           set: { status: "ACCEPTED", updatedAt: now },
         });
     }
@@ -587,13 +587,19 @@ async function verifyStoredCalculations(input: {
 
   const [acceptedFollows] = await input.db
     .select({ count: count() })
-    .from(follow)
+    .from(friendshipTable)
     .where(
       and(
-        eq(follow.status, "ACCEPTED"),
+        eq(friendshipTable.status, "ACCEPTED"),
         or(
-          and(eq(follow.followerId, input.ownerId), inArray(follow.followingId, actorIds)),
-          and(inArray(follow.followerId, actorIds), eq(follow.followingId, input.ownerId)),
+          and(
+            eq(friendshipTable.followerId, input.ownerId),
+            inArray(friendshipTable.followingId, actorIds),
+          ),
+          and(
+            inArray(friendshipTable.followerId, actorIds),
+            eq(friendshipTable.followingId, input.ownerId),
+          ),
         ),
       ),
     );

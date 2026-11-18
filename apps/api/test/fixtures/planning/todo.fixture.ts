@@ -1,5 +1,5 @@
-import type { TodoItemPrimitives } from "#api/modules/planning/shared/domain/todo-item.entity";
-import { Todo, type TodoPrimitives } from "#api/modules/planning/shared/domain/todo.aggregate";
+import type { TodoItemPrimitives } from "#api/modules/planning/todos/domain/todo-item.entity";
+import { Todo, type TodoPrimitives } from "#api/modules/planning/todos/domain/todo.aggregate";
 
 export const TODO_FIXTURE_NOW = Temporal.Instant.from("2026-11-10T00:00:00Z");
 export const TODO_FIXTURE_USER_ID = "clz7x5p8k0001qz0z8z8z8z8z";

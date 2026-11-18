@@ -1,10 +1,10 @@
+import { dailyCompletionsRangeResponseSchema } from '@aido/api/contracts/daily-completion/v1';
+import { todoDetailsResponseSchema } from '@aido/api/contracts/todo-comment/v1';
 import {
-  dailyCompletionsRangeResponseSchema,
-  todoDetailsResponseSchema,
   todoListResponseSchema,
   todoSummaryResponseSchema,
   updateTodoSchema,
-} from '@aido/api';
+} from '@aido/api/contracts/todo/v1';
 import { toInstant } from '@src/shared/date/instant';
 import { createTestQueryClient } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';

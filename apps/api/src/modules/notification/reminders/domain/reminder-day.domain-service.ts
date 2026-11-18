@@ -1,22 +1,44 @@
-const DAY_MS = 24 * 60 * 60_000;
+import { localDateIn } from "#api/shared/domain/time/time-zone-name";
 
-// 리마인더 대상 구간은 사용자 현지 오늘을 UTC 자정 순간으로 둔 옛 기준을 그대로 쓴다
-export function utcStartOf(date: Temporal.PlainDate): Temporal.Instant {
-  return date.toZonedDateTime("UTC").toInstant();
+import { nonIsoCalendarDate } from "./reminders.errors.js";
+
+// 날짜 규칙(docs/conventions/dates.md): 배치는 사용자 저장 시간대의 달력 날짜로 센다
+
+/** 그 순간이 현지 달력으로 오늘보다 며칠 전인지. 같은 날이면 0이다 */
+export function localDaysSince(
+  since: Temporal.Instant,
+  today: Temporal.PlainDate,
+  timezone: string,
+): number {
+  return localDateIn(since, timezone).until(today, { largestUnit: "days" }).days;
 }
 
-/** 그 순간부터 현지 오늘(UTC 자정 기준)까지 지난 24시간 단위 일수. 0 쪽으로 버린다 */
-export function elapsedDaysUntil(today: Temporal.PlainDate, since: Temporal.Instant): number {
-  const days = Math.trunc((utcStartOf(today).epochMilliseconds - since.epochMilliseconds) / DAY_MS);
-  // 오늘 자정 뒤의 순간은 -0이 되어 0과 다르게 비교되지 않게 맞춘다
-  return days === 0 ? 0 : days;
+/** 현지 날짜가 시작하는 순간. 자정이 DST 틈이면 틈 뒤 첫 순간이다 */
+export function localStartOf(date: Temporal.PlainDate, timezone: string): Temporal.Instant {
+  return date.toZonedDateTime(timezone).toInstant();
+}
+
+/**
+ * 시간대 묶음의 사람마다 현지 날짜 [firstDay, endDay)가 되는 순간을 모두 덮는 범위다.
+ * 묶음의 시간대는 지금 오프셋이 같아도 그날 오프셋이 다를 수 있어 넓게 읽고, 사람마다 localDaysSince로 거른다.
+ */
+export function localDayRangeAcross(
+  timezones: readonly string[],
+  firstDay: Temporal.PlainDate,
+  endDay: Temporal.PlainDate,
+): { readonly since: Temporal.Instant; readonly until: Temporal.Instant } | null {
+  const starts = timezones.map((timezone) => localStartOf(firstDay, timezone));
+  const ends = timezones.map((timezone) => localStartOf(endDay, timezone));
+  const since = starts.toSorted(Temporal.Instant.compare).at(0);
+  const until = ends.toSorted(Temporal.Instant.compare).at(-1);
+  return since == null || until == null ? null : { since, until };
 }
 
 // 날짜 키로 만든 PlainDate는 ISO 달력이라 주차가 늘 있고 타입만 undefined를 허용한다
 function isoWeekOf(date: Temporal.PlainDate): { readonly year: number; readonly week: number } {
   const { yearOfWeek, weekOfYear } = date;
   if (yearOfWeek == null || weekOfYear == null) {
-    throw new Error(`ISO 달력 날짜가 아니다: ${date.toString()}`);
+    throw nonIsoCalendarDate(date);
   }
   return { year: yearOfWeek, week: weekOfYear };
 }
@@ -34,8 +56,11 @@ export function previousIsoWeekOf(today: Temporal.PlainDate): {
   return { start, end, isoYear: year, isoWeek: week };
 }
 
-/** 주 단위 발송 이력 key의 주 식별자(예: "2026-W10") */
-export function isoWeekIdOf(date: Temporal.PlainDate): string {
-  const { year, week } = isoWeekOf(date);
-  return `${year}-W${String(week).padStart(2, "0")}`;
+/** 그 날이 속한 ISO 주의 월요일부터 다음 주 월요일 전까지 */
+export function isoWeekRangeOf(date: Temporal.PlainDate): {
+  readonly start: Temporal.PlainDate;
+  readonly end: Temporal.PlainDate;
+} {
+  const start = date.subtract({ days: date.dayOfWeek - 1 });
+  return { start, end: start.add({ weeks: 1 }) };
 }

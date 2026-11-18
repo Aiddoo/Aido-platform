@@ -1,8 +1,7 @@
 import type {
   TodoComment,
   TodoCommentPrimitives,
-} from "#api/modules/engagement/comments/domain/todo-comment.aggregate";
-import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+} from "#api/modules/engagement/todo-comments/domain/todo-comment.aggregate";
 import { FakeTodoCommentReader } from "#test/doubles/engagement/fake-todo-comment.reader";
 import { FakeTodoEngagementCounter } from "#test/doubles/engagement/fake-todo-engagement-counter";
 import { InMemoryTodoCommentLikeRepository } from "#test/doubles/engagement/in-memory-todo-comment-like.repository";
@@ -16,6 +15,7 @@ import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { StubMutualFriendReader } from "#test/doubles/social/stub-mutual-friend-reader";
 
 import {
   createTodoCommentFixture,
@@ -26,7 +26,7 @@ import {
   TODO_COMMENT_FIXTURE_VIEWER_ID,
 } from "./todo-comment.fixture.js";
 
-/** 댓글 UseCase를 InMemory 저장소와 기록용 대역으로 조립하는 의존성 묶음 */
+/** 댓글 UseCase를 InMemory 저장소와 기록용 대역으로 조립하는 의존성 묶음. 조회 포트는 대역 하나가 모두 맡는다 */
 export function createTodoCommentsFixture() {
   const repository = new InMemoryTodoCommentRepository();
   const likeRepository = new InMemoryTodoCommentLikeRepository();
@@ -38,6 +38,9 @@ export function createTodoCommentsFixture() {
   reader.names.set(TODO_COMMENT_FIXTURE_OWNER_ID, "작성자");
   reader.names.set(TODO_COMMENT_FIXTURE_VIEWER_ID, "방문자");
   const engagementCounter = new FakeTodoEngagementCounter();
+  const mutualFriendReader = new StubMutualFriendReader();
+  mutualFriendReader.addMutual(TODO_COMMENT_FIXTURE_OWNER_ID, TODO_COMMENT_FIXTURE_VIEWER_ID);
+  mutualFriendReader.addMutual(TODO_COMMENT_FIXTURE_OWNER_ID, TODO_COMMENT_FIXTURE_FRIEND_ID);
   let commentSequence = 0;
 
   async function addComment(overrides: Partial<TodoCommentPrimitives> = {}): Promise<TodoComment> {
@@ -48,7 +51,7 @@ export function createTodoCommentsFixture() {
       ...overrides,
     });
     await repository.save(comment);
-    await engagementCounter.increaseCommentCount(TodoId.reconstitute(comment.todoId), 1);
+    await engagementCounter.increaseCommentCount(comment.todoId, 1);
     return comment;
   }
 
@@ -57,7 +60,13 @@ export function createTodoCommentsFixture() {
     likeRepository,
     purgeRepository: new InMemoryTodoCommentPurgeRepository(repository, likeRepository),
     reader,
+    accessReader: reader,
+    threadReader: reader,
+    replyReader: reader,
+    conversationReader: reader,
+    likeReader: reader,
     engagementCounter,
+    mutualFriendReader,
     notification: new RecordingTodoCommentNotification(),
     blockReader: new StubTodoCommentBlockReader(),
     cursorCodec: new StubTodoCommentCursorCodec(),

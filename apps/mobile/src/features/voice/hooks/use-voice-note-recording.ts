@@ -72,7 +72,6 @@ export function useVoiceNoteRecording({
         discard: storage.discard,
         signOutEpoch,
         // persist는 아래에 선언한 함수지만 녹음 조각이 저장된 뒤에만 불린다
-        // oxlint-disable-next-line react/immutability -- 위 이유로 초기화 전에 접근하지 않는다
         onRecordingSaved: () => persist('later'),
       }),
   );

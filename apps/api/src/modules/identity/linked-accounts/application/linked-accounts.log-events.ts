@@ -1,0 +1,15 @@
+export const LinkedAccountsLogEvent = {
+  PASSWORD_RESET_REQUESTED: "identity.password-reset.requested",
+  PASSWORD_RESET_REQUEST_SKIPPED: "identity.password-reset.request.skipped",
+  PASSWORD_RESET_COMPLETED: "identity.password-reset.completed",
+  PASSWORD_CHANGED: "identity.password.changed",
+  PASSWORD_SET: "identity.password.set",
+  PASSWORD_REHASHED: "identity.password.rehashed",
+  PASSWORD_REHASH_FAILED: "identity.password.rehash.failed",
+  OAUTH_ACCOUNT_LINKED: "identity.oauth.account.linked",
+  OAUTH_ACCOUNT_UNLINKED: "identity.oauth.account.unlinked",
+  OAUTH_TOKEN_EXCHANGE_FAILED: "identity.oauth.token-exchange.failed",
+  OAUTH_TOKEN_EXCHANGE_INVALID: "identity.oauth.token-exchange.invalid",
+  OAUTH_NONCE_REJECTED: "identity.oauth.nonce.rejected",
+  OAUTH_TOKEN_VERIFY_FAILED: "identity.oauth.token-verify.failed",
+} as const;

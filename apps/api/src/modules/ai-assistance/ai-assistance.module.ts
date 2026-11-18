@@ -1,19 +1,23 @@
 import { Module } from "@nestjs/common";
 
-import { AiAssistanceGenerationModule } from "./generation/ai-assistance-generation.module.js";
-import { AiAssistanceParsingModule } from "./parsing/ai-assistance-parsing.module.js";
-import { AiAssistancePlanningModule } from "./planning/ai-assistance-planning.module.js";
-import { AiAssistanceReportsModule } from "./reports/ai-assistance-reports.module.js";
+import { AiAssistanceActionPlanDraftsModule } from "./action-plan-drafts/ai-assistance-action-plan-drafts.module.js";
+import { AiAssistanceAiGenerationsModule } from "./ai-generations/ai-assistance-ai-generations.module.js";
+import { AiAssistanceAiReportsModule } from "./ai-reports/ai-assistance-ai-reports.module.js";
+import { AiAssistanceParsedDraftsModule } from "./parsed-drafts/ai-assistance-parsed-drafts.module.js";
 import { AiAssistanceSuggestionsModule } from "./suggestions/ai-assistance-suggestions.module.js";
 
 @Module({
   imports: [
-    AiAssistanceGenerationModule,
-    AiAssistanceParsingModule,
-    AiAssistancePlanningModule,
-    AiAssistanceReportsModule,
+    AiAssistanceAiGenerationsModule,
+    AiAssistanceParsedDraftsModule,
+    AiAssistanceActionPlanDraftsModule,
+    AiAssistanceAiReportsModule,
     AiAssistanceSuggestionsModule,
   ],
-  exports: [AiAssistanceGenerationModule, AiAssistanceParsingModule, AiAssistancePlanningModule],
+  exports: [
+    AiAssistanceAiGenerationsModule,
+    AiAssistanceParsedDraftsModule,
+    AiAssistanceActionPlanDraftsModule,
+  ],
 })
 export class AiAssistanceModule {}

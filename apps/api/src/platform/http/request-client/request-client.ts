@@ -1,14 +1,18 @@
 import type { IncomingHttpHeaders } from "node:http";
 
-import { isSemanticVersionAtLeast } from "@aido/api";
 import {
+  isSemanticVersionAtLeast,
+  DEFAULT_LOCALE,
+  DEVICE_NAME_MAX_LENGTH,
   DEVICE_TYPES,
   type DeviceType,
+  findSupportedLocale,
   IDEMPOTENCY_KEY_MAX_LENGTH,
+  OS_VERSION_PATTERN,
   resolveSupportedLocale,
+  type SupportedLocale,
 } from "@aido/api/vocabulary";
 
-import { DEFAULT_LOCALE, SUPPORTED_LOCALES, type SupportedLocale } from "#api/shared/domain/locale";
 import { normalizeIanaTimezone } from "#api/shared/domain/time/time-zone-name";
 
 /** 앱이 매 요청에 보내는 헤더를 요청당 한 번 정규화한 값. 확인되지 않은 값은 null이다. */
@@ -23,15 +27,13 @@ export interface RequestClient {
   readonly deviceName: string | null;
   /** 런타임이 지원하는 정규 IANA X-Timezone */
   readonly timezone: string | null;
-  /** Accept-Language를 보냈으면 지원 locale(미지원 언어는 ko), 보내지 않았으면 null */
+  /** Accept-Language를 보냈으면 지원 locale(requestedAppLocale), 보내지 않았으면 null */
   readonly locale: SupportedLocale | null;
   /** 형식이 맞는 Idempotency-Key. 사용자 행동 한 번을 가리킨다 */
   readonly idempotencyKey: string | null;
 }
 
-const MAX_DEVICE_NAME_LENGTH = 40;
 const MAX_APP_VERSION_LENGTH = 30;
-const OS_VERSION_PATTERN = /^[0-9A-Za-z][0-9A-Za-z._-]{0,19}$/;
 const APP_BUILD_PATTERN = /^[0-9A-Za-z][0-9A-Za-z.]{0,19}$/;
 const IDEMPOTENCY_KEY_PATTERN = new RegExp(`^[\\x21-\\x7e]{1,${IDEMPOTENCY_KEY_MAX_LENGTH}}$`);
 
@@ -66,42 +68,56 @@ export function normalizeDeviceName(value: string | undefined): string | null {
       .replaceAll(/\s+/gu, " ")
       .trim(),
   )
-    .slice(0, MAX_DEVICE_NAME_LENGTH)
+    .slice(0, DEVICE_NAME_MAX_LENGTH)
     .join("")
     .trim();
 
   return name || null;
 }
 
+// Accept-Language 첫 항목의 언어 태그. "en-US,en;q=0.9"는 "en-US"다
+function primaryLanguageTag(header: unknown): string | null {
+  if (typeof header !== "string") {
+    return null;
+  }
+  const primary = header.split(",")[0]?.split(";")[0]?.trim() ?? "";
+  return primary.length > 0 ? primary : null;
+}
+
+// 1.4.0부터 앱이 앱 언어를 Accept-Language로 보낸다
+const APP_LOCALE_HEADER_MIN_APP_VERSION = "1.4.0";
+
 /**
- * Accept-Language 헤더에서 지원 로케일을 추출한다.
- * - 미전송 → undefined: 저장된 locale을 덮어쓰지 않는다
- *   (1.4.0에서 en으로 쓰는 유저가 구버전 기기로 토큰을 재등록해도 en이 유지됨)
- * - 화이트리스트(ko/en) 외 언어 → "ko" 폴백
- * - "en-US,en;q=0.9" 같은 표준 형식은 첫 항목의 language 서브태그만 사용
+ * X-App-Version 없음·1.4.0 미만(1.10.0 이하 앱과 앱 밖 클라이언트)에서 지원하지 않는 언어만 ko로 둔다(1.4.0 전 앱은
+ * iOS가 기기 언어를 붙였고 한국어 화면뿐이다, 1.4.0~1.10.0은 ko·en만 보낸다). 제거 조건은 docs/conventions/compatibility.md다.
  */
-export function parseAcceptLanguage(header: unknown): SupportedLocale | undefined {
-  if (typeof header !== "string" || header.length === 0) {
-    return undefined;
-  }
+export function resolvePreI18nAppLocale(tag: string): SupportedLocale {
+  return findSupportedLocale(tag) ?? DEFAULT_LOCALE;
+}
 
-  const primary = header.split(",")[0]?.trim().toLowerCase();
-  if (!primary) {
-    return undefined;
+/**
+ * 저장하는 앱 언어. 보내지 않으면 null이라 저장된 locale을 덮어쓰지 않는다
+ * (1.4.0에서 en으로 쓰는 유저가 구버전 기기로 토큰을 재등록해도 en이 유지된다).
+ */
+export function requestedAppLocale(
+  header: unknown,
+  appVersion: string | null,
+): SupportedLocale | null {
+  const tag = primaryLanguageTag(header);
+  if (tag == null) {
+    return null;
   }
-
-  const language = primary.split(";")[0]?.split("-")[0];
-  const matched = SUPPORTED_LOCALES.find((locale) => locale === language);
-  return matched ?? DEFAULT_LOCALE;
+  const sentByPreI18nApp =
+    appVersion == null || !isSemanticVersionAtLeast(appVersion, APP_LOCALE_HEADER_MIN_APP_VERSION);
+  return sentByPreI18nApp ? resolvePreI18nAppLocale(tag) : resolveSupportedLocale(tag);
 }
 
 /**
  * 응답 문구(오류 message 등)의 언어. Accept-Language 첫 항목을 앱과 같은 vocabulary 규칙으로 정한다.
- * 저장용 locale(parseAcceptLanguage)과 달리 보내지 않으면 ko, 지원하지 않는 언어는 en이다.
+ * 저장용 locale(requestedAppLocale)과 달리 보내지 않으면 ko다.
  */
 export function resolveResponseLocale(header: unknown): SupportedLocale {
-  const primary = typeof header === "string" ? header.split(",")[0]?.split(";")[0] : undefined;
-  return resolveSupportedLocale(primary);
+  return resolveSupportedLocale(primaryLanguageTag(header));
 }
 
 /**
@@ -109,15 +125,16 @@ export function resolveResponseLocale(header: unknown): SupportedLocale {
  * 쓰고 신뢰 판단에 쓰지 않는다. 중복 헤더(배열)는 모호하므로 무시한다.
  */
 export function parseRequestClient(headers: IncomingHttpHeaders, requestId: string): RequestClient {
+  const appVersion = normalizeAppVersion(headers["x-app-version"]);
   return {
     requestId,
-    appVersion: normalizeAppVersion(headers["x-app-version"]),
+    appVersion,
     appBuild: matchPattern(singleValue(headers["x-app-build"]), APP_BUILD_PATTERN),
     platform: normalizeDevicePlatform(singleValue(headers["x-device-type"])),
     osVersion: matchPattern(singleValue(headers["x-os-version"]), OS_VERSION_PATTERN),
     deviceName: normalizeDeviceName(singleValue(headers["x-device-name"])),
     timezone: normalizeIanaTimezone(headers["x-timezone"]),
-    locale: parseAcceptLanguage(headers["accept-language"]) ?? null,
+    locale: requestedAppLocale(headers["accept-language"], appVersion),
     idempotencyKey: matchPattern(singleValue(headers["idempotency-key"]), IDEMPOTENCY_KEY_PATTERN),
   };
 }

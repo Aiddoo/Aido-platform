@@ -1,13 +1,13 @@
 import type { QuotaMeter } from "@aido/api/vocabulary";
 
-import { QuotaChargeRepositoryPort } from "#api/modules/access/quotas/application/ports/quota-charge.repository.port";
-import { quotaChargeConflict } from "#api/modules/access/quotas/application/quotas.errors";
-import type { QuotaChargeId } from "#api/modules/access/quotas/domain/quota-charge-id.vo";
+import { QuotaChargeRepositoryPort } from "#api/modules/access/quota-charges/application/ports/quota-charge.repository.port";
+import { quotaChargeConflict } from "#api/modules/access/quota-charges/application/quota-charges.errors";
+import type { QuotaChargeId } from "#api/modules/access/quota-charges/domain/quota-charge-id.vo";
 import {
   QuotaCharge,
   type QuotaChargePrimitives,
   type QuotaChargeVersion,
-} from "#api/modules/access/quotas/domain/quota-charge.aggregate";
+} from "#api/modules/access/quota-charges/domain/quota-charge.aggregate";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 function isReservedBefore(charge: QuotaChargePrimitives, cutoff: Temporal.Instant): boolean {
@@ -48,7 +48,11 @@ export class InMemoryQuotaChargeRepository extends QuotaChargeRepositoryPort {
   }): Promise<QuotaCharge[]> {
     return this.all
       .filter((charge) => isReservedBefore(charge, params.cutoff))
-      .toSorted((left, right) => Temporal.Instant.compare(left.updatedAt, right.updatedAt))
+      .toSorted(
+        (left, right) =>
+          Temporal.Instant.compare(left.updatedAt, right.updatedAt) ||
+          Number(left.id > right.id) - Number(left.id < right.id),
+      )
       .slice(0, params.limit)
       .map((charge) => QuotaCharge.reconstitute(charge));
   }

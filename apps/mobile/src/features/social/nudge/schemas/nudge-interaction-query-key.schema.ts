@@ -1,4 +1,4 @@
-import { getNudgeInteractionsQuerySchema } from '@aido/api';
+import { getNudgeInteractionsQuerySchema } from '@aido/api/contracts/nudge/v1';
 import type { z } from 'zod';
 
 export const nudgeDirectionSchema = getNudgeInteractionsQuerySchema.shape.direction;

@@ -2,7 +2,7 @@ import { SuggestionActivityReaderPort } from "#api/modules/ai-assistance/suggest
 import type {
   SuggestionHistoryItem,
   TodoSummaryForAnalysis,
-} from "#api/modules/ai-assistance/suggestions/domain/suggestion.constants";
+} from "#api/modules/ai-assistance/suggestions/domain/suggestions.constants";
 
 export class StubSuggestionActivityReader extends SuggestionActivityReaderPort {
   todos: TodoSummaryForAnalysis[] = [];

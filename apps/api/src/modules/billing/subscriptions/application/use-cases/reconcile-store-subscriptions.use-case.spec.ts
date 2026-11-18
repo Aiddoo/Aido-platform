@@ -6,9 +6,9 @@ import { FakeUserMutationLock } from "#test/doubles/billing/fake-user-mutation-l
 import { InMemoryPremiumGrantRepository } from "#test/doubles/billing/in-memory-premium-grant.repository";
 import { InMemoryStoreEntitlementReader } from "#test/doubles/billing/in-memory-store-entitlement.reader";
 import { InMemorySubscriptionRepository } from "#test/doubles/billing/in-memory-subscription.repository";
-import { InMemoryUserSubscriptionProjectionRepository } from "#test/doubles/billing/in-memory-user-subscription-projection.repository";
 import { RecordingPremiumAccessCache } from "#test/doubles/billing/recording-premium-access-cache";
 import { StubStoreSubscriptionStatusReader } from "#test/doubles/billing/stub-store-subscription-status.reader";
+import { InMemoryUserSubscriptionProjection } from "#test/doubles/identity/in-memory-user-subscription-projection";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 import {
   createSubscriptionFixture,
@@ -17,7 +17,7 @@ import {
   SUBSCRIPTION_FIXTURE_USER_ID,
 } from "#test/fixtures/billing/subscription.fixture";
 
-import type { StoreSubscriptionState } from "../../domain/subscription.aggregate.js";
+import type { StoreSubscriptionState } from "../../domain/store-subscription-reconcile.domain-service.js";
 import { ReconcileStoreSubscriptionsUseCase } from "./reconcile-store-subscriptions.use-case.js";
 
 const NOW = SUBSCRIPTION_FIXTURE_NOW;
@@ -47,9 +47,7 @@ function setup(
     createSubscriptionFixture({ status: options.status ?? "ACTIVE", expiresAt: EXPIRES_AT }),
   ]);
   const premiumGrantRepository = new InMemoryPremiumGrantRepository();
-  const projection = new InMemoryUserSubscriptionProjectionRepository([
-    SUBSCRIPTION_FIXTURE_USER_ID,
-  ]);
+  const projection = new InMemoryUserSubscriptionProjection([SUBSCRIPTION_FIXTURE_USER_ID]);
   const statusReader = new StubStoreSubscriptionStatusReader();
   for (const state of options.states ?? []) {
     statusReader.states.set(state.storeSubscriptionId, state);

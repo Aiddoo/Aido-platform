@@ -4,6 +4,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
+import { AdminNotice } from "../../domain/admin-notice.aggregate.js";
 import { computePreviousKstDayRange } from "../../domain/signup-report-period.domain-service.js";
 import { AdminNoticeLogEvent } from "../admin-notices.log-events.js";
 import { buildDailySummaryMessage } from "../messages/admin-message.messages.js";
@@ -35,13 +36,14 @@ export class DispatchDailySignupSummaryUseCase {
     try {
       const { start, end, reportDate } = computePreviousKstDayRange(clock.now());
       const { signupsByProvider, totalUsers } = await statsReader.getSignupStats(start, end);
-      const reportDateStr = reportDate.toString();
+      const reportDateKey = reportDate.toString();
 
-      const message = buildDailySummaryMessage({ signupsByProvider, totalUsers, reportDateStr });
+      const message = buildDailySummaryMessage({ signupsByProvider, totalUsers, reportDateKey });
       await queue.enqueueSend(
-        "admin",
-        { type: "message", message },
-        { jobId: `signup-summary_${reportDateStr}` },
+        AdminNotice.create({
+          content: { type: "message", message },
+          deduplicationKey: `signup-summary_${reportDateKey}`,
+        }),
       );
 
       logger.log({

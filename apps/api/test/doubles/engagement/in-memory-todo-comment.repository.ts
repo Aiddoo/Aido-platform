@@ -1,8 +1,9 @@
-import { TodoCommentIdempotencyRace } from "#api/modules/engagement/comments/application/comments.errors";
-import { TodoCommentRepositoryPort } from "#api/modules/engagement/comments/application/ports/todo-comment.repository.port";
-import type { TodoCommentId } from "#api/modules/engagement/comments/domain/todo-comment-id.vo";
-import { TodoComment } from "#api/modules/engagement/comments/domain/todo-comment.aggregate";
-import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import type { TodoCommentId } from "#api/modules/engagement/shared/domain/todo-comment-id.vo";
+import { TodoCommentRepositoryPort } from "#api/modules/engagement/todo-comments/application/ports/todo-comment.repository.port";
+import { todoCommentIdempotencyRace } from "#api/modules/engagement/todo-comments/application/todo-comments.errors";
+import type { TodoCommentRequestId } from "#api/modules/engagement/todo-comments/domain/todo-comment-request-id.vo";
+import { TodoComment } from "#api/modules/engagement/todo-comments/domain/todo-comment.aggregate";
+import type { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 // 저장 사본을 두어 save 없이 바꾼 Aggregate가 저장소 상태로 새지 않게 한다
@@ -27,14 +28,14 @@ export class InMemoryTodoCommentRepository extends TodoCommentRepositoryPort {
 
   async findByIdAndTodoId(commentId: TodoCommentId, todoId: TodoId): Promise<TodoComment | null> {
     const comment = this.#comments.get(commentId.value);
-    return comment != null && comment.todoId === todoId.value ? copyOf(comment) : null;
+    return comment != null && comment.todoId.equals(todoId) ? copyOf(comment) : null;
   }
 
   async listByAuthorIdAndClientRequestIds(
     authorId: UserId,
-    clientRequestIds: readonly string[],
+    clientRequestIds: readonly TodoCommentRequestId[],
   ): Promise<TodoComment[]> {
-    const requested = new Set(clientRequestIds);
+    const requested = new Set(clientRequestIds.map((requestId) => requestId.value));
     return this.list().filter(
       (comment) => comment.authorId.equals(authorId) && requested.has(comment.clientRequestId),
     );
@@ -59,7 +60,7 @@ export class InMemoryTodoCommentRepository extends TodoCommentRepositoryPort {
         stored.clientRequestId === comment.clientRequestId,
     );
     if (isNew && isDuplicateRequest) {
-      throw new TodoCommentIdempotencyRace();
+      throw todoCommentIdempotencyRace();
     }
     const stored = this.#comments.get(comment.id.value);
     // 다시 저장해도 생성 때 정한 칸은 그대로 둔다(Drizzle 저장소와 같다)

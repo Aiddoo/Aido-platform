@@ -3,19 +3,19 @@ import { ErrorCode } from "@aido/api/errors";
 import { GetPremiumEntitlementsUseCase } from "#api/modules/billing/premium-grants/application/use-cases/get-premium-entitlements.use-case";
 import { ProjectPremiumAccessUseCase } from "#api/modules/billing/premium-grants/application/use-cases/project-premium-access.use-case";
 import type { PremiumGrant } from "#api/modules/billing/premium-grants/domain/premium-grant.aggregate";
-import { FakeSubscriptionWebhookLock } from "#test/doubles/billing/fake-subscription-webhook-lock";
 import { FakeUserMutationLock } from "#test/doubles/billing/fake-user-mutation-lock";
 import { InMemoryPremiumGrantRepository } from "#test/doubles/billing/in-memory-premium-grant.repository";
 import { InMemoryStoreEntitlementReader } from "#test/doubles/billing/in-memory-store-entitlement.reader";
 import { InMemorySubscriptionEventReceiptRepository } from "#test/doubles/billing/in-memory-subscription-event-receipt.repository";
 import { InMemorySubscriptionUserReader } from "#test/doubles/billing/in-memory-subscription-user.reader";
 import { InMemorySubscriptionRepository } from "#test/doubles/billing/in-memory-subscription.repository";
-import { InMemoryUserSubscriptionProjectionRepository } from "#test/doubles/billing/in-memory-user-subscription-projection.repository";
 import { RecordingPremiumAccessCache } from "#test/doubles/billing/recording-premium-access-cache";
 import { RecordingStoreSubscriptionReconcileScheduler } from "#test/doubles/billing/recording-store-subscription-reconcile-scheduler";
 import { RecordingSubscriptionEventNotifier } from "#test/doubles/billing/recording-subscription-event-notifier";
+import { InMemoryUserSubscriptionProjection } from "#test/doubles/identity/in-memory-user-subscription-projection";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
+import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createPremiumGrantFixture } from "#test/fixtures/billing/premium-grant.fixture";
 import {
@@ -34,10 +34,14 @@ import type {
   SubscriptionStartedEvent,
 } from "../../domain/store-subscription.event.js";
 import type { Subscription } from "../../domain/subscription.aggregate.js";
+import { SubscriptionLockKeys } from "../subscriptions.lock-keys.js";
 import {
   ApplyStoreSubscriptionEventUseCase,
   type ApplyStoreSubscriptionEventCommand,
 } from "./apply-store-subscription-event.use-case.js";
+import { ApplySubscriptionChainEventUseCase } from "./apply-subscription-chain-event.use-case.js";
+import { ChangeSubscriptionChainUseCase } from "./change-subscription-chain.use-case.js";
+import { TransferSubscriptionsUseCase } from "./transfer-subscriptions.use-case.js";
 
 const NOW = SUBSCRIPTION_FIXTURE_NOW;
 const DAY = 24 * 60 * 60 * 1000;
@@ -46,13 +50,13 @@ const NEXT_EXPIRES_AT = NOW.add({ milliseconds: 60 * DAY });
 const USER = {
   id: SUBSCRIPTION_FIXTURE_USER_ID,
   email: "subscriber@example.com",
-  profile: { name: "구독 사용자" },
+  name: "구독 사용자",
   appUserAlias: "app-user-alias",
 };
 const PREVIOUS_OWNER = {
   id: "clz7x5p8k0009qz0z8z8z8z8z",
   email: "previous@example.com",
-  profile: { name: "이전 사용자" },
+  name: "이전 사용자",
 };
 const CHAIN_ID = SUBSCRIPTION_FIXTURE_CHAIN_ID;
 
@@ -140,7 +144,7 @@ function setup(
   const users = [USER, ...(options.extraUsers ?? [])];
   const subscriptionRepository = new InMemorySubscriptionRepository(options.subscriptions ?? []);
   const premiumGrantRepository = new InMemoryPremiumGrantRepository(options.grants ?? []);
-  const userSubscriptionProjection = new InMemoryUserSubscriptionProjectionRepository(
+  const userSubscriptionProjection = new InMemoryUserSubscriptionProjection(
     users.map((user) => user.id),
   );
   const projectPremiumAccess = new ProjectPremiumAccessUseCase({
@@ -154,22 +158,45 @@ function setup(
   const receiptRepository = new InMemorySubscriptionEventReceiptRepository();
   const cache = new RecordingPremiumAccessCache();
   const notifier = new RecordingSubscriptionEventNotifier();
-  const webhookLock = new FakeSubscriptionWebhookLock();
+  const mutationLock = new RecordingMutationLock();
   const reconcileScheduler = new RecordingStoreSubscriptionReconcileScheduler();
   const userLock = new FakeUserMutationLock(users.map((user) => user.id));
+  const clock = new FixedClock(NOW.add({ hours: 1 }));
+  const logger = new SilentLogger();
+  const unitOfWork = new ImmediateUnitOfWork();
+  const subscriptionUserReader = new InMemorySubscriptionUserReader(users);
   const useCase = new ApplyStoreSubscriptionEventUseCase({
-    subscriptionRepository,
-    subscriptionUserReader: new InMemorySubscriptionUserReader(users),
-    receiptRepository,
-    userLock,
-    unitOfWork: new ImmediateUnitOfWork(),
+    applySubscriptionChainEvent: new ApplySubscriptionChainEventUseCase({
+      subscriptionRepository,
+      subscriptionUserReader,
+      receiptRepository,
+      userLock,
+      mutationLock,
+      unitOfWork,
+      changeSubscriptionChain: new ChangeSubscriptionChainUseCase({
+        subscriptionRepository,
+        projectPremiumAccess,
+        clock,
+        logger,
+      }),
+      notifier,
+      reconcileScheduler,
+      clock,
+      logger,
+    }),
+    transferSubscriptions: new TransferSubscriptionsUseCase({
+      subscriptionRepository,
+      subscriptionUserReader,
+      receiptRepository,
+      userLock,
+      mutationLock,
+      unitOfWork,
+      projectPremiumAccess,
+      clock,
+    }),
     cache,
     notifier,
-    webhookLock,
-    projectPremiumAccess,
-    reconcileScheduler,
-    clock: new FixedClock(NOW.add({ hours: 1 })),
-    logger: new SilentLogger(),
+    logger,
   });
   return {
     useCase,
@@ -179,7 +206,7 @@ function setup(
     receiptRepository,
     cache,
     notifier,
-    webhookLock,
+    mutationLock,
     reconcileScheduler,
     userLock,
   };
@@ -402,7 +429,7 @@ describe("ApplyStoreSubscriptionEventUseCase — 스토어 구독 이벤트 반�
   describe("실패 분류", () => {
     it("처리하지 않는 이벤트는 사용자를 찾지 않고 닫는다", async () => {
       // Given
-      const { useCase, webhookLock } = setup();
+      const { useCase, mutationLock } = setup();
       const ignored: StoreSubscriptionChainEvent = {
         ...baseEvent,
         kind: "IGNORED",
@@ -413,7 +440,7 @@ describe("ApplyStoreSubscriptionEventUseCase — 스토어 구독 이벤트 반�
       await useCase.execute(ignored);
 
       // Then
-      expect(webhookLock.acquiredAppUserIds).toEqual([]);
+      expect(mutationLock.acquiredKeys).toEqual([]);
     });
 
     it("우리 사용자가 아니면 영구 실패라 보고하고 받은 것으로 닫는다", async () => {
@@ -443,8 +470,8 @@ describe("ApplyStoreSubscriptionEventUseCase — 스토어 구독 이벤트 반�
 
     it("같은 사용자의 웹훅이 처리 중이면 SUBSCRIPTION_1605로 던져 공급자가 다시 보내게 한다", async () => {
       // Given
-      const { useCase, webhookLock, notifier } = setup();
-      webhookLock.held.add(USER.id);
+      const { useCase, mutationLock, notifier, receiptRepository } = setup();
+      mutationLock.contendedKeys.add(SubscriptionLockKeys.webhook(USER.id));
 
       // When
       const result = useCase.execute(startedEvent());
@@ -452,11 +479,12 @@ describe("ApplyStoreSubscriptionEventUseCase — 스토어 구독 이벤트 반�
       // Then
       await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.SUBSCRIPTION_1605 });
       expect(notifier.failures).toEqual([]);
+      expect(receiptRepository.receipts.size).toBe(0);
     });
 
-    it("일시 실패는 보고하지 않고 던져 공급자 재전송에 맡기며 잠금은 푼다", async () => {
+    it("일시 실패는 보고하지 않고 던져 공급자 재전송에 맡긴다", async () => {
       // Given
-      const { useCase, subscriptionRepository, webhookLock, notifier } = setup();
+      const { useCase, subscriptionRepository, notifier } = setup();
       vi.spyOn(subscriptionRepository, "save").mockRejectedValueOnce(new Error("connection lost"));
 
       // When
@@ -465,7 +493,6 @@ describe("ApplyStoreSubscriptionEventUseCase — 스토어 구독 이벤트 반�
       // Then
       await expect(result).rejects.toThrow("connection lost");
       expect(notifier.failures).toEqual([]);
-      expect(webhookLock.held.size).toBe(0);
     });
 
     it("반영 뒤 캐시 무효화가 실패하면 보고하고 알림은 보내지 않는다", async () => {

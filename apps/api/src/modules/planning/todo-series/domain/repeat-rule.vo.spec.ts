@@ -1,12 +1,28 @@
 import { readFileSync } from "node:fs";
 
-import { todoRepeatSchema } from "@aido/api";
+import { todoRepeatSchema } from "@aido/api/contracts/todo/v1";
 import { ErrorCode } from "@aido/api/errors";
 import { z } from "zod";
 
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
 import { RepeatRule, type RepeatEnd, type RepeatSpec } from "./repeat-rule.vo.js";
+
+const date = (value: string) => Temporal.PlainDate.from(value);
+
+function keysBetween(
+  rule: RepeatRule,
+  range: { seriesStart: string; from: string; through: string; generatedCount?: number },
+): string[] {
+  return rule
+    .occurrencesBetween({
+      seriesStart: date(range.seriesStart),
+      from: date(range.from),
+      through: date(range.through),
+      generatedCount: range.generatedCount,
+    })
+    .map((value) => value.toString());
+}
 
 const NEVER: RepeatEnd = { type: "NEVER" };
 
@@ -66,7 +82,7 @@ describe("RepeatRule — 반복 규칙", () => {
       // Given
       const rule = RepeatRule.create(repeat);
       // When
-      const occurrences = rule.occurrencesBetween(startDate, startDate, through);
+      const occurrences = keysBetween(rule, { seriesStart: startDate, from: startDate, through });
       // Then
       expect(occurrences).toEqual(expected);
     },
@@ -78,7 +94,11 @@ describe("RepeatRule — 반복 규칙", () => {
       // Given
       const rule = RepeatRule.create(repeat);
       // When
-      const occurrences = rule.occurrencesBetween(startDate, startDate, FAR_THROUGH);
+      const occurrences = keysBetween(rule, {
+        seriesStart: startDate,
+        from: startDate,
+        through: FAR_THROUGH,
+      });
       // Then
       expect({ count: occurrences.length, last: occurrences.at(-1) }).toEqual({
         count: expectedCount,
@@ -178,7 +198,7 @@ describe("RepeatRule — 반복 규칙", () => {
       // Given
       const rule = RepeatRule.create(spec);
       // When
-      const dates = rule.occurrencesBetween(start, from ?? start, through);
+      const dates = keysBetween(rule, { seriesStart: start, from: from ?? start, through });
       // Then
       expect(dates).toEqual(expected);
     });
@@ -187,7 +207,12 @@ describe("RepeatRule — 반복 규칙", () => {
       // Given
       const rule = RepeatRule.create({ frequency: "DAILY", end: { type: "COUNT", count: 3 } });
       // When
-      const dates = rule.occurrencesBetween("2026-11-05", "2026-11-07", "2026-12-01", 2);
+      const dates = keysBetween(rule, {
+        seriesStart: "2026-11-05",
+        from: "2026-11-07",
+        through: "2026-12-01",
+        generatedCount: 2,
+      });
       // Then
       expect(dates).toEqual(["2026-11-07"]);
     });
@@ -196,7 +221,7 @@ describe("RepeatRule — 반복 규칙", () => {
       // Given
       const rule = RepeatRule.create({ frequency: "DAILY", end: { type: "COUNT", count: 3 } });
       // When
-      const next = rule.firstOnOrAfter("2026-11-05", "2026-11-08", 3);
+      const next = rule.firstOnOrAfter(date("2026-11-05"), date("2026-11-08"), 3);
       // Then
       expect(next).toBeNull();
     });
@@ -211,9 +236,9 @@ describe("RepeatRule — 반복 규칙", () => {
       // Given
       const rule = RepeatRule.create(spec);
       // When
-      const next = rule.firstOnOrAfter("2026-11-02", "2026-11-03");
+      const next = rule.firstOnOrAfter(date("2026-11-02"), date("2026-11-03"));
       // Then
-      expect(next).toBe(expected);
+      expect(next?.toString()).toBe(expected);
     });
   });
 
@@ -237,9 +262,11 @@ describe("RepeatRule — 반복 규칙", () => {
         build: () => RepeatRule.create({ frequency: "DAILY", end: { type: "COUNT", count: 0 } }),
       },
     ])("$field가 맞지 않으면 TODO_0845다", ({ field, build }) => {
-      // When / Then
-      expect(build).toThrow(DomainException);
-      expect(build).toThrow(
+      // When
+      const create = build;
+      // Then
+      expect(create).toThrow(DomainException);
+      expect(create).toThrow(
         expect.objectContaining({ errorCode: ErrorCode.TODO_0845, details: { field } }),
       );
     });
@@ -266,27 +293,26 @@ describe("RepeatRule — 반복 규칙", () => {
         interval: 1,
         end: NEVER,
       });
-      // When / Then
-      expect(
-        rule.equals(
-          RepeatRule.create({
-            frequency: "WEEKLY",
-            weekdays: ["FRI", "MON"],
-            interval: 1,
-            end: NEVER,
-          }),
-        ),
-      ).toBe(true);
-      expect(
-        rule.equals(
-          RepeatRule.create({
-            frequency: "WEEKLY",
-            weekdays: ["MON", "FRI"],
-            interval: 2,
-            end: NEVER,
-          }),
-        ),
-      ).toBe(false);
+      // When
+      const equalsReordered = rule.equals(
+        RepeatRule.create({
+          frequency: "WEEKLY",
+          weekdays: ["FRI", "MON"],
+          interval: 1,
+          end: NEVER,
+        }),
+      );
+      const equalsOtherInterval = rule.equals(
+        RepeatRule.create({
+          frequency: "WEEKLY",
+          weekdays: ["MON", "FRI"],
+          interval: 2,
+          end: NEVER,
+        }),
+      );
+      // Then
+      expect(equalsReordered).toBe(true);
+      expect(equalsOtherInterval).toBe(false);
     });
 
     it("toSpec은 from의 역변환이다", () => {
@@ -297,15 +323,17 @@ describe("RepeatRule — 반복 규칙", () => {
         weekdays: ["TUE"],
         end: { type: "UNTIL", date: "2027-01-01" },
       };
-      // When / Then
-      expect(RepeatRule.create(spec).toSpec()).toEqual(spec);
+      // When
+      const roundTrip = RepeatRule.create(spec).toSpec();
+      // Then
+      expect(roundTrip).toEqual(spec);
     });
 
     it("분할 뒤 횟수 종료는 앞쪽에서 쓴 만큼 줄어든다", () => {
       // Given
       const rule = RepeatRule.create({ frequency: "DAILY", end: { type: "COUNT", count: 10 } });
       // When
-      const next = rule.continuingFrom("2026-11-05", "2026-11-08");
+      const next = rule.continuingFrom(date("2026-11-05"), date("2026-11-08"));
       // Then
       expect(next.toSpec().end).toEqual({ type: "COUNT", count: 7 });
     });
@@ -318,7 +346,11 @@ describe("RepeatRule — Temporal 달력 경계", () => {
     const rule = RepeatRule.create({ frequency: "MONTHLY", monthDay: 31, end: { type: "NEVER" } });
 
     // When
-    const dates = rule.occurrencesBetween("2028-01-01", "2028-01-01", "2028-04-30");
+    const dates = keysBetween(rule, {
+      seriesStart: "2028-01-01",
+      from: "2028-01-01",
+      through: "2028-04-30",
+    });
 
     // Then
     expect(dates).toEqual(["2028-01-31", "2028-02-29", "2028-03-31", "2028-04-30"]);
@@ -329,7 +361,11 @@ describe("RepeatRule — Temporal 달력 경계", () => {
     const rule = RepeatRule.create({ frequency: "MONTHLY", monthDay: 29, end: { type: "NEVER" } });
 
     // When
-    const dates = rule.occurrencesBetween("2027-01-01", "2027-02-01", "2027-03-31");
+    const dates = keysBetween(rule, {
+      seriesStart: "2027-01-01",
+      from: "2027-02-01",
+      through: "2027-03-31",
+    });
 
     // Then
     expect(dates).toEqual(["2027-02-28", "2027-03-29"]);
@@ -345,7 +381,11 @@ describe("RepeatRule — Temporal 달력 경계", () => {
     });
 
     // When
-    const dates = rule.occurrencesBetween("2026-12-28", "2026-12-28", "2027-01-31");
+    const dates = keysBetween(rule, {
+      seriesStart: "2026-12-28",
+      from: "2026-12-28",
+      through: "2027-01-31",
+    });
 
     // Then
     expect(dates).toEqual(["2026-12-28", "2027-01-11", "2027-01-25"]);
@@ -361,7 +401,11 @@ describe("RepeatRule — Temporal 달력 경계", () => {
     });
 
     // When
-    const dates = rule.occurrencesBetween("2027-01-03", "2027-01-03", "2027-01-31");
+    const dates = keysBetween(rule, {
+      seriesStart: "2027-01-03",
+      from: "2027-01-03",
+      through: "2027-01-31",
+    });
 
     // Then
     expect(dates).toEqual(["2027-01-03", "2027-01-17", "2027-01-31"]);
@@ -372,7 +416,12 @@ describe("RepeatRule — Temporal 달력 경계", () => {
     const rule = RepeatRule.create({ frequency: "DAILY", end: { type: "COUNT", count: 3 } });
 
     // When
-    const dates = rule.occurrencesBetween("2026-12-30", "2027-01-01", "2027-01-10", 1);
+    const dates = keysBetween(rule, {
+      seriesStart: "2026-12-30",
+      from: "2027-01-01",
+      through: "2027-01-10",
+      generatedCount: 1,
+    });
 
     // Then
     expect(dates).toEqual(["2027-01-01", "2027-01-02"]);

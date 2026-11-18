@@ -6,7 +6,6 @@ import { and, count, eq, gt, lt, ne, or, sum } from "drizzle-orm";
 import { sumBy } from "es-toolkit";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
-import { tupleLessThan } from "#api/platform/database/keyset";
 import {
   inviteActiveDay,
   inviteRedemption,
@@ -15,30 +14,20 @@ import {
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { InviteRedemptionReaderPort } from "../../application/ports/invite-redemption.reader.port.js";
-import type { InviteRedemptionSummary } from "../../application/read-models/invite-redemption-summary.read-model.js";
-import type { InvitedFriend } from "../../application/read-models/invited-friend.read-model.js";
-import type { QualifyReminderCandidate } from "../../application/read-models/qualify-reminder-candidate.read-model.js";
+import type { InviteRedemptionSummaryReadModel } from "../../application/read-models/invite-redemption-summary.read-model.js";
+import type { QualifyReminderCandidateReadModel } from "../../application/read-models/qualify-reminder-candidate.read-model.js";
 import { INVITE_REWARD_MAX_ATTEMPTS } from "../../domain/invite-redemptions.constants.js";
 import type { InviterRewardTotal } from "../../domain/invite-reward.domain-service.js";
 
 @Injectable()
 export class DrizzleInviteRedemptionReader implements InviteRedemptionReaderPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
-  get #db() {
-    return this.#txHost.tx;
-  }
-
-  #activeDayCount() {
-    return (redemption: typeof inviteRedemption) =>
-      this.#db.$count(inviteActiveDay, eq(inviteActiveDay.redemptionId, redemption.id));
-  }
-
-  async summarizeByInviterId(inviterId: UserId): Promise<InviteRedemptionSummary> {
+  async summarizeByInviterId(inviterId: UserId): Promise<InviteRedemptionSummaryReadModel> {
     const groups = await this.#db
       .select({ status: inviteRedemption.status, total: count() })
       .from(inviteRedemption)
@@ -52,62 +41,6 @@ export class DrizzleInviteRedemptionReader implements InviteRedemptionReaderPort
       rewardedCount: countOf("REWARDED"),
       rejectedCount: countOf("REJECTED"),
     };
-  }
-
-  async listInvitedFriends(params: {
-    readonly inviterId: UserId;
-    readonly afterInviteeId: UserId | null;
-    readonly status: RedemptionStatus | null;
-    readonly limit: number;
-  }): Promise<InvitedFriend[]> {
-    const { inviterId, afterInviteeId, status, limit } = params;
-    const anchor =
-      afterInviteeId == null
-        ? null
-        : await this.#db.query.inviteRedemption.findFirst({
-            columns: { joinedAt: true, id: true },
-            where: { inviteeId: afterInviteeId.value, inviterId: inviterId.value },
-          });
-    if (afterInviteeId != null && anchor == null) {
-      return [];
-    }
-
-    const rows = await this.#db.query.inviteRedemption.findMany({
-      columns: {
-        id: true,
-        status: true,
-        rejectionReason: true,
-        joinedAt: true,
-        qualifiedAt: true,
-      },
-      where: {
-        inviterId: inviterId.value,
-        ...(status != null && { status }),
-        ...(anchor != null && {
-          RAW: (table) => tupleLessThan([table.joinedAt, table.id], [anchor.joinedAt, anchor.id]),
-        }),
-      },
-      with: {
-        invitee: {
-          columns: { id: true, userTag: true },
-          with: { profile: { columns: { name: true, profileImage: true } } },
-        },
-      },
-      extras: { activeDayCount: this.#activeDayCount() },
-      orderBy: { joinedAt: "desc", id: "desc" },
-      limit,
-    });
-    return rows.map((row) => ({
-      userId: row.invitee.id,
-      name: row.invitee.profile?.name ?? null,
-      userTag: row.invitee.userTag,
-      profileImage: row.invitee.profile?.profileImage ?? null,
-      status: row.status,
-      activeDayCount: row.activeDayCount,
-      joinedAt: row.joinedAt,
-      qualifiedAt: row.qualifiedAt,
-      rejectionReason: row.rejectionReason,
-    }));
   }
 
   async summarizeInviterRewards(
@@ -159,9 +92,9 @@ export class DrizzleInviteRedemptionReader implements InviteRedemptionReaderPort
   async listQualifyReminderCandidates(params: {
     readonly now: Temporal.Instant;
     readonly expiresBefore: Temporal.Instant;
-    readonly after: Pick<QualifyReminderCandidate, "expiresAt" | "redemptionId"> | null;
+    readonly after: Pick<QualifyReminderCandidateReadModel, "expiresAt" | "redemptionId"> | null;
     readonly limit: number;
-  }): Promise<QualifyReminderCandidate[]> {
+  }): Promise<QualifyReminderCandidateReadModel[]> {
     const { after } = params;
     const rows = await this.#db.query.inviteRedemption.findMany({
       columns: { id: true, timezone: true, expiresAt: true },
@@ -207,5 +140,14 @@ export class DrizzleInviteRedemptionReader implements InviteRedemptionReaderPort
       // 자동 재시도를 다 쓴 FAILED는 받지 못한 보상이라 상한을 차지하지 않는다
       or(ne(rewardGrant.status, "FAILED"), lt(rewardGrant.attempts, INVITE_REWARD_MAX_ATTEMPTS)),
     );
+  }
+
+  #activeDayCount() {
+    return (redemption: typeof inviteRedemption) =>
+      this.#db.$count(inviteActiveDay, eq(inviteActiveDay.redemptionId, redemption.id));
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

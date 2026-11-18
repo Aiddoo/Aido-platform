@@ -16,28 +16,26 @@ import {
 } from "drizzle-orm";
 import { sumBy } from "es-toolkit";
 
+import type { TodoCategoryId } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { tupleGreaterThan } from "#api/platform/database/keyset";
 import { todo, todoCategory, todoSeries } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";
-import type { TodoId } from "../../../shared/domain/todo-id.vo.js";
 import type { TodoSeriesId } from "../../../todo-series/domain/todo-series-id.vo.js";
-import type {
-  TodoPlanReaderPort,
-  UpcomingTodoView,
-} from "../../application/ports/todo-plan.reader.port.js";
+import type { TodoPlanReaderPort } from "../../application/ports/todo-plan.reader.port.js";
 import type {
   FindFriendTodosParams,
   FindTodosParams,
+  TodoReadRepositoryPort,
 } from "../../application/ports/todo-read.repository.port.js";
-import type { TodoReadRepositoryPort } from "../../application/ports/todo-read.repository.port.js";
 import type {
   FriendTodoReadModel,
   TodoReadModel,
 } from "../../application/read-models/todo.read-model.js";
+import type { UpcomingTodoReadModel } from "../../application/read-models/upcoming-todo.read-model.js";
+import type { TodoId } from "../../domain/todo-id.vo.js";
 import { toFriendTodoReadModel, toTodoReadModel } from "./todo-read-model.mapper.js";
 
 // 종료일 유무로 갈라야 두 갈래가 각각 `Todo_userId_startDate_endDate_idx` 범위 조회가 된다
@@ -97,14 +95,10 @@ function orderByIds<Row extends { id: number }>(rows: Row[], ids: readonly numbe
 /** 조회 projection과 집계만 소유하며 활성 CLS transaction에 참여한다. */
 @Injectable()
 export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPlanReaderPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
-  }
-
-  get #db() {
-    return this.#txHost.tx;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
   async findOwnerIds(ids: readonly TodoId[]): Promise<string[]> {
@@ -145,44 +139,6 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
       with: friendTodoWith,
     });
     return orderByIds(rows, ids).map(toFriendTodoReadModel);
-  }
-
-  async #findPageIds(params: FindTodosParams, publicOnly: boolean): Promise<number[]> {
-    const { userId, cursor, size, completed, categoryId, startDate, endDate } = params;
-    let anchorCondition;
-    if (cursor != null) {
-      const anchor = await this.#db.query.todo.findFirst({
-        columns: { id: true, sortOrder: true },
-        where: { id: cursor },
-        with: { category: { columns: { sortOrder: true } } },
-      });
-      if (anchor == null) {
-        return [];
-      }
-      const categoryOrder = requireRecord(anchor.category).sortOrder;
-      anchorCondition = tupleGreaterThan(
-        [todoCategory.sortOrder, todo.sortOrder, todo.id],
-        [categoryOrder, anchor.sortOrder, anchor.id],
-      );
-    }
-
-    const ids = await this.#db
-      .select({ id: todo.id })
-      .from(todo)
-      .innerJoin(todoCategory, eq(todo.categoryId, todoCategory.id))
-      .where(
-        and(
-          eq(todo.userId, userId.value),
-          completed == null ? undefined : eq(todo.completed, completed),
-          categoryId == null ? undefined : eq(todo.categoryId, categoryId.value),
-          publicOnly ? eq(todo.visibility, "PUBLIC") : undefined,
-          todoDateCondition(startDate, endDate),
-          anchorCondition,
-        ),
-      )
-      .orderBy(asc(todoCategory.sortOrder), asc(todo.sortOrder), asc(todo.id))
-      .limit(size + 1);
-    return ids.map((row) => row.id);
   }
 
   async countCompletedByUser(userId: UserId, limit: number): Promise<number> {
@@ -275,7 +231,7 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
   async findUpcoming(
     userId: UserId,
     input: { readonly fromDate: Temporal.PlainDate; readonly limit: number },
-  ): Promise<UpcomingTodoView[]> {
+  ): Promise<UpcomingTodoReadModel[]> {
     const { fromDate } = input;
     // 반복 할 일은 회차가 수십 개라도 다음 회차 하나만 맥락에 넣는다.
     const groupKey = sql`coalesce(${todo.seriesId}, ${todo.id}::text)`;
@@ -328,5 +284,48 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
       ),
     );
     return todos + series;
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
+  }
+
+  async #findPageIds(params: FindTodosParams, publicOnly: boolean): Promise<number[]> {
+    const { userId, cursor, size, completed, categoryId, startDate, endDate } = params;
+    let anchorCondition;
+    if (cursor != null) {
+      // 다른 사용자의 할 일 id는 없는 커서와 같게 빈 페이지다
+      const anchor = await this.#db.query.todo.findFirst({
+        columns: { id: true, sortOrder: true },
+        where: { id: cursor, userId: userId.value },
+        with: { category: { columns: { sortOrder: true } } },
+      });
+      if (anchor == null) {
+        return [];
+      }
+      const categoryOrder = requireRecord(anchor.category).sortOrder;
+      anchorCondition = tupleGreaterThan(
+        [todoCategory.sortOrder, todo.sortOrder, todo.id],
+        [categoryOrder, anchor.sortOrder, anchor.id],
+      );
+    }
+
+    const ids = await this.#db
+      .select({ id: todo.id })
+      .from(todo)
+      .innerJoin(todoCategory, eq(todo.categoryId, todoCategory.id))
+      .where(
+        and(
+          eq(todo.userId, userId.value),
+          completed == null ? undefined : eq(todo.completed, completed),
+          categoryId == null ? undefined : eq(todo.categoryId, categoryId.value),
+          publicOnly ? eq(todo.visibility, "PUBLIC") : undefined,
+          todoDateCondition(startDate, endDate),
+          anchorCondition,
+        ),
+      )
+      .orderBy(asc(todoCategory.sortOrder), asc(todo.sortOrder), asc(todo.id))
+      .limit(size + 1);
+    return ids.map((row) => row.id);
   }
 }

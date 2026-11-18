@@ -1,16 +1,20 @@
 import { omit } from "es-toolkit";
 
-import { TodoId } from "#api/modules/planning/shared/domain/todo-id.vo";
+import { TodoId } from "#api/modules/planning/todos/domain/todo-id.vo";
 import { DrizzleTodoEngagementCounterAdapter } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-engagement-counter.adapter";
 import type {
   TodoEngagementCounterPort,
-  TodoViewRecord,
+  TodoViewRecording,
 } from "#api/modules/planning/todos/planning-todos.public";
-import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
+import { DatabaseRecordNotFoundError } from "#api/platform/database/database.errors";
 import { todo, todoCategory, user } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DateClock } from "#test/doubles/platform/date-clock";
-import { TodoCategoryFixture, TodoFixture, UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import {
+  createTodoCategoryRowFixture,
+  createTodoRowFixture,
+} from "#test/fixtures/planning/todo-row.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -29,7 +33,7 @@ describe("DrizzleTodoEngagementCounterAdapter (실제 PostgreSQL)", () => {
     database = new TestDatabase();
     client = await database.start();
     counter = new DrizzleTodoEngagementCounterAdapter(
-      createDatabaseTransactionFixture(client).txHost,
+      createDatabaseTransactionFixture(client).transactionHost,
       new DateClock(),
     );
   });
@@ -39,17 +43,17 @@ describe("DrizzleTodoEngagementCounterAdapter (실제 PostgreSQL)", () => {
     await client
       .insert(user)
       .values([
-        UserFixture.create({ id: OWNER_ID, email: "owner@example.com", userTag: "COUNT001" }),
-        UserFixture.create({ id: VIEWER_ID, email: "viewer@example.com", userTag: "COUNT002" }),
+        createUserRowFixture({ id: OWNER_ID, email: "owner@example.com", userTag: "COUNT001" }),
+        createUserRowFixture({ id: VIEWER_ID, email: "viewer@example.com", userTag: "COUNT002" }),
       ]);
     const [category] = await client
       .insert(todoCategory)
-      .values(omit(TodoCategoryFixture.create({ userId: OWNER_ID, sortOrder: 0 }), ["id"]))
+      .values(omit(createTodoCategoryRowFixture({ userId: OWNER_ID, sortOrder: 0 }), ["id"]))
       .returning();
     const [row] = await client
       .insert(todo)
       .values({
-        ...omit(TodoFixture.create({ userId: OWNER_ID, categoryId: category?.id ?? 0 }), ["id"]),
+        ...omit(createTodoRowFixture({ userId: OWNER_ID, categoryId: category?.id ?? 0 }), ["id"]),
         commentCount: 0,
         viewCount: 0,
       })
@@ -97,7 +101,7 @@ describe("DrizzleTodoEngagementCounterAdapter (실제 PostgreSQL)", () => {
     );
 
     // Then
-    const expected: TodoViewRecord[] = [
+    const expected: TodoViewRecording[] = [
       { recorded: true, viewCount: 1 },
       { recorded: false, viewCount: 1 },
     ];
@@ -110,7 +114,7 @@ describe("DrizzleTodoEngagementCounterAdapter (실제 PostgreSQL)", () => {
 
     // When
     await counter.lockCounters([TodoId.reconstitute(todoId)]);
-    await counter.replaceCommentCounts([{ todoId, commentCount: 1 }]);
+    await counter.replaceCommentCounts([{ todoId: TodoId.reconstitute(todoId), commentCount: 1 }]);
     await counter.replaceCommentCounts([]);
 
     // Then

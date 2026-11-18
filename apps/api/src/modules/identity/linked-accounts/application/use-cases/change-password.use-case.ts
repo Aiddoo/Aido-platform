@@ -1,0 +1,117 @@
+import { REVOKE_REASON } from "#api/modules/identity/sessions/domain/sessions.constants";
+import type { RequestMetadata } from "#api/modules/identity/shared/domain/request-metadata.constants";
+import { REQUEST_ORIGIN_DEFAULTS } from "#api/modules/identity/shared/domain/request-metadata.constants";
+import { accountDeleted } from "#api/modules/identity/users/application/users.errors";
+import { SECURITY_EVENT } from "#api/modules/identity/users/domain/users.constants";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import type { SessionCachePort } from "../../../sessions/application/ports/session-cache.port.js";
+import type { SessionPushDeviceReleaserPort } from "../../../sessions/application/ports/session-push-device-releaser.port.js";
+import type { SessionRepositoryPort } from "../../../sessions/application/ports/session.repository.port.js";
+import { SessionId } from "../../../sessions/domain/session-id.vo.js";
+import type { SecurityLogRepositoryPort } from "../../../users/application/ports/security-log.repository.port.js";
+import type { UserMutationLockPort } from "../../../users/application/ports/user-mutation-lock.port.js";
+import type { UserRepositoryPort } from "../../../users/application/ports/user.repository.port.js";
+import { invalidCredentials, userNotFound } from "../../../users/application/users.errors.js";
+import { socialAccountPasswordUnchangeable } from "../../domain/linked-accounts.errors.js";
+import { LinkedAccountsLogEvent } from "../linked-accounts.log-events.js";
+import type { LinkedAccountsRepositoryPort } from "../ports/linked-accounts.repository.port.js";
+import type { PasswordHasherPort } from "../ports/password-hasher.port.js";
+
+export interface ChangePasswordCommand {
+  readonly userId: string;
+  readonly currentPassword: string;
+  readonly newPassword: string;
+  readonly metadata?: RequestMetadata;
+  readonly currentSessionId?: string;
+}
+
+interface ChangePasswordDependencies {
+  readonly userRepository: Pick<UserRepositoryPort, "findById">;
+  readonly userMutationLock: Pick<UserMutationLockPort, "lockById">;
+  readonly accountRepository: Pick<LinkedAccountsRepositoryPort, "findByUserId" | "save">;
+  readonly passwordService: Pick<PasswordHasherPort, "verify" | "hash">;
+  readonly sessionRepository: Pick<SessionRepositoryPort, "revokeAllByUserId">;
+  readonly cacheService: Pick<SessionCachePort, "invalidateSession">;
+  readonly securityLogRepository: Pick<SecurityLogRepositoryPort, "create">;
+  readonly unitOfWork: UnitOfWorkPort;
+  readonly pushDevices: Pick<SessionPushDeviceReleaserPort, "releaseSessions">;
+  readonly clock: ClockPort;
+  readonly logger: ApplicationLoggerPort;
+}
+
+export class ChangePasswordUseCase {
+  readonly #dependencies: ChangePasswordDependencies;
+
+  constructor(dependencies: ChangePasswordDependencies) {
+    this.#dependencies = dependencies;
+  }
+
+  async execute(input: ChangePasswordCommand): Promise<{ message: string }> {
+    const { currentPassword, newPassword, metadata, currentSessionId } = input;
+    const userId = UserId.reconstitute(input.userId);
+    const ip = metadata?.ip ?? REQUEST_ORIGIN_DEFAULTS.UNKNOWN_IP;
+    const userAgent = metadata?.userAgent ?? REQUEST_ORIGIN_DEFAULTS.UNKNOWN_USER_AGENT;
+
+    const user = await this.#dependencies.userRepository.findById(userId);
+    if (user == null) {
+      throw userNotFound(input.userId);
+    }
+    if (user.isDeleted()) {
+      throw accountDeleted(user.id.value);
+    }
+
+    // argon2 확인·hash는 잠금 밖에서 한다. 저장은 확인한 hash가 그대로일 때만 써서 그사이 바뀌었으면 거절한다
+    const accounts = await this.#dependencies.accountRepository.findByUserId(userId);
+    const passwordHash = accounts?.passwordHash;
+    if (accounts == null || passwordHash == null || !accounts.hasPassword()) {
+      throw socialAccountPasswordUnchangeable(input.userId);
+    }
+    if (!(await this.#dependencies.passwordService.verify(passwordHash, currentPassword))) {
+      throw invalidCredentials();
+    }
+    const now = this.#dependencies.clock.now();
+    accounts.changePassword(await this.#dependencies.passwordService.hash(newPassword), now);
+
+    const revokedSessionIds = await this.#dependencies.unitOfWork.run(async () => {
+      if (!(await this.#dependencies.userMutationLock.lockById(userId))) {
+        throw userNotFound(input.userId);
+      }
+      if (!(await this.#dependencies.accountRepository.save(accounts))) {
+        throw invalidCredentials();
+      }
+
+      const revokedSessionIds = await this.#dependencies.sessionRepository.revokeAllByUserId({
+        userId,
+        reason: REVOKE_REASON.PASSWORD_CHANGED,
+        now,
+        exceptSessionId:
+          currentSessionId == null ? undefined : SessionId.reconstitute(currentSessionId),
+      });
+
+      await this.#dependencies.securityLogRepository.create({
+        userId,
+        event: SECURITY_EVENT.PASSWORD_CHANGED,
+        ipAddress: ip,
+        userAgent,
+      });
+      return revokedSessionIds;
+    });
+
+    await Promise.all(
+      revokedSessionIds.map((sessionId) =>
+        this.#dependencies.cacheService.invalidateSession(sessionId),
+      ),
+    );
+    await this.#dependencies.pushDevices.releaseSessions(revokedSessionIds);
+    this.#dependencies.logger.log({
+      event: LinkedAccountsLogEvent.PASSWORD_CHANGED,
+      userId: input.userId,
+    });
+
+    return { message: "비밀번호가 변경되었습니다." };
+  }
+}

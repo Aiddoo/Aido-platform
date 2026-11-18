@@ -6,9 +6,10 @@ import type {
   UserRole,
 } from "@aido/api/vocabulary";
 
-import type { FeatureEntitlement } from "#api/modules/access/entitlements/access-entitlements.public";
+import type { FeatureEntitlement } from "#api/modules/access/feature-grants/access-feature-grants.public";
 
-import type { AccountProvider, UserStatus } from "../../../auth/domain/auth.constants.js";
+import type { AccountProvider } from "../../../linked-accounts/domain/linked-accounts.constants.js";
+import type { UserStatus } from "../../domain/users.constants.js";
 
 /** 하루·한 달 한도가 있는 기능은 지금까지 쓴 양과 다음 초기화 시각(ISO 문자열)을 함께 둔다 */
 interface MeteredFeatureEntitlement extends FeatureEntitlement {
@@ -17,14 +18,16 @@ interface MeteredFeatureEntitlement extends FeatureEntitlement {
 }
 
 /** 출시 앱 /me의 기능별 권한. 1.15.0부터 더한 기능은 GET /v1/entitlements가 준다 */
-export type CurrentUserEntitlements = Readonly<Record<PremiumFeature, FeatureEntitlement>> & {
+export type CurrentUserEntitlementsReadModel = Readonly<
+  Record<PremiumFeature, FeatureEntitlement>
+> & {
   readonly AI_PARSE: MeteredFeatureEntitlement;
   readonly CHEER: MeteredFeatureEntitlement;
   readonly NUDGE: MeteredFeatureEntitlement;
 };
 
 /** 내 정보. 시각은 프로필 캐시에 담아 온 ISO 문자열이다 */
-export interface CurrentUserResult {
+export interface CurrentUserReadModel {
   readonly userId: string;
   readonly email: string;
   readonly sessionId: string;
@@ -47,5 +50,5 @@ export interface CurrentUserResult {
   readonly premiumIsTrial?: boolean;
   readonly premiumPlanType?: SubscriptionPlanType | null;
   readonly isPremium?: boolean;
-  readonly entitlements?: CurrentUserEntitlements;
+  readonly entitlements?: CurrentUserEntitlementsReadModel;
 }

@@ -1,52 +1,46 @@
 import { z } from "zod";
 
 import { dateSchema, datetimeSchema } from "../../../common/datetime.js";
-import { AI_REPORT_CONTENT_SOURCES, AI_REPORT_TYPES } from "../../../vocabulary/ai.constants.js";
+import {
+  AI_REPORT_CONTENT_SOURCES,
+  AI_REPORT_PAGE_SIZE,
+  AI_REPORT_TYPES,
+} from "../../../vocabulary/ai.constants.js";
 import { dayOfWeekSchema } from "../../todo/v1/todo.common.js";
 
 export const reportStatsSchema = z.object({
-  totalTodos: z.number().int().nonnegative(),
-  completedTodos: z.number().int().nonnegative(),
+  totalTodos: z.int().nonnegative(),
+  completedTodos: z.int().nonnegative(),
   completionRate: z.number().min(0).max(100),
   prevCompletionRate: z.number().min(0).max(100).nullable(),
-  streakDays: z.number().int().nonnegative(),
+  streakDays: z.int().nonnegative(),
 });
-
-export type ReportStats = z.infer<typeof reportStatsSchema>;
 
 export const categoryBreakdownItemSchema = z.object({
   name: z.string(),
   color: z.string(),
-  total: z.number().int().nonnegative(),
-  completed: z.number().int().nonnegative(),
+  total: z.int().nonnegative(),
+  completed: z.int().nonnegative(),
   rate: z.number().min(0).max(100),
 });
-
-export type CategoryBreakdownItem = z.infer<typeof categoryBreakdownItemSchema>;
 
 export const dayPatternItemSchema = z.object({
   day: dayOfWeekSchema,
-  total: z.number().int().nonnegative(),
-  completed: z.number().int().nonnegative(),
+  total: z.int().nonnegative(),
+  completed: z.int().nonnegative(),
   rate: z.number().min(0).max(100),
 });
 
-export type DayPatternItem = z.infer<typeof dayPatternItemSchema>;
-
 export const timePatternItemSchema = z.object({
-  hour: z.number().int().min(0).max(23),
-  count: z.number().int().nonnegative(),
+  hour: z.int().min(0).max(23),
+  count: z.int().nonnegative(),
 });
-
-export type TimePatternItem = z.infer<typeof timePatternItemSchema>;
 
 export const dailyCompletionItemSchema = z.object({
   date: dateSchema,
-  total: z.number().int().nonnegative(),
-  completed: z.number().int().nonnegative(),
+  total: z.int().nonnegative(),
+  completed: z.int().nonnegative(),
 });
-
-export type DailyCompletionItem = z.infer<typeof dailyCompletionItemSchema>;
 
 export const reportTypeSchema = z.enum(AI_REPORT_TYPES);
 
@@ -68,17 +62,13 @@ export const aiReportSchema = z.object({
   aiTips: z.array(z.string()),
   hasActivity: z.boolean(),
   generatedAt: datetimeSchema,
-  dailyCompletions: z
-    .array(dailyCompletionItemSchema)
-    .nullable()
-    .optional()
-    .describe("기간의 날마다 할 일 수와 끝낸 수(YYYY-MM-DD, 빈 날은 0). 1.16.0 전 리포트는 null"),
-  aiContentSource: z
-    .enum(AI_REPORT_CONTENT_SOURCES)
-    .optional()
-    .describe(
+  dailyCompletions: z.array(dailyCompletionItemSchema).nullable().optional().meta({
+    description: "기간의 날마다 할 일 수와 끝낸 수(YYYY-MM-DD, 빈 날은 0). 1.16.0 전 리포트는 null",
+  }),
+  aiContentSource: z.enum(AI_REPORT_CONTENT_SOURCES).optional().meta({
+    description:
       "aiSummary·aiTips를 쓴 곳. AI는 모델, TEMPLATE은 AI 없이 통계로 채운 글이거나 출처를 남기기 전(2026-10-25 전) 리포트",
-    ),
+  }),
 });
 
 export type AiReport = z.infer<typeof aiReportSchema>;
@@ -87,21 +77,17 @@ export const aiReportResponseSchema = z.object({
   report: aiReportSchema,
 });
 
-export type AiReportResponse = z.infer<typeof aiReportResponseSchema>;
-
 export const aiReportListResponseSchema = z.object({
   reports: z.array(aiReportSchema),
 });
-
-export type AiReportListResponse = z.infer<typeof aiReportListResponseSchema>;
 
 // 리포트 상태 (다음 리포트 예정일)
 
 export const reportStatusSchema = z.object({
   nextWeeklyAt: datetimeSchema,
   nextMonthlyAt: datetimeSchema,
-  daysUntilWeekly: z.number().int().nonnegative(),
-  daysUntilMonthly: z.number().int().nonnegative(),
+  daysUntilWeekly: z.int().nonnegative(),
+  daysUntilMonthly: z.int().nonnegative(),
   latestWeekly: aiReportSchema.nullable(),
   latestMonthly: aiReportSchema.nullable(),
 });
@@ -112,27 +98,25 @@ export const reportStatusResponseSchema = z.object({
   status: reportStatusSchema,
 });
 
-export type ReportStatusResponse = z.infer<typeof reportStatusResponseSchema>;
-
 export const getAiReportsQuerySchema = z.object({
-  type: reportTypeSchema.optional().describe("리포트 종류 (WEEKLY | MONTHLY, 생략 시 전체)"),
+  type: reportTypeSchema
+    .optional()
+    .meta({ description: "리포트 종류 (WEEKLY | MONTHLY, 생략 시 전체)" }),
   limit: z.coerce
     .number()
     .int()
     .positive()
-    .max(50)
-    .default(10)
-    .describe("페이지 크기 (1-50, 기본값: 10)"),
+    .max(AI_REPORT_PAGE_SIZE.MAX)
+    .default(AI_REPORT_PAGE_SIZE.DEFAULT)
+    .meta({
+      description: `페이지 크기 (1-${AI_REPORT_PAGE_SIZE.MAX}, 기본값: ${AI_REPORT_PAGE_SIZE.DEFAULT})`,
+    }),
 });
-
-export type GetAiReportsQuery = z.infer<typeof getAiReportsQuerySchema>;
 
 export const aiReportIdParamSchema = z.object({
   id: z.coerce
     .number()
     .int()
     .positive("유효하지 않은 리포트 ID입니다")
-    .describe("AI 리포트 고유 ID (양의 정수, 예: 1)"),
+    .meta({ description: "AI 리포트 고유 ID (양의 정수, 예: 1)" }),
 });
-
-export type AiReportIdParam = z.infer<typeof aiReportIdParamSchema>;

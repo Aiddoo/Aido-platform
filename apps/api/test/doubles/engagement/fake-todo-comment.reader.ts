@@ -1,37 +1,54 @@
-import {
-  type ListTodoCommentRepliesParams,
-  type ListTodoCommentThreadsParams,
-  type ListTodoConversationParams,
-  TodoCommentReaderPort,
-} from "#api/modules/engagement/comments/application/ports/todo-comment.reader.port";
+import type { TodoCommentId } from "#api/modules/engagement/shared/domain/todo-comment-id.vo";
+import type { TodoCommentLikeReaderPort } from "#api/modules/engagement/todo-comment-likes/application/ports/todo-comment-like.reader.port";
+import type { TodoCommentAccessReaderPort } from "#api/modules/engagement/todo-comments/application/ports/todo-comment-access.reader.port";
+import type {
+  ListTodoCommentRepliesParams,
+  TodoCommentReplyReaderPort,
+} from "#api/modules/engagement/todo-comments/application/ports/todo-comment-reply.reader.port";
+import type {
+  ListTodoCommentThreadsParams,
+  TodoCommentThreadReaderPort,
+} from "#api/modules/engagement/todo-comments/application/ports/todo-comment-thread.reader.port";
+import type { TodoCommentReaderPort } from "#api/modules/engagement/todo-comments/application/ports/todo-comment.reader.port";
+import type {
+  ListTodoConversationParams,
+  TodoConversationReaderPort,
+} from "#api/modules/engagement/todo-comments/application/ports/todo-conversation.reader.port";
 import type {
   TodoCommentReadModel,
   TodoCommentThreadItemReadModel,
-  TodoCommentWindow,
-  TodoConversationWindow,
+  TodoCommentWindowReadModel,
+  TodoConversationWindowReadModel,
   TodoDetailsReadModel,
-} from "#api/modules/engagement/comments/application/read-models/todo-comment.read-model";
-import type { TodoCommentId } from "#api/modules/engagement/comments/domain/todo-comment-id.vo";
-import type { TodoComment } from "#api/modules/engagement/comments/domain/todo-comment.aggregate";
-import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
-import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+} from "#api/modules/engagement/todo-comments/application/read-models/todo-comment.read-model";
+import type { TodoComment } from "#api/modules/engagement/todo-comments/domain/todo-comment.aggregate";
+import type { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { InMemoryTodoCommentLikeRepository } from "./in-memory-todo-comment-like.repository.js";
 import type { InMemoryTodoCommentRepository } from "./in-memory-todo-comment.repository.js";
 
 /**
- * 글·좋아요는 InMemory 저장소에서 읽고, 접근 권한·이름·목록 창은 테스트가 정한다.
- * 목록 창의 keyset 의미는 Drizzle reader를 실제 PostgreSQL로 검증한다.
+ * 댓글 slice의 조회 포트를 한 대역으로 흉내 낸다. 글·좋아요는 InMemory 저장소에서 읽고,
+ * 접근 권한·이름·목록 창은 테스트가 정한다. 목록 창의 keyset 의미는 Drizzle reader를 실제 PostgreSQL로 검증한다.
  */
-export class FakeTodoCommentReader extends TodoCommentReaderPort {
+export class FakeTodoCommentReader
+  implements
+    TodoCommentAccessReaderPort,
+    TodoCommentReaderPort,
+    TodoCommentThreadReaderPort,
+    TodoCommentReplyReaderPort,
+    TodoConversationReaderPort,
+    TodoCommentLikeReaderPort
+{
   readonly names = new Map<string, string | null>();
   readonly details = new Map<number, TodoDetailsReadModel>();
   readonly threadParams: ListTodoCommentThreadsParams[] = [];
   readonly replyParams: ListTodoCommentRepliesParams[] = [];
   readonly conversationParams: ListTodoConversationParams[] = [];
-  threadsWindow: TodoCommentWindow<TodoCommentThreadItemReadModel> | null = null;
-  repliesWindow: TodoCommentWindow<TodoCommentReadModel> | null = null;
-  conversationWindow: TodoConversationWindow | null = null;
+  threadsWindow: TodoCommentWindowReadModel<TodoCommentThreadItemReadModel> | null = null;
+  repliesWindow: TodoCommentWindowReadModel<TodoCommentReadModel> | null = null;
+  conversationWindow: TodoConversationWindowReadModel | null = null;
   /** 기준 묶음·답글을 찾지 못한 것처럼 기준이 있는 조회에 null을 준다 */
   isAnchorMissing = false;
   readonly #access = new Map<number, { ownerId: string; viewerIds: Set<string> }>();
@@ -39,7 +56,6 @@ export class FakeTodoCommentReader extends TodoCommentReaderPort {
   readonly #likes: InMemoryTodoCommentLikeRepository;
 
   constructor(comments: InMemoryTodoCommentRepository, likes: InMemoryTodoCommentLikeRepository) {
-    super();
     this.#comments = comments;
     this.#likes = likes;
   }
@@ -64,9 +80,11 @@ export class FakeTodoCommentReader extends TodoCommentReaderPort {
     return { ...details, isOwner: details.owner.id === viewerId.value };
   }
 
-  async findAccessibleTodoOwnerId(todoId: TodoId, viewerId: UserId): Promise<string | null> {
+  async findAccessibleTodoOwnerId(todoId: TodoId, viewerId: UserId): Promise<UserId | null> {
     const access = this.#access.get(todoId.value);
-    return access?.viewerIds.has(viewerId.value) === true ? access.ownerId : null;
+    return access?.viewerIds.has(viewerId.value) === true
+      ? UserId.reconstitute(access.ownerId)
+      : null;
   }
 
   async findComment(
@@ -84,7 +102,7 @@ export class FakeTodoCommentReader extends TodoCommentReaderPort {
     const stored = new Map(this.#comments.list().map((comment) => [comment.id.value, comment]));
     return commentIds.flatMap((commentId) => {
       const comment = stored.get(commentId.value);
-      return comment == null || comment.todoId !== todoId.value
+      return comment == null || !comment.todoId.equals(todoId)
         ? []
         : [this.#toReadModel(comment, stored)];
     });
@@ -92,21 +110,21 @@ export class FakeTodoCommentReader extends TodoCommentReaderPort {
 
   async listThreads(
     params: ListTodoCommentThreadsParams,
-  ): Promise<TodoCommentWindow<TodoCommentThreadItemReadModel> | null> {
+  ): Promise<TodoCommentWindowReadModel<TodoCommentThreadItemReadModel> | null> {
     this.threadParams.push(params);
     return params.mode !== "INITIAL" && this.isAnchorMissing ? null : this.threadsWindow;
   }
 
   async listReplies(
     params: ListTodoCommentRepliesParams,
-  ): Promise<TodoCommentWindow<TodoCommentReadModel> | null> {
+  ): Promise<TodoCommentWindowReadModel<TodoCommentReadModel> | null> {
     this.replyParams.push(params);
     return params.mode !== "INITIAL" && this.isAnchorMissing ? null : this.repliesWindow;
   }
 
   async listConversation(
     params: ListTodoConversationParams,
-  ): Promise<TodoConversationWindow | null> {
+  ): Promise<TodoConversationWindowReadModel | null> {
     this.conversationParams.push(params);
     return this.conversationWindow;
   }
@@ -121,7 +139,7 @@ export class FakeTodoCommentReader extends TodoCommentReaderPort {
         .list()
         .filter(
           (like) =>
-            like.isActive && like.userId.equals(viewerId) && requested.has(like.commentId.value),
+            like.isActive() && like.userId.equals(viewerId) && requested.has(like.commentId.value),
         )
         .map((like) => like.commentId.value),
     );

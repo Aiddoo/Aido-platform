@@ -26,7 +26,7 @@ Policy는 의미 값(등급, 단계, 종류)을 돌려준다. 그 값을 문구�
 | 좌표·도형                           | `utils/{name}.geometry.ts`                                                    |
 | 표시 방식(배너·조용히, 칸 배치)     | `utils/`의 UI 판단, 창 배치는 `shared/ui/adaptive-pane/window-layout.ts`      |
 | 폼 값·초안·저장 모양                | `schemas/*-form`·`-draft`·`-storage.schema.ts`                                |
-| 서버가 계산한 값의 재계산           | 하지 않는다([계산 경계](#서버클라이언트-계산-경계))                           |
+| 서버가 계산한 값의 재계산           | 하지 않는다([서버·앱 책임](../../../../docs/conventions/ownership.md))        |
 | 다른 기능 Policy의 재수출·위임      | 쓰는 곳이 그 Policy를 직접 부른다                                             |
 
 ```ts
@@ -138,17 +138,17 @@ export function toNotificationTarget(
 
 계약은 `@aido/api`가, 앱 모델은 앱이 소유한다. 서버·앱 공유 값은 `@aido/api`에 추가만 한다.
 
-| 진입점                          | 내용                                                                     | import할 수 있는 곳                                      |
-| ------------------------------- | ------------------------------------------------------------------------ | -------------------------------------------------------- |
-| `@aido/api/vocabulary`          | 용어 튜플·상수·한도(`NOTIFICATION_CATEGORY`, `MEMO_LIMITS`)              | 어디서나                                                 |
-| `@aido/api/common`              | 응답 봉투, 날짜·시각 스키마, 공용 값 스키마(`entityIdSchema`, 알림 종류) | 어디서나. 모델도 쓴다                                    |
-| `@aido/api/errors`              | `ErrorCode`·`Errors`, 코드별 `details` 스키마, `HttpStatus`              | 어디서나                                                 |
-| `@aido/api`(루트)·`contracts/*` | 요청·응답 스키마와 DTO 타입                                              | `apis/`, `schemas/`, `shared/infra/http`, 테스트 fixture |
+| 진입점                         | 내용                                                                     | import할 수 있는 곳                                      |
+| ------------------------------ | ------------------------------------------------------------------------ | -------------------------------------------------------- |
+| `@aido/api/vocabulary`         | 용어 튜플·상수·한도(`NOTIFICATION_CATEGORY`, `MEMO_LIMITS`)              | 어디서나                                                 |
+| `@aido/api/common`             | 응답 봉투, 날짜·시각 스키마, 공용 값 스키마(`entityIdSchema`, 알림 종류) | 어디서나. 모델도 쓴다                                    |
+| `@aido/api/errors`             | `ErrorCode`·`Errors`, 코드별 `details` 스키마, `HttpStatus`              | 어디서나                                                 |
+| `@aido/api/contracts/<x>/v<n>` | 요청·응답 스키마와 DTO 타입                                              | `apis/`, `schemas/`, `shared/infra/http`, 테스트 fixture |
 
 - 한 모양은 한 번만 정의한다. 계약에서 `pick`·`omit`·`extend`로 유도하고 같은 필드를 다시 적지 않는다. 공백 정리는 `trimmed(contract.shape.title)` 하나로 한다.
 - 앱 안에서 여러 기능이 쓰는 같은 모양은 `shared/domains/`에 하나다(`user-summary.model.ts`, `cursor-page.model.ts`).
 - 값 목록은 vocabulary 튜플에서 유도한다(`z.enum(AI_REPORT_TYPES)`). 한도 숫자를 앱에서 다시 적지 않는다. 앱에만 있는 공유 값은 vocabulary나 common으로 올린다.
-- DTO 타입 별칭은 `{X}Dto`로 통일한다(`import type { Memo as MemoDto } from '@aido/api'`).
+- DTO 타입 별칭은 `{X}Dto`로 통일한다(`import type { Memo as MemoDto } from '@aido/api/contracts/memo/v1'`). 루트 `@aido/api`는 쓰지 않는다.
 - 기능 오류는 `domains/{feature}.error.ts` 하나에 둔다: 코드 표, `isXxxError`, `ErrorCode` → 폼 칸 매핑. `details`는 공유 스키마로 읽고 mapper를 거꾸로 import하지 않는다. 분류·표시 규칙은 [error-handling](../error-handling.md)이 원본이다.
 - mapper fixture는 계약 스키마로 검증해 만든다. 계약과 어긋난 fixture로 통과하는 테스트를 막는다([testing](../testing.md)).
 
@@ -179,12 +179,4 @@ export function toNotificationTarget(
 
 ## 서버·클라이언트 계산 경계
 
-| 서버가 계산하고 앱은 읽기만                                                                            | 앱이 계산                                           |
-| ------------------------------------------------------------------------------------------------------ | --------------------------------------------------- |
-| 프리미엄 여부, 한도, 남은 횟수, `resetsAt`, 1회 길이 상한                                              | 메모 미리보기, 묶기, 정렬 표시                      |
-| 차감·환불, 멱등 처리, AI 계획, 겹침 판정                                                               | 낙관적 갱신, 폼 검증(서버가 최종 판단)              |
-| 반복 회차 생성, 순간 값 `scheduledTime`, 휴면                                                          | 달력 표시, `날짜 + 벽시계`의 현지 표시, 오늘        |
-| 쿨다운, 초대·보상 상태                                                                                 | 선택 상태, 시트 열림, 레이아웃                      |
-| 일간 완료(여러 날 할 일은 기간의 모든 날), 날씨와 겹친 할 일·옮길 시각 후보, 알림 목적지(`navigation`) | 변경 직후 그날 완료의 낙관적 갱신, 지난 후보 숨기기 |
-
-앱은 왼쪽 값을 다시 계산하지 않는다. 응답에 필요한 값이 없으면 앱에서 만들지 않고, 새 응답 필드는 서버 작업으로 따로 승인받는다.
+무엇을 서버가 계산하고 앱이 읽기만 하는지는 [서버·앱 책임](../../../../docs/conventions/ownership.md) 한 곳이다. 앱에서는 서버 값을 mapper가 모델로 바꾸고 Policy가 그대로 읽으며, 응답에 값이 없으면 앱에서 만들지 않고 서버 응답 필드를 요청한다.

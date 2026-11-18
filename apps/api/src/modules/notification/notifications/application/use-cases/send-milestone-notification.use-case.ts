@@ -1,0 +1,83 @@
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import type { NotificationRecipientLocaleReaderPort } from "../../../push-dispatches/notification-push-dispatches.public.js";
+import { createMilestoneNotificationMessage } from "../../../shared/application/messages/system-notification.messages.js";
+import {
+  MILESTONE_NOTIFICATION_TYPE,
+  type NotificationMilestone,
+} from "../../../shared/domain/notification-milestone.constants.js";
+import { NotificationLockKeys } from "../notifications.lock-keys.js";
+import { NotificationLogEvent } from "../notifications.log-events.js";
+import { type NotificationHistoryReaderPort } from "../ports/notification-history.reader.port.js";
+import type { PublishNotificationUseCase } from "./publish-notification.use-case.js";
+
+export interface SendMilestoneNotificationInput {
+  readonly userId: string;
+  readonly milestone: NotificationMilestone;
+}
+
+interface SendMilestoneNotificationDependencies {
+  readonly notificationPublisher: Pick<PublishNotificationUseCase, "execute">;
+  readonly recipientLocaleReader: Pick<NotificationRecipientLocaleReaderPort, "getLocale">;
+  readonly notificationHistoryReader: Pick<
+    NotificationHistoryReaderPort,
+    "hasMilestoneNotification"
+  >;
+  readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
+  readonly mutationLock: Pick<MutationLockPort, "acquire">;
+  readonly logger: Pick<ApplicationLoggerPort, "debug" | "log">;
+}
+
+export class SendMilestoneNotificationUseCase {
+  readonly #dependencies: SendMilestoneNotificationDependencies;
+
+  constructor(dependencies: SendMilestoneNotificationDependencies) {
+    this.#dependencies = dependencies;
+  }
+
+  async execute(input: SendMilestoneNotificationInput): Promise<void> {
+    await this.#dependencies.unitOfWork.run(async () => {
+      // 같은 마일스톤의 동시 발송은 앞선 트랜잭션이 커밋한 알림을 보고 건너뛰도록 조회 전에 줄을 세운다
+      await this.#dependencies.mutationLock.acquire([
+        NotificationLockKeys.milestone(input.userId, input.milestone),
+      ]);
+
+      const alreadySent =
+        await this.#dependencies.notificationHistoryReader.hasMilestoneNotification(
+          UserId.reconstitute(input.userId),
+          input.milestone,
+        );
+      if (alreadySent) {
+        this.#dependencies.logger.debug({
+          event: NotificationLogEvent.SEND_MILESTONE_NOTIFICATION_DUPLICATE_SKIPPED,
+          userId: input.userId,
+        });
+        return;
+      }
+
+      const locale = await this.#dependencies.recipientLocaleReader.getLocale(
+        UserId.reconstitute(input.userId),
+      );
+      const message = createMilestoneNotificationMessage({
+        milestone: input.milestone,
+        locale,
+      });
+      await this.#dependencies.notificationPublisher.execute({
+        userId: input.userId,
+        type: MILESTONE_NOTIFICATION_TYPE,
+        title: message.title,
+        body: message.body,
+        copyKey: message.copyKey,
+        copyFacts: message.copyFacts,
+        metadata: { milestone: input.milestone },
+      });
+      this.#dependencies.logger.log({
+        event: NotificationLogEvent.SEND_MILESTONE_NOTIFICATION_SENT,
+        userId: input.userId,
+      });
+    });
+  }
+}

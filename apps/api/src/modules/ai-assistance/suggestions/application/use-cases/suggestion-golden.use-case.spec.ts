@@ -5,14 +5,14 @@ import {
   createAiAssistanceFixture,
   createAnalyzeCommand,
   withAiAssistanceTime,
-} from "#test/fixtures/ai-assistance.fixture";
+} from "#test/fixtures/ai-assistance/ai-assistance-scenario.fixture";
+import { readPromptBlock } from "#test/fixtures/ai-assistance/ai-prompt.fixture";
 import {
   GOLDEN_VARIANTS,
   loadSuggestionGoldenCases,
   type SuggestionGoldenCase,
   toSuggestionContext,
 } from "#test/fixtures/ai-golden/golden-cases";
-import { readPromptBlock } from "#test/fixtures/ai-prompt.fixture";
 
 import {
   buildSuggestionCandidates,

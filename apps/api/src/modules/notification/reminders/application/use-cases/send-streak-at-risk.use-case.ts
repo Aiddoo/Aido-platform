@@ -1,15 +1,19 @@
-import { computeEffectiveStreak } from "#api/modules/identity/identity-settings.public";
+import { computeEffectiveStreak } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { NotificationHistoryReader } from "../../../inbox/application/notification-history.reader.js";
-import { createStreakAtRiskNotificationMessage } from "../../../push/application/messages/scheduler-notification.messages.js";
-import type { PublishNotificationUseCase } from "../../../push/application/use-cases/publish-notification.use-case.js";
-import { resolveRecipientLocale } from "../../../push/domain/recipient-locale.domain-service.js";
-import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
-import type { TimezoneContext } from "../../domain/timezone-context.read-model.js";
+import type {
+  NotificationHistoryReader,
+  PublishNotificationBatchUseCase,
+} from "../../../notifications/notification-notifications.public.js";
+import { createStreakAtRiskNotificationMessage } from "../../../shared/application/messages/scheduler-notification.messages.js";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
+import { resolveRecipientLocale } from "../../../shared/domain/recipient-locale.domain-service.js";
+import type { TimezoneContext } from "../../domain/local-clock.domain-service.js";
 import { type ReEngagementReaderPort } from "../ports/re-engagement-reader.port.js";
 import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-strategy.port.js";
-import { NotificationRemindersLogEvent } from "../reminders.log-events.js";
+import type { UserWithTodosAndStreakReadModel } from "../read-models/scheduler.read-model.js";
+import { ReminderLogEvent } from "../reminders.log-events.js";
 
 /**
  * 스트릭 위기 Strategy (20:15)
@@ -20,7 +24,7 @@ import { NotificationRemindersLogEvent } from "../reminders.log-events.js";
  */
 interface StreakAtRiskStrategyDependencies {
   readonly reader: Pick<ReEngagementReaderPort, "findStreakAtRiskUsers">;
-  readonly notificationPublisher: Pick<PublishNotificationUseCase, "publishBatch">;
+  readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
   readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
@@ -32,8 +36,8 @@ export class SendStreakAtRiskUseCase implements TimezoneReminderStrategyPort {
     this.#dependencies = dependencies;
   }
 
-  async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
-    const { timezones, today, tomorrow } = ctx;
+  async execute(timezoneContext: TimezoneContext): Promise<{ sent: number }> {
+    const { timezones, today, tomorrow } = timezoneContext;
 
     // 스트릭 3일+ 유저 중 오늘 미완료 할일이 있는 유저 조회
     const users = await this.#dependencies.reader.findStreakAtRiskUsers({
@@ -49,33 +53,7 @@ export class SendStreakAtRiskUseCase implements TimezoneReminderStrategyPort {
     // StreakService로 isAtRisk 재검증 + streak >= 3 필터
     // effective streak 값을 보존하여 알림 메시지에 사용
     const atRiskUsers = users
-      .map((user) => {
-        const total = user.todos.length;
-        const completed = user.todos.filter((t) => t.completed).length;
-
-        if (completed === total) {
-          return null;
-        }
-
-        const { streak, isAtRisk } = computeEffectiveStreak({
-          currentStreak: user.preference?.currentStreak ?? 0,
-          lastCompletedDate: user.preference?.lastCompletedDate ?? null,
-          todosCompleted: completed,
-          todosTotal: total,
-          today,
-        });
-
-        return isAtRisk && streak >= 3
-          ? {
-              id: user.id,
-              effectiveStreak: streak,
-              locale: resolveRecipientLocale({
-                storedLocale: user.preference?.locale ?? null,
-                lastRequestLocale: null,
-              }),
-            }
-          : null;
-      })
+      .map((user) => toAtRiskUser(user, today))
       .filter((u): u is NonNullable<typeof u> => u != null);
 
     if (atRiskUsers.length === 0) {
@@ -85,7 +63,7 @@ export class SendStreakAtRiskUseCase implements TimezoneReminderStrategyPort {
     // 중복 방지
     const alreadyNotified =
       await this.#dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds({
-        userIds: atRiskUsers.map((u) => u.id),
+        userIds: atRiskUsers.map((u) => UserId.reconstitute(u.id)),
         type: "STREAK_AT_RISK",
         notificationDate: today,
       });
@@ -120,9 +98,9 @@ export class SendStreakAtRiskUseCase implements TimezoneReminderStrategyPort {
       };
     });
 
-    await this.#dependencies.notificationPublisher.publishBatch(notifications);
+    await this.#dependencies.notificationPublisher.execute(notifications);
     this.#dependencies.logger.log({
-      event: NotificationRemindersLogEvent.STREAK_AT_RISK_SENT,
+      event: ReminderLogEvent.STREAK_AT_RISK_SENT,
       timezones,
       count: notifications.length,
     });
@@ -131,3 +109,31 @@ export class SendStreakAtRiskUseCase implements TimezoneReminderStrategyPort {
 }
 
 // identity의 스트릭 판정은 아직 UTC 자정 Date로 계산한다
+
+function toAtRiskUser(user: UserWithTodosAndStreakReadModel, today: Temporal.PlainDate) {
+  const total = user.todos.length;
+  const completed = user.todos.filter((t) => t.completed).length;
+
+  if (completed === total) {
+    return null;
+  }
+
+  const { streak, isAtRisk } = computeEffectiveStreak({
+    currentStreak: user.preference?.currentStreak ?? 0,
+    lastCompletedDate: user.preference?.lastCompletedDate ?? null,
+    todosCompleted: completed,
+    todosTotal: total,
+    today,
+  });
+
+  return isAtRisk && streak >= 3
+    ? {
+        id: user.id,
+        effectiveStreak: streak,
+        locale: resolveRecipientLocale({
+          storedLocale: user.preference?.locale ?? null,
+          lastRequestLocale: null,
+        }),
+      }
+    : null;
+}

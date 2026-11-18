@@ -1,8 +1,8 @@
 import {
-  planRepeatRefFixture,
-  scheduleDraftFixture,
+  createPlanRepeatRefFixture,
+  createScheduleDraftFixture,
   type ScheduleDraftInput,
-} from "#test/fixtures/ai-response.fixture";
+} from "#test/fixtures/ai-assistance/ai-response.fixture";
 
 import type { ScheduleDraft } from "./todo-draft.constants.js";
 import { resolvePlanSchedule, resolveTodoSchedule } from "./todo-schedule.domain-service.js";
@@ -14,7 +14,7 @@ const LOS_ANGELES = { now: NOW, timeZone: "America/Los_Angeles" };
 
 const none = { pattern: "NONE" } as const;
 const draft = (overrides: ScheduleDraftInput = {}): ScheduleDraft =>
-  scheduleDraftFixture({ repeat: none, ...overrides });
+  createScheduleDraftFixture({ repeat: none, ...overrides });
 
 describe("resolveTodoSchedule — ko golden (서울 수 10:00)", () => {
   it("격주 화요일을 UNSUPPORTED로 받아도 말한 요일이 date에 있어야 다음 화요일이고, NONE이면 오늘로 어긋난다(ko-16)", () => {
@@ -130,7 +130,7 @@ describe("resolveTodoSchedule — ko golden (서울 수 10:00)", () => {
       },
     },
   ])("$id", ({ input, expected }) => {
-    // Given / When
+    // When
     const result = resolveTodoSchedule(input, SEOUL);
     // Then
     expect(result).toMatchObject(expected);
@@ -204,7 +204,7 @@ describe("resolveTodoSchedule — en golden (LA 화 18:00)", () => {
       expected: { startDate: "2026-10-27", scheduledTime: "21:00" },
     },
   ])("$id", ({ input, expected }) => {
-    // Given / When
+    // When
     const result = resolveTodoSchedule(input, LOS_ANGELES);
     // Then
     expect(result).toMatchObject(expected);
@@ -213,48 +213,66 @@ describe("resolveTodoSchedule — en golden (LA 화 18:00)", () => {
   it("교차 시간대: 같은 내일 draft가 서울·LA·UTC에서 각자의 내일이 된다", () => {
     // Given
     const tomorrow = draft({ date: { kind: "OFFSET_DAYS", amount: 1 } });
-    // When / Then
-    expect(resolveTodoSchedule(tomorrow, SEOUL).startDate).toBe("2026-10-29");
-    expect(resolveTodoSchedule(tomorrow, LOS_ANGELES).startDate).toBe("2026-10-28");
-    expect(resolveTodoSchedule(tomorrow, { now: NOW, timeZone: "UTC" }).startDate).toBe(
-      "2026-10-29",
-    );
+    // When
+    const seoul = resolveTodoSchedule(tomorrow, SEOUL);
+    const losAngeles = resolveTodoSchedule(tomorrow, LOS_ANGELES);
+    const utc = resolveTodoSchedule(tomorrow, { now: NOW, timeZone: "UTC" });
+    // Then
+    expect(seoul.startDate).toBe("2026-10-29");
+    expect(losAngeles.startDate).toBe("2026-10-28");
+    expect(utc.startDate).toBe("2026-10-29");
   });
 });
 
 describe("resolveTodoSchedule — 결정 규칙과 경계", () => {
   it("오늘과 같은 요일만 말하면 오늘이다", () => {
-    // Given - 서울 수요일에 "수요일"
+    // Given
+    // 서울 수요일에 "수요일"
     const input = draft({ date: { kind: "WEEKDAY", weekday: "WED" } });
-    // When / Then
-    expect(resolveTodoSchedule(input, SEOUL).startDate).toBe("2026-10-28");
+    // When
+    const result = resolveTodoSchedule(input, SEOUL);
+    // Then
+    expect(result.startDate).toBe("2026-10-28");
   });
 
   it("날짜를 말한 오전/오후 없는 시각은 1~6시 오후, 7~11시 오전이다", () => {
     // Given
     const at = (hour: number) =>
       draft({ date: { kind: "OFFSET_DAYS", amount: 1 }, time: { hour, meridiem: "NONE" } });
-    // When / Then
-    expect(resolveTodoSchedule(at(3), SEOUL).scheduledTime).toBe("15:00");
-    expect(resolveTodoSchedule(at(6), SEOUL).scheduledTime).toBe("18:00");
-    expect(resolveTodoSchedule(at(7), SEOUL).scheduledTime).toBe("07:00");
-    expect(resolveTodoSchedule(at(12), SEOUL).scheduledTime).toBe("12:00");
+    // When
+    const threeOclock = resolveTodoSchedule(at(3), SEOUL);
+    const sixOclock = resolveTodoSchedule(at(6), SEOUL);
+    const sevenOclock = resolveTodoSchedule(at(7), SEOUL);
+    const twelveOclock = resolveTodoSchedule(at(12), SEOUL);
+    // Then
+    expect(threeOclock.scheduledTime).toBe("15:00");
+    expect(sixOclock.scheduledTime).toBe("18:00");
+    expect(sevenOclock.scheduledTime).toBe("07:00");
+    expect(twelveOclock.scheduledTime).toBe("12:00");
   });
 
   it("때만 말하면 기본 시각을 넣는다 (아침 09·점심 12·오후 15·저녁 19·밤 21)", () => {
-    // Given - 내일 기준으로 지난 시각 보정을 배제한다
+    // Given
+    // 내일 기준으로 지난 시각 보정을 배제한다
     const at = (partOfDay: "MORNING" | "NOON" | "AFTERNOON" | "EVENING" | "NIGHT") =>
       draft({ date: { kind: "OFFSET_DAYS", amount: 1 }, time: { partOfDay } });
-    // When / Then
-    expect(resolveTodoSchedule(at("MORNING"), SEOUL).scheduledTime).toBe("09:00");
-    expect(resolveTodoSchedule(at("NOON"), SEOUL).scheduledTime).toBe("12:00");
-    expect(resolveTodoSchedule(at("AFTERNOON"), SEOUL).scheduledTime).toBe("15:00");
-    expect(resolveTodoSchedule(at("EVENING"), SEOUL).scheduledTime).toBe("19:00");
-    expect(resolveTodoSchedule(at("NIGHT"), SEOUL).scheduledTime).toBe("21:00");
+    // When
+    const morning = resolveTodoSchedule(at("MORNING"), SEOUL);
+    const noon = resolveTodoSchedule(at("NOON"), SEOUL);
+    const afternoon = resolveTodoSchedule(at("AFTERNOON"), SEOUL);
+    const evening = resolveTodoSchedule(at("EVENING"), SEOUL);
+    const night = resolveTodoSchedule(at("NIGHT"), SEOUL);
+    // Then
+    expect(morning.scheduledTime).toBe("09:00");
+    expect(noon.scheduledTime).toBe("12:00");
+    expect(afternoon.scheduledTime).toBe("15:00");
+    expect(evening.scheduledTime).toBe("19:00");
+    expect(night.scheduledTime).toBe("21:00");
   });
 
   it("오전/오후 없는 시각이 오늘 둘 다 지났으면 내일의 일반적 시각이다", () => {
-    // Given - 서울 23:30
+    // Given
+    // 서울 23:30
     const lateNight = { now: new Date("2026-10-28T14:30:00Z"), timeZone: "Asia/Seoul" };
     // When
     const result = resolveTodoSchedule(draft({ time: { hour: 9, meridiem: "NONE" } }), lateNight);
@@ -263,7 +281,8 @@ describe("resolveTodoSchedule — 결정 규칙과 경계", () => {
   });
 
   it("자정 직전의 상대 시각은 날짜를 넘긴다", () => {
-    // Given - 서울 23:30에 "1시간 후"
+    // Given
+    // 서울 23:30에 "1시간 후"
     const lateNight = { now: new Date("2026-10-28T14:30:00Z"), timeZone: "Asia/Seoul" };
     // When
     const result = resolveTodoSchedule(draft({ time: { relativeMinutes: 60 } }), lateNight);
@@ -272,7 +291,8 @@ describe("resolveTodoSchedule — 결정 규칙과 경계", () => {
   });
 
   it("LA 서머타임 종료일에도 달력 날짜로 내일을 계산한다", () => {
-    // Given - 2026-11-01 01:30 PST 이후(두 번째 01:30)
+    // Given
+    // 2026-11-01 01:30 PST 이후(두 번째 01:30)
     const dstEnd = { now: new Date("2026-11-01T09:30:00Z"), timeZone: "America/Los_Angeles" };
     // When
     const result = resolveTodoSchedule(draft({ date: { kind: "OFFSET_DAYS", amount: 1 } }), dstEnd);
@@ -281,7 +301,8 @@ describe("resolveTodoSchedule — 결정 규칙과 경계", () => {
   });
 
   it("윤일 2028-02-29를 그대로 해석하고 다음 날은 3월 1일이다", () => {
-    // Given - 서울 2028-02-28 12:00
+    // Given
+    // 서울 2028-02-28 12:00
     const leap = { now: new Date("2028-02-28T03:00:00Z"), timeZone: "Asia/Seoul" };
     // When
     const leapDay = resolveTodoSchedule(
@@ -304,7 +325,8 @@ describe("resolveTodoSchedule — 결정 규칙과 경계", () => {
   });
 
   it("말일 다음 달 오프셋은 그 달 말일로 맞추고, 월만 생략한 31일은 다음 31일이다", () => {
-    // Given - 서울 2027-01-31
+    // Given
+    // 서울 2027-01-31
     const monthEnd = { now: new Date("2027-01-31T03:00:00Z"), timeZone: "Asia/Seoul" };
     // When
     const nextMonth = resolveTodoSchedule(
@@ -321,21 +343,26 @@ describe("resolveTodoSchedule — 결정 규칙과 경계", () => {
   });
 
   it("연말에 다음 달 초와 내년 초를 새해로 계산한다", () => {
-    // Given - 서울 2026-12-31
+    // Given
+    // 서울 2026-12-31
     const yearEnd = { now: new Date("2026-12-31T03:00:00Z"), timeZone: "Asia/Seoul" };
-    // When / Then
-    expect(
-      resolveTodoSchedule(draft({ date: { kind: "MONTH_START", amount: 1 } }), yearEnd).startDate,
-    ).toBe("2027-01-01");
-    expect(
-      resolveTodoSchedule(draft({ date: { kind: "YEAR_START", amount: 1 } }), yearEnd).startDate,
-    ).toBe("2027-01-01");
-    expect(
-      resolveTodoSchedule(
-        draft({ date: { kind: "WEEKDAY", weekday: "MON", weekOffset: 1 } }),
-        yearEnd,
-      ).startDate,
-    ).toBe("2027-01-04");
+    // When
+    const nextMonthStart = resolveTodoSchedule(
+      draft({ date: { kind: "MONTH_START", amount: 1 } }),
+      yearEnd,
+    );
+    const nextYearStart = resolveTodoSchedule(
+      draft({ date: { kind: "YEAR_START", amount: 1 } }),
+      yearEnd,
+    );
+    const nextMonday = resolveTodoSchedule(
+      draft({ date: { kind: "WEEKDAY", weekday: "MON", weekOffset: 1 } }),
+      yearEnd,
+    );
+    // Then
+    expect(nextMonthStart.startDate).toBe("2027-01-01");
+    expect(nextYearStart.startDate).toBe("2027-01-01");
+    expect(nextMonday.startDate).toBe("2027-01-04");
   });
 
   it("종료일이 시작일보다 앞이면 종료일을 버리고 경고를 남긴다", () => {
@@ -351,7 +378,7 @@ describe("resolveTodoSchedule — 결정 규칙과 경계", () => {
   });
 
   it("반복 기간과 반복 종료를 말하면 그 기간으로 끝낸다", () => {
-    // Given - 한 달 동안 매일
+    // Given
     const input = draft({
       repeat: { pattern: "DAILY", forDuration: { unit: "MONTH", amount: 1 } },
     });
@@ -670,7 +697,8 @@ describe("resolveTodoSchedule — 이번 달 초·올해 초", () => {
 
 describe("resolveTodoSchedule — 모델이 흔들린 표현에서도 예측 가능한 결과", () => {
   it("때와 함께 온 relativeMinutes 0은 '지금'이 아니라 말한 날짜와 때로 계산한다", () => {
-    // Given - 서울 수 10:00에 "내일 아침 치과 예약 전화"를 모델이 relativeMinutes 0과 함께 냄
+    // Given
+    // 서울 수 10:00에 "내일 아침 치과 예약 전화"를 모델이 relativeMinutes 0과 함께 냄
     const input = draft({
       date: { kind: "OFFSET_DAYS", amount: 1 },
       time: { partOfDay: "MORNING", relativeMinutes: 0 },
@@ -691,7 +719,8 @@ describe("resolveTodoSchedule — 모델이 흔들린 표현에서도 예측 가
   });
 
   it("다른 날을 말한 표현과 함께 온 상대 시각은 무시하고 말한 날짜를 지킨다", () => {
-    // Given - "내일"과 120분 뒤가 함께 오면 오늘 12:00이 아니라 내일이다
+    // Given
+    // "내일"과 120분 뒤가 함께 오면 오늘 12:00이 아니라 내일이다
     const input = draft({
       date: { kind: "OFFSET_DAYS", amount: 1 },
       time: { relativeMinutes: 120 },
@@ -703,7 +732,7 @@ describe("resolveTodoSchedule — 모델이 흔들린 표현에서도 예측 가
   });
 
   it("오늘을 말한 상대 시각은 그대로 지금부터 계산한다", () => {
-    // Given - "오늘 2시간 뒤"
+    // Given
     const input = draft({ date: { kind: "TODAY" }, time: { relativeMinutes: 120 } });
     // When
     const result = resolveTodoSchedule(input, SEOUL);
@@ -712,7 +741,8 @@ describe("resolveTodoSchedule — 모델이 흔들린 표현에서도 예측 가
   });
 
   it("날짜 없이 말한 때가 오늘 이미 지났으면 내일 그 때로 넘긴다", () => {
-    // Given - 서울 10:00에 "아침에 영양제 먹기"
+    // Given
+    // 서울 10:00에 "아침에 영양제 먹기"
     const input = draft({ time: { partOfDay: "MORNING" } });
     // When
     const result = resolveTodoSchedule(input, SEOUL);
@@ -721,7 +751,8 @@ describe("resolveTodoSchedule — 모델이 흔들린 표현에서도 예측 가
   });
 
   it("'오늘 아침'이 이미 지났으면 오늘로 두고 지난 기본 시각을 넣지 않는다", () => {
-    // Given - 서울 10:00에 "오늘 아침 영양제 먹기"
+    // Given
+    // 서울 10:00에 "오늘 아침 영양제 먹기"
     const input = draft({ date: { kind: "TODAY" }, time: { partOfDay: "MORNING" } });
     // When
     const result = resolveTodoSchedule(input, SEOUL);
@@ -739,7 +770,8 @@ describe("resolveTodoSchedule — 모델이 흔들린 표현에서도 예측 가
   });
 
   it("오늘 지난 시각을 숫자로 말하면 사용자가 말한 그대로 둔다", () => {
-    // Given - 서울 10:00에 "오늘 오전 9시 약 먹기"
+    // Given
+    // 서울 10:00에 "오늘 오전 9시 약 먹기"
     const input = draft({ date: { kind: "TODAY" }, time: { hour: 9, minute: 0, meridiem: "AM" } });
     // When
     const result = resolveTodoSchedule(input, SEOUL);
@@ -845,7 +877,7 @@ describe("resolveTodoSchedule — 반복 규칙 (서울 수 2026-10-28)", () => 
     { name: "요일 없는 매주", repeat: { pattern: "WEEKLY_DAYS" }, expected: null },
   ] as const)("$name", ({ repeat, expected }) => {
     // Given
-    const input = scheduleDraftFixture({ repeat: { ...repeat } });
+    const input = createScheduleDraftFixture({ repeat: { ...repeat } });
     // When
     const result = resolveTodoSchedule(input, SEOUL);
     // Then
@@ -856,9 +888,9 @@ describe("resolveTodoSchedule — 반복 규칙 (서울 수 2026-10-28)", () => 
     // Given
     const said = {
       ...draft(),
-      repeat: planRepeatRefFixture({ pattern: "MONTHLY_DAY", monthDay: 15 }),
+      repeat: createPlanRepeatRefFixture({ pattern: "MONTHLY_DAY", monthDay: 15 }),
     };
-    const unsaid = { ...draft(), repeat: planRepeatRefFixture({ pattern: "MONTHLY_DAY" }) };
+    const unsaid = { ...draft(), repeat: createPlanRepeatRefFixture({ pattern: "MONTHLY_DAY" }) };
     // When
     const results = [said, unsaid].map((input) => resolveTodoSchedule(input, SEOUL).repeat);
     // Then
@@ -944,7 +976,7 @@ describe("resolvePlanSchedule — 계획의 주말", () => {
     { name: "일요일에 말한 이번 주말은 오늘", clock: SUNDAY, expected: "2026-11-08" },
   ])("$name 한 번이고 반복이 아니다", ({ clock, expected }) => {
     // Given
-    const input = { ...draft(), repeat: planRepeatRefFixture({ pattern: "THIS_WEEKEND" }) };
+    const input = { ...draft(), repeat: createPlanRepeatRefFixture({ pattern: "THIS_WEEKEND" }) };
     // When
     const result = resolvePlanSchedule(input, clock);
     // Then
@@ -959,7 +991,7 @@ describe("resolvePlanSchedule — 계획의 주말", () => {
 
   it("다음 주말은 다음 주 토요일 한 번이다", () => {
     // Given
-    const input = { ...draft(), repeat: planRepeatRefFixture({ pattern: "NEXT_WEEKEND" }) };
+    const input = { ...draft(), repeat: createPlanRepeatRefFixture({ pattern: "NEXT_WEEKEND" }) };
     // When
     const result = resolvePlanSchedule(input, THURSDAY);
     // Then
@@ -968,7 +1000,7 @@ describe("resolvePlanSchedule — 계획의 주말", () => {
 
   it("주말마다는 끝 없는 반복이다", () => {
     // Given
-    const input = { ...draft(), repeat: planRepeatRefFixture({ pattern: "WEEKENDS" }) };
+    const input = { ...draft(), repeat: createPlanRepeatRefFixture({ pattern: "WEEKENDS" }) };
     // When
     const result = resolvePlanSchedule(input, THURSDAY);
     // Then

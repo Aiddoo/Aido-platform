@@ -61,7 +61,7 @@ export function createTransactionHost(
 
 /** 저장소 integration fixture가 실제 트랜잭션과 Required 전파를 공유한다. */
 export function createDatabaseTransactionFixture(client: Database) {
-  const txHost = createTransactionHost(client);
-  const uow: UnitOfWorkPort = { run: (work) => txHost.withTransaction(work) };
-  return { txHost, uow };
+  const transactionHost = createTransactionHost(client);
+  const uow: UnitOfWorkPort = { run: (work) => transactionHost.withTransaction(work) };
+  return { transactionHost, uow };
 }

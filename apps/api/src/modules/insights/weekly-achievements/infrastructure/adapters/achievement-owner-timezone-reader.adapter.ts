@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { UserPreferenceReaderPort } from "#api/modules/identity/identity-settings.public";
+import { UserPreferenceReaderPort } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { AchievementOwnerTimezoneReaderPort } from "../../application/ports/achievement-owner-timezone.reader.port.js";

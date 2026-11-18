@@ -7,10 +7,12 @@ import {
   TODO_SERIES_PAUSED_JOB_NAME,
   TODO_SERIES_PAUSED_QUEUE,
 } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder.queue";
+import { TodoId } from "#api/modules/planning/todos/domain/todo-id.vo";
 import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
 import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { DateClock } from "#test/doubles/platform/date-clock";
-import { nowInstant } from "#test/fixtures/clock.fixture";
+import { nowInstant } from "#test/fixtures/platform/clock.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import { TestDatabase } from "#test/setup/test-database";
@@ -19,6 +21,8 @@ import { withFastJobTiming } from "../../helpers/fast-job-timing.js";
 
 const SCHEMA = "pgboss";
 const USER_ID = "user-reminder";
+const USER = UserId.reconstitute(USER_ID);
+const todo = (value: number) => TodoId.reconstitute(value);
 const HOUR_MS = 60 * 60 * 1000;
 const MINUTE_MS = 60 * 1000;
 const FAST_TODO_REMINDER_QUEUE = withFastJobTiming(TODO_REMINDER_QUEUE);
@@ -60,10 +64,15 @@ describe("리마인더 재예약 (실제 pg-boss)", () => {
       max: 3,
     });
     transaction = createDatabaseTransactionFixture(client);
-    jobQueue = new PgBossJobQueueAdapter(boss, transaction.txHost, new JobQueueRegistry(), {
-      shutdownTimeoutMs: 10_000,
-      workerEnabled: true,
-    });
+    jobQueue = new PgBossJobQueueAdapter(
+      boss,
+      transaction.transactionHost,
+      new JobQueueRegistry(),
+      {
+        shutdownTimeoutMs: 10_000,
+        workerEnabled: true,
+      },
+    );
     await jobQueue.start();
     scheduler = new TodoReminderSchedulerAdapter(jobQueue, new DateClock());
   });
@@ -83,10 +92,10 @@ describe("리마인더 재예약 (실제 pg-boss)", () => {
     const todoId = nextTodoId;
     const first = nowInstant().add({ milliseconds: 5 * HOUR_MS });
     const moved = nowInstant().add({ milliseconds: 8 * HOUR_MS });
-    await scheduler.scheduleReminder(todoId, first, USER_ID);
+    await scheduler.scheduleReminder(todo(todoId), first, USER);
 
     // When
-    await scheduler.scheduleReminder(todoId, moved, USER_ID);
+    await scheduler.scheduleReminder(todo(todoId), moved, USER);
 
     // Then
     const starts = await queuedStarts(todoId, "60min");
@@ -103,13 +112,13 @@ describe("리마인더 재예약 (실제 pg-boss)", () => {
     const first = nowInstant().add({ milliseconds: 5 * HOUR_MS });
     const moved = nowInstant().add({ milliseconds: 8 * HOUR_MS });
     await scheduler.scheduleReminders(
-      todoIds.map((todoId) => ({ todoId, scheduledTime: first, userId: USER_ID })),
+      todoIds.map((todoId) => ({ todoId: todo(todoId), scheduledTime: first, userId: USER })),
     );
 
     // When
-    await scheduler.cancelReminders(todoIds);
+    await scheduler.cancelReminders(todoIds.map(todo));
     await scheduler.scheduleReminders(
-      todoIds.map((todoId) => ({ todoId, scheduledTime: moved, userId: USER_ID })),
+      todoIds.map((todoId) => ({ todoId: todo(todoId), scheduledTime: moved, userId: USER })),
     );
 
     // Then
@@ -127,9 +136,9 @@ describe("리마인더 재예약 (실제 pg-boss)", () => {
     const todoId = nextTodoId;
     const key = `reminder_${todoId}_10min`;
     await scheduler.scheduleReminder(
-      todoId,
+      todo(todoId),
       nowInstant().add({ milliseconds: 10 * MINUTE_MS + 500 }),
-      USER_ID,
+      USER,
     );
     await jobQueue.work(FAST_TODO_REMINDER_QUEUE, vi.fn().mockResolvedValue(undefined));
     const finished = await vi.waitFor(
@@ -142,9 +151,9 @@ describe("리마인더 재예약 (실제 pg-boss)", () => {
     );
     // When
     await scheduler.scheduleReminder(
-      todoId,
+      todo(todoId),
       nowInstant().add({ milliseconds: 10 * MINUTE_MS + 500 }),
-      USER_ID,
+      USER,
     );
     // Then
     await vi.waitFor(
@@ -187,14 +196,18 @@ describe("리마인더 재예약 (실제 pg-boss)", () => {
     // Given
     const todoId = nextTodoId;
     const first = nowInstant().add({ milliseconds: 5 * HOUR_MS });
-    await scheduler.scheduleReminder(todoId, first, USER_ID);
+    await scheduler.scheduleReminder(todo(todoId), first, USER);
     const before = await queuedStarts(todoId, "60min");
 
     // When
     const outcome = transaction.uow.run(async () => {
-      await scheduler.cancelReminders([todoId]);
+      await scheduler.cancelReminders([todo(todoId)]);
       await scheduler.scheduleReminders([
-        { todoId, scheduledTime: nowInstant().add({ milliseconds: 8 * HOUR_MS }), userId: USER_ID },
+        {
+          todoId: todo(todoId),
+          scheduledTime: nowInstant().add({ milliseconds: 8 * HOUR_MS }),
+          userId: USER,
+        },
       ]);
       throw new Error("force rollback");
     });

@@ -36,11 +36,11 @@ describe("DrizzleRewardGrantRepository (실제 PostgreSQL)", () => {
   });
 
   function createRepositories() {
-    const { txHost } = createDatabaseTransactionFixture(client);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
     return {
-      grants: new DrizzleRewardGrantRepository(txHost),
-      redemptions: new DrizzleInviteRedemptionRepository(txHost, new DateClock()),
-      reader: new DrizzleInviteRedemptionReader(txHost),
+      grants: new DrizzleRewardGrantRepository(transactionHost),
+      redemptions: new DrizzleInviteRedemptionRepository(transactionHost, new DateClock()),
+      reader: new DrizzleInviteRedemptionReader(transactionHost),
     };
   }
 
@@ -50,7 +50,7 @@ describe("DrizzleRewardGrantRepository (실제 PostgreSQL)", () => {
   });
 
   it("초대한 사람이 자기가 초대받아 받은 보상은 초대한 사람 보상 합계에서 뺀다", async () => {
-    // Given 초대한 사람 자신도 다른 사람의 초대를 수락했다
+    // Given
     const { grants, redemptions, reader } = createRepositories();
     const ownRedemption = createInviteRedemptionFixture({
       id: InviteRedemptionId.generate().value,

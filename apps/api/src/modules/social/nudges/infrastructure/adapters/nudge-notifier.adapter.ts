@@ -1,17 +1,17 @@
+import { type SupportedLocale } from "@aido/api/vocabulary";
 import { Inject, Injectable } from "@nestjs/common";
 import { match } from "ts-pattern";
 
-import { NotificationQueueAdapter } from "#api/modules/notification/notification-delivery-jobs.public";
+import { NotificationQueueAdapter } from "#api/modules/notification/notifications/notification-notifications-jobs.public";
 import {
+  type CreateNotificationData,
   createNudgeReplyNotificationMessage,
   createNudgeThanksNotificationMessage,
+  PublishNotificationBatchUseCase,
   PublishNotificationUseCase,
-  type CreateNotificationData,
-  NotificationRecipientLocaleReaderPort,
   TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY,
-} from "#api/modules/notification/notification-delivery.public";
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
+} from "#api/modules/notification/notifications/notification-notifications.public";
+import { NotificationRecipientLocaleReaderPort } from "#api/modules/notification/push-dispatches/notification-push-dispatches.public";
 
 import {
   type NudgeInteractionNotification,
@@ -23,44 +23,52 @@ import {
 export class NudgeNotifierAdapter extends NudgeNotifierPort {
   readonly #notificationQueue: NotificationQueueAdapter;
   readonly #notificationPublisher: PublishNotificationUseCase;
+  readonly #notificationBatchPublisher: PublishNotificationBatchUseCase;
   readonly #notificationRecipientLocaleReader: NotificationRecipientLocaleReaderPort;
 
   constructor(
     notificationQueue: NotificationQueueAdapter,
     notificationPublisher: PublishNotificationUseCase,
+    notificationBatchPublisher: PublishNotificationBatchUseCase,
     @Inject(NotificationRecipientLocaleReaderPort)
     notificationRecipientLocaleReader: NotificationRecipientLocaleReaderPort,
   ) {
     super();
     this.#notificationQueue = notificationQueue;
     this.#notificationPublisher = notificationPublisher;
+    this.#notificationBatchPublisher = notificationBatchPublisher;
     this.#notificationRecipientLocaleReader = notificationRecipientLocaleReader;
   }
 
   notifyNudgeSent(notification: NudgeSentNotification): Promise<void> {
-    return this.#notificationQueue.enqueueNudgeSent(notification);
+    return this.#notificationQueue.enqueueNudgeSent({
+      nudgeId: notification.nudgeId.value,
+      senderId: notification.senderId.value,
+      receiverId: notification.receiverId.value,
+      senderName: notification.senderName,
+      todoId: notification.todoId.value,
+      todoTitle: notification.todoTitle,
+      message: notification.message,
+    });
   }
 
   async recordInteraction(notification: NudgeInteractionNotification): Promise<void> {
     const locale = await this.#notificationRecipientLocaleReader.getLocale(
-      UserId.reconstitute(notification.recipientId),
+      notification.recipientId,
     );
-    await this.#notificationPublisher.publish(this.#toNotificationData(notification, locale));
+    await this.#notificationPublisher.execute(this.#toNotificationData(notification, locale));
   }
 
   async recordInteractions(notifications: readonly NudgeInteractionNotification[]): Promise<void> {
     if (notifications.length === 0) {
       return;
     }
-    const locales = await this.#notificationRecipientLocaleReader.getLocales(
-      notifications.map((notification) => UserId.reconstitute(notification.recipientId)),
+    const localeOf = await this.#notificationRecipientLocaleReader.getLocales(
+      notifications.map((notification) => notification.recipientId),
     );
-    await this.#notificationPublisher.publishBatch(
+    await this.#notificationBatchPublisher.execute(
       notifications.map((notification) =>
-        this.#toNotificationData(
-          notification,
-          locales.get(notification.recipientId) ?? DEFAULT_LOCALE,
-        ),
+        this.#toNotificationData(notification, localeOf(notification.recipientId.value)),
       ),
     );
   }
@@ -77,8 +85,8 @@ export class NudgeNotifierAdapter extends NudgeNotifierPort {
       locale,
       variantContext: {
         campaignKey,
-        recipientId: payload.recipientId,
-        occurrenceKey: String(payload.nudgeId),
+        recipientId: payload.recipientId.value,
+        occurrenceKey: String(payload.nudgeId.value),
       },
     };
     const message = match(payload)
@@ -88,13 +96,13 @@ export class NudgeNotifierAdapter extends NudgeNotifierPort {
       .with({ kind: "thanks" }, () => createNudgeThanksNotificationMessage(copyInput))
       .exhaustive();
     return {
-      userId: payload.recipientId,
+      userId: payload.recipientId.value,
       type,
       title: message.title,
       body: message.body,
-      nudgeId: payload.nudgeId,
-      todoId: payload.todoId,
-      friendId: payload.actorId,
+      nudgeId: payload.nudgeId.value,
+      todoId: payload.todoId.value,
+      friendId: payload.actorId.value,
       campaignKey,
       variantId: message.variantId,
     };

@@ -9,7 +9,7 @@ import {
   searchUsersResponseSchema,
   sendFriendRequestResponseSchema,
   sentRequestsResponseSchema,
-} from '@aido/api';
+} from '@aido/api/contracts/follow/v1';
 import type { ApiError } from '@src/core/errors/api-error';
 import { err, type Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http-client';

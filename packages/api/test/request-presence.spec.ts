@@ -1,6 +1,10 @@
 import { test, expect, describe } from "vitest";
 
-import { getTodosQuerySchema, updateTodoSchema, type UpdateTodoInput } from "../src/index.js";
+import {
+  getTodosQuerySchema,
+  updateTodoSchema,
+  type UpdateTodoInput,
+} from "../src/contracts/todo/v1/index.js";
 
 const fixtureTest = test.extend<{ patch: UpdateTodoInput }>({ patch: {} });
 

@@ -13,14 +13,10 @@ import { toReminderNudge, toReminderNudgeRow } from "./reminder-nudge-row.mapper
 
 @Injectable()
 export class DrizzleReminderNudgeRepository implements ReminderNudgeRepositoryPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
-  }
-
-  get #db() {
-    return this.#txHost.tx;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
   async nextId(): Promise<ReminderNudgeId> {
@@ -37,5 +33,9 @@ export class DrizzleReminderNudgeRepository implements ReminderNudgeRepositoryPo
 
   async save(reminder: ReminderNudge): Promise<void> {
     await this.#db.insert(reminderNudgeTable).values(toReminderNudgeRow(reminder));
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

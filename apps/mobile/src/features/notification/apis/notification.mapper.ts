@@ -4,7 +4,7 @@ import {
   type NotificationInboxResponse as NotificationInboxResponseDto,
   type NotificationNavigation as NotificationNavigationDto,
   notificationRoutingSchema,
-} from '@aido/api';
+} from '@aido/api/contracts/notification/v1';
 import { NOTIFICATION_TYPE } from '@aido/api/vocabulary';
 import { dateKeySchema } from '@src/shared/date/date-key';
 import { type Instant, toInstant } from '@src/shared/date/instant';

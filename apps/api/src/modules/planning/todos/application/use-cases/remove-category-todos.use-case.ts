@@ -1,7 +1,7 @@
+import type { TodoCategoryId } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import type { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { TodoCategoryId } from "../../../categories/domain/todo-category-id.vo.js";
 import type { TodoBulkRemoverPort } from "../ports/todo-bulk-remover.port.js";
 import type { TodoCachePort } from "../ports/todo-cache.port.js";
 import type { TodoReminderSchedulerPort } from "../ports/todo-reminder-scheduler.port.js";
@@ -42,7 +42,7 @@ export class RemoveCategoryTodosUseCase {
     // 리마인더 작업은 시각이 있는 할 일에만 있다. 결정적 작업 id로 한 문장에 지운다
     const scheduledTodoIds = removed.todos
       .filter((removedTodo) => removedTodo.scheduledTime != null)
-      .map((removedTodo) => removedTodo.id.value);
+      .map((removedTodo) => removedTodo.id);
     if (scheduledTodoIds.length > 0) {
       await reminderScheduler.cancelReminders(scheduledTodoIds);
     }

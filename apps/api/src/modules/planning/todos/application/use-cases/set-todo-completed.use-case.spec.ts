@@ -9,21 +9,18 @@ import {
   snapshotTodoRecord,
 } from "#test/fixtures/planning/planning-todos.fixture";
 
-import { TodoRescheduledEvent } from "../../../shared/domain/todo-rescheduled.event.js";
-import { TodoToggledEvent } from "../../../shared/domain/todo-toggled.event.js";
+import { TodoRescheduledEvent } from "../../domain/todo-rescheduled.event.js";
+import { TodoToggledEvent } from "../../domain/todo-toggled.event.js";
 import { SetTodoCompletedUseCase } from "./set-todo-completed.use-case.js";
 
 describe("할 일 완료 상태 전이", () => {
   let fixture: ReturnType<typeof createPlanningTodoFixture>;
   let useCase: SetTodoCompletedUseCase;
   beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(PLANNING_TIME);
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
     useCase = new SetTodoCompletedUseCase(fixture);
   });
   afterEach(() => {
-    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -56,8 +53,8 @@ describe("할 일 완료 상태 전이", () => {
       completed: true,
     };
     await useCase.execute(input);
-    const completionWrite = vi.spyOn(fixture.todoRepository, "updateCompletion");
-    vi.setSystemTime(new Date("2026-05-15T04:00:00Z"));
+    const completionWrite = vi.spyOn(fixture.todoRepository, "save");
+    fixture.clock.advanceBy({ hours: 1 });
     // When
     const result = await useCase.execute(input);
     // Then
@@ -104,15 +101,15 @@ describe("할 일 완료 상태 전이", () => {
   it("다른 사용자의 할 일은 완료할 수 없다", async () => {
     // Given
     const before = snapshotTodoRecord(fixture.records.get(1));
-    // When / Then
-    await expect(
-      useCase.execute({
-        id: 1,
-        userId: "other-user",
-        timezone: "UTC",
-        completed: true,
-      }),
-    ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
+    // When
+    const result = useCase.execute({
+      id: 1,
+      userId: "other-user",
+      timezone: "UTC",
+      completed: true,
+    });
+    // Then
+    await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
     expect(fixture.records.get(1)).toEqual(before);
     expect(fixture.completionEffects.events).toEqual([]);
   });

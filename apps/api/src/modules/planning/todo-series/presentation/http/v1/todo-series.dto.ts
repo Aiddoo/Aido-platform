@@ -1,4 +1,4 @@
-import { todoSeriesIdParamSchema, todoSeriesResponseSchema } from "@aido/api";
+import { todoSeriesIdParamSchema, todoSeriesResponseSchema } from "@aido/api/contracts/todo/v1";
 import type { z } from "zod";
 
 export const TodoSeriesIdParamDto = todoSeriesIdParamSchema.meta({

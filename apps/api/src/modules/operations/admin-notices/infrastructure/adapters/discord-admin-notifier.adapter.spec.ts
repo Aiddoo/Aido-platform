@@ -3,7 +3,7 @@ import { HttpClient } from "@nestjs/http-client";
 
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
-import { RecordingOperationalAlert } from "#test/mocks/recording-operational-alert";
+import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 
 import {
   type AdminNotifierContractScenario,
@@ -28,7 +28,7 @@ function adapter(
   },
 ) {
   return new DiscordAdminNotifierAdapter(
-    { admin: webhooks.admin, payment: webhooks.payment },
+    { discordWebhookUrls: { admin: webhooks.admin, payment: webhooks.payment } },
     new HttpClient({ retry: { attempts: 3, methods: ["POST"] }, throwOnHttpError: true }),
     new OutboundPolicyRegistry(new RecordingOperationalAlert()),
     new FixedClock(NOW),

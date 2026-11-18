@@ -1,13 +1,13 @@
 import type { InviteFriendship, REDEEM_OUTCOME } from "@aido/api/vocabulary";
 
-import type { InviterProfile } from "#api/modules/social/invites/social-invites.public";
+import type { InviterProfileReadModel } from "#api/modules/social/invites/social-invites.public";
 
 import type { RewardAmount } from "../../domain/invite-reward.domain-service.js";
 
-export type InviteRedeemResult =
+export type InviteRedeemResultReadModel =
   | {
       readonly outcome: typeof REDEEM_OUTCOME.REDEEMED;
-      readonly inviter: InviterProfile;
+      readonly inviter: InviterProfileReadModel;
       readonly friendship: InviteFriendship;
       readonly rewards: readonly RewardAmount[];
       readonly redemptionId: string;
@@ -16,10 +16,10 @@ export type InviteRedeemResult =
     }
   | {
       readonly outcome: typeof REDEEM_OUTCOME.CONNECTED;
-      readonly inviter: InviterProfile;
+      readonly inviter: InviterProfileReadModel;
       readonly friendship: InviteFriendship;
     }
   | {
       readonly outcome: typeof REDEEM_OUTCOME.ALREADY_FRIENDS;
-      readonly inviter: InviterProfile;
+      readonly inviter: InviterProfileReadModel;
     };

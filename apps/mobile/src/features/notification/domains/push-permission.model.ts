@@ -1,4 +1,4 @@
-import { PUSH_PERMISSION_STATUS } from '@aido/api/vocabulary';
+import { isDeliverablePushPermission, PUSH_PERMISSION_STATUS } from '@aido/api/vocabulary';
 import { DAY_MS } from '@src/shared/constants/time-units';
 import {
   diffMs,
@@ -16,7 +16,7 @@ const PUSH_PROMPT_SNOOZE_DAYS = 14;
 /** 가입 뒤 이 날수 안에만 알림 화면을 보여 준다. 그 뒤에는 할 일 시간을 정할 때 묻는다 */
 const PUSH_ONBOARDING_WINDOW_DAYS = 1;
 
-const pushPermissionSchema = z.object({
+export const pushPermissionSchema = z.object({
   status: z.enum(PUSH_PERMISSION_STATUS),
   canAskAgain: z.boolean(),
 });
@@ -62,12 +62,8 @@ type PushAskContext =
       now: Instant;
     };
 
-/** iOS 임시 허용(provisional·ephemeral)도 알림이 조용히 도착하므로 허용으로 본다 */
 function isPushDeliverable(permission: PushPermission): boolean {
-  return (
-    permission.status === PUSH_PERMISSION_STATUS.GRANTED ||
-    permission.status === PUSH_PERMISSION_STATUS.PROVISIONAL
-  );
+  return isDeliverablePushPermission(permission.status);
 }
 
 function isUndecided(permission: PushPermission): boolean {

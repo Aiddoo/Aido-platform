@@ -33,7 +33,7 @@ import {
 import { user } from "./identity.schema.js";
 import { todo } from "./planning.schema.js";
 
-export const follow = pgTable(
+export const friendship = pgTable(
   "Follow",
   {
     createdAt: instant()

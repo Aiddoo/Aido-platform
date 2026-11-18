@@ -1,6 +1,6 @@
 import { times } from "es-toolkit/compat";
 
-import { clampPageSize, toCursorPage } from "./cursor-page.js";
+import { clampPageSize, toCursorPage, toMappedCursorPage } from "./cursor-page.js";
 
 interface Row {
   readonly id: number;
@@ -43,6 +43,42 @@ describe("toCursorPage — 커서 페이지 만들기", () => {
     // Then
     expect(page.items.map((row) => row.id)).toEqual(expectedIds);
     expect(page.pagination).toEqual({ nextCursor, hasNext, size: 3 });
+  });
+});
+
+describe("toMappedCursorPage — 매핑에서 빠지는 행이 있는 커서 페이지", () => {
+  it("가운데 행이 매핑에서 빠져도 다음 페이지 여부와 커서는 읽은 원래 행으로 정한다", async () => {
+    // Given
+    const rows = createRows(4);
+
+    // When
+    const page = await toMappedCursorPage({
+      rows,
+      size: 3,
+      toCursor: (row) => row.id,
+      toItems: (pageRows) => pageRows.filter((row) => row.id !== 99),
+    });
+
+    // Then
+    expect(page.items.map((row) => row.id)).toEqual([100, 98]);
+    expect(page.pagination).toEqual({ nextCursor: 98, hasNext: true, size: 3 });
+  });
+
+  it("마지막 행이 빠져도 커서는 그 원래 행이라 다음 페이지가 그 뒤부터 이어진다", async () => {
+    // Given
+    const rows = createRows(4);
+
+    // When
+    const page = await toMappedCursorPage({
+      rows,
+      size: 3,
+      toCursor: (row) => row.id,
+      toItems: async (pageRows) => pageRows.filter((row) => row.id !== 98),
+    });
+
+    // Then
+    expect(page.items.map((row) => row.id)).toEqual([100, 99]);
+    expect(page.pagination).toEqual({ nextCursor: 98, hasNext: true, size: 3 });
   });
 });
 

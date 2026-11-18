@@ -2,7 +2,8 @@ import {
   WeeklyAchievementStatsReaderPort,
   type WeeklyStatsParams,
 } from "#api/modules/notification/reminders/application/ports/weekly-achievement-stats-reader.port";
-import type { UserTodoCount } from "#api/modules/notification/reminders/application/read-models/scheduler.read-model";
+import type { UserTodoCountReadModel } from "#api/modules/notification/reminders/application/read-models/scheduler.read-model";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { WeeklyStatsUserSeed } from "#test/contracts/notification/weekly-achievement-stats-reader.contract";
 
 function dayNumberOf(date: Temporal.PlainDate): number {
@@ -43,22 +44,26 @@ export class InMemoryWeeklyAchievementStatsReader extends WeeklyAchievementStats
     return id;
   }
 
-  async groupTotalTodosByUser(params: WeeklyStatsParams): Promise<UserTodoCount[]> {
+  async groupTotalTodosByUser(params: WeeklyStatsParams): Promise<UserTodoCountReadModel[]> {
     return this.#countTodoDaysByUser(params, () => true);
   }
 
-  async groupCompletedTodosByUser(params: WeeklyStatsParams): Promise<UserTodoCount[]> {
+  async groupCompletedTodosByUser(params: WeeklyStatsParams): Promise<UserTodoCountReadModel[]> {
     return this.#countTodoDaysByUser(params, (todo) => todo.completed);
   }
 
-  async findFreeRecipientIds(userIds: string[]): Promise<Set<string>> {
-    return new Set(userIds.filter((userId) => this.#users.get(userId)?.isFree === true));
+  async findFreeRecipientIds(userIds: readonly UserId[]): Promise<Set<string>> {
+    return new Set(
+      userIds
+        .map((userId) => userId.value)
+        .filter((userId) => this.#users.get(userId)?.isFree === true),
+    );
   }
 
   #countTodoDaysByUser(
     params: WeeklyStatsParams,
     include: (todo: StoredTodo) => boolean,
-  ): UserTodoCount[] {
+  ): UserTodoCountReadModel[] {
     const firstDay = dayNumberOf(params.periodStart);
     const lastDay = dayNumberOf(params.periodEnd) - 1;
     return [...this.#users.values()].flatMap((user) => {

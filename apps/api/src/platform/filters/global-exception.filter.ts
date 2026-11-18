@@ -1,4 +1,4 @@
-import type { RestErrorResponse } from "@aido/api";
+import type { RestErrorResponse } from "@aido/api/common";
 import { ErrorCode, type ErrorCodeType, Errors, toPublicErrorDetails } from "@aido/api/errors";
 import {
   type ArgumentsHost,
@@ -8,7 +8,7 @@ import {
   HttpStatus,
   Inject,
 } from "@nestjs/common";
-import type { Request, Response } from "express";
+import { HttpAdapterHost } from "@nestjs/core";
 import { PinoLogger } from "nestjs-pino";
 
 import { appConfig, type AppSettings } from "#api/platform/config/app.config";
@@ -19,6 +19,7 @@ import {
   isRecordNotFoundError,
 } from "#api/platform/database/database-error.util";
 import { DatabaseAlerts } from "#api/platform/database/database.alerts";
+import type { HttpRequest, HttpResponse } from "#api/platform/http/http-request";
 import { readRouteTemplate } from "#api/platform/http/request-route";
 import { readRequestUserId } from "#api/platform/http/request-user-id";
 import { ErrorMessageTranslator } from "#api/platform/i18n/error-message.translator";
@@ -28,6 +29,7 @@ import { SENTRY_EXTRA, SENTRY_TAG } from "#api/platform/observability/sentry-key
 import { ExceptionReporterPort } from "#api/shared/application/ports/exception-reporter.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
   concurrentModification,
@@ -75,6 +77,7 @@ function classifiedFailureGroup(exception: unknown): string | undefined {
 /** 모든 예외를 공유 오류 envelope로 바꾸고, 5xx만 예외 보고로 보낸다. */
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
+  readonly #adapterHost: HttpAdapterHost;
   readonly #logger: PinoLogger;
   readonly #exposeErrorDetails: boolean;
   readonly #messages: ErrorMessageTranslator;
@@ -82,12 +85,14 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   readonly #operationalAlert: OperationalAlertPort;
 
   constructor(
+    adapterHost: HttpAdapterHost,
     logger: PinoLogger,
     @Inject(appConfig.KEY) app: Pick<AppSettings, "devTools">,
     messages: ErrorMessageTranslator,
     exceptionReporter: ExceptionReporterPort,
     operationalAlert: OperationalAlertPort,
   ) {
+    this.#adapterHost = adapterHost;
     this.#logger = logger;
     this.#exposeErrorDetails = app.devTools.exposeErrorDetails;
     this.#messages = messages;
@@ -97,18 +102,19 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   }
 
   catch(exception: unknown, host: ArgumentsHost) {
-    const ctx = host.switchToHttp();
-    const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest<Request>();
+    const httpContext = host.switchToHttp();
+    const response = httpContext.getResponse<HttpResponse>();
+    const request = httpContext.getRequest<HttpRequest>();
     const { statusCode, errorResponse } = this.#toResponse(exception);
 
-    const userId = readRequestUserId(request) ?? "anonymous";
+    const requestUserId = readRequestUserId(request);
+    const userId = requestUserId ?? "anonymous";
     const requestPath = httpRequestPath(request.url);
 
     // 4xx는 앱이 처리하는 업무 거부라 보고하지 않는다
     if (statusCode >= HttpStatus.INTERNAL_SERVER_ERROR) {
       this.#exceptionReporter.report(exception, {
-        userId: userId === "anonymous" ? null : userId,
+        userId: requestUserId == null ? null : UserId.reconstitute(requestUserId),
         tags: {
           [SENTRY_TAG.HTTP_METHOD]: request.method,
           [SENTRY_TAG.HTTP_ROUTE]: readRouteTemplate(request) ?? "unmatched",
@@ -144,7 +150,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       this.#logger.warn(logFields, "HTTP 요청 거부");
     }
 
-    response.status(statusCode).json(errorResponse);
+    this.#adapterHost.httpAdapter.reply(response, errorResponse, statusCode);
   }
 
   #toResponse(exception: unknown): { statusCode: number; errorResponse: RestErrorResponse } {

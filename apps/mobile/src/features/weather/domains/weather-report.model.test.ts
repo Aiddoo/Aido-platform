@@ -1,4 +1,8 @@
-import type { WeatherAlert as WeatherAlertDto, WeatherNextHourPeriod } from '@aido/api';
+import type {
+  WeatherAlert as WeatherAlertDto,
+  WeatherNextHourPeriod,
+} from '@aido/api/contracts/weather/v2';
+import { DAY_MS, MINUTE_MS } from '@src/shared/constants/time-units';
 import { toInstant } from '@src/shared/date/instant';
 
 import {
@@ -13,6 +17,9 @@ import { toWeatherReport } from '../apis/weather.mapper';
 import {
   findTodayOrFirstForecast,
   getPrecipitationWindow,
+  getReportFreshForMs,
+  getReportRefetchIntervalMs,
+  getReportStaleTimeMs,
   getTodayKey,
   isNowcastExpired,
   isReportStale,
@@ -340,26 +347,188 @@ describe('getTodayKey', () => {
 });
 
 describe('isReportStale', () => {
-  it('공급자에서 받은 지 30분까지는 최신으로 본다', () => {
+  it('예산 절약으로 서버가 2시간 둔 리포트는 받은 지 1시간이 지나도 만료 전이라 안내하지 않는다', () => {
     // Given
-    const report = createWeatherReport({ fetchedAt: '2026-11-02T06:20:00.000Z' });
+    const report = createWeatherReport({
+      fetchedAt: '2026-11-02T06:20:00.000Z',
+      expiresAt: '2026-11-02T08:20:00.000Z',
+    });
 
     // When
-    const stale = isReportStale(report, toInstant('2026-11-02T06:50:00.000Z'));
+    const stale = isReportStale(report, toInstant('2026-11-02T07:20:00.000Z'));
 
     // Then
     expect(stale).toBe(false);
   });
 
-  it('공급자에서 받은 지 30분이 지나면 오래된 정보로 본다', () => {
+  it.each([
+    { now: '2026-11-02T06:51:00.000Z', expected: false },
+    { now: '2026-11-02T06:52:00.000Z', expected: false },
+    { now: '2026-11-02T06:52:00.001Z', expected: true },
+  ])(
+    '06:50 만료 리포트는 다시 받는 동안(2분)은 두고 $now에 오래됨 $expected다',
+    ({ now, expected }) => {
+      // Given
+      const report = createWeatherReport({ expiresAt: '2026-11-02T06:50:00.000Z' });
+
+      // When
+      const stale = isReportStale(report, toInstant(now));
+
+      // Then
+      expect(stale).toBe(expected);
+    },
+  );
+
+  it('공급자 장애로 받은 마지막 리포트(만료 없음)는 받자마자 오래된 정보로 안내한다', () => {
     // Given
-    const report = createWeatherReport({ fetchedAt: '2026-11-02T06:20:00.000Z' });
+    const report = createWeatherReport({ expiresAt: undefined });
 
     // When
-    const stale = isReportStale(report, toInstant('2026-11-02T06:50:01.000Z'));
+    const stale = isReportStale(report, toInstant('2026-11-02T06:21:00.000Z'));
 
     // Then
     expect(stale).toBe(true);
+  });
+});
+
+describe('getReportFreshForMs', () => {
+  it.each([
+    { at: '2026-11-02T06:20:00.000Z', expiresAt: '2026-11-02T06:50:00.000Z', expected: 1_800_000 },
+    { at: '2026-11-02T06:49:30.000Z', expiresAt: '2026-11-02T06:50:00.000Z', expected: 30_000 },
+    { at: '2026-11-02T06:55:00.000Z', expiresAt: '2026-11-02T06:50:00.000Z', expected: 0 },
+    { at: '2026-11-02T06:20:00.000Z', expiresAt: undefined, expected: 0 },
+  ])(
+    '$at에 만료 $expiresAt 리포트는 $expected ms 동안 같은 리포트다',
+    ({ at, expiresAt, expected }) => {
+      // Given
+      const report = createWeatherReport({ expiresAt });
+
+      // When
+      const freshForMs = getReportFreshForMs(report, toInstant(at));
+
+      // Then
+      expect(freshForMs).toBe(expected);
+    },
+  );
+});
+
+describe('getReportStaleTimeMs', () => {
+  const RECEIVED_AT = toInstant('2026-11-02T06:20:00.000Z');
+
+  it('받은 때부터 만료까지를 같은 리포트로 본다', () => {
+    // Given
+    const report = createWeatherReport({ expiresAt: '2026-11-02T06:50:00.000Z' });
+
+    // When
+    const staleTimeMs = getReportStaleTimeMs(report, RECEIVED_AT);
+
+    // Then
+    expect(staleTimeMs).toBe(30 * MINUTE_MS);
+  });
+
+  it('만료가 이미 지났거나 임박해도 1분보다 짧게 다시 묻지 않는다', () => {
+    // Given
+    const expired = createWeatherReport({ expiresAt: '2026-11-02T06:10:00.000Z' });
+    const imminent = createWeatherReport({ expiresAt: '2026-11-02T06:20:10.000Z' });
+
+    // When
+    const expiredMs = getReportStaleTimeMs(expired, RECEIVED_AT);
+    const imminentMs = getReportStaleTimeMs(imminent, RECEIVED_AT);
+
+    // Then
+    expect(expiredMs).toBe(MINUTE_MS);
+    expect(imminentMs).toBe(MINUTE_MS);
+  });
+
+  it('만료가 없는 리포트(공급자 장애로 받은 마지막 리포트)는 5분 뒤 다시 묻는다', () => {
+    // Given
+    const report = createWeatherReport({ expiresAt: undefined });
+
+    // When
+    const staleTimeMs = getReportStaleTimeMs(report, RECEIVED_AT);
+
+    // Then
+    expect(staleTimeMs).toBe(5 * MINUTE_MS);
+  });
+
+  it('만료가 하루보다 멀면 하루로 줄인다', () => {
+    // Given
+    const report = createWeatherReport({ expiresAt: '2026-12-31T00:00:00.000Z' });
+
+    // When
+    const staleTimeMs = getReportStaleTimeMs(report, RECEIVED_AT);
+
+    // Then
+    expect(staleTimeMs).toBe(DAY_MS);
+  });
+
+  it('받은 리포트가 없으면 바로 오래된 것으로 본다', () => {
+    // When
+    const staleTimeMs = getReportStaleTimeMs(undefined, RECEIVED_AT);
+
+    // Then
+    expect(staleTimeMs).toBe(0);
+  });
+
+  it('남은 시간은 받은 때를 기준으로 세므로 지금과 다른 시각을 넘기면 다른 값이 나온다', () => {
+    // Given
+    const report = createWeatherReport({ expiresAt: '2026-11-02T06:50:00.000Z' });
+
+    // When
+    const fromReceived = getReportStaleTimeMs(report, toInstant('2026-11-02T06:20:00.000Z'));
+    const fromLater = getReportStaleTimeMs(report, toInstant('2026-11-02T06:40:00.000Z'));
+
+    // Then
+    expect(fromReceived).toBe(30 * MINUTE_MS);
+    expect(fromLater).toBe(10 * MINUTE_MS);
+  });
+});
+
+describe('getReportRefetchIntervalMs', () => {
+  const NOW_AT = toInstant('2026-11-02T06:20:00.000Z');
+
+  it('지금부터 만료까지 남은 시간 뒤에 다시 받는다', () => {
+    // Given
+    const report = createWeatherReport({ expiresAt: '2026-11-02T06:35:00.000Z' });
+
+    // When
+    const intervalMs = getReportRefetchIntervalMs(report, NOW_AT);
+
+    // Then
+    expect(intervalMs).toBe(15 * MINUTE_MS);
+  });
+
+  it('만료가 지났으면 1분마다, 만료가 없으면 5분마다 다시 받는다', () => {
+    // Given
+    const expired = createWeatherReport({ expiresAt: '2026-11-02T06:00:00.000Z' });
+    const noExpiry = createWeatherReport({ expiresAt: undefined });
+
+    // When
+    const expiredMs = getReportRefetchIntervalMs(expired, NOW_AT);
+    const noExpiryMs = getReportRefetchIntervalMs(noExpiry, NOW_AT);
+
+    // Then
+    expect(expiredMs).toBe(MINUTE_MS);
+    expect(noExpiryMs).toBe(5 * MINUTE_MS);
+  });
+
+  it('만료가 아주 멀어도 타이머 상한(2^31-1ms)을 넘지 않게 하루로 줄인다', () => {
+    // Given
+    const report = createWeatherReport({ expiresAt: '2099-01-01T00:00:00.000Z' });
+
+    // When
+    const intervalMs = getReportRefetchIntervalMs(report, NOW_AT);
+
+    // Then
+    expect(intervalMs).toBe(DAY_MS);
+  });
+
+  it('받은 리포트가 없으면 주기로 다시 받지 않는다', () => {
+    // When
+    const intervalMs = getReportRefetchIntervalMs(undefined, NOW_AT);
+
+    // Then
+    expect(intervalMs).toBe(false);
   });
 });
 

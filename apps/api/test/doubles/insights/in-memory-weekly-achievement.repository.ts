@@ -1,3 +1,5 @@
+import { sortBy } from "es-toolkit";
+
 import { WeeklyAchievementRepositoryPort } from "#api/modules/insights/weekly-achievements/application/ports/weekly-achievement.repository.port";
 import type { IsoWeek } from "#api/modules/insights/weekly-achievements/domain/iso-week.vo";
 import { WeeklyAchievementId } from "#api/modules/insights/weekly-achievements/domain/weekly-achievement-id.vo";
@@ -58,13 +60,22 @@ export class InMemoryWeeklyAchievementRepository extends WeeklyAchievementReposi
       .map(copyOf);
   }
 
-  async listAllByYear(params: {
+  async listThroughYear(params: {
     readonly userId: UserId;
     readonly year: number;
   }): Promise<WeeklyAchievement[]> {
-    return this.#ownedInYear(params.userId, params.year)
-      .toSorted((left, right) => left.isoWeek.week - right.isoWeek.week)
-      .map(copyOf);
+    const throughYear = this.#owned(params.userId).filter(
+      (achievement) => achievement.isoWeek.year <= params.year,
+    );
+    return sortBy(throughYear, [
+      (achievement) => achievement.isoWeek.year,
+      (achievement) => achievement.isoWeek.week,
+    ]).map(copyOf);
+  }
+
+  async listRecordedYears(userId: UserId): Promise<number[]> {
+    const years = new Set(this.#owned(userId).map((achievement) => achievement.isoWeek.year));
+    return [...years].toSorted((left, right) => right - left);
   }
 
   async findByWeek(params: {
@@ -92,8 +103,12 @@ export class InMemoryWeeklyAchievementRepository extends WeeklyAchievementReposi
   }
 
   #ownedInYear(userId: UserId, year: number): WeeklyAchievement[] {
-    return [...this.#achievements.values()].filter(
-      (achievement) => achievement.userId.equals(userId) && achievement.isoWeek.year === year,
+    return this.#owned(userId).filter((achievement) => achievement.isoWeek.year === year);
+  }
+
+  #owned(userId: UserId): WeeklyAchievement[] {
+    return [...this.#achievements.values()].filter((achievement) =>
+      achievement.userId.equals(userId),
     );
   }
 }

@@ -1,11 +1,11 @@
 import { InviteUserReaderPort } from "#api/modules/social/invite-redemptions/application/ports/invite-user.reader.port";
-import type { InviteeIdentity } from "#api/modules/social/invite-redemptions/application/read-models/invitee-identity.read-model";
+import type { InviteeIdentityReadModel } from "#api/modules/social/invite-redemptions/application/read-models/invitee-identity.read-model";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { INVITE_FIXTURE_NOW, INVITE_FIXTURE_USERS } from "#test/fixtures/social/invite.fixture";
 
 // fixture 사용자를 모두 방금 가입한 사람으로 두고, 인증 이메일·소셜 계정·탈퇴만 바꿔 쓴다
 export class StubInviteUserReader extends InviteUserReaderPort {
-  readonly #identities = new Map<string, InviteeIdentity>();
+  readonly #identities = new Map<string, InviteeIdentityReadModel>();
   readonly #withdrawnUserIds = new Set<string>();
 
   constructor() {
@@ -21,7 +21,7 @@ export class StubInviteUserReader extends InviteUserReaderPort {
     }
   }
 
-  setIdentity(identity: InviteeIdentity): void {
+  setIdentity(identity: InviteeIdentityReadModel): void {
     this.#identities.set(identity.userId, identity);
   }
 
@@ -34,7 +34,7 @@ export class StubInviteUserReader extends InviteUserReaderPort {
     this.#withdrawnUserIds.add(userId);
   }
 
-  async findInviteeIdentity(userId: UserId): Promise<InviteeIdentity | null> {
+  async findInviteeIdentity(userId: UserId): Promise<InviteeIdentityReadModel | null> {
     return this.#identities.get(userId.value) ?? null;
   }
 

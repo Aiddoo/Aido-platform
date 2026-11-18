@@ -1,16 +1,16 @@
 # 관리자 알림
 
-운영 채널(가입)과 결제 채널(구독)로 가는 관리자 알림을 바꿀 때 읽는다. Application(`src/modules/operations/admin-notices/application`)은 채널에 상관없는 알림 사실(`AdminNotice`)만 만든다. 제목·이모지·색·필드 배치·날짜 표시는 채널 어댑터가 정하고, Discord는 `admin-notices/infrastructure/adapters/discord-*.mapper.ts` 한 곳에 있다. 지금 어댑터는 Discord와 로그(`ADMIN_NOTIFIER_PROVIDER=log`)이며, 다른 채널은 어댑터와 `admin-notifier-selection.adapter.ts` 표에 한 줄을 더해 붙인다.
+운영 채널(가입)과 결제 채널(구독)로 가는 관리자 알림을 바꿀 때 읽는다. Application(`src/modules/operations/admin-notices/application`)은 채널에 상관없는 알림 사실(생성만 하는 Aggregate `AdminNotice`)만 만든다. 결제 알림은 `payment`, 가입·일반 알림은 `admin` 채널로 간다. 제목·이모지·색·필드 배치·날짜 표시는 채널 어댑터가 정하고, Discord는 `admin-notices/infrastructure/adapters/discord-*.mapper.ts` 한 곳에 있다. 지금 어댑터는 Discord와 로그(`ADMIN_NOTIFIER_PROVIDER=log`)이며, 다른 채널은 어댑터와 `admin-notifier-selection.adapter.ts` 표에 한 줄을 더해 붙인다.
 
-| `AdminNotice.type`   | 내용                                                     | 만드는 곳                                     |
-| -------------------- | -------------------------------------------------------- | --------------------------------------------- |
-| `subscription_event` | 사용자 블록 + 결제 블록(`SubscriptionNotice`)            | `EnqueueSubscriptionEvent`(billing 커밋 뒤)   |
-| `user_registered`    | 사용자 블록 + 가입 요청의 기기·앱 정보(`SignupNotice`)   | `EnqueueUserRegistered`                       |
-| `message`            | 이미 조립한 일반 알림(`AdminNotification`, 일일 요약 등) | `DispatchDailySignupSummary`, 이전 형식 큐 잡 |
+| `AdminNotice.type`   | 내용                                                     | 만드는 곳                                   |
+| -------------------- | -------------------------------------------------------- | ------------------------------------------- |
+| `subscription_event` | 사용자 블록 + 결제 블록(`SubscriptionNotice`)            | `EnqueueSubscriptionEvent`(billing 커밋 뒤) |
+| `user_registered`    | 사용자 블록 + 가입 요청의 기기·앱 정보(`SignupNotice`)   | `EnqueueUserRegistered`                     |
+| `message`            | 이미 조립한 일반 알림(`AdminNotification`, 일일 요약 등) | `DispatchDailySignupSummary`                |
 
 발송은 `admin-notification.v1` 큐 잡으로 처리해 채널 실패가 회원가입·웹훅 처리를 막지 않는다. 일시 실패(429·5xx·연결 실패)만 큐가 2회까지 다시 시도하고, 채널이 거절한 요청(그 밖의 4xx)은 다시 보내지 않고 운영 경보(`operations.admin-notification.rejected`)를 올린다. webhook이 설정되지 않은 채널은 건너뛴다.
 
-큐 잡 데이터는 `{ channel, notice }`다. 배포 순간 큐에 남은 이전 잡(보관 24시간)은 그 모양 그대로 `message`로 보낸다. 조립 메시지(`{ channel, notification }`, `LegacySendDataSchema`)와 그 전 형식(`color`·`fields[].name`, `LegacyAdminNotificationSchema`, 색은 info로)이 해당하고 제거 조건은 [호환](../../../docs/conventions/compatibility.md#2-외부-계약-바꾸지-않는다)에 있다. 표시에만 쓰는 값(스토어·사유·가입 방식 등)이 모르는 값이면 잡을 버리지 않고 그 칸만 비운다.
+큐 잡 데이터는 `{ channel, notice }`다. 표시에만 쓰는 값(스토어·사유·가입 방식 등)이 모르는 값이면 잡을 버리지 않고 그 칸만 비운다.
 
 일반 메시지(`message`)의 `severity`는 채널 색으로 바뀐다: info 파랑·success 초록·warning 노랑·critical 빨강. 시각 필드는 보는 사람의 시간대로 보여 준다.
 
@@ -27,7 +27,7 @@
 | 이메일    | 전체 이메일. 가입·결제 알림이 같은 규칙이다(내부 운영 채널, 가리지 않음)    |
 | 사용자 ID | 내부 사용자 ID                                                              |
 
-사용자 블록은 `AdminNoticeUserReaderPort`(`DrizzleAdminNoticeUserReader`: `User`·`UserProfile`·첫 `Account`)로 채운다. 업무 트랜잭션이 커밋된 뒤 큐에 넣기 직전에 읽으며, billing·identity Application은 이 조회를 모른다. 사용자가 없거나 조회가 실패하면 알림을 버리지 않고 호출한 Context가 준 값(이메일·이름, 가입은 가입 방식·시각)으로 보낸다. 실패 로그는 `operations.notifications.user-lookup.failed`(`userId`·`errorType`)뿐이다.
+사용자 블록은 `AdminNoticeUserReaderPort`(`IdentityAdminNoticeUserAdapter` → identity `UserSignupReaderPort`: `User`·`UserProfile`·첫 `Account`)로 채운다. 업무 트랜잭션이 커밋된 뒤 큐에 넣기 직전에 읽으며, billing·identity Application은 이 조회를 모른다. 사용자가 없거나 조회가 실패하면 알림을 버리지 않고 호출한 Context가 준 값(이메일·이름, 가입은 가입 방식·시각)으로 보낸다. 실패 로그는 `operations.notifications.user-lookup.failed`(`userId`·`errorType`)뿐이다.
 
 ## 결제 알림
 
@@ -80,11 +80,11 @@ RevenueCat 웹훅이 처리 원장에 새로 기록되고 구독 상태가 바�
 
 사유 라벨: `UNSUBSCRIBE` 사용자가 해지 · `BILLING_ERROR` 결제 실패 · `DEVELOPER_INITIATED` 개발자가 취소 · `PRICE_INCREASE` 가격 인상에 동의하지 않음 · `CUSTOMER_SUPPORT` 스토어 고객지원 환불 · `SUBSCRIPTION_PAUSED` 구독 일시정지 · `UNKNOWN` 알 수 없음. RevenueCat 원문 → billing 어휘는 ACL(`revenuecat-webhook-translator.adapter.ts`), billing 어휘 → 사람 말은 Discord 어댑터가 바꾼다.
 
-웹훅 값은 billing이 `SubscriptionEventPayload`에 이벤트 종류와 상관없이 같은 이름으로 싣는다(`baseEventPayload`). 체험 시작처럼 금액이 0이면 0을 그대로 보인다.
+웹훅 값은 billing이 `SubscriptionEventPayloadReadModel`에 이벤트 종류와 상관없이 같은 이름으로 싣는다(`baseEventPayload`). 체험 시작처럼 금액이 0이면 0을 그대로 보인다.
 
 ### 웹훅 처리 실패 (권고)
 
-웹훅 처리 실패(`SUBSCRIPTION_1602` 등)는 이 알림이 아니라 운영 경보 `billing.subscription.webhook.processing-failed`(Sentry)다. Sentry 알림 규칙으로 결제 채널에 보낼 때는 메시지에 태그 `storeEnvironment`(SANDBOX/PRODUCTION)·`eventKind`·`store`와 details의 `errorCode`·`eventId`·`productId`를 보이게 하고, 제목 앞에 `🚨`를 붙여 이 알림의 빨강(결제 문제·환불·만료)과 구분하기를 권한다. 사용자 이메일·닉네임은 Sentry에 싣지 않으므로 사용자는 RevenueCat 고객 화면이나 내부 사용자 ID로 찾는다.
+웹훅 처리 실패(`SUBSCRIPTION_1602` 등)는 이 알림이 아니라 운영 경보 `billing.subscription.webhook.processing.failed`(Sentry)다. Sentry 알림 규칙으로 결제 채널에 보낼 때는 메시지에 태그 `storeEnvironment`(SANDBOX/PRODUCTION)·`eventKind`·`store`와 details의 `errorCode`·`eventId`·`productId`를 보이게 하고, 제목 앞에 `🚨`를 붙여 이 알림의 빨강(결제 문제·환불·만료)과 구분하기를 권한다. 사용자 이메일·닉네임은 Sentry에 싣지 않으므로 사용자는 RevenueCat 고객 화면이나 내부 사용자 ID로 찾는다.
 
 ## 운영 채널 알림
 
@@ -93,7 +93,7 @@ RevenueCat 웹훅이 처리 원장에 새로 기록되고 구독 상태가 바�
 | 회원가입       | 신규 가입                                                                                           | 👋 새로운 회원가입             |
 | 일일 가입 요약 | 매일 KST 기준 전일 집계                                                                             | 일일 가입 리포트 \| YYYY-MM-DD |
 | (알림 없음)    | 로그인. 로그인마다 보내면 소음이 커서 보내지 않는다                                                 | -                              |
-| (알림 없음)    | RevenueCat 웹훅 실패는 운영 경보(`billing.subscription.webhook.processing-failed`, Sentry)로 올린다 | -                              |
+| (알림 없음)    | RevenueCat 웹훅 실패는 운영 경보(`billing.subscription.webhook.processing.failed`, Sentry)로 올린다 | -                              |
 
 ### 회원가입 알림
 

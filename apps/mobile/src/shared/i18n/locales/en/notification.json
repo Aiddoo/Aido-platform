@@ -4,7 +4,16 @@
     "description": "A {{time}} to-do stays at {{time}}"
   },
   "actions": {
-    "marketingOptOut": "Turn off promotional notifications"
+    "marketingOptOut": "Turn off promotional notifications",
+    "todoReminderComplete": "Done",
+    "todoReminderSnooze": "Remind in {{minutes}} min"
+  },
+  "reminderActions": {
+    "completed": "Marked “{{title}}” as done",
+    "alreadyCompleted": "This to-do is already done",
+    "snoozed": "We'll remind you again in {{minutes}} minutes",
+    "snoozedAt": "At {{time}}",
+    "snoozeFailed": "Couldn't schedule the reminder"
   },
   "marketingOptIn": {
     "title": "Get offers and news too?",
@@ -64,7 +73,7 @@
     "pushLabel": "Push notifications",
     "pushDescription": "Get to-do and billing alerts on every device signed in to this account. Promotions need separate consent",
     "nightPushLabel": "Night push notifications",
-    "nightPushDescription": "Get offer and friend alerts from 9 PM to 8 AM too. Reminders you set always arrive on time",
+    "nightPushDescription": "Get offer and friend alerts from {{start}} to {{end}} too. Reminders you set always arrive on time",
     "aiPushLabel": "AI suggestions & reports",
     "aiPushDescription": "Get notified when new AI suggestions or weekly and monthly reports are ready. They still show in Notifications when off",
     "marketingLabel": "Marketing communications",

@@ -2,7 +2,7 @@ import {
   type GetInvitedFriendsQuery,
   inviteAvailabilityResponseSchema,
   invitePreviewResponseSchema,
-} from '@aido/api';
+} from '@aido/api/contracts/invite/v1';
 import type { ApiError } from '@src/core/errors/api-error';
 import type { Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http-client';

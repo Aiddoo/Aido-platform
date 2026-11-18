@@ -9,7 +9,7 @@ import {
   weatherHourlyForecastSchema,
   weatherNextHourPeriodSchema,
   weatherReportSchema,
-} from "../src/contracts/weather/index.js";
+} from "../src/contracts/weather/v2/index.js";
 
 /** 서버가 앞으로 더할 수 있는 값. 지금 어휘에는 없다 */
 const FUTURE_VALUE = "FUTURE_VALUE";
@@ -34,6 +34,7 @@ describe("weatherReportSchema", () => {
         pm25: 15,
         source: FUTURE_VALUE,
       }),
+      headline: weatherReportSchema.shape.headline.parse({ kind: FUTURE_VALUE }),
     };
 
     // Then
@@ -49,6 +50,7 @@ describe("weatherReportSchema", () => {
       severity: "UNKNOWN",
       reason: null,
       airQuality: null,
+      headline: null,
     });
   });
 

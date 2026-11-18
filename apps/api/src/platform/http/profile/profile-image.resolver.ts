@@ -1,4 +1,4 @@
-import { isSemanticVersionAtLeast } from "@aido/api";
+import { isSemanticVersionAtLeast } from "@aido/api/vocabulary";
 
 export const resolveProfileImage = (
   profileImage: string | null,

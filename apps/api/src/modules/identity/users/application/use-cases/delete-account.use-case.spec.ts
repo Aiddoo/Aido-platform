@@ -1,44 +1,49 @@
 import { ErrorCode } from "@aido/api/errors";
-import { ACCOUNT_DELETION, REVOKE_REASON, SECURITY_EVENT } from "@aido/api/vocabulary";
+import { ACCOUNT_DELETION } from "@aido/api/vocabulary";
 
-import type { AuthAccountRecord } from "#api/modules/identity/auth/application/ports/auth-account.repository.port";
-import type { IdentityUser } from "#api/modules/identity/users/domain/identity-user.aggregate";
-import { InMemoryAuthAccountRepository } from "#test/doubles/identity/in-memory-auth-account.repository";
-import { InMemoryAuthSecurityLogRepository } from "#test/doubles/identity/in-memory-auth-security-log.repository";
-import { InMemoryAuthSessionRepository } from "#test/doubles/identity/in-memory-auth-session.repository";
-import { InMemoryAuthUserRepository } from "#test/doubles/identity/in-memory-auth-user.repository";
-import { FixedClock } from "#test/doubles/platform/fixed-clock";
-import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
-import { SilentLogger } from "#test/doubles/platform/silent-logger";
-import { createAuthAccountFixture } from "#test/fixtures/identity/auth-credential.fixture";
+import { REVOKE_REASON } from "#api/modules/identity/sessions/domain/sessions.constants";
+import type { User } from "#api/modules/identity/users/domain/user.aggregate";
+import { SECURITY_EVENT } from "#api/modules/identity/users/domain/users.constants";
 import {
-  AUTH_FIXTURE_NOW,
-  AUTH_FIXTURE_USER_ID,
-  createAuthSessionFixture,
-  createIdentityUserFixture,
-} from "#test/fixtures/identity/auth-session.fixture";
+  type InMemoryLinkedAccountRow,
+  InMemoryLinkedAccountsRepository,
+} from "#test/doubles/identity/in-memory-linked-accounts.repository";
+import { InMemorySecurityLogRepository } from "#test/doubles/identity/in-memory-security-log.repository";
+import { InMemorySessionRepository } from "#test/doubles/identity/in-memory-session.repository";
+import { InMemoryUserRepository } from "#test/doubles/identity/in-memory-user.repository";
 import {
   StubAccountLifecycleCache,
   StubAccountPasswordVerifier,
-} from "#test/mocks/ports/account-lifecycle.stub";
-import { StubSessionPushDeviceReleaser } from "#test/mocks/ports/auth-session.stub";
+} from "#test/doubles/identity/stub-account-lifecycle";
+import { StubSessionPushDeviceReleaser } from "#test/doubles/identity/stub-auth-session";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
+import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { createLinkedAccountFixture } from "#test/fixtures/identity/auth-credential.fixture";
+import {
+  AUTH_FIXTURE_NOW,
+  AUTH_FIXTURE_USER_ID,
+  createSessionFixture,
+  createUserFixture,
+} from "#test/fixtures/identity/session.fixture";
 
-import { AuthLogEvent } from "../../../auth/application/auth.log-events.js";
-import { AUTH_DEFAULTS, type AccountProvider } from "../../../auth/domain/auth.constants.js";
+import { type AccountProvider } from "../../../linked-accounts/domain/linked-accounts.constants.js";
+import { REQUEST_ORIGIN_DEFAULTS } from "../../../shared/domain/request-metadata.constants.js";
+import { UserLogEvent } from "../users.log-events.js";
 import { DeleteAccountUseCase } from "./delete-account.use-case.js";
 
 const userId = AUTH_FIXTURE_USER_ID;
 const password = "CorrectPassword1!";
 const allSessionIds = ["my-session-1", "my-session-2", "expired-session", "other-session"];
 
-function accountOf(provider: AccountProvider): AuthAccountRecord {
-  return createAuthAccountFixture({
+function accountOf(provider: AccountProvider): InMemoryLinkedAccountRow {
+  return createLinkedAccountFixture({
     provider,
     password: provider === "CREDENTIAL" ? `digest:${password}` : null,
   });
 }
 
-class FailingSecurityLogRepository extends InMemoryAuthSecurityLogRepository {
+class FailingSecurityLogRepository extends InMemorySecurityLogRepository {
   override async create(): Promise<void> {
     throw new Error("Audit write failed");
   }
@@ -47,29 +52,27 @@ class FailingSecurityLogRepository extends InMemoryAuthSecurityLogRepository {
 describe("DeleteAccount — 계정 탈퇴와 모든 기기의 접근 종료", () => {
   function given(
     options: {
-      readonly accounts?: readonly AuthAccountRecord[];
-      readonly users?: readonly IdentityUser[];
-      readonly securityLogRepository?: InMemoryAuthSecurityLogRepository;
+      readonly accounts?: readonly InMemoryLinkedAccountRow[];
+      readonly users?: readonly User[];
+      readonly securityLogRepository?: InMemorySecurityLogRepository;
     } = {},
   ) {
-    const userRepository = new InMemoryAuthUserRepository(
-      options.users ?? [createIdentityUserFixture()],
-    );
-    const accountRepository = new InMemoryAuthAccountRepository(
+    const userRepository = new InMemoryUserRepository(options.users ?? [createUserFixture()]);
+    const accountRepository = new InMemoryLinkedAccountsRepository(
       options.accounts ?? [accountOf("CREDENTIAL")],
     );
-    const sessionRepository = new InMemoryAuthSessionRepository([
-      createAuthSessionFixture({ id: "my-session-1" }),
-      createAuthSessionFixture({ id: "my-session-2" }),
-      createAuthSessionFixture({
+    const sessionRepository = new InMemorySessionRepository([
+      createSessionFixture({ id: "my-session-1" }),
+      createSessionFixture({ id: "my-session-2" }),
+      createSessionFixture({
         id: "expired-session",
         expiresAt: AUTH_FIXTURE_NOW.subtract({ milliseconds: 1 }),
       }),
-      createAuthSessionFixture({ id: "other-session", userId: "other-user" }),
+      createSessionFixture({ id: "other-session", userId: "other-user" }),
     ]);
     const cacheService = new StubAccountLifecycleCache(allSessionIds, [userId, "other-user"]);
     const securityLogRepository =
-      options.securityLogRepository ?? new InMemoryAuthSecurityLogRepository();
+      options.securityLogRepository ?? new InMemorySecurityLogRepository();
     const passwordService = new StubAccountPasswordVerifier();
     const pushDevices = new StubSessionPushDeviceReleaser();
     const logger = new SilentLogger();
@@ -80,6 +83,7 @@ describe("DeleteAccount — 계정 탈퇴와 모든 기기의 접근 종료", ()
       accountRepository,
       sessionRepository,
       cacheService,
+      userProfileCache: cacheService,
       securityLogRepository,
       passwordService,
       logger,
@@ -154,7 +158,7 @@ describe("DeleteAccount — 계정 탈퇴와 모든 기기의 접근 종료", ()
       );
       // 비밀번호·탈퇴 이유·IP가 운영 로그에 남지 않아야 한다
       expect(fixture.logger.messages).toEqual([
-        { event: AuthLogEvent.ACCOUNT_DELETION_REQUESTED, userId },
+        { event: UserLogEvent.ACCOUNT_DELETION_REQUESTED, userId },
       ]);
     },
   );
@@ -171,8 +175,8 @@ describe("DeleteAccount — 계정 탈퇴와 모든 기기의 접근 종료", ()
       {
         userId,
         event: SECURITY_EVENT.ACCOUNT_DELETION_REQUESTED,
-        ipAddress: AUTH_DEFAULTS.UNKNOWN_IP,
-        userAgent: AUTH_DEFAULTS.UNKNOWN_USER_AGENT,
+        ipAddress: REQUEST_ORIGIN_DEFAULTS.UNKNOWN_IP,
+        userAgent: REQUEST_ORIGIN_DEFAULTS.UNKNOWN_USER_AGENT,
         metadata: {
           reason: null,
           gracePeriodDays: ACCOUNT_DELETION.GRACE_PERIOD_DAYS,
@@ -211,7 +215,9 @@ describe("DeleteAccount — 계정 탈퇴와 모든 기기의 접근 종료", ()
     "$description: 계정·세션·캐시를 변경하지 않는다",
     async ({ inputPassword, storedPassword, errorCode }) => {
       // Given
-      const fixture = given({ accounts: [createAuthAccountFixture({ password: storedPassword })] });
+      const fixture = given({
+        accounts: [createLinkedAccountFixture({ password: storedPassword })],
+      });
 
       // When
       const pending = fixture.useCase.execute({ userId, password: inputPassword });
@@ -231,7 +237,7 @@ describe("DeleteAccount — 계정 탈퇴와 모든 기기의 접근 종료", ()
     {
       scenario: "이미 탈퇴한",
       users: [
-        createIdentityUserFixture({
+        createUserFixture({
           status: "SUSPENDED",
           deletedAt: AUTH_FIXTURE_NOW.subtract({ hours: 24 }),
         }),

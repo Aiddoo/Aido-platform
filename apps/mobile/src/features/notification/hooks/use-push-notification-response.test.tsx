@@ -20,6 +20,7 @@ import { Pressable, Text } from 'react-native';
 
 import { createMarkReadResponseDto } from '../__tests__/notification.fixtures';
 import { NOTIFICATION_ENTRY_HOLD_MAX_MS } from '../constants/notification.constants';
+import { toPushNotificationResponseId } from '../domains/push-notification-response.model';
 import { usePushNotificationResponse } from './use-push-notification-response';
 
 jest.unmock('expo-router');
@@ -29,6 +30,7 @@ const RESPONSE = {
   actionIdentifier: 'default',
   data: { notificationId: 0, type: 'FOLLOW_NEW', action: { type: 'NONE' } },
 };
+const RESPONSE_ID = toPushNotificationResponseId(RESPONSE.id, RESPONSE.actionIdentifier);
 
 async function setup({ status }: { status: AuthStatus }) {
   const gateway = createPushNotificationGatewayStub();
@@ -80,7 +82,25 @@ describe('usePushNotificationResponse', () => {
     await act(async () => gateway.emitResponse(RESPONSE));
 
     // Then
-    expect(store.getSnapshot().pending?.id).toBe('response-1');
+    expect(store.getSnapshot().pending?.id).toBe(RESPONSE_ID);
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('버튼을 눌러 처리한 알림의 본문을 누르면 새 응답으로 받고, 그 응답이 두 번 와도 한 번만 받는다', async () => {
+    // Given
+    const { gateway, store } = await setup({ status: 'unauthenticated' });
+    // Android 알림 버튼은 알림을 닫지 않아 같은 알림의 본문을 다시 누를 수 있다
+    await act(async () => gateway.emitResponse({ ...RESPONSE, actionIdentifier: 'complete' }));
+    await act(async () => store.settle(toPushNotificationResponseId(RESPONSE.id, 'complete')));
+    const listener = jest.fn();
+    store.subscribe(listener);
+
+    // When
+    await act(async () => gateway.emitResponse(RESPONSE));
+    await act(async () => gateway.emitResponse(RESPONSE));
+
+    // Then
+    expect(store.getSnapshot().pending?.id).toBe(RESPONSE_ID);
     expect(listener).toHaveBeenCalledTimes(1);
   });
 
@@ -145,7 +165,7 @@ describe('usePushNotificationResponse', () => {
     await changeStatus('locked');
 
     // Then
-    expect(store.getSnapshot().pending?.id).toBe('response-1');
+    expect(store.getSnapshot().pending?.id).toBe(RESPONSE_ID);
   });
 
   it('Index가 이동하지 못해도 상한이 지나면 슬롯을 비워 갇히지 않는다', async () => {
@@ -154,7 +174,7 @@ describe('usePushNotificationResponse', () => {
 
     // When
     await act(async () => gateway.emitResponse(RESPONSE));
-    expect(store.getSnapshot().ready?.response.id).toBe('response-1');
+    expect(store.getSnapshot().ready?.response.id).toBe(RESPONSE_ID);
 
     // Then
     await waitFor(() => expect(store.getSnapshot().ready).toBeNull(), {
@@ -289,6 +309,75 @@ describe('usePushNotificationResponse', () => {
     expect(httpClient.patch).toHaveBeenCalledTimes(1);
     expect(httpClient.post).toHaveBeenCalledTimes(1);
     expect(analytics.trackEvent).toHaveBeenCalledTimes(1);
+  });
+
+  it('수신 거부 버튼을 처리하면 그 알림을 알림 센터에서 지운다', async () => {
+    // Given
+    const { gateway, httpClient } = await setup({ status: 'authenticated' });
+    httpClient.post.mockResolvedValueOnce(
+      ok({ optedOut: true, marketingPushWithdrawnAt: '2026-11-09T03:00:00.000Z' }),
+    );
+
+    // When
+    await act(async () =>
+      gateway.emitResponse({
+        ...RESPONSE,
+        id: 'opt-out',
+        actionIdentifier: 'MARKETING_OPT_OUT',
+        data: { ...RESPONSE.data, marketingOptOutToken: 'token-1' },
+      }),
+    );
+
+    // Then
+    await waitFor(() => expect(gateway.dismissNotification).toHaveBeenCalledWith('opt-out'));
+  });
+
+  it('본문을 눌러 연 알림은 지우지 않는다', async () => {
+    // Given
+    const { gateway, httpClient, store } = await setup({ status: 'authenticated' });
+    httpClient.patch.mockResolvedValue(ok(createMarkReadResponseDto()));
+    httpClient.post.mockResolvedValue(ok({ opened: true }));
+    // 앱 화면 안이라 입구 훅이 직접 열고 응답을 끝낸다
+    await act(async () => store.markAppEntry(false));
+
+    // When
+    await act(async () =>
+      gateway.emitResponse({
+        ...RESPONSE,
+        data: { ...RESPONSE.data, notificationId: 7, navigation: { kind: 'NONE' } },
+      }),
+    );
+
+    // Then
+    await waitFor(() => expect(gateway.clearLastResponse).toHaveBeenCalled());
+    expect(store.getSnapshot().ready).toBeNull();
+    expect(gateway.dismissNotification).not.toHaveBeenCalled();
+  });
+
+  it('처리한 버튼 알림을 지우지 못해도 경고만 남긴다', async () => {
+    // Given
+    const { gateway, httpClient, logger } = await setup({ status: 'authenticated' });
+    httpClient.post.mockResolvedValueOnce(
+      ok({ optedOut: true, marketingPushWithdrawnAt: '2026-11-09T03:00:00.000Z' }),
+    );
+    gateway.dismissNotification.mockRejectedValueOnce(new Error('unavailable'));
+
+    // When
+    await act(async () =>
+      gateway.emitResponse({
+        ...RESPONSE,
+        id: 'opt-out',
+        actionIdentifier: 'MARKETING_OPT_OUT',
+        data: { ...RESPONSE.data, marketingOptOutToken: 'token-1' },
+      }),
+    );
+
+    // Then
+    await waitFor(() =>
+      expect(logger.warn).toHaveBeenCalledWith('notification.action-notification-dismiss.failed', {
+        error: 'unavailable',
+      }),
+    );
   });
 
   it('언마운트 전까지 응답 리스너는 하나다', async () => {

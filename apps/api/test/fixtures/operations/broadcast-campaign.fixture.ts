@@ -1,7 +1,7 @@
 import {
   BroadcastCampaign,
   type BroadcastCampaignPrimitives,
-} from "#api/modules/operations/broadcasts/domain/broadcast-campaign.aggregate";
+} from "#api/modules/operations/broadcast-campaigns/domain/broadcast-campaign.aggregate";
 
 export const BROADCAST_FIXTURE_NOW = Temporal.Instant.from("2026-11-03T10:00:00Z");
 export const BROADCAST_FIXTURE_REQUEST_ID = "0f8b8a52-5b0e-4f39-9f8b-6f3b3c1f2a10";

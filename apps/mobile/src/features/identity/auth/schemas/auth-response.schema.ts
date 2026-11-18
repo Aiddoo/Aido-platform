@@ -1,4 +1,8 @@
-import { authTokensSchema, refreshTokensSchema, registerResponseSchema } from '@aido/api';
+import {
+  authTokensSchema,
+  refreshTokensSchema,
+  registerResponseSchema,
+} from '@aido/api/contracts/auth/v1';
 import { z } from 'zod';
 
 /** 지금 서버는 복구 여부를 항상 싣는다. 계약의 선택 칸을 앱에서는 필수로 읽는다 */

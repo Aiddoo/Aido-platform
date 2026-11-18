@@ -5,7 +5,7 @@ import { ApiBearerAuth, ApiQuery, ApiTags } from "@nestjs/swagger";
 import {
   CurrentUser,
   type CurrentUserPayload,
-} from "#api/modules/identity/identity-auth-http.public";
+} from "#api/modules/identity/sessions/identity-sessions.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
 import { UserIdParamDto } from "#api/platform/http/dtos/user-id-param.dto";
 import { SWAGGER_TAGS } from "#api/platform/http/swagger/constants/swagger.constant";
@@ -74,46 +74,6 @@ export class DailyCompletionController {
 \`\`\`
 GET /daily-completions?startDate=2026-01-01&endDate=2026-01-31
 \`\`\`
-
-### 응답 구조
-\`\`\`json
-{
-  "completions": [
-    {
-      "date": "2026-01-15",
-      "totalTodos": 3,
-      "completedTodos": 3,
-      "isComplete": true,
-      "completionRate": 100,
-      "categoryColors": ["#FF6B43", "#4A90D9"]
-    },
-    {
-      "date": "2026-01-16",
-      "totalTodos": 4,
-      "completedTodos": 2,
-      "isComplete": false,
-      "completionRate": 50,
-      "categoryColors": ["#FF6B43"]
-    }
-  ],
-  "totalCompleteDays": 1,
-  "dateRange": {
-    "startDate": "2026-01-01",
-    "endDate": "2026-01-31"
-  }
-}
-\`\`\`
-
-### 응답 필드 설명
-| 필드 | 타입 | 설명 |
-|------|------|------|
-| \`completions[].date\` | string | 날짜 (YYYY-MM-DD) |
-| \`completions[].totalTodos\` | number | 해당 날짜의 총 할 일 수 |
-| \`completions[].completedTodos\` | number | 완료한 할 일 수 |
-| \`completions[].isComplete\` | boolean | 100% 완료 여부 (물고기 표시) |
-| \`completions[].completionRate\` | number | 완료율 (0-100) |
-| \`completions[].categoryColors\` | string[] | 해당 날짜 투두의 카테고리 색상 (HEX, 중복 제거) |
-| \`totalCompleteDays\` | number | 100% 완료한 날 수 (물고기 개수) |
 
 ### 캘린더 UI 매핑
 - \`isComplete: true\` → 물고기 아이콘 표시

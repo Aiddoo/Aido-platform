@@ -173,14 +173,14 @@ sequenceDiagram
 - Domain·Application은 Nest·ORM·SDK·HTTP 계약을 모른다. 다른 Context는 `<context>-<slice>.public.ts`로만 부르고 그 Context 테이블을 직접 읽지 않는다.
 - 포트는 abstract class이자 DI 토큰이다. `provideUseCase`가 조립하고 의존성 키 누락·토큰 타입 불일치는 컴파일 오류다.
 
-| Context                           | slice                                                                                                              |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| identity · access · billing       | `auth`·`users`·`preferences` · `entitlements`·`quotas` · `subscriptions`·`premium-grants`                          |
-| planning · notes · engagement     | `todos`·`todo-series`·`categories` · `memos` · `comments`                                                          |
-| social                            | `friends`·`blocks`·`cheers`·`nudges`·`invites`·`reports`                                                           |
-| notification · insights           | `inbox`·`push`·`email`·`reminders`·`retention` · `daily-completions`·`weekly-achievements`                         |
-| ai-assistance · voice · weather   | `generation`·`parsing`·`planning`·`reports`·`suggestions` · `voice-notes`·`action-plans` · `forecasts`·`locations` |
-| operations · app-config · support | `broadcasts`·`admin-notices`·`metrics` · `app-versions`·`feature-discovery` · `inquiries`                          |
+| Context                           | slice                                                                                                                                                       |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| identity · access · billing       | `auth`·`users`·`preferences` · `feature-grants`·`quota-charges` · `subscriptions`·`premium-grants`                                                          |
+| planning · notes · engagement     | `todos`·`todo-series`·`categories` · `memos` · `todo-comments`·`todo-comment-likes`                                                                         |
+| social                            | `friendships`·`user-blocks`·`cheers`·`nudges`·`reminder-nudges`·`invites`·`invite-redemptions`·`user-reports`                                               |
+| notification · insights           | `notifications`·`push-devices`·`push-dispatches`·`email-messages`·`reminders`·`retention-assignments` · `daily-completions`·`weekly-achievements`           |
+| ai-assistance · voice · weather   | `ai-generations`·`parsed-drafts`·`action-plan-drafts`·`ai-reports`·`suggestions` · `voice-digests`·`plan-applications` · `weather-reports`·`user-locations` |
+| operations · app-config · support | `broadcast-campaigns`·`admin-notices` · `app-releases`·`feature-discovery-campaigns` · `inquiries`                                                          |
 
 ### 트랜잭션 안 작업 enqueue와 도메인 이벤트
 

@@ -1,4 +1,4 @@
-import type { InvitePreviewResponse } from '@aido/api';
+import type { InvitePreviewResponse } from '@aido/api/contracts/invite/v1';
 import { REDEEM_OUTCOME } from '@aido/api/vocabulary';
 import { toInstant, toNullableInstant } from '@src/shared/date/instant';
 import { pick } from 'es-toolkit';

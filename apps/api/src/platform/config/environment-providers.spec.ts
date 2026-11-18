@@ -1,6 +1,6 @@
 import { Redis } from "ioredis";
 
-import { notificationEmailConfig } from "#api/modules/notification/email/notification-email.config";
+import { notificationEmailMessagesConfig } from "#api/modules/notification/email-messages/notification-email-messages.config";
 import { operationsAdminNoticesConfig } from "#api/modules/operations/admin-notices/operations-admin-notices.config";
 
 import { cacheConfig, selectSharedRedis } from "./cache.config.js";
@@ -49,7 +49,7 @@ describe("배포 환경 → 공급자 기본값", () => {
     "$name은 비워 둔 공급자를 이메일 $email·관리자 알림 $adminNotifier로 고른다",
     ({ env, email, adminNotifier }) => {
       // When
-      const emailConfig = notificationEmailConfig.parse(env);
+      const emailConfig = notificationEmailMessagesConfig.parse(env);
       const adminNoticesConfig = operationsAdminNoticesConfig.parse(env);
 
       // Then
@@ -67,7 +67,7 @@ describe("배포 환경 → 공급자 기본값", () => {
     };
 
     // When
-    const emailConfig = notificationEmailConfig.parse(env);
+    const emailConfig = notificationEmailMessagesConfig.parse(env);
     const adminNoticesConfig = operationsAdminNoticesConfig.parse(env);
 
     // Then

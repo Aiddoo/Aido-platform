@@ -87,6 +87,25 @@ describe('toWidgetWeek', () => {
     // 9월 27일~10월 3일 주의 수요일은 9월 30일이다
     expect(week.title).toBe('9월 5주차');
   });
+
+  it.each([
+    { date: '2026-12-31', title: '12월 5주차' },
+    { date: '2027-01-01', title: '2026년 12월 5주차' },
+    { date: '2027-01-02', title: '2026년 12월 5주차' },
+    { date: '2027-01-03', title: '1월 1주차' },
+  ])(
+    '오늘이 $date이면 앱 달력과 같이 주차 달의 해가 올해가 아닐 때만 연도를 붙여 $title이다',
+    ({ date, title }) => {
+      // Given
+      const summary = createWidgetSummary({ date: createDateKey(date) });
+
+      // When
+      const week = toWidgetWeek(summary, createWidgetSnapshotContext());
+
+      // Then
+      expect(week.title).toBe(title);
+    },
+  );
 });
 
 describe('toWidgetSnapshotStrings', () => {

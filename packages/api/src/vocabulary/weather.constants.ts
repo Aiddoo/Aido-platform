@@ -142,6 +142,16 @@ export const WEATHER_FROZEN_PRECIPITATION_TYPES = [
   "HAIL",
 ] as const satisfies readonly WeatherPrecipitationType[];
 
+/** 할 일과 겹친 비·눈 날씨의 종류. 아침 날씨 알림과 날씨 화면 머리글(`headline`)이 함께 쓴다. */
+export const WEATHER_WET_HAZARDS = ["rain", "storm", "snow"] as const;
+
+export type WeatherWetHazard = (typeof WEATHER_WET_HAZARDS)[number];
+
+/** 내일 비·눈이 시작하는 때(기기 시간대). 경계는 `WEATHER_BRIEFING_RULES`다. */
+export const WEATHER_DAY_PARTS = ["dawn", "morning", "afternoon", "evening"] as const;
+
+export type WeatherDayPart = (typeof WEATHER_DAY_PARTS)[number];
+
 /** 날씨와 겹친 할 일을 옮기는 앱 경로. 날씨 푸시의 `DEEP_LINK` url과 앱 링크가 함께 쓴다. */
 export const WEATHER_RESCHEDULE_DEEP_LINK = "/weather/reschedule";
 

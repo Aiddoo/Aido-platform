@@ -1,5 +1,5 @@
 import { dedupeByTitlePrefixAndDays } from "./pattern-filter.domain-service.js";
-import type { DetectedPattern } from "./suggestion.constants.js";
+import type { DetectedPattern } from "./suggestions.constants.js";
 
 const makePattern = (overrides: Partial<DetectedPattern> = {}): DetectedPattern => ({
   title: "테스트 제안",

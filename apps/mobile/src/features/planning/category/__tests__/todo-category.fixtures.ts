@@ -3,7 +3,7 @@ import {
   todoCategoryListResponseSchema,
   todoCategorySchema as todoCategoryDtoSchema,
   todoCategoryWithCountSchema as todoCategoryWithCountDtoSchema,
-} from '@aido/api';
+} from '@aido/api/contracts/todo-category/v1';
 import { ErrorCode, type ErrorCodeType, Errors } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 import { defineFixture } from '@src/testing/fixture';

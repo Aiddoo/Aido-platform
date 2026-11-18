@@ -10,14 +10,14 @@ import { toSubscriptionEventReceiptRow } from "./subscription-event-receipt-row.
 
 @Injectable()
 export class DrizzleSubscriptionEventReceiptRepository implements SubscriptionEventReceiptRepositoryPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
   async claim(receipt: SubscriptionEventReceipt): Promise<boolean> {
-    const inserted = await this.#txHost.tx
+    const inserted = await this.#transactionHost.tx
       .insert(subscriptionEventReceipt)
       .values(toSubscriptionEventReceiptRow(receipt))
       .onConflictDoNothing({

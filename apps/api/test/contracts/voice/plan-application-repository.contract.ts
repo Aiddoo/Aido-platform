@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import type { PlanApplicationRepositoryPort } from "#api/modules/voice/action-plans/application/ports/plan-application.repository.port";
+import type { PlanApplicationRepositoryPort } from "#api/modules/voice/plan-applications/application/ports/plan-application.repository.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   createPlanApplicationFixture,

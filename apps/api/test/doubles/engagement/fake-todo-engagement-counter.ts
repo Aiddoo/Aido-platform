@@ -1,8 +1,8 @@
-import type { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
+import type { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import {
   type TodoCommentCount,
   TodoEngagementCounterPort,
-  type TodoViewRecord,
+  type TodoViewRecording,
 } from "#api/modules/planning/todos/planning-todos.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -26,7 +26,7 @@ export class FakeTodoEngagementCounter extends TodoEngagementCounterPort {
     return true;
   }
 
-  async recordView(todoId: TodoId, viewerId: UserId): Promise<TodoViewRecord> {
+  async recordView(todoId: TodoId, viewerId: UserId): Promise<TodoViewRecording> {
     const key = `${todoId.value}:${viewerId.value}`;
     const recorded = !this.#views.has(key);
     this.#views.add(key);
@@ -41,7 +41,7 @@ export class FakeTodoEngagementCounter extends TodoEngagementCounterPort {
 
   async replaceCommentCounts(counts: readonly TodoCommentCount[]): Promise<void> {
     for (const { todoId, commentCount } of counts) {
-      this.commentCounts.set(todoId, commentCount);
+      this.commentCounts.set(todoId.value, commentCount);
     }
   }
 }

@@ -19,7 +19,8 @@ import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
 import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { DateClock } from "#test/doubles/platform/date-clock";
-import { TodoCategoryFixture, UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import { createTodoCategoryRowFixture } from "#test/fixtures/planning/todo-row.fixture";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase } from "#test/setup/test-database";
 
@@ -43,6 +44,7 @@ describe("시간대 재계산 규모 측정", () => {
   ])(
     "$name",
     async ({ seriesCount, days, historyRows, otherUsers }) => {
+      // Given
       let statements = 0;
       const database = new TestDatabase({
         createClient: (url) =>
@@ -68,13 +70,18 @@ describe("시간대 재계산 규모 측정", () => {
         max: 3,
       });
       const transaction = createDatabaseTransactionFixture(client);
-      const jobQueue = new PgBossJobQueueAdapter(boss, transaction.txHost, new JobQueueRegistry(), {
-        shutdownTimeoutMs: 10_000,
-        workerEnabled: true,
-      });
+      const jobQueue = new PgBossJobQueueAdapter(
+        boss,
+        transaction.transactionHost,
+        new JobQueueRegistry(),
+        {
+          shutdownTimeoutMs: 10_000,
+          workerEnabled: true,
+        },
+      );
       await jobQueue.start();
       try {
-        const user = UserFixture.create({
+        const user = createUserRowFixture({
           id: createEntityId(),
           email: `scale-${createEntityId()}@example.com`,
           userTag: createEntityId().slice(-8).toUpperCase(),
@@ -83,7 +90,7 @@ describe("시간대 재계산 규모 측정", () => {
         await client.insert(userPreference).values({ userId: user.id, timezone: NEW_YORK });
         const [category] = await client
           .insert(todoCategory)
-          .values(omit(TodoCategoryFixture.create({ userId: user.id, sortOrder: 0 }), ["id"]))
+          .values(omit(createTodoCategoryRowFixture({ userId: user.id, sortOrder: 0 }), ["id"]))
           .returning();
         const seriesIds = Array.from({ length: seriesCount }, () => createEntityId());
         await client.execute(sql`
@@ -103,7 +110,7 @@ describe("시간대 재계산 규모 측정", () => {
           n % 10 <> 0, CASE WHEN n % 10 <> 0 THEN now() END, now()
         FROM generate_series(1, ${historyRows}) AS n`);
         for (let index = 0; index < otherUsers; index += 1) {
-          const other = UserFixture.create({
+          const other = createUserRowFixture({
             id: createEntityId(),
             email: `other-${createEntityId()}@example.com`,
             userTag: createEntityId().slice(-8).toUpperCase(),
@@ -111,7 +118,7 @@ describe("시간대 재계산 규모 측정", () => {
           await client.insert(userTable).values(other);
           const [otherCategory] = await client
             .insert(todoCategory)
-            .values(omit(TodoCategoryFixture.create({ userId: other.id, sortOrder: 0 }), ["id"]))
+            .values(omit(createTodoCategoryRowFixture({ userId: other.id, sortOrder: 0 }), ["id"]))
             .returning();
           await client.execute(sql`
           INSERT INTO "Todo" ("userId", "categoryId", "title", "startDate", "scheduledLocalTime", "scheduledTime", "isAllDay", "completed", "updatedAt")
@@ -124,11 +131,14 @@ describe("시간대 재계산 규모 측정", () => {
         );
         const useCase = new RebaseTodoTimezoneUseCase({
           clock: new DateClock(),
-          todoRepository: new DrizzleTodoRepository(transaction.txHost, new DateClock()),
-          seriesRepository: new DrizzleTodoSeriesRepository(transaction.txHost, new DateClock()),
+          todoRepository: new DrizzleTodoRepository(transaction.transactionHost, new DateClock()),
+          seriesRepository: new DrizzleTodoSeriesRepository(
+            transaction.transactionHost,
+            new DateClock(),
+          ),
           ownerTimezone: {
             findTimezone: async (id) => {
-              const row = await transaction.txHost.tx.query.userPreference.findFirst({
+              const row = await transaction.transactionHost.tx.query.userPreference.findFirst({
                 columns: { timezone: true },
                 where: { userId: id.value },
               });
@@ -138,10 +148,11 @@ describe("시간대 재계산 규모 측정", () => {
           todoReminder: reminders,
           todoCache: { invalidateFriendTodos: async () => undefined },
           unitOfWork: transaction.uow,
-          mutationLock: new PostgresMutationLockAdapter(transaction.txHost),
+          mutationLock: new PostgresMutationLockAdapter(transaction.transactionHost),
           logger: { log: () => undefined },
         });
 
+        // When
         global.gc?.();
         const heapBefore = process.memoryUsage().heapUsed;
         let heapPeak = heapBefore;
@@ -167,6 +178,7 @@ describe("시간대 재계산 규모 측정", () => {
         const repeated = await useCase.execute({ userId: user.id });
         const repeatedMs = Math.round(performance.now() - repeatedAt);
 
+        // Then
         const measured = {
           seriesCount,
           historyRows,

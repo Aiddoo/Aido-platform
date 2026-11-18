@@ -1,4 +1,4 @@
-import { userIdParamSchema } from '@aido/api';
+import { userIdParamSchema } from '@aido/api/contracts/follow/v1';
 import { z } from 'zod';
 
 import { inviteCodeSchema } from '../domains/invite-code.model';

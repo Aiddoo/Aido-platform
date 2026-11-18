@@ -1,7 +1,7 @@
 import type { NudgeReplyKind } from "@aido/api/vocabulary";
 
-import { TodoId } from "#api/modules/planning/todos/planning-todo-queries.public";
-import type { MutualFriendReaderPort } from "#api/modules/social/friends/social-friends.public";
+import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
+import type { MutualFriendReaderPort } from "#api/modules/social/friendships/social-friendships.public";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -79,7 +79,7 @@ export class ReplyToNudgeUseCase {
       const friendIds = await mutualFriendReader.getCurrentMutualFriendIds(userId);
       const isAvailable = isNudgeInteractionAvailable({
         receiverId: command.userId,
-        isMutualFriend: friendIds.includes(nudge.senderId.value),
+        isMutualFriend: friendIds.some((friendId) => friendId.equals(nudge.senderId)),
         todoOwnerId: todo.ownerId,
         todoVisibility: todo.visibility,
       });
@@ -94,10 +94,10 @@ export class ReplyToNudgeUseCase {
         if (isFirstReply) {
           await notifier.recordInteraction({
             kind: "reply",
-            nudgeId: nudge.id.value,
-            todoId: todo.id,
-            actorId: command.userId,
-            recipientId: nudge.senderId.value,
+            nudgeId: nudge.id,
+            todoId: TodoId.reconstitute(todo.id),
+            actorId: userId,
+            recipientId: nudge.senderId,
             actorName: received.receiver.name ?? received.receiver.userTag,
             todoTitle: todo.title,
             replyKind: command.replyKind,

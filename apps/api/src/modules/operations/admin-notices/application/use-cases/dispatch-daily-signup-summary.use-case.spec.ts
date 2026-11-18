@@ -36,7 +36,9 @@ describe("DispatchDailySignupSummaryUseCase — 일일 가입 요약", () => {
     // When
     await useCase.execute();
 
-    // Then - 집계 기간은 전일 KST 00:00 ~ 당일 KST 00:00
+    // Then
+    // 집계 기간은 전일 KST 00:00 ~ 당일 KST 00:00
+
     expect(statsReader.requests).toEqual([
       {
         start: Temporal.Instant.from("2026-02-09T15:00:00Z"),
@@ -46,7 +48,7 @@ describe("DispatchDailySignupSummaryUseCase — 일일 가입 요약", () => {
     expect(queue.sent).toEqual([
       {
         channel: "admin",
-        options: { jobId: "signup-summary_2026-02-10" },
+        deduplicationKey: "signup-summary_2026-02-10",
         notice: {
           type: "message",
           message: expect.objectContaining({

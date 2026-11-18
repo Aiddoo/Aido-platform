@@ -3,7 +3,7 @@ import {
   todoCommentMutationResponseSchema,
   todoCommentSchema,
   todoCommentViewerSchema,
-} from '@aido/api';
+} from '@aido/api/contracts/todo-comment/v1';
 import { TODO_COMMENT_LIMITS } from '@aido/api/vocabulary';
 import { z } from 'zod';
 

@@ -28,7 +28,7 @@ import {
   updateTodoSchema,
   updateTodoTitleSchema,
   updateTodoVisibilitySchema,
-} from "@aido/api";
+} from "@aido/api/contracts/todo/v1";
 import type { z } from "zod";
 
 export const ChangeTodoCategoryDto = changeTodoCategorySchema.meta({ id: "ChangeTodoCategoryDto" });

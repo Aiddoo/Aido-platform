@@ -148,9 +148,6 @@ export type MeteredFeatureKey = {
     : never;
 }[PlanQuotaFeatureKey];
 
-/** 출시 앱의 /me.entitlements에 있는 횟수·개수 기능 */
-export type PremiumLimitFeatureKey = Extract<PlanLimitFeatureKey, PremiumFeature>;
-
 /**
  * 보상(초대)으로 한도를 늘릴 수 있는 resource 기능. 받은 자리는 요금제 한도에 더하고 무제한 한도는 그대로다.
  * DB enum ResourceType이 이 튜플이라 값·순서를 바꾸지 않고 끝에만 더한다(마이그레이션 필요).

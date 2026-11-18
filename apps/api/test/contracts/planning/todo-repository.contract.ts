@@ -1,15 +1,16 @@
-import { TodoCategoryId } from "#api/modules/planning/categories/domain/todo-category-id.vo";
-import { TodoId } from "#api/modules/planning/shared/domain/todo-id.vo";
-import { TodoItemId } from "#api/modules/planning/shared/domain/todo-item-id.vo";
-import { TodoItem } from "#api/modules/planning/shared/domain/todo-item.entity";
 import { TodoTitle } from "#api/modules/planning/shared/domain/todo-title.vo";
-import type { Todo, TodoPrimitives } from "#api/modules/planning/shared/domain/todo.aggregate";
+import { TodoCategoryId } from "#api/modules/planning/todo-categories/domain/todo-category-id.vo";
 import type { TodoSeriesRepositoryPort } from "#api/modules/planning/todo-series/application/ports/todo-series.repository.port";
 import { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-series-id.vo";
 import type {
   TodoOccurrencePlan,
-  TodoRepositoryPort,
-} from "#api/modules/planning/todos/application/ports/todo.repository.port";
+  TodoOccurrenceWriterPort,
+} from "#api/modules/planning/todos/application/ports/todo-occurrence-writer.port";
+import type { TodoRepositoryPort } from "#api/modules/planning/todos/application/ports/todo.repository.port";
+import { TodoId } from "#api/modules/planning/todos/domain/todo-id.vo";
+import { TodoItemId } from "#api/modules/planning/todos/domain/todo-item-id.vo";
+import { TodoSchedule } from "#api/modules/planning/todos/domain/todo-schedule.vo";
+import type { Todo, TodoPrimitives } from "#api/modules/planning/todos/domain/todo.aggregate";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createTodoSeriesFixture } from "#test/fixtures/planning/todo-series.fixture";
 import {
@@ -19,15 +20,27 @@ import {
   TODO_FIXTURE_USER_ID,
 } from "#test/fixtures/planning/todo.fixture";
 
+export interface TodoEngagementCounts {
+  readonly commentCount: number;
+  readonly viewCount: number;
+}
+
 export interface TodoRepositoryContractContext {
   readonly todoRepository: TodoRepositoryPort;
+  readonly occurrenceWriter: TodoOccurrenceWriterPort;
   readonly seriesRepository: TodoSeriesRepositoryPort;
-  /** 두 사용자가 모두 쓸 수 있는 카테고리 */
+  // 두 사용자가 모두 쓸 수 있는 카테고리
   readonly categoryId: number;
+  // engagement가 TodoEngagementCounterPort로 쓰는 칸을 저장소 밖에서 바꾸고 읽는다
+  readonly engagementCounts: {
+    write(todoId: TodoId, counts: TodoEngagementCounts): Promise<void>;
+    read(todoId: TodoId): Promise<TodoEngagementCounts>;
+  };
 }
 
 const SERIES_ID = "0f9d7c1e-6a4b-4c2d-9e8f-1a2b3c4d5e6f";
 const LATER = TODO_FIXTURE_NOW.add({ minutes: 1 });
+const OWNER_ID = UserId.reconstitute(TODO_FIXTURE_USER_ID);
 
 async function insertTodo(
   context: TodoRepositoryContractContext,
@@ -47,7 +60,7 @@ async function occurrencePlans(
   dates: readonly string[],
   sortOrderFrom = 0,
 ): Promise<TodoOccurrencePlan[]> {
-  const ids = await context.todoRepository.nextIds(dates.length);
+  const ids = await context.occurrenceWriter.nextIds(dates.length);
   return dates.flatMap((date, index) => {
     const id = ids[index];
     return id == null
@@ -64,12 +77,20 @@ async function occurrencePlans(
             scheduledLocalTime: "09:00",
             scheduledTime: Temporal.Instant.from(`${date}T00:00:00.000Z`),
             isAllDay: false,
-            occurrenceDate: date,
+            occurrenceDate: Temporal.PlainDate.from(date),
             createdAt: TODO_FIXTURE_NOW,
             sortOrder: sortOrderFrom + index,
           },
         ];
   });
+}
+
+async function load(context: TodoRepositoryContractContext, todo: Todo): Promise<Todo> {
+  const found = await context.todoRepository.findByIdAndUserId(todo.id, todo.userId);
+  if (found == null) {
+    throw new Error("저장한 할 일을 다시 읽지 못했다");
+  }
+  return found;
 }
 
 async function findPrimitives(
@@ -83,12 +104,12 @@ export function describeTodoRepositoryContract(
   createContext: () => Promise<TodoRepositoryContractContext>,
 ): void {
   describe("할 일 저장소 계약", () => {
-    it("nextIds는 한 번에 서로 다른 id를 오름차순으로 주고 nextId와 겹치지 않는다", async () => {
+    it("회차 id 묶음은 한 번에 서로 다른 id를 오름차순으로 주고 nextId와 겹치지 않는다", async () => {
       // Given
-      const { todoRepository } = await createContext();
+      const { todoRepository, occurrenceWriter } = await createContext();
 
       // When
-      const batch = await todoRepository.nextIds(3);
+      const batch = await occurrenceWriter.nextIds(3);
       const single = await todoRepository.nextId();
 
       // Then
@@ -97,7 +118,7 @@ export function describeTodoRepositoryContract(
       expect(new Set([...values, single.value]).size).toBe(4);
     });
 
-    it("넣은 할 일은 주인에게만 보이고 같은 값으로 복원된다", async () => {
+    it("넣은 할 일은 주인에게만 보이고 읽기·잠가 읽기 모두 같은 값으로 복원된다", async () => {
       // Given
       const context = await createContext();
       const todo = await insertTodo(context, {
@@ -110,89 +131,123 @@ export function describeTodoRepositoryContract(
       });
 
       // When
-      const found = await context.todoRepository.findByIdAndUserId(
-        todo.id,
-        UserId.reconstitute(TODO_FIXTURE_USER_ID),
-      );
-      const foreign = await context.todoRepository.findByIdAndUserId(
+      const found = await context.todoRepository.findByIdAndUserId(todo.id, OWNER_ID);
+      const locked = await context.todoRepository.lockByIdAndUserId(todo.id, OWNER_ID);
+      const foreign = await context.todoRepository.lockByIdAndUserId(
         todo.id,
         UserId.reconstitute(TODO_FIXTURE_OTHER_USER_ID),
       );
 
       // Then
       expect(found?.toPrimitives()).toEqual(todo.toPrimitives());
+      expect(locked?.toPrimitives()).toEqual(todo.toPrimitives());
       expect(foreign).toBeNull();
     });
 
-    it("부분 수정은 보낸 칸만 바꾸고 null은 지우기, 생략은 유지다", async () => {
+    it("save는 행동이 바꾼 Aggregate 칸을 모두 쓰고 다시 읽으면 같은 값이다", async () => {
       // Given
       const context = await createContext();
-      const todo = await insertTodo(context, {
+      const inserted = await insertTodo(context, {
         endDate: Temporal.PlainDate.from("2026-11-12"),
         visibility: "PRIVATE",
       });
+      const todo = await load(context, inserted);
 
       // When
-      await context.todoRepository.updateDetails(todo.id, {
-        title: "바뀐 제목",
-        endDate: null,
-        completed: true,
-        completedAt: LATER,
-      });
-      const completed = await findPrimitives(context, todo);
-      await context.todoRepository.updateDetails(todo.id, {
-        completed: false,
-        completedAt: null,
-      });
-      const reopened = await findPrimitives(context, todo);
+      todo.updateDetails(
+        { title: "바뀐 제목", endDate: null, visibility: "PUBLIC", completed: true },
+        "Asia/Seoul",
+        LATER,
+      );
+      todo.moveTo(7, LATER);
+      todo.reschedule(
+        TodoSchedule.create({
+          startDate: Temporal.PlainDate.from("2026-11-20"),
+          endDate: null,
+          scheduledLocalTime: "08:00",
+          isAllDay: false,
+          timezone: "Asia/Seoul",
+        }),
+        LATER,
+      );
+      await context.todoRepository.save(todo);
 
       // Then
-      expect(completed).toMatchObject({
+      expect(await findPrimitives(context, todo)).toEqual(todo.toPrimitives());
+      expect(todo.toPrimitives()).toMatchObject({
         title: "바뀐 제목",
         endDate: null,
-        visibility: "PRIVATE",
+        visibility: "PUBLIC",
         completed: true,
         completedAt: LATER,
+        sortOrder: 7,
+        scheduledLocalTime: "08:00",
+        updatedAt: LATER,
       });
-      expect(reopened).toMatchObject({ title: "바뀐 제목", completed: false, completedAt: null });
     });
 
-    it("제목·공개·카테고리·일정·순서는 각각 그 칸만 바꾼다", async () => {
-      // Given
+    it("save는 engagement가 고친 댓글·조회 수를 덮어쓰지 않는다", async () => {
+      // Given: 할 일을 읽은 뒤 다른 요청이 댓글·조회 수를 바꿨다
       const context = await createContext();
-      const todo = await insertTodo(context);
-      const schedule = {
-        startDate: Temporal.PlainDate.from("2026-11-20"),
-        endDate: null,
-        scheduledLocalTime: "08:00",
-        scheduledTime: Temporal.Instant.from("2026-11-19T23:00:00.000Z"),
-        isAllDay: false,
-      };
+      const todo = await load(context, await insertTodo(context));
+      await context.engagementCounts.write(todo.id, { commentCount: 3, viewCount: 7 });
 
       // When
-      await context.todoRepository.updateTitle(todo.id, "새 제목");
-      await context.todoRepository.updateVisibility(todo.id, "PRIVATE");
-      await context.todoRepository.updateCategory(
-        todo.id,
-        TodoCategoryId.reconstitute(context.categoryId),
-      );
-      await context.todoRepository.updateSchedule(todo.id, schedule);
-      await context.todoRepository.updateSortOrder(todo.id, 7);
+      todo.rename(TodoTitle.create("댓글 달린 할 일"), LATER);
+      todo.complete("Asia/Seoul", LATER);
+      await context.todoRepository.save(todo);
 
       // Then
-      expect(await findPrimitives(context, todo)).toMatchObject({
-        title: "새 제목",
-        visibility: "PRIVATE",
-        categoryId: context.categoryId,
-        sortOrder: 7,
-        ...schedule,
+      expect(await context.engagementCounts.read(todo.id)).toEqual({
+        commentCount: 3,
+        viewCount: 7,
       });
+      expect(await findPrimitives(context, todo)).toMatchObject({
+        title: "댓글 달린 할 일",
+        completed: true,
+      });
+    });
+
+    it("지운 할 일을 save하면 부재 오류이고 행을 되살리지 않는다", async () => {
+      // Given
+      const context = await createContext();
+      const todo = await load(context, await insertTodo(context));
+      await context.todoRepository.delete(todo);
+
+      // When
+      todo.rename(TodoTitle.create("늦게 온 수정"), LATER);
+      const save = context.todoRepository.save(todo);
+
+      // Then
+      await expect(save).rejects.toThrow();
+      expect(await findPrimitives(context, todo)).toBeUndefined();
+    });
+
+    it("공개 범위만 바꿔 저장하면 다른 칸은 그대로다", async () => {
+      // Given
+      const context = await createContext();
+      const todo = await load(
+        context,
+        await insertTodo(context, { categoryId: context.categoryId }),
+      );
+      const before = todo.toPrimitives();
+
+      // When
+      todo.changeVisibility("PRIVATE", LATER);
+      await context.todoRepository.save(todo);
+
+      // Then
+      expect(await findPrimitives(context, todo)).toEqual({
+        ...before,
+        visibility: "PRIVATE",
+        updatedAt: LATER,
+      });
+      expect(todo.categoryId.equals(TodoCategoryId.reconstitute(context.categoryId))).toBe(true);
     });
 
     it("이웃·끝 순서는 그 사용자 할 일을 (sortOrder, id)로 보고 옮기는 할 일은 건너뛴다", async () => {
       // Given: 같은 sortOrder 둘(20)은 id 순서로 줄 선다
       const context = await createContext();
-      const owner = UserId.reconstitute(TODO_FIXTURE_USER_ID);
       const first = await insertTodo(context, { sortOrder: 10 });
       const tieLow = await insertTodo(context, { sortOrder: 20 });
       const tieHigh = await insertTodo(context, { sortOrder: 20 });
@@ -201,31 +256,25 @@ export function describeTodoRepositoryContract(
       const at = (todo: Todo) => ({ id: todo.id, sortOrder: todo.sortOrder });
 
       // When
+      const { todoRepository } = context;
       const neighbors = {
-        afterTieLow: await context.todoRepository.findAdjacentSortOrder(
-          owner,
-          at(tieLow),
-          "next",
-          first.id,
-        ),
-        afterTieLowSkippingTieHigh: await context.todoRepository.findAdjacentSortOrder(
-          owner,
-          at(tieLow),
-          "next",
-          tieHigh.id,
-        ),
-        beforeFirst: await context.todoRepository.findAdjacentSortOrder(
-          owner,
-          at(first),
-          "previous",
-          last.id,
-        ),
-        firstSkippingFirst: await context.todoRepository.findEdgeSortOrder(
-          owner,
-          "first",
-          first.id,
-        ),
-        lastSkippingLast: await context.todoRepository.findEdgeSortOrder(owner, "last", last.id),
+        afterTieLow: await todoRepository.findAdjacentSortOrder(OWNER_ID, {
+          from: at(tieLow),
+          direction: "next",
+          excludeId: first.id,
+        }),
+        afterTieLowSkippingTieHigh: await todoRepository.findAdjacentSortOrder(OWNER_ID, {
+          from: at(tieLow),
+          direction: "next",
+          excludeId: tieHigh.id,
+        }),
+        beforeFirst: await todoRepository.findAdjacentSortOrder(OWNER_ID, {
+          from: at(first),
+          direction: "previous",
+          excludeId: last.id,
+        }),
+        firstSkippingFirst: await todoRepository.findEdgeSortOrder(OWNER_ID, "first", first.id),
+        lastSkippingLast: await todoRepository.findEdgeSortOrder(OWNER_ID, "last", last.id),
       };
 
       // Then
@@ -248,7 +297,7 @@ export function describeTodoRepositoryContract(
       const other = await insertTodo(context, { userId: TODO_FIXTURE_OTHER_USER_ID, sortOrder: 1 });
 
       // When
-      await context.todoRepository.renumberSortOrders(UserId.reconstitute(TODO_FIXTURE_USER_ID));
+      await context.todoRepository.renumberSortOrders(OWNER_ID);
 
       // Then: (3, 앞 id) → (3, 뒤 id) → 4 → 5 순서다
       const sortOrders = [];
@@ -261,16 +310,12 @@ export function describeTodoRepositoryContract(
     it("최대 순서는 그 사용자 할 일만 보고 없으면 -1이다", async () => {
       // Given
       const context = await createContext();
-      const empty = await context.todoRepository.getMaxSortOrder(
-        UserId.reconstitute(TODO_FIXTURE_USER_ID),
-      );
+      const empty = await context.todoRepository.getMaxSortOrder(OWNER_ID);
       await insertTodo(context, { sortOrder: 4 });
       await insertTodo(context, { userId: TODO_FIXTURE_OTHER_USER_ID, sortOrder: 9 });
 
       // When
-      const maxSortOrder = await context.todoRepository.getMaxSortOrder(
-        UserId.reconstitute(TODO_FIXTURE_USER_ID),
-      );
+      const maxSortOrder = await context.todoRepository.getMaxSortOrder(OWNER_ID);
 
       // Then
       expect({ empty, maxSortOrder }).toEqual({ empty: -1, maxSortOrder: 4 });
@@ -279,22 +324,20 @@ export function describeTodoRepositoryContract(
     it("회차는 이미 있는 날짜를 건너뛰고 만든 행에만 체크리스트를 복사한다", async () => {
       // Given
       const context = await createContext();
-      const [existing] = await context.todoRepository.insertOccurrences(
+      const seriesId = TodoSeriesId.reconstitute(SERIES_ID);
+      const [existing] = await context.occurrenceWriter.insertOccurrences(
         await occurrencePlans(context, ["2026-11-10"]),
-        TodoSeriesId.reconstitute(SERIES_ID),
+        seriesId,
         [],
       );
 
       // When
-      const created = await context.todoRepository.insertOccurrences(
+      const created = await context.occurrenceWriter.insertOccurrences(
         await occurrencePlans(context, ["2026-11-10", "2026-11-11"], 1),
-        TodoSeriesId.reconstitute(SERIES_ID),
+        seriesId,
         [{ title: "물병 채우기" }, { title: "마시기" }],
       );
-      const rows = await context.todoRepository.findOccurrencesFrom(
-        [TodoSeriesId.reconstitute(SERIES_ID)],
-        "2026-11-10",
-      );
+      const rows = await context.occurrenceWriter.findOccurrencesFrom([seriesId], "2026-11-10");
 
       // Then
       expect(created).toEqual([
@@ -303,15 +346,15 @@ export function describeTodoRepositoryContract(
         }),
       ]);
       expect(rows.map((row) => [row.todoId, row.occurrenceDate])).toEqual([
-        [existing?.todoId, "2026-11-10"],
-        [created[0]?.todoId, "2026-11-11"],
+        [existing?.todoId.value, "2026-11-10"],
+        [created[0]?.todoId.value, "2026-11-11"],
       ]);
       const titles = await Promise.all(
-        [existing?.todoId, created[0]?.todoId].map(async (todoId) =>
+        [existing?.todoId.value, created[0]?.todoId.value].map(async (todoId) =>
           (
             await context.todoRepository.findByIdAndUserId(
               TodoId.reconstitute(todoId ?? 0),
-              UserId.reconstitute(TODO_FIXTURE_USER_ID),
+              OWNER_ID,
             )
           )
             ?.toPrimitives()
@@ -324,34 +367,39 @@ export function describeTodoRepositoryContract(
     it("회차 지우기는 기준 날짜부터이고 완료 회차는 includeCompleted일 때만 지운다", async () => {
       // Given
       const context = await createContext();
-      const created = await context.todoRepository.insertOccurrences(
+      const seriesId = TodoSeriesId.reconstitute(SERIES_ID);
+      const created = await context.occurrenceWriter.insertOccurrences(
         await occurrencePlans(context, ["2026-11-10", "2026-11-11", "2026-11-12"]),
-        TodoSeriesId.reconstitute(SERIES_ID),
+        seriesId,
         [],
       );
-      const completedId = created[2]?.todoId ?? 0;
-      await context.todoRepository.updateDetails(TodoId.reconstitute(completedId), {
-        completed: true,
-        completedAt: LATER,
-      });
+      const completedId = created[2]?.todoId.value ?? 0;
+      const completed = await context.todoRepository.findByIdAndUserId(
+        TodoId.reconstitute(completedId),
+        OWNER_ID,
+      );
+      completed?.complete("Asia/Seoul", LATER);
+      if (completed != null) {
+        await context.todoRepository.save(completed);
+      }
 
       // When
-      const following = await context.todoRepository.deleteOccurrences({
-        userId: UserId.reconstitute(TODO_FIXTURE_USER_ID),
-        seriesIds: [TodoSeriesId.reconstitute(SERIES_ID)],
+      const following = await context.occurrenceWriter.deleteOccurrences({
+        userId: OWNER_ID,
+        seriesIds: [seriesId],
         fromDate: "2026-11-11",
         includeCompleted: false,
       });
-      const rest = await context.todoRepository.deleteOccurrences({
-        userId: UserId.reconstitute(TODO_FIXTURE_USER_ID),
-        seriesIds: [TodoSeriesId.reconstitute(SERIES_ID)],
+      const rest = await context.occurrenceWriter.deleteOccurrences({
+        userId: OWNER_ID,
+        seriesIds: [seriesId],
         includeCompleted: true,
       });
 
       // Then
-      expect(following).toEqual([created[1]?.todoId]);
+      expect(following).toEqual([created[1]?.todoId.value]);
       expect(rest.toSorted((left, right) => left - right)).toEqual([
-        created[0]?.todoId,
+        created[0]?.todoId.value,
         completedId,
       ]);
     });
@@ -362,7 +410,7 @@ export function describeTodoRepositoryContract(
       await insertTodo(context);
       await insertTodo(context, { completed: true, completedAt: TODO_FIXTURE_NOW });
       await insertTodo(context, { userId: TODO_FIXTURE_OTHER_USER_ID });
-      await context.todoRepository.insertOccurrences(
+      await context.occurrenceWriter.insertOccurrences(
         await occurrencePlans(context, ["2026-11-10", "2026-11-11"]),
         TodoSeriesId.reconstitute(SERIES_ID),
         [],
@@ -373,7 +421,7 @@ export function describeTodoRepositoryContract(
 
       // When
       const usage = await context.todoRepository.countCategoryUsage(
-        UserId.reconstitute(TODO_FIXTURE_USER_ID),
+        OWNER_ID,
         TodoCategoryId.reconstitute(context.categoryId),
       );
 
@@ -381,37 +429,31 @@ export function describeTodoRepositoryContract(
       expect(usage).toBe(2);
     });
 
-    it("하위 항목은 넣은 순서로 읽고 고치기·지우기·순서 바꾸기를 반영한다", async () => {
+    it("하위 항목은 넣은 순서로 읽고 save가 더하기·고치기·지우기·순서 바꾸기를 반영한다", async () => {
       // Given
       const context = await createContext();
-      const todo = await insertTodo(context);
-      await context.todoRepository.createInlineItems(todo.id, [
+      const inserted = await insertTodo(context);
+      await context.todoRepository.createInlineItems(inserted.id, [
         { title: "첫째" },
         { title: "둘째" },
       ]);
-      const added = TodoItem.create({
-        id: await context.todoRepository.nextItemId(),
-        title: TodoTitle.create("셋째"),
-        sortOrder: 2,
-        now: TODO_FIXTURE_NOW,
-      });
-      await context.todoRepository.insertItem(todo.id, added);
-      const inserted = (await findPrimitives(context, todo))?.items ?? [];
-      const [first, second] = inserted;
+      const todo = await load(context, inserted);
+      const [first, second] = todo.items;
 
       // When
-      await context.todoRepository.updateItem(TodoItemId.reconstitute(first?.id ?? 0), {
-        completed: true,
+      const added = todo.addItem({
+        id: await context.todoRepository.nextItemId(),
+        title: TodoTitle.create("셋째"),
+        timezone: "Asia/Seoul",
+        now: TODO_FIXTURE_NOW,
       });
-      await context.todoRepository.deleteItem(TodoItemId.reconstitute(second?.id ?? 0));
-      await context.todoRepository.reorderItems([
-        added.id,
-        TodoItemId.reconstitute(first?.id ?? 0),
-      ]);
+      todo.updateItem(first?.id ?? TodoItemId.reconstitute(0), { completed: true }, LATER);
+      todo.removeItem(second?.id ?? TodoItemId.reconstitute(0));
+      todo.reorderItems([added.id, first?.id ?? TodoItemId.reconstitute(0)], LATER);
+      await context.todoRepository.save(todo);
 
       // Then
       const items = (await findPrimitives(context, todo))?.items ?? [];
-      expect(inserted.map((item) => item.title)).toEqual(["첫째", "둘째", "셋째"]);
       expect(items.map((item) => [item.title, item.completed, item.sortOrder])).toEqual([
         ["셋째", false, 0],
         ["첫째", true, 1],
@@ -426,7 +468,7 @@ export function describeTodoRepositoryContract(
       const kept = await insertTodo(context);
 
       // When
-      await context.todoRepository.delete(todo.id);
+      await context.todoRepository.delete(todo);
 
       // Then
       expect(await findPrimitives(context, todo)).toBeUndefined();

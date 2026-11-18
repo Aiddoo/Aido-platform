@@ -319,6 +319,218 @@ const namespaceFunctionName = {
   },
 };
 
+// 서버 이름은 풀어 쓴다(apps/api/docs/conventions.md#변수상수). camelCase·snake_case 토큰마다 금지 목록과 비교한다.
+// 외부가 정한 이름(import·객체 리터럴 키·계약 schema 키)은 보지 않고 우리가 선언하는 이름만 본다
+const DEFAULT_ABBREVIATIONS = {
+  acc: 'accumulator',
+  args: 'parameters',
+  arr: 'array',
+  cb: 'callback',
+  cfg: 'config',
+  cnt: 'count',
+  conf: 'config',
+  ctx: 'context',
+  e: 'error',
+  el: 'element',
+  err: 'error',
+  evt: 'event',
+  fn: '역할 이름',
+  idx: 'index',
+  msg: 'message',
+  msgs: 'messages',
+  num: 'number',
+  obj: 'object',
+  opts: 'options',
+  repo: 'repository',
+  repos: 'repositories',
+  req: 'request',
+  res: 'response',
+  str: 'string',
+  svc: 'service',
+  tmp: 'temporary',
+  trx: 'transaction',
+  tx: 'transaction',
+  val: 'value',
+  vals: 'values',
+};
+
+function splitIdentifierWords(name) {
+  return name
+    .replace(/^#/u, '')
+    .replace(/([a-z0-9])([A-Z])/gu, '$1 $2')
+    .replace(/([A-Z]+)([A-Z][a-z])/gu, '$1 $2')
+    .split(/[\s_$]+/u)
+    .filter((word) => word.length > 0)
+    .map((word) => word.toLowerCase());
+}
+
+function collectPatternIdentifiers(pattern) {
+  if (pattern == null) {
+    return [];
+  }
+  switch (pattern.type) {
+    case 'Identifier':
+      return [pattern];
+    case 'AssignmentPattern':
+      return collectPatternIdentifiers(pattern.left);
+    case 'RestElement':
+      return collectPatternIdentifiers(pattern.argument);
+    case 'ArrayPattern':
+      return pattern.elements.flatMap(collectPatternIdentifiers);
+    case 'ObjectPattern':
+      return pattern.properties.flatMap((property) =>
+        collectPatternIdentifiers(property.type === 'RestElement' ? property : property.value),
+      );
+    case 'TSParameterProperty':
+      return collectPatternIdentifiers(pattern.parameter);
+    default:
+      return [];
+  }
+}
+
+function keyName(key) {
+  if (key?.type === 'Identifier' || key?.type === 'PrivateIdentifier') {
+    return key.name;
+  }
+  return null;
+}
+
+const noAbbreviation = {
+  meta: {
+    type: 'suggestion',
+    schema: [
+      {
+        type: 'object',
+        properties: {
+          abbreviations: { type: 'object', additionalProperties: { type: 'string' } },
+          allow: { type: 'array', items: { type: 'string' } },
+        },
+        additionalProperties: false,
+      },
+    ],
+  },
+  create(context) {
+    const options = context.options[0] ?? {};
+    const abbreviations = { ...DEFAULT_ABBREVIATIONS, ...options.abbreviations };
+    for (const allowed of options.allow ?? []) {
+      delete abbreviations[allowed];
+    }
+
+    function check(node, name) {
+      if (name == null) {
+        return;
+      }
+      const words = splitIdentifierWords(name);
+      // 한 글자(e)는 이름 전체일 때만 축약어다. userE처럼 이름의 일부면 다른 뜻이다
+      const found = words.find(
+        (word) => Object.hasOwn(abbreviations, word) && (word.length > 1 || words.length === 1),
+      );
+      if (found != null) {
+        context.report({
+          node,
+          message: `${name}: 축약어 "${found}" 대신 "${abbreviations[found]}"처럼 풀어 쓴다(conventions.md 변수·상수).`,
+        });
+      }
+    }
+
+    function checkParameters(node) {
+      for (const identifier of node.params.flatMap(collectPatternIdentifiers)) {
+        check(identifier, identifier.name);
+      }
+    }
+
+    return {
+      VariableDeclarator(node) {
+        for (const identifier of collectPatternIdentifiers(node.id)) {
+          check(identifier, identifier.name);
+        }
+      },
+      FunctionDeclaration(node) {
+        check(node.id ?? node, node.id?.name ?? null);
+        checkParameters(node);
+      },
+      FunctionExpression: checkParameters,
+      ArrowFunctionExpression: checkParameters,
+      CatchClause(node) {
+        for (const identifier of collectPatternIdentifiers(node.param)) {
+          check(identifier, identifier.name);
+        }
+      },
+      PropertyDefinition(node) {
+        check(node.key, keyName(node.key));
+      },
+      MethodDefinition(node) {
+        check(node.key, keyName(node.key));
+      },
+      TSPropertySignature(node) {
+        check(node.key, keyName(node.key));
+      },
+    };
+  },
+};
+
+const FORBIDDEN_TYPE_NAME = /^.+(?:Record|Row|View|Snapshot)$/u;
+const TYPE_DECLARATIONS = new Set([
+  'TSTypeAliasDeclaration',
+  'TSInterfaceDeclaration',
+  'ClassDeclaration',
+]);
+
+// 조회 결과는 Read Model 한 용어다. record·row·view·snapshot이 섞이면 쓰기 모델·DB 행과 구별되지 않는다
+const readModelSuffix = {
+  meta: {
+    type: 'suggestion',
+    schema: [
+      {
+        type: 'object',
+        properties: { exportSuffix: { type: 'string' } },
+        additionalProperties: false,
+      },
+    ],
+  },
+  create(context) {
+    const exportSuffix = context.options[0]?.exportSuffix ?? null;
+    let reportedNames = new Set();
+    function checkDeclaration(node) {
+      const name = node.id?.name;
+      if (name == null || !FORBIDDEN_TYPE_NAME.test(name)) {
+        return;
+      }
+      reportedNames.add(name);
+      context.report({
+        node: node.id,
+        message: `${name}: application 타입 이름에 Record·Row·View·Snapshot 접미사를 쓰지 않는다. 조회 결과는 <Noun>ReadModel, 쓰기 모델은 Entity·VO다.`,
+      });
+    }
+    return {
+      Program() {
+        reportedNames = new Set();
+      },
+      TSTypeAliasDeclaration: checkDeclaration,
+      TSInterfaceDeclaration: checkDeclaration,
+      ClassDeclaration: checkDeclaration,
+      'ExportNamedDeclaration:exit'(node) {
+        const { declaration } = node;
+        if (
+          exportSuffix == null ||
+          declaration == null ||
+          !TYPE_DECLARATIONS.has(declaration.type)
+        ) {
+          return;
+        }
+        const name = declaration.id?.name;
+        if (name == null || name.endsWith(exportSuffix) || reportedNames.has(name)) {
+          return;
+        }
+        context.report({
+          node: declaration.id,
+          message: `${name}: *.read-model.ts가 내보내는 타입은 ${exportSuffix}로 끝낸다(<Noun>${exportSuffix}).`,
+        });
+      },
+    };
+  },
+};
+
 export default {
   'component-name': componentName,
   'function-name': functionName,
@@ -327,4 +539,6 @@ export default {
   'icon-prop-name': iconPropName,
   'loading-namespace-name': loadingNamespaceName,
   'namespace-function-name': namespaceFunctionName,
+  'no-abbreviation': noAbbreviation,
+  'read-model-suffix': readModelSuffix,
 };

@@ -1,10 +1,7 @@
-import {
-  createTodoSchema,
-  timeOfDaySchema,
-  todoCategoryIdParamSchema,
-  todoDetailsParamSchema,
-  todoItemIdParamSchema,
-} from '@aido/api';
+import { timeOfDaySchema } from '@aido/api/common';
+import { todoCategoryIdParamSchema } from '@aido/api/contracts/todo-category/v1';
+import { todoDetailsParamSchema } from '@aido/api/contracts/todo-comment/v1';
+import { createTodoSchema, todoItemIdParamSchema } from '@aido/api/contracts/todo/v1';
 import { routeIntegerStringSchema } from '@src/shared/schemas/route-params.schema';
 import { z } from 'zod';
 

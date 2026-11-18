@@ -4,6 +4,7 @@ import {
 } from "#test/fixtures/billing/subscription.fixture";
 
 import { STORE_RENEWAL_GRACE_MS } from "../../shared/domain/store-renewal-grace.domain-service.js";
+import { ProviderEventId } from "./provider-event-id.vo.js";
 
 const NOW = SUBSCRIPTION_FIXTURE_NOW;
 const EXPIRES_AT = NOW.add({ hours: 24 * 30 });
@@ -24,7 +25,7 @@ describe("Subscription — 스토어 구독 체인", () => {
       const changed = subscription.renew({
         expiresAt: NEXT_EXPIRES_AT,
         now: LATER,
-        eventId: "renewal-1",
+        eventId: ProviderEventId.reconstitute("renewal-1"),
         productId: "premium_yearly",
       });
 
@@ -80,7 +81,11 @@ describe("Subscription — 스토어 구독 체인", () => {
       const subscription = createSubscriptionFixture();
 
       // When
-      const changed = subscription.cancel({ refunded: false, now: LATER, eventId: "cancel-1" });
+      const changed = subscription.cancel({
+        refunded: false,
+        now: LATER,
+        eventId: ProviderEventId.reconstitute("cancel-1"),
+      });
 
       // Then
       expect(changed).toBe(true);

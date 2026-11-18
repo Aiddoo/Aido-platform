@@ -1,6 +1,8 @@
-import type { SubscriptionPlan } from '../domains/subscription.model';
+import { defineFixture } from '@src/testing/fixture';
 
-const DEFAULT_PLAN: SubscriptionPlan = {
+import { subscriptionPlanSchema } from '../domains/subscription.model';
+
+export const createSubscriptionPlan = defineFixture(subscriptionPlanSchema, {
   identifier: 'annual',
   planType: 'annual',
   priceString: '₩29,900',
@@ -9,10 +11,4 @@ const DEFAULT_PLAN: SubscriptionPlan = {
   title: '연간',
   description: null,
   freeTrial: { periodUnit: 'week', periodNumberOfUnits: 2 },
-};
-
-export function createSubscriptionPlan(
-  overrides: Partial<SubscriptionPlan> = {},
-): SubscriptionPlan {
-  return { ...DEFAULT_PLAN, ...overrides };
-}
+});

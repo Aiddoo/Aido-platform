@@ -1,16 +1,22 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and, eq, isNull } from "drizzle-orm";
+import { keyBy, uniq } from "es-toolkit";
 
-import { hasNoBlockWith } from "#api/modules/social/blocks/social-block-queries.public";
 import {
-  USER_BRIEF_RELATION,
-  type UserBriefRow,
-} from "#api/modules/social/friends/social-friends.public";
+  UserBriefReaderPort,
+  type UserBriefReadModel,
+} from "#api/modules/identity/users/identity-users.public";
+import { hasNoBlockWith } from "#api/modules/social/user-blocks/social-user-blocks.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { tupleLessThan } from "#api/platform/database/keyset";
 import { cheer as cheerTable } from "#api/platform/database/schema/index";
-import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import {
+  type CursorPage,
+  emptyCursorPage,
+  toMappedCursorPage,
+} from "#api/shared/application/cursor-page";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
   CheerReaderPort,
@@ -23,50 +29,36 @@ import type {
 
 type CheerOwner = "receiverId" | "senderId";
 
-type CheerRowWithUsers = typeof cheerTable.$inferSelect & {
-  readonly sender: UserBriefRow;
-  readonly receiver: UserBriefRow;
-};
+type CheerRow = typeof cheerTable.$inferSelect;
 
-function toCheerUserReadModel(row: UserBriefRow): CheerUserReadModel {
+function toCheerUserReadModel(brief: UserBriefReadModel): CheerUserReadModel {
   return {
-    id: row.id,
-    userTag: row.userTag,
-    name: row.profile?.name ?? null,
-    profileImage: row.profile?.profileImage ?? null,
+    id: brief.userId.value,
+    userTag: brief.userTag,
+    name: brief.name,
+    profileImage: brief.profileImage,
   };
 }
 
-function toCheerReadModel(row: CheerRowWithUsers): CheerReadModel {
-  return {
-    id: row.id,
-    senderId: row.senderId,
-    receiverId: row.receiverId,
-    message: row.message,
-    readAt: row.readAt,
-    createdAt: row.createdAt,
-    sender: toCheerUserReadModel(row.sender),
-    receiver: toCheerUserReadModel(row.receiver),
-  };
-}
-
+// 응원 행은 이 Context에서 읽고, 보낸·받은 사람 프로필은 identity 조회 포트로 한 번에 붙인다
 @Injectable()
 export class DrizzleCheerReader implements CheerReaderPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #userBriefReader: UserBriefReaderPort;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
+  constructor(
+    transactionHost: TransactionHost<DrizzleTransactionalAdapter>,
+    userBriefReader: UserBriefReaderPort,
+  ) {
+    this.#transactionHost = transactionHost;
+    this.#userBriefReader = userBriefReader;
   }
 
-  get #db() {
-    return this.#txHost.tx;
-  }
-
-  listReceived(params: ListCheersParams): Promise<CheerReadModel[]> {
+  listReceived(params: ListCheersParams): Promise<CursorPage<CheerReadModel, number>> {
     return this.#listOwned(params, "receiverId");
   }
 
-  listSent(params: ListCheersParams): Promise<CheerReadModel[]> {
+  listSent(params: ListCheersParams): Promise<CursorPage<CheerReadModel, number>> {
     return this.#listOwned(params, "senderId");
   }
 
@@ -101,8 +93,11 @@ export class DrizzleCheerReader implements CheerReaderPort {
     );
   }
 
-  async #listOwned(params: ListCheersParams, owner: CheerOwner): Promise<CheerReadModel[]> {
-    const { userId, afterCheerId, limit } = params;
+  async #listOwned(
+    params: ListCheersParams,
+    owner: CheerOwner,
+  ): Promise<CursorPage<CheerReadModel, number>> {
+    const { userId, afterCheerId, size } = params;
     // 커서는 응원 id 하나라 그 응원의 생성 시각을 먼저 읽어 (createdAt, id) 경계를 만든다
     const anchor =
       afterCheerId == null
@@ -112,7 +107,7 @@ export class DrizzleCheerReader implements CheerReaderPort {
             where: { id: afterCheerId.value },
           });
     if (afterCheerId != null && anchor == null) {
-      return [];
+      return emptyCursorPage(size);
     }
     const rows = await this.#db.query.cheer.findMany({
       where: {
@@ -135,10 +130,47 @@ export class DrizzleCheerReader implements CheerReaderPort {
               ]),
         ],
       },
-      with: { sender: USER_BRIEF_RELATION, receiver: USER_BRIEF_RELATION },
       orderBy: { createdAt: "desc", id: "desc" },
-      limit,
+      limit: size + 1,
     });
-    return rows.map(toCheerReadModel);
+    return toMappedCursorPage({
+      rows,
+      size,
+      toCursor: (row) => row.id,
+      toItems: (pageRows) => this.#toCheerReadModels(pageRows),
+    });
+  }
+
+  async #toCheerReadModels(rows: readonly CheerRow[]): Promise<CheerReadModel[]> {
+    const briefs = await this.#userBriefReader.findByUserIds(
+      uniq(rows.flatMap((row) => [row.senderId, row.receiverId])).map((userId) =>
+        UserId.reconstitute(userId),
+      ),
+    );
+    const users = keyBy(briefs, (brief) => brief.userId.value);
+    // 사람이 FK로 지워지면 응원도 함께 지워진다. 그 사이에 사라진 행은 목록에서 뺀다
+    return rows.flatMap((row) => {
+      const sender = users[row.senderId];
+      const receiver = users[row.receiverId];
+      if (sender == null || receiver == null) {
+        return [];
+      }
+      return [
+        {
+          id: row.id,
+          senderId: row.senderId,
+          receiverId: row.receiverId,
+          message: row.message,
+          readAt: row.readAt,
+          createdAt: row.createdAt,
+          sender: toCheerUserReadModel(sender),
+          receiver: toCheerUserReadModel(receiver),
+        },
+      ];
+    });
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }

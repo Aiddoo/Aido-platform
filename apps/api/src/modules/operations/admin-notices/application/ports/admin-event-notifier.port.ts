@@ -7,6 +7,13 @@ import type {
 } from "@aido/api/vocabulary";
 
 import type {
+  ProviderEventId,
+  StoreProductId,
+  StoreSubscriptionId,
+} from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import type {
   NoticeEndReason,
   NoticeStore,
   SignupEventProvider,
@@ -16,7 +23,7 @@ import type {
 
 /** 가입 알림 입력. 가입을 커밋한 identity가 요청에서 확인한 값을 넘긴다. */
 export interface UserRegisteredNoticeInput {
-  readonly userId: string;
+  readonly userId: UserId;
   readonly email: string;
   readonly provider: SignupEventProvider;
   /** 가입 시각(ISO string) */
@@ -38,17 +45,17 @@ export interface UserRegisteredNoticeInput {
 
 /** 결제 채널 구독 알림 입력. 부가 필드는 없으면 알림에서 "—"로 표시하거나 생략한다. */
 export interface SubscriptionNoticeInput {
-  readonly userId: string;
+  readonly userId: UserId;
   readonly email: string;
   readonly name?: string;
   readonly kind: SubscriptionNoticeKind;
   /** 기간 없는 일회성 구매(STARTED만) */
   readonly isOneTime?: boolean;
-  readonly productId: string;
+  readonly productId: StoreProductId;
   readonly planType?: SubscriptionPlanType;
   readonly store: NoticeStore | null;
   readonly environment?: SubscriptionEnvironment;
-  readonly storeSubscriptionId?: string;
+  readonly storeSubscriptionId?: StoreSubscriptionId;
   readonly purchasedAt?: string;
   readonly expiresAt?: string;
   readonly gracePeriodEndsAt?: string;
@@ -56,13 +63,13 @@ export interface SubscriptionNoticeInput {
   readonly priceUsd?: number;
   readonly priceInPurchasedCurrency?: number;
   readonly purchasedCurrency?: string;
-  readonly newProductId?: string;
+  readonly newProductId?: StoreProductId;
   readonly newPlanType?: SubscriptionPlanType;
   readonly transfer?: { readonly from: readonly string[]; readonly to: readonly string[] };
   /** 공급자 고객 화면 주소 */
   readonly providerCustomerUrl?: string;
   /** 공급자 이벤트 ID. 알림 작업 멱등 key로 쓴다 */
-  readonly eventId?: string;
+  readonly eventId?: ProviderEventId;
   readonly countryCode?: string;
   readonly periodKind?: StorePeriodType;
   readonly appVersion?: string;

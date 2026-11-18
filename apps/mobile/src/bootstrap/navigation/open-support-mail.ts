@@ -1,3 +1,4 @@
+import { SUPPORT_EMAIL_ADDRESS } from '@aido/api/vocabulary';
 import { getNowInstant } from '@src/shared/date/clock';
 import { getErrorMessage } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
@@ -7,9 +8,6 @@ import { logger } from '@src/shared/infra/logger/global-logger';
 import { createDiagnosticCode } from '@src/shared/utils/create-diagnostic-code';
 
 import { ROOT_ERROR_BOUNDARY_LOG_EVENT } from './root-error-boundary-log-events';
-
-/** 문의·신고 수신 주소. 서버 `SUPPORT_EMAIL` 기본값과 같다 */
-const SUPPORT_EMAIL = 'support@aido.kr';
 
 interface SupportMailInput {
   subject: string;
@@ -35,5 +33,5 @@ export function openSupportMail() {
 }
 
 function createSupportMailUrl({ subject, body }: SupportMailInput): string {
-  return `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  return `mailto:${SUPPORT_EMAIL_ADDRESS}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }

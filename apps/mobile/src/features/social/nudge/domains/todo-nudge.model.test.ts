@@ -1,12 +1,11 @@
 import { createParentTodo } from '@src/features/planning/todo/__tests__/sub-todo.fixtures';
-import { createTodoDetails } from '@src/features/planning/todo/__tests__/todo.fixtures';
-import type { DateKey } from '@src/shared/date/date-key';
+import { toInstant } from '@src/shared/date/instant';
 import { createDateKey } from '@src/testing/date-key';
 
-import { createNudgeLimitInfo } from '../__tests__/todo-nudge.fixtures';
 import {
-  isLimitReached,
   isMessageTooLong,
+  type NudgeCooldownInfo,
+  NudgeCooldownPolicy,
   normalizeMessage,
   TodoNudgePolicy,
 } from './todo-nudge.model';
@@ -43,74 +42,6 @@ describe('canNudgeTodoOnDate', () => {
 
     // When
     const result = TodoNudgePolicy.canNudgeTodoOnDate(todo, NEXT_DAY_KEY, TODAY_KEY);
-
-    // Then
-    expect(result).toBe(false);
-  });
-});
-
-describe('canNudgeTodoInRange', () => {
-  const createInput = ({
-    canNudge = true,
-    completed = false,
-    startDate = createDateKey('2026-08-17'),
-    endDate = null,
-  }: {
-    canNudge?: boolean;
-    completed?: boolean;
-    startDate?: DateKey;
-    endDate?: DateKey | null;
-  } = {}) =>
-    createTodoDetails({
-      todo: createParentTodo({ completed, startDate, endDate }),
-      permissions: { canEdit: false, canComment: true, canNudge },
-    });
-
-  it('오늘이 친구의 미완료 할 일 범위 안이면 true를 반환한다', () => {
-    // Given
-    // 시작일보다 늦어도 종료일 전이면 서버의 기간 할 일 정책과 같다.
-    const input = createInput({
-      startDate: createDateKey('2026-08-16'),
-      endDate: createDateKey('2026-08-18'),
-    });
-
-    // When
-    const result = TodoNudgePolicy.canNudgeTodoInRange(input, createDateKey('2026-08-17'));
-
-    // Then
-    expect(result).toBe(true);
-  });
-
-  it('서버 권한이 없으면 오늘의 미완료 할 일도 false를 반환한다', () => {
-    // Given
-    // 자기 할 일은 details.permissions.canNudge가 false다.
-    const input = createInput({ canNudge: false });
-
-    // When
-    const result = TodoNudgePolicy.canNudgeTodoInRange(input, createDateKey('2026-08-17'));
-
-    // Then
-    expect(result).toBe(false);
-  });
-
-  it('완료한 할 일은 오늘 범위 안이어도 false를 반환한다', () => {
-    // Given
-    const input = createInput({ completed: true });
-
-    // When
-    const result = TodoNudgePolicy.canNudgeTodoInRange(input, createDateKey('2026-08-17'));
-
-    // Then
-    expect(result).toBe(false);
-  });
-
-  it('지난 단일 날짜 할 일은 false를 반환한다', () => {
-    // Given
-    // 8월 17일에 첨부 화면의 8월 16일 할 일을 보는 경우다.
-    const input = createInput({ startDate: createDateKey('2026-08-16'), endDate: null });
-
-    // When
-    const result = TodoNudgePolicy.canNudgeTodoInRange(input, createDateKey('2026-08-17'));
 
     // Then
     expect(result).toBe(false);
@@ -199,48 +130,40 @@ describe('isMessageTooLong', () => {
   });
 });
 
-describe('isLimitReached', () => {
-  it('remainingToday가 0이면 true를 반환한다', () => {
-    // Given
-    const limitInfo = createNudgeLimitInfo({ remainingToday: 0 });
+describe('canNudgeAfterCooldown', () => {
+  // 10:00Z에 끝나는 쿨다운을 받은 뒤 화면을 켜 두었다
+  const COOLING_DOWN: NudgeCooldownInfo = {
+    canNudge: false,
+    cooldownEndsAt: toInstant('2026-11-18T10:00:00.000Z'),
+    remainingSeconds: 3600,
+  };
 
+  it.each([
+    { now: '2026-11-18T09:59:59.999Z', expected: false },
+    { now: '2026-11-18T10:00:00.000Z', expected: true },
+  ])('쿨다운이 10:00Z에 끝나면 $now에 찌를 수 있음은 $expected다', ({ now, expected }) => {
     // When
-    const result = isLimitReached(limitInfo);
+    const canNudge = NudgeCooldownPolicy.canNudgeAfterCooldown(COOLING_DOWN, toInstant(now));
 
     // Then
-    expect(result).toBe(true);
+    expect(canNudge).toBe(expected);
   });
 
-  it('remainingToday가 양수이면 false를 반환한다', () => {
+  it('서버가 찌를 수 있다고 했으면 쿨다운 끝 순간과 무관하게 찌를 수 있다', () => {
     // Given
-    const limitInfo = createNudgeLimitInfo({ remainingToday: 2 });
+    const available: NudgeCooldownInfo = {
+      canNudge: true,
+      cooldownEndsAt: null,
+      remainingSeconds: null,
+    };
 
     // When
-    const result = isLimitReached(limitInfo);
+    const canNudge = NudgeCooldownPolicy.canNudgeAfterCooldown(
+      available,
+      toInstant('2026-11-18T09:00:00.000Z'),
+    );
 
     // Then
-    expect(result).toBe(false);
-  });
-
-  it('remainingToday가 1이면 마지막 한 번이 남아 false를 반환한다', () => {
-    // Given
-    const limitInfo = createNudgeLimitInfo({ remainingToday: 1 });
-
-    // When
-    const result = isLimitReached(limitInfo);
-
-    // Then
-    expect(result).toBe(false);
-  });
-
-  it('remainingToday가 null (무제한)이면 false를 반환한다', () => {
-    // Given
-    const limitInfo = createNudgeLimitInfo({ remainingToday: null });
-
-    // When
-    const result = isLimitReached(limitInfo);
-
-    // Then
-    expect(result).toBe(false);
+    expect(canNudge).toBe(true);
   });
 });

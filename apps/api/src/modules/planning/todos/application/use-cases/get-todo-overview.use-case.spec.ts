@@ -21,7 +21,7 @@ describe("GetTodoOverviewUseCase — 할 일 개요", () => {
     const fixture = createPlanningTodoFixture();
     const series = createTodoSeriesFixture({
       userId: fixture.userId,
-      startDate: "2026-01-01",
+      startDate: Temporal.PlainDate.from("2026-01-01"),
       rule: {
         frequency: "DAILY",
         interval: 1,
@@ -29,13 +29,13 @@ describe("GetTodoOverviewUseCase — 할 일 개요", () => {
         monthDay: null,
         end: { type: "UNTIL", date: "2026-03-31" },
       },
-      nextOccurrenceDate: "2026-01-20",
+      nextOccurrenceDate: Temporal.PlainDate.from("2026-01-20"),
     });
     fixture.seriesStore.set(series.id.value, series);
     const useCase = createGetTodoOverviewUseCase(fixture, {
       seriesCatchUp: {
         execute: async () => {
-          series.stopAfter("2026-03-31");
+          series.stopAfter(Temporal.PlainDate.from("2026-03-31"));
         },
       },
     });
@@ -52,8 +52,8 @@ describe("GetTodoOverviewUseCase — 할 일 개요", () => {
     const fixture = createPlanningTodoFixture();
     const series = createTodoSeriesFixture({
       userId: fixture.userId,
-      startDate: "2026-01-01",
-      nextOccurrenceDate: "2026-01-20",
+      startDate: Temporal.PlainDate.from("2026-01-01"),
+      nextOccurrenceDate: Temporal.PlainDate.from("2026-01-20"),
     });
     fixture.seriesStore.set(series.id.value, series);
     const useCase = createGetTodoOverviewUseCase(fixture);

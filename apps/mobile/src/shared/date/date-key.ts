@@ -1,11 +1,10 @@
 import { dateSchema } from '@aido/api/common';
-import { DAYS_PER_WEEK } from '@src/shared/constants/time-units';
+import { DAYS_PER_WEEK, MONTHS_PER_YEAR } from '@src/shared/constants/time-units';
 import { z } from 'zod';
 
 // Hinnant의 civil 날짜 ↔ 일수 변환(proleptic 그레고리력, "chrono-Compatible Low-Level Date Algorithms")이다.
 // Hermes에 Temporal이 없고 폴리필은 spike에서 버렸다. 3월을 해의 첫 달로 세면 윤일이 해의 끝에 와 식이 단순해진다
 const DATE_KEY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
-const MONTHS_PER_YEAR = 12;
 const FEBRUARY = 2;
 const MARCH = 3;
 const LEAP_FEBRUARY_DAYS = 29;

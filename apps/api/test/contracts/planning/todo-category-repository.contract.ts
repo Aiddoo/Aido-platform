@@ -1,10 +1,10 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import type { TodoCategoryRepositoryPort } from "#api/modules/planning/categories/application/ports/todo-category.repository.port";
+import type { TodoCategoryRepositoryPort } from "#api/modules/planning/todo-categories/application/ports/todo-category.repository.port";
 import type {
   TodoCategory,
   TodoCategoryPrimitives,
-} from "#api/modules/planning/categories/domain/todo-category.aggregate";
+} from "#api/modules/planning/todo-categories/domain/todo-category.aggregate";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createTodoCategoryFixture } from "#test/fixtures/planning/todo-category.fixture";
 import {
@@ -12,6 +12,8 @@ import {
   TODO_FIXTURE_OTHER_USER_ID,
   TODO_FIXTURE_USER_ID,
 } from "#test/fixtures/planning/todo.fixture";
+
+const LATER = TODO_FIXTURE_NOW.add({ minutes: 1 });
 
 export interface TodoCategoryRepositoryContractContext {
   readonly categoryRepository: TodoCategoryRepositoryPort;
@@ -77,7 +79,8 @@ export function describeTodoCategoryRepositoryContract(
       ).rejects.toMatchObject({
         errorCode: ErrorCode.TODO_CATEGORY_0853,
       });
-      await expect(categoryRepository.update(other.id, { name: "업무" })).rejects.toMatchObject({
+      other.updateDetails({ name: "업무" }, LATER);
+      await expect(categoryRepository.save(other)).rejects.toMatchObject({
         errorCode: ErrorCode.TODO_CATEGORY_0853,
       });
       expect(
@@ -89,19 +92,24 @@ export function describeTodoCategoryRepositoryContract(
       ).toBe(true);
     });
 
-    it("고치기는 보낸 칸만 바꾸고 저장된 카테고리를 돌려준다", async () => {
+    it("save는 이름·색·순서·수정 시각을 쓰고 다시 읽으면 같은 값이다", async () => {
       // Given
       const { categoryRepository } = await createContext();
       const category = await insertCategory(categoryRepository, { name: "업무", color: "#FFB3B3" });
 
       // When
-      const updated = await categoryRepository.update(category.id, { color: "#000000" });
+      category.updateDetails({ color: "#000000" }, LATER);
+      category.moveTo(3, LATER);
+      await categoryRepository.save(category);
 
       // Then
-      expect(updated.toPrimitives()).toMatchObject({
+      const saved = await categoryRepository.findByIdAndUserId(category.id, category.userId);
+      expect(saved?.toPrimitives()).toEqual(category.toPrimitives());
+      expect(category.toPrimitives()).toMatchObject({
         name: "업무",
         color: "#000000",
-        sortOrder: 0,
+        sortOrder: 3,
+        updatedAt: LATER,
       });
     });
 
@@ -180,9 +188,7 @@ export function describeTodoCategoryRepositoryContract(
       // When
       const shifted = await categoryRepository.shiftSortOrders(
         UserId.reconstitute(TODO_FIXTURE_USER_ID),
-        1,
-        null,
-        1,
+        { from: 1, to: null, delta: 1 },
       );
 
       // Then

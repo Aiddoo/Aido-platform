@@ -14,14 +14,6 @@ import { THROTTLER_STORAGE } from "./throttle.constants.js";
  * cache/lock/dedup 모듈과 동일한 포트/어댑터 조립 형태:
  * CACHE_TYPE=redis + Redis 연결이 있으면 RedisThrottlerStorage,
  * 아니면 undefined(@nestjs/throttler 기본 in-memory storage 사용).
- *
- * @example
- * // app.module.ts
- * ThrottlerModule.forRootAsync({
- *   imports: [ThrottleModule.forRoot()],
- *   inject: [ConfigService, { token: THROTTLER_STORAGE, optional: true }],
- *   ...
- * })
  */
 @Module({})
 export class ThrottleModule {

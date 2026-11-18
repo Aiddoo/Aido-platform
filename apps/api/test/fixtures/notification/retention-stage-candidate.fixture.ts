@@ -1,8 +1,8 @@
-import type { RetentionStageCandidate } from "#api/modules/notification/retention/application/read-models/retention-stage-candidate.read-model";
+import type { RetentionStageCandidateReadModel } from "#api/modules/notification/retention-assignments/application/read-models/retention-stage-candidate.read-model";
 
 export function createRetentionStageCandidateFixture(
-  overrides: Partial<RetentionStageCandidate> = {},
-): RetentionStageCandidate {
+  overrides: Partial<RetentionStageCandidateReadModel> = {},
+): RetentionStageCandidateReadModel {
   return {
     assignmentId: "assignment-1",
     stageId: "stage-1",

@@ -1,0 +1,85 @@
+import type { ApplicationException } from "#api/shared/application/application.exception";
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import { LinkedAccountsLogEvent } from "../../../linked-accounts/application/linked-accounts.log-events.js";
+import type { LinkOAuthIdentityUseCase } from "../../../linked-accounts/application/use-cases/link-oauth-identity.use-case.js";
+import type { RequestMetadata } from "../../../shared/domain/request-metadata.constants.js";
+import type { UserMutationLockPort } from "../../../users/application/ports/user-mutation-lock.port.js";
+import type { UserProfileInvalidatorPort } from "../../../users/application/ports/user-profile-invalidator.port.js";
+import { invalidCredentials, userNotFound } from "../../../users/application/users.errors.js";
+import { OAuthStateLogEvent } from "../oauth-states.log-events.js";
+import type { OAuthStateRepositoryPort } from "../ports/oauth-state.repository.port.js";
+
+export interface LinkOAuthAccountWithCodeCommand {
+  readonly userId: string;
+  readonly code: string;
+  readonly metadata?: RequestMetadata;
+}
+
+interface LinkOAuthAccountWithCodeDependencies {
+  readonly userMutationLock: Pick<UserMutationLockPort, "lockById">;
+  readonly oauthStateRepository: Pick<OAuthStateRepositoryPort, "findByExchangeCode" | "save">;
+  readonly linkOAuthIdentity: Pick<LinkOAuthIdentityUseCase, "execute">;
+  readonly unitOfWork: UnitOfWorkPort;
+  readonly cacheService: Pick<UserProfileInvalidatorPort, "invalidateUserProfile">;
+  readonly clock: ClockPort;
+  readonly logger: ApplicationLoggerPort;
+}
+
+export class LinkOAuthAccountWithCodeUseCase {
+  readonly #dependencies: LinkOAuthAccountWithCodeDependencies;
+
+  constructor(dependencies: LinkOAuthAccountWithCodeDependencies) {
+    this.#dependencies = dependencies;
+  }
+
+  async execute(input: LinkOAuthAccountWithCodeCommand): Promise<{ message: string }> {
+    const userId = UserId.reconstitute(input.userId);
+    const result = await this.#dependencies.unitOfWork.run(async () => {
+      if (!(await this.#dependencies.userMutationLock.lockById(userId))) {
+        throw userNotFound(input.userId);
+      }
+      const at = this.#dependencies.clock.now();
+      const state = await this.#dependencies.oauthStateRepository.findByExchangeCode(
+        input.code,
+        at,
+      );
+      if (state == null || state.validityAt(at) !== "valid" || !state.canLinkFor(input.userId)) {
+        throw this.#invalidCode();
+      }
+      const providerAccountId = state.linkedProviderAccountId();
+      if (providerAccountId == null || !state.consume(at)) {
+        throw this.#invalidCode();
+      }
+      const consumed = await this.#dependencies.oauthStateRepository.save(state);
+      if (!consumed) {
+        throw this.#invalidCode();
+      }
+      return this.#dependencies.linkOAuthIdentity.execute({
+        userId: input.userId,
+        provider: state.provider,
+        providerAccountId,
+        metadata: input.metadata,
+      });
+    });
+    if (result.linked) {
+      await this.#dependencies.cacheService.invalidateUserProfile(userId);
+      this.#dependencies.logger.log({
+        event: LinkedAccountsLogEvent.OAUTH_ACCOUNT_LINKED,
+        userId: input.userId,
+      });
+    }
+    return { message: result.message };
+  }
+
+  #invalidCode(): ApplicationException {
+    this.#dependencies.logger.warn({
+      event: OAuthStateLogEvent.OAUTH_EXCHANGE_REJECTED,
+      mode: "link",
+    });
+    return invalidCredentials();
+  }
+}

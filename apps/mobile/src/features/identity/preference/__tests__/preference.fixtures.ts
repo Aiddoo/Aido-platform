@@ -1,42 +1,31 @@
-import type { PreferenceResponse } from '@aido/api';
+import { preferenceResponseSchema } from '@aido/api/contracts/user-preference/v1';
 import type { ErrorCodeType } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
+import { defineFixture } from '@src/testing/fixture';
 
-import { type Preference, preferenceSchema } from '../domains/preference.model';
+import { preferenceSchema } from '../domains/preference.model';
 
-function generatePreferenceDto(): PreferenceResponse {
-  return {
-    pushEnabled: true,
-    nightPushEnabled: false,
-    timezone: 'Asia/Seoul',
-    morningReminderHour: 8,
-    morningReminderMinute: 0,
-    eveningReminderHour: 21,
-    eveningReminderMinute: 0,
-    timeFormat: 'TWELVE_HOUR',
-    weatherMorningEnabled: false,
-    weatherMorningHour: 7,
-    weatherMorningMinute: 0,
-    weatherEveningEnabled: false,
-    weatherEveningHour: 18,
-    weatherEveningMinute: 0,
-    aiPushEnabled: true,
-  };
-}
+const PREFERENCE = {
+  pushEnabled: true,
+  nightPushEnabled: false,
+  timezone: 'Asia/Seoul',
+  morningReminderHour: 8,
+  morningReminderMinute: 0,
+  eveningReminderHour: 21,
+  eveningReminderMinute: 0,
+  timeFormat: 'TWELVE_HOUR',
+  weatherMorningEnabled: false,
+  weatherMorningHour: 7,
+  weatherMorningMinute: 0,
+  weatherEveningEnabled: false,
+  weatherEveningHour: 18,
+  weatherEveningMinute: 0,
+  aiPushEnabled: true,
+} as const;
 
-export function createPreferenceDto(overrides?: Partial<PreferenceResponse>): PreferenceResponse {
-  return {
-    ...generatePreferenceDto(),
-    ...overrides,
-  };
-}
+export const createPreferenceDto = defineFixture(preferenceResponseSchema, PREFERENCE);
 
-export function createPreference(overrides?: Partial<Preference>): Preference {
-  return {
-    ...preferenceSchema.parse(generatePreferenceDto()),
-    ...overrides,
-  };
-}
+export const createPreference = defineFixture(preferenceSchema, PREFERENCE);
 
 export function createPreferenceApiError(
   overrides?: Partial<{ code: ErrorCodeType; message: string; status: number }>,

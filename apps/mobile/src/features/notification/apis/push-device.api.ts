@@ -2,7 +2,7 @@ import {
   pushDeviceResponseSchema,
   type UnregisterPushDeviceByTokenInput,
   unregisterPushDeviceByTokenResponseSchema,
-} from '@aido/api';
+} from '@aido/api/contracts/notification/v1';
 import type { ApiError } from '@src/core/errors/api-error';
 import { ok, type Result } from '@src/core/errors/result';
 import type { HttpClient, RequestConfig } from '@src/core/ports/http-client';

@@ -1,4 +1,8 @@
-import { type MemoListResponse, memoListResponseSchema, updateMemoSchema } from '@aido/api';
+import {
+  type MemoListResponse,
+  memoListResponseSchema,
+  updateMemoSchema,
+} from '@aido/api/contracts/memo/v1';
 import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
 import { createTestQueryClient } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';

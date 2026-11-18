@@ -6,7 +6,7 @@ import type {
   SearchUser,
   SearchUsersResponse,
   SendFriendRequestResponse,
-} from '@aido/api';
+} from '@aido/api/contracts/follow/v1';
 import { toInstant } from '@src/shared/date/instant';
 import { pick } from 'es-toolkit';
 

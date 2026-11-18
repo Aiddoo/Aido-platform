@@ -1,3 +1,5 @@
+import { unwrap } from '../ast.mjs';
+
 /** 오류 값이 흔히 받는 이름. 타입 정보 없이 오류 객체를 알아보는 기준이다 */
 const ERROR_NAMES = new Set(['error', 'err', 'e', 'failure', 'cause', 'rejection']);
 /** `apiError`·`serverError`처럼 Error로 끝나는 이름도 오류 값으로 본다 */
@@ -67,6 +69,65 @@ const noErrorFieldAccess = {
   },
 };
 
+const ERROR_BASE_NAME = /(?:Error|Exception)$/u;
+const BUILT_IN_ERRORS = new Set([
+  'Error',
+  'TypeError',
+  'RangeError',
+  'SyntaxError',
+  'ReferenceError',
+  'EvalError',
+  'URIError',
+  'AggregateError',
+]);
+
+// 오류의 코드·details·재시도 판단은 *.errors.ts 한 곳에서 정한다. 어디에 거는지는 .oxlintrc.json overrides가 정한다
+const errorClassLocation = {
+  meta: {
+    type: 'suggestion',
+    schema: [
+      {
+        type: 'object',
+        properties: { inlineThrow: { type: 'boolean' } },
+        additionalProperties: false,
+      },
+    ],
+  },
+  create(context) {
+    const checksInlineThrow = context.options[0]?.inlineThrow ?? false;
+    function checkClass(node) {
+      const base = node.superClass;
+      if (base?.type !== 'Identifier' || !ERROR_BASE_NAME.test(base.name)) {
+        return;
+      }
+      context.report({
+        node: node.id ?? node,
+        message: `${node.id?.name ?? '이름 없는 오류 클래스'}: 오류 클래스(${base.name} 하위)는 *.errors.ts에만 선언한다. 재시도 판단용 내부 오류(*RetryableError·*ConflictError)도 같다.`,
+      });
+    }
+    return {
+      ClassDeclaration: checkClass,
+      ClassExpression: checkClass,
+      ThrowStatement(node) {
+        const thrown = unwrap(node.argument);
+        if (
+          !checksInlineThrow ||
+          (thrown?.type !== 'NewExpression' && thrown?.type !== 'CallExpression') ||
+          thrown.callee.type !== 'Identifier' ||
+          !BUILT_IN_ERRORS.has(thrown.callee.name)
+        ) {
+          return;
+        }
+        context.report({
+          node: thrown,
+          message: `throw new ${thrown.callee.name}(…)를 바로 쓰지 않는다. application·domain의 오류는 <slice>.errors.ts의 이름 있는 생성 함수로 만든다.`,
+        });
+      },
+    };
+  },
+};
+
 export default {
   'no-error-field-access': noErrorFieldAccess,
+  'error-class-location': errorClassLocation,
 };

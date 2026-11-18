@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { currentUserSchema } from "../src/index.js";
+import { currentUserSchema } from "../src/contracts/auth/v1/index.js";
 
 const currentUser = {
   userId: "clz7x5p8k0001qz0z8z8z8z8z",

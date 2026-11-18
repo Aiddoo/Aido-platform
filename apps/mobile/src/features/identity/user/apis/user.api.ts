@@ -1,4 +1,4 @@
-import { updateProfileResponseSchema } from '@aido/api';
+import { updateProfileResponseSchema } from '@aido/api/contracts/auth/v1';
 import type { HttpClient } from '@src/core/ports/http-client';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 

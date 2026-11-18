@@ -1,7 +1,7 @@
 import {
   InviterProgressReaderPort,
   type InviterProgressReadModel,
-} from "#api/modules/social/invite-redemptions/social-invite-redemption-queries.public";
+} from "#api/modules/social/invite-redemptions/social-invite-redemptions.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 // 초대 수락이 하나도 없는 초대한 사람의 진행이다. 계산 규칙은 수락 slice의 spec이 지킨다

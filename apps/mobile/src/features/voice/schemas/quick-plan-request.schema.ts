@@ -1,4 +1,4 @@
-import { quickPlanRequestSchema } from '@aido/api';
+import { quickPlanRequestSchema } from '@aido/api/contracts/voice/v1';
 import type { z } from 'zod';
 
 import { voicePlanSourceSchema } from '../domains/voice-plan.model';

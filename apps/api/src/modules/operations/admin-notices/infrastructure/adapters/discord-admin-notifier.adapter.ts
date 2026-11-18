@@ -1,20 +1,26 @@
-import { Logger } from "@nestjs/common";
-import type { HttpClient } from "@nestjs/http-client";
+import { Inject, Injectable, Logger } from "@nestjs/common";
+import { HttpClient, InjectHttpClient } from "@nestjs/http-client";
 
 import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
-import type { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
-import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
+import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toIsoString } from "#api/shared/domain/time/instant";
 
 import {
   AdminNotifierPort,
   type AdminNotifyOutcome,
 } from "../../application/ports/admin-notifier.port.js";
-import type { AdminNotice } from "../../application/read-models/admin-notice.read-model.js";
+import type { AdminNoticePrimitives } from "../../domain/admin-notice.aggregate.js";
 import type { AdminNotificationChannel } from "../../domain/admin-notices.constants.js";
+import {
+  type OperationsAdminNoticesConfig,
+  operationsAdminNoticesConfig,
+} from "../../operations-admin-notices.config.js";
 import { AdminNotifierProviderLogEvent } from "./admin-notifier-provider.log-events.js";
 import { renderDiscordEmbed } from "./discord-embed.mapper.js";
 import { DISCORD_WEBHOOK_POLICY } from "./discord-outbound.policy.js";
+
+export const DISCORD_HTTP_CLIENT_NAME = "discord";
 
 /** 응답 없는 webhook이 관리자 알림 worker 슬롯을 붙잡지 않도록 요청마다 끊는다. */
 export const DISCORD_WEBHOOK_TIMEOUT_MS = 10_000;
@@ -27,6 +33,7 @@ const HTTP_SERVER_ERROR = 500;
  *
  * @see https://discord.com/developers/docs/resources/webhook#execute-webhook
  */
+@Injectable()
 export class DiscordAdminNotifierAdapter extends AdminNotifierPort {
   readonly #logger = new Logger(DiscordAdminNotifierAdapter.name);
   readonly #policy: OutboundPolicy;
@@ -36,19 +43,23 @@ export class DiscordAdminNotifierAdapter extends AdminNotifierPort {
   readonly #clock: ClockPort;
 
   constructor(
-    webhookUrls: Readonly<Record<AdminNotificationChannel, string | undefined>>,
-    http: HttpClient,
+    @Inject(operationsAdminNoticesConfig.KEY)
+    config: Pick<OperationsAdminNoticesConfig, "discordWebhookUrls">,
+    @InjectHttpClient(DISCORD_HTTP_CLIENT_NAME) http: HttpClient,
     policies: OutboundPolicyRegistry,
     clock: ClockPort,
   ) {
     super();
-    this.#webhookUrls = webhookUrls;
+    this.#webhookUrls = config.discordWebhookUrls;
     this.#http = http;
     this.#policy = policies.get(DISCORD_WEBHOOK_POLICY);
     this.#clock = clock;
   }
 
-  async send(channel: AdminNotificationChannel, notice: AdminNotice): Promise<AdminNotifyOutcome> {
+  async send(
+    channel: AdminNotificationChannel,
+    notice: AdminNoticePrimitives,
+  ): Promise<AdminNotifyOutcome> {
     const webhookUrl = this.#webhookUrls[channel];
     if (webhookUrl == null || webhookUrl === "") {
       this.#logger.debug({

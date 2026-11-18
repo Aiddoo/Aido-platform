@@ -1,33 +1,31 @@
-import type { Todo as TodoResponse } from "@aido/api";
+import type { Todo as TodoResponse } from "@aido/api/contracts/todo/v1";
 import { uniq } from "es-toolkit";
 
-import type { TodoCategoryId } from "#api/modules/planning/categories/domain/todo-category-id.vo";
-import { TodoId } from "#api/modules/planning/shared/domain/todo-id.vo";
+import type { TodoCategoryId } from "#api/modules/planning/todo-categories/domain/todo-category-id.vo";
 import type { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-series-id.vo";
 import { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
 import type {
   FindFriendTodosParams,
   FindTodosParams,
 } from "#api/modules/planning/todos/application/ports/todo-read.repository.port";
-import {
-  TodoReadRepositoryPort,
-  type TodaySummaryTodoRow,
-} from "#api/modules/planning/todos/application/ports/todo-read.repository.port";
+import { TodoReadRepositoryPort } from "#api/modules/planning/todos/application/ports/todo-read.repository.port";
+import type { TodaySummaryTodoReadModel } from "#api/modules/planning/todos/application/read-models/today-summary-todo.read-model";
 import type {
   FriendTodoReadModel,
   TodoReadModel,
 } from "#api/modules/planning/todos/application/read-models/todo.read-model";
+import { TodoId } from "#api/modules/planning/todos/domain/todo-id.vo";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { copyTodoRecord } from "#test/doubles/planning/in-memory-todo.repository";
 import {
   createTodoReadModelFromRecord,
   type PlanningTodoRecord,
-} from "#test/fixtures/todo-response.fixture";
+} from "#test/fixtures/planning/todo-response.fixture";
 
 export class InMemoryTodoReadRepository extends TodoReadRepositoryPort {
   queryResults: TodoReadModel[] = [];
   dayStats = { total: 0, completed: 0 };
-  topTodos: TodaySummaryTodoRow[] = [];
+  topTodos: TodaySummaryTodoReadModel[] = [];
   readonly records: Map<number, PlanningTodoRecord>;
   readonly categories: Map<number, TodoResponse["category"]>;
   readonly seriesStore: Map<string, TodoSeries>;
@@ -77,7 +75,7 @@ export class InMemoryTodoReadRepository extends TodoReadRepositoryPort {
   async countCategoryUsage(userId: UserId, categoryId: TodoCategoryId): Promise<number> {
     const activeSeries = [...this.seriesStore.values()].filter(
       (series) =>
-        series.userId.equals(userId) && series.categoryId === categoryId.value && series.isActive,
+        series.userId.equals(userId) && series.categoryId === categoryId.value && series.isActive(),
     ).length;
     return (
       activeSeries +
@@ -114,7 +112,7 @@ export class InMemoryTodoReadRepository extends TodoReadRepositoryPort {
     _userId: UserId,
     _today: Temporal.PlainDate,
     _limit: number,
-  ): Promise<TodaySummaryTodoRow[]> {
+  ): Promise<TodaySummaryTodoReadModel[]> {
     return structuredClone(this.topTodos);
   }
 }

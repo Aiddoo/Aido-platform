@@ -28,17 +28,16 @@ export default defineConfig({
     }),
   ],
   resolve: {
-    // 접두사 일치(`@aido/api`가 `@aido/api/contracts/x`까지 삼키는 일)를 막으려고 정확히 일치하는 정규식으로 둔다.
+    // package exports의 subpath만 src로 바꾼다. 정확히 일치하는 정규식이라 없는 경로는 해석에 실패한다
     alias: [
       { find: "#api", replacement: resolve(import.meta.dirname, "src") },
       { find: "#test", replacement: resolve(import.meta.dirname, "test") },
-      { find: /^@aido\/api$/, replacement: `${packageApiSource}/index.ts` },
       {
         find: /^@aido\/api\/(common|errors|vocabulary)$/,
         replacement: `${packageApiSource}/$1/index.ts`,
       },
       {
-        find: /^@aido\/api\/contracts\/([^/]+)$/,
+        find: /^@aido\/api\/contracts\/([^/]+\/v\d+)$/,
         replacement: `${packageApiSource}/contracts/$1/index.ts`,
       },
     ],

@@ -1,17 +1,18 @@
+import type { GeoCell } from "#api/modules/weather/shared/domain/geo-cell.vo";
 import {
   WeatherReportProviderPort,
   type WeatherReportRequest,
-} from "#api/modules/weather/forecasts/application/ports/weather-report-provider.port";
-import type { WeatherReportAttribution } from "#api/modules/weather/forecasts/application/read-models/weather-report-attribution.read-model";
-import type { WeatherReportLanguage } from "#api/modules/weather/forecasts/domain/weather-report-language.domain-service";
-import type { WeatherReport } from "#api/modules/weather/forecasts/domain/weather-report.vo";
-import type { GeoCell } from "#api/modules/weather/shared/domain/geo-cell.vo";
-import { weatherAttributionFixture, weatherReportFixture } from "#test/fixtures/weather.fixture";
+} from "#api/modules/weather/weather-reports/application/ports/weather-report-provider.port";
+import type { WeatherReportAttributionReadModel } from "#api/modules/weather/weather-reports/application/read-models/weather-report-attribution.read-model";
+import type { WeatherReportLanguage } from "#api/modules/weather/weather-reports/domain/weather-report-language.domain-service";
+import type { WeatherReport } from "#api/modules/weather/weather-reports/domain/weather-report.aggregate";
+import { createWeatherReportFixture } from "#test/fixtures/weather/weather-report.fixture";
+import { createWeatherAttributionFixture } from "#test/fixtures/weather/weather.fixture";
 
 export class StubWeatherReportProvider extends WeatherReportProviderPort {
   readonly calls: { cellKey: string; request: WeatherReportRequest }[] = [];
   readonly attributionLanguages: WeatherReportLanguage[] = [];
-  report: WeatherReport = weatherReportFixture();
+  report: WeatherReport = createWeatherReportFixture();
   failure: Error | null = null;
   localizationFailure: Error | null = null;
   hasLocalizedContent = false;
@@ -31,15 +32,17 @@ export class StubWeatherReportProvider extends WeatherReportProviderPort {
     return this.report;
   }
 
-  async getAttribution(language: WeatherReportLanguage): Promise<WeatherReportAttribution> {
+  async getAttribution(
+    language: WeatherReportLanguage,
+  ): Promise<WeatherReportAttributionReadModel> {
     this.attributionLanguages.push(language);
-    return weatherAttributionFixture(language);
+    return createWeatherAttributionFixture(language);
   }
 
   clear(): void {
     this.calls.length = 0;
     this.attributionLanguages.length = 0;
-    this.report = weatherReportFixture();
+    this.report = createWeatherReportFixture();
     this.failure = null;
     this.localizationFailure = null;
   }

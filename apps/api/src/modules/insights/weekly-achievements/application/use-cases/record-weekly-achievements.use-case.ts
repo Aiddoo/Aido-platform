@@ -3,6 +3,7 @@ import { zip } from "es-toolkit";
 import { WeeklyAchievement } from "../../domain/weekly-achievement.aggregate.js";
 import type { WeeklyAchievementTally } from "../ports/weekly-achievement-writer.port.js";
 import type { WeeklyAchievementRepositoryPort } from "../ports/weekly-achievement.repository.port.js";
+import { weeklyAchievementIdsMissing } from "../weekly-achievements.errors.js";
 
 export interface RecordWeeklyAchievementsCommand {
   readonly tallies: readonly WeeklyAchievementTally[];
@@ -31,7 +32,7 @@ export class RecordWeeklyAchievementsUseCase {
     const ids = await weeklyAchievementRepository.nextIds(command.tallies.length);
     const achievements = zip(command.tallies, ids).map(([tally, id]) => {
       if (tally == null || id == null) {
-        throw new Error("weekly achievement id count must match tally count");
+        throw weeklyAchievementIdsMissing();
       }
       return WeeklyAchievement.create({ id, ...tally });
     });

@@ -3,12 +3,13 @@ import { Inject, Injectable } from "@nestjs/common";
 
 import {
   createPremiumRenewalUpcomingNotificationMessage,
-  PublishNotificationUseCase,
+  PublishNotificationBatchUseCase,
+  SCHEDULER_CAMPAIGN_KEY,
+} from "#api/modules/notification/notifications/notification-notifications.public";
+import {
   NotificationRecipientLocaleReaderPort,
   NotificationRecipientTimezoneReaderPort,
-  SCHEDULER_CAMPAIGN_KEY,
-} from "#api/modules/notification/notification-delivery.public";
-import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
+} from "#api/modules/notification/push-dispatches/notification-push-dispatches.public";
 import { instantToDate } from "#api/shared/domain/time/instant";
 import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/time/time-zone-name";
 
@@ -17,12 +18,12 @@ import type { UpcomingRenewalNotice } from "../../domain/upcoming-renewal-notice
 
 @Injectable()
 export class UpcomingRenewalNotifierAdapter implements UpcomingRenewalNotifierPort {
-  readonly #notificationPublisher: PublishNotificationUseCase;
+  readonly #notificationPublisher: PublishNotificationBatchUseCase;
   readonly #localeReader: NotificationRecipientLocaleReaderPort;
   readonly #timezoneReader: NotificationRecipientTimezoneReaderPort;
 
   constructor(
-    notificationPublisher: PublishNotificationUseCase,
+    notificationPublisher: PublishNotificationBatchUseCase,
     @Inject(NotificationRecipientLocaleReaderPort)
     localeReader: NotificationRecipientLocaleReaderPort,
     @Inject(NotificationRecipientTimezoneReaderPort)
@@ -38,14 +39,14 @@ export class UpcomingRenewalNotifierAdapter implements UpcomingRenewalNotifierPo
       return;
     }
     const userIds = notices.map((notice) => notice.userId);
-    const [locales, timezones] = await Promise.all([
+    const [localeOf, timezones] = await Promise.all([
       this.#localeReader.getLocales(userIds),
-      this.#timezoneReader.getTimezones(userIds.map((userId) => userId.value)),
+      this.#timezoneReader.getTimezones(userIds),
     ]);
-    await this.#notificationPublisher.publishBatch(
+    await this.#notificationPublisher.execute(
       notices.map((notice) => {
         const message = createPremiumRenewalUpcomingNotificationMessage({
-          locale: locales.get(notice.userId.value) ?? DEFAULT_LOCALE,
+          locale: localeOf(notice.userId.value),
           timezone: timezones.get(notice.userId.value) ?? DEFAULT_DELIVERY_TIMEZONE,
           renewsAt: instantToDate(notice.expiresAt),
           now: instantToDate(now),

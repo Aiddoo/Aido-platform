@@ -8,8 +8,9 @@ import { type AppLogger } from '@src/core/ports/app-logger';
 import { useGetDailyCompletionsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
+import { getNowInstant } from '@src/shared/date/clock';
 import { addDaysToDateKey } from '@src/shared/date/date-key';
-import { type Instant, toEpochMs } from '@src/shared/date/instant';
+import { fromEpochMs, type Instant, toEpochMs } from '@src/shared/date/instant';
 import { getErrorMessage, toError, unwrap } from '@src/shared/errors';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { shouldRetryQuery } from '@src/shared/query/query-retry';
@@ -30,6 +31,8 @@ import { WeatherLocationPolicy } from '../domains/weather-location.model';
 import { type LocationReading } from '../domains/weather-location.model';
 import {
   findTodayOrFirstForecast,
+  getReportRefetchIntervalMs,
+  getReportStaleTimeMs,
   type HourlyForecastEntry,
   WeatherReportPolicy,
 } from '../domains/weather-report.model';
@@ -111,9 +114,14 @@ export function useWeatherLocationRevision(): number {
   return WeatherLocationPolicy.getReadingRevision(reading);
 }
 
-const REPORT_STALE_TIME_MS = 10 * MINUTE_MS;
-/** 화면을 켜 둔 동안에도 분 단위 강수 안내가 어긋나지 않게 주기적으로 다시 받는다. */
-const REPORT_REFETCH_INTERVAL_MS = 15 * MINUTE_MS;
+function getReportStaleTime(query: Query<WeatherReport, Error>): number {
+  return getReportStaleTimeMs(query.state.data, fromEpochMs(query.state.dataUpdatedAt));
+}
+
+function getReportRefetchInterval(query: Query<WeatherReport, Error>): number | false {
+  return getReportRefetchIntervalMs(query.state.data, getNowInstant());
+}
+
 /** 공급자 장애(WEATHER_1901)는 오래 기다리기보다 다시 시도 화면을 빨리 보여 준다. */
 const REPORT_MAX_RETRIES = 2;
 
@@ -144,8 +152,8 @@ export function useGetWeatherReportQueryOptions() {
         }),
       );
     },
-    staleTime: REPORT_STALE_TIME_MS,
-    refetchInterval: REPORT_REFETCH_INTERVAL_MS,
+    staleTime: getReportStaleTime,
+    refetchInterval: getReportRefetchInterval,
     retry: shouldRetryReport,
     ...PERSISTED_QUERY_OPTIONS,
   });
@@ -162,7 +170,7 @@ export function useGetWeatherReportQueryOptions() {
         devOverride,
       ),
     initialData: cached == null ? undefined : withDevWeatherOverride(cached, devOverride),
-    staleTime: REPORT_STALE_TIME_MS,
+    staleTime: getReportStaleTime,
     retry: shouldRetryReport,
   });
 }
@@ -177,7 +185,7 @@ export function useGetForecastCompletionsQueryOptions() {
 }
 
 function selectHero(report: WeatherReport) {
-  return pick(report, ['location', 'current', 'daily', 'fetchedAt']);
+  return pick(report, ['location', 'current', 'daily', 'fetchedAt', 'expiresAt']);
 }
 
 function selectAlerts(report: WeatherReport) {
@@ -236,7 +244,7 @@ function selectHourly(report: WeatherReport, now: Instant) {
 }
 
 function selectBriefing(report: WeatherReport) {
-  return pick(report, ['location', 'hourly', 'daily', 'fetchedAt', 'briefing']);
+  return pick(report, ['location', 'hourly', 'daily', 'fetchedAt', 'briefing', 'headline']);
 }
 
 function selectDaily(report: WeatherReport) {

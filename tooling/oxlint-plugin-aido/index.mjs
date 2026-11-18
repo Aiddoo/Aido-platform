@@ -2,6 +2,7 @@
 // 어느 파일에 거는지는 .oxlintrc.json의 overrides가 정하고, 규칙은 AST 모양만 본다.
 import conventions from './rules/conventions.mjs';
 import errors from './rules/errors.mjs';
+import layers from './rules/layers.mjs';
 import location from './rules/location.mjs';
 import model from './rules/model.mjs';
 import modules from './rules/modules.mjs';
@@ -10,6 +11,7 @@ import observability from './rules/observability.mjs';
 import platform from './rules/platform.mjs';
 import react from './rules/react.mjs';
 import routing from './rules/routing.mjs';
+import shape from './rules/shape.mjs';
 import spacing from './rules/spacing.mjs';
 import syntax from './rules/syntax.mjs';
 import testing from './rules/testing.mjs';
@@ -19,6 +21,7 @@ export default {
   rules: {
     ...conventions,
     ...errors,
+    ...layers,
     ...location,
     ...model,
     ...modules,
@@ -27,6 +30,7 @@ export default {
     ...platform,
     ...react,
     ...routing,
+    ...shape,
     ...spacing,
     ...syntax,
     ...testing,

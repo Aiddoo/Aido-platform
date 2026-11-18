@@ -58,7 +58,7 @@ const TEST_FILES: ReadonlyArray<readonly [string, string]> = [
 ];
 
 const CONTRACT_FILES: ReadonlyArray<readonly [string, string]> = [
-  ['contracts/{{aggregate}}/index.ts', 'contracts/index.ts.hbs'],
+  ['contracts/{{aggregate}}/v1/index.ts', 'contracts/index.ts.hbs'],
   ['contracts/{{aggregate}}/v1/{{aggregate}}.request.ts', 'contracts/request.ts.hbs'],
   ['contracts/{{aggregate}}/v1/{{aggregate}}.response.ts', 'contracts/response.ts.hbs'],
   ['vocabulary/{{aggregate}}.constants.ts', 'contracts/constants.ts.hbs'],
@@ -247,12 +247,6 @@ export default function generator(plop: PlopTypes.NodePlopAPI): void {
         ...addFiles('apps/api/test', TEST_FILES, data),
         ...addFiles('packages/api/src', CONTRACT_FILES, data),
         ...schemaActions,
-        {
-          type: 'modify',
-          path: 'packages/api/src/index.ts',
-          pattern: /(\nexport \* from "\.\/vocabulary\/index\.js";)/,
-          template: '\nexport * from "./contracts/{{aggregate}}/index.js";$1',
-        },
         {
           type: 'append',
           path: 'packages/api/src/vocabulary/index.ts',

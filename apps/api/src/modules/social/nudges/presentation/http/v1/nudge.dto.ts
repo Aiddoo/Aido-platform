@@ -8,7 +8,7 @@ import {
   nudgeLimitInfoSchema,
   receivedNudgesResponseSchema,
   sentNudgesResponseSchema,
-} from "@aido/api";
+} from "@aido/api/contracts/nudge/v1";
 import type { z } from "zod";
 
 export const GetNudgesQueryDto = getNudgesQuerySchema.meta({

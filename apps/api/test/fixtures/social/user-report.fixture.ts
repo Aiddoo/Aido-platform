@@ -1,7 +1,7 @@
 import {
   UserReport,
   type UserReportPrimitives,
-} from "#api/modules/social/reports/domain/user-report.aggregate";
+} from "#api/modules/social/user-reports/domain/user-report.aggregate";
 
 // 18:00 KST. 운영자 알림의 접수 시각 문구를 이 값으로 확인한다
 export const USER_REPORT_FIXTURE_NOW = Temporal.Instant.from("2026-10-26T09:00:00Z");

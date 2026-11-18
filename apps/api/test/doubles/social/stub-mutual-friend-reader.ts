@@ -1,5 +1,5 @@
-import { MutualFriendReaderPort } from "#api/modules/social/friends/social-friends.public";
-import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { MutualFriendReaderPort } from "#api/modules/social/friendships/social-friendships.public";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 function pairKey(userId: string, targetUserId: string): string {
   return userId < targetUserId ? `${userId}:${targetUserId}` : `${targetUserId}:${userId}`;
@@ -42,17 +42,17 @@ export class StubMutualFriendReader extends MutualFriendReaderPort {
     return this.#displayNames.get(userId.value) ?? userId.value;
   }
 
-  async getMutualFriendIds(userId: UserId): Promise<string[]> {
+  async getMutualFriendIds(userId: UserId): Promise<UserId[]> {
     return [...this.#mutualPairs].flatMap((pair) => {
       const [left = "", right = ""] = pair.split(":");
       if (left === userId.value) {
-        return [right];
+        return [UserId.reconstitute(right)];
       }
-      return right === userId.value ? [left] : [];
+      return right === userId.value ? [UserId.reconstitute(left)] : [];
     });
   }
 
-  async getCurrentMutualFriendIds(userId: UserId): Promise<string[]> {
+  async getCurrentMutualFriendIds(userId: UserId): Promise<UserId[]> {
     return this.getMutualFriendIds(userId);
   }
 }

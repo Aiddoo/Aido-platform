@@ -6,7 +6,7 @@ import {
   selectRecordedDays,
   toActivityKey,
 } from "./recorded-activity-evidence.domain-service.js";
-import type { TodoSummaryForAnalysis } from "./suggestion.constants.js";
+import type { TodoSummaryForAnalysis } from "./suggestions.constants.js";
 
 const todo = (startDate: string, completed = true): TodoSummaryForAnalysis => ({
   title: "책 읽기 10분",
@@ -19,12 +19,15 @@ const todo = (startDate: string, completed = true): TodoSummaryForAnalysis => ({
 
 describe("recorded activity evidence", () => {
   it("월요일 DATE 기록 세 개와 시각을 실제 등록/완료 근거로 구분한다", () => {
+    // Given
     const records = [
       todo("2026-09-21"),
       todo("2026-09-28", false),
       { ...todo("2026-10-05"), scheduledTime: "19:30" },
     ];
+    // When
     const [evidence] = collectRecordedActivities(records);
+    // Then
     expect(evidence).toEqual({
       key: "책읽기10분",
       title: "책 읽기 10분",
@@ -38,29 +41,35 @@ describe("recorded activity evidence", () => {
     expect(selectRecordedDays(evidence)).toEqual(["MON"]);
   });
   it("반복 등록과 실제 완료가 있는 요일을 단발성 완료보다 우선한다", () => {
+    // When
     const [evidence] = collectRecordedActivities([
       todo("2026-09-21"),
       todo("2026-09-28", false),
       todo("2026-09-23"),
     ]);
+    // Then
     assert.exists(evidence);
     expect(selectRecordedDays(evidence)).toEqual(["MON"]);
   });
   it("요일 반복이 없으면 완료 수, 기록 수, ISO 요일 순의 최빈 한 요일을 제안한다", () => {
+    // When
     const [evidence] = collectRecordedActivities([
       todo("2026-09-23"),
       todo("2026-09-21"),
       todo("2026-09-22", false),
     ]);
+    // Then
     assert.exists(evidence);
     expect(selectRecordedDays(evidence)).toEqual(["MON"]);
   });
   it("완료가 없으면 성공을 만들지 않고 가장 많이 등록한 요일만 선택한다", () => {
+    // When
     const [evidence] = collectRecordedActivities([
       todo("2026-09-23", false),
       todo("2026-09-30", false),
       todo("2026-09-21", false),
     ]);
+    // Then
     expect(evidence?.completedOccurrences).toBe(0);
     assert.exists(evidence);
     expect(selectRecordedDays(evidence)).toEqual(["WED"]);

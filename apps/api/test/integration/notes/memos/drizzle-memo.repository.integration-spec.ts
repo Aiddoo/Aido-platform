@@ -1,8 +1,8 @@
 import { DrizzleMemoRepository } from "#api/modules/notes/memos/infrastructure/persistence/drizzle-memo.repository";
-import { DatabaseRecordNotFoundError } from "#api/platform/database/database-error.util";
+import { DatabaseRecordNotFoundError } from "#api/platform/database/database.errors";
 import { user } from "#api/platform/database/schema/index";
 import { describeMemoRepositoryContract } from "#test/contracts/notes/memo-repository.contract";
-import { UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import {
   createMemoFixture,
   MEMO_FIXTURE_OTHER_USER_ID,
@@ -25,8 +25,8 @@ describe("DrizzleMemoRepository (실제 PostgreSQL)", () => {
     await client
       .insert(user)
       .values([
-        UserFixture.create({ id: MEMO_FIXTURE_USER_ID }),
-        UserFixture.create({ id: MEMO_FIXTURE_OTHER_USER_ID }),
+        createUserRowFixture({ id: MEMO_FIXTURE_USER_ID }),
+        createUserRowFixture({ id: MEMO_FIXTURE_OTHER_USER_ID }),
       ]);
   });
 
@@ -35,8 +35,8 @@ describe("DrizzleMemoRepository (실제 PostgreSQL)", () => {
   });
 
   function createRepository(): DrizzleMemoRepository {
-    const { txHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleMemoRepository(txHost);
+    const { transactionHost } = createDatabaseTransactionFixture(client);
+    return new DrizzleMemoRepository(transactionHost);
   }
 
   describeMemoRepositoryContract(async () => createRepository());

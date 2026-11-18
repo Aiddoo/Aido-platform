@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { FriendLockKeys } from "#api/modules/social/friends/social-friends.public";
+import { FriendshipLockKeys } from "#api/modules/social/friendships/social-friendships.public";
 import { InviteLockKeys } from "#api/modules/social/invites/social-invites.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
@@ -33,6 +33,7 @@ import {
 import { createRewardClaimFixture } from "#test/fixtures/social/reward-claim.fixture";
 
 import { InviteRedemptionId } from "../../domain/invite-redemption-id.vo.js";
+import { RecordInviteRedemptionUseCase } from "./record-invite-redemption.use-case.js";
 import { RedeemInviteUseCase } from "./redeem-invite.use-case.js";
 
 const NOW = INVITE_FIXTURE_NOW.add({ hours: 1 });
@@ -71,14 +72,19 @@ function createRedeemer(options: { readonly isEnabled?: boolean } = {}) {
     inviteRedemptionRepository,
     rewardClaimRepository,
     rewardGrantRepository,
+    recordInviteRedemption: new RecordInviteRedemptionUseCase({
+      inviteRedemptionRepository,
+      rewardClaimRepository,
+      rewardGrantRepository,
+      rewardApplier,
+      rewardScheduler,
+    }),
     userReader,
-    rewardApplier,
     mutualFriendReader,
     blockReader,
     friendshipEstablisher,
     claimHasher: new FakeClaimHasher(),
     notifier,
-    rewardScheduler,
     inviteConfig: { isEnabled: options.isEnabled ?? true },
     clock: new FixedClock(NOW),
     logger: new SilentLogger(),
@@ -120,9 +126,9 @@ describe("RedeemInviteUseCase — 초대 수락", () => {
     expect(redeemer.mutationLock.acquiredKeys).toEqual([
       [
         InviteLockKeys.invite(INVITER_ID),
-        FriendLockKeys.pair(INVITER_ID, INVITEE_ID),
-        FriendLockKeys.list(INVITER_ID),
-        FriendLockKeys.list(INVITEE_ID),
+        FriendshipLockKeys.pair(INVITER_ID, INVITEE_ID),
+        FriendshipLockKeys.list(INVITER_ID),
+        FriendshipLockKeys.list(INVITEE_ID),
       ],
     ]);
     const redemption =
@@ -191,7 +197,7 @@ describe("RedeemInviteUseCase — 초대 수락", () => {
     expect(result).toMatchObject({ outcome: "REDEEMED", rewards: [], friendship: "FRIENDS" });
     const redemption =
       await redeemer.inviteRedemptionRepository.findByInviteeIdForUpdate(INVITEE_ID);
-    expect(redemption?.inviterRewardEligible).toBe(false);
+    expect(redemption?.isInviterRewardEligible()).toBe(false);
     expect(redeemer.rewardGrantRepository.size).toBe(0);
   });
 

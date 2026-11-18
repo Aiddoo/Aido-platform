@@ -1,10 +1,15 @@
+import { dateKeySchema } from '@src/shared/date/date-key';
 import { fromEpochMs } from '@src/shared/date/instant';
 
-import { createPushNotificationResponse } from '../__tests__/notification.fixtures';
+import {
+  createPushNotification,
+  createPushNotificationResponse,
+} from '../__tests__/notification.fixtures';
 import {
   hasHandledResponse,
   PushNotificationResponsePolicy,
   rememberHandledResponse,
+  toPushNotificationResponseId,
 } from './push-notification-response.model';
 
 describe('PushNotificationResponsePolicy.isMarketingOptOut', () => {
@@ -104,6 +109,106 @@ describe('PushNotificationResponsePolicy.getResponseAction', () => {
   });
 });
 
+describe('PushNotificationResponsePolicy.getTodoReminderAction', () => {
+  const NOW_MS = 1_000_000_000;
+  const NOW = fromEpochMs(NOW_MS);
+  const REMINDER = createPushNotification({
+    notificationId: 1024,
+    type: 'TODO_REMINDER',
+    target: { kind: 'TODO', todoId: 42, ownerId: null, dateKey: dateKeySchema.parse('2026-11-18') },
+  });
+
+  it.each([
+    ['complete', { type: 'complete', todoId: 42, dateKey: '2026-11-18' }],
+    ['snooze', { type: 'snooze', todoId: 42, notificationId: 1024 }],
+    ['expo.modules.notifications.actions.DEFAULT', null],
+  ] as const)(
+    '리마인드 알림의 %s 응답이 할 일 화면을 연 뒤 할 일을 정한다',
+    (actionIdentifier, expected) => {
+      // Given
+      const response = createPushNotificationResponse({ actionIdentifier, notification: REMINDER });
+
+      // When
+      const request = PushNotificationResponsePolicy.getTodoReminderAction(response);
+
+      // Then
+      expect(request).toEqual(expected);
+    },
+  );
+
+  it.each([
+    ['리마인드가 아닌 알림', { type: 'TODO_SHARED' as const }],
+    ['할 일을 열지 않는 알림', { target: { kind: 'NOTIFICATIONS' as const } }],
+  ])('%s의 버튼 응답은 할 일을 바꾸지 않고 열기만 한다', (_case, overrides) => {
+    // Given
+    const response = createPushNotificationResponse({
+      actionIdentifier: 'complete',
+      notification: { ...REMINDER, ...overrides },
+    });
+
+    // When
+    const request = PushNotificationResponsePolicy.getTodoReminderAction(response);
+
+    // Then
+    expect(request).toBeNull();
+  });
+
+  it('서버 기록이 없는 알림의 다시 알림은 예약할 알림 id가 없어 하지 않는다', () => {
+    // Given
+    const response = createPushNotificationResponse({
+      actionIdentifier: 'snooze',
+      notification: { ...REMINDER, notificationId: 0 },
+    });
+
+    // When
+    const request = PushNotificationResponsePolicy.getTodoReminderAction(response);
+
+    // Then
+    expect(request).toBeNull();
+  });
+
+  it.each([
+    ['loading', { type: 'defer', reason: 'auth-resolving' }],
+    ['locked', { type: 'defer', reason: 'auth-resolving' }],
+    ['unauthenticated', { type: 'defer', reason: 'authentication-required' }],
+    ['authenticated', { type: 'open' }],
+  ] as const)('버튼 응답도 %s 상태에서는 기본 탭과 같이 미루거나 연다', (authStatus, expected) => {
+    // Given
+    const response = createPushNotificationResponse({
+      actionIdentifier: 'complete',
+      notification: REMINDER,
+      receivedAt: NOW,
+    });
+
+    // When
+    const action = PushNotificationResponsePolicy.getResponseAction(response, {
+      authStatus,
+      now: NOW,
+    });
+
+    // Then
+    expect(action).toEqual(expected);
+  });
+
+  it('로그인을 10분 넘게 기다린 버튼 응답은 열지도 바꾸지도 않고 버린다', () => {
+    // Given
+    const response = createPushNotificationResponse({
+      actionIdentifier: 'snooze',
+      notification: REMINDER,
+      receivedAt: NOW,
+    });
+
+    // When
+    const action = PushNotificationResponsePolicy.getResponseAction(response, {
+      authStatus: 'authenticated',
+      now: fromEpochMs(NOW_MS + 10 * 60_000 + 1),
+    });
+
+    // Then
+    expect(action).toEqual({ type: 'drop', reason: 'expired' });
+  });
+});
+
 describe('PushNotificationResponsePolicy.getOpenAppState', () => {
   const ACTIVE_SINCE = 10_000;
 
@@ -138,6 +243,42 @@ describe('PushNotificationResponsePolicy.getOpenAppState', () => {
       expect(openedFrom).toBe(expected);
     },
   );
+});
+
+describe('PushNotificationResponsePolicy.shouldDismissNotification', () => {
+  it.each([
+    ['수신 거부 버튼', 'MARKETING_OPT_OUT', true],
+    ['리마인드 완료 버튼', 'complete', true],
+    ['리마인드 다시 알림 버튼', 'snooze', true],
+    ['본문 탭', 'expo.modules.notifications.actions.DEFAULT', false],
+    ['모르는 버튼', 'UNKNOWN_ACTION', false],
+  ])('%s 응답을 처리한 뒤 알림을 지우는지는 %s다', (_case, actionIdentifier, expected) => {
+    // Given
+    const response = createPushNotificationResponse({ actionIdentifier });
+
+    // When
+    const result = PushNotificationResponsePolicy.shouldDismissNotification(response);
+
+    // Then
+    expect(result).toBe(expected);
+  });
+});
+
+describe('toPushNotificationResponseId', () => {
+  it('같은 알림이어도 버튼과 본문 탭은 다른 응답이고, 같은 알림의 같은 동작은 같은 응답이다', () => {
+    // Given
+    const notificationIdentifier = 'notification-42';
+    const bodyTap = 'expo.modules.notifications.actions.DEFAULT';
+
+    // When
+    const button = toPushNotificationResponseId(notificationIdentifier, 'complete');
+    const body = toPushNotificationResponseId(notificationIdentifier, bodyTap);
+    const redelivered = toPushNotificationResponseId(notificationIdentifier, bodyTap);
+
+    // Then
+    expect(body).not.toBe(button);
+    expect(redelivered).toBe(body);
+  });
 });
 
 describe('rememberHandledResponse', () => {

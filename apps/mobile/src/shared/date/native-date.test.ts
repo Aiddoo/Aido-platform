@@ -21,4 +21,13 @@ describe('toPickerDate', () => {
     // Then
     expect([result.getSeconds(), result.getMilliseconds()]).toEqual([0, 0]);
   });
+
+  it('프로세스 시간대와 무관하게 고른 시와 분을 UTC 벽시계에 둔다', () => {
+    // When
+    const result = toPickerDate({ hour: 2, minute: 30 });
+
+    // Then
+    // 기기 시간대가 바뀐 뒤에도 피커(timeZoneName UTC)와 JS가 같은 02:30을 읽는다
+    expect(result.toISOString()).toBe('2000-01-15T02:30:00.000Z');
+  });
 });

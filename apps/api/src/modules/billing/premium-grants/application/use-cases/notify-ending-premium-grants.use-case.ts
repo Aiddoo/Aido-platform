@@ -12,7 +12,7 @@ import { PremiumGrantLogEvent } from "../premium-grants.log-events.js";
 
 const PREMIUM_GRANT_ENDING_NOTICE = {
   noticeDays: PREMIUM_GRANT_ENDING_NOTICE_DAYS,
-  logEvent: PremiumGrantLogEvent.PREMIUM_GRANT_ENDING_NOTIFIED,
+  logEvent: PremiumGrantLogEvent.ENDING_NOTIFIED,
 } as const satisfies BillingNoticeSettings;
 
 export interface NotifyEndingPremiumGrantsDependencies {

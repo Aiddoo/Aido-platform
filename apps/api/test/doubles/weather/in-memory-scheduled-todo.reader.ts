@@ -1,8 +1,8 @@
-import { ScheduledTodoReaderPort } from "#api/modules/weather/forecasts/application/ports/scheduled-todo.reader.port";
-import type { ScheduledTodo } from "#api/modules/weather/forecasts/application/read-models/scheduled-todo.read-model";
+import { ScheduledTodoReaderPort } from "#api/modules/weather/weather-reports/application/ports/scheduled-todo.reader.port";
+import type { ScheduledTodoReadModel } from "#api/modules/weather/weather-reports/application/read-models/scheduled-todo.read-model";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-interface StoredTodo extends ScheduledTodo {
+interface StoredTodo extends ScheduledTodoReadModel {
   readonly userId: string;
 }
 
@@ -21,7 +21,7 @@ export class InMemoryScheduledTodoReader extends ScheduledTodoReaderPort {
     readonly timezone: string;
     readonly from: Temporal.Instant;
     readonly until: Temporal.Instant;
-  }): Promise<ScheduledTodo[]> {
+  }): Promise<ScheduledTodoReadModel[]> {
     if (this.failure != null) {
       throw this.failure;
     }

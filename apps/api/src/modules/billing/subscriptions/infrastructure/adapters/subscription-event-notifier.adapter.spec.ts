@@ -1,11 +1,11 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { NotificationQueueAdapter } from "#api/modules/notification/notification-delivery-jobs.public";
-import { notificationEventJobKey } from "#api/modules/notification/push/infrastructure/jobs/notification-job-keys.constants";
+import { notificationEventJobKey } from "#api/modules/notification/notifications/infrastructure/jobs/notification-job-keys.constants";
 import {
   NOTIFICATION_QUEUE,
   NotificationJobName,
-} from "#api/modules/notification/push/infrastructure/jobs/notification.queue";
+} from "#api/modules/notification/notifications/infrastructure/jobs/notification.queue";
+import { NotificationQueueAdapter } from "#api/modules/notification/notifications/notification-notifications-jobs.public";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { RecordingAdminEventNotifier } from "#test/doubles/operations/recording-admin-event-notifier";
@@ -16,8 +16,10 @@ import { suppressLogger } from "#test/setup/suppress-logger";
 
 import type { StoreCustomerConsolePort } from "../../application/ports/store-customer-console.port.js";
 import type { StoreSubscriptionEventFailureContext } from "../../application/ports/subscription-event-notifier.port.js";
-import type { SubscriptionEventPayload } from "../../application/read-models/subscription-event-payload.read-model.js";
+import type { SubscriptionEventPayloadReadModel } from "../../application/read-models/subscription-event-payload.read-model.js";
 import { SubscriptionAlerts } from "../../application/subscriptions.alerts.js";
+import { ProviderEventId } from "../../domain/provider-event-id.vo.js";
+import { StoreProductId } from "../../domain/store-product-id.vo.js";
 import { SubscriptionEventNotifierAdapter } from "./subscription-event-notifier.adapter.js";
 
 function createAdapter(options: { customerConsoleUrl?: string } = {}) {
@@ -25,8 +27,10 @@ function createAdapter(options: { customerConsoleUrl?: string } = {}) {
   const alerts = new RecordingOperationalAlert();
   const jobQueue = new InMemoryJobQueue();
   const customerConsole: StoreCustomerConsolePort = {
-    customerUrlOf: (appUserId) =>
-      options.customerConsoleUrl == null ? null : `${options.customerConsoleUrl}/${appUserId}`,
+    customerUrlOf: (customerId) =>
+      options.customerConsoleUrl == null
+        ? null
+        : `${options.customerConsoleUrl}/${customerId.value}`,
   };
   const adapter = new SubscriptionEventNotifierAdapter(
     adminEventNotifier,
@@ -43,10 +47,10 @@ function createAdapter(options: { customerConsoleUrl?: string } = {}) {
 describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
   const context: StoreSubscriptionEventFailureContext = {
     kind: "STARTED",
-    providerEventId: "evt-1",
+    providerEventId: ProviderEventId.reconstitute("evt-1"),
     store: "APP_STORE",
     environment: "SANDBOX",
-    productId: "premium_monthly",
+    productId: StoreProductId.reconstitute("premium_monthly"),
   };
 
   it("경보 태그와 세부 값에는 이벤트 식별자와 오류 종류만 싣고 스택은 원인 예외로 넘긴다", () => {
@@ -104,7 +108,7 @@ describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
 });
 
 describe("SubscriptionEventNotifierAdapter — 구독 이벤트 운영 알림", () => {
-  const event: SubscriptionEventPayload = {
+  const event: SubscriptionEventPayloadReadModel = {
     userId: "user-1",
     email: "user@example.com",
     kind: "STARTED",
@@ -134,10 +138,10 @@ describe("SubscriptionEventNotifierAdapter — 구독 이벤트 운영 알림", 
     // Then
     expect(forwarded).toEqual([
       {
-        userId: "user-1",
+        userId: UserId.reconstitute("user-1"),
         email: "user@example.com",
         kind: "STARTED",
-        productId: "premium_monthly",
+        productId: StoreProductId.reconstitute("premium_monthly"),
         store: "APP_STORE",
       },
     ]);

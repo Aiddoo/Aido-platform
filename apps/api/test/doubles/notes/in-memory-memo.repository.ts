@@ -1,4 +1,4 @@
-import { MemoIdempotencyKeyTakenError } from "#api/modules/notes/memos/application/memos.errors";
+import { memoIdempotencyKeyTaken } from "#api/modules/notes/memos/application/memos.errors";
 import { MemoRepositoryPort } from "#api/modules/notes/memos/application/ports/memo.repository.port";
 import { MemoId } from "#api/modules/notes/memos/domain/memo-id.vo";
 import type { SortOrderShift } from "#api/modules/notes/memos/domain/memo-ordering.domain-service";
@@ -8,7 +8,7 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 // Drizzle 저장소와 같은 순서(고정 먼저, sortOrder·id 내림차순)로 나열한다
 function compareListOrder(left: Memo, right: Memo): number {
   return (
-    Number(right.isPinned) - Number(left.isPinned) ||
+    Number(right.isPinned()) - Number(left.isPinned()) ||
     right.sortOrder - left.sortOrder ||
     right.id.value - left.id.value
   );
@@ -110,7 +110,7 @@ export class InMemoryMemoRepository extends MemoRepositoryPort {
           other.toPrimitives().idempotencyKey === idempotencyKey,
       );
     if (isKeyTaken) {
-      throw new MemoIdempotencyKeyTakenError();
+      throw memoIdempotencyKeyTaken();
     }
     this.#memos.set(memo.id.value, copyOf(memo));
   }

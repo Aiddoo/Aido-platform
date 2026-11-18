@@ -1,4 +1,4 @@
-import type { AdminNoticeUser } from "../../application/read-models/admin-notice.read-model.js";
+import type { AdminNoticeUser } from "../../domain/admin-notice.aggregate.js";
 import { renderDiscordEmbed } from "./discord-embed.mapper.js";
 
 const user: AdminNoticeUser = {
@@ -14,7 +14,7 @@ const AT = "2026-11-10T00:30:05.000Z";
 
 describe("Discord 가입 알림 embed", () => {
   it("결제 알림과 같은 사용자 블록 뒤에 가입 기기·앱·언어를 둔다", () => {
-    // Given / When
+    // When
     const embed = renderDiscordEmbed(
       {
         type: "user_registered",
@@ -71,7 +71,7 @@ describe("Discord 가입 알림 embed", () => {
   });
 
   it("기기 정보를 보내지 않은 앱은 가입 방식으로 추측하지 않고 —로 둔다", () => {
-    // Given / When
+    // When
     const embed = renderDiscordEmbed({ type: "user_registered", user, signup: {} }, AT);
 
     // Then

@@ -2,8 +2,8 @@ import { INVITE_LINK_BASE_URL } from "@aido/api/vocabulary";
 
 import { toIsoString } from "#api/shared/domain/time/instant";
 
-import type { InviterProfile } from "../../../application/read-models/inviter-profile.read-model.js";
-import type { MyInvite } from "../../../application/read-models/my-invite.read-model.js";
+import type { InviterProfileReadModel } from "../../../application/read-models/inviter-profile.read-model.js";
+import type { MyInviteReadModel } from "../../../application/read-models/my-invite.read-model.js";
 import type {
   InviteAvailabilityResponseDto,
   InvitePreviewResponseDto,
@@ -18,7 +18,7 @@ export function toInviteAvailabilityResponse(isEnabled: boolean): InviteAvailabi
   return { enabled: isEnabled };
 }
 
-export function toMyInviteResponse(myInvite: MyInvite): MyInviteResponseDto {
+export function toMyInviteResponse(myInvite: MyInviteReadModel): MyInviteResponseDto {
   return {
     code: myInvite.code,
     link: toInviteLink(myInvite.code),
@@ -39,6 +39,8 @@ export function toMyInviteResponse(myInvite: MyInvite): MyInviteResponseDto {
   };
 }
 
-export function toInvitePreviewResponse(inviter: InviterProfile): InvitePreviewResponseDto {
+export function toInvitePreviewResponse(
+  inviter: InviterProfileReadModel,
+): InvitePreviewResponseDto {
   return { inviter: { name: inviter.name, profileImage: inviter.profileImage } };
 }

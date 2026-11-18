@@ -1,7 +1,5 @@
-import type { DayOfWeek } from "@aido/api/vocabulary";
+import type { DayOfWeek, Localized, SupportedLocale } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
-
-import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import type { SuggestionCandidate } from "../../domain/suggestion-candidates.domain-service.js";
 import { suggestionContextTranslations } from "./suggestion-context.messages.js";
@@ -29,7 +27,7 @@ function formatDays(locale: SupportedLocale, days: readonly DayOfWeek[]): string
 }
 
 /** 출시 앱(≤1.15)이 보이는 제안 근거. 모델 글 없이 기록 수치로만 만든다. */
-export const suggestionReasonCopy: Readonly<Record<SupportedLocale, SuggestionReasonCopy>> = {
+export const suggestionReasonCopy: Localized<SuggestionReasonCopy> = {
   ko: {
     repeat: (candidate, days) =>
       `최근 '${candidate.title}' 활동을 ${candidate.occurrences}번 기록하고 ${candidate.completed}번 완료했어요. ${formatDays("ko", days)}에 반복으로 등록해두면 매번 다시 입력하지 않아도 돼요.`,

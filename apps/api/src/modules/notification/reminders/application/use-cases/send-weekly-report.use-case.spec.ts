@@ -5,8 +5,8 @@ import { StubScheduledReminderReader } from "#test/doubles/notification/stub-sch
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createTimezoneContextFixture } from "#test/fixtures/notification/timezone-context.fixture";
 
-import { createWeeklyReportNotificationMessage } from "../../../push/application/messages/system-notification.messages.js";
-import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/notification-campaign.constants.js";
+import { createWeeklyReportNotificationMessage } from "../../../shared/application/messages/system-notification.messages.js";
+import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
 import { SendWeeklyReportUseCase } from "./send-weekly-report.use-case.js";
 
 describe("SendWeeklyReportUseCase — 주간 리포트 전략", () => {
@@ -17,7 +17,7 @@ describe("SendWeeklyReportUseCase — 주간 리포트 전략", () => {
   let strategy: SendWeeklyReportUseCase;
 
   /** 월요일 09:00 */
-  const ctx = createTimezoneContextFixture({ date: "2024-01-15", localHour: 9 });
+  const timezoneContext = createTimezoneContextFixture({ date: "2024-01-15", localHour: 9 });
   const sent = () => publisher.published.map(({ data }) => data);
 
   beforeEach(() => {
@@ -28,7 +28,7 @@ describe("SendWeeklyReportUseCase — 주간 리포트 전략", () => {
     strategy = new SendWeeklyReportUseCase({
       reader,
       preferenceReader: preferences,
-      notificationPublisher: publisher,
+      notificationPublisher: publisher.batch,
       notificationHistoryReader: history,
       logger: new SilentLogger(),
     });
@@ -39,9 +39,10 @@ describe("SendWeeklyReportUseCase — 주간 리포트 전략", () => {
     reader.weeklyReportRecipients = [{ id: "user-1" }];
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
-    // Then — AI 리포트는 유료 기능이라 대상 조회가 프리미엄만 고르고, 푸시 여부는 발송 단계가 정한다
+    // Then
+    // AI 리포트는 유료 기능이라 대상 조회가 프리미엄만 고르고, 푸시 여부는 발송 단계가 정한다
     expect(result).toEqual({ sent: 1 });
     expect(reader.queries).toEqual([
       {
@@ -49,7 +50,7 @@ describe("SendWeeklyReportUseCase — 주간 리포트 전략", () => {
         params: {
           timezones: ["Asia/Seoul"],
           periodStart: Temporal.PlainDate.from("2024-01-08"),
-          periodEnd: ctx.today,
+          periodEnd: timezoneContext.today,
         },
       },
     ]);
@@ -76,10 +77,10 @@ describe("SendWeeklyReportUseCase — 주간 리포트 전략", () => {
   it("오늘 이미 주간 리포트 알림을 받은 사용자를 제외한다", async () => {
     // Given
     reader.weeklyReportRecipients = [{ id: "user-1" }, { id: "user-2" }];
-    history.notified("WEEKLY_REPORT", ["user-1"], ctx.today);
+    history.notified("WEEKLY_REPORT", ["user-1"], timezoneContext.today);
 
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 1 });
@@ -88,7 +89,7 @@ describe("SendWeeklyReportUseCase — 주간 리포트 전략", () => {
 
   it("대상이 없으면 발송하지 않는다", async () => {
     // When
-    const result = await strategy.execute(ctx);
+    const result = await strategy.execute(timezoneContext);
 
     // Then
     expect(result).toEqual({ sent: 0 });

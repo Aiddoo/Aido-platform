@@ -1,0 +1,170 @@
+import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
+import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import { toErrorType } from "#api/shared/application/utils/error-message.util";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { localDateIn, resolveTimezone } from "#api/shared/domain/time/time-zone-name";
+
+import { GeoCell } from "../../../shared/domain/geo-cell.vo.js";
+import { isKoreanWeatherCovered } from "../../../shared/domain/korean-weather-coverage.domain-service.js";
+import type { TimezoneResolverPort } from "../../../user-locations/application/ports/timezone-resolver.port.js";
+import type { UserLocationRepositoryPort } from "../../../user-locations/application/ports/user-location.repository.port.js";
+import { userLocationNotFound } from "../../../user-locations/application/user-locations.errors.js";
+import {
+  planWeatherBriefing,
+  type WeatherBriefing,
+  type WeatherBriefingTodo,
+} from "../../domain/weather-briefing.domain-service.js";
+import {
+  decideWeatherHeadline,
+  type WeatherHeadline,
+} from "../../domain/weather-headline.domain-service.js";
+import type { WeatherReportLanguage } from "../../domain/weather-report-language.domain-service.js";
+import type { WeatherReport } from "../../domain/weather-report.aggregate.js";
+import type { AirQuality, AirQualityProviderPort } from "../ports/air-quality-provider.port.js";
+import type { ScheduledTodoReaderPort } from "../ports/scheduled-todo.reader.port.js";
+import type { WeatherReportCachePort } from "../ports/weather-report-cache.port.js";
+import type { WeatherReportProviderPort } from "../ports/weather-report-provider.port.js";
+import type { WeatherReportAttributionReadModel } from "../read-models/weather-report-attribution.read-model.js";
+import { WeatherReportLogEvent } from "../weather-reports.log-events.js";
+import type { ReadWeatherReportUseCase } from "./read-weather-report.use-case.js";
+
+const KOREA_COUNTRY_CODE = "KR";
+
+export interface GetWeatherReportQuery {
+  readonly userId: string;
+  readonly language: WeatherReportLanguage;
+  /** 할 일을 저장한 기기 시간대(`X-Timezone`). 없으면 위치 시간대로 오늘을 정한다. */
+  readonly timezone?: string;
+}
+
+export interface WeatherReportResult {
+  readonly location: {
+    readonly latitude: number;
+    readonly longitude: number;
+    readonly timezone: string;
+  };
+  readonly report: WeatherReport;
+  /** 서버가 이 리포트를 공급자에서 다시 받기 시작하는 순간. 폴백한 리포트면 null */
+  readonly expiresAt: Temporal.Instant | null;
+  readonly airQuality: AirQuality | null;
+  readonly attribution: WeatherReportAttributionReadModel;
+  /** 오늘 할 일 조회가 실패하면 브리핑만 빠진다. */
+  readonly briefing: WeatherBriefing | null;
+  /** 브리핑 카드 머리글. 날씨 알림과 같은 판단이고, 오늘 할 일이나 오늘 일별 예보가 없으면 null이다 */
+  readonly headline: WeatherHeadline | null;
+}
+
+export interface GetWeatherReportDependencies {
+  readonly userLocationRepository: Pick<UserLocationRepositoryPort, "findByUserId">;
+  readonly readWeatherReport: Pick<ReadWeatherReportUseCase, "execute">;
+  readonly weatherReportProvider: Pick<WeatherReportProviderPort, "getAttribution">;
+  readonly weatherReportCache: Pick<WeatherReportCachePort, "getOrLoadAirQuality">;
+  readonly timezoneResolver: Pick<TimezoneResolverPort, "resolve">;
+  readonly airQualityProvider: Pick<AirQualityProviderPort, "findAirQuality">;
+  readonly scheduledTodoReader: Pick<ScheduledTodoReaderPort, "listPendingTimedTodos">;
+  readonly logger: Pick<ApplicationLoggerPort, "warn" | "error">;
+  readonly clock: ClockPort;
+}
+
+export class GetWeatherReportUseCase {
+  readonly #dependencies: GetWeatherReportDependencies;
+
+  constructor(dependencies: GetWeatherReportDependencies) {
+    this.#dependencies = dependencies;
+  }
+
+  async execute(query: GetWeatherReportQuery): Promise<WeatherReportResult> {
+    const location = await this.#dependencies.userLocationRepository.findByUserId(
+      UserId.reconstitute(query.userId),
+    );
+    if (location == null) {
+      throw userLocationNotFound();
+    }
+
+    const cell = GeoCell.create(location.coordinate);
+    // 리포트·대기질 캐시를 칸 단위로 공유하므로 시간대·국가·대기질 여부도 사용자 좌표가 아닌 칸 중심에서 정한다.
+    const region = this.#dependencies.timezoneResolver.resolve(cell.center);
+    const isKorea =
+      region.countryCode === KOREA_COUNTRY_CODE && isKoreanWeatherCovered(cell.center);
+
+    const now = this.#dependencies.clock.now();
+    const timezone = query.timezone ?? region.timezone;
+
+    // 리포트는 언어 공유 캐시일 수 있으므로 공급자 표기는 요청 언어로 따로 받는다.
+    const [reportResult, airQualityResult, attributionResult, todosResult] =
+      await Promise.allSettled([
+        this.#dependencies.readWeatherReport.execute({ cell, region, language: query.language }),
+        isKorea ? this.#loadAirQuality(cell) : Promise.resolve(null),
+        this.#dependencies.weatherReportProvider.getAttribution(query.language),
+        this.#listTodayTodos(UserId.reconstitute(query.userId), now, timezone),
+      ]);
+    if (reportResult.status === "rejected") {
+      throw reportResult.reason;
+    }
+    if (attributionResult.status === "rejected") {
+      throw attributionResult.reason;
+    }
+    if (airQualityResult.status === "rejected") {
+      this.#dependencies.logger.warn({
+        event: WeatherReportLogEvent.REPORT_AIR_QUALITY_UNAVAILABLE,
+        cellKey: cell.key,
+        errorType: toErrorType(airQualityResult.reason),
+      });
+    }
+
+    if (todosResult.status === "rejected") {
+      this.#dependencies.logger.warn({
+        event: WeatherReportLogEvent.REPORT_BRIEFING_TODOS_UNAVAILABLE,
+        errorType: toErrorType(todosResult.reason),
+      });
+    }
+
+    const report = reportResult.value.report.windowAt(now, region.timezone);
+    const todos = todosResult.status === "fulfilled" ? todosResult.value : null;
+    return {
+      location: {
+        latitude: location.latitude,
+        longitude: location.longitude,
+        timezone: region.timezone,
+      },
+      report,
+      expiresAt: reportResult.value.expiresAt,
+      airQuality: airQualityResult.status === "fulfilled" ? airQualityResult.value : null,
+      attribution: attributionResult.value,
+      briefing:
+        todos == null ? null : planWeatherBriefing({ hourly: report.hourly, todos, now, timezone }),
+      headline:
+        todos == null
+          ? null
+          : decideWeatherHeadline(report, todos, {
+              now,
+              timezone,
+              locationTimezone: region.timezone,
+            }),
+    };
+  }
+
+  /** 지금부터 기기 시간대의 오늘이 끝날 때까지 남은, 시각이 정해진 할 일 */
+  async #listTodayTodos(
+    userId: UserId,
+    now: Temporal.Instant,
+    timezone: string,
+  ): Promise<WeatherBriefingTodo[]> {
+    const today = localDateIn(now, timezone);
+    // 서머타임으로 자정이 없는 날은 그날 첫 순간이다
+    const tomorrowStart = today.add({ days: 1 }).toZonedDateTime(resolveTimezone(timezone));
+    return this.#dependencies.scheduledTodoReader.listPendingTimedTodos({
+      userId,
+      date: today,
+      timezone,
+      from: now,
+      until: tomorrowStart.toInstant(),
+    });
+  }
+
+  #loadAirQuality(cell: GeoCell): Promise<AirQuality | null> {
+    return this.#dependencies.weatherReportCache.getOrLoadAirQuality(cell, () =>
+      this.#dependencies.airQualityProvider.findAirQuality(cell),
+    );
+  }
+}

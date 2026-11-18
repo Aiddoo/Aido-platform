@@ -10,14 +10,14 @@ import type { StoreEntitlementReaderPort } from "../../application/ports/store-e
 
 @Injectable()
 export class DrizzleStoreEntitlementReader implements StoreEntitlementReaderPort {
-  readonly #txHost: TransactionHost<DrizzleTransactionalAdapter>;
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 
-  constructor(txHost: TransactionHost<DrizzleTransactionalAdapter>) {
-    this.#txHost = txHost;
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
   }
 
   async listByUserId(userId: UserId): Promise<StoreSubscriptionEntitlement[]> {
-    const rows = await this.#txHost.tx.query.subscription.findMany({
+    const rows = await this.#transactionHost.tx.query.subscription.findMany({
       columns: {
         storeSubscriptionId: true,
         productId: true,

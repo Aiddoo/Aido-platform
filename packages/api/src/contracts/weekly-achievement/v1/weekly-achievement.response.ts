@@ -5,20 +5,20 @@ import { cursorPageSchema } from "../../../common/pagination.js";
 
 const weeklyAchievementSchema = z
   .object({
-    id: z.number().int().describe("주간 달성 기록 ID (양의 정수)"),
-    year: z.number().int().describe("ISO 연도 (예: 2026)"),
-    week: z.number().int().min(1).max(53).describe("ISO 주차 (1-53)"),
-    weekLabel: z.string().describe("주차 라벨 (예: 3월 2주차)"),
+    id: z.int().meta({ description: "주간 달성 기록 ID (양의 정수)" }),
+    year: z.int().meta({ description: "ISO 연도 (예: 2026)" }),
+    week: z.int().min(1).max(53).meta({ description: "ISO 주차 (1-53)" }),
+    weekLabel: z.string().meta({ description: "주차 라벨 (예: 3월 2주차)" }),
     dateRange: z
       .object({
-        startDate: dateSchema.describe("주 시작일 월요일 (YYYY-MM-DD)"),
-        endDate: dateSchema.describe("주 종료일 일요일 (YYYY-MM-DD)"),
+        startDate: dateSchema.meta({ description: "주 시작일 월요일 (YYYY-MM-DD)" }),
+        endDate: dateSchema.meta({ description: "주 종료일 일요일 (YYYY-MM-DD)" }),
       })
-      .describe("해당 주의 날짜 범위"),
-    totalTodos: z.number().int().nonnegative().describe("총 할 일 수"),
-    completedTodos: z.number().int().nonnegative().describe("완료한 할 일 수"),
-    completionRate: z.number().min(0).max(100).describe("완료율 (0-100%)"),
-    achievedAt: datetimeSchema.describe("달성 시점 (ISO 8601 UTC)"),
+      .meta({ description: "해당 주의 날짜 범위" }),
+    totalTodos: z.int().nonnegative().meta({ description: "총 할 일 수" }),
+    completedTodos: z.int().nonnegative().meta({ description: "완료한 할 일 수" }),
+    completionRate: z.number().min(0).max(100).meta({ description: "완료율 (0-100%)" }),
+    achievedAt: datetimeSchema.meta({ description: "달성 시점 (ISO 8601 UTC)" }),
   })
   .meta({
     example: {
@@ -38,11 +38,11 @@ export type WeeklyAchievementDto = z.infer<typeof weeklyAchievementSchema>;
 
 export const weeklyAchievementSummarySchema = z
   .object({
-    totalWeeks: z.number().int().nonnegative().describe("기록된 총 주 수"),
-    perfectWeeks: z.number().int().nonnegative().describe("100% 달성 주 수"),
-    currentStreak: z.number().int().nonnegative().describe("현재 연속 달성 주"),
-    bestStreak: z.number().int().nonnegative().describe("최고 연속 달성 기록"),
-    averageRate: z.number().min(0).max(100).describe("평균 완료율 (0-100%)"),
+    totalWeeks: z.int().nonnegative().meta({ description: "기록된 총 주 수" }),
+    perfectWeeks: z.int().nonnegative().meta({ description: "100% 달성 주 수" }),
+    currentStreak: z.int().nonnegative().meta({ description: "현재 연속 달성 주" }),
+    bestStreak: z.int().nonnegative().meta({ description: "최고 연속 달성 기록" }),
+    averageRate: z.number().min(0).max(100).meta({ description: "평균 완료율 (0-100%)" }),
   })
   .meta({
     example: {
@@ -54,14 +54,12 @@ export const weeklyAchievementSummarySchema = z
     },
   });
 
-export type WeeklyAchievementSummary = z.infer<typeof weeklyAchievementSummarySchema>;
-
 export const weeklyAchievementListResponseSchema = cursorPageSchema(
   weeklyAchievementSchema,
-  z.number().int(),
+  z.int(),
   { items: "주간 달성 목록", pagination: "페이지네이션 정보" },
 )
-  .extend({ summary: weeklyAchievementSummarySchema.describe("전체 통계 요약") })
+  .extend({ summary: weeklyAchievementSummarySchema.meta({ description: "전체 통계 요약" }) })
   .meta({
     example: {
       items: [
@@ -93,3 +91,13 @@ export type WeeklyAchievementListResponse = z.infer<typeof weeklyAchievementList
 export const weeklyAchievementDetailResponseSchema = weeklyAchievementSchema;
 
 export type WeeklyAchievementDetailResponse = z.infer<typeof weeklyAchievementDetailResponseSchema>;
+
+export const weeklyAchievementYearsResponseSchema = z
+  .object({
+    years: z.array(z.int()).meta({
+      description: "주간 달성 기록이 하나라도 있는 ISO 연도 (내림차순, 기록이 없으면 빈 배열)",
+    }),
+  })
+  .meta({ example: { years: [2027, 2026] } });
+
+export type WeeklyAchievementYearsResponse = z.infer<typeof weeklyAchievementYearsResponseSchema>;

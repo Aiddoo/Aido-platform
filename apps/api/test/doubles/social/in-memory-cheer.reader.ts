@@ -7,6 +7,11 @@ import type {
   CheerUserReadModel,
 } from "#api/modules/social/cheers/application/read-models/cheer.read-model";
 import type { Cheer } from "#api/modules/social/cheers/domain/cheer.aggregate";
+import {
+  type CursorPage,
+  emptyCursorPage,
+  toMappedCursorPage,
+} from "#api/shared/application/cursor-page";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { InMemoryCheerRepository } from "./in-memory-cheer.repository.js";
@@ -32,11 +37,11 @@ export class InMemoryCheerReader extends CheerReaderPort {
     this.#users.set(user.id, user);
   }
 
-  async listReceived(params: ListCheersParams): Promise<CheerReadModel[]> {
+  async listReceived(params: ListCheersParams): Promise<CursorPage<CheerReadModel, number>> {
     return this.#listOwned(params, (cheer) => cheer.receiverId.equals(params.userId));
   }
 
-  async listSent(params: ListCheersParams): Promise<CheerReadModel[]> {
+  async listSent(params: ListCheersParams): Promise<CursorPage<CheerReadModel, number>> {
     return this.#listOwned(params, (cheer) => cheer.senderId.equals(params.userId));
   }
 
@@ -55,21 +60,27 @@ export class InMemoryCheerReader extends CheerReaderPort {
       .filter((cheer) => cheer.receiverId.equals(userId) && cheer.readAt == null).length;
   }
 
-  #listOwned(params: ListCheersParams, isOwned: (cheer: Cheer) => boolean): CheerReadModel[] {
+  #listOwned(
+    params: ListCheersParams,
+    isOwned: (cheer: Cheer) => boolean,
+  ): Promise<CursorPage<CheerReadModel, number>> {
     const cheers = this.#cheerRepository.listAll();
     const anchor =
       params.afterCheerId == null
         ? null
         : cheers.find((cheer) => cheer.id.value === params.afterCheerId?.value);
     if (params.afterCheerId != null && anchor == null) {
-      return [];
+      return Promise.resolve(emptyCursorPage(params.size));
     }
-    return cheers
-      .filter(isOwned)
-      .filter((cheer) => anchor == null || compareListOrder(anchor, cheer) < 0)
-      .toSorted(compareListOrder)
-      .slice(0, params.limit)
-      .map((cheer) => this.#toReadModel(cheer));
+    return toMappedCursorPage({
+      rows: cheers
+        .filter(isOwned)
+        .filter((cheer) => anchor == null || compareListOrder(anchor, cheer) < 0)
+        .toSorted(compareListOrder),
+      size: params.size,
+      toCursor: (cheer) => cheer.id.value,
+      toItems: (pageRows) => pageRows.map((cheer) => this.#toReadModel(cheer)),
+    });
   }
 
   #toReadModel(cheer: Cheer): CheerReadModel {

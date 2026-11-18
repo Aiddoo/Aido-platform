@@ -1,0 +1,374 @@
+import type { TestingModule } from "@nestjs/testing";
+import { sql } from "drizzle-orm";
+import { vi } from "vitest";
+
+import { ResetPasswordUseCase } from "#api/modules/identity/linked-accounts/application/use-cases/reset-password.use-case";
+import { LinkedAccounts } from "#api/modules/identity/linked-accounts/domain/linked-accounts.aggregate";
+import { Argon2PasswordHasherAdapter } from "#api/modules/identity/linked-accounts/infrastructure/adapters/argon2-password-hasher.adapter";
+import { DrizzleLinkedAccountsRepository } from "#api/modules/identity/linked-accounts/infrastructure/persistence/drizzle-linked-accounts.repository";
+import { ConsumeVerificationCodeUseCase } from "#api/modules/identity/verifications/application/use-cases/consume-verification-code.use-case";
+import { Verification } from "#api/modules/identity/verifications/domain/verification.aggregate";
+import { NodeVerificationCodeSecurityAdapter } from "#api/modules/identity/verifications/infrastructure/adapters/node-verification-code-security.adapter";
+import { DrizzleVerificationRepository } from "#api/modules/identity/verifications/infrastructure/persistence/drizzle-verification.repository";
+import { user as userTable, verification } from "#api/platform/database/schema/index";
+import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
+import { FakeEmailSender } from "#test/doubles/notification/fake-email-sender";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import { createVerificationRowFixture } from "#test/fixtures/identity/verification-row.fixture";
+import { createTestClient } from "#test/setup/database-context";
+import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
+
+import { createAuthTestModule } from "../../helpers/auth-test-module.factory.js";
+
+const at = new Date("2026-12-31T23:59:00.000Z");
+const atInstant = Temporal.Instant.fromEpochMilliseconds(at.getTime());
+const expiresAt = Temporal.Instant.from("2027-01-01T00:09:00.000Z");
+const code = "123456";
+const security = new NodeVerificationCodeSecurityAdapter();
+const digest = security.hash(code);
+
+describe("인증 소비와 credential 저장 (실제 PostgreSQL)", () => {
+  let database: TestDatabase;
+  let client: TestDatabaseClient;
+  let module: TestingModule;
+  let repository: DrizzleVerificationRepository;
+  let accountRepository: DrizzleLinkedAccountsRepository;
+  let consumeCode: ConsumeVerificationCodeUseCase;
+  let passwordService: Argon2PasswordHasherAdapter;
+  let resetPassword: ResetPasswordUseCase;
+  let unitOfWork: UnitOfWorkPort;
+  let userId: string;
+  const email = "verification-owner@example.com";
+
+  beforeAll(async () => {
+    database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 6 }) });
+    client = await database.start();
+    module = await createAuthTestModule(client, new FakeEmailSender());
+    repository = module.get(DrizzleVerificationRepository);
+    accountRepository = module.get(DrizzleLinkedAccountsRepository);
+    consumeCode = module.get(ConsumeVerificationCodeUseCase);
+    passwordService = module.get(Argon2PasswordHasherAdapter);
+    resetPassword = module.get(ResetPasswordUseCase);
+    unitOfWork = module.get(UnitOfWorkPort);
+  });
+
+  beforeEach(async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(at);
+    await database.cleanup();
+    const user = createUserRowFixture({
+      id: createEntityId(),
+      email,
+      userTag: "OTPTEST1",
+      createdAt: atInstant,
+      updatedAt: atInstant,
+    });
+    await client.insert(userTable).values(user);
+    userId = user.id;
+  });
+
+  afterEach(() => vi.useRealTimers());
+
+  afterAll(async () => {
+    try {
+      await module?.close();
+    } finally {
+      await database?.stop();
+    }
+  });
+
+  // 다른 요청이 읽어 둔 사본처럼 저장된 행과 상관없이 소비할 수 있는 상태로 만든다
+  function staleVerification(id: number, tokenHash: string): Verification {
+    return Verification.reconstitute({
+      id,
+      userId,
+      type: "PASSWORD_RESET",
+      tokenHash,
+      expiresAt: atInstant.add({ minutes: 10 }),
+      attempts: 0,
+      usedAt: null,
+      createdAt: atInstant.subtract({ minutes: 1 }),
+    });
+  }
+
+  async function givenVerification(
+    overrides: Parameters<typeof createVerificationRowFixture>[0] = {},
+  ) {
+    const fixture = createVerificationRowFixture({
+      userId,
+      type: "PASSWORD_RESET",
+      token: digest,
+      expiresAt,
+      createdAt: atInstant,
+      ...overrides,
+    });
+    await client.insert(verification).values(fixture);
+    return fixture;
+  }
+
+  async function readVerification(id: number) {
+    return client.query.verification.findFirst({ where: { id } });
+  }
+
+  async function givenCredentialAccount(passwordHash: string): Promise<LinkedAccounts> {
+    const accounts = LinkedAccounts.create(UserId.reconstitute(userId));
+    accounts.setPassword({ id: await accountRepository.nextId(), passwordHash, now: atInstant });
+    await accountRepository.save(accounts);
+    const saved = await accountRepository.findByUserId(UserId.reconstitute(userId));
+    if (saved == null) {
+      throw new Error("credential 계정이 만들어지지 않았습니다.");
+    }
+    return saved;
+  }
+
+  async function storedPasswordHash(): Promise<string | null> {
+    return (
+      (await accountRepository.findByUserId(UserId.reconstitute(userId)))?.passwordHash ?? null
+    );
+  }
+
+  async function competeForRow<T>(
+    table: "Verification" | "Account",
+    id: number,
+    start: () => Array<Promise<T>>,
+  ) {
+    const locked = Promise.withResolvers<void>();
+    const release = Promise.withResolvers<void>();
+    const holdingLock = client.transaction(async (transaction) => {
+      const lock =
+        table === "Verification"
+          ? sql`SELECT "id" FROM "Verification" WHERE "id" = ${id} FOR UPDATE`
+          : sql`SELECT "id" FROM "Account" WHERE "id" = ${id} FOR UPDATE`;
+      await transaction.execute(lock);
+      locked.resolve();
+      await release.promise;
+    });
+    await Promise.race([
+      locked.promise,
+      holdingLock.then(() => {
+        throw new Error("동시 UPDATE 요청 전에 row lock이 해제되었습니다.");
+      }),
+    ]);
+    const outcomes = Promise.allSettled(start());
+    try {
+      await vi.waitFor(
+        async () => {
+          const waiting = await client.execute<{ count: number }>(sql`
+            SELECT count(*)::int AS count FROM pg_stat_activity
+            WHERE datname = current_database() AND wait_event_type = 'Lock'
+              AND query ILIKE '%UPDATE%' AND query LIKE ${`%${table}%`}
+          `);
+          expect(waiting.rows[0]?.count).toBe(2);
+        },
+        { timeout: 5000, interval: 10 },
+      );
+    } finally {
+      release.resolve();
+      await holdingLock;
+      await outcomes;
+    }
+    return outcomes;
+  }
+
+  it("같은 OTP의 동시 비밀번호 재설정은 하나만 성공하고 승자의 비밀번호와 감사 기록을 저장한다", async () => {
+    // Given
+    await givenCredentialAccount(await passwordService.hash("OriginalPassword123!"));
+    const verification = await givenVerification();
+    const nextPasswords = ["FirstNewPassword123!", "SecondNewPassword123!"];
+
+    // When
+    const results = await competeForRow("Verification", verification.id, () =>
+      nextPasswords.map((newPassword) => resetPassword.execute({ email, code, newPassword })),
+    );
+
+    // Then
+    expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+    const rejected = results.find((result) => result.status === "rejected");
+    expect(rejected?.reason).toMatchObject({ errorCode: "VERIFY_0751" });
+    const passwordHash = await storedPasswordHash();
+    if (passwordHash == null) {
+      throw new Error("성공한 요청의 credential 비밀번호가 저장되지 않았습니다.");
+    }
+    const matches = await Promise.all(
+      nextPasswords.map((password) => passwordService.verify(passwordHash, password)),
+    );
+    expect(matches).toEqual(results.map((result) => result.status === "fulfilled"));
+    expect((await readVerification(verification.id))?.usedAt).toBeInstanceOf(Temporal.Instant);
+    expect(
+      await client.query.securityLog.findMany({ where: { event: "PASSWORD_CHANGED" } }),
+    ).toHaveLength(1);
+  });
+
+  it("소비 후 후속 쓰기가 실패하면 usedAt도 rollback하여 다시 사용할 수 있다", async () => {
+    // Given
+    const verification = await givenVerification();
+    const failure = new Error("후속 쓰기 실패");
+
+    // When
+    await expect(
+      unitOfWork.run(async () => {
+        await consumeCode.execute({ userId, code, type: "PASSWORD_RESET" });
+        throw failure;
+      }),
+    ).rejects.toBe(failure);
+
+    // Then
+    expect((await readVerification(verification.id))?.usedAt).toBeNull();
+    await expect(
+      consumeCode.execute({ userId, code, type: "PASSWORD_RESET" }),
+    ).resolves.toBeUndefined();
+    expect((await readVerification(verification.id))?.usedAt).toEqual(atInstant);
+  });
+
+  it("잘못된 코드의 실패 횟수는 외부 트랜잭션 rollback 후에도 유지한다", async () => {
+    // Given
+    const verification = await givenVerification();
+
+    // When
+    await expect(
+      unitOfWork.run(() => consumeCode.execute({ userId, code: "000000", type: "PASSWORD_RESET" })),
+    ).rejects.toMatchObject({ errorCode: "VERIFY_0751" });
+
+    // Then
+    expect(await readVerification(verification.id)).toMatchObject({ attempts: 1, usedAt: null });
+  });
+
+  it("병렬 실패 횟수 증가는 독립 커밋으로 누락 없이 누적한다", async () => {
+    // Given
+    const verification = await givenVerification();
+
+    // When
+    const results = await competeForRow("Verification", verification.id, () => [
+      unitOfWork.run(() => consumeCode.execute({ userId, code: "000000", type: "PASSWORD_RESET" })),
+      unitOfWork.run(() => consumeCode.execute({ userId, code: "000000", type: "PASSWORD_RESET" })),
+    ]);
+
+    // Then
+    for (const result of results) {
+      expect(result.status).toBe("rejected");
+      if (result.status === "rejected") {
+        expect(result.reason).toMatchObject({ errorCode: "VERIFY_0751" });
+      }
+    }
+    expect(await readVerification(verification.id)).toMatchObject({ attempts: 2, usedAt: null });
+  });
+
+  it.each([
+    { description: "만료 시각", overrides: { expiresAt: atInstant }, errorCode: "VERIFY_0751" },
+    { description: "시도 한도", overrides: { attempts: 5 }, errorCode: "VERIFY_0754" },
+  ])(
+    "$description에 도달한 코드는 DB 조건과 서비스에서 소비를 거부한다",
+    async ({ overrides, errorCode }) => {
+      // Given
+      const verification = await givenVerification(overrides);
+      const staleCopy = staleVerification(verification.id, digest);
+      staleCopy.consume(atInstant);
+
+      // When
+      const consumed = await repository.save(staleCopy);
+      const result = consumeCode.execute({ userId, code, type: "PASSWORD_RESET" });
+
+      // Then
+      expect(consumed).toBe(false);
+      await expect(result).rejects.toMatchObject({
+        errorCode,
+      });
+      expect(await readVerification(verification.id)).toMatchObject({
+        usedAt: null,
+        attempts: verification.attempts,
+      });
+    },
+  );
+
+  it("동시에 들어온 틀린 시도 여러 개도 시도 횟수는 한도에서 멈춘다", async () => {
+    // Given
+    const verification = await givenVerification({ attempts: 0 });
+
+    // When
+    const results = await Promise.allSettled(
+      Array.from({ length: 10 }, () =>
+        consumeCode.execute({ userId, code: "000000", type: "PASSWORD_RESET" }),
+      ),
+    );
+
+    // Then
+    expect(results.every((result) => result.status === "rejected")).toBe(true);
+    expect((await readVerification(verification.id))?.attempts).toBe(5);
+  });
+
+  it("hash가 다른 사본은 소비 저장을 거부하고 같은 코드의 두 소비 중 하나만 저장한다", async () => {
+    // Given
+    const verification = await givenVerification({ attempts: 1 });
+    const otherHash = staleVerification(verification.id, security.hash("654321"));
+    const first = staleVerification(verification.id, digest);
+    const second = staleVerification(verification.id, digest);
+    for (const copy of [otherHash, first, second]) {
+      copy.consume(atInstant);
+    }
+
+    // When
+    const otherHashConsumed = await repository.save(otherHash);
+    const afterMismatch = await readVerification(verification.id);
+    const firstConsumed = await repository.save(first);
+    const secondConsumed = await repository.save(second);
+
+    // Then
+    expect(otherHashConsumed).toBe(false);
+    expect(afterMismatch?.usedAt).toBeNull();
+    expect({ firstConsumed, secondConsumed }).toEqual({
+      firstConsumed: true,
+      secondConsumed: false,
+    });
+  });
+
+  it("느린 로그인 rehash는 먼저 저장된 새 비밀번호를 덮어쓰지 않는다", async () => {
+    // Given
+    await givenCredentialAccount("old-password-hash");
+    const slowRehash = await accountRepository.findByUserId(UserId.reconstitute(userId));
+    const changed = await accountRepository.findByUserId(UserId.reconstitute(userId));
+    slowRehash?.changePassword("slow-rehash", atInstant);
+    changed?.changePassword("new-password-hash", atInstant);
+    if (slowRehash == null || changed == null) {
+      throw new Error("credential 계정이 만들어지지 않았습니다.");
+    }
+    await accountRepository.save(changed);
+
+    // When
+    const saved = await accountRepository.save(slowRehash);
+
+    // Then
+    expect(saved).toBe(false);
+    expect(await storedPasswordHash()).toBe("new-password-hash");
+  });
+
+  it("같은 기존 해시의 두 rehash 중 하나만 변경하고 실제 승자의 해시를 저장한다", async () => {
+    // Given
+    const loaded = await givenCredentialAccount("old-password-hash");
+    const accountId = loaded.accounts.at(0)?.id.value ?? 0;
+    const first = await accountRepository.findByUserId(UserId.reconstitute(userId));
+    const second = await accountRepository.findByUserId(UserId.reconstitute(userId));
+    if (first == null || second == null) {
+      throw new Error("credential 계정이 만들어지지 않았습니다.");
+    }
+    first.changePassword("first-rehash", atInstant);
+    second.changePassword("second-rehash", atInstant);
+
+    // When
+    const results = await competeForRow("Account", accountId, () => [
+      accountRepository.save(first),
+      accountRepository.save(second),
+    ]);
+
+    // Then
+    const updated = results.map((result) => {
+      if (result.status === "rejected") {
+        throw result.reason;
+      }
+      return result.value;
+    });
+    expect(updated.filter(Boolean)).toHaveLength(1);
+    expect(await storedPasswordHash()).toBe(updated[0] ? "first-rehash" : "second-rehash");
+  });
+});

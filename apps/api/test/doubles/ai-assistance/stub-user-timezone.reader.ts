@@ -1,4 +1,4 @@
-import { UserTimezoneReaderPort } from "#api/modules/identity/identity-settings.public";
+import { UserTimezoneReaderPort } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 
 export class StubUserTimezoneReader extends UserTimezoneReaderPort {
   timezone: string | null = "Asia/Seoul";

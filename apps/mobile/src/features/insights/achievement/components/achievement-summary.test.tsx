@@ -1,5 +1,8 @@
 import '@src/shared/i18n/init';
-import { weeklyAchievementListResponseSchema } from '@aido/api';
+import {
+  weeklyAchievementListResponseSchema,
+  weeklyAchievementYearsResponseSchema,
+} from '@aido/api/contracts/weekly-achievement/v1';
 import { ok } from '@src/core/errors/result';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { i18n } from '@src/shared/i18n';
@@ -44,6 +47,9 @@ async function renderSummary(language: 'ko' | 'en') {
   httpClient.get.mockImplementation(
     respondByPath({
       'v1/auth/me': ok(createCurrentUserDto()),
+      'v1/weekly-achievements/years': ok(
+        weeklyAchievementYearsResponseSchema.parse({ years: [2026] }),
+      ),
       'v1/weekly-achievements': async () => ok(weekly.current),
     }),
   );

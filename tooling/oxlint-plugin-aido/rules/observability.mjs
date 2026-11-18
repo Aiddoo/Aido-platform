@@ -168,44 +168,123 @@ function collectExportedConstNames(program) {
   );
 }
 
+const SEGMENT = '[a-z0-9]+(?:-[a-z0-9]+)*';
+const CONTEXT_FROM_PATH = /\/modules\/([^/]+)\//u;
+
+function unwrapExpression(node) {
+  let current = node;
+  while (current?.type === 'TSAsExpression' || current?.type === 'TSSatisfiesExpression') {
+    current = current.expression;
+  }
+  return current;
+}
+
+function buildKeyPattern({ minSegments, maxSegments, singleWordOutcome }) {
+  const outcome = singleWordOutcome ? '[a-z0-9]+' : SEGMENT;
+  return new RegExp(
+    `^${SEGMENT}(?:\\.${SEGMENT}){${minSegments - 2},${maxSegments - 2}}\\.${outcome}$`,
+    'u',
+  );
+}
+
 const logEventKey = {
-  meta: { type: 'suggestion' },
+  meta: {
+    type: 'suggestion',
+    schema: [
+      {
+        type: 'object',
+        properties: {
+          constantPattern: { type: 'string' },
+          minSegments: { type: 'integer', minimum: 2 },
+          maxSegments: { type: 'integer', minimum: 2 },
+          singleWordOutcome: { type: 'boolean' },
+          contextFromPath: { type: 'boolean' },
+        },
+        additionalProperties: false,
+      },
+    ],
+  },
   create(context) {
+    const options = context.options[0] ?? {};
+    const constantPattern =
+      options.constantPattern == null
+        ? LOG_EVENT_CONSTANT
+        : new RegExp(options.constantPattern, 'u');
+    const keyShape = {
+      minSegments: options.minSegments ?? 3,
+      maxSegments: options.maxSegments ?? 3,
+      singleWordOutcome: options.singleWordOutcome ?? false,
+    };
+    const keyPattern =
+      options.minSegments == null && options.maxSegments == null && !keyShape.singleWordOutcome
+        ? LOG_EVENT_KEY
+        : buildKeyPattern(keyShape);
+    const shapeLabel =
+      keyPattern === LOG_EVENT_KEY
+        ? '{feature}.{subject}.{outcome} 세 마디 kebab-case'
+        : `{context}.{subject}[.{detail}].{outcome} ${keyShape.minSegments}~${keyShape.maxSegments}마디, 마지막은 하이픈 없는 결과 한 단어`;
+    const expectedContext = options.contextFromPath
+      ? (CONTEXT_FROM_PATH.exec(context.filename)?.[1] ?? null)
+      : null;
     const seen = new Set();
     let otherFileKeys = null;
+
+    function checkKey(value) {
+      const key = value.value;
+      if (!keyPattern.test(key)) {
+        context.report({ node: value, message: `${key}: 로그 키는 ${shapeLabel}입니다.` });
+      }
+      if (expectedContext != null && !key.startsWith(`${expectedContext}.`)) {
+        context.report({
+          node: value,
+          message: `${key}: 첫 마디는 이 파일의 Context(${expectedContext})입니다.`,
+        });
+      }
+      if (seen.has(key)) {
+        context.report({ node: value, message: `${key}: 같은 파일에 이미 있는 로그 키입니다.` });
+      }
+      seen.add(key);
+      otherFileKeys ??= collectOtherFileKeys(context.filename);
+      const owner = otherFileKeys.get(key);
+      if (owner != null) {
+        context.report({
+          node: value,
+          message: `${key}: ${owner}에도 있는 로그 키입니다. 키는 앱 전체에서 하나의 뜻만 갖습니다(Sentry 대시보드).`,
+        });
+      }
+    }
+
     return {
       Program(program) {
         const exported = collectExportedConstNames(program);
-        if (exported.length !== 1 || !LOG_EVENT_CONSTANT.test(exported[0])) {
+        if (exported.length !== 1 || !constantPattern.test(exported[0])) {
           context.report({
             node: program,
-            message: `로그 키 파일은 *_LOG_EVENT 상수 하나만 내보냅니다(지금: ${exported.join(', ') || '없음'}).`,
+            message: `로그 키 파일은 ${constantPattern.source} 상수 하나만 내보냅니다(지금: ${exported.join(', ') || '없음'}).`,
           });
         }
-      },
-      Property(node) {
-        const { value } = node;
-        if (value.type !== 'Literal' || typeof value.value !== 'string') {
-          return;
-        }
-        const key = value.value;
-        if (!LOG_EVENT_KEY.test(key)) {
-          context.report({
-            node: value,
-            message: `${key}: 로그 키는 {feature}.{subject}.{outcome} 세 마디 kebab-case입니다.`,
-          });
-        }
-        if (seen.has(key)) {
-          context.report({ node: value, message: `${key}: 같은 파일에 이미 있는 로그 키입니다.` });
-        }
-        seen.add(key);
-        otherFileKeys ??= collectOtherFileKeys(context.filename);
-        const owner = otherFileKeys.get(key);
-        if (owner != null) {
-          context.report({
-            node: value,
-            message: `${key}: ${owner}에도 있는 로그 키입니다. 키는 앱 전체에서 하나의 뜻만 갖습니다(Sentry 대시보드).`,
-          });
+        for (const statement of program.body) {
+          const declaration =
+            statement.type === 'ExportNamedDeclaration' ? statement.declaration : null;
+          if (declaration?.type !== 'VariableDeclaration') {
+            continue;
+          }
+          for (const declarator of declaration.declarations) {
+            const initializer = unwrapExpression(declarator.init);
+            if (
+              declarator.id.type !== 'Identifier' ||
+              !constantPattern.test(declarator.id.name) ||
+              initializer?.type !== 'ObjectExpression'
+            ) {
+              continue;
+            }
+            for (const property of initializer.properties) {
+              const value = property.type === 'Property' ? property.value : null;
+              if (value?.type === 'Literal' && typeof value.value === 'string') {
+                checkKey(value);
+              }
+            }
+          }
         }
       },
     };
@@ -224,30 +303,59 @@ function getTerminalName(node) {
   return null;
 }
 
-// logger 호출은 *_LOG_EVENT 상수로 키를 넘긴다. 문자열을 바로 쓰면 log-event-key의 형식·유일성 검사를 건너뛴다
+// logger 호출은 로그 키 상수로 키를 넘긴다. 문자열을 바로 쓰면 log-event-key의 형식·유일성 검사를 건너뛴다.
+// 앱은 첫 인자가 키, 서버는 첫 인자 객체의 eventProperty(event)가 키다
 const loggerEventConstant = {
-  meta: { type: 'suggestion' },
-  createOnce(context) {
+  meta: {
+    type: 'suggestion',
+    schema: [
+      {
+        type: 'object',
+        properties: {
+          eventProperty: { type: 'string' },
+          methods: { type: 'array', items: { type: 'string' } },
+        },
+        additionalProperties: false,
+      },
+    ],
+  },
+  create(context) {
+    const options = context.options[0] ?? {};
+    const methods = new Set(options.methods ?? LOGGER_METHODS);
+    const eventProperty = options.eventProperty ?? null;
+    function isLiteralKey(node) {
+      return (
+        (node?.type === 'Literal' && typeof node.value === 'string') ||
+        node?.type === 'TemplateLiteral'
+      );
+    }
     return {
       CallExpression(node) {
         const { callee } = node;
         if (
           callee.type !== 'MemberExpression' ||
           callee.computed ||
-          !LOGGER_METHODS.has(callee.property.name) ||
+          !methods.has(callee.property.name) ||
           getTerminalName(callee.object) !== 'logger'
         ) {
           return;
         }
-        const [key] = node.arguments;
-        if (
-          (key?.type === 'Literal' && typeof key.value === 'string') ||
-          key?.type === 'TemplateLiteral'
-        ) {
+        const [first] = node.arguments;
+        const key =
+          eventProperty != null && first?.type === 'ObjectExpression'
+            ? first.properties.find(
+                (property) =>
+                  property.type === 'Property' &&
+                  !property.computed &&
+                  property.key.type === 'Identifier' &&
+                  property.key.name === eventProperty,
+              )?.value
+            : first;
+        if (isLiteralKey(key)) {
           context.report({
             node: key,
             message:
-              'logger에는 문자열 대신 {feature}-log-events.ts의 *_LOG_EVENT 상수로 키를 넘깁니다(observability.md).',
+              'logger에는 문자열 대신 log-events 파일의 로그 키 상수를 넘깁니다(observability.md).',
           });
         }
       },

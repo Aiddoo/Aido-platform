@@ -1,4 +1,4 @@
-import type { DayOfWeek } from '@aido/api';
+import type { DayOfWeek } from '@aido/api/vocabulary';
 import { fromEpochMs, toEpochMs, toInstant } from '@src/shared/date/instant';
 import { i18n } from '@src/shared/i18n';
 import { createDateKey } from '@src/testing/date-key';
@@ -203,7 +203,7 @@ describe('로케일 인지 포맷 (i18n)', () => {
     expect(formatRelativeTimeLabel(now, now, EN_SEOUL)).toBe('Just now');
     expect(formatRelativeTimeLabel(oneMinuteAgo, now, EN_SEOUL)).toBe('1 minute ago');
     expect(formatRelativeTimeLabel(twoHoursAgo, now, EN_SEOUL)).toBe('2 hours ago');
-    expect(formatRelativeTimeLabel(oneDayAgo, now, EN_SEOUL)).toBe('yesterday');
+    expect(formatRelativeTimeLabel(oneDayAgo, now, EN_SEOUL)).toBe('Yesterday');
     expect(formatRelativeTimeLabel(twoDaysAgo, now, EN_SEOUL)).toBe('2 days ago');
   });
 });

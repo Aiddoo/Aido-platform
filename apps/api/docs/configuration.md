@@ -7,7 +7,7 @@ env를 더하거나 읽는 위치를 바꿀 때, 운영 env를 준비할 때 읽
 - 시작 검증은 `src/platform/config/schemas`의 전체 schema(`validateEnv`)가 한 번 한다. env는 여기 등록해야 읽힌다(schema가 모르는 변수는 버려진다).
 - 읽는 방법은 namespace 설정이다. [defineConfig](../src/platform/config/define-config.ts)`("<namespace>", schema, (env) => ({ ENV_NAME: env.ENV_NAME, … }))`(`registerAs` + Zod)로 정의하고, 읽기 함수는 schema가 읽는 env 키를 모두 적어야 컴파일된다. 주입은 `@Inject(xConfig.KEY)`, 타입은 `ConfigType<typeof xConfig>`다.
   - 공용은 `platform/config`의 `app`·`database`·`redis`·`jwt`·`sentry`·`cache`·`encryption`·`job`·`throttle`이다. 여러 slice가 같은 env(`SUPPORT_EMAIL`, 서명 대체용 `JWT_SECRET`)를 읽으면 각 slice 설정이 같은 schema 조각을 고른다.
-  - slice 소유는 `<context>-<slice>.config.ts`(사례: [identity-auth.config.ts](../src/modules/identity/auth/identity-auth.config.ts), [weather-forecasts.config.ts](../src/modules/weather/forecasts/weather-forecasts.config.ts))이고 slice module이 `ConfigModule.forFeature`로 등록한다.
+  - slice 소유는 `<context>-<slice>.config.ts`(사례: [identity-linked-accounts.config.ts](../src/modules/identity/linked-accounts/identity-linked-accounts.config.ts), [weather-weather-reports.config.ts](../src/modules/weather/weather-reports/weather-weather-reports.config.ts))이고 slice module이 `ConfigModule.forFeature`로 등록한다.
   - 설정은 부팅 때 `process.env` 원문을 한 번 파싱한다. 요청마다 env를 다시 읽지 않고, 검증을 거친 env를 namespace schema로 다시 파싱하지 않는다(`z.stringbool()` 같은 칸이 검증 뒤 값을 거절한다).
   - 테스트는 설정 provider를 바꾸거나(`overrideProvider(<config>.KEY)`), 여러 namespace가 함께 바뀌는 배포 환경은 앱을 띄우기 전에 env를 넣는다(`createE2eApp({ env })`).
 - `process.env`는 `platform/config/env.ts`(`processEnv`)와 `*.config.ts`에서만 읽는다(oxlint `node/no-process-env`).
@@ -19,22 +19,22 @@ env를 더하거나 읽는 위치를 바꿀 때, 운영 env를 준비할 때 읽
 
 런타임 판단은 `NODE_ENV`가 아니라 배포 환경(`appConfig.environment`: `development | staging | production`)을 읽는다. `APP_ENV`가 우선이고, 없으면 `NODE_ENV=production`은 production, 나머지는 development다(개발서버는 production 빌드 + `APP_ENV=development`). 코드는 `NODE_ENV`·`APP_ENV`를 직접 읽지 않고 `appConfig`를 주입받아 환경 이름 대신 아래 스위치와 공급자 값을 읽는다. Sentry 발송과 경보 어댑터([관측](observability.md#환경별-어댑터))도 같은 값을 본다.
 
-| 환경 → 공급자·스위치                                                 | development 로컬 실행               | development 개발서버 | staging                     | production            |
-| -------------------------------------------------------------------- | ----------------------------------- | -------------------- | --------------------------- | --------------------- |
-| `devTools.exposeErrorDetails`(오류 원문·검증 상세·DB 정보)           | 켬(테스트 실행은 끔)                | 끔                   | 끔                          | 끔                    |
-| `devTools.swaggerUi`(`/api/docs`·`/api/admin/docs`)                  | 켬(테스트 실행은 끔)                | 끔                   | 끔                          | 끔                    |
-| `devTools.oauthDevRedirects`(`aido-dev://`·localhost·`exp://` 복귀)  | 켬(테스트 실행은 끔)                | 끔                   | 끔                          | 끔                    |
-| `devTools.localCorsOrigins`(localhost 출처 추가)                     | 켬(테스트 실행은 끔)                | 끔                   | 끔                          | 끔                    |
-| `responseContractCheck`(handler 반환값 응답 계약 검사)               | 켬                                  | 켬                   | 켬                          | 끔                    |
-| 웹훅 서명(RevenueCat)                                                | 비밀 있으면 검증, 없으면 건너뜀     | 같음                 | 검증(비밀 없으면 모두 거절) | 검증(비밀 필수)       |
-| Test Store 구매 반영                                                 | 반영                                | 반영                 | 반영                        | 받기만 함             |
-| `EMAIL_PROVIDER` 비었을 때                                           | 키 있으면 `resend`, 없으면 `log`    | 같음                 | `resend`                    | `resend`(`log` 금지)  |
-| `ADMIN_NOTIFIER_PROVIDER` 비었을 때                                  | 웹훅 있으면 `discord`, 없으면 `log` | 같음                 | `discord`                   | `discord`(`log` 금지) |
-| `CACHE_TYPE`(캐시·잠금·중복 방지·스로틀) / `PUSH_RATE_LIMIT_BACKEND` | `memory` / `postgres`               | 같음                 | 같음                        | 같음                  |
-| `AI_PROVIDER_ORDER` / `AI_GENERATION_MODE`                           | `anthropic,google,openai` / `on`    | 같음                 | 같음                        | 같음                  |
-| 초대 해시 비밀(`INVITE_ENABLED=true`일 때)                           | 없으면 로컬 값                      | 같음                 | 필수                        | 필수                  |
-| Sentry 발송                                                          | 안 함                               | 안 함                | 안 함                       | DSN 있으면 보냄       |
-| 공개 `/health` 상세(`exposeHealthDetails`: 큐·런타임·인스턴스)       | 공개                                | 공개                 | 공개                        | `{ status }`만        |
+| 환경 → 공급자·스위치                                                | development 로컬 실행               | development 개발서버 | staging                     | production            |
+| ------------------------------------------------------------------- | ----------------------------------- | -------------------- | --------------------------- | --------------------- |
+| `devTools.exposeErrorDetails`(오류 원문·검증 상세·DB 정보)          | 켬(테스트 실행은 끔)                | 끔                   | 끔                          | 끔                    |
+| `devTools.swaggerUi`(`/api/docs`·`/api/admin/docs`)                 | 켬(테스트 실행은 끔)                | 끔                   | 끔                          | 끔                    |
+| `devTools.oauthDevRedirects`(`aido-dev://`·localhost·`exp://` 복귀) | 켬(테스트 실행은 끔)                | 끔                   | 끔                          | 끔                    |
+| `devTools.localCorsOrigins`(localhost 출처 추가)                    | 켬(테스트 실행은 끔)                | 끔                   | 끔                          | 끔                    |
+| `responseContractCheck`(handler 반환값 응답 계약 검사)              | 켬                                  | 켬                   | 켬                          | 끔                    |
+| 웹훅 서명(RevenueCat)                                               | 비밀 있으면 검증, 없으면 건너뜀     | 같음                 | 검증(비밀 없으면 모두 거절) | 검증(비밀 필수)       |
+| Test Store 구매 반영                                                | 반영                                | 반영                 | 반영                        | 받기만 함             |
+| `EMAIL_PROVIDER` 비었을 때                                          | 키 있으면 `resend`, 없으면 `log`    | 같음                 | `resend`                    | `resend`(`log` 금지)  |
+| `ADMIN_NOTIFIER_PROVIDER` 비었을 때                                 | 웹훅 있으면 `discord`, 없으면 `log` | 같음                 | `discord`                   | `discord`(`log` 금지) |
+| `CACHE_TYPE`(캐시·중복 방지·스로틀) / `PUSH_RATE_LIMIT_BACKEND`     | `memory` / `postgres`               | 같음                 | 같음                        | 같음                  |
+| `AI_PROVIDER_ORDER` / `AI_GENERATION_MODE`                          | `anthropic,google,openai` / `on`    | 같음                 | 같음                        | 같음                  |
+| 초대 해시 비밀(`INVITE_ENABLED=true`일 때)                          | 없으면 로컬 값                      | 같음                 | 필수                        | 필수                  |
+| Sentry 발송                                                         | 안 함                               | 안 함                | 안 함                       | DSN 있으면 보냄       |
+| 공개 `/health` 상세(`exposeHealthDetails`: 큐·런타임·인스턴스)      | 공개                                | 공개                 | 공개                        | `{ status }`만        |
 
 - 로컬 실행(`appConfig.isLocalRun`)은 배포 환경이 development이고 `NODE_ENV`가 production이 아닐 때다(소스로 띄운 서버·테스트). 개발 도구는 로컬 실행에서만 켠다. 배포된 개발서버(production 빌드 + `APP_ENV=development`)는 외부에서 닿는 주소라 오류 원문·Swagger·OAuth 개발 복귀·localhost CORS를 닫고, 공급자·관측(로그 어댑터, Sentry 끔)만 development 값을 쓴다.
 - 테스트 실행(`NODE_ENV=test`)은 출시 응답 계약을 검증하므로 로컬 실행이어도 개발 도구를 끈다.
@@ -96,7 +96,6 @@ env를 더하거나 읽는 위치를 바꿀 때, 운영 env를 준비할 때 읽
 | DISCORD_SIGNUP_WEBHOOK_URL / DISCORD_PAYMENT_WEBHOOK_URL                | 운영 가입/결제 채널                                                                                                                                                                                                                                  |
 | REVENUECAT_WEBHOOK_SECRET                                               | 웹훅 Authorization 비교 값. 운영 필수                                                                                                                                                                                                                |
 | REVENUECAT_API_V2_SECRET_KEY / REVENUECAT_PROJECT_ID                    | 선택. 둘 다 있으면 웹훅 뒤 스토어 상태 대조를 켠다([결제](billing.md#웹훅-뒤-스토어-상태-대조)). v2 비밀 키, 권한은 읽기 둘뿐                                                                                                                        |
-| APP_VERSION_CHECK_*                                                     | 전환기 대체값. `_ENABLED`(기본 false)·`_IOS_LATEST_VERSION`·`_ANDROID_LATEST_VERSION`. DB `AppRelease`에 행이 없는 플랫폼만 읽는다([배포](deployment.md#공개-버전과-env-반영))                                                                       |
 | FEATURE_DISCOVERY_*                                                     | 새 기능 소개. 규칙은 아래                                                                                                                                                                                                                            |
 
 ## 새 기능 소개 값

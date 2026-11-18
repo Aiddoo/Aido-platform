@@ -1,7 +1,7 @@
 import {
   type SingleTodoCountQuery,
   SingleTodoCountReaderPort,
-} from "#api/modules/planning/todos/planning-todo-queries.public";
+} from "#api/modules/planning/todos/planning-todos-queries.public";
 
 export class StubSingleTodoCountReader extends SingleTodoCountReaderPort {
   count = 3;

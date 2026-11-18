@@ -47,7 +47,7 @@ describe("RedisErrorLogSampler — Redis 에러 로그 샘플러", () => {
     // Given
     const sampler = new RedisErrorLogSampler({ warn }, 30_000);
 
-    // When — 같은 윈도우 안에서 100회 에러
+    // When
     for (let i = 0; i < 100; i++) {
       sampler.warn("GET", new Error("boom"));
     }
@@ -63,7 +63,8 @@ describe("RedisErrorLogSampler — Redis 에러 로그 샘플러", () => {
       sampler.warn("GET", new Error("boom"));
     }
 
-    // When — 윈도우 경과 후 새 에러
+    // When
+
     vi.advanceTimersByTime(30_000);
     sampler.warn("SET", new Error("still down"));
 

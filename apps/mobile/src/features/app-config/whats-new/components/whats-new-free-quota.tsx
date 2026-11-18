@@ -1,5 +1,6 @@
 import { QuotaChip } from '@src/features/billing/subscription/components/quota-chip';
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
+import { useFormatPlanAmount } from '@src/features/billing/subscription/hooks/use-format-plan-amount';
 import { useFormatPlanValue } from '@src/features/billing/subscription/hooks/use-format-plan-value';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import {
@@ -32,6 +33,7 @@ export function WhatsNewFreeQuota() {
   const { t } = useTranslation(['whatsNew', 'subscription']);
   const { data: snapshot } = useSuspenseQuery(useGetEntitlementsQueryOptions());
   const formatPlanValue = useFormatPlanValue();
+  const formatPlanAmount = useFormatPlanAmount();
   const { free } = getPlanBenefitAmounts(snapshot);
 
   return (
@@ -47,7 +49,9 @@ export function WhatsNewFreeQuota() {
         Icon={ReportDuoIcon}
         label={t('whatsNew:v1_15_0.quota.voiceNote')}
         value={formatPlanValue(toPlanFeatureComparison(snapshot, 'VOICE_NOTE').free)}
-        detail={t('whatsNew:v1_15_0.quota.voiceNoteMinutes', { minutes: free.voiceNoteMinutes })}
+        detail={t('whatsNew:v1_15_0.quota.voiceNoteMinutes', {
+          minutes: formatPlanAmount(free.voiceNoteMinutes),
+        })}
         chip={<QuotaChip feature="VOICE_NOTE" className="self-start" />}
       />
       {EntitlementPolicy.hasFullAccess(snapshot) && (

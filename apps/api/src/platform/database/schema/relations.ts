@@ -3,8 +3,8 @@ import { defineRelations } from "drizzle-orm";
 import * as schema from "./tables.schema.js";
 
 export const relations = defineRelations(schema, (r) => ({
-  account: {
-    user: r.one.user({ from: r.account.userId, to: r.user.id, optional: false }),
+  linkedAccount: {
+    user: r.one.user({ from: r.linkedAccount.userId, to: r.user.id, optional: false }),
   },
   aiReport: {
     user: r.one.user({ from: r.aiReport.userId, to: r.user.id, optional: false }),
@@ -26,15 +26,15 @@ export const relations = defineRelations(schema, (r) => ({
   dailyCompletion: {
     user: r.one.user({ from: r.dailyCompletion.userId, to: r.user.id, optional: false }),
   },
-  follow: {
+  friendship: {
     follower: r.one.user({
-      from: r.follow.followerId,
+      from: r.friendship.followerId,
       to: r.user.id,
       optional: false,
       alias: "Follow_followerId_fkey",
     }),
     following: r.one.user({
-      from: r.follow.followingId,
+      from: r.friendship.followingId,
       to: r.user.id,
       optional: false,
       alias: "Follow_followingId_fkey",
@@ -135,9 +135,6 @@ export const relations = defineRelations(schema, (r) => ({
     user: r.one.user({ from: r.pushToken.userId, to: r.user.id, optional: false }),
     deliveryAttempts: r.many.pushDeliveryAttempt(),
   },
-  recurringSuggestion: {
-    user: r.one.user({ from: r.recurringSuggestion.userId, to: r.user.id, optional: false }),
-  },
   reminderNudge: {
     receiver: r.one.user({
       from: r.reminderNudge.receiverId,
@@ -152,8 +149,8 @@ export const relations = defineRelations(schema, (r) => ({
       alias: "ReminderNudge_senderId_fkey",
     }),
   },
-  resourceBonus: {
-    user: r.one.user({ from: r.resourceBonus.userId, to: r.user.id, optional: false }),
+  featureGrant: {
+    user: r.one.user({ from: r.featureGrant.userId, to: r.user.id, optional: false }),
   },
   retentionExperimentAssignment: {
     user: r.one.user({
@@ -186,6 +183,9 @@ export const relations = defineRelations(schema, (r) => ({
   },
   session: {
     user: r.one.user({ from: r.session.userId, to: r.user.id, optional: false }),
+  },
+  suggestion: {
+    user: r.one.user({ from: r.suggestion.userId, to: r.user.id, optional: false }),
   },
   subscription: {
     user: r.one.user({ from: r.subscription.userId, to: r.user.id, optional: false }),
@@ -240,7 +240,7 @@ export const relations = defineRelations(schema, (r) => ({
     viewer: r.one.user({ from: r.todoView.viewerId, to: r.user.id, optional: false }),
   },
   user: {
-    accounts: r.many.account(),
+    accounts: r.many.linkedAccount(),
     aiReports: r.many.aiReport(),
     dailyCompletions: r.many.dailyCompletion(),
     memos: r.many.memo(),
@@ -248,11 +248,11 @@ export const relations = defineRelations(schema, (r) => ({
     pushDispatches: r.many.pushDispatch(),
     pushDevices: r.many.pushDevice(),
     pushTokens: r.many.pushToken(),
-    recurringSuggestions: r.many.recurringSuggestion(),
     retentionAssignments: r.many.retentionExperimentAssignment(),
     securityLogs: r.many.securityLog(),
     sessions: r.many.session(),
     subscriptions: r.many.subscription(),
+    suggestions: r.many.suggestion(),
     todos: r.many.todo(),
     todoCategories: r.many.todoCategory(),
     authoredTodoComments: r.many.todoComment(),
@@ -267,8 +267,8 @@ export const relations = defineRelations(schema, (r) => ({
     weeklyAchievements: r.many.weeklyAchievement(),
     receivedCheers: r.many.cheer({ alias: "Cheer_receiverId_fkey" }),
     sentCheers: r.many.cheer({ alias: "Cheer_senderId_fkey" }),
-    following: r.many.follow({ alias: "Follow_followerId_fkey" }),
-    followers: r.many.follow({ alias: "Follow_followingId_fkey" }),
+    following: r.many.friendship({ alias: "Follow_followerId_fkey" }),
+    followers: r.many.friendship({ alias: "Follow_followingId_fkey" }),
     receivedNudges: r.many.nudge({ alias: "Nudge_receiverId_fkey" }),
     sentNudges: r.many.nudge({ alias: "Nudge_senderId_fkey" }),
     receivedRemindNudges: r.many.reminderNudge({ alias: "ReminderNudge_receiverId_fkey" }),
@@ -278,7 +278,7 @@ export const relations = defineRelations(schema, (r) => ({
     inviteeRedemption: r.one.inviteRedemption({ alias: "InviteRedemption_inviteeId_fkey" }),
     rewardGrants: r.many.rewardGrant(),
     premiumGrants: r.many.premiumGrant(),
-    resourceBonuses: r.many.resourceBonus(),
+    featureGrants: r.many.featureGrant(),
     initiatedBlocks: r.many.userBlock({ alias: "UserBlock_blockerId_fkey" }),
     receivedBlocks: r.many.userBlock({ alias: "UserBlock_blockedId_fkey" }),
     filedReports: r.many.userReport({ alias: "UserReport_reporterId_fkey" }),

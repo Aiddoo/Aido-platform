@@ -59,6 +59,13 @@ export class FastJobQueue extends JobQueuePort {
     return this.#queue.enqueueMany(withFastJobTiming(queue), jobs);
   }
 
+  findPayload<TPayload extends object>(
+    queue: QueueDefinition<TPayload>,
+    idempotencyKey: string,
+  ): Promise<TPayload | null> {
+    return this.#queue.findPayload(queue, idempotencyKey);
+  }
+
   cancel(queue: QueueDefinition<object>, idempotencyKeys: readonly string[]): Promise<void> {
     return this.#queue.cancel(queue, idempotencyKeys);
   }

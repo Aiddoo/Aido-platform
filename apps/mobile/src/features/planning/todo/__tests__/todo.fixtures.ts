@@ -1,17 +1,17 @@
+import { dailyCompletionsRangeResponseSchema } from '@aido/api/contracts/daily-completion/v1';
 import {
-  dailyCompletionsRangeResponseSchema,
   type Todo as TodoDto,
   todoItemResponseSchema,
   todoListResponseSchema,
   todoSchema as todoDtoSchema,
-} from '@aido/api';
+} from '@aido/api/contracts/todo/v1';
 import { ErrorCode, type ErrorCodeType, Errors } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 import { createDateKey } from '@src/testing/date-key';
 import { defineFixture } from '@src/testing/fixture';
 
-import { type TodoDetails, todoDetailsSchema } from '../domains/todo.model';
-import type { TodoFormValues } from '../schemas/todo-form.schema';
+import { todoDetailsSchema } from '../domains/todo.model';
+import { todoFormSchema } from '../schemas/todo-form.schema';
 import { createParentTodo } from './sub-todo.fixtures';
 
 const TODO_DTO: TodoDto = {
@@ -76,27 +76,21 @@ export function createTodoApiError({
   return new ApiError(code, message, status);
 }
 
-export function createTodoDetails(overrides?: Partial<TodoDetails>): TodoDetails {
-  return todoDetailsSchema.parse({
-    todo: createParentTodo(),
-    owner: { id: 'clz7x5p8k0010qz0z8z8z8z8z', name: '친구', profileImage: null },
-    permissions: { canEdit: false, canComment: true, canNudge: true },
-    metrics: { viewCount: 0, commentCount: 0 },
-    ...overrides,
-  });
-}
+export const createTodoDetails = defineFixture(todoDetailsSchema, {
+  todo: createParentTodo(),
+  owner: { id: 'clz7x5p8k0010qz0z8z8z8z8z', name: '친구', profileImage: null },
+  permissions: { canEdit: false, canComment: true, canNudge: true },
+  metrics: { viewCount: 0, commentCount: 0 },
+});
 
 /** 작성 시트의 기본값과 같은 하루짜리 종일 할 일 폼 값 */
-export function createTodoFormValues(overrides: Partial<TodoFormValues> = {}): TodoFormValues {
-  return {
-    title: '테스트 할일',
-    categoryId: 1,
-    startDate: createDateKey('2026-03-08'),
-    endDate: null,
-    scheduledTime: null,
-    isAllDay: true,
-    visibility: 'PUBLIC',
-    repeat: null,
-    ...overrides,
-  };
-}
+export const createTodoFormValues = defineFixture(todoFormSchema, {
+  title: '테스트 할일',
+  categoryId: 1,
+  startDate: createDateKey('2026-03-08'),
+  endDate: null,
+  scheduledTime: null,
+  isAllDay: true,
+  visibility: 'PUBLIC',
+  repeat: null,
+});

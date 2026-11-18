@@ -12,18 +12,16 @@ import { CreateMemoUseCase } from "#api/modules/notes/memos/application/use-case
 import { ReorderMemoUseCase } from "#api/modules/notes/memos/application/use-cases/reorder-memo.use-case";
 import { RewriteMemoUseCase } from "#api/modules/notes/memos/application/use-cases/rewrite-memo.use-case";
 import { MemoId } from "#api/modules/notes/memos/domain/memo-id.vo";
-import { TodoCategoryId } from "#api/modules/planning/categories/planning-categories.public";
-import {
-  DatabaseRecordNotFoundError,
-  databaseSqlState,
-  requireRecord,
-} from "#api/platform/database/database-error.util";
+import { TodoCategoryId } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
+import { databaseSqlState, requireRecord } from "#api/platform/database/database-error.util";
+import { DatabaseRecordNotFoundError } from "#api/platform/database/database.errors";
 import { memo, todoCategory, todoItem, user } from "#api/platform/database/schema/index";
 import { DomainEventPublisherPort } from "#api/shared/application/ports/domain-event-publisher.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { TodoCategoryFixture, UserFixture } from "#test/fixtures/index";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createMemoFixture } from "#test/fixtures/notes/memo.fixture";
+import { createTodoCategoryRowFixture } from "#test/fixtures/planning/todo-row.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
@@ -79,8 +77,8 @@ describe("메모 변경 원자성 (실제 PostgreSQL)", () => {
   beforeEach(async () => {
     recording = null;
     await context.reset();
-    const owner = UserFixture.create();
-    const other = UserFixture.create();
+    const owner = createUserRowFixture();
+    const other = createUserRowFixture();
     await client.insert(user).values([owner, other]);
     userId = owner.id;
     otherUserId = other.id;
@@ -489,7 +487,7 @@ describe("메모 변경 원자성 (실제 PostgreSQL)", () => {
     const seeded = await seedMemo();
     const [category] = await client
       .insert(todoCategory)
-      .values(omit(TodoCategoryFixture.create({ userId, sortOrder: 0 }), ["id"]))
+      .values(omit(createTodoCategoryRowFixture({ userId, sortOrder: 0 }), ["id"]))
       .returning();
     const categoryId = requireRecord(category).id;
     const publish = vi.spyOn(context.module.get(DomainEventPublisherPort), "publish");

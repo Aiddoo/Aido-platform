@@ -3,25 +3,33 @@ import type { Provider } from "@nestjs/common";
 import { WeeklyAchievementWriterPort as InsightsWeeklyAchievementWriterPort } from "#api/modules/insights/weekly-achievements/insights-weekly-achievements.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { ExclusiveRunnerPort } from "#api/shared/application/ports/exclusive-runner.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { SweepCursorPort } from "#api/shared/application/ports/sweep-cursor.port";
 
-import { WeatherReportReaderPort } from "../../weather/forecasts/weather-forecasts.public.js";
-import { NotificationHistoryReader } from "../inbox/application/notification-history.reader.js";
-import { PublishNotificationUseCase } from "../push/application/use-cases/publish-notification.use-case.js";
+import { WeatherReportReaderPort } from "../../weather/weather-reports/weather-weather-reports.public.js";
+import {
+  NotificationHistoryReader,
+  PublishNotificationBatchUseCase,
+} from "../notifications/notification-notifications.public.js";
 import { ReEngagementReaderPort } from "./application/ports/re-engagement-reader.port.js";
 import { ReminderWeatherReportReaderPort } from "./application/ports/reminder-weather-report.reader.port.js";
 import { ScheduledReminderReaderPort } from "./application/ports/scheduled-reminder-reader.port.js";
-import { SchedulerDedupPort } from "./application/ports/scheduler-dedup.port.js";
 import { SchedulerPreferenceReaderPort } from "./application/ports/scheduler-preference-reader.port.js";
+import { SnoozeNotificationReaderPort } from "./application/ports/snooze-notification.reader.port.js";
+import { SnoozeTodoReaderPort } from "./application/ports/snooze-todo.reader.port.js";
 import { TimezoneReminderEnqueuerPort } from "./application/ports/timezone-reminder-enqueuer.port.js";
 import { TodoReminderReaderPort } from "./application/ports/todo-reminder-reader.port.js";
 import { TodoReminderSchedulerPort } from "./application/ports/todo-reminder-scheduler.port.js";
+import { TodoReminderSnoozeSchedulerPort } from "./application/ports/todo-reminder-snooze-scheduler.port.js";
 import { TodoSeriesOwnerDormancyPort } from "./application/ports/todo-series-owner-dormancy.port.js";
 import { WeatherBriefingTodoReaderPort } from "./application/ports/weather-briefing-todo.reader.port.js";
 import { WeatherReminderReaderPort } from "./application/ports/weather-reminder-reader.port.js";
 import { WeeklyAchievementStatsReaderPort } from "./application/ports/weekly-achievement-stats-reader.port.js";
 import { WeeklyAchievementWriterPort } from "./application/ports/weekly-achievement-writer.port.js";
+import { CatchUpChangedReminderHourUseCase } from "./application/use-cases/catch-up-changed-reminder-hour.use-case.js";
+import { DeliverQueuedSocialDigestUseCase } from "./application/use-cases/deliver-queued-social-digest.use-case.js";
+import { RecordReminderLateSkipUseCase } from "./application/use-cases/record-reminder-late-skip.use-case.js";
 import { SendEveningReminderUseCase } from "./application/use-cases/send-evening-reminder.use-case.js";
 import { SendLunchNudgeUseCase } from "./application/use-cases/send-lunch-nudge.use-case.js";
 import { SendMonthlyReportUseCase } from "./application/use-cases/send-monthly-report.use-case.js";
@@ -35,26 +43,35 @@ import { SendWeatherMorningUseCase } from "./application/use-cases/send-weather-
 import { SendWeeklyAchievementUseCase } from "./application/use-cases/send-weekly-achievement.use-case.js";
 import { SendWeeklyReportUseCase } from "./application/use-cases/send-weekly-report.use-case.js";
 import { SendWinbackUseCase } from "./application/use-cases/send-winback.use-case.js";
+import { SnoozeTodoReminderUseCase } from "./application/use-cases/snooze-todo-reminder.use-case.js";
 import { SweepTimezoneRemindersUseCase } from "./application/use-cases/sweep-timezone-reminders.use-case.js";
+import { InboxSnoozeNotificationAdapter } from "./infrastructure/adapters/inbox-snooze-notification.adapter.js";
+import { PlanningSnoozeTodoAdapter } from "./infrastructure/adapters/planning-snooze-todo.adapter.js";
 import { PlanningWeatherBriefingTodoAdapter } from "./infrastructure/adapters/planning-weather-briefing-todo.adapter.js";
-import { SchedulerDedupAdapter } from "./infrastructure/adapters/scheduler-dedup.adapter.js";
 import { TodoSeriesOwnerDormancyAdapter } from "./infrastructure/adapters/todo-series-owner-dormancy.adapter.js";
 import { TodoReminderSchedulerAdapter } from "./infrastructure/jobs/todo-reminder-scheduler.adapter.js";
-import { DrizzleSchedulerReader } from "./infrastructure/persistence/drizzle-scheduler.reader.js";
+import { TodoReminderSnoozeSchedulerAdapter } from "./infrastructure/jobs/todo-reminder-snooze-scheduler.adapter.js";
+import { DrizzleReEngagementReader } from "./infrastructure/persistence/drizzle-re-engagement.reader.js";
+import { DrizzleScheduledReminderReader } from "./infrastructure/persistence/drizzle-scheduled-reminder.reader.js";
+import { DrizzleSchedulerPreferenceReader } from "./infrastructure/persistence/drizzle-scheduler-preference.reader.js";
+import { DrizzleTodoReminderReader } from "./infrastructure/persistence/drizzle-todo-reminder.reader.js";
+import { DrizzleWeatherReminderReader } from "./infrastructure/persistence/drizzle-weather-reminder.reader.js";
+import { DrizzleWeeklyAchievementStatsReader } from "./infrastructure/persistence/drizzle-weekly-achievement-stats.reader.js";
 
 // 읽기 포트는 계약별로 나뉘고 DB 접근은 Drizzle 어댑터 하나에 모인다
 export const NOTIFICATION_REMINDERS_PERSISTENCE_PROVIDERS = [
   { provide: WeatherBriefingTodoReaderPort, useClass: PlanningWeatherBriefingTodoAdapter },
-  DrizzleSchedulerReader,
-  { provide: ScheduledReminderReaderPort, useExisting: DrizzleSchedulerReader },
-  { provide: ReEngagementReaderPort, useExisting: DrizzleSchedulerReader },
-  { provide: WeatherReminderReaderPort, useExisting: DrizzleSchedulerReader },
-  { provide: WeeklyAchievementStatsReaderPort, useExisting: DrizzleSchedulerReader },
-  { provide: TodoReminderReaderPort, useExisting: DrizzleSchedulerReader },
-  { provide: SchedulerPreferenceReaderPort, useExisting: DrizzleSchedulerReader },
-  { provide: SchedulerDedupPort, useClass: SchedulerDedupAdapter },
+  { provide: ScheduledReminderReaderPort, useClass: DrizzleScheduledReminderReader },
+  { provide: ReEngagementReaderPort, useClass: DrizzleReEngagementReader },
+  { provide: WeatherReminderReaderPort, useClass: DrizzleWeatherReminderReader },
+  { provide: WeeklyAchievementStatsReaderPort, useClass: DrizzleWeeklyAchievementStatsReader },
+  { provide: TodoReminderReaderPort, useClass: DrizzleTodoReminderReader },
+  { provide: SchedulerPreferenceReaderPort, useClass: DrizzleSchedulerPreferenceReader },
   { provide: TodoSeriesOwnerDormancyPort, useClass: TodoSeriesOwnerDormancyAdapter },
   { provide: TodoReminderSchedulerPort, useClass: TodoReminderSchedulerAdapter },
+  { provide: SnoozeTodoReaderPort, useClass: PlanningSnoozeTodoAdapter },
+  { provide: SnoozeNotificationReaderPort, useClass: InboxSnoozeNotificationAdapter },
+  { provide: TodoReminderSnoozeSchedulerPort, useClass: TodoReminderSnoozeSchedulerAdapter },
   // 날씨 알림은 화면과 같은 v2 리포트·칸 캐시를 weather Context의 공개 capability로 읽는다
   {
     provide: ReminderWeatherReportReaderPort,
@@ -85,41 +102,41 @@ export const NOTIFICATION_REMINDERS_PERSISTENCE_PROVIDERS = [
 export const NOTIFICATION_REMINDERS_USE_CASE_PROVIDERS = [
   provideUseCase(SendMorningReminderUseCase, {
     reader: ScheduledReminderReaderPort,
-    notificationPublisher: PublishNotificationUseCase,
+    notificationPublisher: PublishNotificationBatchUseCase,
     notificationHistoryReader: NotificationHistoryReader,
     logger: loggerFor(SendMorningReminderUseCase),
   }),
   provideUseCase(SendEveningReminderUseCase, {
     reader: ScheduledReminderReaderPort,
-    notificationPublisher: PublishNotificationUseCase,
+    notificationPublisher: PublishNotificationBatchUseCase,
     notificationHistoryReader: NotificationHistoryReader,
     logger: loggerFor(SendEveningReminderUseCase),
   }),
   provideUseCase(SendLunchNudgeUseCase, {
     reader: ScheduledReminderReaderPort,
     preferenceReader: SchedulerPreferenceReaderPort,
-    notificationPublisher: PublishNotificationUseCase,
+    notificationPublisher: PublishNotificationBatchUseCase,
     notificationHistoryReader: NotificationHistoryReader,
     logger: loggerFor(SendLunchNudgeUseCase),
   }),
   provideUseCase(SendWeeklyReportUseCase, {
     reader: ScheduledReminderReaderPort,
     preferenceReader: SchedulerPreferenceReaderPort,
-    notificationPublisher: PublishNotificationUseCase,
+    notificationPublisher: PublishNotificationBatchUseCase,
     notificationHistoryReader: NotificationHistoryReader,
     logger: loggerFor(SendWeeklyReportUseCase),
   }),
   provideUseCase(SendMonthlyReportUseCase, {
     reader: ScheduledReminderReaderPort,
     preferenceReader: SchedulerPreferenceReaderPort,
-    notificationPublisher: PublishNotificationUseCase,
+    notificationPublisher: PublishNotificationBatchUseCase,
     notificationHistoryReader: NotificationHistoryReader,
     logger: loggerFor(SendMonthlyReportUseCase),
   }),
   provideUseCase(SendWeeklyAchievementUseCase, {
     reader: WeeklyAchievementStatsReaderPort,
     preferenceReader: SchedulerPreferenceReaderPort,
-    notificationPublisher: PublishNotificationUseCase,
+    notificationPublisher: PublishNotificationBatchUseCase,
     notificationHistoryReader: NotificationHistoryReader,
     weeklyAchievementWriter: WeeklyAchievementWriterPort,
     logger: loggerFor(SendWeeklyAchievementUseCase),
@@ -127,43 +144,41 @@ export const NOTIFICATION_REMINDERS_USE_CASE_PROVIDERS = [
   provideUseCase(SendWinbackUseCase, {
     reader: ReEngagementReaderPort,
     preferenceReader: SchedulerPreferenceReaderPort,
-    notificationPublisher: PublishNotificationUseCase,
+    notificationPublisher: PublishNotificationBatchUseCase,
     notificationHistoryReader: NotificationHistoryReader,
-    schedulerDedup: SchedulerDedupPort,
     logger: loggerFor(SendWinbackUseCase),
   }),
   provideUseCase(SendNudgeSuggestUseCase, {
     reader: ReEngagementReaderPort,
     preferenceReader: SchedulerPreferenceReaderPort,
-    notificationPublisher: PublishNotificationUseCase,
+    notificationPublisher: PublishNotificationBatchUseCase,
     notificationHistoryReader: NotificationHistoryReader,
-    schedulerDedup: SchedulerDedupPort,
     logger: loggerFor(SendNudgeSuggestUseCase),
   }),
   provideUseCase(SendOnboardingUseCase, {
     reader: ReEngagementReaderPort,
     preferenceReader: SchedulerPreferenceReaderPort,
-    notificationPublisher: PublishNotificationUseCase,
+    notificationPublisher: PublishNotificationBatchUseCase,
     notificationHistoryReader: NotificationHistoryReader,
     logger: loggerFor(SendOnboardingUseCase),
   }),
   provideUseCase(SendSocialDigestUseCase, {
     reader: ReEngagementReaderPort,
     preferenceReader: SchedulerPreferenceReaderPort,
-    notificationPublisher: PublishNotificationUseCase,
+    notificationPublisher: PublishNotificationBatchUseCase,
     notificationHistoryReader: NotificationHistoryReader,
     logger: loggerFor(SendSocialDigestUseCase),
   }),
   provideUseCase(SendStreakAtRiskUseCase, {
     reader: ReEngagementReaderPort,
-    notificationPublisher: PublishNotificationUseCase,
+    notificationPublisher: PublishNotificationBatchUseCase,
     notificationHistoryReader: NotificationHistoryReader,
     logger: loggerFor(SendStreakAtRiskUseCase),
   }),
   provideUseCase(SendWeatherMorningUseCase, {
     reader: WeatherReminderReaderPort,
     todoReader: WeatherBriefingTodoReaderPort,
-    notificationPublisher: PublishNotificationUseCase,
+    notificationPublisher: PublishNotificationBatchUseCase,
     notificationHistoryReader: NotificationHistoryReader,
     weatherReportReader: ReminderWeatherReportReaderPort,
     clock: ClockPort,
@@ -171,13 +186,35 @@ export const NOTIFICATION_REMINDERS_USE_CASE_PROVIDERS = [
   }),
   provideUseCase(SendWeatherEveningUseCase, {
     reader: WeatherReminderReaderPort,
-    notificationPublisher: PublishNotificationUseCase,
+    notificationPublisher: PublishNotificationBatchUseCase,
     notificationHistoryReader: NotificationHistoryReader,
     weatherReportReader: ReminderWeatherReportReaderPort,
     clock: ClockPort,
     logger: loggerFor(SendWeatherEveningUseCase),
   }),
+  provideUseCase(SnoozeTodoReminderUseCase, {
+    todoReader: SnoozeTodoReaderPort,
+    notificationReader: SnoozeNotificationReaderPort,
+    snoozeScheduler: TodoReminderSnoozeSchedulerPort,
+    clock: ClockPort,
+    logger: loggerFor(SnoozeTodoReminderUseCase),
+  }),
   provideSweepTimezoneRemindersUseCase(),
+  provideUseCase(RecordReminderLateSkipUseCase, {
+    logger: loggerFor(RecordReminderLateSkipUseCase),
+    alert: OperationalAlertPort,
+  }),
+  provideUseCase(CatchUpChangedReminderHourUseCase, {
+    clock: ClockPort,
+    morningReminder: SendMorningReminderUseCase,
+    eveningReminder: SendEveningReminderUseCase,
+    logger: loggerFor(CatchUpChangedReminderHourUseCase),
+  }),
+  provideUseCase(DeliverQueuedSocialDigestUseCase, {
+    clock: ClockPort,
+    socialDigest: SendSocialDigestUseCase,
+    logger: loggerFor(DeliverQueuedSocialDigestUseCase),
+  }),
 ] satisfies Provider[];
 
 export function provideSweepTimezoneRemindersUseCase() {
@@ -185,6 +222,7 @@ export function provideSweepTimezoneRemindersUseCase() {
     preferenceReader: SchedulerPreferenceReaderPort,
     enqueuer: TimezoneReminderEnqueuerPort,
     sweepCursor: SweepCursorPort,
+    exclusiveRunner: ExclusiveRunnerPort,
     clock: ClockPort,
     morningReminder: SendMorningReminderUseCase,
     eveningReminder: SendEveningReminderUseCase,
@@ -193,7 +231,6 @@ export function provideSweepTimezoneRemindersUseCase() {
     weeklyAchievement: SendWeeklyAchievementUseCase,
     winback: SendWinbackUseCase,
     nudgeSuggest: SendNudgeSuggestUseCase,
-    socialDigest: SendSocialDigestUseCase,
     lunchNudge: SendLunchNudgeUseCase,
     streakAtRisk: SendStreakAtRiskUseCase,
     onboarding: SendOnboardingUseCase,

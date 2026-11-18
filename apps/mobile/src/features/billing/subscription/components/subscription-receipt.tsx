@@ -1,6 +1,5 @@
 import { type Instant } from '@src/shared/date/instant';
 import type { PlanType } from '@src/shared/domains/plan-type.model';
-import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Barcode,
@@ -18,15 +17,16 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { formatCount } from '@src/shared/utils/number-format';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { Skeleton } from 'heroui-native';
 import { match, P } from 'ts-pattern';
 
 import { SubscriptionPolicy } from '../domains/subscription.model';
+import { useFormatPlanAmount } from '../hooks/use-format-plan-amount';
 import { useFormatReceiptDate } from '../hooks/use-format-receipt-date';
 import { useSubscriptionReceipt } from '../hooks/use-subscription-receipt';
+import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
 import { getPremiumBenefitAmounts } from '../utils/plan-benefit.view-model';
 import { getPlanNameKey, getPlanPriceLabelKey } from '../utils/subscription-label.view-model';
@@ -40,12 +40,12 @@ export function SubscriptionReceipt() {
   const { t } = useTranslation('subscription');
   const receipt = useSubscriptionReceipt();
   const { variant, footnote } = receipt;
-  const dateFormatContext = useDateFormatContext();
-  const premium = getPremiumBenefitAmounts();
+  const formatAmount = useFormatPlanAmount();
+  const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
+  const premium = getPremiumBenefitAmounts(entitlements);
   const planPrices = usePlanPrices({
     isEnabled: (variant === 'paid' || variant === 'trial') && receipt.details != null,
   });
-  const formatAmount = (value: number) => formatCount(value, dateFormatContext.locale);
   const formatReceiptDate = useFormatReceiptDate(toReceiptDateLabel(variant));
 
   return (

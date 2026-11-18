@@ -2,16 +2,14 @@ import type { PublishedDomainEvent } from "#api/shared/application/ports/domain-
 import { RecordingTodoReminderScheduler } from "#test/doubles/planning/recording-todo-reminder-scheduler";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 
-import { TodoCreatedEvent } from "../../../shared/domain/todo-created.event.js";
-import { TodoDeletedEvent } from "../../../shared/domain/todo-deleted.event.js";
-import { TodoRescheduledEvent } from "../../../shared/domain/todo-rescheduled.event.js";
-import { TodoToggledEvent } from "../../../shared/domain/todo-toggled.event.js";
-import { TodoUpdatedEvent } from "../../../shared/domain/todo-updated.event.js";
 import { TodoOccurrencesCreatedEvent } from "../../../todo-series/domain/todo-occurrences-created.event.js";
-import {
-  todoChangedPayloadSchema,
-  todoSeriesChangedPayloadSchema,
-} from "../../planning-todos.public.js";
+import { todoSeriesChangedPayloadSchema } from "../../../todo-series/domain/todo-series-published-events.constants.js";
+import { TodoCreatedEvent } from "../../domain/todo-created.event.js";
+import { TodoDeletedEvent } from "../../domain/todo-deleted.event.js";
+import { todoChangedPayloadSchema } from "../../domain/todo-published-events.constants.js";
+import { TodoRescheduledEvent } from "../../domain/todo-rescheduled.event.js";
+import { TodoToggledEvent } from "../../domain/todo-toggled.event.js";
+import { TodoUpdatedEvent } from "../../domain/todo-updated.event.js";
 import { ApplyTodoEventsUseCase } from "./apply-todo-events.use-case.js";
 
 const AT = Temporal.Instant.from("2026-11-10T00:00:00Z");
@@ -64,14 +62,24 @@ describe("ApplyTodoEventsUseCase — 트랜잭션 안 리마인더·이벤트", 
     },
     {
       label: "완료하면 예약을 취소한다",
-      event: new TodoToggledEvent(1, "user-1", true, "Asia/Seoul"),
+      event: new TodoToggledEvent({
+        todoId: 1,
+        userId: "user-1",
+        completed: true,
+        timezone: "Asia/Seoul",
+      }),
       scheduled: [],
       cancelled: [1],
       eventName: "planning.todo.completed",
     },
     {
       label: "완료를 되돌리면 이 이벤트로는 예약하지 않는다(시각은 rescheduled가 다시 잡는다)",
-      event: new TodoToggledEvent(1, "user-1", false, "Asia/Seoul"),
+      event: new TodoToggledEvent({
+        todoId: 1,
+        userId: "user-1",
+        completed: false,
+        timezone: "Asia/Seoul",
+      }),
       scheduled: [],
       cancelled: [],
       eventName: "planning.todo.reopened",

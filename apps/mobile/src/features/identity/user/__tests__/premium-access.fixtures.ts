@@ -1,26 +1,23 @@
-import { toInstant } from '@src/shared/date/instant';
+import { defineFixture } from '@src/testing/fixture';
 
-import { type PremiumAccess } from '../domains/premium-access.model';
+import { premiumAccessSchema } from '../domains/premium-access.model';
 import {
   type CurrentUserResponse,
   currentUserResponseSchema,
 } from '../schemas/user-response.schema';
 import { createCurrentUserDto } from './user.fixtures';
 
-export function createPremiumAccess(overrides?: Partial<PremiumAccess>): PremiumAccess {
-  return {
-    source: 'GRANT',
-    // 11월 1일 14:30 KST
-    endsAt: toInstant('2026-11-01T05:30:00Z'),
-    periodEndsAt: toInstant('2026-11-01T05:30:00Z'),
-    willRenew: false,
-    isTrial: false,
-    bankedDays: 0,
-    grantEndedAt: null,
-    planType: null,
-    ...overrides,
-  };
-}
+export const createPremiumAccess = defineFixture(premiumAccessSchema, {
+  source: 'GRANT',
+  // 11월 1일 14:30 KST
+  endsAt: '2026-11-01T05:30:00Z',
+  periodEndsAt: '2026-11-01T05:30:00Z',
+  willRenew: false,
+  isTrial: false,
+  bankedDays: 0,
+  grantEndedAt: null,
+  planType: null,
+});
 
 /** 서버 /me 응답을 @aido/api 계약으로 검증해 만든다. 서버가 보낼 수 없는 모양은 여기서 실패한다 */
 function premiumMe(overrides: Partial<CurrentUserResponse>) {

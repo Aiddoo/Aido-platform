@@ -1,8 +1,8 @@
-import type { EstablishFriendshipInput } from "#api/modules/social/friends/application/ports/friendship-establisher.port";
+import type { EstablishFriendshipInput } from "#api/modules/social/friendships/application/ports/friendship-establisher.port";
 import {
   FriendshipEstablisherPort,
   type FriendshipEstablishment,
-} from "#api/modules/social/friends/social-friends.public";
+} from "#api/modules/social/friendships/social-friendships.public";
 
 // 정해 둔 결과를 돌려주고 요청을 남긴다
 export class StubFriendshipEstablisher extends FriendshipEstablisherPort {

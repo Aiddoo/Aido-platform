@@ -4,9 +4,9 @@ import {
   Injectable,
   type NestInterceptor,
 } from "@nestjs/common";
-import type { Request } from "express";
 import type { Observable } from "rxjs";
 
+import type { HttpRequest } from "#api/platform/http/http-request";
 import { readRouteTemplate } from "#api/platform/http/request-route";
 import { readRequestUserId } from "#api/platform/http/request-user-id";
 
@@ -17,7 +17,7 @@ import { tagRequestRoute } from "./sentry-scope.js";
 export class RequestScopeInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     if (context.getType() === "http") {
-      const request = context.switchToHttp().getRequest<Request>();
+      const request = context.switchToHttp().getRequest<HttpRequest>();
       tagRequestRoute({
         method: request.method,
         route: readRouteTemplate(request),

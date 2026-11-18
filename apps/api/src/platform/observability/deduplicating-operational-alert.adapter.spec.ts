@@ -14,7 +14,7 @@ const REPEAT_INTERVAL_MS = OPERATIONAL_ALERT_LIMITS.repeatIntervalMs;
 function alert(key: string): OperationalAlert {
   return {
     key,
-    context: "job",
+    context: "jobs",
     severity: "error",
     summary: "작업이 재시도를 모두 쓰고 실패했다",
     runbook: "로그를 본다",
@@ -33,27 +33,27 @@ describe("DeduplicatingOperationalAlertAdapter — 운영 경보 전송 한도",
   it("같은 key는 반복 간격 안에서 한 번만 보낸다", () => {
     // Given
     const { clock, alerts, raisedKeys } = setup();
-    alerts.raise(alert("job.failed:report.v1:TypeError"));
+    alerts.raise(alert("jobs.job.failed:report.v1:TypeError"));
 
     // When
     clock.advanceBy({ milliseconds: REPEAT_INTERVAL_MS - 1 });
-    alerts.raise(alert("job.failed:report.v1:TypeError"));
+    alerts.raise(alert("jobs.job.failed:report.v1:TypeError"));
 
     // Then
-    expect(raisedKeys()).toEqual(["job.failed:report.v1:TypeError"]);
+    expect(raisedKeys()).toEqual(["jobs.job.failed:report.v1:TypeError"]);
   });
 
   it("반복 간격이 지나면 같은 key를 다시 보낸다", () => {
     // Given
     const { clock, alerts, raisedKeys } = setup();
-    alerts.raise(alert("schedule.overdue:daily"));
+    alerts.raise(alert("jobs.schedule.overdue:daily"));
 
     // When
     clock.advanceBy({ milliseconds: REPEAT_INTERVAL_MS });
-    alerts.raise(alert("schedule.overdue:daily"));
+    alerts.raise(alert("jobs.schedule.overdue:daily"));
 
     // Then
-    expect(raisedKeys()).toEqual(["schedule.overdue:daily", "schedule.overdue:daily"]);
+    expect(raisedKeys()).toEqual(["jobs.schedule.overdue:daily", "jobs.schedule.overdue:daily"]);
   });
 
   it("다시 보내는 경보는 key가 달라도 시간당 상한까지만 보낸다", () => {
@@ -81,9 +81,9 @@ describe("DeduplicatingOperationalAlertAdapter — 운영 경보 전송 한도",
     ["a", "b", "c"].forEach((key) => alerts.raise(alert(key)));
 
     // When
-    alerts.raise(alert("queue.dead-letter:push-delivery-dead-letter.v1"));
+    alerts.raise(alert("jobs.dead-letter.queued:push-delivery-dead-letter.v1"));
 
     // Then
-    expect(raisedKeys().at(-1)).toBe("queue.dead-letter:push-delivery-dead-letter.v1");
+    expect(raisedKeys().at(-1)).toBe("jobs.dead-letter.queued:push-delivery-dead-letter.v1");
   });
 });

@@ -3,7 +3,7 @@ import {
   inviteCodeParamSchema,
   invitePreviewResponseSchema,
   myInviteResponseSchema,
-} from "@aido/api";
+} from "@aido/api/contracts/invite/v1";
 import type { z } from "zod";
 
 export const InviteCodeParamDto = inviteCodeParamSchema.meta({

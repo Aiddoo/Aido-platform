@@ -1,3 +1,4 @@
+import { StoreCustomerId } from "../../../domain/store-customer-id.vo.js";
 import { RevenueCatCustomerConsoleAdapter } from "./revenuecat-customer-console.adapter.js";
 
 function adapterWith(projectId: string | undefined): RevenueCatCustomerConsoleAdapter {
@@ -12,7 +13,7 @@ describe("RevenueCatCustomerConsoleAdapter", () => {
     const adapter = adapterWith("6a6ea506");
 
     // When
-    const url = adapter.customerUrlOf("app user/1");
+    const url = adapter.customerUrlOf(StoreCustomerId.reconstitute("app user/1"));
 
     // Then
     expect(url).toBe("https://app.revenuecat.com/projects/6a6ea506/customers/app%20user%2F1");
@@ -23,7 +24,7 @@ describe("RevenueCatCustomerConsoleAdapter", () => {
     const adapter = adapterWith(undefined);
 
     // When
-    const url = adapter.customerUrlOf("app-user-1");
+    const url = adapter.customerUrlOf(StoreCustomerId.reconstitute("app-user-1"));
 
     // Then
     expect(url).toBeNull();

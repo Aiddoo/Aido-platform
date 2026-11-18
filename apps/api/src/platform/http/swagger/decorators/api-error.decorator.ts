@@ -117,8 +117,7 @@ export function documentErrors(
 function documentErrorCode(
   status: HttpStatus,
   errorCode: ErrorCodeType,
-  fallback: string,
-  description?: string,
+  { fallback, description }: { readonly fallback: string; readonly description?: string },
 ): MethodDecorator {
   return documentErrors(status, [
     { code: errorCode, message: description ?? messageOf(errorCode, fallback) },
@@ -131,8 +130,6 @@ function documentErrorCode(
  * 기존 ERROR_CODE, ERROR_MESSAGE, ERROR_HTTP_STATUS 상수를 재사용하여
  * Swagger 에러 응답 문서를 생성합니다.
  *
- * @example
- * ```typescript
  * @Get(':id')
  * @ApiErrorResponse({ errorCode: 'USER_NOT_FOUND' })
  * findById(@Param('id') id: number) { ... }
@@ -142,116 +139,102 @@ export function ApiErrorResponse(options: ApiErrorResponseOptions): MethodDecora
   const { errorCode, description } = options;
   const status = Errors[errorCode]?.httpStatus ?? HttpStatus.BAD_REQUEST;
 
-  return documentErrorCode(status, errorCode, "Unknown error", description);
+  return documentErrorCode(status, errorCode, { fallback: "Unknown error", description });
 }
 
 /**
  * 404 Not Found 에러 데코레이터
  *
- * @example
- * ```typescript
  * @Get(':id')
  * @ApiNotFoundError('USER_NOT_FOUND')
  * findById(@Param('id') id: number) { ... }
  * ```
  */
 export function ApiNotFoundError(errorCode: ErrorCodeType): MethodDecorator {
-  return documentErrorCode(HttpStatus.NOT_FOUND, errorCode, "Not found");
+  return documentErrorCode(HttpStatus.NOT_FOUND, errorCode, { fallback: "Not found" });
 }
 
 /**
  * 401 Unauthorized 에러 데코레이터
  *
- * @example
- * ```typescript
  * @Get('profile')
  * @ApiUnauthorizedError(ErrorCode.AUTH_0107)
  * getProfile() { ... }
  * ```
  */
 export function ApiUnauthorizedError(errorCode?: ErrorCodeType): MethodDecorator {
-  return documentErrorCode(
-    HttpStatus.UNAUTHORIZED,
-    errorCode ?? ErrorCode.AUTH_0107,
-    "인증이 필요합니다.",
-  );
+  return documentErrorCode(HttpStatus.UNAUTHORIZED, errorCode ?? ErrorCode.AUTH_0107, {
+    fallback: "인증이 필요합니다.",
+  });
 }
 
 /**
  * 403 Forbidden 에러 데코레이터
  *
- * @example
- * ```typescript
  * @Delete(':id')
  * @ApiForbiddenError(ErrorCode.AUTH_0108)
  * delete(@Param('id') id: number) { ... }
  * ```
  */
 export function ApiForbiddenError(errorCode: ErrorCodeType): MethodDecorator {
-  return documentErrorCode(HttpStatus.FORBIDDEN, errorCode, "접근 권한이 없습니다.");
+  return documentErrorCode(HttpStatus.FORBIDDEN, errorCode, { fallback: "접근 권한이 없습니다." });
 }
 
 /**
  * 409 Conflict 에러 데코레이터
  *
- * @example
- * ```typescript
  * @Post()
  * @ApiConflictError('EMAIL_ALREADY_EXISTS')
  * create(@Body() dto: CreateUserDto) { ... }
  * ```
  */
 export function ApiConflictError(errorCode: ErrorCodeType): MethodDecorator {
-  return documentErrorCode(HttpStatus.CONFLICT, errorCode, "Conflict");
+  return documentErrorCode(HttpStatus.CONFLICT, errorCode, { fallback: "Conflict" });
 }
 
 /**
  * 422 Unprocessable Entity 에러 데코레이터
  *
- * @example
- * ```typescript
  * @Post('verify')
  * @ApiUnprocessableError('VERIFICATION_CODE_EXPIRED')
  * verify(@Body() dto: VerifyDto) { ... }
  * ```
  */
 export function ApiUnprocessableError(errorCode: ErrorCodeType): MethodDecorator {
-  return documentErrorCode(HttpStatus.UNPROCESSABLE_ENTITY, errorCode, "Unprocessable");
+  return documentErrorCode(HttpStatus.UNPROCESSABLE_ENTITY, errorCode, {
+    fallback: "Unprocessable",
+  });
 }
 
 /**
  * 400 Bad Request 에러 데코레이터
  *
- * @example
- * ```typescript
  * @Post(':userId')
  * @ApiBadRequestError('CANNOT_FOLLOW_SELF')
  * sendRequest(@Param('userId') userId: string) { ... }
  * ```
  */
 export function ApiBadRequestError(errorCode: ErrorCodeType): MethodDecorator {
-  return documentErrorCode(HttpStatus.BAD_REQUEST, errorCode, "Bad request");
+  return documentErrorCode(HttpStatus.BAD_REQUEST, errorCode, { fallback: "Bad request" });
 }
 
 /**
  * 503 Service Unavailable 에러 데코레이터
  *
- * @example
- * ```typescript
  * @Post('parse')
  * @ApiServiceUnavailableError('AI_SERVICE_UNAVAILABLE')
  * parse(@Body() dto: ParseDto) { ... }
  * ```
  */
 export function ApiServiceUnavailableError(errorCode: ErrorCodeType): MethodDecorator {
-  return documentErrorCode(HttpStatus.SERVICE_UNAVAILABLE, errorCode, "Service unavailable");
+  return documentErrorCode(HttpStatus.SERVICE_UNAVAILABLE, errorCode, {
+    fallback: "Service unavailable",
+  });
 }
 
 /**
  * 429 Too Many Requests 에러 데코레이터
  *
- * @example
- * ```typescript
  * @Post('parse')
  * @ApiTooManyRequestsError('AI_USAGE_LIMIT_EXCEEDED')
  * parse(@Body() dto: ParseDto) { ... }
@@ -261,26 +244,22 @@ export function ApiTooManyRequestsError(
   errorCode: ErrorCodeType,
   description?: string,
 ): MethodDecorator {
-  return documentErrorCode(
-    HttpStatus.TOO_MANY_REQUESTS,
-    errorCode,
-    "Too many requests",
+  return documentErrorCode(HttpStatus.TOO_MANY_REQUESTS, errorCode, {
+    fallback: "Too many requests",
     description,
-  );
+  });
 }
 
 /**
  * 410 Gone 에러 데코레이터
  *
- * @example
- * ```typescript
  * @Get(':code')
  * @ApiGoneError(ErrorCode.INVITE_2102)
  * preview(@Param() params: InviteCodeParamDto) { ... }
  * ```
  */
 export function ApiGoneError(errorCode: ErrorCodeType): MethodDecorator {
-  return documentErrorCode(HttpStatus.GONE, errorCode, "Gone");
+  return documentErrorCode(HttpStatus.GONE, errorCode, { fallback: "Gone" });
 }
 
 /**
@@ -288,8 +267,6 @@ export function ApiGoneError(errorCode: ErrorCodeType): MethodDecorator {
  *
  * 같은 상태의 단일 코드 데코레이터를 겹쳐 써도 코드가 모이지만, 한 줄로 읽히도록 함께 선언한다.
  *
- * @example
- * ```typescript
  * @Post(':code/redeem')
  * @ApiErrorCodesResponse(HttpStatus.FORBIDDEN, [ErrorCode.INVITE_2105, ErrorCode.INVITE_2106])
  * redeem(@Param() params: InviteCodeParamDto) { ... }

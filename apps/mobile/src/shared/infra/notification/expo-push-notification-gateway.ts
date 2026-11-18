@@ -9,7 +9,7 @@ import type {
 } from '@src/core/ports/push-notification-gateway';
 import { getErrorMessage } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
-import { withTimeout } from 'es-toolkit';
+import { Mutex, withTimeout } from 'es-toolkit';
 import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
 
@@ -93,6 +93,8 @@ async function ensureChannel(logger: AppLogger): Promise<void> {
  * 화면이 정하기 전과 판단이 실패하면 배너로 보인다
  */
 export function createExpoPushNotificationGateway(logger: AppLogger): PushNotificationGateway {
+  // expo-notifications 58 iOS CategoryManager(actor)는 첫 등록이 기존 목록을 기다리는 사이 다음 등록을 받아(재진입) 둘 다 같은 목록에 자기 것만 더해 쓴다. 겹치면 나중 것만 남는다
+  const categoryLock = new Mutex();
   let decideForegroundPresentation: (
     notification: ReceivedPushNotification,
   ) => ForegroundPushPresentation = presentAsBanner;
@@ -155,20 +157,28 @@ export function createExpoPushNotificationGateway(logger: AppLogger): PushNotifi
     },
     clearLastResponse: () => Notifications.clearLastNotificationResponse(),
     setCategory: async ({ identifier, actions }) => {
-      await Notifications.setNotificationCategoryAsync(
-        identifier,
-        actions.map(({ identifier: actionIdentifier, title, opensAppToForeground }) => ({
-          identifier: actionIdentifier,
-          buttonTitle: title,
-          options: { opensAppToForeground },
-        })),
-      );
+      await categoryLock.acquire();
+      try {
+        await Notifications.setNotificationCategoryAsync(
+          identifier,
+          actions.map(({ identifier: actionIdentifier, title, opensAppToForeground }) => ({
+            identifier: actionIdentifier,
+            buttonTitle: title,
+            options: { opensAppToForeground },
+          })),
+        );
+      } finally {
+        categoryLock.release();
+      }
     },
     setBadgeCount: async (count) => {
       await Notifications.setBadgeCountAsync(count);
     },
     dismissDelivered: async () => {
       await Notifications.dismissAllNotificationsAsync();
+    },
+    dismissNotification: async (identifier) => {
+      await Notifications.dismissNotificationAsync(identifier);
     },
     setForegroundPresentation: (decide) => {
       decideForegroundPresentation = decide;

@@ -9,13 +9,14 @@ export const corsSchema = z.object({
   CORS_ORIGINS: z
     .string()
     .default("http://localhost:3000,http://localhost:8081")
-    .transform((val) => val.split(",").map((origin) => origin.trim())),
+    .transform((value) => value.split(",").map((origin) => origin.trim())),
 });
 
 /**
  * Rate Limiting 설정 스키마
  */
 export const throttleSchema = z.object({
+  // 배포 env 이름이라 그대로 둔다. 값은 밀리초이고 코드는 throttle 설정의 ttlMs로 읽는다
   THROTTLE_TTL: z.coerce.number().int().positive().default(60_000),
   THROTTLE_LIMIT: z.coerce.number().int().positive().default(100),
 });

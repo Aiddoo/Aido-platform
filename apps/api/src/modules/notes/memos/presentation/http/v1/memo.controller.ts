@@ -21,8 +21,7 @@ import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 import {
   CurrentUser,
   type CurrentUserPayload,
-} from "#api/modules/identity/identity-auth-http.public";
-import { TodoCategoryId } from "#api/modules/planning/categories/planning-categories.public";
+} from "#api/modules/identity/sessions/identity-sessions.public";
 import { API_VERSION } from "#api/platform/http/api-versioning";
 import { Timezone } from "#api/platform/http/decorators/timezone.decorator";
 import { type RequestClient } from "#api/platform/http/request-client/request-client";
@@ -50,6 +49,7 @@ import { GetMemoUseCase } from "../../../application/use-cases/get-memo.use-case
 import { ListMemosUseCase } from "../../../application/use-cases/list-memos.use-case.js";
 import { ReorderMemoUseCase } from "../../../application/use-cases/reorder-memo.use-case.js";
 import { RewriteMemoUseCase } from "../../../application/use-cases/rewrite-memo.use-case.js";
+import { toConvertedTodoDraft, toConvertedTodoDrafts } from "./memo-command.mapper.js";
 import {
   MEMO_RESPONSE_MESSAGES,
   toConvertMemoToTodoResponse,
@@ -343,15 +343,7 @@ export class MemoController {
       userId: user.userId,
       memoId: params.id,
       timezone: tz,
-      todo: {
-        categoryId: TodoCategoryId.reconstitute(dto.categoryId),
-        startDate: Temporal.PlainDate.from(dto.startDate),
-        endDate: dto.endDate == null ? undefined : Temporal.PlainDate.from(dto.endDate),
-        scheduledTime: dto.scheduledTime,
-        isAllDay: dto.isAllDay,
-        visibility: dto.visibility,
-        items: dto.items,
-      },
+      todo: toConvertedTodoDraft(dto),
     });
     return toConvertMemoToTodoResponse(todo);
   }
@@ -399,28 +391,7 @@ export class MemoController {
       userId: user.userId,
       memoId: params.id,
       timezone: tz,
-      todos: dto.todos.map((todo) => ({
-        title: todo.title,
-        categoryId: TodoCategoryId.reconstitute(todo.categoryId),
-        startDate: Temporal.PlainDate.from(todo.startDate),
-        endDate: todo.endDate == null ? undefined : Temporal.PlainDate.from(todo.endDate),
-        scheduledTime: todo.scheduledTime,
-        isAllDay: todo.isAllDay,
-        visibility: todo.visibility,
-        // 출시 앱(1.14.x까지)은 isRecurring + recurrence(요일 + 종료일)만 보낸다.
-        repeat:
-          todo.repeat ??
-          (todo.isRecurring && todo.recurrence != null
-            ? {
-                frequency: "WEEKLY",
-                interval: 1,
-                weekdays: todo.recurrence.daysOfWeek,
-                end: { type: "UNTIL", date: todo.recurrence.endDate },
-              }
-            : undefined),
-        usesLegacySeriesLimit: todo.repeat == null,
-        items: todo.items,
-      })),
+      todos: toConvertedTodoDrafts(dto),
     });
     return toConvertMemoToTodosResponse(todos);
   }

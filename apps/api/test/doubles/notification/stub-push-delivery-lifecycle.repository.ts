@@ -1,13 +1,19 @@
-import {
-  type ClaimedPushDelivery,
-  type ClaimPushDeliveriesInput,
-  type FinalizePushDeliveryResultsInput,
-  type FinalizeSkippedPushDeliveryInput,
-  type ReleasePushDeliveryInput,
-  type ReopenPushDeliveriesAfterClaimFailureInput,
-  type PushDeliveryFence,
-  PushDeliveryLifecycleRepositoryPort,
-} from "#api/modules/notification/push/application/ports/push-delivery-lifecycle.repository.port";
+import type {
+  ClaimedPushDelivery,
+  ClaimPushDeliveriesInput,
+  PushDeliveryClaimRepositoryPort,
+  ReopenPushDeliveriesAfterClaimFailureInput,
+} from "#api/modules/notification/push-dispatches/application/ports/push-delivery-claim.repository.port";
+import type {
+  FinalizePushDeliveryResultsInput,
+  FinalizeSkippedPushDeliveryInput,
+  PushDeliveryFinalizationRepositoryPort,
+} from "#api/modules/notification/push-dispatches/application/ports/push-delivery-finalization.repository.port";
+import type {
+  PushDeliveryLeaseRepositoryPort,
+  ReleasePushDeliveryInput,
+} from "#api/modules/notification/push-dispatches/application/ports/push-delivery-lease.repository.port";
+import type { PushDeliveryFenceReadModel } from "#api/modules/notification/push-dispatches/application/read-models/push-delivery-fence.read-model";
 
 const PUSH_DELIVERY_LIFECYCLE_OPERATIONS = [
   "claim",
@@ -23,7 +29,12 @@ const PUSH_DELIVERY_LIFECYCLE_OPERATIONS = [
 export type PushDeliveryLifecycleOperation = (typeof PUSH_DELIVERY_LIFECYCLE_OPERATIONS)[number];
 
 // claim은 정해 둔 배송을 주고 나머지 쓰기는 모두 반영된 것처럼 답한다. 받은 입력과 순서를 남기고, failNext로 받은 뒤 한 번씩 실패시킨다
-export class StubPushDeliveryLifecycleRepository extends PushDeliveryLifecycleRepositoryPort {
+export class StubPushDeliveryLifecycleRepository
+  implements
+    PushDeliveryClaimRepositoryPort,
+    PushDeliveryFinalizationRepositoryPort,
+    PushDeliveryLeaseRepositoryPort
+{
   claimed: readonly ClaimedPushDelivery[] = [];
   // 정하면 markRateLimitReserved가 이 dispatch만 승인한다(fence를 잃은 worker)
   reservableDispatchIds: ReadonlySet<number> | null = null;
@@ -34,7 +45,7 @@ export class StubPushDeliveryLifecycleRepository extends PushDeliveryLifecycleRe
   readonly reopenAfterFinalClaimFailureInputs: ReopenPushDeliveriesAfterClaimFailureInput[] = [];
   readonly reopenFailedPublicationsInputs: ReopenPushDeliveriesAfterClaimFailureInput[] = [];
   readonly rateLimitReservations: {
-    readonly fences: readonly PushDeliveryFence[];
+    readonly fences: readonly PushDeliveryFenceReadModel[];
     readonly reservedAt: Temporal.Instant;
   }[] = [];
   readonly finalizedSkipped: FinalizeSkippedPushDeliveryInput[][] = [];
@@ -45,7 +56,6 @@ export class StubPushDeliveryLifecycleRepository extends PushDeliveryLifecycleRe
   readonly #observe: (operation: PushDeliveryLifecycleOperation) => void;
 
   constructor(observe: (operation: PushDeliveryLifecycleOperation) => void = () => {}) {
-    super();
     this.#observe = observe;
   }
 
@@ -76,7 +86,7 @@ export class StubPushDeliveryLifecycleRepository extends PushDeliveryLifecycleRe
   }
 
   async markRateLimitReserved(
-    fences: readonly PushDeliveryFence[],
+    fences: readonly PushDeliveryFenceReadModel[],
     reservedAt: Temporal.Instant,
   ): Promise<readonly number[]> {
     this.rateLimitReservations.push({ fences: [...fences], reservedAt });

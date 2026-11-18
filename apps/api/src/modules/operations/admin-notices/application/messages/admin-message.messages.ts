@@ -1,10 +1,9 @@
 import { sumBy } from "es-toolkit";
 
-import { AdminNotificationMessage } from "../../domain/admin-notification-message.vo.js";
 import type {
   AdminNotification,
   AdminNotificationFieldValue,
-} from "../read-models/admin-notification.read-model.js";
+} from "../../domain/admin-notice.aggregate.js";
 import { accountProviderLabel } from "./provider-labels.messages.js";
 
 function text(value: string): AdminNotificationFieldValue {
@@ -14,7 +13,7 @@ function text(value: string): AdminNotificationFieldValue {
 export interface DailySignupSummary {
   readonly signupsByProvider: readonly { readonly provider: string; readonly count: number }[];
   readonly totalUsers: number;
-  readonly reportDateStr: string;
+  readonly reportDateKey: string;
 }
 
 export function buildDailySummaryMessage(summary: DailySignupSummary): AdminNotification {
@@ -27,8 +26,8 @@ export function buildDailySummaryMessage(summary: DailySignupSummary): AdminNoti
     })
     .join("\n");
 
-  return createAdminNotification({
-    title: `일일 가입 리포트 | ${summary.reportDateStr} (KST)`,
+  return {
+    title: `일일 가입 리포트 | ${summary.reportDateKey} (KST)`,
     body:
       previousDayTotal > 0
         ? `전일 신규 가입은 ${previousDayTotal}명입니다.\n\n가입 채널별\n${providerBreakdown}`
@@ -47,20 +46,9 @@ export function buildDailySummaryMessage(summary: DailySignupSummary): AdminNoti
       },
       {
         label: "집계 기준",
-        value: text(`${summary.reportDateStr} 00:00 ~ 23:59 (KST)`),
+        value: text(`${summary.reportDateKey} 00:00 ~ 23:59 (KST)`),
         inline: false,
       },
     ],
-  });
-}
-
-function createAdminNotification(input: AdminNotification): AdminNotification {
-  const content = AdminNotificationMessage.create(input);
-  return {
-    title: content.title,
-    body: content.body,
-    fields: (input.fields ?? []).map((field) => ({ ...field })),
-    severity: input.severity,
-    ...(input.link ? { link: input.link } : {}),
   };
 }

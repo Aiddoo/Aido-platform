@@ -1,17 +1,19 @@
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
 import type { PremiumAccess } from "../../../shared/domain/premium-access.domain-service.js";
 import type { StoreSubscriptionChainEvent } from "../../domain/store-subscription.event.js";
-import type { SubscriptionUser } from "../ports/subscription-user.reader.port.js";
 import {
   baseEventPayload,
   premiumAccessSummaryOf,
 } from "./subscription-event-payload.read-model.js";
+import type { SubscriptionUserReadModel } from "./subscription-user.read-model.js";
 
 type NotifiableEvent = Exclude<StoreSubscriptionChainEvent, { kind: "IGNORED" }>;
 
-const user: SubscriptionUser = {
-  id: "user-1",
+const user: SubscriptionUserReadModel = {
+  id: UserId.reconstitute("user-1"),
   email: "user@example.com",
-  profile: { name: "매튜" },
+  name: "매튜",
 };
 
 const common = {
@@ -130,7 +132,10 @@ describe("premiumAccessSummaryOf — 이벤트 뒤 프리미엄 상태", () => {
       },
     },
   ])("$label 출처와 보상 일수를 그대로 싣는다", ({ access, expected }) => {
-    // When / Then
-    expect(premiumAccessSummaryOf(access)).toEqual(expected);
+    // When
+    const summary = premiumAccessSummaryOf(access);
+
+    // Then
+    expect(summary).toEqual(expected);
   });
 });

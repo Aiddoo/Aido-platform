@@ -1,8 +1,8 @@
-import { DAY_OF_WEEK_ORDER, type DayOfWeek, dayIndexToDayOfWeek } from "@aido/api/vocabulary";
+import { DAYS_OF_WEEK, type DayOfWeek } from "@aido/api/vocabulary";
 import { countBy, groupBy, maxBy, orderBy } from "es-toolkit";
 
-import { sundayBasedDayIndex } from "../../shared/domain/user-calendar.domain-service.js";
-import type { RecordedActivityEvidence, TodoSummaryForAnalysis } from "./suggestion.constants.js";
+import { dayOfWeekOf } from "../../shared/domain/user-calendar.domain-service.js";
+import type { RecordedActivityEvidence, TodoSummaryForAnalysis } from "./suggestions.constants.js";
 
 const IGNORED_TITLE_CHARACTERS =
   /[\p{P}\p{S}\p{Extended_Pictographic}\p{Cf}\p{Me}\p{Variation_Selector}\s]/gu;
@@ -27,8 +27,7 @@ export function collectRecordedActivities(
     ([key, records]) => {
       const recordsByDay: Partial<Record<DayOfWeek, TodoSummaryForAnalysis[]>> = groupBy(
         records,
-        (record) =>
-          dayIndexToDayOfWeek(sundayBasedDayIndex(Temporal.PlainDate.from(record.startDate))),
+        (record) => dayOfWeekOf(Temporal.PlainDate.from(record.startDate)),
       );
       const topTime = findMostUsed(records.flatMap(({ scheduledTime }) => scheduledTime ?? []));
       return {
@@ -36,7 +35,7 @@ export function collectRecordedActivities(
         title: findMostUsed(records.map((record) => record.title))?.value ?? key,
         occurrences: records.length,
         completedOccurrences: countCompleted(records),
-        days: DAY_OF_WEEK_ORDER.flatMap((day) => {
+        days: DAYS_OF_WEEK.flatMap((day) => {
           const dayRecords = recordsByDay[day];
           return dayRecords == null
             ? []
@@ -67,7 +66,7 @@ export function selectRecordedDays(evidence: Pick<RecordedActivityEvidence, "day
   }
   const bestDay = orderBy(
     evidence.days,
-    ["completed", "total", (day) => DAY_OF_WEEK_ORDER.indexOf(day.day)],
+    ["completed", "total", (day) => DAYS_OF_WEEK.indexOf(day.day)],
     ["desc", "desc", "asc"],
   )[0];
   return bestDay == null ? [] : [bestDay.day];

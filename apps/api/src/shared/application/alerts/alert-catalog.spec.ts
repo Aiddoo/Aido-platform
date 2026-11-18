@@ -7,6 +7,10 @@ const SOURCE_ROOT = join(import.meta.dirname, "../../..");
 const CATALOG_DOC = join(SOURCE_ROOT, "../docs/alerts.md");
 const TABLE_START = "<!-- alert-catalog:start -->";
 const TABLE_END = "<!-- alert-catalog:end -->";
+// 로그 키와 같은 문법: 3~5마디, 마지막은 하이픈 없는 한 단어(apps/api/docs/observability.md)
+const ALERT_KEY_PATTERN =
+  /^[a-z0-9]+(?:-[a-z0-9]+)*(?:\.[a-z0-9]+(?:-[a-z0-9]+)*){1,3}\.[a-z0-9]+$/u;
+const MODULE_CONTEXT_PATTERN = /^modules\/([^/]+)\//u;
 
 interface CatalogFile {
   readonly path: string;
@@ -69,6 +73,26 @@ describe("경보 카탈로그 — slice *.alerts.ts 전체", () => {
     // Then
     expect(new Set(keys).size).toBe(keys.length);
     expect(incomplete).toEqual([]);
+  });
+
+  it("key는 로그 키와 같은 문법이고 context는 slice가 있는 Context 폴더 이름이다", async () => {
+    // Given
+    const catalogs = await loadCatalogs();
+
+    // When
+    const violations = catalogs.flatMap(({ path, definitions }) => {
+      const owningContext = MODULE_CONTEXT_PATTERN.exec(path)?.[1] ?? null;
+      return definitions
+        .filter(
+          (definition) =>
+            !ALERT_KEY_PATTERN.test(definition.key) ||
+            (owningContext != null && definition.context !== owningContext),
+        )
+        .map((definition) => `${path}: ${definition.key}`);
+    });
+
+    // Then
+    expect(violations).toEqual([]);
   });
 
   it("운영 문서(docs/alerts.md)의 경보 표가 카탈로그와 같다", async () => {

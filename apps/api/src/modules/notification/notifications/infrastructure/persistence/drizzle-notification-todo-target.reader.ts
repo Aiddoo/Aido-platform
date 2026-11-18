@@ -1,0 +1,41 @@
+import { TransactionHost } from "@nestjs-cls/transactional";
+import { Injectable } from "@nestjs/common";
+
+import {
+  type TodoId,
+  todoOwnerDates,
+} from "#api/modules/planning/todos/planning-todos-queries.public";
+import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+
+import type {
+  NotificationTodoTarget,
+  NotificationTodoTargetReaderPort,
+} from "../../application/ports/notification-todo-target.reader.port.js";
+
+@Injectable()
+export class DrizzleNotificationTodoTargetReader implements NotificationTodoTargetReaderPort {
+  readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
+
+  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>) {
+    this.#transactionHost = transactionHost;
+  }
+
+  async findTodoTargets(
+    todoIds: readonly TodoId[],
+  ): Promise<ReadonlyMap<number, NotificationTodoTarget>> {
+    if (todoIds.length === 0) {
+      return new Map();
+    }
+
+    const targets = todoOwnerDates(todoIds);
+    const rows = await this.#transactionHost.tx.select().from(targets);
+
+    return new Map(
+      rows.map((row) => [
+        row.id,
+        { ownerId: UserId.reconstitute(row.userId), date: row.startDate.toString() },
+      ]),
+    );
+  }
+}

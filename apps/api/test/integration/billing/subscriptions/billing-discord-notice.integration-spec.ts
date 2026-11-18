@@ -1,0 +1,245 @@
+/**
+ * RevenueCat 웹훅 1건이 결제 채널 관리자 알림(사용자 블록 + 결제 블록)과 Discord embed가 되기까지
+ * 실제 PostgreSQL로 확인한다. Discord로는 보내지 않는다(ADMIN_NOTIFIER는 기록용 Fake).
+ */
+import type { RevenueCatWebhookPayload } from "#api/modules/billing/subscriptions/infrastructure/adapters/revenuecat/revenuecat-webhook.wire";
+import { RevenueCatWebhookController } from "#api/modules/billing/subscriptions/presentation/http/v1/revenuecat-webhook.controller";
+import { AdminNotifierPort } from "#api/modules/operations/admin-notices/application/ports/admin-notifier.port";
+import { DispatchDailySignupSummaryUseCase } from "#api/modules/operations/admin-notices/application/use-cases/dispatch-daily-signup-summary.use-case";
+import { SendAdminNotificationUseCase } from "#api/modules/operations/admin-notices/application/use-cases/send-admin-notification.use-case";
+import type { AdminNoticePrimitives } from "#api/modules/operations/admin-notices/domain/admin-notice.aggregate";
+import { renderDiscordEmbed } from "#api/modules/operations/admin-notices/infrastructure/adapters/discord-embed.mapper";
+import { AdminNotificationProcessor } from "#api/modules/operations/admin-notices/infrastructure/jobs/admin-notification.processor";
+import { ADMIN_NOTIFICATION_QUEUE } from "#api/modules/operations/admin-notices/infrastructure/jobs/admin-notification.queue";
+import { linkedAccount, user as userTable, userProfile } from "#api/platform/database/schema/index";
+import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
+import { createEntityId } from "#api/shared/domain/model/entity-id";
+import { instantFromDate } from "#api/shared/domain/time/instant";
+import type { FakeAdminNotifier } from "#test/doubles/operations/fake-admin-notifier";
+import type { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
+import { createSubscriptionEventFixture } from "#test/fixtures/billing/subscription-event.fixture";
+import { createLinkedAccountRowFixture } from "#test/fixtures/identity/linked-account-row.fixture";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import { createTestClient } from "#test/setup/database-context";
+import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
+
+/** 2026-11-10 10:00 KST */
+const AT = new Date("2026-11-10T01:00:00.000Z");
+const JOINED_AT = new Date("2026-10-01T03:00:00.000Z");
+const EXPIRES_AT = new Date("2027-11-10T01:00:00.000Z");
+const PROJECT_ID = "proj_discord_notice";
+
+describe("결제 웹훅 → Discord 결제 알림 (실제 PostgreSQL)", () => {
+  let database: TestDatabase;
+  let client: TestDatabaseClient;
+  let context: E2eTestContext;
+  let receiver: RevenueCatWebhookController;
+  let jobQueue: InMemoryJobQueue;
+  let notifier: FakeAdminNotifier;
+  let processor: AdminNotificationProcessor;
+  let userId: string;
+
+  beforeAll(async () => {
+    process.env.REVENUECAT_PROJECT_ID = PROJECT_ID;
+    database = new TestDatabase({ createClient: (url) => createTestClient(url, { max: 5 }) });
+    client = await database.start();
+    context = await createE2eApp({ testDatabase: database });
+    receiver = context.module.get(RevenueCatWebhookController);
+    jobQueue = context.module.get<typeof JobQueuePort, InMemoryJobQueue>(JobQueuePort);
+    notifier = context.module.get(AdminNotifierPort);
+    // E2E 앱은 백그라운드 작업자를 끈다. 같은 조립의 유스케이스로 작업자를 만들어 큐 payload 검증부터 탄다
+    processor = new AdminNotificationProcessor(
+      jobQueue,
+      context.module.get(SendAdminNotificationUseCase),
+      context.module.get(DispatchDailySignupSummaryUseCase),
+    );
+    await processor.onModuleInit();
+  });
+
+  beforeEach(async () => {
+    await context.reset();
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(AT);
+    const owner = createUserRowFixture({
+      id: createEntityId(),
+      email: "matthew@example.com",
+      userTag: "MATT2025",
+      createdAt: instantFromDate(JOINED_AT),
+      updatedAt: instantFromDate(JOINED_AT),
+    });
+    await client.insert(userTable).values(owner);
+    await client.insert(userProfile).values({ userId: owner.id, name: "매튜" });
+    // 가입 방식은 처음 만든 계정이다. 나중에 연결한 Google 계정이 아니다
+    await client.insert(linkedAccount).values([
+      createLinkedAccountRowFixture({
+        userId: owner.id,
+        provider: "APPLE",
+        createdAt: instantFromDate(JOINED_AT),
+      }),
+      createLinkedAccountRowFixture({
+        userId: owner.id,
+        provider: "GOOGLE",
+        createdAt: instantFromDate(AT),
+      }),
+    ]);
+    userId = owner.id;
+  });
+
+  afterEach(() => vi.useRealTimers());
+
+  afterAll(async () => {
+    delete process.env.REVENUECAT_PROJECT_ID;
+    if (context) {
+      await destroyE2eApp(context);
+    } else {
+      await database?.stop();
+    }
+  });
+
+  function withCountry(payload: RevenueCatWebhookPayload, countryCode: string) {
+    return { ...payload, event: { ...payload.event, country_code: countryCode } };
+  }
+
+  /** 커밋 뒤 기다리지 않고 넘긴 알림이 큐에 들어올 때까지 기다렸다가 작업자로 처리한다. */
+  async function deliverPaymentNotices(count: number): Promise<AdminNoticePrimitives[]> {
+    await vi.waitFor(() => expect(jobQueue.jobsIn(ADMIN_NOTIFICATION_QUEUE)).toHaveLength(count), {
+      timeout: 5000,
+    });
+    await jobQueue.drain(ADMIN_NOTIFICATION_QUEUE);
+    return notifier.getSent("payment").map((sent) => sent.notice);
+  }
+
+  it("운영 연간 구매 1건은 저장된 사용자 블록과 웹훅 금액·국가·만료로 결제 알림이 된다", async () => {
+    // Given
+    const purchase = createSubscriptionEventFixture("INITIAL_PURCHASE", {
+      app_user_id: userId,
+      product_id: "com.aido.pro.yearly",
+      id: "evt-discord-purchase",
+      transaction_id: "2000000812345678",
+      original_transaction_id: "2000000812345678",
+      period_type: "NORMAL",
+      purchased_at_ms: AT.getTime() - 60_000,
+      expiration_at_ms: EXPIRES_AT.getTime(),
+      price: 27.99,
+      currency: "KRW",
+      price_in_purchased_currency: 39_000,
+    });
+
+    // When
+    await receiver.receive(withCountry(purchase, "KR"));
+    const [notice] = await deliverPaymentNotices(1);
+
+    // Then
+    expect(notice).toEqual({
+      type: "subscription_event",
+      user: {
+        userId,
+        email: "matthew@example.com",
+        nickname: "매튜",
+        userTag: "MATT2025",
+        joinedAt: JOINED_AT.toISOString(),
+        signupMethod: "APPLE",
+      },
+      subscription: {
+        event: "purchased",
+        environment: "PRODUCTION",
+        store: "APP_STORE",
+        productId: "com.aido.pro.yearly",
+        planType: "ANNUAL",
+        periodKind: "NORMAL",
+        price: { amount: 39_000, currency: "KRW", usd: 27.99 },
+        purchasedAt: new Date(AT.getTime() - 60_000).toISOString(),
+        expiresAt: EXPIRES_AT.toISOString(),
+        countryCode: "KR",
+        isFirstPurchase: true,
+        premium: {
+          source: "STORE",
+          periodEndsAt: EXPIRES_AT.toISOString(),
+          bankedDays: 0,
+          isTrial: false,
+        },
+        storeSubscriptionId: "2000000812345678",
+        customerUrl: `https://app.revenuecat.com/projects/${PROJECT_ID}/customers/${userId}`,
+      },
+    });
+
+    if (notice == null) {
+      throw new Error("결제 알림이 없습니다");
+    }
+    const embed = renderDiscordEmbed(notice, AT.toISOString());
+    expect(embed.title).toBe("[운영] 🎉 새 구독");
+    expect(embed.fields.slice(0, 9).map((field) => [field.name, field.value])).toEqual([
+      ["닉네임", "매튜"],
+      ["태그", "#MATT2025"],
+      ["가입 방식", "Apple"],
+      ["가입일", "2026-10-01 (D+40)"],
+      ["이메일", "matthew@example.com"],
+      ["사용자 ID", `\`${userId}\``],
+      ["국가", "🇰🇷 대한민국 (KR)"],
+      ["프리미엄", "스토어 구독"],
+      [
+        "RevenueCat",
+        `[고객 화면](https://app.revenuecat.com/projects/${PROJECT_ID}/customers/${userId})`,
+      ],
+    ]);
+    expect(embed.fields).toContainEqual({
+      name: "금액",
+      value: "₩39,000 · US$27.99",
+      inline: true,
+    });
+  });
+
+  it("결제 실패로 만료되면 위험 색과 결제 실패 사유를 보여 준다", async () => {
+    // Given
+    const transactionId = "2000000899990000";
+    const purchase = createSubscriptionEventFixture("INITIAL_PURCHASE", {
+      app_user_id: userId,
+      product_id: "com.aido.pro.monthly",
+      id: "evt-discord-monthly",
+      transaction_id: transactionId,
+      original_transaction_id: transactionId,
+      purchased_at_ms: AT.getTime() - 31 * 24 * 60 * 60 * 1000,
+      expiration_at_ms: AT.getTime() - 60_000,
+      price: 2.99,
+      currency: "KRW",
+      price_in_purchased_currency: 3900,
+    });
+    const expiration = createSubscriptionEventFixture("EXPIRATION", {
+      app_user_id: userId,
+      product_id: "com.aido.pro.monthly",
+      id: "evt-discord-expired",
+      transaction_id: transactionId,
+      original_transaction_id: transactionId,
+      expiration_at_ms: AT.getTime() - 60_000,
+      expiration_reason: "BILLING_ERROR",
+    });
+    await receiver.receive(purchase);
+
+    // When
+    await receiver.receive(expiration);
+    const notices = await deliverPaymentNotices(2);
+
+    // Then
+    const expired = notices.find(
+      (notice) => notice.type === "subscription_event" && notice.subscription.event === "expired",
+    );
+    if (expired == null) {
+      throw new Error("만료 알림이 없습니다");
+    }
+    const embed = renderDiscordEmbed(expired, AT.toISOString());
+    expect(embed.title).toBe("[운영] ⌛ 구독 만료");
+    expect(embed.color).toBe(0xed4245);
+    expect(embed.fields).toContainEqual({
+      name: "사유",
+      value: "결제 실패 (BILLING_ERROR)",
+      inline: false,
+    });
+    expect(embed.fields).toContainEqual({ name: "요금제", value: "월간", inline: true });
+    expect(embed.fields).toContainEqual({ name: "프리미엄", value: "무료", inline: true });
+  });
+});

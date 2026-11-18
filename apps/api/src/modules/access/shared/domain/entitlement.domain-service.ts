@@ -16,7 +16,7 @@ import {
 import { mapValues } from "es-toolkit";
 import { match } from "ts-pattern";
 
-import type { FeatureGrants } from "./access.constants.js";
+import { type FeatureGrants, NO_FEATURE_GRANTS } from "./access.constants.js";
 import { hasPaidAccess, type PaidAccessState } from "./paid-access.domain-service.js";
 
 /** 권한 판단에 쓰는 사용자 상태. 역할(USER·ADMIN)의 출처는 identity다. */
@@ -242,4 +242,30 @@ export function resolveFeatureQuota(params: {
     isFairUse: quota?.isFairUse ?? false,
     perUse: resolvePerUseLimit({ plan, feature }),
   };
+}
+
+/** 요금제 하나의 기능 값. 받은 자리 없이 resolveFeatureQuota와 같은 계산이다 */
+export type PlanFeatureLimit = Pick<
+  FeatureQuotaState,
+  "allowed" | "limit" | "isFairUse" | "perUse"
+>;
+
+export type PlanComparison = Readonly<Record<Plan, PlanFeatureLimit>>;
+
+function resolvePlanFeatureLimit(plan: Plan, feature: PlanFeature): PlanFeatureLimit {
+  const { allowed, limit, isFairUse, perUse } = resolveFeatureQuota({
+    plan,
+    feature,
+    grants: NO_FEATURE_GRANTS,
+    usage: null,
+  });
+  return { allowed, limit, isFairUse, perUse };
+}
+
+/** 기능마다 무료·프리미엄 요금제 값. 결제 화면이 앱에 묶인 카탈로그 대신 서버가 집행하는 값을 보여 준다 */
+export function resolvePlanComparisons(): Record<PlanFeature, PlanComparison> {
+  return mapValues(PLAN_CATALOG, (_definition, feature) => ({
+    free: resolvePlanFeatureLimit("free", feature),
+    premium: resolvePlanFeatureLimit("premium", feature),
+  }));
 }

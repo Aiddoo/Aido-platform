@@ -28,22 +28,26 @@ const rainyReport = createWeatherReport({
       },
     ],
   }),
+  headline: {
+    kind: 'todoWet',
+    hazard: 'rain',
+    precipitationChance: 70,
+    window: { startsAt: '2026-11-02T07:00:00.000Z', endsAt: '2026-11-02T09:00:00.000Z' },
+  },
 });
 
 const DEPS: BriefingViewPorts = {
   hourly: rainyReport.hourly,
   now: NOW,
   formatClock: (date) => `clock:${date}`,
+  formatTodoTime: (localTime) => `todo:${localTime}`,
   formatHour: (date) => `hour:${date}`,
   formatTemperature: (celsius) => `${celsius}°`,
   formatChance: (percent) => `${percent}%`,
 };
 
 function viewFor(report: WeatherReport, todos: BriefingTodo[]) {
-  const briefing = getWeatherBriefing(report, todos, {
-    now: NOW,
-    timeZone: 'Asia/Seoul',
-  });
+  const briefing = getWeatherBriefing(report, todos, { now: NOW });
   if (briefing == null) {
     throw new Error('서버 브리핑이 있는 리포트여야 한다');
   }
@@ -66,6 +70,32 @@ describe('toBriefingView', () => {
     expect(view.action).toMatchObject({ kind: 'reschedule', reason: 'rain', todoIds: [1] });
   });
 
+  it('눈 소식 본문의 할 일 시각은 예보 칸을 찾은 순간이 아니라 할 일의 벽시계로 쓴다', () => {
+    // Given
+    // 서머타임 시작일처럼 없는 02:30이 전환 뒤 순간(16:30 칸)으로 밀린 할 일
+    const snowyReport = createWeatherReport({
+      hourly: HOURLY,
+      briefing: createBriefingDto({ reason: 'rain', affectedTodoIds: [1] }),
+      headline: {
+        kind: 'todoWet',
+        hazard: 'snow',
+        precipitationChance: 70,
+        window: { startsAt: '2026-11-02T07:00:00.000Z', endsAt: '2026-11-02T09:00:00.000Z' },
+      },
+    });
+    const shiftedTodo = createBriefingTodo({
+      localTime: '02:30',
+      scheduledAt: toInstant('2026-11-02T07:30:00.000Z'),
+    });
+
+    // When
+    const view = viewFor(snowyReport, [shiftedTodo]);
+
+    // Then
+    expect(view.body).toEqual({ key: 'briefing.snowy.body', values: { time: 'todo:02:30' } });
+    expect(view.rows[0]?.todo.localTime).toBe('02:30');
+  });
+
   it('비와 겹친 할 일을 모두 끝냈으면 옮기기 버튼을 감춘다', () => {
     // When
     const view = viewFor(rainyReport, [createBriefingTodo({ completed: true })]);
@@ -76,8 +106,14 @@ describe('toBriefingView', () => {
   });
 
   it('할 일이 없고 오늘 늦게 비가 오면 비 시작 시각만 알리고 할 일 제안은 하지 않는다', () => {
+    // Given
+    const report = createWeatherReport({
+      hourly: HOURLY,
+      headline: { kind: 'wetLater', startsAt: '2026-11-02T07:00:00.000Z', isSnow: false },
+    });
+
     // When
-    const view = viewFor(createWeatherReport({ hourly: HOURLY }), []);
+    const view = viewFor(report, []);
 
     // Then
     expect(view.body).toEqual({
@@ -86,5 +122,19 @@ describe('toBriefingView', () => {
     });
     expect(view.rows).toEqual([]);
     expect(view.action).toBeNull();
+  });
+
+  it('서버가 지금부터 온다고 한 비·눈은 시작 시각 대신 지금 온다고 알린다', () => {
+    // Given
+    const report = createWeatherReport({
+      hourly: HOURLY,
+      headline: { kind: 'wetLater', startsAt: '2026-11-02T06:26:00.000Z', isSnow: true },
+    });
+
+    // When
+    const view = viewFor(report, []);
+
+    // Then
+    expect(view.body).toEqual({ key: 'briefing.rainLater.nowSnowBody' });
   });
 });

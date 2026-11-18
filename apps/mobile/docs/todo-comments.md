@@ -43,7 +43,7 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾸고,
 `domains/todo-comment.model.ts`가 앱 모델과 규칙을 소유하고, `apis/todo-comment.mapper.ts`가 계약 DTO를 모델로 바꾼다.
 
 - zod: 모델 스키마는 `domains/`에서 앱 모양으로 직접 정의하고 시각은 `Instant`다. `schemas/`는 폼·params·초안·요청 모양만 둔다.
-  `@aido/api` 루트는 `apis/`와 `schemas/`만 import한다(dependency-cruiser가 검사).
+  계약(`@aido/api/contracts/todo-comment/v<n>`)은 `apis/`와 `schemas/`만 import한다(dependency-cruiser가 검사).
 - 이름 있는 순수 함수와 `TodoCommentPolicy` Facade(키 = 함수 이름)
   - 표시: `getDisplayState(active | deleted | blockedAuthor)`, `isReply`
   - 권한: `canLikeComment`, `canReplyToComment`, `canEditComment`, `canDeleteComment`, `canDeleteOnlyAsTodoOwner`,

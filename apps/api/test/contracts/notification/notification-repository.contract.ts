@@ -1,12 +1,12 @@
-import type { CreateNotificationData } from "#api/modules/notification/inbox/application/ports/notification-draft.port";
-import type { NotificationHistoryReaderPort } from "#api/modules/notification/inbox/application/ports/notification-history.reader.port";
-import type { NotificationInboxReaderPort } from "#api/modules/notification/inbox/application/ports/notification-inbox.reader.port";
-import {
-  DuplicateNotificationError,
-  type NotificationRepositoryPort,
-} from "#api/modules/notification/inbox/application/ports/notification.repository.port";
-import type { InboxNotification } from "#api/modules/notification/inbox/application/read-models/inbox-notification.read-model";
-import { NotificationId } from "#api/modules/notification/inbox/domain/notification-id.vo";
+import { DuplicateNotificationError } from "#api/modules/notification/notifications/application/notifications.errors";
+import type { NotificationHistoryReaderPort } from "#api/modules/notification/notifications/application/ports/notification-history.reader.port";
+import type { NotificationInboxReaderPort } from "#api/modules/notification/notifications/application/ports/notification-inbox.reader.port";
+import { type NotificationRepositoryPort } from "#api/modules/notification/notifications/application/ports/notification.repository.port";
+import type { UnreadNotificationCountReaderPort } from "#api/modules/notification/notifications/application/ports/unread-notification-count.reader.port";
+import type { InboxNotificationReadModel } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
+import type { CreateNotificationData } from "#api/modules/notification/shared/domain/notification-draft.constants";
+import { NotificationId } from "#api/modules/notification/shared/domain/notification-id.vo";
+import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   createNotificationDraftFixture,
@@ -20,6 +20,7 @@ export interface NotificationStoreSubject {
   readonly repository: NotificationRepositoryPort;
   readonly inboxReader: NotificationInboxReaderPort;
   readonly historyReader: NotificationHistoryReaderPort;
+  readonly unreadCountReader: UnreadNotificationCountReaderPort;
 }
 
 const USER_ID = NOTIFICATION_FIXTURE_USER_ID;
@@ -29,11 +30,11 @@ const LATER = NOTIFICATION_FIXTURE_NOW.add({ minutes: 1 });
 async function create(
   repository: NotificationRepositoryPort,
   overrides: Partial<CreateNotificationData> = {},
-): Promise<InboxNotification> {
+): Promise<InboxNotificationReadModel> {
   return repository.createNotification(createNotificationDraftFixture(overrides));
 }
 
-function idsOf(rows: readonly InboxNotification[]): number[] {
+function idsOf(rows: readonly InboxNotificationReadModel[]): number[] {
   return rows.map((row) => row.id);
 }
 
@@ -190,8 +191,8 @@ export function describeNotificationRepositoryContract(
 
         // When
         const results = [
-          first == null ? null : await repository.markAsRead(first),
-          stale == null ? null : await repository.markAsRead(stale),
+          first == null ? null : await repository.save(first),
+          stale == null ? null : await repository.save(stale),
         ];
 
         // Then
@@ -227,6 +228,28 @@ export function describeNotificationRepositoryContract(
         expect([typed.count, unreadAfterTyped, rest.count, again.count]).toEqual([2, 1, 1, 0]);
         expect(await inboxReader.countUnread(UserId.reconstitute(USER_ID))).toBe(0);
         expect(await inboxReader.countUnread(UserId.reconstitute(OTHER_USER_ID))).toBe(1);
+      });
+
+      it("여러 사람의 안 읽은 수를 한 번에 세고 안 읽은 알림이 없는 사람은 뺀다", async () => {
+        // Given
+        const { repository, unreadCountReader } = await createSubject();
+        await create(repository);
+        await create(repository);
+        await create(repository, { userId: OTHER_USER_ID });
+        await repository.markAllAsRead(
+          UserId.reconstitute(OTHER_USER_ID),
+          undefined,
+          NOTIFICATION_FIXTURE_NOW,
+        );
+
+        // When
+        const counts = await unreadCountReader.countUnreadByUsers([
+          UserId.reconstitute(USER_ID),
+          UserId.reconstitute(OTHER_USER_ID),
+        ]);
+
+        // Then
+        expect([...counts]).toEqual([[USER_ID, 2]]);
       });
 
       it("전체 읽음은 바꾼 행의 읽은 시각을 now로 남긴다", async () => {
@@ -318,7 +341,9 @@ export function describeNotificationRepositoryContract(
 
       // Then
       expect(result.count).toBe(3);
-      expect(result.affectedUserIds.toSorted()).toEqual([USER_ID, OTHER_USER_ID].toSorted());
+      expect(result.affectedUserIds.map((userId) => userId.value).toSorted()).toEqual(
+        [USER_ID, OTHER_USER_ID].toSorted(),
+      );
       expect(none).toEqual({ count: 0, affectedUserIds: [] });
       const remaining = await inboxReader.listByUser({
         userId: UserId.reconstitute(USER_ID),
@@ -328,6 +353,68 @@ export function describeNotificationRepositoryContract(
         types: undefined,
       });
       expect(idsOf(remaining)).toEqual([kept.id]);
+    });
+
+    it("보관 기간 정리는 기준 시각 전 알림을 만든 순서로 limit개 지우고 마일스톤 알림은 남긴다", async () => {
+      // Given
+      const { repository, historyReader } = await createSubject();
+      const first = await create(repository, { title: "첫째" });
+      await create(repository, { type: "WEEKLY_ACHIEVEMENT", metadata: { milestone: "STREAK_3" } });
+      await create(repository, { title: "둘째" });
+      const farFuture = Temporal.Instant.from("2999-01-01T00:00:00Z");
+
+      // When
+      const firstBatch = await repository.deleteCreatedBefore({
+        createdBefore: farFuture,
+        createdFrom: null,
+        limit: 1,
+      });
+      const rest = await repository.deleteCreatedBefore({
+        createdBefore: farFuture,
+        createdFrom: firstBatch.lastCreatedAt,
+        limit: 10,
+      });
+      const untouched = await repository.deleteCreatedBefore({
+        createdBefore: Temporal.Instant.from("2000-01-01T00:00:00Z"),
+        createdFrom: null,
+        limit: 10,
+      });
+
+      // Then
+      expect(firstBatch).toEqual({
+        deletedCount: 1,
+        lastCreatedAt: first.createdAt,
+        unreadOwnerIds: [UserId.reconstitute(USER_ID)],
+      });
+      expect(rest.deletedCount).toBe(1);
+      expect(untouched).toEqual({ deletedCount: 0, lastCreatedAt: null, unreadOwnerIds: [] });
+      expect(
+        await historyReader.hasMilestoneNotification(UserId.reconstitute(USER_ID), "STREAK_3"),
+      ).toBe(true);
+    });
+
+    it("보관 기간 정리는 안 읽은 알림이 지워진 사람만 한 번씩 돌려준다", async () => {
+      // Given
+      const { repository } = await createSubject();
+      await create(repository, { title: "안 읽음 1" });
+      await create(repository, { title: "안 읽음 2" });
+      await create(repository, { userId: OTHER_USER_ID, title: "읽음" });
+      await repository.markAllAsRead(
+        UserId.reconstitute(OTHER_USER_ID),
+        undefined,
+        Temporal.Instant.from("2026-11-18T00:00:00Z"),
+      );
+
+      // When
+      const batch = await repository.deleteCreatedBefore({
+        createdBefore: Temporal.Instant.from("2999-01-01T00:00:00Z"),
+        createdFrom: null,
+        limit: 10,
+      });
+
+      // Then
+      expect(batch.deletedCount).toBe(3);
+      expect(batch.unreadOwnerIds).toEqual([UserId.reconstitute(USER_ID)]);
     });
 
     describe("알림함 조회", () => {
@@ -425,7 +512,7 @@ export function describeNotificationRepositoryContract(
           nudgeId: 9,
         });
         const base = {
-          userId: USER_ID,
+          userId: UserId.reconstitute(USER_ID),
           type: "NUDGE_RECEIVED",
           since: Temporal.Instant.from("2000-01-01T00:00:00Z"),
         } as const;
@@ -435,13 +522,15 @@ export function describeNotificationRepositoryContract(
           await historyReader.existsRecentNotification(base),
           await historyReader.existsRecentNotification({
             ...base,
-            friendId: NOTIFICATION_FIXTURE_ACTOR_ID,
-            todoId: 3,
-            nudgeId: 9,
+            friendId: UserId.reconstitute(NOTIFICATION_FIXTURE_ACTOR_ID),
+            todoId: TodoId.reconstitute(3),
           }),
-          await historyReader.existsRecentNotification({ ...base, nudgeId: 10 }),
+          await historyReader.existsRecentNotification({ ...base, todoId: TodoId.reconstitute(4) }),
           await historyReader.existsRecentNotification({ ...base, type: "CHEER_RECEIVED" }),
-          await historyReader.existsRecentNotification({ ...base, userId: OTHER_USER_ID }),
+          await historyReader.existsRecentNotification({
+            ...base,
+            userId: UserId.reconstitute(OTHER_USER_ID),
+          }),
           await historyReader.existsRecentNotification({
             ...base,
             since: Temporal.Instant.from("2999-01-01T00:00:00Z"),
@@ -470,21 +559,87 @@ export function describeNotificationRepositoryContract(
 
         // When
         const notified = await historyReader.findAlreadyNotifiedUserIds({
-          userIds: [USER_ID, OTHER_USER_ID],
+          userIds: [UserId.reconstitute(USER_ID), UserId.reconstitute(OTHER_USER_ID)],
           type: "FRIEND_COMPLETED",
           notificationDate,
-          friendId: NOTIFICATION_FIXTURE_ACTOR_ID,
+          friendId: UserId.reconstitute(NOTIFICATION_FIXTURE_ACTOR_ID),
         });
         const otherFriend = await historyReader.findAlreadyNotifiedUserIds({
-          userIds: [USER_ID, OTHER_USER_ID],
+          userIds: [UserId.reconstitute(USER_ID), UserId.reconstitute(OTHER_USER_ID)],
           type: "FRIEND_COMPLETED",
           notificationDate,
-          friendId: OTHER_USER_ID,
+          friendId: UserId.reconstitute(OTHER_USER_ID),
         });
 
         // Then
         expect([...notified]).toEqual([USER_ID]);
         expect(otherFriend.size).toBe(0);
+      });
+
+      it("재방문 단계는 사용자마다 자기 기준 시각 뒤에 만든 WINBACK 행의 metadata.stage만이다", async () => {
+        // Given
+        const { repository, historyReader } = await createSubject();
+        await create(repository, { type: "WINBACK", metadata: { stage: "day3" } });
+        await create(repository, { type: "WINBACK", metadata: { stage: "day7" } });
+        await create(repository, { type: "LUNCH_NUDGE", metadata: { stage: "day14" } });
+        await create(repository, {
+          userId: OTHER_USER_ID,
+          type: "WINBACK",
+          metadata: { stage: "day3" },
+        });
+
+        // When
+        const stages = await historyReader.findWinbackStagesSince({
+          recipients: [
+            {
+              userId: UserId.reconstitute(USER_ID),
+              since: Temporal.Instant.from("2000-01-01T00:00:00Z"),
+            },
+            {
+              userId: UserId.reconstitute(OTHER_USER_ID),
+              since: Temporal.Instant.from("2999-01-01T00:00:00Z"),
+            },
+          ],
+        });
+        const none = await historyReader.findWinbackStagesSince({ recipients: [] });
+
+        // Then
+        expect(
+          [...stages.entries()].map(([userId, values]) => [userId, [...values].toSorted()]),
+        ).toEqual([[USER_ID, ["day3", "day7"]]]);
+        expect(none.size).toBe(0);
+      });
+
+      it("콕 제안 친구는 알림 날짜가 [start, end)인 그 사용자의 NUDGE_SUGGEST 행의 친구다", async () => {
+        // Given
+        const { repository, historyReader } = await createSubject();
+        await create(repository, {
+          type: "NUDGE_SUGGEST",
+          friendId: NOTIFICATION_FIXTURE_ACTOR_ID,
+          notificationDate: Temporal.PlainDate.from("2026-03-02"),
+        });
+        await create(repository, {
+          type: "NUDGE_SUGGEST",
+          friendId: OTHER_USER_ID,
+          notificationDate: Temporal.PlainDate.from("2026-03-09"),
+        });
+        await create(repository, {
+          type: "FRIEND_COMPLETED",
+          friendId: OTHER_USER_ID,
+          notificationDate: Temporal.PlainDate.from("2026-03-03"),
+        });
+
+        // When
+        const friends = await historyReader.findNudgeSuggestedFriends({
+          userIds: [UserId.reconstitute(USER_ID), UserId.reconstitute(OTHER_USER_ID)],
+          start: Temporal.PlainDate.from("2026-03-02"),
+          end: Temporal.PlainDate.from("2026-03-09"),
+        });
+
+        // Then
+        expect([...friends.entries()].map(([userId, values]) => [userId, [...values]])).toEqual([
+          [USER_ID, [NOTIFICATION_FIXTURE_ACTOR_ID]],
+        ]);
       });
 
       it("마일스톤 알림은 metadata.milestone이 같은 그 사용자의 마일스톤 종류 알림이 있을 때만 있다", async () => {
@@ -498,10 +653,13 @@ export function describeNotificationRepositoryContract(
 
         // When
         const results = [
-          await historyReader.hasMilestoneNotification(USER_ID, "STREAK_3"),
-          await historyReader.hasMilestoneNotification(USER_ID, "COUNT_10"),
-          await historyReader.hasMilestoneNotification(USER_ID, "COUNT_50"),
-          await historyReader.hasMilestoneNotification(OTHER_USER_ID, "STREAK_3"),
+          await historyReader.hasMilestoneNotification(UserId.reconstitute(USER_ID), "STREAK_3"),
+          await historyReader.hasMilestoneNotification(UserId.reconstitute(USER_ID), "COUNT_10"),
+          await historyReader.hasMilestoneNotification(UserId.reconstitute(USER_ID), "COUNT_50"),
+          await historyReader.hasMilestoneNotification(
+            UserId.reconstitute(OTHER_USER_ID),
+            "STREAK_3",
+          ),
         ];
 
         // Then

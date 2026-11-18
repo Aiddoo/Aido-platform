@@ -1,3 +1,5 @@
+import { StoreProductId } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 
 import type {
@@ -7,18 +9,18 @@ import type {
 import { AdminEventNotifierAdapter } from "./admin-event-notifier.adapter.js";
 
 const userPayload: UserRegisteredNoticeInput = {
-  userId: "user-1",
+  userId: UserId.reconstitute("user-1"),
   email: "test@example.com",
   provider: "apple",
   registeredAt: "2026-03-07T12:00:00.000Z",
 };
 
 const subscriptionPayload: SubscriptionNoticeInput = {
-  userId: "user-1",
+  userId: UserId.reconstitute("user-1"),
   email: "test@example.com",
   kind: "STARTED",
   store: null,
-  productId: "aido_premium_monthly",
+  productId: StoreProductId.reconstitute("aido_premium_monthly"),
 };
 
 // 등록 호출을 기록하고, 실패를 주면 큐 등록 실패를 흉내 낸다
@@ -75,7 +77,7 @@ describe("AdminEventNotifierAdapter — 격리된 관리자 이벤트 알림", (
     // Then
     expect(logger.messages).toEqual([
       {
-        event: "operations.notifications.signup.enqueue-failed",
+        event: "operations.notifications.signup.enqueue.failed",
         userId: "user-1",
         errorType: "queue-enqueue",
       },
@@ -95,7 +97,7 @@ describe("AdminEventNotifierAdapter — 격리된 관리자 이벤트 알림", (
     // Then
     expect(logger.messages).toEqual([
       {
-        event: "operations.notifications.subscription.enqueue-failed",
+        event: "operations.notifications.subscription.enqueue.failed",
         userId: "user-1",
         errorType: "queue-enqueue",
       },

@@ -4,10 +4,12 @@ import { DrizzleModule, getDrizzleToken } from "@nestjs/drizzle";
 
 import { databaseConfig } from "#api/platform/config/database.config";
 import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
+import { ExclusiveRunnerPort } from "#api/shared/application/ports/exclusive-runner.port";
 import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { SavepointRunnerPort } from "#api/shared/application/ports/savepoint-runner.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
+import { ClsExclusiveRunner } from "./cls-exclusive-runner.js";
 import { ClsSavepointRunner } from "./cls-savepoint-runner.js";
 import { ClsUnitOfWork } from "./cls-unit-of-work.js";
 import { createDatabase, DRIZZLE } from "./database.client.js";
@@ -33,6 +35,7 @@ import { createPostgresPool } from "./postgres-pool.js";
     { provide: AfterCommitTaskRegistryPort, useExisting: ClsUnitOfWork },
     { provide: SavepointRunnerPort, useClass: ClsSavepointRunner },
     { provide: MutationLockPort, useClass: PostgresMutationLockAdapter },
+    { provide: ExclusiveRunnerPort, useClass: ClsExclusiveRunner },
   ],
   exports: [
     DRIZZLE,
@@ -40,6 +43,7 @@ import { createPostgresPool } from "./postgres-pool.js";
     AfterCommitTaskRegistryPort,
     SavepointRunnerPort,
     MutationLockPort,
+    ExclusiveRunnerPort,
   ],
 })
 export class DatabaseModule {}

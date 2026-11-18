@@ -1,11 +1,11 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import type { QuotaChargeRepositoryPort } from "#api/modules/access/quotas/application/ports/quota-charge.repository.port";
-import { QuotaChargeId } from "#api/modules/access/quotas/domain/quota-charge-id.vo";
+import type { QuotaChargeRepositoryPort } from "#api/modules/access/quota-charges/application/ports/quota-charge.repository.port";
+import { QuotaChargeId } from "#api/modules/access/quota-charges/domain/quota-charge-id.vo";
 import type {
   QuotaCharge,
   QuotaChargePrimitives,
-} from "#api/modules/access/quotas/domain/quota-charge.aggregate";
+} from "#api/modules/access/quota-charges/domain/quota-charge.aggregate";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   ACCESS_FIXTURE_NOW,

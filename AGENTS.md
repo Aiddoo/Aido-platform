@@ -8,7 +8,7 @@ Turborepo + pnpm 모노레포. AI 할 일 관리 서비스의 API 서버와 모�
 
 - API: [`apps/api/AGENTS.md`](apps/api/AGENTS.md) → 필요한 문서만 [서버 문서 안내](apps/api/docs/README.md)에서 고른다. 새 서버 기능은 [새 기능 추가](apps/api/docs/new-feature.md) 순서를 따른다.
 - Mobile: [`apps/mobile/AGENTS.md`](apps/mobile/AGENTS.md).
-- 앱·서버 공통: [오류](docs/conventions/errors.md) · [날짜·언어](docs/conventions/dates.md) · [호환](docs/conventions/compatibility.md) · [nullish](docs/conventions/nullish.md) · [테스트 파일](docs/conventions/testing.md) · [Git](docs/conventions/git.md) · [스크립트](docs/conventions/scripts.md).
+- 앱·서버 공통: [서버·앱 책임](docs/conventions/ownership.md) · [오류](docs/conventions/errors.md) · [날짜·언어](docs/conventions/dates.md) · [호환](docs/conventions/compatibility.md) · [nullish](docs/conventions/nullish.md) · [테스트 파일](docs/conventions/testing.md) · [Git](docs/conventions/git.md) · [스크립트](docs/conventions/scripts.md).
 - 문서·`AGENTS.md`·rules·스킬을 고칠 때는 [문서 규칙](docs/conventions/docs.md)을 읽는다.
 
 ## 스택
@@ -57,6 +57,7 @@ docs/           앱·서버 공통 규칙(conventions), 릴리스 기록(release
 
 **응집도·결합도**
 
+- 판단은 서버, 표시는 앱이다. 값마다 주인은 하나이고 앱은 서버 값을 다시 계산하지 않는다([서버·앱 책임](docs/conventions/ownership.md)).
 - 함께 바뀌는 파일은 같은 기능 폴더에 둔다. 함께 바뀌지 않으면 버그가 나는 것(계약·큐 payload·잠금 키)은 한 곳에 응집한다.
 - 책임은 하나씩(SOLID). 계산·변환은 부수효과 없는 순수 함수이고 클래스·훅은 그것을 감싼다.
 - 기능 사이 중복은 허용한다. 공용화는 함께 바뀌어야 할 때만 한다. props·인자 드릴링은 구조로 없앤다.

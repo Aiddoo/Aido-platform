@@ -13,11 +13,13 @@
 ## 이벤트 키와 필드 (서버·앱 공통)
 
 - 형식은 `<context>.<subject>[.<detail>].<outcome>`다. 소문자, 단어는 하이픈, 마디는 점이다(`identity.oauth.token-exchange.failed`, 앱 `todo-comment.submit.failed`).
-- 첫 마디는 Bounded Context, platform은 기술 영역(`http`·`redis`·`cache`·`jobs`·`database`·`events`)이다. 마지막은 결과(`failed`·`completed`·`skipped` …)다.
+- 첫 마디는 Bounded Context 폴더 이름, platform은 기술 영역(`server`·`http`·`redis`·`cache`·`dedup`·`jobs`·`database`·`events`·`outbound`·`observability`·`metering`·`config`)이다. 마디는 3~5개이고 마지막은 하이픈 없는 결과 한 단어(`failed`·`completed`·`skipped` …)다. Oxlint `aido/log-event-key`·`aido/logger-event-constant`가 강제한다.
 - Sentry `feature` 태그는 첫 마디의 하이픈을 밑줄로 바꾼 값이다(앱 [observability](../../mobile/docs/observability.md)와 같은 축).
 - `errorType`은 분류 또는 예외 클래스 이름(`toErrorType`), `errorCode`는 공유 `ErrorCode` 값만이다. 공급자 기호는 `providerError`, 공급자 HTTP 상태는 `statusCode`, Node 네트워크 code는 `networkCode`다.
-- 메시지 자리에 template literal·문자열 연결을 쓰지 않는다. `logger.warn({ event, ...fields })` 한 객체로 남긴다.
-- 기존 snake_case 키(`weather.*`·`ai.job.*`·`social.*`·`notification.*` 일부)는 저장된 조회 호환으로 유지한다. 새 키만 이 형식이다.
+- 메시지 자리에 template literal·문자열 연결을 쓰지 않는다. `logger.warn({ event, ...fields })` 한 객체로 남기고 키 필드 이름은 `event` 하나다.
+- 결과는 마지막 마디 하나다. 동작과 결과를 하이픈으로 붙이지 않는다(`todo-series.materialization.failed`, `materialize-failed` 금지).
+- 상수는 slice `<slice>.log-events.ts`의 `<Aggregate>LogEvent` 객체이고 키는 `<SUBJECT_OUTCOME>`이다. Aggregate 이름을 키에 다시 쓰지 않는다(`PremiumGrantLogEvent.RECORDED`).
+- 경보 key(`<slice>.alerts.ts`)도 같은 문법이다. 첫 마디는 `defineAlerts`의 context(= Sentry `alert_context` 태그)이고, 같은 사건을 가리키면 로그 키와 같은 문자열을 쓴다(`ai-assistance.spend.halted`).
 
 레벨: log는 필요한 성공 이벤트, warn은 격리된 실패·처리 가능한 거부, error는 최종 실패, debug는 진단이다.
 
@@ -59,6 +61,8 @@
 
 경보 중복 제거 감싸기는 고른 어댑터 바깥에서 모든 환경에 같게 돈다. heartbeat 포트도 같은 표에 열을 더해 고른다.
 
+종료 신호(SIGTERM·SIGINT)는 `main.ts`의 `closeOnShutdownSignals`가 받아 `server.shutdown.started`(`signal`)를 남기고 `app.close()`를 부른다. 작업 worker 정지(`beforeApplicationShutdown`)와 HTTP 서버 종료가 끝나면 `finally`에서 남은 Sentry 이벤트를 2초 안에 보내고(`EXCEPTION_REPORT_FLUSH_TIMEOUT_MS`), 프로세스는 exit 0으로 끝난다. Nest `enableShutdownHooks`는 HTTP 서버 닫기가 실패하면 뒤 hook과 flush를 건너뛰어 쓰지 않는다. 종료 hook 하나의 실패는 Nest Logger가 남기고 다음 hook으로 넘어간다. 종료 순서 자체가 실패하면 `server.shutdown.failed`(`signal`·`errorType`)를 남기고 flush 뒤 exit 1이다.
+
 ## 요청·작업 문맥
 
 | 대상 | Sentry 태그·사용자                                                                                             | 넣는 곳                                                       |
@@ -73,33 +77,35 @@
 
 key·심각도·첫 대응 전체는 [경보 카탈로그](alerts.md)다. 아래는 1인 운영자가 손을 대야 하는 흐름과 조건이다.
 
-| 흐름                 | 경보 key                                                         | 조건(상수는 재는 코드 옆)                                                                                                                                                                                                                                                                                                         |
-| -------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 계정 삭제(법적 기한) | `identity.account-purge.failed`                                  | 03시 배치에서 사용자 1명 이상 삭제 실패. 배치 전체 실패는 작업 실패 경보                                                                                                                                                                                                                                                          |
-| 결제·권한            | `billing.subscription.*`, `social.invite-reward.retry-exhausted` | 웹훅 영구 실패·원문 불일치, 대조 재시도 소진, 초대 보상 재시도 소진. 웹훅 일시 실패는 5xx 예외                                                                                                                                                                                                                                    |
-| 푸시 발송            | `notification.push.receipt-failure-ratio-high`                   | 한 receipt 확인 실행(5분)에서 받은 receipt ≥ 20건(`PUSH_RECEIPT_FAILURE_MIN_RECEIPTS`) 중 공급자 실패(기기 미등록 제외) ≥ 20%(`PUSH_RECEIPT_FAILURE_RATIO_THRESHOLD`). Expo는 회로가 없어 발송 실패는 작업 실패 경보                                                                                                              |
-| AI                   | `ai.provider.*`, `ai.spend.*`                                    | 업체 결제 회로(402 1회)·인증 회로(401·403 연속 3회)·장애 회로(시간 초과·5xx·과부하 연속 `AI_BREAKER_HEALTH_THRESHOLD`회, warning), 모든 업체 회로 열림, 키가 설정된 업체 없음(동의 범위 때문이면 경보 없음), 비용 경고·배경 중단·전체 중단 기준선. 업체가 모두 실패한 요청의 `AI_1301`은 5xx 예외(`http-5xx.AI_1301`)로 따로 간다 |
-| 리마인더             | `notification.reminder.late-skips-high`                          | 15분 넘게 늦거나 할 일 시각이 지나 버린 할 일 리마인더가 1시간(`REMINDER_LATE_SKIP_WINDOW_MS`)에 20건(`REMINDER_LATE_SKIP_THRESHOLD`)                                                                                                                                                                                             |
-| 리마인더             | `notification.reminder.sweep-catch-up-capped`                    | 시간대 sweep이 15분 따라잡기 상한(`REMINDER_LATE_LIMIT_MINUTES`)을 넘겨 분을 버림                                                                                                                                                                                                                                                 |
-| 작업·스케줄          | `job.failed`, `schedule.*`, `queue.dead-letter`                  | 아래 [작업 실패 경보](#작업-실패-경보)                                                                                                                                                                                                                                                                                            |
-| DB·런타임            | `runtime.*`, `database.unique-constraint.unknown`                | 풀 대기 30초 지속, 루프 p99 > 200ms, 힙 > 85%(`RUNTIME_THRESHOLDS`, 60초 표본, 넘기 시작한 표본에서만)                                                                                                                                                                                                                            |
-| 보안                 | `identity.session.refresh-token-reused`                          | 유예 10초 밖에서 이미 바꾼 refresh token이 다시 옴(warning)                                                                                                                                                                                                                                                                       |
-| 메일·날씨·운영       | `notification.email.*`, `weather.*`, `operations.*`              | 공급자 회로·한도·거절, WeatherKit 월 호출, 관리자 알림 거절, 브로드캐스트 재시도 소진                                                                                                                                                                                                                                             |
+| 흐름                 | 경보 key                                                                                 | 조건(상수는 재는 코드 옆)                                                                                                                                                                                                                                                                                                         |
+| -------------------- | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 계정 삭제(법적 기한) | `identity.account-purge.failed`                                                          | 03시 배치에서 사용자 1명 이상 삭제 실패. 배치 전체 실패는 작업 실패 경보                                                                                                                                                                                                                                                          |
+| 결제·권한            | `billing.subscription.*`, `social.invite-reward.retry.exhausted`                         | 웹훅 영구 실패·원문 불일치, 대조 재시도 소진, 초대 보상 재시도 소진. 웹훅 일시 실패는 5xx 예외                                                                                                                                                                                                                                    |
+| 푸시 발송            | `notification.push.receipt-failure-ratio.high`                                           | 한 receipt 확인 실행(5분)에서 받은 receipt ≥ 20건(`PUSH_RECEIPT_FAILURE_MIN_RECEIPTS`) 중 공급자 실패(기기 미등록 제외) ≥ 20%(`PUSH_RECEIPT_FAILURE_RATIO_THRESHOLD`). Expo는 회로가 없어 발송 실패는 작업 실패 경보                                                                                                              |
+| AI                   | `ai-assistance.provider.*`, `ai-assistance.spend.*`                                      | 업체 결제 회로(402 1회)·인증 회로(401·403 연속 3회)·장애 회로(시간 초과·5xx·과부하 연속 `AI_BREAKER_HEALTH_THRESHOLD`회, warning), 모든 업체 회로 열림, 키가 설정된 업체 없음(동의 범위 때문이면 경보 없음), 비용 경고·배경 중단·전체 중단 기준선. 업체가 모두 실패한 요청의 `AI_1301`은 5xx 예외(`http-5xx.AI_1301`)로 따로 간다 |
+| 리마인더             | `notification.reminder.late-skips.high`                                                  | 15분 넘게 늦거나 할 일 시각이 지나 버린 할 일 리마인더가 1시간(`REMINDER_LATE_SKIP_WINDOW_MS`)에 20건(`REMINDER_LATE_SKIP_THRESHOLD`)                                                                                                                                                                                             |
+| 리마인더             | `notification.reminder.sweep-catch-up.capped`                                            | 시간대 sweep이 15분 따라잡기 상한(`REMINDER_LATE_LIMIT_MINUTES`)을 넘겨 분을 버림                                                                                                                                                                                                                                                 |
+| 작업·스케줄          | `jobs.job.failed`, `jobs.schedule.*`, `jobs.dead-letter.queued`, `jobs.queue.backlogged` | 아래 [작업 실패 경보](#작업-실패-경보)                                                                                                                                                                                                                                                                                            |
+| DB·런타임            | `runtime.*`, `database.unique-constraint.unknown`                                        | 풀 대기 30초 지속, 루프 p99 > 200ms, 힙 > 85%(`RUNTIME_THRESHOLDS`, 60초 표본, 넘기 시작한 표본에서만)                                                                                                                                                                                                                            |
+| 보안                 | `identity.session.refresh-token.reused`                                                  | 유예 10초 밖에서 이미 바꾼 refresh token이 다시 옴(warning)                                                                                                                                                                                                                                                                       |
+| 메일·날씨·운영       | `notification.email.*`, `weather.*`, `operations.*`                                      | 공급자 회로·한도·거절, WeatherKit 월 호출, 관리자 알림 거절, 브로드캐스트 재시도 소진                                                                                                                                                                                                                                             |
 
 ## 작업 실패 경보
 
 2026-11 운영에서 `ai-report-generation.v1`·`ai-suggestion-analysis.v1` 디스패처가 8일 넘게 매 실행 실패(392건)했지만 pg-boss `failed`와 로그에만 남았다. 그래서 작업 실패는 아래 경보로 사람에게 간다(catalog: [jobs.alerts.ts](../src/platform/jobs/jobs.alerts.ts)).
 
-| 신호(key:subject)                | 언제                                                                                                                  | 어디서                                                  |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| `job.failed:<queue>:<errorType>` | 재시도를 모두 쓰고 실패(DLQ로 옮겨질 때, `InvalidJobPayload` 포함). 남은 재시도의 실패는 `jobs.attempt.failed` 로그만 | `PgBossJobQueueAdapter`                                 |
-| `schedule.failing:<scheduleKey>` | 마지막 두 예정 실행의 창(간격 × 2 + 30분) 안에 실패만 있다                                                            | `schedule-watchdog.v1`(15분, `missed: "skip"`)          |
-| `schedule.overdue:<scheduleKey>` | 같은 창 안에 실행이 없거나 남은 실행이 30분 넘게 멈춰 있다                                                            | 같음                                                    |
-| `queue.dead-letter:<queue>`      | 최근 15분 동안 DLQ에 작업이 들어왔다                                                                                  | 같음                                                    |
-| Cron 모니터 `aido-job-worker`    | 감시 작업 check-in이 두 번 연속 빠지거나 실패(약 35분). worker·pg-boss가 통째로 멈춘 경우                             | `SentryJobHeartbeatAdapter`(`withMonitor`, 설정 upsert) |
+| 신호(key:subject)                     | 언제                                                                                                                      | 어디서                                                                        |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `jobs.job.failed:<queue>:<errorType>` | 재시도를 모두 쓰고 실패(DLQ로 옮겨질 때, `InvalidJobPayload` 포함). 남은 재시도의 실패는 `jobs.attempt.failed` 로그만     | `PgBossJobQueueAdapter`                                                       |
+| `jobs.schedule.failing:<scheduleKey>` | 마지막 두 예정 실행의 창(간격 × 2 + 30분) 안에 실패만 있다                                                                | `schedule-watchdog.v1`(15분, `missed: "skip"`)                                |
+| `jobs.schedule.overdue:<scheduleKey>` | 같은 창 안에 실행이 없거나 남은 실행이 30분 넘게 멈춰 있다                                                                | 같음                                                                          |
+| `jobs.dead-letter.queued:<queue>`     | 최근 15분 동안 DLQ에 작업이 들어왔다                                                                                      | 같음                                                                          |
+| `jobs.queue.backlogged:<queue>`       | 대기(created·retry, 예약 포함) 작업이 정의의 `backlogWarningSize`(없으면 폴링 종류의 `JOB_BACKLOG_WARNING_SIZE`)를 넘었다 | pg-boss supervise(60초)의 `warning` 이벤트를 `PgBossJobQueueAdapter`가 받는다 |
+| Cron 모니터 `aido-job-worker`         | 감시 작업 check-in이 두 번 연속 빠지거나 실패(약 35분). worker·pg-boss가 통째로 멈춘 경우                                 | `SentryJobHeartbeatAdapter`(`withMonitor`, 설정 upsert)                       |
 
 - 태그는 `queue`·`job.name`·`job.attempt`·`error.type`·`schedule.key`뿐이고 payload 값·예외 message는 싣지 않는다. 판정은 순수 함수 [schedule-watchdog.domain-service.ts](../src/platform/jobs/schedule-watchdog.domain-service.ts)다.
-- 판정하지 않는 것: 앞 예정 시각 뒤에 등록된 스케줄, 보관 기간(`deleteAfterSeconds`)이 지나 지워졌을 수 있는 실행, 등록되지 않은 스케줄(`bootstrap.background-init.failed` 로그).
+- 감시 작업은 모든 스케줄의 실행 수와 모든 DLQ 유입을 각각 문장 하나로 세고 pg-boss 풀에서 읽는다. 스케줄마다 앱 풀에서 따로 세던 때 HTTP와 연결을 다퉜다(Sentry NODE-NESTJS-2K·2J·27).
+- 판정하지 않는 것: 앞 예정 시각 뒤에 등록된 스케줄, 보관 기간(`deleteAfterSeconds`)이 지나 지워졌을 수 있는 실행, 등록되지 않은 스케줄(`server.background-initialization.failed` 로그).
 - 모니터 slug는 상수 `JOB_WORKER_MONITOR_SLUG`다. Sentry가 environment별로 나눠 보여 env로 바꾸지 않는다.
 
 ### 중복 제거
@@ -117,19 +123,19 @@ key·심각도·첫 대응 전체는 [경보 카탈로그](alerts.md)다. 아래
 
 새 유료 인프라 없이 Sentry Performance, `/health`, `OperationalAlertPort`로 본다.
 
-| 신호        | 무엇                                                                     | 어디서                                                                                                         |
-| ----------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| 지연        | HTTP 경로별 p50·p95·p99, DB span, 공급자 호출, 작업별 p95                | Sentry Performance                                                                                             |
-| 트래픽·오류 | RPS, 5xx 비율, 4xx는 `errorCode`별                                       | Sentry(5xx), 로그(4xx)                                                                                         |
-| 포화도      | 풀 `waitingCount`·`idleCount`·`totalCount`, 이벤트 루프 지연 p99, 힙·RSS | [runtime-stats](../src/platform/observability/runtime-stats.ts)(60초) → `/health` `runtime` 상세·경보          |
-| 큐          | 큐별 대기·실행·실패, 가장 오래된 대기 시간, DLQ 크기                     | Health job 상태(`JobQueueRegistry`), 스케줄 감시                                                               |
-| 외부 의존성 | 공급자별 지연·오류율·회로 상태·bulkhead 거절                             | `outbound.circuit.*` 로그, `OutboundUsage`, Health `outbound`                                                  |
-| DB          | 연결 수, CPU 크레딧, FreeableMemory·스왑, 느린 쿼리, autovacuum          | CloudWatch RDS 경보([목록](deployment.md#서버-설정과-관리)) + `pg_stat_statements`(느린 쿼리 로그는 꺼져 있다) |
-| 업무        | 가입·DAU·푸시 퍼널                                                       | [알림·지표](notifications.md#지표)                                                                             |
+| 신호        | 무엇                                                                                           | 어디서                                                                                                         |
+| ----------- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| 지연        | HTTP 경로별 p50·p95·p99, DB span, 공급자 호출, 작업별 p95                                      | Sentry Performance                                                                                             |
+| 트래픽·오류 | RPS, 5xx 비율, 4xx는 `errorCode`별                                                             | Sentry(5xx), 로그(4xx)                                                                                         |
+| 포화도      | 풀 `waitingCount`·`idleCount`·`totalCount`, 이벤트 루프 지연 p99, 힙·RSS, 캐시 적중·미스·키 수 | [runtime-stats](../src/platform/observability/runtime-stats.ts)(60초) → `/health` `runtime` 상세·경보          |
+| 큐          | 큐별 대기·실행·실패, 가장 오래된 대기 시간, DLQ 크기                                           | Health job 상태(`JobQueueRegistry`), 스케줄 감시                                                               |
+| 외부 의존성 | 공급자별 지연·오류율·회로 상태·bulkhead 거절                                                   | `outbound.circuit.*` 로그, `OutboundUsage`, Health `outbound`                                                  |
+| DB          | 연결 수, CPU 크레딧, FreeableMemory·스왑, 느린 쿼리, autovacuum                                | CloudWatch RDS 경보([목록](deployment.md#서버-설정과-관리)) + `pg_stat_statements`(느린 쿼리 로그는 꺼져 있다) |
+| 업무        | 가입·DAU·푸시 캠페인 결과                                                                      | [알림·지표](notifications.md#지표)                                                                             |
 
 - 판정은 순수 함수 `evaluateRuntimeSample`·`newlyBreached`이고 `runtime` 상세는 항상 up이다. 경보는 넘기 시작한 표본에서만 올린다. Swagger 설명은 계약 지문 때문에 바꾸지 않는다.
 - 공개 `/health`의 상세(`database`·`queues`·`outbound`·`runtime`·`instanceId`)는 development·staging에서만 싣는다(`appConfig.exposeHealthDetails`). 운영은 `{ status }`와 200/503만 주므로 큐·포화도 감시는 경보(`OperationalAlertPort`)와 로그로 한다.
-- 메모리: 힙 경보(`runtime.heap.usage-high`)는 사용량이 상한(`--max-old-space-size=384`)의 85%를 넘으면 뜬다. RSS(컨테이너 512MB)는 `/health` runtime 상세에만 싣고 경보가 없으니 배포 사이 추세로 본다. 누수 회귀는 [메모리 소크](testing.md#메모리)가 먼저 잡는다.
+- 메모리: 힙 경보(`runtime.heap.usage.high`)는 사용량이 상한(`--max-old-space-size=384`)의 85%를 넘으면 뜬다. RSS(컨테이너 512MB)는 `/health` runtime 상세에만 싣고 경보가 없으니 배포 사이 추세로 본다. 누수 회귀는 [메모리 소크](testing.md#메모리)가 먼저 잡는다.
 - Sentry 경보 규칙과 RDS 사용자 정의 파라미터 그룹은 사용자 승인 뒤 만든다.
 
 ### 표본 비율 (`tracesSampler`)

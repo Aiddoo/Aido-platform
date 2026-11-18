@@ -1,5 +1,4 @@
 import { useTrack } from '@src/shared/analytics';
-import { getIsoWeekYear } from '@src/shared/date/date-key';
 import { formatDateKeyRange, formatIsoWeekLabel } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
@@ -22,7 +21,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { formatPercent } from '@src/shared/utils/number-format';
-import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { useQueryClient, useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { Link, router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
@@ -30,8 +29,12 @@ import type { ComponentProps, ReactElement } from 'react';
 
 import { AchievementPolicy } from '../domains/achievement.model';
 import type { BadgeType, WeeklyAchievement } from '../domains/achievement.model';
+import { useAchievementYear } from '../hooks/use-achievement-params';
 import { refreshWeeklyAchievements } from '../queries/achievement-cache';
-import { useGetWeeklyAchievementsInfiniteQueryOptions } from '../queries/achievement.queries';
+import {
+  useGetAchievementYearsQueryOptions,
+  useGetWeeklyAchievementsInfiniteQueryOptions,
+} from '../queries/achievement.queries';
 import { BadgeIcon } from './badge-icon';
 
 const LOADING_ROW_COUNT = 5;
@@ -43,8 +46,10 @@ interface WeeklyAchievementListProps {
 }
 
 export function WeeklyAchievementList({ header }: WeeklyAchievementListProps) {
-  const year = getIsoWeekYear(useTodayKey());
   const queryClient = useQueryClient();
+  const { data: achievementYears } = useSuspenseQuery(useGetAchievementYearsQueryOptions());
+  // 보이는 해는 기록 있는 연도를 받아야 정해진다
+  const [year] = useAchievementYear(achievementYears);
   const {
     data: weeklyAchievements,
     fetchNextPage,

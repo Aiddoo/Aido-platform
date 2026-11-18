@@ -1,11 +1,11 @@
 import { Module } from "@nestjs/common";
 
-import { AccessEntitlementUsageModule } from "./entitlement-usage/access-entitlement-usage.module.js";
-import { AccessEntitlementsModule } from "./entitlements/access-entitlements.module.js";
-import { AccessQuotasModule } from "./quotas/access-quotas.module.js";
+import { AccessFeatureGrantsQueriesModule } from "./feature-grants/access-feature-grants-queries.module.js";
+import { AccessFeatureGrantsModule } from "./feature-grants/access-feature-grants.module.js";
+import { AccessQuotaChargesModule } from "./quota-charges/access-quota-charges.module.js";
 
 @Module({
-  imports: [AccessEntitlementsModule, AccessQuotasModule, AccessEntitlementUsageModule],
-  exports: [AccessEntitlementsModule, AccessQuotasModule],
+  imports: [AccessFeatureGrantsQueriesModule, AccessQuotaChargesModule, AccessFeatureGrantsModule],
+  exports: [AccessFeatureGrantsQueriesModule, AccessQuotaChargesModule],
 })
 export class AccessModule {}

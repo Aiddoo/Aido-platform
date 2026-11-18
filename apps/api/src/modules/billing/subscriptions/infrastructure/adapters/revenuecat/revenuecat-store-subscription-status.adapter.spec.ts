@@ -6,10 +6,8 @@ import { RecordingOperationalAlert } from "#test/doubles/platform/recording-oper
 import { suppressLogger } from "#test/setup/suppress-logger";
 
 import { StoreSubscriptionId } from "../../../domain/store-subscription-id.vo.js";
-import {
-  RevenueCatRequestError,
-  RevenueCatStoreSubscriptionStatusAdapter,
-} from "./revenuecat-store-subscription-status.adapter.js";
+import { RevenueCatStoreSubscriptionStatusAdapter } from "./revenuecat-store-subscription-status.adapter.js";
+import { RevenueCatRequestError } from "./revenuecat.errors.js";
 
 const PROJECT_ID = "proj1ab2c3d4";
 const CHAIN_ID = "GPA.1234-5678-9012-34567";

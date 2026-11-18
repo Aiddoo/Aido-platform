@@ -5,7 +5,7 @@ import type {
   SubscriptionNotice,
   SubscriptionNoticePremium,
   SubscriptionNoticePrice,
-} from "../../application/read-models/admin-notice.read-model.js";
+} from "../../domain/admin-notice.aggregate.js";
 import type { SubscriptionNoticeEvent } from "../../domain/admin-notices.constants.js";
 import {
   daysUntil,

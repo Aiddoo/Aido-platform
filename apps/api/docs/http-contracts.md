@@ -4,19 +4,23 @@ Controller·DTO·Zod schema·응답 매퍼·페이지네이션·Swagger·요청 
 
 ## 경계와 소유
 
-| 경계                   | 소유                                                                 |
-| ---------------------- | -------------------------------------------------------------------- |
-| `@aido/api`            | 요청·응답 Zod schema, inferred type, 성공 envelope, 공용 pagination  |
-| `@aido/api/errors`     | 안정된 오류 code·HTTP 오류 계약·공개 details                         |
-| `@aido/api/vocabulary` | Zod·HTTP·ORM 없는 순수 상수·튜플                                     |
-| presentation           | DTO 검증, DTO → Command 변환(문자열 → Temporal 포함), 응답 매핑·문구 |
-| Application·Domain     | 계약 타입을 모른다(lint로 막는다)                                    |
+| 경계                                  | 소유                                                                 |
+| ------------------------------------- | -------------------------------------------------------------------- |
+| `@aido/api/contracts/<resource>/v<n>` | 요청·응답 Zod schema, inferred type                                  |
+| `@aido/api/common`                    | 성공 envelope, 공용 pagination·날짜·id schema                        |
+| `@aido/api/errors`                    | 안정된 오류 code·HTTP 오류 계약·공개 details                         |
+| `@aido/api/vocabulary`                | Zod·HTTP·ORM 없는 순수 상수·튜플                                     |
+| presentation                          | DTO 검증, DTO → Command 변환(문자열 → Temporal 포함), 응답 매핑·문구 |
+| Application·Domain                    | 계약 타입을 모른다(lint로 막는다)                                    |
 
 ## Controller
 
 - Controller는 guard·Swagger·DTO 검증, 원시값의 Command 변환, 결과의 HTTP 매핑만 한다. Repository·SDK·트랜잭션·업무 판단을 두지 않는다. UseCase를 직접 주입한다.
-- `@Controller({ path, version: API_VERSION.V1 })`처럼 v1도 명시한다. v2는 계약이 갈라질 때만 `http/v2/`에 둔다. 사례: [MemoController](../src/modules/notes/memos/presentation/http/v1/memo.controller.ts).
-- 공용 데코레이터는 `platform/http/decorators`(`@Timezone`·`@Locale`·`@IdempotencyKey`·`@RawResponse`·`@ClientAbortSignal`)와 `platform/http/request-client`(`@AppVersion`·`@CurrentRequestClient`)에 있다. 인증(`@CurrentUser`·`@Public`·`@Admin`)은 identity auth가 `identity-auth-http.public.ts`로 연다.
+- `@Controller({ path, version: API_VERSION.V1 })`처럼 v1도 명시한다. v2는 계약이 갈라질 때만 `http/v2/`에 둔다. 버전은 폴더로만 나누고 클래스·Swagger 태그·상수 이름에 넣지 않으며, 버전 폴더끼리 import하지 않는다. 사례: [MemoController](../src/modules/notes/memos/presentation/http/v1/memo.controller.ts).
+- 공용 데코레이터는 `platform/http/decorators`(`@Timezone`·`@Locale`·`@IdempotencyKey`·`@RawResponse`·`@RedirectResponse`·`@ClientAbortSignal`)와 `platform/http/request-client`(`@AppVersion`·`@CurrentRequestClient`)에 있다. 인증(`@CurrentUser`·`@Public`·`@Admin`)은 identity sessions가 `identity-sessions.public.ts`로 연다.
+- redirect는 `@RedirectResponse()`(Nest `@Redirect()`, 302)를 붙이고 handler가 `{ url }`을 돌려준다. `@Res()`로 응답을 직접 보내지 않는다.
+- guard·interceptor·decorator가 읽는 요청·응답 타입은 `platform/http/http-request.ts`의 `HttpRequest`·`HttpResponse`다. HTTP 어댑터(`@nestjs/platform-node`) API(`trustProxy`·`maxParamLength`, route별 본문 한도)는 `platform/http` 안에만 둔다(`lint:deps`의 `http-adapter-only-in-platform-http`).
+- HTTP 어댑터는 `NodeAdapter`(node:http)이고 운영·테스트 앱이 `createHttpAdapter()` 하나로 만든다. 경로는 대소문자를 구분하고 등록 순서가 아니라 특이성(리터럴 > `:param`)으로 고른다. 응답에 ETag가 없어 304를 주지 않는다. `__proto__`·`constructor.prototype` 키가 있는 JSON 본문과 퍼센트 인코딩이 깨진 경로는 400, 100KB(녹음 정리 256KB)를 넘는 본문은 413, 디코딩해 256자를 넘는 경로 파라미터는 414이고 모두 전역 필터의 `SYS_0002` envelope다.
 
 ## 요청 헤더와 throttle
 
@@ -31,7 +35,7 @@ Controller·DTO·Zod schema·응답 매퍼·페이지네이션·Swagger·요청 
 
 - `X-Request-Id`는 UUID면 그대로, 아니면 새 UUID를 쓰고 응답 헤더로 돌려준다([관측](observability.md#http-로그와-요청-id)).
 - 헤더 Swagger 문서는 `platform/http/swagger/decorators/api-header.decorator.ts`의 `@ApiAppVersionHeader()`·`@ApiIdempotencyKeyHeader()`를 쓴다. query·path는 `@Query/@Param({ schema })`가 문서를 만든다. `@ApiQuery`·`@ApiParam`을 겹쳐 쓰면 그쪽이 이겨 문서가 검증과 달라지므로 새로 쓰지 않는다(남은 곳은 출시 지문을 갱신하며 옮긴다).
-- throttle은 전역 `UserAwareThrottlerGuard`다. 한도는 Controller 옆 이름 있는 상수(`AUTH_THROTTLE.LOGIN`처럼 `{ ttl, limit }`)이고, 인증 전은 IP, 사용자별은 `@ThrottleByUser()` + `@Throttle`이다. 출시된 endpoint의 새 한도는 `@ApiDoc` description 문장으로 적는다.
+- throttle은 전역 `UserAwareThrottlerGuard`다. 인증한 요청은 사용자 id, 인증 전은 IP로 센다. 한도는 slice `presentation/http/<slice>.rate-limits.ts`의 `defineRateLimits({ <행동>: { limitPerMinute 또는 limitPerHour, limitPerDay? } })` 한 곳이고 라우트는 `@RateLimit(<Slice>RateLimits.<행동>)` 하나를 붙인다. 출시된 endpoint의 새 한도는 `@ApiDoc` description 문장으로 적는다.
 
 ## Schema와 DTO
 
@@ -64,7 +68,7 @@ Controller·DTO·Zod schema·응답 매퍼·페이지네이션·Swagger·요청 
 - 출시 계약을 helper로 옮길 때는 그 계약의 설명 문구를 세 번째 인자로 넘겨 생성된 JSON Schema를 바이트 단위로 같게 두고, OpenAPI 지문으로 확인한다.
 - 다른 모양의 출시 계약(알림·친구·응원·찌르기·초대·댓글)은 그대로 두고, 서버 내부는 `CursorPage`로 통일한 뒤 매퍼가 옛 모양을 만든다.
 - 서버가 발급한 문자열 ID는 [`entityIdSchema`](../../../packages/api/src/common/entity-id.ts)로 검증한다(`z.cuid()` 금지). 모양 규칙은 `@aido/api/vocabulary`의 `ENTITY_ID_PATTERN` 하나이고 서버 도메인은 `isEntityId`로 같은 규칙을 쓴다.
-- 문자열 커서는 서명한다. 댓글 커서는 [HmacTodoCommentCursorCodecAdapter](../src/modules/engagement/comments/infrastructure/adapters/hmac-todo-comment-cursor-codec.adapter.ts)가 `CURSOR_SIGNING_KEYS` key ring으로 서명한다([보안](security.md#서명-키-회전)). 숫자 커서 계약은 숫자를 유지한다.
+- 문자열 커서는 서명한다. 댓글 커서는 [HmacTodoCommentCursorCodecAdapter](../src/modules/engagement/todo-comments/infrastructure/adapters/hmac-todo-comment-cursor-codec.adapter.ts)가 `CURSOR_SIGNING_KEYS` key ring으로 서명한다([보안](security.md#서명-키-회전)). 숫자 커서 계약은 숫자를 유지한다.
 
 ## 타입 안전 체크리스트
 
@@ -82,7 +86,7 @@ Controller·DTO·Zod schema·응답 매퍼·페이지네이션·Swagger·요청 
 
 ## 출시 앱 호환 절차
 
-출시된 operation의 상태 코드·필수 입력·기존 필드는 바꾸지 않는다. released OpenAPI fixture(`test/e2e/fixtures/released-*-openapi-contract.ts`)와 [OpenAPI 계약 테스트](../test/e2e/openapi-contract.e2e-spec.ts)(`test:contract`)가 막는다. 필드·파라미터를 더해야 하면:
+출시된 operation의 상태 코드·필수 입력·기존 필드는 바꾸지 않는다. released OpenAPI fixture(`test/e2e/fixtures/released-*-openapi-contract.ts`)와 [OpenAPI 계약 테스트](../test/e2e/platform/openapi-contract.e2e-spec.ts)(`test:contract`)가 막는다. 필드·파라미터를 더해야 하면:
 
 1. 생략했을 때 동작이 지금과 정확히 같은 optional만 더한다.
 2. fixture에 이전 지문을 `pre<변경>SchemasFingerprint`·`pre<변경>PathsFingerprint`로 사유 주석과 함께 남기고 현재 지문을 갱신한다.
