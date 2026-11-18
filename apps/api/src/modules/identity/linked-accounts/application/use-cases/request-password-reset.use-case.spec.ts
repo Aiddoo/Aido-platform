@@ -284,6 +284,80 @@ describe("RequestPasswordReset — 계정 존재를 노출하지 않는 재설�
     expect(fixture.verificationRepository.all).toHaveLength(20);
   });
 
+  it("이메일 상한을 채워도 마지막 발송 한 시간 뒤에는 가입 여부와 상관없이 같은 응답으로 한 통을 더 받는다", async () => {
+    // Given
+    const fixture = createAuthCredentialFixture();
+    const useCase = new RequestPasswordResetUseCase(fixture);
+    const emails = [fixture.user.email, "nobody@example.com"];
+    for (const ip of ["198.51.100.1", "198.51.100.2", "198.51.100.3", "198.51.100.4"]) {
+      for (let request = 0; request < 5; request += 1) {
+        for (const email of emails) {
+          await useCase.execute({ email, metadata: { ip }, emailLocale: "ko" });
+        }
+        fixture.clock.advanceBy({ seconds: 61 });
+      }
+    }
+    fixture.clock.advanceBy({ minutes: 59 });
+    const request = (email: string) =>
+      useCase
+        .execute({ email, metadata: { ip: "192.0.2.10" }, emailLocale: "ko" })
+        .catch((error: unknown) => error);
+
+    // When
+    const afterOneHour = await Promise.all(emails.map(request));
+    fixture.clock.advanceBy({ seconds: 61 });
+    const rightAfter = await Promise.all(emails.map(request));
+
+    // Then
+    expect(afterOneHour).toEqual([
+      { message: "등록된 이메일인 경우 비밀번호 재설정 코드가 발송됩니다." },
+      { message: "등록된 이메일인 경우 비밀번호 재설정 코드가 발송됩니다." },
+    ]);
+    expect(rightAfter).toEqual([
+      expect.objectContaining({
+        errorCode: ErrorCode.VERIFY_0753,
+        details: { remainingSeconds: 60 },
+      }),
+      expect.objectContaining({
+        errorCode: ErrorCode.VERIFY_0753,
+        details: { remainingSeconds: 60 },
+      }),
+    ]);
+    expect(fixture.verificationRepository.all).toHaveLength(21);
+  });
+
+  it("IPv6 /64 대역 안에서 주소를 바꿔도 한 곳으로 세어 이메일마다 하루 5통이다", async () => {
+    // Given
+    const fixture = createAuthCredentialFixture();
+    const useCase = new RequestPasswordResetUseCase(fixture);
+    for (let request = 0; request < 5; request += 1) {
+      await useCase.execute({
+        email: fixture.user.email,
+        metadata: { ip: `2001:db8:1:2::${request + 1}` },
+        emailLocale: "ko",
+      });
+      fixture.clock.advanceBy({ seconds: 61 });
+    }
+
+    // When
+    const sixth = await useCase
+      .execute({
+        email: fixture.user.email,
+        metadata: { ip: "2001:db8:1:2:ffff::6" },
+        emailLocale: "ko",
+      })
+      .catch((error: unknown) => error);
+
+    // Then
+    expect(sixth).toEqual(
+      expect.objectContaining({
+        errorCode: ErrorCode.VERIFY_0753,
+        details: { remainingSeconds: 60 },
+      }),
+    );
+    expect(fixture.verificationRepository.all).toHaveLength(5);
+  });
+
   it("60초 대기 중 다시 누른 요청은 상한을 쓰지 않아 그 IP의 5번째 코드도 받는다", async () => {
     // Given
     const fixture = createAuthCredentialFixture();

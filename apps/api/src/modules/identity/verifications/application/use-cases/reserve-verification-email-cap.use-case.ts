@@ -34,9 +34,11 @@ interface ReserveVerificationEmailCapDependencies {
   readonly clock: ClockPort;
 }
 
-function cappedBucketsFor(
-  command: ReserveVerificationEmailCapCommand,
-): readonly { readonly bucket: VerificationEmailCapBucket; readonly maxCodes: number }[] {
+function cappedBucketsFor(command: ReserveVerificationEmailCapCommand): readonly {
+  readonly bucket: VerificationEmailCapBucket;
+  readonly maxCodes: number;
+  readonly afterCapIntervalMinutes?: number;
+}[] {
   return match(command)
     .with({ purpose: "PASSWORD_SETUP" }, ({ purpose, userId }) => [
       {
@@ -50,6 +52,7 @@ function cappedBucketsFor(
         {
           bucket: { scope: "email" as const, purpose, email },
           maxCodes: VERIFICATION_EMAIL_CAP.MAX_CODES_PER_EMAIL,
+          afterCapIntervalMinutes: VERIFICATION_EMAIL_CAP.AFTER_EMAIL_CAP_INTERVAL_MINUTES,
         },
         {
           bucket: { scope: "email-source" as const, purpose, email, sourceIp },
@@ -74,9 +77,9 @@ export class ReserveVerificationEmailCapUseCase {
     const { verificationEmailCap, clock } = this.#dependencies;
     const now = clock.now();
     const counts = await Promise.all(
-      cappedBucketsFor(command).map(async ({ bucket, maxCodes }) => ({
+      cappedBucketsFor(command).map(async ({ bucket, ...cap }) => ({
         bucket,
-        maxCodes,
+        ...cap,
         sentAts: sentAtsInEmailCapWindow(await verificationEmailCap.findSentAts(bucket), now),
       })),
     );

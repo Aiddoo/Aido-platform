@@ -5,6 +5,7 @@ import { match } from "ts-pattern";
 import { z } from "zod";
 
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
+import { requestSourceKey } from "#api/platform/throttle/request-source-key";
 
 import {
   type VerificationEmailCapBucket,
@@ -59,7 +60,7 @@ export class VerificationEmailCapAdapter extends VerificationEmailCapPort {
       .with({ scope: "email-source" }, ({ purpose, email, sourceIp }) =>
         VerificationEmailCapKey.emailSource(
           purpose,
-          sha256Hex(`${normalizeEmail(email)}\n${sourceIp}`),
+          sha256Hex(`${normalizeEmail(email)}\n${requestSourceKey(sourceIp)}`),
         ),
       )
       .with({ scope: "user" }, ({ purpose, userId }) =>

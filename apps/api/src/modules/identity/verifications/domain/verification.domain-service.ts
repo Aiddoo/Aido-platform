@@ -51,21 +51,38 @@ export function sentAtsInEmailCapWindow(
 export interface VerificationEmailCapCount {
   readonly sentAts: readonly Temporal.Instant[];
   readonly maxCodes: number;
+  /** 상한을 채운 뒤에도 마지막으로 보낸 지 이만큼 지나면 한 통을 더 보낸다. 없으면 창이 풀릴 때까지 막는다 */
+  readonly afterCapIntervalMinutes?: number;
 }
 
 function capRemainingSeconds(
   count: VerificationEmailCapCount,
   now: Temporal.Instant,
 ): number | null {
-  const oldestBlocking = sentAtsInEmailCapWindow(count.sentAts, now).at(-count.maxCodes);
-  if (oldestBlocking == null) {
+  const inWindow = sentAtsInEmailCapWindow(count.sentAts, now);
+  const oldestBlocking = inWindow.at(-count.maxCodes);
+  const lastSentAt = inWindow.at(-1);
+  if (oldestBlocking == null || lastSentAt == null) {
     return null;
   }
-  return resendRemainingSeconds(oldestBlocking.add(EMAIL_CAP_WINDOW), now);
+  const windowReleasesAt = oldestBlocking.add(EMAIL_CAP_WINDOW);
+  if (count.afterCapIntervalMinutes == null) {
+    return resendRemainingSeconds(windowReleasesAt, now);
+  }
+  const intervalReleasesAt = lastSentAt.add({ minutes: count.afterCapIntervalMinutes });
+  if (isExpiredAt(intervalReleasesAt, now)) {
+    return null;
+  }
+  const releasesAt =
+    Temporal.Instant.compare(intervalReleasesAt, windowReleasesAt) < 0
+      ? intervalReleasesAt
+      : windowReleasesAt;
+  return resendRemainingSeconds(releasesAt, now);
 }
 
 /**
- * 기준 하나라도 창 안에 보낸 코드가 상한만큼 있으면 막는다. 남은 초는 다시 보내기 대기(60초)를 넘기지 않는다.
+ * 기준 하나라도 창 안에 보낸 코드가 상한만큼 있으면 막는다(상한 뒤 간격이 있는 기준은 그 간격이 지나면 한 통 보낸다).
+ * 남은 초는 다시 보내기 대기(60초)를 넘기지 않는다.
  * 출시 앱은 이 값을 초 단위 타이머로, 문구는 "1분 뒤"로만 보여 줘 하루치 초를 그대로 주면 어색하다
  */
 export function judgeVerificationEmailCap(

@@ -2,10 +2,17 @@ import {
   type VerificationEmailCapBucket,
   VerificationEmailCapPort,
 } from "#api/modules/identity/verifications/application/ports/verification-email-cap.port";
+import { requestSourceKey } from "#api/platform/throttle/request-source-key";
 
 function bucketKey(bucket: VerificationEmailCapBucket): string {
+  if (bucket.scope === "user") {
+    return JSON.stringify(bucket);
+  }
+  const email = bucket.email.trim().toLowerCase();
   return JSON.stringify(
-    "email" in bucket ? { ...bucket, email: bucket.email.trim().toLowerCase() } : bucket,
+    bucket.scope === "email-source"
+      ? { ...bucket, email, sourceIp: requestSourceKey(bucket.sourceIp) }
+      : { ...bucket, email },
   );
 }
 

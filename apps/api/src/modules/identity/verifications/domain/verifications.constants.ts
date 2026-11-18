@@ -26,6 +26,8 @@ export const VERIFICATION_EMAIL_CAP = {
   MAX_CODES_PER_EMAIL_SOURCE: 5,
   // 받은편지함 하나가 용도마다 하루 20통을 넘지 않고 막으려면 서로 다른 IP 4곳이 다 써야 한다
   MAX_CODES_PER_EMAIL: 20,
+  // 남이 이메일 상한을 채워도 본인이 한 시간 안에 코드를 받는다. 상한 뒤 넘치는 메일은 시간당 한 통이다
+  AFTER_EMAIL_CAP_INTERVAL_MINUTES: 60,
   // 비밀번호 설정은 로그인한 본인만 요청해 IP로 나누지 않고 사용자마다 하루 10통이다
   MAX_CODES_PER_USER: 10,
 } as const;

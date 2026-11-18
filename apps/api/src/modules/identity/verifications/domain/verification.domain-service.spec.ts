@@ -121,6 +121,54 @@ describe("이메일 코드 상한 — 기준마다 24시간 창 안 상한", () 
     expect(judgement).toEqual({ ok: false, remainingSeconds: 20 });
   });
 
+  it("상한 뒤 간격이 있는 기준은 마지막 발송에서 한 시간 동안만 막고 그 뒤 한 통을 보낸다", () => {
+    // Given
+    const sentAts = sentEveryHour(20);
+    const lastSentAt = sentAts.at(-1) ?? AUTH_FIXTURE_NOW;
+    const cap = { maxCodes: 20, afterCapIntervalMinutes: 60 };
+    const afterOneMore = [...sentAts, lastSentAt.add({ minutes: 60 })];
+
+    // When
+    const judgements = [
+      judgeVerificationEmailCap([{ ...cap, sentAts }], lastSentAt.add({ minutes: 1 })),
+      judgeVerificationEmailCap(
+        [{ ...cap, sentAts }],
+        lastSentAt.add({ minutes: 60 }).subtract({ seconds: 10 }),
+      ),
+      judgeVerificationEmailCap([{ ...cap, sentAts }], lastSentAt.add({ minutes: 60 })),
+      judgeVerificationEmailCap(
+        [{ ...cap, sentAts: afterOneMore }],
+        lastSentAt.add({ minutes: 61 }),
+      ),
+    ];
+
+    // Then
+    expect(judgements).toEqual([
+      { ok: false, remainingSeconds: 60 },
+      { ok: false, remainingSeconds: 10 },
+      { ok: true },
+      { ok: false, remainingSeconds: 60 },
+    ]);
+  });
+
+  it("상한 뒤 간격이 없는 기준은 한 시간이 지나도 창이 풀릴 때까지 막는다", () => {
+    // Given
+    const sentAts = sentEveryHour(5);
+    const lastSentAt = sentAts.at(-1) ?? AUTH_FIXTURE_NOW;
+
+    // When
+    const judgement = judgeVerificationEmailCap(
+      [
+        { sentAts, maxCodes: 20, afterCapIntervalMinutes: 60 },
+        { sentAts, maxCodes: 5 },
+      ],
+      lastSentAt.add({ hours: 2 }),
+    );
+
+    // Then
+    expect(judgement).toEqual({ ok: false, remainingSeconds: 60 });
+  });
+
   it("보낸 지 24시간 정각부터 창 밖이라 다시 보낼 수 있고 창 안 기록만 남긴다", () => {
     // Given
     const sentAts = sentEveryHour(10);
