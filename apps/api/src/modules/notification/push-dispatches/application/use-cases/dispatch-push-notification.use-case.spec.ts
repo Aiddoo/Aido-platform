@@ -282,6 +282,7 @@ describe("푸시 단건 발송·배치 준비·배치 전송 — 토큰 선택�
         [
           {
             channel: "EXPO",
+            platform: "IOS",
             token: "new-token",
             title: "친구의 답장",
             body: "곧 시작해요",
@@ -330,6 +331,7 @@ describe("푸시 단건 발송·배치 준비·배치 전송 — 토큰 선택�
       [
         {
           channel: "EXPO",
+          platform: "IOS",
           token: "updated-token",
           title: "초대",
           body: "본문",
@@ -373,6 +375,7 @@ describe("푸시 단건 발송·배치 준비·배치 전송 — 토큰 선택�
     expect(prepared.messages).toEqual([
       {
         channel: "EXPO",
+        platform: "IOS",
         token: "old-token",
         title: "title-1",
         body: "body-1",
@@ -381,6 +384,7 @@ describe("푸시 단건 발송·배치 준비·배치 전송 — 토큰 선택�
       },
       {
         channel: "EXPO",
+        platform: "IOS",
         token: "new-token",
         title: "title-1",
         body: "body-1",
@@ -389,6 +393,7 @@ describe("푸시 단건 발송·배치 준비·배치 전송 — 토큰 선택�
       },
       {
         channel: "EXPO",
+        platform: "IOS",
         token: "new-token",
         title: "title-2",
         body: "body-2",
@@ -492,6 +497,7 @@ describe("푸시 단건 발송·배치 준비·배치 전송 — 토큰 선택�
       [
         {
           channel: "EXPO",
+          platform: "IOS",
           token: "invalid-token",
           title: "title",
           body: "body",
@@ -557,6 +563,7 @@ describe("푸시 단건 발송·배치 준비·배치 전송 — 토큰 선택�
       [
         {
           channel: "EXPO",
+          platform: "IOS",
           token: "generic-token",
           title: "title-1",
           body: "body-1",
@@ -565,6 +572,7 @@ describe("푸시 단건 발송·배치 준비·배치 전송 — 토큰 선택�
         },
         {
           channel: "EXPO",
+          platform: "IOS",
           token: "feature-token",
           title: "title-2",
           body: "body-2",
@@ -689,9 +697,9 @@ describe("푸시 단건 발송·배치 준비·배치 전송 — 토큰 선택�
 
 describe("푸시 배지 — 기기 앱 버전과 안 읽은 수", () => {
   const badgeDevices = [
-    { token: "phone-token", channel: "EXPO", appVersion: "1.17.0" },
-    { token: "tablet-token", channel: "EXPO", appVersion: "1.16.0" },
-    { token: "mac-token", channel: "EXPO", appVersion: null },
+    { token: "phone-token", channel: "EXPO", platform: "IOS", appVersion: "1.17.0" },
+    { token: "tablet-token", channel: "EXPO", platform: "ANDROID", appVersion: "1.16.0" },
+    { token: "mac-token", channel: "EXPO", platform: "IOS", appVersion: null },
   ] as const;
 
   it("단건은 배지를 다시 맞추는 앱 기기에만 받는 사람의 안 읽은 수를 싣는다", async () => {
@@ -737,7 +745,10 @@ describe("푸시 배지 — 기기 앱 버전과 안 읽은 수", () => {
     const { service, unreadCounts } = createDispatchUseCase({
       activeTokens: [
         ["user-1", badgeDevices],
-        ["user-2", [{ token: "user-2-phone", channel: "EXPO", appVersion: "1.17.2" }]],
+        [
+          "user-2",
+          [{ token: "user-2-phone", channel: "EXPO", platform: "ANDROID", appVersion: "1.17.2" }],
+        ],
         ["user-3", ["user-3-old"]],
       ],
       unreadCounts: [["user-1", 4]],

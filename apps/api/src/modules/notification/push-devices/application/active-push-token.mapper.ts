@@ -8,6 +8,15 @@ export function toActivePushTokens(
 ): ActivePushTokenReadModel[] {
   return records.flatMap((record) => {
     const channel = toPushChannel(record.provider);
-    return channel == null ? [] : [{ token: record.token, channel, appVersion: record.appVersion }];
+    return channel == null
+      ? []
+      : [
+          {
+            token: record.token,
+            channel,
+            platform: record.platform,
+            appVersion: record.appVersion,
+          },
+        ];
   });
 }

@@ -1,3 +1,5 @@
+import type { PushChannel } from "../../shared/domain/push-channel.constants.js";
+
 /**
  * `acceptedTicketCountBeforeFailure`가 1 이상이면 앞선 청크가 이미 공급자에 수락됐다.
  * 호출자는 논리 배치 전체를 다시 시도하므로 그 알림은 at-least-once로 중복 전달될 수 있다.
@@ -67,6 +69,31 @@ export function pushDeliveryRateLimitReservationConflict(
   dispatchIds: readonly number[],
 ): PushDeliveryRateLimitReservationConflictError {
   return new PushDeliveryRateLimitReservationConflictError(dispatchIds);
+}
+
+// 채널은 메시지마다 결과 하나를 입력 순서로 돌려준다. 수가 다르면 결과를 발송에 순서로 잇지 못한다
+export class PushChannelResultCountMismatchError extends Error {
+  readonly channel: PushChannel;
+  readonly expectedCount: number;
+  readonly receivedCount: number;
+
+  constructor(channel: PushChannel, expectedCount: number, receivedCount: number) {
+    super(
+      `Push channel result count mismatch: channel=${channel}, expected=${expectedCount}, received=${receivedCount}`,
+    );
+    this.channel = channel;
+    this.expectedCount = expectedCount;
+    this.receivedCount = receivedCount;
+    this.name = PushChannelResultCountMismatchError.name;
+  }
+}
+
+export function pushChannelResultCountMismatch(
+  channel: PushChannel,
+  expectedCount: number,
+  receivedCount: number,
+): PushChannelResultCountMismatchError {
+  return new PushChannelResultCountMismatchError(channel, expectedCount, receivedCount);
 }
 
 // 묶음 발송 후보의 수신자를 같은 조회에서 읽었으므로 없으면 코드가 어긋난 것이다

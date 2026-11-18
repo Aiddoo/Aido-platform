@@ -20,6 +20,7 @@ const body = "notification14-synthetic-private-body";
 const privateMessage = `${credential}; token=${token}; body=${body}`;
 const payload = () => ({
   channel: "EXPO" as const,
+  platform: "IOS" as const,
   token,
   title: "fixture notification",
   body,

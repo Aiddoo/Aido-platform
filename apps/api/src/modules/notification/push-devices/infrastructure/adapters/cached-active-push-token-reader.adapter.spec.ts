@@ -10,11 +10,20 @@ import { PUSH_TOKEN_CACHE_TTL_MS, PushTokenCacheKey } from "../cache/push-token-
 import { CachedActivePushTokenReaderAdapter } from "./cached-active-push-token-reader.adapter.js";
 
 const TOKENS_SCHEMA = z.array(
-  z.object({ token: z.string(), channel: z.literal("EXPO"), appVersion: z.string().nullable() }),
+  z.object({
+    token: z.string(),
+    channel: z.literal("EXPO"),
+    platform: z.enum(["IOS", "ANDROID"]),
+    appVersion: z.string().nullable(),
+  }),
 );
 
-function expoToken(token: string, appVersion: string | null = null) {
-  return { token, channel: "EXPO", appVersion } as const;
+function expoToken(
+  token: string,
+  appVersion: string | null = null,
+  platform: "IOS" | "ANDROID" = "IOS",
+) {
+  return { token, channel: "EXPO", platform, appVersion } as const;
 }
 
 function createFixture(tokens: Parameters<typeof createPushTokenFixture>[0][] = []) {
@@ -185,6 +194,30 @@ describe("CachedActivePushTokenReaderAdapter - 활성 푸시 토큰 cache-aside"
 
     // Then
     expect(result).toEqual([expoToken("ExponentPushToken[db]", "1.15.1")]);
+  });
+
+  it("플랫폼 없이 저장한 이전 캐시 값은 미스로 보고 저장소에서 기기 플랫폼과 함께 다시 읽는다", async () => {
+    // Given
+    const userId = "user-cache-without-platform";
+    const { cache, reader } = createFixture([
+      {
+        userId,
+        deviceId: "android_device",
+        token: "ExponentPushToken[android]",
+        platform: "ANDROID",
+      },
+    ]);
+    await cache.set(PushTokenCacheKey.pushTokens(userId), [
+      { token: "ExponentPushToken[android]", channel: "EXPO", appVersion: null },
+    ]);
+
+    // When
+    const result = await reader.findByUserIds([UserId.reconstitute(userId)]);
+
+    // Then
+    expect([...result]).toEqual([
+      [userId, [expoToken("ExponentPushToken[android]", null, "ANDROID")]],
+    ]);
   });
 
   it("이 서버가 모르는 채널의 토큰은 발송 대상에서 뺀다", async () => {

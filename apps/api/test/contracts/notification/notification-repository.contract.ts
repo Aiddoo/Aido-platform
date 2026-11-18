@@ -2,6 +2,7 @@ import { DuplicateNotificationError } from "#api/modules/notification/notificati
 import type { NotificationHistoryReaderPort } from "#api/modules/notification/notifications/application/ports/notification-history.reader.port";
 import type { NotificationInboxReaderPort } from "#api/modules/notification/notifications/application/ports/notification-inbox.reader.port";
 import { type NotificationRepositoryPort } from "#api/modules/notification/notifications/application/ports/notification.repository.port";
+import type { UnreadNotificationCountReaderPort } from "#api/modules/notification/notifications/application/ports/unread-notification-count.reader.port";
 import type { InboxNotificationReadModel } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
 import type { CreateNotificationData } from "#api/modules/notification/shared/domain/notification-draft.constants";
 import { NotificationId } from "#api/modules/notification/shared/domain/notification-id.vo";
@@ -19,6 +20,7 @@ export interface NotificationStoreSubject {
   readonly repository: NotificationRepositoryPort;
   readonly inboxReader: NotificationInboxReaderPort;
   readonly historyReader: NotificationHistoryReaderPort;
+  readonly unreadCountReader: UnreadNotificationCountReaderPort;
 }
 
 const USER_ID = NOTIFICATION_FIXTURE_USER_ID;
@@ -230,7 +232,7 @@ export function describeNotificationRepositoryContract(
 
       it("여러 사람의 안 읽은 수를 한 번에 세고 안 읽은 알림이 없는 사람은 뺀다", async () => {
         // Given
-        const { repository, inboxReader } = await createSubject();
+        const { repository, unreadCountReader } = await createSubject();
         await create(repository);
         await create(repository);
         await create(repository, { userId: OTHER_USER_ID });
@@ -241,7 +243,7 @@ export function describeNotificationRepositoryContract(
         );
 
         // When
-        const counts = await inboxReader.countUnreadByUsers([
+        const counts = await unreadCountReader.countUnreadByUsers([
           UserId.reconstitute(USER_ID),
           UserId.reconstitute(OTHER_USER_ID),
         ]);

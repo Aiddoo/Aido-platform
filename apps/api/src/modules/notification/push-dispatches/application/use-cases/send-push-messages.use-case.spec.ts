@@ -5,12 +5,14 @@ import {
 
 import { PushTicketId } from "../../domain/push-ticket-id.vo.js";
 import type { PushMessage } from "../ports/push-channel.port.js";
+import { PushChannelResultCountMismatchError } from "../push-dispatches.errors.js";
 import { SendPushMessagesUseCase } from "./send-push-messages.use-case.js";
 
 function message(token: string): PushMessage {
   return {
     channel: "EXPO",
     token,
+    platform: "IOS",
     title: "title",
     body: "body",
     priority: "high",
@@ -44,6 +46,28 @@ describe("SendPushMessagesUseCase", () => {
       ["tablet", "rejected"],
       ["mac", "accepted"],
     ]);
+  });
+
+  it("채널이 메시지 수와 다른 수의 결과를 주면 결과를 발송에 잇지 않고 실패한다", async () => {
+    // Given
+    const expo = new FakePushChannel();
+    expo.nextResults = async ([first]) =>
+      first == null
+        ? []
+        : [
+            {
+              token: first.token,
+              status: "accepted",
+              ticketId: PushTicketId.reconstitute("ticket-first"),
+            },
+          ];
+    const useCase = new SendPushMessagesUseCase({ channels: pushChannelRegistryOf(expo) });
+
+    // When
+    const sending = useCase.execute([message("phone"), message("tablet")]);
+
+    // Then
+    await expect(sending).rejects.toThrow(new PushChannelResultCountMismatchError("EXPO", 2, 1));
   });
 
   it("보낼 메시지가 없으면 채널을 부르지 않는다", async () => {

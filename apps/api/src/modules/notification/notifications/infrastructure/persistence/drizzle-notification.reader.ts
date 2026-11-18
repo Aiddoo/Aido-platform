@@ -20,12 +20,16 @@ import type {
   ListInboxNotificationsQuery,
   NotificationInboxReaderPort,
 } from "../../application/ports/notification-inbox.reader.port.js";
+import type { UnreadNotificationCountReaderPort } from "../../application/ports/unread-notification-count.reader.port.js";
 import type { InboxNotificationReadModel } from "../../application/read-models/inbox-notification.read-model.js";
 import { milestoneNotificationCondition } from "./milestone-notification.query-fragment.js";
 
 @Injectable()
 export class DrizzleNotificationReader
-  implements NotificationInboxReaderPort, NotificationHistoryReaderPort
+  implements
+    NotificationInboxReaderPort,
+    NotificationHistoryReaderPort,
+    UnreadNotificationCountReaderPort
 {
   readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
 

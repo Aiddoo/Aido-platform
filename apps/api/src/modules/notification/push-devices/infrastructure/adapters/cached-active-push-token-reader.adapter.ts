@@ -1,3 +1,4 @@
+import { PUSH_DEVICE_PLATFORM } from "@aido/api/vocabulary";
 import { Injectable } from "@nestjs/common";
 import { groupBy } from "es-toolkit";
 import { z } from "zod";
@@ -17,11 +18,12 @@ import {
   pushTokensCacheKey,
 } from "../cache/push-token-cache.keyspace.js";
 
-// 토큰 문자열 배열로 저장한 이전 값은 스키마가 달라 미스가 되고 DB에서 다시 읽는다
+// 토큰 문자열 배열이나 플랫폼 없이 저장한 이전 값은 스키마가 달라 미스가 되고 DB에서 다시 읽는다
 const PUSH_TOKENS_SCHEMA = z.array(
   z.object({
     token: z.string(),
     channel: z.enum(PUSH_CHANNELS),
+    platform: z.enum(PUSH_DEVICE_PLATFORM),
     appVersion: z.string().nullable(),
   }),
 );

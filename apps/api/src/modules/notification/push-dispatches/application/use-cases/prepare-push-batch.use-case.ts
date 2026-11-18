@@ -41,7 +41,7 @@ interface PreparePushBatchDependencies {
   readonly pushTokenRepository: Pick<PushTokenRepositoryPort, "findActivePushTokensByUsers">;
   readonly activePushTokenReader: Pick<ActivePushTokenReaderPort, "findByUserIds">;
   readonly noActiveTokenReasons: Pick<NoActiveTokenReasonReader, "findReasons">;
-  readonly unreadCounts: Pick<UnreadNotificationCountReaderPort, "countByUsers">;
+  readonly unreadCounts: Pick<UnreadNotificationCountReaderPort, "countUnreadByUsers">;
 }
 
 interface SelectedPushToken {
@@ -125,7 +125,7 @@ export class PreparePushBatchUseCase {
     if (badgeUserIds.length === 0) {
       return new Map();
     }
-    return this.#dependencies.unreadCounts.countByUsers(
+    return this.#dependencies.unreadCounts.countUnreadByUsers(
       badgeUserIds.map((userId) => UserId.reconstitute(userId)),
     );
   }
@@ -181,13 +181,14 @@ function selectTokens(
 
 function toPushMessage(
   payload: BatchPushNotificationPayload,
-  { channel, token, appVersion }: ActivePushTokenReadModel,
+  { channel, token, platform, appVersion }: ActivePushTokenReadModel,
   unreadCount: number,
 ): PushMessage {
   const badge = pushBadgeFor({ appVersion, unreadCount });
   return {
     channel,
     token,
+    platform,
     ...(badge != null && { badge }),
     title: payload.title,
     body: payload.body,

@@ -49,7 +49,7 @@ interface DispatchPushNotificationDependencies {
     "deactivateInvalidTokens" | "findPushTokensByUser"
   >;
   readonly sendMessages: Pick<SendPushMessagesUseCase, "execute">;
-  readonly unreadCounts: Pick<UnreadNotificationCountReaderPort, "countByUsers">;
+  readonly unreadCounts: Pick<UnreadNotificationCountReaderPort, "countUnreadByUsers">;
   readonly activePushTokenReader: Pick<ActivePushTokenReaderPort, "findByUserId">;
   readonly pushTokenCache: Pick<PushTokenCachePort, "invalidatePushTokens">;
   readonly noActiveTokenReasons: Pick<NoActiveTokenReasonReader, "findReason">;
@@ -78,9 +78,9 @@ export class DispatchPushNotificationUseCase {
       tokenResolution.tokens,
     );
     const results = await this.#dependencies.sendMessages.execute(
-      tokenResolution.tokens.map(({ channel, token, appVersion }) => {
+      tokenResolution.tokens.map(({ channel, token, platform, appVersion }) => {
         const badge = pushBadgeFor({ appVersion, unreadCount });
-        return { ...command.payload, channel, token, ...(badge != null && { badge }) };
+        return { ...command.payload, channel, token, platform, ...(badge != null && { badge }) };
       }),
     );
     const revokedTokens = tokensToRevoke(results);
@@ -113,7 +113,7 @@ export class DispatchPushNotificationUseCase {
     if (!tokens.some(({ appVersion }) => carriesUnreadBadge(appVersion))) {
       return 0;
     }
-    const counts = await this.#dependencies.unreadCounts.countByUsers([
+    const counts = await this.#dependencies.unreadCounts.countUnreadByUsers([
       UserId.reconstitute(userId),
     ]);
     return counts.get(userId) ?? 0;

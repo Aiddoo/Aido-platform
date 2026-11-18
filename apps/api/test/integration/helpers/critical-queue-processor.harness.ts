@@ -24,8 +24,8 @@ import { SendFollowRequestNotificationUseCase } from "#api/modules/notification/
 import { SendMilestoneNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-milestone-notification.use-case";
 import { SendNotificationWithDeduplicationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-notification-with-deduplication.use-case";
 import { SendNudgeNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-nudge-notification.use-case";
-import { CachedUnreadNotificationCountReaderAdapter } from "#api/modules/notification/notifications/infrastructure/adapters/cached-unread-notification-count-reader.adapter";
 import { NotificationQueueProcessor } from "#api/modules/notification/notifications/infrastructure/jobs/notification-queue.processor";
+import { DrizzleNotificationReader } from "#api/modules/notification/notifications/infrastructure/persistence/drizzle-notification.reader";
 import { NOTIFICATION_NOTIFICATIONS_PROVIDERS } from "#api/modules/notification/notifications/notification-notifications.providers";
 import { ReportPushDeviceUseCase } from "#api/modules/notification/push-devices/application/use-cases/report-push-device.use-case";
 import { UnregisterPushDeviceUseCase } from "#api/modules/notification/push-devices/application/use-cases/unregister-push-device.use-case";
@@ -236,7 +236,7 @@ function notificationProviders(pushProvider: FakePushChannel): Provider[] {
     ...NOTIFICATION_PUSH_DISPATCHES_USE_CASE_PROVIDERS,
     {
       provide: UnreadNotificationCountReaderPort,
-      useClass: CachedUnreadNotificationCountReaderAdapter,
+      useClass: DrizzleNotificationReader,
     },
     NotificationQueueProcessor,
     PushDeliveryQueueProcessor,

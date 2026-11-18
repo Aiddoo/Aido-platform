@@ -323,6 +323,7 @@ class StubPushDelivery {
       ...base,
       messages: deliverable.map((payload) => ({
         channel: "EXPO" as const,
+        platform: "IOS" as const,
         token: `token-${payload.userId.value}`,
         title: payload.title,
         body: payload.body,

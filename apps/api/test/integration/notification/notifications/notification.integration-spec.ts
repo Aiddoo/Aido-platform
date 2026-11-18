@@ -27,7 +27,7 @@ import { PublishNotificationBatchUseCase } from "#api/modules/notification/notif
 import { SendBatchNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-batch-notification.use-case";
 import { SendNotificationWithDeduplicationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-notification-with-deduplication.use-case";
 import { SendNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-notification.use-case";
-import { CachedUnreadNotificationCountReaderAdapter } from "#api/modules/notification/notifications/infrastructure/adapters/cached-unread-notification-count-reader.adapter";
+import { DrizzleNotificationReader } from "#api/modules/notification/notifications/infrastructure/persistence/drizzle-notification.reader";
 import { DrizzleNotificationRepository } from "#api/modules/notification/notifications/infrastructure/persistence/drizzle-notification.repository";
 import { NOTIFICATION_NOTIFICATIONS_PROVIDERS } from "#api/modules/notification/notifications/notification-notifications.providers";
 import { PublishNotificationUseCase } from "#api/modules/notification/notifications/notification-notifications.public";
@@ -185,7 +185,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
         ...NOTIFICATION_PUSH_DISPATCHES_USE_CASE_PROVIDERS,
         {
           provide: UnreadNotificationCountReaderPort,
-          useClass: CachedUnreadNotificationCountReaderAdapter,
+          useClass: DrizzleNotificationReader,
         },
         {
           provide: PushDispatchRepositoryPort,

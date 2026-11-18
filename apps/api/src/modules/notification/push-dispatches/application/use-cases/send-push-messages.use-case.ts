@@ -1,6 +1,7 @@
 import { PUSH_CHANNELS } from "../../../shared/domain/push-channel.constants.js";
 import type { PushChannelRegistryPort } from "../ports/push-channel-registry.port.js";
 import type { PushMessage, PushSendResult } from "../ports/push-channel.port.js";
+import { pushChannelResultCountMismatch } from "../push-dispatches.errors.js";
 
 interface SendPushMessagesDependencies {
   readonly channels: Pick<PushChannelRegistryPort, "forChannel">;
@@ -24,6 +25,10 @@ export class SendPushMessagesUseCase {
       const results = await this.#dependencies.channels
         .forChannel(channel)
         .sendBatch(entries.map(([, message]) => message));
+      // 호출자가 결과를 발송에 위치로 잇기 때문에 하나라도 빠지면 뒤 결과가 다른 발송에 기록된다
+      if (results.length !== entries.length) {
+        throw pushChannelResultCountMismatch(channel, entries.length, results.length);
+      }
       for (const [position, result] of results.entries()) {
         const entry = entries[position];
         if (entry != null) {

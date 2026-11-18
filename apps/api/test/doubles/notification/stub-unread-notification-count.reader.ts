@@ -11,7 +11,7 @@ export class StubUnreadNotificationCountReader extends UnreadNotificationCountRe
     this.#counts = new Map(counts);
   }
 
-  async countByUsers(users: readonly UserId[]): Promise<ReadonlyMap<string, number>> {
+  async countUnreadByUsers(users: readonly UserId[]): Promise<ReadonlyMap<string, number>> {
     const userIds = users.map((user) => user.value);
     this.requestedUserIds.push(userIds);
     return new Map(

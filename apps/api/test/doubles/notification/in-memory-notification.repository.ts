@@ -16,6 +16,7 @@ import {
   type DeletedNotificationHistory,
   NotificationRepositoryPort,
 } from "#api/modules/notification/notifications/application/ports/notification.repository.port";
+import type { UnreadNotificationCountReaderPort } from "#api/modules/notification/notifications/application/ports/unread-notification-count.reader.port";
 import type { InboxNotificationReadModel } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
 import { Notification } from "#api/modules/notification/notifications/domain/notification.aggregate";
 import type { CreateNotificationData } from "#api/modules/notification/shared/domain/notification-draft.constants";
@@ -65,7 +66,10 @@ function reminderOccurrenceKeyOf(
 // 알림함 행과 같은 모양으로 저장해 쓰기 뒤 목록·미읽음 수·이력을 그대로 읽어 볼 수 있게 한다
 export class InMemoryNotificationRepository
   extends NotificationRepositoryPort
-  implements NotificationInboxReaderPort, NotificationHistoryReaderPort
+  implements
+    NotificationInboxReaderPort,
+    NotificationHistoryReaderPort,
+    UnreadNotificationCountReaderPort
 {
   readonly #rows = new Map<number, InboxNotificationReadModel>();
   readonly #reminderOccurrenceKeys = new Set<string>();

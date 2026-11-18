@@ -1,3 +1,5 @@
+import type { PushDevicePlatform } from "@aido/api/vocabulary";
+
 import type { PushChannel } from "../../../shared/domain/push-channel.constants.js";
 import type { PushCategoryId } from "../../domain/push-category-id.vo.js";
 import type { PushDeliveryPriority } from "../../domain/push-delivery-options.domain-service.js";
@@ -21,6 +23,8 @@ export interface PushMessageContent {
 export interface PushMessage extends PushMessageContent {
   readonly channel: PushChannel;
   readonly token: string;
+  // 토큰을 등록한 기기의 플랫폼. 채널 어댑터가 플랫폼마다 실을 공급자 필드를 고른다
+  readonly platform: PushDevicePlatform;
   // 앱 아이콘 배지. 그 기기 앱이 배지를 다시 맞출 수 있을 때만 받는 사람의 안 읽은 수를 싣는다(pushBadgeFor)
   readonly badge?: number;
 }

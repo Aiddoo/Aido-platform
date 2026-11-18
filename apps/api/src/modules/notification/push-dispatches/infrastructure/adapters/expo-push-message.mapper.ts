@@ -1,3 +1,4 @@
+import { PUSH_DEVICE_PLATFORM } from "@aido/api/vocabulary";
 import type { ExpoPushMessage } from "expo-server-sdk";
 
 import type { PushMessage } from "../../application/ports/push-channel.port.js";
@@ -33,9 +34,9 @@ export function buildExpoPushMessage(payload: PushMessage): ExpoPushMessageBuild
     body: payload.body,
     data: payload.data,
     badge: payload.badge,
-    // iOS는 apns-collapse-id로 보관 중·이미 뜬 알림을 바꾸고, Android의 collapse_key는 보관 중인 것만 합쳐
-    // 이미 뜬 알림은 tag로 바꾼다(Expo 문서 collapseId·tag)
-    collapseId: payload.collapseKey,
+    // collapseId는 iOS에서 apns-collapse-id로 보관 중·이미 뜬 알림을 바꾼다. Android에서는 FCM collapse_key라
+    // 꺼진 기기에 4개만 남기고 나머지를 버리므로 싣지 않는다. 이미 뜬 Android 알림은 tag가 바꾸고 iOS는 tag를 무시한다
+    ...(payload.platform === PUSH_DEVICE_PLATFORM.IOS && { collapseId: payload.collapseKey }),
     tag: payload.collapseKey,
     sound: payload.sound ?? "default",
     // 앱이 등록한 Android 알림 채널은 default 하나다

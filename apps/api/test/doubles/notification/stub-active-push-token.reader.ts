@@ -4,9 +4,11 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 type StubToken = string | ActivePushTokenReadModel;
 
-// 토큰 문자열만 주면 앱 버전을 모르는 Expo 토큰이다
+// 토큰 문자열만 주면 앱 버전을 모르는 iOS Expo 토큰이다
 function toReadModel(token: StubToken): ActivePushTokenReadModel {
-  return typeof token === "string" ? { token, channel: "EXPO", appVersion: null } : token;
+  return typeof token === "string"
+    ? { token, channel: "EXPO", platform: "IOS", appVersion: null }
+    : token;
 }
 
 // cache-aside 활성 토큰 조회 대역. 어떤 사용자를 조회했는지 남겨 capability 경로가 캐시를 거치지 않는지 본다

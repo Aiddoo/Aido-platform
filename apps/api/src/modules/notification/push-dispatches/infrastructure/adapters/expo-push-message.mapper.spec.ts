@@ -11,6 +11,7 @@ function createPayload(overrides: Partial<PushMessage> = {}): PushMessage {
   return {
     channel: "EXPO",
     token: VALID_TOKEN,
+    platform: "IOS",
     title: "알림",
     body: "본문",
     priority: "high",
@@ -34,9 +35,9 @@ describe("Expo Push 메시지 변환", () => {
     });
   });
 
-  it("같은 알림의 재전송 키를 iOS·Android 보관 중 합치기(collapseId)와 Android에 뜬 알림 바꾸기(tag)에 함께 싣는다", () => {
+  it("iOS 기기에는 같은 알림의 재전송 키를 collapseId와 tag에 함께 싣는다", () => {
     // Given
-    const payload = createPayload({ collapseKey: "notification-42", badge: 3 });
+    const payload = createPayload({ platform: "IOS", collapseKey: "notification-42", badge: 3 });
 
     // When
     const result = buildExpoPushMessage(payload);
@@ -46,6 +47,18 @@ describe("Expo Push 메시지 변환", () => {
       status: "ready",
       message: { collapseId: "notification-42", tag: "notification-42", badge: 3 },
     });
+  });
+
+  it("Android 기기에는 꺼진 동안 4개만 보관되는 collapseId 없이 tag만 싣는다", () => {
+    // Given
+    const payload = createPayload({ platform: "ANDROID", collapseKey: "notification-42" });
+
+    // When
+    const result = buildExpoPushMessage(payload);
+
+    // Then
+    expect(result).toMatchObject({ status: "ready", message: { tag: "notification-42" } });
+    expect(result).not.toHaveProperty("message.collapseId");
   });
 
   it("JSON UTF-8 크기가 4096 byte면 전송 가능하다", () => {
