@@ -85,14 +85,14 @@ export const loginWithPasswordProvider = provideUseCase(LoginWithPasswordUseCase
   logger: loggerFor(LoginWithPasswordUseCase),
 });
 
-const registerSocialUserProvider = provideUseCase(RegisterSocialUserUseCase, {
+export const registerSocialUserProvider = provideUseCase(RegisterSocialUserUseCase, {
   unitOfWork: UnitOfWorkPort,
   provisionUserUseCase: ProvisionUserUseCase,
   securityLogRepository: SecurityLogRepositoryPort,
   clock: ClockPort,
 });
 
-const autoLinkOAuthAccountProvider = provideUseCase(AutoLinkOAuthAccountUseCase, {
+export const autoLinkOAuthAccountProvider = provideUseCase(AutoLinkOAuthAccountUseCase, {
   accountRepository: LinkedAccountsRepositoryPort,
   userMutationLock: UserMutationLockPort,
   securityLogRepository: SecurityLogRepositoryPort,

@@ -76,8 +76,10 @@ import {
   startOAuthAuthorizationProvider,
 } from "../../../src/modules/identity/oauth-states/identity-oauth-states.providers.js";
 import {
+  autoLinkOAuthAccountProvider,
   loginWithMobileOAuthTokenProvider,
   loginWithOAuthTokenProvider,
+  registerSocialUserProvider,
   verifyEmailProvider,
   loginWithPasswordProvider,
   issueLoginProvider,
@@ -127,6 +129,8 @@ export async function createAuthTestModule(
             listLinkedAccountsProvider,
             loginWithMobileOAuthTokenProvider,
             loginWithOAuthTokenProvider,
+            registerSocialUserProvider,
+            autoLinkOAuthAccountProvider,
             oauthSignupNotifierProvider,
             startOAuthAuthorizationProvider,
             unlinkOAuthAccountProvider,

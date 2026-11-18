@@ -31,13 +31,13 @@ export const NOTIFICATION_PUSH_DEVICES_PERSISTENCE_PROVIDERS = [
   { provide: ClientAppVersionReaderPort, useClass: DrizzleClientAppVersionReader },
   { provide: ActivePushTokenReaderPort, useClass: CachedActivePushTokenReaderAdapter },
   { provide: PushTokenCachePort, useClass: PushTokenCacheAdapter },
+  { provide: UserPreferenceCachePort, useClass: UserPreferenceCacheAdapter },
 ] satisfies Provider[];
 
 const NOTIFICATION_PUSH_DEVICES_EXTERNAL_PROVIDERS = [
   { provide: PushTokenFormatPort, useClass: ExpoPushTokenFormatAdapter },
   // 같은 Context의 발송·알림 slice도 이 Module에서 identity 설정 ACL을 받는다
   { provide: UserNotificationSettingsPort, useClass: UserNotificationSettingsAdapter },
-  { provide: UserPreferenceCachePort, useClass: UserPreferenceCacheAdapter },
 ] satisfies Provider[];
 
 export const NOTIFICATION_PUSH_DEVICES_USE_CASE_PROVIDERS = [
