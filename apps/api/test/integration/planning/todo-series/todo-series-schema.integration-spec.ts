@@ -577,7 +577,7 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
       expect(restored?.rule.equals(rule)).toBe(true);
       expect(restored?.checklistTemplate).toEqual([{ title: "항목" }]);
       expect(restored?.scheduledLocalTime).toBe("09:00");
-      expect(restored?.nextOccurrenceDate).toBe(series.nextOccurrenceDate);
+      expect(restored?.nextOccurrenceDate?.toString()).toBe(series.nextOccurrenceDate?.toString());
     });
 
     it("커서를 옮긴 규칙을 저장하면 끝난 규칙은 진행 중 개수에서 빠진다", async () => {
