@@ -31,10 +31,11 @@ export function todosStartingBetween(
 ) {
   return new QueryBuilder()
     .select({
-      startDate: todo.startDate,
+      // Temporal 칸은 디코더를 단 SQL로 낸다. 하위 질의 칸(Proxy)으로 행마다 디코드하면 리포트의 3만 행 조회 CPU가 약 20% 늘었다
+      startDate: sql`${todo.startDate}`.mapWith(todo.startDate).as("startDate"),
       categoryId: todo.categoryId,
       completed: todo.completed,
-      completedAt: todo.completedAt,
+      completedAt: sql`${todo.completedAt}`.mapWith(todo.completedAt).as("completedAt"),
     })
     .from(todo)
     .where(and(eq(todo.userId, userId.value), gte(todo.startDate, from), lt(todo.startDate, until)))
