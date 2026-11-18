@@ -33,6 +33,7 @@ import {
   AccountTodoCommentCleanupPort,
   AccountUsageCleanupPort,
 } from "./application/ports/account-cleanup.port.js";
+import { GrowthMetricsSnapshotPort } from "./application/ports/growth-metrics-snapshot.port.js";
 import { GrowthMetricsReaderPort } from "./application/ports/growth-metrics.reader.port.js";
 import { RetentionEnrollerPort } from "./application/ports/retention-enroller.port.js";
 import { SecurityLogRepositoryPort } from "./application/ports/security-log.repository.port.js";
@@ -57,6 +58,7 @@ import { UserProfileCacheAdapter } from "./infrastructure/adapters/user-profile-
 import { UserProvisioningSeederAdapter } from "./infrastructure/adapters/user-provisioning-seeder.adapter.js";
 import { DrizzleGrowthMetricsReader } from "./infrastructure/persistence/drizzle-growth-metrics.reader.js";
 import { DrizzleUserRepository } from "./infrastructure/persistence/drizzle-user.repository.js";
+import { RepeatableReadGrowthMetricsSnapshotAdapter } from "./infrastructure/persistence/repeatable-read-growth-metrics-snapshot.adapter.js";
 
 export const accountNotificationCleanupProvider: FactoryProvider<AccountNotificationCleanupPort> = {
   provide: AccountNotificationCleanupPort,
@@ -215,9 +217,14 @@ export const IDENTITY_USERS_PROVIDERS = [
 
 export const IDENTITY_USERS_ADMIN_PROVIDERS = [
   { provide: GrowthMetricsReaderPort, useClass: DrizzleGrowthMetricsReader },
+  {
+    provide: GrowthMetricsSnapshotPort,
+    useClass: RepeatableReadGrowthMetricsSnapshotAdapter,
+  },
   provideUseCase(GetGrowthSummaryUseCase, {
     growthMetricsReader: GrowthMetricsReaderPort,
     todoActivationReader: TodoActivationReaderPort,
+    snapshot: GrowthMetricsSnapshotPort,
     clock: ClockPort,
   }),
 ] satisfies Provider[];

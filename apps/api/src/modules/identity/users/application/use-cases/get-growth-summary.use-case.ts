@@ -9,6 +9,7 @@ import {
   toCohortMetric,
   toRetentionMetric,
 } from "../../domain/growth-summary.domain-service.js";
+import type { GrowthMetricsSnapshotPort } from "../ports/growth-metrics-snapshot.port.js";
 import type { GrowthMetricsReaderPort } from "../ports/growth-metrics.reader.port.js";
 import type { GrowthSummaryReadModel } from "../read-models/growth-summary.read-model.js";
 
@@ -20,6 +21,7 @@ export interface GetGrowthSummaryQuery {
 export interface GetGrowthSummaryDependencies {
   readonly growthMetricsReader: Pick<GrowthMetricsReaderPort, "getActivity" | "listCohortSignups">;
   readonly todoActivationReader: Pick<TodoActivationReaderPort, "listActivatedUserIds">;
+  readonly snapshot: Pick<GrowthMetricsSnapshotPort, "run">;
   readonly clock: ClockPort;
 }
 
@@ -32,20 +34,31 @@ export class GetGrowthSummaryUseCase {
   }
 
   async execute(query: GetGrowthSummaryQuery): Promise<GrowthSummaryReadModel> {
-    const { growthMetricsReader, todoActivationReader, clock } = this.#dependencies;
+    const { growthMetricsReader, todoActivationReader, snapshot, clock } = this.#dependencies;
     const asOf = clock.now();
     const defaults = defaultCohortRange(asOf);
     const cohortFrom = query.cohortFrom ?? defaults.cohortFrom;
     const cohortTo = query.cohortTo ?? defaults.cohortTo;
 
-    const activity = await growthMetricsReader.getActivity({ cohortFrom, cohortTo });
-    const signups = await growthMetricsReader.listCohortSignups({ cohortFrom, cohortTo, asOf });
-    const activatedUserIds = await todoActivationReader.listActivatedUserIds(
-      signups.map((signup) => ({
-        userId: signup.userId,
-        ...activationWindowOf(signup.signedUpAt),
-      })),
-    );
+    const { activity, signups, activatedUserIds } = await snapshot.run(async () => {
+      const cohortActivity = await growthMetricsReader.getActivity({ cohortFrom, cohortTo });
+      const cohortSignups = await growthMetricsReader.listCohortSignups({
+        cohortFrom,
+        cohortTo,
+        asOf,
+      });
+      const activatedIds = await todoActivationReader.listActivatedUserIds(
+        cohortSignups.map((signup) => ({
+          userId: signup.userId,
+          ...activationWindowOf(signup.signedUpAt),
+        })),
+      );
+      return {
+        activity: cohortActivity,
+        signups: cohortSignups,
+        activatedUserIds: activatedIds,
+      };
+    });
     const activated = new Set(activatedUserIds.map((userId) => userId.value));
     const tally = tallyGrowthCohort({
       signups: signups.map((signup) => ({

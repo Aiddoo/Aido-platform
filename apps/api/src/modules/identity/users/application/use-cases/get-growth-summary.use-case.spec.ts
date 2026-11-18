@@ -4,6 +4,7 @@ import type {
 } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 
 import type {
   GrowthCohortRange,
@@ -96,6 +97,7 @@ function createUseCase(params: {
     useCase: new GetGrowthSummaryUseCase({
       growthMetricsReader,
       todoActivationReader,
+      snapshot: new ImmediateUnitOfWork(),
       clock: new FixedClock(AS_OF),
     }),
   };

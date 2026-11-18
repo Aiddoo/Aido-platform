@@ -6,6 +6,7 @@ import { DELETED_COMMENT_AUTHOR } from "#api/modules/engagement/todo-comments/do
 import { GetGrowthSummaryUseCase } from "#api/modules/identity/users/application/use-cases/get-growth-summary.use-case";
 import { DrizzleGrowthMetricsReader } from "#api/modules/identity/users/infrastructure/persistence/drizzle-growth-metrics.reader";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
+import { RepeatableReadGrowthMetricsSnapshotAdapter } from "#api/modules/identity/users/infrastructure/persistence/repeatable-read-growth-metrics-snapshot.adapter";
 import { DrizzleTodoActivationReader } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-activation.reader";
 import { requireRecord } from "#api/platform/database/database-error.util";
 import {
@@ -44,6 +45,7 @@ describe("성장 지표 — identity 활동일·planning 할 일 조회 (실제 
     growthSummary = new GetGrowthSummaryUseCase({
       growthMetricsReader: new DrizzleGrowthMetricsReader(transactionHost),
       todoActivationReader: new DrizzleTodoActivationReader(transactionHost),
+      snapshot: new RepeatableReadGrowthMetricsSnapshotAdapter(transactionHost),
       clock: new FixedClock(Temporal.Instant.from("2026-07-31T12:00:00Z")),
     });
   }, 60_000);
