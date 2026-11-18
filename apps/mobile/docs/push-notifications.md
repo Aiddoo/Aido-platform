@@ -102,7 +102,7 @@ PushRegistrationService (features/notification/services) → PushDeviceApi (apis
   - 로그인한 적 없는 시작(`none`)과 판정 실패(`boot-failed`)는 등록을 건드리지 않는다. 잠긴 키체인처럼 세션이 살아 있을 수 있어서다.
 - 로그아웃·탈퇴·세션 만료는 OS 알림 센터에 이미 도착한 알림을 지운다(`SessionCleanupService` → `PushNotificationGateway.dismissDelivered`). 페이로드에 받는 사람이 없어 남기면 공용 기기에서 다음 계정이 앞 계정의 알림 문구를 본다(눌러도 소유 확인에서 버려진다). 만료 뒤에도 지우는 것은 다음에 다른 계정이 로그인할 수 있어서다. 로그인한 적 없는 시작과 판정 실패는 세션이 살아 있을 수 있어 지우지 않는다. 지우기가 실패해도 다른 정리는 계속하고 경고만 남긴다. 배지는 아래처럼 미인증이면 0이 된다.
 - 탈퇴는 앱이 해제하지 않는다. 서버 탈퇴가 전 세션과 기기를 함께 푼다. 탈퇴 전에 풀면 비밀번호 오류에도 이 기기의 알림이 끊긴다.
-- 앱 아이콘 배지는 알림함의 안 읽은 수 조회(`useGetUnreadCountQueryOptions`) 하나를 따른다. `NotificationProvider`의 `useNotificationBadgeSync`가 로그인한 동안 이 조회를 구독해, 앱이 앞으로 올 때(`focusManager`, `staleTime: 0`)·다시 연결될 때·푸시 수신과 읽음 처리의 무효화·낙관적 수정 때마다 배지를 그 수로 맞춘다. 그래서 다른 기기에서 읽거나 받은 알림도 이 기기를 열면 배지에 반영된다. 배지만 따로 서버에 묻지 않는다. 읽음 처리(`NOTIFICATION_MUTATION_KEYS.writes()`)는 실패하면 그 알림만 안 읽음으로 되돌리고, 마지막 처리가 끝날 때만 다시 받아 배지가 앞 처리의 값으로 깜빡이지 않는다.
+- 앱 아이콘 배지는 알림함의 안 읽은 수 조회(`useGetUnreadCountQueryOptions`) 하나를 따른다. `NotificationProvider`의 `useNotificationBadgeSync`가 로그인한 동안 이 조회를 구독해, 앱이 앞으로 올 때(`focusManager`, `staleTime: 0`)·다시 연결될 때·푸시 수신과 읽음 처리의 무효화·낙관적 수정 때마다 배지를 그 수로 맞춘다. 그래서 다른 기기에서 읽거나 받은 알림도 이 기기를 열면 배지에 반영된다. 서버는 1.17.0 이상 기기에 푸시마다 그때의 안 읽은 수를 `badge`로 실어 앱이 꺼져 있어도 아이콘이 맞는다([서버 푸시 발송](../../api/docs/push-delivery.md#배지와-중복-배너)). 그 값은 이 기기의 캐시와 어긋날 수 있어 조회가 끝날 때마다(`dataUpdatedAt`) 받은 수가 같아도 배지를 다시 쓴다. 배지만 따로 서버에 묻지 않는다. 읽음 처리(`NOTIFICATION_MUTATION_KEYS.writes()`)는 실패하면 그 알림만 안 읽음으로 되돌리고, 마지막 처리가 끝날 때만 다시 받아 배지가 앞 처리의 값으로 깜빡이지 않는다.
 - 콜드 스타트의 인증 확인 중(`loading`·`locked`)에는 배지를 건드리지 않고, 로그아웃(`unauthenticated`)일 때만 지운다(`NotificationBadgePolicy.getBadgeCount`).
 
 ## 눌린 푸시 처리
