@@ -9,10 +9,11 @@ interface DailyCompletionKeyDates {
   readonly end: string;
 }
 
+// range-v3: 완료율을 Math.round로 저장하던 이전 서버 값을 TTL 동안 그대로 내주지 않게 버전을 올렸다
 export const DailyCompletionCacheKey = {
   generation: (userId: string) => cacheKey("daily-completion", "range-v1", userId, "generation"),
   range: (userId: string, generation: string, dates: DailyCompletionKeyDates) =>
-    cacheKey("daily-completion", "range-v2", userId, generation, "own", dates.start, dates.end),
+    cacheKey("daily-completion", "range-v3", userId, generation, "own", dates.start, dates.end),
   publicRange: (userId: string, generation: string, dates: DailyCompletionKeyDates) =>
-    cacheKey("daily-completion", "range-v2", userId, generation, "public", dates.start, dates.end),
+    cacheKey("daily-completion", "range-v3", userId, generation, "public", dates.start, dates.end),
 } as const;

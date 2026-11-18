@@ -15,7 +15,8 @@ import { instant } from "../columns/temporal-columns.js";
 import { user } from "./identity.schema.js";
 
 /**
- * 계획 적용 한 번의 멱등 기록. 7일 뒤 지운다. 사용자 글자는 두지 않고 만든 id와 요청 해시만 둔다.
+ * 계획 적용 한 번의 멱등 기록. 음성 메모 보관 기한(VOICE_NOTE_RETENTION_DAYS, 30일) 뒤 지운다.
+ * 사용자 글자는 두지 않고 만든 id와 요청 해시만 둔다.
  * 할 일·메모는 그 뒤 지워질 수 있어 외래 키를 걸지 않는다.
  */
 export const planApplication = pgTable(

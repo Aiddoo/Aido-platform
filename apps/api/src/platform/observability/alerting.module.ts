@@ -1,4 +1,4 @@
-import { Global, Module, type OnApplicationShutdown } from "@nestjs/common";
+import { Global, Module } from "@nestjs/common";
 import type { ConfigType } from "@nestjs/config";
 import { APP_INTERCEPTOR } from "@nestjs/core";
 
@@ -18,7 +18,6 @@ import { RequestScopeInterceptor } from "./request-scope.interceptor.js";
 import { SentryExceptionReporter } from "./sentry-exception-reporter.adapter.js";
 import { SentryJobHeartbeatAdapter } from "./sentry-job-heartbeat.adapter.js";
 import { SentryOperationalAlertAdapter } from "./sentry-operational-alert.adapter.js";
-import { flushExceptionReports } from "./sentry-scope.js";
 
 /**
  * 환경별 어댑터 표. 관측 포트를 더하면 이 표에 열 하나를 더하고 같은 판정으로 고른다.
@@ -43,9 +42,6 @@ const OBSERVABILITY_ADAPTERS = {
     readonly heartbeat: new () => JobHeartbeatPort;
   }
 >;
-
-// 이 안에 못 보낸 이벤트는 버린다. 종료 유예(compose stop_grace_period) 안에서 끝나야 한다
-const EXCEPTION_REPORT_FLUSH_TIMEOUT_MS = 2000;
 
 type AppSettings = ConfigType<typeof appConfig>;
 type SentrySettings = ConfigType<typeof sentryConfig>;
@@ -83,9 +79,4 @@ function adaptersFor(app: AppSettings, sentry: SentrySettings) {
   ],
   exports: [OperationalAlertPort, ExceptionReporterPort, JobHeartbeatPort],
 })
-export class AlertingModule implements OnApplicationShutdown {
-  // HTTP 서버와 작업 worker가 멈춘 뒤에 돌아 그동안 쌓인 경보·예외까지 보낸다
-  async onApplicationShutdown(): Promise<void> {
-    await flushExceptionReports(EXCEPTION_REPORT_FLUSH_TIMEOUT_MS);
-  }
-}
+export class AlertingModule {}

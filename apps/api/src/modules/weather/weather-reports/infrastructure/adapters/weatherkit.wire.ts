@@ -101,8 +101,12 @@ const instantSchema = z.iso
   .transform((value) => Temporal.Instant.from(value));
 
 /** readTime은 공급자가 읽은 순간, expireTime은 그 dataset을 새로 내기 전까지의 순간이다. */
+// 한 칸이 틀려도 다른 칸은 남기도록 칸마다 버린다
 const metadataSchema = z
-  .looseObject({ readTime: instantSchema.nullish(), expireTime: instantSchema.nullish() })
+  .looseObject({
+    readTime: instantSchema.nullish().catch(undefined),
+    expireTime: instantSchema.nullish().catch(undefined),
+  })
   .optional()
   .catch(undefined);
 

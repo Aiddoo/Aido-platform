@@ -168,6 +168,25 @@ describe("WeatherKitReportAdapter — 가용성·REST 요청과 실패 분류", 
     expect(warnSpy).not.toHaveBeenCalled();
   });
 
+  it("metadata의 expireTime만 형식이 틀려도 readTime은 fetchedAt으로 남는다", async () => {
+    // Given
+    const body = createSeoulRainWeatherKitReportFixture();
+    const { provider } = createProvider([
+      jsonResponse(createWeatherKitAvailabilityFixture()),
+      jsonResponse({
+        ...body,
+        currentWeather: {
+          ...body.currentWeather,
+          metadata: { readTime: "2026-11-02T06:18:00Z", expireTime: "not-a-time" },
+        },
+      }),
+    ]);
+    // When
+    const report = await provider.getReport(cell, REQUEST);
+    // Then
+    expect(report.fetchedAt).toEqual(Temporal.Instant.from("2026-11-02T06:18:00Z"));
+  });
+
   it("실제 도쿄 응답의 맑음 구간은 precipitationType NONE이고 분 단위 예보를 모두 담는다", async () => {
     // Given
     const { provider } = createProvider([

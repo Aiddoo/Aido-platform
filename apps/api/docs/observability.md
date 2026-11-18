@@ -61,7 +61,7 @@
 
 경보 중복 제거 감싸기는 고른 어댑터 바깥에서 모든 환경에 같게 돈다. heartbeat 포트도 같은 표에 열을 더해 고른다.
 
-종료 신호(SIGTERM·SIGINT)는 `main.ts`의 `enableShutdownHooks`가 받는다. 작업 worker 정지와 HTTP 서버 종료가 끝난 뒤 AlertingModule의 `onApplicationShutdown`이 남은 Sentry 이벤트를 2초 안에 보내고(`EXCEPTION_REPORT_FLUSH_TIMEOUT_MS`), 프로세스는 exit 0으로 끝난다. 종료 hook의 실패는 Nest Logger가 남기고 종료 코드는 바꾸지 않는다(컨테이너는 어차피 내려간다). 종료 시작은 `server.shutdown.started`(`signal`) 로그다.
+종료 신호(SIGTERM·SIGINT)는 `main.ts`의 `closeOnShutdownSignals`가 받아 `server.shutdown.started`(`signal`)를 남기고 `app.close()`를 부른다. 작업 worker 정지(`beforeApplicationShutdown`)와 HTTP 서버 종료가 끝나면 `finally`에서 남은 Sentry 이벤트를 2초 안에 보내고(`EXCEPTION_REPORT_FLUSH_TIMEOUT_MS`), 프로세스는 exit 0으로 끝난다. Nest `enableShutdownHooks`는 HTTP 서버 닫기가 실패하면 뒤 hook과 flush를 건너뛰어 쓰지 않는다. 종료 hook 하나의 실패는 Nest Logger가 남기고 다음 hook으로 넘어간다. 종료 순서 자체가 실패하면 `server.shutdown.failed`(`signal`·`errorType`)를 남기고 flush 뒤 exit 1이다.
 
 ## 요청·작업 문맥
 

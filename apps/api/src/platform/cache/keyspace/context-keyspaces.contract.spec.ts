@@ -106,8 +106,9 @@ describe("Bounded Context별 cache keyspace 계약", () => {
     expect(latestForecastKey).toBe("aido:v1:weather:forecast-latest:60:127");
     expect(conditionsKey).toBe("aido:v1:weather:conditions:60:127:2026-04-01");
     expect(friendTodosKey).toBe("aido:v1:todo:friend-view-v2:user-1:generation-1:-:-:20");
+    // range-v3: 완료율 반올림을 바꿔 이전 서버가 쓴 값을 읽지 않는다
     expect(dailyCompletionRangeKey).toBe(
-      "aido:v1:daily-completion:range-v2:user-1:generation-1:own:2026-01-01:2026-01-31",
+      "aido:v1:daily-completion:range-v3:user-1:generation-1:own:2026-01-01:2026-01-31",
     );
     expect(pushTokensKey).toBe("aido:v1:notification:push-tokens:user-1");
     expect(dedupKey).toBe("aido:v1:notification:dedup-notified:MORNING_REMINDER:2026-01-01");

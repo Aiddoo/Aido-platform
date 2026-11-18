@@ -391,6 +391,35 @@ describe("PgBossJobQueueAdapter — PostgreSQL 영속 큐", () => {
     ]);
   });
 
+  it("경고 기준 없이 만든 큐(DLQ)의 적체 경보는 threshold를 0으로 싣지 않고 뺀다", async () => {
+    // Given
+    const alerts = new RecordingOperationalAlert();
+    const alertingBoss = new FakePgBossClient();
+    new PgBossJobQueueAdapter(
+      alertingBoss,
+      { tx: createFakeDatabase().database },
+      new JobQueueRegistry(),
+      { shutdownTimeoutMs: 90_000, workerEnabled: true },
+      alerts,
+    );
+
+    // When
+    alertingBoss.emitWarning({
+      message: "Warning: large queue backlog",
+      data: { name: `${QUEUE}.dlq`, queuedCount: 10_001, warningQueueSize: null, pinSeconds: 0.1 },
+    });
+
+    // Then
+    expect(alerts.alerts).toEqual([
+      {
+        ...QueueAlerts.BACKLOGGED,
+        subject: `${QUEUE}.dlq`,
+        tags: { queue: `${QUEUE}.dlq` },
+        details: { queuedCount: 10_001 },
+      },
+    ]);
+  });
+
   it("idempotencyKey를 결정적 pg-boss id와 singletonKey로 매핑한다", async () => {
     // When
     await jobQueue.enqueue(DOCUMENT_QUEUE, { documentId: 42 }, { idempotencyKey: "document_42" });

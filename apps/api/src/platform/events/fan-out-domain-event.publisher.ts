@@ -13,6 +13,18 @@ import { toErrorType } from "#api/shared/application/utils/error-message.util";
 
 import { EventSubscriptionCatalog } from "./event-subscription.catalog.js";
 
+// 합치기 key가 구독끼리 겹쳐 다른 일이 사라지지 않게 namespace(기본은 구독 이름)를 앞에 붙인다
+function coalesceKeyOf<TPayload extends object>(
+  subscription: AfterCommitEventSubscription<TPayload>,
+  payload: TPayload,
+): string | undefined {
+  if (subscription.coalesce == null) {
+    return undefined;
+  }
+  const namespace = subscription.coalesce.namespace ?? subscription.name;
+  return `${namespace}:${subscription.coalesce.key(payload)}`;
+}
+
 // pg-boss 내장 publish/subscribe는 구독 조회가 트랜잭션 밖이고 구독자별 결정적 id를 못 써 코드 레지스트리로 나눠 보낸다
 @Injectable()
 export class FanOutDomainEventPublisher extends DomainEventPublisherPort {
@@ -50,11 +62,9 @@ export class FanOutDomainEventPublisher extends DomainEventPublisherPort {
             idempotencyKey: `${event.eventId}:${subscription.name}`,
           });
         } else {
-          // 합치기 key가 구독끼리 겹쳐 다른 일이 사라지지 않게 구독 이름을 앞에 붙인다
-          const rawCoalesceKey = subscription.coalesceKey?.(parsed);
           this.#afterCommit.register(
             () => this.#deliverAfterCommit(event, subscription, parsed),
-            rawCoalesceKey == null ? undefined : `${subscription.name}:${rawCoalesceKey}`,
+            coalesceKeyOf(subscription, parsed),
           );
         }
       }

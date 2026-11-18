@@ -108,7 +108,7 @@ describe("FanOutDomainEventPublisher — after-commit 합치기 key", () => {
         eventName: "notes.memo.pinned",
         delivery: "after-commit",
         payloadSchema,
-        coalesceKey: () => "same-key",
+        coalesce: { key: () => "same-key" },
       });
     const publisher = new FanOutDomainEventPublisher(
       new EventSubscriptionCatalog([subscribe("insights.cache-a"), subscribe("insights.cache-b")]),
@@ -125,6 +125,39 @@ describe("FanOutDomainEventPublisher — after-commit 합치기 key", () => {
       "insights.cache-a:same-key",
       "insights.cache-b:same-key",
     ]);
+  });
+});
+
+describe("FanOutDomainEventPublisher — after-commit 합치기 namespace", () => {
+  it("namespace를 함께 쓰는 구독은 이벤트 이름이 달라도 같은 합치기 key를 낸다", async () => {
+    // Given
+    const registry = new RecordingAfterCommitTasks();
+    const subscribe = (eventName: string) =>
+      defineEventSubscription({
+        name: `insights.cache:${eventName}`,
+        eventName,
+        delivery: "after-commit",
+        payloadSchema,
+        coalesce: { namespace: "insights.cache", key: ({ memoId }) => memoId },
+      });
+    const publisher = new FanOutDomainEventPublisher(
+      new EventSubscriptionCatalog([
+        subscribe("notes.memo.pinned"),
+        subscribe("notes.memo.edited"),
+      ]),
+      new InMemoryJobQueue(),
+      registry,
+      new EventEmitter2(),
+    );
+
+    // When
+    await publisher.publish([
+      memoPinned({ memoId: "memo-1" }),
+      { ...memoPinned({ memoId: "memo-1" }), eventName: "notes.memo.edited", eventId: "event-2" },
+    ]);
+
+    // Then
+    expect(registry.coalesceKeys).toEqual(["insights.cache:memo-1", "insights.cache:memo-1"]);
   });
 });
 

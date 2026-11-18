@@ -58,7 +58,8 @@ export const QueueAlerts = defineAlerts("jobs", {
 const queueBacklogWarningSchema = z.object({
   name: z.string().min(1),
   queuedCount: z.coerce.number().int(),
-  warningQueueSize: z.coerce.number().int(),
+  // 기준 없이 만든 큐(DLQ)는 null이다. coerce가 null을 0으로 바꾸지 않게 nullish를 먼저 본다
+  warningQueueSize: z.coerce.number().int().nullish(),
 });
 
 export function queueBackloggedAlert(warningData: unknown): OperationalAlert | null {
@@ -67,11 +68,13 @@ export function queueBackloggedAlert(warningData: unknown): OperationalAlert | n
     return null;
   }
   const { name, queuedCount, warningQueueSize } = parsed.data;
+  // pg-boss는 큐 기준이 비었거나 0이면 자기 기본 기준을 쓴다. 그 값은 warning에 없어 threshold를 싣지 않는다
+  const hasQueueThreshold = warningQueueSize != null && warningQueueSize > 0;
   return {
     ...QueueAlerts.BACKLOGGED,
     subject: name,
     tags: { queue: name },
-    details: { queuedCount, threshold: warningQueueSize },
+    details: hasQueueThreshold ? { queuedCount, threshold: warningQueueSize } : { queuedCount },
   };
 }
 

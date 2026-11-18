@@ -120,7 +120,7 @@ Aggregate 안 이벤트는 `<aggregate>.<과거형>`이다. 같은 트랜잭션�
 
 - `PATCH /v1/todos/:id`의 `completed`도 `complete`·`reopen`을 거쳐 `planning.todo.completed`·`reopened`와 완료 효과를 낸다. 다른 칸도 함께 바꿨으면 `planning.todo.updated`가 먼저 나간다.
 - 카테고리 함께 지우기는 할 일마다 `planning.todo.deleted`를 내지 않고 `planning.todo-category.deleted` 하나로 알린다.
-- 범위 수정·삭제는 구간마다·기준 회차마다 회차 사실을 낼 수 있다. insights 일간 완료 캐시 구독은 `coalesceKey`로 커밋마다 사용자당 한 번만 지운다. `todo.occurrences-created`의 수는 계획한 회차 수라 이미 있던 날짜만 계획해도 나간다(내보내는 payload에는 수가 없다).
+- 범위 수정·삭제는 구간마다·기준 회차마다 회차 사실을 낼 수 있다. insights 일간 완료 캐시 구독은 모두 한 `coalesce` namespace를 써서 사실 이름이 달라도 커밋마다 사용자당 한 번만 지운다. `todo.occurrences-created`의 수는 계획한 회차 수라 이미 있던 날짜만 계획해도 나간다(내보내는 payload에는 수가 없다).
 
 ## 다른 Context와의 문
 
