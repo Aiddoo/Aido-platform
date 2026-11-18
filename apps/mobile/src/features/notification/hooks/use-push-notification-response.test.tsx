@@ -20,6 +20,7 @@ import { Pressable, Text } from 'react-native';
 
 import { createMarkReadResponseDto } from '../__tests__/notification.fixtures';
 import { NOTIFICATION_ENTRY_HOLD_MAX_MS } from '../constants/notification.constants';
+import { toPushNotificationResponseId } from '../domains/push-notification-response.model';
 import { usePushNotificationResponse } from './use-push-notification-response';
 
 jest.unmock('expo-router');
@@ -29,6 +30,7 @@ const RESPONSE = {
   actionIdentifier: 'default',
   data: { notificationId: 0, type: 'FOLLOW_NEW', action: { type: 'NONE' } },
 };
+const RESPONSE_ID = toPushNotificationResponseId(RESPONSE.id, RESPONSE.actionIdentifier);
 
 async function setup({ status }: { status: AuthStatus }) {
   const gateway = createPushNotificationGatewayStub();
@@ -80,7 +82,25 @@ describe('usePushNotificationResponse', () => {
     await act(async () => gateway.emitResponse(RESPONSE));
 
     // Then
-    expect(store.getSnapshot().pending?.id).toBe('response-1');
+    expect(store.getSnapshot().pending?.id).toBe(RESPONSE_ID);
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('버튼을 눌러 처리한 알림의 본문을 누르면 새 응답으로 받고, 그 응답이 두 번 와도 한 번만 받는다', async () => {
+    // Given
+    const { gateway, store } = await setup({ status: 'unauthenticated' });
+    // Android 알림 버튼은 알림을 닫지 않아 같은 알림의 본문을 다시 누를 수 있다
+    await act(async () => gateway.emitResponse({ ...RESPONSE, actionIdentifier: 'complete' }));
+    await act(async () => store.settle(toPushNotificationResponseId(RESPONSE.id, 'complete')));
+    const listener = jest.fn();
+    store.subscribe(listener);
+
+    // When
+    await act(async () => gateway.emitResponse(RESPONSE));
+    await act(async () => gateway.emitResponse(RESPONSE));
+
+    // Then
+    expect(store.getSnapshot().pending?.id).toBe(RESPONSE_ID);
     expect(listener).toHaveBeenCalledTimes(1);
   });
 
@@ -145,7 +165,7 @@ describe('usePushNotificationResponse', () => {
     await changeStatus('locked');
 
     // Then
-    expect(store.getSnapshot().pending?.id).toBe('response-1');
+    expect(store.getSnapshot().pending?.id).toBe(RESPONSE_ID);
   });
 
   it('Index가 이동하지 못해도 상한이 지나면 슬롯을 비워 갇히지 않는다', async () => {
@@ -154,7 +174,7 @@ describe('usePushNotificationResponse', () => {
 
     // When
     await act(async () => gateway.emitResponse(RESPONSE));
-    expect(store.getSnapshot().ready?.response.id).toBe('response-1');
+    expect(store.getSnapshot().ready?.response.id).toBe(RESPONSE_ID);
 
     // Then
     await waitFor(() => expect(store.getSnapshot().ready).toBeNull(), {

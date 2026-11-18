@@ -29,6 +29,7 @@ export type PushOpenAppState = 'cold' | 'background' | 'foreground';
 
 /** 사용자가 누른 푸시 하나. 처리가 끝날 때까지 진입 슬롯에 남는다 */
 export interface PushNotificationResponse {
+  /** 누른 알림과 동작으로 만든 응답 id(`toPushNotificationResponseId`) */
   id: string;
   actionIdentifier: string;
   notification: PushNotification;
@@ -120,6 +121,18 @@ function getOpenAppState(response: PushNotificationResponse): PushOpenAppState {
     return 'background';
   }
   return 'foreground';
+}
+
+/**
+ * 응답 하나의 id. Android 알림 버튼은 알림을 닫지 않아 버튼을 누른 뒤 본문을 또 누를 수 있으므로 알림 identifier에
+ * 누른 동작(본문 탭도 expo-notifications 기본 동작 id가 있다)을 더한다. 같은 응답이 다시 오면(콜드 스타트의 마지막
+ * 응답과 리스너) 같은 id라 한 번만 연다
+ */
+export function toPushNotificationResponseId(
+  notificationIdentifier: string,
+  actionIdentifier: string,
+): string {
+  return JSON.stringify([notificationIdentifier, actionIdentifier]);
 }
 
 /** 한 탭은 한 번만 연다 */

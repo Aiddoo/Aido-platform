@@ -9,6 +9,7 @@ import {
   hasHandledResponse,
   PushNotificationResponsePolicy,
   rememberHandledResponse,
+  toPushNotificationResponseId,
 } from './push-notification-response.model';
 
 describe('PushNotificationResponsePolicy.isMarketingOptOut', () => {
@@ -242,6 +243,23 @@ describe('PushNotificationResponsePolicy.getOpenAppState', () => {
       expect(openedFrom).toBe(expected);
     },
   );
+});
+
+describe('toPushNotificationResponseId', () => {
+  it('같은 알림이어도 버튼과 본문 탭은 다른 응답이고, 같은 알림의 같은 동작은 같은 응답이다', () => {
+    // Given
+    const notificationIdentifier = 'notification-42';
+    const bodyTap = 'expo.modules.notifications.actions.DEFAULT';
+
+    // When
+    const button = toPushNotificationResponseId(notificationIdentifier, 'complete');
+    const body = toPushNotificationResponseId(notificationIdentifier, bodyTap);
+    const redelivered = toPushNotificationResponseId(notificationIdentifier, bodyTap);
+
+    // Then
+    expect(body).not.toBe(button);
+    expect(redelivered).toBe(body);
+  });
 });
 
 describe('rememberHandledResponse', () => {

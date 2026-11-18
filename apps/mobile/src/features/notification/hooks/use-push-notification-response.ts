@@ -54,6 +54,7 @@ import { getTodoReminderActionFailure } from '../domains/notification.error';
 import {
   type PushNotificationResponse,
   PushNotificationResponsePolicy,
+  toPushNotificationResponseId,
   type TodoReminderActionOutcome,
   type TodoReminderActionRequest,
 } from '../domains/push-notification-response.model';
@@ -117,7 +118,7 @@ export function usePushNotificationResponse(): void {
         });
       }
       store.receive({
-        id: response.id,
+        id: toPushNotificationResponseId(response.id, response.actionIdentifier),
         actionIdentifier: response.actionIdentifier,
         notification: notification ?? createUnreadablePushNotification(),
         receivedAt: getNowInstant(),
