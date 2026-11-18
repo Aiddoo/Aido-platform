@@ -224,6 +224,9 @@ auditConfig:
   #   Expo가 밝혔다(@expo/fingerprint build/Options.js). 9·10에 백포트가 없고 11은 glob 13과 맞지 않는다.
   # - GHSA-3g3m-2fjr-6pw4(glob <=14.0.1): 13.0.7 백포트를 위 override로 받는다. 권고 범위가 갱신되지 않아
   #   계속 잡히고, 남은 glob 10은 AbortSignal을 쓰지 않는 개발 도구다.
+  # - GHSA-fc5q-39xc-vjpf(picomatch <=4.0.7, 고친 버전 없음): 모바일 빌드 도구(metro file-map·jest-util)에만 있고
+  #   서버 운영 의존성에는 없다. 패턴이 설정 파일에서만 와 외부 입력이 닿지 않는다. 고친 버전이 나오면 지운다.
   ignoreGhsas:
     - GHSA-g3hv-75wg-m249
     - GHSA-3g3m-2fjr-6pw4
+    - GHSA-fc5q-39xc-vjpf
