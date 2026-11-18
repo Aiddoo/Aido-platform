@@ -1,4 +1,4 @@
-import { clampPageSize, toCursorPage } from "#api/shared/application/cursor-page";
+import { clampPageSize } from "#api/shared/application/cursor-page";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -34,11 +34,11 @@ export class GetReceivedCheersUseCase {
     const { cheerReader, countCache, logger } = this.#dependencies;
     const userId = UserId.reconstitute(query.userId);
     const size = clampPageSize(query.size);
-    const [rows, counts] = await Promise.all([
+    const [page, counts] = await Promise.all([
       cheerReader.listReceived({
         userId,
         afterCheerId: query.cursor == null ? null : CheerId.reconstitute(query.cursor),
-        limit: size + 1,
+        size,
       }),
       // 수는 쪽마다 같아서 짧게 담아 둔다. 트랜잭션 밖 독립 읽기다
       countCache.wrapReceivedCounts(userId, async () => {
@@ -49,7 +49,6 @@ export class GetReceivedCheersUseCase {
         return { total, unread };
       }),
     ]);
-    const page = toCursorPage({ rows, size, toCursor: (cheer) => cheer.id });
     logger.debug({
       event: CheerLogEvent.RECEIVED_LISTED,
       userId: query.userId,

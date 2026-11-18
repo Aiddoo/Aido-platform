@@ -15,6 +15,7 @@ import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
+import { StubMutualFriendReader } from "#test/doubles/social/stub-mutual-friend-reader";
 
 import {
   createTodoCommentFixture,
@@ -37,6 +38,9 @@ export function createTodoCommentsFixture() {
   reader.names.set(TODO_COMMENT_FIXTURE_OWNER_ID, "작성자");
   reader.names.set(TODO_COMMENT_FIXTURE_VIEWER_ID, "방문자");
   const engagementCounter = new FakeTodoEngagementCounter();
+  const mutualFriendReader = new StubMutualFriendReader();
+  mutualFriendReader.addMutual(TODO_COMMENT_FIXTURE_OWNER_ID, TODO_COMMENT_FIXTURE_VIEWER_ID);
+  mutualFriendReader.addMutual(TODO_COMMENT_FIXTURE_OWNER_ID, TODO_COMMENT_FIXTURE_FRIEND_ID);
   let commentSequence = 0;
 
   async function addComment(overrides: Partial<TodoCommentPrimitives> = {}): Promise<TodoComment> {
@@ -62,6 +66,7 @@ export function createTodoCommentsFixture() {
     conversationReader: reader,
     likeReader: reader,
     engagementCounter,
+    mutualFriendReader,
     notification: new RecordingTodoCommentNotification(),
     blockReader: new StubTodoCommentBlockReader(),
     cursorCodec: new StubTodoCommentCursorCodec(),

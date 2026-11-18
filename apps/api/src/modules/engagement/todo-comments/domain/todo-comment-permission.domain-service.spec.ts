@@ -101,24 +101,39 @@ describe("할 일 댓글 접근 권한", () => {
   });
 
   it.each([
-    { name: "내 할 일", isOwner: true, isNudgeableToday: true, canNudge: false },
     {
-      name: "끝내지 않은 친구의 오늘 할 일",
+      name: "내 할 일",
+      isOwner: true,
+      isMutualFriend: false,
+      isNudgeableToday: true,
+      canNudge: false,
+    },
+    {
+      name: "끝내지 않은 맞팔 친구의 오늘 할 일",
       isOwner: false,
+      isMutualFriend: true,
       isNudgeableToday: true,
       canNudge: true,
     },
     {
-      name: "끝냈거나 오늘이 아닌 친구의 할 일",
+      name: "한쪽만 수락한 친구의 오늘 할 일",
       isOwner: false,
+      isMutualFriend: false,
+      isNudgeableToday: true,
+      canNudge: false,
+    },
+    {
+      name: "끝냈거나 오늘이 아닌 맞팔 친구의 할 일",
+      isOwner: false,
+      isMutualFriend: true,
       isNudgeableToday: false,
       canNudge: false,
     },
   ])(
     "$name은 콕 보내기 규칙대로 canNudge가 $canNudge다",
-    ({ isOwner, isNudgeableToday, canNudge }) => {
+    ({ isOwner, isMutualFriend, isNudgeableToday, canNudge }) => {
       // When
-      const permissions = getTodoDetailsPermissions({ isOwner, isNudgeableToday });
+      const permissions = getTodoDetailsPermissions({ isOwner, isMutualFriend, isNudgeableToday });
 
       // Then
       expect(permissions).toEqual({ canEdit: isOwner, canComment: true, canNudge });

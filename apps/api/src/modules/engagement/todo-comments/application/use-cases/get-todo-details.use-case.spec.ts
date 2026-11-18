@@ -88,6 +88,36 @@ describe("GetTodoDetailsUseCase — 할 일 상세와 조회 수", () => {
     expect(fixture.engagementCounter.viewCounts.get(TODO_ID)).toBe(3);
   });
 
+  it("한쪽만 수락한 친구는 상세를 볼 수 있어도 콕 보내기처럼 canNudge가 false다", async () => {
+    // Given
+    // 고정 시계는 UTC 2026-08-26 01:00이다
+    fixture.reader.details.set(TODO_ID, {
+      todo: createTodoReadModelFixture({
+        id: TODO_ID,
+        userId: TODO_COMMENT_FIXTURE_OWNER_ID,
+        startDate: "2026-08-26",
+      }),
+      owner: { id: TODO_COMMENT_FIXTURE_OWNER_ID, name: "작성자", profileImage: null },
+      viewCount: 3,
+      commentCount: 2,
+      isOwner: false,
+    });
+    fixture.mutualFriendReader.removeMutual(
+      TODO_COMMENT_FIXTURE_OWNER_ID,
+      TODO_COMMENT_FIXTURE_VIEWER_ID,
+    );
+
+    // When
+    const details = await new GetTodoDetailsUseCase(fixture).execute({
+      todoId: TODO_ID,
+      viewerId: TODO_COMMENT_FIXTURE_VIEWER_ID,
+      timezone: "UTC",
+    });
+
+    // Then
+    expect(details.permissions).toEqual({ canEdit: false, canComment: true, canNudge: false });
+  });
+
   it.each([
     { name: "끝내지 않은 오늘 할 일", todo: { startDate: "2026-08-26" }, canNudge: true },
     {

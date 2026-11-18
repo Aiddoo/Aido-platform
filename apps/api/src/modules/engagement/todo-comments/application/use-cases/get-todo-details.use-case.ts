@@ -1,5 +1,6 @@
 import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { TodoEngagementCounterPort } from "#api/modules/planning/todos/planning-todos.public";
+import type { MutualFriendReaderPort } from "#api/modules/social/friendships/social-friendships.public";
 import { canNudgeTodoOn } from "#api/modules/social/nudges/social-nudges.public";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
@@ -25,6 +26,7 @@ interface GetTodoDetailsDependencies {
   readonly unitOfWork: UnitOfWorkPort;
   readonly accessReader: Pick<TodoCommentAccessReaderPort, "findAccessibleTodoDetails">;
   readonly engagementCounter: Pick<TodoEngagementCounterPort, "recordView">;
+  readonly mutualFriendReader: Pick<MutualFriendReaderPort, "isMutualFriend">;
   readonly clock: ClockPort;
 }
 
@@ -50,8 +52,23 @@ export class GetTodoDetailsUseCase {
     );
     return {
       ...details,
-      permissions: getTodoDetailsPermissions({ isOwner: details.isOwner, isNudgeableToday }),
+      permissions: getTodoDetailsPermissions({
+        isOwner: details.isOwner,
+        isNudgeableToday,
+        isMutualFriend: await this.#isMutualFriendOfOwner(details, query.viewerId),
+      }),
     };
+  }
+
+  // 상세는 한쪽 수락 친구도 열 수 있지만 콕 보내기는 맞팔 친구만 받는다(SendNudgeUseCase와 같은 판정)
+  async #isMutualFriendOfOwner(details: TodoDetailsReadModel, viewerId: string): Promise<boolean> {
+    if (details.isOwner) {
+      return false;
+    }
+    return this.#dependencies.mutualFriendReader.isMutualFriend(
+      UserId.reconstitute(viewerId),
+      UserId.reconstitute(details.todo.userId),
+    );
   }
 
   #readDetails(query: GetTodoDetailsQuery): Promise<TodoDetailsReadModel> {

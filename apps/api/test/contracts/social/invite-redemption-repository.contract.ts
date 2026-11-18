@@ -170,24 +170,24 @@ export function describeInviteRedemptionRepositoryContract(
         inviterId: INVITER_ID,
         afterInviteeId: null,
         status: null,
-        limit: 3,
+        size: 3,
       });
       const nextPage = await invitedFriendReader.listInvitedFriends({
         inviterId: INVITER_ID,
         afterInviteeId: tiedNewer.inviteeId,
         status: null,
-        limit: 3,
+        size: 3,
       });
 
       // Then
-      expect(firstPage.map((friend) => friend.userId)).toEqual([
+      expect(firstPage.items.map((friend) => friend.userId)).toEqual([
         newest.inviteeId.value,
         active.inviteeId.value,
         tiedNewer.inviteeId.value,
       ]);
-      expect(nextPage.map((friend) => friend.userId)).toEqual([tiedOlder.inviteeId.value]);
+      expect(nextPage.items.map((friend) => friend.userId)).toEqual([tiedOlder.inviteeId.value]);
       const invitee = INVITE_FIXTURE_INVITEES[2];
-      expect(firstPage[1]).toEqual({
+      expect(firstPage.items[1]).toEqual({
         userId: invitee?.id,
         name: invitee?.name,
         userTag: invitee?.userTag,
@@ -219,24 +219,24 @@ export function describeInviteRedemptionRepositoryContract(
         inviterId: INVITER_ID,
         afterInviteeId: null,
         status: "JOINED",
-        limit: 10,
+        size: 10,
       });
       const afterUnknown = await invitedFriendReader.listInvitedFriends({
         inviterId: INVITER_ID,
         afterInviteeId: UserId.reconstitute(inviteFixtureInviteeId(3)),
         status: null,
-        limit: 10,
+        size: 10,
       });
       const afterForeign = await invitedFriendReader.listInvitedFriends({
         inviterId: INVITER_ID,
         afterInviteeId: foreign.inviteeId,
         status: null,
-        limit: 10,
+        size: 10,
       });
 
       // Then
-      expect(waiting.map((friend) => friend.userId)).toEqual([joined.inviteeId.value]);
-      expect([afterUnknown, afterForeign]).toEqual([[], []]);
+      expect(waiting.items.map((friend) => friend.userId)).toEqual([joined.inviteeId.value]);
+      expect([afterUnknown.items, afterForeign.items]).toEqual([[], []]);
     });
 
     it("마감 정비는 마감이 at 이하인 JOINED만 마감 순서로 limit만큼 거절한다", async () => {

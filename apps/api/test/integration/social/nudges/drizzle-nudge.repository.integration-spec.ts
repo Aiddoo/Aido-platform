@@ -124,13 +124,13 @@ describe("DrizzleNudgeRepository·DrizzleNudgeReader (실제 PostgreSQL)", () =>
     const received = await reader.listReceived({
       userId: RECEIVER_ID,
       afterNudgeId: null,
-      limit: 5,
+      size: 5,
     });
     const interactions = await reader.listInteractions({
       viewerId: SENDER_ID,
       direction: "sent",
       afterNudgeId: null,
-      limit: 5,
+      size: 5,
     });
     const single = await reader.findInteraction(nudge.id, RECEIVER_ID);
     const counts = {
@@ -140,7 +140,7 @@ describe("DrizzleNudgeRepository·DrizzleNudgeReader (실제 PostgreSQL)", () =>
     };
 
     // Then
-    expect({ received, interactions, single }).toEqual({
+    expect({ received: received.items, interactions: interactions.items, single }).toEqual({
       received: [],
       interactions: [],
       single: null,

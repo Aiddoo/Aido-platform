@@ -3,6 +3,11 @@ import type { RedemptionStatus } from "@aido/api/vocabulary";
 import { InvitedFriendReaderPort } from "#api/modules/social/invite-redemptions/application/ports/invited-friend.reader.port";
 import type { InvitedFriendReadModel } from "#api/modules/social/invite-redemptions/application/read-models/invited-friend.read-model";
 import type { InviteRedemption } from "#api/modules/social/invite-redemptions/domain/invite-redemption.aggregate";
+import {
+  type CursorPage,
+  emptyCursorPage,
+  toMappedCursorPage,
+} from "#api/shared/application/cursor-page";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { type InviteFixtureUser, INVITE_FIXTURE_USERS } from "#test/fixtures/social/invite.fixture";
 
@@ -43,9 +48,9 @@ export class InMemoryInvitedFriendReader extends InvitedFriendReaderPort {
     readonly inviterId: UserId;
     readonly afterInviteeId: UserId | null;
     readonly status: RedemptionStatus | null;
-    readonly limit: number;
-  }): Promise<InvitedFriendReadModel[]> {
-    const { inviterId, afterInviteeId, status, limit } = params;
+    readonly size: number;
+  }): Promise<CursorPage<InvitedFriendReadModel, string>> {
+    const { inviterId, afterInviteeId, status, size } = params;
     const owned = this.#redemptions
       .listAll()
       .filter((redemption) => redemption.inviterId?.equals(inviterId) === true)
@@ -55,13 +60,16 @@ export class InMemoryInvitedFriendReader extends InvitedFriendReaderPort {
         ? null
         : owned.find((redemption) => redemption.inviteeId.equals(afterInviteeId));
     if (afterInviteeId != null && anchor == null) {
-      return [];
+      return emptyCursorPage(size);
     }
-    return owned
-      .filter((redemption) => status == null || redemption.status === status)
-      .filter((redemption) => anchor == null || compareNewestFirst(anchor, redemption) < 0)
-      .slice(0, limit)
-      .map((redemption) => this.#toInvitedFriend(redemption));
+    return toMappedCursorPage({
+      rows: owned
+        .filter((redemption) => status == null || redemption.status === status)
+        .filter((redemption) => anchor == null || compareNewestFirst(anchor, redemption) < 0),
+      size,
+      toCursor: (redemption) => redemption.inviteeId.value,
+      toItems: (pageRows) => pageRows.map((redemption) => this.#toInvitedFriend(redemption)),
+    });
   }
 
   #toInvitedFriend(redemption: InviteRedemption): InvitedFriendReadModel {

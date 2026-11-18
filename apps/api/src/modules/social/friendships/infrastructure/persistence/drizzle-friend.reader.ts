@@ -12,6 +12,11 @@ import {
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { tupleGreaterThan, tupleLessThan } from "#api/platform/database/keyset";
 import { friendship as friendshipTable } from "#api/platform/database/schema/social.schema";
+import {
+  type CursorPage,
+  emptyCursorPage,
+  toMappedCursorPage,
+} from "#api/shared/application/cursor-page";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { FriendReaderPort } from "../../application/ports/friend.reader.port.js";
@@ -52,9 +57,9 @@ export class DrizzleFriendReader implements FriendReaderPort {
     readonly userId: UserId;
     readonly afterFriendshipId: FriendshipId | null;
     readonly tagSearch: string | null;
-    readonly limit: number;
-  }): Promise<FriendReadModel[]> {
-    const { userId, afterFriendshipId, tagSearch, limit } = params;
+    readonly size: number;
+  }): Promise<CursorPage<FriendReadModel, string>> {
+    const { userId, afterFriendshipId, tagSearch, size } = params;
     const anchor =
       afterFriendshipId == null
         ? null
@@ -63,7 +68,7 @@ export class DrizzleFriendReader implements FriendReaderPort {
             where: { id: afterFriendshipId.value },
           });
     if (afterFriendshipId != null && anchor == null) {
-      return [];
+      return emptyCursorPage(size);
     }
 
     const rows = await this.#db.query.friendship.findMany({
@@ -91,9 +96,14 @@ export class DrizzleFriendReader implements FriendReaderPort {
         ],
       },
       orderBy: { sortOrder: "asc", id: "asc" },
-      limit,
+      limit: size + 1,
     });
-    return this.#toFriends(rows);
+    return toMappedCursorPage({
+      rows,
+      size,
+      toCursor: (row) => row.id,
+      toItems: (pageRows) => this.#toFriends(pageRows),
+    });
   }
 
   async findFriendById(friendshipId: FriendshipId): Promise<FriendReadModel | null> {
@@ -108,11 +118,11 @@ export class DrizzleFriendReader implements FriendReaderPort {
   async listReceivedRequests(params: {
     readonly userId: UserId;
     readonly afterFriendshipId: FriendshipId | null;
-    readonly limit: number;
-  }): Promise<FriendRequestReadModel[]> {
+    readonly size: number;
+  }): Promise<CursorPage<FriendRequestReadModel, string>> {
     const anchor = await this.#findRequestAnchor(params.afterFriendshipId);
     if (params.afterFriendshipId != null && anchor == null) {
-      return [];
+      return emptyCursorPage(params.size);
     }
     const rows = await this.#db.query.friendship.findMany({
       where: {
@@ -121,19 +131,19 @@ export class DrizzleFriendReader implements FriendReaderPort {
         ...(anchor != null && { RAW: (table) => this.#isBeforeRequest(table, anchor) }),
       },
       orderBy: { createdAt: "desc", id: "desc" },
-      limit: params.limit,
+      limit: params.size + 1,
     });
-    return this.#toFriendRequests(rows, (row) => row.followerId);
+    return this.#toFriendRequestPage(rows, params.size, (row) => row.followerId);
   }
 
   async listSentRequests(params: {
     readonly userId: UserId;
     readonly afterFriendshipId: FriendshipId | null;
-    readonly limit: number;
-  }): Promise<FriendRequestReadModel[]> {
+    readonly size: number;
+  }): Promise<CursorPage<FriendRequestReadModel, string>> {
     const anchor = await this.#findRequestAnchor(params.afterFriendshipId);
     if (params.afterFriendshipId != null && anchor == null) {
-      return [];
+      return emptyCursorPage(params.size);
     }
     const rows = await this.#db.query.friendship.findMany({
       where: {
@@ -142,9 +152,9 @@ export class DrizzleFriendReader implements FriendReaderPort {
         ...(anchor != null && { RAW: (table) => this.#isBeforeRequest(table, anchor) }),
       },
       orderBy: { createdAt: "desc", id: "desc" },
-      limit: params.limit,
+      limit: params.size + 1,
     });
-    return this.#toFriendRequests(rows, (row) => row.followingId);
+    return this.#toFriendRequestPage(rows, params.size, (row) => row.followingId);
   }
 
   countReceivedRequests(userId: UserId): Promise<number> {
@@ -215,16 +225,24 @@ export class DrizzleFriendReader implements FriendReaderPort {
     });
   }
 
-  async #toFriendRequests(
+  #toFriendRequestPage(
     rows: readonly FriendshipRow[],
+    size: number,
     counterpartOf: (row: FriendshipRow) => string,
-  ): Promise<FriendRequestReadModel[]> {
-    const users = await this.#findUsers(rows.map(counterpartOf));
-    return rows.flatMap((row) => {
-      const user = users[counterpartOf(row)];
-      return user == null
-        ? []
-        : [{ friendshipId: row.id, user: toFriendUser(user), requestedAt: row.createdAt }];
+  ): Promise<CursorPage<FriendRequestReadModel, string>> {
+    return toMappedCursorPage({
+      rows,
+      size,
+      toCursor: (row) => row.id,
+      toItems: async (pageRows): Promise<FriendRequestReadModel[]> => {
+        const users = await this.#findUsers(pageRows.map(counterpartOf));
+        return pageRows.flatMap((row) => {
+          const user = users[counterpartOf(row)];
+          return user == null
+            ? []
+            : [{ friendshipId: row.id, user: toFriendUser(user), requestedAt: row.createdAt }];
+        });
+      },
     });
   }
 

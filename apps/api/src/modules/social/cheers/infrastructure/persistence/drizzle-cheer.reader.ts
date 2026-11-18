@@ -11,6 +11,11 @@ import { hasNoBlockWith } from "#api/modules/social/user-blocks/social-user-bloc
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { tupleLessThan } from "#api/platform/database/keyset";
 import { cheer as cheerTable } from "#api/platform/database/schema/index";
+import {
+  type CursorPage,
+  emptyCursorPage,
+  toMappedCursorPage,
+} from "#api/shared/application/cursor-page";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
@@ -49,11 +54,11 @@ export class DrizzleCheerReader implements CheerReaderPort {
     this.#userBriefReader = userBriefReader;
   }
 
-  listReceived(params: ListCheersParams): Promise<CheerReadModel[]> {
+  listReceived(params: ListCheersParams): Promise<CursorPage<CheerReadModel, number>> {
     return this.#listOwned(params, "receiverId");
   }
 
-  listSent(params: ListCheersParams): Promise<CheerReadModel[]> {
+  listSent(params: ListCheersParams): Promise<CursorPage<CheerReadModel, number>> {
     return this.#listOwned(params, "senderId");
   }
 
@@ -88,8 +93,11 @@ export class DrizzleCheerReader implements CheerReaderPort {
     );
   }
 
-  async #listOwned(params: ListCheersParams, owner: CheerOwner): Promise<CheerReadModel[]> {
-    const { userId, afterCheerId, limit } = params;
+  async #listOwned(
+    params: ListCheersParams,
+    owner: CheerOwner,
+  ): Promise<CursorPage<CheerReadModel, number>> {
+    const { userId, afterCheerId, size } = params;
     // 커서는 응원 id 하나라 그 응원의 생성 시각을 먼저 읽어 (createdAt, id) 경계를 만든다
     const anchor =
       afterCheerId == null
@@ -99,7 +107,7 @@ export class DrizzleCheerReader implements CheerReaderPort {
             where: { id: afterCheerId.value },
           });
     if (afterCheerId != null && anchor == null) {
-      return [];
+      return emptyCursorPage(size);
     }
     const rows = await this.#db.query.cheer.findMany({
       where: {
@@ -123,9 +131,14 @@ export class DrizzleCheerReader implements CheerReaderPort {
         ],
       },
       orderBy: { createdAt: "desc", id: "desc" },
-      limit,
+      limit: size + 1,
     });
-    return this.#toCheerReadModels(rows);
+    return toMappedCursorPage({
+      rows,
+      size,
+      toCursor: (row) => row.id,
+      toItems: (pageRows) => this.#toCheerReadModels(pageRows),
+    });
   }
 
   async #toCheerReadModels(rows: readonly CheerRow[]): Promise<CheerReadModel[]> {

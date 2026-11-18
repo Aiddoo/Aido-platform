@@ -339,18 +339,18 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
         nudgeReader.listReceived({
           userId: UserId.reconstitute(meId),
           afterNudgeId: null,
-          limit: 10,
+          size: 10,
         }),
         nudgeReader.countUnreadReceived(UserId.reconstitute(meId)),
         cheerReader.listSent({
           userId: UserId.reconstitute(meId),
           afterCheerId: null,
-          limit: 10,
+          size: 10,
         }),
         cheerReader.listReceived({
           userId: UserId.reconstitute(otherId),
           afterCheerId: null,
-          limit: 10,
+          size: 10,
         }),
         friendSearchReader.searchUsers({
           viewerId: UserId.reconstitute(meId),
@@ -361,10 +361,10 @@ describe("사용자 차단 (실제 PostgreSQL)", () => {
       ]);
 
     // Then
-    expect(receivedNudges).toEqual([]);
+    expect(receivedNudges.items).toEqual([]);
     expect(unreadNudges).toBe(0);
-    expect(sentCheers).toEqual([]);
-    expect(cheersSeenByBlocked).toEqual([]);
+    expect(sentCheers.items).toEqual([]);
+    expect(cheersSeenByBlocked.items).toEqual([]);
     expect(searchResults).toEqual([]);
     expect(
       await friendSearchReader.countUsers({

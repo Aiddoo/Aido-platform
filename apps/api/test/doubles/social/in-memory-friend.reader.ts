@@ -6,6 +6,11 @@ import type {
 } from "#api/modules/social/friendships/application/read-models/friend.read-model";
 import type { FriendshipId } from "#api/modules/social/friendships/domain/friendship-id.vo";
 import type { Friendship } from "#api/modules/social/friendships/domain/friendship.aggregate";
+import {
+  type CursorPage,
+  emptyCursorPage,
+  toMappedCursorPage,
+} from "#api/shared/application/cursor-page";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { InMemoryFriendProfileReader } from "./in-memory-friend-profile.reader.js";
@@ -33,16 +38,16 @@ export class InMemoryFriendReader extends FriendReaderPort {
     readonly userId: UserId;
     readonly afterFriendshipId: FriendshipId | null;
     readonly tagSearch: string | null;
-    readonly limit: number;
-  }): Promise<FriendReadModel[]> {
-    const { userId, afterFriendshipId, tagSearch, limit } = params;
+    readonly size: number;
+  }): Promise<CursorPage<FriendReadModel, string>> {
+    const { userId, afterFriendshipId, tagSearch, size } = params;
     const all = this.#friendshipRepository.listAll();
     const anchor = afterFriendshipId == null ? null : this.#findById(all, afterFriendshipId);
     if (afterFriendshipId != null && anchor == null) {
-      return [];
+      return emptyCursorPage(size);
     }
 
-    const friends: FriendReadModel[] = [];
+    const rows: Friendship[] = [];
     const candidates = all
       .filter(
         (friendship) =>
@@ -62,15 +67,20 @@ export class InMemoryFriendReader extends FriendReaderPort {
         userId,
         friendship.followingId,
       );
-      const friend = this.#toFriend(friendship);
       const isMatched =
         tagSearch == null ||
-        friend?.user.userTag.toLowerCase().includes(tagSearch.toLowerCase()) === true;
-      if (isMutual && friend != null && isMatched) {
-        friends.push(friend);
+        this.#toFriend(friendship)?.user.userTag.toLowerCase().includes(tagSearch.toLowerCase()) ===
+          true;
+      if (isMutual && isMatched) {
+        rows.push(friendship);
       }
     }
-    return friends.slice(0, limit);
+    return toMappedCursorPage({
+      rows,
+      size,
+      toCursor: (friendship) => friendship.id.value,
+      toItems: (pageRows) => pageRows.flatMap((friendship) => this.#toFriend(friendship) ?? []),
+    });
   }
 
   async findFriendById(friendshipId: FriendshipId): Promise<FriendReadModel | null> {
@@ -81,8 +91,8 @@ export class InMemoryFriendReader extends FriendReaderPort {
   async listReceivedRequests(params: {
     readonly userId: UserId;
     readonly afterFriendshipId: FriendshipId | null;
-    readonly limit: number;
-  }): Promise<FriendRequestReadModel[]> {
+    readonly size: number;
+  }): Promise<CursorPage<FriendRequestReadModel, string>> {
     return this.#listRequests(params, (friendship) => ({
       isOwned: friendship.followingId.equals(params.userId),
       counterpartId: friendship.followerId.value,
@@ -92,8 +102,8 @@ export class InMemoryFriendReader extends FriendReaderPort {
   async listSentRequests(params: {
     readonly userId: UserId;
     readonly afterFriendshipId: FriendshipId | null;
-    readonly limit: number;
-  }): Promise<FriendRequestReadModel[]> {
+    readonly size: number;
+  }): Promise<CursorPage<FriendRequestReadModel, string>> {
     return this.#listRequests(params, (friendship) => ({
       isOwned: friendship.followerId.equals(params.userId),
       counterpartId: friendship.followingId.value,
@@ -139,16 +149,16 @@ export class InMemoryFriendReader extends FriendReaderPort {
   }
 
   #listRequests(
-    params: { readonly afterFriendshipId: FriendshipId | null; readonly limit: number },
+    params: { readonly afterFriendshipId: FriendshipId | null; readonly size: number },
     toSide: (friendship: Friendship) => { isOwned: boolean; counterpartId: string },
-  ): FriendRequestReadModel[] {
+  ): Promise<CursorPage<FriendRequestReadModel, string>> {
     const all = this.#friendshipRepository.listAll();
     const anchor =
       params.afterFriendshipId == null ? null : this.#findById(all, params.afterFriendshipId);
     if (params.afterFriendshipId != null && anchor == null) {
-      return [];
+      return Promise.resolve(emptyCursorPage(params.size));
     }
-    return all
+    const rows = all
       .filter((friendship) => friendship.isPending() && toSide(friendship).isOwned)
       .toSorted(
         (left, right) =>
@@ -159,14 +169,19 @@ export class InMemoryFriendReader extends FriendReaderPort {
           anchor == null ||
           Temporal.Instant.compare(friendship.createdAt, anchor.createdAt) < 0 ||
           (friendship.createdAt.equals(anchor.createdAt) && compareIds(friendship, anchor) < 0),
-      )
-      .flatMap((friendship) => {
-        const user = this.#profileReader.findUser(toSide(friendship).counterpartId);
-        return user == null
-          ? []
-          : [{ friendshipId: friendship.id.value, user, requestedAt: friendship.createdAt }];
-      })
-      .slice(0, params.limit);
+      );
+    return toMappedCursorPage({
+      rows,
+      size: params.size,
+      toCursor: (friendship) => friendship.id.value,
+      toItems: (pageRows) =>
+        pageRows.flatMap((friendship) => {
+          const user = this.#profileReader.findUser(toSide(friendship).counterpartId);
+          return user == null
+            ? []
+            : [{ friendshipId: friendship.id.value, user, requestedAt: friendship.createdAt }];
+        }),
+    });
   }
 
   #findById(all: readonly Friendship[], friendshipId: FriendshipId): Friendship | null {

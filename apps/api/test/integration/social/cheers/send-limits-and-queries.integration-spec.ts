@@ -278,9 +278,9 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
     recording = listStatements;
     const list = await context.module
       .get(CheerReaderPort)
-      .listReceived({ userId: UserId.reconstitute(receiverId), afterCheerId: null, limit: 3 });
+      .listReceived({ userId: UserId.reconstitute(receiverId), afterCheerId: null, size: 3 });
     recording = null;
-    const first = list[0];
+    const first = list.items[0];
     if (first === undefined) {
       throw new Error("list fixture 누락");
     }
@@ -291,7 +291,7 @@ describe("Social 일일 한도·쿨다운·조회 쿼리 (실제 PostgreSQL)", (
     recording = null;
 
     // Then
-    expect(list).toHaveLength(3);
+    expect(list.items).toHaveLength(3);
     expect(listStatements).toHaveLength(2);
     expect(readStatements).toHaveLength(2);
   });

@@ -1,4 +1,4 @@
-import { clampPageSize, type CursorPage, toCursorPage } from "#api/shared/application/cursor-page";
+import { clampPageSize, type CursorPage } from "#api/shared/application/cursor-page";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { FriendshipId } from "../../domain/friendship-id.vo.js";
@@ -35,18 +35,15 @@ export class GetFriendsUseCase {
     const { friendReader, mutualFriendReader } = this.#dependencies;
     const size = clampPageSize(query.size);
     const userId = UserId.reconstitute(query.userId);
-    const [friends, totalCount] = await Promise.all([
+    const [page, totalCount] = await Promise.all([
       friendReader.listFriends({
         userId,
         afterFriendshipId: query.cursor == null ? null : FriendshipId.reconstitute(query.cursor),
         tagSearch: query.search ?? null,
-        limit: size + 1,
+        size,
       }),
       mutualFriendReader.countFriends(userId),
     ]);
-    return {
-      page: toCursorPage({ rows: friends, size, toCursor: (friend) => friend.friendshipId }),
-      totalCount,
-    };
+    return { page, totalCount };
   }
 }

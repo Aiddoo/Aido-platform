@@ -154,7 +154,7 @@ describe("DrizzleInviteRedemptionRepository (실제 PostgreSQL)", () => {
       inviterId: INVITER_ID,
       afterInviteeId: null,
       status: null,
-      limit: 2,
+      size: 2,
     });
     const smallPageStatements = statements.length;
     statements = [];
@@ -162,14 +162,14 @@ describe("DrizzleInviteRedemptionRepository (실제 PostgreSQL)", () => {
       inviterId: INVITER_ID,
       afterInviteeId: null,
       status: null,
-      limit: 5,
+      size: 5,
     });
     const fullPageStatements = statements.length;
     statements = null;
 
     // Then
     expect([smallPageStatements, fullPageStatements]).toEqual([2, 2]);
-    expect(everyone.map((friend) => friend.userId)).toEqual([...inviteeIds].reverse());
+    expect(everyone.items.map((friend) => friend.userId)).toEqual([...inviteeIds].reverse());
   });
 
   it("마감 정비가 동시에 돌아도 SKIP LOCKED로 나눠 잡아 같은 수락을 두 번 거절하지 않는다", async () => {
@@ -241,7 +241,7 @@ describe("DrizzleInviteRedemptionRepository (실제 PostgreSQL)", () => {
       inviterId: INVITER_ID,
       afterInviteeId: null,
       status: "JOINED",
-      limit: 21,
+      size: 20,
     });
     const listStatements = statements.length;
     statements = null;
@@ -253,7 +253,8 @@ describe("DrizzleInviteRedemptionRepository (실제 PostgreSQL)", () => {
       qualifiedCount: 250,
       rewardsEarned: [{ rewardType: "FRIEND_SLOT", quantity: 250 }],
     });
-    expect(waiting).toHaveLength(21);
-    expect(waiting.every((friend) => friend.status === "JOINED")).toBe(true);
+    expect(waiting.items).toHaveLength(20);
+    expect(waiting.pagination.hasNext).toBe(true);
+    expect(waiting.items.every((friend) => friend.status === "JOINED")).toBe(true);
   });
 });

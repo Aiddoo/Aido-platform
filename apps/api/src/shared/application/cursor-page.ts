@@ -35,3 +35,21 @@ export function toCursorPage<TItem, TCursor extends string | number>(params: {
     },
   };
 }
+
+export function emptyCursorPage<TItem, TCursor extends string | number>(
+  size: number,
+): CursorPage<TItem, TCursor> {
+  return { items: [], pagination: { nextCursor: null, hasNext: false, size } };
+}
+
+// 그 사이 지워진 상대처럼 매핑에서 빠지는 행이 있어도 다음 쪽 여부와 커서는 읽은 원래 행으로 정한다
+export async function toMappedCursorPage<TRow, TItem, TCursor extends string | number>(params: {
+  readonly rows: readonly TRow[];
+  readonly size: number;
+  readonly toCursor: (row: TRow) => TCursor;
+  readonly toItems: (rows: readonly TRow[]) => Promise<readonly TItem[]> | readonly TItem[];
+}): Promise<CursorPage<TItem, TCursor>> {
+  const { rows, size, toCursor, toItems } = params;
+  const page = toCursorPage({ rows, size, toCursor });
+  return { items: await toItems(page.items), pagination: page.pagination };
+}

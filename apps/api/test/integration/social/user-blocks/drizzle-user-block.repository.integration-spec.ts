@@ -170,17 +170,17 @@ describe("DrizzleUserBlockRepository (실제 PostgreSQL)", () => {
       const firstPage = await reader.listByBlockerId({
         blockerId: BLOCKER_ID,
         afterBlockId: null,
-        limit: 2,
+        size: 2,
       });
       const nextPage = await reader.listByBlockerId({
         blockerId: BLOCKER_ID,
         afterBlockId: UserBlockId.reconstitute("cblock0000000000000000002"),
-        limit: 5,
+        size: 5,
       });
       const totalCount = await reader.countByBlockerId(BLOCKER_ID);
 
       // Then
-      expect(firstPage).toEqual([
+      expect(firstPage.items).toEqual([
         {
           blockId: "cblock0000000000000000002",
           userId: USER_BLOCK_FIXTURE_OTHER_USER_ID,
@@ -198,7 +198,7 @@ describe("DrizzleUserBlockRepository (실제 PostgreSQL)", () => {
           blockedAt: USER_BLOCK_FIXTURE_NOW,
         },
       ]);
-      expect(nextPage.map((blockedUser) => blockedUser.blockId)).toEqual([
+      expect(nextPage.items.map((blockedUser) => blockedUser.blockId)).toEqual([
         "cblock0000000000000000001",
         "cblock0000000000000000003",
       ]);
@@ -219,17 +219,17 @@ describe("DrizzleUserBlockRepository (실제 PostgreSQL)", () => {
         await reader.listByBlockerId({
           blockerId: BLOCKER_ID,
           afterBlockId: UserBlockId.reconstitute("cblock0000000000000000099"),
-          limit: 5,
+          size: 5,
         }),
         await reader.listByBlockerId({
           blockerId: BLOCKER_ID,
           afterBlockId: UserBlockId.reconstitute("cblock0000000000000000009"),
-          limit: 5,
+          size: 5,
         }),
       ];
 
       // Then
-      expect(pages).toEqual([[], []]);
+      expect(pages.map((page) => page.items)).toEqual([[], []]);
     });
   });
 });

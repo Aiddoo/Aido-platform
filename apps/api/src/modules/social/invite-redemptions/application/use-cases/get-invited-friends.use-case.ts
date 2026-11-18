@@ -5,7 +5,7 @@ import {
   assertInviteEnabled,
   type InviteConfigPort,
 } from "#api/modules/social/invites/social-invites.public";
-import { clampPageSize, toCursorPage } from "#api/shared/application/cursor-page";
+import { clampPageSize } from "#api/shared/application/cursor-page";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { InviteRedemptionReaderPort } from "../ports/invite-redemption.reader.port.js";
@@ -61,18 +61,18 @@ export class GetInvitedFriendsUseCase {
     const inviterId = UserId.reconstitute(query.inviterId);
     const size = clampPageSize(query.size);
     const status = query.status ?? null;
-    const [friends, summary] = await Promise.all([
+    const [page, summary] = await Promise.all([
       invitedFriendReader.listInvitedFriends({
         inviterId,
         afterInviteeId: query.cursor == null ? null : UserId.reconstitute(query.cursor),
         status,
-        limit: size + 1,
+        size,
       }),
       inviteRedemptionReader.summarizeByInviterId(inviterId),
     ]);
 
     return {
-      ...toCursorPage({ rows: friends, size, toCursor: (friend) => friend.userId }),
+      ...page,
       totalCount: countOf(summary, status),
     };
   }

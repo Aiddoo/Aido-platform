@@ -100,34 +100,34 @@ describe("친구 목록·요청·프로필 조회 (실제 PostgreSQL)", () => {
       userId,
       afterFriendshipId: null,
       tagSearch: null,
-      limit: 10,
+      size: 10,
     });
     const afterAlpha = await friendReader.listFriends({
       userId,
       afterFriendshipId: alpha.id,
       tagSearch: null,
-      limit: 1,
+      size: 1,
     });
     const afterMissing = await friendReader.listFriends({
       userId,
       afterFriendshipId: FriendshipId.reconstitute("cmissing00000000000000000"),
       tagSearch: null,
-      limit: 10,
+      size: 10,
     });
 
     // Then
-    expect(all.map((friend) => friend.friendshipId)).toEqual([
+    expect(all.items.map((friend) => friend.friendshipId)).toEqual([
       alpha.id.value,
       tiedFirst.id.value,
       tiedSecond.id.value,
     ]);
-    expect(all[0]).toEqual({
+    expect(all.items[0]).toEqual({
       friendshipId: alpha.id.value,
       user: { id: ALPHA, userTag: "ALPHA001", name: "알파", profileImage: "alpha.png" },
       friendsSince: alpha.updatedAt,
     });
-    expect(afterAlpha.map((friend) => friend.friendshipId)).toEqual([tiedFirst.id.value]);
-    expect(afterMissing).toEqual([]);
+    expect(afterAlpha.items.map((friend) => friend.friendshipId)).toEqual([tiedFirst.id.value]);
+    expect(afterMissing.items).toEqual([]);
   });
 
   it("태그 검색은 대소문자를 무시하고 %·_를 글자 그대로 찾는다", async () => {
@@ -139,14 +139,14 @@ describe("친구 목록·요청·프로필 조회 (실제 PostgreSQL)", () => {
     // When
     const [byWord, byUnderscore, byPercent] = await Promise.all(
       ["alpha", "_", "%"].map((tagSearch) =>
-        friendReader.listFriends({ userId, afterFriendshipId: null, tagSearch, limit: 10 }),
+        friendReader.listFriends({ userId, afterFriendshipId: null, tagSearch, size: 10 }),
       ),
     );
 
     // Then
-    expect(byWord?.map((friend) => friend.user.id)).toEqual([ALPHA]);
-    expect(byUnderscore?.map((friend) => friend.user.id)).toEqual([UNDERSCORE]);
-    expect(byPercent).toEqual([]);
+    expect(byWord?.items.map((friend) => friend.user.id)).toEqual([ALPHA]);
+    expect(byUnderscore?.items.map((friend) => friend.user.id)).toEqual([UNDERSCORE]);
+    expect(byPercent?.items).toEqual([]);
   });
 
   it("관계 하나는 상태와 상관없이 상대 요약으로 읽고 프로필이 없으면 이름·사진은 null이다", async () => {
@@ -185,17 +185,17 @@ describe("친구 목록·요청·프로필 조회 (실제 PostgreSQL)", () => {
     const firstPage = await friendReader.listReceivedRequests({
       userId,
       afterFriendshipId: null,
-      limit: 2,
+      size: 2,
     });
     const nextPage = await friendReader.listReceivedRequests({
       userId,
       afterFriendshipId: middle.id,
-      limit: 2,
+      size: 2,
     });
     const sentRequests = await friendReader.listSentRequests({
       userId,
       afterFriendshipId: null,
-      limit: 10,
+      size: 10,
     });
     const counts = await Promise.all([
       friendReader.countReceivedRequests(userId),
@@ -203,18 +203,18 @@ describe("친구 목록·요청·프로필 조회 (실제 PostgreSQL)", () => {
     ]);
 
     // Then
-    expect(firstPage.map((request) => request.friendshipId)).toEqual([
+    expect(firstPage.items.map((request) => request.friendshipId)).toEqual([
       newest.id.value,
       middle.id.value,
     ]);
-    expect(firstPage[0]).toEqual({
+    expect(firstPage.items[0]).toEqual({
       friendshipId: newest.id.value,
       user: { id: BRAVO, userTag: "BRAVO002", name: null, profileImage: null },
       requestedAt: newest.createdAt,
     });
-    expect(nextPage.map((request) => request.friendshipId)).toEqual([oldest.id.value]);
-    expect(sentRequests.map((request) => request.user.id)).toEqual([ONE_WAY]);
-    expect(sentRequests[0]?.friendshipId).toBe(sent.id.value);
+    expect(nextPage.items.map((request) => request.friendshipId)).toEqual([oldest.id.value]);
+    expect(sentRequests.items.map((request) => request.user.id)).toEqual([ONE_WAY]);
+    expect(sentRequests.items[0]?.friendshipId).toBe(sent.id.value);
     expect(counts).toEqual([3, 1]);
   });
 

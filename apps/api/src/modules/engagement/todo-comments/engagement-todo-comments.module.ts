@@ -6,6 +6,7 @@ import { NotificationNotificationsModule } from "#api/modules/notification/notif
 import { NotificationPushDispatchesModule } from "#api/modules/notification/push-dispatches/notification-push-dispatches.public";
 import { PlanningTodosQueriesModule } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { PlanningTodosModule } from "#api/modules/planning/todos/planning-todos.public";
+import { SocialFriendshipsModule } from "#api/modules/social/friendships/social-friendships.public";
 import { SocialUserBlocksQueriesModule } from "#api/modules/social/user-blocks/social-user-blocks.public";
 
 import { TodoCommentAccountCleanupPort } from "./application/ports/todo-comment-account-cleanup.port.js";
@@ -21,6 +22,7 @@ import { TodoCommentThreadController } from "./presentation/http/v2/todo-comment
     NotificationPushDispatchesModule,
     PlanningTodosModule,
     PlanningTodosQueriesModule,
+    SocialFriendshipsModule,
     SocialUserBlocksQueriesModule,
     ConfigModule.forFeature(engagementTodoCommentsConfig),
   ],

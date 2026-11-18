@@ -28,6 +28,11 @@ import { hasNoBlockWith } from "#api/modules/social/user-blocks/social-user-bloc
 import type { Database, DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { tupleLessThan } from "#api/platform/database/keyset";
 import { nudge as nudgeTable } from "#api/platform/database/schema/index";
+import {
+  type CursorPage,
+  emptyCursorPage,
+  toMappedCursorPage,
+} from "#api/shared/application/cursor-page";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
@@ -39,24 +44,16 @@ import type {
   NudgeInteractionTodoReadModel,
   NudgeThanksRecipientReadModel,
 } from "../../application/read-models/nudge-interaction.read-model.js";
-import type {
-  NudgeReadModel,
-  NudgeUserReadModel,
-} from "../../application/read-models/nudge.read-model.js";
+import type { NudgeReadModel } from "../../application/read-models/nudge.read-model.js";
 import { NudgeId } from "../../domain/nudge-id.vo.js";
-import { toNudgeInteractionTodoReadModel } from "./nudge-row.mapper.js";
+import {
+  toNudgeInteractionTodoReadModel,
+  toNudgeReadModel,
+  toNudgeUserReadModel,
+} from "./nudge-row.mapper.js";
 
 type NudgeRow = typeof nudgeTable.$inferSelect;
 type NudgeQueryExecutor = Pick<Database, "select">;
-
-function toNudgeUserReadModel(brief: UserBriefReadModel): NudgeUserReadModel {
-  return {
-    id: brief.userId.value,
-    userTag: brief.userTag,
-    name: brief.name,
-    profileImage: brief.profileImage,
-  };
-}
 
 function thankedOnTodo(todoId: TodoId, receiverId: UserId): SQL | undefined {
   return and(
@@ -133,11 +130,11 @@ export class DrizzleNudgeReader implements NudgeReaderPort {
     this.#todoBriefReader = todoBriefReader;
   }
 
-  listReceived(params: ListNudgesParams): Promise<NudgeReadModel[]> {
+  listReceived(params: ListNudgesParams): Promise<CursorPage<NudgeReadModel, number>> {
     return this.#listOwned(params, "received");
   }
 
-  listSent(params: ListNudgesParams): Promise<NudgeReadModel[]> {
+  listSent(params: ListNudgesParams): Promise<CursorPage<NudgeReadModel, number>> {
     return this.#listOwned(params, "sent");
   }
 
@@ -199,9 +196,9 @@ export class DrizzleNudgeReader implements NudgeReaderPort {
     readonly viewerId: UserId;
     readonly direction: NudgeDirection;
     readonly afterNudgeId: NudgeId | null;
-    readonly limit: number;
-  }): Promise<NudgeReadModel[]> {
-    const { viewerId, direction, afterNudgeId, limit } = params;
+    readonly size: number;
+  }): Promise<CursorPage<NudgeReadModel, number>> {
+    const { viewerId, direction, afterNudgeId, size } = params;
     const rows = await this.#db.query.nudge.findMany({
       where: {
         ...(direction === "received"
@@ -215,9 +212,14 @@ export class DrizzleNudgeReader implements NudgeReaderPort {
         ...(afterNudgeId != null && { id: { lt: afterNudgeId.value } }),
       },
       orderBy: { id: "desc" },
-      limit,
+      limit: size + 1,
     });
-    return this.#toNudgeReadModels(rows);
+    return toMappedCursorPage({
+      rows,
+      size,
+      toCursor: (row) => row.id,
+      toItems: (pageRows) => this.#toNudgeReadModels(pageRows),
+    });
   }
 
   async findInteractionTodo(
@@ -256,32 +258,26 @@ export class DrizzleNudgeReader implements NudgeReaderPort {
     return row?.lastThankedAt ?? null;
   }
 
+  async listAllThanksRecipients(
+    query: NudgeThanksCandidateQuery,
+  ): Promise<NudgeThanksRecipientReadModel[]> {
+    return this.#toThanksRecipients(await this.#thanksCandidateIds(query));
+  }
+
   async listThanksRecipients(
     query: NudgeThanksCandidateQuery & {
       readonly afterNudgeId: NudgeId | null;
-      readonly limit: number | null;
+      readonly size: number;
     },
-  ): Promise<NudgeThanksRecipientReadModel[]> {
-    const ids = await listThanksCandidateIds({
-      db: this.#db,
-      todoBriefReader: this.#todoBriefReader,
-      query,
-    });
-    const { afterNudgeId, limit } = query;
+  ): Promise<CursorPage<NudgeThanksRecipientReadModel, number>> {
+    const ids = await this.#thanksCandidateIds(query);
+    const { afterNudgeId, size } = query;
     const remainingIds = afterNudgeId == null ? ids : ids.filter((id) => id < afterNudgeId.value);
-    const pageIds = limit == null ? remainingIds : remainingIds.slice(0, limit);
-    if (pageIds.length === 0) {
-      return [];
-    }
-    const rows = await this.#db.query.nudge.findMany({
-      columns: { id: true, senderId: true },
-      where: { id: { in: pageIds } },
-      orderBy: { id: "desc" },
-    });
-    const senders = await this.#findUsers(rows.map((row) => row.senderId));
-    return rows.flatMap((row) => {
-      const sender = senders[row.senderId];
-      return sender == null ? [] : [{ nudgeId: row.id, sender: toNudgeUserReadModel(sender) }];
+    return toMappedCursorPage({
+      rows: remainingIds.slice(0, size + 1),
+      size,
+      toCursor: (nudgeId) => nudgeId,
+      toItems: (pageIds) => this.#toThanksRecipients(pageIds),
     });
   }
 
@@ -297,8 +293,11 @@ export class DrizzleNudgeReader implements NudgeReaderPort {
     return row?.count ?? 0;
   }
 
-  async #listOwned(params: ListNudgesParams, direction: NudgeDirection): Promise<NudgeReadModel[]> {
-    const { userId, afterNudgeId, limit } = params;
+  async #listOwned(
+    params: ListNudgesParams,
+    direction: NudgeDirection,
+  ): Promise<CursorPage<NudgeReadModel, number>> {
+    const { userId, afterNudgeId, size } = params;
     // 커서는 콕 id 하나라 그 콕의 생성 시각을 먼저 읽어 (createdAt, id) 경계를 만든다
     const anchor =
       afterNudgeId == null
@@ -308,7 +307,7 @@ export class DrizzleNudgeReader implements NudgeReaderPort {
             where: { id: afterNudgeId.value },
           });
     if (afterNudgeId != null && anchor == null) {
-      return [];
+      return emptyCursorPage(size);
     }
 
     const rows = await this.#db.query.nudge.findMany({
@@ -333,9 +332,34 @@ export class DrizzleNudgeReader implements NudgeReaderPort {
         ],
       },
       orderBy: { createdAt: "desc", id: "desc" },
-      limit,
+      limit: size + 1,
     });
-    return this.#toNudgeReadModels(rows);
+    return toMappedCursorPage({
+      rows,
+      size,
+      toCursor: (row) => row.id,
+      toItems: (pageRows) => this.#toNudgeReadModels(pageRows),
+    });
+  }
+
+  #thanksCandidateIds(query: NudgeThanksCandidateQuery): Promise<number[]> {
+    return listThanksCandidateIds({ db: this.#db, todoBriefReader: this.#todoBriefReader, query });
+  }
+
+  async #toThanksRecipients(nudgeIds: readonly number[]): Promise<NudgeThanksRecipientReadModel[]> {
+    if (nudgeIds.length === 0) {
+      return [];
+    }
+    const rows = await this.#db.query.nudge.findMany({
+      columns: { id: true, senderId: true },
+      where: { id: { in: [...nudgeIds] } },
+      orderBy: { id: "desc" },
+    });
+    const senders = await this.#findUsers(rows.map((row) => row.senderId));
+    return rows.flatMap((row) => {
+      const sender = senders[row.senderId];
+      return sender == null ? [] : [{ nudgeId: row.id, sender: toNudgeUserReadModel(sender) }];
+    });
   }
 
   async #toNudgeReadModels(rows: readonly NudgeRow[]): Promise<NudgeReadModel[]> {
@@ -351,24 +375,7 @@ export class DrizzleNudgeReader implements NudgeReaderPort {
       if (sender == null || receiver == null || todo == null) {
         return [];
       }
-      return [
-        {
-          id: row.id,
-          senderId: row.senderId,
-          receiverId: row.receiverId,
-          todoId: row.todoId,
-          message: row.message,
-          readAt: row.readAt,
-          createdAt: row.createdAt,
-          replyKind: row.replyKind,
-          repliedAt: row.repliedAt,
-          replyUpdatedAt: row.replyUpdatedAt,
-          thankedAt: row.thankedAt,
-          sender: toNudgeUserReadModel(sender),
-          receiver: toNudgeUserReadModel(receiver),
-          todo: toNudgeInteractionTodoReadModel(todo),
-        },
-      ];
+      return [toNudgeReadModel(row, { sender, receiver, todo })];
     });
   }
 

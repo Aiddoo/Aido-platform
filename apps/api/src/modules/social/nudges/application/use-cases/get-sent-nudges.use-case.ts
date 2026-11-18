@@ -1,4 +1,4 @@
-import { clampPageSize, toCursorPage } from "#api/shared/application/cursor-page";
+import { clampPageSize } from "#api/shared/application/cursor-page";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -31,15 +31,14 @@ export class GetSentNudgesUseCase {
     const { nudgeReader, countCache, logger } = this.#dependencies;
     const userId = UserId.reconstitute(query.userId);
     const size = clampPageSize(query.size);
-    const [rows, totalCount] = await Promise.all([
+    const [page, totalCount] = await Promise.all([
       nudgeReader.listSent({
         userId,
         afterNudgeId: query.cursor == null ? null : NudgeId.reconstitute(query.cursor),
-        limit: size + 1,
+        size,
       }),
       countCache.wrapSentCount(userId, () => nudgeReader.countSent(userId)),
     ]);
-    const page = toCursorPage({ rows, size, toCursor: (nudge) => nudge.id });
     logger.debug({
       event: NudgeLogEvent.SENT_LISTED,
       userId: query.userId,

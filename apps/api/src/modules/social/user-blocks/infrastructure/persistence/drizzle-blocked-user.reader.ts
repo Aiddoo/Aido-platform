@@ -10,6 +10,11 @@ import {
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { tupleLessThan } from "#api/platform/database/keyset";
 import { userBlock } from "#api/platform/database/schema/index";
+import {
+  type CursorPage,
+  emptyCursorPage,
+  toMappedCursorPage,
+} from "#api/shared/application/cursor-page";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { BlockedUserReaderPort } from "../../application/ports/blocked-user.reader.port.js";
@@ -32,9 +37,9 @@ export class DrizzleBlockedUserReader implements BlockedUserReaderPort {
   async listByBlockerId(params: {
     readonly blockerId: UserId;
     readonly afterBlockId: UserBlockId | null;
-    readonly limit: number;
-  }): Promise<BlockedUserReadModel[]> {
-    const { blockerId, afterBlockId, limit } = params;
+    readonly size: number;
+  }): Promise<CursorPage<BlockedUserReadModel, string>> {
+    const { blockerId, afterBlockId, size } = params;
     const anchor =
       afterBlockId == null
         ? null
@@ -43,7 +48,7 @@ export class DrizzleBlockedUserReader implements BlockedUserReaderPort {
             where: { id: afterBlockId.value, blockerId: blockerId.value },
           });
     if (afterBlockId != null && anchor == null) {
-      return [];
+      return emptyCursorPage(size);
     }
 
     const rows = await this.#db.query.userBlock.findMany({
@@ -62,8 +67,26 @@ export class DrizzleBlockedUserReader implements BlockedUserReaderPort {
         ],
       },
       orderBy: { createdAt: "desc", id: "desc" },
-      limit,
+      limit: size + 1,
     });
+    return toMappedCursorPage({
+      rows,
+      size,
+      toCursor: (row) => row.id,
+      toItems: (pageRows) => this.#toBlockedUsers(pageRows),
+    });
+  }
+
+  countByBlockerId(blockerId: UserId): Promise<number> {
+    return this.#db.$count(
+      userBlock,
+      and(eq(userBlock.blockerId, blockerId.value), undeletedUserCondition(userBlock.blockedId)),
+    );
+  }
+
+  async #toBlockedUsers(
+    rows: readonly (typeof userBlock.$inferSelect)[],
+  ): Promise<BlockedUserReadModel[]> {
     const briefs = keyBy(
       await this.#userBriefReader.findByUserIds(
         rows.map((row) => UserId.reconstitute(row.blockedId)),
@@ -86,13 +109,6 @@ export class DrizzleBlockedUserReader implements BlockedUserReaderPort {
         },
       ];
     });
-  }
-
-  countByBlockerId(blockerId: UserId): Promise<number> {
-    return this.#db.$count(
-      userBlock,
-      and(eq(userBlock.blockerId, blockerId.value), undeletedUserCondition(userBlock.blockedId)),
-    );
   }
 
   get #db() {
