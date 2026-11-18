@@ -26,10 +26,6 @@ export class Drizzle{{pascalCase aggregate}}Repository implements {{pascalCase a
     this.#transactionHost = transactionHost;
   }
 
-  get #db() {
-    return this.#transactionHost.tx;
-  }
-
 {{#if isSerial}}
   async nextId(): Promise<{{pascalCase aggregate}}Id> {
     return {{pascalCase aggregate}}Id.reconstitute(await nextSequenceValue(this.#db, {{camelCase aggregate}}Table.id));
@@ -94,5 +90,9 @@ export class Drizzle{{pascalCase aggregate}}Repository implements {{pascalCase a
         target: {{camelCase aggregate}}Table.id,
         set: { name: row.name, updatedAt: row.updatedAt },
       });
+  }
+
+  get #db() {
+    return this.#transactionHost.tx;
   }
 }
