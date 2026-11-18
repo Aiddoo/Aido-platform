@@ -47,8 +47,12 @@ describe("DrizzleLoginAttemptRepository (실제 PostgreSQL)", () => {
 
     // Then
     await expect(outcome).rejects.toBe(failure);
-    expect(await repository.countRecentFailuresByEmail("rollback@example.com", attemptedAt)).toBe(
-      1,
-    );
+    expect(
+      await repository.countRecentFailures({
+        email: "rollback@example.com",
+        ipAddress: "127.0.0.1",
+        since: attemptedAt,
+      }),
+    ).toEqual({ byEmail: 1, bySource: 1 });
   });
 });

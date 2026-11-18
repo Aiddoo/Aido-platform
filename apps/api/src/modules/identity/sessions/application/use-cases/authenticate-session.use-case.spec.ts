@@ -22,8 +22,10 @@ import {
   AuthenticateSessionUseCase,
 } from "./authenticate-session.use-case.js";
 
+// 같은 세션의 동시 미스는 먼저 온 요청의 factory 하나에 합류한다(GenerationGuardedCache singleflight)
 class MemorySessionCache implements Pick<SessionCachePort, "wrapSession"> {
   readonly entries = new Map<string, CachedSession>();
+  readonly #inflight = new Map<string, Promise<CachedSession>>();
   failRead = false;
   failWrite = false;
 
@@ -38,7 +40,9 @@ class MemorySessionCache implements Pick<SessionCachePort, "wrapSession"> {
     if (cached != null) {
       return cached;
     }
-    const loaded = await factory();
+    const inflight = this.#inflight.get(sessionId.value) ?? factory();
+    this.#inflight.set(sessionId.value, inflight);
+    const loaded = await inflight.finally(() => this.#inflight.delete(sessionId.value));
     if (this.failWrite) {
       throw new Error("redis down");
     }
@@ -257,6 +261,32 @@ describe("AuthenticateSessionUseCase — access 토큰의 세션 확인", () => 
 
     // Then
     await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.SESSION_0703 });
+  });
+
+  it("다른 요청의 DB 읽기에 합류해 받은 거절은 캐시 장애로 남기지 않고 DB를 다시 읽지 않는다", async () => {
+    // Given
+    const logger = new SilentLogger();
+    const { useCase, sessionReads } = createUseCase({
+      logger,
+      session: createSessionFixture({ revokedAt: AUTH_FIXTURE_NOW }),
+    });
+
+    // When
+    const results = await Promise.allSettled([useCase.execute(CLAIMS), useCase.execute(CLAIMS)]);
+
+    // Then
+    expect(results).toEqual([
+      {
+        status: "rejected",
+        reason: expect.objectContaining({ errorCode: ErrorCode.SESSION_0703 }),
+      },
+      {
+        status: "rejected",
+        reason: expect.objectContaining({ errorCode: ErrorCode.SESSION_0703 }),
+      },
+    ]);
+    expect(sessionReads).toEqual([AUTH_FIXTURE_SESSION_ID]);
+    expect(logger.messages).toEqual([]);
   });
 
   it("DB 읽기 오류는 캐시 장애로 삼키지 않고 그대로 던진다", async () => {

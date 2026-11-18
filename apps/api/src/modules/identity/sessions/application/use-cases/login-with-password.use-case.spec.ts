@@ -4,7 +4,7 @@ import type { LinkedAccounts } from "#api/modules/identity/linked-accounts/domai
 import { SECURITY_EVENT } from "#api/modules/identity/users/domain/users.constants";
 import type { ApplicationLogMessage } from "#api/shared/application/ports/application-logger.port";
 import { InMemoryLinkedAccountsRepository } from "#test/doubles/identity/in-memory-linked-accounts.repository";
-import { StubPasswordHasher } from "#test/doubles/identity/stub-auth-credentials";
+import { STUB_DUMMY_HASH, StubPasswordHasher } from "#test/doubles/identity/stub-auth-credentials";
 import type { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
@@ -170,6 +170,78 @@ describe("LoginWithPassword — 이메일 로그인과 계정 보호", () => {
     },
   );
 
+  it.each(["missing", "social"] as const)(
+    "%s 계정도 고정 hash로 비밀번호를 한 번 확인해 응답 시간이 같다",
+    async (reason) => {
+      // Given
+      const fixture = given({ empty: reason === "missing", socialOnly: reason === "social" });
+
+      // When
+      const pending = fixture.useCase.execute({
+        email: fixture.user.email,
+        password: AUTH_CREDENTIAL_PASSWORD,
+      });
+
+      // Then
+      await expect(pending).rejects.toMatchObject({ errorCode: ErrorCode.USER_0602 });
+      expect(fixture.passwordService.checked).toEqual([
+        { hash: STUB_DUMMY_HASH, password: AUTH_CREDENTIAL_PASSWORD },
+      ]);
+    },
+  );
+
+  it("한 곳의 실패로 잠겨도 다른 곳의 본인은 로그인하고 IPv6는 /64 대역 하나를 한 곳으로 센다", async () => {
+    // Given
+    const fixture = given();
+    const login = (password: string, ip: string) =>
+      fixture.useCase
+        .execute({ email: fixture.user.email, password, metadata: { ip, userAgent: "Aido" } })
+        .catch((error: unknown) => error);
+    for (let attempt = 1; attempt <= 4; attempt += 1) {
+      await login("wrong", `2001:db8:1:2::${attempt}`);
+    }
+
+    // When
+    const fifthFromBlock = await login("wrong", "2001:db8:1:2:ffff::5");
+    const correctFromBlock = await login(AUTH_CREDENTIAL_PASSWORD, "2001:db8:1:2::9");
+    const fromOwner = await login(AUTH_CREDENTIAL_PASSWORD, "192.0.2.10");
+
+    // Then
+    expect(fifthFromBlock).toMatchObject({ errorCode: ErrorCode.USER_0607 });
+    expect(correctFromBlock).toMatchObject({ errorCode: ErrorCode.USER_0607 });
+    expect(fromOwner).toMatchObject({ userId: fixture.user.id, accountRestored: false });
+  });
+
+  it("여러 곳에 나눈 실패도 이메일마다 20번이면 새 곳의 로그인까지 잠근다", async () => {
+    // Given
+    const fixture = given();
+    const login = (password: string, ip: string) =>
+      fixture.useCase
+        .execute({ email: fixture.user.email, password, metadata: { ip, userAgent: "Aido" } })
+        .catch((error: unknown) => error);
+    const failures: unknown[] = [];
+    for (const ip of ["198.51.100.1", "198.51.100.2", "198.51.100.3", "198.51.100.4"]) {
+      for (let attempt = 1; attempt <= 4; attempt += 1) {
+        failures.push(await login("wrong", ip));
+      }
+    }
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      failures.push(await login("wrong", "198.51.100.5"));
+    }
+
+    // When
+    const twentiethFailure = await login("wrong", "198.51.100.6");
+    const fromOwner = await login(AUTH_CREDENTIAL_PASSWORD, "192.0.2.10");
+
+    // Then
+    expect(failures).toHaveLength(19);
+    for (const failure of failures) {
+      expect(failure).toMatchObject({ errorCode: ErrorCode.USER_0602 });
+    }
+    expect(twentiethFailure).toMatchObject({ errorCode: ErrorCode.USER_0607 });
+    expect(fromOwner).toMatchObject({ errorCode: ErrorCode.USER_0607 });
+  });
+
   it("다섯 번째 비밀번호 실패부터 잠그고 30분이 지난 실패는 잠금 계산에서 제외한다", async () => {
     // Given
     const fixture = given();
@@ -202,7 +274,7 @@ describe("LoginWithPassword — 이메일 로그인과 계정 보호", () => {
     expect(fixture.securityLogRepository.entries).toEqual([
       expect.objectContaining({
         event: SECURITY_EVENT.ACCOUNT_LOCKED,
-        metadata: { email: fixture.user.email, recentFailures: 5 },
+        metadata: { email: fixture.user.email, recentFailures: 5, recentSourceFailures: 5 },
       }),
       expect.objectContaining({ event: SECURITY_EVENT.LOGIN_SUCCESS }),
     ]);

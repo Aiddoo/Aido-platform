@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { Injectable } from "@nestjs/common";
 import * as argon2 from "argon2";
 
@@ -18,6 +20,8 @@ export class Argon2PasswordHasherAdapter {
     parallelism: ARGON2_CONFIG.PARALLELISM,
     hashLength: ARGON2_CONFIG.HASH_LENGTH,
   };
+  // 상수 문자열 대신 지금 설정으로 처음 쓸 때 만들어 ARGON2_CONFIG를 바꿔도 실제 확인과 비용이 같다
+  #dummyHash: Promise<string> | null = null;
 
   async hash(password: string): Promise<string> {
     return argon2.hash(password, this.#hashOptions);
@@ -30,6 +34,11 @@ export class Argon2PasswordHasherAdapter {
       // 잘못된 해시 형식 등의 오류 시 false 반환
       return false;
     }
+  }
+
+  async verifyAgainstDummyHash(password: string): Promise<void> {
+    this.#dummyHash ??= this.hash(randomUUID());
+    await this.verify(await this.#dummyHash, password);
   }
 
   // 보안 파라미터가 변경되었을 때 기존 해시를 새 설정으로 재해싱해야 하는지 확인

@@ -83,36 +83,60 @@ describe("ResetPassword — 코드 소비와 모든 기기의 세션 폐기", ()
     ]);
   });
 
+  async function givenAccountState(state: "존재하지 않는" | "탈퇴한" | "소셜 전용") {
+    const fixture = await given({
+      empty: state === "존재하지 않는",
+      socialOnly: state === "소셜 전용",
+    });
+    if (state === "탈퇴한") {
+      const user = createUserFixture(fixture.user);
+      user.requestDeletion(AUTH_CREDENTIAL_NOW);
+      await fixture.userRepository.save(user);
+    }
+    return fixture;
+  }
+
   it.each(["존재하지 않는", "탈퇴한", "소셜 전용"] as const)(
-    "%s 사용자는 비밀번호와 세션을 변경하지 못한다",
+    "%s 사용자도 맞는 코드가 없으면 같은 VERIFY_0751이고 틀린 시도를 센다",
     async (state) => {
       // Given
-      const fixture = await given({
-        empty: state === "존재하지 않는",
-        socialOnly: state === "소셜 전용",
+      const fixture = await givenAccountState(state);
+
+      // When
+      const pending = fixture.useCase.execute({
+        email: fixture.user.email,
+        code: "000000",
+        newPassword,
       });
-      if (state === "탈퇴한") {
-        const user = createUserFixture(fixture.user);
-        user.requestDeletion(AUTH_CREDENTIAL_NOW);
-        await fixture.userRepository.save(user);
-      }
-      const errorCode =
-        state === "존재하지 않는"
-          ? ErrorCode.VERIFY_0751
-          : state === "탈퇴한"
-            ? ErrorCode.USER_0606
-            : ErrorCode.USER_0613;
+
+      // Then
+      await expect(pending).rejects.toMatchObject({ errorCode: ErrorCode.VERIFY_0751 });
+      expect(fixture.passwordService.hashes).toEqual([newPassword]);
+      expect(fixture.securityLogRepository.entries).toEqual([]);
+      expect(fixture.verificationRepository.all).toEqual([
+        expect.objectContaining({ attempts: state === "존재하지 않는" ? 0 : 1, usedAt: null }),
+      ]);
+    },
+  );
+
+  it.each([
+    ["탈퇴한", ErrorCode.USER_0606],
+    ["소셜 전용", ErrorCode.USER_0613],
+  ] as const)(
+    "%s 사용자는 맞는 코드를 낸 뒤에만 그 상태 오류를 받고 비밀번호와 세션을 바꾸지 못한다",
+    async (state, errorCode) => {
+      // Given
+      const fixture = await givenAccountState(state);
+      const session = createSessionFixture({ userId: fixture.user.id });
+      fixture.sessionRepository.seed(session);
 
       // When
       const pending = fixture.useCase.execute({ email: fixture.user.email, code, newPassword });
 
       // Then
       await expect(pending).rejects.toMatchObject({ errorCode });
-      expect(fixture.passwordService.hashes).toEqual([]);
+      expect(fixture.sessionRepository.stored(session.id.value)?.revokedAt).toBeNull();
       expect(fixture.securityLogRepository.entries).toEqual([]);
-      expect(fixture.verificationRepository.all).toEqual([
-        expect.objectContaining({ attempts: 0, usedAt: null }),
-      ]);
     },
   );
 

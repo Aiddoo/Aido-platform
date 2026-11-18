@@ -24,7 +24,10 @@ import { invalidCredentials } from "../../../users/application/users.errors.js";
 import { UserLogEvent } from "../../../users/application/users.log-events.js";
 import type { User } from "../../../users/domain/user.aggregate.js";
 import { accountLocked } from "../../../users/domain/users.errors.js";
-import type { LoginAttemptRepositoryPort } from "../ports/login-attempt.repository.port.js";
+import type {
+  LoginAttemptRepositoryPort,
+  RecentLoginFailures,
+} from "../ports/login-attempt.repository.port.js";
 import { emailNotVerified } from "../sessions.errors.js";
 import { SessionLogEvent } from "../sessions.log-events.js";
 import type { IssueLoginUseCase } from "./issue-login.use-case.js";
@@ -42,9 +45,12 @@ interface LoginWithPasswordDependencies {
   readonly userMutationLock: Pick<UserMutationLockPort, "lockById">;
   readonly loginAttemptRepository: Pick<
     LoginAttemptRepositoryPort,
-    "countRecentFailuresByEmail" | "create"
+    "countRecentFailures" | "create"
   >;
-  readonly passwordService: Pick<PasswordHasherPort, "verify" | "needsRehash" | "hash">;
+  readonly passwordService: Pick<
+    PasswordHasherPort,
+    "verify" | "verifyAgainstDummyHash" | "needsRehash" | "hash"
+  >;
   readonly securityLogRepository: Pick<SecurityLogRepositoryPort, "create">;
   readonly issueLoginUseCase: Pick<IssueLoginUseCase, "execute">;
   readonly restoreAccount: Pick<RestoreAccountUseCase, "execute">;
@@ -62,6 +68,13 @@ interface LoginAttemptContext {
   readonly userAgent: string;
 }
 
+function reachesLockout(failures: RecentLoginFailures): boolean {
+  return (
+    failures.bySource >= LOGIN_ATTEMPT.MAX_FAILURES_PER_SOURCE ||
+    failures.byEmail >= LOGIN_ATTEMPT.MAX_FAILURES_PER_EMAIL
+  );
+}
+
 export class LoginWithPasswordUseCase {
   readonly #dependencies: LoginWithPasswordDependencies;
 
@@ -77,8 +90,10 @@ export class LoginWithPasswordUseCase {
     };
     const recentFailures = await this.#assertNotLockedOut(attempt);
 
+    // 계정·비밀번호가 없어도 같은 비용으로 비밀번호를 확인해 응답 시간으로 가입 여부가 드러나지 않게 한다
     const user = await this.#dependencies.userRepository.findByEmail(attempt.email);
     if (user == null) {
+      await this.#dependencies.passwordService.verifyAgainstDummyHash(input.password);
       await this.#recordFailure(attempt, LOGIN_FAILURE_REASON.USER_NOT_FOUND);
       throw invalidCredentials();
     }
@@ -86,6 +101,7 @@ export class LoginWithPasswordUseCase {
     const accounts = await this.#dependencies.accountRepository.findByUserId(user.id);
     const passwordHash = accounts?.passwordHash;
     if (accounts == null || passwordHash == null || !accounts.hasPassword()) {
+      await this.#dependencies.passwordService.verifyAgainstDummyHash(input.password);
       await this.#recordFailure(attempt, LOGIN_FAILURE_REASON.NO_CREDENTIAL_ACCOUNT);
       throw invalidCredentials();
     }
@@ -96,8 +112,12 @@ export class LoginWithPasswordUseCase {
     );
     if (!isPasswordValid) {
       await this.#recordFailure(attempt, LOGIN_FAILURE_REASON.INVALID_PASSWORD);
-      const remainingAttempts = LOGIN_ATTEMPT.MAX_FAILURES - recentFailures - 1;
-      if (remainingAttempts <= 0) {
+      if (
+        reachesLockout({
+          byEmail: recentFailures.byEmail + 1,
+          bySource: recentFailures.bySource + 1,
+        })
+      ) {
         throw accountLocked(attempt.email);
       }
       throw invalidCredentials();
@@ -109,19 +129,23 @@ export class LoginWithPasswordUseCase {
     return this.#issueLogin(user, attempt, input.deviceName);
   }
 
-  async #assertNotLockedOut(attempt: LoginAttemptContext): Promise<number> {
+  async #assertNotLockedOut(attempt: LoginAttemptContext): Promise<RecentLoginFailures> {
     const { loginAttemptRepository, securityLogRepository, clock } = this.#dependencies;
-    const lockoutSince = clock.now().subtract({ minutes: LOGIN_ATTEMPT.LOCKOUT_MINUTES });
-    const recentFailures = await loginAttemptRepository.countRecentFailuresByEmail(
-      attempt.email,
-      lockoutSince,
-    );
-    if (recentFailures >= LOGIN_ATTEMPT.MAX_FAILURES) {
+    const recentFailures = await loginAttemptRepository.countRecentFailures({
+      email: attempt.email,
+      ipAddress: attempt.ipAddress,
+      since: clock.now().subtract({ minutes: LOGIN_ATTEMPT.LOCKOUT_MINUTES }),
+    });
+    if (reachesLockout(recentFailures)) {
       await securityLogRepository.create({
         event: SECURITY_EVENT.ACCOUNT_LOCKED,
         ipAddress: attempt.ipAddress,
         userAgent: attempt.userAgent,
-        metadata: { email: attempt.email, recentFailures },
+        metadata: {
+          email: attempt.email,
+          recentFailures: recentFailures.byEmail,
+          recentSourceFailures: recentFailures.bySource,
+        },
       });
       throw accountLocked(attempt.email);
     }

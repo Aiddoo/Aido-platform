@@ -23,6 +23,10 @@ export class FakePasswordHasher implements PasswordHasherPort {
     }
   }
 
+  async verifyAgainstDummyHash(password: string): Promise<void> {
+    await this.verify(await this.hash("dummy-password"), password);
+  }
+
   needsRehash(): boolean {
     return false;
   }

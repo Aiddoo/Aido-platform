@@ -5,12 +5,13 @@ import type {
 import { AUTH_FIXTURE_NOW } from "#test/fixtures/identity/session.fixture";
 
 const EMAIL = "login@example.com";
+const SOURCE_IP = "127.0.0.1";
 
 function attempt(overrides: Partial<NewLoginAttempt> = {}): NewLoginAttempt {
   return {
     email: EMAIL,
     provider: "CREDENTIAL",
-    ipAddress: "127.0.0.1",
+    ipAddress: SOURCE_IP,
     userAgent: "Aido/1.15.1",
     success: false,
     failureReason: "INVALID_PASSWORD",
@@ -33,10 +34,37 @@ export function describeLoginAttemptRepositoryContract(
       await repository.create(attempt({ email: "other@example.com" }));
 
       // When
-      const count = await repository.countRecentFailuresByEmail(EMAIL, AUTH_FIXTURE_NOW);
+      const failures = await repository.countRecentFailures({
+        email: EMAIL,
+        ipAddress: SOURCE_IP,
+        since: AUTH_FIXTURE_NOW,
+      });
 
       // Then
-      expect(count).toBe(2);
+      expect(failures).toEqual({ byEmail: 2, bySource: 2 });
+    });
+
+    it("같은 이메일의 실패를 보낸 곳마다 나눠 세고 IPv6는 /64 대역 하나를 한 곳으로 센다", async () => {
+      // Given
+      const repository = await createRepository();
+      for (const ipAddress of [
+        "2001:db8:1:2::1",
+        "2001:db8:1:2::2",
+        "2001:db8:1:3::1",
+        SOURCE_IP,
+      ]) {
+        await repository.create(attempt({ ipAddress }));
+      }
+
+      // When
+      const failures = await repository.countRecentFailures({
+        email: EMAIL,
+        ipAddress: "2001:db8:1:2:ffff::9",
+        since: AUTH_FIXTURE_NOW,
+      });
+
+      // Then
+      expect(failures).toEqual({ byEmail: 4, bySource: 2 });
     });
 
     it("공급자 없이 남긴 실패도 센다", async () => {
@@ -45,10 +73,14 @@ export function describeLoginAttemptRepositoryContract(
       await repository.create(attempt({ provider: undefined }));
 
       // When
-      const count = await repository.countRecentFailuresByEmail(EMAIL, AUTH_FIXTURE_NOW);
+      const failures = await repository.countRecentFailures({
+        email: EMAIL,
+        ipAddress: SOURCE_IP,
+        since: AUTH_FIXTURE_NOW,
+      });
 
       // Then
-      expect(count).toBe(1);
+      expect(failures).toEqual({ byEmail: 1, bySource: 1 });
     });
 
     it("기록이 없으면 0이다", async () => {
@@ -56,10 +88,14 @@ export function describeLoginAttemptRepositoryContract(
       const repository = await createRepository();
 
       // When
-      const count = await repository.countRecentFailuresByEmail(EMAIL, AUTH_FIXTURE_NOW);
+      const failures = await repository.countRecentFailures({
+        email: EMAIL,
+        ipAddress: SOURCE_IP,
+        since: AUTH_FIXTURE_NOW,
+      });
 
       // Then
-      expect(count).toBe(0);
+      expect(failures).toEqual({ byEmail: 0, bySource: 0 });
     });
 
     it("시도 시각이 기준 시각 전인 기록만 limit개씩 지운다", async () => {
@@ -87,8 +123,12 @@ export function describeLoginAttemptRepositoryContract(
       // Then
       expect(deletedCounts).toEqual([1, 1, 0]);
       expect(
-        await repository.countRecentFailuresByEmail(EMAIL, AUTH_FIXTURE_NOW.subtract({ hours: 2 })),
-      ).toBe(1);
+        await repository.countRecentFailures({
+          email: EMAIL,
+          ipAddress: SOURCE_IP,
+          since: AUTH_FIXTURE_NOW.subtract({ hours: 2 }),
+        }),
+      ).toEqual({ byEmail: 1, bySource: 1 });
     });
   });
 }

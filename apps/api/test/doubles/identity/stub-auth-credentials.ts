@@ -16,6 +16,9 @@ import {
   StubAccountPasswordVerifier,
 } from "#test/doubles/identity/stub-account-lifecycle";
 
+/** 계정이 없을 때 StubPasswordHasher가 비교하는 hash. 어떤 비밀번호와도 맞지 않는다 */
+export const STUB_DUMMY_HASH = "dummy-hash";
+
 export class StubPasswordHasher extends StubAccountPasswordVerifier implements PasswordHasherPort {
   readonly hashes: string[] = [];
   readonly outdatedHashes = new Set<string>();
@@ -23,6 +26,10 @@ export class StubPasswordHasher extends StubAccountPasswordVerifier implements P
   async hash(password: string): Promise<string> {
     this.hashes.push(password);
     return `digest:${password}`;
+  }
+
+  async verifyAgainstDummyHash(password: string): Promise<void> {
+    await this.verify(STUB_DUMMY_HASH, password);
   }
 
   needsRehash(hash: string): boolean {

@@ -49,28 +49,24 @@ export class ResetPasswordUseCase {
 
   async execute(input: ResetPasswordCommand): Promise<{ message: string }> {
     const { email, code, newPassword } = input;
+    // 계정을 찾기 전에 만들어 없는 이메일도 응답 시간이 같다
+    const hashedPassword = await this.#dependencies.passwordService.hash(newPassword);
     const user = await this.#dependencies.userRepository.findByEmail(email);
     if (user == null) {
       throw invalidVerificationCode();
     }
-    if (user.isDeleted()) {
-      throw accountDeleted(user.id.value);
-    }
 
     const { accountRepository } = this.#dependencies;
-    // 코드를 확인하기 전에 거절해 소셜 전용 계정은 코드를 쓰지 않는다
-    if (!(await accountRepository.findByUserId(user.id))?.hasCredentialAccount()) {
-      throw socialAccountPasswordUnchangeable(user.id.value);
-    }
-
-    const hashedPassword = await this.#dependencies.passwordService.hash(newPassword);
-
     const revokedSessionIds = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.consumeVerificationCode.execute({
         userId: user.id.value,
         code,
         type: "PASSWORD_RESET",
       });
+      // 탈퇴·소셜 전용은 맞는 코드 뒤에만 알려 그전에는 없는 이메일과 같은 VERIFY_0751이다(이 거절은 소비를 되돌린다)
+      if (user.isDeleted()) {
+        throw accountDeleted(user.id.value);
+      }
 
       // 재설정은 지금 비밀번호를 몰라도 되므로 잠근 뒤 다시 읽은 hash 위에 바꾼다
       if (!(await this.#dependencies.userMutationLock.lockById(user.id))) {

@@ -3,6 +3,7 @@ import type { UserRole } from "@aido/api/vocabulary";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
+import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 import { instantFromDate, toIsoString } from "#api/shared/domain/time/instant";
 
 import type { UserRepositoryPort } from "../../../users/application/ports/user.repository.port.js";
@@ -71,7 +72,7 @@ export class AuthenticateSessionUseCase {
     };
   }
 
-  // 인증은 마지막 방어선이라 캐시 장애는 미스로 보고 DB에서 읽는다. factory의 거절·DB 오류는 그대로 던진다
+  // 인증은 마지막 방어선이라 캐시 장애는 미스로 보고 DB에서 읽는다. factory의 거절·DB 오류와 합류해 받은 거절은 그대로 던진다
   async #readSession(sessionId: SessionId): Promise<CachedSession> {
     const loading: { session: Promise<CachedSession> | null } = { session: null };
     try {
@@ -80,6 +81,10 @@ export class AuthenticateSessionUseCase {
         return loading.session;
       });
     } catch (error) {
+      // 합류한 요청은 자기 factory가 돌지 않아 loading으로는 거절과 캐시 장애를 가르지 못한다
+      if (error instanceof ErrorCodedException) {
+        throw error;
+      }
       if (loading.session == null) {
         this.#dependencies.logger.warn({
           event: SessionLogEvent.SESSION_CACHE_READ_FAILED,
