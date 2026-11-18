@@ -131,3 +131,16 @@ Repository·Reader·스키마·마이그레이션·DB 오류 번역을 바꿀 �
 | `PushDevice.deviceModel`·`osVersion`                                                                                                           | 남긴다                                    | 문의 대응용 기기 기록(`PushDevice` 주석). 토큰이 없는 거절 기기는 여기에만 남는다                                                                                                        |
 | `PushDevice.permissionCanAskAgain`, `RewardGrant.lastErrorCode`, `User.lastSeenAppVersionAt`                                                   | 남긴다                                    | 운영 분석 자료(권한을 다시 물을 수 있는 기기, 보상 실패 원인, 앱 버전을 마지막으로 본 시각)                                                                                              |
 | `Session.revokedReason`, `SecurityLog`, `LoginAttempt`의 감사 칸                                                                               | 남긴다                                    | 감사 기록. 보관 기한은 [식별 기록 보관 기한](security.md#식별-기록-보관-기한)                                                                                                            |
+
+## 정리 작업 색인
+
+보관 기한 정리(`deleteEndedBefore`·`deleteExpiredBefore`·`deleteRecordedBefore` 등)는 `id IN (SELECT … WHERE <칸> < cutoff LIMIT 500)`을 남은 행이 500보다 적을 때까지 되풀이한다. 마지막 묶음은 늘 고를 행이 모자라 `LIMIT`이 일찍 멈추지 못하므로, 고르는 칸에 색인이 없으면 매일 테이블 전체를 순차로 읽는다. 그래서 테이블이 보관 기한보다 오래 쌓이는 곳에만 색인을 둔다.
+
+| 테이블·칸                                                                | 색인                                                   | 이유                                                                                                                    |
+| ------------------------------------------------------------------------ | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| `Session.revokedAt`                                                      | `Session_revokedAt_idx`(부분, `revokedAt IS NOT NULL`) | 활성 세션과 푸시 기기가 지키는 만료 세션이 쌓인다. 만료 쪽 `Session_expiresAt_idx`와 BitmapOr로 묶여 폐기한 행만 읽는다 |
+| `SecurityLog.createdAt`                                                  | `SecurityLog_createdAt_idx`                            | 1년치가 쌓이고 기존 색인 셋은 `createdAt`이 앞 칸이 아니다                                                              |
+| `Verification.expiresAt`                                                 | 두지 않는다                                            | 정리가 만료 1일 뒤 지워 테이블이 하루치 인증 코드로 묶인다. 순차 읽기도 그 크기에서 멈춘다                              |
+| `LoginAttempt.createdAt`·`OAuthState.expiresAt`·`Notification.createdAt` | 기존 색인                                              | —                                                                                                                       |
+
+10만 행 합성 데이터(Testcontainers PG 16)에서 고를 행이 없는 마지막 묶음은 `Session`이 순차 읽기 2,664 버퍼 → BitmapOr 511 버퍼(남은 것은 푸시 기기가 지키는 만료 세션), `SecurityLog`가 834 → 2 버퍼였다. 색인을 더하는 마이그레이션은 위 6번처럼 배포 전 운영 행 수를 읽기 전용으로 보고, 크면 같은 이름의 `CREATE INDEX CONCURRENTLY`를 배포 전에 손으로 만든다(마이그레이션은 `IF NOT EXISTS`로 건너뛴다).

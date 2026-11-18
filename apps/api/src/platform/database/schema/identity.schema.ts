@@ -140,6 +140,10 @@ export const session = pgTable(
       .onUpdate("cascade")
       .onDelete("cascade"),
     index("Session_expiresAt_idx").using("btree", table.expiresAt.asc().nullsLast()),
+    // 만료 기록 정리가 폐기 30일 지난 세션을 고른다. 이 색인이 없으면 OR 조건 전체가 순차 읽기다
+    index("Session_revokedAt_idx")
+      .using("btree", table.revokedAt.asc().nullsLast())
+      .where(sql`("revokedAt" IS NOT NULL)`),
     index("Session_tokenFamily_idx").using("btree", table.tokenFamily.asc().nullsLast()),
     index("Session_userId_idx").using("btree", table.userId.asc().nullsLast()),
     unique("Session_refreshTokenHash_key").on(table.refreshTokenHash),
@@ -263,6 +267,8 @@ export const securityLog = pgTable(
     })
       .onUpdate("cascade")
       .onDelete("set null"),
+    // 만료 기록 정리가 1년 지난 행을 고른다. 다른 색인은 createdAt이 앞 칸이 아니라 쓰지 못한다
+    index("SecurityLog_createdAt_idx").using("btree", table.createdAt.asc().nullsLast()),
     index("SecurityLog_event_createdAt_idx").using(
       "btree",
       table.event.asc().nullsLast(),
