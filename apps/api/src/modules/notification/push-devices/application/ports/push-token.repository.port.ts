@@ -31,4 +31,11 @@ export abstract class PushTokenRepositoryPort {
     tokens: string[],
     deactivatedAt: Temporal.Instant,
   ): Promise<{ count: number }>;
+  // 마지막 기기 보고(활성 토큰의 updatedAt)가 기준보다 오래된 활성 토큰을 오래된 순으로 limit개 끈다.
+  // 끈 토큰마다 그 사용자 ID를 하나씩 돌려준다
+  abstract deactivateUnreportedSince(command: {
+    readonly reportedBefore: Temporal.Instant;
+    readonly deactivatedAt: Temporal.Instant;
+    readonly limit: number;
+  }): Promise<{ readonly userIds: readonly UserId[] }>;
 }

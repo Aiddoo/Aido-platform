@@ -10,4 +10,10 @@ export const PushDeviceLogEvent = {
   UNREGISTER_PUSH_DEVICE_ALL_UNREGISTERED:
     "notification.delivery.unregister-push-device.all.unregistered",
   PUSH_DEVICE_UNREGISTERED_BY_TOKEN: "notification.push.device-by-token.unregistered",
+  STALE_PUSH_TOKENS_DEACTIVATED: "notification.delivery.stale-push-token.deactivated",
+  STALE_PUSH_TOKEN_CACHE_SETTLE_FAILED:
+    "notification.delivery.stale-push-token.cache-settle.failed",
+  STALE_PUSH_TOKEN_PRUNE_JOB_FAILED: "notification.delivery.stale-push-token-prune.job.failed",
+  STALE_PUSH_TOKEN_PRUNE_SCHEDULER_REGISTERED:
+    "notification.delivery.stale-push-token-prune.scheduler.registered",
 } as const;

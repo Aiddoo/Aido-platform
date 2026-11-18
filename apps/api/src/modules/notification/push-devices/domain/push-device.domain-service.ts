@@ -11,6 +11,13 @@ import { match, P } from "ts-pattern";
 /** 이 기간 동안 보고가 없던 기기는 지운 앱으로 보고 도달 판정에서 뺀다. */
 export const PUSH_DEVICE_STALE_AFTER_DAYS = 90;
 
+/**
+ * 이 기간 동안 보고가 없던 기기의 토큰은 끈다. 앱은 열 때마다 보고하므로 9개월 동안 그 기기에서 앱을 열지
+ * 않은 것이다. 가장 긴 재방문 알림(30일 쉼)보다 충분히 길고, FCM이 Android 등록을 만료로 보는 270일과 같다.
+ * APNs에는 이런 만료가 없어 iOS 토큰은 서버가 끄지 않으면 계속 보낸다
+ */
+export const PUSH_TOKEN_STALE_AFTER_DAYS = 270;
+
 export type NoActiveTokenSkipReason =
   | typeof PUSH_DISPATCH_SKIP_REASON.PUSH_PERMISSION_NOT_REQUESTED
   | typeof PUSH_DISPATCH_SKIP_REASON.PUSH_PERMISSION_DENIED

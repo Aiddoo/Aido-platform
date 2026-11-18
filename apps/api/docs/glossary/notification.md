@@ -74,6 +74,7 @@ slice 사이도 같은 공개 면으로 잇는다. 아래 slice가 위 slice를 
 | 해제        | `UnregisterPushDeviceUseCase`, `UnregisterPushDeviceByTokenUseCase` | 로그인한 기기의 로그아웃 해제와 세션이 끝난 기기의 공개 해제. 공개 해제는 deviceId·토큰이 둘 다 맞을 때만 지우고 결과는 같게 준다                                                                                                                                  |
 | 세션 해제   | `ReleaseSessionPushDevicesUseCase`                                  | identity가 세션을 폐기하면 그 세션의 기기·토큰을 바로 지운다. 실패해도 세션 폐기는 막지 않는다                                                                                                                                                                     |
 | 오래된 기기 | `PUSH_DEVICE_STALE_AFTER_DAYS`                                      | 오래 보고하지 않은 기기는 지운 앱으로 보고 건너뜀 사유 판정에서 뺀다([기기와 토큰](../push-delivery.md#기기와-토큰))                                                                                                                                               |
+| 오래된 토큰 | `PUSH_TOKEN_STALE_AFTER_DAYS`, `DeactivateStalePushTokensUseCase`   | 마지막 기기 보고가 270일 넘은 활성 토큰. 매일 끄고 다시 보고하면 켜진다([기기와 토큰](../push-delivery.md#기기와-토큰))                                                                                                                                            |
 
 기기는 보고마다 통째로 덮어쓰고 상태 전이가 없다. 토큰만 상태가 있다.
 
@@ -83,6 +84,7 @@ slice 사이도 같은 공개 면으로 잇는다. 아래 slice가 위 slice를 
 | 활성        | 기기 보고 `KEEP`                                                 | 활성(세션·앱 버전만 맞춤) | 토큰이 없던 기기면 그대로 없음                             |
 | 활성·비활성 | 기기 보고 `RELEASE`, 해제, 세션 폐기, 소유 이전                  | 없음                      | 없는 등록을 해제해도 성공                                  |
 | 활성        | `deactivateInvalidTokens`(`DEVICE_UNREGISTERED`·`INVALID_TOKEN`) | 비활성                    | receipt 실패는 발송 당시 토큰 지문과 지금 토큰이 같을 때만 |
+| 활성        | `deactivateUnreportedSince`(270일 무보고, 매일 04:10 KST)        | 비활성                    | 기기가 다시 보고하면 `REGISTER`가 켠다                     |
 
 ## push-dispatches
 

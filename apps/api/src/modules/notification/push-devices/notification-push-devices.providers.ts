@@ -12,6 +12,7 @@ import { PushTokenCachePort } from "./application/ports/push-token-cache.port.js
 import { PushTokenFormatPort } from "./application/ports/push-token-format.port.js";
 import { PushTokenRepositoryPort } from "./application/ports/push-token.repository.port.js";
 import { UserPreferenceCachePort } from "./application/ports/user-preference-cache.port.js";
+import { DeactivateStalePushTokensUseCase } from "./application/use-cases/deactivate-stale-push-tokens.use-case.js";
 import { ReportPushDeviceUseCase } from "./application/use-cases/report-push-device.use-case.js";
 import { UnregisterPushDeviceByTokenUseCase } from "./application/use-cases/unregister-push-device-by-token.use-case.js";
 import { UnregisterPushDeviceUseCase } from "./application/use-cases/unregister-push-device.use-case.js";
@@ -64,6 +65,12 @@ export const NOTIFICATION_PUSH_DEVICES_USE_CASE_PROVIDERS = [
     unitOfWork: UnitOfWorkPort,
     cache: PushTokenCachePort,
     logger: loggerFor(UnregisterPushDeviceByTokenUseCase),
+  }),
+  provideUseCase(DeactivateStalePushTokensUseCase, {
+    pushTokenRepository: PushTokenRepositoryPort,
+    cache: PushTokenCachePort,
+    clock: ClockPort,
+    logger: loggerFor(DeactivateStalePushTokensUseCase),
   }),
 ] satisfies Provider[];
 

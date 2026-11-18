@@ -104,6 +104,7 @@ await jobQueue.registerSchedules(DOCUMENT_QUEUE); // schedules를 key별로 upse
 | `daily-invite-maintenance-scheduler`           | `invite-maintenance.v1`                       | 03:30 KST                         | `skip`                                |
 | `daily-expired-record-purge-scheduler`         | `identity.expired-record-purge.v1`            | 03:40 KST                         | `skip`                                |
 | `daily-notification-history-purge-scheduler`   | `notification.history-purge.v1`               | 03:50 KST                         | `skip`                                |
+| `daily-stale-push-token-prune-scheduler`       | `notification.stale-push-token-prune.v1`      | 04:10 KST                         | `skip`                                |
 | `daily-outbound-usage-retention`               | `outbound-usage-retention.v1`                 | 04:30 KST                         | `skip`                                |
 
 - 사용자 현지 시각에 맞춰야 하는 작업(제안·리포트)은 고정 KST가 아니라 매시 실행에서 "지금 현지 경계에 있는 사용자"를 고른다.

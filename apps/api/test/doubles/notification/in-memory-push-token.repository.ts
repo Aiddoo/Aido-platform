@@ -182,6 +182,27 @@ export class InMemoryPushTokenRepository extends PushTokenRepositoryPort {
     return { count: targets.length };
   }
 
+  async deactivateUnreportedSince(command: {
+    readonly reportedBefore: Temporal.Instant;
+    readonly deactivatedAt: Temporal.Instant;
+    readonly limit: number;
+  }): Promise<{ readonly userIds: readonly UserId[] }> {
+    const targets = [...this.#tokens.values()]
+      .filter(
+        (row) =>
+          row.isActive && Temporal.Instant.compare(row.updatedAt, command.reportedBefore) < 0,
+      )
+      .toSorted(
+        (left, right) =>
+          Temporal.Instant.compare(left.updatedAt, right.updatedAt) || left.id - right.id,
+      )
+      .slice(0, command.limit);
+    for (const row of targets) {
+      this.#tokens.set(row.id, { ...row, isActive: false, updatedAt: command.deactivatedAt });
+    }
+    return { userIds: targets.map((row) => UserId.reconstitute(row.userId)) };
+  }
+
   #find(predicate: (row: StoredPushToken) => boolean): StoredPushToken | undefined {
     return [...this.#tokens.values()].find(predicate);
   }

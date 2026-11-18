@@ -166,6 +166,68 @@ export function describePushTokenRepositoryContract(
       ]);
     });
 
+    it("오래 보고하지 않은 활성 토큰만 오래된 순으로 한도까지 끄고 다시 보고하면 켜진다", async () => {
+      // Given
+      const subject = await createSubject();
+      const repository = subject.tokens;
+      const cutoff = PUSH_TOKEN_FIXTURE_NOW.add({ hours: 1 });
+      await register(subject, { deviceId: "ios_oldest", token: "ExponentPushToken[oldest]" });
+      await register(subject, {
+        userId: OTHER_USER_ID,
+        deviceId: "ios_older",
+        token: "ExponentPushToken[older]",
+        registeredAt: LATER,
+      });
+      await register(subject, {
+        deviceId: "ios_reported",
+        token: "ExponentPushToken[reported]",
+        registeredAt: cutoff,
+      });
+
+      // When
+      const first = await repository.deactivateUnreportedSince({
+        reportedBefore: cutoff,
+        deactivatedAt: cutoff,
+        limit: 1,
+      });
+      const rest = await repository.deactivateUnreportedSince({
+        reportedBefore: cutoff,
+        deactivatedAt: cutoff,
+        limit: 10,
+      });
+      await register(subject, {
+        deviceId: "ios_oldest",
+        token: "ExponentPushToken[oldest]",
+        registeredAt: cutoff.add({ minutes: 1 }),
+      });
+
+      // Then
+      expect(first.userIds.map((userId) => userId.value)).toEqual([USER_ID]);
+      expect(rest.userIds.map((userId) => userId.value)).toEqual([OTHER_USER_ID]);
+      expect(await tokensOf(repository, USER_ID)).toEqual([
+        {
+          userId: USER_ID,
+          deviceId: "ios_oldest",
+          token: "ExponentPushToken[oldest]",
+          isActive: true,
+        },
+        {
+          userId: USER_ID,
+          deviceId: "ios_reported",
+          token: "ExponentPushToken[reported]",
+          isActive: true,
+        },
+      ]);
+      expect(await tokensOf(repository, OTHER_USER_ID)).toEqual([
+        {
+          userId: OTHER_USER_ID,
+          deviceId: "ios_older",
+          token: "ExponentPushToken[older]",
+          isActive: false,
+        },
+      ]);
+    });
+
     it("기기·사용자 삭제는 그 범위의 토큰만 지우고 지운 수를 준다", async () => {
       // Given
       const subject = await createSubject();

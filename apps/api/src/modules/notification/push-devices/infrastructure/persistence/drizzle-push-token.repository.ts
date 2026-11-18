@@ -1,6 +1,6 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, lt } from "drizzle-orm";
 
 import type { SessionId } from "#api/modules/identity/sessions/identity-sessions.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
@@ -105,6 +105,31 @@ export class DrizzlePushTokenRepository implements PushTokenRepositoryPort {
       .where(inArray(pushToken.token, tokens))
       .returning({ id: pushToken.id });
     return { count: updated.length };
+  }
+
+  async deactivateUnreportedSince({
+    reportedBefore,
+    deactivatedAt,
+    limit,
+  }: {
+    readonly reportedBefore: Temporal.Instant;
+    readonly deactivatedAt: Temporal.Instant;
+    readonly limit: number;
+  }): Promise<{ readonly userIds: readonly UserId[] }> {
+    // 기기 보고(등록·유지)가 updatedAt을 보고 시각으로 쓰고, 끈 토큰은 isActive로 다시 고르지 않는다
+    const unreported = this.#db
+      .select({ id: pushToken.id })
+      .from(pushToken)
+      .where(and(eq(pushToken.isActive, true), lt(pushToken.updatedAt, reportedBefore)))
+      .orderBy(asc(pushToken.updatedAt), asc(pushToken.id))
+      .limit(limit)
+      .for("update", { skipLocked: true });
+    const deactivated = await this.#db
+      .update(pushToken)
+      .set({ isActive: false, updatedAt: deactivatedAt })
+      .where(and(inArray(pushToken.id, unreported), eq(pushToken.isActive, true)))
+      .returning({ userId: pushToken.userId });
+    return { userIds: deactivated.map((row) => UserId.reconstitute(row.userId)) };
   }
 
   get #db() {
