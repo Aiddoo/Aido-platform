@@ -120,7 +120,7 @@ export class TodoSeries extends AggregateRoot<TodoSeriesId, TodoSeriesProps, Tod
     });
   }
 
-  // 회차 묶음 변경은 구독자에게 규칙당 한 번만 알린다
+  // 회차 묶음 변경은 구독자에게 규칙당 한 번만 알리고 이벤트를 비우면 다시 낼 수 있다
   #occurrencesChangeRaised = false;
   #deleted = false;
 
@@ -174,6 +174,11 @@ export class TodoSeries extends AggregateRoot<TodoSeriesId, TodoSeriesProps, Tod
 
   get updatedAt(): Temporal.Instant {
     return this.props.updatedAt;
+  }
+
+  override pullDomainEvents(): TodoSeriesEvent[] {
+    this.#occurrencesChangeRaised = false;
+    return super.pullDomainEvents();
   }
 
   isActive(): boolean {
@@ -237,8 +242,7 @@ export class TodoSeries extends AggregateRoot<TodoSeriesId, TodoSeriesProps, Tod
     return dates.map((date) => draftOccurrence(this.props, date));
   }
 
-  // date 뒤로 회차를 만들지 않는다. 규칙이 이미 끝났어도 커서가 뒤처져 있으면 닫는다.
-  // 응답의 끝 날짜가 앱에 보이므로 종료일이 시작일보다 앞서지 않게 시작일로 맞춘다
+  // date 뒤로 회차를 만들지 않는다. 규칙이 끝났어도 커서가 뒤처졌으면 닫고, 앱에 보이는 종료일은 시작일 이상으로 맞춘다
   stopAfter(date: Temporal.PlainDate): boolean {
     const { startDate } = this.props;
     const lastDate = Temporal.PlainDate.compare(date, startDate) < 0 ? startDate : date;
@@ -388,10 +392,9 @@ export class TodoSeries extends AggregateRoot<TodoSeriesId, TodoSeriesProps, Tod
   }
 
   #raiseOccurrencesChanged(): void {
-    if (this.#occurrencesChangeRaised) {
-      return;
+    if (!this.#occurrencesChangeRaised) {
+      this.#occurrencesChangeRaised = true;
+      this.raise(new TodoOccurrencesChangedEvent(this.id.value, this.props.userId.value));
     }
-    this.#occurrencesChangeRaised = true;
-    this.raise(new TodoOccurrencesChangedEvent(this.id.value, this.props.userId.value));
   }
 }

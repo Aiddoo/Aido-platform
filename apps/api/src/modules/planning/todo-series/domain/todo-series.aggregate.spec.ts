@@ -679,4 +679,18 @@ describe("TodoSeries — 반복 할 일", () => {
       expect(series.nextOccurrenceDate?.toString()).toBe("2026-11-30");
     });
   });
+
+  describe("회차 변경 이벤트", () => {
+    it("이벤트를 비운 뒤에는 같은 인스턴스가 다시 회차 변경을 낼 수 있다", () => {
+      // Given
+      const series = start();
+      series.replaceChecklist([{ title: "하나" }]);
+      const first = series.pullDomainEvents();
+      // When
+      series.replaceChecklist([{ title: "둘" }]);
+      // Then
+      expect(first).toHaveLength(1);
+      expect(series.pullDomainEvents()).toHaveLength(1);
+    });
+  });
 });

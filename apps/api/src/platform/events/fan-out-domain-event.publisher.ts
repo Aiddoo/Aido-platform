@@ -50,9 +50,11 @@ export class FanOutDomainEventPublisher extends DomainEventPublisherPort {
             idempotencyKey: `${event.eventId}:${subscription.name}`,
           });
         } else {
+          // 합치기 key가 구독끼리 겹쳐 다른 일이 사라지지 않게 구독 이름을 앞에 붙인다
+          const rawCoalesceKey = subscription.coalesceKey?.(parsed);
           this.#afterCommit.register(
             () => this.#deliverAfterCommit(event, subscription, parsed),
-            subscription.coalesceKey?.(parsed),
+            rawCoalesceKey == null ? undefined : `${subscription.name}:${rawCoalesceKey}`,
           );
         }
       }

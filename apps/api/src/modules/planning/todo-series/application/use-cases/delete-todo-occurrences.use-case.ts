@@ -90,8 +90,10 @@ export class DeleteTodoOccurrencesUseCase {
         })
         .exhaustive();
       await todoReminder.cancelReminders(deletedTodoIds.map((id) => TodoId.reconstitute(id)));
-      // 끝난 규칙이나 규칙 없는 묶음은 규칙 값이 그대로여도 회차 행이 지워진다
-      todo.markOccurrencesChanged(deletedTodoIds.length);
+      // 규칙 행이 회차 변경을 내지 않았을 때만 낸다. 끝난 규칙이나 규칙 없는 묶음은 규칙 값이 그대로여도 회차 행이 지워진다
+      if (events.length === 0) {
+        todo.markOccurrencesChanged(deletedTodoIds.length);
+      }
       await this.#dependencies.applyTodoEvents.execute([...events, ...todo.pullDomainEvents()]);
       return { seriesId, deletedTodoIds };
     });

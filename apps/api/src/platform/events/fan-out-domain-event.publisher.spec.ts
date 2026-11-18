@@ -18,8 +18,11 @@ import { FanOutDomainEventPublisher } from "./fan-out-domain-event.publisher.js"
 class RecordingAfterCommitTasks extends AfterCommitTaskRegistryPort {
   readonly tasks: AfterCommitTask[] = [];
 
-  register(task: AfterCommitTask): void {
+  readonly coalesceKeys: (string | undefined)[] = [];
+
+  register(task: AfterCommitTask, coalesceKey?: string): void {
     this.tasks.push(task);
+    this.coalesceKeys.push(coalesceKey);
   }
 }
 
@@ -92,6 +95,36 @@ describe("FanOutDomainEventPublisher — 구독별 전달", () => {
     // Then
     await expect(publishing).rejects.toThrow(z.ZodError);
     expect(jobQueue.jobs).toEqual([]);
+  });
+});
+
+describe("FanOutDomainEventPublisher — after-commit 합치기 key", () => {
+  it("두 구독이 같은 원래 key를 돌려줘도 구독 이름을 붙여 서로의 작업을 합치지 않는다", async () => {
+    // Given
+    const registry = new RecordingAfterCommitTasks();
+    const subscribe = (name: string) =>
+      defineEventSubscription({
+        name,
+        eventName: "notes.memo.pinned",
+        delivery: "after-commit",
+        payloadSchema,
+        coalesceKey: () => "same-key",
+      });
+    const publisher = new FanOutDomainEventPublisher(
+      new EventSubscriptionCatalog([subscribe("insights.cache-a"), subscribe("insights.cache-b")]),
+      new InMemoryJobQueue(),
+      registry,
+      new EventEmitter2(),
+    );
+
+    // When
+    await publisher.publish([memoPinned({ memoId: "memo-1" })]);
+
+    // Then
+    expect(registry.coalesceKeys).toEqual([
+      "insights.cache-a:same-key",
+      "insights.cache-b:same-key",
+    ]);
   });
 });
 

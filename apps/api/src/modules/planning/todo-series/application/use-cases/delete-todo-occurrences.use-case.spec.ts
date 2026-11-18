@@ -74,6 +74,30 @@ describe("반복 회차 범위 삭제", () => {
     ]);
   });
 
+  it("규칙 행이 있는 반복을 모두 지우면 회차가 바뀐 사실을 한 번만 낸다", async () => {
+    // Given
+    const userId = "planning-user";
+    const series = createTodoSeriesFixture({ userId });
+    const fixture = createPlanningTodoFixture({
+      todos: [1, 2].map((id) =>
+        occurrence({ id, userId, seriesId: series.id.value, occurrenceDate: START }),
+      ),
+    });
+    fixture.seriesStore.set(series.id.value, series);
+
+    // When
+    await fixture.deleteOccurrences.execute({ todoId: 1, userId, scope: "ALL" });
+
+    // Then
+    expect(fixture.records.size).toBe(0);
+    expect(publishedSeriesFacts(fixture)).toEqual([
+      {
+        eventName: "planning.todo-series.occurrences-changed",
+        payload: expect.objectContaining({ seriesId: series.id.value, userId }),
+      },
+    ]);
+  });
+
   it("이미 끝난 규칙이라 규칙 값이 그대로여도 이후 회차를 지우면 회차가 바뀐 사실을 낸다", async () => {
     // Given
     const userId = "planning-user";
