@@ -3,6 +3,7 @@ import { RecordingNotificationPublisher } from "#test/doubles/notification/recor
 import { StubNotificationHistoryReader } from "#test/doubles/notification/stub-notification-history.reader";
 import { StubScheduledReminderReader } from "#test/doubles/notification/stub-scheduled-reminder.reader";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { InMemoryExclusiveRunner } from "#test/doubles/platform/in-memory-exclusive-runner";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { TEST_CUID } from "#test/fixtures/identity/user-id.fixture";
@@ -125,6 +126,7 @@ function createHarness(nowIso: string) {
   preferenceReader.timezones = ["Asia/Seoul"];
   const enqueuer = new RecordingEnqueuer();
   const sweepCursor = new InMemorySweepCursor();
+  const exclusiveRunner = new InMemoryExclusiveRunner();
   const logger = new SilentLogger();
   const alert = new RecordingOperationalAlert();
   const orchestrator = new SweepTimezoneRemindersUseCase({
@@ -132,6 +134,7 @@ function createHarness(nowIso: string) {
     preferenceReader,
     enqueuer,
     sweepCursor,
+    exclusiveRunner,
     clock,
     logger,
     alert,
@@ -153,6 +156,7 @@ function createHarness(nowIso: string) {
     preferenceReader,
     enqueuer,
     sweepCursor,
+    exclusiveRunner,
     logger,
     alert,
     orchestrator,

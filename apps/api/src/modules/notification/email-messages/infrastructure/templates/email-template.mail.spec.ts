@@ -135,4 +135,31 @@ describe("EmailTemplateMail — React Email 메일 렌더", () => {
     expect(text).toContain("(상세 내용 없음)");
     expect(html).not.toContain("관리자 문서에서 처리하기");
   });
+
+  it("렌더러를 불러오지 못하면 그 실패를 남기지 않고 다음 렌더가 다시 불러온다", async () => {
+    // Given
+    let importAttempts = 0;
+    const mail = new EmailTemplateMail(SUPPORT_EMAIL, async () => {
+      importAttempts += 1;
+      if (importAttempts === 1) {
+        throw new Error("renderer import failed");
+      }
+      return import("./email-renderer.js");
+    });
+    const template = {
+      kind: "verification",
+      data: { code: "482916", expiryMinutes: 10 },
+    } satisfies EmailTemplate;
+
+    // When
+    const first = await mail.render({ template, locale: "ko" }).then(
+      () => "rendered",
+      (error: unknown) => (error instanceof Error ? error.message : "unknown"),
+    );
+    const second = await mail.render({ template, locale: "ko" });
+
+    // Then
+    expect(first).toBe("renderer import failed");
+    expect(second.subject).toBe(CODE_MAIL_COPY.ko.subject);
+  });
 });

@@ -52,16 +52,17 @@ Repository·Reader·스키마·마이그레이션·DB 오류 번역을 바꿀 �
 
 `db.execute(sql…)`는 ORM으로 쓸 수 없을 때만 테이블·칼럼·enum을 참조로 넘겨(`${todo.id}`, `sql.identifier(col.name)`, `::${pushDispatchStatus}`) 쓰고 이유를 한 줄 남긴다. 지금 쓰는 곳은 다음뿐이다.
 
-| 경우                                                                   | 위치                                                            |
-| ---------------------------------------------------------------------- | --------------------------------------------------------------- |
-| `pg_advisory_xact_lock`·`pg_try_advisory_xact_lock`                    | `PostgresMutationLockAdapter`                                   |
-| 시퀀스 `nextval`                                                       | `sequence.ts`                                                   |
-| 트랜잭션 한정 `set_config('statement_timeout', …)`                     | `ClsUnitOfWork`                                                 |
-| VALUES CTE + `FOR UPDATE OF` + 데이터 변경 CTE(claim·finalize·release) | `DrizzlePushDelivery{Claim,Finalization,Lease}Repository`       |
-| 리텐션 단계 후보 CTE, 시스템 뷰 `pg_timezone_names`                    | `DrizzleRetentionAssignmentRepository`                          |
-| 성장 지표 요약 CTE                                                     | `DrizzleGrowthMetricsReader`                                    |
-| pg-boss 테이블 조회·SQL 브리지                                         | `pg-boss-schedule-run.reader.ts`, `drizzle-pg-boss.database.ts` |
-| 연결 확인 `SELECT 1`                                                   | `DatabaseHealthIndicator`                                       |
+| 경우                                                                        | 위치                                                            |
+| --------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `pg_advisory_xact_lock`·`pg_try_advisory_xact_lock`                         | `PostgresMutationLockAdapter`                                   |
+| 시퀀스 `nextval`                                                            | `sequence.ts`                                                   |
+| 트랜잭션 한정 `set_config('statement_timeout', …)`                          | `ClsUnitOfWork`                                                 |
+| 잠금만 쥔 트랜잭션의 `set_config('idle_in_transaction_session_timeout', …)` | `ClsExclusiveRunner`                                            |
+| VALUES CTE + `FOR UPDATE OF` + 데이터 변경 CTE(claim·finalize·release)      | `DrizzlePushDelivery{Claim,Finalization,Lease}Repository`       |
+| 리텐션 단계 후보 CTE, 시스템 뷰 `pg_timezone_names`                         | `DrizzleRetentionAssignmentRepository`                          |
+| 성장 지표 요약 CTE                                                          | `DrizzleGrowthMetricsReader`                                    |
+| pg-boss 테이블 조회·SQL 브리지                                              | `pg-boss-schedule-run.reader.ts`, `drizzle-pg-boss.database.ts` |
+| 연결 확인 `SELECT 1`                                                        | `DatabaseHealthIndicator`                                       |
 
 ## 시간 칼럼
 

@@ -3,6 +3,7 @@ import { groupBy } from "es-toolkit";
 import { minutesToSweep } from "#api/shared/application/minutes-to-sweep";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { ExclusiveRunnerPort } from "#api/shared/application/ports/exclusive-runner.port";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import type { SweepCursorPort } from "#api/shared/application/ports/sweep-cursor.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -22,6 +23,7 @@ import {
 import type { SchedulerPreferenceReaderPort } from "../ports/scheduler-preference-reader.port.js";
 import type { TimezoneReminderEnqueuerPort } from "../ports/timezone-reminder-enqueuer.port.js";
 import { ReminderAlerts } from "../reminders.alerts.js";
+import { ReminderLockKeys } from "../reminders.lock-keys.js";
 import { ReminderLogEvent } from "../reminders.log-events.js";
 import type { SendEveningReminderUseCase } from "./send-evening-reminder.use-case.js";
 import type { SendLunchNudgeUseCase } from "./send-lunch-nudge.use-case.js";
@@ -43,6 +45,7 @@ interface SweepTimezoneRemindersDependencies {
   readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "findActiveTimezones">;
   readonly enqueuer: Pick<TimezoneReminderEnqueuerPort, "enqueueSocialDigest">;
   readonly sweepCursor: Pick<SweepCursorPort, "findLastCompletedAt" | "markCompleted">;
+  readonly exclusiveRunner: Pick<ExclusiveRunnerPort, "run">;
   readonly clock: Pick<ClockPort, "now">;
   readonly morningReminder: Pick<SendMorningReminderUseCase, "execute">;
   readonly eveningReminder: Pick<SendEveningReminderUseCase, "execute">;
@@ -72,50 +75,65 @@ export class SweepTimezoneRemindersUseCase {
   }
 
   async execute(): Promise<void> {
-    const { logger, sweepCursor } = this.#dependencies;
+    const { logger } = this.#dependencies;
     logger.log({ event: ReminderLogEvent.TIMEZONE_AWARE_REMINDER_SWEEP_STARTED });
 
     try {
-      const lastCompletedAt = await sweepCursor.findLastCompletedAt(
-        TIMEZONE_REMINDER_SWEEP_CURSOR_KEY,
+      // 배포가 겹쳐 두 인스턴스가 같은 분을 돌면 고정 시각 알림이 두 번 갈 수 있다. 진 쪽은 건너뛰고 다음 실행이 커서로 따라잡는다
+      const run = await this.#dependencies.exclusiveRunner.run(
+        ReminderLockKeys.timezoneSweep(),
+        () => this.#sweepPendingMinutes(),
       );
-      const minutes = minutesToSweep({
-        lastCompletedAt,
-        now: this.#dependencies.clock.now(),
-        maxCatchUpMinutes: REMINDER_LATE_LIMIT_MINUTES,
-      });
-      const skippedMinutes = countSkippedMinutes(lastCompletedAt, minutes);
-      // worker가 REMINDER_LATE_LIMIT_MINUTES(15분)보다 오래 멈춰 그보다 앞선 분의 정시 알림을 버렸다
-      if (skippedMinutes > 0) {
-        logger.warn({
-          event: ReminderLogEvent.TIMEZONE_AWARE_REMINDER_MINUTES_SKIPPED,
-          reason: REMINDER_LATE_SKIP_REASON,
-          skippedMinutes,
-        });
-        this.#dependencies.alert.raise({
-          ...ReminderAlerts.SWEEP_CATCH_UP_CAPPED,
-          details: { skippedMinutes, maxCatchUpMinutes: REMINDER_LATE_LIMIT_MINUTES },
+      if (run.status === "held") {
+        logger.log({
+          event: ReminderLogEvent.TIMEZONE_AWARE_REMINDER_SWEEP_SKIPPED,
+          reason: "sweep-in-progress",
         });
       }
-
-      const timezones = await this.#dependencies.preferenceReader.findActiveTimezones();
-      for (const minute of minutes) {
-        await this.#sweepMinute(minute, timezones);
-        // 분을 끝낸 뒤에만 옮겨 중간에 멈추면 그 분부터 다시 처리한다. 다시 보내는 사용자는 일간 중복 방지가 막는다
-        await sweepCursor.markCompleted(TIMEZONE_REMINDER_SWEEP_CURSOR_KEY, minute);
-      }
-
-      logger.log({
-        event: ReminderLogEvent.TIMEZONE_AWARE_REMINDER_SWEEP_COMPLETED,
-        timezoneCount: timezones.length,
-        minuteCount: minutes.length,
-      });
     } catch {
       logger.error({
         event: ReminderLogEvent.TIMEZONE_AWARE_REMINDER_SWEEP_FAILED,
         errorType: "sweep-execution",
       });
     }
+  }
+
+  async #sweepPendingMinutes(): Promise<void> {
+    const { logger, sweepCursor } = this.#dependencies;
+    const lastCompletedAt = await sweepCursor.findLastCompletedAt(
+      TIMEZONE_REMINDER_SWEEP_CURSOR_KEY,
+    );
+    const minutes = minutesToSweep({
+      lastCompletedAt,
+      now: this.#dependencies.clock.now(),
+      maxCatchUpMinutes: REMINDER_LATE_LIMIT_MINUTES,
+    });
+    const skippedMinutes = countSkippedMinutes(lastCompletedAt, minutes);
+    // worker가 REMINDER_LATE_LIMIT_MINUTES(15분)보다 오래 멈춰 그보다 앞선 분의 정시 알림을 버렸다
+    if (skippedMinutes > 0) {
+      logger.warn({
+        event: ReminderLogEvent.TIMEZONE_AWARE_REMINDER_MINUTES_SKIPPED,
+        reason: REMINDER_LATE_SKIP_REASON,
+        skippedMinutes,
+      });
+      this.#dependencies.alert.raise({
+        ...ReminderAlerts.SWEEP_CATCH_UP_CAPPED,
+        details: { skippedMinutes, maxCatchUpMinutes: REMINDER_LATE_LIMIT_MINUTES },
+      });
+    }
+
+    const timezones = await this.#dependencies.preferenceReader.findActiveTimezones();
+    for (const minute of minutes) {
+      await this.#sweepMinute(minute, timezones);
+      // 분을 끝낸 뒤에만 옮겨 중간에 멈추면 그 분부터 다시 처리한다. 다시 보내는 사용자는 일간 중복 방지가 막는다
+      await sweepCursor.markCompleted(TIMEZONE_REMINDER_SWEEP_CURSOR_KEY, minute);
+    }
+
+    logger.log({
+      event: ReminderLogEvent.TIMEZONE_AWARE_REMINDER_SWEEP_COMPLETED,
+      timezoneCount: timezones.length,
+      minuteCount: minutes.length,
+    });
   }
 
   async #sweepMinute(minute: Temporal.Instant, timezones: readonly string[]): Promise<void> {

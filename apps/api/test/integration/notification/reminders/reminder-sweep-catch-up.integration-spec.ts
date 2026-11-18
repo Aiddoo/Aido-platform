@@ -23,6 +23,8 @@ import {
 import type { TimezoneContext } from "#api/modules/notification/reminders/domain/local-clock.domain-service";
 import { TodoReminderQueueProcessor } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-queue.processor";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
+import { ClsExclusiveRunner } from "#api/platform/database/cls-exclusive-runner";
+import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
 import {
   notification,
   todo,
@@ -144,7 +146,11 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
     await database.stop();
   });
 
-  function createWorker(now: Temporal.Instant) {
+  // beforeMorning은 아침 전략에 들어간 뒤 기다릴 곳이다. 두 sweep이 겹치는 순서를 barrier로 정한다
+  function createWorker(
+    now: Temporal.Instant,
+    beforeMorning: () => Promise<void> = async () => undefined,
+  ) {
     const clock = new FixedClock(now);
     const cursor = new InterruptibleSweepCursor(
       new DrizzleSweepCursorAdapter(transaction.transactionHost),
@@ -169,10 +175,15 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
       preferenceReader: reader.schedulerPreference,
       enqueuer: { enqueueSocialDigest: () => undefined },
       sweepCursor: cursor,
+      exclusiveRunner: new ClsExclusiveRunner(
+        transaction.transactionHost,
+        new PostgresMutationLockAdapter(transaction.transactionHost),
+      ),
       clock,
       morningReminder: {
         execute: async (context: TimezoneContext) => {
           sweptMinutes.push(`${context.localHour}:${String(context.localMinute).padStart(2, "0")}`);
+          await beforeMorning();
           return morningReminder.execute(context);
         },
       },
@@ -278,6 +289,34 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
         skippedMinutes: 25,
       });
       expect(await morningReminders()).toEqual([]);
+    });
+
+    it("배포가 겹쳐 두 sweep이 함께 돌면 하나만 분을 처리하고 다른 하나는 건너뛴다", async () => {
+      // Given
+      // 블루가 08:00 아침 리마인더를 처리하는 중에 그린이 같은 분을 돈다
+      const entered = Promise.withResolvers<void>();
+      const release = Promise.withResolvers<void>();
+      const blue = createWorker(BEFORE_MORNING.add({ minutes: 4 }), async () => {
+        entered.resolve();
+        await release.promise;
+      });
+      const green = createWorker(BEFORE_MORNING.add({ minutes: 4 }));
+      const blueSweep = blue.sweep.execute();
+      await entered.promise;
+
+      // When
+      await green.sweep.execute();
+      release.resolve();
+      await blueSweep;
+
+      // Then
+      expect(green.sweptMinutes).toEqual([]);
+      expect(green.logger.messages).toContainEqual({
+        event: ReminderLogEvent.TIMEZONE_AWARE_REMINDER_SWEEP_SKIPPED,
+        reason: "sweep-in-progress",
+      });
+      expect(blue.sweptMinutes).toEqual(["8:00"]);
+      expect(await morningReminders()).toHaveLength(1);
     });
 
     describe("할 일 리마인더 작업", () => {

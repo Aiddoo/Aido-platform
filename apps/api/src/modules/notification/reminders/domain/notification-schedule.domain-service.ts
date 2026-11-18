@@ -35,8 +35,9 @@ export function matchesScheduleTime(
  *
  * every-minute sweep이 지연/누락되면 정확 일치(matchesScheduleTime)만으로는
  * 해당 슬롯이 조용히 사라진다. 슬롯 시작부터 grace분 이내면 발송 창으로 본다.
- * 모든 고정 캠페인 전략이 `(userId, type, 로컬일자)` DB 유니크로 하루 1회 멱등이라
- * 연속 분에 재실행돼도 중복 발송되지 않는다.
+ * 고정 캠페인 전략은 `(userId, type, 로컬일자)`로 이미 보낸 알림을 읽어(캐시 + DB 조회, 유니크 제약은 없다)
+ * 하루 1회로 거르므로 연속 분에 재실행돼도 다시 보내지 않는다. 동시에 도는 두 sweep은 이 조회로 막지 못해
+ * sweep 전체를 advisory 잠금으로 하나만 돌린다(SweepTimezoneRemindersUseCase).
  */
 export const SCHEDULE_GRACE_MINUTES = 3;
 

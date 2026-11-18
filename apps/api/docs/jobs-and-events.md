@@ -113,7 +113,7 @@ await jobQueue.registerSchedules(DOCUMENT_QUEUE); // schedules를 key별로 upse
 
 **광고성 동의 재확인을 하루 한 번으로 줄이지 않는 이유**: 현지 야간(21:00~08:00) 사용자는 표시하지 않고 다음 실행에 남기는데, 하루 한 번 고정 시각은 어떤 시간대에서는 늘 야간이라 그 사용자들이 영영 알림을 받지 못한다. 대상이 없으면 인덱스 조회 한 번이라 매시 실행이 싸다.
 
-**워터마크 따라잡기**: 마지막 성공 시각(`ScheduledSweepCursor` 행)부터 지금까지의 분(최대 15분)을 모두 처리한다. 중복은 기존 일간 dedup 유니크가 막는다. 15분 넘게 늦은 리마인더는 보내지 않고 사유를 남긴다.
+**워터마크 따라잡기**: 마지막 성공 시각(`ScheduledSweepCursor` 행)부터 지금까지의 분(최대 15분)을 모두 처리한다. 같은 분을 다시 돌 때의 중복은 이미 보낸 알림 조회(캐시 + DB, 유니크 제약 아님)가 막는다. 이 조회는 동시에 도는 두 sweep을 막지 못하므로 sweep 전체를 `ExclusiveRunnerPort`(트랜잭션 advisory try-lock)로 하나만 돌리고, 잠금을 얻지 못한 실행은 `…sweep.skipped`를 남기고 건너뛴다. 다음 실행이 커서로 따라잡는다. 15분 넘게 늦은 리마인더는 보내지 않고 사유를 남긴다.
 
 ```ts
 const lastCompletedAt = await sweepCursor.findLastCompletedAt("tz-reminder-sweep");

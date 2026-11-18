@@ -20,11 +20,13 @@ import { SweepTimezoneRemindersUseCase } from "#api/modules/notification/reminde
 import { NOTIFICATION_SCHEDULE } from "#api/modules/notification/reminders/domain/notification-schedule.domain-service";
 import { provideSweepTimezoneRemindersUseCase } from "#api/modules/notification/reminders/notification-reminders.providers";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { ExclusiveRunnerPort } from "#api/shared/application/ports/exclusive-runner.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { SweepCursorPort } from "#api/shared/application/ports/sweep-cursor.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemorySweepCursor } from "#test/doubles/notification/in-memory-sweep-cursor";
 import { DateClock } from "#test/doubles/platform/date-clock";
+import { InMemoryExclusiveRunner } from "#test/doubles/platform/in-memory-exclusive-runner";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { TEST_CUID } from "#test/fixtures/identity/user-id.fixture";
 import { suppressLogger } from "#test/setup/suppress-logger";
@@ -91,6 +93,7 @@ describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
         { provide: SchedulerPreferenceReaderPort, useValue: mockPreferenceReader },
         { provide: TimezoneReminderEnqueuerPort, useValue: mockEnqueuer },
         { provide: SweepCursorPort, useValue: new InMemorySweepCursor() },
+        { provide: ExclusiveRunnerPort, useValue: new InMemoryExclusiveRunner() },
         { provide: ClockPort, useValue: new DateClock() },
         { provide: OperationalAlertPort, useValue: new RecordingOperationalAlert() },
         { provide: SendMorningReminderUseCase, useValue: mockMorningReminder },

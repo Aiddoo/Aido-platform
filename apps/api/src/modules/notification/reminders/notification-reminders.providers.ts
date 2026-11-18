@@ -3,6 +3,7 @@ import type { Provider } from "@nestjs/common";
 import { WeeklyAchievementWriterPort as InsightsWeeklyAchievementWriterPort } from "#api/modules/insights/weekly-achievements/insights-weekly-achievements.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { ExclusiveRunnerPort } from "#api/shared/application/ports/exclusive-runner.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { SweepCursorPort } from "#api/shared/application/ports/sweep-cursor.port";
 
@@ -221,6 +222,7 @@ export function provideSweepTimezoneRemindersUseCase() {
     preferenceReader: SchedulerPreferenceReaderPort,
     enqueuer: TimezoneReminderEnqueuerPort,
     sweepCursor: SweepCursorPort,
+    exclusiveRunner: ExclusiveRunnerPort,
     clock: ClockPort,
     morningReminder: SendMorningReminderUseCase,
     eveningReminder: SendEveningReminderUseCase,

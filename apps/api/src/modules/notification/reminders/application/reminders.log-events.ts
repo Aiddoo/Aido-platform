@@ -7,6 +7,8 @@ export const ReminderLogEvent = {
     "notification.reminders.timezone-aware-reminder.sweep.completed",
   TIMEZONE_AWARE_REMINDER_MINUTES_SKIPPED:
     "notification.reminders.timezone-aware-reminder.minutes.skipped",
+  TIMEZONE_AWARE_REMINDER_SWEEP_SKIPPED:
+    "notification.reminders.timezone-aware-reminder.sweep.skipped",
   TIMEZONE_AWARE_REMINDER_SWEEP_FAILED:
     "notification.reminders.timezone-aware-reminder.sweep.failed",
   TIMEZONE_AWARE_REMINDER_CATCH_UP_MORNING:
