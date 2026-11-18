@@ -225,6 +225,7 @@ export class PostgresPushRateLimiterAdapter implements PushRateLimiterPort {
         return true;
       }
 
+      // 한 묶음에 같은 사용자가 여럿이면 앞 요청의 예약을 세어 차례로 판단한다
       if (request.reserveGeneral && !generalReserved) {
         reservations.push({
           dispatchId: request.dispatchId,
@@ -233,6 +234,7 @@ export class PostgresPushRateLimiterAdapter implements PushRateLimiterPort {
           localDate: null,
           reservedAt: now,
         });
+        generalByUser.set(request.userId, (generalByUser.get(request.userId) ?? 0) + 1);
       }
       if (localDate && !engagementReserved) {
         reservations.push({
@@ -242,6 +244,10 @@ export class PostgresPushRateLimiterAdapter implements PushRateLimiterPort {
           localDate,
           reservedAt: now,
         });
+        engagementByUserDate.set(this.#engagementKey(request.userId, localDate), {
+          count: (engagement?.count ?? 0) + 1,
+          lastReservedAt: now,
+        });
       }
       return false;
     });
@@ -250,7 +256,6 @@ export class PostgresPushRateLimiterAdapter implements PushRateLimiterPort {
 
   #assertRequests(requests: readonly ReservationRequest[]): void {
     const dispatchIds = new Set<number>();
-    const userIds = new Set<string>();
     for (const request of requests) {
       if (!Number.isSafeInteger(request.dispatchId) || request.dispatchId <= 0) {
         throw new Error(`Invalid push dispatch id: ${request.dispatchId}`);
@@ -261,11 +266,7 @@ export class PostgresPushRateLimiterAdapter implements PushRateLimiterPort {
       if (dispatchIds.has(request.dispatchId)) {
         throw new Error(`Duplicate push dispatch id: ${request.dispatchId}`);
       }
-      if (userIds.has(request.userId)) {
-        throw new Error(`Duplicate push rate limit user in batch: ${request.userId}`);
-      }
       dispatchIds.add(request.dispatchId);
-      userIds.add(request.userId);
     }
   }
 

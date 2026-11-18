@@ -198,4 +198,42 @@ describe("PostgresPushRateLimiterAdapter (실제 PostgreSQL)", () => {
     expect(decisions).toEqual([false, false]);
     await expect(countReservations()).resolves.toBe(3);
   });
+
+  it("배치에 같은 사용자 요청이 여럿이면 앞 요청의 예약까지 세어 차례로 판단한다", async () => {
+    // Given
+    const userId = await createUser("same-user");
+    const dispatchIds = await Promise.all(
+      Array.from({ length: 17 }, (_, index) => createDispatch(userId, `same-user-${index}`)),
+    );
+    for (const dispatchId of dispatchIds.slice(0, 13)) {
+      await limiter.reserveGeneral({
+        dispatchId: PushDispatchId.reconstitute(dispatchId),
+        userId: UserId.reconstitute(userId),
+      });
+    }
+    const engagementRequestCount = 2;
+
+    // When
+    const decisions = await limiter.reserveBatch(
+      dispatchIds.slice(13).map((dispatchId, index) => ({
+        dispatchId: PushDispatchId.reconstitute(dispatchId),
+        userId: UserId.reconstitute(userId),
+        ...(index < engagementRequestCount && { engagementLocalDate: "2026-08-29" }),
+      })),
+    );
+
+    // Then
+    expect(decisions).toEqual([false, true, false, true]);
+    await expect(
+      countReservations(
+        and(
+          eq(pushRateLimitReservation.userId, userId),
+          eq(pushRateLimitReservation.phase, "GENERAL"),
+        ),
+      ),
+    ).resolves.toBe(15);
+    await expect(countReservations(eq(pushRateLimitReservation.phase, "ENGAGEMENT"))).resolves.toBe(
+      1,
+    );
+  });
 });

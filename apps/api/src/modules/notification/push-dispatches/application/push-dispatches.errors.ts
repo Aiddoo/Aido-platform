@@ -96,6 +96,11 @@ export function pushChannelResultCountMismatch(
   return new PushChannelResultCountMismatchError(channel, expectedCount, receivedCount);
 }
 
+// 결과는 입력 위치로 발송에 이어지므로 채널 구현이 없어 빠진 메시지가 있으면 뒤 결과를 당겨 쓰지 않는다
+export function pushMessageResultMissing(index: number, channel: string): Error {
+  return new Error(`Push message result missing: index=${index}, channel=${channel}`);
+}
+
 // 묶음 발송 후보의 수신자를 같은 조회에서 읽었으므로 없으면 코드가 어긋난 것이다
 export function pushDeliveryRecipientMissing(userId: string): Error {
   return new Error(`Push delivery recipient missing: userId=${userId}`);

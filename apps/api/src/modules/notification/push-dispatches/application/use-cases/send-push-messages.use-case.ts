@@ -1,7 +1,10 @@
 import { PUSH_CHANNELS } from "../../../shared/domain/push-channel.constants.js";
 import type { PushChannelRegistryPort } from "../ports/push-channel-registry.port.js";
 import type { PushMessage, PushSendResult } from "../ports/push-channel.port.js";
-import { pushChannelResultCountMismatch } from "../push-dispatches.errors.js";
+import {
+  pushChannelResultCountMismatch,
+  pushMessageResultMissing,
+} from "../push-dispatches.errors.js";
 
 interface SendPushMessagesDependencies {
   readonly channels: Pick<PushChannelRegistryPort, "forChannel">;
@@ -36,9 +39,12 @@ export class SendPushMessagesUseCase {
         }
       }
     }
-    return messages.flatMap((_, index) => {
+    return messages.map((message, index) => {
       const result = resultsByIndex.get(index);
-      return result == null ? [] : [result];
+      if (result == null) {
+        throw pushMessageResultMissing(index, message.channel);
+      }
+      return result;
     });
   }
 }

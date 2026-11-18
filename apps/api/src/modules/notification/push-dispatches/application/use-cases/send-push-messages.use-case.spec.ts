@@ -3,6 +3,7 @@ import {
   pushChannelRegistryOf,
 } from "#test/doubles/notification/fake-push-channel";
 
+import type { PushChannel } from "../../../shared/domain/push-channel.constants.js";
 import { PushTicketId } from "../../domain/push-ticket-id.vo.js";
 import type { PushMessage } from "../ports/push-channel.port.js";
 import { PushChannelResultCountMismatchError } from "../push-dispatches.errors.js";
@@ -68,6 +69,24 @@ describe("SendPushMessagesUseCase", () => {
 
     // Then
     await expect(sending).rejects.toThrow(new PushChannelResultCountMismatchError("EXPO", 2, 1));
+  });
+
+  it("어휘에 없는 채널의 메시지가 섞이면 뒤 결과를 당겨 잇지 않고 실패한다", async () => {
+    // Given
+    const expo = new FakePushChannel();
+    const useCase = new SendPushMessagesUseCase({ channels: pushChannelRegistryOf(expo) });
+    // 다른 이미지가 저장한 채널 값은 타입 밖에서 들어온다
+    const unknownChannel: PushChannel = JSON.parse('"WEB_PUSH"');
+
+    // When
+    const sending = useCase.execute([
+      message("phone"),
+      { ...message("browser"), channel: unknownChannel },
+      message("tablet"),
+    ]);
+
+    // Then
+    await expect(sending).rejects.toThrow("Push message result missing: index=1, channel=WEB_PUSH");
   });
 
   it("보낼 메시지가 없으면 채널을 부르지 않는다", async () => {
