@@ -2,7 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 
 import { WeatherForecastCache } from "#api/modules/weather/weather-reports/infrastructure/cache/weather-forecast.cache";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
-import { FakeTimerClock } from "#test/doubles/platform/fake-timer-clock";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { InMemoryUserLocationRepository } from "#test/doubles/weather/in-memory-user-location.repository";
 import { StubWeatherForecastProvider } from "#test/doubles/weather/stub-weather-forecast-provider";
@@ -17,12 +17,10 @@ describe("GetWeatherForecastUseCase — 사용자 위치와 예보", () => {
   let repository: InMemoryUserLocationRepository;
   let weatherProvider: StubWeatherForecastProvider;
   let useCase: GetWeatherForecastUseCase;
+  // 예보 제공 범위가 현재 시각 기준이므로 요청 날짜의 KST 09:00을 지금으로 고정한다.
   const date = Temporal.Instant.from("2026-07-23T00:00:00.000Z");
 
   beforeEach(() => {
-    // 예보 제공 범위가 현재 시각 기준이므로 요청 날짜의 KST 09:00을 지금으로 고정한다.
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(date.epochMilliseconds);
     suppressLogger();
     memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
     repository = new InMemoryUserLocationRepository([createWeatherLocationFixture()]);
@@ -32,17 +30,13 @@ describe("GetWeatherForecastUseCase — 사용자 위치와 예보", () => {
       weatherProvider,
       weatherCache: cache,
       logger: new SilentLogger(),
-      clock: new FakeTimerClock(),
+      clock: new FixedClock(date),
     });
     useCase = new GetWeatherForecastUseCase({
       userLocationRepository: repository,
       readWeatherForecast,
     });
   });
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   it("사용자의 저장 좌표와 예보 결과를 함께 반환한다", async () => {
     // Given
     // When

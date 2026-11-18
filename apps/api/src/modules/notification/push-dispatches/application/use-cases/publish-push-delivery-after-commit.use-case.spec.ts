@@ -52,6 +52,7 @@ describe("PublishPushDeliveryAfterCommitUseCase — commit 이후 fast path", ()
 
   it("2초 timeout은 commit 흐름만 놓아주고 이미 시작한 발행은 취소하지 않는다", async () => {
     // Given
+    // 2초 timeout(setTimeout)이 실제로 지나가야 fast path가 놓아주므로 타이머를 가짜로 돌린다
     vi.useFakeTimers();
     const { afterCommit, publishOutbox, logger, publisher } = createAfterCommitPublisher();
     let resolvePublication: ((publishedCount: number) => void) | undefined;

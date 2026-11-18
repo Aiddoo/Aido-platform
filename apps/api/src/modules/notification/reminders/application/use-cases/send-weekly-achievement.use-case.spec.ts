@@ -1,5 +1,4 @@
 import { SUPPORTED_LOCALES } from "@aido/api/vocabulary";
-import { vi } from "vitest";
 
 import { previousIsoWeekOf } from "#api/modules/notification/reminders/domain/reminder-day.domain-service";
 import type {
@@ -239,24 +238,18 @@ describe.each(SUPPORTED_LOCALES)("%s 주간 성취 문구의 기간", (locale) =
       today: Temporal.PlainDate.from("2026-07-27"),
       tomorrow: Temporal.PlainDate.from("2026-07-28"),
     };
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date("2026-07-26T22:00:00.000Z"));
-    try {
-      // When
-      await strategy.execute(context);
-      const params = totalQueries[0];
-      const record = writtenRecords[0]?.[0];
-      const message = publishedBatches[0]?.[0];
+    // When
+    await strategy.execute(context);
+    const params = totalQueries[0];
+    const record = writtenRecords[0]?.[0];
+    const message = publishedBatches[0]?.[0];
 
-      // Then
-      expect(params?.periodStart.toString()).toBe("2026-07-20");
-      expect(params?.periodEnd.toString()).toBe("2026-07-27");
-      expect(record).toMatchObject({ year: 2026, week: 30, totalTodos: 8, completedTodos: 3 });
-      expect(message).toBeDefined();
-      const text = `${message?.title} ${message?.body}`;
-      expect(text).toMatch(locale === "ko" ? /지난주/ : /last week/i);
-    } finally {
-      vi.useRealTimers();
-    }
+    // Then
+    expect(params?.periodStart.toString()).toBe("2026-07-20");
+    expect(params?.periodEnd.toString()).toBe("2026-07-27");
+    expect(record).toMatchObject({ year: 2026, week: 30, totalTodos: 8, completedTodos: 3 });
+    expect(message).toBeDefined();
+    const text = `${message?.title} ${message?.body}`;
+    expect(text).toMatch(locale === "ko" ? /지난주/ : /last week/i);
   });
 });

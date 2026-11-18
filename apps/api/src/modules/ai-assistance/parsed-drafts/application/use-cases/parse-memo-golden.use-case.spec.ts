@@ -1,3 +1,4 @@
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { createAiParsingFixture } from "#test/fixtures/ai-assistance/ai-parsing-scenario.fixture";
 import {
   GOLDEN_MEMO_CATEGORY_ID,
@@ -10,15 +11,12 @@ import { ParseMemoUseCase } from "./parse-memo.use-case.js";
 const cases = GOLDEN_VARIANTS.flatMap((variant) => loadParseMemoGoldenCases(variant));
 
 describe("ParseMemoUseCase golden — fake model이 draft를 내면 공개 응답이 기대값과 같다", () => {
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   it.each(cases)("$id $input", async (golden) => {
     // Given
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date(golden.now));
-    const fixture = createAiParsingFixture();
+    const fixture = createAiParsingFixture(
+      {},
+      { clock: new FixedClock(Temporal.Instant.from(golden.now)) },
+    );
     fixture.generator.setRawResponse(golden.draft);
     const useCase = new ParseMemoUseCase(fixture);
     // When

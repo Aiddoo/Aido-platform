@@ -3,7 +3,6 @@ import { vi } from "vitest";
 import { TodoTitle } from "#api/modules/planning/shared/domain/todo-title.vo";
 import { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-series-id.vo";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { DateClock } from "#test/doubles/platform/date-clock";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { createPlanningTodoFixture } from "#test/fixtures/planning/planning-todos.fixture";
 
@@ -20,22 +19,19 @@ describe("회차 채우기", () => {
   let alert: RecordingOperationalAlert;
 
   beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(AT);
-    fixture = createPlanningTodoFixture();
+    fixture = createPlanningTodoFixture({
+      now: Temporal.Instant.fromEpochMilliseconds(AT.getTime()),
+    });
     alert = new RecordingOperationalAlert();
-  });
-  afterEach(() => {
-    vi.useRealTimers();
   });
 
   function useCase(overrides: { deadlineMs?: number; batchSize?: number } = {}) {
     return new MaterializeDueTodoSeriesUseCase({
-      clock: new DateClock(),
+      clock: fixture.clock,
       seriesRepository: fixture.todoSeriesRepository,
       seriesOwner: fixture.seriesOwner,
       dueRunner: new MaterializeTodoSeriesUseCase({
-        clock: new DateClock(),
+        clock: fixture.clock,
         seriesRepository: fixture.todoSeriesRepository,
         materializer: fixture.occurrenceMaterializer,
         effects: fixture.seriesEffects,

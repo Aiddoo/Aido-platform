@@ -1,6 +1,5 @@
 import { PLAN_CATALOG } from "@aido/api/vocabulary";
 
-import { QUOTA_LEDGER_TIME } from "#test/fixtures/access/quota-ledger.fixture";
 import { createAiParsingFixture } from "#test/fixtures/ai-assistance/ai-parsing-scenario.fixture";
 
 import { GetAiUsageUseCase } from "./get-ai-usage.use-case.js";
@@ -8,11 +7,6 @@ import { GetAiUsageUseCase } from "./get-ai-usage.use-case.js";
 const FREE_AI_LIMIT = PLAN_CATALOG.AI_PARSE.free;
 
 describe("GetAiUsageUseCase", () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(QUOTA_LEDGER_TIME);
-  });
-  afterEach(() => vi.useRealTimers());
   it("현재 기간의 AI_PARSE 사용량과 KST 다음 달 리셋 시각을 반환한다", async () => {
     // Given
     const fixture = createAiParsingFixture({ aiUsageCount: 3 });

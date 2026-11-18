@@ -17,7 +17,7 @@ import {
 import { InMemoryQuotaChargeRepository } from "#test/doubles/access/in-memory-quota-charge.repository";
 import { InMemoryQuotaUsageRepository } from "#test/doubles/access/in-memory-quota-usage.repository";
 import { StubUserMutationLock } from "#test/doubles/access/stub-user-mutation-lock";
-import { DateClock } from "#test/doubles/platform/date-clock";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
@@ -29,12 +29,9 @@ import {
   type AccessUserInput,
 } from "./access-user.fixture.js";
 
-/** vi.setSystemTime으로 Date를 옮기는 다른 Context spec이 원장과 같은 시각을 쓰게 한다 */
-export const QUOTA_LEDGER_TIME = new Date(ACCESS_FIXTURE_NOW.epochMilliseconds);
-
 /**
  * 메모리 대역 위의 실제 원장(UseCase·QuotaLedgerAdapter). 사용 Context의 UseCase 테스트도 이 원장을 쓴다.
- * 시계를 주지 않으면 vi.setSystemTime을 따르는 DateClock이다.
+ * 시계를 주지 않으면 ACCESS_FIXTURE_NOW에 멈춘 FixedClock이다.
  */
 export function createQuotaLedgerFixture(
   input: AccessUserInput = {},
@@ -50,7 +47,7 @@ export function createQuotaLedgerFixture(
   const unitOfWork = new ImmediateUnitOfWork();
   const logger = new SilentLogger();
   const alert = new RecordingOperationalAlert();
-  const clock = options.clock ?? new DateClock();
+  const clock = options.clock ?? new FixedClock(ACCESS_FIXTURE_NOW);
   const dependencies = {
     unitOfWork,
     userMutationLock: new StubUserMutationLock(users),

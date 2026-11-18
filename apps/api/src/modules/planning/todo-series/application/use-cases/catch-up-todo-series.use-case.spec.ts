@@ -3,7 +3,6 @@ import { vi } from "vitest";
 import { TodoTitle } from "#api/modules/planning/shared/domain/todo-title.vo";
 import { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-series-id.vo";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { DateClock } from "#test/doubles/platform/date-clock";
 import { createPlanningTodoFixture } from "#test/fixtures/planning/planning-todos.fixture";
 
 import { RepeatRule } from "../../domain/repeat-rule.vo.js";
@@ -23,11 +22,11 @@ describe("복귀 회차 채우기", () => {
   let dueRunner: MaterializeTodoSeriesUseCase;
 
   beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(AT);
-    fixture = createPlanningTodoFixture();
+    fixture = createPlanningTodoFixture({
+      now: Temporal.Instant.fromEpochMilliseconds(AT.getTime()),
+    });
     dueRunner = new MaterializeTodoSeriesUseCase({
-      clock: new DateClock(),
+      clock: fixture.clock,
       seriesRepository: fixture.todoSeriesRepository,
       materializer: fixture.occurrenceMaterializer,
       effects: fixture.seriesEffects,
@@ -35,13 +34,10 @@ describe("복귀 회차 채우기", () => {
       mutationLock: fixture.mutationLock,
     });
   });
-  afterEach(() => {
-    vi.useRealTimers();
-  });
 
   function catchUp(overrides: { deadlineMs?: number } = {}) {
     return new CatchUpTodoSeriesUseCase({
-      clock: new DateClock(),
+      clock: fixture.clock,
       seriesRepository: fixture.todoSeriesRepository,
       seriesOwner: fixture.seriesOwner,
       dueRunner,
@@ -109,7 +105,7 @@ describe("복귀 회차 채우기", () => {
     const findIdsBehind = vi.spyOn(fixture.todoSeriesRepository, "findIdsBehind");
     const service = catchUp();
     await service.execute(fixture.userId);
-    vi.setSystemTime(new Date("2026-11-06T00:00:00.000Z"));
+    fixture.clock.advanceBy({ hours: 21 });
     // When
     await service.execute(fixture.userId);
     // Then
@@ -123,7 +119,7 @@ describe("복귀 회차 채우기", () => {
 
   it("UTC 날짜가 하루 늦은 시간대의 오늘도 조회 범위에 넣는다", async () => {
     // Given
-    vi.setSystemTime(new Date("2026-11-04T16:00:00.000Z"));
+    fixture.clock.advanceBy({ hours: -11 });
     const findIdsBehind = vi.spyOn(fixture.todoSeriesRepository, "findIdsBehind");
     // When
     await catchUp().execute(fixture.userId);
@@ -157,7 +153,7 @@ describe("복귀 회차 채우기", () => {
     await expect(service.execute(fixture.userId)).resolves.toBeUndefined();
     await service.execute(fixture.userId);
     const callsBeforeRetry = findIdsBehind.mock.calls.length;
-    vi.setSystemTime(new Date(AT.getTime() + TODO_SERIES_CATCH_UP_BUDGET.RETRY_AFTER_MS + 1));
+    fixture.clock.advanceBy({ milliseconds: TODO_SERIES_CATCH_UP_BUDGET.RETRY_AFTER_MS + 1 });
     await service.execute(fixture.userId);
     // Then
     expect(callsBeforeRetry).toBe(1);
@@ -184,7 +180,7 @@ describe("복귀 회차 채우기", () => {
     const service = catchUp();
     // When
     await service.execute(fixture.userId);
-    vi.setSystemTime(new Date(AT.getTime() + TODO_SERIES_CATCH_UP_BUDGET.RETRY_AFTER_MS + 1));
+    fixture.clock.advanceBy({ milliseconds: TODO_SERIES_CATCH_UP_BUDGET.RETRY_AFTER_MS + 1 });
     await service.execute(fixture.userId);
     // Then
     expect(spy).toHaveBeenCalledTimes(3);

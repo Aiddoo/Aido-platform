@@ -24,7 +24,7 @@ import { RecordingTodoReminderScheduler } from "#test/doubles/planning/recording
 import { createStubCategoryOwnership } from "#test/doubles/planning/stub-category-ownership";
 import { StubTodoOwnerTimezone } from "#test/doubles/planning/stub-todo-owner-timezone";
 import { StubTodoSeriesOwner } from "#test/doubles/planning/stub-todo-series-owner";
-import { DateClock } from "#test/doubles/platform/date-clock";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
@@ -42,7 +42,7 @@ export function snapshotTodoRecord(
 }
 
 export function createPlanningTodoFixture(
-  input: { userId?: string; todos?: PlanningTodoRecord[] } = {},
+  input: { userId?: string; todos?: PlanningTodoRecord[]; now?: Temporal.Instant } = {},
 ) {
   const userId = input.userId ?? "planning-user";
   const records = new Map((input.todos ?? []).map((record) => [record.id, copyTodoRecord(record)]));
@@ -67,7 +67,7 @@ export function createPlanningTodoFixture(
   const todoSeriesRepository = new InMemoryTodoSeriesRepository(seriesStore);
   const seriesOwner = new StubTodoSeriesOwner();
   const todoReminder = new RecordingTodoReminderScheduler();
-  const clock = new DateClock();
+  const clock = new FixedClock(input.now ?? PLANNING_INSTANT);
   const applyTodoEvents = new ApplyTodoEventsUseCase({
     reminderScheduler: todoReminder,
     eventPublisher,
@@ -166,5 +166,7 @@ export function createPlanningTodo(userId = "planning-user", id = 1) {
     userId,
     id,
     startDate: Temporal.PlainDate.from("2026-05-15"),
+    createdAt: PLANNING_INSTANT,
+    updatedAt: PLANNING_INSTANT,
   });
 }

@@ -3,7 +3,6 @@ import { QuotaChargedGenerationAdapter } from "#api/modules/ai-assistance/parsed
 import { QuotaChargedPlanRunnerAdapter } from "#api/modules/voice/plan-applications/infrastructure/adapters/quota-charged-plan-runner.adapter";
 import { FakeAiGenerator } from "#test/doubles/ai-assistance/fake-ai.generator";
 import { StubAiDataSharingConsentReader } from "#test/doubles/ai-assistance/stub-ai-data-sharing-consent.reader";
-import { DateClock } from "#test/doubles/platform/date-clock";
 import { RecordingOperationalAlert } from "#test/doubles/platform/recording-operational-alert";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createQuotaLedgerFixture } from "#test/fixtures/access/quota-ledger.fixture";
@@ -15,8 +14,7 @@ export function createPlanFlowFixture(
   const ledgerFixture = createQuotaLedgerFixture(ledgerInput);
   const aiGenerator = new FakeAiGenerator();
   const logger = new SilentLogger();
-  // 원장이 vi.setSystemTime으로 고정한 Date를 따라가므로 같은 시계를 쓴다
-  const clock = new DateClock();
+  const clock = ledgerFixture.clock;
   const alert = new RecordingOperationalAlert();
   const consentReader = new StubAiDataSharingConsentReader();
   consentReader.decision = "AGREED";

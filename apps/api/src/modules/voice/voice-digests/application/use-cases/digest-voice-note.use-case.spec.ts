@@ -6,7 +6,6 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createAiGenerationError } from "#test/doubles/ai-assistance/fake-ai.generator";
 import { InMemoryPlanResultReplay } from "#test/doubles/voice/in-memory-plan-result-replay";
 import { StubPlanningContextReader } from "#test/doubles/voice/stub-planning-context.reader";
-import { QUOTA_LEDGER_TIME } from "#test/fixtures/access/quota-ledger.fixture";
 import { createPlanFlowFixture } from "#test/fixtures/voice/plan-flow.fixture";
 import {
   digestDraft,
@@ -61,14 +60,6 @@ function setup(ledgerInput: Parameters<typeof createPlanFlowFixture>[0] = {}) {
 }
 
 describe("DigestVoiceNoteUseCase", () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(QUOTA_LEDGER_TIME);
-  });
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   describe("녹음 길이 확인(1.15.1은 경보만)", () => {
     const { maxSeconds } = PLAN_CATALOG.VOICE_NOTE.perUse;
 

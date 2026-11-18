@@ -5,7 +5,6 @@ import { copyTodoRecord } from "#test/doubles/planning/in-memory-todo.repository
 import {
   createPlanningTodoFixture,
   createPlanningTodo,
-  PLANNING_TIME,
 } from "#test/fixtures/planning/planning-todos.fixture";
 
 import { ReorderTodoUseCase } from "./reorder-todo.use-case.js";
@@ -14,13 +13,10 @@ describe("할 일 순서 변경", () => {
   let fixture: ReturnType<typeof createPlanningTodoFixture>;
   let useCase: ReorderTodoUseCase;
   beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(PLANNING_TIME);
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
     useCase = new ReorderTodoUseCase(fixture);
   });
   afterEach(() => {
-    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 

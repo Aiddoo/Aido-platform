@@ -5,7 +5,6 @@ import {
   createPlanningTodoFixture,
   createPlanningTodo,
   PLANNING_INSTANT,
-  PLANNING_TIME,
 } from "#test/fixtures/planning/planning-todos.fixture";
 
 import { GetTodoResourceLimitUseCase } from "./get-todo-resource-limit.use-case.js";
@@ -14,13 +13,10 @@ describe("할 일 리소스 한도 조회", () => {
   let fixture: ReturnType<typeof createPlanningTodoFixture>;
   let useCase: GetTodoResourceLimitUseCase;
   beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(PLANNING_TIME);
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
     useCase = new GetTodoResourceLimitUseCase(fixture);
   });
   afterEach(() => {
-    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 

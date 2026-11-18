@@ -4,7 +4,6 @@ import { vi } from "vitest";
 import {
   createPlanningTodoFixture,
   createPlanningTodo,
-  PLANNING_TIME,
   snapshotTodoRecord,
 } from "#test/fixtures/planning/planning-todos.fixture";
 
@@ -15,13 +14,10 @@ describe("하위 항목 순서 변경", () => {
   let fixture: ReturnType<typeof createPlanningTodoFixture>;
   let useCase: ReorderTodoItemsUseCase;
   beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(PLANNING_TIME);
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
     useCase = new ReorderTodoItemsUseCase(fixture);
   });
   afterEach(() => {
-    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 

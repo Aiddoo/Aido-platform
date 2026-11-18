@@ -6,7 +6,6 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   createPlanningTodoFixture,
   createPlanningTodo,
-  PLANNING_TIME,
 } from "#test/fixtures/planning/planning-todos.fixture";
 import { createTodoReadModelFromRecord } from "#test/fixtures/planning/todo-response.fixture";
 
@@ -16,13 +15,10 @@ describe("할 일 목록 조회", () => {
   let fixture: ReturnType<typeof createPlanningTodoFixture>;
   let useCase: ListTodosUseCase;
   beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(PLANNING_TIME);
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
     useCase = new ListTodosUseCase(fixture);
   });
   afterEach(() => {
-    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 

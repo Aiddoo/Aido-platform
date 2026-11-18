@@ -2,6 +2,7 @@ import { PLAN_CATALOG } from "@aido/api/vocabulary";
 
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createAiGenerationError } from "#test/doubles/ai-assistance/fake-ai.generator";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { createAiParsingFixture } from "#test/fixtures/ai-assistance/ai-parsing-scenario.fixture";
 
 import { ParseTodoUseCase, type ParseTodoCommand } from "./parse-todo.use-case.js";
@@ -9,10 +10,10 @@ import { ParseTodoUseCase, type ParseTodoCommand } from "./parse-todo.use-case.j
 const FREE_AI_LIMIT = PLAN_CATALOG.AI_PARSE.free;
 
 // 서울 2026-10-28(수) 10:00
-const NOW = new Date("2026-10-28T01:00:00Z");
+const NOW = Temporal.Instant.from("2026-10-28T01:00:00Z");
 
 function createFixture() {
-  const fixture = createAiParsingFixture();
+  const fixture = createAiParsingFixture({}, { clock: new FixedClock(NOW) });
   fixture.generator.setDefaultResponse({
     title: "팀 미팅",
     date: { kind: "OFFSET_DAYS", amount: 1 },
@@ -30,16 +31,8 @@ function createFixture() {
 }
 
 describe("ParseTodoUseCase", () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(NOW);
-  });
   afterEach(() => {
-    try {
-      vi.restoreAllMocks();
-    } finally {
-      vi.useRealTimers();
-    }
+    vi.restoreAllMocks();
   });
 
   it("모델이 고른 표현을 서버가 사용자 로컬 날짜·시각으로 계산하고 프롬프트 버전을 돌려준다", async () => {

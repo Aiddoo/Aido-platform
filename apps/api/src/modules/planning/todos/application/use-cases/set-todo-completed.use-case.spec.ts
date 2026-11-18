@@ -17,13 +17,10 @@ describe("할 일 완료 상태 전이", () => {
   let fixture: ReturnType<typeof createPlanningTodoFixture>;
   let useCase: SetTodoCompletedUseCase;
   beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(PLANNING_TIME);
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
     useCase = new SetTodoCompletedUseCase(fixture);
   });
   afterEach(() => {
-    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -57,7 +54,7 @@ describe("할 일 완료 상태 전이", () => {
     };
     await useCase.execute(input);
     const completionWrite = vi.spyOn(fixture.todoRepository, "save");
-    vi.setSystemTime(new Date("2026-05-15T04:00:00Z"));
+    fixture.clock.advanceBy({ hours: 1 });
     // When
     const result = await useCase.execute(input);
     // Then

@@ -18,8 +18,6 @@ describe("할 일 부분 수정", () => {
   let fixture: ReturnType<typeof createPlanningTodoFixture>;
   let useCase: UpdateTodoUseCase;
   beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(PLANNING_TIME);
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
     useCase = new UpdateTodoUseCase({
       ...fixture,
@@ -28,7 +26,6 @@ describe("할 일 부분 수정", () => {
     });
   });
   afterEach(() => {
-    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -196,7 +193,7 @@ describe("할 일 부분 수정", () => {
     const input = { id: 1, userId: fixture.userId, timezone: "UTC", data: { completed: true } };
     // When
     const completed = await useCase.execute(input);
-    vi.setSystemTime(Temporal.Instant.from("2026-05-15T04:00:00Z"));
+    fixture.clock.advanceBy({ hours: 1 });
     const repeated = await useCase.execute(input);
     const uncompleted = await useCase.execute({ ...input, data: { completed: false } });
     // Then

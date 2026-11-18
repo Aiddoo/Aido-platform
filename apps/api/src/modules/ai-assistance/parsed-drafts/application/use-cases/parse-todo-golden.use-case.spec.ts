@@ -1,6 +1,7 @@
 import { omit } from "es-toolkit";
 
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { createAiParsingFixture } from "#test/fixtures/ai-assistance/ai-parsing-scenario.fixture";
 import { GOLDEN_VARIANTS, loadParseTodoGoldenCases } from "#test/fixtures/ai-golden/golden-cases";
 
@@ -9,15 +10,12 @@ import { ParseTodoUseCase } from "./parse-todo.use-case.js";
 const cases = GOLDEN_VARIANTS.flatMap((variant) => loadParseTodoGoldenCases(variant));
 
 describe("ParseTodoUseCase golden — fake model이 draft를 내면 공개 응답이 기대값과 같다", () => {
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   it.each(cases)("$id $input", async (golden) => {
     // Given
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date(golden.now));
-    const fixture = createAiParsingFixture();
+    const fixture = createAiParsingFixture(
+      {},
+      { clock: new FixedClock(Temporal.Instant.from(golden.now)) },
+    );
     fixture.generator.setRawResponse(golden.draft);
     const useCase = new ParseTodoUseCase(fixture);
     // When

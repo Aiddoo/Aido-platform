@@ -6,7 +6,6 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createAiGenerationError } from "#test/doubles/ai-assistance/fake-ai.generator";
 import { InMemoryPlanResultReplay } from "#test/doubles/voice/in-memory-plan-result-replay";
 import { StubPlanningContextReader } from "#test/doubles/voice/stub-planning-context.reader";
-import { QUOTA_LEDGER_TIME } from "#test/fixtures/access/quota-ledger.fixture";
 import { createPlanFlowFixture } from "#test/fixtures/voice/plan-flow.fixture";
 import { memoActionDraft, todoActionDraft } from "#test/fixtures/voice/voice-plan.fixture";
 
@@ -50,14 +49,6 @@ function setup(ledgerInput: Parameters<typeof createPlanFlowFixture>[0] = {}) {
 }
 
 describe("CreateQuickPlanUseCase", () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(QUOTA_LEDGER_TIME);
-  });
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   it("할 일이 있으면 한 번 차감하고 공유 응답 계약에 맞는 계획과 한도를 준다", async () => {
     // Given
     const { aiGenerator, execute, used } = setup();

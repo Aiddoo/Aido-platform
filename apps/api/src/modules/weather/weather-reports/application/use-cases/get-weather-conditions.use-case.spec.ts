@@ -2,7 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 
 import { WeatherForecastCache } from "#api/modules/weather/weather-reports/infrastructure/cache/weather-forecast.cache";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
-import { FakeTimerClock } from "#test/doubles/platform/fake-timer-clock";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { InMemoryUserLocationRepository } from "#test/doubles/weather/in-memory-user-location.repository";
 import { StubAirQualityProvider } from "#test/doubles/weather/stub-air-quality-provider";
@@ -30,8 +30,6 @@ describe("GetWeatherConditionsUseCase — 날짜별 부가정보와 부분 실�
 
   beforeEach(() => {
     suppressLogger();
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(date.epochMilliseconds);
     memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
     cache = new WeatherForecastCache(memory);
     repository = new InMemoryUserLocationRepository([createWeatherLocationFixture()]);
@@ -44,7 +42,7 @@ describe("GetWeatherConditionsUseCase — 날짜별 부가정보와 부분 실�
       weatherProvider,
       weatherCache: cache,
       logger,
-      clock: new FakeTimerClock(),
+      clock: new FixedClock(date),
     });
     conditions = new GetWeatherConditionsUseCase({
       userLocationRepository: repository,
@@ -56,10 +54,6 @@ describe("GetWeatherConditionsUseCase — 날짜별 부가정보와 부분 실�
       weatherCache: cache,
       logger,
     });
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
   });
 
   it("위치가 없으면 WEATHER_1902이며 공급자에 접근하지 않는다", async () => {
@@ -144,7 +138,7 @@ describe("GetWeatherConditionsUseCase — 날짜별 부가정보와 부분 실�
       weatherProvider: provider,
       weatherCache: cache,
       logger,
-      clock: new FakeTimerClock(),
+      clock: new FixedClock(date),
     });
     const localConditions = new GetWeatherConditionsUseCase({
       userLocationRepository: repository,

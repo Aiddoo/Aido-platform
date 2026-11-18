@@ -3,6 +3,7 @@ import { PLAN_CATALOG } from "@aido/api/vocabulary";
 
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createAiGenerationError } from "#test/doubles/ai-assistance/fake-ai.generator";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { createAiParsingFixture } from "#test/fixtures/ai-assistance/ai-parsing-scenario.fixture";
 import { readPromptBlock } from "#test/fixtures/ai-assistance/ai-prompt.fixture";
 
@@ -11,7 +12,7 @@ import { ParseMemoUseCase, type ParseMemoCommand } from "./parse-memo.use-case.j
 const FREE_AI_LIMIT = PLAN_CATALOG.AI_PARSE.free;
 
 // 서울 2026-10-28(수) 10:00
-const NOW = new Date("2026-10-28T01:00:00Z");
+const NOW = Temporal.Instant.from("2026-10-28T01:00:00Z");
 
 function draftTodo(title: string, overrides: Record<string, unknown> = {}) {
   return {
@@ -26,7 +27,7 @@ function draftTodo(title: string, overrides: Record<string, unknown> = {}) {
 }
 
 function createFixture() {
-  const fixture = createAiParsingFixture();
+  const fixture = createAiParsingFixture({}, { clock: new FixedClock(NOW) });
   const useCase = new ParseMemoUseCase(fixture);
   const input: ParseMemoCommand = {
     userId: fixture.userId,
@@ -40,16 +41,8 @@ function createFixture() {
 }
 
 describe("ParseMemoUseCase", () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(NOW);
-  });
   afterEach(() => {
-    try {
-      vi.restoreAllMocks();
-    } finally {
-      vi.useRealTimers();
-    }
+    vi.restoreAllMocks();
   });
 
   describe("이미 있는 할 일과 겹침", () => {

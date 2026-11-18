@@ -58,6 +58,7 @@ describe("GetWeatherReportUseCase — 칸 단위 캐시·폴백과 한국 대기
   }
 
   beforeEach(() => {
+    // 칸 캐시 TTL을 InMemoryCacheStore가 Date로 재서 Date와 FakeTimerClock을 함께 옮긴다
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(now.epochMilliseconds);
     memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });

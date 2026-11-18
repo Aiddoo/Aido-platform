@@ -4,7 +4,6 @@ import { vi } from "vitest";
 import {
   createPlanningTodoFixture,
   createPlanningTodo,
-  PLANNING_TIME,
   snapshotTodoRecord,
 } from "#test/fixtures/planning/planning-todos.fixture";
 
@@ -15,13 +14,10 @@ describe("하위 항목 삭제", () => {
   let fixture: ReturnType<typeof createPlanningTodoFixture>;
   let useCase: DeleteTodoItemUseCase;
   beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(PLANNING_TIME);
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
     useCase = new DeleteTodoItemUseCase(fixture);
   });
   afterEach(() => {
-    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 

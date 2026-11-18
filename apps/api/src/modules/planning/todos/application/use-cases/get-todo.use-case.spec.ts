@@ -4,7 +4,6 @@ import { vi } from "vitest";
 import {
   createPlanningTodoFixture,
   createPlanningTodo,
-  PLANNING_TIME,
 } from "#test/fixtures/planning/planning-todos.fixture";
 
 import { GetTodoUseCase } from "./get-todo.use-case.js";
@@ -13,13 +12,10 @@ describe("할 일 상세 조회", () => {
   let fixture: ReturnType<typeof createPlanningTodoFixture>;
   let useCase: GetTodoUseCase;
   beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(PLANNING_TIME);
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
     useCase = new GetTodoUseCase(fixture);
   });
   afterEach(() => {
-    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 

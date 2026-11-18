@@ -25,8 +25,6 @@ describe("할 일 생성", () => {
   let fixture: ReturnType<typeof createPlanningTodoFixture>;
   let useCase: CreateTodoUseCase;
   beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(PLANNING_TIME);
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
     useCase = new CreateTodoUseCase({
       ...fixture,
@@ -42,7 +40,6 @@ describe("할 일 생성", () => {
     });
   });
   afterEach(() => {
-    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -289,7 +286,7 @@ describe("할 일 생성", () => {
       "$name 회차마다 로컬 시간을 UTC로 바꾼다",
       async ({ startDate, until, timezone, now, expected }) => {
         // Given
-        vi.setSystemTime(new Date(now));
+        fixture.clock.advanceBy(fixture.clock.now().until(Temporal.Instant.from(now)));
         // When
         const { todos, series } = await useCase.execute(
           seriesInput({

@@ -15,13 +15,10 @@ describe("할 일 카테고리 이동", () => {
   let fixture: ReturnType<typeof createPlanningTodoFixture>;
   let useCase: ChangeTodoCategoryUseCase;
   beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(PLANNING_TIME);
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
     useCase = new ChangeTodoCategoryUseCase(fixture);
   });
   afterEach(() => {
-    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
