@@ -135,6 +135,7 @@ export function createPushNotificationResponse(
 ): PushNotificationResponse {
   return {
     id: 'response-1',
+    notificationIdentifier: 'notification-request-1',
     actionIdentifier: 'expo.modules.notifications.actions.DEFAULT',
     notification: createPushNotification(),
     receivedAt: fromEpochMs(0),

@@ -310,6 +310,23 @@ describe('리마인드 알림 버튼', () => {
     });
   });
 
+  it('버튼을 처리하면 그 알림을 알림 센터에서 지워 남은 버튼을 다시 누르지 않게 한다', async () => {
+    // Given
+    const { route, gateway } = await setup({
+      snooze: async () => ok({ remindAt: '2026-11-18T11:40:00.000Z' }),
+    });
+
+    // When
+    await act(async () => gateway.emitResponse(createReminderResponse('snooze')));
+
+    // Then
+    await waitFor(() => expect(route.getPathname()).toBe(`/todo/${TODO_ID}`));
+    await waitFor(() =>
+      expect(gateway.dismissNotification).toHaveBeenCalledWith('response-snooze'),
+    );
+    expect(gateway.dismissNotification).toHaveBeenCalledTimes(1);
+  });
+
   it('이미 끝낸 할 일에 다시 알림을 누르면 오류 대신 끝냈다고만 알린다', async () => {
     // Given
     const { route, gateway, haptics, analytics } = await setup({

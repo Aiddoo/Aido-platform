@@ -49,10 +49,13 @@ export interface PushNotificationGateway {
   getLastResponse(): PushNotificationResponse | null;
   /** 처리한 마지막 응답을 지운다. 지원하지 않는 환경에서는 throw할 수 있다 */
   clearLastResponse(): void;
+  /** 알림 버튼을 등록한다. 여러 번 불러도 앞 등록이 끝난 뒤 차례로 등록한다 */
   setCategory(category: PushNotificationCategory): Promise<void>;
   setBadgeCount(count: number): Promise<void>;
   /** OS 알림 센터에 도착해 남은 알림을 모두 지운다. 배지는 안 읽은 수를 따르므로 건드리지 않는다 */
   dismissDelivered(): Promise<void>;
+  /** OS 알림 센터에 남은 알림 하나를 지운다. identifier는 응답의 `id`다 */
+  dismissNotification(identifier: string): Promise<void>;
   /** 앱이 앞에 있을 때 받은 알림을 어떻게 보일지 정한다. 반환 함수로 기본(배너)으로 되돌린다 */
   setForegroundPresentation(
     decide: (notification: ReceivedPushNotification) => ForegroundPushPresentation,

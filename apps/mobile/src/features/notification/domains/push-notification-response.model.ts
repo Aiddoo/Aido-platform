@@ -31,6 +31,8 @@ export type PushOpenAppState = 'cold' | 'background' | 'foreground';
 export interface PushNotificationResponse {
   /** 누른 알림과 동작으로 만든 응답 id(`toPushNotificationResponseId`) */
   id: string;
+  /** 누른 알림의 OS identifier. 처리한 버튼 응답의 알림을 지울 때 쓴다 */
+  notificationIdentifier: string;
   actionIdentifier: string;
   notification: PushNotification;
   receivedAt: Instant;
@@ -86,6 +88,18 @@ function getTodoReminderAction(
     .exhaustive();
 }
 
+/**
+ * 처리가 끝나면 OS 알림 센터에서 그 알림을 지울 응답. 앱이 등록한 버튼(수신 거부·완료·다시 알림)만 지운다.
+ * Android 알림 버튼은 알림을 닫지 않아, 남기면 다른 버튼을 다시 눌러 이미 끝낸 할 일 안내만 받는다.
+ * 본문 탭과 모르는 동작은 OS가 하는 대로 둔다
+ */
+function shouldDismissNotification(response: PushNotificationResponse) {
+  return (
+    isMarketingOptOut(response) ||
+    todoReminderActionSchema.safeParse(response.actionIdentifier).success
+  );
+}
+
 function isExpired(response: PushNotificationResponse, now: Instant) {
   return diffMs(now, response.receivedAt) > PENDING_RESPONSE_LIFETIME_MS;
 }
@@ -124,9 +138,9 @@ function getOpenAppState(response: PushNotificationResponse): PushOpenAppState {
 }
 
 /**
- * 응답 하나의 id. Android 알림 버튼은 알림을 닫지 않아 버튼을 누른 뒤 본문을 또 누를 수 있으므로 알림 identifier에
- * 누른 동작(본문 탭도 expo-notifications 기본 동작 id가 있다)을 더한다. 같은 응답이 다시 오면(콜드 스타트의 마지막
- * 응답과 리스너) 같은 id라 한 번만 연다
+ * 응답 하나의 id. 버튼 응답의 알림은 처리한 뒤에 지우므로(지우기가 실패하거나 그 전에) 버튼을 누른 뒤 본문을 또 누를 수
+ * 있어 알림 identifier에 누른 동작(본문 탭도 expo-notifications 기본 동작 id가 있다)을 더한다. 같은 응답이 다시 오면
+ * (콜드 스타트의 마지막 응답과 리스너) 같은 id라 한 번만 연다
  */
 export function toPushNotificationResponseId(
   notificationIdentifier: string,
@@ -155,5 +169,6 @@ export const PushNotificationResponsePolicy = {
   isMarketingOptOut,
   getResponseAction,
   getTodoReminderAction,
+  shouldDismissNotification,
   getOpenAppState,
 } as const;

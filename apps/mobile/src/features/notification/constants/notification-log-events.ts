@@ -8,6 +8,7 @@ export const NOTIFICATION_LOG_EVENT = {
   TODO_REMINDER_CATEGORY_REGISTRATION_FAILED:
     'notification.todo-reminder-category-registration.failed',
   REMINDER_ACTION_FAILED: 'notification.reminder-action.failed',
+  ACTION_NOTIFICATION_DISMISS_FAILED: 'notification.action-notification-dismiss.failed',
   REMINDER_SNOOZE_TIME_SKIPPED: 'notification.reminder-snooze-time.skipped',
   BADGE_SYNC_FAILED: 'notification.badge-sync.failed',
   BADGE_CLEAR_FAILED: 'notification.badge-clear.failed',

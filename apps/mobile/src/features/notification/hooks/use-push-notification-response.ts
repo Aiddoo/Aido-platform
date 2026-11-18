@@ -92,11 +92,18 @@ export function usePushNotificationResponse(): void {
     }
   }, [gateway, logger]);
   const finishResponse = useCallback(
-    (responseId: string) => {
-      store.settle(responseId);
+    (response: PushNotificationResponse) => {
+      store.settle(response.id);
       clearLastResponse();
+      if (PushNotificationResponsePolicy.shouldDismissNotification(response)) {
+        gateway.dismissNotification(response.notificationIdentifier).catch((error: unknown) =>
+          logger.warn(NOTIFICATION_LOG_EVENT.ACTION_NOTIFICATION_DISMISS_FAILED, {
+            error: getErrorMessage(error),
+          }),
+        );
+      }
     },
-    [clearLastResponse, store],
+    [clearLastResponse, gateway, logger, store],
   );
 
   useLayoutEffect(() => {
@@ -119,6 +126,7 @@ export function usePushNotificationResponse(): void {
       }
       store.receive({
         id: toPushNotificationResponseId(response.id, response.actionIdentifier),
+        notificationIdentifier: response.id,
         actionIdentifier: response.actionIdentifier,
         notification: notification ?? createUnreadablePushNotification(),
         receivedAt: getNowInstant(),
@@ -158,7 +166,7 @@ export function usePushNotificationResponse(): void {
 
 function useMarketingOptOut(
   response: PushNotificationResponse | null,
-  finishResponse: (responseId: string) => void,
+  finishResponse: (response: PushNotificationResponse) => void,
 ) {
   const status = useAuthStatus();
   const appLifecycle = useAppLifecycle();
@@ -179,7 +187,7 @@ function useMarketingOptOut(
     const token = target.notification.marketingOptOutToken;
     // 계약이 빈 토큰을 막지 않아 빈 값도 끌 대상이 없다고 본다
     if (action.type === 'drop' || token == null || token === '') {
-      finishResponse(target.id);
+      finishResponse(target);
       return;
     }
     inFlightIdRef.current = target.id;
@@ -195,7 +203,7 @@ function useMarketingOptOut(
     }
     // 보내는 사이 로그아웃으로 슬롯이 비었으면 새 세션의 응답을 지우지 않는다
     if (!signal.aborted) {
-      finishResponse(target.id);
+      finishResponse(target);
     }
   });
 
@@ -220,7 +228,7 @@ function useMarketingOptOut(
 /** 인증과 복원이 끝난 탭의 소유를 확인하고 목적지를 정한다 */
 function useResolveResponse(
   response: PushNotificationResponse | null,
-  finishResponse: (responseId: string) => void,
+  finishResponse: (response: PushNotificationResponse) => void,
 ) {
   const status = useAuthStatus();
   const isRestoring = useIsRestoring();
@@ -248,7 +256,7 @@ function useResolveResponse(
         return;
       }
       if (ownership === 'foreign') {
-        finishResponse(target.id);
+        finishResponse(target);
         return;
       }
       store.markReady(target.id, resolveDestination(notification.target));
@@ -256,7 +264,7 @@ function useResolveResponse(
       logger.warn(NOTIFICATION_LOG_EVENT.RESPONSE_OPEN_FAILED, { error: getErrorMessage(error) });
       // 끝난 세션이나 밀려난 탭의 실패로 새 탭의 마지막 응답을 지우지 않는다
       if (isCurrent()) {
-        finishResponse(target.id);
+        finishResponse(target);
       }
     } finally {
       if (inFlightIdRef.current === target.id) {
@@ -271,7 +279,7 @@ function useResolveResponse(
       now: getNowInstant(),
     });
     if (action.type === 'drop') {
-      finishResponse(target.id);
+      finishResponse(target);
       return;
     }
     if (action.type === 'open' && !isRestoring) {
@@ -289,7 +297,7 @@ function useResolveResponse(
 /** 앱에 들어가는 중이면 Index가 경로를 열고, 앱 안이면 여기서 연다 */
 function useOpenReadyEntry(
   entry: ReadyPushNotificationEntry | null,
-  finishResponse: (responseId: string) => void,
+  finishResponse: (response: PushNotificationResponse) => void,
 ) {
   const { isEnteringApp } = usePushNotificationEntry();
   const logger = useLogger();
@@ -345,7 +353,7 @@ function useOpenReadyEntry(
       logger.warn(NOTIFICATION_LOG_EVENT.RESPONSE_OPEN_FAILED, { error: getErrorMessage(error) });
     } finally {
       inFlightIdRef.current = null;
-      finishResponse(response.id);
+      finishResponse(response);
     }
   });
 
@@ -355,7 +363,7 @@ function useOpenReadyEntry(
     if (PushNotificationPolicy.hasServerRecord(response.notification)) {
       recordOpened(response.notification.notificationId);
     }
-    finishResponse(response.id);
+    finishResponse(response);
   });
 
   useEffect(() => {

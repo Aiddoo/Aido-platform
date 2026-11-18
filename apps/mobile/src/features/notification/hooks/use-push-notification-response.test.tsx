@@ -311,6 +311,75 @@ describe('usePushNotificationResponse', () => {
     expect(analytics.trackEvent).toHaveBeenCalledTimes(1);
   });
 
+  it('수신 거부 버튼을 처리하면 그 알림을 알림 센터에서 지운다', async () => {
+    // Given
+    const { gateway, httpClient } = await setup({ status: 'authenticated' });
+    httpClient.post.mockResolvedValueOnce(
+      ok({ optedOut: true, marketingPushWithdrawnAt: '2026-11-09T03:00:00.000Z' }),
+    );
+
+    // When
+    await act(async () =>
+      gateway.emitResponse({
+        ...RESPONSE,
+        id: 'opt-out',
+        actionIdentifier: 'MARKETING_OPT_OUT',
+        data: { ...RESPONSE.data, marketingOptOutToken: 'token-1' },
+      }),
+    );
+
+    // Then
+    await waitFor(() => expect(gateway.dismissNotification).toHaveBeenCalledWith('opt-out'));
+  });
+
+  it('본문을 눌러 연 알림은 지우지 않는다', async () => {
+    // Given
+    const { gateway, httpClient, store } = await setup({ status: 'authenticated' });
+    httpClient.patch.mockResolvedValue(ok(createMarkReadResponseDto()));
+    httpClient.post.mockResolvedValue(ok({ opened: true }));
+    // 앱 화면 안이라 입구 훅이 직접 열고 응답을 끝낸다
+    await act(async () => store.markAppEntry(false));
+
+    // When
+    await act(async () =>
+      gateway.emitResponse({
+        ...RESPONSE,
+        data: { ...RESPONSE.data, notificationId: 7, navigation: { kind: 'NONE' } },
+      }),
+    );
+
+    // Then
+    await waitFor(() => expect(gateway.clearLastResponse).toHaveBeenCalled());
+    expect(store.getSnapshot().ready).toBeNull();
+    expect(gateway.dismissNotification).not.toHaveBeenCalled();
+  });
+
+  it('처리한 버튼 알림을 지우지 못해도 경고만 남긴다', async () => {
+    // Given
+    const { gateway, httpClient, logger } = await setup({ status: 'authenticated' });
+    httpClient.post.mockResolvedValueOnce(
+      ok({ optedOut: true, marketingPushWithdrawnAt: '2026-11-09T03:00:00.000Z' }),
+    );
+    gateway.dismissNotification.mockRejectedValueOnce(new Error('unavailable'));
+
+    // When
+    await act(async () =>
+      gateway.emitResponse({
+        ...RESPONSE,
+        id: 'opt-out',
+        actionIdentifier: 'MARKETING_OPT_OUT',
+        data: { ...RESPONSE.data, marketingOptOutToken: 'token-1' },
+      }),
+    );
+
+    // Then
+    await waitFor(() =>
+      expect(logger.warn).toHaveBeenCalledWith('notification.action-notification-dismiss.failed', {
+        error: 'unavailable',
+      }),
+    );
+  });
+
   it('언마운트 전까지 응답 리스너는 하나다', async () => {
     // Given
     const { gateway } = await setup({ status: 'unauthenticated' });

@@ -245,6 +245,25 @@ describe('PushNotificationResponsePolicy.getOpenAppState', () => {
   );
 });
 
+describe('PushNotificationResponsePolicy.shouldDismissNotification', () => {
+  it.each([
+    ['수신 거부 버튼', 'MARKETING_OPT_OUT', true],
+    ['리마인드 완료 버튼', 'complete', true],
+    ['리마인드 다시 알림 버튼', 'snooze', true],
+    ['본문 탭', 'expo.modules.notifications.actions.DEFAULT', false],
+    ['모르는 버튼', 'UNKNOWN_ACTION', false],
+  ])('%s 응답을 처리한 뒤 알림을 지우는지는 %s다', (_case, actionIdentifier, expected) => {
+    // Given
+    const response = createPushNotificationResponse({ actionIdentifier });
+
+    // When
+    const result = PushNotificationResponsePolicy.shouldDismissNotification(response);
+
+    // Then
+    expect(result).toBe(expected);
+  });
+});
+
 describe('toPushNotificationResponseId', () => {
   it('같은 알림이어도 버튼과 본문 탭은 다른 응답이고, 같은 알림의 같은 동작은 같은 응답이다', () => {
     // Given

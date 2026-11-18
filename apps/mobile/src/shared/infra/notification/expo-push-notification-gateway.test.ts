@@ -30,6 +30,7 @@ jest.mock('expo-notifications', () => ({
   clearLastNotificationResponse: jest.fn(),
   setNotificationCategoryAsync: jest.fn(),
   setNotificationHandler: jest.fn(),
+  dismissNotificationAsync: jest.fn(),
 }));
 
 const getPermissionsAsync = jest.mocked(Notifications.getPermissionsAsync);
@@ -38,6 +39,7 @@ const getExpoPushTokenAsync = jest.mocked(Notifications.getExpoPushTokenAsync);
 const requestPermissionsAsync = jest.mocked(Notifications.requestPermissionsAsync);
 const setNotificationChannelAsync = jest.mocked(Notifications.setNotificationChannelAsync);
 const setNotificationHandler = jest.mocked(Notifications.setNotificationHandler);
+const setNotificationCategoryAsync = jest.mocked(Notifications.setNotificationCategoryAsync);
 
 describe('createExpoPushNotificationGateway', () => {
   const gateway = createExpoPushNotificationGateway(createAppLoggerStub());
@@ -213,6 +215,71 @@ describe('createExpoPushNotificationGateway', () => {
     expect(Notifications.setNotificationCategoryAsync).toHaveBeenCalledWith('MARKETING', [
       { identifier: 'OPT_OUT', buttonTitle: '수신 거부', options: { opensAppToForeground: true } },
     ]);
+  });
+
+  describe('카테고리 등록 순서', () => {
+    setupFakeTimersPerTest();
+
+    it('카테고리를 한꺼번에 등록해도 앞 등록이 끝난 뒤 다음을 보내 iOS에서 둘 다 남는다', async () => {
+      // Given
+      const isolatedGateway = createExpoPushNotificationGateway(createAppLoggerStub());
+      // iOS CategoryManager처럼 처음 읽은 목록에 자기 것만 더해 쓰는 OS 목록
+      let registered: string[] = [];
+      const nativeCalls = new Map<string, () => void>();
+      setNotificationCategoryAsync.mockImplementation((identifier) => {
+        const snapshot = registered;
+        return new Promise((resolve) => {
+          nativeCalls.set(identifier, () => {
+            registered = [...snapshot, identifier];
+            resolve({ identifier, actions: [], options: undefined });
+          });
+        });
+      });
+
+      // When
+      const marketing = isolatedGateway.setCategory({ identifier: 'MARKETING', actions: [] });
+      const reminder = isolatedGateway.setCategory({ identifier: 'TODO_REMINDER', actions: [] });
+      await jest.advanceTimersByTimeAsync(0);
+      const startedBeforeFirstResolved = [...nativeCalls.keys()];
+      nativeCalls.get('MARKETING')?.();
+      await marketing;
+      await jest.advanceTimersByTimeAsync(0);
+      nativeCalls.get('TODO_REMINDER')?.();
+      await reminder;
+
+      // Then
+      expect(startedBeforeFirstResolved).toEqual(['MARKETING']);
+      expect(setNotificationCategoryAsync.mock.calls.map(([identifier]) => identifier)).toEqual([
+        'MARKETING',
+        'TODO_REMINDER',
+      ]);
+      expect(registered).toEqual(['MARKETING', 'TODO_REMINDER']);
+    });
+  });
+
+  it('앞 카테고리 등록이 실패해도 다음 등록은 이어서 보낸다', async () => {
+    // Given
+    const isolatedGateway = createExpoPushNotificationGateway(createAppLoggerStub());
+    setNotificationCategoryAsync
+      .mockRejectedValueOnce(new Error('category unavailable'))
+      .mockResolvedValueOnce({ identifier: 'TODO_REMINDER', actions: [], options: undefined });
+
+    // When
+    const marketing = isolatedGateway.setCategory({ identifier: 'MARKETING', actions: [] });
+    const reminder = isolatedGateway.setCategory({ identifier: 'TODO_REMINDER', actions: [] });
+
+    // Then
+    await expect(marketing).rejects.toThrow('category unavailable');
+    await expect(reminder).resolves.toBeUndefined();
+    expect(setNotificationCategoryAsync).toHaveBeenCalledTimes(2);
+  });
+
+  it('알림 하나 지우기는 응답 identifier를 SDK에 넘긴다', async () => {
+    // When
+    await gateway.dismissNotification('req-4');
+
+    // Then
+    expect(Notifications.dismissNotificationAsync).toHaveBeenCalledWith('req-4');
   });
   it('권한 창을 띄우기 전에 알림 채널을 먼저 만든다', async () => {
     // Given
