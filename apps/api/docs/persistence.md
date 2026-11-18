@@ -119,3 +119,15 @@ Repository·Reader·스키마·마이그레이션·DB 오류 번역을 바꿀 �
 7. 앞 마이그레이션의 잠금은 트랜잭션 끝까지 남는다. 그래서 다른 테이블(FK가 가리키는 테이블 포함)을 AccessExclusive로 잠그는 마이그레이션은 첫 문장에 `SET LOCAL lock_timeout = '500ms'`를 둔다. 기다리는 동안 앱 요청이 앱 `lock_timeout`(5초)을 넘겨 503이 되거나 교착에서 앱 트랜잭션이 끊기지 않도록, `deadlock_timeout`(1초)보다 먼저 migrate가 물러난다. 실패는 다시 실행하면 된다.
 
 `db:deploy`(migrate 이미지)는 URL guard → pg-boss migrate → Drizzle migrate 순서이고 원격 DB는 `AIDO_ALLOW_REMOTE_DB=1`일 때만 허용한다. 이미지 롤백은 DB를 되돌리지 않는다([배포](deployment.md#롤백의-범위)).
+
+## 안 쓰는 칸
+
+지우는 중인 칸(1단계)과 코드가 읽지 않아도 남기는 칸이다. 칸을 지우거나 남기기로 바꾸면 이 표를 고친다.
+
+| 칸                                                                                                                                             | 상태                                      | 근거·지우는 조건                                                                                                                                                                         |
+| ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Account.accessToken`·`accessTokenExpiresAt`·`refreshToken`·`scope`, `OAuthState.codeVerifier`·`ipAddress`·`userAgent`, `PushToken.lastUsedAt` | 1.17.0 스키마에서 뺐다. 1.18.0에서 지운다 | 읽기·쓰기 0. 1.17.0이 롤백 바닥이 되고 1.17.0 배포 뒤 만든 행에 값이 없을 때 지운다. 예전 값은 읽는 코드가 없어 guard는 새 행만 본다([호환](../../../docs/conventions/compatibility.md)) |
+| `PushDevice.platform`·`PushToken.platform`                                                                                                     | 남긴다(읽는다)                            | 푸시 묶음 키(`collapseId`)를 iOS 토큰에만 싣는 발송 경로가 토큰 플랫폼을 읽는다. 기기 행 값이 토큰 행으로 복사된다                                                                       |
+| `PushDevice.deviceModel`·`osVersion`                                                                                                           | 남긴다                                    | 문의 대응용 기기 기록(`PushDevice` 주석). 토큰이 없는 거절 기기는 여기에만 남는다                                                                                                        |
+| `PushDevice.permissionCanAskAgain`, `RewardGrant.lastErrorCode`, `User.lastSeenAppVersionAt`                                                   | 남긴다                                    | 운영 분석 자료(권한을 다시 물을 수 있는 기기, 보상 실패 원인, 앱 버전을 마지막으로 본 시각)                                                                                              |
+| `Session.revokedReason`, `SecurityLog`, `LoginAttempt`의 감사 칸                                                                               | 남긴다                                    | 감사 기록. 보관 기한은 [식별 기록 보관 기한](security.md#식별-기록-보관-기한)                                                                                                            |

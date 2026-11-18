@@ -3,13 +3,7 @@
  *
  * 타입 안전한 User 및 관련 엔티티 테스트 데이터 생성
  */
-import type {
-  Account,
-  AccountProvider,
-  User,
-  UserPreference,
-  UserProfile,
-} from "#test/types/database-rows";
+import type { Account, User, UserPreference, UserProfile } from "#test/types/database-rows";
 
 let userCounter = 0;
 
@@ -127,24 +121,9 @@ export const AccountFixture = {
       provider: overrides.provider ?? "CREDENTIAL",
       providerAccountId: overrides.providerAccountId ?? `provider-${id}`,
       password: overrides.password ?? null,
-      accessToken: overrides.accessToken ?? null,
-      accessTokenExpiresAt: overrides.accessTokenExpiresAt ?? null,
-      refreshToken: overrides.refreshToken ?? null,
-      scope: overrides.scope ?? null,
       createdAt: overrides.createdAt ?? now,
       updatedAt: overrides.updatedAt ?? now,
     };
-  },
-
-  /**
-   * OAuth Account 생성
-   */
-  createOAuth: (provider: AccountProvider, overrides: Partial<Account> = {}): Account => {
-    return AccountFixture.create({
-      provider,
-      accessToken: `${provider.toLowerCase()}-access-token`,
-      ...overrides,
-    });
   },
 
   /**

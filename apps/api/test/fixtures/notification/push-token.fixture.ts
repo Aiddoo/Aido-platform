@@ -20,7 +20,6 @@ export function createPushTokenFixture(
     isActive: true,
     createdAt: PUSH_TOKEN_FIXTURE_NOW,
     updatedAt: PUSH_TOKEN_FIXTURE_NOW,
-    lastUsedAt: PUSH_TOKEN_FIXTURE_NOW,
     payloadVersion: 2,
     appVersion: null,
     ...overrides,

@@ -13,5 +13,4 @@ export type UserPreference = typeof tables.userPreference.$inferSelect;
 export type UserProfile = typeof tables.userProfile.$inferSelect;
 export type Verification = typeof tables.verification.$inferSelect;
 
-export type AccountProvider = (typeof tables.accountProvider.enumValues)[number];
 export type TimeFormat = (typeof tables.timeFormat.enumValues)[number];

@@ -1,0 +1,3 @@
+-- 스키마에서만 뺀다. 1.16.0 이미지가 Account·OAuthState·PushToken을 읽고 쓸 때마다 이 칸을 이름으로 적어 DB 칸은 남긴다.
+-- 생성기가 만든 DROP COLUMN(Account.accessToken·accessTokenExpiresAt·refreshToken·scope, OAuthState.codeVerifier·ipAddress·userAgent, PushToken.lastUsedAt)은 지웠다.
+-- 모두 nullable이거나 기본값(PushToken.lastUsedAt = now())이 있어 칸을 적지 않는 insert도 통과한다. 1.17.0이 롤백 바닥이 된 뒤 1.18.0에서 지운다(compatibility.md).

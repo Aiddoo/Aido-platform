@@ -101,7 +101,6 @@ export class InMemoryPushTokenRepository extends PushTokenRepositoryPort {
       appVersion: device.pushToken.appVersion,
       createdAt: existing?.createdAt ?? registeredAt,
       updatedAt: registeredAt,
-      lastUsedAt: existing?.lastUsedAt ?? registeredAt,
     });
   }
 

@@ -12,7 +12,6 @@ export interface PushTokenReadModel {
   readonly isActive: boolean;
   readonly createdAt: Temporal.Instant;
   readonly updatedAt: Temporal.Instant;
-  readonly lastUsedAt: Temporal.Instant;
   readonly payloadVersion: number;
   readonly appVersion: string | null;
 }

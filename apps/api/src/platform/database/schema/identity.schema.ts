@@ -82,8 +82,7 @@ export const user = pgTable(
 export const linkedAccount = pgTable(
   "Account",
   {
-    accessToken: text(),
-    accessTokenExpiresAt: instant(),
+    // DB에는 accessToken·accessTokenExpiresAt·refreshToken·scope가 남아 있다(1.16.0 이미지가 SELECT). 1.18.0에서 지운다(compatibility.md)
     createdAt: instant()
       .default(sql`now()`)
       .notNull(),
@@ -91,8 +90,6 @@ export const linkedAccount = pgTable(
     password: varchar({ length: 128 }),
     provider: accountProvider().notNull(),
     providerAccountId: varchar({ length: 255 }).notNull(),
-    refreshToken: text(),
-    scope: varchar({ length: 500 }),
     // 저장소가 ClockPort 값으로 insert·update마다 명시한다
     updatedAt: instant().notNull(),
     userId: text().notNull(),
@@ -219,7 +216,7 @@ export const oAuthState = pgTable(
   {
     accessToken: varchar({ length: 1000 }),
     accountRestored: boolean(),
-    codeVerifier: varchar({ length: 128 }),
+    // DB에는 codeVerifier·ipAddress·userAgent가 남아 있다(1.16.0 이미지가 SELECT). 1.18.0에서 지운다(compatibility.md)
     createdAt: instant()
       .default(sql`now()`)
       .notNull(),
@@ -228,7 +225,6 @@ export const oAuthState = pgTable(
     expiresAt: instant().notNull(),
     id: serial().primaryKey(),
     initiatingUserId: varchar({ length: 36 }),
-    ipAddress: varchar({ length: 45 }),
     isNewUser: boolean(),
     mode: varchar({ length: 10 }),
     profileImage: varchar({ length: 500 }),
@@ -236,7 +232,6 @@ export const oAuthState = pgTable(
     redirectUri: varchar({ length: 500 }).notNull(),
     refreshToken: varchar({ length: 1000 }),
     state: varchar({ length: 64 }).notNull(),
-    userAgent: varchar({ length: 500 }),
     userId: varchar({ length: 255 }),
     userName: varchar({ length: 20 }),
   },

@@ -177,9 +177,7 @@ export const pushToken = pgTable(
     deviceId: varchar({ length: 255 }).notNull(),
     id: serial().primaryKey(),
     isActive: boolean().default(true).notNull(),
-    lastUsedAt: instant()
-      .default(sql`now()`)
-      .notNull(),
+    // DB에는 lastUsedAt(기본값 now())이 남아 있다(1.16.0 이미지가 SELECT). 1.18.0에서 지운다(compatibility.md)
     payloadVersion: integer().default(1).notNull(),
     platform: platform().notNull(),
     // 토큰을 받는 발송 채널(PUSH_CHANNELS). 등록 API v1은 Expo 토큰만 받아 기존 행은 기본값으로 채운다
