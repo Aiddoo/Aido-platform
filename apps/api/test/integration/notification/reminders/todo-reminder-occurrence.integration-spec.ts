@@ -19,6 +19,10 @@ import { PublishNotificationUseCase } from "#api/modules/notification/notificati
 import { DrizzlePushDispatchRepository } from "#api/modules/notification/push-dispatches/infrastructure/persistence/drizzle-push-dispatch.repository";
 import type { SnoozedReminderBooking } from "#api/modules/notification/reminders/application/ports/todo-reminder-snooze-scheduler.port";
 import { RecordReminderLateSkipUseCase } from "#api/modules/notification/reminders/application/use-cases/record-reminder-late-skip.use-case";
+import {
+  todoReminderJobKey,
+  todoReminderSnoozeJobKey,
+} from "#api/modules/notification/reminders/infrastructure/jobs/reminder-job-keys.constants";
 import { TodoReminderQueueProcessor } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-queue.processor";
 import { TodoReminderSchedulerAdapter } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-scheduler.adapter";
 import { TodoReminderSnoozeSchedulerAdapter } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-snooze-scheduler.adapter";
@@ -51,7 +55,10 @@ import {
   userPreference,
 } from "#api/platform/database/schema/index";
 import { JobQueueRegistry } from "#api/platform/jobs/job-queue.registry";
-import { PgBossJobQueueAdapter } from "#api/platform/jobs/pg-boss-job-queue.adapter";
+import {
+  deterministicJobId,
+  PgBossJobQueueAdapter,
+} from "#api/platform/jobs/pg-boss-job-queue.adapter";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
@@ -284,21 +291,27 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
     return id;
   }
 
-  /** 예약된 단계의 시각을 앞당겨 실제 큐에서 꺼내 처리하고 끝낸다. 끝난 작업 행이 남는 것까지 운영과 같다. */
-  async function fireStage(todoId: number, stage: Stage): Promise<void> {
-    await client.execute(
-      sql`UPDATE pgboss.job SET start_after = now() - interval '1 second'
-          WHERE name = ${TODO_REMINDER_QUEUE} AND singleton_key = ${`reminder_${todoId}_${stage}`}
-            AND state = 'created'`,
+  /**
+   * 키로 정확한 작업 하나를 읽어 처리하고 끝낸다. 큐를 꺼내(fetch) 고르지 않아 다른 테스트의 작업을 건드리지 않고,
+   * DB 시계와 startAfter 차이에도 흔들리지 않는다. 끝난 작업 행이 남는 것까지 운영과 같다.
+   */
+  async function runQueuedJob(idempotencyKey: string, times = 1): Promise<void> {
+    const job = await boss.getJobById<unknown>(
+      TODO_REMINDER_QUEUE,
+      deterministicJobId(TODO_REMINDER_QUEUE, idempotencyKey),
     );
-    const jobs = await boss.fetch<unknown>(TODO_REMINDER_QUEUE);
-    expect(jobs).toHaveLength(1);
-    const job = jobs[0];
-    if (job == null) {
-      return;
+    if (job?.state !== "created") {
+      throw new Error(`대기 중인 작업이 없다: ${idempotencyKey}`);
     }
-    await processor.process(todoReminderJobSchema.parse(job.data));
-    await boss.complete(TODO_REMINDER_QUEUE, job.id);
+    for (let attempt = 0; attempt < times; attempt++) {
+      await processor.process(todoReminderJobSchema.parse(job.data));
+    }
+    // 꺼내지 않은 작업은 includeQueued로만 끝낼 수 있다. 끝난 행이 남아 같은 id의 재예약이 무시되는 운영과 같아진다
+    await boss.complete(TODO_REMINDER_QUEUE, job.id, null, { includeQueued: true });
+  }
+
+  function fireStage(todoId: number, stage: Stage): Promise<void> {
+    return runQueuedJob(todoReminderJobKey(todoId, stage));
   }
 
   function moveTo(todoId: number, day: number, time: string | null) {
@@ -501,22 +514,9 @@ describe("할 일 알림 회차 중복 방지 (실제 PostgreSQL·pg-boss)", () 
       });
     }
 
-    /** 다시 알림 작업을 실제 큐에서 꺼내 처리하고 끝낸다. 재시도처럼 같은 작업을 한 번 더 처리할 수 있다 */
-    async function fireSnooze(todoId: number, notificationId: number, times = 1): Promise<void> {
-      const jobs = await boss.fetch<unknown>(TODO_REMINDER_QUEUE, {
-        includeMetadata: true,
-        batchSize: 10,
-      });
-      const job = jobs.find(
-        ({ singletonKey }) => singletonKey === `reminder-snooze_${todoId}_${notificationId}`,
-      );
-      if (job == null) {
-        throw new Error("다시 알림 작업이 없다");
-      }
-      for (let attempt = 0; attempt < times; attempt++) {
-        await processor.process(todoReminderJobSchema.parse(job.data));
-      }
-      await boss.complete(TODO_REMINDER_QUEUE, job.id);
+    /** 다시 알림 작업을 처리하고 끝낸다. 재시도처럼 같은 작업을 한 번 더 처리할 수 있다 */
+    function fireSnooze(todoId: number, notificationId: number, times = 1): Promise<void> {
+      return runQueuedJob(todoReminderSnoozeJobKey(todoId, notificationId), times);
     }
 
     it("회차 알림을 막지도 막히지도 않고, 누른 알림마다 한 번씩 울린다", async () => {
