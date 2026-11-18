@@ -186,9 +186,9 @@
       "files": ["apps/api/src/**/*.{ts,tsx}"],
       "excludeFiles": ["**/*.spec.ts", "**/*.integration-spec.ts"],
       "rules": {
-        "aido/aggregate-shape": "off",
-        "aido/member-order": "off",
-        "aido/max-params": ["off", { "max": 3 }]
+        "aido/aggregate-shape": "error",
+        "aido/member-order": "error",
+        "aido/max-params": ["error", { "max": 3 }]
       }
     },
     {
@@ -200,27 +200,27 @@
         "apps/api/src/platform/database/schema/**"
       ],
       "rules": {
-        "max-lines": ["off", { "max": 400 }],
-        "max-lines-per-function": ["off", { "max": 80 }]
+        "max-lines": ["error", { "max": 400 }],
+        "max-lines-per-function": ["error", { "max": 80 }]
       }
     },
     {
       "files": ["apps/api/src/**/*.port.ts"],
       "rules": {
-        "aido/port-id-value-object": "off",
-        "aido/port-return-shape": "off"
+        "aido/port-id-value-object": "error",
+        "aido/port-return-shape": "error"
       }
     },
     {
       "files": ["apps/api/src/shared/application/ports/domain-event-publisher.port.ts"],
       "rules": {
-        "aido/port-id-value-object": ["off", { "technicalIds": ["eventId"] }]
+        "aido/port-id-value-object": ["error", { "technicalIds": ["eventId"] }]
       }
     },
     {
       "files": ["apps/api/src/**/*.use-case.ts"],
       "rules": {
-        "aido/use-case-single-execute": "off"
+        "aido/use-case-single-execute": "error"
       }
     },
     {
@@ -232,7 +232,7 @@
         "**/*.integration-spec.ts"
       ],
       "rules": {
-        "aido/error-class-location": "off"
+        "aido/error-class-location": "error"
       }
     },
     {
@@ -244,20 +244,20 @@
         "**/*.integration-spec.ts"
       ],
       "rules": {
-        "aido/error-class-location": ["off", { "inlineThrow": true }]
+        "aido/error-class-location": ["error", { "inlineThrow": true }]
       }
     },
     {
       "files": ["apps/api/src/**/application/**/*.ts"],
       "excludeFiles": ["**/*.spec.ts", "**/*.integration-spec.ts"],
       "rules": {
-        "aido/read-model-suffix": "off"
+        "aido/read-model-suffix": "error"
       }
     },
     {
       "files": ["apps/api/src/**/*.read-model.ts"],
       "rules": {
-        "aido/read-model-suffix": ["off", { "exportSuffix": "ReadModel" }]
+        "aido/read-model-suffix": ["error", { "exportSuffix": "ReadModel" }]
       }
     },
     {
@@ -268,13 +268,13 @@
         "**/*.integration-spec.ts"
       ],
       "rules": {
-        "aido/rate-limit-location": "off"
+        "aido/rate-limit-location": "error"
       }
     },
     {
       "files": ["apps/api/src/modules/*/*/presentation/http/*.rate-limits.ts"],
       "rules": {
-        "aido/rate-limit-location": ["off", { "definitionFile": true }]
+        "aido/rate-limit-location": ["error", { "definitionFile": true }]
       }
     },
     {
