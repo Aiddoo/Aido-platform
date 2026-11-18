@@ -10,6 +10,7 @@ import { InMemoryPushDeviceRepository } from "#test/doubles/notification/in-memo
 import { InMemoryPushTokenRepository } from "#test/doubles/notification/in-memory-push-token.repository";
 import { RecordingPushTokenCache } from "#test/doubles/notification/recording-push-token-cache";
 import { StubActivePushTokenReader } from "#test/doubles/notification/stub-active-push-token.reader";
+import { StubUnreadNotificationCountReader } from "#test/doubles/notification/stub-unread-notification-count.reader";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createNotificationDraftFixture } from "#test/fixtures/notification/notification.fixture";
@@ -83,7 +84,8 @@ function createDispatchUseCase(
   options: {
     readonly devices?: readonly PushDevice[];
     readonly tokens?: readonly PushTokenReadModel[];
-    readonly activeTokens?: Iterable<readonly [string, readonly string[]]>;
+    readonly activeTokens?: ConstructorParameters<typeof StubActivePushTokenReader>[0];
+    readonly unreadCounts?: Iterable<readonly [string, number]>;
   } = {},
 ) {
   const pushTokenRepository = new InMemoryPushTokenRepository(options.tokens);
@@ -93,6 +95,7 @@ function createDispatchUseCase(
     channels: pushChannelRegistryOf(pushProvider),
   });
   const pushTokenCache = new RecordingPushTokenCache();
+  const unreadCounts = new StubUnreadNotificationCountReader(options.unreadCounts);
   const clock = new FixedClock(NOW);
   const noActiveTokenReasons = new NoActiveTokenReasonReader({
     pushDeviceRepository: new InMemoryPushDeviceRepository(options.devices),
@@ -102,6 +105,7 @@ function createDispatchUseCase(
     dispatchPush: new DispatchPushNotificationUseCase({
       pushTokenRepository,
       sendMessages,
+      unreadCounts,
       activePushTokenReader,
       pushTokenCache,
       noActiveTokenReasons,
@@ -112,6 +116,7 @@ function createDispatchUseCase(
       pushTokenRepository,
       activePushTokenReader,
       noActiveTokenReasons,
+      unreadCounts,
     }),
     sendPushBatch: new SendPushBatchUseCase({
       pushTokenRepository,
@@ -121,7 +126,14 @@ function createDispatchUseCase(
       logger: new SilentLogger(),
     }),
   };
-  return { service, pushTokenRepository, activePushTokenReader, pushProvider, pushTokenCache };
+  return {
+    service,
+    pushTokenRepository,
+    activePushTokenReader,
+    pushProvider,
+    pushTokenCache,
+    unreadCounts,
+  };
 }
 
 async function activeTokensOf(
@@ -672,5 +684,83 @@ describe("푸시 단건 발송·배치 준비·배치 전송 — 토큰 선택�
       "ExponentPushToken[user-1]",
     ]);
     expect(pushTokenCache.invalidatedPushTokenUserIds).toEqual([]);
+  });
+});
+
+describe("푸시 배지 — 기기 앱 버전과 안 읽은 수", () => {
+  const badgeDevices = [
+    { token: "phone-token", channel: "EXPO", appVersion: "1.17.0" },
+    { token: "tablet-token", channel: "EXPO", appVersion: "1.16.0" },
+    { token: "mac-token", channel: "EXPO", appVersion: null },
+  ] as const;
+
+  it("단건은 배지를 다시 맞추는 앱 기기에만 받는 사람의 안 읽은 수를 싣는다", async () => {
+    // Given
+    const { service, pushProvider } = createDispatchUseCase({
+      activeTokens: [["user-1", badgeDevices]],
+      unreadCounts: [["user-1", 4]],
+    });
+
+    // When
+    await service.dispatchPush.execute({
+      data: createNotificationDraftFixture({ userId: "user-1", title: "title", body: "body" }),
+      payload: { title: "title", body: "body", ...DELIVERY_OPTIONS },
+    });
+
+    // Then
+    expect(pushProvider.getSentPayloads().map(({ token, badge }) => [token, badge])).toEqual([
+      ["phone-token", 4],
+      ["tablet-token", undefined],
+      ["mac-token", undefined],
+    ]);
+  });
+
+  it("단건 받는 사람의 기기가 모두 옛 앱이면 안 읽은 수를 세지 않는다", async () => {
+    // Given
+    const { service, unreadCounts } = createDispatchUseCase({
+      activeTokens: [["user-1", badgeDevices.slice(1)]],
+      unreadCounts: [["user-1", 4]],
+    });
+
+    // When
+    await service.dispatchPush.execute({
+      data: createNotificationDraftFixture({ userId: "user-1", title: "title", body: "body" }),
+      payload: { title: "title", body: "body", ...DELIVERY_OPTIONS },
+    });
+
+    // Then
+    expect(unreadCounts.requestedUserIds).toEqual([]);
+  });
+
+  it("배치는 배지를 실을 기기가 있는 사람만 한 번에 세고 안 읽은 알림이 없으면 0을 실어 배지를 지운다", async () => {
+    // Given
+    const { service, unreadCounts } = createDispatchUseCase({
+      activeTokens: [
+        ["user-1", badgeDevices],
+        ["user-2", [{ token: "user-2-phone", channel: "EXPO", appVersion: "1.17.2" }]],
+        ["user-3", ["user-3-old"]],
+      ],
+      unreadCounts: [["user-1", 4]],
+    });
+
+    // When
+    const prepared = await service.preparePushBatch.execute([
+      batchPayload({ userId: "user-1", dispatchId: 1 }),
+      batchPayload({ userId: "user-2", dispatchId: 2 }),
+      batchPayload({ userId: "user-3", dispatchId: 3 }),
+    ]);
+
+    // Then
+    if (prepared.status !== "ready") {
+      throw new Error("전송할 알림 배치가 필요합니다");
+    }
+    expect(unreadCounts.requestedUserIds).toEqual([["user-1", "user-2"]]);
+    expect(prepared.messages.map(({ token, badge }) => [token, badge])).toEqual([
+      ["phone-token", 4],
+      ["tablet-token", undefined],
+      ["mac-token", undefined],
+      ["user-2-phone", 0],
+      ["user-3-old", undefined],
+    ]);
   });
 });

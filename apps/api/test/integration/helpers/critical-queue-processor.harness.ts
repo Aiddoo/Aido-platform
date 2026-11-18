@@ -16,6 +16,7 @@ import { UserPreferenceReaderAdapter } from "#api/modules/identity/user-preferen
 import { UserSettingsCacheAdapter } from "#api/modules/identity/user-preferences/infrastructure/adapters/user-settings-cache.adapter";
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/user-preferences/infrastructure/persistence/drizzle-user-preference.repository";
 import { MarketingConsentReconfirmPort } from "#api/modules/notification/notifications/application/ports/marketing-consent-reconfirm.port";
+import { UnreadNotificationCountReaderPort } from "#api/modules/notification/notifications/application/ports/unread-notification-count.reader.port";
 import { SendBillingIssueNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-billing-issue-notification.use-case";
 import { SendCheerNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-cheer-notification.use-case";
 import { SendFollowAcceptedNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-follow-accepted-notification.use-case";
@@ -23,6 +24,7 @@ import { SendFollowRequestNotificationUseCase } from "#api/modules/notification/
 import { SendMilestoneNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-milestone-notification.use-case";
 import { SendNotificationWithDeduplicationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-notification-with-deduplication.use-case";
 import { SendNudgeNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-nudge-notification.use-case";
+import { CachedUnreadNotificationCountReaderAdapter } from "#api/modules/notification/notifications/infrastructure/adapters/cached-unread-notification-count-reader.adapter";
 import { NotificationQueueProcessor } from "#api/modules/notification/notifications/infrastructure/jobs/notification-queue.processor";
 import { NOTIFICATION_NOTIFICATIONS_PROVIDERS } from "#api/modules/notification/notifications/notification-notifications.providers";
 import { ReportPushDeviceUseCase } from "#api/modules/notification/push-devices/application/use-cases/report-push-device.use-case";
@@ -232,6 +234,10 @@ function notificationProviders(pushProvider: FakePushChannel): Provider[] {
     ...NOTIFICATION_PUSH_DEVICES_USE_CASE_PROVIDERS,
     ...NOTIFICATION_PUSH_DISPATCHES_PERSISTENCE_PROVIDERS,
     ...NOTIFICATION_PUSH_DISPATCHES_USE_CASE_PROVIDERS,
+    {
+      provide: UnreadNotificationCountReaderPort,
+      useClass: CachedUnreadNotificationCountReaderAdapter,
+    },
     NotificationQueueProcessor,
     PushDeliveryQueueProcessor,
     // 큐 처리기가 부르지 않을 UseCase는 실수로 불리면 바로 드러나게 바꿔 둔다

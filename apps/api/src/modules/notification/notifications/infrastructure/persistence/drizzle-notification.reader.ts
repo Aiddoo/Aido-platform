@@ -87,6 +87,26 @@ export class DrizzleNotificationReader
     );
   }
 
+  async countUnreadByUsers(userIds: readonly UserId[]): Promise<ReadonlyMap<string, number>> {
+    if (userIds.length === 0) {
+      return new Map();
+    }
+    const rows = await this.#db
+      .select({ userId: notification.userId, unreadCount: count() })
+      .from(notification)
+      .where(
+        and(
+          inArray(
+            notification.userId,
+            userIds.map((userId) => userId.value),
+          ),
+          eq(notification.isRead, false),
+        ),
+      )
+      .groupBy(notification.userId);
+    return new Map(rows.map((row) => [row.userId, row.unreadCount]));
+  }
+
   async existsRecentNotification(query: ExistsRecentNotificationQuery): Promise<boolean> {
     const row = await this.#db.query.notification.findFirst({
       columns: { id: true },

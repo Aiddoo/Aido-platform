@@ -70,6 +70,7 @@ describe("PushNotificationPayloadMapper — 푸시 payload 조립", () => {
         variantId: "comment.created.ko.v1",
         dispatchId: 202,
       },
+      collapseKey: "notification-101",
       ttlSeconds: TTL_SECONDS,
       priority: "high",
     });

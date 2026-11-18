@@ -253,6 +253,17 @@ export class InMemoryNotificationRepository
     ).length;
   }
 
+  async countUnreadByUsers(users: readonly UserId[]): Promise<ReadonlyMap<string, number>> {
+    const counts = new Map<string, number>();
+    for (const user of users) {
+      const unread = await this.countUnread(user);
+      if (unread > 0) {
+        counts.set(user.value, unread);
+      }
+    }
+    return counts;
+  }
+
   async existsRecentNotification(query: ExistsRecentNotificationQuery): Promise<boolean> {
     return [...this.#rows.values()].some(
       (row) =>

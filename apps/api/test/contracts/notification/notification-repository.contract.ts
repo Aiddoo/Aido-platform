@@ -228,6 +228,28 @@ export function describeNotificationRepositoryContract(
         expect(await inboxReader.countUnread(UserId.reconstitute(OTHER_USER_ID))).toBe(1);
       });
 
+      it("여러 사람의 안 읽은 수를 한 번에 세고 안 읽은 알림이 없는 사람은 뺀다", async () => {
+        // Given
+        const { repository, inboxReader } = await createSubject();
+        await create(repository);
+        await create(repository);
+        await create(repository, { userId: OTHER_USER_ID });
+        await repository.markAllAsRead(
+          UserId.reconstitute(OTHER_USER_ID),
+          undefined,
+          NOTIFICATION_FIXTURE_NOW,
+        );
+
+        // When
+        const counts = await inboxReader.countUnreadByUsers([
+          UserId.reconstitute(USER_ID),
+          UserId.reconstitute(OTHER_USER_ID),
+        ]);
+
+        // Then
+        expect([...counts]).toEqual([[USER_ID, 2]]);
+      });
+
       it("전체 읽음은 바꾼 행의 읽은 시각을 now로 남긴다", async () => {
         // Given
         const { repository } = await createSubject();

@@ -3,6 +3,7 @@ import { ConfigModule } from "@nestjs/config";
 
 import { IdentityUserPreferencesModule } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 
+import { NotificationNotificationsQueriesModule } from "../notifications/notification-notifications-queries.public.js";
 import { NotificationPushDevicesModule } from "../push-devices/notification-push-devices.public.js";
 import { NotificationRecipientLocaleReaderPort } from "./application/ports/notification-recipient-locale.reader.port.js";
 import { NotificationRecipientTimezoneReaderPort } from "./application/ports/notification-recipient-timezone.reader.port.js";
@@ -18,9 +19,10 @@ import { NOTIFICATION_PUSH_DISPATCHES_PROVIDERS } from "./notification-push-disp
 import { MarketingPushOptOutController } from "./presentation/http/v1/marketing-push-opt-out.controller.js";
 
 @Module({
-  // 수신자 설정 캐시가 identity 설정 조회 포트를 쓴다
+  // 수신자 설정 캐시가 identity 설정 조회 포트를, 푸시 배지가 알림함의 안 읽은 수 조회를 쓴다
   imports: [
     IdentityUserPreferencesModule,
+    NotificationNotificationsQueriesModule,
     NotificationPushDevicesModule,
     ConfigModule.forFeature(notificationPushDispatchesConfig),
   ],

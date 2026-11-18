@@ -3,6 +3,7 @@ import { groupBy, uniq } from "es-toolkit";
 
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import type { UnreadNotificationCountReaderPort } from "../../../notifications/notification-notifications-queries.public.js";
 import {
   type ActivePushTokenReaderPort,
   type ActivePushTokenReadModel,
@@ -10,6 +11,7 @@ import {
   toActivePushTokens,
 } from "../../../push-devices/notification-push-devices.public.js";
 import { supportsFeatureDiscoveryMarketing } from "../../domain/feature-marketing-capability.domain-service.js";
+import { carriesUnreadBadge, pushBadgeFor } from "../../domain/push-badge.domain-service.js";
 import type { NoActiveTokenReasonReader } from "../no-active-token-reason.reader.js";
 import type { PushMessage } from "../ports/push-channel.port.js";
 import type { BatchPushNotificationPayload } from "../ports/push-notification-payload.port.js";
@@ -39,6 +41,12 @@ interface PreparePushBatchDependencies {
   readonly pushTokenRepository: Pick<PushTokenRepositoryPort, "findActivePushTokensByUsers">;
   readonly activePushTokenReader: Pick<ActivePushTokenReaderPort, "findByUserIds">;
   readonly noActiveTokenReasons: Pick<NoActiveTokenReasonReader, "findReasons">;
+  readonly unreadCounts: Pick<UnreadNotificationCountReaderPort, "countByUsers">;
+}
+
+interface SelectedPushToken {
+  readonly payload: BatchPushNotificationPayload;
+  readonly token: ActivePushTokenReadModel;
 }
 
 // 배치 payload마다 받을 토큰을 골라 공급자 payload로 펼치고, 토큰이 없는 발송은 이유와 함께 뺀다
@@ -56,7 +64,7 @@ export class PreparePushBatchUseCase {
     );
     const capabilityTokensByUser = await this.#findCapabilityTokens(payloads);
 
-    const messages: PushMessage[] = [];
+    const selected: SelectedPushToken[] = [];
     const dispatchIds: number[] = [];
     const attemptedDispatchIds = new Set<number>();
     const skippedDispatches: Array<{ dispatchId: number; reason: PushDispatchSkipReason }> = [];
@@ -79,7 +87,7 @@ export class PreparePushBatchUseCase {
       }
       attemptedDispatchIds.add(dispatchId);
       for (const token of selection.tokens) {
-        messages.push(toPushMessage(payload, token));
+        selected.push({ payload, token });
         dispatchIds.push(dispatchId);
       }
     }
@@ -94,11 +102,32 @@ export class PreparePushBatchUseCase {
       }
     }
 
+    const unreadCounts = await this.#unreadCountsForBadges(selected);
+    const messages = selected.map(({ payload, token }) =>
+      toPushMessage(payload, token, unreadCounts.get(payload.userId.value) ?? 0),
+    );
     const base = { attemptedDispatchIds, skippedDispatches, recipientUserIds: userIds };
     if (messages.length === 0) {
       return { status: "empty", ...base };
     }
     return { status: "ready", messages, dispatchIds, ...base };
+  }
+
+  // 배지를 실을 기기가 있는 사람만 한 번에 센다. 수신자마다 따로 묻지 않는다
+  async #unreadCountsForBadges(
+    selected: readonly SelectedPushToken[],
+  ): Promise<ReadonlyMap<string, number>> {
+    const badgeUserIds = uniq(
+      selected
+        .filter(({ token }) => carriesUnreadBadge(token.appVersion))
+        .map(({ payload }) => payload.userId.value),
+    );
+    if (badgeUserIds.length === 0) {
+      return new Map();
+    }
+    return this.#dependencies.unreadCounts.countByUsers(
+      badgeUserIds.map((userId) => UserId.reconstitute(userId)),
+    );
   }
 
   async #findCapabilityTokens(
@@ -152,15 +181,19 @@ function selectTokens(
 
 function toPushMessage(
   payload: BatchPushNotificationPayload,
-  { channel, token }: ActivePushTokenReadModel,
+  { channel, token, appVersion }: ActivePushTokenReadModel,
+  unreadCount: number,
 ): PushMessage {
+  const badge = pushBadgeFor({ appVersion, unreadCount });
   return {
     channel,
     token,
+    ...(badge != null && { badge }),
     title: payload.title,
     body: payload.body,
     data: payload.data,
     categoryId: payload.categoryId,
+    collapseKey: payload.collapseKey,
     priority: payload.priority,
     ttlSeconds: payload.ttlSeconds,
   };

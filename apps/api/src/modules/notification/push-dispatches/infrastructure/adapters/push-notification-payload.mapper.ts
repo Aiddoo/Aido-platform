@@ -23,7 +23,10 @@ import {
 } from "../../application/ports/push-notification-payload.port.js";
 import { FEATURE_DISCOVERY_CAMPAIGN_KEY } from "../../domain/feature-marketing-capability.domain-service.js";
 import { PushCategoryId } from "../../domain/push-category-id.vo.js";
-import { PUSH_DELIVERY_PRIORITY } from "../../domain/push-delivery-options.domain-service.js";
+import {
+  PUSH_DELIVERY_PRIORITY,
+  pushCollapseKey,
+} from "../../domain/push-delivery-options.domain-service.js";
 import { isMarketingNotification } from "../../domain/push-eligibility.domain-service.js";
 import { toNotificationNavigation } from "./notification-navigation.mapper.js";
 import { toNotificationRouting } from "./notification-routing.mapper.js";
@@ -78,6 +81,7 @@ export class PushNotificationPayloadMapper extends PushNotificationPayloadPort {
         ...this.#createNotificationData(data, notificationId.value),
         dispatchId: dispatchId.value,
       },
+      collapseKey: pushCollapseKey(notificationId.value),
       ttlSeconds: input.ttlSeconds,
       priority: PUSH_DELIVERY_PRIORITY,
       ...(categoryId != null && { categoryId }),

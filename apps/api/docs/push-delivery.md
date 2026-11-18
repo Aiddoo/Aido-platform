@@ -84,6 +84,14 @@ receipt 갱신은 `TICKET_ACCEPTED`에만 원자적으로 적용한다. 이미 D
 | `PUSH_PERMISSION_NOT_REQUESTED` | 허용된 기기가 없고 `NOT_DETERMINED` 기기가 있음. 거절보다 먼저 센다                |
 | `PUSH_PERMISSION_DENIED`        | 허용된 기기가 없고 `DENIED` 기기만 있음                                            |
 
+## 배지와 중복 배너
+
+사용자는 폰·태블릿·Mac 여러 기기로 받는다. 지금은 사용자의 활성 토큰 전부로 보낸다. 근거는 [Expo 메시지 형식](https://docs.expo.dev/push-notifications/sending-notifications/#message-request-format)이다.
+
+- **중복 배너**: 메시지마다 알림 id로 만든 키(`pushCollapseKey`, `notification-<id>`)를 `collapseId`와 `tag`에 함께 싣는다. Expo 문서상 `collapseId`(iOS·Android)는 iOS에서 `apns-collapse-id`로 보관 중인 것과 이미 뜬 알림을 모두 바꾸지만 Android에서는 FCM `collapse_key`로 보관 중인 것만 합친다. 이미 뜬 Android 알림은 `tag`(FCM `notification.tag`)가 바꾼다. 그래서 청크 transport 실패 뒤 배치 재시도로 같은 알림이 두 번 가도 한 기기에는 한 번 보인다. 알림 id가 다르면(다시 알림·새 알림) 키도 달라 바꾸지 않는다. `threadId`는 묶어 보일 뿐 바꾸지 않아 쓰지 않는다.
+- **배지**: Expo `badge`는 문서상 iOS 전용이다(0이면 지운다, `allowsBadge`가 꺼져 있으면 OS가 무시한다). 서버는 앱 1.17.0 이상 기기(`PushToken.appVersion`, 기기가 보고한 네이티브 버전)에만 받는 사람의 안 읽은 수를 싣는다(`pushBadgeFor`). 1.15.1~1.16.0 앱도 열 때 배지를 안 읽은 수로 맞추지만 받은 수가 캐시와 같으면 다시 쓰지 않아, 다른 기기에서 읽은 뒤 서버가 실은 배지가 남는다. 1.17.0 앱은 조회할 때마다 다시 쓴다([앱 배지](../../mobile/docs/push-notifications.md#로그아웃과-배지)). OTA는 네이티브 버전을 올리지 않으므로 1.16.0 다음 앱 버전부터 싣는다. 안 읽은 알림이 없으면 0을 실어 지운다.
+- **안 읽은 수**: 알림함 조회와 같은 캐시(`NotificationCacheKey.unreadCount`, "all" 범위)를 먼저 읽고 없는 사람만 `countUnreadByUsers` 한 쿼리로 센다(`UnreadNotificationCountReaderPort`, `notifications` slice의 `-queries` Module). 묶음 발송은 배지를 실을 기기가 있는 사람만 묶음당 한 번 묻고 캐시에 쓰지 않는다. 배지 기기가 없으면 세지 않는다. 알림은 발송 전에 커밋되므로 수에 이번 알림이 들어간다. 다른 기기에서 읽은 것은 다음 푸시나 그 기기를 열 때 맞는다(무음 푸시로 지우는 읽음 동기화는 후보).
+
 ## 큐와 작업 key
 
 큐 규칙(이름·`defineQueue`·멱등)은 [작업과 이벤트](jobs-and-events.md#큐-정의)다. 푸시 큐는 `push-dispatches/infrastructure/jobs/*.queue.ts`(`push-delivery.v1`)와 `notifications/infrastructure/jobs/*.queue.ts`(`notification.v1`, receipt 확인 포함)에 있고, 예약 작업(`push-receipts`·`relay-outbox`)은 DLQ 없이 같은 큐의 예약 정의로 등록한다. 같은 원인 이벤트의 작업은 결정적 job id로 한 번만 저장된다.

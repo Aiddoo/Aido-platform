@@ -154,3 +154,8 @@ function nextLocalMidnight(now: Temporal.Instant, timeZone: TimeZone): Temporal.
     .toZonedDateTime(timeZone.value)
     .toInstant();
 }
+
+// 재시도로 같은 알림을 다시 보내도 한 기기에 한 번만 보이게 하는 키. 알림 id가 같으면 같은 배너다
+export function pushCollapseKey(notificationId: number): string {
+  return `notification-${notificationId}`;
+}

@@ -10,6 +10,7 @@ import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
+import { UnreadNotificationCountReaderPort } from "../notifications/notification-notifications-queries.public.js";
 import {
   ActivePushTokenReaderPort,
   PushDeviceRepositoryPort,
@@ -188,6 +189,7 @@ export const NOTIFICATION_PUSH_DISPATCHES_USE_CASE_PROVIDERS = [
   provideUseCase(DispatchPushNotificationUseCase, {
     pushTokenRepository: PushTokenRepositoryPort,
     sendMessages: SendPushMessagesUseCase,
+    unreadCounts: UnreadNotificationCountReaderPort,
     activePushTokenReader: ActivePushTokenReaderPort,
     pushTokenCache: PushTokenCachePort,
     noActiveTokenReasons: NoActiveTokenReasonReader,
@@ -198,6 +200,7 @@ export const NOTIFICATION_PUSH_DISPATCHES_USE_CASE_PROVIDERS = [
     pushTokenRepository: PushTokenRepositoryPort,
     activePushTokenReader: ActivePushTokenReaderPort,
     noActiveTokenReasons: NoActiveTokenReasonReader,
+    unreadCounts: UnreadNotificationCountReaderPort,
   }),
   provideUseCase(SendPushBatchUseCase, {
     pushTokenRepository: PushTokenRepositoryPort,

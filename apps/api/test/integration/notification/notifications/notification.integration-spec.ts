@@ -15,6 +15,7 @@ import { DrizzleUserPreferenceRepository } from "#api/modules/identity/user-pref
 import { MarketingConsentReconfirmPort } from "#api/modules/notification/notifications/application/ports/marketing-consent-reconfirm.port";
 import { NotificationDeduplicationPort } from "#api/modules/notification/notifications/application/ports/notification-deduplication.port";
 import { NotificationRepositoryPort } from "#api/modules/notification/notifications/application/ports/notification.repository.port";
+import { UnreadNotificationCountReaderPort } from "#api/modules/notification/notifications/application/ports/unread-notification-count.reader.port";
 import type { InboxNotificationReadModel } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
 import { GetUnreadNotificationCountUseCase } from "#api/modules/notification/notifications/application/use-cases/get-unread-notification-count.use-case";
 import { ListNotificationsUseCase } from "#api/modules/notification/notifications/application/use-cases/list-notifications.use-case";
@@ -26,6 +27,7 @@ import { PublishNotificationBatchUseCase } from "#api/modules/notification/notif
 import { SendBatchNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-batch-notification.use-case";
 import { SendNotificationWithDeduplicationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-notification-with-deduplication.use-case";
 import { SendNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-notification.use-case";
+import { CachedUnreadNotificationCountReaderAdapter } from "#api/modules/notification/notifications/infrastructure/adapters/cached-unread-notification-count-reader.adapter";
 import { DrizzleNotificationRepository } from "#api/modules/notification/notifications/infrastructure/persistence/drizzle-notification.repository";
 import { NOTIFICATION_NOTIFICATIONS_PROVIDERS } from "#api/modules/notification/notifications/notification-notifications.providers";
 import { PublishNotificationUseCase } from "#api/modules/notification/notifications/notification-notifications.public";
@@ -181,6 +183,10 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
         ...NOTIFICATION_PUSH_DEVICES_USE_CASE_PROVIDERS,
         ...NOTIFICATION_PUSH_DISPATCHES_PERSISTENCE_PROVIDERS,
         ...NOTIFICATION_PUSH_DISPATCHES_USE_CASE_PROVIDERS,
+        {
+          provide: UnreadNotificationCountReaderPort,
+          useClass: CachedUnreadNotificationCountReaderAdapter,
+        },
         {
           provide: PushDispatchRepositoryPort,
           useValue: mockPushDispatchRepository,

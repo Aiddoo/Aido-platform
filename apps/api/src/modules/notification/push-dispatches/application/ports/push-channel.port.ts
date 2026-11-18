@@ -10,7 +10,8 @@ export interface PushMessageContent {
   readonly title: string;
   readonly body: string;
   readonly data?: Record<string, unknown>;
-  readonly badge?: number;
+  // 같은 알림의 재전송이 한 기기에 두 번 보이지 않게 하는 키(pushCollapseKey)
+  readonly collapseKey?: string;
   readonly sound?: "default" | null;
   readonly categoryId?: PushCategoryId;
   readonly priority: PushDeliveryPriority;
@@ -20,6 +21,8 @@ export interface PushMessageContent {
 export interface PushMessage extends PushMessageContent {
   readonly channel: PushChannel;
   readonly token: string;
+  // 앱 아이콘 배지. 그 기기 앱이 배지를 다시 맞출 수 있을 때만 받는 사람의 안 읽은 수를 싣는다(pushBadgeFor)
+  readonly badge?: number;
 }
 
 export interface PushFailure {

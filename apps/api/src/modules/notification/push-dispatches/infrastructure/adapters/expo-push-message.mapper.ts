@@ -33,6 +33,10 @@ export function buildExpoPushMessage(payload: PushMessage): ExpoPushMessageBuild
     body: payload.body,
     data: payload.data,
     badge: payload.badge,
+    // iOS는 apns-collapse-id로 보관 중·이미 뜬 알림을 바꾸고, Android의 collapse_key는 보관 중인 것만 합쳐
+    // 이미 뜬 알림은 tag로 바꾼다(Expo 문서 collapseId·tag)
+    collapseId: payload.collapseKey,
+    tag: payload.collapseKey,
     sound: payload.sound ?? "default",
     // 앱이 등록한 Android 알림 채널은 default 하나다
     channelId: "default",

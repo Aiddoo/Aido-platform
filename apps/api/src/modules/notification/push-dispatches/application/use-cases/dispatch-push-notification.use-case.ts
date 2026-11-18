@@ -4,6 +4,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import type { UnreadNotificationCountReaderPort } from "../../../notifications/notification-notifications-queries.public.js";
 import {
   type ActivePushTokenReaderPort,
   type ActivePushTokenReadModel,
@@ -20,6 +21,7 @@ import {
   FEATURE_DISCOVERY_CAMPAIGN_KEY,
   supportsFeatureDiscoveryMarketing,
 } from "../../domain/feature-marketing-capability.domain-service.js";
+import { carriesUnreadBadge, pushBadgeFor } from "../../domain/push-badge.domain-service.js";
 import type { NoActiveTokenReasonReader } from "../no-active-token-reason.reader.js";
 import type { PushMessageContent, PushSendResult } from "../ports/push-channel.port.js";
 import { countOutcomes, tokensToRevoke } from "../push-delivery-results.mapper.js";
@@ -47,6 +49,7 @@ interface DispatchPushNotificationDependencies {
     "deactivateInvalidTokens" | "findPushTokensByUser"
   >;
   readonly sendMessages: Pick<SendPushMessagesUseCase, "execute">;
+  readonly unreadCounts: Pick<UnreadNotificationCountReaderPort, "countByUsers">;
   readonly activePushTokenReader: Pick<ActivePushTokenReaderPort, "findByUserId">;
   readonly pushTokenCache: Pick<PushTokenCachePort, "invalidatePushTokens">;
   readonly noActiveTokenReasons: Pick<NoActiveTokenReasonReader, "findReason">;
@@ -70,8 +73,15 @@ export class DispatchPushNotificationUseCase {
       return tokenResolution;
     }
 
+    const unreadCount = await this.#unreadCountForBadge(
+      command.data.userId,
+      tokenResolution.tokens,
+    );
     const results = await this.#dependencies.sendMessages.execute(
-      tokenResolution.tokens.map(({ channel, token }) => ({ ...command.payload, channel, token })),
+      tokenResolution.tokens.map(({ channel, token, appVersion }) => {
+        const badge = pushBadgeFor({ appVersion, unreadCount });
+        return { ...command.payload, channel, token, ...(badge != null && { badge }) };
+      }),
     );
     const revokedTokens = tokensToRevoke(results);
     if (revokedTokens.length > 0) {
@@ -93,6 +103,20 @@ export class DispatchPushNotificationUseCase {
       ...countOutcomes(results),
     });
     return { status: "sent", results };
+  }
+
+  // 배지를 실을 기기가 없으면 세지 않는다
+  async #unreadCountForBadge(
+    userId: string,
+    tokens: readonly ActivePushTokenReadModel[],
+  ): Promise<number> {
+    if (!tokens.some(({ appVersion }) => carriesUnreadBadge(appVersion))) {
+      return 0;
+    }
+    const counts = await this.#dependencies.unreadCounts.countByUsers([
+      UserId.reconstitute(userId),
+    ]);
+    return counts.get(userId) ?? 0;
   }
 
   async #resolveTokens(
