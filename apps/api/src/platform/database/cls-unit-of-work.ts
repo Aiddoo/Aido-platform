@@ -19,6 +19,7 @@ const AFTER_COMMIT_TASK_SCOPE = Symbol("AFTER_COMMIT_TASK_SCOPE");
 
 interface AfterCommitTaskScope {
   readonly tasks: AfterCommitTask[];
+  readonly coalesceKeys: Set<string>;
 }
 
 interface UnitOfWorkTransactionHost {
@@ -55,7 +56,7 @@ export class ClsUnitOfWork implements UnitOfWorkPort, AfterCommitTaskRegistryPor
       throw new RangeError("statementTimeoutMs must be a positive integer");
     }
 
-    const scope: AfterCommitTaskScope = { tasks: [] };
+    const scope: AfterCommitTaskScope = { tasks: [], coalesceKeys: new Set() };
     const result = await this.#transactionHost.withTransaction(async () => {
       this.#cls.set(AFTER_COMMIT_TASK_SCOPE, scope);
       if (statementTimeoutMs != null) {
@@ -71,7 +72,7 @@ export class ClsUnitOfWork implements UnitOfWorkPort, AfterCommitTaskRegistryPor
     return result;
   }
 
-  register(task: AfterCommitTask): void {
+  register(task: AfterCommitTask, coalesceKey?: string): void {
     if (!this.#transactionHost.isTransactionActive()) {
       this.#runImmediately(task);
       return;
@@ -82,6 +83,12 @@ export class ClsUnitOfWork implements UnitOfWorkPort, AfterCommitTaskRegistryPor
       throw new Error("After-commit task scope is missing for an active transaction");
     }
 
+    if (coalesceKey != null) {
+      if (scope.coalesceKeys.has(coalesceKey)) {
+        return;
+      }
+      scope.coalesceKeys.add(coalesceKey);
+    }
     // nestjs-cls의 Required 전파는 store를 shallow-copy한다. 배열 reference를
     // 유지해야 nested UoW에서 등록한 작업을 root commit이 함께 flush할 수 있다.
     scope.tasks.push(task);

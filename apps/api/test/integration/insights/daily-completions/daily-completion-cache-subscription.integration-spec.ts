@@ -1,35 +1,18 @@
-import { Injectable } from "@nestjs/common";
 import request from "supertest";
 
 import { DailyCompletionCachePort } from "#api/modules/insights/daily-completions/application/ports/daily-completion-cache.port";
-import { DailyCompletionCache } from "#api/modules/insights/daily-completions/infrastructure/cache/daily-completion.cache";
-import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import {
   DomainEventPublisherPort,
   type PublishedDomainEvent,
 } from "#api/shared/application/ports/domain-event-publisher.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
-import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { CountingDailyCompletionCache } from "#test/doubles/insights/counting-daily-completion-cache";
 
 import {
   createE2eApp,
   destroyE2eApp,
   type E2eTestContext,
 } from "../../../e2e/helpers/e2e-app-factory.js";
-
-@Injectable()
-class CountingDailyCompletionCache extends DailyCompletionCache {
-  readonly invalidatedUserIds: string[] = [];
-
-  constructor(store: CacheStorePort) {
-    super(store);
-  }
-
-  override async invalidate(userId: UserId): Promise<void> {
-    this.invalidatedUserIds.push(userId.value);
-    await super.invalidate(userId);
-  }
-}
 
 function todoCompleted(userId: string): PublishedDomainEvent {
   return {

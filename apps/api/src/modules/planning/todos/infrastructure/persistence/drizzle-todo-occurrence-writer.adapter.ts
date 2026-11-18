@@ -120,15 +120,15 @@ export class DrizzleTodoOccurrenceWriterAdapter implements TodoOccurrenceWriterP
     seriesId: TodoSeriesId,
     fromDate: string,
     patch: TodoOccurrencePatch,
-  ): Promise<void> {
+  ): Promise<number> {
     const values = omitBy(
       { title: patch.title, categoryId: patch.categoryId?.value, visibility: patch.visibility },
       isUndefined,
     );
     if (isEmptyObject(values)) {
-      return;
+      return 0;
     }
-    await this.#db
+    const updated = await this.#db
       .update(todo)
       .set({ ...values, updatedAt: this.#clock.now() })
       .where(
@@ -137,7 +137,9 @@ export class DrizzleTodoOccurrenceWriterAdapter implements TodoOccurrenceWriterP
           gte(todo.occurrenceDate, Temporal.PlainDate.from(fromDate)),
           eq(todo.completed, false),
         ),
-      );
+      )
+      .returning({ id: todo.id });
+    return updated.length;
   }
 
   async updateOccurrenceTimes(times: readonly TodoOccurrenceTime[]): Promise<void> {

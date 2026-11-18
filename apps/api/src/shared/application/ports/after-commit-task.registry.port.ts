@@ -5,7 +5,8 @@ export type AfterCommitTask = () => Promise<void>;
  *
  * 트랜잭션이 없으면 작업을 즉시 best-effort로 실행합니다. 이 포트는 내구성을
  * 보장하지 않으므로, 반드시 전달되어야 하는 작업은 outbox와 함께 사용합니다.
+ * `coalesceKey`가 같은 작업은 같은 Unit of Work에서 처음 등록한 하나만 실행합니다.
  */
 export abstract class AfterCommitTaskRegistryPort {
-  abstract register(task: AfterCommitTask): void;
+  abstract register(task: AfterCommitTask, coalesceKey?: string): void;
 }

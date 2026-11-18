@@ -13,6 +13,7 @@ import {
 
 import { TodoTitle } from "../../shared/domain/todo-title.vo.js";
 import { TodoCategoryId } from "../../todo-categories/domain/todo-category-id.vo.js";
+import { TodoOccurrencesChangedEvent } from "../../todo-series/domain/todo-occurrences-changed.event.js";
 import { TodoCategoryChangedEvent } from "./todo-category-changed.event.js";
 import { TodoCreatedEvent } from "./todo-created.event.js";
 import { TodoId } from "./todo-id.vo.js";
@@ -575,6 +576,35 @@ describe("Todo — 할 일 애그리게잇", () => {
       // Then
       expect(changes).toEqual([false, false]);
       expect(todo.pullDomainEvents()).toHaveLength(0);
+    });
+  });
+
+  describe("markOccurrencesChanged", () => {
+    it("반복 회차 행을 고치거나 지웠으면 규칙 값이 그대로여도 그 반복의 회차 변경 사실을 낸다", () => {
+      // Given
+      const todo = createTodoFixture({ seriesId: "series-1" });
+
+      // When
+      const changed = todo.markOccurrencesChanged(3);
+
+      // Then
+      expect(changed).toBe(true);
+      expect(todo.pullDomainEvents()).toEqual([
+        new TodoOccurrencesChangedEvent("series-1", TODO_FIXTURE_USER_ID),
+      ]);
+    });
+
+    it("바뀐 회차 행이 없거나 반복 회차가 아니면 false이고 사실을 내지 않는다", () => {
+      // Given
+      const occurrence = createTodoFixture({ seriesId: "series-1" });
+      const single = createTodoFixture({ seriesId: null });
+
+      // When
+      const changes = [occurrence.markOccurrencesChanged(0), single.markOccurrencesChanged(2)];
+
+      // Then
+      expect(changes).toEqual([false, false]);
+      expect([...occurrence.pullDomainEvents(), ...single.pullDomainEvents()]).toEqual([]);
     });
   });
 

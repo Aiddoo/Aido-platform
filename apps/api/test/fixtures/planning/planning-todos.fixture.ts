@@ -1,8 +1,10 @@
 import type { Todo as TodoResponse } from "@aido/api/contracts/todo/v1";
 
+import { ApplyFollowingTodosUpdateUseCase } from "#api/modules/planning/todo-series/application/use-cases/apply-following-todos-update.use-case";
 import { DeleteTodoOccurrencesUseCase } from "#api/modules/planning/todo-series/application/use-cases/delete-todo-occurrences.use-case";
 import { MaterializeTodoOccurrencesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-todo-occurrences.use-case";
 import { PublishTodoSeriesEditUseCase } from "#api/modules/planning/todo-series/application/use-cases/publish-todo-series-edit.use-case";
+import { RemapFollowingOccurrencesUseCase } from "#api/modules/planning/todo-series/application/use-cases/remap-following-occurrences.use-case";
 import type { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
 import { ApplyTodoEventsUseCase } from "#api/modules/planning/todos/application/use-cases/apply-todo-events.use-case";
 import { ResolveTodoTimezoneUseCase } from "#api/modules/planning/todos/application/use-cases/resolve-todo-timezone.use-case";
@@ -111,6 +113,18 @@ export function createPlanningTodoFixture(
     mutationLock,
     logger,
   });
+  const applyFollowingUpdate = new ApplyFollowingTodosUpdateUseCase({
+    todoRepository,
+    occurrenceWriter,
+    remapOccurrences: new RemapFollowingOccurrencesUseCase({ occurrenceWriter }),
+    seriesRepository: todoSeriesRepository,
+    categoryOwnership,
+    materializer: occurrenceMaterializer,
+    todoReminder,
+    mutationLock,
+    clock,
+    applyTodoEvents,
+  });
   return {
     userId,
     records,
@@ -129,6 +143,7 @@ export function createPlanningTodoFixture(
     seriesEffects,
     occurrenceMaterializer,
     deleteOccurrences,
+    applyFollowingUpdate,
     todoCache,
     eventPublisher,
     completionEffects,

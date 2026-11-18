@@ -31,6 +31,8 @@ export interface AfterCommitEventSubscription<
   TPayload extends object,
 > extends EventSubscriptionBase<TPayload> {
   readonly delivery: "after-commit";
+  /** 같은 커밋에서 key가 같은 전달은 처음 하나만 보낸다. 사용자 단위 캐시 정리를 한 번으로 합칠 때 쓴다. */
+  coalesceKey?(payload: TPayload): string;
 }
 
 export type EventSubscription<TPayload extends object> =

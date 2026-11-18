@@ -16,6 +16,14 @@ export interface TodoScheduleProps {
   readonly isAllDay: boolean;
 }
 
+export const TODO_SCHEDULE_FIELDS = [
+  "startDate",
+  "endDate",
+  "scheduledLocalTime",
+  "scheduledTime",
+  "isAllDay",
+] as const satisfies readonly (keyof TodoScheduleProps)[];
+
 export interface TodoScheduleInput {
   readonly startDate: Temporal.PlainDate;
   readonly endDate: Temporal.PlainDate | null;

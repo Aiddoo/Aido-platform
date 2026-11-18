@@ -35,6 +35,8 @@ function cacheSubscription<TPayload extends CacheOwnerPayload>(
     eventName,
     delivery: "after-commit",
     payloadSchema,
+    // 한 범위 수정이 할 일·회차 사실을 여럿 내도 커밋마다 사용자 캐시는 한 번만 지운다
+    coalesceKey: ({ userId }) => `insights.daily-completion-cache:${userId}`,
   });
 }
 

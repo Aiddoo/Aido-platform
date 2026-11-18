@@ -90,7 +90,9 @@ export class DeleteTodoOccurrencesUseCase {
         })
         .exhaustive();
       await todoReminder.cancelReminders(deletedTodoIds.map((id) => TodoId.reconstitute(id)));
-      await this.#dependencies.applyTodoEvents.execute(events);
+      // 끝난 규칙이나 규칙 없는 묶음은 규칙 값이 그대로여도 회차 행이 지워진다
+      todo.markOccurrencesChanged(deletedTodoIds.length);
+      await this.#dependencies.applyTodoEvents.execute([...events, ...todo.pullDomainEvents()]);
       return { seriesId, deletedTodoIds };
     });
 

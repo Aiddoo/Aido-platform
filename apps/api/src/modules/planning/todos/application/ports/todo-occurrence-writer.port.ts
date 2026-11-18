@@ -63,12 +63,12 @@ export abstract class TodoOccurrenceWriterPort {
     fromDate: string,
   ): Promise<readonly TodoOccurrenceReadModel[]>;
 
-  // fromDate 이후(포함) 미완료 회차의 내용을 함께 고친다. 완료한 회차는 기록이라 두지 않는다
+  // fromDate 이후(포함) 미완료 회차의 내용을 함께 고치고 고친 행 수를 준다. 완료한 회차는 기록이라 두지 않는다
   abstract updateFollowingOccurrences(
     seriesId: TodoSeriesId,
     fromDate: string,
     patch: TodoOccurrencePatch,
-  ): Promise<void>;
+  ): Promise<number>;
 
   // 회차마다 값이 다른 시각을 한 문장으로 저장한다
   abstract updateOccurrenceTimes(times: readonly TodoOccurrenceTime[]): Promise<void>;

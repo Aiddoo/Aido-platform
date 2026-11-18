@@ -6,6 +6,7 @@ import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
 import { TodoTitle } from "../../shared/domain/todo-title.vo.js";
 import { TodoCategoryId } from "../../todo-categories/domain/todo-category-id.vo.js";
+import { TodoOccurrencesChangedEvent } from "../../todo-series/domain/todo-occurrences-changed.event.js";
 import { TodoSeriesId } from "../../todo-series/domain/todo-series-id.vo.js";
 import { TodoCategoryChangedEvent } from "./todo-category-changed.event.js";
 import {
@@ -23,9 +24,9 @@ import {
 } from "./todo-details-patch.domain-service.js";
 import { TodoId } from "./todo-id.vo.js";
 import type { TodoItemId } from "./todo-item-id.vo.js";
-import { TodoItem, type TodoItemPrimitives } from "./todo-item.entity.js";
+import { TodoItem, type TodoItemChange, type TodoItemPrimitives } from "./todo-item.entity.js";
 import { TodoRescheduledEvent } from "./todo-rescheduled.event.js";
-import { TodoSchedule } from "./todo-schedule.vo.js";
+import { TODO_SCHEDULE_FIELDS, TodoSchedule } from "./todo-schedule.vo.js";
 import { TodoToggledEvent } from "./todo-toggled.event.js";
 import { TodoUpdatedEvent } from "./todo-updated.event.js";
 import { TodoVisibilityChangedEvent } from "./todo-visibility-changed.event.js";
@@ -37,7 +38,8 @@ export type TodoEvent =
   | TodoUpdatedEvent
   | TodoDeletedEvent
   | TodoVisibilityChangedEvent
-  | TodoCategoryChangedEvent;
+  | TodoCategoryChangedEvent
+  | TodoOccurrencesChangedEvent;
 
 export interface TodoPrimitives {
   readonly id: number;
@@ -126,15 +128,7 @@ export class Todo extends AggregateRoot<TodoId, TodoProps, TodoEvent> {
       sortOrder: primitives.sortOrder,
       completed: primitives.completed,
       completedAt: primitives.completedAt,
-      schedule: TodoSchedule.reconstitute(
-        pick(primitives, [
-          "startDate",
-          "endDate",
-          "scheduledLocalTime",
-          "scheduledTime",
-          "isAllDay",
-        ]),
-      ),
+      schedule: TodoSchedule.reconstitute(pick(primitives, TODO_SCHEDULE_FIELDS)),
       visibility: primitives.visibility,
       seriesId: primitives.seriesId == null ? null : TodoSeriesId.reconstitute(primitives.seriesId),
       occurrenceDate: primitives.occurrenceDate,
@@ -316,6 +310,16 @@ export class Todo extends AggregateRoot<TodoId, TodoProps, TodoEvent> {
     return true;
   }
 
+  // 범위 수정·삭제가 이 회차가 속한 반복의 회차 행을 묶음 문장으로 바꿨을 때 행마다가 아니라 한 번 알린다
+  markOccurrencesChanged(changedCount: number): boolean {
+    const { seriesId } = this.props;
+    if (seriesId == null || changedCount === 0) {
+      return false;
+    }
+    this.raise(new TodoOccurrencesChangedEvent(seriesId.value, this.props.userId.value));
+    return true;
+  }
+
   // 끝에 붙인다. 끝낸 일에 항목을 더하면 남은 일이 생긴 것이라 다시 연다("완료 + 0/N"을 막는다, QA #37)
   addItem(params: {
     readonly id: TodoItemId;
@@ -330,19 +334,10 @@ export class Todo extends AggregateRoot<TodoId, TodoProps, TodoEvent> {
     return item;
   }
 
-  // 제목을 먼저 검증해 실패하면 아무 값도 바꾸지 않는다
-  updateItem(
-    itemId: TodoItemId,
-    change: { readonly title?: string; readonly completed?: boolean },
-    now: Temporal.Instant,
-  ): boolean {
-    const item = findChecklistItem(this.props.items, itemId);
-    const title = change.title == null ? null : TodoTitle.create(change.title);
-    const renamed = title != null && item.rename(title, now);
-    const completionChanged =
-      change.completed != null && item.changeCompleted(change.completed, now);
-    this.#itemsChanged ||= renamed || completionChanged;
-    return renamed || completionChanged;
+  updateItem(itemId: TodoItemId, change: TodoItemChange, now: Temporal.Instant): boolean {
+    const changed = findChecklistItem(this.props.items, itemId).edit(change, now);
+    this.#itemsChanged ||= changed;
+    return changed;
   }
 
   removeItem(itemId: TodoItemId): boolean {

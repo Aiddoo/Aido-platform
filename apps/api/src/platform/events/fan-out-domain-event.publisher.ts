@@ -50,7 +50,10 @@ export class FanOutDomainEventPublisher extends DomainEventPublisherPort {
             idempotencyKey: `${event.eventId}:${subscription.name}`,
           });
         } else {
-          this.#afterCommit.register(() => this.#deliverAfterCommit(event, subscription, parsed));
+          this.#afterCommit.register(
+            () => this.#deliverAfterCommit(event, subscription, parsed),
+            subscription.coalesceKey?.(parsed),
+          );
         }
       }
     }

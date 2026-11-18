@@ -138,6 +138,28 @@ describe("ClsUnitOfWork — commit 후 작업 등록", () => {
     expect(events).toEqual(["outer-before", "nested", "outer-after"]);
   });
 
+  it("같은 coalesceKey는 nested UoW까지 합쳐 처음 등록한 작업 하나만 commit 뒤 실행한다", async () => {
+    // Given
+    const events: string[] = [];
+    const task = (name: string) => async () => {
+      events.push(name);
+    };
+
+    // When
+    await unitOfWork.run(async () => {
+      registry.register(task("user-a:first"), "cache:user-a");
+      await unitOfWork.run(async () => {
+        registry.register(task("user-a:nested"), "cache:user-a");
+        registry.register(task("user-b"), "cache:user-b");
+      });
+      registry.register(task("user-a:last"), "cache:user-a");
+      registry.register(task("plain"));
+    });
+
+    // Then
+    expect(events).toEqual(["user-a:first", "user-b", "plain"]);
+  });
+
   it("한 작업의 실패가 다음 작업과 이미 commit된 business result를 막지 않는다", async () => {
     // Given
     const secondTask = vi.fn().mockResolvedValue(undefined);

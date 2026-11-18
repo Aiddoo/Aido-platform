@@ -20,6 +20,11 @@ interface TodoItemProps {
   updatedAt: Temporal.Instant;
 }
 
+export interface TodoItemChange {
+  readonly title?: string;
+  readonly completed?: boolean;
+}
+
 interface CreateTodoItemParams {
   readonly id: TodoItemId;
   readonly title: TodoTitle;
@@ -76,6 +81,15 @@ export class TodoItem extends Entity<TodoItemId, TodoItemProps> {
     this.props.completed = completed;
     this.props.updatedAt = now;
     return true;
+  }
+
+  // 제목을 먼저 검증해 실패하면 아무 값도 바꾸지 않는다
+  edit(change: TodoItemChange, now: Temporal.Instant): boolean {
+    const title = change.title == null ? null : TodoTitle.create(change.title);
+    const renamed = title != null && this.rename(title, now);
+    const completionChanged =
+      change.completed != null && this.changeCompleted(change.completed, now);
+    return renamed || completionChanged;
   }
 
   moveTo(sortOrder: number, now: Temporal.Instant): boolean {

@@ -25,6 +25,7 @@ import { categoryTodoLimitReached, todoNotFound } from "../../../todos/applicati
 import { TodoLockKeys } from "../../../todos/application/todos.lock-keys.js";
 import type { ApplyTodoEventsUseCase } from "../../../todos/application/use-cases/apply-todo-events.use-case.js";
 import { TodoId } from "../../../todos/domain/todo-id.vo.js";
+import type { Todo } from "../../../todos/domain/todo.aggregate.js";
 import { RepeatRule, type RepeatSpec } from "../../domain/repeat-rule.vo.js";
 import {
   changesToMatch,
@@ -76,6 +77,7 @@ interface FollowingEdit {
 interface ReminderPlan {
   readonly cancelledTodoIds: number[];
   reminders: TodoReminderSchedule[];
+  patchedCount: number;
 }
 
 interface SegmentEdit {
@@ -147,18 +149,18 @@ export class ApplyFollowingTodosUpdateUseCase {
         ownerId,
       );
     }
-    const { occurrenceDate } = todo;
-    if (occurrenceDate == null) {
-      throw todoNotFound(id);
-    }
-    return this.#applyTo(input, series, occurrenceDate);
+    return this.#applyTo(input, series, todo);
   }
 
   async #applyTo(
     input: UpdateFollowingTodosInput,
     series: TodoSeries,
-    pivot: Temporal.PlainDate,
+    pivotTodo: Todo,
   ): Promise<AppliedFollowingEdit> {
+    const pivot = pivotTodo.occurrenceDate;
+    if (pivot == null) {
+      throw todoNotFound(input.id);
+    }
     const edit = toFollowingEdit(input, series);
     const following = await this.#dependencies.seriesRepository.lockFollowingSegments(series);
     await this.#assertLimits(input, edit, [series, ...following]);
@@ -171,16 +173,16 @@ export class ApplyFollowingTodosUpdateUseCase {
       now: this.#dependencies.clock.now(),
     };
     const { target, split } = reshapeSeries(segmentEdit);
-    const plan: ReminderPlan = { cancelledTodoIds: [], reminders: [] };
+    const plan: ReminderPlan = { cancelledTodoIds: [], reminders: [], patchedCount: 0 };
 
     // 합칠 회차는 옮기기 전에 맞춘다. 옮긴 뒤에는 어느 구간의 행이었는지 알 수 없다.
     for (const segment of following) {
       const changes = edit.changedRule == null ? edit.details : changesToMatch(segment, target);
-      addRescheduled(plan, await this.#applyDetailsToSegment(segment, changes, pivot));
+      await this.#applyDetailsToSegment(plan, segment, { changes, pivot });
     }
     const responseTodoId =
       edit.changedRule != null || split ? await this.#remap(segmentEdit, target, plan) : input.id;
-    await this.#dependencies.occurrenceWriter.updateFollowingOccurrences(
+    plan.patchedCount += await this.#dependencies.occurrenceWriter.updateFollowingOccurrences(
       target.id,
       pivot.toString(),
       toOccurrencePatch(input),
@@ -193,9 +195,12 @@ export class ApplyFollowingTodosUpdateUseCase {
 
     await this.#saveSegments(segmentEdit, target, split);
     await this.#commitReminders(plan);
-    await this.#dependencies.applyTodoEvents.execute(
-      [series, ...following, target].flatMap((segment) => segment.pullDomainEvents()),
-    );
+    // 규칙 값과 같은 수정도 따로 고친 회차를 덮어쓰면 행이 바뀌어 기준 회차가 알린다
+    pivotTodo.markOccurrencesChanged(plan.patchedCount + plan.cancelledTodoIds.length);
+    await this.#dependencies.applyTodoEvents.execute([
+      ...[series, ...following, target].flatMap((segment) => segment.pullDomainEvents()),
+      ...pivotTodo.pullDomainEvents(),
+    ]);
     return { source: series, target, isSplit: split, responseTodoId };
   }
 
@@ -245,22 +250,23 @@ export class ApplyFollowingTodosUpdateUseCase {
     await todoReminder.scheduleReminders(uniqBy(plan.reminders, ({ todoId }) => todoId.value));
   }
 
-  /** 뒤 구간의 규칙 값과 이미 있는 미완료 회차를 함께 고친다. 시각을 다시 계산했으면 그 회차들을 돌려준다. */
+  /** 뒤 구간의 규칙 값과 이미 있는 미완료 회차를 함께 고친다. 시각을 다시 계산했으면 예약도 다시 잡는다. */
   async #applyDetailsToSegment(
+    plan: ReminderPlan,
     segment: TodoSeries,
-    changes: TodoSeriesDetailChanges,
-    pivot: Temporal.PlainDate,
-  ): Promise<readonly RescheduledOccurrence[]> {
+    change: { readonly changes: TodoSeriesDetailChanges; readonly pivot: Temporal.PlainDate },
+  ): Promise<void> {
+    const { changes, pivot } = change;
     segment.applyDetails(changes);
-    await this.#dependencies.occurrenceWriter.updateFollowingOccurrences(
+    plan.patchedCount += await this.#dependencies.occurrenceWriter.updateFollowingOccurrences(
       segment.id,
       pivot.toString(),
       toOccurrencePatch(changes),
     );
     // oxlint-disable-next-line aido/no-strict-nullish -- null은 시간 지우기, undefined는 시간을 건드리지 않은 수정이다
-    return changes.scheduledLocalTime === undefined
-      ? []
-      : this.#rescheduleRows(segment, pivot, changes.scheduledLocalTime);
+    if (changes.scheduledLocalTime !== undefined) {
+      addRescheduled(plan, await this.#rescheduleRows(segment, pivot, changes.scheduledLocalTime));
+    }
   }
 
   /** DST로 오프셋이 달라지므로 회차의 실제 날짜마다 규칙 시간대로 다시 해석한다. */

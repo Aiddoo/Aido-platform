@@ -1,4 +1,4 @@
-import { isUndefined, omitBy } from "es-toolkit";
+import { isEmptyObject, isUndefined, omitBy } from "es-toolkit";
 
 import type { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-series-id.vo";
 import {
@@ -98,16 +98,21 @@ export class InMemoryTodoOccurrenceWriter extends TodoOccurrenceWriterPort {
     seriesId: TodoSeriesId,
     fromDate: string,
     patch: TodoOccurrencePatch,
-  ): Promise<void> {
+  ): Promise<number> {
     const values = omitBy(
       { title: patch.title, categoryId: patch.categoryId?.value, visibility: patch.visibility },
       isUndefined,
     );
-    for (const row of await this.findOccurrencesFrom([seriesId], fromDate)) {
-      if (!row.completed) {
-        Object.assign(this.#record(row.todoId), values);
-      }
+    if (isEmptyObject(values)) {
+      return 0;
     }
+    const open = (await this.findOccurrencesFrom([seriesId], fromDate)).filter(
+      (row) => !row.completed,
+    );
+    for (const row of open) {
+      Object.assign(this.#record(row.todoId), values);
+    }
+    return open.length;
   }
 
   async updateOccurrenceTimes(times: readonly TodoOccurrenceTime[]): Promise<void> {
