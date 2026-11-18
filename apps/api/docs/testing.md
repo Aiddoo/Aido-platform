@@ -21,18 +21,26 @@
 
 ```text
 test/
-  fixtures/<context>/<noun>.fixture.ts        # create<Noun>Fixture(overrides), DB seed는 insert<Noun>FixtureRows(db)
-  doubles/<context>/in-memory-<noun>.repository.ts | fake-<capability>.ts | stub-<capability>.ts
+  fixtures/<context>/<aggregate>.fixture.ts   # create<Aggregate>Fixture(overrides): <Aggregate>.reconstitute
+  fixtures/<context>/<noun>-row.fixture.ts    # create<Noun>RowFixture(overrides): DB seed 행
+  fixtures/platform/fixture-sequence.ts       # 행 fixture 번호, vitest setup이 테스트마다 초기화
+  doubles/<context>/in-memory-<noun>.repository.ts | stub-<noun>.adapter.ts | stub-<capability>.ts
+                   | fake-<capability>.ts | recording-<capability>.ts
   doubles/platform/                           # fixed-clock, immediate-unit-of-work, recording-mutation-lock,
                                               # recording-after-commit-registry, in-memory-job-queue, silent-logger …
   contracts/platform/cache-store.contract.ts
   contracts/<context>/<noun>-repository.contract.ts
   integration/<context>/<slice>/*.integration-spec.ts
-  e2e/<context>/<slice>.e2e-spec.ts, e2e/fixtures/released-*-openapi-contract.ts (불변)
+  integration/platform/<영역>/*.integration-spec.ts   # database·jobs·cache·events·metering·redis·testing
+  e2e/<context>/<slice>[-<관점>].e2e-spec.ts
+  e2e/platform/*.e2e-spec.ts                  # 앱 경계·헬스·요청 식별·운영 설정·OpenAPI 계약
+  e2e/fixtures/released-*-openapi-contract.ts (불변), e2e/helpers/
   setup/                                      # global-setup, managed-test-database, test-database
 ```
 
-- 새 필드는 fixture 기본값 한곳에 더하고 시나리오에서는 차이만 덮어쓴다. fixture는 `create<Aggregate>Fixture(overrides)`가 `<Aggregate>.reconstitute`로 만든다. 객체형 fixture(`UserFixture.create`)·fluent builder·barrel을 쓰지 않는다.
+- 새 필드는 fixture 기본값 한곳에 더하고 시나리오에서는 차이만 덮어쓴다. fixture는 `create<Aggregate>Fixture(overrides)`가 `<Aggregate>.reconstitute`로 만든다. Aggregate가 아닌 값(Read Model·외부 응답·command)도 `create<Noun>Fixture(overrides)` 함수다. 객체형 fixture(`XFixture.create`)·fluent builder(`.withX().build()`)·barrel(`index.ts`·재수출)을 쓰지 않는다(Oxlint `aido/no-barrel-file`·`aido/no-re-export`).
+- DB에 직접 넣는 행은 `create<Noun>RowFixture(overrides)`(`<noun>-row.fixture.ts`)다. 저장소 `save`가 없는 테이블·다른 Context 테이블을 seed할 때만 쓰고, id·email 번호는 `fixture-sequence`가 테스트마다 1부터 센다.
+- 더블 파일은 `test/doubles/<context>/`에 종류 접두사로 둔다: `in-memory-<noun>.repository.ts`(상태를 가진 저장소), `stub-<noun>.adapter.ts`·`stub-<capability>.ts`(정한 값을 돌려줌), `fake-<capability>.ts`(단순한 실제 동작), `recording-<capability>.ts`(호출 기록). 여러 Context가 쓰는 기술 더블은 `doubles/platform/`이다.
 - 본문은 `// Given`·`// When`·`// Then` 한 줄 주석으로 나눈다. 합본(`// When / Then`)·꼬리 설명(`// Given - …`)·콜론을 쓰지 않는다([테스트 파일](../../../docs/conventions/testing.md)).
 - 포트 계약 suite(`describe<Noun>RepositoryContract(createRepository)`)를 InMemory(unit, `*.repository.port.spec.ts`)와 Drizzle(integration)이 같이 통과한다. 사례: [memo 계약](../test/contracts/notes/memo-repository.contract.ts)을 [unit](../src/modules/notes/memos/application/ports/memo.repository.port.spec.ts)·[integration](../test/integration/notes/memos/drizzle-memo.repository.integration-spec.ts)에서 돌린다.
 - UseCase spec은 파일 안의 작은 factory(`createCreateMemoUseCase({ memoRepository })`)로 기본 더블(`ImmediateUnitOfWork`·`RecordingMutationLock`·`FixedClock`·`SilentLogger`)을 두고 다른 부분만 덮어쓴다. 사례: [create-memo spec](../src/modules/notes/memos/application/use-cases/create-memo.use-case.spec.ts).
@@ -78,7 +86,8 @@ describe("CreateMemoUseCase — 메모 만들기", () => {
 
 ## 시간과 타이머
 
-- 시각은 `FixedClock`으로 고정한다. `vi.useFakeTimers`는 `setTimeout`·`setInterval`을 직접 쓰는 platform·adapter 테스트에만 쓰고 `afterEach`에 복원한다. UseCase·Domain spec은 시계를 `ClockPort`로만 받는다.
+- 시각은 `FixedClock`으로 고정한다. UseCase·Domain spec은 시계를 `ClockPort`로만 받고 시간을 옮길 때는 `clock.advanceBy(...)`를 쓴다. `vi.useFakeTimers`·`vi.setSystemTime`으로 "지금"을 바꾸지 않는다.
+- `vi.useFakeTimers`는 실제 타이머 동작(`setTimeout`·`setInterval`·`Date.now()`로 재는 TTL)이 검사 대상일 때만 쓰고, 그 줄 위에 이유를 한 줄 주석으로 남긴다. 복원은 setup의 `afterEach`가 한다.
 - PostgreSQL·socket·job의 native timer는 그대로 둔다. 완료는 [실행 자원과 flake](#실행-자원과-flake)대로 기다린다.
 - 같은 instant를 서울·LA × ko·en으로 돌려 결과가 언어에 따라 바뀌지 않는지 본다.
 

@@ -291,6 +291,22 @@
       }
     },
     {
+      "files": ["apps/api/test/**/index.ts"],
+      "rules": {
+        "aido/no-barrel-file": "error"
+      }
+    },
+    {
+      "files": [
+        "apps/api/test/fixtures/**/*.ts",
+        "apps/api/test/doubles/**/*.ts",
+        "apps/api/test/e2e/helpers/**/*.ts"
+      ],
+      "rules": {
+        "aido/no-re-export": "error"
+      }
+    },
+    {
       "files": [
         "**/*.spec.ts",
         "**/*.test.ts",
