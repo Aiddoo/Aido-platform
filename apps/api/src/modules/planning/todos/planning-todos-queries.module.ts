@@ -8,7 +8,8 @@ import { TodoCompletionGroupReaderPort } from "./application/ports/todo-completi
 import { TodoDetailsReaderPort } from "./application/ports/todo-details.reader.port.js";
 import { TodoPlanReaderPort } from "./application/ports/todo-plan.reader.port.js";
 import { TodoScheduleReaderPort } from "./application/ports/todo-schedule.reader.port.js";
-import { TodoTimezoneRebaseQueueService } from "./infrastructure/jobs/todo-timezone-rebase-enqueuer.adapter.js";
+import { TodoTimezoneRebaseQueuePort } from "./application/ports/todo-timezone-rebase-queue.port.js";
+import { TodoTimezoneRebaseQueueAdapter } from "./infrastructure/jobs/todo-timezone-rebase-queue.adapter.js";
 import { DrizzleRepeatingTodoTitleReader } from "./infrastructure/persistence/drizzle-repeating-todo-title.reader.js";
 import { DrizzleSingleTodoCountReader } from "./infrastructure/persistence/drizzle-single-todo-count.reader.js";
 import { DrizzleTodoActivationReader } from "./infrastructure/persistence/drizzle-todo-activation.reader.js";
@@ -30,7 +31,7 @@ import { DrizzleTodoScheduleReader } from "./infrastructure/persistence/drizzle-
     { provide: TodoBriefReaderPort, useClass: DrizzleTodoBriefReader },
     { provide: TodoActivationReaderPort, useClass: DrizzleTodoActivationReader },
     { provide: TodoPlanReaderPort, useClass: DrizzleTodoReadRepository },
-    TodoTimezoneRebaseQueueService,
+    { provide: TodoTimezoneRebaseQueuePort, useClass: TodoTimezoneRebaseQueueAdapter },
   ],
   exports: [
     TodoCompletionGroupReaderPort,
@@ -41,7 +42,7 @@ import { DrizzleTodoScheduleReader } from "./infrastructure/persistence/drizzle-
     TodoBriefReaderPort,
     TodoActivationReaderPort,
     TodoPlanReaderPort,
-    TodoTimezoneRebaseQueueService,
+    TodoTimezoneRebaseQueuePort,
   ],
 })
 export class PlanningTodosQueriesModule {}

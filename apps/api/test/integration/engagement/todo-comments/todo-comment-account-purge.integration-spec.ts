@@ -23,6 +23,7 @@ import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructur
 import { NotificationCachePort } from "#api/modules/notification/notifications/application/ports/notification-cache.port";
 import { NotificationRepositoryPort } from "#api/modules/notification/notifications/application/ports/notification.repository.port";
 import { DeleteActorNotificationsUseCase } from "#api/modules/notification/notifications/application/use-cases/delete-actor-notifications.use-case";
+import { InvalidateRecipientUnreadCountsUseCase } from "#api/modules/notification/notifications/application/use-cases/invalidate-recipient-unread-counts.use-case";
 import { DrizzleNotificationRepository } from "#api/modules/notification/notifications/infrastructure/persistence/drizzle-notification.repository";
 import { DrizzleTodoEngagementCounterAdapter } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-engagement-counter.adapter";
 import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
@@ -267,8 +268,10 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
         { provide: NotificationRepositoryPort, useClass: DrizzleNotificationRepository },
         provideUseCase(DeleteActorNotificationsUseCase, {
           repository: NotificationRepositoryPort,
+        }),
+        provideUseCase(InvalidateRecipientUnreadCountsUseCase, {
           cache: NotificationCachePort,
-          logger: loggerFor(DeleteActorNotificationsUseCase),
+          logger: loggerFor(InvalidateRecipientUnreadCountsUseCase),
         }),
         { provide: NotificationCachePort, useValue: notificationCache },
         DrizzleUserRepository,

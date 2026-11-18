@@ -20,8 +20,7 @@ export class StreakAdapter implements StreakPort {
   }
 
   async recordTodoToggle(toggle: TodoToggle): Promise<void> {
-    const { userId, completed, timezone, todayStats } = toggle;
-    await this.#userStreakAccess.recordTodoToggle(userId, completed, timezone, todayStats);
+    await this.#userStreakAccess.recordTodoToggle(toggle);
   }
 
   async getStreakContext(userId: UserId): Promise<{

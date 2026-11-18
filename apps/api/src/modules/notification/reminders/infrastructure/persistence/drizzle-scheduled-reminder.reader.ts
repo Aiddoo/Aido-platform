@@ -9,6 +9,7 @@ import {
 import { userReminderPreference } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import { userRecipients } from "#api/modules/identity/users/identity-users.public";
 import {
+  hasCompletedTodoBetween,
   hasTodoBetween,
   todoCompletionsBetween,
   todoCountBetween,
@@ -137,7 +138,7 @@ export class DrizzleScheduledReminderReader implements ScheduledReminderReaderPo
           recentTreatmentExclusion(this.#retention, this.#clock, recipients.userId),
           userInTimezones(recipients.userId, timezones),
           hasTodoBetween(recipients.userId, today, tomorrow),
-          not(hasTodoBetween(recipients.userId, today, tomorrow, true)),
+          not(hasCompletedTodoBetween(recipients.userId, today, tomorrow)),
         ),
       );
   }

@@ -4,7 +4,7 @@ import { and, asc, eq, gt, inArray, isNotNull, isNull, or, type SQL, sql } from 
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { user, userConsent } from "#api/platform/database/schema/index";
-import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
   type FindMarketingReconfirmTargetsParams,
@@ -30,6 +30,14 @@ import type { UserConsentReadModel } from "../../application/read-models/consent
 import { AiDataSharingConsent } from "../../domain/ai-data-sharing-consent.entity.js";
 
 type UserConsentRow = typeof userConsent.$inferSelect;
+
+function toMarketingReconfirmTarget(row: {
+  readonly userId: string;
+  readonly marketingAgreedAt: Temporal.Instant | null;
+  readonly marketingPushAgreedAt: Temporal.Instant | null;
+}): MarketingReconfirmTarget {
+  return { ...row, userId: UserId.reconstitute(row.userId) };
+}
 
 function toUserConsentReadModel(row: UserConsentRow): UserConsentReadModel {
   return {
@@ -84,7 +92,7 @@ export class DrizzleUserConsentRepository extends UserConsentRepositoryPort {
   async findMarketingReconfirmTargets(
     params: FindMarketingReconfirmTargetsParams,
   ): Promise<MarketingReconfirmTarget[]> {
-    return this.#db
+    const rows = await this.#db
       .select(reconfirmTargetColumns)
       .from(userConsent)
       .innerJoin(user, eq(user.id, userConsent.userId))
@@ -98,6 +106,7 @@ export class DrizzleUserConsentRepository extends UserConsentRepositoryPort {
       )
       .orderBy(asc(userConsent.userId))
       .limit(params.limit);
+    return rows.map(toMarketingReconfirmTarget);
   }
 
   async claimMarketingReconfirm(
@@ -107,7 +116,7 @@ export class DrizzleUserConsentRepository extends UserConsentRepositoryPort {
     if (userIds.length === 0) {
       return [];
     }
-    return this.#db
+    const rows = await this.#db
       .update(userConsent)
       .set({ marketingReconfirmedAt: params.at })
       .where(
@@ -120,6 +129,7 @@ export class DrizzleUserConsentRepository extends UserConsentRepositoryPort {
         ),
       )
       .returning(reconfirmTargetColumns);
+    return rows.map(toMarketingReconfirmTarget);
   }
 
   get #db() {

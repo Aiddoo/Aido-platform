@@ -225,7 +225,11 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
         notificationId: dispatch.notificationId,
       });
     }, WORKER_WAIT);
-    expect(harness.pushProvider.getSentPayloads()).toEqual([
+    expect(
+      harness.pushProvider
+        .getSentPayloads()
+        .map((payload) => ({ ...payload, categoryId: payload.categoryId?.value })),
+    ).toEqual([
       expect.objectContaining({
         token: "fake-retention-token",
         categoryId: "MARKETING",

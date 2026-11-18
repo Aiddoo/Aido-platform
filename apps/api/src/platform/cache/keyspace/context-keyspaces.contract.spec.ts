@@ -71,13 +71,13 @@ describe("Bounded Context별 cache keyspace 계약", () => {
     });
     const latestForecastKey = WeatherCacheKey.latestForecast(60, 127);
     const conditionsKey = WeatherCacheKey.conditions(60, 127, "2026-04-01");
-    const friendTodosKey = TodoCacheKey.friendTodosFirstPageVersioned(
-      "user-1",
-      "generation-1",
-      "-",
-      "-",
-      20,
-    );
+    const friendTodosKey = TodoCacheKey.friendTodosFirstPageVersioned({
+      ownerUserId: "user-1",
+      generation: "generation-1",
+      startDate: "-",
+      endDate: "-",
+      size: 20,
+    });
     const dailyCompletionRangeKey = DailyCompletionCacheKey.range("user-1", "generation-1", {
       start: "2026-01-01",
       end: "2026-01-31",

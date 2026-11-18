@@ -3,6 +3,7 @@ import {
   type WeeklyStatsParams,
 } from "#api/modules/notification/reminders/application/ports/weekly-achievement-stats-reader.port";
 import type { UserTodoCountReadModel } from "#api/modules/notification/reminders/application/read-models/scheduler.read-model";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { WeeklyStatsUserSeed } from "#test/contracts/notification/weekly-achievement-stats-reader.contract";
 
 function dayNumberOf(date: Temporal.PlainDate): number {
@@ -51,8 +52,12 @@ export class InMemoryWeeklyAchievementStatsReader extends WeeklyAchievementStats
     return this.#countTodoDaysByUser(params, (todo) => todo.completed);
   }
 
-  async findFreeRecipientIds(userIds: string[]): Promise<Set<string>> {
-    return new Set(userIds.filter((userId) => this.#users.get(userId)?.isFree === true));
+  async findFreeRecipientIds(userIds: readonly UserId[]): Promise<Set<string>> {
+    return new Set(
+      userIds
+        .map((userId) => userId.value)
+        .filter((userId) => this.#users.get(userId)?.isFree === true),
+    );
   }
 
   #countTodoDaysByUser(

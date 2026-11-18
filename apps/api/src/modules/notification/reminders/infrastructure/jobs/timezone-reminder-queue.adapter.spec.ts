@@ -3,7 +3,6 @@ import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
 import { TEST_CUID } from "#test/fixtures/index";
 
-import type { ReminderHourChangedJobData } from "../../application/ports/timezone-reminder-enqueuer.port.js";
 import { TimezoneReminderQueueAdapter } from "./timezone-reminder-queue.adapter.js";
 import { TimezoneReminderSweepScheduler } from "./timezone-reminder-sweep.scheduler.js";
 import { TIMEZONE_REMINDER_QUEUE, TimezoneReminderJobName } from "./timezone-reminder.queue.js";
@@ -21,21 +20,24 @@ describe("TimezoneReminderQueueAdapter — 리마인더 큐 등록", () => {
 
   it("리마인더 시간 변경을 판별 가능한 메시지로 등록한다", async () => {
     // Given
-    const payload: ReminderHourChangedJobData = {
-      userId: "user-1",
+    const request = {
+      userId: UserId.reconstitute("user-1"),
       timezone: "Asia/Seoul",
       morningReminderHour: 8,
       morningReminderMinute: 0,
     };
 
     // When
-    service.enqueueReminderHourChanged(payload);
+    service.enqueueReminderHourChanged(request);
 
     // Then
     await vi.waitFor(() => {
       expect(jobQueue.jobsIn(TIMEZONE_REMINDER_QUEUE)).toEqual([
         expect.objectContaining({
-          payload: { name: TimezoneReminderJobName.REMINDER_HOUR_CHANGED, data: payload },
+          payload: {
+            name: TimezoneReminderJobName.REMINDER_HOUR_CHANGED,
+            data: { ...request, userId: "user-1" },
+          },
         }),
       ]);
     });

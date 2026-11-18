@@ -1,9 +1,11 @@
 import {
   type NotificationDeliveryPreference,
+  type NotificationDeliveryPreferenceWithUserId,
   type NotificationMarketingConsent,
+  type NotificationMarketingConsentWithUserId,
   UserNotificationSettingsPort,
 } from "#api/modules/notification/shared/application/ports/user-notification-settings.port";
-import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createNotificationDeliveryPreferenceFixture } from "#test/fixtures/notification/notification-delivery-preference.fixture";
 
 // 사용자별 수신 설정·광고 동의를 메모리에 둔다. 동의 조회 순서를 보려고 읽은 사용자도 남긴다
@@ -39,12 +41,12 @@ export class InMemoryUserNotificationSettings extends UserNotificationSettingsPo
 
   async findPreferenceReadModelsByUserIds(
     users: readonly UserId[],
-  ): Promise<Array<NotificationDeliveryPreference & { readonly userId: string }>> {
+  ): Promise<NotificationDeliveryPreferenceWithUserId[]> {
     const userIds = users.map((user) => user.value);
     this.preferenceBatchReads.push([...userIds]);
     return userIds.flatMap((userId) => {
       const preference = this.preferences.get(userId);
-      return preference == null ? [] : [{ userId, ...preference }];
+      return preference == null ? [] : [{ ...preference, userId: UserId.reconstitute(userId) }];
     });
   }
 
@@ -56,12 +58,12 @@ export class InMemoryUserNotificationSettings extends UserNotificationSettingsPo
 
   async findConsentReadModelsByUserIds(
     users: readonly UserId[],
-  ): Promise<Array<NotificationMarketingConsent & { readonly userId: string }>> {
+  ): Promise<NotificationMarketingConsentWithUserId[]> {
     const userIds = users.map((user) => user.value);
     this.consentBatchReads.push([...userIds]);
     return userIds.flatMap((userId) => {
       const consent = this.consents.get(userId);
-      return consent == null ? [] : [{ userId, ...consent }];
+      return consent == null ? [] : [{ ...consent, userId: UserId.reconstitute(userId) }];
     });
   }
 

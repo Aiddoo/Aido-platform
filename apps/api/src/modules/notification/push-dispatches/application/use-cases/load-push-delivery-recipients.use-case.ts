@@ -45,9 +45,9 @@ export class LoadPushDeliveryRecipientsUseCase {
       this.#dependencies.userSettings.findConsentReadModelsByUserIds(recipientIds),
     ]);
     const preferenceByUserId = new Map(
-      preferences.map((preference) => [preference.userId, preference]),
+      preferences.map((preference) => [preference.userId.value, preference]),
     );
-    const consentByUserId = new Map(consents.map((consent) => [consent.userId, consent]));
+    const consentByUserId = new Map(consents.map((consent) => [consent.userId.value, consent]));
     const now = this.#dependencies.clock.now();
 
     return new Map(

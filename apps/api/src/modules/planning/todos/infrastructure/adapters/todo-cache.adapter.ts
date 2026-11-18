@@ -62,13 +62,13 @@ export class TodoCacheAdapter implements TodoCachePort {
     const { ownerUserId, startDate, endDate, size } = key;
     const generation = await this.#getFriendTodosGeneration(ownerUserId);
     const page = await this.#cacheService.get(
-      TodoCacheKey.friendTodosFirstPageVersioned(
-        ownerUserId.value,
+      TodoCacheKey.friendTodosFirstPageVersioned({
+        ownerUserId: ownerUserId.value,
         generation,
         startDate,
         endDate,
         size,
-      ),
+      }),
       FRIEND_TODOS_PAGE_SCHEMA,
     );
     // page GET이 끝난 뒤 다시 읽어야 둘 사이의 invalidate를 반드시 관측한다.
@@ -95,13 +95,13 @@ export class TodoCacheAdapter implements TodoCachePort {
 
     // 확인 직후 invalidate가 와도 이전 generation 키에만 저장되어 새 reader에는 보이지 않는다.
     await this.#cacheService.set(
-      TodoCacheKey.friendTodosFirstPageVersioned(
-        ownerUserId.value,
+      TodoCacheKey.friendTodosFirstPageVersioned({
+        ownerUserId: ownerUserId.value,
         generation,
         startDate,
         endDate,
         size,
-      ),
+      }),
       page,
       TODO_CACHE_TTL_MS.FRIEND_VIEW,
     );

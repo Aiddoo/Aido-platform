@@ -23,34 +23,34 @@
 
 다른 Context는 아래 공개 면으로만 들어온다. notification은 다른 Context 테이블을 읽지 않고 그쪽이 구현한 포트로 설정·동의·할 일을 읽는다.
 
-| 공개 면                                     | 코드                                                                                                         | 쓰는 쪽                                                                                  |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
-| `notification-notifications.public`         | `PublishNotificationUseCase`, `CreateNotificationData`, 문구 생성 함수, `DeleteActorNotificationsUseCase`    | 알림을 만드는 모든 Context, identity 계정 정리                                           |
-| `notification-notifications-jobs.public`    | `NotificationQueueModule`, `NotificationQueueAdapter`                                                        | social·billing·planning·identity. 기능 Module을 끌어오면 identity 설정과 파일이 순환한다 |
-| `notification-push-devices.public`          | `NotificationPushDevicesQueriesModule`의 `SessionPushDeviceReleasePort`(import 없는 Module)                  | identity 세션 폐기                                                                       |
-| `notification-push-devices.public`          | `ClientAppVersionReaderPort`, `hasPushTokenCondition`                                                        | ai-assistance 앱 버전, operations 브로드캐스트 대상                                      |
-| `notification-push-devices.public`          | `hasPushRegistrationForSessionCondition`                                                                     | identity 세션 보관 기한 정리(기기가 남은 만료 세션을 남긴다)                             |
-| `notification-push-dispatches.public`       | `NotificationRecipientLocaleReaderPort`·`NotificationRecipientTimezoneReaderPort`·`PushQuietHoursReaderPort` | 수신자 언어·시간대·야간을 묻는 쪽(초대·결제·운영 등)                                     |
-| `notification-push-dispatches.public`       | `PushCampaignOutcomeReaderPort`                                                                              | operations 캠페인 결과 집계                                                              |
-| `notification-email-messages.public`        | `SendCodeEmailUseCase`·`SendInquiryEmailUseCase`·`SendUserReportEmailUseCase`                                | identity 코드 메일, support 문의, social 신고                                            |
-| `notification-reminders.public`             | `TodoReminderSchedulerPort`, `NOTIFICATION_SCHEDULE`                                                         | planning 할 일 리마인더 예약                                                             |
-| `notification-reminders-jobs.public`        | `TimezoneReminderEnqueuerPort`, `ReminderTimezoneCachePort`                                                  | identity 설정(시간대·알림 시각 변경). 기능 Module을 끌어오면 파일이 순환한다             |
-| `notification-retention-assignments.public` | `RetentionEnrollmentPort`                                                                                    | identity 가입·첫 인증                                                                    |
+| 공개 면                                     | 코드                                                                                                                                               | 쓰는 쪽                                                                                  |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `notification-notifications.public`         | `PublishNotificationUseCase`, `CreateNotificationData`, 문구 생성 함수, `DeleteActorNotificationsUseCase`·`InvalidateRecipientUnreadCountsUseCase` | 알림을 만드는 모든 Context, identity 계정 정리                                           |
+| `notification-notifications-jobs.public`    | `NotificationQueueModule`, `NotificationQueueAdapter`                                                                                              | social·billing·planning·identity. 기능 Module을 끌어오면 identity 설정과 파일이 순환한다 |
+| `notification-push-devices.public`          | `NotificationPushDevicesQueriesModule`의 `SessionPushDeviceReleasePort`(import 없는 Module)                                                        | identity 세션 폐기                                                                       |
+| `notification-push-devices.public`          | `ClientAppVersionReaderPort`, `hasPushTokenCondition`                                                                                              | ai-assistance 앱 버전, operations 브로드캐스트 대상                                      |
+| `notification-push-devices.public`          | `hasPushRegistrationForSessionCondition`                                                                                                           | identity 세션 보관 기한 정리(기기가 남은 만료 세션을 남긴다)                             |
+| `notification-push-dispatches.public`       | `NotificationRecipientLocaleReaderPort`·`NotificationRecipientTimezoneReaderPort`·`PushQuietHoursReaderPort`                                       | 수신자 언어·시간대·야간을 묻는 쪽(초대·결제·운영 등)                                     |
+| `notification-push-dispatches.public`       | `PushCampaignOutcomeReaderPort`                                                                                                                    | operations 캠페인 결과 집계                                                              |
+| `notification-email-messages.public`        | `SendCodeEmailUseCase`·`SendInquiryEmailUseCase`·`SendUserReportEmailUseCase`                                                                      | identity 코드 메일, support 문의, social 신고                                            |
+| `notification-reminders.public`             | `TodoReminderSchedulerPort`, `NOTIFICATION_SCHEDULE`                                                                                               | planning 할 일 리마인더 예약                                                             |
+| `notification-reminders-jobs.public`        | `TimezoneReminderEnqueuerPort`, `ReminderTimezoneCachePort`                                                                                        | identity 설정(시간대·알림 시각 변경). 기능 Module을 끌어오면 파일이 순환한다             |
+| `notification-retention-assignments.public` | `RetentionEnrollmentPort`                                                                                                                          | identity 가입·첫 인증                                                                    |
 
 slice 사이도 같은 공개 면으로 잇는다. 아래 slice가 위 slice를 모른다: `push-devices` ← `push-dispatches` ← `notifications` ← `reminders`·`retention-assignments`. 알림 종류·문구 카탈로그·알림 재료처럼 둘 이상이 쓰는 것은 `shared/`다.
 
 ## notifications
 
-| 용어           | 코드                                                                       | 뜻                                                                                                                                     |
-| -------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| 알림           | `Notification`(Aggregate, `notifications` slice), `NotificationId`         | 한 사용자의 알림함 항목 하나. 푸시가 막혀도 알림함 기록은 남는다                                                                       |
-| 알림함         | `ListNotificationsUseCase`, `InboxNotificationReadModel`                   | 최신순 목록과 카테고리(`ALL`·`NOTICE`·`TODO`·`SOCIAL`)·안 읽음 필터. 앱 버전이 해석하지 못하는 종류는 뺀다(`visibleNotificationTypes`) |
-| 안 읽은 수     | `GetUnreadNotificationCountUseCase`, `NotificationInboxScope`              | 배지 숫자. 앱 버전 범위마다 따로 캐시하고 읽음·발행이 바뀌면 비운다                                                                    |
-| 읽음           | `markRead`, `MarkNotificationReadUseCase`                                  | 받은 사람만 읽음으로 바꾼다                                                                                                            |
-| 모두 읽기      | `MarkAllNotificationsReadUseCase`                                          | 이 앱 버전이 보는 종류만 읽음으로 바꾼다. 새 앱으로 올리면 못 보던 알림은 안 읽음으로 보인다                                           |
-| 열기           | `MarkNotificationOpenedUseCase`, `openedAt`                                | 푸시를 눌러 앱을 연 기록. 처음 연 때만 남기고 읽음도 맞춘다                                                                            |
-| 중복 알림      | `SendNotificationWithDeduplicationUseCase`, `resolveDeduplicationStrategy` | 같은 사용자·종류·대상의 알림이 창 안에 있으면 만들지 않는다. 지금은 친구 요청·수락이 같은 친구 24시간이다                              |
-| 보낸 사람 정리 | `DeleteActorNotificationsUseCase`                                          | 탈퇴한 사람이 보낸 알림을 받은 사람들의 알림함에서 지우고 커밋 뒤 그들의 안 읽은 수 캐시를 비운다                                      |
+| 용어           | 코드                                                                        | 뜻                                                                                                                                     |
+| -------------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| 알림           | `Notification`(Aggregate, `notifications` slice), `NotificationId`          | 한 사용자의 알림함 항목 하나. 푸시가 막혀도 알림함 기록은 남는다                                                                       |
+| 알림함         | `ListNotificationsUseCase`, `InboxNotificationReadModel`                    | 최신순 목록과 카테고리(`ALL`·`NOTICE`·`TODO`·`SOCIAL`)·안 읽음 필터. 앱 버전이 해석하지 못하는 종류는 뺀다(`visibleNotificationTypes`) |
+| 안 읽은 수     | `GetUnreadNotificationCountUseCase`, `NotificationInboxScope`               | 배지 숫자. 앱 버전 범위마다 따로 캐시하고 읽음·발행이 바뀌면 비운다                                                                    |
+| 읽음           | `markRead`, `MarkNotificationReadUseCase`                                   | 받은 사람만 읽음으로 바꾼다                                                                                                            |
+| 모두 읽기      | `MarkAllNotificationsReadUseCase`                                           | 이 앱 버전이 보는 종류만 읽음으로 바꾼다. 새 앱으로 올리면 못 보던 알림은 안 읽음으로 보인다                                           |
+| 열기           | `MarkNotificationOpenedUseCase`, `openedAt`                                 | 푸시를 눌러 앱을 연 기록. 처음 연 때만 남기고 읽음도 맞춘다                                                                            |
+| 중복 알림      | `SendNotificationWithDeduplicationUseCase`, `resolveDeduplicationStrategy`  | 같은 사용자·종류·대상의 알림이 창 안에 있으면 만들지 않는다. 지금은 친구 요청·수락이 같은 친구 24시간이다                              |
+| 보낸 사람 정리 | `DeleteActorNotificationsUseCase`, `InvalidateRecipientUnreadCountsUseCase` | 탈퇴한 사람이 보낸 알림을 받은 사람들의 알림함에서 지우고 커밋 뒤 그들의 안 읽은 수 캐시를 비운다                                      |
 
 | 상태         | 행동                         | 다음           | 다시·금지                                                                  |
 | ------------ | ---------------------------- | -------------- | -------------------------------------------------------------------------- |

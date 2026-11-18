@@ -105,7 +105,7 @@ export class SendFriendCompletionNotificationsUseCase {
         target.recipientUserIds.map((userId) => UserId.reconstitute(userId)),
       );
     const storedLocaleByUserId = new Map(
-      preferences.map((preference) => [preference.userId, preference.locale]),
+      preferences.map((preference) => [preference.userId.value, preference.locale]),
     );
     return target.recipientUserIds.map((userId) => {
       const variantContext = {

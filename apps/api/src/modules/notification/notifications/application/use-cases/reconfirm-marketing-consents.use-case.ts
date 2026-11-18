@@ -109,7 +109,7 @@ export class ReconfirmMarketingConsentsUseCase {
   ): Promise<number> {
     const [localeOf, timezones] = await Promise.all([
       this.#dependencies.localeReader.getLocales(userIds),
-      this.#dependencies.timezoneReader.getTimezones(userIds.map((userId) => userId.value)),
+      this.#dependencies.timezoneReader.getTimezones(userIds),
     ]);
     return this.#dependencies.unitOfWork.run(async () => {
       const claimed = await this.#dependencies.reconfirmAccess.claimMarketingReconfirm(userIds, {

@@ -43,7 +43,8 @@ function createReconfirm(
       getLocales: async () => (userId) => (userId.endsWith("en") ? "en" : "ko"),
     },
     timezoneReader: {
-      getTimezones: async (userIds) => new Map(userIds.map((userId) => [userId, "Asia/Seoul"])),
+      getTimezones: async (userIds) =>
+        new Map(userIds.map((userId) => [userId.value, "Asia/Seoul"])),
     },
     quietHoursReader: {
       findUsersInQuietHours: async (users) =>

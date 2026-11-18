@@ -29,7 +29,7 @@ describe("RefreshPushTimezone — 실제 변경에만 설정 캐시 갱신", () 
     async (existing) => {
       // Given
       const fixture = createUserSettingsFixture(existing ? {} : { preference: null });
-      await fixture.preferenceReader.read(UserId.reconstitute(fixture.userId));
+      await fixture.preferenceReader.execute(UserId.reconstitute(fixture.userId));
       const cached = fixture.cache.snapshots.get(fixture.userId);
       fixture.reminderTimezoneCache.activeTimezones.add("UTC");
       // When
@@ -69,7 +69,7 @@ describe("RefreshPushTimezone — 실제 변경에만 설정 캐시 갱신", () 
     // Given
     // 이전 설정 응답이 캐시되어 있고 목록 무효화가 실패한다.
     const fixture = createUserSettingsFixture();
-    await fixture.preferenceReader.read(UserId.reconstitute(fixture.userId));
+    await fixture.preferenceReader.execute(UserId.reconstitute(fixture.userId));
     const failure = new Error("synthetic cache unavailable");
     const useCase = new RefreshPushTimezoneUseCase({
       ...fixture,

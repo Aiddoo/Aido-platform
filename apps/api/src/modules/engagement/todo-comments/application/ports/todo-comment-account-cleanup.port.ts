@@ -1,8 +1,8 @@
+import type { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 export interface TodoCommentAccountCleanupResult {
-  // identity가 받아 그대로 돌려주는 결과라 identity 포트(AccountTodoCommentCleanupResult)와 같은 원시 모양이다
-  readonly affectedTodoIds: readonly number[];
+  readonly affectedTodoIds: readonly TodoId[];
 }
 
 /**

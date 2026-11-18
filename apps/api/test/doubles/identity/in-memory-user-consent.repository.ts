@@ -7,7 +7,7 @@ import {
 } from "#api/modules/identity/user-preferences/application/ports/user-consent.repository.port";
 import type { UserConsentReadModel } from "#api/modules/identity/user-preferences/application/read-models/consent.read-model";
 import { AiDataSharingConsent } from "#api/modules/identity/user-preferences/domain/ai-data-sharing-consent.entity";
-import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 const EMPTY_CONSENT: Omit<UserConsentReadModel, "userId"> = {
   termsAgreedAt: null,
@@ -26,7 +26,7 @@ function copyOf(record: UserConsentReadModel): UserConsentReadModel {
 
 function toTarget(record: UserConsentReadModel): MarketingReconfirmTarget {
   return {
-    userId: record.userId,
+    userId: UserId.reconstitute(record.userId),
     marketingAgreedAt: record.marketingAgreedAt,
     marketingPushAgreedAt: record.marketingPushAgreedAt,
   };

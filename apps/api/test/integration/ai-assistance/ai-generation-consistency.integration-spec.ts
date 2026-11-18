@@ -33,6 +33,7 @@ import { DrizzleSuggestionActivityReader } from "#api/modules/ai-assistance/sugg
 import { DrizzleSuggestionAnalysisRunRepository } from "#api/modules/ai-assistance/suggestions/infrastructure/persistence/drizzle-suggestion-analysis-run.repository";
 import { DrizzleSuggestionRepository } from "#api/modules/ai-assistance/suggestions/infrastructure/persistence/drizzle-suggestion.repository";
 import { GetAiDataSharingConsentUseCase } from "#api/modules/identity/user-preferences/application/use-cases/get-ai-data-sharing-consent.use-case";
+import { AiDataSharingConsentReaderAdapter } from "#api/modules/identity/user-preferences/infrastructure/adapters/ai-data-sharing-consent-reader.adapter";
 import { DrizzleUserConsentRepository } from "#api/modules/identity/user-preferences/infrastructure/persistence/drizzle-user-consent.repository";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { DrizzleClientAppVersionReader } from "#api/modules/notification/push-devices/infrastructure/persistence/drizzle-client-app-version.reader";
@@ -171,9 +172,11 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     const clock = new DateClock();
     const pushDeviceVersions = new DrizzleClientAppVersionReader(fixture.transactionHost);
     const scheduledAiConsent = new ScheduledAiConsentReader({
-      consentReader: new GetAiDataSharingConsentUseCase({
-        consentRepository: new DrizzleUserConsentRepository(fixture.transactionHost),
-      }),
+      consentReader: new AiDataSharingConsentReaderAdapter(
+        new GetAiDataSharingConsentUseCase({
+          consentRepository: new DrizzleUserConsentRepository(fixture.transactionHost),
+        }),
+      ),
       clientAppVersion: {
         findLatestAppVersion: (owner) => pushDeviceVersions.findLatestAppVersion(owner),
       },

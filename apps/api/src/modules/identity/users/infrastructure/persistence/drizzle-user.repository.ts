@@ -25,7 +25,7 @@ import {
   userProfile,
 } from "#api/platform/database/schema/index";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
-import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { localDateIn } from "#api/shared/domain/time/time-zone-name";
 
 import { userTagCollided, userTagGenerationFailed } from "../../application/users.errors.js";
@@ -152,7 +152,7 @@ export class DrizzleUserRepository
           ne(user.status, "SUSPENDED"),
         ),
       );
-    return rows;
+    return rows.map((row) => ({ ...row, userId: UserId.reconstitute(row.userId) }));
   }
 
   async findLastSeenAppVersion(userId: UserId): Promise<string | null> {

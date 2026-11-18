@@ -1,10 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 
-import {
-  type MarketingReconfirmTarget,
-  UserNotificationSettingsAccessPort,
-} from "#api/modules/identity/user-preferences/identity-user-preferences.public";
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { UserNotificationSettingsAccessPort } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
   MarketingConsentReconfirmPort,
@@ -22,34 +19,22 @@ export class MarketingConsentReconfirmAdapter implements MarketingConsentReconfi
     this.#userSettingsAccess = userSettingsAccess;
   }
 
-  async findMarketingReconfirmTargets(params: {
+  findMarketingReconfirmTargets(params: {
     readonly cutoff: Temporal.Instant;
     readonly afterUserId?: UserId;
     readonly limit: number;
   }): Promise<MarketingReconfirmRecipient[]> {
-    const targets = await this.#userSettingsAccess.findMarketingReconfirmTargets({
+    return this.#userSettingsAccess.findMarketingReconfirmTargets({
       cutoff: params.cutoff,
       afterUserId: params.afterUserId,
       limit: params.limit,
     });
-    return targets.map(toMarketingReconfirmRecipient);
   }
 
-  async claimMarketingReconfirm(
+  claimMarketingReconfirm(
     userIds: readonly UserId[],
     params: { readonly cutoff: Temporal.Instant; readonly at: Temporal.Instant },
   ): Promise<MarketingReconfirmRecipient[]> {
-    const claimed = await this.#userSettingsAccess.claimMarketingReconfirm(userIds, params);
-    return claimed.map(toMarketingReconfirmRecipient);
+    return this.#userSettingsAccess.claimMarketingReconfirm(userIds, params);
   }
-}
-
-function toMarketingReconfirmRecipient(
-  target: MarketingReconfirmTarget,
-): MarketingReconfirmRecipient {
-  return {
-    userId: UserId.reconstitute(target.userId),
-    marketingAgreedAt: target.marketingAgreedAt,
-    marketingPushAgreedAt: target.marketingPushAgreedAt,
-  };
 }

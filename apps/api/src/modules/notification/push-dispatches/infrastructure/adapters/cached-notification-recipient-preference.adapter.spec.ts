@@ -1,11 +1,14 @@
 import { ReadUserPreferencesUseCase } from "#api/modules/identity/user-preferences/application/use-cases/read-user-preferences.use-case";
 import type { PreferenceSettingsReadModel } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
+import { UserPreferenceReaderAdapter } from "#api/modules/identity/user-preferences/infrastructure/adapters/user-preference-reader.adapter";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createUserSettingsFixture } from "#test/fixtures/user-settings.fixture";
 
 import {
   type NotificationDeliveryPreference,
+  type NotificationDeliveryPreferenceWithUserId,
   type NotificationMarketingConsent,
+  type NotificationMarketingConsentWithUserId,
   UserNotificationSettingsPort,
 } from "../../../shared/application/ports/user-notification-settings.port.js";
 import { CachedNotificationRecipientPreferenceAdapter } from "./cached-notification-recipient-preference.adapter.js";
@@ -28,19 +31,21 @@ class StubUserNotificationSettings extends UserNotificationSettingsPort {
     return this.preferenceRows.find((row) => row.userId === userId) ?? null;
   }
 
-  async findPreferenceReadModelsByUserIds(users: readonly UserId[]): Promise<PreferenceRow[]> {
+  async findPreferenceReadModelsByUserIds(
+    users: readonly UserId[],
+  ): Promise<NotificationDeliveryPreferenceWithUserId[]> {
     const userIds = users.map((user) => user.value);
     this.batchRequests.push([...userIds]);
-    return this.preferenceRows.filter((row) => userIds.includes(row.userId));
+    return this.preferenceRows
+      .filter((row) => userIds.includes(row.userId))
+      .map((row) => ({ ...row, userId: UserId.reconstitute(row.userId) }));
   }
 
   async findConsentReadModel(): Promise<NotificationMarketingConsent | null> {
     return null;
   }
 
-  async findConsentReadModelsByUserIds(): Promise<
-    (NotificationMarketingConsent & { readonly userId: string })[]
-  > {
+  async findConsentReadModelsByUserIds(): Promise<NotificationMarketingConsentWithUserId[]> {
     return [];
   }
 
@@ -51,7 +56,9 @@ describe("CachedNotificationRecipientPreferenceAdapter - 수신자 언어와 공
   function createFixture() {
     const settings = createUserSettingsFixture({ preference: { locale: "en", currentStreak: 17 } });
     const userSettings = new StubUserNotificationSettings();
-    const preferenceReader = new ReadUserPreferencesUseCase(settings);
+    const preferenceReader = new UserPreferenceReaderAdapter(
+      new ReadUserPreferencesUseCase(settings),
+    );
     const reader = new CachedNotificationRecipientPreferenceAdapter(userSettings, preferenceReader);
     return { ...settings, userSettings, reader };
   }
@@ -77,7 +84,7 @@ describe("CachedNotificationRecipientPreferenceAdapter - 수신자 언어와 공
     const settings = createUserSettingsFixture({ preference: null });
     const reader = new CachedNotificationRecipientPreferenceAdapter(
       new StubUserNotificationSettings(),
-      new ReadUserPreferencesUseCase(settings),
+      new UserPreferenceReaderAdapter(new ReadUserPreferencesUseCase(settings)),
     );
 
     // When

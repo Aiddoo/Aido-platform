@@ -46,6 +46,6 @@ export class CleanUpAccountTodoCommentsUseCase {
       const commentCounts = await purgeRepository.purge(userId, plan, clock.now());
       await engagementCounter.replaceCommentCounts(commentCounts);
     }
-    return { affectedTodoIds: plan.affectedTodoIds.map((todoId) => todoId.value) };
+    return { affectedTodoIds: plan.affectedTodoIds };
   }
 }

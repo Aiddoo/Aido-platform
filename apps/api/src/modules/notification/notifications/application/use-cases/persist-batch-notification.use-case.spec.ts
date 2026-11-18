@@ -10,12 +10,12 @@ import { PersistBatchNotificationUseCase } from "./persist-batch-notification.us
 
 class RecordingAfterCommitPublisher implements Pick<
   PublishPushDeliveryAfterCommitUseCase,
-  "register"
+  "execute"
 > {
   readonly registered: number[][] = [];
 
-  register(dispatchIds: readonly number[]): void {
-    this.registered.push([...dispatchIds]);
+  execute(command: { readonly dispatchIds: readonly number[] }): void {
+    this.registered.push([...command.dispatchIds]);
   }
 }
 

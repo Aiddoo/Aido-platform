@@ -12,7 +12,7 @@ export interface GetPreferenceQuery {
 }
 
 interface GetPreferenceDependencies {
-  readonly preferenceReader: Pick<ReadUserPreferencesUseCase, "read">;
+  readonly preferenceReader: Pick<ReadUserPreferencesUseCase, "execute">;
   readonly entitlement: PreferenceEntitlementPort;
 }
 
@@ -26,7 +26,7 @@ export class GetPreferenceUseCase {
   async execute(input: GetPreferenceQuery): Promise<PreferenceReadModel> {
     const userId = UserId.reconstitute(input.userId);
     const [snapshot, canCustomizeReminder] = await Promise.all([
-      this.#dependencies.preferenceReader.read(userId),
+      this.#dependencies.preferenceReader.execute(userId),
       this.#dependencies.entitlement.can(userId, "CUSTOM_REMINDER_TIME"),
     ]);
     return toPreferenceReadModel(snapshot, canCustomizeReminder);

@@ -4,7 +4,7 @@ import {
   NotificationRecipientLocaleReaderPort,
   NotificationRecipientTimezoneReaderPort,
 } from "#api/modules/notification/push-dispatches/notification-push-dispatches.public";
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
 
 import { BroadcastRecipientReaderPort } from "../../application/ports/broadcast-recipient.reader.port.js";
@@ -32,8 +32,8 @@ export class NotificationBroadcastRecipientAdapter extends BroadcastRecipientRea
   ): Promise<ReadonlyMap<string, BroadcastRecipientReadModel>> {
     const ids = userIds.map((userId) => userId.value);
     const [localeOf, timezones] = await Promise.all([
-      this.#localeReader.getLocales(ids.map((userId) => UserId.reconstitute(userId))),
-      this.#timezoneReader.getTimezones(ids),
+      this.#localeReader.getLocales(userIds),
+      this.#timezoneReader.getTimezones(userIds),
     ]);
     return new Map(
       ids.map((id) => [

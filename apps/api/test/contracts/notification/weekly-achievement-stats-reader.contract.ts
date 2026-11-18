@@ -1,4 +1,5 @@
 import type { WeeklyAchievementStatsReaderPort } from "#api/modules/notification/reminders/application/ports/weekly-achievement-stats-reader.port";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 const WEEKLY_STATS_USER_PLANS = ["FREE", "PREMIUM", "ADMIN"] as const;
 
@@ -158,7 +159,9 @@ export function describeWeeklyAchievementStatsReaderContract(
       const otherFree = await subject.givenUser({ timezone: SEOUL, plan: "FREE" });
 
       // When
-      const recipients = await subject.reader.findFreeRecipientIds([free, premium, admin]);
+      const recipients = await subject.reader.findFreeRecipientIds(
+        [free, premium, admin].map((userId) => UserId.reconstitute(userId)),
+      );
       const none = await subject.reader.findFreeRecipientIds([]);
 
       // Then

@@ -13,6 +13,7 @@ import {
 } from "#api/modules/identity/users/identity-users.public";
 import {
   completedTodoCountsByUser,
+  hasOpenTodoBetween,
   hasTodoBetween,
   todoCompletionsBetween,
 } from "#api/modules/planning/todos/planning-todos-queries.public";
@@ -203,7 +204,7 @@ export class DrizzleReEngagementReader implements ReEngagementReaderPort {
           ),
           recentTreatmentExclusion(this.#retention, this.#clock, recipients.userId),
           userInTimezones(recipients.userId, timezones),
-          hasTodoBetween(recipients.userId, today, tomorrow, false),
+          hasOpenTodoBetween(recipients.userId, today, tomorrow),
         ),
       );
     return rows.map(({ id, completions }) => ({ id, todos: toTodoCompletions(completions) }));
@@ -270,7 +271,7 @@ export class DrizzleReEngagementReader implements ReEngagementReaderPort {
           recentTreatmentExclusion(this.#retention, this.#clock, recipients.userId),
           inArray(preference.timezone, [...timezones]),
           gte(preference.currentStreak, STREAK_AT_RISK_MIN_DAYS),
-          hasTodoBetween(recipients.userId, today, tomorrow, false),
+          hasOpenTodoBetween(recipients.userId, today, tomorrow),
         ),
       );
     return rows.map(({ id, completions, ...streak }) => ({

@@ -26,7 +26,7 @@ interface SendNotificationDependencies {
   readonly cache: Pick<NotificationCachePort, "invalidateUnreadCount">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly afterCommit: Pick<AfterCommitTaskRegistryPort, "register">;
-  readonly afterCommitPublisher: Pick<PublishPushDeliveryAfterCommitUseCase, "register">;
+  readonly afterCommitPublisher: Pick<PublishPushDeliveryAfterCommitUseCase, "execute">;
   readonly logger: Pick<ApplicationLoggerPort, "debug" | "warn">;
 }
 
@@ -60,7 +60,7 @@ export class SendNotificationUseCase {
         });
         await this.#dependencies.pushDispatchRepository.saveAll([dispatch]);
         this.#registerUnreadCountInvalidation(data.userId);
-        this.#dependencies.afterCommitPublisher.register([dispatch.id.value]);
+        this.#dependencies.afterCommitPublisher.execute({ dispatchIds: [dispatch.id.value] });
         return notification;
       });
     } catch (error) {

@@ -288,7 +288,7 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
     const publication = vi.spyOn(context.module.get(PublishPushDeliveryOutboxUseCase), "execute");
     const registration = vi.spyOn(
       context.module.get(PublishPushDeliveryAfterCommitUseCase),
-      "register",
+      "execute",
     );
     const cache = context.module.get<NotificationCachePort>(NotificationCachePort);
     const invalidation = vi.spyOn(cache, "invalidateUnreadCount");

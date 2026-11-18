@@ -11,14 +11,16 @@ export abstract class UserSettingsProvisionerPort {
   abstract seedDefaults(userId: UserId, consent: ConsentAgreement): Promise<void>;
 }
 
+export interface TodoToggle {
+  readonly userId: UserId;
+  readonly completed: boolean;
+  readonly timezone: string;
+  readonly todayStats: DatedTodoCompletionStats | null;
+}
+
 /** todo가 완료 처리 후 스트릭을 기록하고 조회하는 capability. */
 export abstract class UserStreakAccessPort {
-  abstract recordTodoToggle(
-    userId: UserId,
-    completed: boolean,
-    timezone: string,
-    todayStats: DatedTodoCompletionStats | null,
-  ): Promise<void>;
+  abstract recordTodoToggle(toggle: TodoToggle): Promise<void>;
   abstract findPreferenceReadModel(userId: UserId): Promise<UserPreferenceReadModel | null>;
 }
 

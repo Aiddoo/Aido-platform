@@ -22,9 +22,6 @@ export class TimezoneReminderEnqueuerAdapter implements ReminderScheduleEnqueuer
   }
 
   enqueueReminderHourChanged(payload: ReminderHourChangedPayload): void {
-    this.#timezoneReminderQueueService.enqueueReminderHourChanged({
-      ...payload,
-      userId: payload.userId.value,
-    });
+    this.#timezoneReminderQueueService.enqueueReminderHourChanged(payload);
   }
 }

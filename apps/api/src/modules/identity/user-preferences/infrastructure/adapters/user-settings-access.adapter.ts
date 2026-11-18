@@ -2,13 +2,13 @@ import { Inject, Injectable } from "@nestjs/common";
 
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { DatedTodoCompletionStats } from "../../application/ports/todo-completion-stats.reader.port.js";
 import {
   type FindMarketingReconfirmTargetsParams,
   type MarketingReconfirmTarget,
   UserConsentRepositoryPort,
 } from "../../application/ports/user-consent.repository.port.js";
 import type {
+  TodoToggle,
   UserNotificationSettingsAccessPort,
   UserSettingsProvisionerPort,
   UserStreakAccessPort,
@@ -80,17 +80,12 @@ export class UserSettingsAccessAdapter
     return this.#seedUserSettingsUseCase.execute({ userId: userId.value, consent });
   }
 
-  recordTodoToggle(
-    userId: UserId,
-    completed: boolean,
-    timezone: string,
-    todayStats: DatedTodoCompletionStats | null,
-  ): Promise<void> {
+  recordTodoToggle(toggle: TodoToggle): Promise<void> {
     return this.#onTodoToggledUseCase.execute({
-      userId: userId.value,
-      completed,
-      timezone,
-      todayStats: todayStats ?? undefined,
+      userId: toggle.userId.value,
+      completed: toggle.completed,
+      timezone: toggle.timezone,
+      todayStats: toggle.todayStats ?? undefined,
     });
   }
 

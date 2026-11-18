@@ -1,6 +1,5 @@
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { UserPreferenceReaderPort } from "../ports/user-preference.reader.port.js";
 import type { UserPreferenceRepositoryPort } from "../ports/user-preference.repository.port.js";
 import type { UserSettingsCachePort } from "../ports/user-settings-cache.port.js";
 import {
@@ -14,14 +13,14 @@ interface UserPreferenceReaderDependencies {
   readonly cache: Pick<UserSettingsCachePort, "wrapUserPreference">;
 }
 
-export class ReadUserPreferencesUseCase implements UserPreferenceReaderPort {
+export class ReadUserPreferencesUseCase {
   readonly #dependencies: UserPreferenceReaderDependencies;
 
   constructor(dependencies: UserPreferenceReaderDependencies) {
     this.#dependencies = dependencies;
   }
 
-  read(userId: UserId): Promise<PreferenceSettingsReadModel> {
+  execute(userId: UserId): Promise<PreferenceSettingsReadModel> {
     return this.#dependencies.cache.wrapUserPreference(userId, async () => {
       const preference =
         await this.#dependencies.preferenceRepository.findReadModelByUserId(userId);

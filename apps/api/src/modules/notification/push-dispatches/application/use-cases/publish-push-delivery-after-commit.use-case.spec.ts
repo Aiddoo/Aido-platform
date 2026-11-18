@@ -41,7 +41,7 @@ describe("PublishPushDeliveryAfterCommitUseCase — commit 이후 fast path", ()
     const dispatchIds = [61, 62];
 
     // When
-    publisher.register(dispatchIds);
+    publisher.execute({ dispatchIds });
     dispatchIds.splice(0, dispatchIds.length, 999);
     await afterCommit.runAll();
 
@@ -63,7 +63,7 @@ describe("PublishPushDeliveryAfterCommitUseCase — commit 이후 fast path", ()
       return publishedCount;
     });
     publishOutbox.result = () => underlyingPublication;
-    publisher.register([71]);
+    publisher.execute({ dispatchIds: [71] });
 
     // When
     const fastPath = afterCommit.runAll();
@@ -88,7 +88,7 @@ describe("PublishPushDeliveryAfterCommitUseCase — commit 이후 fast path", ()
     const { afterCommit, publisher } = createAfterCommitPublisher();
 
     // When
-    publisher.register([]);
+    publisher.execute({ dispatchIds: [] });
 
     // Then
     expect(afterCommit.tasks).toEqual([]);

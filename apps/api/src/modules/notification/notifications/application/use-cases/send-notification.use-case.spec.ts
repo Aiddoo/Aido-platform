@@ -28,12 +28,12 @@ const data = createNotificationDraftFixture({
 
 class RecordingAfterCommitPublisher implements Pick<
   PublishPushDeliveryAfterCommitUseCase,
-  "register"
+  "execute"
 > {
   readonly registeredDispatchIds: number[][] = [];
 
-  register(dispatchIds: readonly number[]): void {
-    this.registeredDispatchIds.push([...dispatchIds]);
+  execute(command: { readonly dispatchIds: readonly number[] }): void {
+    this.registeredDispatchIds.push([...command.dispatchIds]);
   }
 }
 

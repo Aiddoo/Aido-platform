@@ -1,49 +1,31 @@
-import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { NotificationLogEvent } from "../notifications.log-events.js";
-import { type NotificationCachePort } from "../ports/notification-cache.port.js";
 import { type NotificationRepositoryPort } from "../ports/notification.repository.port.js";
 
-/** auth purge가 소비하는 알림 bounded context의 개인정보 정리 capability입니다. */
-export interface NotificationAccountCleanupResult {
-  affectedUserIds: string[];
+export interface DeleteActorNotificationsCommand {
+  readonly actorId: UserId;
 }
 
-interface NotificationAccountCleanupDependencies {
+export interface DeleteActorNotificationsResult {
+  readonly affectedUserIds: readonly UserId[];
+}
+
+interface DeleteActorNotificationsDependencies {
   readonly repository: Pick<NotificationRepositoryPort, "deleteNotificationsByActorId">;
-  readonly cache: Pick<NotificationCachePort, "invalidateUnreadCount">;
-  readonly logger: Pick<ApplicationLoggerPort, "warn">;
 }
 
+/** 계정 purge가 연 트랜잭션 안에서 탈퇴한 사람이 남긴 알림을 지운다. 받은 사람 캐시는 커밋 뒤 따로 정리한다 */
 export class DeleteActorNotificationsUseCase {
-  readonly #dependencies: NotificationAccountCleanupDependencies;
+  readonly #dependencies: DeleteActorNotificationsDependencies;
 
-  constructor(dependencies: NotificationAccountCleanupDependencies) {
+  constructor(dependencies: DeleteActorNotificationsDependencies) {
     this.#dependencies = dependencies;
   }
 
-  async cleanupInTransaction(userId: string): Promise<NotificationAccountCleanupResult> {
-    const result = await this.#dependencies.repository.deleteNotificationsByActorId(
-      UserId.reconstitute(userId),
+  async execute(command: DeleteActorNotificationsCommand): Promise<DeleteActorNotificationsResult> {
+    const { affectedUserIds } = await this.#dependencies.repository.deleteNotificationsByActorId(
+      command.actorId,
     );
-    return { affectedUserIds: result.affectedUserIds.map((userId) => userId.value) };
-  }
-
-  async settleAfterCommit(result: NotificationAccountCleanupResult): Promise<void> {
-    const settlements = await Promise.allSettled(
-      result.affectedUserIds.map((userId) =>
-        this.#dependencies.cache.invalidateUnreadCount(UserId.reconstitute(userId)),
-      ),
-    );
-    for (const [index, settlement] of settlements.entries()) {
-      if (settlement.status === "rejected") {
-        this.#dependencies.logger.warn({
-          event: NotificationLogEvent.NOTIFICATION_ACCOUNT_CLEANUP_CACHE_SETTLE_FAILED,
-          userId: result.affectedUserIds[index],
-          errorType: "cache-invalidation",
-        });
-      }
-    }
+    return { affectedUserIds };
   }
 }

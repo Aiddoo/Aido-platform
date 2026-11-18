@@ -1,3 +1,4 @@
+import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { createTodoCommentLikeFixture } from "#test/fixtures/engagement/todo-comment-like.fixture";
 import {
   TODO_COMMENT_FIXTURE_FRIEND_ID,
@@ -45,7 +46,7 @@ describe("CleanUpAccountTodoCommentsUseCase — 계정 정리 경계", () => {
     });
 
     // Then
-    expect(result).toEqual({ affectedTodoIds: [TODO_ID] });
+    expect(result.affectedTodoIds.map((todoId) => todoId.value)).toEqual([TODO_ID]);
     expect(fixture.mutationLock.acquiredKeys).toEqual([
       [head.id.value, reply.id.value]
         .toSorted()
@@ -86,7 +87,9 @@ describe("InvalidateCleanedTodoCachesUseCase — 계정 정리 뒤 캐시", () =
     fixture.todoViewCache.failures.set(8, new Error("private cache failure"));
 
     // When
-    await new InvalidateCleanedTodoCachesUseCase(fixture).execute({ todoIds: [8, 13] });
+    await new InvalidateCleanedTodoCachesUseCase(fixture).execute({
+      todoIds: [TodoId.reconstitute(8), TodoId.reconstitute(13)],
+    });
 
     // Then
     expect(fixture.todoViewCache.batchCalls).toBe(1);

@@ -28,7 +28,7 @@ interface PersistBatchNotificationDependencies {
   readonly pushDispatchRepository: Pick<PushDispatchRepositoryPort, "nextIds" | "saveAll">;
   readonly clock: Pick<ClockPort, "now">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
-  readonly afterCommitPublisher: Pick<PublishPushDeliveryAfterCommitUseCase, "register">;
+  readonly afterCommitPublisher: Pick<PublishPushDeliveryAfterCommitUseCase, "execute">;
 }
 
 export interface BatchNotificationOptions {
@@ -98,9 +98,9 @@ export class PersistBatchNotificationUseCase {
       });
     });
     await this.#dependencies.pushDispatchRepository.saveAll(dispatches);
-    this.#dependencies.afterCommitPublisher.register(
-      dispatches.map((dispatch) => dispatch.id.value),
-    );
+    this.#dependencies.afterCommitPublisher.execute({
+      dispatchIds: dispatches.map((dispatch) => dispatch.id.value),
+    });
     return { count: created.length, sourceData: dataList };
   }
 }

@@ -20,12 +20,12 @@ import {
   UserTimezoneReaderPort,
 } from "./application/ports/user-settings-access.port.js";
 import { UserSettingsCachePort } from "./application/ports/user-settings-cache.port.js";
-import { GetAiDataSharingConsentUseCase } from "./application/use-cases/get-ai-data-sharing-consent.use-case.js";
-import { ReadUserPreferencesUseCase } from "./application/use-cases/read-user-preferences.use-case.js";
 import { IDENTITY_USER_PREFERENCES_PROVIDERS } from "./identity-user-preferences.providers.js";
+import { AiDataSharingConsentReaderAdapter } from "./infrastructure/adapters/ai-data-sharing-consent-reader.adapter.js";
 import { StreakMilestoneNotifierAdapter } from "./infrastructure/adapters/streak-milestone-notifier.adapter.js";
 import { TimezoneReminderEnqueuerAdapter } from "./infrastructure/adapters/timezone-reminder-enqueuer.adapter.js";
 import { TodoTimezoneRebaseEnqueuerAdapter } from "./infrastructure/adapters/todo-timezone-rebase-enqueuer.adapter.js";
+import { UserPreferenceReaderAdapter } from "./infrastructure/adapters/user-preference-reader.adapter.js";
 import { UserSettingsAccessAdapter } from "./infrastructure/adapters/user-settings-access.adapter.js";
 import { UserSettingsCacheAdapter } from "./infrastructure/adapters/user-settings-cache.adapter.js";
 import { DrizzleTodoCompletionStatsReader } from "./infrastructure/persistence/drizzle-todo-completion-stats.reader.js";
@@ -47,8 +47,8 @@ import { SettingsController } from "./presentation/http/v1/user-settings.control
   providers: [
     ...IDENTITY_USER_PREFERENCES_PROVIDERS,
     UserSettingsAccessAdapter,
-    { provide: UserPreferenceReaderPort, useExisting: ReadUserPreferencesUseCase },
-    { provide: AiDataSharingConsentReaderPort, useExisting: GetAiDataSharingConsentUseCase },
+    { provide: UserPreferenceReaderPort, useClass: UserPreferenceReaderAdapter },
+    { provide: AiDataSharingConsentReaderPort, useClass: AiDataSharingConsentReaderAdapter },
     TimezoneSelfHealInterceptor,
     DrizzleUserPreferenceRepository,
     DrizzleUserConsentRepository,

@@ -52,7 +52,7 @@ describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () 
       premium: true,
       preference: { timezone: "Asia/Seoul", eveningReminderHour: 20 },
     });
-    await fixture.preferenceReader.read(UserId.reconstitute(fixture.userId));
+    await fixture.preferenceReader.execute(UserId.reconstitute(fixture.userId));
     // When
     const result = await new UpdatePreferenceUseCase(fixture).execute({
       userId: fixture.userId,
@@ -133,7 +133,7 @@ describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () 
     async ({ premium, changes, errorCode }) => {
       // Given
       const fixture = createUserSettingsFixture({ premium });
-      await fixture.preferenceReader.read(UserId.reconstitute(fixture.userId));
+      await fixture.preferenceReader.execute(UserId.reconstitute(fixture.userId));
       const snapshot = fixture.cache.snapshots.get(fixture.userId);
       // When
       const pending = new UpdatePreferenceUseCase(fixture).execute({
@@ -165,7 +165,7 @@ describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () 
     // Given
     // 이전 설정 응답이 캐시되어 있고 목록 무효화가 실패한다.
     const fixture = createUserSettingsFixture();
-    await fixture.preferenceReader.read(UserId.reconstitute(fixture.userId));
+    await fixture.preferenceReader.execute(UserId.reconstitute(fixture.userId));
     const failure = new Error("synthetic cache unavailable");
     const useCase = new UpdatePreferenceUseCase({
       ...fixture,

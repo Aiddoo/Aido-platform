@@ -8,6 +8,7 @@ import { NotificationHistoryReader } from "./application/notification-history.re
 import { NotificationInboxReaderPort } from "./application/ports/notification-inbox.reader.port.js";
 import { NotificationRepositoryPort } from "./application/ports/notification.repository.port.js";
 import { DeleteActorNotificationsUseCase } from "./application/use-cases/delete-actor-notifications.use-case.js";
+import { InvalidateRecipientUnreadCountsUseCase } from "./application/use-cases/invalidate-recipient-unread-counts.use-case.js";
 import { PublishNotificationBatchUseCase } from "./application/use-cases/publish-notification-batch.use-case.js";
 import { PublishNotificationUseCase } from "./application/use-cases/publish-notification.use-case.js";
 import { MarketingConsentReconfirmProcessor } from "./infrastructure/jobs/marketing-consent-reconfirm.processor.js";
@@ -44,6 +45,7 @@ import { NotificationController } from "./presentation/http/v1/notification.cont
     NotificationInboxReaderPort,
     NotificationRepositoryPort,
     DeleteActorNotificationsUseCase,
+    InvalidateRecipientUnreadCountsUseCase,
     NotificationQueueModule,
   ],
 })

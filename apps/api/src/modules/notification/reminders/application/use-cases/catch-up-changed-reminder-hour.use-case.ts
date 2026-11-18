@@ -2,10 +2,19 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 
 import { isReminderTimeDue, timezoneContextAt } from "../../domain/local-clock.domain-service.js";
-import type { ReminderHourChangedJobData } from "../ports/timezone-reminder-enqueuer.port.js";
 import { ReminderLogEvent } from "../reminders.log-events.js";
 import type { SendEveningReminderUseCase } from "./send-evening-reminder.use-case.js";
 import type { SendMorningReminderUseCase } from "./send-morning-reminder.use-case.js";
+
+/** 큐 payload 그대로다. 바꾸지 않은 시각은 비어 있다 */
+export interface CatchUpChangedReminderHourCommand {
+  readonly userId: string;
+  readonly timezone: string;
+  readonly morningReminderHour?: number;
+  readonly morningReminderMinute?: number;
+  readonly eveningReminderHour?: number;
+  readonly eveningReminderMinute?: number;
+}
 
 interface CatchUpChangedReminderHourDependencies {
   readonly clock: Pick<ClockPort, "now">;
@@ -22,7 +31,7 @@ export class CatchUpChangedReminderHourUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(payload: ReminderHourChangedJobData): Promise<void> {
+  async execute(payload: CatchUpChangedReminderHourCommand): Promise<void> {
     try {
       const timezoneContext = timezoneContextAt(
         this.#dependencies.clock.now(),

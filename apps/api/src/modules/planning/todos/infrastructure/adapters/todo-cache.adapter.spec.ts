@@ -74,13 +74,13 @@ describe("TodoCacheAdapter — 친구 Todo generation 캐시", () => {
     // 이전 generation에는 쓰지 않고 새 generation reader도 stale page를 보지 않는다
     expect(
       await backend.has(
-        TodoCacheKey.friendTodosFirstPageVersioned(
-          OWNER_ID.value,
-          staleRead.generation,
-          START_DATE,
-          END_DATE,
-          PAGE_SIZE,
-        ),
+        TodoCacheKey.friendTodosFirstPageVersioned({
+          ownerUserId: OWNER_ID.value,
+          generation: staleRead.generation,
+          startDate: START_DATE,
+          endDate: END_DATE,
+          size: PAGE_SIZE,
+        }),
       ),
     ).toBe(false);
 
@@ -142,13 +142,13 @@ describe("TodoCacheAdapter — 친구 Todo generation 캐시", () => {
       cacheRead.generation,
       page,
     );
-    const previousPageKey = TodoCacheKey.friendTodosFirstPageVersioned(
-      OWNER_ID.value,
-      cacheRead.generation,
-      START_DATE,
-      END_DATE,
-      PAGE_SIZE,
-    );
+    const previousPageKey = TodoCacheKey.friendTodosFirstPageVersioned({
+      ownerUserId: OWNER_ID.value,
+      generation: cacheRead.generation,
+      startDate: START_DATE,
+      endDate: END_DATE,
+      size: PAGE_SIZE,
+    });
 
     // When
     await adapter.invalidateFriendTodos(OWNER_ID);
@@ -174,13 +174,13 @@ describe("TodoCacheAdapter — 친구 Todo generation 캐시", () => {
     };
     const cacheService = backend;
     const generationKey = TodoCacheKey.friendTodosGeneration(OWNER_ID.value);
-    const pageKey = TodoCacheKey.friendTodosFirstPageVersioned(
-      OWNER_ID.value,
-      "generation-before-write",
-      START_DATE,
-      END_DATE,
-      PAGE_SIZE,
-    );
+    const pageKey = TodoCacheKey.friendTodosFirstPageVersioned({
+      ownerUserId: OWNER_ID.value,
+      generation: "generation-before-write",
+      startDate: START_DATE,
+      endDate: END_DATE,
+      size: PAGE_SIZE,
+    });
     await backend.set(generationKey, "generation-before-write", 60_000);
     await backend.set(pageKey, stalePage, 60_000);
 

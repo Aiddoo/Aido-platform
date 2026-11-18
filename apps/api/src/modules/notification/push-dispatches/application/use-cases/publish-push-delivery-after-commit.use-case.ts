@@ -15,6 +15,10 @@ interface PushDeliveryAfterCommitPublisherDependencies {
   readonly logger: Pick<ApplicationLoggerPort, "warn">;
 }
 
+export interface PublishPushDeliveryAfterCommitCommand {
+  readonly dispatchIds: readonly number[];
+}
+
 export class PublishPushDeliveryAfterCommitUseCase {
   readonly #dependencies: PushDeliveryAfterCommitPublisherDependencies;
 
@@ -22,11 +26,11 @@ export class PublishPushDeliveryAfterCommitUseCase {
     this.#dependencies = dependencies;
   }
 
-  register(dispatchIds: readonly number[]): void {
-    if (dispatchIds.length === 0) {
+  execute(command: PublishPushDeliveryAfterCommitCommand): void {
+    if (command.dispatchIds.length === 0) {
       return;
     }
-    const committedDispatchIds = [...dispatchIds];
+    const committedDispatchIds = [...command.dispatchIds];
     this.#dependencies.afterCommit.register(async () => {
       try {
         await withTimeout(

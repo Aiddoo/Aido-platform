@@ -26,6 +26,7 @@ import { NotificationRepositoryPort } from "./application/ports/notification.rep
 import { DeleteActorNotificationsUseCase } from "./application/use-cases/delete-actor-notifications.use-case.js";
 import { FinalizeBatchNotificationUseCase } from "./application/use-cases/finalize-batch-notification.use-case.js";
 import { GetUnreadNotificationCountUseCase } from "./application/use-cases/get-unread-notification-count.use-case.js";
+import { InvalidateRecipientUnreadCountsUseCase } from "./application/use-cases/invalidate-recipient-unread-counts.use-case.js";
 import { ListNotificationsUseCase } from "./application/use-cases/list-notifications.use-case.js";
 import { MarkAllNotificationsReadUseCase } from "./application/use-cases/mark-all-notifications-read.use-case.js";
 import { MarkNotificationOpenedUseCase } from "./application/use-cases/mark-notification-opened.use-case.js";
@@ -95,8 +96,10 @@ export const NOTIFICATION_NOTIFICATIONS_USE_CASE_PROVIDERS = [
   }),
   provideUseCase(DeleteActorNotificationsUseCase, {
     repository: NotificationRepositoryPort,
+  }),
+  provideUseCase(InvalidateRecipientUnreadCountsUseCase, {
     cache: NotificationCachePort,
-    logger: loggerFor(DeleteActorNotificationsUseCase),
+    logger: loggerFor(InvalidateRecipientUnreadCountsUseCase),
   }),
   provideUseCase(PurgeNotificationHistoryUseCase, {
     notificationRepository: NotificationRepositoryPort,

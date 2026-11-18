@@ -5,7 +5,7 @@ import type { UserConsentReadModel } from "../read-models/consent.read-model.js"
 
 /** 광고성 수신 동의 사실을 다시 알릴 사용자 */
 export interface MarketingReconfirmTarget {
-  readonly userId: string;
+  readonly userId: UserId;
   readonly marketingAgreedAt: Temporal.Instant | null;
   readonly marketingPushAgreedAt: Temporal.Instant | null;
 }

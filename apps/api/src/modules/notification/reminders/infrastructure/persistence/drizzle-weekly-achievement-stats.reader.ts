@@ -7,6 +7,7 @@ import { userRecipients } from "#api/modules/identity/users/identity-users.publi
 import { todoDaysInPeriodByUser } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type {
@@ -34,7 +35,7 @@ export class DrizzleWeeklyAchievementStatsReader implements WeeklyAchievementSta
     return this.#countTodoDaysByUser(params, true);
   }
 
-  async findFreeRecipientIds(userIds: string[]): Promise<Set<string>> {
+  async findFreeRecipientIds(userIds: readonly UserId[]): Promise<Set<string>> {
     if (userIds.length === 0) {
       return new Set();
     }
@@ -44,7 +45,10 @@ export class DrizzleWeeklyAchievementStatsReader implements WeeklyAchievementSta
       .from(recipients.table)
       .where(
         and(
-          inArray(recipients.userId, userIds),
+          inArray(
+            recipients.userId,
+            userIds.map((userId) => userId.value),
+          ),
           freeAccessCondition(recipients.table, instantToDate(this.#clock.now())),
         ),
       );

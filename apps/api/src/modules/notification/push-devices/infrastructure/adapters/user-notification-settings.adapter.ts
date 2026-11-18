@@ -5,9 +5,13 @@ import {
   UserNotificationSettingsAccessPort,
   type UserPreferenceReadModel,
 } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
-import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { UserNotificationSettingsPort } from "../../../shared/application/ports/user-notification-settings.port.js";
+import type {
+  NotificationDeliveryPreferenceWithUserId,
+  NotificationMarketingConsentWithUserId,
+  UserNotificationSettingsPort,
+} from "../../../shared/application/ports/user-notification-settings.port.js";
 
 /**
  * notification의 설정 포트를 user-settings의 공개 capability에 연결한다.
@@ -35,18 +39,25 @@ export class UserNotificationSettingsAdapter implements UserNotificationSettings
     return this.#userSettingsAccess.findPreferenceReadModel(userId);
   }
 
-  findPreferenceReadModelsByUserIds(
+  async findPreferenceReadModelsByUserIds(
     userIds: readonly UserId[],
-  ): Promise<UserPreferenceReadModel[]> {
-    return this.#userSettingsAccess.findPreferenceReadModelsByUserIds(userIds);
+  ): Promise<NotificationDeliveryPreferenceWithUserId[]> {
+    const preferences = await this.#userSettingsAccess.findPreferenceReadModelsByUserIds(userIds);
+    return preferences.map((preference) => ({
+      ...preference,
+      userId: UserId.reconstitute(preference.userId),
+    }));
   }
 
   findConsentReadModel(userId: UserId): Promise<UserConsentReadModel | null> {
     return this.#userSettingsAccess.findConsentReadModel(userId);
   }
 
-  findConsentReadModelsByUserIds(userIds: readonly UserId[]): Promise<UserConsentReadModel[]> {
-    return this.#userSettingsAccess.findConsentReadModelsByUserIds(userIds);
+  async findConsentReadModelsByUserIds(
+    userIds: readonly UserId[],
+  ): Promise<NotificationMarketingConsentWithUserId[]> {
+    const consents = await this.#userSettingsAccess.findConsentReadModelsByUserIds(userIds);
+    return consents.map((consent) => ({ ...consent, userId: UserId.reconstitute(consent.userId) }));
   }
 
   async updateMarketingPushConsent(userId: UserId, agreed: boolean): Promise<void> {

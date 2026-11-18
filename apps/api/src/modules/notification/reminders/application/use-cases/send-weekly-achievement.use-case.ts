@@ -48,7 +48,9 @@ export class SendWeeklyAchievementUseCase implements TimezoneReminderStrategyPor
     if (completedUserIds.length === 0) {
       return { sent: 0 };
     }
-    const freeRecipientIds = await this.#dependencies.reader.findFreeRecipientIds(completedUserIds);
+    const freeRecipientIds = await this.#dependencies.reader.findFreeRecipientIds(
+      completedUserIds.map((userId) => UserId.reconstitute(userId)),
+    );
     const notifiableUserIds = completedUserIds.filter((userId) => freeRecipientIds.has(userId));
     if (notifiableUserIds.length === 0) {
       return { sent: 0 };

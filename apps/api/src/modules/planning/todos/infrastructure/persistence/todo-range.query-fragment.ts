@@ -31,24 +31,37 @@ export function todoCompletionsBetween(
   >`array(select ${todo.completed} from ${todo} where ${and(eq(todo.userId, userIdColumn), startsBetween(from, until))})`;
 }
 
-export function hasTodoBetween(
-  userIdColumn: AnyPgColumn,
-  from: Temporal.PlainDate,
-  until: Temporal.PlainDate,
-  completed?: boolean,
-): SQL {
+function hasTodoMatching(userIdColumn: AnyPgColumn, condition: SQL | undefined): SQL {
   return exists(
     new QueryBuilder()
       .select({ one: sql`1` })
       .from(todo)
-      .where(
-        and(
-          eq(todo.userId, userIdColumn),
-          startsBetween(from, until),
-          completed == null ? undefined : eq(todo.completed, completed),
-        ),
-      ),
+      .where(and(eq(todo.userId, userIdColumn), condition)),
   );
+}
+
+export function hasTodoBetween(
+  userIdColumn: AnyPgColumn,
+  from: Temporal.PlainDate,
+  until: Temporal.PlainDate,
+): SQL {
+  return hasTodoMatching(userIdColumn, startsBetween(from, until));
+}
+
+export function hasOpenTodoBetween(
+  userIdColumn: AnyPgColumn,
+  from: Temporal.PlainDate,
+  until: Temporal.PlainDate,
+): SQL {
+  return hasTodoMatching(userIdColumn, and(startsBetween(from, until), eq(todo.completed, false)));
+}
+
+export function hasCompletedTodoBetween(
+  userIdColumn: AnyPgColumn,
+  from: Temporal.PlainDate,
+  until: Temporal.PlainDate,
+): SQL {
+  return hasTodoMatching(userIdColumn, and(startsBetween(from, until), eq(todo.completed, true)));
 }
 
 // 시작일이 from 이후인 반복 아닌 할 일이 있다

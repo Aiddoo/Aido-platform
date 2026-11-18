@@ -8,6 +8,7 @@ import {
   UserPreferenceReaderPort,
   UserSettingsCachePort,
 } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
+import { UserPreferenceReaderAdapter } from "#api/modules/identity/user-preferences/infrastructure/adapters/user-preference-reader.adapter";
 import { UserSettingsCacheAdapter } from "#api/modules/identity/user-preferences/infrastructure/adapters/user-settings-cache.adapter";
 import { DrizzleUserConsentRepository } from "#api/modules/identity/user-preferences/infrastructure/persistence/drizzle-user-consent.repository";
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/user-preferences/infrastructure/persistence/drizzle-user-preference.repository";
@@ -158,7 +159,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
     mockPushDispatchRepository.saveAll.mock.calls.flatMap(([dispatches]) =>
       dispatches.map((dispatch) => dispatch.toPrimitives()),
     );
-  const mockAfterCommitPublisher = { register: vi.fn() };
+  const mockAfterCommitPublisher = { execute: vi.fn() };
   const mockUserId = "user-notification-123";
   const mockPushToken = "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]";
 
@@ -209,10 +210,12 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
             preferenceRepository: DrizzleUserPreferenceRepository,
             cache: CacheStorePort,
           ) =>
-            new ReadUserPreferencesUseCase({
-              preferenceRepository,
-              cache: new UserSettingsCacheAdapter(cache),
-            }),
+            new UserPreferenceReaderAdapter(
+              new ReadUserPreferencesUseCase({
+                preferenceRepository,
+                cache: new UserSettingsCacheAdapter(cache),
+              }),
+            ),
           inject: [DrizzleUserPreferenceRepository, CacheStorePort],
         },
         UserSettingsCacheAdapter,
@@ -247,11 +250,17 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
             },
             findPreferenceReadModel: (userId: UserId) =>
               preferenceRepository.findReadModelByUserId(userId),
-            findPreferenceReadModelsByUserIds: (userIds: readonly UserId[]) =>
-              preferenceRepository.findReadModelsByUserIds(userIds),
+            findPreferenceReadModelsByUserIds: async (userIds: readonly UserId[]) =>
+              (await preferenceRepository.findReadModelsByUserIds(userIds)).map((preference) => ({
+                ...preference,
+                userId: UserId.reconstitute(preference.userId),
+              })),
             findConsentReadModel: (userId: UserId) => consentRepository.findByUserId(userId),
-            findConsentReadModelsByUserIds: (userIds: readonly UserId[]) =>
-              consentRepository.findByUserIds(userIds),
+            findConsentReadModelsByUserIds: async (userIds: readonly UserId[]) =>
+              (await consentRepository.findByUserIds(userIds)).map((consent) => ({
+                ...consent,
+                userId: UserId.reconstitute(consent.userId),
+              })),
             updateMarketingPushConsent: async (userId: UserId, agreed: boolean) => {
               const preference = await preferenceRepository.getByUserId(userId);
               preference.changeMarketingPushConsent(
@@ -966,7 +975,9 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
           force: false,
         }),
       ]);
-      expect(mockAfterCommitPublisher.register).toHaveBeenCalledWith([dispatches[0]?.id]);
+      expect(mockAfterCommitPublisher.execute).toHaveBeenCalledWith({
+        dispatchIds: [dispatches[0]?.id],
+      });
     });
 
     it("푸시 토큰이 없어도 알림을 생성해야 함", async () => {

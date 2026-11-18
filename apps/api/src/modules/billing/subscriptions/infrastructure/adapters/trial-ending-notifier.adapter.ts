@@ -41,7 +41,7 @@ export class TrialEndingNotifierAdapter implements TrialEndingNotifierPort {
     const userIds = notices.map((notice) => notice.userId);
     const [localeOf, timezones] = await Promise.all([
       this.#localeReader.getLocales(userIds),
-      this.#timezoneReader.getTimezones(userIds.map((userId) => userId.value)),
+      this.#timezoneReader.getTimezones(userIds),
     ]);
     await this.#notificationPublisher.execute(
       notices.map((notice) => {

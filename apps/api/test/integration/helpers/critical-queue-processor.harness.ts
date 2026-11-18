@@ -12,6 +12,7 @@ import {
   type UserPreferenceReadModel,
   UserSettingsCachePort,
 } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
+import { UserPreferenceReaderAdapter } from "#api/modules/identity/user-preferences/infrastructure/adapters/user-preference-reader.adapter";
 import { UserSettingsCacheAdapter } from "#api/modules/identity/user-preferences/infrastructure/adapters/user-settings-cache.adapter";
 import { DrizzleUserPreferenceRepository } from "#api/modules/identity/user-preferences/infrastructure/persistence/drizzle-user-preference.repository";
 import { MarketingConsentReconfirmPort } from "#api/modules/notification/notifications/application/ports/marketing-consent-reconfirm.port";
@@ -283,10 +284,12 @@ function notificationProviders(pushProvider: FakePushProvider): Provider[] {
     {
       provide: UserPreferenceReaderPort,
       useFactory: (preferenceRepository: DrizzleUserPreferenceRepository, cache: CacheStorePort) =>
-        new ReadUserPreferencesUseCase({
-          preferenceRepository,
-          cache: new UserSettingsCacheAdapter(cache),
-        }),
+        new UserPreferenceReaderAdapter(
+          new ReadUserPreferencesUseCase({
+            preferenceRepository,
+            cache: new UserSettingsCacheAdapter(cache),
+          }),
+        ),
       inject: [DrizzleUserPreferenceRepository, CacheStorePort],
     },
   ];
@@ -366,20 +369,32 @@ function createDatabaseBackedSettingsPort(database: Database): UserNotificationS
     upsertPushLocale: (userId, locale) => upsertPreference(userId.value, { locale }),
     findPreferenceReadModel: async (userId): Promise<UserPreferenceReadModel | null> =>
       (await database.query.userPreference.findFirst({ where: { userId: userId.value } })) ?? null,
-    findPreferenceReadModelsByUserIds: async (userIds): Promise<UserPreferenceReadModel[]> =>
-      userIds.length === 0
-        ? []
-        : database.query.userPreference.findMany({
-            where: { userId: { in: userIds.map((userId) => userId.value) } },
-          }),
+    findPreferenceReadModelsByUserIds: async (userIds) => {
+      if (userIds.length === 0) {
+        return [];
+      }
+      const preferences = await database.query.userPreference.findMany({
+        where: { userId: { in: userIds.map((userId) => userId.value) } },
+      });
+      return preferences.map((preference) => ({
+        ...preference,
+        userId: UserId.reconstitute(preference.userId),
+      }));
+    },
     findConsentReadModel: async (userId): Promise<UserConsentReadModel | null> =>
       (await database.query.userConsent.findFirst({ where: { userId: userId.value } })) ?? null,
-    findConsentReadModelsByUserIds: async (userIds): Promise<UserConsentReadModel[]> =>
-      userIds.length === 0
-        ? []
-        : database.query.userConsent.findMany({
-            where: { userId: { in: userIds.map((userId) => userId.value) } },
-          }),
+    findConsentReadModelsByUserIds: async (userIds) => {
+      if (userIds.length === 0) {
+        return [];
+      }
+      const consents = await database.query.userConsent.findMany({
+        where: { userId: { in: userIds.map((userId) => userId.value) } },
+      });
+      return consents.map((consent) => ({
+        ...consent,
+        userId: UserId.reconstitute(consent.userId),
+      }));
+    },
     updateMarketingPushConsent: async (user, agreed) => {
       const userId = user.value;
       const marketingPushAgreedAt = agreed

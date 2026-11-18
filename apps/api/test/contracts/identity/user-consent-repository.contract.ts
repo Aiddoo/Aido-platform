@@ -1,4 +1,7 @@
-import type { UserConsentRepositoryPort } from "#api/modules/identity/user-preferences/application/ports/user-consent.repository.port";
+import type {
+  MarketingReconfirmTarget,
+  UserConsentRepositoryPort,
+} from "#api/modules/identity/user-preferences/application/ports/user-consent.repository.port";
 import type { UserPreferenceRepositoryPort } from "#api/modules/identity/user-preferences/application/ports/user-preference.repository.port";
 import type { UserConsentReadModel } from "#api/modules/identity/user-preferences/application/read-models/consent.read-model";
 import type { ConsentAgreement } from "#api/modules/identity/user-preferences/domain/user-consent.entity";
@@ -33,6 +36,10 @@ const EMPTY_CONSENT: Omit<UserConsentReadModel, "userId"> = {
 
 function sortedByUserId<T extends { readonly userId: string }>(items: readonly T[]): T[] {
   return items.toSorted((left, right) => (left.userId < right.userId ? -1 : 1));
+}
+
+function withPlainUserId(targets: readonly MarketingReconfirmTarget[]) {
+  return targets.map((target) => ({ ...target, userId: target.userId.value }));
 }
 
 // 동의는 UserPreference 저장으로만 바뀌어 같은 저장소 묶음으로 행을 만든다
@@ -149,7 +156,7 @@ export function describeUserConsentRepositoryContract(
       const targets = await repository.findMarketingReconfirmTargets({ cutoff: CUTOFF, limit: 10 });
 
       // Then
-      expect(targets).toEqual([
+      expect(withPlainUserId(targets)).toEqual([
         { userId: USER_ID, marketingAgreedAt: CUTOFF, marketingPushAgreedAt: null },
       ]);
     });
@@ -172,7 +179,7 @@ export function describeUserConsentRepositoryContract(
       const targets = await repository.findMarketingReconfirmTargets({ cutoff: CUTOFF, limit: 10 });
 
       // Then
-      expect(targets).toEqual([
+      expect(withPlainUserId(targets)).toEqual([
         { userId: USER_ID, marketingAgreedAt: null, marketingPushAgreedAt: BEFORE_CUTOFF },
       ]);
     });
@@ -199,7 +206,7 @@ export function describeUserConsentRepositoryContract(
       const targets = await repository.findMarketingReconfirmTargets({ cutoff: CUTOFF, limit: 10 });
 
       // Then
-      expect(targets).toEqual([
+      expect(withPlainUserId(targets)).toEqual([
         { userId: USER_ID, marketingAgreedAt: AFTER_CUTOFF, marketingPushAgreedAt: BEFORE_CUTOFF },
       ]);
     });
@@ -226,7 +233,7 @@ export function describeUserConsentRepositoryContract(
 
       // Then
       expect(beforeReconfirm).toEqual([]);
-      expect(atReconfirm.map((target) => target.userId)).toEqual([USER_ID]);
+      expect(atReconfirm.map((target) => target.userId.value)).toEqual([USER_ID]);
       expect(
         (await repository.findByUserId(UserId.reconstitute(USER_ID)))?.marketingReconfirmedAt,
       ).toEqual(reconfirmedAt);
@@ -255,9 +262,9 @@ export function describeUserConsentRepositoryContract(
       });
 
       // Then
-      expect(all.map((target) => target.userId)).toEqual([USER_ID, OTHER_USER_ID]);
-      expect(first.map((target) => target.userId)).toEqual([USER_ID]);
-      expect(second.map((target) => target.userId)).toEqual([OTHER_USER_ID]);
+      expect(all.map((target) => target.userId.value)).toEqual([USER_ID, OTHER_USER_ID]);
+      expect(first.map((target) => target.userId.value)).toEqual([USER_ID]);
+      expect(second.map((target) => target.userId.value)).toEqual([OTHER_USER_ID]);
       expect(last).toEqual([]);
     });
 
@@ -286,7 +293,7 @@ export function describeUserConsentRepositoryContract(
       const empty = await repository.claimMarketingReconfirm([], params);
 
       // Then
-      expect(sortedByUserId(claimed)).toEqual([
+      expect(sortedByUserId(withPlainUserId(claimed))).toEqual([
         { userId: USER_ID, marketingAgreedAt: BEFORE_CUTOFF, marketingPushAgreedAt: null },
       ]);
       expect({ repeated, empty }).toEqual({ repeated: [], empty: [] });

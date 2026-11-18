@@ -67,12 +67,12 @@ export class CachedNotificationRecipientPreferenceAdapter
       uniqueUserIds.map((userId) => UserId.reconstitute(userId)),
     );
     return recipientLocaleOf(
-      new Map(preferences.map((preference) => [preference.userId, preference.locale])),
+      new Map(preferences.map((preference) => [preference.userId.value, preference.locale])),
     );
   }
 
-  async getTimezones(userIds: readonly string[]): Promise<ReadonlyMap<string, string>> {
-    const uniqueUserIds = uniq(userIds);
+  async getTimezones(userIds: readonly UserId[]): Promise<ReadonlyMap<string, string>> {
+    const uniqueUserIds = uniq(userIds.map((userId) => userId.value));
     if (uniqueUserIds.length === 0) {
       return new Map();
     }
@@ -80,7 +80,7 @@ export class CachedNotificationRecipientPreferenceAdapter
       uniqueUserIds.map((userId) => UserId.reconstitute(userId)),
     );
     const timezones = new Map(
-      preferences.map((preference) => [preference.userId, preference.timezone]),
+      preferences.map((preference) => [preference.userId.value, preference.timezone]),
     );
     return new Map(
       uniqueUserIds.map((userId) => [userId, resolveDeliveryTimezone(timezones.get(userId))]),

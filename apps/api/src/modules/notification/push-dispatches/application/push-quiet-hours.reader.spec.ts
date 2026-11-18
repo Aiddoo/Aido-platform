@@ -13,7 +13,7 @@ function createReader(timezones: Readonly<Record<string, string>>) {
           }
           return [
             {
-              userId,
+              userId: UserId.reconstitute(userId),
               timezone,
               pushEnabled: true,
               nightPushEnabled: false,

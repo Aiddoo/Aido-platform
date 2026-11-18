@@ -2,9 +2,14 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 
 import { timezoneContextAt } from "../../domain/local-clock.domain-service.js";
-import type { SocialDigestJobData } from "../ports/timezone-reminder-enqueuer.port.js";
 import { ReminderLogEvent } from "../reminders.log-events.js";
 import type { SendSocialDigestUseCase } from "./send-social-digest.use-case.js";
+
+export interface DeliverQueuedSocialDigestCommand {
+  readonly timezone: string;
+  /** 배포 전에 등록된 지연 작업은 없을 수 있어 optional로 읽는다 */
+  readonly recipientUserIds?: readonly string[];
+}
 
 interface DeliverQueuedSocialDigestDependencies {
   readonly clock: Pick<ClockPort, "now">;
@@ -20,7 +25,7 @@ export class DeliverQueuedSocialDigestUseCase {
     this.#dependencies = dependencies;
   }
 
-  async execute(payload: SocialDigestJobData): Promise<void> {
+  async execute(payload: DeliverQueuedSocialDigestCommand): Promise<void> {
     try {
       if (!payload.recipientUserIds?.length) {
         this.#dependencies.logger.warn({

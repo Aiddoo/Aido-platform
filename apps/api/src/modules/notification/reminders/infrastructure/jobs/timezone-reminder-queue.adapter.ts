@@ -6,7 +6,7 @@ import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { NotificationJobLogEvent } from "../../../shared/application/notification-job.log-events.js";
 import { SOCIAL_DIGEST_DELAY_MS } from "../../../shared/domain/notification-campaign.constants.js";
 import {
-  type ReminderHourChangedJobData,
+  type ReminderHourChangedRequest,
   type SocialDigestEnqueueRequest,
   TimezoneReminderEnqueuerPort,
 } from "../../application/ports/timezone-reminder-enqueuer.port.js";
@@ -28,10 +28,10 @@ export class TimezoneReminderQueueAdapter extends TimezoneReminderEnqueuerPort {
     this.#clock = clock;
   }
 
-  enqueueReminderHourChanged(payload: ReminderHourChangedJobData): void {
+  enqueueReminderHourChanged(request: ReminderHourChangedRequest): void {
     this.#enqueueInBackground({
       name: TimezoneReminderJobName.REMINDER_HOUR_CHANGED,
-      data: payload,
+      data: { ...request, userId: request.userId.value },
     });
   }
 

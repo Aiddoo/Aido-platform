@@ -33,7 +33,7 @@ export class PushQuietHoursReader implements PushQuietHoursReaderPort {
     const preferences =
       await this.#dependencies.userSettings.findPreferenceReadModelsByUserIds(users);
     const timezones = new Map(
-      preferences.map((preference) => [preference.userId, preference.timezone]),
+      preferences.map((preference) => [preference.userId.value, preference.timezone]),
     );
     return new Set(
       userIds.filter((userId) =>

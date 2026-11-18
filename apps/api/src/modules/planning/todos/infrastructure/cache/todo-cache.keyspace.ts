@@ -9,15 +9,25 @@ export const TODO_CACHE_TTL_MS = {
 
 export const FRIEND_TODOS_INITIAL_GENERATION = "initial";
 
+interface FriendTodosFirstPageKey {
+  readonly ownerUserId: string;
+  readonly generation: string;
+  readonly startDate: string;
+  readonly endDate: string;
+  readonly size: number;
+}
+
 export const TodoCacheKey = {
   friendTodosGeneration: (ownerUserId: string) =>
     cacheKey("todo", "friend-view-v2-generation", ownerUserId),
-  friendTodosFirstPageVersioned: (
-    ownerUserId: string,
-    generation: string,
-    startDate: string,
-    endDate: string,
-    size: number,
-  ) =>
-    cacheKey("todo", "friend-view-v2", ownerUserId, generation, startDate, endDate, String(size)),
+  friendTodosFirstPageVersioned: (page: FriendTodosFirstPageKey) =>
+    cacheKey(
+      "todo",
+      "friend-view-v2",
+      page.ownerUserId,
+      page.generation,
+      page.startDate,
+      page.endDate,
+      String(page.size),
+    ),
 } as const;

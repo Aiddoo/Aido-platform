@@ -25,12 +25,12 @@ export interface NotificationMarketingConsent {
   readonly marketingPushAgreedAt: Temporal.Instant | null;
 }
 
-type NotificationDeliveryPreferenceWithUserId = NotificationDeliveryPreference & {
-  readonly userId: string;
+export type NotificationDeliveryPreferenceWithUserId = NotificationDeliveryPreference & {
+  readonly userId: UserId;
 };
 
-type NotificationMarketingConsentWithUserId = NotificationMarketingConsent & {
-  readonly userId: string;
+export type NotificationMarketingConsentWithUserId = NotificationMarketingConsent & {
+  readonly userId: UserId;
 };
 
 // 푸시 발송 판단에 필요한 사용자 설정만 알림이 소유한 모양으로 읽고 쓴다(identity 내부 레코드 변화가 넘어오지 않게)

@@ -32,7 +32,7 @@ export class TodoSeriesOwnerAdapter implements TodoSeriesOwnerPort {
     const accounts = await this.#activityReader.findActiveAccounts(userIds);
     return new Map(
       accounts.map((account) => [
-        account.userId,
+        account.userId.value,
         {
           lastActiveAt: account.lastActiveAt,
           signedUpAt: account.signedUpAt,

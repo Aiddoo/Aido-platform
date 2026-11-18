@@ -150,7 +150,7 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
   it("만료가 지난 ACTIVE projection은 무료 대상이고 자동 갱신 유예 안의 구독자는 프리미엄 대상이다", async () => {
     // When
     const freeIds = await reader.weeklyAchievementStats.findFreeRecipientIds(
-      Object.values(userIds),
+      Object.values(userIds).map((userId) => UserId.reconstitute(userId)),
     );
     const premiumMorning = await reader.scheduledReminder.findPremiumMorningReminderUsers({
       timezones: ["UTC"],
@@ -169,7 +169,7 @@ describe("유효 프리미엄 SQL 조건과 스케줄러 대상 (실제 PostgreS
   it("SQL 조건은 모든 경우(ADMIN·스토어 유예 포함)에 EntitlementReaderAdapter의 premium 요금제 판단과 같다", async () => {
     // When
     const freeIds = await reader.weeklyAchievementStats.findFreeRecipientIds(
-      Object.values(userIds),
+      Object.values(userIds).map((userId) => UserId.reconstitute(userId)),
     );
     const decisions = await Promise.all(
       Object.entries(userIds).map(async ([scenario, id]) => ({
