@@ -116,7 +116,7 @@ export function createPlanningTodoFixture(
   const applyFollowingUpdate = new ApplyFollowingTodosUpdateUseCase({
     todoRepository,
     occurrenceWriter,
-    remapOccurrences: new RemapFollowingOccurrencesUseCase({ occurrenceWriter }),
+    remapOccurrences: new RemapFollowingOccurrencesUseCase({ occurrenceWriter, mutationLock }),
     seriesRepository: todoSeriesRepository,
     categoryOwnership,
     materializer: occurrenceMaterializer,

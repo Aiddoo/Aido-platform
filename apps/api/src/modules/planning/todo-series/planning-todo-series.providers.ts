@@ -102,7 +102,10 @@ export const PLANNING_TODO_SERIES_PROVIDERS = [
     todoReminder: TodoReminderSchedulerPort,
     mutationLock: MutationLockPort,
   }),
-  provideUseCase(RemapFollowingOccurrencesUseCase, { occurrenceWriter: TodoOccurrenceWriterPort }),
+  provideUseCase(RemapFollowingOccurrencesUseCase, {
+    occurrenceWriter: TodoOccurrenceWriterPort,
+    mutationLock: MutationLockPort,
+  }),
   provideUseCase(ApplyFollowingTodosUpdateUseCase, {
     clock: ClockPort,
     todoRepository: TodoRepositoryPort,

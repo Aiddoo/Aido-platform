@@ -1,6 +1,9 @@
+import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+
 import { resolveScheduledInstant } from "../../../shared/domain/todo-calendar.domain-service.js";
 import type { TodoOccurrenceWriterPort } from "../../../todos/application/ports/todo-occurrence-writer.port.js";
 import type { TodoReminderSchedule } from "../../../todos/application/ports/todo-reminder-scheduler.port.js";
+import { TodoLockKeys } from "../../../todos/application/todos.lock-keys.js";
 import { TodoId } from "../../../todos/domain/todo-id.vo.js";
 import { occurrenceHorizon } from "../../domain/occurrence-horizon.domain-service.js";
 import { planOccurrenceRemap } from "../../domain/occurrence-remap.domain-service.js";
@@ -27,6 +30,7 @@ interface RemapFollowingOccurrencesDependencies {
     TodoOccurrenceWriterPort,
     "findOccurrencesFrom" | "deleteMany" | "moveOccurrence" | "reassignOccurrences"
   >;
+  readonly mutationLock: MutationLockPort;
 }
 
 // 이후 모두 고치기에서 규칙이 바뀌면 이후 회차 행을 새 규칙 날짜에 맞춘다. 뒤 구간의 행도 같은 기준으로 합친다.
@@ -60,6 +64,11 @@ export class RemapFollowingOccurrencesUseCase {
       pivotTodoId,
       sourceSeriesId: source.id.value,
     });
+    if (plan.responseTodoId !== pivotTodoId) {
+      // EditTodoUseCase가 이어서 응답 회차를 할 일 잠금으로 고친다. 옮기기가 그 행을 잠그기 전에 잡아, 할 일 잠금 → 행 순서로
+      // 기다리는 완료 토글과 엇갈리지 않게 한다. 사용자 순서 잠금 아래라 할 일 잠금끼리는 순서가 엇갈리지 않는다
+      await this.#dependencies.mutationLock.acquire([TodoLockKeys.todo(plan.responseTodoId)]);
+    }
     // 유니크 인덱스 때문에 자리를 비운 뒤 기준 회차를 옮긴다
     await occurrenceWriter.deleteMany(
       plan.deletedTodoIds.map((todoId) => TodoId.reconstitute(todoId)),

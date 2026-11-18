@@ -1517,5 +1517,53 @@ describe("반복 할 일 범위 수정·삭제 (실제 PostgreSQL)", () => {
       expect(await client.$count(todoSeries, eq(todoSeries.userId, userId))).toBe(1);
       expect(["A", "B"]).toContain((await seriesRow(seriesId))?.title);
     });
+
+    it("응답 회차가 완료한 다른 회차로 바뀌어도 그 회차의 완료 토글과 교착 없이 차례로 끝난다", async () => {
+      // Given
+      const { todos } = await start();
+      const pivot = todos[1];
+      // 새 규칙(월요일)의 첫 날짜 11-09 회차를 완료해 두면 기준 회차 대신 그 회차가 응답 회차다
+      const firstMonday = todos[7];
+      await complete(firstMonday?.id ?? 0);
+      const responseTodoId = firstMonday?.id ?? 0;
+      const held = Promise.withResolvers<void>();
+      const editWaiting = Promise.withResolvers<void>();
+      // 완료 토글처럼 할 일 잠금을 먼저 쥐고, 수정이 그 잠금을 기다린 뒤에 행을 잠근다
+      const toggle = client.transaction(async (transaction) => {
+        await transaction.execute(
+          sql`SELECT pg_advisory_xact_lock(hashtextextended(${TodoLockKeys.todo(responseTodoId)}, 0))`,
+        );
+        held.resolve();
+        await editWaiting.promise;
+        await transaction.execute(
+          sql`SELECT "id" FROM "Todo" WHERE "id" = ${responseTodoId} FOR UPDATE`,
+        );
+      });
+      await held.promise;
+      // When
+      const editing = edit(pivot?.id ?? 0, {
+        scope: "THIS_AND_FOLLOWING",
+        repeat: WEEKLY_MON,
+        data: { completed: false },
+      });
+      await vi.waitFor(
+        async () => {
+          const waiting = await client.execute<{ count: number }>(sql`
+            SELECT count(*)::int AS count FROM pg_locks
+            WHERE locktype = 'advisory' AND NOT granted
+            AND database = (SELECT oid FROM pg_database WHERE datname = current_database())
+          `);
+          expect(waiting.rows[0]?.count).toBe(1);
+        },
+        { timeout: 5000, interval: 10 },
+      );
+      editWaiting.resolve();
+      const outcomes = await Promise.allSettled([toggle, editing]);
+      // Then
+      expect(outcomes.map((outcome) => outcome.status)).toEqual(["fulfilled", "fulfilled"]);
+      const response = await client.query.todo.findFirst({ where: { id: responseTodoId } });
+      expect(response).toMatchObject({ completed: false });
+      expect(await client.query.todo.findFirst({ where: { id: pivot?.id ?? 0 } })).toBeUndefined();
+    });
   });
 });

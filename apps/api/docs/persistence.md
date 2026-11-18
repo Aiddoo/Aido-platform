@@ -41,6 +41,7 @@ Repository·Reader·스키마·마이그레이션·DB 오류 번역을 바꿀 �
 - 사례: 메모 수정(`RewriteMemoUseCase`)·고정(`ChangeMemoPinnedUseCase`)·순서 이동(`ReorderMemoUseCase`)은 같은 메모 행을 `save`하고 순서 이동은 다른 메모의 `sortOrder`도 `shiftSortOrders`로 민다. 셋은 같은 잠금 키([memos.lock-keys.ts](../src/modules/notes/memos/application/memos.lock-keys.ts))를 잡는다.
 - 할 일 순서는 사이를 띄운 정수(간격 1024, [todo-sort-order.domain-service.ts](../src/modules/planning/shared/domain/todo-sort-order.domain-service.ts))다. 새 할 일·순서 바꾸기는 이웃 사이 값 한 행만 쓰고, 사이가 없을 때만 그 사용자 할 일을 지금 순서대로 다시 번호 매긴다. 둘 다 사용자 순서 잠금(`TodoLockKeys.sortOrder`) 아래에서 한다.
 - 할 일은 사용자마다 할 일이 많아 사용자 잠금으로 줄 세우지 않는다. `save`하는 UseCase는 할 일 잠금(`TodoLockKeys.todo`)을 잡고 그 행을 `FOR UPDATE`로 읽는다(`TodoRepositoryPort.lockByIdAndUserId`). 순서 다시 매기기·회차 묶음·카테고리 옮기기·시간대 재계산의 집합 update가 같은 행을 쓰면 기다렸다가 그 값 위에 저장한다. `save`는 댓글·조회 수(engagement 칸)를 쓰지 않고, 하위 항목은 Aggregate가 항목을 바꾼 저장(`hasChangedItems`)에서만 데이터 변경 CTE 한 문장으로 쓴다.
+- 잠금은 늘 할 일 잠금 → 행 순서다. 한 트랜잭션이 다른 할 일 행도 고치면 그 행을 쓰기 전에 그 할 일 잠금을 잡는다. 사례: 이후 회차 수정에서 응답 회차가 이미 완료한 다른 회차로 바뀌면 `RemapFollowingOccurrencesUseCase`가 그 행을 옮기기 전에 그 할 일 잠금을 잡는다. 그러지 않으면 그 회차의 완료 토글(잠금을 쥐고 행을 기다림)과 교착(`40P01`)한다. 할 일 잠금 둘은 사용자 순서 잠금 아래에서만 함께 잡아 서로 엇갈리지 않는다.
 - 예외: 한 칸만 조건부로 바꾸는 갱신(`readAt`을 `WHERE "readAt" IS NULL`일 때만 채우기)은 잠금 없이 저장소의 전용 메서드로 둔다. 조건이 경합을 막고 다른 칸을 덮지 않기 때문이다.
 
 ## raw SQL
