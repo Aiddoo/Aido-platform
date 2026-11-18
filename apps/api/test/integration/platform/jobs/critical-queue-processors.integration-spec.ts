@@ -20,14 +20,13 @@ import { CreateBroadcastCampaignUseCase } from "#api/modules/operations/broadcas
 import { BROADCAST_FAN_OUT_QUEUE } from "#api/modules/operations/broadcast-campaigns/infrastructure/jobs/broadcast-fan-out.queue";
 import { pushDispatch, pushToken, user, userPreference } from "#api/platform/database/schema/index";
 import { enrollRetentionAssignment } from "#test/fixtures/notification/retention-assignment.fixture";
-import type { TestDatabaseClient } from "#test/setup/test-database";
-import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
-
 import {
   type CriticalQueueProcessorHarness,
   createCriticalQueueProcessorHarness,
-} from "./helpers/critical-queue-processor.harness.js";
-import { WORKER_WAIT } from "./helpers/fast-job-timing.js";
+} from "#test/integration/helpers/critical-queue-processor.harness";
+import { WORKER_WAIT } from "#test/integration/helpers/fast-job-timing";
+import type { TestDatabaseClient } from "#test/setup/test-database";
+import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
 
 const BROADCAST_TIMEOUT_MS = 180_000;
 

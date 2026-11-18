@@ -10,10 +10,9 @@ import {
   type JobRetryPolicy,
   type QueueDefinition,
 } from "#api/shared/application/ports/job-queue.port";
+import { FAST_JOB_POLLING_SECONDS, WORKER_WAIT } from "#test/integration/helpers/fast-job-timing";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import { TestDatabase } from "#test/setup/test-database";
-
-import { FAST_JOB_POLLING_SECONDS, WORKER_WAIT } from "./helpers/fast-job-timing.js";
 
 const SCHEMA = "pgboss";
 

@@ -1,8 +1,8 @@
 import { ThrottlerGuard } from "@nestjs/throttler";
 import { vi } from "vitest";
 
-import { TestDatabase } from "../setup/test-database.js";
-import { createE2eApp } from "./helpers/e2e-app-factory.js";
+import { createE2eApp } from "#test/e2e/helpers/e2e-app-factory";
+import { TestDatabase } from "#test/setup/test-database";
 
 const realCanActivate = ThrottlerGuard.prototype.canActivate;
 

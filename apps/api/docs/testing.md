@@ -91,7 +91,7 @@ describe("CreateMemoUseCase — 메모 만들기", () => {
 3. 자신이 만든 DB·컨테이너만 정리한다. URI·비밀은 출력하지 않는다.
 
 - 실패 지점 뒤 실제 행, 다음 실행의 claim 가능성, 남아야 할 토큰·멱등 행·outbox를 본다. 경합은 barrier와 lock waiter로 같은 경계에서 기다렸는지 확인한다.
-- 사례: [transaction-propagation](../test/integration/transaction-propagation.integration-spec.ts)(CLS·Required·Nested·after-commit), [domain-event-fan-out](../test/integration/domain-event-fan-out.integration-spec.ts)(구독자별 작업), [todo-timezone-rebase](../test/integration/planning/todos/todo-timezone-rebase.integration-spec.ts)(실제 pg-boss 재계산), [push-receipt-consistency](../test/integration/notification/push-dispatches/push-receipt-consistency.integration-spec.ts)(token·receipt 한 UoW).
+- 사례: [transaction-propagation](../test/integration/platform/database/transaction-propagation.integration-spec.ts)(CLS·Required·Nested·after-commit), [domain-event-fan-out](../test/integration/platform/events/domain-event-fan-out.integration-spec.ts)(구독자별 작업), [todo-timezone-rebase](../test/integration/planning/todos/todo-timezone-rebase.integration-spec.ts)(실제 pg-boss 재계산), [push-receipt-consistency](../test/integration/notification/push-dispatches/push-receipt-consistency.integration-spec.ts)(token·receipt 한 UoW).
 
 ## E2E (실제 HTTP)
 
@@ -100,7 +100,7 @@ describe("CreateMemoUseCase — 메모 만들기", () => {
 - 각 케이스는 필요한 데이터를 스스로 준비하고 `ctx.reset()`으로 정리한다. 새 override는 `customizeBuilder`, mutable Fake는 `additionalResetters`로 넣는다.
 - 공개 route·validation·nullable/default·오류 우선순위, 401·비소유·premium 경계, 저장 결과를 본다. 응답 body는 공유 schema로 `.parse`한다. 앱은 [응답 계약 검사](http-contracts.md#응답-계약-검사)를 켠 채로 떠서 선언과 다른 성공 응답은 500이 된다.
 - throttle은 기본으로 꺼져 있다. 검증할 때만 `withRealThrottler: true`를 쓴다.
-- [OpenAPI 계약](../test/e2e/openapi-contract.e2e-spec.ts)과 released fixture가 출시 앱 응답 모양을 지킨다([절차](http-contracts.md#출시-앱-호환-절차)).
+- [OpenAPI 계약](../test/e2e/platform/openapi-contract.e2e-spec.ts)과 released fixture가 출시 앱 응답 모양을 지킨다([절차](http-contracts.md#출시-앱-호환-절차)).
 
 ## 실행
 
@@ -138,7 +138,7 @@ DB 프로젝트는 worker마다 자기 DB를 받아 파일을 병렬로 돌리�
 프로세스 안 저장소·타이머가 새지 않는지는 `performance` 프로젝트의 소크 테스트(수동)로 본다. 규칙은 [확장](scaling.md#메모리)에 있다.
 
 - 프로세스 안 저장소·타이머를 바꾸면 [메모리 소크](../test/performance/memory-soak.performance-spec.ts)를 혼자 돌린다. 실제 pg-boss로 띄운 앱에 주요 경로 5천 번·큐 작업 1천 건을 보내고 `global.gc()` 뒤 힙 증가가 4MB 미만인지 본다. 기본 `test`·CI에는 없다.
-- [종료 handle 검사](../test/e2e/app-shutdown-handles.e2e-spec.ts)는 E2E에 있다. `app.close()` 뒤 stdio 말고 남은 타이머·소켓이 없어야 한다.
+- [종료 handle 검사](../test/e2e/platform/app-shutdown-handles.e2e-spec.ts)는 E2E에 있다. `app.close()` 뒤 stdio 말고 남은 타이머·소켓이 없어야 한다.
 
 ```sh
 AIDO_TEST_DB_WORKERS=2 pnpm --filter @aido/server exec vitest run --project performance test/performance/memory-soak.performance-spec.ts

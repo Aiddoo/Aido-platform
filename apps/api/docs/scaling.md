@@ -27,7 +27,7 @@
 - 값은 읽을 때 Zod로 검증하고 다르면 미스다(배포 사이 값 모양이 달라도 안전). 직렬화는 JSON 하나이고 Temporal은 문자열로 저장한다.
 - 범용 `wrap`은 미스 뒤 factory 값을 그대로 저장한다. 쓰기의 커밋 뒤 무효화보다 늦게 끝난 읽기가 커밋 전 값을 다시 저장해 TTL 동안 남길 수 있으므로, 그러면 안 되는 캐시는 세대를 쓴다. 일간 완료·친구 화면 할 일은 세대를 키에 넣고, 권한(`subscription:status:v2`)·프로필(`auth:user-profile`)·설정(`user-settings:preference`)·세션(`auth:session`)·미읽음 수(2분)·푸시 토큰·카테고리 목록·친구 id·친구 수(5분)는 키를 두고 [GenerationGuardedCache](../src/platform/cache/generation-guarded-cache.ts)로 factory 전에 읽은 세대가 그대로일 때만 저장한다. 세대 키는 값 키 옆의 `*-generation` 키다. 같은 세대에서 난 동시 미스는 factory를 한 번만 부르고, 무효화 뒤에 온 미스는 그 전 factory를 기다리지 않는다. 세션 회전은 세대를 두고 값만 지워 갱신한 세션을 다시 캐시한다.
 - 세대 무효화는 세대 키만 바꾼다. 이전 세대 값은 닿지 않고 짧은 값 TTL(친구 화면 1분·일간 완료 10분)에 사라지므로, Redis 키 전체를 훑는 `delByPattern`(SCAN)을 요청 경로에서 기다리지 않는다.
-- 캐시·dedup·throttler 저장소의 계약 suite([test/contracts/platform](../test/contracts/platform))를 in-memory(unit)와 Redis·Valkey 컨테이너([redis-adapters.integration-spec.ts](../test/integration/platform/redis-adapters.integration-spec.ts))에서 같이 돌린다.
+- 캐시·dedup·throttler 저장소의 계약 suite([test/contracts/platform](../test/contracts/platform))를 in-memory(unit)와 Redis·Valkey 컨테이너([redis-adapters.integration-spec.ts](../test/integration/platform/redis/redis-adapters.integration-spec.ts))에서 같이 돌린다.
 - slice 캐시 어댑터는 `CacheStorePort`만 받는다(사례: [daily-completion.cache.ts](../src/modules/insights/daily-completions/infrastructure/cache/daily-completion.cache.ts), weather `weather-report.cache.ts`). 다른 캐시 진입점을 만들지 않는다.
 - 날씨 캐시(칸 리포트·latest·가용성·대기질·측정소, 격자 예보)도 `CACHE_TYPE=memory`면 프로세스 메모리에 있어 배포마다 사라진다. 배포 뒤 활성 칸마다 WeatherKit 호출이 약 2번(가용성·리포트) 다시 나가고, 6시간 latest 폴백도 함께 사라져 그 사이 WeatherKit 장애는 `WEATHER_1901`이 된다. 배포당 이 호출이 월 예산(`weather.weatherkit.monthly-budget.*` 경보)에 눈에 띄거나 폴백 손실이 문제가 되면, 인스턴스 수와 상관없이 같은 서버의 Valkey로 `CACHE_TYPE=redis`를 켠다([아래 체크리스트](#redisvalkey를-켤-때)). 지금은 바꾸지 않는다.
 - memory 저장소는 모든 캐시가 항목 한도 하나(`CACHE_MAX_ITEMS`, 기본 10,000)를 LRU로 나눠 쓴다(dedup·throttler는 따로 둔다). 운영 env에 옛 값(3,000)이 남아 있으면 배포 때 맞춘다. 만료 항목은 읽히거나 밀려날 때만 빠지므로 쓴 키가 한도를 넘은 뒤로는 늘 가득 차 있고 새 키가 가장 오래 안 읽은 키를 밀어낸다. 키를 가장 많이 만드는 것은 활성 사용자 수에 비례하는 사용자 키(30초마다 다시 채우는 세션, 프로필·권한·설정·카테고리·팔로우·일간 완료 범위, 24시간 남는 일간 완료·친구 화면 세대, `GenerationGuardedCache`의 `*-generation` 키)와 활성 칸·격자 수에 비례하는 날씨 키(칸마다 리포트·latest·대기질·가용성, 격자마다 날짜별 예보·일출입)다. `*-generation` 키는 무효화할 때만 쓰므로 세대 TTL 동안 쓰기를 한 사용자마다 세대 캐시 하나에 많아야 하나다(미읽음 수는 범위가 여럿이어도 하나). 사용자 키는 대부분 1KB 안이고 날씨 리포트는 칸마다 수십 KB라 한도를 다 채워도 수십 MB로 추정한다(운영 측정 전). 그래서 크기(`maxSize`)가 아니라 개수로만 자르고 힙은 런타임 경보로 본다. 아침·저녁 묶음 발송은 수신자마다 토큰 키를 쓰지 않고 캐시를 읽기만 해 사용자 키를 밀어내지 않는다. 적중·미스·키 수는 런타임 표본(`/health` 상세, 60초마다 `observability.runtime-stats.cache.sampled` 로그)에서 본다. 키 수가 한도에 붙고 적중률이 떨어지면 한도를 올리거나 Redis로 바꾼다.
@@ -64,7 +64,7 @@
 - [ ] 같은 서버의 컨테이너로 시작한다. `127.0.0.1`에만 열고 영속화는 끄고 `maxmemory`와 `allkeys-lru`를 둔다(캐시라 잃어도 된다)
 - [ ] 같은 서버 안이므로 `REDIS_COMMAND_TIMEOUT_MS`를 수백 ms로 낮춘다. 응답이 없을 때 요청마다 기다리는 시간의 상한이다
 - [ ] 장애를 사람이 알도록 `redis.connection.errored`가 이어질 때의 경보를 `platform` 경보 카탈로그에 더한다. 지금은 로그만 남는다
-- [ ] 계약 suite([redis-adapters.integration-spec.ts](../test/integration/platform/redis-adapters.integration-spec.ts))가 Redis·Valkey 컨테이너에서 통과하는지 본다
+- [ ] 계약 suite([redis-adapters.integration-spec.ts](../test/integration/platform/redis/redis-adapters.integration-spec.ts))가 Redis·Valkey 컨테이너에서 통과하는지 본다
 
 ## 확장 단계
 

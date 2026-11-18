@@ -85,7 +85,7 @@ Controller·DTO·Zod schema·응답 매퍼·페이지네이션·Swagger·요청 
 
 ## 출시 앱 호환 절차
 
-출시된 operation의 상태 코드·필수 입력·기존 필드는 바꾸지 않는다. released OpenAPI fixture(`test/e2e/fixtures/released-*-openapi-contract.ts`)와 [OpenAPI 계약 테스트](../test/e2e/openapi-contract.e2e-spec.ts)(`test:contract`)가 막는다. 필드·파라미터를 더해야 하면:
+출시된 operation의 상태 코드·필수 입력·기존 필드는 바꾸지 않는다. released OpenAPI fixture(`test/e2e/fixtures/released-*-openapi-contract.ts`)와 [OpenAPI 계약 테스트](../test/e2e/platform/openapi-contract.e2e-spec.ts)(`test:contract`)가 막는다. 필드·파라미터를 더해야 하면:
 
 1. 생략했을 때 동작이 지금과 정확히 같은 optional만 더한다.
 2. fixture에 이전 지문을 `pre<변경>SchemasFingerprint`·`pre<변경>PathsFingerprint`로 사유 주석과 함께 남기고 현재 지문을 갱신한다.

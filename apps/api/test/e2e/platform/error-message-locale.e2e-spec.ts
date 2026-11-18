@@ -8,7 +8,7 @@ import {
 } from "#test/e2e/helpers/e2e-app-factory";
 import type { VerifiedUser } from "#test/e2e/helpers/e2e-helpers";
 
-import enErrors from "../../src/i18n/en/errors.json" with { type: "json" };
+import enErrors from "../../../src/i18n/en/errors.json" with { type: "json" };
 
 describe("오류 응답 message 언어 E2E", () => {
   let testContext: E2eTestContext;

@@ -3,8 +3,7 @@ import { setTimeout as sleep } from "node:timers/promises";
 import request from "supertest";
 
 import { createE2eApp, destroyE2eApp } from "#test/e2e/helpers/e2e-app-factory";
-
-import { preparePgBossSchema, useRealJobQueue } from "./helpers/real-job-queue.js";
+import { preparePgBossSchema, useRealJobQueue } from "#test/e2e/helpers/real-job-queue";
 
 // Vitest fork worker의 stdin·stdout·stderr·IPC 파이프다. 앱과 무관하게 처음부터 열려 있다
 const STDIO_RESOURCES = new Set(["PipeWrap", "TTYWrap"]);

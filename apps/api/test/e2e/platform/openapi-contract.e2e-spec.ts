@@ -17,10 +17,13 @@ import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { z } from "zod";
 
 import { convertStandardSchema } from "#api/platform/http/swagger/standard-schema.converter";
-
-import { RELEASED_V1_OPENAPI_CONTRACT } from "./fixtures/released-v1-openapi-contract.js";
-import { RELEASED_V1_8_2_OPENAPI_CONTRACT } from "./fixtures/released-v1.8.2-openapi-contract.js";
-import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/e2e-app-factory.js";
+import { RELEASED_V1_OPENAPI_CONTRACT } from "#test/e2e/fixtures/released-v1-openapi-contract";
+import { RELEASED_V1_8_2_OPENAPI_CONTRACT } from "#test/e2e/fixtures/released-v1.8.2-openapi-contract";
+import {
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
 
 const RELEASED_OPENAPI_CONTRACTS = [
   RELEASED_V1_OPENAPI_CONTRACT,

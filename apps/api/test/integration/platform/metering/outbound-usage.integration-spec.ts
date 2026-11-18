@@ -6,16 +6,15 @@ import { DrizzleUsageMeterAdapter } from "#api/platform/metering/adapters/drizzl
 import { UsageMeterPort, USAGE_SUBJECT_ALL } from "#api/platform/metering/usage-meter.port";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { describeUsageMeterContract } from "#test/contracts/platform/usage-meter.contract";
-import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
-import { nowInstant } from "#test/fixtures/platform/clock.fixture";
-import { createTestClient } from "#test/setup/database-context";
-import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
-
 import {
   createE2eApp,
   destroyE2eApp,
   type E2eTestContext,
-} from "../e2e/helpers/e2e-app-factory.js";
+} from "#test/e2e/helpers/e2e-app-factory";
+import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
+import { nowInstant } from "#test/fixtures/platform/clock.fixture";
+import { createTestClient } from "#test/setup/database-context";
+import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 const KEY = { meter: "email.sent", periodKey: "2026-11-05", subject: USAGE_SUBJECT_ALL };
 

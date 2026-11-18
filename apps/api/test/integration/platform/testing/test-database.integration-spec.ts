@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 
-import { TestDatabase } from "../setup/test-database.js";
+import { TestDatabase } from "#test/setup/test-database";
 
 describe("TestDatabase 통합 테스트 (실제 DB)", () => {
   let testDatabase: TestDatabase;

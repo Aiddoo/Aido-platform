@@ -66,8 +66,7 @@ import { PassThroughCountCache } from "#test/doubles/social/pass-through-count-c
 import { nowInstant } from "#test/fixtures/platform/clock.fixture";
 import { createTestClient, createTransactionHost } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
-
-import { TestDatabase } from "../setup/test-database.js";
+import { TestDatabase } from "#test/setup/test-database";
 
 const CONCURRENCY = 20;
 const CATEGORY_POOL_MAX = 30;
