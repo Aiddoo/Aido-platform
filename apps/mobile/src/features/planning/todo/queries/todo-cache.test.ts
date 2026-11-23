@@ -14,6 +14,7 @@ import {
   invalidateTodoDependentQueries,
   invalidateTodos,
   invalidateTodoSummaries,
+  isTodoSummaryDateRequestable,
   settleTodoWrite,
   shouldPersistTodosByDate,
   syncDailyCompletionWithList,
@@ -491,6 +492,23 @@ describe('todo-cache', () => {
       // Then
       expect(monthEnd).toBe(true);
       expect(yearEnd).toBe(true);
+    });
+  });
+
+  describe('isTodoSummaryDateRequestable', () => {
+    const todayKey = createDateKey('2026-12-31');
+
+    it.each([
+      ['2026-12-30', false],
+      ['2026-12-31', true],
+      ['2027-01-01', true],
+      ['2027-01-21', false],
+    ])('%s 요약은 서버에 물을 수 있는지 %s다', (date, expected) => {
+      // When
+      const result = isTodoSummaryDateRequestable({ date: createDateKey(date), todayKey });
+
+      // Then
+      expect(result).toBe(expected);
     });
   });
 

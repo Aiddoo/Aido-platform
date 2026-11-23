@@ -46,7 +46,7 @@ useWidgetSnapshotSync(authState)
 - Query는 인증과 현재 계정 식별자가 준비될 때 활성화하고 `throwOnError: false`를 유지한다.
 - 인증 판정 중에는 이전 snapshot을 유지한다. 로그아웃이 확정되면 loggedOut과 소유자 제거를 기록한다. 로그아웃·탈퇴 뒤에 도착한 앞 계정 요약은 쓰지 않고, 쓰는 중이던 요약이 있으면 그 뒤에 loggedOut이 마지막으로 남는다(`use-widget-snapshot-sync.test.tsx`).
 - 계정 식별자는 Android 저장소의 별도 metadata다. 공유 snapshot과 iOS timeline payload에 넣지 않는다.
-- 내일 요약은 서버가 그 날짜 기준으로 계산한 잠정 값이다. 서버 날짜가 요청과 다르거나 거부되면 내일 day 없이 쓰고, Query가 5s→10s→20s→40s로 4번만 다시 묻는다(`useGetTodoSummaryQueryOptions`).
+- 내일 요약은 서버가 그 날짜 기준으로 계산한 잠정 값이다. 서버 날짜가 요청과 다르거나 거부되면 내일 day 없이 쓰고, Query가 5s→10s→20s→40s로 4번만 다시 묻는다(`useGetTodoSummaryQueryOptions`). 복귀·자정 직후처럼 날짜 state가 바뀌기 전의 재조회는 묻는 순간 X-Timezone과 같은 기기 시계·시간대로 오늘·내일인지 다시 재고, 아니면 묻지 않는다(`isTodoSummaryDateRequestable`).
 - 렌더러는 전달받은 props만 쓴다. 토큰·네트워크·앱 Provider·현재 시각을 읽지 않는다.
 - native 쓰기와 오류 관측 실패는 앱 인증·startup을 reject하지 않는다.
 - 앱 없이 깨어난 Android 위젯 프로세스의 실패는 Sentry를 올리지 않고 저장 값(`aido_widget_headless_failure_v1`)에 남겼다가 다음 앱 시작 때 동기화 훅이 읽어 `ErrorReporter`로 보낸다. 서비스는 Sentry를 부르지 않는다([관측](./observability.md#event-captureexception-capturemessage)).

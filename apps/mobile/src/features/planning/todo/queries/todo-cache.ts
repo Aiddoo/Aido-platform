@@ -35,6 +35,17 @@ export function shouldPersistTodosByDate({ date, todayKey }: { date: DateKey; to
   return addDaysToDateKey(todayKey, -1) <= date && date <= addDaysToDateKey(todayKey, 1);
 }
 
+/** 서버는 X-Timezone 기준 오늘·내일 요약만 받는다. 자정을 넘긴 뒤 아직 바뀌지 않은 날짜로는 묻지 않는다 */
+export function isTodoSummaryDateRequestable({
+  date,
+  todayKey,
+}: {
+  date: DateKey;
+  todayKey: DateKey;
+}) {
+  return date === todayKey || date === addDaysToDateKey(todayKey, 1);
+}
+
 const DATE_CATCH_UP_BASE_DELAY_MS = 5_000;
 const DATE_CATCH_UP_MAX_ATTEMPTS = 4;
 

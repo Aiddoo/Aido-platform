@@ -80,7 +80,7 @@ const WATCHED: Record<string, QueryKey> = {
   'list:other-day': TODO_QUERY_KEYS.listByDate({ date: OTHER_DAY }),
   'calendar:month': TODO_QUERY_KEYS.completionsByRange(MONTH),
   'calendar:next-month': TODO_QUERY_KEYS.completionsByRange(NEXT_MONTH),
-  'widget:day': TODO_QUERY_KEYS.widgetSummaryByDate({ date: DAY, userId: null }),
+  'widget:day': TODO_QUERY_KEYS.widgetSummaryByDate({ date: DAY, userId: OWNER_ID }),
   overview: TODO_QUERY_KEYS.overview(),
   categories: TODO_CATEGORY_QUERY_KEYS.list(),
   'friend:day': TODO_QUERY_KEYS.friendListByDate({ userId: FRIEND_ID, date: DAY }),
@@ -293,7 +293,8 @@ function createTodoServer() {
 function WatchedQueries() {
   useQuery(useGetTodosByDateQueryOptions({ date: OTHER_DAY }));
   useQuery(useGetDailyCompletionsQueryOptions(NEXT_MONTH));
-  useQuery(useGetTodoSummaryQueryOptions({ date: DAY, userId: null }));
+  // 고정 날짜(DAY)는 기기 오늘이 아니라 묻는 날짜 판정을 끈다. 그 판정은 todo-cache.test가 본다
+  useQuery({ ...useGetTodoSummaryQueryOptions({ date: DAY, userId: OWNER_ID }), enabled: true });
   useQuery(useGetTodoOverviewQueryOptions());
   useQuery(useGetTodoCategoriesQueryOptions());
   useQuery(useGetFriendTodosQueryOptions({ friendUserId: FRIEND_ID, date: DAY }));
@@ -852,7 +853,8 @@ function FeedListProbe() {
 
 function BackgroundProbe() {
   // 위젯 동기화·시작 체크리스트가 피드 뒤에서 붙들고 있는 조회
-  useQuery(useGetTodoSummaryQueryOptions({ date: DAY, userId: null }));
+  // 고정 날짜(DAY)는 기기 오늘이 아니라 묻는 날짜 판정을 끈다. 그 판정은 todo-cache.test가 본다
+  useQuery({ ...useGetTodoSummaryQueryOptions({ date: DAY, userId: OWNER_ID }), enabled: true });
   useQuery(useGetDailyCompletionsQueryOptions(WEEK));
   useQuery(useGetTodoOverviewQueryOptions());
   return null;
@@ -961,7 +963,7 @@ describe('할 일을 만든 뒤 다시 받는 조회', () => {
 
     // Then
     expect(refetched).toEqual([
-      hashKey(TODO_QUERY_KEYS.widgetSummaryByDate({ date: DAY, userId: null })),
+      hashKey(TODO_QUERY_KEYS.widgetSummaryByDate({ date: DAY, userId: OWNER_ID })),
     ]);
     expect(httpClient.get).toHaveBeenCalledTimes(1);
     expect(renders).toEqual({ calendar: 1, list: 2 });

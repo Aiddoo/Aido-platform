@@ -131,10 +131,7 @@ export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
     limit: WIDGET_TOP_TODOS_LIMIT,
   });
   const [{ data }, { data: tomorrowData }] = useQueries({
-    queries: [
-      { ...todayQueryOptions, enabled: isUserDataEnabled, throwOnError: false },
-      { ...tomorrowQueryOptions, enabled: isUserDataEnabled, throwOnError: false },
-    ],
+    queries: [todayQueryOptions, tomorrowQueryOptions],
   });
   const { data: completions } = useQuery({
     ...useGetDailyCompletionsQueryOptions({ startDate: rangeStart, endDate: rangeEnd }),
