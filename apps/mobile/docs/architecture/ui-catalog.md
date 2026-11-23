@@ -25,7 +25,7 @@ UI는 heroui-native → `shared/ui` → React Native 순서로 고른다. 같은
 | 목록·설정 행        | `ListRow`, `SettingsListGroup`(`ListGroup` 확장, 빈 카드 `.Empty`), `InfiniteList`                                                             | 유지. 빈 상태를 다시 그리지 않는다                                                                                                                                |
 | 카드                | **`SurfaceCard`**                                                                                                                              | 직접 만든 카드와 직접 쓴 `Card`를 옮긴다                                                                                                                          |
 | 영수증 카드         | `ScallopedContainer`                                                                                                                           | 위아래 물결 가장자리 카드. AI 제안·리포트·구독·초대 혜택. 한 흐름은 영수증 하나에 담고 머리와 줄은 `DashedDivider`로 잇는다                                       |
-| 입력                | `Input`·`TextArea`·`BottomSheetInput`, `PasswordInput`(auth 기능)                                                                              | 유지([이유](#직접-만든-부품을-둔-이유))                                                                                                                           |
+| 입력                | `Input`·`TextArea`(시트 안에서도 같다), `PasswordInput`(auth 기능)                                                                             | 유지([이유](#직접-만든-부품을-둔-이유))                                                                                                                           |
 | OTP·선택·체크·토글  | heroui `InputOTP`, `RadioGroup` + `ChoiceRadio`, **`Checkbox`**(shared 확장), `ControlField`(`SettingsListGroup.Toggle`)                       | 고르는 입력은 `RadioGroup.Item`                                                                                                                                   |
 | 칩                  | **`LabelChip`**, 누르는 칩은 `ActionButton`                                                                                                    | soft 칩 복제를 옮긴다                                                                                                                                             |
 | 시트·다이얼로그     | `ConfirmDialog`(`useConfirmDialog().openAsync({ onConfirm })`, route가 그리면 `isOpen`·`onFinish`), **`useOpenSheet`**, **`RouteBottomSheet`** | [시트](#시트)                                                                                                                                                     |
@@ -59,15 +59,15 @@ UI는 heroui-native → `shared/ui` → React Native 순서로 고른다. 같은
 
 원본으로 바꿨을 때 화면·동작이 같다고 보일 수 없으면 유지한다. heroui 업데이트가 이유를 풀면 바꾼다.
 
-| 부품                      | 원본                                        | 유지 이유                                                                                                                                                                                                                |
-| ------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `Input`, `TextArea`       | `TextField`·`Input`·`TextArea`·`FieldError` | 시트 키보드 대상(gorhom `BottomSheetTextInput`이 UI 스레드에서 바꾸고 등록·정리한다. `isBottomSheetAware`는 1.0.11에 없다), `FieldError`가 자리를 잡지 않아 오류가 뜨면 아래가 밀린다, heroui `TextArea`는 높이 고정이다 |
-| `PasswordInput`           | `InputGroup`                                | `InputGroup.Input`이 heroui `Input`이라 위 차이를 갖고, `Suffix`가 묶음 높이에 절대 위치라 라벨·오류 줄을 다시 만들어야 한다. `Input`과 함께 옮긴다                                                                      |
-| `HintPopoverContent`      | `Popover`의 `avoidCollisions`               | heroui는 위아래를 뒤집지 않고 위치만 자른다. `getHintPlacement`는 자리가 많은 쪽으로 뒤집고, 왼쪽 폭 계산(`getHintWidth`)도 heroui에 없다                                                                                |
-| `AppToast`                | `Toast.Title`·`.Description`·`.Action`      | heroui 글자가 고정 크기라 앱 글꼴 5단계를 따르지 않는다                                                                                                                                                                  |
-| `ActionButton`, 누르는 칩 | heroui `Chip`                               | `Chip`은 `PressableFeedback`이 아니라 눌림 크기 변화가 사라진다                                                                                                                                                          |
-| `ListRow`                 | `ListGroup.Item`                            | 제목·설명이 heroui 글꼴이고 안쪽 여백이 달라 모양이 바뀐다                                                                                                                                                               |
-| 요금제 선택 카드          | heroui `Card`                               | 고른 테두리(`border-2`)가 UI 스레드에서 전환되고 `SurfaceCard`와 역할·모서리가 달라 `AnimatedCard`로 둔다(`subscription-plan-input`, 로딩 `plan-picker`)                                                                 |
+| 부품                      | 원본                                        | 유지 이유                                                                                                                                                        |
+| ------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Input`, `TextArea`       | `TextField`·`Input`·`TextArea`·`FieldError` | `FieldError`가 자리를 잡지 않아 오류가 뜨면 아래가 밀린다, heroui `TextArea`는 높이 고정이다. 시트 안 키보드는 네이티브 시트(1.1.1)가 맡아 시트 전용 입력이 없다 |
+| `PasswordInput`           | `InputGroup`                                | `InputGroup.Input`이 heroui `Input`이라 위 차이를 갖고, `Suffix`가 묶음 높이에 절대 위치라 라벨·오류 줄을 다시 만들어야 한다. `Input`과 함께 옮긴다              |
+| `HintPopoverContent`      | `Popover`의 `avoidCollisions`               | heroui는 위아래를 뒤집지 않고 위치만 자른다. `getHintPlacement`는 자리가 많은 쪽으로 뒤집고, 왼쪽 폭 계산(`getHintWidth`)도 heroui에 없다                        |
+| `AppToast`                | `Toast.Title`·`.Description`·`.Action`      | heroui 글자가 고정 크기라 앱 글꼴 5단계를 따르지 않는다                                                                                                          |
+| `ActionButton`, 누르는 칩 | heroui `Chip`                               | `Chip`은 `PressableFeedback`이 아니라 눌림 크기 변화가 사라진다                                                                                                  |
+| `ListRow`                 | `ListGroup.Item`                            | 제목·설명이 heroui 글꼴이고 안쪽 여백이 달라 모양이 바뀐다                                                                                                       |
+| 요금제 선택 카드          | heroui `Card`                               | 고른 테두리(`border-2`)가 UI 스레드에서 전환되고 `SurfaceCard`와 역할·모서리가 달라 `AnimatedCard`로 둔다(`subscription-plan-input`, 로딩 `plan-picker`)         |
 
 - 입력의 초점·선택 색은 이제 테마([design](../design.md#테마-토큰))로 맞출 수 있어 유지 이유가 아니다. `maxLength`가 있으면 글자 수를 자동으로 보인다.
 
@@ -101,7 +101,7 @@ UI는 heroui-native → `shared/ui` → React Native 순서로 고른다. 같은
 | `RouteKeyboardBottomSheet` | 입력이 있는 대상 시트 route                                          |
 
 - 내용은 `children` 흐름에 두고, 작은 화면·큰 글자·키보드에도 보여야 할 주 버튼만 `footer`에 둔다. 시트 안에 세로 스크롤을 또 두지 않는다.
-- 아래 시트 입력으로 포커스를 돌릴 때는 `onCloseStart`에서 한다. "확인"이 머리글에 있으면 `hasFixedHeader` + `SheetHeaderLayout`이다. 배치(Duo 접힘선·레일, iPad 여백)는 `getSheetLayout`이 정한다.
+- 아래 시트 입력으로 포커스를 돌릴 때는 `onCloseStart`에서 한다. "확인"이 머리글에 있으면 `hasFixedHeader` + `SheetHeaderLayout`이다. 시트는 heroui-native 1.1.1 네이티브 시트(TrueSheet)라 배치·키보드·끌기는 네이티브가 정한다.
 - 상세 계약은 `src/shared/ui/bottom-sheet/bottom-sheet.md`에 있다.
 
 ## 이름

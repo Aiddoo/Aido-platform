@@ -17,7 +17,6 @@ import {
   setupFakeTimersPerTest,
   createTestDi,
 } from '@src/testing/core';
-import { getLastGorhomSheetProps } from '@src/testing/mocks/gorhom-bottom-sheet';
 import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 
@@ -140,8 +139,6 @@ describe('useOfferMarketingPushAfterCompletion', () => {
       await fireEvent.press(await screen.findByText('받을게요'));
       await jest.runOnlyPendingTimersAsync();
     });
-    // 동의 뒤 닫히는 애니메이션이 시작되면 시트는 닫힘을 한 번 더 알린다
-    await act(async () => getLastGorhomSheetProps().onAnimate(0, -1));
 
     // Then
     expect(analytics.trackEvent).toHaveBeenCalledWith('marketing_push_opted_in', {

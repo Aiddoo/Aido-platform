@@ -20,7 +20,7 @@ import {
   createTestQueryClient,
   createVoiceNoteStorageFake,
 } from '@src/testing/core';
-import { getLastGorhomSheetProps } from '@src/testing/mocks/gorhom-bottom-sheet';
+import { startDismissingTopSheet } from '@src/testing/mocks/react-native-true-sheet-reanimated';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
@@ -173,7 +173,7 @@ describe('TodoCreateBottomSheet', () => {
       expect(await within(sheetRoute).findAllByText('저장하지 못했어요')).not.toHaveLength(0);
 
       // When
-      await act(async () => getLastGorhomSheetProps().onAnimate(0, -1));
+      await act(async () => startDismissingTopSheet());
 
       // Then
       expect(within(sheetRoute).queryAllByText('저장하지 못했어요')).toEqual([]);
