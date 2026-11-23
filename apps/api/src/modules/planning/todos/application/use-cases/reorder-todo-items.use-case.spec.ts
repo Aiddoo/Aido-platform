@@ -1,5 +1,4 @@
 import { ErrorCode } from "@aido/api/errors";
-import { vi } from "vitest";
 
 import {
   createPlanningTodoFixture,
@@ -17,10 +16,6 @@ describe("하위 항목 순서 변경", () => {
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
     useCase = new ReorderTodoItemsUseCase(fixture);
   });
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it("전체 ID 순서대로 항목을 저장하고 새 연속 순서를 반환한다", async () => {
     // Given
     await fixture.todoRepository.createInlineItems(TodoId.reconstitute(1), [

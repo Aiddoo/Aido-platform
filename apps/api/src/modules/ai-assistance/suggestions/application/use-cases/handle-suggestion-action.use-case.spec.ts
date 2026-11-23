@@ -3,12 +3,12 @@ import { ErrorCode } from "@aido/api/errors";
 import { TodoCategoryId } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { InMemorySuggestionRepository } from "#test/doubles/ai-assistance/in-memory-suggestion.repository";
-import { createSpyApplicationLogger } from "#test/doubles/ai-assistance/spy-application-logger";
 import { StubUserLocalePreferenceReader } from "#test/doubles/ai-assistance/stub-ai-parsing-readers";
 import { FakeStagedTodoCreator } from "#test/doubles/planning/fake-staged-todo-creator";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { ImmediateUnitOfWork } from "#test/doubles/platform/immediate-unit-of-work";
 import { RecordingAfterCommitRegistry } from "#test/doubles/platform/recording-after-commit-registry";
+import { RecordingApplicationLogger } from "#test/doubles/platform/recording-application-logger";
 import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
 import {
   createSuggestionFixture,
@@ -45,7 +45,7 @@ function setup(
     afterCommit,
     localePreferenceReader,
     clock: new FixedClock(Temporal.Instant.from(options.at ?? NOW)),
-    logger: createSpyApplicationLogger(),
+    logger: new RecordingApplicationLogger(),
   });
   return { useCase, repository, todoCreator, afterCommit, localePreferenceReader };
 }

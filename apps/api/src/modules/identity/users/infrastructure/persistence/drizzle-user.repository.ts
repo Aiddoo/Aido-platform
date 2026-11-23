@@ -1,6 +1,6 @@
 import { ACCOUNT_DELETION } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, Optional } from "@nestjs/common";
 import { and, asc, eq, gt, inArray, isNotNull, isNull, lte, ne, sql } from "drizzle-orm";
 
 import { IdentityPersistenceConflict } from "#api/modules/identity/shared/domain/identity.errors";
@@ -56,11 +56,18 @@ export class DrizzleUserRepository
 
   readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
   readonly #clock: ClockPort;
+  readonly #generateTag: () => string;
 
-  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
+  constructor(
+    transactionHost: TransactionHost<DrizzleTransactionalAdapter>,
+    clock: ClockPort,
+    // 태그 충돌 integration 테스트만 정한 태그를 넘긴다. Nest는 넘기지 않아 무작위 태그다
+    @Optional() generateTag: () => string = generateUserTag,
+  ) {
     super();
     this.#transactionHost = transactionHost;
     this.#clock = clock;
+    this.#generateTag = generateTag;
   }
 
   async findByEmail(email: string): Promise<User | null> {
@@ -299,7 +306,7 @@ export class DrizzleUserRepository
 
   async #generateUniqueUserTag(): Promise<string> {
     for (let i = 0; i < MAX_USER_TAG_RETRIES; i++) {
-      const tag = generateUserTag();
+      const tag = this.#generateTag();
       const exists = await this.#db.query.user.findFirst({
         columns: { id: true },
         where: { userTag: tag },

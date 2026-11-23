@@ -1,5 +1,4 @@
 import { ErrorCode } from "@aido/api/errors";
-import { vi } from "vitest";
 
 import { copyTodoRecord } from "#test/doubles/planning/in-memory-todo.repository";
 import {
@@ -16,10 +15,6 @@ describe("할 일 순서 변경", () => {
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
     useCase = new ReorderTodoUseCase(fixture);
   });
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it.each([
     { name: "아래 before", id: 1, targetTodoId: 4, position: "before", expected: [2, 3, 1, 4] },
     { name: "위 before", id: 4, targetTodoId: 2, position: "before", expected: [1, 4, 2, 3] },

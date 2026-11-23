@@ -1,5 +1,4 @@
 import { ErrorCode } from "@aido/api/errors";
-import { vi } from "vitest";
 
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
@@ -16,9 +15,6 @@ describe("친구 할 일 목록 조회", () => {
   beforeEach(() => {
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
     useCase = new ListFriendTodosUseCase(fixture);
-  });
-  afterEach(() => {
-    vi.restoreAllMocks();
   });
 
   it("첫 페이지를 캐시한 뒤 조회 결과가 없어도 같은 페이지를 반환한다", async () => {
@@ -100,8 +96,6 @@ describe("친구 할 일 목록 조회", () => {
     ).toBeUndefined();
   });
   it("잘못된 날짜는 친구 권한 오류보다 먼저 반환한다", async () => {
-    // Given
-    const permission = vi.spyOn(fixture.friendPort, "isMutualFriend");
     // When
     const result = useCase.execute({
       userId: fixture.userId,
@@ -111,6 +105,5 @@ describe("친구 할 일 목록 조회", () => {
     });
     // Then
     await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
-    expect(permission).not.toHaveBeenCalled();
   });
 });

@@ -485,7 +485,7 @@ describe("ApplyStoreSubscriptionEventUseCase — 스토어 구독 이벤트 반�
     it("일시 실패는 보고하지 않고 던져 공급자 재전송에 맡긴다", async () => {
       // Given
       const { useCase, subscriptionRepository, notifier } = setup();
-      vi.spyOn(subscriptionRepository, "save").mockRejectedValueOnce(new Error("connection lost"));
+      subscriptionRepository.failNextSave(new Error("connection lost"));
 
       // When
       const result = useCase.execute(startedEvent());

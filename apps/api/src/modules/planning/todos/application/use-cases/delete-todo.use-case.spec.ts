@@ -1,5 +1,4 @@
 import { ErrorCode } from "@aido/api/errors";
-import { vi } from "vitest";
 
 import {
   createPlanningTodoFixture,
@@ -16,10 +15,6 @@ describe("할 일 삭제", () => {
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
     useCase = new DeleteTodoUseCase(fixture);
   });
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it("저장된 할 일을 제거하고 삭제 이벤트와 캐시 무효화를 반영한다", async () => {
     // Given
     fixture.todoCache.categoryUsers.add(fixture.userId);

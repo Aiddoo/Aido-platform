@@ -26,6 +26,14 @@ export class InMemoryTodoReadRepository extends TodoReadRepositoryPort {
   queryResults: TodoReadModel[] = [];
   dayStats = { total: 0, completed: 0 };
   topTodos: TodaySummaryTodoReadModel[] = [];
+  // 기간·한도처럼 UseCase가 정해 넘기는 조회 조건을 확인한다
+  readonly listQueries: FindTodosParams[] = [];
+  readonly dayStatsQueries: { readonly userId: UserId; readonly day: Temporal.PlainDate }[] = [];
+  readonly topTodosQueries: {
+    readonly userId: UserId;
+    readonly day: Temporal.PlainDate;
+    readonly limit: number;
+  }[] = [];
   readonly records: Map<number, PlanningTodoRecord>;
   readonly categories: Map<number, TodoResponse["category"]>;
   readonly seriesStore: Map<string, TodoSeries>;
@@ -66,7 +74,8 @@ export class InMemoryTodoReadRepository extends TodoReadRepositoryPort {
     }
     return responses;
   }
-  async findManyByUserId(_params: FindTodosParams): Promise<TodoReadModel[]> {
+  async findManyByUserId(params: FindTodosParams): Promise<TodoReadModel[]> {
+    this.listQueries.push(params);
     return structuredClone(this.queryResults);
   }
   async findPublicTodosByUserId(_params: FindFriendTodosParams): Promise<FriendTodoReadModel[]> {
@@ -103,16 +112,18 @@ export class InMemoryTodoReadRepository extends TodoReadRepositoryPort {
     );
   }
   async getTodayTodoStats(
-    _userId: UserId,
-    _today: Temporal.PlainDate,
+    userId: UserId,
+    today: Temporal.PlainDate,
   ): Promise<{ total: number; completed: number }> {
+    this.dayStatsQueries.push({ userId, day: today });
     return { ...this.dayStats };
   }
   async findTodayTopTodos(
-    _userId: UserId,
-    _today: Temporal.PlainDate,
-    _limit: number,
+    userId: UserId,
+    today: Temporal.PlainDate,
+    limit: number,
   ): Promise<TodaySummaryTodoReadModel[]> {
+    this.topTodosQueries.push({ userId, day: today, limit });
     return structuredClone(this.topTodos);
   }
 }

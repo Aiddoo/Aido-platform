@@ -1,6 +1,6 @@
 import { WeatherReportCache } from "#api/modules/weather/weather-reports/infrastructure/cache/weather-report.cache";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
-import { FakeTimerClock } from "#test/doubles/platform/fake-timer-clock";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { StubTimezoneResolver } from "#test/doubles/weather/stub-timezone-resolver";
 import { StubWeatherProviderBudget } from "#test/doubles/weather/stub-weather-provider-budget";
@@ -21,32 +21,29 @@ describe("ReadWeatherReportsUseCase — 여러 위치의 v2 리포트를 칸 캐
   let provider: StubWeatherReportProvider;
   let timezoneResolver: StubTimezoneResolver;
   let logger: SilentLogger;
+  let clock: FixedClock;
   let reader: ReadWeatherReportsUseCase;
 
   beforeEach(() => {
-    // 칸 캐시 TTL을 InMemoryCacheStore가 Date로 재서 Date와 FakeTimerClock을 함께 옮긴다
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(now.epochMilliseconds);
-    memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
+    // 칸 캐시 TTL과 리포트 캐시가 같은 시계를 본다
+    clock = new FixedClock(now);
+    memory = new InMemoryCacheStore({
+      defaultTtlMs: 60_000,
+      maxItems: 100,
+      nowMs: () => clock.now().epochMilliseconds,
+    });
     provider = new StubWeatherReportProvider();
     timezoneResolver = new StubTimezoneResolver();
     logger = new SilentLogger();
     reader = new ReadWeatherReportsUseCase({
       readWeatherReport: new ReadWeatherReportUseCase({
         weatherReportProvider: provider,
-        weatherReportCache: new WeatherReportCache(
-          memory,
-          new FakeTimerClock(),
-          new StubWeatherProviderBudget(),
-        ),
+        weatherReportCache: new WeatherReportCache(memory, clock, new StubWeatherProviderBudget()),
         logger,
       }),
       timezoneResolver,
       logger,
     });
-  });
-  afterEach(() => {
-    vi.useRealTimers();
   });
 
   it("같은 칸의 사용자 여러 명은 공급자를 한 번만 부르고 모두 같은 리포트를 받는다", async () => {
@@ -95,7 +92,7 @@ describe("ReadWeatherReportsUseCase — 여러 위치의 v2 리포트를 칸 캐
     await reader.execute({ requests: [{ key: "seoul", ...SEOUL, language: "ko" }], now });
     provider.failure = new Error("weatherkit 429");
     const later = Temporal.Instant.from("2026-11-02T08:00:00.000Z");
-    vi.setSystemTime(later.epochMilliseconds);
+    clock.advanceBy(now.until(later));
     // When
     const reports = await reader.execute({
       requests: [
@@ -121,7 +118,7 @@ describe("ReadWeatherReportsUseCase — 여러 위치의 v2 리포트를 칸 캐
     provider.localizationFailure = new Error("availability timeout");
     provider.failure = new Error("weatherkit 503");
     const later = Temporal.Instant.from("2026-11-02T08:00:00.000Z");
-    vi.setSystemTime(later.epochMilliseconds);
+    clock.advanceBy(now.until(later));
     // When
     const reports = await reader.execute({
       requests: [{ key: "seoul", ...SEOUL, language: "ko" }],

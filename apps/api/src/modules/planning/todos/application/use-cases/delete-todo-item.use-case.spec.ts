@@ -1,5 +1,4 @@
 import { ErrorCode } from "@aido/api/errors";
-import { vi } from "vitest";
 
 import {
   createPlanningTodoFixture,
@@ -17,10 +16,6 @@ describe("하위 항목 삭제", () => {
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
     useCase = new DeleteTodoItemUseCase(fixture);
   });
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it("요청한 항목만 삭제하고 다른 항목과 통계를 보존한다", async () => {
     // Given
     await fixture.todoRepository.createInlineItems(TodoId.reconstitute(1), [

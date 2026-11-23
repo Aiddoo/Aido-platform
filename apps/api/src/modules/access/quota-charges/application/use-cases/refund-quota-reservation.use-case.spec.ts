@@ -123,9 +123,7 @@ describe("RefundQuotaReservationUseCase·CommitQuotaReservationUseCase — 확�
     // Given
     const fixture = setup();
     const reservation = await fixture.reserve();
-    vi.spyOn(fixture.quotaChargeRepository, "saveIfUnchanged").mockRejectedValue(
-      new Error("private database details"),
-    );
+    fixture.quotaChargeRepository.failSaves(new Error("private database details"));
 
     // When
     const refunded = await fixture.ledger.refund(reservation, "FAILED");

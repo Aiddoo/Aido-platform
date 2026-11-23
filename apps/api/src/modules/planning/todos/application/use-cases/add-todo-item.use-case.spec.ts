@@ -1,6 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
 import { TODO_ITEM_LIMITS } from "@aido/api/vocabulary";
-import { vi } from "vitest";
 
 import {
   createPlanningTodoFixture,
@@ -20,10 +19,6 @@ describe("하위 항목 추가", () => {
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
     useCase = new AddTodoItemUseCase(fixture);
   });
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it("항목 제목과 다음 순서를 저장하고 실제 항목 통계를 반환한다", async () => {
     // Given
     await fixture.todoRepository.seedItem(1, { title: "기존 항목", sortOrder: 0 });

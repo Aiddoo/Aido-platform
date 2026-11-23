@@ -6,9 +6,9 @@ import {
   createAiGenerationError,
   FakeAiGenerator,
 } from "#test/doubles/ai-assistance/fake-ai.generator";
-import { createSpyApplicationLogger } from "#test/doubles/ai-assistance/spy-application-logger";
 import { StubAiDataSharingConsentReader } from "#test/doubles/ai-assistance/stub-ai-data-sharing-consent.reader";
 import { DateClock } from "#test/doubles/platform/date-clock";
+import { RecordingApplicationLogger } from "#test/doubles/platform/recording-application-logger";
 import {
   digestDraft,
   memoActionDraft,
@@ -49,7 +49,7 @@ const fullUpcomingTodos = Array.from({ length: PLANNING_UPCOMING_TODO_LIMIT }, (
 
 function setup() {
   const aiGenerator = new FakeAiGenerator();
-  const logger = createSpyApplicationLogger();
+  const logger = new RecordingApplicationLogger();
   return {
     aiGenerator,
     logger,
@@ -134,8 +134,8 @@ describe("AiActionPlanGeneratorAdapter", () => {
       errorCode: ErrorCode.AI_1302,
       details: { charged: false },
     });
-    expect(logger.log).not.toHaveBeenCalled();
-    expect(logger.error).toHaveBeenCalledWith(
+    expect(logger.messagesAt("log")).toEqual([]);
+    expect(logger.messagesAt("error")).toContainEqual(
       expect.objectContaining({ outcome: "FAILED", quotaCharged: false }),
     );
   });
@@ -147,7 +147,7 @@ describe("AiActionPlanGeneratorAdapter", () => {
     // When
     await generator.generateQuickPlan({ ...planningInput, text: "회의" });
     // Then
-    expect(logger.log).toHaveBeenCalledWith(
+    expect(logger.messagesAt("log")).toContainEqual(
       expect.objectContaining({ outcome: "NO_ACTION", quotaCharged: false }),
     );
   });
@@ -164,7 +164,7 @@ describe("AiActionPlanGeneratorAdapter", () => {
     });
     // Then
     expect(digest.isEmpty).toBe(false);
-    expect(logger.log).toHaveBeenCalledWith(
+    expect(logger.messagesAt("log")).toContainEqual(
       expect.objectContaining({ outcome: "SUCCESS", quotaCharged: true }),
     );
   });
@@ -176,7 +176,7 @@ describe("AiActionPlanGeneratorAdapter", () => {
     // When
     await generator.generateQuickPlan({ ...planningInput, text: "비밀 내용" });
     // Then
-    const logged = JSON.stringify([...logger.log.mock.calls, ...logger.error.mock.calls]);
+    const logged = JSON.stringify([...logger.callsAt("log"), ...logger.callsAt("error")]);
     expect(logged).not.toContain("비밀");
   });
 

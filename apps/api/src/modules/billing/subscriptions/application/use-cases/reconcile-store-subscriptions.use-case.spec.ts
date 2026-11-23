@@ -150,12 +150,12 @@ describe("ReconcileStoreSubscriptionsUseCase — 스토어 상태 대조", () =>
   it("대조할 체인이 없는 사용자는 스토어를 읽지 않는다", async () => {
     // Given
     const { useCase, statusReader } = setup({ status: "EXPIRED" });
-    const read = vi.spyOn(statusReader, "read");
+    statusReader.failure = new Error("revenuecat down");
 
     // When
-    await useCase.execute(command);
+    const result = useCase.execute(command);
 
     // Then
-    expect(read).not.toHaveBeenCalled();
+    await expect(result).resolves.toEqual({ correctedCount: 0, fields: [] });
   });
 });

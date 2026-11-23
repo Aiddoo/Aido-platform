@@ -27,7 +27,6 @@ import { InMemoryAiReportRepository } from "#test/doubles/ai-assistance/in-memor
 import { InMemorySuggestionAnalysisRunRepository } from "#test/doubles/ai-assistance/in-memory-suggestion-analysis-run.repository";
 import { InMemorySuggestionRepository } from "#test/doubles/ai-assistance/in-memory-suggestion.repository";
 import { RecordingSuggestionAnalysisEnqueuer } from "#test/doubles/ai-assistance/recording-suggestion-analysis-enqueuer";
-import { createSpyApplicationLogger } from "#test/doubles/ai-assistance/spy-application-logger";
 import { StubAiDataSharingConsentReader } from "#test/doubles/ai-assistance/stub-ai-data-sharing-consent.reader";
 import {
   StubAiClientAppVersion,
@@ -40,6 +39,7 @@ import { StubSingleTodoCountReader } from "#test/doubles/ai-assistance/stub-sing
 import { StubSuggestionActivityReader } from "#test/doubles/ai-assistance/stub-suggestion-activity.reader";
 import { StubUserTimezoneReader } from "#test/doubles/ai-assistance/stub-user-timezone.reader";
 import { DateClock } from "#test/doubles/platform/date-clock";
+import { RecordingApplicationLogger } from "#test/doubles/platform/recording-application-logger";
 import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
 import { createReportAiResponse } from "#test/fixtures/ai-assistance/ai-response.fixture";
 
@@ -110,7 +110,7 @@ export function createAiAssistanceFixture() {
   const generator = new GatedFakeAiGenerator();
   const aiDataSharingConsent = new StubAiDataSharingConsentReader();
   const clientAppVersion = new StubAiClientAppVersion();
-  const logger = createSpyApplicationLogger();
+  const logger = new RecordingApplicationLogger();
   const clock = new DateClock();
   const scheduledAiConsent = new ScheduledAiConsentReader({
     consentReader: aiDataSharingConsent,

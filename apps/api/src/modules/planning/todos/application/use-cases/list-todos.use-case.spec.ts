@@ -1,5 +1,4 @@
 import { ErrorCode } from "@aido/api/errors";
-import { vi } from "vitest";
 
 import { TodoCategoryId } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -18,29 +17,22 @@ describe("할 일 목록 조회", () => {
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
     useCase = new ListTodosUseCase(fixture);
   });
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
 
   it("복귀 처리가 끝난 뒤 목록을 읽는다", async () => {
     // Given
-    const order: string[] = [];
-    vi.spyOn(fixture.seriesCatchUp, "execute").mockImplementation(async () => {
-      order.push("catch-up");
-    });
-    vi.spyOn(fixture.todoReadRepository, "findManyByUserId").mockImplementation(async () => {
-      order.push("read");
-      return [];
-    });
+    fixture.seriesCatchUp.execute = async () => {
+      fixture.todoReadRepository.queryResults = [
+        createTodoReadModelFromRecord(createPlanningTodo(fixture.userId, 7)),
+      ];
+    };
     // When
-    await useCase.execute({ userId: fixture.userId });
+    const page = await useCase.execute({ userId: fixture.userId });
     // Then
-    expect(order).toEqual(["catch-up", "read"]);
+    expect(page.items.map((todo) => todo.id)).toEqual([7]);
   });
 
   it("필터와 정규화한 size를 읽기 경계에 전달한다", async () => {
     // Given
-    const query = vi.spyOn(fixture.todoReadRepository, "findManyByUserId");
     const startDate = Temporal.PlainDate.from("2026-05-01");
     const endDate = Temporal.PlainDate.from("2026-05-31");
     // When
@@ -54,15 +46,17 @@ describe("할 일 목록 조회", () => {
       endDate,
     });
     // Then
-    expect(query).toHaveBeenCalledWith({
-      userId: UserId.reconstitute(fixture.userId),
-      cursor: 5,
-      size: 10,
-      categoryId: TodoCategoryId.reconstitute(1),
-      completed: false,
-      startDate,
-      endDate,
-    });
+    expect(fixture.todoReadRepository.listQueries).toEqual([
+      {
+        userId: UserId.reconstitute(fixture.userId),
+        cursor: 5,
+        size: 10,
+        categoryId: TodoCategoryId.reconstitute(1),
+        completed: false,
+        startDate,
+        endDate,
+      },
+    ]);
   });
   it("size+1 결과에서 다음 커서를 만들고 마지막 페이지는 null을 반환한다", async () => {
     // Given
@@ -95,8 +89,6 @@ describe("할 일 목록 조회", () => {
     expect(openRange.pagination.size).toBe(20);
   });
   it("역전된 기간은 저장소에 도달하기 전에 거부한다", async () => {
-    // Given
-    const query = vi.spyOn(fixture.todoReadRepository, "findManyByUserId");
     // When
     const result = useCase.execute({
       userId: fixture.userId,
@@ -105,6 +97,6 @@ describe("할 일 목록 조회", () => {
     });
     // Then
     await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
-    expect(query).not.toHaveBeenCalled();
+    expect(fixture.todoReadRepository.listQueries).toEqual([]);
   });
 });

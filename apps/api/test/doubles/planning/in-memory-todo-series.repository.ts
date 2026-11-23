@@ -7,8 +7,11 @@ import { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-seri
 import { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+// 복귀 채우기가 같은 날 다시 묻지 않는지 보려고 뒤처진 규칙 조회를 남기고, failNextBehindQuery로 한 번씩 실패시킨다
 export class InMemoryTodoSeriesRepository extends TodoSeriesRepositoryPort {
   readonly store: Map<string, TodoSeries>;
+  readonly behindQueries: { readonly userId: UserId; readonly through: Temporal.PlainDate }[] = [];
+  readonly #behindQueryFailures: Error[] = [];
 
   constructor(store: Map<string, TodoSeries> = new Map()) {
     super();
@@ -92,6 +95,11 @@ export class InMemoryTodoSeriesRepository extends TodoSeriesRepositoryPort {
     userId: UserId,
     through: Temporal.PlainDate,
   ): Promise<readonly TodoSeriesId[]> {
+    this.behindQueries.push({ userId, through });
+    const failure = this.#behindQueryFailures.shift();
+    if (failure != null) {
+      throw failure;
+    }
     return [...this.store.values()]
       .filter((series) => {
         const next = series.nextOccurrenceDate;
@@ -103,6 +111,10 @@ export class InMemoryTodoSeriesRepository extends TodoSeriesRepositoryPort {
       })
       .map((series) => series.id);
   }
+  failNextBehindQuery(error: Error): void {
+    this.#behindQueryFailures.push(error);
+  }
+
   #copy(series: TodoSeries): TodoSeries {
     return TodoSeries.reconstitute(series.toPrimitives());
   }

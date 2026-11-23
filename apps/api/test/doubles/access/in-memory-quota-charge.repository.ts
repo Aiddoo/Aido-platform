@@ -15,8 +15,10 @@ function isReservedBefore(charge: QuotaChargePrimitives, cutoff: Temporal.Instan
 }
 
 // 저장 사본만 두어 저장하지 않고 바꾼 Aggregate가 저장소 상태로 새지 않게 한다
+// failSaves로 조건부 저장을 정한 횟수만큼 그 오류로 실패시킨다(기본은 계속)
 export class InMemoryQuotaChargeRepository extends QuotaChargeRepositoryPort {
   readonly #charges = new Map<string, QuotaChargePrimitives>();
+  #saveFailure: { readonly error: Error; remaining: number } | null = null;
 
   /** 저장 순서대로의 차감 행 */
   get all(): readonly QuotaChargePrimitives[] {
@@ -99,7 +101,15 @@ export class InMemoryQuotaChargeRepository extends QuotaChargeRepositoryPort {
     });
   }
 
+  failSaves(error: Error, times = Number.POSITIVE_INFINITY): void {
+    this.#saveFailure = { error, remaining: times };
+  }
+
   async saveIfUnchanged(charge: QuotaCharge, expected: QuotaChargeVersion): Promise<boolean> {
+    if (this.#saveFailure != null && this.#saveFailure.remaining > 0) {
+      this.#saveFailure.remaining -= 1;
+      throw this.#saveFailure.error;
+    }
     const primitives = charge.toPrimitives();
     const stored = this.#charges.get(primitives.id);
     if (

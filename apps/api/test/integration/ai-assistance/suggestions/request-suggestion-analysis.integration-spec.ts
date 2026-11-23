@@ -8,8 +8,8 @@ import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mut
 import { user } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { RecordingSuggestionAnalysisEnqueuer } from "#test/doubles/ai-assistance/recording-suggestion-analysis-enqueuer";
-import { createSpyApplicationLogger } from "#test/doubles/ai-assistance/spy-application-logger";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { RecordingApplicationLogger } from "#test/doubles/platform/recording-application-logger";
 import { SUGGESTION_FIXTURE_USER_ID } from "#test/fixtures/ai-assistance/suggestion.fixture";
 import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
@@ -40,7 +40,7 @@ describe("RequestSuggestionAnalysisUseCase (실제 PostgreSQL 잠금)", () => {
   function createRequest() {
     const { transactionHost, uow } = createDatabaseTransactionFixture(client);
     const enqueuer = new RecordingSuggestionAnalysisEnqueuer();
-    const logger = createSpyApplicationLogger();
+    const logger = new RecordingApplicationLogger();
     const request = new RequestSuggestionAnalysisUseCase({
       entitlementReader: { can: async () => true },
       onDemandConfig: { isEnabled: true },
@@ -115,10 +115,10 @@ describe("RequestSuggestionAnalysisUseCase (실제 PostgreSQL 잠금)", () => {
         localDate: Temporal.PlainDate.from("2026-11-16"),
       }),
     ]);
-    expect(logger.log).toHaveBeenCalledWith(
+    expect(logger.messagesAt("log")).toContainEqual(
       expect.objectContaining({ event: "ai-assistance.suggestion-analysis.requested" }),
     );
-    expect(logger.log).toHaveBeenCalledWith(
+    expect(logger.messagesAt("log")).toContainEqual(
       expect.objectContaining({ event: "ai-assistance.suggestion-analysis.deduplicated" }),
     );
   });

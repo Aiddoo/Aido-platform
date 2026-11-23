@@ -1,6 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
 import { TODO_LIMITS } from "@aido/api/vocabulary";
-import { vi } from "vitest";
 
 import {
   createPlanningTodoFixture,
@@ -18,10 +17,6 @@ describe("할 일 카테고리 이동", () => {
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
     useCase = new ChangeTodoCategoryUseCase(fixture);
   });
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it("새 카테고리에 저장하고 응답과 카테고리 캐시를 갱신한다", async () => {
     // Given
     fixture.categories.set(2, { id: 2, name: "새 카테고리", color: "#123456", sortOrder: 1 });

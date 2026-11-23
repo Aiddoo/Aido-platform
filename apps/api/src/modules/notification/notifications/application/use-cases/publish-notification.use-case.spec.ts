@@ -1,6 +1,5 @@
-import { vi } from "vitest";
-
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
 
 import { PublishNotificationUseCase } from "./publish-notification.use-case.js";
 
@@ -16,9 +15,9 @@ const comment = {
 describe("PublishNotificationUseCase", () => {
   it("할 일 주인·날짜를 더한 알림을 단건 발송에 넘긴다", async () => {
     // Given
-    const sendNotification = { execute: vi.fn().mockResolvedValue(null) };
+    const sent = new RecordingNotificationPublisher();
     const useCase = new PublishNotificationUseCase({
-      sendNotification,
+      sendNotification: sent.single,
       todoTargetReader: {
         findTodoTargets: async () =>
           new Map([[42, { ownerId: UserId.reconstitute("owner-1"), date: "2026-10-27" }]]),
@@ -29,9 +28,14 @@ describe("PublishNotificationUseCase", () => {
     await useCase.execute(comment);
 
     // Then
-    expect(sendNotification.execute).toHaveBeenCalledWith({
-      ...comment,
-      metadata: { commentId: "comment-1", todoOwnerId: "owner-1", todoDate: "2026-10-27" },
-    });
+    expect(sent.published).toEqual([
+      {
+        mode: "single",
+        data: {
+          ...comment,
+          metadata: { commentId: "comment-1", todoOwnerId: "owner-1", todoDate: "2026-10-27" },
+        },
+      },
+    ]);
   });
 });

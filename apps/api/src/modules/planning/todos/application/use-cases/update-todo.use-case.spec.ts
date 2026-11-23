@@ -1,6 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
 import { TODO_LIMITS } from "@aido/api/vocabulary";
-import { vi } from "vitest";
 
 import {
   createPlanningTodoFixture,
@@ -25,10 +24,6 @@ describe("할 일 부분 수정", () => {
       publishUpdate: new PublishTodoUpdateUseCase(fixture),
     });
   });
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it("제목만 수정하면 nullable 일정과 완료 상태를 보존한다", async () => {
     // Given
     const before = snapshotTodoRecord(fixture.records.get(1));

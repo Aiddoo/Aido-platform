@@ -13,6 +13,7 @@ interface PushDeliveryAfterCommitPublisherDependencies {
   readonly afterCommit: Pick<AfterCommitTaskRegistryPort, "register">;
   readonly publishOutbox: Pick<PublishPushDeliveryOutboxUseCase, "execute">;
   readonly logger: Pick<ApplicationLoggerPort, "warn">;
+  readonly fastPathTimeoutMs?: number;
 }
 
 export interface PublishPushDeliveryAfterCommitCommand {
@@ -39,7 +40,7 @@ export class PublishPushDeliveryAfterCommitUseCase {
               kind: "dispatches",
               dispatchIds: committedDispatchIds,
             }),
-          FAST_PATH_TIMEOUT_MS,
+          this.#dependencies.fastPathTimeoutMs ?? FAST_PATH_TIMEOUT_MS,
         );
       } catch {
         // Timeout은 underlying publish를 취소하지 않는다. PENDING/PROCESSING은 relay가 복구한다.

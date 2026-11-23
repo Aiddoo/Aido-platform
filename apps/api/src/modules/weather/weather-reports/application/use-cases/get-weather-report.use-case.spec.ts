@@ -4,7 +4,7 @@ import { WeatherKitNotConfiguredError } from "#api/modules/weather/weather-repor
 import { WeatherReportCache } from "#api/modules/weather/weather-reports/infrastructure/cache/weather-report.cache";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
 import { toIsoString } from "#api/shared/domain/time/instant";
-import { FakeTimerClock } from "#test/doubles/platform/fake-timer-clock";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { InMemoryScheduledTodoReader } from "#test/doubles/weather/in-memory-scheduled-todo.reader";
 import { InMemoryUserLocationRepository } from "#test/doubles/weather/in-memory-user-location.repository";
@@ -32,11 +32,11 @@ describe("GetWeatherReportUseCase — 칸 단위 캐시·폴백과 한국 대기
   let airQuality: StubAirQualityProvider;
   let logger: SilentLogger;
   let todos: InMemoryScheduledTodoReader;
+  let clock: FixedClock;
   let useCase: GetWeatherReportUseCase;
 
-  /** 캐시 TTL과 응답 시각이 같은 시계를 보도록 Date만 고정·이동한다. */
   function moveClockTo(iso: string): void {
-    vi.setSystemTime(Temporal.Instant.from(iso).epochMilliseconds);
+    clock.advanceBy(clock.now().until(Temporal.Instant.from(iso)));
   }
 
   function rebuild(): GetWeatherReportUseCase {
@@ -53,16 +53,19 @@ describe("GetWeatherReportUseCase — 칸 단위 캐시·폴백과 한국 대기
       airQualityProvider: airQuality,
       scheduledTodoReader: todos,
       logger,
-      clock: new FakeTimerClock(),
+      clock,
     });
   }
 
   beforeEach(() => {
-    // 칸 캐시 TTL을 InMemoryCacheStore가 Date로 재서 Date와 FakeTimerClock을 함께 옮긴다
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(now.epochMilliseconds);
-    memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
-    cache = new WeatherReportCache(memory, new FakeTimerClock(), new StubWeatherProviderBudget());
+    // 칸 캐시 TTL과 응답 시각이 같은 시계를 본다
+    clock = new FixedClock(now);
+    memory = new InMemoryCacheStore({
+      defaultTtlMs: 60_000,
+      maxItems: 100,
+      nowMs: () => clock.now().epochMilliseconds,
+    });
+    cache = new WeatherReportCache(memory, clock, new StubWeatherProviderBudget());
     repository = new InMemoryUserLocationRepository([createWeatherLocationFixture()]);
     provider = new StubWeatherReportProvider();
     timezoneResolver = new StubTimezoneResolver();
@@ -70,9 +73,6 @@ describe("GetWeatherReportUseCase — 칸 단위 캐시·폴백과 한국 대기
     logger = new SilentLogger();
     todos = new InMemoryScheduledTodoReader();
     useCase = rebuild();
-  });
-  afterEach(() => {
-    vi.useRealTimers();
   });
 
   it("위치가 없으면 공급자를 부르지 않고 WEATHER_1902다", async () => {

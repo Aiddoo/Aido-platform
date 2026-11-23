@@ -1,5 +1,3 @@
-import { vi } from "vitest";
-
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   createPlanningTodoFixture,
@@ -15,9 +13,6 @@ describe("오늘의 할 일 요약", () => {
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
     useCase = new GetTodoSummaryUseCase(fixture);
   });
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
 
   it("통계와 가벼운 상위 목록과 스트릭을 함께 반환한다", async () => {
     // Given
@@ -27,7 +22,6 @@ describe("오늘의 할 일 요약", () => {
       { id: 1, title: "완료", completed: true, categoryColor: "#FFB3B3" },
     ];
     fixture.streakContext.currentStreak = 12;
-    const topQuery = vi.spyOn(fixture.todoReadRepository, "findTodayTopTodos");
     // When
     const result = await useCase.execute({
       userId: fixture.userId,
@@ -43,11 +37,13 @@ describe("오늘의 할 일 요약", () => {
       currentStreak: 12,
       topTodos: fixture.todoReadRepository.topTodos,
     });
-    expect(topQuery).toHaveBeenCalledWith(
-      UserId.reconstitute(fixture.userId),
-      Temporal.PlainDate.from("2026-05-15"),
-      10,
-    );
+    expect(fixture.todoReadRepository.topTodosQueries).toEqual([
+      {
+        userId: UserId.reconstitute(fixture.userId),
+        day: Temporal.PlainDate.from("2026-05-15"),
+        limit: 10,
+      },
+    ]);
   });
   it.each([
     { name: "빈 목록", total: 0, completed: 0, rate: 0, complete: false },
@@ -88,7 +84,6 @@ describe("오늘의 할 일 요약", () => {
     fixture.todoReadRepository.dayStats = { total: 2, completed: 0 };
     fixture.streakContext.currentStreak = 6;
     fixture.streakContext.lastCompletedDate = Temporal.PlainDate.from("2026-05-15");
-    const statsQuery = vi.spyOn(fixture.todoReadRepository, "getTodayTodoStats");
     // When
     const result = await useCase.execute({
       userId: fixture.userId,
@@ -97,9 +92,8 @@ describe("오늘의 할 일 요약", () => {
     });
     // Then
     expect(result).toMatchObject({ date: "2026-05-16", totalTodos: 2, currentStreak: 6 });
-    expect(statsQuery).toHaveBeenCalledWith(
-      UserId.reconstitute(fixture.userId),
-      Temporal.PlainDate.from("2026-05-16"),
-    );
+    expect(fixture.todoReadRepository.dayStatsQueries).toEqual([
+      { userId: UserId.reconstitute(fixture.userId), day: Temporal.PlainDate.from("2026-05-16") },
+    ]);
   });
 });

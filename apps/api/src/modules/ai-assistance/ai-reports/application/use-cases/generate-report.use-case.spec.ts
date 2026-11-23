@@ -523,7 +523,7 @@ describe("GenerateReportUseCase", () => {
         promptVersion: null,
         aiSummary: "작은 일 하나부터 다시 시작하기 좋은 때예요.",
       });
-      expect(f.logger.error).toHaveBeenCalledWith(
+      expect(f.logger.messagesAt("error")).toContainEqual(
         expect.objectContaining({
           event: "ai-assistance.generation.failed",
           task: "report",
@@ -587,12 +587,12 @@ describe("GenerateReportUseCase", () => {
         // Then
         expect(result).not.toBeNull();
         expect(f.reportRepository.saved[0]?.contentSource).toBe("FALLBACK");
-        expect(f.logger.warn).toHaveBeenCalledWith({
+        expect(f.logger.messagesAt("warn")).toContainEqual({
           event: "ai-assistance.report.provider.unavailable",
           userId: f.userId,
           errorType: kind,
         });
-        expect(f.logger.error).not.toHaveBeenCalled();
+        expect(f.logger.messagesAt("error")).toEqual([]);
       }),
   );
 

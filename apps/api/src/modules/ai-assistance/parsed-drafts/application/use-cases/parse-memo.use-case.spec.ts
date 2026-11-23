@@ -41,10 +41,6 @@ function createFixture() {
 }
 
 describe("ParseMemoUseCase", () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   describe("이미 있는 할 일과 겹침", () => {
     const upcoming = [
       { id: 41, title: "치과 예약", startDate: "2026-10-29", isRepeating: false },
@@ -208,9 +204,7 @@ describe("ParseMemoUseCase", () => {
     // Given
     const fixture = createFixture();
     fixture.generator.setInvalidResponse(createAiGenerationError("UPSTREAM"));
-    vi.spyOn(fixture.quotaChargeRepository, "saveIfUnchanged").mockRejectedValue(
-      new TypeError("db down"),
-    );
+    fixture.quotaChargeRepository.failSaves(new TypeError("db down"));
     // When
     const failure = await fixture.useCase.execute(fixture.input).catch((cause: unknown) => cause);
     // Then
@@ -222,14 +216,16 @@ describe("ParseMemoUseCase", () => {
     // Given
     const fixture = createFixture();
     fixture.generator.setRawResponse({ todos: [draftTodo("보고서 쓰기")], totalTaskCount: 1 });
-    vi.spyOn(fixture.quota, "read").mockRejectedValue(new TypeError("db down"));
+    fixture.quota.read = async () => {
+      throw new TypeError("db down");
+    };
     // When
     const result = await fixture.useCase.execute(fixture.input);
     // Then
     expect(result.featureQuota).toBeNull();
     expect(result.draft.todos).toHaveLength(1);
     expect([...fixture.quotaChargeRepository.all][0]).toMatchObject({ status: "COMMITTED" });
-    expect(fixture.logger.warn).toHaveBeenCalledWith({
+    expect(fixture.logger.messagesAt("warn")).toContainEqual({
       event: "ai-assistance.generation.quota-read.failed",
       feature: "AI_PARSE",
       task: "parse-memo",
@@ -307,14 +303,14 @@ describe("ParseMemoUseCase", () => {
     expect((await fixture.quota.read(UserId.reconstitute(fixture.userId), "AI_PARSE")).used).toBe(
       0,
     );
-    expect(fixture.logger.log).not.toHaveBeenCalled();
+    expect(fixture.logger.messagesAt("log")).toEqual([]);
   });
 
   it("카테고리 조회 실패는 원래 오류를 유지하며 예약 사용량을 보상한다", async () => {
     // Given
     const fixture = createFixture();
     const failure = new Error("category unavailable");
-    vi.spyOn(fixture.categoryReader, "findByUserId").mockRejectedValueOnce(failure);
+    fixture.categoryReader.failWith = failure;
     // When
     const execution = fixture.useCase.execute(fixture.input);
     // Then
@@ -353,8 +349,8 @@ describe("ParseMemoUseCase", () => {
     expect((await fixture.quota.read(UserId.reconstitute(fixture.userId), "AI_PARSE")).used).toBe(
       0,
     );
-    expect(fixture.logger.log).not.toHaveBeenCalled();
-    expect(fixture.logger.error).toHaveBeenCalledWith(
+    expect(fixture.logger.messagesAt("log")).toEqual([]);
+    expect(fixture.logger.messagesAt("error")).toContainEqual(
       expect.objectContaining({
         event: "ai-assistance.generation.failed",
         task: "parse-memo",
@@ -365,7 +361,7 @@ describe("ParseMemoUseCase", () => {
         validationIssues: [{ path: ["todos", 0, "categoryId"], code: "too_small" }],
       }),
     );
-    const logged = JSON.stringify(fixture.logger.error.mock.calls);
+    const logged = JSON.stringify(fixture.logger.callsAt("error"));
     expect(logged).not.toContain("PRIVATE_");
     expect(logged).not.toContain("message");
   });
@@ -388,7 +384,7 @@ describe("ParseMemoUseCase", () => {
     expect((await fixture.quota.read(UserId.reconstitute(fixture.userId), "AI_PARSE")).used).toBe(
       1,
     );
-    expect(fixture.logger.log).toHaveBeenCalledWith(
+    expect(fixture.logger.messagesAt("log")).toContainEqual(
       expect.objectContaining({
         event: "ai-assistance.generation.completed",
         task: "parse-memo",
@@ -397,7 +393,7 @@ describe("ParseMemoUseCase", () => {
         itemCount: 5,
       }),
     );
-    expect(fixture.logger.error).not.toHaveBeenCalled();
+    expect(fixture.logger.messagesAt("error")).toEqual([]);
   });
 
   it("재시도가 소진된 요청 과다는 파싱 실패가 아닌 AI_1310으로 반환하고 실패 종류를 기록한다", async () => {
@@ -411,8 +407,8 @@ describe("ParseMemoUseCase", () => {
     expect((await fixture.quota.read(UserId.reconstitute(fixture.userId), "AI_PARSE")).used).toBe(
       0,
     );
-    expect(fixture.logger.log).not.toHaveBeenCalled();
-    expect(fixture.logger.error).toHaveBeenCalledWith(
+    expect(fixture.logger.messagesAt("log")).toEqual([]);
+    expect(fixture.logger.messagesAt("error")).toContainEqual(
       expect.objectContaining({
         event: "ai-assistance.generation.failed",
         errorType: "RATE_LIMITED",
@@ -436,7 +432,7 @@ describe("ParseMemoUseCase", () => {
       // Then
       expect(result.draft.todos.map((todo) => todo.title)).toEqual(titles.slice(0, keptCount));
       expect(result.draft.omittedTodoCount).toBe(omittedTodoCount);
-      expect(fixture.logger.log).toHaveBeenCalledWith(
+      expect(fixture.logger.messagesAt("log")).toContainEqual(
         expect.objectContaining({ todoCount: keptCount, omittedTodoCount }),
       );
     },
@@ -455,7 +451,7 @@ describe("ParseMemoUseCase", () => {
     // Then
     expect(result.draft.todos.map((todo) => todo.title)).toEqual(titles.slice(0, 5));
     expect(result.draft.omittedTodoCount).toBe(7);
-    expect(fixture.logger.log).toHaveBeenCalledWith(
+    expect(fixture.logger.messagesAt("log")).toContainEqual(
       expect.objectContaining({ todoCount: 5, omittedTodoCount: 7 }),
     );
   });
@@ -546,7 +542,7 @@ describe("ParseMemoUseCase", () => {
       "단계 4",
       "단계 5",
     ]);
-    expect(fixture.logger.log).toHaveBeenCalledWith(
+    expect(fixture.logger.messagesAt("log")).toContainEqual(
       expect.objectContaining({ warnings: ["ITEMS_TRUNCATED"] }),
     );
   });
@@ -673,7 +669,7 @@ describe("ParseMemoUseCase", () => {
     // When
     await fixture.useCase.execute(fixture.input);
     // Then
-    expect(fixture.logger.log).toHaveBeenCalledWith(
+    expect(fixture.logger.messagesAt("log")).toContainEqual(
       expect.objectContaining({
         dateRefs: [
           { kind: "WEEKDAY", weekOffset: 0 },
@@ -681,7 +677,7 @@ describe("ParseMemoUseCase", () => {
         ],
       }),
     );
-    expect(JSON.stringify(fixture.logger.log.mock.calls)).not.toContain("PRIVATE_TITLE");
+    expect(JSON.stringify(fixture.logger.callsAt("log"))).not.toContain("PRIVATE_TITLE");
   });
 
   it("성공 로그에는 메모 원문과 모델이 만든 제목을 남기지 않는다", async () => {
@@ -691,7 +687,7 @@ describe("ParseMemoUseCase", () => {
     // When
     await fixture.useCase.execute({ ...fixture.input, content: "PRIVATE_MEMO_TEXT" });
     // Then
-    const logged = JSON.stringify([fixture.logger.log.mock.calls, fixture.logger.warn.mock.calls]);
+    const logged = JSON.stringify([fixture.logger.callsAt("log"), fixture.logger.callsAt("warn")]);
     expect(logged).not.toContain("PRIVATE_MEMO_TEXT");
     expect(logged).not.toContain("PRIVATE_TITLE");
   });

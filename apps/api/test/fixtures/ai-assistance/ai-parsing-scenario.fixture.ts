@@ -1,12 +1,12 @@
 import { QuotaChargedGenerationAdapter } from "#api/modules/ai-assistance/parsed-drafts/infrastructure/adapters/quota-charged-generation.adapter";
 import { FakeAiGenerator } from "#test/doubles/ai-assistance/fake-ai.generator";
-import { createSpyApplicationLogger } from "#test/doubles/ai-assistance/spy-application-logger";
 import { StubAiDataSharingConsentReader } from "#test/doubles/ai-assistance/stub-ai-data-sharing-consent.reader";
 import {
   StubAiUserCategoryReader,
   StubUpcomingTodoReader,
   StubUserLocalePreferenceReader,
 } from "#test/doubles/ai-assistance/stub-ai-parsing-readers";
+import { RecordingApplicationLogger } from "#test/doubles/platform/recording-application-logger";
 import type { AccessUserInput } from "#test/fixtures/access/access-user.fixture";
 import { createQuotaLedgerFixture } from "#test/fixtures/access/quota-ledger.fixture";
 
@@ -18,7 +18,7 @@ export function createAiParsingFixture(
   const ledgerFixture = createQuotaLedgerFixture(input, undefined, options);
   const categoryReader = new StubAiUserCategoryReader();
   categoryReader.categories.set(ledgerFixture.userId, [{ id: 7, name: "업무" }]);
-  const logger = createSpyApplicationLogger();
+  const logger = new RecordingApplicationLogger();
   return {
     ...ledgerFixture,
     quota: ledgerFixture.ledger,

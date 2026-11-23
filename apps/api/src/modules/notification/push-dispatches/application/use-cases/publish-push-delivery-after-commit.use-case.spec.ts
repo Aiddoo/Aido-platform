@@ -18,6 +18,9 @@ class RecordingPublishOutbox implements Pick<PublishPushDeliveryOutboxUseCase, "
   }
 }
 
+// 실제 timer로 바로 놓아주도록 2초 대신 1ms를 쓴다
+const SHORT_FAST_PATH_TIMEOUT_MS = 1;
+
 function createAfterCommitPublisher() {
   const afterCommit = new RecordingAfterCommitRegistry();
   const publishOutbox = new RecordingPublishOutbox();
@@ -26,15 +29,12 @@ function createAfterCommitPublisher() {
     afterCommit,
     publishOutbox,
     logger,
+    fastPathTimeoutMs: SHORT_FAST_PATH_TIMEOUT_MS,
   });
   return { afterCommit, publishOutbox, logger, publisher };
 }
 
 describe("PublishPushDeliveryAfterCommitUseCase — commit 이후 fast path", () => {
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   it("등록 시점의 dispatch ID 복사본만 commit 이후 발행한다", async () => {
     // Given
     const { afterCommit, publishOutbox, publisher } = createAfterCommitPublisher();
@@ -50,10 +50,8 @@ describe("PublishPushDeliveryAfterCommitUseCase — commit 이후 fast path", ()
     expect(publishOutbox.inputs).toEqual([{ kind: "dispatches", dispatchIds: [61, 62] }]);
   });
 
-  it("2초 timeout은 commit 흐름만 놓아주고 이미 시작한 발행은 취소하지 않는다", async () => {
+  it("timeout은 commit 흐름만 놓아주고 이미 시작한 발행은 취소하지 않는다", async () => {
     // Given
-    // 2초 timeout(setTimeout)이 실제로 지나가야 fast path가 놓아주므로 타이머를 가짜로 돌린다
-    vi.useFakeTimers();
     const { afterCommit, publishOutbox, logger, publisher } = createAfterCommitPublisher();
     let resolvePublication: ((publishedCount: number) => void) | undefined;
     let underlyingPublicationSettled = false;
@@ -68,7 +66,6 @@ describe("PublishPushDeliveryAfterCommitUseCase — commit 이후 fast path", ()
 
     // When
     const fastPath = afterCommit.runAll();
-    await vi.advanceTimersByTimeAsync(2000);
 
     // Then
     await expect(fastPath).resolves.toBeUndefined();

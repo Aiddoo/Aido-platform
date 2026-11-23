@@ -1,5 +1,4 @@
 import { ErrorCode } from "@aido/api/errors";
-import { vi } from "vitest";
 
 import {
   createPlanningTodoFixture,
@@ -17,10 +16,6 @@ describe("하위 항목 수정", () => {
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
     useCase = new UpdateTodoItemUseCase(fixture);
   });
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it("제목과 false 완료 값을 저장하고 다른 항목은 보존한다", async () => {
     // Given
     await fixture.todoRepository.createInlineItems(TodoId.reconstitute(1), [

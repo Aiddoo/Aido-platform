@@ -2,20 +2,11 @@ import { ErrorCode } from "@aido/api/errors";
 import { sql } from "drizzle-orm";
 
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
-import { generateUserTag } from "#api/modules/identity/users/infrastructure/persistence/user-tag.adapter";
 import { user } from "#api/platform/database/schema/index";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
-
-vi.mock(
-  import("#api/modules/identity/users/infrastructure/persistence/user-tag.adapter"),
-  async (importOriginal) => {
-    const original = await importOriginal();
-    return { generateUserTag: vi.fn(original.generateUserTag) };
-  },
-);
 
 const CLASHING_TAG = "TAGCLASH";
 
@@ -52,9 +43,12 @@ describe("DrizzleUserRepository 태그 충돌 (실제 PostgreSQL)", () => {
 
   it("확인 뒤 다른 가입이 같은 태그를 먼저 넣으면 1.15.0 필터와 같은 500 SYS_0001로 번역한다", async () => {
     // Given
-    vi.mocked(generateUserTag).mockReturnValue(CLASHING_TAG);
     const { transactionHost } = createDatabaseTransactionFixture(client);
-    const repository = new DrizzleUserRepository(transactionHost, new DateClock());
+    const repository = new DrizzleUserRepository(
+      transactionHost,
+      new DateClock(),
+      () => CLASHING_TAG,
+    );
 
     // When
     const { creating } = await competitor.transaction(async (transaction) => {
