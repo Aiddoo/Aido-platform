@@ -1,5 +1,3 @@
-import { vi } from "vitest";
-
 import type {
   AiGenerationRequest,
   AiTaskId,
@@ -39,12 +37,12 @@ import { StubRepeatingTodoTitleReader } from "#test/doubles/ai-assistance/stub-r
 import { StubSingleTodoCountReader } from "#test/doubles/ai-assistance/stub-single-todo-count.reader";
 import { StubSuggestionActivityReader } from "#test/doubles/ai-assistance/stub-suggestion-activity.reader";
 import { StubUserTimezoneReader } from "#test/doubles/ai-assistance/stub-user-timezone.reader";
-import { DateClock } from "#test/doubles/platform/date-clock";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { RecordingApplicationLogger } from "#test/doubles/platform/recording-application-logger";
 import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
 import { createReportAiResponse } from "#test/fixtures/ai-assistance/ai-response.fixture";
 
-const AI_ASSISTANCE_TIME = new Date("2026-03-22T12:00:00Z");
+const AI_ASSISTANCE_TIME = Temporal.Instant.from("2026-03-22T12:00:00Z");
 /** 고정 시각(서울 21:00)의 현지 날짜 */
 export const AI_ASSISTANCE_TODAY = Temporal.PlainDate.from("2026-03-22");
 
@@ -90,7 +88,7 @@ export function pauseAiResponse(provider: GatedFakeAiGenerator) {
   return { entered, release };
 }
 
-export function createAiAssistanceFixture() {
+export function createAiAssistanceFixture({ now = AI_ASSISTANCE_TIME } = {}) {
   const userId = "ai-fixture-user";
   const unitOfWork = new StubAiGenerationUnitOfWork();
   const access = new StubAiGenerationAccess(unitOfWork);
@@ -112,7 +110,7 @@ export function createAiAssistanceFixture() {
   const aiDataSharingConsent = new StubAiDataSharingConsentReader();
   const clientAppVersion = new StubAiClientAppVersion();
   const logger = new RecordingApplicationLogger();
-  const clock = new DateClock();
+  const clock = new FixedClock(now);
   const scheduledAiConsent = new CheckScheduledAiConsentUseCase({
     consentReader: aiDataSharingConsent,
     clientAppVersion,
@@ -197,6 +195,7 @@ export function createAiAssistanceFixture() {
     aiDataSharingConsent,
     clientAppVersion,
     logger,
+    clock,
     suggestionContext,
     analyze,
     request,
@@ -233,7 +232,7 @@ export async function analyzeQueuedSuggestions(
         userId: owner,
         localDate: command.localDate,
         trigger: command.trigger,
-        now: new DateClock().now(),
+        now: fixture.clock.now(),
       }),
     );
   }
@@ -294,23 +293,9 @@ export function seedPendingSuggestion(
       suggestedCategoryId: 7,
       status: "PENDING",
       expiresAt: Temporal.Instant.from("2026-04-05T12:00:00Z"),
-      createdAt: Temporal.Instant.from(AI_ASSISTANCE_TIME.toISOString()),
-      updatedAt: Temporal.Instant.from(AI_ASSISTANCE_TIME.toISOString()),
+      createdAt: AI_ASSISTANCE_TIME,
+      updatedAt: AI_ASSISTANCE_TIME,
       evidence: null,
     }),
   );
-}
-
-export async function withAiAssistanceTime<T>(
-  work: () => Promise<T> | T,
-  date = AI_ASSISTANCE_TIME,
-): Promise<T> {
-  vi.useFakeTimers({ toFake: ["Date"] });
-  vi.setSystemTime(date);
-  try {
-    return await work();
-  } finally {
-    vi.useRealTimers();
-    vi.restoreAllMocks();
-  }
 }

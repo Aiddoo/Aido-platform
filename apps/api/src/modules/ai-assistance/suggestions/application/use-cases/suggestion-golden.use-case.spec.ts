@@ -4,7 +4,6 @@ import { assert } from "vitest";
 import {
   createAiAssistanceFixture,
   analyzeQueuedSuggestions,
-  withAiAssistanceTime,
 } from "#test/fixtures/ai-assistance/ai-assistance-scenario.fixture";
 import { readPromptBlock } from "#test/fixtures/ai-assistance/ai-prompt.fixture";
 import {
@@ -23,16 +22,16 @@ import type { SuggestionData } from "../messages/suggestion-data.messages.js";
 const cases = GOLDEN_VARIANTS.flatMap((variant) => loadSuggestionGoldenCases(variant));
 
 async function analyze(golden: SuggestionGoldenCase, picks: unknown) {
-  const fixture = createAiAssistanceFixture();
+  const fixture = createAiAssistanceFixture({ now: Temporal.Instant.from(golden.now) });
   const context = toSuggestionContext(golden);
   fixture.activityReader.todos = context.todos;
   fixture.activityReader.history = context.suggestionHistory;
   fixture.repeatingTitleReader.titles = context.repeatingTitles;
   fixture.generator.setRawResponse({ picks });
-  const result = await withAiAssistanceTime(
-    () => analyzeQueuedSuggestions(fixture, { timezone: golden.timezone, locale: golden.locale }),
-    new Date(golden.now),
-  );
+  const result = await analyzeQueuedSuggestions(fixture, {
+    timezone: golden.timezone,
+    locale: golden.locale,
+  });
   assert.exists(result);
   const count = result.createdSuggestionCount;
   const candidates = buildGoldenCandidates(golden);
