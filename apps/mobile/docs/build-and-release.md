@@ -85,8 +85,8 @@ eas env:set --name SENTRY_AUTH_TOKEN --value "<TOKEN>" --environment production 
 eas build --profile development --platform <ios|android|all>   # dev client
 eas build --profile preview --platform <ios|android|all>
 eas build --local --profile production --platform <ios|android>
-pnpm update:preview "메시지"            # OTA
-pnpm update:production "메시지"
+pnpm update:preview --message "메시지"            # OTA
+pnpm update:production --message "메시지"
 ```
 
 - EAS CLI는 `eas.json`의 `cli.version` 이상이다. `npm install -g eas-cli` 뒤 `eas --version`으로 PATH에서 실행되는 버전을 확인한다(Node 버전 관리 도구와 Homebrew의 전역 위치가 다르면 이전 CLI가 실행된다).
@@ -110,7 +110,7 @@ cd apps/mobile
 GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0=false \
   eas build:inspect -p android -e production --stage archive --output /tmp/aido-archive --force
 
-# 3. 한 플랫폼씩 차례로 빌드한다. iOS가 끝난 뒤 Android를 시작한다(동시에 돌리지 않는다)
+# 3. 한 플랫폼씩 차례로 빌드한다(동시에 돌리면 기기 부하가 커지고 Metro 캐시가 부딪친다)
 GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0=false TMPDIR=/tmp/eas-ios \
   eas build --local -p ios --profile production --non-interactive --output ~/Desktop/aido-<버전>.ipa < /dev/null
 
@@ -119,12 +119,11 @@ GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0=false TMPD
   eas build --local -p android --profile production --non-interactive --output ~/Desktop/aido-<버전>.aab < /dev/null
 ```
 
-두 빌드를 함께 돌리면 기기 부하가 커지고 Metro 캐시가 부딪친다. `TMPDIR`을 나누는 것은 앞 실행이 남긴 Metro 캐시와 섞이지 않게 하려는 것이다.
-
 | 증상                                                                    | 원인                                                                              | 대책                                                      |
 | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------- |
 | `Compressing project files` 뒤 오류 없이 종료(exit 0), 빌드 번호만 오름 | 전역 `core.fsmonitor=true`가 EAS 임시 복사본 `.git`에 소켓을 만들고 복사가 멈춘다 | 명령에만 `core.fsmonitor=false`를 준다(위 `GIT_CONFIG_*`) |
 | `createBundleReleaseJsAndAssets` `ENOTEMPTY …/metro-cache`              | iOS·Android가 같은 `TMPDIR`의 Metro 캐시를 함께 쓴다                              | 한 플랫폼씩 차례로 빌드하고 플랫폼마다 `TMPDIR`을 나눈다  |
+| iOS `pod install` `could not find compatible versions for pod`          | 네이티브 의존성을 올린 뒤 로컬 CocoaPods trunk 목록에 새 pod 버전이 아직 없다     | `pod repo update trunk` 뒤 iOS만 다시 빌드한다            |
 
 ### SDK 58 빌드 주의
 
@@ -147,9 +146,9 @@ pnpm check:native-icons
 
 JS만 바뀐 핫픽스는 OTA로 낸다. runtime이 fingerprint라 운영 빌드와 fingerprint가 같아야 사용자에게 간다.
 
-- 머지된 `main`의 독립 clone(위 1단계)에서 `eas.json`의 `node` 버전으로 `eas fingerprint:generate --environment production`이 운영 빌드와 같은지 먼저 본다. `main`에 네이티브 변경이 함께 들어가 다르면 마지막 JS 커밋(stack의 네이티브 층 바로 아래)에서 같은 절차로 낸다. 작업 중인 checkout은 git 제외 파일 때문에 값이 달라 OTA가 아무에게도 가지 않는다.
-- `pnpm update:production "메시지"`로 보낸다. `--environment production`이 빠지면 `extra`(API·Sentry·RevenueCat·카카오 키)가 비어 결제가 깨진다.
-- 보낸 뒤 업데이트 manifest의 runtime과 `extra`를 확인하고, 소스맵은 `eas env:exec production`으로 올린다. OTA는 다음 콜드 스타트에 적용된다.
+- 머지된 `main`의 독립 clone(위 1단계)에서 `eas.json`의 `node` 버전으로 `eas fingerprint:generate --environment production`이 운영 빌드와 같은지 먼저 본다. 운영 runtime은 `eas update:list --branch production`에서 그 스토어 버전으로 낸 OTA의 runtime이다(로컬 빌드는 `eas build:list`에 없다). `main`에 네이티브 변경이 함께 들어가 다르면 마지막 JS 커밋(stack의 네이티브 층 바로 아래)에서 같은 절차로 낸다. 작업 중인 checkout은 git 제외 파일 때문에 값이 달라 OTA가 아무에게도 가지 않는다.
+- `pnpm update:production --message "메시지"`로 보낸다. `--environment production`이 빠지면 `extra`(API·Sentry·RevenueCat·카카오 키)가 비어 결제가 깨진다.
+- 보낸 뒤 출력의 runtime이 운영과 같은지, `loaded from the "production" environment` 줄에 API·Sentry·RevenueCat·카카오 키 이름이 있는지 확인한다. 소스맵은 `eas env:exec production 'node_modules/.bin/sentry-expo-upload-sourcemaps dist'`로 올린다. OTA는 다음 콜드 스타트에 적용된다.
 
 ## 스토어 제출
 
