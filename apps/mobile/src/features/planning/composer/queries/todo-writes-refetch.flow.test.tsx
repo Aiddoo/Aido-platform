@@ -417,7 +417,9 @@ async function renderFeed() {
   }
   async function settleWrites() {
     await act(async () => {
-      heldWrites.splice(0).forEach((settle) => settle());
+      for (const settle of heldWrites.splice(0)) {
+        settle();
+      }
       await deliverQueryNotifications();
     });
   }
@@ -942,7 +944,9 @@ async function renderCreateFeed() {
       await deliverQueryNotifications();
     });
     await act(async () => {
-      heldGets.splice(0).forEach((settle) => settle());
+      for (const settle of heldGets.splice(0)) {
+        settle();
+      }
       await deliverQueryNotifications();
     });
   }

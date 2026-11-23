@@ -256,14 +256,14 @@ describe('createAppContainer', () => {
       const syncStorage = createMemorySyncStorage();
       const { sessionCleanupService, whatsNewRepository, marketingPushPromptRepository } =
         createTestDi({ ports: { syncStorage } });
-      [DELETED_ACCOUNT_ID, REMAINING_ACCOUNT_ID].forEach((accountId) => {
+      for (const accountId of [DELETED_ACCOUNT_ID, REMAINING_ACCOUNT_ID]) {
         whatsNewRepository.claimSeen({ userId: accountId, campaignId: 'campaign-1' }, DISMISSED_AT);
         marketingPushPromptRepository.dismiss(accountId, DISMISSED_AT);
         createStoreReviewRepository(syncStorage).update(accountId, (state) => ({
           ...state,
           requestedAt: [DISMISSED_AT],
         }));
-      });
+      }
 
       // When
       sessionCleanupService.beforeAccountDeletion(DELETED_ACCOUNT_ID);

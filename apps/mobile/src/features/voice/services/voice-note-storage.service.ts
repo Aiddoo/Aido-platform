@@ -70,9 +70,13 @@ export class VoiceNoteStorageService {
     if (this.#isDraftStorageOpen) {
       this.#recordings.removeOwned(accountId);
     } else {
-      notes.forEach((note) => this.#removeFiles(accountId, note));
+      for (const note of notes) {
+        this.#removeFiles(accountId, note);
+      }
     }
-    notes.forEach((note) => this.#drafts.save(accountId, VoiceNotePolicy.withoutRecordings(note)));
+    for (const note of notes) {
+      this.#drafts.save(accountId, VoiceNotePolicy.withoutRecordings(note));
+    }
   };
 
   removeExpired = (accountId: string): void => {
@@ -80,7 +84,9 @@ export class VoiceNoteStorageService {
     const [expired, alive] = partition(this.#drafts.findAll(accountId), (note) =>
       VoiceNotePolicy.isExpired(note, now),
     );
-    expired.forEach((note) => this.#remove(accountId, note));
+    for (const note of expired) {
+      this.#remove(accountId, note);
+    }
 
     // 읽지 못한 것은 빈 것이 아니다. 초안을 다 읽은 실행에서만 어느 초안도 가리키지 않는 녹음을 지운다
     if (!this.#isDraftStorageOpen) {
@@ -108,6 +114,8 @@ export class VoiceNoteStorageService {
   };
 
   #removeFiles = (accountId: string, note: VoiceNote): void => {
-    note.recordings.forEach(({ fileName }) => this.#recordings.remove(accountId, fileName));
+    for (const { fileName } of note.recordings) {
+      this.#recordings.remove(accountId, fileName);
+    }
   };
 }

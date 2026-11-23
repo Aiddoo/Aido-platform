@@ -97,7 +97,9 @@ function createStepperStore<Contexts extends StepperContexts>(
         return;
       }
       state = next;
-      listeners.forEach((listener) => listener());
+      for (const listener of listeners) {
+        listener();
+      }
     },
     subscribe: (listener) => {
       listeners.add(listener);

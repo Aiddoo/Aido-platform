@@ -4,7 +4,9 @@ import { createCoachmarkRepository } from './coachmark.repository';
 
 function createStorageWith(keys: Readonly<Record<string, string>>) {
   const storage = createMemorySyncStorage();
-  Object.entries(keys).forEach(([key, raw]) => storage.set(key, raw));
+  for (const [key, raw] of Object.entries(keys)) {
+    storage.set(key, raw);
+  }
   return storage;
 }
 

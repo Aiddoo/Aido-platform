@@ -154,7 +154,9 @@ describe('useWidgetSnapshotSync', () => {
       // When
       await changeAuthState('unauthenticated');
       await act(async () => {
-        lateSummaries.forEach(({ settle }) => settle());
+        for (const { settle } of lateSummaries) {
+          settle();
+        }
       });
 
       // Then

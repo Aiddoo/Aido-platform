@@ -10,11 +10,11 @@ export function cleanStartupKeys(
   cleanups: Record<string, () => void>,
   logger: Pick<AppLogger, 'warn'>,
 ): void {
-  Object.entries(cleanups).forEach(([step, cleanup]) => {
+  for (const [step, cleanup] of Object.entries(cleanups)) {
     try {
       cleanup();
     } catch (error) {
       logger.warn(STARTUP_KEY_CLEANUP_LOG_EVENT.FAILED, { step, error: getErrorMessage(error) });
     }
-  });
+  }
 }

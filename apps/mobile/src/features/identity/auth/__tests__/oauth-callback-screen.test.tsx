@@ -87,9 +87,9 @@ function isStackState(value: unknown): value is { routes: StackNode[] } {
 
 async function openCallbackLink(provider: string) {
   await act(async () => {
-    systemUrlListeners.forEach((listener) =>
-      listener({ url: `${ENV.SCHEME}://auth/${provider}?code=one-time-code` }),
-    );
+    for (const listener of systemUrlListeners) {
+      listener({ url: `${ENV.SCHEME}://auth/${provider}?code=one-time-code` });
+    }
   });
 }
 

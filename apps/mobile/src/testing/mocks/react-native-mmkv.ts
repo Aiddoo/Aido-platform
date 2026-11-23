@@ -11,7 +11,9 @@ class InMemoryMMKV {
   readonly #listeners = new Set<(key: string) => void>();
 
   #notify(key: string): void {
-    this.#listeners.forEach((listener) => listener(key));
+    for (const listener of this.#listeners) {
+      listener(key);
+    }
   }
 
   addOnValueChangedListener(listener: (key: string) => void): { remove: () => void } {

@@ -15,20 +15,24 @@ export function createCoachmarkRepository(
 ): CoachmarkRepository {
   return {
     removeRetiredKeys: () => {
-      storage
+      const retiredKeys = storage
         .keys()
         .filter(
           (key) =>
             key.startsWith(`${COACHMARK_KEY_PREFIX}:`) &&
             RETIRED_COACHMARK_KINDS.includes(key.slice(key.lastIndexOf(':') + 1)),
-        )
-        .forEach((key) => storage.remove(key));
+        );
+      for (const key of retiredKeys) {
+        storage.remove(key);
+      }
     },
     clear: (accountId) => {
-      storage
+      const accountKeys = storage
         .keys()
-        .filter((key) => key.startsWith(`${COACHMARK_KEY_PREFIX}:${accountId}:`))
-        .forEach((key) => storage.remove(key));
+        .filter((key) => key.startsWith(`${COACHMARK_KEY_PREFIX}:${accountId}:`));
+      for (const key of accountKeys) {
+        storage.remove(key);
+      }
     },
   };
 }

@@ -218,7 +218,9 @@ function isStackState(value: unknown): value is { routes: StackNode[] } {
 
 async function openSystemUrl(url: string) {
   await act(async () => {
-    systemUrlListeners.forEach((listener) => listener({ url }));
+    for (const listener of systemUrlListeners) {
+      listener({ url });
+    }
   });
 }
 

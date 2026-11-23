@@ -191,9 +191,9 @@ describe('addDaysToDateKey — 날짜 key에 달력 일수 더하기', () => {
     const keys = range(800).map((offset) => addDaysToDateKey(start, offset));
 
     // Then
-    keys.forEach((key, offset) => {
+    for (const [offset, key] of keys.entries()) {
       expect(diffDateKeysInDays(start, key)).toBe(offset);
-    });
+    }
     expect(new Set(keys).size).toBe(800);
   });
 });

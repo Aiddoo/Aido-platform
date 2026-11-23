@@ -139,16 +139,18 @@ export function createVoiceRecordingRepository(
           !referencedFileNames.has(file.name) &&
           VoiceRecordingFilePolicy.isRecordingFileExpired(file, now),
       );
-      expired.forEach((file) => removeSafely(directory, file.name));
+      for (const file of expired) {
+        removeSafely(directory, file.name);
+      }
     },
 
     removeAllExceptOwner: (accountId) => {
       try {
         const ownerName = encodeURIComponent(accountId);
-        files
-          .listDirectoryNames(ROOT)
-          .filter((name) => name !== ownerName)
-          .forEach((name) => files.removeDirectory([...ROOT, name]));
+        const otherOwnerNames = files.listDirectoryNames(ROOT).filter((name) => name !== ownerName);
+        for (const name of otherOwnerNames) {
+          files.removeDirectory([...ROOT, name]);
+        }
       } catch (error) {
         logger.warn(VOICE_LOG_EVENT.RECORDING_CLEANUP_FAILED, {
           error: getErrorMessage(error),

@@ -31,10 +31,12 @@ function ConsentGateProbe() {
     <>
       <Button
         onPress={() => {
-          [1, 2].forEach(async () => {
+          const requestAndCount = async () => {
             await gate.requestAgreementIfNeeded();
             setSettledCount((count) => count + 1);
-          });
+          };
+          requestAndCount();
+          requestAndCount();
         }}
       >
         두 번 시작

@@ -253,7 +253,7 @@ function Scrubber({
 
   const flagPath = useMemo(() => {
     const builder = Skia.PathBuilder.Make();
-    flagIndexes.forEach((flagIndex) => {
+    for (const flagIndex of flagIndexes) {
       const x = Math.floor((flagIndex / Math.max(levels.length, 1)) * barCount) * STEP;
       builder.addRect({ x, y: 0, width: FLAG.poleWidth, height: height * FLAG.poleHeightShare });
       builder
@@ -261,7 +261,7 @@ function Scrubber({
         .lineTo(x + FLAG.poleWidth + FLAG.width, FLAG.height / 2)
         .lineTo(x + FLAG.poleWidth, FLAG.height)
         .close();
-    });
+    }
     const path = builder.detach();
     builder.dispose();
     return path;

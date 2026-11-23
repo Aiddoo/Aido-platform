@@ -81,32 +81,34 @@ export function createWhatsNewRepository(
     },
 
     removeRetiredKeys: ({ campaignIds, now }) => {
-      storage
-        .keys()
-        .filter((key) => {
-          if (!key.startsWith(`${SEEN_KEY_PREFIX}:`) && !key.startsWith(`${REENTRY_KEY_PREFIX}:`)) {
-            return false;
-          }
-          if (!campaignIds.includes(key.slice(key.lastIndexOf(':') + 1))) {
-            return true;
-          }
-          return (
-            key.startsWith(`${REENTRY_KEY_PREFIX}:`) &&
-            !shouldShowReentry(parseSavedInstant(storage.get(key)), now)
-          );
-        })
-        .forEach((key) => storage.remove(key));
+      const staleKeys = storage.keys().filter((key) => {
+        if (!key.startsWith(`${SEEN_KEY_PREFIX}:`) && !key.startsWith(`${REENTRY_KEY_PREFIX}:`)) {
+          return false;
+        }
+        if (!campaignIds.includes(key.slice(key.lastIndexOf(':') + 1))) {
+          return true;
+        }
+        return (
+          key.startsWith(`${REENTRY_KEY_PREFIX}:`) &&
+          !shouldShowReentry(parseSavedInstant(storage.get(key)), now)
+        );
+      });
+      for (const key of staleKeys) {
+        storage.remove(key);
+      }
     },
 
     clear: (userId) => {
-      storage
+      const userKeys = storage
         .keys()
         .filter(
           (key) =>
             key.startsWith(`${SEEN_KEY_PREFIX}:${userId}:`) ||
             key.startsWith(`${REENTRY_KEY_PREFIX}:${userId}:`),
-        )
-        .forEach((key) => storage.remove(key));
+        );
+      for (const key of userKeys) {
+        storage.remove(key);
+      }
     },
   };
 }

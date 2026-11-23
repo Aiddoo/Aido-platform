@@ -18,9 +18,11 @@ const WAIT_LONGER_THAN_FOCUS_POLLING_MS = 2_000;
 
 function showKeyboard(addKeyboardListener: jest.SpiedFunction<typeof Keyboard.addListener>) {
   return act(async () => {
-    addKeyboardListener.mock.calls
-      .filter(([eventName]) => eventName === 'keyboardWillShow')
-      .forEach(([_eventName, listener]) => listener(KEYBOARD_WILL_SHOW));
+    for (const [eventName, listener] of addKeyboardListener.mock.calls) {
+      if (eventName === 'keyboardWillShow') {
+        listener(KEYBOARD_WILL_SHOW);
+      }
+    }
   });
 }
 

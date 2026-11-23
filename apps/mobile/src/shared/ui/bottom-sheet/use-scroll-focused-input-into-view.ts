@@ -212,7 +212,9 @@ export function useScrollFocusedInputIntoView({
     ];
     return () => {
       pending.abort();
-      subscriptions.forEach((subscription) => subscription.remove());
+      for (const subscription of subscriptions) {
+        subscription.remove();
+      }
       keyboardTopRef.current = null;
       releasePlan();
     };

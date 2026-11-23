@@ -361,9 +361,9 @@ describe('toNotificationDestination', () => {
       );
 
       // Then
-      getRouteDestinationPathnames(destinations).forEach((pathname) => {
+      for (const pathname of getRouteDestinationPathnames(destinations)) {
         expect(routePathnames).toContain(pathname);
-      });
+      }
     });
 
     it('읽지 못한 알림이 여는 알림함은 있는 화면이다', () => {

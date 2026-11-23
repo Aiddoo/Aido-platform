@@ -114,11 +114,11 @@ function findHostsWithProp(propName: string, value?: unknown) {
     if (propName in node.props && (value == null || node.props[propName] === value)) {
       found.push(node);
     }
-    node.children.forEach((child) => {
+    for (const child of node.children) {
       if (typeof child !== 'string') {
         visit(child);
       }
-    });
+    }
   };
   if (screen.root != null) {
     visit(screen.root);
