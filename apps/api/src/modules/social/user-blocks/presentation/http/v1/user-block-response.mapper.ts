@@ -45,13 +45,15 @@ function toBlockedUserResponse(
 }
 
 export function toBlockedUsersResponse(
-  list: BlockedUserListReadModel,
+  blockedUsers: BlockedUserListReadModel,
   appVersion: string | undefined,
 ): BlockedUsersResponse {
   return {
-    items: list.page.items.map((blockedUser) => toBlockedUserResponse(blockedUser, appVersion)),
-    totalCount: list.totalCount,
-    hasMore: list.page.pagination.hasNext,
-    nextCursor: list.page.pagination.nextCursor,
+    items: blockedUsers.page.items.map((blockedUser) =>
+      toBlockedUserResponse(blockedUser, appVersion),
+    ),
+    totalCount: blockedUsers.totalCount,
+    hasMore: blockedUsers.page.pagination.hasNext,
+    nextCursor: blockedUsers.page.pagination.nextCursor,
   };
 }

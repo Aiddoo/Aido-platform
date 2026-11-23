@@ -184,11 +184,11 @@ export class GetTodoConversationUseCase {
     if (anchor.mode !== "FOCUS" || anchor.commentId == null) {
       return null;
     }
-    const item = window.anchorIndex == null ? undefined : window.items[window.anchorIndex];
-    if (item == null || item.id !== anchor.commentId.value) {
+    const focusComment = window.anchorIndex == null ? undefined : window.items[window.anchorIndex];
+    if (focusComment == null || focusComment.id !== anchor.commentId.value) {
       throw commentNotFound(anchor.commentId);
     }
-    return item;
+    return focusComment;
   }
 
   #toEmptyPage(query: GetTodoConversationQuery): TodoConversationPageReadModel {

@@ -96,20 +96,20 @@ export class KasiSunTimeAdapter implements SunTimeProviderPort {
     if (!parsed.success) {
       return this.#unavailable("invalid_structure");
     }
-    const data = parsed.data;
+    const sunTimeResponse = parsed.data;
 
-    const resultCode = data.response?.header?.resultCode;
+    const resultCode = sunTimeResponse.response?.header?.resultCode;
     if (resultCode !== "00") {
       return this.#unavailable("provider_result");
     }
 
-    const item = data.response?.body?.items?.item;
-    if (item == null) {
+    const sunTimeEntry = sunTimeResponse.response?.body?.items?.item;
+    if (sunTimeEntry == null) {
       return this.#unavailable("missing_item");
     }
 
-    const sunriseRaw = item.sunrise;
-    const sunsetRaw = item.sunset;
+    const sunriseRaw = sunTimeEntry.sunrise;
+    const sunsetRaw = sunTimeEntry.sunset;
 
     if (!sunriseRaw || !sunsetRaw) {
       return this.#unavailable("missing_time");

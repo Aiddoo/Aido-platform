@@ -59,9 +59,9 @@ export function keepGroundedInsight(
   insightKey: string | null,
   evidence: ReportEvidence,
 ): string {
-  const item = evidence.items.find(({ key }) => key === insightKey);
+  const insightEvidence = evidence.items.find(({ key }) => key === insightKey);
   return keepGroundedSentences(insight, {
-    numbers: [...evidence.overallNumbers, ...(item?.numbers ?? [])],
+    numbers: [...evidence.overallNumbers, ...(insightEvidence?.numbers ?? [])],
     quotedTexts: evidence.quotedTexts,
   });
 }

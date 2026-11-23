@@ -93,14 +93,14 @@ export class RevenueCatStoreSubscriptionStatusAdapter implements StoreSubscripti
     projectId: string,
     storeSubscriptionId: string,
   ): Promise<RevenueCatSubscription | undefined> {
-    const list = await this.#get(
+    const matchingSubscriptions = await this.#get(
       `/projects/${encodeURIComponent(projectId)}/subscriptions`,
       { store_subscription_identifier: storeSubscriptionId },
       revenueCatSubscriptionListSchema,
     );
-    return sortBy(list.items, [
-      (item) => (item.gives_access ? 1 : 0),
-      (item) => item.current_period_ends_at ?? 0,
+    return sortBy(matchingSubscriptions.items, [
+      (subscription) => (subscription.gives_access ? 1 : 0),
+      (subscription) => subscription.current_period_ends_at ?? 0,
     ]).at(-1);
   }
 

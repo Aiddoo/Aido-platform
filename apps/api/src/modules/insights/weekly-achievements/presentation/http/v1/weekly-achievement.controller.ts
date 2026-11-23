@@ -90,13 +90,13 @@ GET /weekly-achievements?year=2026&cursor=21&size=20
     @Query({ schema: GetWeeklyAchievementsQueryDto }) query: GetWeeklyAchievementsQueryDto,
     @Locale() requestedLocale: SupportedLocale | null,
   ): Promise<WeeklyAchievementListResponseDto> {
-    const list = await this.#listWeeklyAchievements.execute({
+    const achievements = await this.#listWeeklyAchievements.execute({
       userId: user.userId,
       year: query.year,
       cursor: query.cursor,
       size: query.size,
     });
-    return toWeeklyAchievementListResponse(list, requestedLocale ?? DEFAULT_LOCALE);
+    return toWeeklyAchievementListResponse(achievements, requestedLocale ?? DEFAULT_LOCALE);
   }
 
   @Get("years")

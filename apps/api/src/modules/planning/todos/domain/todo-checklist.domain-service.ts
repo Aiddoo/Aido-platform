@@ -13,21 +13,21 @@ import {
 /** 끝에 붙인 새 항목. 한도를 넘으면 TODO_0838이다. */
 export function appendChecklistItem(
   items: readonly TodoItem[],
-  item: { readonly id: TodoItemId; readonly title: TodoTitle; readonly now: Temporal.Instant },
+  newItem: { readonly id: TodoItemId; readonly title: TodoTitle; readonly now: Temporal.Instant },
 ): TodoItem {
   if (items.length >= TODO_ITEM_LIMITS.MAX_PER_TODO) {
     throw checklistLimitReached(items.length);
   }
   const maxSortOrder = items.reduce((max, entry) => Math.max(max, entry.sortOrder), -1);
-  return TodoItem.create({ ...item, sortOrder: maxSortOrder + 1 });
+  return TodoItem.create({ ...newItem, sortOrder: maxSortOrder + 1 });
 }
 
 export function findChecklistItem(items: readonly TodoItem[], itemId: TodoItemId): TodoItem {
-  const item = items.find((entry) => entry.id.equals(itemId));
-  if (item == null) {
+  const checklistItem = items.find((entry) => entry.id.equals(itemId));
+  if (checklistItem == null) {
     throw checklistItemNotFound(itemId.value);
   }
-  return item;
+  return checklistItem;
 }
 
 /** 모든 하위 항목 id를 한 번씩 받아야 한다. 배열 순서가 새 순서다. */

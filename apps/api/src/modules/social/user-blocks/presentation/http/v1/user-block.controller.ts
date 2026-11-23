@@ -147,11 +147,11 @@ export class UserBlockController {
     @Query({ schema: GetBlockedUsersQueryDto }) query: GetBlockedUsersQueryDto,
     @AppVersion() appVersion?: string,
   ): Promise<BlockedUsersResponseDto> {
-    const list = await this.#getBlockedUsersUseCase.execute({
+    const blockedUsers = await this.#getBlockedUsersUseCase.execute({
       blockerId: user.userId,
       cursor: query.cursor,
       size: query.limit,
     });
-    return toBlockedUsersResponse(list, appVersion);
+    return toBlockedUsersResponse(blockedUsers, appVersion);
   }
 }
