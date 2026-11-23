@@ -27,14 +27,14 @@ function translate(...[key, params]: Parameters<WidgetTranslateFn>): ReturnType<
 }
 
 function buildContext(
-  timeZone: string,
+  timezone: string,
   weekCompletions?: WidgetSnapshotContext['weekCompletions'],
 ): WidgetSnapshotContext {
   return {
     t: translate,
     locale: toResolvedLanguage(i18n.language),
     now: getNowInstant(),
-    timeZone,
+    timezone,
     weekCompletions,
   };
 }
@@ -43,7 +43,7 @@ interface LatestWidgetSnapshot {
   authState: WidgetSyncAuthState;
   userId: string | null;
   date: DateKey;
-  timeZone: string;
+  timezone: string;
   tomorrowDate: DateKey;
   data?: WidgetSummaryInput;
   tomorrowData?: WidgetSummaryInput;
@@ -59,7 +59,7 @@ function syncLatest(
   if (latest.authState === 'unauthenticated') {
     return {
       method: 'syncLoggedOut',
-      result: widgetSyncService.syncLoggedOut(latest.date, buildContext(latest.timeZone)),
+      result: widgetSyncService.syncLoggedOut(latest.date, buildContext(latest.timezone)),
     };
   }
   if (
@@ -79,7 +79,7 @@ function syncLatest(
           latest.tomorrowData?.date === latest.tomorrowDate ? latest.tomorrowData : undefined,
       },
       buildContext(
-        latest.timeZone,
+        latest.timezone,
         latest.completions ? Object.values(latest.completions) : undefined,
       ),
       latest.userId,
@@ -115,7 +115,7 @@ function reportWidgetSync(
 export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
   const widgetSyncService = useWidgetSyncService();
   const errorReporter = useErrorReporter();
-  const { currentLocalDateKey: date, currentTimeZone } = useLocalDate();
+  const { currentLocalDateKey: date, currentTimezone } = useLocalDate();
   const { startDateKey: rangeStart, endDateKey: rangeEnd } = getCalendarWeek(date);
   const userId = useMyAccountId({ isEnabled: authState === 'authenticated' });
   const tomorrowDate = addDaysToDateKey(date, 1);
@@ -144,7 +144,7 @@ export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
       authState,
       userId,
       date,
-      timeZone: currentTimeZone,
+      timezone: currentTimezone,
       tomorrowDate,
       data,
       tomorrowData,
@@ -169,7 +169,7 @@ export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
 
   useEffect(() => {
     syncCurrent();
-  }, [authState, data, tomorrowData, completions, date, tomorrowDate, currentTimeZone, userId]);
+  }, [authState, data, tomorrowData, completions, date, tomorrowDate, currentTimezone, userId]);
 
   useEffect(() => {
     const handleLanguageChanged = () => {

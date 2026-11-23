@@ -59,19 +59,19 @@ export class WidgetSyncService {
     context: WidgetSnapshotContext,
     userId: string,
   ): Promise<WidgetSyncResult> =>
-    this.#scheduleWrite(() => toWidgetSnapshot(summaries, context), userId, context.timeZone);
+    this.#scheduleWrite(() => toWidgetSnapshot(summaries, context), userId, context.timezone);
 
   syncLoggedOut = (localDate: DateKey, context: WidgetSnapshotContext): Promise<WidgetSyncResult> =>
     this.#scheduleWrite(
       () => toLoggedOutWidgetSnapshot(localDate, context),
       null,
-      context.timeZone,
+      context.timezone,
     );
 
   #scheduleWrite = (
     createSnapshot: () => WidgetSnapshot,
     userId: string | null,
-    timeZone: string,
+    timezone: string,
   ): Promise<WidgetSyncResult> => {
     const generation = ++this.#generation;
 
@@ -87,7 +87,7 @@ export class WidgetSyncService {
         const snapshotKey = JSON.stringify({
           snapshot: { ...snapshot, updatedAtIso: '' },
           userId,
-          timeZone,
+          timezone,
         });
         if (snapshotKey === this.#lastSnapshotKey) {
           return { status: 'unchanged' };

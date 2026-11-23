@@ -209,9 +209,9 @@ describe('toZonedInstant', () => {
       '00:00',
       '2026-09-06T04:00:00.000Z',
     ],
-  ])('%s는 서버처럼 겹치면 앞쪽, 없으면 전환 뒤 순간이다', (_name, timeZone, date, time, iso) => {
+  ])('%s는 서버처럼 겹치면 앞쪽, 없으면 전환 뒤 순간이다', (_name, timezone, date, time, iso) => {
     // When
-    const instant = toZonedInstant({ date: createDateKey(date), time, timeZone });
+    const instant = toZonedInstant({ date: createDateKey(date), time, timezone });
 
     // Then
     expect(instant).toBe(iso);
@@ -237,15 +237,15 @@ describe('toZonedInstant', () => {
       '2028-02-29',
     ];
     const times = ['00:00', '00:30', '01:00', '01:30', '02:00', '02:30', '03:00', '23:59'];
-    const cases = zones.flatMap((timeZone) =>
-      dates.flatMap((date) => times.map((time) => ({ timeZone, date, time }))),
+    const cases = zones.flatMap((timezone) =>
+      dates.flatMap((date) => times.map((time) => ({ timezone, date, time }))),
     );
 
     // When
     const mismatches = cases.filter(
-      ({ timeZone, date, time }) =>
-        toZonedInstant({ date: createDateKey(date), time, timeZone }) !==
-        temporalOracle.toZonedInstant(date, time, timeZone),
+      ({ timezone, date, time }) =>
+        toZonedInstant({ date: createDateKey(date), time, timezone }) !==
+        temporalOracle.toZonedInstant(date, time, timezone),
     );
 
     // Then
@@ -258,10 +258,10 @@ describe('toZonedInstant', () => {
     ['서머타임 끝나는 날 오후', '2026-11-01', '14:30', '2026-11-01T22:30:00.000Z'],
   ])('LA %s에도 벽시계 그대로의 순간이다', (_name, dateKey, hhmm, iso) => {
     // Given
-    const timeZone = 'America/Los_Angeles';
+    const timezone = 'America/Los_Angeles';
 
     // When
-    const instant = toZonedInstant({ date: createDateKey(dateKey), time: hhmm, timeZone });
+    const instant = toZonedInstant({ date: createDateKey(dateKey), time: hhmm, timezone });
 
     // Then
     expect(new Date(instant).toISOString()).toBe(iso);
@@ -270,12 +270,12 @@ describe('toZonedInstant', () => {
   it.each([
     ['Asia/Seoul', '2026-10-01T05:30:00.000Z'],
     ['America/Los_Angeles', '2026-10-01T21:30:00.000Z'],
-  ])('같은 벽시계도 %s에서는 다른 순간이다', (timeZone, iso) => {
+  ])('같은 벽시계도 %s에서는 다른 순간이다', (timezone, iso) => {
     // Given
     const dateKey = createDateKey('2026-10-01');
 
     // When
-    const instant = toZonedInstant({ date: dateKey, time: '14:30', timeZone });
+    const instant = toZonedInstant({ date: dateKey, time: '14:30', timezone });
 
     // Then
     expect(new Date(instant).toISOString()).toBe(iso);
@@ -379,9 +379,9 @@ describe('calculateCalendarDaysLeft', () => {
       '2028-03-01T20:00:00Z',
       1,
     ],
-  ] as const)('%s 남은 달력 일수를 반환한다', (_case, timeZone, now, endsAt, expected) => {
+  ] as const)('%s 남은 달력 일수를 반환한다', (_case, timezone, now, endsAt, expected) => {
     // When
-    const result = calculateCalendarDaysLeft(toInstant(endsAt), toInstant(now), timeZone);
+    const result = calculateCalendarDaysLeft(toInstant(endsAt), toInstant(now), timezone);
 
     // Then
     expect(result).toBe(expected);

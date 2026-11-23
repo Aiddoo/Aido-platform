@@ -15,17 +15,17 @@ describe('AchievementYearsPolicy', () => {
   describe('보일 해', () => {
     it.each([
       // 월요일 주간 리마인더가 2026년 53주를 남기고 알림을 보낸 뒤다. 새해는 아직 기록이 없다
-      { timeZone: 'Asia/Seoul', recorded: yearsOf(2026), expected: 2026 },
+      { timezone: 'Asia/Seoul', recorded: yearsOf(2026), expected: 2026 },
       // LA는 아직 53주가 끝나지 않아 52주까지 기록이 있고 오늘의 ISO 연도도 2026이다
-      { timeZone: 'America/Los_Angeles', recorded: yearsOf(2026), expected: 2026 },
+      { timezone: 'America/Los_Angeles', recorded: yearsOf(2026), expected: 2026 },
       // 처음 쓰는 사용자는 오늘의 ISO 연도를 본다
-      { timeZone: 'Asia/Seoul', recorded: yearsOf(), expected: 2027 },
-      { timeZone: 'America/Los_Angeles', recorded: yearsOf(), expected: 2026 },
+      { timezone: 'Asia/Seoul', recorded: yearsOf(), expected: 2027 },
+      { timezone: 'America/Los_Angeles', recorded: yearsOf(), expected: 2026 },
     ])(
-      '2027-01-04 09:30 KST에 $timeZone 기기는 기록 있는 해 $recorded.years 중 $expected년을 보인다',
-      ({ timeZone, recorded, expected }) => {
+      '2027-01-04 09:30 KST에 $timezone 기기는 기록 있는 해 $recorded.years 중 $expected년을 보인다',
+      ({ timezone, recorded, expected }) => {
         // Given
-        const todayKey = toDateKey(NEW_YEAR_MONDAY_MORNING_IN_SEOUL, timeZone);
+        const todayKey = toDateKey(NEW_YEAR_MONDAY_MORNING_IN_SEOUL, timezone);
 
         // When
         const year = AchievementYearsPolicy.getShownYear(recorded, {

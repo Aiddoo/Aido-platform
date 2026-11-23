@@ -37,12 +37,12 @@ interface TodoScheduleInput {
 function getMovedScheduleInput(
   todo: TodoScheduleSnapshot,
   startsAt: Instant,
-  timeZone: string,
+  timezone: string,
 ): TodoScheduleInput {
   return {
     startDate: todo.startDate,
     endDate: todo.endDate,
-    scheduledTime: toHHmm(startsAt, timeZone),
+    scheduledTime: toHHmm(startsAt, timezone),
     isAllDay: false,
   };
 }

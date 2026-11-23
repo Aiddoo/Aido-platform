@@ -261,7 +261,7 @@ describe('findResetNotice', () => {
     const now = toInstant('2026-11-05T14:00:00Z');
 
     // When
-    const notice = EntitlementPolicy.findResetNotice(snapshot, 'NUDGE', { now, timeZone: SEOUL });
+    const notice = EntitlementPolicy.findResetNotice(snapshot, 'NUDGE', { now, timezone: SEOUL });
 
     // Then
     expect(notice).toEqual({ type: 'tomorrow' });
@@ -275,7 +275,7 @@ describe('findResetNotice', () => {
     // When
     const notice = EntitlementPolicy.findResetNotice(snapshot, 'AI_PARSE', {
       now,
-      timeZone: SEOUL,
+      timezone: SEOUL,
     });
 
     // Then
@@ -290,7 +290,7 @@ describe('findResetNotice', () => {
     // When
     const notice = EntitlementPolicy.findResetNotice(snapshot, 'AI_PARSE', {
       now,
-      timeZone: LOS_ANGELES,
+      timezone: LOS_ANGELES,
     });
 
     // Then
@@ -306,7 +306,7 @@ describe('findResetNotice', () => {
     const now = toInstant('2026-12-02T00:00:00Z');
 
     // When
-    const notice = EntitlementPolicy.findResetNotice(snapshot, feature, { now, timeZone: SEOUL });
+    const notice = EntitlementPolicy.findResetNotice(snapshot, feature, { now, timezone: SEOUL });
 
     // Then
     expect(notice).toBeNull();

@@ -24,7 +24,7 @@ export function NotificationProvider({ children }: PropsWithChildren) {
     [queryClient],
   );
   const accountId = useMyAccountId({ isEnabled: isAuthenticated });
-  const { currentTimeZone } = useLocalDate();
+  const { currentTimezone } = useLocalDate();
   const [reportCount, markReported] = useReducer((count: number) => count + 1, 0);
 
   useForegroundPushSync({ authStatus: status, invalidateByType });
@@ -35,7 +35,7 @@ export function NotificationProvider({ children }: PropsWithChildren) {
   useRegisterNotificationCategories();
   usePushDeviceSync({
     authStatus: status,
-    deviceTimeZone: currentTimeZone,
+    deviceTimezone: currentTimezone,
     onReported: markReported,
   });
   useTimezoneChangeNotice({ accountId, reportCount });

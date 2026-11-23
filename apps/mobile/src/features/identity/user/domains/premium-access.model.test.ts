@@ -96,7 +96,7 @@ describe('findDaysLeft', () => {
     [LOS_ANGELES, '2028-02-29T14:00:00Z', 0],
   ] as const)(
     '윤년 2월 29일 경계에서 %s 기준 %s에는 남은 일수 %i를 반환한다',
-    (timeZone, now, expected) => {
+    (timezone, now, expected) => {
       // Given
       const access = createPremiumAccess({
         endsAt: toInstant('2028-02-29T15:00:00Z'),
@@ -104,7 +104,7 @@ describe('findDaysLeft', () => {
       });
 
       // When
-      const result = PremiumAccessPolicy.findDaysLeft(access, toInstant(now), timeZone);
+      const result = PremiumAccessPolicy.findDaysLeft(access, toInstant(now), timezone);
 
       // Then
       expect(result).toBe(expected);

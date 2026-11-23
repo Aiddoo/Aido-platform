@@ -4,7 +4,7 @@ import { createDateKey } from '@src/testing/date-key';
 import { createParentTodo, createSubTodo } from '../__tests__/sub-todo.fixtures';
 import type { TodoRepeat } from './todo-repeat.model';
 import {
-  getShiftedEndDate,
+  findShiftedEndDate,
   getVisibility,
   hasScheduleChanged,
   isPrivateVisibility,
@@ -62,7 +62,7 @@ describe('isLastOpenTodo', () => {
   });
 });
 
-describe('getShiftedEndDate', () => {
+describe('findShiftedEndDate', () => {
   it('날짜를 옮겨도 기간 길이를 유지하고 하루짜리는 null이다', () => {
     // Given
     const multiDay = {
@@ -72,8 +72,8 @@ describe('getShiftedEndDate', () => {
     const oneDay = { startDate: createDateKey('2026-11-05'), endDate: null };
 
     // When
-    const shifted = getShiftedEndDate(multiDay, createDateKey('2026-11-29'));
-    const unchanged = getShiftedEndDate(oneDay, createDateKey('2026-11-29'));
+    const shifted = findShiftedEndDate(multiDay, createDateKey('2026-11-29'));
+    const unchanged = findShiftedEndDate(oneDay, createDateKey('2026-11-29'));
 
     // Then
     expect(shifted).toBe('2026-12-01');
@@ -81,7 +81,7 @@ describe('getShiftedEndDate', () => {
   });
 });
 
-describe('getLocalTime', () => {
+describe('findLocalTime', () => {
   const instant = toInstant('2026-11-05T01:00:00.000Z');
 
   it('서버가 준 벽시계는 시간대를 바꿔도 같은 오전 10시다', () => {
@@ -89,8 +89,8 @@ describe('getLocalTime', () => {
     const todo = createParentTodo({ isAllDay: false, localTime: '10:00', scheduledAt: instant });
 
     // When
-    const seoul = TodoPolicy.getLocalTime(todo, 'Asia/Seoul');
-    const newYork = TodoPolicy.getLocalTime(todo, 'America/New_York');
+    const seoul = TodoPolicy.findLocalTime(todo, 'Asia/Seoul');
+    const newYork = TodoPolicy.findLocalTime(todo, 'America/New_York');
 
     // Then
     expect(seoul).toBe('10:00');
@@ -102,8 +102,8 @@ describe('getLocalTime', () => {
     const todo = createParentTodo({ isAllDay: false, localTime: null, scheduledAt: instant });
 
     // When
-    const seoul = TodoPolicy.getLocalTime(todo, 'Asia/Seoul');
-    const newYork = TodoPolicy.getLocalTime(todo, 'America/New_York');
+    const seoul = TodoPolicy.findLocalTime(todo, 'Asia/Seoul');
+    const newYork = TodoPolicy.findLocalTime(todo, 'America/New_York');
 
     // Then
     expect(seoul).toBe('10:00');
@@ -119,7 +119,7 @@ describe('getLocalTime', () => {
     });
 
     // When
-    const time = TodoPolicy.getLocalTime(todo, 'America/New_York');
+    const time = TodoPolicy.findLocalTime(todo, 'America/New_York');
 
     // Then
     expect(time).toBe('03:30');
@@ -131,8 +131,8 @@ describe('getLocalTime', () => {
     const noTime = createParentTodo({ isAllDay: false, localTime: null, scheduledAt: null });
 
     // When
-    const allDayTime = TodoPolicy.getLocalTime(allDay, 'Asia/Seoul');
-    const noTimeTime = TodoPolicy.getLocalTime(noTime, 'Asia/Seoul');
+    const allDayTime = TodoPolicy.findLocalTime(allDay, 'Asia/Seoul');
+    const noTimeTime = TodoPolicy.findLocalTime(noTime, 'Asia/Seoul');
 
     // Then
     expect(allDayTime).toBeNull();
@@ -141,7 +141,7 @@ describe('getLocalTime', () => {
 });
 
 describe('hasUpcomingTimedTodo', () => {
-  const now = { dateKey: createDateKey('2026-11-05'), time: '12:00', timeZone: 'Asia/Seoul' };
+  const now = { dateKey: createDateKey('2026-11-05'), time: '12:00', timezone: 'Asia/Seoul' };
 
   it.each([
     ['내일 시간 있는 할 일', { startDate: createDateKey('2026-11-06'), localTime: '09:00' }, true],

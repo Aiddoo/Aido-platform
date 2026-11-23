@@ -59,7 +59,7 @@ function WaitingStatus({ onRequest }: { onRequest: () => void }) {
   const nextAnalysisAt = toZonedInstant({
     date: addDaysToDateKey(todayKey, 1),
     time: DEMO_NEXT_ANALYSIS_TIME,
-    timeZone: dateFormatContext.timeZone,
+    timezone: dateFormatContext.timezone,
   });
 
   return (

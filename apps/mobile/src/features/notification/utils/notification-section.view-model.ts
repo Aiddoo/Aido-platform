@@ -34,10 +34,10 @@ export type DateSectionedListItem<TEntry> =
 export function toDateSectionedListItems<TEntry extends { createdAt: Instant }>(
   entries: readonly TEntry[],
   todayDateKey: DateKey,
-  timeZone: string,
+  timezone: string,
 ): DateSectionedListItem<TEntry>[] {
   const getSection = (entry: TEntry) =>
-    getDateSectionKey(toDateKey(entry.createdAt, timeZone), todayDateKey);
+    getDateSectionKey(toDateKey(entry.createdAt, timezone), todayDateKey);
   const sections = groupBy(entries, getSection);
   return Object.values(sections).flatMap((sectionEntries): DateSectionedListItem<TEntry>[] => {
     const first = sectionEntries[0];

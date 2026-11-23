@@ -136,7 +136,7 @@ export function createDevicePorts(): DevicePorts {
     syncStorage: deviceSyncStorage,
     platform: process.env.EXPO_OS === 'ios' ? 'ios' : 'android',
     deviceModel: DEVICE_MODEL_NAME,
-    getTimeZone: getDeviceTimezone,
+    getTimezone: getDeviceTimezone,
     // 요청 헤더(Accept-Language)와 같은 값이다
     getLanguage: () => i18n.language,
     inviteLinkOpenedStore: createInviteLinkOpenedStore(),

@@ -18,7 +18,7 @@ describe('getDaysUntilReport', () => {
     // When
     const daysLeft = ReportStatusPolicy.getDaysUntilReport(STATUS, 'WEEKLY', {
       now: toInstant(now),
-      timeZone: SEOUL,
+      timezone: SEOUL,
     });
 
     // Then
@@ -29,11 +29,11 @@ describe('getDaysUntilReport', () => {
     // When
     const beforeMidnight = ReportStatusPolicy.getDaysUntilReport(STATUS, 'MONTHLY', {
       now: toInstant('2026-11-25T14:59:00.000Z'),
-      timeZone: SEOUL,
+      timezone: SEOUL,
     });
     const afterMidnight = ReportStatusPolicy.getDaysUntilReport(STATUS, 'MONTHLY', {
       now: toInstant('2026-11-25T15:00:00.000Z'),
-      timeZone: SEOUL,
+      timezone: SEOUL,
     });
 
     // Then

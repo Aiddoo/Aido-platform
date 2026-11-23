@@ -54,13 +54,13 @@ function hasRenewal(access: PremiumAccess) {
   return access.willRenew || hasBankedDays(access);
 }
 
-function findDaysLeft(access: PremiumAccess, now: Instant, timeZone: string) {
-  return access.endsAt == null ? null : calculateCalendarDaysLeft(access.endsAt, now, timeZone);
+function findDaysLeft(access: PremiumAccess, now: Instant, timezone: string) {
+  return access.endsAt == null ? null : calculateCalendarDaysLeft(access.endsAt, now, timezone);
 }
 
 /** 곧 끝나는데 이어질 길이 없는지. 이미 끝난 시각이면 곧 만료가 아니라 만료다 */
-function isExpiringSoon(access: PremiumAccess, now: Instant, timeZone: string) {
-  const daysLeft = findDaysLeft(access, now, timeZone);
+function isExpiringSoon(access: PremiumAccess, now: Instant, timezone: string) {
+  const daysLeft = findDaysLeft(access, now, timezone);
   if (access.endsAt == null || daysLeft == null) {
     return false;
   }
@@ -73,16 +73,16 @@ function isExpiringSoon(access: PremiumAccess, now: Instant, timeZone: string) {
 }
 
 /** 체험이 끝나는 날(=첫 결제일)까지 남은 달력 일수. 체험이 아니면 null이다 */
-function findTrialDaysLeft(access: PremiumAccess, now: Instant, timeZone: string) {
+function findTrialDaysLeft(access: PremiumAccess, now: Instant, timezone: string) {
   if (!isTrial(access) || access.periodEndsAt == null) {
     return null;
   }
-  return calculateCalendarDaysLeft(access.periodEndsAt, now, timeZone);
+  return calculateCalendarDaysLeft(access.periodEndsAt, now, timezone);
 }
 
 /** 자동 갱신과 상관없이 체험 끝을 서버 체험 알림과 같은 날수부터 앱 안에서도 알린다 */
-function isTrialEndingSoon(access: PremiumAccess, now: Instant, timeZone: string) {
-  const daysLeft = findTrialDaysLeft(access, now, timeZone);
+function isTrialEndingSoon(access: PremiumAccess, now: Instant, timezone: string) {
+  const daysLeft = findTrialDaysLeft(access, now, timezone);
   if (access.periodEndsAt == null || daysLeft == null) {
     return false;
   }
@@ -93,7 +93,7 @@ function isTrialEndingSoon(access: PremiumAccess, now: Instant, timeZone: string
 }
 
 /** 자동 갱신되는 연간 구독이 서버 갱신 알림과 같은 날수 안에 결제될 때 남은 달력 일수. 그 밖에는 null이다 */
-function findAnnualRenewalDaysLeft(access: PremiumAccess, now: Instant, timeZone: string) {
+function findAnnualRenewalDaysLeft(access: PremiumAccess, now: Instant, timezone: string) {
   if (
     !isStoreSubscribed(access) ||
     isTrial(access) ||
@@ -104,7 +104,7 @@ function findAnnualRenewalDaysLeft(access: PremiumAccess, now: Instant, timeZone
   ) {
     return null;
   }
-  const daysLeft = calculateCalendarDaysLeft(access.periodEndsAt, now, timeZone);
+  const daysLeft = calculateCalendarDaysLeft(access.periodEndsAt, now, timezone);
   return isWithinNoticeDays(daysLeft, PREMIUM_RENEWAL_NOTICE_DAYS) ? daysLeft : null;
 }
 

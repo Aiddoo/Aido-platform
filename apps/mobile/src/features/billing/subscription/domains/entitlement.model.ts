@@ -167,14 +167,14 @@ function getQuotaStatus(
 function findResetNotice(
   snapshot: EntitlementSnapshot,
   feature: EntitlementFeature,
-  { now, timeZone }: { now: Instant; timeZone: string },
+  { now, timezone }: { now: Instant; timezone: string },
 ): QuotaResetNotice | null {
   const quota = findFeatureQuota(snapshot, feature);
   if (quota?.limit == null || quota.resetsAt == null || hasInstantPassed(quota.resetsAt, now)) {
     return null;
   }
 
-  const daysLeft = calculateCalendarDaysLeft(quota.resetsAt, now, timeZone);
+  const daysLeft = calculateCalendarDaysLeft(quota.resetsAt, now, timezone);
   if (daysLeft === 0) {
     return { type: 'today' };
   }

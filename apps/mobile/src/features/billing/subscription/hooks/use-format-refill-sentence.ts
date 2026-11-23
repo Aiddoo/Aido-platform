@@ -23,7 +23,7 @@ export function useFormatRefillSentence() {
       const limit = EntitlementPolicy.findLimit(snapshot, feature);
       const notice = EntitlementPolicy.findResetNotice(snapshot, feature, {
         now: getNowInstant(),
-        timeZone: dateFormatContext.timeZone,
+        timezone: dateFormatContext.timezone,
       });
       if (limit == null || notice == null) {
         return null;

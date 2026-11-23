@@ -163,7 +163,7 @@ export function isMultiDayTodo(todo: Todo): boolean {
 }
 
 // 할 일과 폼의 날짜 칸이 함께 쓰는 기간 규칙이라 필요한 날짜만 받는다
-export function getShiftedEndDate(
+export function findShiftedEndDate(
   todo: Pick<Todo, 'startDate' | 'endDate'>,
   startDate: DateKey,
 ): DateKey | null {
@@ -190,7 +190,7 @@ export type TodoEditableFields = Omit<TodoSchedule, 'repeat'> &
 export type TodoFieldChanges = Partial<TodoEditableFields>;
 
 // 종일이면 남아 있는 시각을 버린다. 시각과 종일을 따로 가진 폼·시트가 보낼 시각이다
-export function getScheduledTime(
+export function findScheduledTime(
   schedule: Pick<TodoSchedule, 'isAllDay' | 'scheduledTime'>,
 ): string | null {
   return schedule.isAllDay ? null : schedule.scheduledTime;
@@ -206,7 +206,7 @@ export function withScheduleStartDate(
     schedule.repeat != null && !isSeriesOccurrence
       ? TodoRepeatPolicy.withRepeatStartDate(schedule.repeat, schedule.startDate, startDate)
       : schedule.repeat;
-  return { ...schedule, startDate, endDate: getShiftedEndDate(schedule, startDate), repeat };
+  return { ...schedule, startDate, endDate: findShiftedEndDate(schedule, startDate), repeat };
 }
 
 // 반복과 여러 날 기간은 함께 두지 않는다. 반복을 정하면 끝 날짜를 지운다
@@ -247,23 +247,23 @@ export function isTodoOnDate(todo: Todo, date: DateKey): boolean {
 }
 
 // 서버가 준 벽시계는 어디서든 그 시각이고 칸을 비워 둔 시간 행만 순간을 시간대로 읽는다. 종일·시간 없음은 null
-export function getLocalTime(todo: Todo, timeZone: string): string | null {
+export function findLocalTime(todo: Todo, timezone: string): string | null {
   if (todo.isAllDay) {
     return null;
   }
   if (todo.localTime != null) {
     return todo.localTime;
   }
-  return todo.scheduledAt == null ? null : toHHmm(todo.scheduledAt, timeZone);
+  return todo.scheduledAt == null ? null : toHHmm(todo.scheduledAt, timezone);
 }
 
 // 완료 전이고 시간이 있으며 아직 지나지 않은 할 일이 있는가. 시각은 어디서든 그 시각이라 벽시계로 비교한다
 export function hasUpcomingTimedTodo(
   todos: readonly Todo[],
-  now: { dateKey: DateKey; time: string; timeZone: string },
+  now: { dateKey: DateKey; time: string; timezone: string },
 ): boolean {
   return todos.some((todo) => {
-    const localTime = getLocalTime(todo, now.timeZone);
+    const localTime = findLocalTime(todo, now.timezone);
     return (
       !todo.completed &&
       localTime != null &&
@@ -309,6 +309,6 @@ export const TodoPolicy = {
   getTodayToggleDates,
   isOptimisticTodo,
   isLastOpenTodo,
-  getLocalTime,
+  findLocalTime,
   hasUpcomingTimedTodo,
 } as const;

@@ -30,7 +30,7 @@ function createService() {
   const drafts = createVoiceNoteDraftRepository({
     storage,
     logger,
-    getTimeZone: () => 'Asia/Seoul',
+    getTimezone: () => 'Asia/Seoul',
   });
   const service = new VoiceNoteStorageService({
     drafts,

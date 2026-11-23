@@ -3,7 +3,7 @@ import DateTimePicker, {
   type IOSNativeProps,
 } from '@react-native-community/datetimepicker';
 import type { TimeFormat } from '@src/shared/date/format/date-format';
-import { getPickerTimeOfDay, PICKER_TIME_ZONE, toPickerDate } from '@src/shared/date/native-date';
+import { getPickerTimeOfDay, PICKER_TIMEZONE, toPickerDate } from '@src/shared/date/native-date';
 import type { TimeOfDay } from '@src/shared/date/time-of-day';
 import { useLocaleContext } from '@src/shared/hooks/use-locale-context';
 import { getTimePickerLocale } from '@src/shared/i18n/app-locales';
@@ -50,7 +50,7 @@ export function TimeSpinner({
       mode="time"
       display="spinner"
       minuteInterval={1}
-      timeZoneName={PICKER_TIME_ZONE}
+      timeZoneName={PICKER_TIMEZONE}
       locale={getTimePickerLocale(language, timeFormat)}
       minimumDate={minimum == null ? undefined : toPickerDate(minimum)}
       maximumDate={maximum == null ? undefined : toPickerDate(maximum)}
@@ -76,7 +76,7 @@ export function openAndroidTimePicker({
       mode: 'time',
       display: 'spinner',
       minuteInterval: 1,
-      timeZoneName: PICKER_TIME_ZONE,
+      timeZoneName: PICKER_TIMEZONE,
       is24Hour: timeFormat === 'TWENTY_FOUR_HOUR',
       onValueChange: (_event, date) => resolve(getPickerTimeOfDay(date)),
       onDismiss: () => resolve(null),

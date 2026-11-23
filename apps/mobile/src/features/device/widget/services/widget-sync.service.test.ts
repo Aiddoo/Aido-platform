@@ -12,7 +12,7 @@ const context: WidgetSnapshotContext = {
   t: (key) => key,
   locale: 'ko',
   now: toInstant('2026-07-12T09:00:00.000Z'),
-  timeZone: 'Asia/Seoul',
+  timezone: 'Asia/Seoul',
 };
 
 const summary: WidgetSummaryInput = {
@@ -172,7 +172,7 @@ describe('WidgetSyncService', () => {
     // 같은 날짜 그대로 런던 시간대로 바뀐다
     await service.syncSummary(
       { today: summary },
-      { ...context, timeZone: 'Europe/London' },
+      { ...context, timezone: 'Europe/London' },
       USER_ID,
     );
 

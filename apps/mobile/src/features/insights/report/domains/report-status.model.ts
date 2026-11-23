@@ -22,9 +22,9 @@ export function getNextReportAt(status: ReportStatus, type: ReportType): Instant
 export function getDaysUntilReport(
   status: ReportStatus,
   type: ReportType,
-  { now, timeZone }: { now: Instant; timeZone: string },
+  { now, timezone }: { now: Instant; timezone: string },
 ): number {
-  return calculateCalendarDaysLeft(getNextReportAt(status, type), now, timeZone);
+  return calculateCalendarDaysLeft(getNextReportAt(status, type), now, timezone);
 }
 
 export const ReportStatusPolicy = {

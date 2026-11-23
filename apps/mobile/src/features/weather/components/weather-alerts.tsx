@@ -41,7 +41,7 @@ export function WeatherAlerts() {
       alert={mostSevere}
       isInEffect={WeatherReportPolicy.isAlertInEffect(mostSevere, now)}
       otherCount={rest.length}
-      timeZone={weather.location.timezone}
+      timezone={weather.location.timezone}
       timeFormat={preference.timeFormat}
       now={now}
     />
@@ -52,7 +52,7 @@ interface WeatherAlertItemProps {
   alert: WeatherAlert;
   isInEffect: boolean;
   otherCount: number;
-  timeZone: string;
+  timezone: string;
   timeFormat: TimeFormat;
   now: Instant;
 }
@@ -61,7 +61,7 @@ WeatherAlerts.Item = function Item({
   alert,
   isInEffect,
   otherCount,
-  timeZone,
+  timezone,
   timeFormat,
   now,
 }: WeatherAlertItemProps) {
@@ -69,8 +69,8 @@ WeatherAlerts.Item = function Item({
   const openUrl = useOpenInAppBrowser();
   const { trackEvent } = useTrack();
   const fontScaleRatio = useFontScaleRatio();
-  const dateFormat = useLocationDateFormat(timeZone);
-  const localTime = useFormatLocalTime(timeZone, now);
+  const dateFormat = useLocationDateFormat(timezone);
+  const localTime = useFormatLocalTime(timezone, now);
   const time = (date: Instant) => localTime(formatClockTime(date, timeFormat, dateFormat));
   const period = isInEffect
     ? t('alerts.until', { time: time(alert.expiresAt) })

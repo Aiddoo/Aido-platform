@@ -109,7 +109,7 @@ export function useTimezoneChangeNotice({
 interface DeviceNow {
   dateKey: DateKey;
   time: string;
-  timeZone: string;
+  timezone: string;
 }
 
 interface RecordedTimezoneChange {
@@ -132,10 +132,10 @@ function useRecordedTimezoneChange({
     if (accountId == null || reportCount === 0) {
       return;
     }
-    const { currentLocalDate, currentLocalDateKey, currentTimeZone, currentUtcOffsetMinutes } =
+    const { currentLocalDate, currentLocalDateKey, currentTimezone, currentUtcOffsetMinutes } =
       readDeviceLocalDateState();
     const change = recordDeviceTimezone(storage, accountId, {
-      timeZone: currentTimeZone,
+      timeZone: currentTimezone,
       offsetMinutes: currentUtcOffsetMinutes,
     });
     if (change != null) {
@@ -144,8 +144,8 @@ function useRecordedTimezoneChange({
         change,
         now: {
           dateKey: currentLocalDateKey,
-          time: toHHmm(currentLocalDate, currentTimeZone),
-          timeZone: currentTimeZone,
+          time: toHHmm(currentLocalDate, currentTimezone),
+          timezone: currentTimezone,
         },
       });
     }

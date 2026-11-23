@@ -43,7 +43,7 @@ export function ReportStatusBanner() {
       {match(
         ReportStatusPolicy.getDaysUntilReport(status, reportType, {
           now,
-          timeZone: dateFormatContext.timeZone,
+          timezone: dateFormatContext.timezone,
         }),
       )
         .with(0, () => t('report.statusBanner.nextToday', { time }))

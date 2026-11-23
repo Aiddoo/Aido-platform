@@ -20,7 +20,7 @@ import {
   type DailyCompletionSummary,
 } from '../domains/daily-completion.model';
 import {
-  getScheduledTime,
+  findScheduledTime,
   type Todo,
   type TodoDetails,
   type TodoOverview,
@@ -136,7 +136,7 @@ export function toTodoListResult(dto: TodoListResponse): TodoListResult {
 
 /** 작성 시트·반복 작성·메모 옮기기가 모두 이 모양으로 보낸다 */
 export function toCreateTodoRequest(values: TodoFormValues): CreateTodoInput {
-  const scheduledTime = getScheduledTime(values);
+  const scheduledTime = findScheduledTime(values);
   return {
     title: values.title,
     categoryId: values.categoryId,
@@ -150,13 +150,13 @@ export function toCreateTodoRequest(values: TodoFormValues): CreateTodoInput {
 }
 
 /** 수정 폼의 처음 값. 시각은 서버 벽시계를, 칸을 비워 둔 옛 시간 행은 시간대로 읽은 시각을 쓴다 */
-export function toTodoFormValues(todo: Todo, timeZone: string): TodoFormValues {
+export function toTodoFormValues(todo: Todo, timezone: string): TodoFormValues {
   return {
     title: todo.title,
     categoryId: todo.category.id,
     startDate: todo.startDate,
     endDate: todo.endDate,
-    scheduledTime: TodoPolicy.getLocalTime(todo, timeZone),
+    scheduledTime: TodoPolicy.findLocalTime(todo, timezone),
     isAllDay: todo.isAllDay,
     visibility: todo.visibility,
     repeat: todo.repeat,

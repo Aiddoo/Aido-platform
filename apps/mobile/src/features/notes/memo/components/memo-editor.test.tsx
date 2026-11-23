@@ -620,7 +620,7 @@ describe('MemoEditor', () => {
       const planDraftKey = createMemoPlanDraftKey({
         userId: 'account-1',
         memoId: MEMO_ID,
-        timeZone: 'Asia/Seoul',
+        timezone: 'Asia/Seoul',
       });
       await waitFor(() => expect(di.draftService.restore(planDraftKey).status).toBe('restored'));
       expect(router.push).not.toHaveBeenCalled();

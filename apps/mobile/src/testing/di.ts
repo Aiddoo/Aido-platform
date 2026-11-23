@@ -133,7 +133,7 @@ export function createTestPorts({
   queryClient = createTestQueryClient(),
   platform = 'ios',
   deviceModel = null,
-  getTimeZone = () => 'Asia/Seoul',
+  getTimezone = () => 'Asia/Seoul',
   getLanguage = () => 'ko',
   inviteLinkOpenedStore = createInviteLinkOpenedStore(),
 }: TestPortOverrides = {}): AppContainerPorts {
@@ -182,7 +182,7 @@ export function createTestPorts({
     queryClient,
     platform,
     deviceModel,
-    getTimeZone,
+    getTimezone,
     getLanguage,
     inviteLinkOpenedStore,
   };

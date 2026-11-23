@@ -293,8 +293,8 @@ function findFirstDryHourStart(
   return dryHour?.startsAt ?? null;
 }
 
-function isLaterDay(endsAt: Instant | null, now: Instant, timeZone: string): boolean {
-  return endsAt != null && toDateKey(endsAt, timeZone) !== toDateKey(now, timeZone);
+function isLaterDay(endsAt: Instant | null, now: Instant, timezone: string): boolean {
+  return endsAt != null && toDateKey(endsAt, timezone) !== toDateKey(now, timezone);
 }
 
 function toWindow(

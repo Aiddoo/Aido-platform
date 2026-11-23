@@ -28,7 +28,7 @@ import { NotificationList } from './notification-list';
 import { NotificationListRow } from './notification-list-row';
 
 export function SentNudgeList() {
-  const { currentLocalDateKey, currentTimeZone } = useLocalDate();
+  const { currentLocalDateKey, currentTimezone } = useLocalDate();
   const {
     data: listItems,
     fetchNextPage,
@@ -42,7 +42,7 @@ export function SentNudgeList() {
       toDateSectionedListItems(
         selectPageItems(infinitePages),
         currentLocalDateKey,
-        currentTimeZone,
+        currentTimezone,
       ),
   });
   const queryClient = useQueryClient();

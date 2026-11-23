@@ -103,12 +103,12 @@ interface TodoEditFormProps {
 
 function TodoEditForm({ todo, isOpen, onOpenChange, onClose }: TodoEditFormProps) {
   const { t } = useTranslation('todo');
-  const { timeZone } = useDateFormatContext();
+  const { timezone } = useDateFormatContext();
   const openSheet = useOpenSheet();
   const reportUnexpectedError = useReportUnexpectedError('todo');
 
   // 다시 받은 할 일로 비교 기준을 맞춘다. 고치지 않은 칸은 새 값을 보이고 고치던 칸은 남아 고친 칸만 보낸다
-  const savedValues = toTodoFormValues(todo, timeZone);
+  const savedValues = toTodoFormValues(todo, timezone);
   const canChangeRepeat = TodoPolicy.canChangeRepeat(todo);
 
   const form = useForm({

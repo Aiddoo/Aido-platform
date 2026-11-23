@@ -10,10 +10,10 @@ import { isValidHHmm, type TimeOfDay, toTimeOfDay } from '../time-of-day';
 import { getZonedHour, toDateKey } from '../zoned';
 import { getFormatter, getPartValue, PARTS_LOCALE } from './intl-formatter';
 
-/** 표시 언어(locale)는 글자 모양만, 시간대(timeZone)는 날짜·시각 계산만 정한다. */
+/** 표시 언어(locale)는 글자 모양만, 시간대(timezone)는 날짜·시각 계산만 정한다. */
 export interface DateFormatContext {
   locale: IntlLocale;
-  timeZone: string;
+  timezone: string;
 }
 
 export type TimeFormat = (typeof TIME_FORMATS)[number];
@@ -57,7 +57,7 @@ function formatNumericDay(date: Date, context: DateFormatContext): string {
 }
 
 function toUtcContext(context: DateFormatContext): DateFormatContext {
-  return { ...context, timeZone: 'UTC' };
+  return { ...context, timezone: 'UTC' };
 }
 
 function toUtcMidnight(dateKey: DateKey): Date {
@@ -133,7 +133,7 @@ export function formatYearAwareDateLabel(
   if (!isValidDate(toFormatDate(value))) {
     return '';
   }
-  const kind = getYearAwareDateLabel([toDateKey(value, context.timeZone)], todayDateKey);
+  const kind = getYearAwareDateLabel([toDateKey(value, context.timezone)], todayDateKey);
   return formatDateLabel(value, kind, context);
 }
 
@@ -205,7 +205,7 @@ export function formatInstantHour(
   timeFormat: TimeFormat,
   context: DateFormatContext,
 ): string {
-  return formatHourLabel(getZonedHour(date, context.timeZone), timeFormat, context);
+  return formatHourLabel(getZonedHour(date, context.timezone), timeFormat, context);
 }
 
 const RELATIVE_DAY_LIMIT = 7;
@@ -238,8 +238,8 @@ export function formatRelativeTimeWith(
   if (elapsedMs < HOUR_MS) {
     return labels.minutesAgo(Math.floor(elapsedMs / MINUTE_MS));
   }
-  const todayDateKey = toDateKey(now, context.timeZone);
-  const elapsedDays = diffDateKeysInDays(toDateKey(date, context.timeZone), todayDateKey);
+  const todayDateKey = toDateKey(now, context.timezone);
+  const elapsedDays = diffDateKeysInDays(toDateKey(date, context.timezone), todayDateKey);
   // 25시간인 서머타임 해제일은 24시간이 지나도 같은 날일 수 있다
   if (elapsedMs < DAY_MS || elapsedDays < 1) {
     return labels.hoursAgo(Math.floor(elapsedMs / HOUR_MS));

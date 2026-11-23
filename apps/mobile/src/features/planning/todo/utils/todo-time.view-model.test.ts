@@ -3,8 +3,8 @@ import { type DateFormatContext } from '@src/shared/date/format/date-format';
 import { createParentTodo } from '../__tests__/sub-todo.fixtures';
 import { formatTodoTime } from './todo-time.view-model';
 
-const SEOUL: DateFormatContext = { locale: 'ko-KR', timeZone: 'Asia/Seoul' };
-const NEW_YORK: DateFormatContext = { locale: 'ko-KR', timeZone: 'America/New_York' };
+const SEOUL: DateFormatContext = { locale: 'ko-KR', timezone: 'Asia/Seoul' };
+const NEW_YORK: DateFormatContext = { locale: 'ko-KR', timezone: 'America/New_York' };
 
 describe('formatTodoTime', () => {
   it.each([SEOUL, NEW_YORK])('어느 기기 시간대든 고른 시각 그대로다 (%o)', (context) => {

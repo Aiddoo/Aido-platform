@@ -25,8 +25,8 @@ const NOW = new Date('2026-11-05T12:00:00.000Z');
 const NOTICE_TITLE = '할 일 알림 시간을 지금 시간대에 맞췄어요';
 
 // 앱은 오프셋을 기기 시간대 이름으로 계산한다. 프로세스 시간대(CI는 UTC)에 기대면 환경마다 결과가 갈린다
-function getOffsetMinutesAt(timeZone: string) {
-  return getZoneOffsetMs(NOW.getTime(), timeZone) / MINUTE_MS;
+function getOffsetMinutesAt(timezone: string) {
+  return getZoneOffsetMs(NOW.getTime(), timezone) / MINUTE_MS;
 }
 
 // 기기 시간대(America/New_York)와 14시간 떨어진 곳에서 왔다
@@ -40,10 +40,12 @@ const upcomingTimedTodo = createTodoDto({
   isAllDay: false,
 });
 
-function setDeviceTimeZone(timeZone: string) {
+function setDeviceTimezone(timezone: string) {
   jest
     .mocked(getCalendars)
-    .mockReturnValue([{ calendar: null, uses24hourClock: false, firstWeekday: 1, timeZone }]);
+    .mockReturnValue([
+      { calendar: null, uses24hourClock: false, firstWeekday: 1, timeZone: timezone },
+    ]);
 }
 
 interface ProbeProps {
@@ -92,11 +94,11 @@ describe('useTimezoneChangeNotice', () => {
   setupFakeTimersPerTest({ now: NOW });
 
   beforeEach(() => {
-    setDeviceTimeZone('America/New_York');
+    setDeviceTimezone('America/New_York');
   });
 
   afterEach(() => {
-    setDeviceTimeZone('UTC');
+    setDeviceTimezone('UTC');
   });
 
   it('처음 저장할 때는 안내하지 않고 요청도 하지 않는다', async () => {
@@ -171,7 +173,7 @@ describe('useTimezoneChangeNotice', () => {
 
   it('이름만 다른 같은 오프셋이면 안내하지 않고 할 일을 묻지 않는다', async () => {
     // Given
-    setDeviceTimeZone('Asia/Tokyo');
+    setDeviceTimezone('Asia/Tokyo');
     const { di, recordedTimezone, getTodos, analytics } = setup([upcomingTimedTodo]);
     recordedTimezone.save({
       timeZone: 'Asia/Seoul',

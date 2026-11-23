@@ -180,7 +180,7 @@ export interface AppContainerPorts {
   platform: 'ios' | 'android';
   /** 운영 알림에서 구독 이벤트의 기기를 보도록 결제 SDK에 붙인다 */
   deviceModel: string | null;
-  getTimeZone: () => string;
+  getTimezone: () => string;
   /** 요청 헤더(Accept-Language)와 같은 값 */
   getLanguage: () => string;
   /** 센 초대 링크 열림. 루트 "다시 시도"로 컨테이너를 새로 만들어도 같은 링크를 다시 세지 않게 프로세스에 하나다 */
@@ -238,7 +238,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     }),
     registrationRepository: createPushRegistrationRepository(ports.storage),
     logger,
-    getTimeZone: ports.getTimeZone,
+    getTimezone: ports.getTimezone,
     getLanguage: ports.getLanguage,
     sessionEpoch,
     now: getNowInstant,
@@ -258,7 +258,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
   const voiceNoteDraftRepository = createVoiceNoteDraftRepository({
     storage: draftStorage,
     logger,
-    getTimeZone: ports.getTimeZone,
+    getTimezone: ports.getTimezone,
   });
   const voiceRecordingRepository = createVoiceRecordingRepository(ports.localFileSystem, logger);
   const voiceNoteStorageService = new VoiceNoteStorageService({

@@ -22,24 +22,24 @@ export type PlanTodoEditFormValues = z.infer<typeof planTodoEditFormSchema>;
 
 // 저장 시간대가 없는 옛 ISO 초안은 지금 기기 시간대로 읽는다. 자정 반올림 추측은 날짜 선택기 값에서 더 자주 틀린다.
 // 초안 보관 기간(30일)이 지난 2026-12-11 이후 옮기는 코드와 함께 지운다(compatibility.md)
-export function restoreDraftDateKey(value: unknown, timeZone: string) {
+export function restoreDraftDateKey(value: unknown, timezone: string) {
   const instant = z.iso.datetime().safeParse(value);
-  return instant.success ? toDateKey(toInstant(instant.data), timeZone) : value;
+  return instant.success ? toDateKey(toInstant(instant.data), timezone) : value;
 }
 
-function restoreActionDates(action: unknown, timeZone: string) {
+function restoreActionDates(action: unknown, timezone: string) {
   if (!isPlainObject(action) || action.type !== 'create-todo') {
     return action;
   }
   return {
     ...action,
-    startDate: restoreDraftDateKey(action.startDate, timeZone),
-    endDate: restoreDraftDateKey(action.endDate, timeZone),
+    startDate: restoreDraftDateKey(action.startDate, timezone),
+    endDate: restoreDraftDateKey(action.endDate, timezone),
   };
 }
 
 // 읽지 못한 카드가 있어도 나머지는 살리고 못 살린 수를 omittedTodoCount에 더해 화면이 알리게 한다
-export function createPlanReviewDraftSchema(timeZone: string): z.ZodType<PlanReviewDraft> {
+export function createPlanReviewDraftSchema(timezone: string): z.ZodType<PlanReviewDraft> {
   return z
     .object({
       omittedTodoCount: z.int().nonnegative(),
@@ -47,7 +47,7 @@ export function createPlanReviewDraftSchema(timeZone: string): z.ZodType<PlanRev
     })
     .transform(({ omittedTodoCount, form }) => {
       const parsed = form.actions.map((action) =>
-        planActionFormSchema.safeParse(restoreActionDates(action, timeZone)),
+        planActionFormSchema.safeParse(restoreActionDates(action, timezone)),
       );
       const actions = parsed.flatMap((result) => (result.success ? [result.data] : []));
       return {

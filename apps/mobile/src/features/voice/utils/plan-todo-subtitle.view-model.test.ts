@@ -7,7 +7,7 @@ import { findPlanTodoSubtitle } from './plan-todo-subtitle.view-model';
 const CONTEXT = {
   todayKey: createDateKey('2026-11-07'),
   timeFormat: 'TWENTY_FOUR_HOUR',
-  dateFormatContext: { locale: 'ko-KR', timeZone: 'Asia/Seoul' },
+  dateFormatContext: { locale: 'ko-KR', timezone: 'Asia/Seoul' },
 } as const;
 
 const TODO = {

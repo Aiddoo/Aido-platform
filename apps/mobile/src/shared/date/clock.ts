@@ -9,7 +9,7 @@ import { getNextLocalMidnight, getZoneOffsetMs, toDateKey } from './zoned';
 export type LocalDateState = {
   currentLocalDate: Date;
   currentLocalDateKey: DateKey;
-  currentTimeZone: string;
+  currentTimezone: string;
   currentUtcOffsetMinutes: number;
 };
 
@@ -20,12 +20,12 @@ export function getNowInstant(): Instant {
   return fromEpochMs(Date.now());
 }
 
-export function createLocalDateState(now: Instant, timeZone: string): LocalDateState {
+export function createLocalDateState(now: Instant, timezone: string): LocalDateState {
   return {
     currentLocalDate: instantToDate(now),
-    currentLocalDateKey: toDateKey(now, timeZone),
-    currentTimeZone: timeZone,
-    currentUtcOffsetMinutes: getZoneOffsetMs(toEpochMs(now), timeZone) / MINUTE_MS,
+    currentLocalDateKey: toDateKey(now, timezone),
+    currentTimezone: timezone,
+    currentUtcOffsetMinutes: getZoneOffsetMs(toEpochMs(now), timezone) / MINUTE_MS,
   };
 }
 
@@ -37,14 +37,14 @@ export function readDeviceLocalDateState(now: Instant = getNowInstant()): LocalD
 export function isSameLocalDateState(previous: LocalDateState, next: LocalDateState): boolean {
   return (
     previous.currentLocalDateKey === next.currentLocalDateKey &&
-    previous.currentTimeZone === next.currentTimeZone &&
+    previous.currentTimezone === next.currentTimezone &&
     previous.currentUtcOffsetMinutes === next.currentUtcOffsetMinutes
   );
 }
 
-export function millisecondsUntilNextLocalMidnight(now: Instant, timeZone: string): number {
+export function millisecondsUntilNextLocalMidnight(now: Instant, timezone: string): number {
   return Math.max(
     MIDNIGHT_GRACE_MS,
-    toEpochMs(getNextLocalMidnight(now, timeZone)) - toEpochMs(now) + MIDNIGHT_GRACE_MS,
+    toEpochMs(getNextLocalMidnight(now, timezone)) - toEpochMs(now) + MIDNIGHT_GRACE_MS,
   );
 }

@@ -43,7 +43,7 @@ export function PushPermissionNotice({ className }: PushPermissionNoticeProps) {
     pushNoticeDismissedAtStoredValue,
     me.id,
   );
-  const { timeZone } = useDateFormatContext();
+  const { timezone } = useDateFormatContext();
   const now = useMinuteNow();
   const { trackEvent } = useTrack();
   const isVisible =
@@ -51,8 +51,8 @@ export function PushPermissionNotice({ className }: PushPermissionNoticeProps) {
       surface: 'feed',
       hasUpcomingTimedTodo: TodoPolicy.hasUpcomingTimedTodo(todayTodos.todos, {
         dateKey: todayKey,
-        time: toHHmm(now, timeZone),
-        timeZone,
+        time: toHHmm(now, timezone),
+        timezone,
       }),
       prompt: { noticeDismissedAt },
       now,

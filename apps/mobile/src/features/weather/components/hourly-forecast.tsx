@@ -193,7 +193,7 @@ HourlyForecast.Summary = function Summary({
   context: TimelineContext;
   now: Instant;
 }) {
-  const localTime = useFormatLocalTime(dateFormat.timeZone, now);
+  const localTime = useFormatLocalTime(dateFormat.timezone, now);
   const hourLabel = (date: Instant) => localTime(formatInstantHour(date, timeFormat, dateFormat));
 
   const sentence = match(summary)

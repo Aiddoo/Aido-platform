@@ -47,7 +47,7 @@ interface UseDatePickerOptions {
 }
 
 export function useDatePicker({ initialDateKey }: UseDatePickerOptions): DatePicker {
-  const { locale, timeZone } = useDateFormatContext();
+  const { locale, timezone } = useDateFormatContext();
   const [state, dispatch] = useReducer(datePickerReducer, {
     selectedDateKey: initialDateKey,
     displayMonthKey: getMonthStartDateKey(initialDateKey),
@@ -55,8 +55,8 @@ export function useDatePicker({ initialDateKey }: UseDatePickerOptions): DatePic
 
   // 달·언어가 같으면 칸 글자를 다시 만들지 않아 날짜를 눌러도 Intl을 부르지 않는다
   const weeks = useMemo(
-    () => getPickerMonthWeeks(state.displayMonthKey, { locale, timeZone }),
-    [state.displayMonthKey, locale, timeZone],
+    () => getPickerMonthWeeks(state.displayMonthKey, { locale, timezone }),
+    [state.displayMonthKey, locale, timezone],
   );
   return {
     selectedDateKey: state.selectedDateKey,

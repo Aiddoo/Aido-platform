@@ -28,7 +28,7 @@ interface PushDeviceReport {
   deviceId: string;
   permission: PushPermission;
   token: string | null;
-  timeZone: string;
+  timezone: string;
   language: string;
 }
 
@@ -43,7 +43,7 @@ interface PushRegistrationServicePorts {
   deviceIdService: Pick<DeviceIdService, 'get'>;
   registrationRepository: PushRegistrationRepository;
   logger: AppLogger;
-  getTimeZone: () => string;
+  getTimezone: () => string;
   /** 서버는 푸시 문구 언어를 요청 헤더에서 읽어 언어가 바뀌면 다시 보낸다 */
   getLanguage: () => string;
   sessionEpoch: Pick<SessionEpoch, 'current'>;
@@ -56,7 +56,7 @@ export class PushRegistrationService {
   readonly #deviceIdService: Pick<DeviceIdService, 'get'>;
   readonly #registrationRepository: PushRegistrationRepository;
   readonly #logger: AppLogger;
-  readonly #getTimeZone: () => string;
+  readonly #getTimezone: () => string;
   readonly #getLanguage: () => string;
   readonly #sessionEpoch: Pick<SessionEpoch, 'current'>;
   readonly #now: () => Instant;
@@ -77,7 +77,7 @@ export class PushRegistrationService {
     deviceIdService,
     registrationRepository,
     logger,
-    getTimeZone,
+    getTimezone,
     getLanguage,
     sessionEpoch,
     now,
@@ -87,7 +87,7 @@ export class PushRegistrationService {
     this.#deviceIdService = deviceIdService;
     this.#registrationRepository = registrationRepository;
     this.#logger = logger;
-    this.#getTimeZone = getTimeZone;
+    this.#getTimezone = getTimezone;
     this.#getLanguage = getLanguage;
     this.#sessionEpoch = sessionEpoch;
     this.#now = now;
@@ -142,10 +142,10 @@ export class PushRegistrationService {
         : createEmptyPushRegistration();
     const token = PushRegistrationPolicy.findReportToken(registration, { permission, issuedToken });
     const deviceId = await this.#deviceIdService.get();
-    const timeZone = this.#getTimeZone();
+    const timezone = this.#getTimezone();
     const language = this.#getLanguage();
 
-    const report: PushDeviceReport = { deviceId, permission, token, timeZone, language };
+    const report: PushDeviceReport = { deviceId, permission, token, timezone, language };
 
     const lastReported = this.#lastReported;
     if (!force && lastReported != null && isEqual(report, lastReported.report)) {

@@ -17,7 +17,7 @@ describe('toWidgetTimelineEntries', () => {
     // When
     const entries = toWidgetTimelineEntries(snapshot, {
       now,
-      timeZone: 'Asia/Seoul',
+      timezone: 'Asia/Seoul',
       appScheme: 'aido',
     });
 
@@ -38,7 +38,7 @@ describe('toWidgetTimelineEntries', () => {
     // When
     const entries = toWidgetTimelineEntries(snapshot, {
       now,
-      timeZone: 'Asia/Seoul',
+      timezone: 'Asia/Seoul',
       appScheme: 'aido',
     });
 
@@ -57,7 +57,7 @@ describe('toWidgetTimelineEntries', () => {
     // When
     const entries = toWidgetTimelineEntries(snapshot, {
       now,
-      timeZone: 'Asia/Seoul',
+      timezone: 'Asia/Seoul',
       appScheme: 'aido',
     });
 
@@ -76,7 +76,7 @@ describe('toWidgetTimelineEntries', () => {
     // When
     const entries = toWidgetTimelineEntries(snapshot, {
       now,
-      timeZone: 'Asia/Seoul',
+      timezone: 'Asia/Seoul',
       appScheme: 'aido',
     });
 

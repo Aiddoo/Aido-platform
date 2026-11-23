@@ -23,7 +23,7 @@ function createReceipt(
   me: CurrentUserResponse,
   { isStoreConfigured = true, now = NOW }: ReceiptOptions = {},
 ) {
-  return toSubscriptionReceiptViewModel(toUser(me), { isStoreConfigured, now, timeZone: SEOUL });
+  return toSubscriptionReceiptViewModel(toUser(me), { isStoreConfigured, now, timezone: SEOUL });
 }
 
 describe('toSubscriptionReceiptViewModel', () => {

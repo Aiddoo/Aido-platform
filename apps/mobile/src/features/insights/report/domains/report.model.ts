@@ -59,11 +59,11 @@ export const aiReportSchema = z.object({
 export type AiReport = z.infer<typeof aiReportSchema>;
 
 // 지난 기간 완료율이 없으면(첫 리포트) 비교할 값이 없다
-export function getCompletionRateChange(report: AiReport): number | null {
+export function findCompletionRateChange(report: AiReport): number | null {
   const { completionRate, prevCompletionRate } = report.stats;
   return prevCompletionRate != null ? completionRate - prevCompletionRate : null;
 }
 
 export const ReportPolicy = {
-  getCompletionRateChange,
+  findCompletionRateChange,
 } as const;

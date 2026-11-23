@@ -380,7 +380,7 @@ describe('useParseMemoMutationOptions', () => {
       } = await renderScreenHook(
         () => ({
           mutation: useMutation(useParseMemoMutationOptions({ memoId: 5 })),
-          timeZone: useDateFormatContext().timeZone,
+          timezone: useDateFormatContext().timezone,
         }),
         {
           withLocalDate: true,
@@ -403,7 +403,7 @@ describe('useParseMemoMutationOptions', () => {
         createMemoPlanDraftKey({
           userId: 'account-1',
           memoId: 5,
-          timeZone: parse.current.timeZone,
+          timezone: parse.current.timezone,
         }),
         { sourceUpdatedAt: Date.parse('2026-10-02T00:05:00.000Z') },
       );

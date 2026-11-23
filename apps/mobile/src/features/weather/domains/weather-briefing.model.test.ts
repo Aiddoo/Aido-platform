@@ -268,7 +268,7 @@ describe('findWeatherBriefing', () => {
 });
 
 describe('toBriefingTodo', () => {
-  const SEOUL = { date: createDateKey('2026-11-02'), timeZone: 'Asia/Seoul' };
+  const SEOUL = { date: createDateKey('2026-11-02'), timezone: 'Asia/Seoul' };
   const BASE = {
     id: 1,
     title: '산책',
@@ -314,7 +314,7 @@ describe('toBriefingTodo', () => {
     const seoul = WeatherBriefingPolicy.toBriefingTodo(input, SEOUL);
     const losAngeles = WeatherBriefingPolicy.toBriefingTodo(input, {
       date: createDateKey('2026-11-02'),
-      timeZone: 'America/Los_Angeles',
+      timezone: 'America/Los_Angeles',
     });
 
     // Then
@@ -331,7 +331,7 @@ describe('toBriefingTodo', () => {
     // When
     const todo = WeatherBriefingPolicy.toBriefingTodo(input, {
       date: createDateKey('2026-11-01'),
-      timeZone: 'America/Los_Angeles',
+      timezone: 'America/Los_Angeles',
     });
 
     // Then
@@ -350,7 +350,7 @@ describe('toBriefingTodo', () => {
     // When
     const todo = WeatherBriefingPolicy.toBriefingTodo(input, {
       date: createDateKey('2027-03-14'),
-      timeZone: 'America/New_York',
+      timezone: 'America/New_York',
     });
     const [forecastTodo] = WeatherBriefingPolicy.getForecastTodos(
       hourly,
@@ -516,7 +516,7 @@ describe('getBriefingState', () => {
     // When
     const state = getBriefingState(undefined, {
       now: NOW,
-      deviceTimeZone: 'Asia/Seoul',
+      deviceTimezone: 'Asia/Seoul',
     });
 
     // Then
@@ -530,7 +530,7 @@ describe('getBriefingState', () => {
     // When
     const state = getBriefingState(STATE_REPORT, {
       now: later,
-      deviceTimeZone: 'Asia/Seoul',
+      deviceTimezone: 'Asia/Seoul',
     });
 
     // Then
@@ -540,11 +540,11 @@ describe('getBriefingState', () => {
   it.each([
     ['Asia/Tokyo', 'visible'],
     ['America/Los_Angeles', 'hidden'],
-  ] as const)('기기 시간대가 %s이면 서울 리포트 브리핑은 %s이다', (deviceTimeZone, expected) => {
+  ] as const)('기기 시간대가 %s이면 서울 리포트 브리핑은 %s이다', (deviceTimezone, expected) => {
     // When
     const state = getBriefingState(STATE_REPORT, {
       now: NOW,
-      deviceTimeZone,
+      deviceTimezone,
     });
 
     // Then

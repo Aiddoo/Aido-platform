@@ -26,15 +26,15 @@ function getEpochMs(value: ZonedInput): number {
   return value instanceof Date ? value.getTime() : toEpochMs(value);
 }
 
-function formatParts(epochMs: number, timeZone: string, options: Intl.DateTimeFormatOptions) {
-  return getFormatter({ locale: PARTS_LOCALE, timeZone }, options).formatToParts(
+function formatParts(epochMs: number, timezone: string, options: Intl.DateTimeFormatOptions) {
+  return getFormatter({ locale: PARTS_LOCALE, timezone }, options).formatToParts(
     toNativeDate(epochMs),
   );
 }
 
 /** 그 순간에 그 시간대의 벽시계가 UTC보다 앞선 밀리초 */
-export function getZoneOffsetMs(epochMs: number, timeZone: string): number {
-  const parts = formatParts(epochMs, timeZone, WALL_CLOCK_OPTIONS);
+export function getZoneOffsetMs(epochMs: number, timezone: string): number {
+  const parts = formatParts(epochMs, timezone, WALL_CLOCK_OPTIONS);
   const read = (type: Intl.DateTimeFormatPartTypes) => Number(getPartValue(parts, type));
   const wallClockAsUtc = Date.UTC(
     read('year'),
@@ -53,77 +53,77 @@ export function getZoneOffsetMs(epochMs: number, timeZone: string): number {
 export function toZonedInstant({
   date,
   time,
-  timeZone,
+  timezone,
 }: {
   date: DateKey;
   time: string;
-  timeZone: string;
+  timezone: string;
 }): Instant {
   const wallClockAsUtc = Date.parse(`${date}T${time.slice(0, 5)}:00Z`);
-  const offsetBefore = getZoneOffsetMs(wallClockAsUtc - DAY_MS, timeZone);
-  const offsetAfter = getZoneOffsetMs(wallClockAsUtc + DAY_MS, timeZone);
+  const offsetBefore = getZoneOffsetMs(wallClockAsUtc - DAY_MS, timezone);
+  const offsetAfter = getZoneOffsetMs(wallClockAsUtc + DAY_MS, timezone);
   const matches = [wallClockAsUtc - offsetBefore, wallClockAsUtc - offsetAfter].filter(
-    (candidate) => candidate + getZoneOffsetMs(candidate, timeZone) === wallClockAsUtc,
+    (candidate) => candidate + getZoneOffsetMs(candidate, timezone) === wallClockAsUtc,
   );
   // 겹치면 둘 중 앞쪽, 하나면 그것, 없으면(건너뛴 시각) 전환 전 오프셋으로 읽어 전환 뒤로 민다
   return fromEpochMs(matches.length > 0 ? Math.min(...matches) : wallClockAsUtc - offsetBefore);
 }
 
 /** 잘못된 `Date`(NaN)는 날짜가 없어 던진다. `Instant`는 늘 유효하다 */
-export function toDateKey(value: ZonedInput, timeZone: string): DateKey {
-  const parts = formatParts(getEpochMs(value), timeZone, DATE_KEY_OPTIONS);
+export function toDateKey(value: ZonedInput, timezone: string): DateKey {
+  const parts = formatParts(getEpochMs(value), timezone, DATE_KEY_OPTIONS);
   const dateKey = `${getPartValue(parts, 'year')}-${getPartValue(parts, 'month')}-${getPartValue(parts, 'day')}`;
   if (!isDateKey(dateKey)) {
-    throw new RangeError(`${timeZone}에서 날짜 key로 읽을 수 없는 순간이다`);
+    throw new RangeError(`${timezone}에서 날짜 key로 읽을 수 없는 순간이다`);
   }
   return dateKey;
 }
 
-export function getZonedHour(value: ZonedInput, timeZone: string): number {
+export function getZonedHour(value: ZonedInput, timezone: string): number {
   const epochMs = getEpochMs(value);
   if (!Number.isFinite(epochMs)) {
     return Number.NaN;
   }
-  return Number(getPartValue(formatParts(epochMs, timeZone, ZONED_HOUR_OPTIONS), 'hour'));
+  return Number(getPartValue(formatParts(epochMs, timezone, ZONED_HOUR_OPTIONS), 'hour'));
 }
 
-export function toHHmm(value: ZonedInput, timeZone: string): string {
+export function toHHmm(value: ZonedInput, timezone: string): string {
   const epochMs = getEpochMs(value);
   if (!Number.isFinite(epochMs)) {
     return '';
   }
-  const parts = formatParts(epochMs, timeZone, ZONED_TIME_OPTIONS);
+  const parts = formatParts(epochMs, timezone, ZONED_TIME_OPTIONS);
   return `${getPartValue(parts, 'hour')}:${getPartValue(parts, 'minute')}`;
 }
 
 /** 같은 순간의 벽시계(날짜·시·분)가 두 시간대에서 같은지. 이름이 달라도 오프셋이 같으면(서울·도쿄) 같다. */
 export function hasSameWallClock(
   value: ZonedInput,
-  timeZone: string,
-  otherTimeZone: string,
+  timezone: string,
+  otherTimezone: string,
 ): boolean {
   const epochMs = getEpochMs(value);
   if (!Number.isFinite(epochMs)) {
     return true;
   }
   const read = (zone: string) =>
-    getFormatter({ locale: PARTS_LOCALE, timeZone: zone }, WALL_CLOCK_OPTIONS).format(
+    getFormatter({ locale: PARTS_LOCALE, timezone: zone }, WALL_CLOCK_OPTIONS).format(
       toNativeDate(epochMs),
     );
-  return read(timeZone) === read(otherTimeZone);
+  return read(timezone) === read(otherTimezone);
 }
 
 /** 끝나는 날까지 남은 달력 일수(시간대 기준). 이미 지난 날은 0일이다 */
-export function calculateCalendarDaysLeft(endsAt: Instant, now: Instant, timeZone: string): number {
-  return Math.max(diffDateKeysInDays(toDateKey(now, timeZone), toDateKey(endsAt, timeZone)), 0);
+export function calculateCalendarDaysLeft(endsAt: Instant, now: Instant, timezone: string): number {
+  return Math.max(diffDateKeysInDays(toDateKey(now, timezone), toDateKey(endsAt, timezone)), 0);
 }
 
 /** 그 날짜가 시작하는 순간. 자정이 없거나 두 번 오는 날도 그 날의 첫 순간이다 */
-export function getStartOfDateKey(dateKey: DateKey, timeZone: string): Instant {
-  return toZonedInstant({ date: dateKey, time: '00:00', timeZone });
+export function getStartOfDateKey(dateKey: DateKey, timezone: string): Instant {
+  return toZonedInstant({ date: dateKey, time: '00:00', timezone });
 }
 
 /** 자정이 없거나 두 번 오는 DST 날짜도 다음 날짜의 첫 순간이다 */
-export function getNextLocalMidnight(now: Instant, timeZone: string): Instant {
-  return getStartOfDateKey(addDaysToDateKey(toDateKey(now, timeZone), 1), timeZone);
+export function getNextLocalMidnight(now: Instant, timezone: string): Instant {
+  return getStartOfDateKey(addDaysToDateKey(toDateKey(now, timezone), 1), timezone);
 }

@@ -11,6 +11,6 @@ export function formatTodoTime(
   timeFormat: TimeFormat,
   context: DateFormatContext,
 ): string | null {
-  const localTime = TodoPolicy.getLocalTime(todo, context.timeZone);
+  const localTime = TodoPolicy.findLocalTime(todo, context.timezone);
   return localTime == null ? null : formatHHmmTime(localTime, timeFormat, context);
 }

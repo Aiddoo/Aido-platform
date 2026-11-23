@@ -1,13 +1,13 @@
 import { createAiReport } from '../__tests__/report.fixtures';
 import { ReportPolicy } from './report.model';
 
-describe('getCompletionRateChange', () => {
+describe('findCompletionRateChange', () => {
   it('지난 기간보다 오르거나 내린 만큼을 반환한다', () => {
     // Given
     const report = createAiReport();
 
     // When
-    const change = ReportPolicy.getCompletionRateChange(report);
+    const change = ReportPolicy.findCompletionRateChange(report);
 
     // Then
     // 60 - 75 = -15
@@ -28,7 +28,7 @@ describe('getCompletionRateChange', () => {
     });
 
     // When
-    const change = ReportPolicy.getCompletionRateChange(report);
+    const change = ReportPolicy.findCompletionRateChange(report);
 
     // Then
     expect(change).toBeNull();

@@ -87,11 +87,11 @@ export function DailyForecast() {
   const nowPosition = toTemperaturePosition(weather.daily, weather.current.temperature);
   const format = useMemo<RowFormat>(
     () => ({
-      dateFormat: { locale: dateFormat.locale, timeZone: dateFormat.timeZone },
+      dateFormat: { locale: dateFormat.locale, timezone: dateFormat.timezone },
       timeFormat: preference.timeFormat,
       columnScale: fontScaleRatio,
     }),
-    [dateFormat.locale, dateFormat.timeZone, preference.timeFormat, fontScaleRatio],
+    [dateFormat.locale, dateFormat.timezone, preference.timeFormat, fontScaleRatio],
   );
 
   if (weather.daily.length === 0) {

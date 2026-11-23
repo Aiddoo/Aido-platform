@@ -99,7 +99,7 @@ TodoActionsBottomSheet.ActionList = function ActionList({
         input: {
           startDate,
           endDate,
-          scheduledTime: TodoPolicy.getLocalTime(todo, dateFormatContext.timeZone),
+          scheduledTime: TodoPolicy.findLocalTime(todo, dateFormatContext.timezone),
           isAllDay: todo.isAllDay,
         },
       },

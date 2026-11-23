@@ -6,8 +6,8 @@ import type { PlanReviewDraft } from '../domains/voice-plan.model';
 import { createPlanReviewDraftSchema } from './plan-review-form.schema';
 
 // 고친 카드를 통째로 읽지 못하면 글자와 요약은 살리고 이 칸만 비워 화면이 알리게 한다
-function createStoredPlanDraftSchema(timeZone: string) {
-  const planReviewDraftSchema = createPlanReviewDraftSchema(timeZone);
+function createStoredPlanDraftSchema(timezone: string) {
+  const planReviewDraftSchema = createPlanReviewDraftSchema(timezone);
 
   return z.codec(z.unknown(), z.custom<PlanReviewDraft | null>(), {
     decode: (raw) => planReviewDraftSchema.safeParse(raw).data ?? null,
@@ -16,13 +16,13 @@ function createStoredPlanDraftSchema(timeZone: string) {
 }
 
 // 기기에 남긴 초안. 칸이 생기기 전에 저장한 초안도 읽도록 새 칸은 기본값을 둔다. 기본값은 2026-12-11 이후 지운다(compatibility.md)
-function buildVoiceNoteDraftSchema(timeZone: string) {
+function buildVoiceNoteDraftSchema(timezone: string) {
   const { shape } = voiceNoteSchema;
   return voiceNoteSchema.extend({
     sentences: z.array(
       shape.sentences.element.extend({ lowConfidenceWords: z.array(z.string()).default([]) }),
     ),
-    planDraft: createStoredPlanDraftSchema(timeZone),
+    planDraft: createStoredPlanDraftSchema(timezone),
     planApplyRequest: shape.planApplyRequest.default(null),
     appliedTodoCount: shape.appliedTodoCount.default(null),
     memoSaveRequest: shape.memoSaveRequest.default(null),

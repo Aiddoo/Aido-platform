@@ -52,7 +52,7 @@ describe('formatRepeatSummary', () => {
     const label = formatRepeatSummary(
       { frequency: 'MONTHLY', monthDay: 15, end: { type: 'COUNT', count: 10 } },
       createDateKey('2026-11-09'),
-      { locale: 'ko-KR', timeZone: 'Asia/Seoul' },
+      { locale: 'ko-KR', timezone: 'Asia/Seoul' },
     );
 
     // Then
@@ -67,7 +67,7 @@ describe('formatRepeatSummary', () => {
     const label = formatRepeatSummary(
       { frequency: 'DAILY', end: { type: 'UNTIL', date: createDateKey(untilDate) } },
       createDateKey('2026-11-09'),
-      { locale: 'ko-KR', timeZone: 'Asia/Seoul' },
+      { locale: 'ko-KR', timezone: 'Asia/Seoul' },
     );
 
     // Then

@@ -11,7 +11,7 @@ export function getReportHeadline(report: AiReport): ReportHeadline {
   if (!report.hasActivity) {
     return { kind: 'noActivity' };
   }
-  const change = ReportPolicy.getCompletionRateChange(report);
+  const change = ReportPolicy.findCompletionRateChange(report);
   const { completionRate } = report.stats;
   if (change == null) {
     return { kind: 'firstReport', completionRate };

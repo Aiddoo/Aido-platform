@@ -116,8 +116,8 @@ describe('날짜 key 기준 달력 주', () => {
     // 서울은 일요일 0시, LA는 토요일 오전인 같은 순간
     const instant = new Date('2026-10-31T15:00:00Z');
     const readWeeks = () =>
-      ['Asia/Seoul', 'America/Los_Angeles'].map((timeZone) => {
-        const todayDateKey = toDateKey(instant, timeZone);
+      ['Asia/Seoul', 'America/Los_Angeles'].map((timezone) => {
+        const todayDateKey = toDateKey(instant, timezone);
         return { todayDateKey, ...getCalendarWeek(todayDateKey) };
       });
     await i18n.changeLanguage(from);

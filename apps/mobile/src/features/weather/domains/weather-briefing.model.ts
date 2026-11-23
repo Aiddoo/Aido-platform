@@ -42,14 +42,14 @@ export interface BriefingTodo {
 /** 여러 날 할 일은 시작일이 어제여도 오늘 목록에 있어 보고 있는 날짜 + 벽시계 + 기기 시간대로 시각을 만든다 */
 function toBriefingTodo(
   todo: Todo,
-  { date, timeZone }: { date: DateKey; timeZone: string },
+  { date, timezone }: { date: DateKey; timezone: string },
 ): BriefingTodo {
-  const localTime = TodoPolicy.getLocalTime(todo, timeZone);
+  const localTime = TodoPolicy.findLocalTime(todo, timezone);
   return {
     id: todo.id,
     title: todo.title,
     localTime,
-    scheduledAt: localTime == null ? null : toZonedInstant({ date, time: localTime, timeZone }),
+    scheduledAt: localTime == null ? null : toZonedInstant({ date, time: localTime, timezone }),
     completed: todo.completed,
     subTodoProgress: SubTodoPolicy.hasSubTodos(todo.subTodos)
       ? SubTodoPolicy.getSubTodoStats(todo.subTodos)
@@ -244,14 +244,14 @@ type BriefingState = 'loading' | 'hidden' | 'visible';
 // 브리핑 카드는 예보의 브리핑 칸만 구독해 Policy 밖 함수로 두고 필요한 칸만 받는다
 export function getBriefingState(
   report: Pick<WeatherReport, 'location' | 'fetchedAt'> | undefined,
-  { now, deviceTimeZone }: { now: Instant; deviceTimeZone: string },
+  { now, deviceTimezone }: { now: Instant; deviceTimezone: string },
 ): BriefingState {
   if (report == null) {
     return 'loading';
   }
   if (
     isNowcastExpired(report, now) ||
-    !hasSameWallClock(now, report.location.timezone, deviceTimeZone)
+    !hasSameWallClock(now, report.location.timezone, deviceTimezone)
   ) {
     return 'hidden';
   }
