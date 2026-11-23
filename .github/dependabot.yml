@@ -57,6 +57,9 @@ updates:
       - dependency-name: '@nestjs-cls/transactional-adapter-drizzle-orm'
       # minor마다 pg-boss DB 스키마 버전이 바뀔 수 있다. Blue-Green 겹침과 옛 이미지 롤백 때 이전 버전이
       # 새 스키마에서 도는지 릴리스 노트로 확인한 뒤 catalog로 직접 올린다.
+      # 12.39.0은 스키마 46→47이고, migrate: false인 12.38.2는 시작할 때 버전이 정확히 같지 않으면
+      # "pg-boss database requires migrations"를 던진다. 이전 SHA 재배포가 job 큐를 시작하지 못하므로
+      # pg-boss 스키마 롤백 절차를 정한 뒤 올린다.
       - dependency-name: 'pg-boss'
       # ── Expo SDK 58 관리(bundledNativeModules 핀) — `npx expo install --fix`가 소유.
       #    수동/dependabot bump 시 expo-doctor·install --check 정합이 깨진다. SDK 업그레이드 때 일괄 갱신.
