@@ -14,11 +14,11 @@ disable-model-invocation: true
 
 ## 필요할 때 읽을 문서
 
-- [서버 진입점](../../../apps/api/AGENTS.md): 서버 규칙 체크리스트와 완료 기준.
+- [서버 진입점](../../../apps/api/AGENTS.md): 꼭 지키는 서버 규칙과 [완료](../../../apps/api/AGENTS.md#완료) 기준.
 - [구조](../../../apps/api/docs/architecture.md): Context·slice·공개 면·조립.
 - [이름 사전](../../../apps/api/docs/conventions.md)·[도메인 모델](../../../apps/api/docs/domain-modeling.md): 파일 이름과 모델 규약.
 - [HTTP 계약](../../../apps/api/docs/http-contracts.md): route·DTO·응답.
 - [영속성](../../../apps/api/docs/persistence.md): 저장소·잠금·schema.
 - [테스트](../../../apps/api/docs/testing.md): 변경 동작 검증.
 
-완료는 실제 사용 흐름과 관련 예외가 구현·검증되고, 출시 앱 계약과 의존성 경계가 유지되며, 바꾼 규칙이 문서와 일치하는 상태다. 실행한 검증 명령과 결과를 기록하고, 추가 변경이 없으면 통과한 전체 검사를 반복하지 않는다.
+끝낼 때는 [서버 완료 기준](../../../apps/api/AGENTS.md#완료)을 따른다.

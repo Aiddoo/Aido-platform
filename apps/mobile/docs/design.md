@@ -136,6 +136,7 @@ Reanimated의 `duration`·`delay`는 `ANIMATION` 상수(`shared/constants/animat
   - 버튼은 [프리미엄 보기]와 글자 버튼 [나중에]다. 무료 대안(친구 초대, 지금까지 정리하기)이 있으면 대안이 주 버튼이고 [프리미엄 보기]가 글자 버튼이다.
 - 같은 기능을 그날 [나중에]로 닫았으면 그다음부터는 시트 대신 "프리미엄 보기" 행동이 붙은 토스트로 알린다. 판단은 `getUpsellPresentation`(`billing/subscription/utils/upsell.view-model.ts`), 기록은 업셀 저장 값(`upsellDismissalStoredValue`)이다.
 - 기능 화면은 시트를 직접 그리지 않는다. 기능별 한도 다이얼로그나 인라인 한도 배너를 새로 만들지 않는다. 앱 실행·홈·할 일 완료 축하에서는 권하지 않는다.
+- **유료 기능 추가.** 기능 키와 한도는 서버가 `@aido/api/vocabulary`의 `PLAN_CATALOG`·`PLAN_FEATURE_KEYS`에 더한다([서버 유료 기능 추가](../../api/docs/entitlements.md#유료-기능-추가)). `PREMIUM_FEATURE_KEYS`는 출시 앱 `/me`가 아는 목록이라 더하지 않는다. 앱은 `EntitlementFeature` 표를 채운다: 게이트 제목 `GATE_TITLE_KEYS`(`use-entitlement-gate.tsx`), 결제 화면 잠금 문구(`paywall.tsx`), 아이콘(`premium-feature-icon.tsx`), 분석 이름(`subscription-analytics.ts`), 비교에 보이면 `plan-comparison-table.tsx`. 표가 `satisfies Record<EntitlementFeature, …>`라 빠뜨리면 typecheck가 실패한다. 게이트를 띄우는 자리는 `EntitlementGateSurface`(`subscription.events.ts`)에 더하고 문구는 ko·en에 함께 넣는다. 구독이 바뀌면 다시 읽을 쿼리는 `meta: { refreshOnPremiumChange: true }`다([data](./architecture/data.md#무효화)).
 - **AI 기능 표시.**
   - AI를 쓰는 실행 지점에는 `AiFilledIcon`을 두고, 횟수를 쓰면 남은 횟수를 함께 보인다. 문구는 `useQuotaStatus`(글자), `QuotaChip`(알약)에서 가져온다.
   - 쓸 때마다 묻는 다이얼로그는 두지 않는다. 처음 한 번 AI 동의를 받고, 횟수를 다 쓰면 위 게이트만 띄운다. 실패해서 차감되지 않으면 그 자리에서 알린다.

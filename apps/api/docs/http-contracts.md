@@ -40,7 +40,7 @@ Controller·DTO·Zod schema·응답 매퍼·페이지네이션·Swagger·요청 
 ## Schema와 DTO
 
 - `packages/api/src/contracts/<resource>/v<n>/`의 `*.request.ts`·`*.response.ts`·`*.common.ts`가 schema를 소유한다. 타입은 `z.infer`로만 얻는다.
-- 서버 DTO는 `http/v1/<noun>.dto.ts` 한 파일에 그 컨트롤러의 `X = schema.meta({ id: "XDto" })`와 타입을 모은다([memo.dto.ts](../src/modules/notes/memos/presentation/http/v1/memo.dto.ts)). Swagger component id는 바꾸지 않는다. 파일을 합칠 때 옛 파일을 같은 커밋에서 지운다(같은 id가 두 번 등록되면 `toJSONSchema`가 실패한다).
+- 서버 DTO는 `http/v1/<noun>.dto.ts` 한 파일에 그 컨트롤러의 `X = schema.meta({ id: "XDto" })`와 타입을 모은다([memo.dto.ts](../src/modules/notes/memos/presentation/http/v1/memo.dto.ts)). Swagger component id와 `@ApiDoc`의 `operationId`는 바꾸지 않는다(신고 접수 메일이 `#/{tag}/{operationId}` 링크를 쓴다). 파일을 합칠 때 옛 파일을 같은 커밋에서 지운다(같은 id가 두 번 등록되면 `toJSONSchema`가 실패한다).
 - Zod 4 문법: 조합은 `.pick`/`.omit`/`.extend`/`.partial`만(`.merge` 금지). 외부 원문은 `z.looseObject`, 내부 계약은 `z.object`, 닫힌 내부 payload는 `z.strictObject`. 오류 옵션은 `{ error }`다.
 - `.describe()`·`.meta()`는 공개 Swagger 계약이다. 새 필드는 단위·시점·nullable 의미를 적는다.
 - required/optional/nullable/default와 검증 메시지는 계약이다. 리팩터링 중 바꾸지 않는다. 기존 한국어 검증 문구도 유지한다(앱은 `SYS_0002`로 현지화).

@@ -1,6 +1,6 @@
 # 서버 문서 안내
 
-서버 작업에 필요한 문서를 고를 때 읽는다. 순서대로 읽을 필요는 없다. 새 기능은 [새 기능 추가](new-feature.md)부터 따른다. 서버 규칙 체크리스트는 [서버 AGENTS](../AGENTS.md), 공통 코드 규칙은 [루트 AGENTS](../../../AGENTS.md#공통-코드-규칙)에 있다.
+서버 작업에 필요한 문서를 고를 때 읽는다. 순서대로 읽을 필요는 없다. 새 기능은 [새 기능 추가](new-feature.md)부터 따른다. 꼭 지키는 서버 규칙은 [서버 AGENTS](../AGENTS.md), 공통 코드 규칙은 [루트 AGENTS](../../../AGENTS.md#공통-코드-규칙)에 있다.
 
 ## 설계·규칙
 
@@ -10,6 +10,7 @@
 | Context·slice·레이어 의존·공개 면·포트        | [아키텍처](architecture.md)         |
 | 파일·클래스·메서드·상수 이름, 공유 값 선언    | [이름 사전](conventions.md)         |
 | Entity·VO·팩토리·상태 전이·도메인 서비스·오류 | [도메인 모델](domain-modeling.md)   |
+| Context별 업무 용어·코드 이름·상태 전이 표    | [용어집](glossary.md)               |
 | Drizzle·raw SQL·시간 칼럼·풀·마이그레이션     | [영속성](persistence.md)            |
 | 큐·도메인 이벤트·크론·배포 중 내구성          | [작업과 이벤트](jobs-and-events.md) |
 | Controller·DTO·페이지네이션·Swagger·요청 헤더 | [HTTP 계약](http-contracts.md)      |
