@@ -776,17 +776,6 @@ describe("타임존 리마인더 — 매분 sweep·시각 변경 따라잡기·�
       ]);
     });
 
-    it("구버전 큐 페이로드에 대상 목록이 없으면 오발송하지 않는다", async () => {
-      // Given
-      const { queuedSocialDigest, strategies } = createHarness("2024-01-16T09:00:00Z");
-
-      // When
-      await queuedSocialDigest.execute({ timezone: "Asia/Seoul" });
-
-      // Then
-      expect(strategies.socialDigest.calls).toEqual([]);
-    });
-
     it("에러 발생 시 throw하지 않고 로깅", async () => {
       // Given
       const { queuedSocialDigest, strategies } = createHarness("2024-01-16T09:00:00Z");

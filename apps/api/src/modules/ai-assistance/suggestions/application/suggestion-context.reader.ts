@@ -31,7 +31,6 @@ export class SuggestionContextReader {
       this.#dependencies.activityReader.findRecentTodos(
         owner,
         suggestionAnalysisPeriod({ at: now, timeZone: timezone }),
-        timezone,
       ),
       this.#dependencies.activityReader.findRecentResponded(
         owner,

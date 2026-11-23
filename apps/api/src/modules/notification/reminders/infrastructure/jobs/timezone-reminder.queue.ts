@@ -25,15 +25,15 @@ const TIMEZONE_REMINDER_RETRY = {
 const ReminderHourChangedJobDataSchema = z.object({
   userId: z.string().min(1),
   timezone: z.string().min(1),
-  morningReminderHour: z.number().int().optional(),
-  morningReminderMinute: z.number().int().optional(),
-  eveningReminderHour: z.number().int().optional(),
-  eveningReminderMinute: z.number().int().optional(),
+  morningReminderHour: z.int().optional(),
+  morningReminderMinute: z.int().optional(),
+  eveningReminderHour: z.int().optional(),
+  eveningReminderMinute: z.int().optional(),
 });
 
 const SocialDigestJobDataSchema = z.object({
   timezone: z.string().min(1),
-  recipientUserIds: z.array(z.string().min(1)).optional(),
+  recipientUserIds: z.array(z.string().min(1)),
 });
 
 export const TimezoneReminderRuntimeJobSchema = z.discriminatedUnion("name", [

@@ -24,10 +24,6 @@ export const AiSuggestionJobName = {
   ANALYZE: "analyze-suggestion",
 } as const;
 
-const weatherGridSchema = z
-  .object({ gridX: z.number(), gridY: z.number(), lat: z.number(), lon: z.number() })
-  .nullable();
-
 // 옛 런타임이 남긴 { name, data } 모양을 그대로 받는다
 export const AiSuggestionRuntimeJobSchema = z.discriminatedUnion("name", [
   z.object({ name: z.literal(AiSuggestionJobName.DISPATCH), data: z.object({}) }),
@@ -36,11 +32,8 @@ export const AiSuggestionRuntimeJobSchema = z.discriminatedUnion("name", [
     data: z.object({
       userId: z.string().min(1),
       timezone: z.string().min(1),
-      // 1.15 worker가 필수로 읽어 새 job도 null로 싣고 새 worker는 읽지 않는다. 1.17.0에서 지운다(compatibility.md)
-      weatherGrid: weatherGridSchema.optional(),
-      // 1.16.0 전에 쌓인 job에는 없어 아침 배치·실행 시각의 현지 날짜로 읽는다. 1.17.0에서 대체를 지운다(compatibility.md)
-      localDate: z.iso.date().optional(),
-      trigger: z.enum(SUGGESTION_ANALYSIS_TRIGGERS).optional(),
+      localDate: z.iso.date(),
+      trigger: z.enum(SUGGESTION_ANALYSIS_TRIGGERS),
     }),
   }),
 ]);

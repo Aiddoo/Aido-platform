@@ -29,8 +29,8 @@ import type {
   ScheduledAiConsentReader,
 } from "../../../ai-generations/application/scheduled-ai-consent.reader.js";
 import { resolveSuggestedCategoryId } from "../../domain/category-resolver.domain-service.js";
-import {
-  type SuggestionAnalysisResult,
+import type {
+  SuggestionAnalysisResult,
   SuggestionAnalysisRun,
 } from "../../domain/suggestion-analysis-run.entity.js";
 import { hasEnoughRecentTodos } from "../../domain/suggestion-analysis-state.domain-service.js";
@@ -100,7 +100,7 @@ export class AnalyzeAndCreateSuggestionsUseCase {
   ): Promise<AnalyzeAndCreateSuggestionsResult | null> {
     const owner = UserId.reconstitute(command.userId);
     const run = await this.#start(owner, command, this.#dependencies.clock.now());
-    if (run.isFinishedOn(command.localDate)) {
+    if (run == null || run.isFinishedOn(command.localDate)) {
       return null;
     }
     const queueWait = run.queueWait;
@@ -119,18 +119,14 @@ export class AnalyzeAndCreateSuggestionsUseCase {
     owner: UserId,
     command: AnalyzeAndCreateSuggestionsCommand,
     now: Temporal.Instant,
-  ): Promise<SuggestionAnalysisRun> {
+  ): Promise<SuggestionAnalysisRun | null> {
     return this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([SuggestionLockKeys.analysisRun(owner)]);
-      // 1.16.0 배포 전에 쌓인 job은 실행 기록 없이 온다. 1.17.0에서 지운다(compatibility.md)
-      const run =
-        (await this.#dependencies.runs.findByUserId(owner)) ??
-        SuggestionAnalysisRun.create({
-          userId: owner,
-          localDate: command.localDate,
-          trigger: command.trigger,
-          now,
-        });
+      // 요청 UseCase가 enqueue와 같은 트랜잭션에서 실행 기록을 만든다. 없으면 탈퇴 등으로 지워진 것이다
+      const run = await this.#dependencies.runs.findByUserId(owner);
+      if (run == null) {
+        return null;
+      }
       if (run.start(command.localDate, now)) {
         await this.#dependencies.runs.save(run);
       }

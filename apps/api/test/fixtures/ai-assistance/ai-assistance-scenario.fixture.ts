@@ -17,9 +17,11 @@ import {
 } from "#api/modules/ai-assistance/suggestions/application/use-cases/analyze-and-create-suggestions.use-case";
 import { DispatchSuggestionAnalysesUseCase } from "#api/modules/ai-assistance/suggestions/application/use-cases/dispatch-suggestion-analyses.use-case";
 import { RequestSuggestionAnalysisUseCase } from "#api/modules/ai-assistance/suggestions/application/use-cases/request-suggestion-analysis.use-case";
+import { SuggestionAnalysisRun } from "#api/modules/ai-assistance/suggestions/domain/suggestion-analysis-run.entity";
 import type { SuggestionPick } from "#api/modules/ai-assistance/suggestions/domain/suggestion-candidates.domain-service";
 import { Suggestion } from "#api/modules/ai-assistance/suggestions/domain/suggestion.aggregate";
 import type { TodoSummaryForAnalysis } from "#api/modules/ai-assistance/suggestions/domain/suggestions.constants";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FakeAiGenerator } from "#test/doubles/ai-assistance/fake-ai.generator";
 import { InMemoryAiReportRepository } from "#test/doubles/ai-assistance/in-memory-ai-report.repository";
 import { InMemorySuggestionAnalysisRunRepository } from "#test/doubles/ai-assistance/in-memory-suggestion-analysis-run.repository";
@@ -211,6 +213,26 @@ export function createAnalyzeCommand(
     isFinalAttempt: false,
     ...overrides,
   };
+}
+
+// 요청 UseCase가 enqueue와 함께 만드는 실행 기록을 먼저 두고 분석한다. 이미 둔 기록은 그대로 쓴다
+export async function analyzeQueuedSuggestions(
+  fixture: ReturnType<typeof createAiAssistanceFixture>,
+  overrides: Partial<AnalyzeAndCreateSuggestionsCommand> = {},
+) {
+  const command = createAnalyzeCommand(fixture, overrides);
+  const owner = UserId.reconstitute(fixture.userId);
+  if ((await fixture.runs.findByUserId(owner)) == null) {
+    await fixture.runs.save(
+      SuggestionAnalysisRun.create({
+        userId: owner,
+        localDate: command.localDate,
+        trigger: command.trigger,
+        now: new DateClock().now(),
+      }),
+    );
+  }
+  return fixture.analyze.execute(command);
 }
 
 /** 모델이 고른 제안 후보. 기본 기록의 후보 a1은 "책 읽기 10분"(월요일 3회 완료)이다. */

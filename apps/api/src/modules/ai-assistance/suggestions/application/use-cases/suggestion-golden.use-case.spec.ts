@@ -3,7 +3,7 @@ import { assert } from "vitest";
 
 import {
   createAiAssistanceFixture,
-  createAnalyzeCommand,
+  analyzeQueuedSuggestions,
   withAiAssistanceTime,
 } from "#test/fixtures/ai-assistance/ai-assistance-scenario.fixture";
 import { readPromptBlock } from "#test/fixtures/ai-assistance/ai-prompt.fixture";
@@ -30,10 +30,7 @@ async function analyze(golden: SuggestionGoldenCase, picks: unknown) {
   fixture.repeatingTitleReader.titles = context.repeatingTitles;
   fixture.generator.setRawResponse({ picks });
   const result = await withAiAssistanceTime(
-    () =>
-      fixture.analyze.execute(
-        createAnalyzeCommand(fixture, { timezone: golden.timezone, locale: golden.locale }),
-      ),
+    () => analyzeQueuedSuggestions(fixture, { timezone: golden.timezone, locale: golden.locale }),
     new Date(golden.now),
   );
   assert.exists(result);

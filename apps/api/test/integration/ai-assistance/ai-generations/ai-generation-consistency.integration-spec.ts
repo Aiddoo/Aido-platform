@@ -21,6 +21,7 @@ import { DrizzleTodoStatsReader } from "#api/modules/ai-assistance/ai-reports/in
 import { SuggestionContextReader } from "#api/modules/ai-assistance/suggestions/application/suggestion-context.reader";
 import { AnalyzeAndCreateSuggestionsUseCase } from "#api/modules/ai-assistance/suggestions/application/use-cases/analyze-and-create-suggestions.use-case";
 import { HandleSuggestionActionUseCase } from "#api/modules/ai-assistance/suggestions/application/use-cases/handle-suggestion-action.use-case";
+import { SuggestionAnalysisRun } from "#api/modules/ai-assistance/suggestions/domain/suggestion-analysis-run.entity";
 import { suggestionAnalysisPeriod } from "#api/modules/ai-assistance/suggestions/domain/suggestion-dispatch-window.domain-service";
 import { SuggestionId } from "#api/modules/ai-assistance/suggestions/domain/suggestion-id.vo";
 import {
@@ -153,6 +154,14 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
         return row;
       }),
     );
+    await new DrizzleSuggestionAnalysisRunRepository(fixture.transactionHost).save(
+      SuggestionAnalysisRun.create({
+        userId: UserId.reconstitute(userId),
+        localDate: Temporal.PlainDate.from("2026-10-08"),
+        trigger: "SCHEDULED",
+        now: Temporal.Instant.from(CURRENT_TIME.toISOString()),
+      }),
+    );
   });
   afterEach(() => {
     vi.useRealTimers();
@@ -252,7 +261,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       provider.setRawResponse({ picks: [createSuggestionPick()] });
       await flow.suggestionProcessor.process({
         name: AiSuggestionJobName.ANALYZE,
-        data: { userId, timezone: "Asia/Seoul", weatherGrid: null },
+        data: { userId, timezone: "Asia/Seoul", localDate: "2026-10-08", trigger: "SCHEDULED" },
       });
     }
     return flow;
@@ -316,7 +325,6 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       const todos = await activity.findRecentTodos(
         UserId.reconstitute(userId),
         suggestionAnalysisPeriod({ at, timeZone: timezone }),
-        timezone,
       );
 
       // Then

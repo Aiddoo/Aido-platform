@@ -16,24 +16,9 @@ export interface JobRetryPolicy {
   readonly deleteAfterSeconds: number;
 }
 
-interface DeadLetterQueuePolicy {
+interface DeadLetterQueue {
   readonly queue: string;
   readonly jobPolicy: JobRetryPolicy;
-}
-
-// 문자열은 DLQ 자체 정책 없이 이름만 넘기던 옛 정의와 쌓인 작업을 위한 모양이다
-export type DeadLetterQueue = string | DeadLetterQueuePolicy;
-
-export function resolveDeadLetterQueue(
-  deadLetter: DeadLetterQueue | undefined,
-): string | undefined {
-  return typeof deadLetter === "string" ? deadLetter : deadLetter?.queue;
-}
-
-export function resolveDeadLetterJobPolicy(
-  deadLetter: DeadLetterQueue | undefined,
-): JobRetryPolicy | undefined {
-  return typeof deadLetter === "object" ? deadLetter.jobPolicy : undefined;
 }
 
 /** 큐 폴링 주기. 폴링은 일이 없어도 큐 저장소에 조회가 나가는 비용이라 "사람이 기다리고 있는가"로 정한다. */

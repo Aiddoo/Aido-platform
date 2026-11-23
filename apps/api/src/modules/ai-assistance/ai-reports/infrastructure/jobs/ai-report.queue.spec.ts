@@ -8,6 +8,7 @@ describe("AiReportRuntimeJobSchema", () => {
       data: {
         userId: "user-1",
         timezone: "Asia/Seoul",
+        locale: "ko",
         reportType: "WEEKLY",
       },
     });

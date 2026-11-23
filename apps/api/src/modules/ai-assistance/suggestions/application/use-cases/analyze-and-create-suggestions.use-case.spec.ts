@@ -7,6 +7,7 @@ import {
   AI_ASSISTANCE_TODAY,
   createAiAssistanceFixture,
   createAnalysisTodo,
+  analyzeQueuedSuggestions,
   createAnalyzeCommand,
   createSuggestionPick,
   pauseAiResponse,
@@ -25,7 +26,7 @@ type Fixture = ReturnType<typeof createAiAssistanceFixture>;
 const RUN_LOCK_KEY = SuggestionLockKeys.analysisRun(UserId.reconstitute("ai-fixture-user"));
 
 async function analyze(f: Fixture, overrides: Partial<AnalyzeAndCreateSuggestionsCommand> = {}) {
-  const result = await f.analyze.execute(createAnalyzeCommand(f, overrides));
+  const result = await analyzeQueuedSuggestions(f, overrides);
   assert.exists(result);
   return result;
 }
@@ -146,7 +147,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
       agreed.aiDataSharingConsent.decision = "AGREED";
       // When
       const skipped = await analyze(undecided);
-      await agreed.analyze.execute(createAnalyzeCommand(agreed));
+      await analyzeQueuedSuggestions(agreed);
       // Then
       expect(skipped.outcome).toBe("CONSENT_MISSING");
       expect(undecided.generator.getCallCount()).toBe(0);
@@ -201,7 +202,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
         const f = usePickResponse(createAiAssistanceFixture());
         seedPendingSuggestion(f);
         const gate = pauseAiResponse(f.generator);
-        const pending = f.analyze.execute(createAnalyzeCommand(f));
+        const pending = analyzeQueuedSuggestions(f);
         // When
         try {
           await gate.entered;
@@ -238,7 +239,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
       seedPendingSuggestion(f);
       f.generator.setRawResponse(raw);
       // When
-      const result = f.analyze.execute(createAnalyzeCommand(f));
+      const result = analyzeQueuedSuggestions(f);
       // Then
       await expect(result).rejects.toThrow();
       expect(f.repository.writes).toEqual([]);
@@ -288,7 +289,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
         const f = createAiAssistanceFixture();
         f.generator.setInvalidResponse(createAiGenerationError(kind));
         // When
-        const result = f.analyze.execute(createAnalyzeCommand(f));
+        const result = analyzeQueuedSuggestions(f);
         // Then
         await expect(result).rejects.toMatchObject({ kind });
         expect(f.repository.writes).toEqual([]);
@@ -317,7 +318,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
       // Given
       const f = usePickResponse(createAiAssistanceFixture(), []);
       // When
-      await f.analyze.execute(createAnalyzeCommand(f));
+      await analyzeQueuedSuggestions(f);
       // Then
       const prompt = f.generator.getLastPrompt() ?? "";
       expect(prompt).toContain('"candidates"');
@@ -365,8 +366,8 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
       ]);
       declined.activityReader.todos = timed.activityReader.todos;
       // When
-      await timed.analyze.execute(createAnalyzeCommand(timed));
-      await declined.analyze.execute(createAnalyzeCommand(declined));
+      await analyzeQueuedSuggestions(timed);
+      await analyzeQueuedSuggestions(declined);
       // Then
       expect(timed.repository.created[0]?.scheduledTime).toBe("19:30");
       expect(declined.repository.created[0]?.scheduledTime).toBeNull();
@@ -490,7 +491,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
         ),
       );
       // When
-      await f.analyze.execute(createAnalyzeCommand(f));
+      await analyzeQueuedSuggestions(f);
       // Then
       expect(f.repository.created.map((row) => row.confidence)).toEqual([0.55, 0.55]);
       expect(f.repository.created.every((row) => row.matchedTodos.length === 0)).toBe(true);
@@ -506,7 +507,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
       ];
       usePickResponse(f, [createSuggestionPick({ candidateId: "a2", useRecordedTime: true })]);
       // When
-      await f.analyze.execute(createAnalyzeCommand(f));
+      await analyzeQueuedSuggestions(f);
       // Then
       expect(f.repository.created[0]).toMatchObject({ title: "러닝", scheduledTime: null });
     }));
@@ -578,7 +579,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
       await seedQueuedRun(f);
       arrange(f);
       // When
-      const result = await f.analyze.execute(createAnalyzeCommand(f));
+      const result = await analyzeQueuedSuggestions(f);
       // Then
       expect(result).toEqual({ ...expected, trigger: "SCHEDULED" });
       expect(await findRun(f)).toMatchObject({
@@ -626,7 +627,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
       const f = usePickResponse(createAiAssistanceFixture());
       await seedQueuedRun(f);
       // When
-      await f.analyze.execute(createAnalyzeCommand(f));
+      await analyzeQueuedSuggestions(f);
       // Then
       expect(f.unitOfWork.runs).toBe(2);
       expect(f.access.locks).toEqual([true]);
@@ -647,7 +648,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
         await seedQueuedRun(f);
         f.generator.setInvalidResponse(createAiGenerationError("TIMEOUT"));
         // When
-        const result = f.analyze.execute(createAnalyzeCommand(f, { isFinalAttempt }));
+        const result = analyzeQueuedSuggestions(f, { isFinalAttempt });
         // Then
         await expect(result).rejects.toMatchObject({ kind: "TIMEOUT" });
         expect(await findRun(f)).toMatchObject(expected);
@@ -662,7 +663,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
       // Given
       const f = usePickResponse(createAiAssistanceFixture());
       // When
-      await f.analyze.execute(createAnalyzeCommand(f, { trigger }));
+      await analyzeQueuedSuggestions(f, { trigger });
       // Then
       expect(f.generator.getLastRequest()).toMatchObject({ task: "suggestion", taskClass });
     }),
@@ -684,7 +685,7 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
       );
       const before = await findRun(f);
       // When
-      const result = await f.analyze.execute(createAnalyzeCommand(f));
+      const result = await analyzeQueuedSuggestions(f);
       // Then
       expect(result).toBeNull();
       expect(f.generator.getCallCount()).toBe(0);
@@ -692,19 +693,15 @@ describe("AnalyzeAndCreateSuggestionsUseCase", () => {
       expect(await findRun(f)).toEqual(before);
     }));
 
-  it("실행 기록이 없는 1.16.0 전 작업도 기록을 만들어 시작하고 끝낸다", () =>
+  it("실행 기록이 없는 job은 AI를 부르지 않고 기록 없이 끝낸다", () =>
     withAiAssistanceTime(async () => {
       // Given
       const f = usePickResponse(createAiAssistanceFixture());
       // When
-      await f.analyze.execute(createAnalyzeCommand(f));
+      const result = await f.analyze.execute(createAnalyzeCommand(f));
       // Then
-      expect(await findRun(f)).toMatchObject({
-        status: "FINISHED",
-        localDate: AI_ASSISTANCE_TODAY,
-        trigger: "SCHEDULED",
-        outcome: "SUGGESTIONS_CREATED",
-        startedAt: expect.any(Temporal.Instant),
-      });
+      expect(result).toBeNull();
+      expect(f.generator.getCallCount()).toBe(0);
+      expect(await findRun(f)).toBeUndefined();
     }));
 });

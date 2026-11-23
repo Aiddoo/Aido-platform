@@ -78,7 +78,7 @@ await jobQueue.registerSchedules(DOCUMENT_QUEUE); // schedules를 key별로 upse
 
 - 큐 이름 `*.v1`과 스케줄 key. 바꾸면 쌓인 작업과 스케줄을 잃는다.
 - 결정적 job id의 key 문자열(`deterministicJobId(queue, key)`). 날짜가 들어간 key(`invite-qualify-reminder:<수락>:<발송 시각>`)도 바이트 단위로 같아야 `cancel()`이 지운다.
-- 옛 payload schema(`ai-report.queue.ts`의 선택 `locale`, `ai-suggestion.queue.ts`의 선택 `weatherGrid`·`localDate`·`trigger`). 배포 순간 쌓여 있는 작업과 배포가 겹치는 동안의 옛 worker를 위해 둔다. 지울 시점은 [호환](../../../docs/conventions/compatibility.md)에 적는다.
+- payload schema의 칸을 빼거나 필수로 바꾸는 변경은 배포가 겹치는 동안 양쪽을 본다. 새 producer가 낸 작업을 옛 worker가 받아야 하고(옛 schema가 필수로 읽는 칸은 계속 싣는다), 옛 producer가 낸 작업을 새 worker가 받아야 한다(새 schema가 필수로 읽는 칸을 옛 producer가 이미 싣는다). 쌓인 옛 작업은 대기 보관(`retentionSeconds`)이 지나면 없다. 남겨야 하는 칸은 [호환](../../../docs/conventions/compatibility.md)에 적는다.
 
 ## 크론 주기와 `missed` 정책
 

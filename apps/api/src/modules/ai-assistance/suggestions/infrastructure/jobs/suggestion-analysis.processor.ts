@@ -12,7 +12,6 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AiGenerationLogEvent } from "../../../ai-generations/application/ai-generations.log-events.js";
 import { UserLocalePreferenceReaderPort } from "../../../ai-generations/application/ports/user-locale-preference.reader.port.js";
 import { AnalyzeAndCreateSuggestionsUseCase } from "../../application/use-cases/analyze-and-create-suggestions.use-case.js";
-import { suggestionDispatchLocalDate } from "../../domain/suggestion-dispatch-window.domain-service.js";
 import {
   AI_SUGGESTION_ON_DEMAND_WORKER,
   AI_SUGGESTION_QUEUE,
@@ -88,12 +87,8 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
       userId,
       timezone,
       locale,
-      // 1.16.0 전에 쌓인 job의 대체다. 1.17.0에서 지운다(compatibility.md)
-      localDate:
-        data.localDate == null
-          ? suggestionDispatchLocalDate({ at: startedAt, timeZone: timezone })
-          : Temporal.PlainDate.from(data.localDate),
-      trigger: data.trigger ?? "SCHEDULED",
+      localDate: Temporal.PlainDate.from(data.localDate),
+      trigger: data.trigger,
       isFinalAttempt: isFinalSuggestionAttempt(attempt),
     });
     if (result == null) {
