@@ -1,4 +1,4 @@
-import { completionRate } from '@aido/api/vocabulary';
+import { completionRate, isAllCompleted } from '@aido/api/vocabulary';
 import { dateKeySchema, type DateKey } from '@src/shared/date/date-key';
 import { completionRateSchema } from '@src/shared/domains/completion-rate.model';
 import { orderBy, uniq } from 'es-toolkit';
@@ -37,7 +37,7 @@ function createDailyCompletionSummary(
   const { totalTodos, completedTodos } = summary;
   return {
     ...summary,
-    isComplete: totalTodos === completedTodos,
+    isComplete: isAllCompleted(completedTodos, totalTodos),
     completionRate: completionRate(completedTodos, totalTodos),
   };
 }

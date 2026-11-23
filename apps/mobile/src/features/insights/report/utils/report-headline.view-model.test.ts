@@ -2,7 +2,14 @@ import { createAiReport } from '../__tests__/report.fixtures';
 import { getReportHeadline } from './report-headline.view-model';
 
 function createStats(completionRate: number, prevCompletionRate: number | null) {
-  return { totalTodos: 10, completedTodos: 6, completionRate, prevCompletionRate, streakDays: 3 };
+  return {
+    totalTodos: 10,
+    completedTodos: 6,
+    completionRate,
+    prevCompletionRate,
+    streakDays: 3,
+    perfectDays: null,
+  };
 }
 
 describe('getReportHeadline', () => {

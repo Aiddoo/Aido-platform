@@ -2,7 +2,6 @@ import { AI_REPORT_CONTENT_SOURCES, AI_REPORT_TYPES } from '@aido/api/vocabulary
 import { dateKeySchema } from '@src/shared/date/date-key';
 import { instantSchema } from '@src/shared/date/instant';
 import { completionRateSchema } from '@src/shared/domains/completion-rate.model';
-import { maxBy, orderBy } from 'es-toolkit';
 import { z } from 'zod';
 
 export const reportTypeSchema = z.enum(AI_REPORT_TYPES);
@@ -14,6 +13,8 @@ const reportStatsSchema = z.object({
   completionRate: completionRateSchema,
   prevCompletionRate: completionRateSchema.nullable(),
   streakDays: z.int().nonnegative(),
+  // 1.16.0 전에 만든 리포트는 날마다의 기록이 없어 서버가 세지 못한다
+  perfectDays: z.int().nonnegative().nullable(),
 });
 
 const categoryBreakdownItemSchema = z.object({
@@ -45,6 +46,8 @@ export const aiReportSchema = z.object({
   stats: reportStatsSchema,
   categoryBreakdown: z.array(categoryBreakdownItemSchema),
   timePatterns: z.array(timePatternItemSchema),
+  // 끝낸 할 일이 없으면 null이다
+  peakHour: z.int().min(0).max(23).nullable(),
   // 1.16.0 전에 만든 리포트는 날마다의 기록이 없다
   dailyCompletions: z.array(dailyCompletionSchema).nullable(),
   aiSummary: z.string(),
@@ -61,25 +64,6 @@ export function getCompletionRateChange(report: AiReport): number | null {
   return prevCompletionRate != null ? completionRate - prevCompletionRate : null;
 }
 
-// 서버는 많이 끝낸 순으로 보내 같은 수끼리 순서가 정해지지 않으므로 시각 순으로 놓아 이른 시각을 고른다
-export function getPeakHour(report: AiReport): number | null {
-  const peak = maxBy(orderBy(report.timePatterns, ['hour'], ['asc']), (pattern) => pattern.count);
-  if (peak == null || peak.count === 0) {
-    return null;
-  }
-  return peak.hour;
-}
-
-export function getPerfectDayCount(report: AiReport): number {
-  if (report.dailyCompletions == null) {
-    return 0;
-  }
-  return report.dailyCompletions.filter((day) => 0 < day.total && day.completed === day.total)
-    .length;
-}
-
 export const ReportPolicy = {
   getCompletionRateChange,
-  getPeakHour,
-  getPerfectDayCount,
 } as const;

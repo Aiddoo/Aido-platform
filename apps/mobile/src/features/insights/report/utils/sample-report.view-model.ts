@@ -1,4 +1,4 @@
-import { completionRate } from '@aido/api/vocabulary';
+import { completionRate, isAllCompleted } from '@aido/api/vocabulary';
 import { DAYS_PER_WEEK } from '@src/shared/constants/time-units';
 import {
   addDaysToDateKey,
@@ -46,6 +46,7 @@ export function createSampleReport(
   const dailyCompletions = createSampleDays(type, periodsAgo, todayKey);
   const totalTodos = sumBy(dailyCompletions, (day) => day.total);
   const completedTodos = sumBy(dailyCompletions, (day) => day.completed);
+  const timePatterns = createSampleTimePatterns(completedTodos);
 
   return {
     // 예시는 서버에 없어 id로 찾지 않는다. 화면은 종류와 몇 기간 전인지로 연다
@@ -60,9 +61,12 @@ export function createSampleReport(
       completionRate: completionRate(completedTodos, totalTodos),
       prevCompletionRate: getSampleCompletionRate(type, periodsAgo + 1, todayKey),
       streakDays: takeRightWhile(dailyCompletions, (day) => day.completed === day.total).length,
+      perfectDays: dailyCompletions.filter((day) => isAllCompleted(day.completed, day.total))
+        .length,
     },
     categoryBreakdown: createSampleCategories(totalTodos, completedTodos, language),
-    timePatterns: createSampleTimePatterns(completedTodos),
+    timePatterns,
+    peakHour: findPeakHour(timePatterns),
     dailyCompletions,
     aiSummary: t(getSampleSummaryKey(type, periodsAgo), { lng: language }),
     aiTips: match(type)
@@ -179,6 +183,16 @@ function createSampleCategory(
 ): AiReport['categoryBreakdown'][number] {
   const completed = total - missed;
   return { name, color, total, completed, rate: completionRate(completed, total) };
+}
+
+/** 서버 findPeakHour와 같은 규칙이다. 가장 많이 끝낸 시각, 같으면 이른 시각이고 끝낸 할 일이 없으면 null이다 */
+function findPeakHour(timePatterns: AiReport['timePatterns']): number | null {
+  const [peak] = orderBy(
+    timePatterns.filter(({ count }) => count > 0),
+    ['count', 'hour'],
+    ['desc', 'asc'],
+  );
+  return peak?.hour ?? null;
 }
 
 function createSampleTimePatterns(completedTodos: number): AiReport['timePatterns'] {
