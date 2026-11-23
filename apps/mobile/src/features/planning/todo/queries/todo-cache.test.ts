@@ -153,7 +153,7 @@ describe('todo-cache', () => {
       queryClient.setQueryData(TODO_QUERY_KEYS.detail({ todoId: 7 }), {
         todo: multiDay,
         owner: { id: 'u', name: null, profileImage: null },
-        permissions: { canEdit: true, canComment: true, canNudge: false },
+        permissions: { canEdit: true, canComment: true, canNudge: false, canThank: false },
         metrics: { viewCount: 0, commentCount: 0 },
       });
 

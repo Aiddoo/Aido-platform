@@ -513,11 +513,14 @@ export function settleTodoEdit(
   const isCategoryChanged = before.category.id !== after.category.id;
   const isCalendarChanged =
     !isSameSpan(beforeSpan, afterSpan) || before.category.color !== after.category.color;
+  const isPermissionInputChanged =
+    before.completed !== after.completed || before.visibility !== after.visibility;
   const filters: InvalidateQueryFilters[] = [
     todoListsFilter(after.id, spans),
     ...spans.map(widgetSummariesFilter),
     ...(isCalendarChanged ? spans.map(completionRangesFilter) : []),
     ...getRepeatOverviewFilters(before),
+    ...(isPermissionInputChanged ? [getTodoDetailsFilter({ todoId: after.id })] : []),
   ];
   if (isCategoryChanged) {
     invalidateTodoCategories(queryClient);
@@ -529,6 +532,11 @@ export function settleTodoEdit(
 /** 완료를 풀거나 지우면 완료한 할 일·할 일·진행 중 반복이 남았는지 서버만 안다 */
 export function getTodoOverviewFilters(): InvalidateQueryFilters[] {
   return [{ queryKey: TODO_QUERY_KEYS.overview() }];
+}
+
+/** 상세 권한(감사 가능 canThank)은 서버가 완료·공개 범위로 정한다. 둘이 바뀌면 상세를 다시 받는다 */
+export function getTodoDetailsFilter({ todoId }: { todoId: number }): InvalidateQueryFilters {
+  return { queryKey: TODO_QUERY_KEYS.detail({ todoId }), exact: true };
 }
 
 /** 반복 회차를 고치면 규칙이 끝났는지(3개월 반복 안내)는 서버만 안다 */
@@ -578,7 +586,7 @@ export function removeTodoPage(queryClient: QueryClient, { todoId }: { todoId: n
 }
 
 export function invalidateTodoDetails(queryClient: QueryClient, { todoId }: { todoId: number }) {
-  return queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.detail({ todoId }) });
+  return queryClient.invalidateQueries(getTodoDetailsFilter({ todoId }));
 }
 
 /** 순서처럼 완료와 무관하게 홈 위젯 요약에 보이는 값이 바뀐 뒤 위젯 요약만 다시 불러온다. */

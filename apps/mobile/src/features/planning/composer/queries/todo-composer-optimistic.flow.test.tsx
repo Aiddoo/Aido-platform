@@ -733,7 +733,7 @@ describe('useTodoMutations', () => {
       queryClient.setQueryData<TodoDetails>(detailsKey, {
         todo,
         owner: { id: 'u', name: null, profileImage: null },
-        permissions: { canEdit: true, canComment: true, canNudge: false },
+        permissions: { canEdit: true, canComment: true, canNudge: false, canThank: false },
         metrics: { viewCount: 0, commentCount: 0 },
       });
       const pending = respondWith({ id: 1 });

@@ -227,6 +227,20 @@ describe('useToggleTodoMutationOptions', () => {
       ).toBe(false);
     });
 
+    it('체크가 확정되면 서버가 정하는 감사 가능 여부를 다시 받도록 상세를 무효화한다', async () => {
+      // Given
+      const { httpClient, givenList, givenCached, toggle, isInvalidated } = await renderToggle();
+      givenList(TODAY, [createParentTodo({ id: 42, startDate: TODAY, completed: false })]);
+      givenCached(TODO_QUERY_KEYS.detail({ todoId: 42 }));
+      httpClient.patch.mockResolvedValue(respondWithTodo(42));
+
+      // When
+      await toggle(42, true, TODAY);
+
+      // Then
+      expect(isInvalidated(TODO_QUERY_KEYS.detail({ todoId: 42 }))).toBe(true);
+    });
+
     it('체크가 실패하면 그 목록과 달력을 서버 값으로 다시 맞춘다', async () => {
       // Given
       const { httpClient, givenList, givenCached, toggle, isInvalidated } = await renderToggle();

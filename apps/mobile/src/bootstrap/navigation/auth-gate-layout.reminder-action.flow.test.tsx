@@ -65,7 +65,7 @@ function createDetailsDto({ completed }: { completed: boolean }) {
   return {
     todo: createTodoDto({ id: TODO_ID, title: '저녁 운동', completed }),
     owner: { id: 'clz7x5p8k0010qz0z8z8z8z8z', name: '나', profileImage: null },
-    permissions: { canEdit: true, canComment: true, canNudge: false },
+    permissions: { canEdit: true, canComment: true, canNudge: false, canThank: false },
     metrics: { viewCount: 0, commentCount: 0 },
   };
 }

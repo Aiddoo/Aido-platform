@@ -16,7 +16,6 @@ import { formatRepeatSummary } from '@src/features/planning/todo/utils/todo-repe
 import { formatTodoTime } from '@src/features/planning/todo/utils/todo-time.view-model';
 import { ThanksSummaryRow } from '@src/features/social/nudge/components/thanks-summary-row';
 import { TodoNudgeButton } from '@src/features/social/nudge/components/todo-nudge-button';
-import { TodoThanksPolicy } from '@src/features/social/nudge/domains/nudge-interaction.model';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -257,11 +256,8 @@ TodoDetailSummary.Thanks = function Thanks() {
   const [todoId] = useTodoId();
   const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
   const push = useSingleTap(router.push);
-  const canThank = TodoThanksPolicy.canThankTodo(detail.todo, {
-    canEditTodo: detail.permissions.canEdit,
-  });
 
-  if (!canThank) {
+  if (!detail.permissions.canThank) {
     return null;
   }
 

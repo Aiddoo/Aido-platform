@@ -32,6 +32,7 @@ import {
   findCachedTodo,
   getCachedTodoDateSpan,
   getTodoOverviewFilters,
+  getTodoDetailsFilter,
   invalidateTodoDependentQueries,
   removeTodoFromList,
   removeTodoPage,
@@ -134,8 +135,11 @@ export function useToggleTodoMutationOptions() {
         isCompletionAffected: true,
         hasFailed: error != null,
         ticket: context?.ticket,
-        // 완료를 풀면 완료한 할 일이 하나도 남지 않았는지 서버만 안다
-        extra: body.completed ? [] : getTodoOverviewFilters(),
+        extra: [
+          getTodoDetailsFilter({ todoId }),
+          // 완료를 풀면 완료한 할 일이 하나도 남지 않았는지 서버만 안다
+          ...(body.completed ? [] : getTodoOverviewFilters()),
+        ],
       });
     },
     meta: { errorFeedback: { feature: 'todo', fallbackKey: 'todo:toast.changeFailedRetry' } },

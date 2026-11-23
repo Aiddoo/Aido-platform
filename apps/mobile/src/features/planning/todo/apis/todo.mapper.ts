@@ -2,7 +2,6 @@ import {
   type DailyCompletionSummary as DailyCompletionSummaryDto,
   type DailyCompletionsRangeResponse,
 } from '@aido/api/contracts/daily-completion/v1';
-import { type TodoDetailsResponse } from '@aido/api/contracts/todo-comment/v1';
 import {
   type CreateTodoInput,
   type FriendTodoListResponse,
@@ -31,6 +30,7 @@ import {
   type TodoListResult,
 } from '../domains/todo.model';
 import type { TodoFormValues } from '../schemas/todo-form.schema';
+import type { TodoDetailsEnvelope } from '../schemas/todo-response.schema';
 import type { TodoSeriesEditOptions } from '../schemas/todo-series-request.schema';
 import { toSubTodo } from './sub-todo.mapper';
 import { toRepeat, toRepeatDto } from './todo-repeat.mapper';
@@ -104,7 +104,7 @@ export function toTodoSummary(dto: TodoSummaryResponse): TodoSummary {
   };
 }
 
-export function toTodoDetails(dto: TodoDetailsResponse): TodoDetails {
+export function toTodoDetails(dto: TodoDetailsEnvelope): TodoDetails {
   return {
     todo: toTodo(dto.todo),
     owner: {

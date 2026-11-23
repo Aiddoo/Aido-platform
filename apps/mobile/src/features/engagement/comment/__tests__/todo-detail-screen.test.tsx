@@ -86,11 +86,13 @@ const COMMENT_DTO = {
   editedAt: null,
 };
 
+const OWNER_PERMISSIONS = { canEdit: true, canComment: true, canNudge: false, canThank: false };
+
 function createDetailsDto(overrides: Record<string, unknown> = {}) {
   return {
     todo: createTodoDto({ id: TODO_ID, userId: USER_ID, title: '운동하기' }),
     owner: { id: USER_ID, name: '나', userTag: 'TEST2025', profileImage: null },
-    permissions: { canEdit: true, canComment: true, canNudge: false },
+    permissions: OWNER_PERMISSIONS,
     metrics: { viewCount: 3, commentCount: 1 },
     ...overrides,
   };
@@ -100,7 +102,7 @@ const THANKS_PREVIEW_PATH = `v1/nudges/todos/${TODO_ID}/thanks`;
 
 const FRIEND_DETAILS = {
   owner: { id: FRIEND_ID, name: '안드친구', userTag: 'FRIEND01', profileImage: null },
-  permissions: { canEdit: false, canComment: true, canNudge: false },
+  permissions: { canEdit: false, canComment: true, canNudge: false, canThank: false },
 };
 
 type HostNode = ReturnType<typeof screen.getByTestId>;
@@ -125,7 +127,8 @@ function findHostsWithProp(propName: string, value?: unknown) {
 }
 
 interface RenderTodoDetailOptions {
-  details?: Record<string, unknown>;
+  /** 상세 응답 덮어쓰기. 함수면 받을 때마다 지금 서버 상태로 답한다 */
+  details?: Record<string, unknown> | (() => Record<string, unknown>);
   threadItems?: unknown[];
   listItems?: ReturnType<typeof createTodoDto>[];
   analytics?: ReturnType<typeof createAnalyticsStub>;
@@ -155,7 +158,7 @@ async function renderTodoDetail({
       return ok(createCurrentUserDto({ userId: USER_ID }));
     }
     if (path === `v1/todos/${TODO_ID}/details`) {
-      return ok(createDetailsDto(details));
+      return ok(createDetailsDto(typeof details === 'function' ? details() : details));
     }
     if (path === 'v1/auth/preference') {
       return ok(createPreferenceDto());
@@ -834,27 +837,28 @@ describe('TodoDetailRoute', () => {
 
     it('완료를 저장하는 동안에는 고마움 현황을 묻지 않고, 저장이 끝나면 받아 콕 찔러준 친구 카드를 보인다', async () => {
       // Given
+      const server = { completed: false };
       const { httpClient } = await renderTodoDetail({
-        details: { todo: createTodoDto({ id: TODO_ID, visibility: 'PUBLIC' }) },
+        details: () => ({
+          todo: createTodoDto({ id: TODO_ID, visibility: 'PUBLIC', completed: server.completed }),
+          permissions: { ...OWNER_PERMISSIONS, canThank: server.completed },
+        }),
         thanksPreview: async () => ok(THANKS_PREVIEW_DTO),
       });
       const completion = createPendingResponse(
         ok({ message: '완료', todo: createTodoDto({ id: TODO_ID, completed: true }) }),
       );
-      httpClient.patch.mockReturnValue(completion.response);
+      httpClient.patch.mockImplementation(async () => {
+        server.completed = true;
+        return completion.response;
+      });
 
       // When
       await fireEvent.press(await screen.findByTestId('todo-detail-checkbox'));
-      await waitFor(() =>
-        expect(httpClient.get).toHaveBeenCalledWith(
-          'v1/nudges/interactions/availability',
-          expect.anything(),
-        ),
-      );
-      await act(async () => {});
 
       // Then
-      expect(screen.getByTestId('todo-detail-checkbox')).toBeChecked();
+      await waitFor(() => expect(screen.getByTestId('todo-detail-checkbox')).toBeChecked());
+      await waitFor(() => expect(httpClient.patch).toHaveBeenCalledTimes(1));
       expect(httpClient.get).not.toHaveBeenCalledWith(THANKS_PREVIEW_PATH, expect.anything());
 
       // When
@@ -869,7 +873,10 @@ describe('TodoDetailRoute', () => {
       // Given
       let attempts = 0;
       await renderTodoDetail({
-        details: { todo: createTodoDto({ id: TODO_ID, visibility: 'PUBLIC', completed: true }) },
+        details: {
+          todo: createTodoDto({ id: TODO_ID, visibility: 'PUBLIC', completed: true }),
+          permissions: { ...OWNER_PERMISSIONS, canThank: true },
+        },
         thanksPreview: async () => {
           attempts += 1;
           if (attempts === 1) {

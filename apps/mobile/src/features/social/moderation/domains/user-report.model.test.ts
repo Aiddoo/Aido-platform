@@ -90,7 +90,7 @@ describe('canReportTodo', () => {
   it('수정할 수 없는 남의 할 일은 신고할 수 있다', () => {
     // Given
     const details = createTodoDetails({
-      permissions: { canEdit: false, canComment: true, canNudge: true },
+      permissions: { canEdit: false, canComment: true, canNudge: true, canThank: false },
     });
 
     // When
@@ -103,7 +103,7 @@ describe('canReportTodo', () => {
   it('수정할 수 있는 내 할 일은 신고할 수 없다', () => {
     // Given
     const details = createTodoDetails({
-      permissions: { canEdit: true, canComment: true, canNudge: true },
+      permissions: { canEdit: true, canComment: true, canNudge: true, canThank: false },
     });
 
     // When

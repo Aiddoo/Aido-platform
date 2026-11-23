@@ -86,6 +86,7 @@ export const todoDetailsSchema = z.object({
     canEdit: z.boolean(),
     canComment: z.boolean(),
     canNudge: z.boolean(),
+    canThank: z.boolean(),
   }),
   metrics: z.object({
     viewCount: z.int().nonnegative(),

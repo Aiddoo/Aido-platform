@@ -1,5 +1,4 @@
 import { dailyCompletionsRangeResponseSchema } from '@aido/api/contracts/daily-completion/v1';
-import { todoDetailsResponseSchema } from '@aido/api/contracts/todo-comment/v1';
 import {
   todoListResponseSchema,
   todoSummaryResponseSchema,
@@ -27,6 +26,7 @@ import {
   todoSchema,
   todoSummarySchema,
 } from '../domains/todo.model';
+import { todoDetailsEnvelopeSchema } from '../schemas/todo-response.schema';
 import {
   toUpdateTodoRequest,
   toCreateTodoRequest,
@@ -193,10 +193,10 @@ describe('todo.mapper', () => {
 
     it('계약을 통과한 할 일 상세를 매핑하면 상세 모델 스키마를 통과한다', () => {
       // Given
-      const dto = todoDetailsResponseSchema.parse({
+      const dto = todoDetailsEnvelopeSchema.parse({
         todo: createTodoDto({ scheduledLocalTime: '18:00' }),
         owner: { id: 'clz7x5p8k0010qz0z8z8z8z8z', name: null, profileImage: null },
-        permissions: { canEdit: false, canComment: true, canNudge: true },
+        permissions: { canEdit: false, canComment: true, canNudge: true, canThank: true },
         metrics: { viewCount: 4, commentCount: 0 },
       });
 

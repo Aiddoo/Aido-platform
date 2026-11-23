@@ -1,8 +1,9 @@
 import type { Todo } from '@src/features/planning/todo/domains/todo.model';
+import { useGetTodoDetailsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { QueryErrorBoundary, type SheetRouteExit } from '@src/shared/ui';
+import { useQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';
 
-import { TodoThanksPolicy } from '../domains/nudge-interaction.model';
 import { ThanksSummaryRow } from './thanks-summary-row';
 
 interface TodoThanksSummaryProps {
@@ -12,7 +13,13 @@ interface TodoThanksSummaryProps {
 
 /** 내 완료한 공개 할 일에 받은 콕이 있으면 감사 요약 줄을 보여 준다. 할 일 동작 시트가 슬롯으로 받는다 */
 export function TodoThanksSummary({ todo, onClose }: TodoThanksSummaryProps) {
-  if (!TodoThanksPolicy.canThankTodo(todo, { canEditTodo: true })) {
+  // 감사할 수 있는지는 서버가 상세 권한(canThank)으로 정한다. 받기 전·실패하면 줄을 보이지 않는다
+  const { data: canThank = false } = useQuery({
+    ...useGetTodoDetailsQueryOptions({ todoId: todo.id }),
+    select: (detail) => detail.permissions.canThank,
+    throwOnError: false,
+  });
+  if (!canThank) {
     return null;
   }
 

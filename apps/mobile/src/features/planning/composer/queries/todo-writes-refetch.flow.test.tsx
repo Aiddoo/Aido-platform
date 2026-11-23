@@ -174,7 +174,7 @@ function createTodoServer() {
       return {
         todo: find(Number(details[1])),
         owner: { id: OWNER_ID, name: '나', profileImage: null },
-        permissions: { canEdit: true, canComment: true, canNudge: false },
+        permissions: { canEdit: true, canComment: true, canNudge: false, canThank: false },
         metrics: { viewCount: 0, commentCount: 0 },
       };
     }
@@ -461,7 +461,8 @@ describe('할 일 쓰기 뒤 다시 받는 조회', () => {
     {
       path: '할 일 체크',
       start: (w) => w.toggleTodo.mutateAsync({ todoId: 1, body: { completed: true }, date: DAY }),
-      expected: ['widget:day'],
+      // 서버가 완료로 감사 가능 여부(permissions.canThank)를 다시 정한다
+      expected: ['detail:1', 'widget:day'],
     },
     {
       path: '할 일 체크 풀기',

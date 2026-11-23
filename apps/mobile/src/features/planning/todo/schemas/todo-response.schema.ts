@@ -32,3 +32,4 @@ export const reorderTodoEnvelopeSchema = reorderTodoResponseSchema.extend({
 export const todoDetailsEnvelopeSchema = todoDetailsResponseSchema.extend({
   todo: lenientTodoSchema,
 });
+export type TodoDetailsEnvelope = z.output<typeof todoDetailsEnvelopeSchema>;
