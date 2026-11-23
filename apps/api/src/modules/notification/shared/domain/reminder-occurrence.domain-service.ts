@@ -1,5 +1,5 @@
 import { toIsoString } from "#api/shared/domain/time/instant";
-import type { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import type { Timezone } from "#api/shared/domain/time/timezone.vo";
 import { toZonedInstant } from "#api/shared/domain/time/zoned-time";
 
 import type { CreateNotificationData } from "./notification-draft.constants.js";
@@ -43,7 +43,7 @@ export function createSnoozedReminderMetadata(
  */
 export function todoReminderPushEndsAt(
   notification: Pick<CreateNotificationData, "metadata" | "reminderOccurrenceKey">,
-  timeZone: TimeZone,
+  timezone: Timezone,
 ): Temporal.Instant | null {
   const { metadata, reminderOccurrenceKey } = notification;
   // 다시 알림의 회차 칸은 누른 알림 id라 날짜로 읽지 않는다
@@ -58,13 +58,13 @@ export function todoReminderPushEndsAt(
   }
   return reminderOccurrenceKey == null
     ? null
-    : reminderOccurrenceStart(reminderOccurrenceKey, timeZone);
+    : reminderOccurrenceStart(reminderOccurrenceKey, timezone);
 }
 
 /** 회차가 시작하는 순간. 할 일 순간과 같이 날짜 + 벽시계 + 받는 사람 시간대로 만든다. 벽시계가 없으면 null이다 */
 function reminderOccurrenceStart(
   occurrenceKey: string,
-  timeZone: TimeZone,
+  timezone: Timezone,
 ): Temporal.Instant | null {
   const [date, time] = occurrenceKey.split("T");
   if (date == null || time == null) {
@@ -75,7 +75,7 @@ function reminderOccurrenceStart(
     return toZonedInstant({
       date: Temporal.PlainDate.from(date),
       time: Temporal.PlainTime.from(time),
-      timeZone,
+      timezone,
     });
   } catch {
     return null;

@@ -26,7 +26,7 @@ import {
 } from "#api/platform/database/schema/index";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { localDateIn } from "#api/shared/domain/time/time-zone-name";
+import { localDateIn } from "#api/shared/domain/time/timezone-name";
 
 import { userTagCollided, userTagGenerationFailed } from "../../application/users.errors.js";
 import type { User } from "../../domain/user.aggregate.js";

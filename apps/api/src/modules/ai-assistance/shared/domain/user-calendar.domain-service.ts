@@ -1,7 +1,7 @@
 import { DAYS_OF_WEEK, type DayOfWeek } from "@aido/api/vocabulary";
 
 import { instantFromDate } from "#api/shared/domain/time/instant";
-import { localDateIn, resolveTimezone } from "#api/shared/domain/time/time-zone-name";
+import { localDateIn, resolveTimezone } from "#api/shared/domain/time/timezone-name";
 
 // 알 수 없는 저장 시간대는 AI 작업을 멈추지 않고 UTC로 계산한다(resolveTimezone)
 export function localDateTimeAt(

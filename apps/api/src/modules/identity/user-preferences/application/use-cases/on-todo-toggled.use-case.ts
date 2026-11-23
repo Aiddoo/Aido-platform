@@ -4,7 +4,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { localDateIn } from "#api/shared/domain/time/time-zone-name";
+import { localDateIn } from "#api/shared/domain/time/timezone-name";
 
 import type { UserPreference } from "../../domain/user-preference.aggregate.js";
 import type { StreakMilestoneNotifierPort } from "../ports/streak-milestone-notifier.port.js";

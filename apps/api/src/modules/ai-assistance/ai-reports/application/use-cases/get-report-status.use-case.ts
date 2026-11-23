@@ -5,8 +5,8 @@ import {
 import { NOTIFICATION_SCHEDULE } from "#api/modules/notification/reminders/notification-reminders.public";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { resolveTimezone } from "#api/shared/domain/time/time-zone-name";
-import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import { resolveTimezone } from "#api/shared/domain/time/timezone-name";
+import { Timezone } from "#api/shared/domain/time/timezone.vo";
 import { toZonedInstant } from "#api/shared/domain/time/zoned-time";
 
 import type { UserLocalePreferenceReaderPort } from "../../../ai-generations/application/ports/user-locale-preference.reader.port.js";
@@ -48,11 +48,11 @@ export class GetReportStatusUseCase {
 
     const zone = timezone ?? (await this.#dependencies.localePreferenceReader.read(owner)).timezone;
     const now = this.#dependencies.clock.now();
-    const timeZone = TimeZone.reconstitute(resolveTimezone(zone));
+    const reportTimezone = Timezone.reconstitute(resolveTimezone(zone));
     // 달력 날짜를 먼저 정하고 각 경계를 다시 시간대에 적용해 DST offset을 반영한다.
     const localToday = localDateAt(now, zone);
     const readyAt = (date: Temporal.PlainDate, time: Temporal.PlainTime) =>
-      toZonedInstant({ date, time, timeZone });
+      toZonedInstant({ date, time, timezone: reportTimezone });
     const isBeforeReady = (date: Temporal.PlainDate, time: Temporal.PlainTime) =>
       Temporal.Instant.compare(now, readyAt(date, time)) < 0;
 

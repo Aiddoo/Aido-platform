@@ -1,4 +1,4 @@
-import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import { Timezone } from "#api/shared/domain/time/timezone.vo";
 
 import {
   createSnoozedReminderMetadata,
@@ -6,7 +6,7 @@ import {
   todoReminderPushEndsAt,
 } from "./reminder-occurrence.domain-service.js";
 
-const SEOUL = TimeZone.reconstitute("Asia/Seoul");
+const SEOUL = Timezone.reconstitute("Asia/Seoul");
 const REMIND_AT = Temporal.Instant.from("2026-11-18T01:10:00Z");
 
 describe("todoReminderPushEndsAt — 할 일 리마인더 푸시가 쓸모를 잃는 순간", () => {
@@ -31,7 +31,7 @@ describe("todoReminderPushEndsAt — 할 일 리마인더 푸시가 쓸모를 �
   it("시작 시각을 남긴 회차 알림은 받는 사람 시간대가 바뀌어도 남긴 시작에서 끝난다", () => {
     // Given
     const startsAt = Temporal.Instant.from("2026-11-18T01:00:00Z");
-    const movedEast = TimeZone.reconstitute("Pacific/Auckland");
+    const movedEast = Timezone.reconstitute("Pacific/Auckland");
 
     // When
     const result = todoReminderPushEndsAt(

@@ -9,8 +9,8 @@ import { resolvePlanSchedule, resolveTodoSchedule } from "./todo-schedule.domain
 
 // 같은 순간을 두 시간대로 해석한다: 서울 2026-10-28(수) 10:00, LA 2026-10-27(화) 18:00
 const NOW = new Date("2026-10-28T01:00:00Z");
-const SEOUL = { now: NOW, timeZone: "Asia/Seoul" };
-const LOS_ANGELES = { now: NOW, timeZone: "America/Los_Angeles" };
+const SEOUL = { now: NOW, timezone: "Asia/Seoul" };
+const LOS_ANGELES = { now: NOW, timezone: "America/Los_Angeles" };
 
 const none = { pattern: "NONE" } as const;
 const draft = (overrides: ScheduleDraftInput = {}): ScheduleDraft =>
@@ -216,7 +216,7 @@ describe("resolveTodoSchedule — en golden (LA 화 18:00)", () => {
     // When
     const seoul = resolveTodoSchedule(tomorrow, SEOUL);
     const losAngeles = resolveTodoSchedule(tomorrow, LOS_ANGELES);
-    const utc = resolveTodoSchedule(tomorrow, { now: NOW, timeZone: "UTC" });
+    const utc = resolveTodoSchedule(tomorrow, { now: NOW, timezone: "UTC" });
     // Then
     expect(seoul.startDate).toBe("2026-10-29");
     expect(losAngeles.startDate).toBe("2026-10-28");
@@ -273,7 +273,7 @@ describe("resolveTodoSchedule — 결정 규칙과 경계", () => {
   it("오전/오후 없는 시각이 오늘 둘 다 지났으면 내일의 일반적 시각이다", () => {
     // Given
     // 서울 23:30
-    const lateNight = { now: new Date("2026-10-28T14:30:00Z"), timeZone: "Asia/Seoul" };
+    const lateNight = { now: new Date("2026-10-28T14:30:00Z"), timezone: "Asia/Seoul" };
     // When
     const result = resolveTodoSchedule(draft({ time: { hour: 9, meridiem: "NONE" } }), lateNight);
     // Then
@@ -283,7 +283,7 @@ describe("resolveTodoSchedule — 결정 규칙과 경계", () => {
   it("자정 직전의 상대 시각은 날짜를 넘긴다", () => {
     // Given
     // 서울 23:30에 "1시간 후"
-    const lateNight = { now: new Date("2026-10-28T14:30:00Z"), timeZone: "Asia/Seoul" };
+    const lateNight = { now: new Date("2026-10-28T14:30:00Z"), timezone: "Asia/Seoul" };
     // When
     const result = resolveTodoSchedule(draft({ time: { relativeMinutes: 60 } }), lateNight);
     // Then
@@ -293,7 +293,7 @@ describe("resolveTodoSchedule — 결정 규칙과 경계", () => {
   it("LA 서머타임 종료일에도 달력 날짜로 내일을 계산한다", () => {
     // Given
     // 2026-11-01 01:30 PST 이후(두 번째 01:30)
-    const dstEnd = { now: new Date("2026-11-01T09:30:00Z"), timeZone: "America/Los_Angeles" };
+    const dstEnd = { now: new Date("2026-11-01T09:30:00Z"), timezone: "America/Los_Angeles" };
     // When
     const result = resolveTodoSchedule(draft({ date: { kind: "OFFSET_DAYS", amount: 1 } }), dstEnd);
     // Then
@@ -303,7 +303,7 @@ describe("resolveTodoSchedule — 결정 규칙과 경계", () => {
   it("윤일 2028-02-29를 그대로 해석하고 다음 날은 3월 1일이다", () => {
     // Given
     // 서울 2028-02-28 12:00
-    const leap = { now: new Date("2028-02-28T03:00:00Z"), timeZone: "Asia/Seoul" };
+    const leap = { now: new Date("2028-02-28T03:00:00Z"), timezone: "Asia/Seoul" };
     // When
     const leapDay = resolveTodoSchedule(
       draft({ date: { kind: "CALENDAR_DATE", month: 2, day: 29 } }),
@@ -327,7 +327,7 @@ describe("resolveTodoSchedule — 결정 규칙과 경계", () => {
   it("말일 다음 달 오프셋은 그 달 말일로 맞추고, 월만 생략한 31일은 다음 31일이다", () => {
     // Given
     // 서울 2027-01-31
-    const monthEnd = { now: new Date("2027-01-31T03:00:00Z"), timeZone: "Asia/Seoul" };
+    const monthEnd = { now: new Date("2027-01-31T03:00:00Z"), timezone: "Asia/Seoul" };
     // When
     const nextMonth = resolveTodoSchedule(
       draft({ date: { kind: "OFFSET_MONTHS", amount: 1 } }),
@@ -345,7 +345,7 @@ describe("resolveTodoSchedule — 결정 규칙과 경계", () => {
   it("연말에 다음 달 초와 내년 초를 새해로 계산한다", () => {
     // Given
     // 서울 2026-12-31
-    const yearEnd = { now: new Date("2026-12-31T03:00:00Z"), timeZone: "Asia/Seoul" };
+    const yearEnd = { now: new Date("2026-12-31T03:00:00Z"), timezone: "Asia/Seoul" };
     // When
     const nextMonthStart = resolveTodoSchedule(
       draft({ date: { kind: "MONTH_START", amount: 1 } }),
@@ -413,8 +413,8 @@ describe("resolveTodoSchedule — 결정 규칙과 경계", () => {
 
 describe("resolveTodoSchedule — 지난 날짜를 만들지 않는다", () => {
   // 서울 2026-11-07(토) 10:00, 2026-11-08(일) 10:00
-  const SATURDAY = { now: new Date("2026-11-07T01:00:00Z"), timeZone: "Asia/Seoul" };
-  const SUNDAY = { now: new Date("2026-11-08T01:00:00Z"), timeZone: "Asia/Seoul" };
+  const SATURDAY = { now: new Date("2026-11-07T01:00:00Z"), timezone: "Asia/Seoul" };
+  const SUNDAY = { now: new Date("2026-11-08T01:00:00Z"), timezone: "Asia/Seoul" };
 
   it.each([
     { name: "토요일의 금요일", clock: SATURDAY, weekday: "FRI", expected: "2026-11-13" },
@@ -453,7 +453,7 @@ describe("resolveTodoSchedule — 지난 날짜를 만들지 않는다", () => {
     "달의 첫날인 일요일에 $weekday 는 $upcoming, 다음 주 $weekday 는 $nextWeek 이다",
     ({ weekday, upcoming, nextWeek }) => {
       // Given
-      const firstSunday = { now: new Date("2026-11-01T01:00:00Z"), timeZone: "Asia/Seoul" };
+      const firstSunday = { now: new Date("2026-11-01T01:00:00Z"), timezone: "Asia/Seoul" };
       const said = [null, 0, 1].map((weekOffset) =>
         draft({ date: { kind: "WEEKDAY", weekday, weekOffset } }),
       );
@@ -611,7 +611,7 @@ describe("resolveTodoSchedule — 지난 날짜를 만들지 않는다", () => {
 describe("resolveTodoSchedule — 이번 달 초·올해 초", () => {
   const seoulAt = (date: string) => ({
     now: new Date(`${date}T01:00:00Z`),
-    timeZone: "Asia/Seoul",
+    timezone: "Asia/Seoul",
   });
   const monthStart = draft({ date: { kind: "MONTH_START", amount: 0 } });
   const yearStart = draft({ date: { kind: "YEAR_START", amount: 0 } });
@@ -675,7 +675,7 @@ describe("resolveTodoSchedule — 이번 달 초·올해 초", () => {
     const zones = ["Asia/Seoul", "America/Los_Angeles"];
     // When
     const dates = zones.map(
-      (timeZone) => resolveTodoSchedule(input, { now: new Date(now), timeZone }).startDate,
+      (timezone) => resolveTodoSchedule(input, { now: new Date(now), timezone }).startDate,
     );
     // Then
     expect(dates).toEqual([seoul, la]);
@@ -944,7 +944,7 @@ describe("resolveTodoSchedule — 반복 규칙 (서울 수 2026-10-28)", () => 
 
   it("일요일에 말한 이번 주말은 기간을 말한 것이라 그날로 끝낸다", () => {
     // Given
-    const sunday = { now: new Date("2026-11-01T01:00:00Z"), timeZone: "Asia/Seoul" };
+    const sunday = { now: new Date("2026-11-01T01:00:00Z"), timezone: "Asia/Seoul" };
     const input = draft({ repeat: { pattern: "THIS_WEEKEND" } });
     // When
     const result = resolveTodoSchedule(input, sunday);
@@ -966,9 +966,9 @@ describe("resolveTodoSchedule — 반복 규칙 (서울 수 2026-10-28)", () => 
 
 describe("resolvePlanSchedule — 계획의 주말", () => {
   // 2026-11-05 목요일, 2026-11-07 토요일, 2026-11-08 일요일 (서울)
-  const THURSDAY = { now: new Date("2026-11-05T01:00:00Z"), timeZone: "Asia/Seoul" };
-  const SATURDAY = { now: new Date("2026-11-07T01:00:00Z"), timeZone: "Asia/Seoul" };
-  const SUNDAY = { now: new Date("2026-11-08T01:00:00Z"), timeZone: "Asia/Seoul" };
+  const THURSDAY = { now: new Date("2026-11-05T01:00:00Z"), timezone: "Asia/Seoul" };
+  const SATURDAY = { now: new Date("2026-11-07T01:00:00Z"), timezone: "Asia/Seoul" };
+  const SUNDAY = { now: new Date("2026-11-08T01:00:00Z"), timezone: "Asia/Seoul" };
 
   it.each([
     { name: "주중에 말한 주말은 다가오는 토요일", clock: THURSDAY, expected: "2026-11-07" },

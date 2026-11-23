@@ -13,7 +13,7 @@ const kernelSample = pgTable("KernelSample", {
   dueDate: plainDate().notNull(),
 });
 
-const PROCESS_TIME_ZONES = ["Asia/Seoul", "America/Los_Angeles"];
+const PROCESS_TIMEZONES = ["Asia/Seoul", "America/Los_Angeles"];
 
 describe("DB 커널 — Temporal column·sequence (실제 PostgreSQL)", () => {
   let database: TestDatabase;
@@ -41,11 +41,11 @@ describe("DB 커널 — Temporal column·sequence (실제 PostgreSQL)", () => {
     await database.stop();
   });
 
-  it.each(PROCESS_TIME_ZONES)(
+  it.each(PROCESS_TIMEZONES)(
     "%s 프로세스에서도 순간과 날짜를 그대로 저장하고 읽는다",
-    async (timeZone) => {
+    async (timezone) => {
       // Given
-      vi.stubEnv("TZ", timeZone);
+      vi.stubEnv("TZ", timezone);
       const occurredAt = Temporal.Instant.from("2026-11-10T14:59:59.007Z");
       const confirmedAt = Temporal.Instant.from("2026-03-08T10:30:00.123Z");
       const dueDate = Temporal.PlainDate.from("2026-11-10");

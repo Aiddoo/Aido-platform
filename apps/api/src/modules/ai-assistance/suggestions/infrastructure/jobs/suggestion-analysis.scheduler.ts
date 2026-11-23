@@ -19,7 +19,7 @@ import { AiGenerationLogEvent } from "../../../ai-generations/application/ai-gen
 import { DispatchSuggestionAnalysesUseCase } from "../../application/use-cases/dispatch-suggestion-analyses.use-case.js";
 import {
   isInSuggestionDispatchWindow,
-  resolveSuggestionTimeZone,
+  resolveSuggestionTimezone,
 } from "../../domain/suggestion-dispatch-window.domain-service.js";
 import { AI_SUGGESTION_QUEUE } from "./ai-suggestion.queue.js";
 
@@ -85,9 +85,9 @@ export class SuggestionAnalysisScheduler implements OnModuleInit {
       fetchPage: (cursor, take) => this.#findCandidatePage({ cursor, take, atDate, recentFrom }),
       onBatch: async (batch) => {
         const targets = batch.flatMap((user) => {
-          const timeZone = resolveSuggestionTimeZone(user.timezone);
-          return isInSuggestionDispatchWindow({ at, timeZone })
-            ? [{ userId: UserId.reconstitute(user.id), timeZone }]
+          const timezone = resolveSuggestionTimezone(user.timezone);
+          return isInSuggestionDispatchWindow({ at, timezone })
+            ? [{ userId: UserId.reconstitute(user.id), timezone }]
             : [];
         });
         totalEnqueued += await this.#dispatchAnalyses.execute({ targets });

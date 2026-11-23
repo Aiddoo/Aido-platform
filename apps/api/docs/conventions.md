@@ -84,6 +84,7 @@
 ## 변수·상수
 
 - 단위 접미사(`timeoutMs`, `ttlSeconds`), boolean은 `is/has/can/should`, 컬렉션은 복수형, id는 `memoId`. `data`·`info`·`item` 같은 뭉뚱그린 이름을 쓰지 않는다.
+- 시간대는 계약·DB·도메인·변수 모두 `timezone`(타입·클래스 `Timezone`, 상수 `_TIMEZONE`, 파일 `timezone-*`)이다. `timeZone`은 외부 API가 그 키를 정한 곳(`Intl.DateTimeFormat`·Temporal 옵션 `timeZone`, `timeZoneId`·`getTimeZoneTransition`, PostgreSQL `TimeZone` 설정)과 출시 앱이 받는 오류 details 키(`invalidTimezone`의 `{ field: "timeZone" }`)에서만 쓴다. 앱도 같은 규칙이다.
 - 축약어를 쓰지 않는다: `ctx` → `timezoneContext`, `tx` → `transaction`, `req`·`res` → `request`·`response`, `err`·`e` → `error`, `val` → `value`, `args`·`opts` → `parameters`·`options`, `cb`·`fn` → 역할 이름, `repo`·`svc`·`msg`·`idx`·`tmp` → 풀어 쓴 이름. 반복 인덱스 `index`와 업계 고유명(`id`·`url`·`ip`·`jwt`)은 이름 그대로다. 배포된 DTO·DB·payload 이름은 바꾸지 않는다(코드 `seriesId` ↔ DB `recurrenceGroupId`).
 - 상수는 `UPPER_SNAKE`이고 단위를 이름에 넣는다. 매직 넘버를 쓰지 않는다.
 

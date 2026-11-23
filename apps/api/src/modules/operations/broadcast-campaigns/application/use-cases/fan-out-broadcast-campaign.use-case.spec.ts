@@ -226,7 +226,7 @@ describe("FanOutBroadcastCampaignUseCase — 수신자 현지 시각 발송", ()
       audience: ["user-la", "user-seoul-1", "user-seoul-2"],
       campaign: localTimeCampaign(),
       recipients: new StubBroadcastRecipientReader({
-        "user-la": { timeZone: "America/Los_Angeles" },
+        "user-la": { timezone: "America/Los_Angeles" },
       }),
     });
 

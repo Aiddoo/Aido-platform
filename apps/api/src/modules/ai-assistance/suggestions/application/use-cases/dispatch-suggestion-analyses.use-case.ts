@@ -16,7 +16,7 @@ import { SuggestionLockKeys } from "../suggestions.lock-keys.js";
 
 interface SuggestionAnalysisTarget {
   readonly userId: UserId;
-  readonly timeZone: string;
+  readonly timezone: string;
 }
 
 export interface DispatchSuggestionAnalysesCommand {
@@ -55,7 +55,7 @@ export class DispatchSuggestionAnalysesUseCase {
       const requested = command.targets.flatMap((target) => {
         const job: SuggestionAnalysisJob = {
           ...target,
-          localDate: suggestionDispatchLocalDate({ at: now, timeZone: target.timeZone }),
+          localDate: suggestionDispatchLocalDate({ at: now, timezone: target.timezone }),
           trigger: "SCHEDULED",
         };
         const run = runsByUserId[target.userId.value];

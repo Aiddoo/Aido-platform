@@ -5,7 +5,7 @@ import { canNudgeTodoOn, judgeNudgeThanks } from "#api/modules/social/nudges/soc
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { localDateIn } from "#api/shared/domain/time/time-zone-name";
+import { localDateIn } from "#api/shared/domain/time/timezone-name";
 
 import { getTodoDetailsPermissions } from "../../domain/todo-comment-permission.domain-service.js";
 import type { TodoCommentAccessReaderPort } from "../ports/todo-comment-access.reader.port.js";

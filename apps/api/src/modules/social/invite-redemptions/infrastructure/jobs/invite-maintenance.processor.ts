@@ -2,7 +2,7 @@ import { Inject, Injectable, type OnModuleInit } from "@nestjs/common";
 
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { type JobEnvelope, JobQueuePort } from "#api/shared/application/ports/job-queue.port";
-import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import { Timezone } from "#api/shared/domain/time/timezone.vo";
 import { localDateOf } from "#api/shared/domain/time/zoned-time";
 
 import { ExpireStaleRedemptionsUseCase } from "../../application/use-cases/expire-stale-redemptions.use-case.js";
@@ -66,7 +66,7 @@ export class InviteMaintenanceProcessor implements OnModuleInit {
     const now = this.#clock.now();
     await this.#expireStaleRedemptions.execute({
       now,
-      runDate: localDateOf(now, TimeZone.create(INVITE_MAINTENANCE_SCHEDULE.timezone)),
+      runDate: localDateOf(now, Timezone.create(INVITE_MAINTENANCE_SCHEDULE.timezone)),
     });
     await this.#scheduleQualifyReminders.execute({ now });
   }

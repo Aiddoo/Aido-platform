@@ -1,4 +1,4 @@
-import type { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import type { Timezone } from "#api/shared/domain/time/timezone.vo";
 import { localDateOf, toZonedInstant } from "#api/shared/domain/time/zoned-time";
 
 import type { BroadcastDelivery } from "./broadcast-delivery.vo.js";
@@ -10,21 +10,21 @@ import type { BroadcastDelivery } from "./broadcast-delivery.vo.js";
  */
 export function resolveRecipientStartAfter(params: {
   readonly delivery: BroadcastDelivery;
-  readonly timeZone: TimeZone;
+  readonly timezone: Timezone;
   readonly now: Temporal.Instant;
 }): Temporal.Instant | null {
-  const { delivery, timeZone, now } = params;
+  const { delivery, timezone, now } = params;
   const { value } = delivery;
   if (value.mode === "NOW") {
     return null;
   }
 
-  const localToday = localDateOf(now, timeZone);
+  const localToday = localDateOf(now, timezone);
   const firstDate =
     Temporal.PlainDate.compare(value.date, localToday) < 0 ? localToday : value.date;
-  const firstInstant = toZonedInstant({ date: firstDate, time: value.localTime, timeZone });
+  const firstInstant = toZonedInstant({ date: firstDate, time: value.localTime, timezone });
   if (Temporal.Instant.compare(firstInstant, now) > 0) {
     return firstInstant;
   }
-  return toZonedInstant({ date: firstDate.add({ days: 1 }), time: value.localTime, timeZone });
+  return toZonedInstant({ date: firstDate.add({ days: 1 }), time: value.localTime, timezone });
 }

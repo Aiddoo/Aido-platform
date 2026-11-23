@@ -362,7 +362,7 @@ function quickPlanCase(golden: QuickPlanGoldenCase): EvalCase {
         context: planContext(golden),
         ...options,
       });
-      const clock = { now, timeZone: golden.timezone };
+      const clock = { now, timezone: golden.timezone };
       return { meta, score: scorePlan(golden.expected, toPlanExpectation(value, clock)) };
     },
   };
@@ -402,7 +402,7 @@ function voiceNoteDigestCase(golden: VoiceNoteDigestGoldenCase): EvalCase {
         ...options,
       });
       const plan: NormalizedActionPlan = value.plan;
-      const clock = { now, timeZone: golden.timezone };
+      const clock = { now, timezone: golden.timezone };
       const bookmarked = golden.sentences.flatMap(({ isBookmarked }, index) =>
         isBookmarked ? [index] : [],
       );

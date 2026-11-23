@@ -1,4 +1,4 @@
-import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import { Timezone } from "#api/shared/domain/time/timezone.vo";
 
 import {
   hasEnoughActiveDays,
@@ -6,7 +6,7 @@ import {
   qualificationExpiresAt,
 } from "./invite-qualification.domain-service.js";
 
-const LOS_ANGELES = TimeZone.create("America/Los_Angeles");
+const LOS_ANGELES = Timezone.create("America/Los_Angeles");
 
 describe("invite-qualification — 사용 시작 판정", () => {
   it.each([
@@ -22,7 +22,7 @@ describe("invite-qualification — 사용 시작 판정", () => {
 
     // When
     const days = [
-      localActivityDate(occurredAt, TimeZone.SEOUL).toString(),
+      localActivityDate(occurredAt, Timezone.SEOUL).toString(),
       localActivityDate(occurredAt, LOS_ANGELES).toString(),
     ];
 
@@ -35,7 +35,7 @@ describe("invite-qualification — 사용 시작 판정", () => {
     const occurredAt = Temporal.Instant.from("2028-02-28T15:00:00Z");
 
     // When
-    const day = localActivityDate(occurredAt, TimeZone.reconstitute(raw));
+    const day = localActivityDate(occurredAt, Timezone.reconstitute(raw));
 
     // Then
     expect(day.toString()).toBe("2028-02-28");

@@ -1,6 +1,6 @@
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import { Timezone } from "#api/shared/domain/time/timezone.vo";
 
 import { Coordinate } from "../../../shared/domain/coordinate.vo.js";
 import { GeoCell } from "../../../shared/domain/geo-cell.vo.js";
@@ -53,7 +53,7 @@ export class RegisterUserLocationUseCase {
       userId,
       coordinate,
       grid,
-      timezone: TimeZone.create(timezone),
+      timezone: Timezone.create(timezone),
       now: clock.now(),
     });
 

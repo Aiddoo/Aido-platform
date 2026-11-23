@@ -1,9 +1,9 @@
-import { TimeZone } from "./time-zone.vo.js";
+import { Timezone } from "./timezone.vo.js";
 
-const UTC = TimeZone.UTC.value;
+const UTC = Timezone.UTC.value;
 
 /** 시간대를 모르는 사용자의 발송·벽시계 기본값. 한국 우선 서비스라 미상 사용자는 대부분 서울이다. */
-export const DEFAULT_DELIVERY_TIMEZONE = TimeZone.SEOUL.value;
+export const DEFAULT_DELIVERY_TIMEZONE = Timezone.SEOUL.value;
 
 /** 신뢰할 수 없는 값을 런타임이 지원하는 정규 IANA 이름으로 바꾼다. 쓸 수 없는 값이면 null이다. */
 export function normalizeIanaTimezone(value: unknown): string | null {

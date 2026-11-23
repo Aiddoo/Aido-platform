@@ -19,7 +19,7 @@ import {
 } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
-import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/time/time-zone-name";
+import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/time/timezone-name";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import {

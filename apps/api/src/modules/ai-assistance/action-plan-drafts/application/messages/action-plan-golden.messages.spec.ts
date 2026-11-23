@@ -63,7 +63,7 @@ describe("계획 golden — 이상적인 모델 출력을 서버가 정규화하
 
   it.each(quickPlanCases)("quick-plan $id $input", (golden) => {
     // Given
-    const clock = { now: new Date(golden.now), timeZone: golden.timezone };
+    const clock = { now: new Date(golden.now), timezone: golden.timezone };
     // When
     const plan = quickPlanPrompt.normalize(golden.draft, normalizeContext(golden));
     // Then
@@ -72,7 +72,7 @@ describe("계획 golden — 이상적인 모델 출력을 서버가 정규화하
 
   it.each(digestCases)("voice-note-digest $id", (golden) => {
     // Given
-    const clock = { now: new Date(golden.now), timeZone: golden.timezone };
+    const clock = { now: new Date(golden.now), timezone: golden.timezone };
     const bookmarked = golden.sentences.flatMap(({ isBookmarked }, index) =>
       isBookmarked ? [index] : [],
     );

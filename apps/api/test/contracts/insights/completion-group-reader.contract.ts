@@ -6,7 +6,7 @@ import type { DailyCompletion } from "#api/modules/insights/daily-completions/do
 import { tallyDailyCompletions } from "#api/modules/insights/daily-completions/domain/daily-completion.domain-service";
 import { DateRange } from "#api/modules/insights/daily-completions/domain/date-range.vo";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import { Timezone } from "#api/shared/domain/time/timezone.vo";
 import { localDateOf } from "#api/shared/domain/time/zoned-time";
 import {
   calendarDate,
@@ -196,8 +196,8 @@ export function describeCompletionGroupReaderContract(
       // Given
       const counter = countByDay(await createReader([span("2026-11-30", "2026-12-01")]));
       const instant = Temporal.Instant.from("2026-11-30T16:30:00Z");
-      const seoulToday = localDateOf(instant, TimeZone.SEOUL);
-      const laToday = localDateOf(instant, TimeZone.create("America/Los_Angeles"));
+      const seoulToday = localDateOf(instant, Timezone.SEOUL);
+      const laToday = localDateOf(instant, Timezone.create("America/Los_Angeles"));
 
       // When
       const seoul = await counter.listByDateRange({

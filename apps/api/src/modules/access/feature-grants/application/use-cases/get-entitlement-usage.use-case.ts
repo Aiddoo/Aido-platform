@@ -21,7 +21,7 @@ import type { EntitlementUsageReadModel } from "../read-models/entitlement-usage
 export interface GetEntitlementUsageQuery {
   readonly userId: string;
   /** 응원·찌르기 일간 사용량의 하루 기준(X-Timezone) */
-  readonly timeZone: string;
+  readonly timezone: string;
 }
 
 export interface GetEntitlementUsageDependencies {
@@ -47,7 +47,7 @@ export class GetEntitlementUsageUseCase {
     const { accessStateReader, quotaUsageRepository, ownedFeatureUsageReader, clock } =
       this.#dependencies;
     const userId = UserId.reconstitute(query.userId);
-    const ownedUsage = await ownedFeatureUsageReader.read({ userId, timeZone: query.timeZone });
+    const ownedUsage = await ownedFeatureUsageReader.read({ userId, timezone: query.timezone });
     const [state, grants] = await Promise.all([
       accessStateReader.findAccessState(userId),
       accessStateReader.sumFeatureGrants(userId),

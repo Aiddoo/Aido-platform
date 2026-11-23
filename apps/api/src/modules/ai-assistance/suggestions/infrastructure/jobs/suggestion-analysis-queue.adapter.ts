@@ -21,7 +21,7 @@ function toQueuedJob(job: SuggestionAnalysisJob) {
       name: AiSuggestionJobName.ANALYZE,
       data: {
         userId: job.userId.value,
-        timezone: job.timeZone,
+        timezone: job.timezone,
         localDate,
         trigger: job.trigger,
       } satisfies AiSuggestionAnalyzeData,

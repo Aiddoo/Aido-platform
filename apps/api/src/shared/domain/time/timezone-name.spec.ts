@@ -5,7 +5,7 @@ import {
   resolveDeliveryTimezone,
   resolveTimezone,
   resolveWallClockTimezone,
-} from "./time-zone-name.js";
+} from "./timezone-name.js";
 
 describe("시간대 이름 해석", () => {
   it.each([

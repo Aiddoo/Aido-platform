@@ -26,7 +26,7 @@ export class GetDailyCheerUsageUseCase {
 
   async execute(query: GetDailyCheerUsageQuery): Promise<DailySendUsage> {
     const { cheerRepository, clock } = this.#dependencies;
-    const window = dailySendWindowAt({ now: clock.now(), timeZone: query.timezone });
+    const window = dailySendWindowAt({ now: clock.now(), timezone: query.timezone });
     const used = await cheerRepository.countSentBetween(UserId.reconstitute(query.userId), window);
     return { used, resetsAt: instantToDate(window.endsAt) };
   }

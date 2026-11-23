@@ -1,6 +1,6 @@
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
-import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import { Timezone } from "#api/shared/domain/time/timezone.vo";
 
 import { Coordinate } from "../../shared/domain/coordinate.vo.js";
 import { GridCoordinate } from "../../shared/domain/grid-coordinate.vo.js";
@@ -22,7 +22,7 @@ interface UserLocationProps {
   readonly userId: UserId;
   readonly coordinate: Coordinate;
   readonly grid: GridCoordinate | null;
-  readonly timezone: TimeZone | null;
+  readonly timezone: Timezone | null;
   readonly updatedAt: Temporal.Instant;
 }
 
@@ -31,7 +31,7 @@ interface CreateUserLocationParams {
   readonly coordinate: Coordinate;
   /** 한국 예보 범위 안의 좌표에만 있다. */
   readonly grid: GridCoordinate | null;
-  readonly timezone: TimeZone;
+  readonly timezone: Timezone;
   readonly now: Temporal.Instant;
 }
 
@@ -53,7 +53,7 @@ export class UserLocation extends AggregateRoot<UserLocationId, UserLocationProp
       userId: UserId.reconstitute(primitives.userId),
       coordinate: Coordinate.reconstitute(primitives.latitude, primitives.longitude),
       grid: gridX == null || gridY == null ? null : GridCoordinate.reconstitute(gridX, gridY),
-      timezone: primitives.timezone == null ? null : TimeZone.reconstitute(primitives.timezone),
+      timezone: primitives.timezone == null ? null : Timezone.reconstitute(primitives.timezone),
       updatedAt: primitives.updatedAt,
     });
   }
@@ -70,7 +70,7 @@ export class UserLocation extends AggregateRoot<UserLocationId, UserLocationProp
     return this.props.grid;
   }
 
-  get timezone(): TimeZone | null {
+  get timezone(): Timezone | null {
     return this.props.timezone;
   }
 

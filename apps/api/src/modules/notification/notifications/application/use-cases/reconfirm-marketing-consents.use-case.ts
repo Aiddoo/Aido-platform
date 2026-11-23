@@ -9,7 +9,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantToDate } from "#api/shared/domain/time/instant";
-import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/time/time-zone-name";
+import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/time/timezone-name";
 
 import type {
   NotificationRecipientLocaleReaderPort,

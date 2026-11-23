@@ -2,7 +2,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { localDateIn } from "#api/shared/domain/time/time-zone-name";
+import { localDateIn } from "#api/shared/domain/time/timezone-name";
 
 import type { PersistedBatchNotificationResultReadModel } from "../../../push-dispatches/notification-push-dispatches.public.js";
 import { createFriendCompletedNotificationMessage } from "../../../shared/application/messages/social-notification.messages.js";

@@ -1,4 +1,4 @@
-import { localDateIn } from "#api/shared/domain/time/time-zone-name";
+import { localDateIn } from "#api/shared/domain/time/timezone-name";
 
 import { nonIsoCalendarDate } from "./reminders.errors.js";
 

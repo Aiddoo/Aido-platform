@@ -2,7 +2,7 @@ import { type SubscriptionPlanType, type SupportedLocale } from "@aido/api/vocab
 import { match } from "ts-pattern";
 
 import { instantFromDate } from "#api/shared/domain/time/instant";
-import { localDateIn } from "#api/shared/domain/time/time-zone-name";
+import { localDateIn } from "#api/shared/domain/time/timezone-name";
 
 import type { NotificationMilestone } from "../../domain/notification-milestone.constants.js";
 import type {

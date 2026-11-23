@@ -51,7 +51,7 @@ describe("RequestSuggestionAnalysisUseCase (실제 PostgreSQL 잠금)", () => {
         execute: async () => ({ state: "ANALYZING", canRequestNow: false, nextAnalysisAt: NOW }),
       },
       countRecentTodos: {
-        execute: async () => ({ timeZone: "Asia/Seoul", recentTodoCount: 3 }),
+        execute: async () => ({ timezone: "Asia/Seoul", recentTodoCount: 3 }),
       },
       unitOfWork: uow,
       mutationLock: new PostgresMutationLockAdapter(transactionHost),

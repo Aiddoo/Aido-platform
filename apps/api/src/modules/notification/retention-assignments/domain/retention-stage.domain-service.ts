@@ -1,4 +1,4 @@
-import { localDateIn, resolveTimezone } from "#api/shared/domain/time/time-zone-name";
+import { localDateIn, resolveTimezone } from "#api/shared/domain/time/timezone-name";
 
 import type { RetentionStageName } from "./retention-assignments.constants.js";
 

@@ -1,11 +1,11 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { TimeZone } from "./time-zone.vo.js";
+import { Timezone } from "./timezone.vo.js";
 
-describe("TimeZone — 시간대", () => {
+describe("Timezone — 시간대", () => {
   it.each(["Mars/Base", "", "+09:00", "KST"])("%j는 IANA 시간대가 아니라 거절한다", (raw) => {
     // When
-    const create = () => TimeZone.create(raw);
+    const create = () => Timezone.create(raw);
 
     // Then
     expect(create).toThrow(
@@ -18,18 +18,18 @@ describe("TimeZone — 시간대", () => {
     const raw = "asia/seoul";
 
     // When
-    const timeZone = TimeZone.create(raw);
+    const timezone = Timezone.create(raw);
 
     // Then
-    expect(timeZone.equals(TimeZone.SEOUL)).toBe(true);
+    expect(timezone.equals(Timezone.SEOUL)).toBe(true);
   });
 
   it("UTC와 서울 기본값을 제공한다", () => {
     // Given
-    const defaults = [TimeZone.UTC, TimeZone.SEOUL];
+    const defaults = [Timezone.UTC, Timezone.SEOUL];
 
     // When
-    const values = defaults.map((timeZone) => timeZone.value);
+    const values = defaults.map((timezone) => timezone.value);
 
     // Then
     expect(values).toEqual(["UTC", "Asia/Seoul"]);

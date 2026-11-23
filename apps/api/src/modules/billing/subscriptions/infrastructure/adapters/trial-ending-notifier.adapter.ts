@@ -11,7 +11,7 @@ import {
   NotificationRecipientTimezoneReaderPort,
 } from "#api/modules/notification/push-dispatches/notification-push-dispatches.public";
 import { instantToDate } from "#api/shared/domain/time/instant";
-import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/time/time-zone-name";
+import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/time/timezone-name";
 
 import type { TrialEndingNotifierPort } from "../../application/ports/trial-ending-notifier.port.js";
 import type { TrialEndingNotice } from "../../domain/trial-ending-notice.entity.js";

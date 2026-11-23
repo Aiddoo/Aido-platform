@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { CacheStorePort } from "#api/platform/cache/cache-store.port";
 import { toIsoString } from "#api/shared/domain/time/instant";
-import { localDateIn } from "#api/shared/domain/time/time-zone-name";
+import { localDateIn } from "#api/shared/domain/time/timezone-name";
 
 import type { GridCoordinate } from "../../../shared/domain/grid-coordinate.vo.js";
 import type { WeatherForecastCachePort } from "../../application/ports/weather-forecast-cache.port.js";

@@ -33,9 +33,9 @@ const engagement = createNotificationDraftFixture({
 
 const MARKETING_AGREED_AT = Temporal.Instant.from("2026-07-01T00:00:00Z");
 
-function localInstant(timeZone: string, localTime: string): Temporal.Instant {
+function localInstant(timezone: string, localTime: string): Temporal.Instant {
   return Temporal.PlainDate.from("2026-07-16")
-    .toZonedDateTime({ timeZone, plainTime: Temporal.PlainTime.from(localTime) })
+    .toZonedDateTime({ timeZone: timezone, plainTime: Temporal.PlainTime.from(localTime) })
     .toInstant();
 }
 
@@ -469,15 +469,15 @@ describe("푸시 수신자 읽기·발송 자격 판정·배치 빈도 예약", 
       ["America/Los_Angeles", "21:00", true],
       ["America/Los_Angeles", "07:59", true],
       ["America/Los_Angeles", "08:00", false],
-    ] as const)("%s 현지 %s(야간 %s)", async (timeZone, localTime, isNight) => {
+    ] as const)("%s 현지 %s(야간 %s)", async (timezone, localTime, isNight) => {
       // Given
       const { useCase, userSettings } = createEvaluatePushDeliveryEligibilityUseCase(
-        localInstant(timeZone, localTime),
+        localInstant(timezone, localTime),
       );
       userSettings.preferences.set(
         "user-1",
         createNotificationDeliveryPreferenceFixture({
-          timezone: timeZone,
+          timezone: timezone,
           nightPushEnabled: false,
         }),
       );

@@ -133,7 +133,7 @@ export class FanOutBroadcastCampaignUseCase {
           ? null
           : resolveRecipientStartAfter({
               delivery: campaign.delivery,
-              timeZone: recipient.timeZone,
+              timezone: recipient.timezone,
               now,
             });
       return startAfter == null ? now.toString() : startAfter.toString();

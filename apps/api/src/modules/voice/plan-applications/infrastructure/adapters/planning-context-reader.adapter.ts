@@ -8,18 +8,18 @@ import { TodoCategoryReaderPort } from "#api/modules/planning/todo-categories/pl
 import { TodoPlanReaderPort } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import { Timezone } from "#api/shared/domain/time/timezone.vo";
 import { localDateOf } from "#api/shared/domain/time/zoned-time";
 
 import { PlanningContextReaderPort } from "../../application/ports/planning-context.reader.port.js";
 import type { PlanningContextReadModel } from "../../application/read-models/planning-context.read-model.js";
 
 // 알 수 없는 시간대는 계획을 멈추지 않고 UTC 오늘로 본다
-function toPlanningTimeZone(raw: string): TimeZone {
+function toPlanningTimezone(raw: string): Timezone {
   try {
-    return TimeZone.create(raw);
+    return Timezone.create(raw);
   } catch {
-    return TimeZone.UTC;
+    return Timezone.UTC;
   }
 }
 
@@ -41,7 +41,7 @@ export class PlanningContextReaderAdapter implements PlanningContextReaderPort {
   }
 
   async read(userId: UserId, timezone: string): Promise<PlanningContextReadModel> {
-    const today = localDateOf(this.#clock.now(), toPlanningTimeZone(timezone));
+    const today = localDateOf(this.#clock.now(), toPlanningTimezone(timezone));
     const [categories, upcomingTodos] = await Promise.all([
       this.#categoryReader.listForUser(userId),
       this.#todoReader.listUpcoming(userId, {

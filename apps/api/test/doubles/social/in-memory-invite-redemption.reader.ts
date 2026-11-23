@@ -124,7 +124,7 @@ export class InMemoryInviteRedemptionReader extends InviteRedemptionReaderPort {
       .slice(0, limit)
       .map(({ redemption }) => ({
         redemptionId: redemption.id.value,
-        timezone: redemption.timeZone.value,
+        timezone: redemption.timezone.value,
         expiresAt: redemption.expiresAt,
         activeDayCount: redemption.activeDays.length,
       }));

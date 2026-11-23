@@ -17,7 +17,7 @@ const PART_OF_DAY_MINUTES: Readonly<Record<Exclude<PartOfDay, "MIDNIGHT">, numbe
 
 export interface ScheduleClock {
   readonly now: Date;
-  readonly timeZone: string;
+  readonly timezone: string;
 }
 
 export interface TimeResolution {
@@ -57,7 +57,7 @@ export function resolveTime(
     const target = representableDay(() => {
       const local = instantFromDate(clock.now)
         .add({ minutes: relativeMinutes })
-        .toZonedDateTimeISO(clock.timeZone);
+        .toZonedDateTimeISO(clock.timezone);
       return { day: local.toPlainDate(), minutes: local.hour * 60 + local.minute };
     });
     return target ?? "INVALID";

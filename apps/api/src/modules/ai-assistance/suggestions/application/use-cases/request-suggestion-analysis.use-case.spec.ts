@@ -120,7 +120,7 @@ describe("RequestSuggestionAnalysisUseCase", () => {
           userId: UserId.reconstitute(f.userId),
           localDate: AI_ASSISTANCE_TODAY,
           trigger: "ON_DEMAND",
-          timeZone: "Asia/Seoul",
+          timezone: "Asia/Seoul",
         },
       ]);
       expect(await findRun(f)).toMatchObject({

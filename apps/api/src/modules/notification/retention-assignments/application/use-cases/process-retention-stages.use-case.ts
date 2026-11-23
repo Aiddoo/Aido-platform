@@ -3,7 +3,7 @@ import { uniqBy } from "es-toolkit";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
-import { localDateIn } from "#api/shared/domain/time/time-zone-name";
+import { localDateIn } from "#api/shared/domain/time/timezone-name";
 
 import type { PublishNotificationUseCase } from "../../../notifications/notification-notifications.public.js";
 import { type RetentionNotificationCopySelection } from "../../../shared/application/messages/notification-copy-catalog.messages.js";

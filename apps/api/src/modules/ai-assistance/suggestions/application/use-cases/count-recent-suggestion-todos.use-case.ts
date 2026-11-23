@@ -3,7 +3,7 @@ import type { SingleTodoCountReaderPort } from "#api/modules/planning/todos/plan
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import {
-  resolveSuggestionTimeZone,
+  resolveSuggestionTimezone,
   suggestionAnalysisPeriod,
 } from "../../domain/suggestion-dispatch-window.domain-service.js";
 import type { RecentTodoCountReadModel } from "../read-models/suggestion-analysis.read-model.js";
@@ -27,13 +27,13 @@ export class CountRecentSuggestionTodosUseCase {
   }
 
   async execute(query: CountRecentSuggestionTodosQuery): Promise<RecentTodoCountReadModel> {
-    const timeZone = resolveSuggestionTimeZone(
+    const timezone = resolveSuggestionTimezone(
       await this.#dependencies.timezoneReader.findStoredTimezone(query.userId),
     );
     const recentTodoCount = await this.#dependencies.todoCountReader.countSingleTodos({
       userId: query.userId,
-      ...suggestionAnalysisPeriod({ at: query.now, timeZone }),
+      ...suggestionAnalysisPeriod({ at: query.now, timezone }),
     });
-    return { timeZone, recentTodoCount };
+    return { timezone, recentTodoCount };
   }
 }

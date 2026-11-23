@@ -81,7 +81,7 @@ export class SendCheerUseCase {
     const message = command.message == null ? null : CheerMessage.create(command.message);
     // 잠금을 기다리다 자정을 넘겨도 요청 시각의 하루와 생성 시각을 쓴다
     const requestedAt = clock.now();
-    const window = dailySendWindowAt({ now: requestedAt, timeZone: command.timezone });
+    const window = dailySendWindowAt({ now: requestedAt, timezone: command.timezone });
 
     const cheer = await unitOfWork.run(async () => {
       await mutationLock.acquire([

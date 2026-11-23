@@ -14,7 +14,7 @@ import {
   retentionExperimentStage,
 } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { normalizeIanaTimezone } from "#api/shared/domain/time/time-zone-name";
+import { normalizeIanaTimezone } from "#api/shared/domain/time/timezone-name";
 
 import { resolveRecipientLocale } from "../../../shared/domain/recipient-locale.domain-service.js";
 import type { RetentionAssignmentRepositoryPort } from "../../application/ports/retention-assignment.repository.port.js";

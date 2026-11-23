@@ -14,7 +14,7 @@ import { resolveKmaForecastAvailability } from "#api/modules/weather/weather-rep
  */
 export class FakeWeatherProvider implements WeatherForecastProviderPort {
   readonly name = "fake";
-  readonly timeZone = "Asia/Seoul";
+  readonly timezone = "Asia/Seoul";
   #calls: Array<{ grid: GridCoordinate; target: Temporal.Instant }> = [];
 
   resolveAvailability(params: {

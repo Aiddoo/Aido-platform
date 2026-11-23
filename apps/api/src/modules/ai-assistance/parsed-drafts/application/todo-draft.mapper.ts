@@ -101,7 +101,7 @@ export function normalizeTodoDraft(
   if (draft.intent === "NO_ACTION") {
     const schedule = resolveTodoSchedule(NO_ACTION_SCHEDULE, {
       now: context.now,
-      timeZone: context.timezone,
+      timezone: context.timezone,
     });
     return {
       todo: parsedTodoDataSchema.parse({
@@ -127,7 +127,7 @@ export function normalizeTodoDraft(
     title = fallbackTitle === "" ? NO_ACTION_TITLE[context.locale] : fallbackTitle;
     warnings.push("TITLE_FALLBACK");
   }
-  const schedule = resolveTodoSchedule(draft, { now: context.now, timeZone: context.timezone });
+  const schedule = resolveTodoSchedule(draft, { now: context.now, timezone: context.timezone });
   warnings.push(...schedule.warnings);
   const categoryId =
     draft.categoryId != null && context.ownedCategoryIds.has(draft.categoryId)

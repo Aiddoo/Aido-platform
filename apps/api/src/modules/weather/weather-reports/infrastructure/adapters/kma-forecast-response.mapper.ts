@@ -1,7 +1,7 @@
 import type { SkyCondition } from "@aido/api/vocabulary";
 import { maxBy, sortBy } from "es-toolkit";
 
-import { localDateIn } from "#api/shared/domain/time/time-zone-name";
+import { localDateIn } from "#api/shared/domain/time/timezone-name";
 
 import type {
   DailyForecastReadModel,

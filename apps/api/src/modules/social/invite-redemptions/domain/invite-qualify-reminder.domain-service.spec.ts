@@ -1,7 +1,7 @@
-import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import { Timezone } from "#api/shared/domain/time/timezone.vo";
 
 import {
-  deliveryTimeZoneOf,
+  deliveryTimezoneOf,
   hasOneActiveDayLeft,
   nextQualifyReminderAt,
   qualifyReminderExpiresBefore,
@@ -43,7 +43,7 @@ describe("nextQualifyReminderAt — 사용 시작 알림 발송 시각", () => {
     // When
     const sendAt = nextQualifyReminderAt({
       now: Temporal.Instant.from(now),
-      timeZone: TimeZone.reconstitute(timezone),
+      timezone: Timezone.reconstitute(timezone),
     });
 
     // Then
@@ -54,12 +54,12 @@ describe("nextQualifyReminderAt — 사용 시작 알림 발송 시각", () => {
 describe("invite-qualify-reminder — 알림 후보 기준", () => {
   it("저장 기본값 UTC와 모르는 시간대만 KST로 보고 실제 시간대는 그대로 둔다", () => {
     // Given
-    const timeZones = ["UTC", "Mars/Base", "America/Los_Angeles"].map((raw) =>
-      TimeZone.reconstitute(raw),
+    const timezones = ["UTC", "Mars/Base", "America/Los_Angeles"].map((raw) =>
+      Timezone.reconstitute(raw),
     );
 
     // When
-    const resolved = timeZones.map((timeZone) => deliveryTimeZoneOf(timeZone).value);
+    const resolved = timezones.map((timezone) => deliveryTimezoneOf(timezone).value);
 
     // Then
     expect(resolved).toEqual(["Asia/Seoul", "Asia/Seoul", "America/Los_Angeles"]);

@@ -26,7 +26,7 @@ import { GetEntitlementUsageUseCase } from "./get-entitlement-usage.use-case.js"
 const DAILY_RESETS_AT = Temporal.Instant.from("2026-04-12T15:00:00Z");
 
 class StubOwnedFeatureUsageReader extends OwnedFeatureUsageReaderPort {
-  readonly requests: { readonly userId: UserId; readonly timeZone: string }[] = [];
+  readonly requests: { readonly userId: UserId; readonly timezone: string }[] = [];
   readonly #usage: OwnedFeatureUsage;
 
   constructor(usage: OwnedFeatureUsage) {
@@ -34,7 +34,7 @@ class StubOwnedFeatureUsageReader extends OwnedFeatureUsageReaderPort {
     this.#usage = usage;
   }
 
-  async read(params: { readonly userId: UserId; readonly timeZone: string }) {
+  async read(params: { readonly userId: UserId; readonly timezone: string }) {
     this.requests.push(params);
     return this.#usage;
   }
@@ -70,7 +70,7 @@ function setup(input: {
     users,
     quotaUsageRepository,
     ownedFeatureUsageReader,
-    execute: () => useCase.execute({ userId: ACCESS_FIXTURE_USER_ID, timeZone: "Asia/Seoul" }),
+    execute: () => useCase.execute({ userId: ACCESS_FIXTURE_USER_ID, timezone: "Asia/Seoul" }),
   };
 }
 
@@ -105,7 +105,7 @@ describe("GetEntitlementUsageUseCase — 권한·한도·사용량", () => {
     });
     expect(usage.features.CHEER.resetsAt?.equals(DAILY_RESETS_AT)).toBe(true);
     expect(usage.features.AI_REPORT).toMatchObject({ allowed: false, used: null });
-    expect(fixture.ownedFeatureUsageReader.requests.map((request) => request.timeZone)).toEqual([
+    expect(fixture.ownedFeatureUsageReader.requests.map((request) => request.timezone)).toEqual([
       "Asia/Seoul",
     ]);
   });

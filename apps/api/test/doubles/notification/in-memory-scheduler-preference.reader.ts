@@ -4,7 +4,7 @@ import {
   recipientLocaleOf,
 } from "#api/modules/notification/shared/domain/recipient-locale.domain-service";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { normalizeIanaTimezone } from "#api/shared/domain/time/time-zone-name";
+import { normalizeIanaTimezone } from "#api/shared/domain/time/timezone-name";
 
 interface StoredPreference {
   readonly timezone: string;

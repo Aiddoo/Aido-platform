@@ -40,7 +40,7 @@ export class GetSuggestionAnalysisStateUseCase {
   async execute(query: GetSuggestionAnalysisStateQuery): Promise<SuggestionAnalysisReadModel> {
     const { userId, pendingCount, recentTodos } = query;
     const now = this.#dependencies.clock.now();
-    const [run, consent, { timeZone, recentTodoCount }] = await Promise.all([
+    const [run, consent, { timezone, recentTodoCount }] = await Promise.all([
       this.#dependencies.runs.findByUserId(userId),
       this.#dependencies.scheduledAiConsent.execute(userId),
       recentTodos ?? this.#dependencies.countRecentTodos.execute({ userId, now }),
@@ -51,12 +51,12 @@ export class GetSuggestionAnalysisStateUseCase {
       recentTodoCount,
       run,
       now,
-      timeZone,
+      timezone,
     });
     return {
       state,
       canRequestNow: canRequestAnalysisNow(state, this.#dependencies.onDemandConfig.isEnabled),
-      nextAnalysisAt: nextSuggestionDispatchAt({ at: now, timeZone, run }),
+      nextAnalysisAt: nextSuggestionDispatchAt({ at: now, timezone, run }),
     };
   }
 }

@@ -24,7 +24,7 @@ function facts(overrides: Partial<SuggestionAnalysisFacts> = {}): SuggestionAnal
     recentTodoCount: 3,
     run: null,
     now: NOW,
-    timeZone: "Asia/Seoul",
+    timezone: "Asia/Seoul",
     ...overrides,
   };
 }
@@ -129,30 +129,30 @@ describe("resolveSuggestionAnalysisState", () => {
 
 describe("canRequestAnalysisNow", () => {
   it.each([
-    { name: "서울 23:59", now: "2026-11-15T14:59:00Z", timeZone: "Asia/Seoul", expected: false },
-    { name: "서울 자정", now: "2026-11-15T15:00:00Z", timeZone: "Asia/Seoul", expected: true },
+    { name: "서울 23:59", now: "2026-11-15T14:59:00Z", timezone: "Asia/Seoul", expected: false },
+    { name: "서울 자정", now: "2026-11-15T15:00:00Z", timezone: "Asia/Seoul", expected: true },
     {
       name: "LA 23:59(PST)",
       now: "2026-11-16T07:59:00Z",
-      timeZone: "America/Los_Angeles",
+      timezone: "America/Los_Angeles",
       expected: false,
     },
     {
       name: "LA 자정(PST)",
       now: "2026-11-16T08:00:00Z",
-      timeZone: "America/Los_Angeles",
+      timezone: "America/Los_Angeles",
       expected: true,
     },
     {
       name: "서울 자정이지만 기능이 꺼짐",
       now: "2026-11-15T15:00:00Z",
-      timeZone: "Asia/Seoul",
+      timezone: "Asia/Seoul",
       onDemandEnabled: false,
       expected: false,
     },
   ])(
     "현지 11-15에 끝난 분석은 $name에 다시 받을 수 있는지: $expected",
-    ({ now, timeZone, onDemandEnabled = true, expected }) => {
+    ({ now, timezone, onDemandEnabled = true, expected }) => {
       // Given
       const run = createSuggestionAnalysisRunFixture({
         status: "FINISHED",
@@ -163,7 +163,7 @@ describe("canRequestAnalysisNow", () => {
 
       // When
       const canRequest = canRequestAnalysisNow(
-        resolveSuggestionAnalysisState(facts({ run, now: Temporal.Instant.from(now), timeZone })),
+        resolveSuggestionAnalysisState(facts({ run, now: Temporal.Instant.from(now), timezone })),
         onDemandEnabled,
       );
 

@@ -76,7 +76,7 @@ export class SendReminderNudgeUseCase {
     const message = command.message == null ? null : NudgeMessage.create(command.message);
     // 친구의 "오늘"도 보낸 사람이 요청한 시간대로 본다
     const requestedAt = clock.now();
-    const today = dailySendWindowAt({ now: requestedAt, timeZone: command.timezone }).localDate;
+    const today = dailySendWindowAt({ now: requestedAt, timezone: command.timezone }).localDate;
 
     const reminder = await unitOfWork.run(async () => {
       await mutationLock.acquire([ReminderNudgeLockKeys.cooldown(senderId, receiverId)]);

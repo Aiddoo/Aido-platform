@@ -1,6 +1,6 @@
 import { INVITE_QUALIFICATION } from "@aido/api/vocabulary";
 
-import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import { Timezone } from "#api/shared/domain/time/timezone.vo";
 import { localDateOf, toZonedInstant } from "#api/shared/domain/time/zoned-time";
 
 import { INVITE_QUALIFY_REMINDER } from "./invite-redemptions.constants.js";
@@ -14,12 +14,12 @@ const ONE_DAY_LEFT_ACTIVE_DAYS = INVITE_QUALIFICATION.MIN_ACTIVE_DAYS - 1;
  * 발송 시각은 배송 경로(resolveDeliveryTimezone)와 같이 미상·UTC 시간대를 KST로 본다. 잔존 UTC는 헤더를
  * 못 받아 기본값에 머문 한국 사용자가 대부분이다.
  */
-export function deliveryTimeZoneOf(timeZone: TimeZone): TimeZone {
+export function deliveryTimezoneOf(timezone: Timezone): Timezone {
   try {
-    const resolved = TimeZone.create(timeZone.value);
-    return resolved.equals(TimeZone.UTC) ? TimeZone.SEOUL : resolved;
+    const resolved = Timezone.create(timezone.value);
+    return resolved.equals(Timezone.UTC) ? Timezone.SEOUL : resolved;
   } catch {
-    return TimeZone.SEOUL;
+    return Timezone.SEOUL;
   }
 }
 
@@ -36,14 +36,14 @@ export function hasOneActiveDayLeft(activeDayCount: number): boolean {
 /** now 이후 가장 가까운 로컬 발송 시각. 날짜로 다음 날을 구해 DST 날짜에서도 같은 벽시계 시각이다. */
 export function nextQualifyReminderAt(params: {
   readonly now: Temporal.Instant;
-  readonly timeZone: TimeZone;
+  readonly timezone: Timezone;
 }): Temporal.Instant {
-  const timeZone = deliveryTimeZoneOf(params.timeZone);
+  const timezone = deliveryTimezoneOf(params.timezone);
   const time = Temporal.PlainTime.from(INVITE_QUALIFY_REMINDER.LOCAL_TIME);
-  const today = localDateOf(params.now, timeZone);
-  const todaySlot = toZonedInstant({ date: today, time, timeZone });
+  const today = localDateOf(params.now, timezone);
+  const todaySlot = toZonedInstant({ date: today, time, timezone });
   if (Temporal.Instant.compare(todaySlot, params.now) > 0) {
     return todaySlot;
   }
-  return toZonedInstant({ date: today.add({ days: 1 }), time, timeZone });
+  return toZonedInstant({ date: today.add({ days: 1 }), time, timezone });
 }

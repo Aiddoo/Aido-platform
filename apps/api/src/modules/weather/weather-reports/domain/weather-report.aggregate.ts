@@ -10,7 +10,7 @@ import {
 } from "@aido/api/vocabulary";
 
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
-import { localDateIn } from "#api/shared/domain/time/time-zone-name";
+import { localDateIn } from "#api/shared/domain/time/timezone-name";
 
 import type { GeoCell } from "../../shared/domain/geo-cell.vo.js";
 import { WeatherReportId } from "./weather-report-id.vo.js";

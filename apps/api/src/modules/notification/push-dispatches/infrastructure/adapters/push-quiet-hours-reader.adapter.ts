@@ -1,6 +1,6 @@
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { resolveDeliveryTimezone } from "#api/shared/domain/time/time-zone-name";
-import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import { resolveDeliveryTimezone } from "#api/shared/domain/time/timezone-name";
+import { Timezone } from "#api/shared/domain/time/timezone.vo";
 
 import type { UserNotificationSettingsPort } from "../../../shared/application/ports/user-notification-settings.port.js";
 import type { PushQuietHoursReaderPort } from "../../application/ports/push-quiet-hours.reader.port.js";
@@ -39,7 +39,7 @@ export class PushQuietHoursReaderAdapter implements PushQuietHoursReaderPort {
       userIds.filter((userId) =>
         isWithinQuietHours({
           instant,
-          timeZone: TimeZone.reconstitute(resolveDeliveryTimezone(timezones.get(userId))),
+          timezone: Timezone.reconstitute(resolveDeliveryTimezone(timezones.get(userId))),
           window: PUSH_QUIET_HOURS_WINDOW,
         }),
       ),

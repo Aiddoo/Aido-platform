@@ -34,7 +34,7 @@ describe("DispatchSuggestionAnalysesUseCase", () => {
       ]);
       const targets = [REQUESTED_TODAY, ANALYZED_YESTERDAY, FIRST_TIME].map((userId) => ({
         userId,
-        timeZone: "Asia/Seoul",
+        timezone: "Asia/Seoul",
       }));
 
       // When

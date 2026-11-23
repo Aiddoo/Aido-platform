@@ -43,11 +43,11 @@ export class OwnedFeatureUsageReaderAdapter implements OwnedFeatureUsageReaderPo
 
   async read(params: {
     readonly userId: UserId;
-    readonly timeZone: string;
+    readonly timezone: string;
   }): Promise<OwnedFeatureUsage> {
     const [cheer, nudge, friendCount, categoryCount] = await Promise.all([
-      this.#cheerUsageReader.readDailyUsage(params.userId, params.timeZone),
-      this.#nudgeUsageReader.readDailyUsage(params.userId, params.timeZone),
+      this.#cheerUsageReader.readDailyUsage(params.userId, params.timezone),
+      this.#nudgeUsageReader.readDailyUsage(params.userId, params.timezone),
       this.#friendCountReader.countCurrentFriends(params.userId),
       this.#categoryCountReader.countCategories(params.userId),
     ]);

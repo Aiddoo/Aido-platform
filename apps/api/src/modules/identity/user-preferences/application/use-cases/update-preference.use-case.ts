@@ -5,7 +5,7 @@ import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { normalizeIanaTimezone } from "#api/shared/domain/time/time-zone-name";
+import { normalizeIanaTimezone } from "#api/shared/domain/time/timezone-name";
 
 import { ReminderTime } from "../../domain/reminder-time.vo.js";
 import type { PreferenceEntitlementPort } from "../ports/preference-entitlement.port.js";

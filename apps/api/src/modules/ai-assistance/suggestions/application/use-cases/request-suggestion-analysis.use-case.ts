@@ -73,9 +73,9 @@ export class RequestSuggestionAnalysisUseCase {
     }
     const job = {
       userId,
-      localDate: suggestionDispatchLocalDate({ at: now, timeZone: recentTodos.timeZone }),
+      localDate: suggestionDispatchLocalDate({ at: now, timezone: recentTodos.timezone }),
       trigger: "ON_DEMAND",
-      timeZone: recentTodos.timeZone,
+      timezone: recentTodos.timezone,
     } as const;
     const requested = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([SuggestionLockKeys.analysisRun(userId)]);

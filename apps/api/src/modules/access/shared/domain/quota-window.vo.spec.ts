@@ -1,7 +1,7 @@
 import { QuotaWindow } from "./quota-window.vo.js";
 
-function zoned(localDateTime: string, timeZone: string): Temporal.Instant {
-  return Temporal.PlainDateTime.from(localDateTime).toZonedDateTime(timeZone).toInstant();
+function zoned(localDateTime: string, timezone: string): Temporal.Instant {
+  return Temporal.PlainDateTime.from(localDateTime).toZonedDateTime(timezone).toInstant();
 }
 
 describe("QuotaWindow — 월간 quota 기간(KST 달력 월)", () => {
@@ -28,40 +28,40 @@ describe("QuotaWindow — 월간 quota 기간(KST 달력 월)", () => {
     {
       label: "서울 4월 30일 23:59:59",
       local: "2026-04-30T23:59:59",
-      timeZone: "Asia/Seoul",
+      timezone: "Asia/Seoul",
       period: "2026-M04",
     },
     {
       label: "서울 5월 1일 00:00",
       local: "2026-05-01T00:00:00",
-      timeZone: "Asia/Seoul",
+      timezone: "Asia/Seoul",
       period: "2026-M05",
     },
     // LA는 아직 4월 30일이지만 KST로는 5월 1일 15:59라 5월 기간이다
     {
       label: "LA 4월 30일 23:59",
       local: "2026-04-30T23:59:00",
-      timeZone: "America/Los_Angeles",
+      timezone: "America/Los_Angeles",
       period: "2026-M05",
     },
     // LA 4월 30일 07:59(PDT)는 KST 4월 30일 23:59라 아직 4월 기간이다
     {
       label: "LA 4월 30일 07:59",
       local: "2026-04-30T07:59:00",
-      timeZone: "America/Los_Angeles",
+      timezone: "America/Los_Angeles",
       period: "2026-M04",
     },
     {
       label: "LA 4월 30일 08:00",
       local: "2026-04-30T08:00:00",
-      timeZone: "America/Los_Angeles",
+      timezone: "America/Los_Angeles",
       period: "2026-M05",
     },
   ])(
     "사용자 시간대와 무관하게 KST 달력 월을 쓴다: $label → $period",
-    ({ local, timeZone, period }) => {
+    ({ local, timezone, period }) => {
       // Given
-      const now = zoned(local, timeZone);
+      const now = zoned(local, timezone);
 
       // When
       const window = QuotaWindow.create(now);

@@ -7,7 +7,7 @@ import {
 } from "@aido/api/vocabulary";
 import { maxBy } from "es-toolkit";
 
-import { localDateIn, resolveTimezone } from "#api/shared/domain/time/time-zone-name";
+import { localDateIn, resolveTimezone } from "#api/shared/domain/time/timezone-name";
 
 import {
   findContiguousHours,

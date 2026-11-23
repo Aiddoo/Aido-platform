@@ -25,7 +25,7 @@ export class GetDailyNudgeUsageUseCase {
 
   async execute(query: GetDailyNudgeUsageQuery): Promise<DailySendQuotaUsage> {
     const { nudgeRepository, clock } = this.#dependencies;
-    const window = dailySendWindowAt({ now: clock.now(), timeZone: query.timezone });
+    const window = dailySendWindowAt({ now: clock.now(), timezone: query.timezone });
     const used = await nudgeRepository.countSentBetween(UserId.reconstitute(query.userId), window);
     return { used, resetsAt: window.endsAt };
   }

@@ -8,7 +8,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
-import { resolveTimezone } from "#api/shared/domain/time/time-zone-name";
+import { resolveTimezone } from "#api/shared/domain/time/timezone-name";
 
 import type {
   NotificationHistoryReaderPort,
@@ -190,15 +190,15 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
   ): Promise<WeatherReminderTodoReadModel[]> {
     const targetsByTimezone = groupBy(targets, (user) => user.timezone);
     const todosByTimezone = await Promise.all(
-      Object.entries(targetsByTimezone).map(([timezone, users]) => {
-        const timeZone = resolveTimezone(timezone);
-        const date = now.toZonedDateTimeISO(timeZone).toPlainDate();
+      Object.entries(targetsByTimezone).map(([storedTimezone, users]) => {
+        const timezone = resolveTimezone(storedTimezone);
+        const date = now.toZonedDateTimeISO(timezone).toPlainDate();
         return this.#dependencies.todoReader.listTodayTodos({
           userIds: users.map((user) => UserId.reconstitute(user.id)),
           date,
           timezone,
           from: now,
-          until: date.add({ days: 1 }).toZonedDateTime(timeZone).toInstant(),
+          until: date.add({ days: 1 }).toZonedDateTime(timezone).toInstant(),
         });
       }),
     );

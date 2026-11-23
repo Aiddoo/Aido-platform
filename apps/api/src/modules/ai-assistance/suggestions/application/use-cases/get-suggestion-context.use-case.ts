@@ -35,7 +35,7 @@ export class GetSuggestionContextUseCase {
     const [todos, suggestionHistory, repeatingTitles] = await Promise.all([
       this.#dependencies.activityReader.listRecentTodos(
         query.userId,
-        suggestionAnalysisPeriod({ at: now, timeZone: query.timezone }),
+        suggestionAnalysisPeriod({ at: now, timezone: query.timezone }),
       ),
       this.#dependencies.activityReader.listRecentResponded(
         query.userId,

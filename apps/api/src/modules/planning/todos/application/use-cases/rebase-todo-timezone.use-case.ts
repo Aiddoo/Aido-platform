@@ -5,7 +5,7 @@ import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { type MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { resolveWallClockTimezone } from "#api/shared/domain/time/time-zone-name";
+import { resolveWallClockTimezone } from "#api/shared/domain/time/timezone-name";
 
 import { resolveScheduledInstant } from "../../../shared/domain/todo-calendar.domain-service.js";
 import type { TodoId } from "../../domain/todo-id.vo.js";

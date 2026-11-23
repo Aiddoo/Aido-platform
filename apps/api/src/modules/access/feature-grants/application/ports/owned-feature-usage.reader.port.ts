@@ -20,9 +20,9 @@ export interface OwnedFeatureUsage {
 }
 
 export abstract class OwnedFeatureUsageReaderPort {
-  /** timeZone은 일간 사용량의 하루 기준(X-Timezone)이다. */
+  /** timezone은 일간 사용량의 하루 기준(X-Timezone)이다. */
   abstract read(params: {
     readonly userId: UserId;
-    readonly timeZone: string;
+    readonly timezone: string;
   }): Promise<OwnedFeatureUsage>;
 }

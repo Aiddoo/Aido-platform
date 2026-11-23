@@ -8,7 +8,7 @@ import { UserActivityReaderPort } from "#api/modules/identity/users/identity-use
 import { isSeriesOwnerDormant } from "#api/modules/planning/todo-series/planning-todo-series.public";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import { Timezone } from "#api/shared/domain/time/timezone.vo";
 import { localDateOf } from "#api/shared/domain/time/zoned-time";
 
 import { TodoSeriesOwnerDormancyPort } from "../../application/ports/todo-series-owner-dormancy.port.js";
@@ -46,6 +46,6 @@ export class TodoSeriesOwnerDormancyAdapter extends TodoSeriesOwnerDormancyPort 
     // 휴면 시작일은 지금처럼 UTC 달력 날짜로 알린다
     return isExemptFromDormancy(plan)
       ? null
-      : localDateOf(account.lastActiveAt ?? account.signedUpAt, TimeZone.UTC).toString();
+      : localDateOf(account.lastActiveAt ?? account.signedUpAt, Timezone.UTC).toString();
   }
 }

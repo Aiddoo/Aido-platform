@@ -33,7 +33,7 @@ import { WeatherProviderLogEvent } from "./weather-provider.log-events.js";
 @Injectable()
 export class KmaWeatherForecastAdapter implements WeatherForecastProviderPort {
   readonly name = "kma";
-  readonly timeZone = KMA_TIMEZONE;
+  readonly timezone = KMA_TIMEZONE;
   readonly #logger = new Logger(KmaWeatherForecastAdapter.name);
   readonly #policy: OutboundPolicy;
 

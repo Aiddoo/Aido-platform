@@ -1,5 +1,5 @@
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import { Timezone } from "#api/shared/domain/time/timezone.vo";
 
 import { Coordinate } from "../../shared/domain/coordinate.vo.js";
 import { GridCoordinate } from "../../shared/domain/grid-coordinate.vo.js";
@@ -30,7 +30,7 @@ describe("UserLocation — 위치·시간대와 저장 격자", () => {
       userId: UserId.reconstitute("user-1"),
       coordinate,
       grid: GridCoordinate.create(99, 77),
-      timezone: TimeZone.create("Asia/Seoul"),
+      timezone: Timezone.create("Asia/Seoul"),
       now: NOW,
     });
 

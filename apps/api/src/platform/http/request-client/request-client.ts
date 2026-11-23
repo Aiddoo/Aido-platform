@@ -13,7 +13,7 @@ import {
   type SupportedLocale,
 } from "@aido/api/vocabulary";
 
-import { normalizeIanaTimezone } from "#api/shared/domain/time/time-zone-name";
+import { normalizeIanaTimezone } from "#api/shared/domain/time/timezone-name";
 
 /** 앱이 매 요청에 보내는 헤더를 요청당 한 번 정규화한 값. 확인되지 않은 값은 null이다. */
 export interface RequestClient {

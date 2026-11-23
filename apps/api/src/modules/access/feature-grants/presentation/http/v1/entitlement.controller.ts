@@ -100,7 +100,7 @@ ${PLAN_CATALOG_TABLE}
   ): Promise<EntitlementSnapshotDto> {
     const entitlementUsage = await this.#getEntitlementUsage.execute({
       userId: user.userId,
-      timeZone: timezone,
+      timezone,
     });
     return toEntitlementUsageResponse(entitlementUsage);
   }

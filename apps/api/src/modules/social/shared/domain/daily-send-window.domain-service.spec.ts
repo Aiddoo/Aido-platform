@@ -1,7 +1,7 @@
 import { dailySendWindowAt } from "./daily-send-window.domain-service.js";
 
-function windowOf(now: string, timeZone: string) {
-  const window = dailySendWindowAt({ now: Temporal.Instant.from(now), timeZone });
+function windowOf(now: string, timezone: string) {
+  const window = dailySendWindowAt({ now: Temporal.Instant.from(now), timezone });
   return {
     localDate: window.localDate.toString(),
     startsAt: window.startsAt.toString(),
@@ -14,7 +14,7 @@ describe("dailySendWindowAt — 보낸 사람 현지 하루", () => {
     {
       name: "서울 자정 직전",
       now: "2026-07-26T14:59:59.999Z",
-      timeZone: "Asia/Seoul",
+      timezone: "Asia/Seoul",
       expected: {
         localDate: "2026-07-26",
         startsAt: "2026-07-25T15:00:00Z",
@@ -24,7 +24,7 @@ describe("dailySendWindowAt — 보낸 사람 현지 하루", () => {
     {
       name: "서울 자정",
       now: "2026-07-26T15:00:00Z",
-      timeZone: "Asia/Seoul",
+      timezone: "Asia/Seoul",
       expected: {
         localDate: "2026-07-27",
         startsAt: "2026-07-26T15:00:00Z",
@@ -34,7 +34,7 @@ describe("dailySendWindowAt — 보낸 사람 현지 하루", () => {
     {
       name: "LA 자정 직전(서머타임)",
       now: "2026-07-27T06:59:59.999Z",
-      timeZone: "America/Los_Angeles",
+      timezone: "America/Los_Angeles",
       expected: {
         localDate: "2026-07-26",
         startsAt: "2026-07-26T07:00:00Z",
@@ -44,16 +44,16 @@ describe("dailySendWindowAt — 보낸 사람 현지 하루", () => {
     {
       name: "LA 자정(서머타임)",
       now: "2026-07-27T07:00:00Z",
-      timeZone: "America/Los_Angeles",
+      timezone: "America/Los_Angeles",
       expected: {
         localDate: "2026-07-27",
         startsAt: "2026-07-27T07:00:00Z",
         endsAt: "2026-07-28T07:00:00Z",
       },
     },
-  ])("$name에는 그 현지 날짜의 자정부터 다음 자정 전까지다", ({ now, timeZone, expected }) => {
+  ])("$name에는 그 현지 날짜의 자정부터 다음 자정 전까지다", ({ now, timezone, expected }) => {
     // When
-    const window = windowOf(now, timeZone);
+    const window = windowOf(now, timezone);
 
     // Then
     expect(window).toEqual(expected);
@@ -71,9 +71,9 @@ describe("dailySendWindowAt — 보낸 사람 현지 하루", () => {
     });
   });
 
-  it.each(["", "Mars/Olympus", "UTC"])("시간대가 %j이면 UTC 하루로 센다", (timeZone) => {
+  it.each(["", "Mars/Olympus", "UTC"])("시간대가 %j이면 UTC 하루로 센다", (timezone) => {
     // When
-    const window = windowOf("2026-07-26T23:59:59.999Z", timeZone);
+    const window = windowOf("2026-07-26T23:59:59.999Z", timezone);
 
     // Then
     expect(window).toEqual({

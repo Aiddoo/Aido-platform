@@ -1,7 +1,7 @@
 import { match } from "ts-pattern";
 
 import { instantFromDate } from "#api/shared/domain/time/instant";
-import { localDateIn } from "#api/shared/domain/time/time-zone-name";
+import { localDateIn } from "#api/shared/domain/time/timezone-name";
 
 import { NotificationJobName, type NotificationRuntimeJob } from "./notification.queue.js";
 
