@@ -59,9 +59,9 @@
 | 다국어      | `@nestjs/i18n` 0.0.3                                                             | 기준 언어 카탈로그에서 키 타입을 만들어 빠진 키를 컴파일 오류로 잡는다                      |
 | 관측        | nestjs-pino 5.3.1, Sentry (`@sentry/nestjs` 11.11.0)                             | 요청 ID 하나로 앱·서버 로그·Sentry를 잇고, 유료 APM 없이 무료 플랜 안에서 쓴다              |
 | 모바일      | Expo SDK 58, React Native 0.88.1, React 19.3.0, Expo Router, TanStack Query 5    | iOS·Android·위젯을 한 코드베이스로, 서버 상태는 Query 캐시가 소유한다                       |
-| 테스트      | Vitest 5.1.0 + Testcontainers 12.2.1 (서버), Jest 30.5.2 + jest-expo (모바일)    | SQL·트랜잭션 의미는 실제 PostgreSQL로 검증한다                                              |
+| 테스트      | Vitest 5.1.1 + Testcontainers 12.2.1 (서버), Jest 30.5.2 + jest-expo (모바일)    | SQL·트랜잭션 의미는 실제 PostgreSQL로 검증한다                                              |
 | 품질 도구   | TypeScript 6.0.3, Oxlint 1.93.0, Oxfmt 0.78.0, dependency-cruiser, ls-lint, knip | 구조 규칙을 리뷰 대신 도구로 막는다                                                         |
-| 빌드·인프라 | pnpm 12.18.0, Turborepo 2.11.11, Docker Compose, GitHub Actions, AWS EC2·RDS     | 버전은 catalog 한 곳, 테스트 결과는 원격 캐시로 로컬과 CI가 공유한다. 인스턴스 하나·DB 하나 |
+| 빌드·인프라 | pnpm 12.21.0, Turborepo 2.11.13, Docker Compose, GitHub Actions, AWS EC2·RDS     | 버전은 catalog 한 곳, 테스트 결과는 원격 캐시로 로컬과 CI가 공유한다. 인스턴스 하나·DB 하나 |
 
 ## 아키텍처
 
@@ -365,7 +365,7 @@ flowchart LR
 
 ## 시작하기
 
-- Node.js `26.13.1` LTS([`.nvmrc`](./.nvmrc)), pnpm `12.18.0`(`packageManager`, `npm i -g corepack && corepack enable`), Docker 호환 런타임(로컬 DB와 Testcontainers).
+- Node.js `26.13.1` LTS([`.nvmrc`](./.nvmrc)), pnpm `12.21.0`(`packageManager`, `npm i -g corepack && corepack enable`), Docker 호환 런타임(로컬 DB와 Testcontainers).
 
 ```sh
 pnpm install                                   # postinstall이 packages/*를 빌드한다
