@@ -4,7 +4,7 @@ Repository·Reader·스키마·마이그레이션·DB 오류 번역을 바꿀 �
 
 ## 정본
 
-`drizzle-orm`·`drizzle-kit` `1.0.0-rc.5`(catalog `drizzle1`), `@nestjs/drizzle`(Pool 수명주기), 공식 트랜잭션 어댑터 `@nestjs-cls/transactional-adapter-drizzle-orm`을 쓴다.
+`drizzle-orm`·`drizzle-kit` `1.0.0-rc.6`(catalog `drizzle1`), `@nestjs/drizzle`(Pool 수명주기), 공식 트랜잭션 어댑터 `@nestjs-cls/transactional-adapter-drizzle-orm`을 쓴다.
 
 | 항목            | 경로/명령                                                                            |
 | --------------- | ------------------------------------------------------------------------------------ |
@@ -64,6 +64,8 @@ Repository·Reader·스키마·마이그레이션·DB 오류 번역을 바꿀 �
 | 성장 지표 요약 CTE                                                          | `DrizzleGrowthMetricsReader`                                    |
 | pg-boss 테이블 조회·SQL 브리지                                              | `pg-boss-schedule-run.reader.ts`, `drizzle-pg-boss.database.ts` |
 | 연결 확인 `SELECT 1`                                                        | `DatabaseHealthIndicator`                                       |
+
+`db.execute` 결과는 칸 코덱을 거치지 않고 pg 기본 파서로 읽힌다(Drizzle 1.0 rc.6부터). 시간대 없는 `timestamp`는 프로세스 시간대로 읽혀 어긋나므로 SQL에서 `::TEXT`로 받아 `raw-timestamp.schema.ts`로 바꾼다.
 
 ## 시간 칼럼
 

@@ -50,7 +50,7 @@
 | ----------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | 런타임      | Node.js 26.13.1 LTS (EAS 모바일 빌드는 24.22.3)                                  | 기본 탑재된 `Temporal`로 서버 날짜 계산을 통일한다                                          |
 | API 서버    | NestJS 12.6.0 (ESM, SWC)                                                         | slice 하나를 Module 하나로 두고 abstract class 포트를 그대로 DI 토큰으로 쓴다               |
-| DB·ORM      | PostgreSQL 16, Drizzle ORM 1.0.0-rc.5, `@nestjs/drizzle`                         | SQL에 가까운 쿼리와 행 타입 추론, `customType`으로 Temporal 칸을 둔다                       |
+| DB·ORM      | PostgreSQL 16, Drizzle ORM 1.0.0-rc.6, `@nestjs/drizzle`                         | SQL에 가까운 쿼리와 행 타입 추론, `customType`으로 Temporal 칸을 둔다                       |
 | 작업·이벤트 | pg-boss 12.38.2                                                                  | 브로커 없이 큐·크론·이벤트 전달을 업무 데이터와 같은 트랜잭션에 쓴다                        |
 | 트랜잭션    | nestjs-cls 7, `@nestjs-cls/transactional`                                        | 트랜잭션을 인자로 넘기지 않고 요청 문맥으로 전파한다                                        |
 | 공유 계약   | Zod 4.6.7 (`@aido/api`)                                                          | 서버 검증·Swagger·앱 응답 파싱이 같은 schema를 쓴다                                         |

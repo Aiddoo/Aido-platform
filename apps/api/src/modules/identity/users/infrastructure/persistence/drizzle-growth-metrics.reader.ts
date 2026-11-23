@@ -122,7 +122,7 @@ export class DrizzleGrowthMetricsReader extends GrowthMetricsReaderPort {
         FROM activity_candidates AS activity
       )
       SELECT
-        measurement."measurementStartedAt",
+        measurement."measurementStartedAt"::TEXT AS "measurementStartedAt",
         active_counts."totalActiveUsers",
         active_counts."dau",
         active_counts."wau",
@@ -142,7 +142,7 @@ export class DrizzleGrowthMetricsReader extends GrowthMetricsReaderPort {
       WITH ${localizedSignupsSql({ cohortFrom, cohortTo, asOf: range.asOf })}
       SELECT
         localized."id" AS "userId",
-        localized."createdAt" AS "signedUpAt",
+        localized."createdAt"::TEXT AS "signedUpAt",
         localized."signupLocalDate"::TEXT AS "signupLocalDate",
         localized."asOfLocalDate"::TEXT AS "asOfLocalDate",
         ${retentionActivitySql()}
