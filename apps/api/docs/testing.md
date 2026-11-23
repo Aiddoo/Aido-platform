@@ -45,6 +45,7 @@ test/
 - 포트 계약 suite(`describe<Noun>RepositoryContract(createRepository)`)를 InMemory(unit, `*.repository.port.spec.ts`)와 Drizzle(integration)이 같이 통과한다. 사례: [memo 계약](../test/contracts/notes/memo-repository.contract.ts)을 [unit](../src/modules/notes/memos/application/ports/memo.repository.port.spec.ts)·[integration](../test/integration/notes/memos/drizzle-memo.repository.integration-spec.ts)에서 돌린다.
 - UseCase spec은 파일 안의 작은 factory(`createCreateMemoUseCase({ memoRepository })`)로 기본 더블(`ImmediateUnitOfWork`·`RecordingMutationLock`·`FixedClock`·`SilentLogger`)을 두고 다른 부분만 덮어쓴다. 사례: [create-memo spec](../src/modules/notes/memos/application/use-cases/create-memo.use-case.spec.ts).
 - 테스트 더블은 손으로 쓴 InMemory·Fake·Stub·Recording이다. Nest가 주는 실제 객체(`ExecutionContextHost`, `TransactionHost`)가 있으면 그것을 쓴다. mock 라이브러리(`vitest-mock-extended`·`@suites/*`)와 깊은 mock을 쓰지 않는다. 실패를 주입하거나 호출 자체가 계약일 때도 작은 기록용 double(`RecordingOperationalAlert`·`RecordingMutationLock`)로 본다.
+- UseCase spec(`*.use-case.spec.ts`)은 Oxlint `aido/no-vitest-mock`이 `vi.fn`·`vi.spyOn`·`vi.useFakeTimers`·`vi.setSystemTime`을 막는다. 실패 주입은 double의 `failNext…`·`failWith`, 시각은 `FixedClock`(캐시 만료는 `InMemoryCacheStore`의 `nowMs`), 조회 조건은 double이 남긴 기록으로 본다. 그래서 기존 UseCase spec도 이 규칙으로 옮겼다.
 - `pnpm gen:api-slice`가 fixture·InMemory 저장소·계약·integration spec 뼈대를 함께 만든다.
 
 ```ts

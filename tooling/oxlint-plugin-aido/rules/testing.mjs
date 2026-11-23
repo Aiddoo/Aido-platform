@@ -53,6 +53,27 @@ const noJestModuleMock = {
   },
 };
 
+const VITEST_MOCK_METHODS = new Set(['fn', 'spyOn', 'useFakeTimers', 'setSystemTime']);
+
+// UseCase spec은 손으로 쓴 test/doubles(InMemory·Stub·Recording)와 FixedClock으로 상태를 확인한다
+const noVitestMock = {
+  meta: { type: 'suggestion' },
+  create(context) {
+    return {
+      CallExpression(node) {
+        const names = getMemberNames(node.callee);
+        if (names?.[0] !== 'vi' || !VITEST_MOCK_METHODS.has(names[1])) {
+          return;
+        }
+        context.report({
+          node,
+          message: `UseCase spec에서 vi.${names[1]}을 쓰지 않습니다. test/doubles의 InMemory·Stub·Recording double과 FixedClock으로 바꾸고 호출 대신 상태를 확인합니다.`,
+        });
+      },
+    };
+  },
+};
+
 const RENDER_SCREEN_MODULE = '@src/testing/render';
 const UI_TEST_MODULE_PREFIXES = [
   '@shopify/flash-list',
@@ -313,6 +334,7 @@ const testGwtComments = {
 
 export default {
   'no-jest-module-mock': noJestModuleMock,
+  'no-vitest-mock': noVitestMock,
   'todo-comment-test-location': todoCommentTestLocation,
   'todo-comment-test-purity': todoCommentTestPurity,
   'test-spy-target': testSpyTarget,

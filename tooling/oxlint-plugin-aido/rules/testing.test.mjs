@@ -16,6 +16,16 @@ tester.run('no-jest-module-mock', rules['no-jest-module-mock'], {
   ],
 });
 
+tester.run('no-vitest-mock', rules['no-vitest-mock'], {
+  valid: ['vi.waitFor(() => expect(store.size).toBe(1));', 'clock.advanceBy({ hours: 1 });'],
+  invalid: [
+    { code: 'const read = vi.fn(async () => null);', errors: 1 },
+    { code: "vi.spyOn(repository, 'save');", errors: 1 },
+    { code: "vi.useFakeTimers({ toFake: ['Date'] });", errors: 1 },
+    { code: 'vi.setSystemTime(now);', errors: 1 },
+  ],
+});
+
 tester.run('todo-comment-test-location', rules['todo-comment-test-location'], {
   valid: [
     {
