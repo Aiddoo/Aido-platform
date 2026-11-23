@@ -353,7 +353,7 @@ function TargetBanner({
         variant="ghost"
         hitSlop={CLOSE_HIT_SLOP}
         isDisabled={isSubmitting}
-        accessibilityLabel={t('actions.closeComposer')}
+        aria-label={t('actions.closeComposer')}
         onPress={() => {
           reset(EMPTY_TODO_COMMENT_FORM_VALUES);
           KeyboardController.dismiss().catch((error) =>

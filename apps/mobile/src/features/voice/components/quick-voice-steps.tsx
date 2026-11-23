@@ -415,7 +415,7 @@ CaptureLayout.Header = function Header({ center, right, onClose }: CaptureLayout
           className="size-[22px]"
           hitSlop={11}
           onPress={onClose}
-          accessibilityLabel={t('listening.cancel')}
+          aria-label={t('listening.cancel')}
           testID="quick-voice-cancel"
         >
           <CloseIcon

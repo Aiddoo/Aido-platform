@@ -26,7 +26,7 @@ export function PickerTitleBar({
           variant="ghost"
           className="size-5"
           hitSlop={12}
-          accessibilityLabel={t('actions.close')}
+          aria-label={t('actions.close')}
           onPress={onCancel}
         >
           <CloseIcon
