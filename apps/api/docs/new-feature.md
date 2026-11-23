@@ -28,6 +28,7 @@ pnpm gen:api-slice   # context · slice(복수) · aggregate(단수) · id 종�
 
 ## 2. 도메인을 채운다
 
+- 이름은 [용어집](glossary.md)의 그 Context 표를 따른다. 표에 없는 업무 용어·상태 전이는 같은 PR에서 `glossary/<context>.md`에 더한다.
 - Aggregate는 `create`·`reconstitute`·`toPrimitives()`만 팩토리·꺼내기 이름으로 쓴다(저장하지 않는 Aggregate는 `create`·`toPrimitives()`만). 상태 전이 메서드는 바뀌면 `true`를 돌려주고 그때만 `raise`한다([도메인 모델](domain-modeling.md)).
 - 값 검증은 VO `create`, 여러 모델에 걸친 판단은 `*.domain-service.ts` 순수 함수(판별 유니온 반환, `now`는 인자)다.
 - 서버만 아는 값 목록은 `domain/<slice>.constants.ts` 튜플, 앱과 함께 아는 값은 `@aido/api/vocabulary` 튜플이다. 리터럴 유니온을 손으로 쓰지 않는다([이름 사전](conventions.md#공유-값은-한-곳에서-선언한다)).
