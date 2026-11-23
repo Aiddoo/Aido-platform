@@ -106,7 +106,7 @@ export class OAuthState extends AggregateRoot<OAuthStateId, OAuthStateProps> {
     return isExpiredAt(this.props.expiresAt, now) ? "expired" : "valid";
   }
 
-  // 1.15.0까지의 앱은 연결 시작에 user_hint를 보내지 않아 시작한 사용자가 비어 있다. 모든 지원 앱이 보내면 지운다
+  // 1.15.0 이하 앱은 연결 시작에 user_hint를 보내지 않아 시작한 사용자가 비어 있다. 1.17.0 확인 뒤 지운다(compatibility.md)
   canLinkFor(userId: string): boolean {
     return (
       this.props.mode === "link" &&

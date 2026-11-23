@@ -47,13 +47,13 @@ describe("발급자·대상 없는 옛 토큰 거절 E2E", () => {
         where: { refreshTokenHash: tokenIssuer.hashRefreshToken(login.body.data.refreshToken) },
       }),
     );
-    const legacyJwt = new JwtService();
+    const preIssuerJwt = new JwtService();
     const claims = { sub: session.userId, email, role: "USER", sessionId: session.id };
-    const accessToken = await legacyJwt.signAsync(
+    const accessToken = await preIssuerJwt.signAsync(
       { ...claims, type: "access" },
       { secret: jwt.secret, expiresIn: 900 },
     );
-    const refreshToken = await legacyJwt.signAsync(
+    const refreshToken = await preIssuerJwt.signAsync(
       {
         ...claims,
         type: "refresh",
@@ -73,19 +73,19 @@ describe("발급자·대상 없는 옛 토큰 거절 E2E", () => {
 
   it("iss·aud 없는 access 토큰은 AUTH_0101, refresh 토큰은 회전하지 않고 AUTH_0104로 거절한다", async () => {
     // Given
-    const legacy = await givenPreIssuerTokens("legacy-token@example.com");
+    const released = await givenPreIssuerTokens("legacy-token@example.com");
 
     // When
     const me = await request(testContext.app.getHttpServer())
       .get("/v1/auth/me")
-      .set("Authorization", `Bearer ${legacy.accessToken}`);
+      .set("Authorization", `Bearer ${released.accessToken}`);
     const refreshed = await request(testContext.app.getHttpServer())
       .post("/v1/auth/refresh")
-      .set("Authorization", `Bearer ${legacy.refreshToken}`);
+      .set("Authorization", `Bearer ${released.refreshToken}`);
 
     // Then
-    expect(decodeJwtSegment(legacy.accessToken, 1)).not.toHaveProperty("iss");
-    expect(decodeJwtSegment(legacy.refreshToken, 1)).not.toHaveProperty("aud");
+    expect(decodeJwtSegment(released.accessToken, 1)).not.toHaveProperty("iss");
+    expect(decodeJwtSegment(released.refreshToken, 1)).not.toHaveProperty("aud");
     expect(me.status).toBe(401);
     expect(me.body.error.code).toBe(ErrorCode.AUTH_0101);
     expect(refreshed.status).toBe(401);
@@ -93,8 +93,8 @@ describe("발급자·대상 없는 옛 토큰 거절 E2E", () => {
     const session = requireRecord(
       await testContext.testDatabase
         .getClient()
-        .query.session.findFirst({ where: { id: legacy.sessionId } }),
+        .query.session.findFirst({ where: { id: released.sessionId } }),
     );
-    expect(session).toMatchObject({ refreshTokenHash: legacy.refreshTokenHash, revokedAt: null });
+    expect(session).toMatchObject({ refreshTokenHash: released.refreshTokenHash, revokedAt: null });
   });
 });

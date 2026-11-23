@@ -12,7 +12,7 @@ import {
 } from "#test/e2e/helpers/e2e-app-factory";
 
 // 현재 validator를 가져오면 새 계약으로 구 클라이언트를 검증하게 되므로 소비 필드를 고정한다.
-const legacyTodoSchema = z.object({
+const releasedTodoSchema = z.object({
   id: z.number().int(),
   userId: z.cuid(),
   title: z.string(),
@@ -26,13 +26,13 @@ const legacyTodoSchema = z.object({
   updatedAt: z.iso.datetime(),
 });
 
-const legacyTokensSchema = z.object({ accessToken: z.string(), refreshToken: z.string() });
-const legacyPaginationSchema = z.object({
+const releasedTokensSchema = z.object({ accessToken: z.string(), refreshToken: z.string() });
+const releasedPaginationSchema = z.object({
   nextCursor: z.number().int().nullable(),
   hasNext: z.boolean(),
   size: z.number(),
 });
-const legacyNotificationsSchema = z.object({
+const releasedNotificationsSchema = z.object({
   notifications: z.array(
     z.object({
       id: z.number().int(),
@@ -48,11 +48,11 @@ const legacyNotificationsSchema = z.object({
   nextCursor: z.number().int().nullable(),
 });
 
-function legacySuccess<T>(data: z.ZodType<T>) {
+function releasedSuccess<T>(data: z.ZodType<T>) {
   return z.object({ success: z.literal(true), data, timestamp: z.number().int() });
 }
 
-const legacyErrorSchema = z.object({
+const releasedErrorSchema = z.object({
   success: z.literal(false),
   error: z.object({ code: z.string(), message: z.string() }),
   timestamp: z.number().int(),
@@ -84,12 +84,12 @@ describe("배포된 구 클라이언트 HTTP 호환성", () => {
         .post("/v1/auth/login")
         .send({ email, password })
         .expect(200);
-      const tokens = legacySuccess(legacyTokensSchema).parse(login.body).data;
+      const tokens = releasedSuccess(releasedTokensSchema).parse(login.body).data;
       const refresh = await request(testContext.app.getHttpServer())
         .post("/v1/auth/refresh")
         .set("Authorization", `Bearer ${tokens.refreshToken}`)
         .expect(200);
-      const refreshed = legacySuccess(legacyTokensSchema).parse(refresh.body).data;
+      const refreshed = releasedSuccess(releasedTokensSchema).parse(refresh.body).data;
       const authorization = `Bearer ${refreshed.accessToken}`;
       const categoryId = await testContext.helpers.getDefaultCategoryId(refreshed.accessToken);
 
@@ -101,9 +101,9 @@ describe("배포된 구 클라이언트 HTTP 호환성", () => {
         .expect(201);
 
       // Then
-      const todo = legacySuccess(z.object({ todo: legacyTodoSchema, message: z.string() })).parse(
-        created.body,
-      ).data.todo;
+      const todo = releasedSuccess(
+        z.object({ todo: releasedTodoSchema, message: z.string() }),
+      ).parse(created.body).data.todo;
       expect(todo).toMatchObject({ startDate: "2024-02-29", scheduledTime: null, isAllDay: true });
       expect(todo).not.toHaveProperty("commentCount");
 
@@ -115,8 +115,8 @@ describe("배포된 구 클라이언트 HTTP 호환성", () => {
         .expect(200);
 
       // Then
-      const scheduled = legacySuccess(
-        z.object({ todo: legacyTodoSchema, message: z.string() }),
+      const scheduled = releasedSuccess(
+        z.object({ todo: releasedTodoSchema, message: z.string() }),
       ).parse(updated.body).data.todo;
       expect(scheduled.startDate).toBe("2024-02-29");
       expect(scheduled.scheduledTime).toMatch(/Z$/);
@@ -134,8 +134,8 @@ describe("배포된 구 클라이언트 HTTP 호환성", () => {
         .expect(200);
 
       // Then
-      const page = legacySuccess(
-        z.object({ items: z.array(legacyTodoSchema), pagination: legacyPaginationSchema }),
+      const page = releasedSuccess(
+        z.object({ items: z.array(releasedTodoSchema), pagination: releasedPaginationSchema }),
       ).parse(list.body).data;
       expect(page.items.map((item) => item.id)).toContain(todo.id);
       expect(page.pagination.size).toBe(1);
@@ -161,7 +161,7 @@ describe("배포된 구 클라이언트 HTTP 호환성", () => {
         .expect(200);
 
       // Then
-      const firstPage = legacySuccess(legacyNotificationsSchema).parse(notifications.body).data;
+      const firstPage = releasedSuccess(releasedNotificationsSchema).parse(notifications.body).data;
       expect(firstPage.hasMore).toBe(true);
 
       // When
@@ -173,7 +173,7 @@ describe("배포된 구 클라이언트 HTTP 호환성", () => {
 
       // Then
       expect(
-        legacySuccess(legacyNotificationsSchema).parse(next.body).data.notifications,
+        releasedSuccess(releasedNotificationsSchema).parse(next.body).data.notifications,
       ).toHaveLength(1);
 
       // When
@@ -184,7 +184,7 @@ describe("배포된 구 클라이언트 HTTP 호환성", () => {
         .expect(400);
 
       // Then
-      expect(legacyErrorSchema.parse(invalid.body).error.code).toBe(ErrorCode.SYS_0002);
+      expect(releasedErrorSchema.parse(invalid.body).error.code).toBe(ErrorCode.SYS_0002);
     },
   );
 
@@ -200,7 +200,8 @@ describe("배포된 구 클라이언트 HTTP 호환성", () => {
       .set("Authorization", `Bearer ${user.accessToken}`)
       .send({ title: "댓글의 할 일", categoryId, startDate: "2024-02-29" })
       .expect(201);
-    const todo = legacySuccess(z.object({ todo: legacyTodoSchema })).parse(created.body).data.todo;
+    const todo = releasedSuccess(z.object({ todo: releasedTodoSchema })).parse(created.body).data
+      .todo;
 
     // When
     const written = await request(testContext.app.getHttpServer())
@@ -210,7 +211,7 @@ describe("배포된 구 클라이언트 HTTP 호환성", () => {
       .expect(201);
 
     // Then
-    const comments = legacySuccess(
+    const comments = releasedSuccess(
       z.object({ comments: z.array(z.object({ id: z.string(), content: z.string() })) }),
     ).parse(written.body).data.comments;
     expect(comments[0]?.content).toBe("이전 앱 댓글");
@@ -222,7 +223,7 @@ describe("배포된 구 클라이언트 HTTP 호환성", () => {
       .expect(200);
 
     // Then
-    const read = legacySuccess(
+    const read = releasedSuccess(
       z.object({
         items: z.array(z.object({ comment: z.object({ id: z.string(), content: z.string() }) })),
       }),
