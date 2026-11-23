@@ -12,7 +12,6 @@ import { billingNoticeUntil } from "../../../shared/domain/billing-notice-window
 import type { QuietHoursReaderPort } from "../ports/quiet-hours.reader.port.js";
 
 export const BILLING_NOTICE_SWEEP = {
-  /** 한 번에 읽는 후보 수 */
   BATCH_SIZE: 500,
   /** 한 트랜잭션에서 표시·알림 기록을 남기는 수. 알림 outbox 쓰기를 짧게 나눈다 */
   CLAIM_CHUNK_SIZE: 100,
@@ -24,7 +23,6 @@ export const BILLING_NOTICE_SWEEP = {
 export interface BillingNoticeSettings {
   /** 끝나기 이 일수 전부터 안내한다. 고른 후보 중 보낼 것은 안내 Entity의 isNoticeable이 정한다. */
   readonly noticeDays: number;
-  /** sweep 한 번에 남기는 요약 로그 이벤트 */
   readonly logEvent: string;
 }
 

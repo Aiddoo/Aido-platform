@@ -17,7 +17,6 @@ import type {
 } from "../ports/user-provisioning-seeder.port.js";
 import { type UserRepositoryPort } from "../ports/user.repository.port.js";
 
-/** 신원 계정 유형 — 크레덴셜(이메일) 또는 소셜(OAuth) */
 type ProvisionAccount =
   | { kind: "credential"; hashedPassword: string }
   | { kind: "oauth"; provider: AccountProvider; providerAccountId: string };
@@ -35,7 +34,6 @@ export interface ProvisionUserCommand {
   locale: SupportedLocale;
 }
 
-/** 프로비저닝 결과 — 호출측이 사용하는 최소 신원 정보 */
 export interface ProvisionedUser {
   readonly id: string;
   readonly email: string;
