@@ -109,7 +109,7 @@ export class DeleteTodoOccurrencesUseCase {
   }
 
   // 이후 수정으로 나뉜 앞 구간까지 사용자에게는 하나의 반복 할 일이다.
-  // 규칙이 없는 묶음(1.14.2로 되돌린 동안 생긴 것)은 그 묶음만 지운다
+  // 규칙 행이 없는 묶음은 그 묶음만 지운다
   async #deleteAll(
     ownerId: UserId,
     seriesId: TodoSeriesId,

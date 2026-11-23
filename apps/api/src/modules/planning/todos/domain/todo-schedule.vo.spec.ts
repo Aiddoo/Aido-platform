@@ -127,21 +127,6 @@ describe("TodoSchedule — 일정 값 객체", () => {
     expect(patched.scheduledTime).toEqual(schedule.scheduledTime);
   });
 
-  it("1.14.2 서버가 시간을 지워 칸만 낡은 행은 벽시계도 없는 것으로 읽는다", () => {
-    // Given
-    const props = {
-      startDate: START,
-      endDate: null,
-      scheduledLocalTime: LOCAL,
-      scheduledTime: null,
-      isAllDay: true,
-    };
-    // When
-    const schedule = TodoSchedule.reconstitute(props);
-    // Then
-    expect(schedule.scheduledLocalTime).toBeNull();
-  });
-
   it("유효한 일정으로 생성하면 각 필드를 그대로 노출한다", () => {
     // Given
     const startDate = Temporal.PlainDate.from("2026-03-01");

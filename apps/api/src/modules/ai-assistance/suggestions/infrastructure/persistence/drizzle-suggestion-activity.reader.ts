@@ -43,7 +43,7 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
     return todos.toReversed().map((t) => ({
       title: t.title,
       startDate: t.startDate.toString(),
-      scheduledTime: t.scheduledTime == null ? null : t.scheduledLocalTime,
+      scheduledTime: t.scheduledLocalTime,
       categoryId: t.categoryId,
       completed: t.completed,
       categoryName: requireRecord(t.categoryName),

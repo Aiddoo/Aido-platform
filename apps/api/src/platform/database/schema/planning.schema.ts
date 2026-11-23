@@ -37,7 +37,6 @@ export const todo = pgTable(
     // 코드 이름은 seriesId. 열 이름을 바꾸면 배포가 겹치는 동안 옛 이미지가 실패해 DB 열 이름은 그대로 둔다.
     seriesId: varchar("recurrenceGroupId", { length: 36 }),
     // 벽시계(HH:mm)가 진실이고 scheduledTime은 startDate + 이 값 + 사용자 시간대로 만든 파생값이다.
-    // 1.14.2 서버가 시간을 지운 행에 낡은 값이 남을 수 있어 운영 확인 뒤 CHECK를 걸고 읽기 대체를 지운다(compatibility.md)
     scheduledLocalTime: varchar({ length: 5 }),
     scheduledTime: instant({ withTimezone: true }),
     sortOrder: integer().default(0).notNull(),

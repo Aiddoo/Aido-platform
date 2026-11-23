@@ -50,12 +50,8 @@ export class TodoSchedule extends ValueObject<TodoScheduleProps> {
     });
   }
 
-  // 1.14.2 서버가 시간을 지운 행은 벽시계가 낡아 순간이 없으면 벽시계도 없다. 운영 확인 뒤 지운다(compatibility.md)
   static reconstitute(props: TodoScheduleProps): TodoSchedule {
-    return new TodoSchedule({
-      ...props,
-      scheduledLocalTime: props.scheduledTime == null ? null : props.scheduledLocalTime,
-    });
+    return new TodoSchedule(props);
   }
 
   static #assertDateOrder({

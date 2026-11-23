@@ -29,7 +29,7 @@ export function toFriendTodoReadModel(row: TodoDetailsRow): FriendTodoReadModel 
     startDate: row.startDate.toString(),
     endDate: row.endDate?.toString() ?? null,
     scheduledTime: row.scheduledTime == null ? null : toIsoString(row.scheduledTime),
-    scheduledLocalTime: row.scheduledTime == null ? null : row.scheduledLocalTime,
+    scheduledLocalTime: row.scheduledLocalTime,
     isAllDay: row.isAllDay,
     visibility: row.visibility,
     seriesId: row.seriesId,
