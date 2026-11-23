@@ -5,12 +5,12 @@ import { IdentityUsersQueriesModule } from "#api/modules/identity/users/identity
 import { NotificationNotificationsModule } from "#api/modules/notification/notifications/notification-notifications.public";
 import { NotificationPushDispatchesModule } from "#api/modules/notification/push-dispatches/notification-push-dispatches.public";
 
-import { SweepBillingNoticesUseCase } from "../shared/application/use-cases/sweep-billing-notices.use-case.js";
 import { PremiumAccessCachePort } from "./application/ports/premium-access-cache.port.js";
 import { PremiumAccessReaderPort } from "./application/ports/premium-access.reader.port.js";
 import { PremiumGranterPort } from "./application/ports/premium-granter.port.js";
 import { NotifyEndingPremiumGrantsUseCase } from "./application/use-cases/notify-ending-premium-grants.use-case.js";
 import { ProjectPremiumAccessUseCase } from "./application/use-cases/project-premium-access.use-case.js";
+import { SweepBillingNoticesUseCase } from "./application/use-cases/sweep-billing-notices.use-case.js";
 import { SweepPremiumGrantsUseCase } from "./application/use-cases/sweep-premium-grants.use-case.js";
 import { BILLING_PREMIUM_GRANTS_PROVIDERS } from "./billing-premium-grants.providers.js";
 

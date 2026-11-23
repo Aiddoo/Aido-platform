@@ -10,7 +10,7 @@ import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
-import { SweepBillingNoticesUseCase } from "../shared/application/use-cases/sweep-billing-notices.use-case.js";
+import { SweepBillingNoticesUseCase } from "../premium-grants/application/use-cases/sweep-billing-notices.use-case.js";
 import { StoreCustomerConsolePort } from "./application/ports/store-customer-console.port.js";
 import { StoreSubscriptionReconcileSchedulerPort } from "./application/ports/store-subscription-reconcile-scheduler.port.js";
 import { StoreSubscriptionStatusReaderPort } from "./application/ports/store-subscription-status.reader.port.js";

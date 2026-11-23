@@ -5,7 +5,7 @@ import type {
   BillingNoticeSweepInput,
   BillingNoticeSweepResult,
   SweepBillingNoticesUseCase,
-} from "../../../shared/application/use-cases/sweep-billing-notices.use-case.js";
+} from "../../../premium-grants/application/use-cases/sweep-billing-notices.use-case.js";
 import type { UpcomingRenewalNoticeRepositoryPort } from "../ports/upcoming-renewal-notice.repository.port.js";
 import type { UpcomingRenewalNotifierPort } from "../ports/upcoming-renewal-notifier.port.js";
 import { SubscriptionLogEvent } from "../subscriptions.log-events.js";
