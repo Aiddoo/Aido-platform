@@ -47,9 +47,10 @@
 ## 배포 순서
 
 1. 서버를 먼저 배포한다(Blue-Green, [서버 배포와 롤백](../../../apps/api/docs/deployment.md)). 배포 뒤 `/health`, 로그 error, pg-boss 큐 처리, refresh 토큰 수명을 확인한다.
-2. 앱은 시뮬레이터 QA(iPhone → iPad → 접은 Duo) 뒤 스토어에 제출한다. 모든 시트를 키보드·VoiceOver와 함께 확인한다.
-3. 스토어 문구는 `apps/mobile/store-metadata/1.16.1/release.json`과 listing `release_notes.txt`를 같은 순서로 맞추고 `pnpm --filter @aido/mobile store:check`로 확인한다.
-4. 스토어에서 받을 수 있게 된 뒤 플랫폼마다 `AppRelease`를 1.16.1로 올린다([서버 배포](../../../apps/api/docs/deployment.md#공개-버전과-env-반영)).
+2. 서버가 안정되면 OTA를 낸다. 머지된 `main`에는 네이티브 층(Expo 패치·TrueSheet)이 있어 fingerprint가 운영 1.16.0과 다르므로, OTA는 마지막 JS 층 커밋(`stack/1.16.1/15-mobile-modern-idioms`, fingerprint가 운영과 같음)의 독립 clone에서 낸다. OTA 뒤에는 서버를 이 stack 앞 SHA로 되돌리지 않는다.
+3. 앱은 시뮬레이터 QA(iPhone → iPad → 접은 Duo) 뒤 스토어에 제출한다. 모든 시트를 키보드·VoiceOver와 함께 확인한다.
+4. 스토어 문구는 `apps/mobile/store-metadata/1.16.1/release.json`과 listing `release_notes.txt`를 같은 순서로 맞추고 `pnpm --filter @aido/mobile store:check`로 확인한다.
+5. 스토어에서 받을 수 있게 된 뒤 플랫폼마다 `AppRelease`를 1.16.1로 올린다([서버 배포](../../../apps/api/docs/deployment.md#공개-버전과-env-반영)).
 
 ## 미룬 것
 

@@ -147,7 +147,7 @@ pnpm check:native-icons
 
 JS만 바뀐 핫픽스는 OTA로 낸다. runtime이 fingerprint라 운영 빌드와 fingerprint가 같아야 사용자에게 간다.
 
-- 머지된 `main`의 독립 clone(위 1단계)에서 `eas.json`의 `node` 버전으로 `eas fingerprint:generate --environment production`이 운영 빌드와 같은지 먼저 본다. 작업 중인 checkout은 git 제외 파일 때문에 값이 달라 OTA가 아무에게도 가지 않는다.
+- 머지된 `main`의 독립 clone(위 1단계)에서 `eas.json`의 `node` 버전으로 `eas fingerprint:generate --environment production`이 운영 빌드와 같은지 먼저 본다. `main`에 네이티브 변경이 함께 들어가 다르면 마지막 JS 커밋(stack의 네이티브 층 바로 아래)에서 같은 절차로 낸다. 작업 중인 checkout은 git 제외 파일 때문에 값이 달라 OTA가 아무에게도 가지 않는다.
 - `pnpm update:production "메시지"`로 보낸다. `--environment production`이 빠지면 `extra`(API·Sentry·RevenueCat·카카오 키)가 비어 결제가 깨진다.
 - 보낸 뒤 업데이트 manifest의 runtime과 `extra`를 확인하고, 소스맵은 `eas env:exec production`으로 올린다. OTA는 다음 콜드 스타트에 적용된다.
 
