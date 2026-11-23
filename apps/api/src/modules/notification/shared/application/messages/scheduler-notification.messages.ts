@@ -1,4 +1,9 @@
-import { completionRate, type SupportedLocale, weeklyAchievementBadge } from "@aido/api/vocabulary";
+import {
+  completionRate,
+  isAllCompleted,
+  type SupportedLocale,
+  weeklyAchievementBadge,
+} from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
 import type {
@@ -130,7 +135,7 @@ export function createEveningReminderNotificationMessage({
   variantContext,
 }: EveningReminderNotificationInput): NotificationMessage {
   const options = { locale, variantContext };
-  if (completed === total && total > 0) {
+  if (isAllCompleted(completed, total)) {
     if (streak >= 30) {
       return renderNotificationTemplate(SCHEDULER_COPY.EVENING_STREAK_30, {
         ...options,

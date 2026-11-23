@@ -7,6 +7,11 @@ import { computePeriodLabel } from "../../../application/messages/report-period-
 import type { ReportStatusReadModel } from "../../../application/read-models/report-status.read-model.js";
 import type { AiReport } from "../../../domain/ai-report.aggregate.js";
 import type { ReportContentSource } from "../../../domain/ai-reports.constants.js";
+import {
+  countPerfectDays,
+  findPeakHour,
+  orderTimePatterns,
+} from "../../../domain/report-aggregation.domain-service.js";
 import { computeDateRange } from "../../../domain/report-period.domain-service.js";
 
 // 출처 칸이 생기기 전(2026-10-25) 행(null)은 AI 글인지 폴백인지 몰라 AI 코치로 내세우지 않는다
@@ -38,10 +43,11 @@ export function toAiReportResponse(
       localToday,
     }),
     dateRange: computeDateRange(primitives.type, primitives.year, primitives.period),
-    stats: primitives.stats,
+    stats: { ...primitives.stats, perfectDays: countPerfectDays(primitives.dailyCompletions) },
     categoryBreakdown: [...primitives.categoryBreakdown],
     dayPatterns: [...primitives.dayPatterns],
-    timePatterns: [...primitives.timePatterns],
+    timePatterns: orderTimePatterns(primitives.timePatterns),
+    peakHour: findPeakHour(primitives.timePatterns),
     aiSummary: primitives.aiSummary,
     aiTips: [...primitives.aiTips],
     hasActivity: primitives.hasActivity,

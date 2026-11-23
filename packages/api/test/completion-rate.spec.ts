@@ -1,4 +1,4 @@
-import { completionRate } from "../src/vocabulary/completion-rate.js";
+import { completionRate, isAllCompleted } from "../src/vocabulary/completion-rate.js";
 
 describe("completionRate", () => {
   it.each([
@@ -15,5 +15,19 @@ describe("completionRate", () => {
 
     // Then
     expect(rate).toBe(expected);
+  });
+});
+
+describe("isAllCompleted", () => {
+  it.each([
+    { completed: 0, total: 0, expected: false, reason: "할 일이 없는 날은 끝낸 날이 아니다" },
+    { completed: 2, total: 3, expected: false, reason: "하나라도 남았다" },
+    { completed: 3, total: 3, expected: true, reason: "모두 끝냈다" },
+  ])("$completed/$total → $expected ($reason)", ({ completed, total, expected }) => {
+    // When
+    const result = isAllCompleted(completed, total);
+
+    // Then
+    expect(result).toBe(expected);
   });
 });

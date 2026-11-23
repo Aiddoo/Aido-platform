@@ -1,3 +1,5 @@
+import { isAllCompleted } from "@aido/api/vocabulary";
+
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
@@ -57,7 +59,7 @@ export class OnTodoToggledUseCase {
           return;
         }
 
-        const allCompleted = stats.total === stats.completed;
+        const allCompleted = isAllCompleted(stats.completed, stats.total);
         if (!(await this.#recordTransition(preference, today, allCompleted))) {
           return;
         }

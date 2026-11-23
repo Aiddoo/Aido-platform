@@ -338,8 +338,11 @@ export const RELEASED_V1_OPENAPI_CONTRACT = {
 	/** 1.16.0: 사용자 설정 응답(PreferenceResponseDto·UpdatePreferenceResponseDto)에 항상 값을 주는 aiPushEnabled, 수정 요청(UpdatePreferenceDto)에 선택 칸 aiPushEnabled만 추가. 요청에서 생략하면 그 값을 바꾸지 않고(기본 true), 출시 앱의 Zod는 strip 모드라 새 응답 키를 버린다. test/e2e/user-settings.e2e-spec.ts가 출시 앱 요청 모양(nightPushEnabled만)으로 값이 남는 것을 증명한다. */
 	preAiPushPreferenceSchemasFingerprint:
 		"6c943965c90bb85386453df3d8a799e2511f5854cd0e733edf031386fa9ce0ab",
-	schemasFingerprint:
+	/** 1.16.1: AI 리포트 응답(AiReportResponseDto·AiReportListResponseDto·ReportStatusResponseDto)의 stats에 선택 칸 perfectDays(nullable), 리포트에 선택 칸 peakHour(nullable)만 추가. 둘 다 저장된 dailyCompletions·timePatterns에서 서버가 정하고 기존 칸·필수 여부는 같으며 출시 앱의 Zod는 strip 모드라 새 키를 버린다. ai-report-response.mapper.spec.ts가 값을, test:contract가 모양을 확인한다. */
+	preReportServerOwnedSchemasFingerprint:
 		"81b40124f8595a34b2e1961d35afa6fbc63917e2a34d86cf0cc2990b15c4821a",
+	schemasFingerprint:
+		"ab07d30c2df9b691430535fe3fa79cb02103ba33e5a07ce5298201d85b64b40b",
 	/** 1.13.0: GET /todos/summary에 선택 date 쿼리(오늘·내일)만 추가. 생략 시 기존 응답과 같아 구버전 앱은 영향이 없다. */
 	preTodoSummaryDatePathsFingerprint:
 		"d52736c33c48601fea6473ce56d311e6e49857b7571a532ee943bdc9e3900a1b",

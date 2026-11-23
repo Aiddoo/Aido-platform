@@ -14,3 +14,8 @@ export function completionRate(completedCount: number, totalCount: number): numb
   const rounded = Math.round((completedCount / totalCount) * FULL_RATE);
   return Math.min(Math.max(rounded, 1), FULL_RATE - 1);
 }
+
+// 할 일이 하나 이상이고 모두 끝낸 날(달력의 물고기·연속 기록·리포트 완벽한 날)의 규칙 하나다
+export function isAllCompleted(completedCount: number, totalCount: number): boolean {
+  return totalCount > 0 && completedCount === totalCount;
+}
