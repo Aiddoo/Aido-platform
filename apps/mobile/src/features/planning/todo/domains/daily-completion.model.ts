@@ -1,5 +1,6 @@
 import { completionRate } from '@aido/api/vocabulary';
 import { dateKeySchema, type DateKey } from '@src/shared/date/date-key';
+import { completionRateSchema } from '@src/shared/domains/completion-rate.model';
 import { orderBy, uniq } from 'es-toolkit';
 import { z } from 'zod';
 
@@ -10,7 +11,7 @@ const dailyCompletionSummarySchema = z.object({
   totalTodos: z.int().min(0),
   completedTodos: z.int().min(0),
   isComplete: z.boolean(),
-  completionRate: z.number().min(0).max(100),
+  completionRate: completionRateSchema,
   categoryColors: z.array(z.string()),
 });
 export type DailyCompletionSummary = z.infer<typeof dailyCompletionSummarySchema>;

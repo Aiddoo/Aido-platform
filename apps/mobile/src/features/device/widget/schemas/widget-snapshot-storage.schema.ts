@@ -1,5 +1,6 @@
 import { SUPPORTED_LOCALES } from '@aido/api/vocabulary';
 import { dateKeySchema } from '@src/shared/date/date-key';
+import { completionRateSchema } from '@src/shared/domains/completion-rate.model';
 import { z } from 'zod';
 
 import { WIDGET_TOP_TODOS_LIMIT } from '../constants/widget.constants';
@@ -11,15 +12,15 @@ export const widgetDaySnapshotSchema = z.object({
   state: widgetRenderStateSchema.exclude(['stale']),
   /** 이 day가 설명하는 로컬 날짜 (YYYY-MM-DD) — 렌더 시점 오늘 key와 비교한다 */
   date: dateKeySchema,
-  totalTodos: z.number().int().min(0),
-  completedTodos: z.number().int().min(0),
-  completionRate: z.number().min(0).max(100),
+  totalTodos: z.int().min(0),
+  completedTodos: z.int().min(0),
+  completionRate: completionRateSchema,
   isComplete: z.boolean(),
-  currentStreak: z.number().int().min(0),
+  currentStreak: z.int().min(0),
   topTodos: z
     .array(
       z.object({
-        id: z.number().int(),
+        id: z.int(),
         title: z.string(),
         completed: z.boolean(),
         /** HEX. 위젯 체크박스를 앱 홈과 같은 색으로 그린다 */

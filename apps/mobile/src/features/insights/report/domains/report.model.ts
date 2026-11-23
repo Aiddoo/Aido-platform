@@ -1,6 +1,7 @@
 import { AI_REPORT_CONTENT_SOURCES, AI_REPORT_TYPES } from '@aido/api/vocabulary';
 import { dateKeySchema } from '@src/shared/date/date-key';
 import { instantSchema } from '@src/shared/date/instant';
+import { completionRateSchema } from '@src/shared/domains/completion-rate.model';
 import { maxBy, orderBy } from 'es-toolkit';
 import { z } from 'zod';
 
@@ -10,8 +11,8 @@ export type ReportType = z.infer<typeof reportTypeSchema>;
 const reportStatsSchema = z.object({
   totalTodos: z.int().nonnegative(),
   completedTodos: z.int().nonnegative(),
-  completionRate: z.number().min(0).max(100),
-  prevCompletionRate: z.number().min(0).max(100).nullable(),
+  completionRate: completionRateSchema,
+  prevCompletionRate: completionRateSchema.nullable(),
   streakDays: z.int().nonnegative(),
 });
 
@@ -20,7 +21,7 @@ const categoryBreakdownItemSchema = z.object({
   color: z.string(),
   total: z.int().nonnegative(),
   completed: z.int().nonnegative(),
-  rate: z.number().min(0).max(100),
+  rate: completionRateSchema,
 });
 
 const timePatternItemSchema = z.object({

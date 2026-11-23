@@ -13,6 +13,7 @@ import {
 } from '@src/shared/date/date-key';
 import { instantSchema } from '@src/shared/date/instant';
 import { toHHmm } from '@src/shared/date/zoned';
+import { completionRateSchema } from '@src/shared/domains/completion-rate.model';
 import { userSummarySchema } from '@src/shared/domains/user-summary.model';
 import { z } from 'zod';
 
@@ -62,7 +63,7 @@ export const todoSummarySchema = z.object({
   date: dateKeySchema,
   totalTodos: z.int().min(0),
   completedTodos: z.int().min(0),
-  completionRate: z.number().min(0).max(100),
+  completionRate: completionRateSchema,
   isComplete: z.boolean(),
   currentStreak: z.int().min(0),
   topTodos: z
