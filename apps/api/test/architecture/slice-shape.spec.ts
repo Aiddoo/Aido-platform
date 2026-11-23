@@ -21,20 +21,13 @@ const SLICE_SHAPE_RULES = [
   "application에는 구체 Reader를 두지 않는다(포트는 *.reader.port.ts)",
   "<context>/shared에 UseCase가 없다",
   "포트 조회 메서드는 find는 T | null, list는 목록, get은 null 없는 값을 돌려준다",
+  "reconstitute가 있는 Aggregate는 create·toPrimitives도 있다",
 ] as const;
 type SliceShapeRule = (typeof SLICE_SHAPE_RULES)[number];
 
 interface SliceShapeViolation {
   readonly rule: SliceShapeRule;
   readonly path: string;
-}
-
-// 다른 Context(notification·planning·social·weather·ai-assistance·engagement·voice)를 정리하는 층이 고치면 지운다
-function pendingCleanup(
-  rule: SliceShapeRule,
-  paths: readonly string[],
-): (SliceShapeViolation & { readonly reason: string })[] {
-  return paths.map((path) => ({ rule, path, reason: "07b에서 정리" }));
 }
 
 // 이유를 적은 예외. 순환을 푸는 층에서 남길지 정하고, 이유가 사라지면 지운다
@@ -63,82 +56,17 @@ const DOCUMENTED_EXCEPTIONS: readonly (SliceShapeViolation & { readonly reason: 
     reason:
       "todos 기능 Module이 todo-series 기능 Module을 import하고 todo-series가 할 일 저장·리마인더 포트를 써서, 두 Module이 함께 쓰는 포트 바인딩을 한 곳에 둔다(없애면 Module 순환이거나 9개 바인딩 중복)",
   },
-  ...pendingCleanup("저장 Aggregate의 식별자는 <Aggregate>Id VO다", [
-    "weather/user-locations/domain/user-location.aggregate.ts#UserLocation",
-  ]),
-  ...pendingCleanup("application에는 구체 Reader를 두지 않는다(포트는 *.reader.port.ts)", [
-    "ai-assistance/ai-generations/application/request-locale.reader.ts",
-    "ai-assistance/ai-generations/application/scheduled-ai-consent.reader.ts",
-    "ai-assistance/suggestions/application/suggestion-analysis-state.reader.ts",
-    "ai-assistance/suggestions/application/suggestion-context.reader.ts",
-    "notification/notifications/application/notification-history.reader.ts",
-    "notification/push-dispatches/application/no-active-token-reason.reader.ts",
-    "notification/push-dispatches/application/push-quiet-hours.reader.ts",
-  ]),
-  ...pendingCleanup(
-    "포트 조회 메서드는 find는 T | null, list는 목록, get은 null 없는 값을 돌려준다",
-    [
-      "ai-assistance/parsed-drafts/application/ports/upcoming-todo.reader.port.ts#findByUserId",
-      "ai-assistance/parsed-drafts/application/ports/user-category.reader.port.ts#findByUserId",
-      "ai-assistance/suggestions/application/ports/suggestion-activity.reader.port.ts#findRecentResponded",
-      "ai-assistance/suggestions/application/ports/suggestion-activity.reader.port.ts#findRecentTodos",
-      "engagement/todo-comments/application/ports/todo-comment-block-reader.port.ts#findBlockedCounterpartIds",
-      "engagement/todo-comments/application/ports/todo-comment-reply.reader.port.ts#listReplies",
-      "engagement/todo-comments/application/ports/todo-comment-thread.reader.port.ts#listThreads",
-      "engagement/todo-comments/application/ports/todo-conversation.reader.port.ts#listConversation",
-      "notification/notifications/application/ports/marketing-consent-reconfirm.port.ts#findMarketingReconfirmTargets",
-      "notification/notifications/application/ports/notification-history.reader.port.ts#findAlreadyNotifiedUserIds",
-      "notification/notifications/application/ports/notification-history.reader.port.ts#findNudgeSuggestedFriends",
-      "notification/notifications/application/ports/notification-history.reader.port.ts#findWinbackStagesSince",
-      "notification/notifications/application/ports/notification-todo-target.reader.port.ts#findTodoTargets",
-      "notification/push-dispatches/application/ports/push-quiet-hours.reader.port.ts#findUsersInQuietHours",
-      "notification/push-dispatches/application/ports/push-receipt.repository.port.ts#findPendingTicketIds",
-      "notification/reminders/application/ports/re-engagement-reader.port.ts#findAcceptedFollows",
-      "notification/reminders/application/ports/re-engagement-reader.port.ts#findActiveUsersInTimezones",
-      "notification/reminders/application/ports/re-engagement-reader.port.ts#findFriendsWithTodayTodos",
-      "notification/reminders/application/ports/re-engagement-reader.port.ts#findNudgeSuggestFollows",
-      "notification/reminders/application/ports/re-engagement-reader.port.ts#findOnboardingCandidates",
-      "notification/reminders/application/ports/re-engagement-reader.port.ts#findSocialDigestCandidates",
-      "notification/reminders/application/ports/re-engagement-reader.port.ts#findStreakAtRiskUsers",
-      "notification/reminders/application/ports/re-engagement-reader.port.ts#findWinbackUsers",
-      "notification/reminders/application/ports/scheduled-reminder-reader.port.ts#findFreeEveningReminderUsers",
-      "notification/reminders/application/ports/scheduled-reminder-reader.port.ts#findFreeMorningReminderUsers",
-      "notification/reminders/application/ports/scheduled-reminder-reader.port.ts#findLunchNudgeUsers",
-      "notification/reminders/application/ports/scheduled-reminder-reader.port.ts#findMonthlyReportRecipients",
-      "notification/reminders/application/ports/scheduled-reminder-reader.port.ts#findPremiumEveningReminderUsers",
-      "notification/reminders/application/ports/scheduled-reminder-reader.port.ts#findPremiumMorningReminderUsers",
-      "notification/reminders/application/ports/scheduled-reminder-reader.port.ts#findWeeklyReportRecipients",
-      "notification/reminders/application/ports/scheduler-preference-reader.port.ts#findActiveTimezones",
-      "notification/reminders/application/ports/todo-reminder-reader.port.ts#findActiveTodos",
-      "notification/reminders/application/ports/weather-reminder-reader.port.ts#findWeatherEveningFallbackUsers",
-      "notification/reminders/application/ports/weather-reminder-reader.port.ts#findWeatherEveningUsersWithLocation",
-      "notification/reminders/application/ports/weather-reminder-reader.port.ts#findWeatherMorningFallbackUsers",
-      "notification/reminders/application/ports/weather-reminder-reader.port.ts#findWeatherMorningUsersWithLocation",
-      "notification/reminders/application/ports/weekly-achievement-stats-reader.port.ts#findFreeRecipientIds",
-      "notification/retention-assignments/application/ports/retention-assignment.repository.port.ts#findByIds",
-      "notification/retention-assignments/application/ports/retention-assignment.repository.port.ts#findDueStages",
-      "notification/shared/application/ports/user-notification-settings.port.ts#findConsentReadModelsByUserIds",
-      "notification/shared/application/ports/user-notification-settings.port.ts#findPreferenceReadModelsByUserIds",
-      "planning/todo-categories/application/ports/todo-category.repository.port.ts#findManyByUserId",
-      "planning/todo-series/application/ports/todo-series-owner.port.ts#findOperatingOwners",
-      "planning/todo-series/application/ports/todo-series.repository.port.ts#findDueBatch",
-      "planning/todo-series/application/ports/todo-series.repository.port.ts#findIdsBehind",
-      "planning/todos/application/ports/todo-brief.reader.port.ts#findByIds",
-      "planning/todos/application/ports/todo-occurrence-writer.port.ts#findOccurrencesFrom",
-      "planning/todos/application/ports/todo-plan.reader.port.ts#findManyByIds",
-      "planning/todos/application/ports/todo-plan.reader.port.ts#findUpcoming",
-      "planning/todos/application/ports/todo-read.repository.port.ts#findManyBySeriesId",
-      "planning/todos/application/ports/todo-read.repository.port.ts#findManyByUserId",
-      "planning/todos/application/ports/todo-read.repository.port.ts#findOwnerIds",
-      "planning/todos/application/ports/todo-read.repository.port.ts#findPublicTodosByUserId",
-      "planning/todos/application/ports/todo-read.repository.port.ts#findTodayTopTodos",
-      "social/friendships/application/ports/friend.reader.port.ts#findRelationsWith",
-      "social/user-blocks/application/ports/user-block.reader.port.ts#findBlockedCounterpartIds",
-      "voice/plan-applications/application/ports/planning-context.reader.port.ts#findOwnedCategoryIds",
-      "weather/weather-reports/application/ports/sun-time-provider.port.ts#getSunTime",
-      "weather/weather-reports/application/ports/weather-report-cache.port.ts#getOrLoadAirQuality",
-    ],
-  ),
+  {
+    rule: "reconstitute가 있는 Aggregate는 create·toPrimitives도 있다",
+    path: "notification/notifications/domain/notification.aggregate.ts#Notification",
+    reason:
+      "작업 원장 행이다. 발행은 중복 방지 인덱스로 거르는 집합 insert라 저장소가 만들고 읽음 전이만 복원한다(domain-modeling.md)",
+  },
+  {
+    rule: "reconstitute가 있는 Aggregate는 create·toPrimitives도 있다",
+    path: "app-config/feature-discovery-campaigns/domain/feature-discovery-campaign.aggregate.ts#FeatureDiscoveryCampaign",
+    reason: "운영 env에서 복원만 하고 서버가 만들거나 저장하지 않는다(domain-modeling.md)",
+  },
 ];
 
 // 아직 고치지 않은 위반. 고치면 여기서 지운다. 새 위반은 목록에 더하지 않고 코드를 고친다
@@ -409,6 +337,38 @@ function checkAggregateIds(files: readonly SourceFile[]): string[] {
   );
 }
 
+function hasMethod(declaration: ts.ClassDeclaration, name: string, isStatic: boolean): boolean {
+  return declaration.members.some(
+    (member) =>
+      ts.isMethodDeclaration(member) &&
+      member.name.getText() === name &&
+      (ts.getModifiers(member) ?? []).some(
+        (modifier) => modifier.kind === ts.SyntaxKind.StaticKeyword,
+      ) === isStatic,
+  );
+}
+
+// 복원만 있으면 새 상태를 만드는 규칙이 어디에도 없다. 생성만 하는 Aggregate(AggregateRoot<null>)는 복원하지 않는다
+function checkAggregateFactories(files: readonly SourceFile[]): string[] {
+  return files.flatMap((file) =>
+    file.source.statements.flatMap((statement) => {
+      if (!ts.isClassDeclaration(statement) || statement.name == null) {
+        return [];
+      }
+      const aggregateRoot = (statement.heritageClauses ?? [])
+        .flatMap((clause) => clause.types)
+        .find((type) => type.expression.getText(file.source) === "AggregateRoot");
+      const isCreateOnly = aggregateRoot?.typeArguments?.[0]?.getText(file.source) === "null";
+      if (aggregateRoot == null || isCreateOnly || !hasMethod(statement, "reconstitute", true)) {
+        return [];
+      }
+      return hasMethod(statement, "create", true) && hasMethod(statement, "toPrimitives", false)
+        ? []
+        : [`${file.path}#${statement.name.text}`];
+    }),
+  );
+}
+
 const CONCRETE_READER_FILE = /\/application\/(?:[a-z-]+\/)*[a-z-]+\.reader\.ts$/;
 
 function checkConcreteReaders(files: readonly SourceFile[]): string[] {
@@ -562,6 +522,10 @@ function collectViolations(contexts: readonly ContextFolder[]): SliceShapeViolat
     [
       "포트 조회 메서드는 find는 T | null, list는 목록, get은 null 없는 값을 돌려준다",
       checkPortReadMethods(moduleFiles),
+    ],
+    [
+      "reconstitute가 있는 Aggregate는 create·toPrimitives도 있다",
+      checkAggregateFactories(moduleFiles),
     ],
   ];
   const fileViolations = fileChecks.flatMap(([rule, paths]) =>
