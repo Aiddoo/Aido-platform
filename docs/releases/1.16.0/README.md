@@ -1,6 +1,6 @@
 # 1.16.0: AI 제안·AI 리포트 리디자인
 
-**상태: 출시 예정 2026-11-17.** 코드는 `[1/18]`~`[18.15/18]`이 스택에 있다. 랜딩 [패치 노트](https://aido.kr/ko/patch-notes/1-16-0)는 2026-11-17에 먼저 올렸다(Aido-Landing #75). CI·머지·서버 운영 배포·스토어 제출·실기기 확인은 아직이다. 마이너·패치 의존성 정리(AI SDK, `@nestjs/throttler` 6.8.0, i18next 27.1.3, react-i18next 18.0.2, pnpm 12.21.0)는 Dependabot 5일 냉각이 2026-11-18·11-21에 끝나 1.16.0에 넣지 않는다. 서버 쪽은 냉각 뒤 머지 배포로, 앱 쪽(i18next·react-i18next)은 다음 앱 버전으로 낸다. 측정하지 않은 값은 적지 않는다.
+**상태: 출시.** 2026-11-17 stack #1641의 PR 33개를 `main`에 머지했고(merge commit `3450fbe`), 같은 날 서버를 운영에 배포했다(`deploy.yml` 성공). 앱은 그 코드로 만든 iOS 1.16.0(162)·Android 1.16.0(versionCode 129)으로 두 스토어에 출시했고, 운영 `AppRelease`(`GET /v1/app-config/app-version`)가 iOS·Android 모두 1.16.0이다. 결과는 [Epic #1610](https://github.com/Aiddoo/Aido-platform/issues/1610)에 있다. 랜딩 [패치 노트](https://aido.kr/ko/patch-notes/1-16-0)는 2026-11-17에 먼저 올렸다(Aido-Landing #75). 마이너·패치 의존성 정리(AI SDK, `@nestjs/throttler` 6.8.0, i18next 27.1.3, react-i18next 18.0.2, pnpm 12.21.0)는 Dependabot 5일 냉각 때문에 1.16.0에 넣지 않았다. 측정하지 않은 값은 적지 않는다.
 
 | 내용        | 문서                                                                                                                       |
 | ----------- | -------------------------------------------------------------------------------------------------------------------------- |
