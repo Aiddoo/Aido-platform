@@ -11,11 +11,11 @@ const HANGUL_JAMO = /[\u1100-\u11FF\uA960-\uA97F\uD7B0-\uD7FF]/gu;
 const MIN_TITLE_LETTERS = 2;
 
 export function toActivityKey(title: string): string {
-  return title.normalize("NFKC").toLowerCase().replace(IGNORED_TITLE_CHARACTERS, "");
+  return title.normalize("NFKC").toLowerCase().replaceAll(IGNORED_TITLE_CHARACTERS, "");
 }
 
 export function isMeaningfulTitle(title: string): boolean {
-  const letters = toActivityKey(title).replace(HANGUL_JAMO, "").match(/\p{L}/gu) ?? [];
+  const letters = toActivityKey(title).replaceAll(HANGUL_JAMO, "").match(/\p{L}/gu) ?? [];
   return letters.length >= MIN_TITLE_LETTERS;
 }
 

@@ -5,7 +5,7 @@ import { invalidUserSearchTerm } from "./friendships.errors.js";
 export class UserSearchTerm extends ValueObject<string> {
   // 조합형 한글과 연속 공백을 맞춰 같은 이름이 같은 검색어가 되게 한다
   static create(raw: string): UserSearchTerm {
-    const normalized = raw.normalize("NFC").trim().replace(/\s+/g, " ");
+    const normalized = raw.normalize("NFC").trim().replaceAll(/\s+/g, " ");
     if (normalized.length === 0) {
       throw invalidUserSearchTerm(raw);
     }

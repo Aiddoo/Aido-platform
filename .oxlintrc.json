@@ -534,6 +534,36 @@
       }
     },
     {
+      "files": ["apps/api/src/**/*.{ts,tsx}", "packages/api/src/**/*.ts"],
+      "excludeFiles": ["**/*.spec.ts", "**/*.integration-spec.ts", "**/*.test.ts"],
+      "rules": {
+        "aido/no-switch-statement": "error",
+        "eslint/no-var": "error",
+        "eslint/prefer-object-has-own": "error",
+        "eslint/prefer-object-spread": "error",
+        "unicorn/no-array-for-each": "error",
+        "unicorn/no-array-reverse": "error",
+        "unicorn/no-array-sort": "error",
+        "unicorn/prefer-array-find": "error",
+        "unicorn/prefer-array-flat": "error",
+        "unicorn/prefer-array-flat-map": "error",
+        "unicorn/prefer-array-some": "error",
+        "unicorn/prefer-at": "error",
+        "unicorn/prefer-date-now": "error",
+        "unicorn/prefer-includes": "error",
+        "unicorn/prefer-math-trunc": "error",
+        "unicorn/prefer-modern-math-apis": "error",
+        "unicorn/prefer-node-protocol": "error",
+        "unicorn/prefer-object-from-entries": "error",
+        "unicorn/prefer-optional-catch-binding": "error",
+        "unicorn/prefer-regexp-test": "error",
+        "unicorn/prefer-set-has": "error",
+        "unicorn/prefer-spread": "error",
+        "unicorn/prefer-string-replace-all": "error",
+        "unicorn/prefer-string-slice": "error"
+      }
+    },
+    {
       "files": ["apps/api/src/**/*.{ts,tsx}"],
       "excludeFiles": [
         "apps/api/src/**/*.public.ts",

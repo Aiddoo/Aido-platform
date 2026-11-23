@@ -13,7 +13,7 @@ import {
 
 // 사용자가 붙여 넣은 공백·하이픈·소문자를 서버와 클라가 같은 형태로 맞춘다
 export function normalizeInviteCode(raw: string): string {
-  return raw.replace(/[\s-]/g, "").toUpperCase();
+  return raw.replaceAll(/[\s-]/g, "").toUpperCase();
 }
 
 export const inviteCodeFormatSchema = z

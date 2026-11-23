@@ -65,7 +65,7 @@ export class Session extends AggregateRoot<SessionId, SessionProps> {
       previousTokenHash: null,
       tokenFamily: params.tokenFamily,
       tokenVersion: 1,
-      deviceFingerprint: params.deviceFingerprint.substring(
+      deviceFingerprint: params.deviceFingerprint.slice(
         0,
         SESSION_DEFAULTS.MAX_DEVICE_FINGERPRINT_LENGTH,
       ),

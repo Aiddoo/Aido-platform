@@ -141,7 +141,7 @@ export class SweepTimezoneRemindersUseCase {
     const results = await Promise.allSettled(
       groups.map(async (timezoneContext) => this.#sweepGroup(timezoneContext)),
     );
-    results.forEach((result, index) => {
+    for (const [index, result] of results.entries()) {
       if (result.status === "rejected") {
         this.#dependencies.logger.error({
           event: ReminderLogEvent.TIMEZONE_AWARE_REMINDER_TIMEZONE_FAILED,
@@ -149,7 +149,7 @@ export class SweepTimezoneRemindersUseCase {
           errorType: "strategy-execution",
         });
       }
-    });
+    }
   }
 
   async #sweepGroup(timezoneContext: TimezoneContext): Promise<void> {

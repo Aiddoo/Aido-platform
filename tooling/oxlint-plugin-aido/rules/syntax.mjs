@@ -251,7 +251,24 @@ const noLocaleLiteralComparison = {
   },
 };
 
+// Oxlint에는 no-restricted-syntax가 없어 switch 금지를 직접 건다
+const noSwitchStatement = {
+  meta: { type: 'suggestion' },
+  createOnce(context) {
+    return {
+      SwitchStatement(node) {
+        context.report({
+          node,
+          message:
+            'switch 대신 유니온은 ts-pattern match().with().exhaustive(), 그 밖은 if로 나눕니다. (AGENTS.md 공통 코드 규칙)',
+        });
+      },
+    };
+  },
+};
+
 export default {
+  'no-switch-statement': noSwitchStatement,
   'no-locale-literal-comparison': noLocaleLiteralComparison,
   'no-strict-nullish': noStrictNullish,
   'range-comparison-order': rangeComparisonOrder,

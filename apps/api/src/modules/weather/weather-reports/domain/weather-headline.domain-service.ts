@@ -31,7 +31,11 @@ import {
 
 /** 맑은 날 추천 시간은 가장 따뜻한 시간과 체감 온도 차이가 이 값 안인 시간까지 묶는다 */
 const BEST_OUTDOOR_TOLERANCE_CELSIUS = 1;
-const CLEAR_CONDITIONS: readonly WeatherCondition[] = ["CLEAR", "MOSTLY_CLEAR", "PARTLY_CLOUDY"];
+const CLEAR_CONDITIONS: ReadonlySet<WeatherCondition> = new Set([
+  "CLEAR",
+  "MOSTLY_CLEAR",
+  "PARTLY_CLOUDY",
+]);
 
 /** 날씨 화면 브리핑 카드가 무엇을 알릴지. 문구는 앱이 만들고 서버는 종류와 사실만 정한다 */
 export type WeatherHeadline =
@@ -112,7 +116,7 @@ function findBestOutdoorWindow(
   if (daylightHours.length === 0 || daylightHours.some(isWetHour)) {
     return null;
   }
-  if (!daylightHours.every((hour) => CLEAR_CONDITIONS.includes(hour.condition))) {
+  if (!daylightHours.every((hour) => CLEAR_CONDITIONS.has(hour.condition))) {
     return null;
   }
   const best = maxBy(daylightHours, (hour) => hour.apparentTemperature);

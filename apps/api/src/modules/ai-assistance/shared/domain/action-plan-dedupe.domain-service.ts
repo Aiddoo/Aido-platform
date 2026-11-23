@@ -10,7 +10,7 @@ function normalizeTitle(title: string): string {
   return title
     .normalize("NFKC")
     .toLowerCase()
-    .replace(/[\s\p{P}\p{S}]/gu, "");
+    .replaceAll(/[\s\p{P}\p{S}]/gu, "");
 }
 
 /**

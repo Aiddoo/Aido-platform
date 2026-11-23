@@ -117,7 +117,8 @@
 - v1·v2 응답은 각 버전 매퍼에서 만든다. 버전·권한 분기를 한 함수에 섞지 않는다.
 - 함께 바뀌지 않으면 버그가 나는 것(계약·큐 payload·잠금 키)은 한 파일에 응집한다. Context 사이 매퍼 중복은 허용한다.
 - 계층을 그대로 통과하는 인자(tx·userId 드릴링)는 CLS·Command 객체로 없앤다.
-- 재발명하지 않는다: es-toolkit(`groupBy`·`keyBy`·`chunk`·`isEqual`·`retry`·`clamp`), ts-pattern, Zod, Temporal. `JSON.stringify` 비교는 `isEqual`로, 직접 짠 재시도 루프는 `retry` 또는 pg-boss 재시도로 바꾼다.
+- 재발명하지 않는다: es-toolkit(`groupBy`·`keyBy`·`chunk`·`isEqual`·`retry`·`clamp`·`orderBy`·`maxBy`·`sample`), ts-pattern, Zod, Temporal. `JSON.stringify` 비교는 `isEqual`로, 직접 짠 재시도 루프는 `retry` 또는 pg-boss 재시도로 바꾼다.
+- 운영 코드(`apps/api/src`·`packages/api/src`, spec 제외)는 `switch`를 쓰지 않는다(`aido/no-switch-statement`). 정렬은 제자리 `.sort` 대신 `orderBy`·`sortBy`, 비교 함수가 필요하면 `toSorted`다. `replaceAll`·`slice`·`for…of`·펼침·`Set#has`는 Oxlint `unicorn/*`가 강제한다.
 - 서버에서 남길 주석 이유의 예: 잠금 순서, Required UoW, 재시도·멱등, 오류 우선순위, 구 앱 호환.
 
 ## Nest 공식 패키지 판단
