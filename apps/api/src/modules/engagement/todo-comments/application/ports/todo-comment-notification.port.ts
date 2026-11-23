@@ -3,7 +3,7 @@ import type { TodoCommentKind } from "@aido/api/vocabulary";
 import type { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { TodoCommentId } from "../../../shared/domain/todo-comment-id.vo.js";
+import type { TodoCommentId } from "../../domain/todo-comment-id.vo.js";
 
 export interface TodoCommentActivityNotificationInput {
   readonly recipientId: UserId;

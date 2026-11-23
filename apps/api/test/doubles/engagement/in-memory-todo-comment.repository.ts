@@ -1,6 +1,6 @@
-import type { TodoCommentId } from "#api/modules/engagement/shared/domain/todo-comment-id.vo";
 import { TodoCommentRepositoryPort } from "#api/modules/engagement/todo-comments/application/ports/todo-comment.repository.port";
 import { todoCommentIdempotencyRace } from "#api/modules/engagement/todo-comments/application/todo-comments.errors";
+import type { TodoCommentId } from "#api/modules/engagement/todo-comments/domain/todo-comment-id.vo";
 import type { TodoCommentRequestId } from "#api/modules/engagement/todo-comments/domain/todo-comment-request-id.vo";
 import { TodoComment } from "#api/modules/engagement/todo-comments/domain/todo-comment.aggregate";
 import type { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";

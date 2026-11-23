@@ -1,6 +1,6 @@
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { TodoCommentId } from "../../shared/domain/todo-comment-id.vo.js";
+import { TodoCommentId } from "../domain/todo-comment-id.vo.js";
 import { TodoCommentLockKeys } from "./todo-comments.lock-keys.js";
 
 // 배포가 겹치는 동안 이전 버전과 같은 잠금을 잡아야 해서 문자열을 바이트 단위로 고정한다

@@ -7,9 +7,9 @@ import type { TodoId } from "#api/modules/planning/todos/planning-todos-queries.
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { TodoCommentId } from "../../../shared/domain/todo-comment-id.vo.js";
 import { TodoCommentReaderPort } from "../../application/ports/todo-comment.reader.port.js";
 import type { TodoCommentReadModel } from "../../application/read-models/todo-comment.read-model.js";
+import type { TodoCommentId } from "../../domain/todo-comment-id.vo.js";
 import {
   anchorComment,
   commentAuthor,

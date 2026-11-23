@@ -3,7 +3,7 @@ import { ErrorCode } from "@aido/api/errors";
 import type { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { ApplicationException } from "#api/shared/application/application.exception";
 
-import type { TodoCommentId } from "../../shared/domain/todo-comment-id.vo.js";
+import type { TodoCommentId } from "../domain/todo-comment-id.vo.js";
 
 export function todoNotFound(todoId: TodoId): ApplicationException {
   return new ApplicationException(ErrorCode.TODO_0801, { todoId: todoId.value });

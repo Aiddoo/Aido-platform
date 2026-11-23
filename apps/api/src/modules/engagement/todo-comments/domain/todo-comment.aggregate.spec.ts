@@ -7,9 +7,9 @@ import {
   TODO_COMMENT_FIXTURE_NOW,
 } from "#test/fixtures/engagement/todo-comment.fixture";
 
-import { TodoCommentId } from "../../shared/domain/todo-comment-id.vo.js";
 import { CommentPlacement } from "./comment-placement.vo.js";
 import { TodoCommentContent } from "./todo-comment-content.vo.js";
+import { TodoCommentId } from "./todo-comment-id.vo.js";
 import { TodoComment } from "./todo-comment.aggregate.js";
 
 const AUTHOR = UserId.reconstitute("cm1author0000000000000001");

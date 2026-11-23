@@ -1,4 +1,3 @@
-import type { TodoCommentId } from "#api/modules/engagement/shared/domain/todo-comment-id.vo";
 import type { TodoCommentLikeReaderPort } from "#api/modules/engagement/todo-comment-likes/application/ports/todo-comment-like.reader.port";
 import type { TodoCommentAccessReaderPort } from "#api/modules/engagement/todo-comments/application/ports/todo-comment-access.reader.port";
 import type {
@@ -21,6 +20,7 @@ import type {
   TodoConversationWindowReadModel,
   TodoDetailsReadModel,
 } from "#api/modules/engagement/todo-comments/application/read-models/todo-comment.read-model";
+import type { TodoCommentId } from "#api/modules/engagement/todo-comments/domain/todo-comment-id.vo";
 import type { TodoComment } from "#api/modules/engagement/todo-comments/domain/todo-comment.aggregate";
 import type { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";

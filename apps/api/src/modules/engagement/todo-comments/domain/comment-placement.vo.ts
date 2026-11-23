@@ -2,7 +2,7 @@ import { TODO_COMMENT_KIND, type TodoCommentKind } from "@aido/api/vocabulary";
 
 import { ValueObject } from "#api/shared/domain/model/value-object";
 
-import { TodoCommentId } from "../../shared/domain/todo-comment-id.vo.js";
+import { TodoCommentId } from "./todo-comment-id.vo.js";
 
 type CommentPlacementValue =
   | { readonly kind: typeof TODO_COMMENT_KIND.COMMENT }

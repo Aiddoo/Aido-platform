@@ -1,6 +1,6 @@
-import type { TodoCommentId } from "#api/modules/engagement/shared/domain/todo-comment-id.vo";
 import { TodoCommentLikeRepositoryPort } from "#api/modules/engagement/todo-comment-likes/application/ports/todo-comment-like.repository.port";
 import { TodoCommentLike } from "#api/modules/engagement/todo-comment-likes/domain/todo-comment-like.aggregate";
+import type { TodoCommentId } from "#api/modules/engagement/todo-comments/domain/todo-comment-id.vo";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 function copyOf(like: TodoCommentLike): TodoCommentLike {

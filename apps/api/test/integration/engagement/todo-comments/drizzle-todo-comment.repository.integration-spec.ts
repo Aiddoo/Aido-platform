@@ -1,5 +1,5 @@
-import { TodoCommentId } from "#api/modules/engagement/shared/domain/todo-comment-id.vo";
 import { DrizzleTodoCommentLikeRepository } from "#api/modules/engagement/todo-comment-likes/infrastructure/persistence/drizzle-todo-comment-like.repository";
+import { TodoCommentId } from "#api/modules/engagement/todo-comments/domain/todo-comment-id.vo";
 import { DELETED_COMMENT_AUTHOR } from "#api/modules/engagement/todo-comments/domain/todo-comments.constants";
 import { DrizzleTodoCommentPurgeRepository } from "#api/modules/engagement/todo-comments/infrastructure/persistence/drizzle-todo-comment-purge.repository";
 import { DrizzleTodoCommentRepository } from "#api/modules/engagement/todo-comments/infrastructure/persistence/drizzle-todo-comment.repository";

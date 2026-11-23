@@ -6,7 +6,7 @@ import type { DrizzleTransactionalAdapter } from "#api/platform/database/databas
 import { todoCommentLike as todoCommentLikeTable } from "#api/platform/database/schema/engagement.schema";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { TodoCommentId } from "../../../shared/domain/todo-comment-id.vo.js";
+import type { TodoCommentId } from "../../../todo-comments/domain/todo-comment-id.vo.js";
 import { TodoCommentLikeRepositoryPort } from "../../application/ports/todo-comment-like.repository.port.js";
 import type { TodoCommentLike } from "../../domain/todo-comment-like.aggregate.js";
 import { toTodoCommentLike, toTodoCommentLikeRow } from "./todo-comment-like-row.mapper.js";

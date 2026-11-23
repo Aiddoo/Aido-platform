@@ -16,12 +16,12 @@ import { WriteTodoCommentChainUseCase } from "#api/modules/engagement/todo-comme
 import { TodoComment } from "#api/modules/engagement/todo-comments/domain/todo-comment.aggregate";
 import { DrizzleTodoCommentRepository } from "#api/modules/engagement/todo-comments/infrastructure/persistence/drizzle-todo-comment.repository";
 import { NotificationCachePort } from "#api/modules/notification/notifications/application/ports/notification-cache.port";
+import { NotificationId } from "#api/modules/notification/notifications/domain/notification-id.vo";
 import { PushDispatchRepositoryPort } from "#api/modules/notification/push-dispatches/application/ports/push-dispatch.repository.port";
 import { PublishPushDeliveryAfterCommitUseCase } from "#api/modules/notification/push-dispatches/application/use-cases/publish-push-delivery-after-commit.use-case";
 import { PublishPushDeliveryOutboxUseCase } from "#api/modules/notification/push-dispatches/application/use-cases/publish-push-delivery-outbox.use-case";
 import { PushDispatchId } from "#api/modules/notification/push-dispatches/domain/push-dispatch-id.vo";
 import { PushDispatch } from "#api/modules/notification/push-dispatches/domain/push-dispatch.aggregate";
-import { NotificationId } from "#api/modules/notification/shared/domain/notification-id.vo";
 import { databaseSqlState } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import {

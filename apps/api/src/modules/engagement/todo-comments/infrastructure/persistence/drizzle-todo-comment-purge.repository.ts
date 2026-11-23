@@ -25,11 +25,11 @@ import {
 } from "#api/platform/database/schema/engagement.schema";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { TodoCommentId } from "../../../shared/domain/todo-comment-id.vo.js";
 import {
   type TodoCommentPurgePlan,
   TodoCommentPurgeRepositoryPort,
 } from "../../application/ports/todo-comment-purge.repository.port.js";
+import { TodoCommentId } from "../../domain/todo-comment-id.vo.js";
 import { DELETED_COMMENT_AUTHOR } from "../../domain/todo-comments.constants.js";
 
 interface CounterChange {

@@ -2,7 +2,7 @@
 
 댓글·답글·좋아요 기능을 설계·리뷰할 때 읽는다. 쓰는 법은 [용어집](../glossary.md)이다.
 
-slice는 `todo-comments`(Aggregate `TodoComment`)와 `todo-comment-likes`(Aggregate `TodoCommentLike`)다. 좋아요 UseCase·HTTP는 글의 `likeCount`와 같은 댓글 잠금을 잡아 `todo-comments`에 두고, `todo-comment-likes`는 좋아요 저장소와 좋아요 여부 Reader를 연다. 두 slice가 쓰는 `TodoCommentId`는 `engagement/shared/domain`이다.
+slice는 `todo-comments`(Aggregate `TodoComment`)와 `todo-comment-likes`(Aggregate `TodoCommentLike`)다. 좋아요 UseCase·HTTP는 글의 `likeCount`와 같은 댓글 잠금을 잡아 `todo-comments`에 두고, `todo-comment-likes`는 좋아요 저장소와 좋아요 여부 Reader를 연다. `TodoCommentId`는 소유 slice `todo-comments/domain`에 있고 `todo-comment-likes`가 import한다.
 
 | 용어      | 코드                                                                               | 뜻                                                                                                                                                                     |
 | --------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

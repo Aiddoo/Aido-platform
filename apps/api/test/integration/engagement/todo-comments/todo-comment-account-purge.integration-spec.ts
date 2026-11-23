@@ -6,10 +6,10 @@ import { eq, inArray } from "drizzle-orm";
 import { ClsModule } from "nestjs-cls";
 import { vi } from "vitest";
 
-import { TodoCommentId } from "#api/modules/engagement/shared/domain/todo-comment-id.vo";
 import { TodoCommentPurgeRepositoryPort } from "#api/modules/engagement/todo-comments/application/ports/todo-comment-purge.repository.port";
 import { CleanUpAccountTodoCommentsUseCase } from "#api/modules/engagement/todo-comments/application/use-cases/clean-up-account-todo-comments.use-case";
 import { InvalidateCleanedTodoCachesUseCase } from "#api/modules/engagement/todo-comments/application/use-cases/invalidate-cleaned-todo-caches.use-case";
+import { TodoCommentId } from "#api/modules/engagement/todo-comments/domain/todo-comment-id.vo";
 import { DELETED_COMMENT_AUTHOR } from "#api/modules/engagement/todo-comments/domain/todo-comments.constants";
 import { TodoCommentAccountCleanupPort } from "#api/modules/engagement/todo-comments/engagement-todo-comments.public";
 import { TodoCommentAccountCleanupAdapter } from "#api/modules/engagement/todo-comments/infrastructure/adapters/todo-comment-account-cleanup.adapter";

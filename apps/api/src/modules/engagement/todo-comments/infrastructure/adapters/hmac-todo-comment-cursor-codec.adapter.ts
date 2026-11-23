@@ -7,7 +7,6 @@ import { HmacTokenSigner } from "#api/platform/security/hmac-token-signer";
 import { SigningKeyRing } from "#api/platform/security/signing-key-ring";
 import { isEntityId } from "#api/shared/domain/model/entity-id";
 
-import { TodoCommentId } from "../../../shared/domain/todo-comment-id.vo.js";
 import {
   TodoCommentCursorCodecPort,
   type TodoCommentRepliesCursor,
@@ -26,6 +25,7 @@ import {
   type TodoConversationScope,
 } from "../../application/todo-comment-page.constants.js";
 import { invalidCommentRequest } from "../../application/todo-comments.errors.js";
+import { TodoCommentId } from "../../domain/todo-comment-id.vo.js";
 import {
   type EngagementTodoCommentsConfig,
   engagementTodoCommentsConfig,

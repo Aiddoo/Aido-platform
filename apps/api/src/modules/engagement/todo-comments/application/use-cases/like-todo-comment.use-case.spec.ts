@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { TodoCommentId } from "#api/modules/engagement/shared/domain/todo-comment-id.vo";
+import { TodoCommentId } from "#api/modules/engagement/todo-comments/domain/todo-comment-id.vo";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   TODO_COMMENT_FIXTURE_FRIEND_ID,

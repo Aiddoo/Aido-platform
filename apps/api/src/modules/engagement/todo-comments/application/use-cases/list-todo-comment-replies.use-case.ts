@@ -2,7 +2,7 @@ import type { TodoCommentLikeReaderPort } from "#api/modules/engagement/todo-com
 import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { TodoCommentId } from "../../../shared/domain/todo-comment-id.vo.js";
+import { TodoCommentId } from "../../domain/todo-comment-id.vo.js";
 import type { TodoCommentAccessReaderPort } from "../ports/todo-comment-access.reader.port.js";
 import type { TodoCommentBlockReaderPort } from "../ports/todo-comment-block-reader.port.js";
 import type { TodoCommentCursorCodecPort } from "../ports/todo-comment-cursor-codec.port.js";

@@ -3,7 +3,7 @@ import { TODO_COMMENT_LIMITS } from "@aido/api/vocabulary";
 
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
-import type { TodoCommentId } from "../../shared/domain/todo-comment-id.vo.js";
+import type { TodoCommentId } from "./todo-comment-id.vo.js";
 
 export function commentContentLengthOutOfRange(contentLength: number): DomainException {
   return new DomainException(ErrorCode.SYS_0002, {

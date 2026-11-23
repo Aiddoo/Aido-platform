@@ -4,7 +4,6 @@ import { todoConversationConnectionSchema } from "@aido/api/contracts/todo-comme
 import { Test, type TestingModule } from "@nestjs/testing";
 import { eq } from "drizzle-orm";
 
-import { TodoCommentId } from "#api/modules/engagement/shared/domain/todo-comment-id.vo";
 import { DrizzleTodoCommentLikeReader } from "#api/modules/engagement/todo-comment-likes/infrastructure/persistence/drizzle-todo-comment-like.reader";
 import type { TodoCommentCursorCodecPort } from "#api/modules/engagement/todo-comments/application/ports/todo-comment-cursor-codec.port";
 import { TodoCommentIdempotencyRaceError } from "#api/modules/engagement/todo-comments/application/todo-comments.errors";
@@ -13,6 +12,7 @@ import { ListTodoCommentThreadsUseCase } from "#api/modules/engagement/todo-comm
 import { CommentPlacement } from "#api/modules/engagement/todo-comments/domain/comment-placement.vo";
 import { matchTodoCommentChainReplay } from "#api/modules/engagement/todo-comments/domain/todo-comment-chain.domain-service";
 import { TodoCommentContent } from "#api/modules/engagement/todo-comments/domain/todo-comment-content.vo";
+import { TodoCommentId } from "#api/modules/engagement/todo-comments/domain/todo-comment-id.vo";
 import { TodoCommentRequestId } from "#api/modules/engagement/todo-comments/domain/todo-comment-request-id.vo";
 import { TodoComment } from "#api/modules/engagement/todo-comments/domain/todo-comment.aggregate";
 import { DELETED_COMMENT_AUTHOR } from "#api/modules/engagement/todo-comments/domain/todo-comments.constants";

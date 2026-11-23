@@ -1,5 +1,5 @@
-import { TodoCommentId } from "../../shared/domain/todo-comment-id.vo.js";
 import { CommentPlacement } from "./comment-placement.vo.js";
+import { TodoCommentId } from "./todo-comment-id.vo.js";
 
 const COMMENT_ID = TodoCommentId.reconstitute("cm1todoacomment00000000001");
 const REPLY_ID = TodoCommentId.reconstitute("cm1todoacomment00000000002");

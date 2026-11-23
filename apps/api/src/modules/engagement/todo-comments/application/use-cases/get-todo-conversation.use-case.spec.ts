@@ -11,7 +11,7 @@ import {
   type TodoCommentsFixture,
 } from "#test/fixtures/engagement/todo-comments.fixture";
 
-import { TodoCommentId } from "../../../shared/domain/todo-comment-id.vo.js";
+import { TodoCommentId } from "../../domain/todo-comment-id.vo.js";
 import type { TodoConversationReadModel } from "../read-models/todo-comment.read-model.js";
 import { GetTodoConversationUseCase } from "./get-todo-conversation.use-case.js";
 
