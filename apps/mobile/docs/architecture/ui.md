@@ -4,9 +4,9 @@
 
 ## 기준 컴포넌트
 
-참고 저장소(frontend-fundamentals-mock-exam-1)의 세 컴포넌트가 모든 기능의 모양이다. 아래 예시의 `MemoSummary`·`useSelectedCategoryId`·`useGetCategoriesQueryOptions`·`MemoActionButtonProps`는 모양을 보이려고 지은 이름이라 코드에 없다. 실제 쓰임은 `CategoryPickForm`(`filters` → `useGetTodoCategoriesQueryOptions({ filters })`의 `select`), `MemoList.Item`, `NotificationList`를 본다.
+기능 컴포넌트는 아래 세 모양(래퍼, route id 조각, 목록)을 따른다. 예시의 `MemoSummary`·`useSelectedCategoryId`·`useGetCategoriesQueryOptions`·`MemoActionButtonProps`는 모양을 보이려고 지은 이름이라 코드에 없다. 실제 쓰임은 `UserAvatar`(래퍼), `AmountDueToday`(route 튜플 `useSelectedPlanId`), `CategoryPickForm`(`filters` → `useGetTodoCategoriesQueryOptions({ filters })`의 `select`), `MemoList.Item`, `NotificationList`를 본다.
 
-**`AmountInput`: 역할이 있는 래퍼만 만들고 원본 Props를 지킨다.**
+**래퍼: 역할이 있는 래퍼만 만들고 원본 Props를 지킨다.**
 
 - 래퍼는 자기 일(단위·포맷·도메인 문구·저장)이 있을 때만 만든다. 없으면 원본을 쓴다.
 - `interface MemoActionButtonProps extends Omit<ComponentProps<typeof PressableFeedback>, 'children'>`처럼 직접 구현하는 prop만 `Omit`한다. `className`·`style`·`testID`·접근성 prop·`hitSlop`은 남긴다.
@@ -14,7 +14,7 @@
 - 제어 prop은 원본 이름이다: shared `Input`·`TextArea`는 `value`/`onChange`, `Checkbox`·`Switch`·`ControlField`는 `isSelected`/`onSelectedChange`, `RadioGroup`·`Tabs`는 `value`/`onValueChange`, 시트·다이얼로그는 `isOpen`/`onOpenChange`, 비활성은 `isDisabled`다. `disabled`·`selected`·`onToggle`을 새로 만들지 않는다.
 - Props는 인터페이스로 적는다. `ReturnType<typeof useX>`로 만들지 않는다.
 
-**`CalculationResult`: id는 route 튜플에서 읽고, `== null`이면 빈 조각, 좁힌 id는 `.Contents`가 조회한다.**
+**route id 조각: id는 route 튜플에서 읽고, `== null`이면 빈 조각, 좁힌 id는 `.Contents`가 조회한다.**
 
 ```tsx
 export function MemoSummary() {
@@ -41,7 +41,7 @@ MemoSummary.Contents = function Contents({ memoId }: { memoId: number }) {
 };
 ```
 
-**`ProductList`: 목록은 `filters`·`orderBy`·`limit`를 받고, 행은 부모가 만든 값을 받는다.**
+**목록: `filters`·`orderBy`·`limit`를 받고, 행은 부모가 만든 값을 받는다.**
 
 ```tsx
 export function CategoryList({ filters, orderBy = 'position', limit }: CategoryListProps) {
@@ -97,7 +97,7 @@ const facts = compact([t('daily.precipitation', …), wind == null ? null : t('d
 - **바깥 여백을 모른다.** 루트에 margin·폭·위치를 두지 않는다. 자기 모양(`rounded-2xl bg-gray-1`)과 안쪽 여백만 컴포넌트 몫이고, 바깥 간격은 스크린의 `Spacing`이다.
 - 행의 현재 값은 값만 그리는 컴포넌트가 자기 경계(`fallback={null}`)로 읽는다(`FriendCountValue`). 자리는 같고 구현이 갈리면 `mode` 대신 컴포넌트를 prop으로 넘긴다(`toolbar={MemoEditor.StackToolbar}`).
 - 배타 상태는 `match(…).exhaustive()`, 단순 표시는 `&&`다. 저장 진행은 mutation `isPending`을 `Button`의 `isLoading`에 넘긴다. 변환은 es-toolkit(`groupBy`, `partition`, `sumBy`)으로 view-model 순수 함수에 둔다.
-- 메모는 React Compiler가 한다. 새 코드에 `useMemo`·`useCallback`·`memo`를 더하지 않는다. 있는 직접 메모는 일괄 삭제하지 않고 손대는 파일에서 필요 없는 것만 지운다(가상 목록·캘린더 칸의 `memo`처럼 이유가 있으면 둔다).
+- 메모는 React Compiler가 한다. `useMemo`·`useCallback`·`memo`는 이유가 있을 때만 둔다(가상 목록·캘린더 칸의 `memo`). 이유 없는 직접 메모는 그 파일을 고칠 때 지운다.
 - 색은 토큰 클래스만 쓴다. 조건부 className은 `cn`, 변형이 둘 이상이면 `tv`(`*.variants.ts`)다. 템플릿 리터럴·삼항으로 문자열을 잇지 않는다(`aido/no-classname-concat`). 인라인 `style`은 동적 값(잰 크기, 애니메이션 스타일, 계산한 inset)에만 쓴다.
 
 ## 스크린

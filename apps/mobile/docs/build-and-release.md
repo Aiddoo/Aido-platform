@@ -1,20 +1,21 @@
 # 빌드와 배포
 
-EAS 빌드·로컬 빌드, 환경 변수와 Secrets, 스토어 제출, 배포 순서를 다룬다. 명령은 `apps/mobile`에서 실행한다. 새 기능 소개(Steps·캠페인·이미지)는 [whats-new-release.md](./whats-new-release.md), 릴리스별 변경은 [releases/](./releases/)에 있다.
+EAS 빌드·로컬 빌드, 환경 변수, 스토어 제출, 배포 순서를 다룬다. 명령은 `apps/mobile`에서 실행한다. 새 기능 소개(Steps·캠페인·이미지)는 [whats-new-release.md](./whats-new-release.md), 릴리스별 변경은 [releases/](./releases/)에 있다.
 
 ## 배포 순서
 
-서버 배포 → 안정화 확인 → 앱 제출이다. 앱은 최신 서버 응답만 읽고 옛 서버 분기를 두지 않으므로 앱 1.15.0이 나간 뒤에는 서버를 1.15 이전으로 되돌리지 못한다. 서버 문제는 수정 배포로 대응한다([호환](../../../docs/conventions/compatibility.md)).
+서버 배포 → 안정화 확인 → 앱 제출이다. 앱은 최신 서버 응답만 읽고 옛 서버 분기를 두지 않으므로 앱이 나간 뒤에는 서버를 그 앱이 기대하는 버전 이전으로 되돌리지 못한다. 서버 문제는 수정 배포로 대응한다([호환](../../../docs/conventions/compatibility.md)).
 
 ## 환경과 프로필
 
-| Profile             | APP_ENV     | API URL                       | 용도                             | iOS            | Android |
-| ------------------- | ----------- | ----------------------------- | -------------------------------- | -------------- | ------- |
-| `development`       | development | 자동 감지                     | 개발·디버깅(dev client)          | 시뮬레이터용   | APK     |
-| `preview`           | preview     | `https://api-preview.aido.kr` | 내부 테스트·QA                   | 실기기(Ad Hoc) | APK     |
-| `production`        | production  | `https://api.aido.kr`         | 스토어 제출(빌드 번호 자동 증가) | App Store용    | AAB     |
-| `production-device` | production  | 위와 같음                     | 실기기 Release 검증              | Ad Hoc         | APK     |
+| Profile             | APP_ENV     | API URL               | 용도                             | iOS            | Android |
+| ------------------- | ----------- | --------------------- | -------------------------------- | -------------- | ------- |
+| `development`       | development | 자동 감지             | 개발·디버깅(dev client)          | 시뮬레이터용   | APK     |
+| `preview`           | preview     | `https://api.aido.kr` | 내부 테스트·QA                   | 실기기(Ad Hoc) | APK     |
+| `production`        | production  | `https://api.aido.kr` | 스토어 제출(빌드 번호 자동 증가) | App Store용    | AAB     |
+| `production-device` | production  | 위와 같음             | 실기기 Release 검증              | Ad Hoc         | APK     |
 
+- API URL은 `EXPO_PUBLIC_API_URL`이 있으면 그 값이고, 없으면 `app.config.ts`의 환경별 기본값이다. EAS `preview` 환경에는 `EXPO_PUBLIC_API_URL`이 없어 preview 빌드도 운영 API를 부른다.
 - `--profile`을 생략하면 `production`이다. `production-device`는 `production` EAS environment를 명시적으로 상속한다(내부 배포의 기본 environment인 preview로 production 설정이 바뀌지 않게 한다).
 - 개발 API URL은 자동 감지한다. Android 에뮬레이터는 `localhost → 10.0.2.2`, iOS 시뮬레이터는 `localhost` 유지, 실기기는 개발 머신 IP이며 같은 Wi-Fi여야 한다. 로컬 환경 변수 파일은 `.env`(운영 로컬 빌드) · `.env.development`(개발) · `.env.example`(예시)이고 필수 값은 `APP_ENV`·`EXPO_PUBLIC_API_URL`이다. Expo는 개발에서도 `.env`를 읽으므로 두 파일의 키를 같게 둔다. EAS 빌드는 EAS 환경변수를 쓴다.
 - 번들 ID는 환경마다 다르다(`com.aido.mobile` · `.preview` · `.dev`). 한 기기에 함께 설치되고 키체인·App Group·푸시 토큰도 분리된다.
@@ -28,8 +29,11 @@ EXPO_PUBLIC_API_URL          # API 서버 URL
 EXPO_PUBLIC_SENTRY_DSN       # Sentry DSN (publishable)
 EXPO_PUBLIC_SENTRY_DEBUG     # (선택) dev에서 Sentry SDK만 켠다. 'true'일 때만
 EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY  # 카카오톡 공유 네이티브 앱 키 (publishable)
+REVENUECAT_APPLE_API_KEY     # RevenueCat 공개 SDK 키 (iOS)
+REVENUECAT_GOOGLE_API_KEY    # RevenueCat 공개 SDK 키 (Android)
+REVENUECAT_TEST_API_KEY      # (development만) RevenueCat Test Store 키
 
-# 빌드 (EAS Secrets)
+# 빌드
 GOOGLE_SERVICES_JSON         # Firebase Android (Base64)
 GOOGLE_SERVICES_INFO_PLIST   # Firebase iOS (Base64, 환경별 값)
 SENTRY_AUTH_TOKEN            # Sentry 소스맵 업로드 (sensitive)
@@ -38,22 +42,24 @@ EXPO_PUBLIC_EAS_PROJECT_ID   # EAS 프로젝트 ID
 
 OAuth 클라이언트 ID·시크릿은 앱에 두지 않고 **API 서버 환경 변수**에서 관리한다([인증](./auth.md#소셜-로그인)). 값·서명 파일·로그를 Git에 넣지 않는다.
 
-## EAS Secrets
+## EAS 환경 변수
+
+값은 EAS environment(`development`·`preview`·`production`)마다 `eas env:set`으로 넣고 `eas env:list <environment>`로 확인한다. 세 environment 모두 `APP_ENV`를 둔다. Apple 팀 ID는 비밀이 아니라 `app.config.ts`의 상수다.
 
 `app.config.ts`가 설정을 읽을 때 환경 변수를 Base64 디코딩해 Firebase 파일(`google-services.json`, 환경별 `GoogleService-Info*.plist`)을 복원하고(`restoreBase64File`), `googleServicesFile`이 그 파일을 참조한다.
 
 ```bash
 # Android: 모든 환경이 같은 파일을 쓴다
 base64 -i google-services.json | pbcopy
-eas secret:create --scope project --name GOOGLE_SERVICES_JSON --value "붙여넣기" --type string
+eas env:set --name GOOGLE_SERVICES_JSON --value "붙여넣기" --environment production --environment preview --environment development --visibility secret
 
 # iOS: 환경마다 plist가 다르다. 같은 이름을 EAS 환경마다 다른 값으로 등록한다
 base64 -i GoogleService-Info.development.plist | pbcopy
-eas env:create --name GOOGLE_SERVICES_INFO_PLIST --value "붙여넣기" --environment development --visibility secret
+eas env:set --name GOOGLE_SERVICES_INFO_PLIST --value "붙여넣기" --environment development --visibility secret
 
 # Sentry: DSN은 publishable, Auth Token은 sensitive
-eas env:create --name EXPO_PUBLIC_SENTRY_DSN --value "<DSN>" --environment production --visibility plaintext
-eas env:create --name SENTRY_AUTH_TOKEN --value "<TOKEN>" --environment production --visibility sensitive
+eas env:set --name EXPO_PUBLIC_SENTRY_DSN --value "<DSN>" --environment production --visibility plaintext
+eas env:set --name SENTRY_AUTH_TOKEN --value "<TOKEN>" --environment production --visibility sensitive
 ```
 
 | APP_ENV     | 번들 ID                   | 로컬 plist 파일                        |
@@ -63,7 +69,7 @@ eas env:create --name SENTRY_AUTH_TOKEN --value "<TOKEN>" --environment producti
 | development | `com.aido.mobile.dev`     | `GoogleService-Info.development.plist` |
 
 - Android `google-services.json`은 패키지별 client가 한 파일에 들어 있다. Firebase 콘솔에 `.dev`·`.preview` Android 앱을 추가한 뒤 다시 받은 파일을 등록한다.
-- Base64는 줄바꿈 없이 만든다(macOS는 `base64 -i`). Secret은 프로젝트 멤버만 접근한다. `eas secret:list`로 확인한다.
+- Base64는 줄바꿈 없이 만든다(macOS는 `base64 -i`). `secret` 값은 프로젝트 멤버만 접근하고 `eas env:list`에도 값이 보이지 않는다.
 - `EXPO_PUBLIC_SENTRY_DSN`은 `app.config.ts`의 `extra.sentryDsn`으로 전달되어 `initErrorReporting()`에서 쓰고, `SENTRY_AUTH_TOKEN`은 빌드 중 소스맵 업로드에만 쓴다(런타임 미포함).
 - 카카오톡 공유는 앱에 네이티브 앱 키가 필요하다. EAS 환경 `production`·`preview`·`development`에 각각 넣고 로컬은 `.env.development`에 둔다. 카카오 디벨로퍼스에 iOS 번들 ID(`com.aido.mobile`, `.preview`), Android 패키지, Android 키 해시 세 가지(debug 키, EAS 업로드 키, Play 앱 서명 키)를 모두 등록한다. 키가 있을 때만 `app.config.ts`가 카카오 config plugin을 넣고, 키를 처음 넣거나 바꾸면 **dev client를 다시 빌드**한다(JS 리로드로는 반영되지 않는다).
 
@@ -83,10 +89,10 @@ pnpm update:preview "메시지"            # OTA
 pnpm update:production "메시지"
 ```
 
-- SDK 58 빌드는 EAS CLI 24.8.0 이상이다. `npm install -g eas-cli@24.8.0` 뒤 `eas --version`으로 PATH에서 실행되는 버전을 확인한다(Node 버전 관리 도구와 Homebrew의 전역 위치가 다르면 이전 CLI가 실행된다).
+- EAS CLI는 `eas.json`의 `cli.version` 이상이다. `npm install -g eas-cli` 뒤 `eas --version`으로 PATH에서 실행되는 버전을 확인한다(Node 버전 관리 도구와 Homebrew의 전역 위치가 다르면 이전 CLI가 실행된다).
 - iOS 로컬 빌드 도구: `brew install fastlane cocoapods`, `xcode-select -p`·`fastlane --version`·`pod --version`으로 확인한다.
-- 로컬 빌드는 Node 24.22.2(`eas.json`의 `node`)로 돌린다. 저장소 기본 Node 26(`.nvmrc`)이 아니다. 빌드 셸에서 `nvm use 24.22.2` 뒤 `node --version`으로 확인한다.
-- 로컬 빌드는 `eas.json`의 Node/Fastlane/CocoaPods 도구 버전을 설치하지 않고 EAS Secret도 자동 제공하지 않는다. 필요한 값은 기존 `GOOGLE_SERVICES_JSON`·`GOOGLE_SERVICES_INFO_PLIST` 복원 경로로 공급한다([Expo 로컬 빌드](https://docs.expo.dev/build-reference/local-builds/)).
+- 로컬 빌드는 `eas.json`의 `node` 버전으로 돌린다. 저장소 기본 Node(`.nvmrc`)가 아니다. 빌드 셸에서 그 버전으로 바꾼 뒤 `node --version`으로 확인한다.
+- 로컬 빌드는 `eas.json`의 Node/Fastlane/CocoaPods 도구 버전을 설치하지 않고 EAS 환경 변수도 자동 제공하지 않는다. 필요한 값은 기존 `GOOGLE_SERVICES_JSON`·`GOOGLE_SERVICES_INFO_PLIST` 복원 경로로 공급한다([Expo 로컬 빌드](https://docs.expo.dev/build-reference/local-builds/)).
 - 실기기 Release 검증용 설치 파일(production API·Firebase·Sentry 설정, iOS는 등록된 기기용 Ad Hoc, Android는 APK)은 `eas build --local --platform <ios|android> --profile production-device`다. 스토어 제출 파일과 구분한다.
 
 ### 스토어 제출용 로컬 빌드
@@ -96,7 +102,7 @@ pnpm update:production "메시지"
 ```bash
 # 1. main을 독립 clone으로 받는다(작업 중인 checkout·worktree를 쓰지 않는다)
 gh repo clone Aiddoo/Aido-platform /tmp/aido-build -- --depth 1 --branch main
-cd /tmp/aido-build && nvm use 24.22.2 && pnpm install --frozen-lockfile
+cd /tmp/aido-build && nvm use <eas.json의 node> && pnpm install --frozen-lockfile
 # google-services.json, GoogleService-Info.plist를 apps/mobile에 둔다(git 제외 파일)
 
 # 2. 압축 단계만 먼저 확인한다(빌드 번호를 올리지 않는다)
@@ -141,7 +147,7 @@ pnpm check:native-icons
 
 JS만 바뀐 핫픽스는 OTA로 낸다. runtime이 fingerprint라 운영 빌드와 fingerprint가 같아야 사용자에게 간다.
 
-- 머지된 `main`의 독립 clone(위 1단계)에서 Node 24.22.2로 `eas fingerprint:generate --environment production`이 운영 빌드와 같은지 먼저 본다. 작업 중인 checkout은 git 제외 파일 때문에 값이 달라 OTA가 아무에게도 가지 않는다.
+- 머지된 `main`의 독립 clone(위 1단계)에서 `eas.json`의 `node` 버전으로 `eas fingerprint:generate --environment production`이 운영 빌드와 같은지 먼저 본다. 작업 중인 checkout은 git 제외 파일 때문에 값이 달라 OTA가 아무에게도 가지 않는다.
 - `pnpm update:production "메시지"`로 보낸다. `--environment production`이 빠지면 `extra`(API·Sentry·RevenueCat·카카오 키)가 비어 결제가 깨진다.
 - 보낸 뒤 업데이트 manifest의 runtime과 `extra`를 확인하고, 소스맵은 `eas env:exec production`으로 올린다. OTA는 다음 콜드 스타트에 적용된다.
 
@@ -172,13 +178,13 @@ Play Console은 AAB에서 Android 15(API 35)가 지원 중단한 시스템 바 �
 ## 배포 전 체크리스트
 
 - [ ] 서버: 프로덕션 DB·환경 변수(OAuth 키 포함)·HTTPS, `pnpm db:migrate`, `curl https://api.aido.kr/health`
-- [ ] 앱: EAS `production` 환경변수(`APP_ENV`, `EXPO_PUBLIC_API_URL`), Google Services Secrets, 버전 번호
+- [ ] 앱: EAS `production` 환경변수(`APP_ENV`, `EXPO_PUBLIC_API_URL`), `GOOGLE_SERVICES_JSON`·`GOOGLE_SERVICES_INFO_PLIST`, 버전 번호
 - [ ] 실기기: 소셜 로그인(Google·Apple·Kakao·Naver), API 호출, 푸시 알림, 오류 처리
 - [ ] 보안: 민감 정보는 환경 변수, OAuth 콜백 URL은 프로덕션 도메인(API 서버 설정), HTTPS
 
 ## 트러블슈팅
 
-- **빌드 실패**: `eas secret:list`로 Secret을 확인하고 `eas build --clear-cache --profile production --platform ios`로 캐시를 지우고 다시 빌드한다.
+- **빌드 실패**: `eas env:list production`으로 변수를 확인하고 `eas build --clear-cache --profile production --platform ios`로 캐시를 지우고 다시 빌드한다.
 - **OAuth 로그인 실패**: 공급자 콘솔의 redirect URI는 앱의 `redirectUri`가 아니라 서버 콜백(`*_CALLBACK_URL`, `apps/api/src/platform/config/schemas/oauth.schema.ts`)이다. Apple은 App ID에 Sign In with Apple을 켠다. 앱이 쓰는 `ENV.API_URL`과 API 서버 로그의 콜백 도착을 확인한다.
 - **실기기에서 API 연결 실패**: 개발은 같은 Wi-Fi와 API URL 자동 감지 로그를, 프로덕션은 도메인과 HTTPS 인증서를 확인한다.
 

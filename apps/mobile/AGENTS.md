@@ -44,7 +44,7 @@ Expo SDK 58 · React Native 0.88 · React 19(Compiler) · Expo Router · TanStac
 - **상태 원천은 하나다.** 서버는 Query, URL은 params 튜플, 기기 값은 `useStoredValue`, 폼은 RHF다. 라이브러리가 주는 `isPending`·`error`를 다시 만들지 않는다([state-and-routing](docs/architecture/state-and-routing.md#상태-원천)).
 - **캐시는 cache helper만 만진다.** mutation은 `onSuccess`에서 응답을 쓰고 `onSettled`에서 무효화한다. 오류 피드백은 `meta.errorFeedback` 하나로 한다(`aido/query-client-location`, `aido/mutation-error-feedback`, [data](docs/architecture/data.md#무효화), [오류 처리](docs/error-handling.md#mutation-오류-피드백)).
 - **SDK는 `shared/infra`에서만 import한다.** 기능은 `di-context` 훅으로 포트·Api·서비스를 꺼낸다. 테스트는 포트 stub으로 하고 `jest.mock`은 어댑터 테스트에만 쓴다(`sdk-outside-infra`, `aido/no-jest-module-mock`, [structure](docs/architecture/structure.md#di포트수명)).
-- **타입 안전 100%다.** `as`(`as const` 제외)·`any`·`!`·`@ts-*`를 쓰지 않는다. 유니온은 `match().exhaustive()`, 표는 `satisfies Record<…>`다. null·undefined는 [nullish](../../docs/conventions/nullish.md#6-클라이언트-모바일) 표를 따른다.
+- **타입은 단언하지 않고 유도한다.** `as`(`as const` 제외)·`any`·`!`·`@ts-*`를 쓰지 않는다. 유니온은 `match().exhaustive()`, 표는 `satisfies Record<…>`다. null·undefined는 [nullish](../../docs/conventions/nullish.md#6-클라이언트-모바일) 표를 따른다.
 - **메모리와 프레임.** 구독·타이머·Skia 네이티브 객체는 만든 곳에서 정리한다. 애니메이션은 화면 밖·앱 뒤·모션 줄이기에서 멈춘다([data](docs/architecture/data.md#메모리와-수명), [ui](docs/architecture/ui.md#모션과-skia)).
 - **문구는 ko·en 카탈로그에 함께 넣는다.** 해요체이고 앱 이름은 "아이두"/"Aido"다. 앱은 옛 서버·옛 앱 분기를 두지 않는다([날짜·언어](docs/dates-and-i18n.md#문구-톤과-용어), [호환](../../docs/conventions/compatibility.md)).
 - **테스트는 중요한 로직만 쓴다.** 대상은 모델·Policy, 비자명한 mapper, 캐시·롤백, 핵심 흐름, 버그 재현이다. 표시·배치 테스트는 쓰지 않는다([testing](docs/testing.md#도구와-범위)).
