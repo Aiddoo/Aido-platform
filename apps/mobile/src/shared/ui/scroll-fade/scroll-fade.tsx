@@ -1,4 +1,3 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import { ScrollShadow } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { useResolveClassNames } from 'uniwind';
@@ -23,7 +22,6 @@ export function ScrollFade({ surface, ...props }: ScrollFadeProps) {
   return (
     <ScrollShadow
       {...props}
-      LinearGradientComponent={LinearGradient}
       color={typeof backgroundColor === 'string' ? backgroundColor : undefined}
       size={SCROLL_FADE_HEIGHT}
     />

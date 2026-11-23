@@ -1,4 +1,4 @@
-import type { ComponentType, ReactNode, Ref } from 'react';
+import type { ReactNode, Ref } from 'react';
 import type { TextInputInstance, TextInputProps } from 'react-native';
 
 import type { TextSize } from '../text/text.types';
@@ -23,8 +23,4 @@ export interface TextAreaProps extends Omit<
   textSize?: TextSize;
   growsWithContent?: boolean;
   className?: string;
-}
-
-export interface TextAreaInternalProps extends TextAreaProps {
-  textInputComponent?: ComponentType<TextInputProps>;
 }

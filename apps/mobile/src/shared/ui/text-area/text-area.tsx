@@ -1,15 +1,7 @@
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { cn } from '@src/shared/utils/cn';
-import {
-  type ComponentRef,
-  use,
-  useCallback,
-  useEffectEvent,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from 'react';
-import { TextInput, type View } from 'react-native';
+import { useCallback, useRef, useState } from 'react';
+import { TextInput } from 'react-native';
 import { withUniwind } from 'uniwind';
 
 import { Box } from '../box/box';
@@ -18,8 +10,7 @@ import { type FocusedFieldNode, useReportFocusedField } from '../input/focused-f
 import { Text } from '../text/text';
 import { TEXT_SIZE_CLASSES } from '../text/text.variants';
 import { VStack } from '../v-stack/v-stack';
-import { FieldMaxHeightContext } from './field-max-height';
-import type { TextAreaInternalProps } from './text-area.types';
+import type { TextAreaProps } from './text-area.types';
 import {
   TEXT_AREA_TEXT_SIZES,
   textAreaContainerVariants,
@@ -42,7 +33,6 @@ export function TextArea({
   growsWithContent = false,
   placeholder,
   className,
-  textInputComponent,
   value,
   onChange,
   onFocus,
@@ -50,50 +40,23 @@ export function TextArea({
   onLayout,
   onContentSizeChange,
   ...props
-}: TextAreaInternalProps) {
+}: TextAreaProps) {
   const [isFocused, setIsFocused] = useState(false);
   const fieldRef = useRef<FocusedFieldNode | null>(null);
   const reportFocusedField = useReportFocusedField(fieldRef);
   const [contentHeight, setContentHeight] = useState<number | null>(null);
   const [verticalChromeHeight, setVerticalChromeHeight] = useState<number | null>(null);
-  const getMaxFieldHeight = use(FieldMaxHeightContext);
-  const containerRef = useRef<ComponentRef<typeof View> | null>(null);
-  const [maxContainerHeight, setMaxContainerHeight] = useState<number | null>(null);
-  // 칸 전체와 입력 칸을 같은 배치에서 동기로 재야 라벨·오류 문구 몫이 어긋나지 않아 상한이 흔들리지 않는다
-  const measureMaxContainerHeight = () => {
-    const field = fieldRef.current;
-    const container = containerRef.current;
-    if (!growsWithContent || getMaxFieldHeight == null || field == null || container == null) {
-      return;
-    }
-    field.measure((_x, _y, _width, fieldHeight) =>
-      container.measure((_containerX, _containerY, _containerWidth, containerHeight) => {
-        const maxFieldHeight = getMaxFieldHeight(fieldHeight);
-        setMaxContainerHeight(
-          maxFieldHeight == null ? null : maxFieldHeight - (fieldHeight - containerHeight),
-        );
-      }),
-    );
-  };
-  const handleMaxFieldHeightChange = useEffectEvent(measureMaxContainerHeight);
-  useLayoutEffect(() => {
-    handleMaxFieldHeightChange();
-  }, [getMaxFieldHeight]);
   const layoutMeasurementsRef = useRef<{
     containerHeight?: number;
     inputHeight?: number;
   }>({});
   const hasMeasuredVerticalChromeRef = useRef(false);
   const { resolveSize } = useFontScale();
-  const InputComponent = textInputComponent ?? StyledTextInput;
   const resolvedTextSize = textSize == null ? undefined : resolveSize(textSize);
   const growingContainerStyle =
     growsWithContent && contentHeight != null && verticalChromeHeight != null
       ? {
-          height: Math.min(
-            Math.ceil(contentHeight + verticalChromeHeight),
-            maxContainerHeight ?? Infinity,
-          ),
+          height: Math.ceil(contentHeight + verticalChromeHeight),
         }
       : undefined;
 
@@ -124,7 +87,6 @@ export function TextArea({
         if (isFocused) {
           reportFocusedField(true);
         }
-        measureMaxContainerHeight();
       }}
     >
       {label != null && label.length > 0 && (
@@ -134,7 +96,6 @@ export function TextArea({
       )}
       <VStack gap={4} className={cn(variant === 'bare' && 'flex-1')}>
         <Box
-          ref={containerRef}
           style={growingContainerStyle}
           className={cn(
             textAreaContainerVariants({ variant, isFocused, isDisabled, isInvalid }),
@@ -144,7 +105,7 @@ export function TextArea({
             recordLayoutMeasurement({ containerHeight: event.nativeEvent.layout.height });
           }}
         >
-          <InputComponent
+          <StyledTextInput
             ref={ref}
             value={value}
             onChangeText={onChange}

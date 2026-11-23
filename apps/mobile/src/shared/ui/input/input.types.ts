@@ -1,4 +1,4 @@
-import type { ComponentType, ReactNode, Ref } from 'react';
+import type { ReactNode, Ref } from 'react';
 import type { TextInputInstance, TextInputProps } from 'react-native';
 
 type InputVariant = 'filled' | 'line';
@@ -21,8 +21,4 @@ export interface InputProps extends Omit<
   leftContent?: ReactNode;
   rightContent?: ReactNode;
   className?: string;
-}
-
-export interface InputInternalProps extends InputProps {
-  textInputComponent?: ComponentType<TextInputProps>;
 }

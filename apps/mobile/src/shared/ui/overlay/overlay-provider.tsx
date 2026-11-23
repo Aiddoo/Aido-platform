@@ -72,7 +72,7 @@ export function OverlayProvider({
       <OverlayStateContext value={state}>
         <PortalTargetContext value={portalTarget}>
           {children}
-          {/* overlay와 Portal로 그린 시트는 route 시트가 아니라, 닫혀도 route의 토스트 면을 닫지 않는다 */}
+          {/* overlay로 띄운 시트는 route 시트가 아니라, 닫혀도 route의 토스트 면을 닫지 않는다 */}
           <ToastLayerClosingContext value={null}>
             {[...overlays.entries()].map(([id, { element, version }]) => (
               <Fragment key={`${id}-${version}`}>{element}</Fragment>

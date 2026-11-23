@@ -10,6 +10,7 @@ export const ERROR_REPORT_FEATURES = [
   'app_version',
   'auth',
   'auth_cold_start',
+  'bottom_sheet',
   'draft',
   'entitlement',
   'env',

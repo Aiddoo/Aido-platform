@@ -7,7 +7,7 @@ import { withUniwind } from 'uniwind';
 import { Box } from '../box/box';
 import { Text } from '../text/text';
 import { type FocusedFieldNode, useReportFocusedField } from './focused-field';
-import type { InputInternalProps } from './input.types';
+import type { InputProps } from './input.types';
 import {
   INPUT_TEXT_SIZES,
   inputContainerVariants,
@@ -34,13 +34,11 @@ export function Input({
   onChange,
   onFocus,
   onBlur,
-  textInputComponent,
   ...props
-}: InputInternalProps) {
+}: InputProps) {
   const [isFocused, setIsFocused] = useState(false);
   const fieldRef = useRef<FocusedFieldNode | null>(null);
   const reportFocusedField = useReportFocusedField(fieldRef);
-  const InputComponent = textInputComponent ?? StyledTextInput;
   const { resolveSize } = useFontScale();
 
   return (
@@ -66,7 +64,7 @@ export function Input({
         )}
       >
         {leftContent && <Box className="mr-3">{leftContent}</Box>}
-        <InputComponent
+        <StyledTextInput
           ref={ref}
           value={value}
           onChangeText={onChange}
