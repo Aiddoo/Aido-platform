@@ -35,12 +35,14 @@ import { SecurityLogRepositoryPort } from "#api/modules/identity/users/applicati
 import { UserMutationLockPort } from "#api/modules/identity/users/application/ports/user-mutation-lock.port";
 import { UserProfileInvalidatorPort } from "#api/modules/identity/users/application/ports/user-profile-invalidator.port";
 import { UserRegistrationNotifierPort } from "#api/modules/identity/users/application/ports/user-registration-notifier.port";
+import { UserTagGeneratorPort } from "#api/modules/identity/users/application/ports/user-tag-generator.port";
 import { UserRepositoryPort } from "#api/modules/identity/users/application/ports/user.repository.port";
 import { DeleteAccountUseCase } from "#api/modules/identity/users/application/use-cases/delete-account.use-case";
 import { PurgeDeletedAccountsUseCase } from "#api/modules/identity/users/application/use-cases/purge-deleted-accounts.use-case";
 import { RegisterUseCase } from "#api/modules/identity/users/application/use-cases/register.use-case";
 import { UserMutationLockAdapter } from "#api/modules/identity/users/infrastructure/adapters/user-mutation-lock.adapter";
 import { UserProfileCacheAdapter } from "#api/modules/identity/users/infrastructure/adapters/user-profile-cache.adapter";
+import { RandomUserTagGeneratorAdapter } from "#api/modules/identity/users/infrastructure/adapters/user-tag-generator.adapter";
 import { DrizzleSecurityLogRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-security-log.repository";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { VerificationCodeEmailSenderPort } from "#api/modules/identity/verifications/application/ports/verification-code-email-sender.port";
@@ -176,6 +178,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
         DrizzleLoginAttemptRepository,
         DrizzleVerificationRepository,
         { provide: UserRepositoryPort, useExisting: DrizzleUserRepository },
+        { provide: UserTagGeneratorPort, useClass: RandomUserTagGeneratorAdapter },
         { provide: UserMutationLockPort, useClass: UserMutationLockAdapter },
         { provide: LinkedAccountsRepositoryPort, useExisting: DrizzleLinkedAccountsRepository },
         { provide: SessionRepositoryPort, useExisting: DrizzleSessionRepository },
