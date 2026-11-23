@@ -102,7 +102,7 @@ export class DrizzleTodoCommentReplyReader implements TodoCommentReplyReaderPort
   }
 
   /** 묶음 하나의 답글을 작성 순으로 읽는다. 지운 답글은 목록에서 빠지지만 cursor 위치로는 남는다 */
-  async listReplies(
+  async findReplyWindow(
     params: ListTodoCommentRepliesParams,
   ): Promise<TodoCommentWindowReadModel<TodoCommentReadModel> | null> {
     if (params.mode !== "INITIAL" && params.anchorReplyId == null) {

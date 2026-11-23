@@ -43,7 +43,7 @@ export interface ListTodoCommentThreadsQuery {
 interface ListTodoCommentThreadsDependencies {
   readonly accessReader: Pick<TodoCommentAccessReaderPort, "findAccessibleTodoOwnerId">;
   readonly reader: Pick<TodoCommentReaderPort, "findComment">;
-  readonly threadReader: Pick<TodoCommentThreadReaderPort, "listThreads">;
+  readonly threadReader: Pick<TodoCommentThreadReaderPort, "findThreadWindow">;
   readonly likeReader: Pick<TodoCommentLikeReaderPort, "listLikedCommentIds">;
   readonly blockReader: Pick<TodoCommentBlockReaderPort, "listBlockedCounterpartIds">;
   readonly cursorCodec: Pick<TodoCommentCursorCodecPort, "decodeThreads" | "encodeThreads">;
@@ -69,11 +69,11 @@ export class ListTodoCommentThreadsUseCase {
       throw todoNotFound(todoId);
     }
     const page = await this.#resolvePage(query, todoId);
-    const anchoredWindow = await threadReader.listThreads(page.params);
+    const anchoredWindow = await threadReader.findThreadWindow(page.params);
     // 기준 묶음이 목록에서 보이지 않으면 오류 대신 첫 페이지와 빈 anchor로 연다
     const window =
       anchoredWindow == null && page.params.mode === "ANCHOR"
-        ? await threadReader.listThreads({ ...page.params, mode: "INITIAL" })
+        ? await threadReader.findThreadWindow({ ...page.params, mode: "INITIAL" })
         : anchoredWindow;
     if (window == null) {
       throw invalidCommentRequest();

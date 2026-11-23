@@ -296,7 +296,7 @@ export class DrizzleTodoConversationReader implements TodoConversationReaderPort
     this.#transactionHost = transactionHost;
   }
 
-  async listConversation(
+  async findConversationWindow(
     params: ListTodoConversationParams,
   ): Promise<TodoConversationWindowReadModel | null> {
     const isCursorPage = params.mode === "AFTER" || params.mode === "BEFORE";

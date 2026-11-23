@@ -48,7 +48,7 @@ interface ConversationAnchor {
 interface GetTodoConversationDependencies {
   readonly accessReader: Pick<TodoCommentAccessReaderPort, "findAccessibleTodoOwnerId">;
   readonly reader: Pick<TodoCommentReaderPort, "listComments">;
-  readonly conversationReader: Pick<TodoConversationReaderPort, "listConversation">;
+  readonly conversationReader: Pick<TodoConversationReaderPort, "findConversationWindow">;
   readonly likeReader: Pick<TodoCommentLikeReaderPort, "listLikedCommentIds">;
   readonly blockReader: Pick<TodoCommentBlockReaderPort, "listBlockedCounterpartIds">;
   readonly cursorCodec: Pick<
@@ -79,7 +79,7 @@ export class GetTodoConversationUseCase {
       throw todoNotFound(todoId);
     }
     const anchor = this.#toAnchor(query, todoId);
-    const window = await conversationReader.listConversation({
+    const window = await conversationReader.findConversationWindow({
       todoId,
       sort: query.sort,
       size: query.size,

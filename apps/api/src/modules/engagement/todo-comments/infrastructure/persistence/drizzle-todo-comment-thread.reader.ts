@@ -187,7 +187,7 @@ export class DrizzleTodoCommentThreadReader implements TodoCommentThreadReaderPo
   }
 
   /** 묶음 머리 keyset을 읽고, 고른 묶음마다 대표 답글과 참여자를 LATERAL로 한 번에 붙인다 */
-  async listThreads(
+  async findThreadWindow(
     params: ListTodoCommentThreadsParams,
   ): Promise<TodoCommentWindowReadModel<TodoCommentThreadItemReadModel> | null> {
     const window = await this.#listThreadComments(params);

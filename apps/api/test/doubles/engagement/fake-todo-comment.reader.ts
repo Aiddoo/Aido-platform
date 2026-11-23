@@ -108,21 +108,21 @@ export class FakeTodoCommentReader
     });
   }
 
-  async listThreads(
+  async findThreadWindow(
     params: ListTodoCommentThreadsParams,
   ): Promise<TodoCommentWindowReadModel<TodoCommentThreadItemReadModel> | null> {
     this.threadParams.push(params);
     return params.mode !== "INITIAL" && this.isAnchorMissing ? null : this.threadsWindow;
   }
 
-  async listReplies(
+  async findReplyWindow(
     params: ListTodoCommentRepliesParams,
   ): Promise<TodoCommentWindowReadModel<TodoCommentReadModel> | null> {
     this.replyParams.push(params);
     return params.mode !== "INITIAL" && this.isAnchorMissing ? null : this.repliesWindow;
   }
 
-  async listConversation(
+  async findConversationWindow(
     params: ListTodoConversationParams,
   ): Promise<TodoConversationWindowReadModel | null> {
     this.conversationParams.push(params);

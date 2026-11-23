@@ -30,7 +30,7 @@ export interface ListTodoCommentRepliesQuery {
 interface ListTodoCommentRepliesDependencies {
   readonly accessReader: Pick<TodoCommentAccessReaderPort, "findAccessibleTodoOwnerId">;
   readonly reader: Pick<TodoCommentReaderPort, "findComment">;
-  readonly replyReader: Pick<TodoCommentReplyReaderPort, "listReplies">;
+  readonly replyReader: Pick<TodoCommentReplyReaderPort, "findReplyWindow">;
   readonly likeReader: Pick<TodoCommentLikeReaderPort, "listLikedCommentIds">;
   readonly blockReader: Pick<TodoCommentBlockReaderPort, "listBlockedCounterpartIds">;
   readonly cursorCodec: Pick<TodoCommentCursorCodecPort, "decodeReplies" | "encodeReplies">;
@@ -60,9 +60,9 @@ export class ListTodoCommentRepliesUseCase {
     const params = this.#toParams(query, { todoId, threadCommentId, size: query.size });
     // 기준 답글이 지워졌거나 다른 묶음이면 첫 페이지로 연다
     const window =
-      (await replyReader.listReplies(params)) ??
+      (await replyReader.findReplyWindow(params)) ??
       (params.mode === "AROUND"
-        ? await replyReader.listReplies({ ...params, mode: "INITIAL" })
+        ? await replyReader.findReplyWindow({ ...params, mode: "INITIAL" })
         : null);
     if (window == null) {
       throw invalidCommentRequest();
