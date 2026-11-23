@@ -47,7 +47,7 @@
     "remark-cli": "catalog:",
     "remark-validate-links": "catalog:",
     "tsx": "4.23.15",
-    "turbo": "2.11.11",
+    "turbo": "2.11.12",
     "vite": "catalog:"
   },
   "config": {
