@@ -191,8 +191,8 @@ const same = (left: unknown, right: unknown) => JSON.stringify(left) === JSON.st
 const titleKey = (title: string) =>
   title
     .toLowerCase()
-    .replace(/\b(a|an|the|my)\b/g, "")
-    .replace(/[\s\p{P}]/gu, "");
+    .replaceAll(/\b(a|an|the|my)\b/g, "")
+    .replaceAll(/[\s\p{P}]/gu, "");
 const titleMatches = (expected: string, actual: string) =>
   titleKey(actual).includes(titleKey(expected)) || titleKey(expected).includes(titleKey(actual));
 const options = { agreedConsentVersion: AI_DATA_SHARING_CONSENT.VERSION, userId: null } as const;
@@ -376,7 +376,7 @@ const QUOTED_NAME = /(?<![\p{L}\p{N}])['"‘“][^'"‘’“”\n]+['"’”](?
  * 따옴표 없는 고유명사는 앱 언어가 달라도 원문 표기일 수 있어 녹음 정리에서는 지표로만 본다.
  */
 function isWrittenInLocale(texts: readonly string[], locale: VoiceNoteDigestGoldenCase["locale"]) {
-  const hasHangul = (text: string) => /\p{Script=Hangul}/u.test(text.replace(QUOTED_NAME, ""));
+  const hasHangul = (text: string) => /\p{Script=Hangul}/u.test(text.replaceAll(QUOTED_NAME, ""));
   return texts.every((text) => hasHangul(text) === (locale === "ko"));
 }
 
@@ -531,7 +531,7 @@ const META_TEXT =
   /report_data|insightKey|previousTips|focus\.|stats\.|\bJSON\b|based on the data|according to the data|데이터(?:에 따르면|를 보면)/i;
 
 function isSameTip(left: string, right: string): boolean {
-  const toKey = (text: string) => text.toLowerCase().replace(/[\s\p{P}]/gu, "");
+  const toKey = (text: string) => text.toLowerCase().replaceAll(/[\s\p{P}]/gu, "");
   return toKey(left) === toKey(right);
 }
 

@@ -16,8 +16,7 @@
 import { randomBytes } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join, resolve } from 'node:path';
 
 const LOCAL_HOSTS = new Set([
   'localhost',
@@ -34,7 +33,7 @@ const EMAIL_DOMAIN = 'example.test';
 // apps/api JOB_SCHEMA 기본값. 로컬 개발 서버는 바꾸지 않는다
 const JOB_SCHEMA = 'pgboss';
 
-const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
+const SCRIPT_DIR = import.meta.dirname;
 const ENV_FILE = resolve(SCRIPT_DIR, '..', '.env.maestro');
 
 const ACCOUNT_ROLES = ['main', 'second'] as const;
@@ -188,7 +187,7 @@ function randomPassword(): string {
   // 영문+숫자 필수 규칙을 늘 만족한다
   return `Mx${randomBytes(9)
     .toString('base64url')
-    .replace(/[^A-Za-z0-9]/g, 'a')}9`;
+    .replaceAll(/[^A-Za-z0-9]/g, 'a')}9`;
 }
 
 async function createAccounts(target: Target): Promise<void> {

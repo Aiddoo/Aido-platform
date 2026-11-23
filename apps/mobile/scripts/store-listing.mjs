@@ -7,11 +7,10 @@
 // 폴더 구조는 fastlane deliver/supply의 필드 파일 이름을 따른다(listing/<store>/<locale>/<field>.txt).
 // en-GB처럼 일부 필드만 있는 로캘은 INHERITS의 부모 로캘에서 나머지를 물려받는다.
 import { mkdirSync, readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 
-const MOBILE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const MOBILE_ROOT = resolve(import.meta.dirname, '..');
 const LISTING_ROOT = join(MOBILE_ROOT, 'store-metadata/listing');
 // 출시 노트 기준 버전은 앱 버전 하나다(docs/conventions/git.md#버전).
 export const RELEASE_VERSION = JSON.parse(
@@ -79,7 +78,7 @@ const RELEASE_NOTE_SECTIONS = {
 export const characterCount = (value) => [...value].length;
 export const byteCount = (value) => Buffer.byteLength(value, 'utf8');
 const languageOf = (locale) => locale.slice(0, 2);
-const stripUrls = (value) => value.replace(/https?:\/\/\S+/gu, '');
+const stripUrls = (value) => value.replaceAll(/https?:\/\/\S+/gu, '');
 
 function readField(store, locale, field) {
   const path = join(LISTING_ROOT, store, locale, `${field}.txt`);
@@ -195,19 +194,19 @@ export function checkListings() {
   for (const [store, config] of Object.entries(STORES)) {
     const loaded = {};
     for (const locale of config.locales) {
-      const dir = join(LISTING_ROOT, store, locale);
-      if (!existsSync(dir)) {
+      const localeDirectory = join(LISTING_ROOT, store, locale);
+      if (!existsSync(localeDirectory)) {
         errors.push(`${store}/${locale}: 폴더가 없다`);
         continue;
       }
       const known = new Set(Object.keys(config.fields).map((field) => `${field}.txt`));
-      for (const file of readdirSync(dir)) {
+      for (const file of readdirSync(localeDirectory)) {
         if (!known.has(file)) {
           errors.push(`${store}/${locale}/${file}: 알 수 없는 필드 파일`);
         }
       }
       if (config.inherits[locale] != null) {
-        for (const file of readdirSync(dir)) {
+        for (const file of readdirSync(localeDirectory)) {
           const field = file.replace(/\.txt$/u, '');
           if (!config.overridable.includes(field)) {
             errors.push(
@@ -389,16 +388,16 @@ function markdownFor(store) {
   return `${lines.join('\n').trimEnd()}\n`;
 }
 
-export function exportListings(outDir) {
+export function exportListings(outputDirectory) {
   const written = [];
   for (const [store, config] of Object.entries(STORES)) {
     for (const locale of config.locales) {
       const { values } = loadListing(store, locale);
-      const dir = join(outDir, 'text', store, locale);
-      mkdirSync(dir, { recursive: true });
+      const localeDirectory = join(outputDirectory, 'text', store, locale);
+      mkdirSync(localeDirectory, { recursive: true });
       for (const [field, value] of Object.entries(values)) {
-        writeFileSync(join(dir, `${field}.txt`), value);
-        written.push(join(dir, `${field}.txt`));
+        writeFileSync(join(localeDirectory, `${field}.txt`), value);
+        written.push(join(localeDirectory, `${field}.txt`));
       }
     }
   }
@@ -407,8 +406,8 @@ export function exportListings(outDir) {
     'google-play': 'Google-Play-등록정보.ko-en.md',
   };
   for (const [store, file] of Object.entries(names)) {
-    writeFileSync(join(outDir, file), markdownFor(store));
-    written.push(join(outDir, file));
+    writeFileSync(join(outputDirectory, file), markdownFor(store));
+    written.push(join(outputDirectory, file));
   }
   return written;
 }
@@ -427,9 +426,9 @@ function report() {
   }
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (import.meta.main) {
   const { positionals, values } = parseArgs({
-    args: process.argv.slice(2).filter((arg) => arg !== '--'),
+    args: process.argv.slice(2).filter((argument) => argument !== '--'),
     allowPositionals: true,
     options: { out: { type: 'string' }, quiet: { type: 'boolean', default: false } },
   });

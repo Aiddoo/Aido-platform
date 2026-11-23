@@ -19,8 +19,9 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { join, resolve } from 'node:path';
+import { setTimeout as sleep } from 'node:timers/promises';
+import { pathToFileURL } from 'node:url';
 
 import { z } from 'zod';
 
@@ -50,7 +51,7 @@ type Locale = (typeof LOCALES)[number];
 type Role = 'premium' | 'free' | 'grant' | 'newbie';
 const ROLES: readonly Role[] = ['premium', 'free', 'grant', 'newbie'];
 
-const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
+const SCRIPT_DIR = import.meta.dirname;
 const ENV_FILE = resolve(SCRIPT_DIR, '..', '.env.screens');
 const CONTENT_FILE = join(SCRIPT_DIR, 'demo-content.json');
 
@@ -311,7 +312,7 @@ function randomTag(): string {
 function randomPassword(): string {
   return `Ad${randomBytes(9)
     .toString('base64url')
-    .replace(/[^A-Za-z0-9]/g, 'a')}7`;
+    .replaceAll(/[^A-Za-z0-9]/g, 'a')}7`;
 }
 
 /** 같은 입력이면 같은 값을 주는 0~99 */
@@ -375,10 +376,6 @@ function instant(dateKey: string, time: string, timezone: string): Date {
 const loginResponseSchema = z.object({
   data: z.object({ accessToken: z.string(), userId: z.string() }),
 });
-
-async function sleep(ms: number): Promise<void> {
-  await new Promise((resolveSleep) => setTimeout(resolveSleep, ms));
-}
 
 async function register(
   target: Target,
@@ -576,11 +573,11 @@ interface SeedState {
 }
 
 async function upsertProfile(
-  ctx: Context,
+  context: Context,
   userId: string,
   input: { name: string; icon: string; timezone: string; locale: Locale; timeFormat: string },
 ): Promise<void> {
-  const { db } = ctx;
+  const { db } = context;
   await db.query(
     `INSERT INTO "UserProfile" ("id", "userId", "name", "profileImage") VALUES ($1, $2, $3, $4)
      ON CONFLICT ("userId") DO UPDATE SET "name" = EXCLUDED."name", "profileImage" = EXCLUDED."profileImage"`,
@@ -593,7 +590,7 @@ async function upsertProfile(
        "locale" = EXCLUDED."locale", "timeFormat" = EXCLUDED."timeFormat"`,
     [cuidLike(), userId, input.timezone, input.locale, input.timeFormat],
   );
-  const agreedAt = utc(ctx.now);
+  const agreedAt = utc(context.now);
   await db.query(
     `INSERT INTO "UserConsent" ("id", "userId", "termsAgreedAt", "privacyAgreedAt", "marketingAgreedAt", "marketingPushAgreedAt")
      VALUES ($1, $2, $3, $3, $3, $3)
@@ -604,23 +601,23 @@ async function upsertProfile(
 }
 
 async function createOwner(
-  ctx: Context,
+  context: Context,
   state: Pick<SeedState, 'content' | 'locale'>,
   role: Role,
   createdDaysAgo: number,
 ): Promise<Owner> {
   const spec = state.content.owners[role];
   const password = randomPassword();
-  await register(ctx.target, { email: spec.email, password, name: spec.name });
+  await register(context.target, { email: spec.email, password, name: spec.name });
   const id =
-    (await findUserId(ctx.db, spec.email)) ?? fail(`${role} 계정을 DB에서 찾지 못했습니다.`);
-  const createdAt = utc(new Date(ctx.now.getTime() - createdDaysAgo * DAY_MS));
-  await ctx.db.query(
+    (await findUserId(context.db, spec.email)) ?? fail(`${role} 계정을 DB에서 찾지 못했습니다.`);
+  const createdAt = utc(new Date(context.now.getTime() - createdDaysAgo * DAY_MS));
+  await context.db.query(
     `UPDATE "User" SET "emailVerifiedAt" = $2, "status" = 'ACTIVE', "createdAt" = $2, "updatedAt" = $3,
        "aiUsageCount" = 0, "aiUsageResetAt" = $3 WHERE "id" = $1`,
-    [id, createdAt, utc(ctx.now)],
+    [id, createdAt, utc(context.now)],
   );
-  await upsertProfile(ctx, id, {
+  await upsertProfile(context, id, {
     name: spec.name,
     icon: spec.icon,
     timezone: state.content.timezone,
@@ -628,23 +625,23 @@ async function createOwner(
     timeFormat: state.content.timeFormat,
   });
   // 가입 때 생긴 기본 카테고리는 지우고 데모 카테고리로 채운다(무료 한도 3개)
-  await ctx.db.query('DELETE FROM "TodoCategory" WHERE "userId" = $1', [id]);
+  await context.db.query('DELETE FROM "TodoCategory" WHERE "userId" = $1', [id]);
   return { role, id, email: spec.email, password, name: spec.name };
 }
 
 async function createDbUser(
-  ctx: Context,
+  context: Context,
   state: Pick<SeedState, 'content' | 'locale'>,
   input: { email: string; name: string; icon: string; createdDaysAgo: number },
 ): Promise<string> {
   const id = cuidLike();
-  const createdAt = utc(new Date(ctx.now.getTime() - input.createdDaysAgo * DAY_MS));
-  await ctx.db.query(
+  const createdAt = utc(new Date(context.now.getTime() - input.createdDaysAgo * DAY_MS));
+  await context.db.query(
     `INSERT INTO "User" ("id", "email", "userTag", "status", "emailVerifiedAt", "createdAt", "updatedAt", "lastActiveAt")
      VALUES ($1, $2, $3, 'ACTIVE', $4, $4, $5, $5)`,
-    [id, input.email, randomTag(), createdAt, utc(ctx.now)],
+    [id, input.email, randomTag(), createdAt, utc(context.now)],
   );
-  await upsertProfile(ctx, id, {
+  await upsertProfile(context, id, {
     name: input.name,
     icon: input.icon,
     timezone: state.content.timezone,
@@ -655,17 +652,17 @@ async function createDbUser(
 }
 
 async function createCategories(
-  ctx: Context,
+  context: Context,
   userId: string,
   categories: readonly { key: string; name: string; color: string }[],
 ): Promise<Map<string, number>> {
   const ids = new Map<string, number>();
   for (const [index, category] of categories.entries()) {
     const id = await insertReturningId(
-      ctx.db,
+      context.db,
       `INSERT INTO "TodoCategory" ("userId", "name", "color", "sortOrder", "createdAt", "updatedAt")
        VALUES ($1, $2, $3, $4, $5, $5)`,
-      [userId, category.name, category.color, index, utc(ctx.now)],
+      [userId, category.name, category.color, index, utc(context.now)],
     );
     ids.set(category.key, id);
   }
@@ -684,7 +681,7 @@ interface TodoInsert {
   timezone: string;
 }
 
-async function insertTodo(ctx: Context, todo: TodoInsert): Promise<number> {
+async function insertTodo(context: Context, todo: TodoInsert): Promise<number> {
   const scheduled = todo.time === null ? null : instant(todo.date, todo.time, todo.timezone);
   const completedAt = todo.done
     ? utc(
@@ -695,7 +692,7 @@ async function insertTodo(ctx: Context, todo: TodoInsert): Promise<number> {
     new Date(instant(todo.date, '00:00', todo.timezone).getTime() - 2 * DAY_MS),
   );
   return insertReturningId(
-    ctx.db,
+    context.db,
     `INSERT INTO "Todo" ("userId", "title", "categoryId", "sortOrder", "completed", "completedAt", "startDate",
        "scheduledTime", "isAllDay", "visibility", "recurrenceGroupId", "createdAt", "updatedAt")
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'PUBLIC', $10, $11, $11)`,
@@ -795,7 +792,7 @@ function planDay(
 }
 
 async function seedOwnerTodos(
-  ctx: Context,
+  context: Context,
   state: SeedState,
   owner: Owner,
   role: 'premium' | 'free',
@@ -822,7 +819,7 @@ async function seedOwnerTodos(
         groupId = groupIds.get(todo.recurrenceKey) ?? randomUUID();
         groupIds.set(todo.recurrenceKey, groupId);
       }
-      const id = await insertTodo(ctx, {
+      const id = await insertTodo(context, {
         userId: owner.id,
         title: todo.title,
         categoryId,
@@ -840,26 +837,26 @@ async function seedOwnerTodos(
         todayIds.set(todo.title, id);
       }
       if (todo.detail === true && offset === 0) {
-        ctx.env.set(envKey(state.locale, role, 'TODO_ID'), String(id));
+        context.env.set(envKey(state.locale, role, 'TODO_ID'), String(id));
       }
       if (todo.items !== undefined) {
         for (const [itemIndex, item] of todo.items.entries()) {
-          await ctx.db.query(
+          await context.db.query(
             `INSERT INTO "TodoItem" ("todoId", "title", "completed", "sortOrder", "createdAt", "updatedAt")
              VALUES ($1, $2, $3, $4, $5, $5)`,
-            [id, item.title, item.done, itemIndex, utc(ctx.now)],
+            [id, item.title, item.done, itemIndex, utc(context.now)],
           );
         }
-        ctx.env.set(envKey(state.locale, role, 'CHECKLIST_TODO_ID'), String(id));
+        context.env.set(envKey(state.locale, role, 'CHECKLIST_TODO_ID'), String(id));
       }
       // 다음 반복 할 일(오늘 이후 첫 회차)은 반복 편집 화면에 쓴다
       if (
         groupId !== null &&
         offset > 0 &&
-        !ctx.env.has(envKey(state.locale, role, 'RECURRING_TODO_ID'))
+        !context.env.has(envKey(state.locale, role, 'RECURRING_TODO_ID'))
       ) {
-        ctx.env.set(envKey(state.locale, role, 'RECURRING_TODO_ID'), String(id));
-        ctx.env.set(envKey(state.locale, role, 'RECURRING_DATE'), date);
+        context.env.set(envKey(state.locale, role, 'RECURRING_TODO_ID'), String(id));
+        context.env.set(envKey(state.locale, role, 'RECURRING_DATE'), date);
       }
     }
     if (offset < 0 && plan.length > 0) {
@@ -871,7 +868,7 @@ async function seedOwnerTodos(
   // 다 끝낸 날의 완료 기록, 연속 기록, 지난 주차 달성 기록
   for (const day of dayTotals) {
     if (day.completed === day.total) {
-      await ctx.db.query(
+      await context.db.query(
         `INSERT INTO "DailyCompletion" ("id", "userId", "date", "totalTodos", "completedTodos", "achievedAt", "createdAt", "updatedAt")
          VALUES ($1, $2, $3, $4, $4, $5, $5, $5)`,
         [
@@ -896,7 +893,7 @@ async function seedOwnerTodos(
     run = day.completed === day.total ? run + 1 : 0;
     longest = Math.max(longest, run);
   }
-  await ctx.db.query(
+  await context.db.query(
     `UPDATE "UserPreference" SET "currentStreak" = $2, "longestStreak" = $3, "lastCompletedDate" = $4 WHERE "userId" = $1`,
     [owner.id, streak, Math.max(longest, streak), streak > 0 ? addDays(state.today, -1) : null],
   );
@@ -914,10 +911,10 @@ async function seedOwnerTodos(
     if (entry.year === currentWeek.year && entry.week === currentWeek.week) {
       continue;
     }
-    await ctx.db.query(
+    await context.db.query(
       `INSERT INTO "WeeklyAchievement" ("userId", "year", "week", "totalTodos", "completedTodos", "achievedAt", "createdAt")
        VALUES ($1, $2, $3, $4, $5, $6, $6)`,
-      [owner.id, entry.year, entry.week, entry.total, entry.completed, utc(ctx.now)],
+      [owner.id, entry.year, entry.week, entry.total, entry.completed, utc(context.now)],
     );
   }
 }
@@ -931,7 +928,7 @@ function isoWeek(dateKey: string): { year: number; week: number } {
   return { year: date.getUTCFullYear(), week };
 }
 
-async function seedFriendTodos(ctx: Context, state: SeedState): Promise<void> {
+async function seedFriendTodos(context: Context, state: SeedState): Promise<void> {
   const { content } = state;
   const dailyName = state.locale === 'ko' ? '일상' : 'Daily';
   for (const friend of content.friends) {
@@ -941,7 +938,7 @@ async function seedFriendTodos(ctx: Context, state: SeedState): Promise<void> {
     }
     const categories =
       state.categoryIds.get(friendId) ??
-      (await createCategories(ctx, friendId, [
+      (await createCategories(context, friendId, [
         { key: 'daily', name: dailyName, color: '#20C997' },
       ]));
     state.categoryIds.set(friendId, categories);
@@ -951,7 +948,7 @@ async function seedFriendTodos(ctx: Context, state: SeedState): Promise<void> {
     }
     const todayIds = new Map<string, number>();
     for (const [index, todo] of friend.todos.entries()) {
-      const id = await insertTodo(ctx, {
+      const id = await insertTodo(context, {
         userId: friendId,
         title: todo.title,
         categoryId,
@@ -967,7 +964,7 @@ async function seedFriendTodos(ctx: Context, state: SeedState): Promise<void> {
     // 친구 캘린더가 비어 보이지 않게 지난 3일도 조금 채운다
     for (let offset = -3; offset <= -1; offset += 1) {
       for (const [index, todo] of friend.todos.slice(0, 2).entries()) {
-        await insertTodo(ctx, {
+        await insertTodo(context, {
           userId: friendId,
           title: todo.title,
           categoryId,
@@ -985,19 +982,19 @@ async function seedFriendTodos(ctx: Context, state: SeedState): Promise<void> {
 }
 
 async function befriend(
-  ctx: Context,
+  context: Context,
   a: string,
   b: string,
   sortOrder: number,
   daysAgo: number,
 ): Promise<void> {
-  const createdAt = utc(new Date(ctx.now.getTime() - daysAgo * DAY_MS));
+  const createdAt = utc(new Date(context.now.getTime() - daysAgo * DAY_MS));
   const edges: [string, string][] = [
     [a, b],
     [b, a],
   ];
   for (const [follower, following] of edges) {
-    await ctx.db.query(
+    await context.db.query(
       `INSERT INTO "Follow" ("id", "followerId", "followingId", "status", "sortOrder", "createdAt", "updatedAt")
        VALUES ($1, $2, $3, 'ACCEPTED', $4, $5, $5)
        ON CONFLICT ("followerId", "followingId") DO NOTHING`,
@@ -1007,7 +1004,7 @@ async function befriend(
 }
 
 async function addNotification(
-  ctx: Context,
+  context: Context,
   input: {
     userId: string;
     type: string;
@@ -1022,8 +1019,8 @@ async function addNotification(
     metadata?: Record<string, unknown>;
   },
 ): Promise<void> {
-  const createdAt = new Date(ctx.now.getTime() - input.minutesAgo * 60_000);
-  await ctx.db.query(
+  const createdAt = new Date(context.now.getTime() - input.minutesAgo * 60_000);
+  await context.db.query(
     `INSERT INTO "Notification" ("userId", "type", "title", "body", "isRead", "todoId", "friendId", "nudgeId",
        "cheerId", "metadata", "createdAt", "readAt")
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
@@ -1051,14 +1048,14 @@ function fill(template: string | undefined, values: Record<string, string>): str
   );
 }
 
-async function seedSocial(ctx: Context, state: SeedState, owner: Owner): Promise<void> {
+async function seedSocial(context: Context, state: SeedState, owner: Owner): Promise<void> {
   const { content } = state;
   const isPremium = owner.role === 'premium';
   const friendsOf = content.friends.filter((friend) => isPremium || friend.freeFriend);
   for (const [index, friend] of friendsOf.entries()) {
     const friendId = state.friendIds.get(friend.key);
     if (friendId !== undefined) {
-      await befriend(ctx, owner.id, friendId, index, friend.joinedDaysAgo ?? 30 + index);
+      await befriend(context, owner.id, friendId, index, friend.joinedDaysAgo ?? 30 + index);
     }
   }
   const nameOf = (key: string) => content.friends.find((friend) => friend.key === key)?.name ?? '';
@@ -1069,19 +1066,19 @@ async function seedSocial(ctx: Context, state: SeedState, owner: Owner): Promise
   const nudgeTodoId = ownerToday.get(content.nudge.todo);
   if (nudgeFrom !== undefined && nudgeTodoId !== undefined) {
     const nudgeId = await insertReturningId(
-      ctx.db,
+      context.db,
       `INSERT INTO "Nudge" ("senderId", "receiverId", "todoId", "message", "createdAt") VALUES ($1, $2, $3, $4, $5)`,
       [
         nudgeFrom,
         owner.id,
         nudgeTodoId,
         content.nudge.message,
-        utc(new Date(ctx.now.getTime() - 18 * 60_000)),
+        utc(new Date(context.now.getTime() - 18 * 60_000)),
       ],
     );
-    ctx.env.set(envKey(state.locale, owner.role, 'NUDGE_ID'), String(nudgeId));
-    ctx.env.set(envKey(state.locale, owner.role, 'FRIEND_ID'), nudgeFrom);
-    await addNotification(ctx, {
+    context.env.set(envKey(state.locale, owner.role, 'NUDGE_ID'), String(nudgeId));
+    context.env.set(envKey(state.locale, owner.role, 'FRIEND_ID'), nudgeFrom);
+    await addNotification(context, {
       userId: owner.id,
       type: 'NUDGE_RECEIVED',
       title: fill(content.copy.nudgeWithMessageTitle, { name: nameOf(content.nudge.from) }),
@@ -1103,7 +1100,7 @@ async function seedSocial(ctx: Context, state: SeedState, owner: Owner): Promise
       ? undefined
       : state.friendTodayTodoIds.get(sentTo)?.get(content.sentNudge.todo);
   if (sentTo !== undefined && sentTodoId !== undefined) {
-    await ctx.db.query(
+    await context.db.query(
       `INSERT INTO "Nudge" ("senderId", "receiverId", "todoId", "message", "createdAt", "readAt", "replyKind", "repliedAt")
        VALUES ($1, $2, $3, $4, $5, $5, 'THANKFUL', $5)`,
       [
@@ -1111,7 +1108,7 @@ async function seedSocial(ctx: Context, state: SeedState, owner: Owner): Promise
         sentTo,
         sentTodoId,
         content.sentNudge.message,
-        utc(new Date(ctx.now.getTime() - 95 * 60_000)),
+        utc(new Date(context.now.getTime() - 95 * 60_000)),
       ],
     );
   }
@@ -1120,16 +1117,16 @@ async function seedSocial(ctx: Context, state: SeedState, owner: Owner): Promise
   const cheerFrom = state.friendIds.get(content.cheer.from);
   if (cheerFrom !== undefined) {
     const cheerId = await insertReturningId(
-      ctx.db,
+      context.db,
       `INSERT INTO "Cheer" ("senderId", "receiverId", "message", "createdAt") VALUES ($1, $2, $3, $4)`,
       [
         cheerFrom,
         owner.id,
         content.cheer.message,
-        utc(new Date(ctx.now.getTime() - 3 * 3_600_000)),
+        utc(new Date(context.now.getTime() - 3 * 3_600_000)),
       ],
     );
-    await addNotification(ctx, {
+    await addNotification(context, {
       userId: owner.id,
       type: 'CHEER_RECEIVED',
       title: fill(content.copy.cheerTitle, { name: nameOf(content.cheer.from) }),
@@ -1146,7 +1143,7 @@ async function seedSocial(ctx: Context, state: SeedState, owner: Owner): Promise
       continue;
     }
     if (friend.allDone === true) {
-      await addNotification(ctx, {
+      await addNotification(context, {
         userId: owner.id,
         type: 'FRIEND_COMPLETED',
         title: fill(content.copy.friendCompletedTitle, { name: friend.name }),
@@ -1161,7 +1158,7 @@ async function seedSocial(ctx: Context, state: SeedState, owner: Owner): Promise
   );
   const lastFriendId = lastFriend === undefined ? undefined : state.friendIds.get(lastFriend.key);
   if (lastFriend !== undefined && lastFriendId !== undefined) {
-    await addNotification(ctx, {
+    await addNotification(context, {
       userId: owner.id,
       type: 'FOLLOW_ACCEPTED',
       title: fill(content.copy.followAcceptedTitle, { name: lastFriend.name }),
@@ -1173,29 +1170,29 @@ async function seedSocial(ctx: Context, state: SeedState, owner: Owner): Promise
   }
 }
 
-async function seedMemos(ctx: Context, state: SeedState, owner: Owner): Promise<void> {
+async function seedMemos(context: Context, state: SeedState, owner: Owner): Promise<void> {
   const memos = state.content.memos.filter((memo) => owner.role === 'premium' || memo.free);
   for (const [index, memo] of memos.entries()) {
-    const createdAt = utc(new Date(ctx.now.getTime() - (index * 2 + 1) * DAY_MS));
+    const createdAt = utc(new Date(context.now.getTime() - (index * 2 + 1) * DAY_MS));
     const id = await insertReturningId(
-      ctx.db,
+      context.db,
       `INSERT INTO "Memo" ("userId", "content", "isPinned", "sortOrder", "createdAt", "updatedAt")
        VALUES ($1, $2, $3, $4, $5, $5)`,
       [owner.id, memo.content, memo.pinned, index, createdAt],
     );
     if (memo.ai === true) {
-      ctx.env.set(envKey(state.locale, owner.role, 'MEMO_ID'), String(id));
+      context.env.set(envKey(state.locale, owner.role, 'MEMO_ID'), String(id));
     }
   }
 }
 
-async function ensureInvite(ctx: Context, owner: Owner): Promise<{ id: string; code: string }> {
+async function ensureInvite(context: Context, owner: Owner): Promise<{ id: string; code: string }> {
   // 초대 코드는 실제 API(GET /v1/invites/me)로 만든다. 기능 플래그가 꺼져 있으면 로컬 DB에 같은 모양으로 넣는다
-  const token = await login(ctx.target, owner.email, owner.password);
-  const response = await callApi(ctx.target, 'GET', '/v1/invites/me', token);
+  const token = await login(context.target, owner.email, owner.password);
+  const response = await callApi(context.target, 'GET', '/v1/invites/me', token);
   const code = response.ok ? findInviteCode(response.json) : null;
   if (code !== null) {
-    const { rows } = await ctx.db.query('SELECT "id" FROM "Invite" WHERE "code" = $1', [code]);
+    const { rows } = await context.db.query('SELECT "id" FROM "Invite" WHERE "code" = $1', [code]);
     const id = rows[0]?.id;
     if (typeof id === 'string') {
       return { id, code };
@@ -1206,9 +1203,9 @@ async function ensureInvite(ctx: Context, owner: Owner): Promise<{ id: string; c
   );
   const fallbackCode = randomTag().slice(0, 6);
   const id = cuidLike();
-  await ctx.db.query(
+  await context.db.query(
     `INSERT INTO "Invite" ("id", "inviterId", "code", "status", "createdAt", "updatedAt") VALUES ($1, $2, $3, 'ACTIVE', $4, $4)`,
-    [id, owner.id, fallbackCode, utc(ctx.now)],
+    [id, owner.id, fallbackCode, utc(context.now)],
   );
   return { id, code: fallbackCode };
 }
@@ -1218,22 +1215,22 @@ async function ensureInvite(ctx: Context, owner: Owner): Promise<{ id: string; c
  * - rewarded: 수락 → 2일 활동 → 초대자 프리미엄 7일(구독 중이라 BANKED)·친구 한도 +1, 초대받은 사람 프리미엄 7일
  * - waiting: 수락 후 활동 1일(D-1)
  */
-async function seedInvites(ctx: Context, state: SeedState, premium: Owner): Promise<void> {
+async function seedInvites(context: Context, state: SeedState, premium: Owner): Promise<void> {
   const { content } = state;
-  const invite = await ensureInvite(ctx, premium);
-  ctx.env.set(envKey(state.locale, 'INVITE_CODE'), invite.code);
-  ctx.env.set(envKey(state.locale, 'PREMIUM_USER_ID'), premium.id);
+  const invite = await ensureInvite(context, premium);
+  context.env.set(envKey(state.locale, 'INVITE_CODE'), invite.code);
+  context.env.set(envKey(state.locale, 'PREMIUM_USER_ID'), premium.id);
 
   for (const friend of content.friends) {
     const inviteeId = state.friendIds.get(friend.key);
     if (friend.invite === undefined || inviteeId === undefined) {
       continue;
     }
-    const joinedAt = new Date(ctx.now.getTime() - (friend.joinedDaysAgo ?? 7) * DAY_MS);
+    const joinedAt = new Date(context.now.getTime() - (friend.joinedDaysAgo ?? 7) * DAY_MS);
     const qualifiedAt = new Date(joinedAt.getTime() + 2 * DAY_MS);
     const redemptionId = cuidLike();
     const rewarded = friend.invite === 'rewarded';
-    await ctx.db.query(
+    await context.db.query(
       `INSERT INTO "InviteRedemption" ("id", "inviteId", "inviterId", "inviteeId", "status", "joinedAt", "qualifiedAt",
          "rewardedAt", "expiresAt", "createdAt", "updatedAt", "timezone", "inviterRewardEligible")
        VALUES ($1, $2, $3, $4, $5, $6, $7, $7, $8, $6, $9, $10, true)`,
@@ -1246,13 +1243,13 @@ async function seedInvites(ctx: Context, state: SeedState, premium: Owner): Prom
         utc(joinedAt),
         rewarded ? utc(qualifiedAt) : null,
         utc(new Date(joinedAt.getTime() + 14 * DAY_MS)),
-        utc(ctx.now),
+        utc(context.now),
         content.timezone,
       ],
     );
     const activeDays = rewarded ? 2 : 1;
     for (let day = 0; day < activeDays; day += 1) {
-      await ctx.db.query(
+      await context.db.query(
         `INSERT INTO "InviteActiveDay" ("redemptionId", "localDate", "createdAt") VALUES ($1, $2, $3)`,
         [
           redemptionId,
@@ -1269,7 +1266,7 @@ async function seedInvites(ctx: Context, state: SeedState, premium: Owner): Prom
       ];
       for (const grant of grants) {
         const grantId = cuidLike();
-        await ctx.db.query(
+        await context.db.query(
           `INSERT INTO "RewardGrant" ("id", "recipientId", "sourceType", "sourceId", "rewardType", "quantity", "status",
              "attempts", "createdAt", "updatedAt", "appliedAt")
            VALUES ($1, $2, 'INVITE_REDEMPTION', $3, $4, $5, 'APPLIED', 1, $6, $6, $6)`,
@@ -1277,7 +1274,7 @@ async function seedInvites(ctx: Context, state: SeedState, premium: Owner): Prom
         );
         const sourceKey = `reward-grant:${grantId}`;
         if (grant.type === 'FRIEND_SLOT') {
-          await ctx.db.query(
+          await context.db.query(
             `INSERT INTO "ResourceBonus" ("id", "userId", "resource", "quantity", "sourceKey", "createdAt")
              VALUES ($1, $2, 'FRIEND', 1, $3, $4)`,
             [cuidLike(), grant.recipient, sourceKey, utc(qualifiedAt)],
@@ -1286,7 +1283,7 @@ async function seedInvites(ctx: Context, state: SeedState, premium: Owner): Prom
         }
         if (grant.recipient === premium.id) {
           // 스토어 구독 중이라 끝난 뒤 이어 쓰도록 쌓아 둔다
-          await ctx.db.query(
+          await context.db.query(
             `INSERT INTO "PremiumGrant" ("id", "userId", "source", "sourceKey", "durationDays", "status", "createdAt", "updatedAt")
              VALUES ($1, $2, 'INVITE', $3, 7, 'BANKED', $4, $4)`,
             [cuidLike(), premium.id, sourceKey, utc(qualifiedAt)],
@@ -1299,7 +1296,7 @@ async function seedInvites(ctx: Context, state: SeedState, premium: Owner): Prom
           ? instant(addDays(state.today, 1), '12:00', content.timezone)
           : new Date(qualifiedAt.getTime() + 7 * DAY_MS);
         const startsAt = new Date(endsAt.getTime() - 7 * DAY_MS);
-        await ctx.db.query(
+        await context.db.query(
           `INSERT INTO "PremiumGrant" ("id", "userId", "source", "sourceKey", "durationDays", "status", "startsAt", "endsAt",
              "createdAt", "updatedAt", "endingNotifiedAt")
            VALUES ($1, $2, 'INVITE', $3, 7, $4, $5, $6, $7, $7, $8)`,
@@ -1312,15 +1309,15 @@ async function seedInvites(ctx: Context, state: SeedState, premium: Owner): Prom
             utc(endsAt),
             utc(qualifiedAt),
             // 끝나기 24시간 전 안내 작업이 같은 알림을 한 번 더 만들지 않게, 아래에서 넣는 알림 시각으로 발송 완료를 표시한다
-            isGrantAccount ? utc(new Date(ctx.now.getTime() - 40 * 60_000)) : null,
+            isGrantAccount ? utc(new Date(context.now.getTime() - 40 * 60_000)) : null,
           ],
         );
         if (isGrantAccount) {
-          await ctx.db.query(
+          await context.db.query(
             `UPDATE "User" SET "subscriptionStatus" = 'ACTIVE', "subscriptionExpiresAt" = $2 WHERE "id" = $1`,
             [inviteeId, utc(endsAt)],
           );
-          await addNotification(ctx, {
+          await addNotification(context, {
             userId: inviteeId,
             type: 'PREMIUM_GRANT_ENDING',
             title: content.copy.grantEndingTitle ?? '',
@@ -1329,60 +1326,60 @@ async function seedInvites(ctx: Context, state: SeedState, premium: Owner): Prom
           });
         }
       }
-      await addNotification(ctx, {
+      await addNotification(context, {
         userId: premium.id,
         type: 'INVITE_REWARDED',
         title: content.copy.inviteRewardedTitle ?? '',
         body: content.copy.inviteRewardedBody ?? '',
-        minutesAgo: Math.round((ctx.now.getTime() - qualifiedAt.getTime()) / 60_000),
+        minutesAgo: Math.round((context.now.getTime() - qualifiedAt.getTime()) / 60_000),
         isRead: true,
         friendId: inviteeId,
       });
     } else {
-      await addNotification(ctx, {
+      await addNotification(context, {
         userId: premium.id,
         type: 'INVITE_JOINED',
         title: fill(content.copy.inviteJoinedTitle, { name: friend.name }),
         body: content.copy.inviteJoinedBody ?? '',
-        minutesAgo: Math.round((ctx.now.getTime() - joinedAt.getTime()) / 60_000),
+        minutesAgo: Math.round((context.now.getTime() - joinedAt.getTime()) / 60_000),
         friendId: inviteeId,
       });
     }
   }
 }
 
-async function seedStoreSubscription(ctx: Context, owner: Owner): Promise<void> {
-  const startedAt = new Date(ctx.now.getTime() - 40 * DAY_MS);
+async function seedStoreSubscription(context: Context, owner: Owner): Promise<void> {
+  const startedAt = new Date(context.now.getTime() - 40 * DAY_MS);
   const expiresAt = new Date(startedAt.getTime() + 365 * DAY_MS);
-  await ctx.db.query(
+  await context.db.query(
     `INSERT INTO "Subscription" ("userId", "revenueCatId", "productId", "status", "startedAt", "expiresAt", "createdAt", "updatedAt")
      VALUES ($1, $2, 'com.aido.pro.yearly', 'ACTIVE', $3, $4, $3, $3)`,
     [owner.id, `demo_${randomBytes(8).toString('hex')}`, utc(startedAt), utc(expiresAt)],
   );
   // 스토어 구독 행은 User projection이 ACTIVE일 때만 믿는다(PremiumAccessPolicy)
-  await ctx.db.query(
+  await context.db.query(
     `UPDATE "User" SET "subscriptionStatus" = 'ACTIVE', "subscriptionExpiresAt" = $2 WHERE "id" = $1`,
     [owner.id, utc(expiresAt)],
   );
 }
 
-async function seedLocale(ctx: Context, locale: Locale, content: LocaleContent): Promise<void> {
+async function seedLocale(context: Context, locale: Locale, content: LocaleContent): Promise<void> {
   log(`[${locale}] 기존 데모 계정을 지웁니다.`);
-  await resetLocale(ctx, locale, content);
-  const today = localDate(ctx.now, content.timezone);
-  ctx.env.set('SCREENS_TODAY', today);
-  ctx.env.set('SCREENS_YESTERDAY', addDays(today, -1));
+  await resetLocale(context, locale, content);
+  const today = localDate(context.now, content.timezone);
+  context.env.set('SCREENS_TODAY', today);
+  context.env.set('SCREENS_YESTERDAY', addDays(today, -1));
 
   const partial = { content, locale };
   log(`[${locale}] 로그인 계정 4개를 가입 API로 만듭니다(분당 제한 때문에 몇 분 걸릴 수 있음).`);
-  const premium = await createOwner(ctx, partial, 'premium', 60);
+  const premium = await createOwner(context, partial, 'premium', 60);
   // 프리미엄 상태는 첫 로그인 전에 넣어 엔타이틀먼트 캐시에 무료가 남지 않게 한다
-  await seedStoreSubscription(ctx, premium);
-  const free = await createOwner(ctx, partial, 'free', 14);
+  await seedStoreSubscription(context, premium);
+  const free = await createOwner(context, partial, 'free', 14);
   const grantFriend = content.friends.find((friend) => friend.account === 'grant');
-  const grant = await createOwner(ctx, partial, 'grant', grantFriend?.joinedDaysAgo ?? 7);
-  const newbie = await createOwner(ctx, partial, 'newbie', 0);
-  await ctx.db.query(
+  const grant = await createOwner(context, partial, 'grant', grantFriend?.joinedDaysAgo ?? 7);
+  const newbie = await createOwner(context, partial, 'newbie', 0);
+  await context.db.query(
     `UPDATE "User" SET "aiUsageCount" = 5 WHERE "id" = $1`, // 무료 월 5회를 다 쓴 상태(한도 안내 화면)
     [free.id],
   );
@@ -1399,9 +1396,9 @@ async function seedLocale(ctx: Context, locale: Locale, content: LocaleContent):
     friendTodayTodoIds: new Map(),
   };
   for (const owner of [premium, free, grant, newbie]) {
-    ctx.env.set(envKey(locale, owner.role, 'EMAIL'), owner.email);
-    ctx.env.set(envKey(locale, owner.role, 'PASSWORD'), owner.password);
-    ctx.env.set(envKey(locale, owner.role, 'NAME'), owner.name);
+    context.env.set(envKey(locale, owner.role, 'EMAIL'), owner.email);
+    context.env.set(envKey(locale, owner.role, 'PASSWORD'), owner.password);
+    context.env.set(envKey(locale, owner.role, 'NAME'), owner.name);
   }
 
   log(`[${locale}] 친구·카테고리·할 일·메모를 채웁니다.`);
@@ -1409,7 +1406,7 @@ async function seedLocale(ctx: Context, locale: Locale, content: LocaleContent):
     const id =
       friend.account === 'grant'
         ? grant.id
-        : await createDbUser(ctx, partial, {
+        : await createDbUser(context, partial, {
             email: friendEmail(friend.key, locale),
             name: friend.name,
             icon: friend.icon,
@@ -1417,19 +1414,22 @@ async function seedLocale(ctx: Context, locale: Locale, content: LocaleContent):
           });
     state.friendIds.set(friend.key, id);
   }
-  state.strangerId = await createDbUser(ctx, partial, {
+  state.strangerId = await createDbUser(context, partial, {
     email: friendEmail(content.stranger.key, locale),
     name: content.stranger.name,
     icon: content.stranger.icon,
     createdDaysAgo: 3,
   });
-  ctx.env.set(envKey(locale, 'STRANGER_NAME'), content.stranger.name);
+  context.env.set(envKey(locale, 'STRANGER_NAME'), content.stranger.name);
 
-  state.categoryIds.set(premium.id, await createCategories(ctx, premium.id, content.categories));
+  state.categoryIds.set(
+    premium.id,
+    await createCategories(context, premium.id, content.categories),
+  );
   state.categoryIds.set(
     free.id,
     await createCategories(
-      ctx,
+      context,
       free.id,
       content.categories.filter((category) => category.free),
     ),
@@ -1437,32 +1437,32 @@ async function seedLocale(ctx: Context, locale: Locale, content: LocaleContent):
   // 서연(grant)은 친구로서의 오늘 할 일만 가진다(seedFriendTodos)
   state.categoryIds.set(
     newbie.id,
-    await createCategories(ctx, newbie.id, content.categories.slice(0, 1)),
+    await createCategories(context, newbie.id, content.categories.slice(0, 1)),
   );
 
-  await seedOwnerTodos(ctx, state, premium, 'premium', -35, 7);
-  await seedOwnerTodos(ctx, state, free, 'free', -10, 3);
-  await seedFriendTodos(ctx, state);
-  await seedSocial(ctx, state, premium);
-  await seedSocial(ctx, state, free);
+  await seedOwnerTodos(context, state, premium, 'premium', -35, 7);
+  await seedOwnerTodos(context, state, free, 'free', -10, 3);
+  await seedFriendTodos(context, state);
+  await seedSocial(context, state, premium);
+  await seedSocial(context, state, free);
   // 받은 친구 요청 1건(프리미엄의 받은 요청 탭). 무료 계정은 같은 사람에게 추가를 눌러 친구 한도 안내를 본다
-  await ctx.db.query(
+  await context.db.query(
     `INSERT INTO "Follow" ("id", "followerId", "followingId", "status", "createdAt", "updatedAt")
      VALUES ($1, $2, $3, 'PENDING', $4, $4)`,
-    [cuidLike(), state.strangerId, premium.id, utc(new Date(ctx.now.getTime() - 50 * 60_000))],
+    [cuidLike(), state.strangerId, premium.id, utc(new Date(context.now.getTime() - 50 * 60_000))],
   );
-  await seedMemos(ctx, state, premium);
-  await seedMemos(ctx, state, free);
+  await seedMemos(context, state, premium);
+  await seedMemos(context, state, free);
   for (const owner of [premium, free]) {
-    await ctx.db.query(
+    await context.db.query(
       `INSERT INTO "UserLocation" ("id", "userId", "latitude", "longitude", "gridX", "gridY", "updatedAt")
        VALUES ($1, $2, 37.5446, 127.0557, 61, 127, $3) ON CONFLICT ("userId") DO NOTHING`,
-      [cuidLike(), owner.id, utc(ctx.now)],
+      [cuidLike(), owner.id, utc(context.now)],
     );
   }
   log(`[${locale}] 초대·보상 상태를 만듭니다.`);
-  await seedInvites(ctx, state, premium);
-  writeEnvFile(ctx.env);
+  await seedInvites(context, state, premium);
+  writeEnvFile(context.env);
 }
 
 // ---------- AI ----------
@@ -1484,19 +1484,23 @@ async function waitFor<T>(
   return null;
 }
 
-async function runAiForLocale(ctx: Context, locale: Locale, content: LocaleContent): Promise<void> {
-  const email = ctx.env.get(envKey(locale, 'premium', 'EMAIL'));
-  const password = ctx.env.get(envKey(locale, 'premium', 'PASSWORD'));
+async function runAiForLocale(
+  context: Context,
+  locale: Locale,
+  content: LocaleContent,
+): Promise<void> {
+  const email = context.env.get(envKey(locale, 'premium', 'EMAIL'));
+  const password = context.env.get(envKey(locale, 'premium', 'PASSWORD'));
   if (email === undefined || password === undefined) {
     fail(`[${locale}] .env.screens에 프리미엄 계정이 없습니다. 먼저 seed를 실행하세요.`);
   }
-  const userId = (await findUserId(ctx.db, email)) ?? fail('프리미엄 계정을 찾지 못했습니다.');
-  const token = await login(ctx.target, email, password);
+  const userId = (await findUserId(context.db, email)) ?? fail('프리미엄 계정을 찾지 못했습니다.');
+  const token = await login(context.target, email, password);
   const timeoutMs = Number(process.env.SCREENS_AI_TIMEOUT_SECONDS ?? '300') * 1000;
-  const today = localDate(ctx.now, content.timezone);
+  const today = localDate(context.now, content.timezone);
 
   // 1) parse-todo: 자연어 문장을 실제 AI로 할 일로 바꿔 저장한다
-  const { rows: categoryRows } = await ctx.db.query(
+  const { rows: categoryRows } = await context.db.query(
     'SELECT "id", "name" FROM "TodoCategory" WHERE "userId" = $1 ORDER BY "sortOrder"',
     [userId],
   );
@@ -1505,7 +1509,7 @@ async function runAiForLocale(ctx: Context, locale: Locale, content: LocaleConte
     categoryRows.find((row) => row.name === lifeName)?.id ?? categoryRows[0]?.id ?? null;
   let parsedCount = 0;
   for (const text of content.aiPrompts) {
-    const response = await callApi(ctx.target, 'POST', '/v1/ai/parse-todo', token, {
+    const response = await callApi(context.target, 'POST', '/v1/ai/parse-todo', token, {
       text,
       ...(typeof categoryId === 'number' ? { categoryId } : {}),
     });
@@ -1523,7 +1527,7 @@ async function runAiForLocale(ctx: Context, locale: Locale, content: LocaleConte
         : [parsed.startDate];
     const groupId = dates.length > 1 ? randomUUID() : null;
     for (const date of dates) {
-      await insertTodo(ctx, {
+      await insertTodo(context, {
         userId,
         title: parsed.title,
         categoryId,
@@ -1536,10 +1540,10 @@ async function runAiForLocale(ctx: Context, locale: Locale, content: LocaleConte
       });
     }
   }
-  ctx.env.set(envKey(locale, 'AI_PARSE_TODO'), `${parsedCount}/${content.aiPrompts.length}`);
+  context.env.set(envKey(locale, 'AI_PARSE_TODO'), `${parsedCount}/${content.aiPrompts.length}`);
 
   // 2) 리포트·반복 제안: 서버 worker가 처리하는 job을 넣는다(실제 Gemini 호출은 서버가 한다)
-  const boss = await openJobQueue(ctx.target.databaseUrl);
+  const boss = await openJobQueue(context.target.databaseUrl);
   const stamp = Date.now();
   try {
     for (const reportType of ['WEEKLY', 'MONTHLY'] as const) {
@@ -1570,7 +1574,7 @@ async function runAiForLocale(ctx: Context, locale: Locale, content: LocaleConte
   for (const reportType of ['WEEKLY', 'MONTHLY'] as const) {
     const report = await waitFor(
       async () => {
-        const { rows } = await ctx.db.query(
+        const { rows } = await context.db.query(
           `SELECT "id", "aiSummary" FROM "AiReport" WHERE "userId" = $1 AND "type" = $2 ORDER BY "generatedAt" DESC LIMIT 1`,
           [userId, reportType],
         );
@@ -1584,16 +1588,16 @@ async function runAiForLocale(ctx: Context, locale: Locale, content: LocaleConte
     );
     const key = envKey(locale, `${reportType}_REPORT`);
     if (report === null) {
-      const id = await insertFallbackReport(ctx, userId, locale, content, reportType);
-      ctx.env.set(`${key}_ID`, String(id));
-      ctx.env.set(`${key}_SOURCE`, 'fallback-row');
+      const id = await insertFallbackReport(context, userId, locale, content, reportType);
+      context.env.set(`${key}_ID`, String(id));
+      context.env.set(`${key}_SOURCE`, 'fallback-row');
     } else {
       const isServerFallback = REPORT_FALLBACK_PREFIXES.some((prefix) =>
         report.summary.startsWith(prefix),
       );
       if (isServerFallback) {
         // 서버가 AI 실패로 기본 문구를 저장했다. 사람이 쓴 요약으로 바꾸고 대체로 표시한다
-        await ctx.db.query(
+        await context.db.query(
           `UPDATE "AiReport" SET "aiSummary" = $2, "aiTips" = $3 WHERE "id" = $1`,
           [
             report.id,
@@ -1604,11 +1608,11 @@ async function runAiForLocale(ctx: Context, locale: Locale, content: LocaleConte
           ],
         );
       }
-      ctx.env.set(`${key}_ID`, String(report.id));
-      ctx.env.set(`${key}_SOURCE`, isServerFallback ? 'fallback-text' : 'ai');
+      context.env.set(`${key}_ID`, String(report.id));
+      context.env.set(`${key}_SOURCE`, isServerFallback ? 'fallback-text' : 'ai');
     }
     const copyKey = reportType === 'WEEKLY' ? 'weeklyReport' : 'monthlyReport';
-    await addNotification(ctx, {
+    await addNotification(context, {
       userId,
       type: `${reportType}_REPORT`,
       title: content.copy[`${copyKey}Title`] ?? '',
@@ -1620,7 +1624,7 @@ async function runAiForLocale(ctx: Context, locale: Locale, content: LocaleConte
 
   const suggestionCount = await waitFor(
     async () => {
-      const { rows } = await ctx.db.query(
+      const { rows } = await context.db.query(
         `SELECT count(*)::int AS n FROM "RecurringSuggestion" WHERE "userId" = $1 AND "status" = 'PENDING'`,
         [userId],
       );
@@ -1631,29 +1635,29 @@ async function runAiForLocale(ctx: Context, locale: Locale, content: LocaleConte
     '반복 제안',
   );
   if (suggestionCount === null) {
-    await insertFallbackSuggestions(ctx, userId, content);
-    ctx.env.set(envKey(locale, 'SUGGESTIONS_SOURCE'), 'fallback-row');
+    await insertFallbackSuggestions(context, userId, content);
+    context.env.set(envKey(locale, 'SUGGESTIONS_SOURCE'), 'fallback-row');
   } else {
-    ctx.env.set(envKey(locale, 'SUGGESTIONS_SOURCE'), 'ai');
+    context.env.set(envKey(locale, 'SUGGESTIONS_SOURCE'), 'ai');
   }
-  await addNotification(ctx, {
+  await addNotification(context, {
     userId,
     type: 'AI_SUGGESTION',
     title: content.copy.suggestionTitle ?? '',
     body: content.copy.suggestionBody ?? '',
     minutesAgo: 5 * 60,
   });
-  writeEnvFile(ctx.env);
+  writeEnvFile(context.env);
 }
 
 async function insertFallbackReport(
-  ctx: Context,
+  context: Context,
   userId: string,
   locale: Locale,
   content: LocaleContent,
   reportType: 'WEEKLY' | 'MONTHLY',
 ): Promise<number> {
-  const today = localDate(ctx.now, content.timezone);
+  const today = localDate(context.now, content.timezone);
   let start: string;
   let end: string;
   let year: number;
@@ -1674,7 +1678,7 @@ async function insertFallbackReport(
     year = month.getUTCFullYear();
     period = month.getUTCMonth() + 1;
   }
-  const { rows } = await ctx.db.query(
+  const { rows } = await context.db.query(
     `SELECT t."startDate"::text AS date, t."completed", t."scheduledTime", c."name", c."color"
        FROM "Todo" t JOIN "TodoCategory" c ON c."id" = t."categoryId"
       WHERE t."userId" = $1 AND t."startDate" >= $2 AND t."startDate" < $3`,
@@ -1718,13 +1722,13 @@ async function insertFallbackReport(
       byHour.set(hour, (byHour.get(hour) ?? 0) + 1);
     }
   }
-  const { rows: streakRows } = await ctx.db.query(
+  const { rows: streakRows } = await context.db.query(
     'SELECT "currentStreak" FROM "UserPreference" WHERE "userId" = $1',
     [userId],
   );
   const streak = streakRows[0]?.currentStreak;
   return insertReturningId(
-    ctx.db,
+    context.db,
     `INSERT INTO "AiReport" ("userId", "type", "year", "period", "stats", "categoryBreakdown", "dayPatterns",
        "timePatterns", "aiSummary", "aiTips", "hasActivity", "generatedAt", "createdAt", "locale",
        "dailyCompletions")
@@ -1777,18 +1781,18 @@ async function insertFallbackReport(
 }
 
 async function insertFallbackSuggestions(
-  ctx: Context,
+  context: Context,
   userId: string,
   content: LocaleContent,
 ): Promise<void> {
-  const { rows } = await ctx.db.query(
+  const { rows } = await context.db.query(
     'SELECT "id", "name" FROM "TodoCategory" WHERE "userId" = $1',
     [userId],
   );
   for (const [index, suggestion] of content.fallback.suggestions.entries()) {
     const categoryName = content.categories.find((c) => c.key === suggestion.category)?.name;
     const categoryId = rows.find((row) => row.name === categoryName)?.id;
-    await ctx.db.query(
+    await context.db.query(
       `INSERT INTO "RecurringSuggestion" ("userId", "title", "daysOfWeek", "scheduledTime", "confidence", "reason",
          "matchedTodos", "status", "expiresAt", "createdAt", "updatedAt", "suggestedCategoryId",
          "evidenceRecordedCount", "evidenceCompletedCount", "evidencePeriodDays")
@@ -1800,8 +1804,8 @@ async function insertFallbackSuggestions(
         suggestion.time,
         0.92 - index * 0.07,
         suggestion.reason,
-        utc(new Date(ctx.now.getTime() + 7 * DAY_MS)),
-        utc(ctx.now),
+        utc(new Date(context.now.getTime() + 7 * DAY_MS)),
+        utc(context.now),
         typeof categoryId === 'number' ? categoryId : null,
         suggestion.evidence.recordedCount,
         suggestion.evidence.completedCount,
@@ -1813,86 +1817,94 @@ async function insertFallbackSuggestions(
 
 // ---------- reset ----------
 
-async function resetLocale(ctx: Context, locale: Locale, content: LocaleContent): Promise<void> {
+async function resetLocale(
+  context: Context,
+  locale: Locale,
+  content: LocaleContent,
+): Promise<void> {
   const ids: string[] = [];
   for (const email of demoEmails(content, locale)) {
-    const id = await findUserId(ctx.db, email);
+    const id = await findUserId(context.db, email);
     if (id !== null) {
       ids.push(id);
     }
   }
-  await deleteUsersCascade(ctx.db, ids);
-  for (const key of Array.from(ctx.env.keys())) {
+  await deleteUsersCascade(context.db, ids);
+  for (const key of context.env.keys()) {
     if (key.startsWith(`SCREENS_${locale.toUpperCase()}_`)) {
-      ctx.env.delete(key);
+      context.env.delete(key);
     }
   }
 }
 
 /** 초대 카드 → 수락 → 환영 시트 캡처로 바뀐 신규 계정 상태를 되돌린다(같은 기기에서 다시 보상받게) */
-async function resetNewbie(ctx: Context, content: LocaleContent): Promise<void> {
-  const newbie = await findUserId(ctx.db, content.owners.newbie.email);
-  const premium = await findUserId(ctx.db, content.owners.premium.email);
+async function resetNewbie(context: Context, content: LocaleContent): Promise<void> {
+  const newbie = await findUserId(context.db, content.owners.newbie.email);
+  const premium = await findUserId(context.db, content.owners.premium.email);
   if (newbie === null || premium === null) {
     fail('신규·프리미엄 데모 계정이 없습니다. 먼저 seed를 실행하세요.');
   }
-  await ctx.db.query('BEGIN');
+  await context.db.query('BEGIN');
   try {
-    const { rows } = await ctx.db.query(
+    const { rows } = await context.db.query(
       'SELECT "id" FROM "InviteRedemption" WHERE "inviteeId" = $1',
       [newbie],
     );
     const redemptionIds = rows.flatMap((row) => (typeof row.id === 'string' ? [row.id] : []));
     // 서버가 실제 수락에서 만든 초대 알림(INVITE_JOINED 등)은 friendId 없이 metadata.redemptionId로만 수락과 이어진다
-    await ctx.db.query(
+    await context.db.query(
       `DELETE FROM "Notification" WHERE "metadata"->>'redemptionId' = ANY($1::text[])`,
       [redemptionIds],
     );
-    const { rows: grantRows } = await ctx.db.query(
+    const { rows: grantRows } = await context.db.query(
       'SELECT "id" FROM "RewardGrant" WHERE "sourceId" = ANY($1::text[])',
       [redemptionIds],
     );
     const sourceKeys = grantRows.flatMap((row) =>
       typeof row.id === 'string' ? [`reward-grant:${row.id}`] : [],
     );
-    await ctx.db.query('DELETE FROM "PremiumGrant" WHERE "sourceKey" = ANY($1::text[])', [
+    await context.db.query('DELETE FROM "PremiumGrant" WHERE "sourceKey" = ANY($1::text[])', [
       sourceKeys,
     ]);
-    await ctx.db.query('DELETE FROM "ResourceBonus" WHERE "sourceKey" = ANY($1::text[])', [
+    await context.db.query('DELETE FROM "ResourceBonus" WHERE "sourceKey" = ANY($1::text[])', [
       sourceKeys,
     ]);
-    await ctx.db.query('DELETE FROM "RewardGrant" WHERE "sourceId" = ANY($1::text[])', [
+    await context.db.query('DELETE FROM "RewardGrant" WHERE "sourceId" = ANY($1::text[])', [
       redemptionIds,
     ]);
-    await ctx.db.query('DELETE FROM "InviteRedemption" WHERE "inviteeId" = $1', [newbie]);
-    await ctx.db.query(`DELETE FROM "Follow" WHERE "followerId" = $1 OR "followingId" = $1`, [
+    await context.db.query('DELETE FROM "InviteRedemption" WHERE "inviteeId" = $1', [newbie]);
+    await context.db.query(`DELETE FROM "Follow" WHERE "followerId" = $1 OR "followingId" = $1`, [
       newbie,
     ]);
-    await ctx.db.query(
+    await context.db.query(
       `DELETE FROM "Notification" WHERE "userId" = $1 OR ("userId" = $2 AND "friendId" = $1)`,
       [newbie, premium],
     );
-    await ctx.db.query(
+    await context.db.query(
       `UPDATE "User" SET "subscriptionStatus" = 'FREE', "subscriptionExpiresAt" = NULL WHERE "id" = $1`,
       [newbie],
     );
     // 기기·신원 해시에는 사용자 연결이 없어 로컬 RewardClaim 전체를 지운다(maestro-accounts reset과 같음)
-    await ctx.db.query('DELETE FROM "RewardClaim"');
-    await ctx.db.query('COMMIT');
+    await context.db.query('DELETE FROM "RewardClaim"');
+    await context.db.query('COMMIT');
   } catch (error) {
-    await ctx.db.query('ROLLBACK');
+    await context.db.query('ROLLBACK');
     throw error;
   }
 }
 
-async function printStatus(ctx: Context, locale: Locale, content: LocaleContent): Promise<void> {
+async function printStatus(
+  context: Context,
+  locale: Locale,
+  content: LocaleContent,
+): Promise<void> {
   for (const role of ROLES) {
-    const id = await findUserId(ctx.db, content.owners[role].email);
+    const id = await findUserId(context.db, content.owners[role].email);
     if (id === null) {
       log(`[${locale}] ${role}: 없음`);
       continue;
     }
-    const { rows } = await ctx.db.query(
+    const { rows } = await context.db.query(
       `SELECT u."subscriptionStatus" AS status,
               (SELECT count(*)::int FROM "Todo" t WHERE t."userId" = u."id") AS todos,
               (SELECT count(*)::int FROM "Follow" f WHERE f."followerId" = u."id" AND f."status" = 'ACCEPTED') AS friends,
@@ -1912,7 +1924,7 @@ async function printStatus(ctx: Context, locale: Locale, content: LocaleContent)
     'MONTHLY_REPORT_SOURCE',
     'SUGGESTIONS_SOURCE',
   ]) {
-    log(`[${locale}] ${key}=${ctx.env.get(envKey(locale, key)) ?? '-'}`);
+    log(`[${locale}] ${key}=${context.env.get(envKey(locale, key)) ?? '-'}`);
   }
 }
 
@@ -1927,31 +1939,31 @@ async function main(): Promise<void> {
   }
   const content = loadContent();
   const db = await connectDatabase(target.databaseUrl);
-  const ctx: Context = { db, target, env: readEnvFile(), now: new Date() };
+  const context: Context = { db, target, env: readEnvFile(), now: new Date() };
   try {
     for (const locale of locales) {
       const localeContent = content[locale];
       switch (command) {
         case 'seed':
-          await seedLocale(ctx, locale, localeContent);
-          await runAiForLocale(ctx, locale, localeContent);
-          await printStatus(ctx, locale, localeContent);
+          await seedLocale(context, locale, localeContent);
+          await runAiForLocale(context, locale, localeContent);
+          await printStatus(context, locale, localeContent);
           break;
         case 'ai':
-          await runAiForLocale(ctx, locale, localeContent);
-          await printStatus(ctx, locale, localeContent);
+          await runAiForLocale(context, locale, localeContent);
+          await printStatus(context, locale, localeContent);
           break;
         case 'reset':
-          await resetLocale(ctx, locale, localeContent);
-          writeEnvFile(ctx.env);
+          await resetLocale(context, locale, localeContent);
+          writeEnvFile(context.env);
           log(`[${locale}] 데모 계정을 지웠습니다.`);
           break;
         case 'reset-newbie':
-          await resetNewbie(ctx, localeContent);
+          await resetNewbie(context, localeContent);
           log(`[${locale}] 신규 계정의 초대 수락 상태를 되돌렸습니다.`);
           break;
         case 'status':
-          await printStatus(ctx, locale, localeContent);
+          await printStatus(context, locale, localeContent);
           break;
         default:
           fail('사용: seed | ai | reset | reset-newbie | status [ko|en|all]');

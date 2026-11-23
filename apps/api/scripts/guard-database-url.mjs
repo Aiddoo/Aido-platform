@@ -4,7 +4,7 @@ const ALLOW_REMOTE_ENV = "AIDO_ALLOW_REMOTE_DB";
 /** @param {string} databaseUrl @returns {string | null} */
 function resolveHost(databaseUrl) {
   try {
-    return new URL(databaseUrl).hostname.toLowerCase().replace(/^\[|\]$/g, "");
+    return new URL(databaseUrl).hostname.toLowerCase().replaceAll(/^\[|\]$/g, "");
   } catch {
     return null;
   }

@@ -8,7 +8,7 @@ export function parseColor(value) {
   if (hex) {
     const digits =
       hex[1].length === 3 ? [...hex[1]].map((digit) => digit + digit).join('') : hex[1];
-    return [0, 2, 4].map((index) => Number.parseInt(digits.slice(index, index + 2), 16)).concat(1);
+    return [...[0, 2, 4].map((index) => Number.parseInt(digits.slice(index, index + 2), 16)), 1];
   }
   const rgb = /^rgba?\(([^)]+)\)$/u.exec(text);
   if (rgb) {
