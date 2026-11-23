@@ -2,7 +2,7 @@ import { FriendSearchList } from '@src/features/social/friend/components/friend-
 import { useFriendLimitInvite } from '@src/features/social/invite/hooks/use-friend-limit-invite';
 import { useTranslation } from '@src/shared/i18n';
 import { IS_IOS_APP_ON_MAC, IS_IPAD } from '@src/shared/infra/device/device-info';
-import { Box, Input, QueryErrorBoundary, Spacing, StyledSafeAreaView } from '@src/shared/ui';
+import { Box, Input, QueryErrorBoundary, Spacing } from '@src/shared/ui';
 import { debounce } from 'es-toolkit';
 import { Stack, useNavigation } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -41,21 +41,9 @@ export default function SearchFriendScreen() {
       <Stack.Screen options={{ title: t('search.title') }} />
 
       {match(SEARCH_INPUT)
-        .with('header-bar', () => (
-          <>
-            {/* 스크롤 부모가 라우트의 첫 컴포넌트여야 네이티브 헤더 inset이 적용된다 */}
-            <FriendSearchBar onChangeText={changeQuery} />
-            <QueryErrorBoundary resetKeys={[query.trim()]} fallback={FriendSearchList.Error}>
-              <FriendSearchList
-                query={query}
-                settledQuery={settledQuery}
-                onFriendLimitInvite={onFriendLimitInvite}
-              />
-            </QueryErrorBoundary>
-          </>
-        ))
+        .with('header-bar', () => <FriendSearchBar onChangeText={changeQuery} />)
         .with('field', () => (
-          <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-white">
+          <>
             <Spacing size={8} />
 
             <Box px={16}>
@@ -63,17 +51,18 @@ export default function SearchFriendScreen() {
             </Box>
 
             <Spacing size={8} />
-
-            <QueryErrorBoundary resetKeys={[query.trim()]} fallback={FriendSearchList.Error}>
-              <FriendSearchList
-                query={query}
-                settledQuery={settledQuery}
-                onFriendLimitInvite={onFriendLimitInvite}
-              />
-            </QueryErrorBoundary>
-          </StyledSafeAreaView>
+          </>
         ))
         .exhaustive()}
+
+      {/* 헤더 검색창은 그리는 뷰가 없어 목록이 라우트의 첫 스크롤 부모가 되고 네이티브 헤더 inset을 받는다 */}
+      <QueryErrorBoundary resetKeys={[query.trim()]} fallback={FriendSearchList.Error}>
+        <FriendSearchList
+          query={query}
+          settledQuery={settledQuery}
+          onFriendLimitInvite={onFriendLimitInvite}
+        />
+      </QueryErrorBoundary>
     </>
   );
 }

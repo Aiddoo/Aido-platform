@@ -193,4 +193,4 @@ app/(app)/(tabs)/
 
 ### 검색
 
-- 친구 검색은 `Stack.SearchBar`다. iPad·Mac은 UISearchController를 띄우면 UIKit이 앱을 죽여(Apple 포럼 841090) 목록 위 `Input`을 쓰고, 화면이 한 번 고른다(`friends/search.tsx`의 `SEARCH_INPUT`). 입력 반영은 es-toolkit `debounce`로 늦추고 직접 만든 debounce 훅을 쓰지 않는다.
+- 친구 검색은 `Stack.SearchBar`다. iPad·Mac은 UISearchController를 띄우면 UIKit이 앱을 죽여(Apple 포럼 841090) 목록 위 `Input`을 쓴다. 화면은 입력칸만 한 번 고르고(`friends/search.tsx`의 `SEARCH_INPUT`) 목록·오류 경계는 같다. 입력 반영은 es-toolkit `debounce`로 늦추고 직접 만든 debounce 훅을 쓰지 않는다.
