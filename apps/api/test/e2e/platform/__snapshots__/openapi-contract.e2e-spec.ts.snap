@@ -20985,6 +20985,10 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               "description": "현재 사용자의 콕 찌르기 가능 여부",
               "type": "boolean",
             },
+            "canThank": {
+              "description": "현재 사용자의 할 일이 콕 감사를 받는지(내 할 일·완료·공개). 기능 꺼짐(NUDGE_1111)은 보지 않는다",
+              "type": "boolean",
+            },
           },
           "required": [
             "canEdit",
@@ -65074,7 +65078,7 @@ TODO_0831: 댓글을 찾을 수 없습니다.",
   },
   "/v1/todos/{todoId}/details": {
     "get": {
-      "description": "댓글 화면에 필요한 할 일, 주인, 내 권한과 조회수를 돌려줍니다. 할 일 주인이 아닌 사용자가 열면 조회수를 올립니다.",
+      "description": "댓글 화면에 필요한 할 일, 주인, 내 권한과 조회수를 돌려줍니다. 할 일 주인이 아닌 사용자가 열면 조회수를 올립니다. permissions.canThank는 콕 감사 보내기(PUT /v1/nudges/todos/{todoId}/thanks)가 받아 주는 할 일(내 할 일·완료·공개)일 때만 true입니다.",
       "operationId": "getTodoDetails",
       "parameters": [
         {

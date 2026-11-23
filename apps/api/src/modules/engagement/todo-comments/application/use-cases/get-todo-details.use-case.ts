@@ -1,7 +1,7 @@
 import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { TodoEngagementCounterPort } from "#api/modules/planning/todos/planning-todos.public";
 import type { MutualFriendReaderPort } from "#api/modules/social/friendships/social-friendships.public";
-import { canNudgeTodoOn } from "#api/modules/social/nudges/social-nudges.public";
+import { canNudgeTodoOn, judgeNudgeThanks } from "#api/modules/social/nudges/social-nudges.public";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -56,6 +56,10 @@ export class GetTodoDetailsUseCase {
         isOwner: details.isOwner,
         isNudgeableToday,
         isMutualFriend: await this.#isMutualFriendOfOwner(details, query.viewerId),
+        isThankable: judgeNudgeThanks({
+          isTodoCompleted: todo.completed,
+          todoVisibility: todo.visibility,
+        }).ok,
       }),
     };
   }

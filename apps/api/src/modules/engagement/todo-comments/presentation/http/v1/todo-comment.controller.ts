@@ -117,7 +117,7 @@ export class TodoCommentController {
     summary: "댓글 화면용 할 일 상세 조회",
     operationId: "getTodoDetails",
     description:
-      "댓글 화면에 필요한 할 일, 주인, 내 권한과 조회수를 돌려줍니다. 할 일 주인이 아닌 사용자가 열면 조회수를 올립니다.",
+      "댓글 화면에 필요한 할 일, 주인, 내 권한과 조회수를 돌려줍니다. 할 일 주인이 아닌 사용자가 열면 조회수를 올립니다. permissions.canThank는 콕 감사 보내기(PUT /v1/nudges/todos/{todoId}/thanks)가 받아 주는 할 일(내 할 일·완료·공개)일 때만 true입니다.",
   })
   @ApiSuccessResponse({ type: TodoDetailsResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
