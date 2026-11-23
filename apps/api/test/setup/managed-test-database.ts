@@ -160,7 +160,7 @@ const defaultDependencies: StartManagedTestDatabaseDependencies = {
       return startServiceDatabase(env.AIDO_TEST_POSTGRES_URL, databaseName);
     }
     // 실행마다 버리는 DB라 PostgreSQL 문서의 Non-Durable Settings와 tmpfs로 디스크 동기화를 끈다
-    const container = await new PostgreSqlContainer("postgres:16.15-alpine")
+    const container = await new PostgreSqlContainer("postgres:16.16-alpine")
       .withDatabase(databaseName)
       .withUsername("test_user")
       .withPassword("test_password")

@@ -19,7 +19,7 @@ describeThrottlerStorageContract({
 
 describe.each([
   { name: "Redis", image: "redis:7.4-alpine" },
-  { name: "Valkey", image: "valkey/valkey:8-alpine" },
+  { name: "Valkey", image: "valkey/valkey:9.2.0-alpine" },
 ])("Redis 어댑터 ($name 컨테이너)", ({ name, image }) => {
   let container: StartedTestContainer;
   let redis: Redis;
