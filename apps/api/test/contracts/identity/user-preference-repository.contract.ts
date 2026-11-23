@@ -223,8 +223,8 @@ export function describeUserPreferenceRepositoryContract(
       await seed(repository, OTHER_USER);
 
       // When
-      const found = await repository.findReadModelsByUserIds([USER, OTHER_USER]);
-      const none = await repository.findReadModelsByUserIds([]);
+      const found = await repository.listReadModelsByUserIds([USER, OTHER_USER]);
+      const none = await repository.listReadModelsByUserIds([]);
 
       // Then
       expect(found).toEqual([{ ...COLUMN_DEFAULTS, userId: OTHER_USER.value }]);

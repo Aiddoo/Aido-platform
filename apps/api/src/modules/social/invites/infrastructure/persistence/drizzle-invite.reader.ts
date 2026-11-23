@@ -30,7 +30,7 @@ export class DrizzleInviteReader implements InviteReaderPort {
     if (row == null) {
       return null;
     }
-    const [inviter] = await this.#userBriefReader.findByUserIds([
+    const [inviter] = await this.#userBriefReader.listByUserIds([
       UserId.reconstitute(row.inviterId),
     ]);
     // 탈퇴 대기 중인 사람의 초대는 없는 코드와 같게 다뤄 계정 상태를 드러내지 않는다

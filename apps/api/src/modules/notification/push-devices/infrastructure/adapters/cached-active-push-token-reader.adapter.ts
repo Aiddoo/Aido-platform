@@ -43,12 +43,12 @@ export class CachedActivePushTokenReaderAdapter implements ActivePushTokenReader
     );
   }
 
-  findByUserId(userId: UserId): Promise<readonly ActivePushTokenReadModel[]> {
+  listByUserId(userId: UserId): Promise<readonly ActivePushTokenReadModel[]> {
     return this.#pushTokens.wrap({
       key: pushTokensCacheKey(userId.value),
       schema: PUSH_TOKENS_SCHEMA,
       factory: async () => {
-        const records = await this.#pushTokenRepository.findPushTokensByUser({
+        const records = await this.#pushTokenRepository.listPushTokensByUser({
           userId,
           activeOnly: true,
         });
@@ -59,7 +59,7 @@ export class CachedActivePushTokenReaderAdapter implements ActivePushTokenReader
   }
 
   // 아침·저녁 묶음 발송은 수신자마다 키를 새로 쓰면 공용 LRU의 세션·권한 키를 밀어내므로 읽기만 한다
-  async findByUserIds(
+  async listByUserIds(
     users: readonly UserId[],
   ): Promise<ReadonlyMap<string, readonly ActivePushTokenReadModel[]>> {
     if (users.length === 0) {
@@ -85,7 +85,7 @@ export class CachedActivePushTokenReaderAdapter implements ActivePushTokenReader
       return tokensByUserId;
     }
 
-    const records = await this.#pushTokenRepository.findActivePushTokensByUsers(missedUsers);
+    const records = await this.#pushTokenRepository.listActivePushTokensByUsers(missedUsers);
     for (const [userId, userRecords] of Object.entries(
       groupBy(records, (record) => record.userId),
     )) {

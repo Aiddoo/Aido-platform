@@ -77,7 +77,7 @@ class StubQuietHoursReader extends QuietHoursReaderPort {
     this.quiet = quiet;
   }
 
-  async findUsersInQuietHours(): Promise<ReadonlySet<string>> {
+  async listUsersInQuietHours(): Promise<ReadonlySet<string>> {
     return this.quiet;
   }
 }

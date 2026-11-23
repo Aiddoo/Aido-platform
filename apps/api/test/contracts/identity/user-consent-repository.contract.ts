@@ -120,16 +120,16 @@ export function describeUserConsentRepositoryContract(
       await seedConsent(preferences, OTHER_USER_ID, { agreedTermsVersion: "2.0" });
 
       // When
-      const found = await repository.findByUserIds([
+      const found = await repository.listByUserIds([
         UserId.reconstitute(OTHER_USER_ID),
         UserId.reconstitute("missing-user"),
         UserId.reconstitute(OTHER_USER_ID),
       ]);
-      const both = await repository.findByUserIds([
+      const both = await repository.listByUserIds([
         UserId.reconstitute(USER_ID),
         UserId.reconstitute(OTHER_USER_ID),
       ]);
-      const none = await repository.findByUserIds([]);
+      const none = await repository.listByUserIds([]);
 
       // Then
       expect(found).toMatchObject([
@@ -153,7 +153,7 @@ export function describeUserConsentRepositoryContract(
       });
 
       // When
-      const targets = await repository.findMarketingReconfirmTargets({ cutoff: CUTOFF, limit: 10 });
+      const targets = await repository.listMarketingReconfirmTargets({ cutoff: CUTOFF, limit: 10 });
 
       // Then
       expect(withPlainUserId(targets)).toEqual([
@@ -176,7 +176,7 @@ export function describeUserConsentRepositoryContract(
       });
 
       // When
-      const targets = await repository.findMarketingReconfirmTargets({ cutoff: CUTOFF, limit: 10 });
+      const targets = await repository.listMarketingReconfirmTargets({ cutoff: CUTOFF, limit: 10 });
 
       // Then
       expect(withPlainUserId(targets)).toEqual([
@@ -203,7 +203,7 @@ export function describeUserConsentRepositoryContract(
       );
 
       // When
-      const targets = await repository.findMarketingReconfirmTargets({ cutoff: CUTOFF, limit: 10 });
+      const targets = await repository.listMarketingReconfirmTargets({ cutoff: CUTOFF, limit: 10 });
 
       // Then
       expect(withPlainUserId(targets)).toEqual([
@@ -222,11 +222,11 @@ export function describeUserConsentRepositoryContract(
       });
 
       // When
-      const beforeReconfirm = await repository.findMarketingReconfirmTargets({
+      const beforeReconfirm = await repository.listMarketingReconfirmTargets({
         cutoff: CUTOFF,
         limit: 10,
       });
-      const atReconfirm = await repository.findMarketingReconfirmTargets({
+      const atReconfirm = await repository.listMarketingReconfirmTargets({
         cutoff: reconfirmedAt,
         limit: 10,
       });
@@ -248,14 +248,14 @@ export function describeUserConsentRepositoryContract(
       await seedConsent(preferences, USER_ID, { marketingAgreedAt: BEFORE_CUTOFF });
 
       // When
-      const all = await repository.findMarketingReconfirmTargets({ cutoff: CUTOFF, limit: 10 });
-      const first = await repository.findMarketingReconfirmTargets({ cutoff: CUTOFF, limit: 1 });
-      const second = await repository.findMarketingReconfirmTargets({
+      const all = await repository.listMarketingReconfirmTargets({ cutoff: CUTOFF, limit: 10 });
+      const first = await repository.listMarketingReconfirmTargets({ cutoff: CUTOFF, limit: 1 });
+      const second = await repository.listMarketingReconfirmTargets({
         cutoff: CUTOFF,
         afterUserId: UserId.reconstitute(USER_ID),
         limit: 1,
       });
-      const last = await repository.findMarketingReconfirmTargets({
+      const last = await repository.listMarketingReconfirmTargets({
         cutoff: CUTOFF,
         afterUserId: UserId.reconstitute(OTHER_USER_ID),
         limit: 1,

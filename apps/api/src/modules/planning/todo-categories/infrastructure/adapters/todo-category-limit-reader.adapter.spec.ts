@@ -5,20 +5,20 @@ import { TodoCategoryLimitReaderAdapter } from "./todo-category-limit-reader.ada
 
 type QuotaReader = Pick<
   EntitlementReaderPort,
-  "getFeatureLimit" | "getFeatureLimitInTransaction" | "getFeatureQuotaInTransaction"
+  "findFeatureLimit" | "findFeatureLimitInTransaction" | "getFeatureQuotaInTransaction"
 >;
 
 // 받은 기능 이름·사용량을 남기고 정한 값을 돌려준다
 class RecordingEntitlementReader implements QuotaReader {
-  readonly limitReads: Parameters<QuotaReader["getFeatureLimitInTransaction"]>[] = [];
+  readonly limitReads: Parameters<QuotaReader["findFeatureLimitInTransaction"]>[] = [];
   readonly quotaReads: Parameters<QuotaReader["getFeatureQuotaInTransaction"]>[] = [];
 
-  async getFeatureLimit(): Promise<number | null> {
+  async findFeatureLimit(): Promise<number | null> {
     return null;
   }
 
-  async getFeatureLimitInTransaction(
-    ...parameters: Parameters<QuotaReader["getFeatureLimitInTransaction"]>
+  async findFeatureLimitInTransaction(
+    ...parameters: Parameters<QuotaReader["findFeatureLimitInTransaction"]>
   ): Promise<number | null> {
     this.limitReads.push(parameters);
     return 3;

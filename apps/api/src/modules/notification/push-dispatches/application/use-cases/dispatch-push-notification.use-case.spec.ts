@@ -140,7 +140,7 @@ async function activeTokensOf(
   repository: InMemoryPushTokenRepository,
   userIds: string[],
 ): Promise<string[]> {
-  const records = await repository.findActivePushTokensByUsers(
+  const records = await repository.listActivePushTokensByUsers(
     userIds.map((userId) => UserId.reconstitute(userId)),
   );
   return records.map(({ token }) => token).toSorted();

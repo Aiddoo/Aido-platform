@@ -8,7 +8,7 @@ export interface GetPreferenceReadModelsQuery {
 }
 
 interface GetPreferenceReadModelsDependencies {
-  readonly preferenceRepository: Pick<UserPreferenceRepositoryPort, "findReadModelsByUserIds">;
+  readonly preferenceRepository: Pick<UserPreferenceRepositoryPort, "listReadModelsByUserIds">;
 }
 
 export class GetPreferenceReadModelsUseCase {
@@ -19,7 +19,7 @@ export class GetPreferenceReadModelsUseCase {
   }
 
   execute(input: GetPreferenceReadModelsQuery): Promise<UserPreferenceReadModel[]> {
-    return this.#dependencies.preferenceRepository.findReadModelsByUserIds(
+    return this.#dependencies.preferenceRepository.listReadModelsByUserIds(
       input.userIds.map((userId) => UserId.reconstitute(userId)),
     );
   }

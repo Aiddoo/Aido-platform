@@ -23,13 +23,13 @@ export class StubActivePushTokenReader extends ActivePushTokenReaderPort {
     );
   }
 
-  async findByUserId(user: UserId): Promise<readonly ActivePushTokenReadModel[]> {
+  async listByUserId(user: UserId): Promise<readonly ActivePushTokenReadModel[]> {
     const userId = user.value;
     this.lookedUpUserIds.push(userId);
     return this.#tokensByUser.get(userId) ?? [];
   }
 
-  async findByUserIds(
+  async listByUserIds(
     users: readonly UserId[],
   ): Promise<ReadonlyMap<string, readonly ActivePushTokenReadModel[]>> {
     const userIds = users.map((user) => user.value);

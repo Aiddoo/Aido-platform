@@ -9,7 +9,7 @@ export class StubQuietHoursReader extends QuietHoursReaderPort {
     this.#quietUserIds = new Set(quietUserIds);
   }
 
-  async findUsersInQuietHours(userIds: readonly UserId[]): Promise<ReadonlySet<string>> {
+  async listUsersInQuietHours(userIds: readonly UserId[]): Promise<ReadonlySet<string>> {
     return new Set(
       userIds.flatMap((userId) => (this.#quietUserIds.has(userId.value) ? [userId.value] : [])),
     );

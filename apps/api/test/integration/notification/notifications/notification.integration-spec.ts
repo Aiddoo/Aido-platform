@@ -260,13 +260,13 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
             findPreferenceReadModel: (userId: UserId) =>
               preferenceRepository.findReadModelByUserId(userId),
             findPreferenceReadModelsByUserIds: async (userIds: readonly UserId[]) =>
-              (await preferenceRepository.findReadModelsByUserIds(userIds)).map((preference) => ({
+              (await preferenceRepository.listReadModelsByUserIds(userIds)).map((preference) => ({
                 ...preference,
                 userId: UserId.reconstitute(preference.userId),
               })),
             findConsentReadModel: (userId: UserId) => consentRepository.findByUserId(userId),
             findConsentReadModelsByUserIds: async (userIds: readonly UserId[]) =>
-              (await consentRepository.findByUserIds(userIds)).map((consent) => ({
+              (await consentRepository.listByUserIds(userIds)).map((consent) => ({
                 ...consent,
                 userId: UserId.reconstitute(consent.userId),
               })),

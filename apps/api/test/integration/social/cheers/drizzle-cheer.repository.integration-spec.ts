@@ -31,8 +31,8 @@ class UserBriefReaderWithout extends DrizzleUserBriefReader {
     this.#missingUserId = missingUserId;
   }
 
-  override async findByUserIds(userIds: readonly UserId[]): Promise<UserBriefReadModel[]> {
-    const briefs = await super.findByUserIds(userIds);
+  override async listByUserIds(userIds: readonly UserId[]): Promise<UserBriefReadModel[]> {
+    const briefs = await super.listByUserIds(userIds);
     return briefs.filter((brief) => brief.userId.value !== this.#missingUserId);
   }
 }

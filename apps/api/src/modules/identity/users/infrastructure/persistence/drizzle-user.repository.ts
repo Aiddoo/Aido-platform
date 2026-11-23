@@ -136,7 +136,7 @@ export class DrizzleUserRepository
     }
   }
 
-  async findActiveAccounts(userIds: readonly UserId[]): Promise<readonly UserActivity[]> {
+  async listActiveAccounts(userIds: readonly UserId[]): Promise<readonly UserActivity[]> {
     if (userIds.length === 0) {
       return [];
     }

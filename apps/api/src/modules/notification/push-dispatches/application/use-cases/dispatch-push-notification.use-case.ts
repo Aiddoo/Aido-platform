@@ -46,11 +46,11 @@ export type SinglePushNotificationDeliveryResult =
 interface DispatchPushNotificationDependencies {
   readonly pushTokenRepository: Pick<
     PushTokenRepositoryPort,
-    "deactivateInvalidTokens" | "findPushTokensByUser"
+    "deactivateInvalidTokens" | "listPushTokensByUser"
   >;
   readonly sendMessages: Pick<SendPushMessagesUseCase, "execute">;
   readonly unreadCounts: Pick<UnreadNotificationCountReaderPort, "countUnreadByUsers">;
-  readonly activePushTokenReader: Pick<ActivePushTokenReaderPort, "findByUserId">;
+  readonly activePushTokenReader: Pick<ActivePushTokenReaderPort, "listByUserId">;
   readonly pushTokenCache: Pick<PushTokenCachePort, "invalidatePushTokens">;
   readonly noActiveTokenReasons: Pick<NoActiveTokenReasonReader, "findReason">;
   readonly clock: ClockPort;
@@ -128,7 +128,7 @@ export class DispatchPushNotificationUseCase {
     const requiresFeatureCapability = data.campaignKey === FEATURE_DISCOVERY_CAMPAIGN_KEY;
     const requiresAppVersion = notificationMinAppVersion(data.type) != null;
     if (requiresFeatureCapability || requiresAppVersion) {
-      const records = await this.#dependencies.pushTokenRepository.findPushTokensByUser({
+      const records = await this.#dependencies.pushTokenRepository.listPushTokensByUser({
         userId: UserId.reconstitute(data.userId),
         activeOnly: true,
       });
@@ -151,7 +151,7 @@ export class DispatchPushNotificationUseCase {
         : { status: "skipped", reason: "UNSUPPORTED_APP_CAPABILITY" };
     }
 
-    const tokens = await this.#dependencies.activePushTokenReader.findByUserId(
+    const tokens = await this.#dependencies.activePushTokenReader.listByUserId(
       UserId.reconstitute(data.userId),
     );
     return tokens.length > 0

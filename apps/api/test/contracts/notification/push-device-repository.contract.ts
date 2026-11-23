@@ -22,7 +22,7 @@ async function statusesOf(
   userIds: readonly string[],
   reportedSince: Temporal.Instant = EARLIER,
 ): Promise<Record<string, string[]>> {
-  const statuses = await repository.findPermissionStatusesByUsers(
+  const statuses = await repository.listPermissionStatusesByUsers(
     userIds.map((userId) => UserId.reconstitute(userId)),
     reportedSince,
   );
@@ -41,7 +41,7 @@ export interface PushDeviceContractSubject {
 }
 
 async function tokensOf(tokens: PushTokenRepositoryPort, userId: string) {
-  const records = await tokens.findPushTokensByUser({ userId: UserId.reconstitute(userId) });
+  const records = await tokens.listPushTokensByUser({ userId: UserId.reconstitute(userId) });
   return records.map(({ deviceId, token, isActive }) => ({ deviceId, token, isActive }));
 }
 
@@ -139,7 +139,7 @@ export function describePushDeviceRepositoryContract(
 
       // Then
       expect(saved).toEqual({ previousOwnerIds: [], hasActiveToken: true });
-      const records = await tokens.findPushTokensByUser({ userId: UserId.reconstitute(USER_ID) });
+      const records = await tokens.listPushTokensByUser({ userId: UserId.reconstitute(USER_ID) });
       expect(records).toEqual([
         expect.objectContaining({
           deviceId: "android_device-a",
@@ -167,7 +167,7 @@ export function describePushDeviceRepositoryContract(
 
       // Then
       expect([kept.hasActiveToken, missing.hasActiveToken]).toEqual([true, false]);
-      const [record] = await tokens.findPushTokensByUser({ userId: UserId.reconstitute(USER_ID) });
+      const [record] = await tokens.listPushTokensByUser({ userId: UserId.reconstitute(USER_ID) });
       expect(record).toMatchObject({
         token: "ExponentPushToken[ios_device-a." + USER_ID + "]",
         appVersion: "1.15.0",

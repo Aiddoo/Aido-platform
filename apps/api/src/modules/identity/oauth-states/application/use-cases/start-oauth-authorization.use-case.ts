@@ -25,7 +25,7 @@ export interface StartOAuthAuthorizationCommand {
 }
 
 interface StartOAuthAuthorizationDependencies {
-  readonly registry: Pick<OAuthIdentityProviderRegistryPort, "get">;
+  readonly registry: Pick<OAuthIdentityProviderRegistryPort, "find">;
   readonly oauthStateRepository: Pick<OAuthStateRepositoryPort, "create">;
   readonly configService: Pick<OAuthRuntimeConfigPort, "allowsDevRedirects">;
   readonly clock: ClockPort;
@@ -40,7 +40,7 @@ export class StartOAuthAuthorizationUseCase {
   }
 
   async execute(input: StartOAuthAuthorizationCommand): Promise<string> {
-    const strategy = this.#dependencies.registry.get(input.provider);
+    const strategy = this.#dependencies.registry.find(input.provider);
     if (strategy == null) {
       throw unsupportedOAuthProvider(input.provider);
     }

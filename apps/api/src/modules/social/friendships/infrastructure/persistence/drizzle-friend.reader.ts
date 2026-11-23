@@ -247,7 +247,7 @@ export class DrizzleFriendReader implements FriendReaderPort {
   }
 
   async #findUsers(userIds: readonly string[]): Promise<Record<string, UserBriefReadModel>> {
-    const briefs = await this.#userBriefReader.findByUserIds(
+    const briefs = await this.#userBriefReader.listByUserIds(
       userIds.map((userId) => UserId.reconstitute(userId)),
     );
     return keyBy(briefs, (brief) => brief.userId.value);

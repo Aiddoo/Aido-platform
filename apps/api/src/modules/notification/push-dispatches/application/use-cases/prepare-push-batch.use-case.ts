@@ -34,12 +34,12 @@ export type PreparedPushBatch =
     });
 
 type CapabilityTokensByUser = Partial<
-  Record<string, Awaited<ReturnType<PushTokenRepositoryPort["findActivePushTokensByUsers"]>>>
+  Record<string, Awaited<ReturnType<PushTokenRepositoryPort["listActivePushTokensByUsers"]>>>
 >;
 
 interface PreparePushBatchDependencies {
-  readonly pushTokenRepository: Pick<PushTokenRepositoryPort, "findActivePushTokensByUsers">;
-  readonly activePushTokenReader: Pick<ActivePushTokenReaderPort, "findByUserIds">;
+  readonly pushTokenRepository: Pick<PushTokenRepositoryPort, "listActivePushTokensByUsers">;
+  readonly activePushTokenReader: Pick<ActivePushTokenReaderPort, "listByUserIds">;
   readonly noActiveTokenReasons: Pick<NoActiveTokenReasonReader, "findReasons">;
   readonly unreadCounts: Pick<UnreadNotificationCountReaderPort, "countUnreadByUsers">;
 }
@@ -59,7 +59,7 @@ export class PreparePushBatchUseCase {
 
   async execute(payloads: readonly BatchPushNotificationPayload[]): Promise<PreparedPushBatch> {
     const userIds = uniq(payloads.map((payload) => payload.userId.value));
-    const tokensByUser = await this.#dependencies.activePushTokenReader.findByUserIds(
+    const tokensByUser = await this.#dependencies.activePushTokenReader.listByUserIds(
       userIds.map((userId) => UserId.reconstitute(userId)),
     );
     const capabilityTokensByUser = await this.#findCapabilityTokens(payloads);
@@ -139,7 +139,7 @@ export class PreparePushBatchUseCase {
     if (capabilityUserIds.length === 0) {
       return {};
     }
-    const records = await this.#dependencies.pushTokenRepository.findActivePushTokensByUsers(
+    const records = await this.#dependencies.pushTokenRepository.listActivePushTokensByUsers(
       capabilityUserIds.map((userId) => UserId.reconstitute(userId)),
     );
     return groupBy(records, (record) => record.userId);

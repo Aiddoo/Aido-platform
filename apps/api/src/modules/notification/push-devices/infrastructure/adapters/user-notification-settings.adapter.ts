@@ -42,7 +42,7 @@ export class UserNotificationSettingsAdapter implements UserNotificationSettings
   async findPreferenceReadModelsByUserIds(
     userIds: readonly UserId[],
   ): Promise<NotificationDeliveryPreferenceWithUserId[]> {
-    const preferences = await this.#userSettingsAccess.findPreferenceReadModelsByUserIds(userIds);
+    const preferences = await this.#userSettingsAccess.listPreferenceReadModelsByUserIds(userIds);
     return preferences.map((preference) => ({
       ...preference,
       userId: UserId.reconstitute(preference.userId),
@@ -56,7 +56,7 @@ export class UserNotificationSettingsAdapter implements UserNotificationSettings
   async findConsentReadModelsByUserIds(
     userIds: readonly UserId[],
   ): Promise<NotificationMarketingConsentWithUserId[]> {
-    const consents = await this.#userSettingsAccess.findConsentReadModelsByUserIds(userIds);
+    const consents = await this.#userSettingsAccess.listConsentReadModelsByUserIds(userIds);
     return consents.map((consent) => ({ ...consent, userId: UserId.reconstitute(consent.userId) }));
   }
 

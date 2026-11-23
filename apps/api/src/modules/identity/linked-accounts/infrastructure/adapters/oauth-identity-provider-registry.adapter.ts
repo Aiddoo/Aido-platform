@@ -26,7 +26,7 @@ export class OAuthIdentityProviderRegistryAdapter extends OAuthIdentityProviderR
     );
   }
 
-  get(provider: AccountProvider): OAuthIdentityProviderPort | undefined {
-    return this.#providers.get(provider);
+  find(provider: AccountProvider): OAuthIdentityProviderPort | null {
+    return this.#providers.get(provider) ?? null;
   }
 }

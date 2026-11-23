@@ -8,7 +8,7 @@ export interface GetConsentReadModelsQuery {
 }
 
 interface GetConsentReadModelsDependencies {
-  readonly consentRepository: Pick<UserConsentRepositoryPort, "findByUserIds">;
+  readonly consentRepository: Pick<UserConsentRepositoryPort, "listByUserIds">;
 }
 
 export class GetConsentReadModelsUseCase {
@@ -19,7 +19,7 @@ export class GetConsentReadModelsUseCase {
   }
 
   execute(input: GetConsentReadModelsQuery): Promise<UserConsentReadModel[]> {
-    return this.#dependencies.consentRepository.findByUserIds(
+    return this.#dependencies.consentRepository.listByUserIds(
       input.userIds.map((userId) => UserId.reconstitute(userId)),
     );
   }

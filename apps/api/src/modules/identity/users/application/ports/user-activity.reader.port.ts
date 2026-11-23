@@ -10,5 +10,5 @@ export interface UserActivity {
 
 export abstract class UserActivityReaderPort {
   /** 활동 기록을 읽는다. 정지·탈퇴 대기 계정은 결과에서 빠진다. */
-  abstract findActiveAccounts(userIds: readonly UserId[]): Promise<readonly UserActivity[]>;
+  abstract listActiveAccounts(userIds: readonly UserId[]): Promise<readonly UserActivity[]>;
 }

@@ -380,7 +380,7 @@ export class DrizzleNudgeReader implements NudgeReaderPort {
   }
 
   async #findUsers(userIds: readonly string[]): Promise<Record<string, UserBriefReadModel>> {
-    const briefs = await this.#userBriefReader.findByUserIds(
+    const briefs = await this.#userBriefReader.listByUserIds(
       uniq(userIds).map((userId) => UserId.reconstitute(userId)),
     );
     return keyBy(briefs, (brief) => brief.userId.value);

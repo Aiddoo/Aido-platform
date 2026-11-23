@@ -44,7 +44,7 @@ export class DrizzleUserPreferenceRepository extends UserPreferenceRepositoryPor
     return row == null ? null : toUserPreferenceReadModel(row);
   }
 
-  async findReadModelsByUserIds(userIds: readonly UserId[]): Promise<UserPreferenceReadModel[]> {
+  async listReadModelsByUserIds(userIds: readonly UserId[]): Promise<UserPreferenceReadModel[]> {
     if (userIds.length === 0) {
       return [];
     }

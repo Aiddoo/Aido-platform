@@ -17,7 +17,7 @@
 | 기능 권한           | `FeatureEntitlement`, `resolveFeatureEntitlement`                      | 기능을 쓸 수 있는지(`allowed`)와 표시 한도(`limit`, null은 무제한). quota·resource는 한도가 0보다 크면 쓸 수 있다                           |
 | 집행 한도           | `resolveQuotaLimit`, `isFairUse`                                       | 서버가 실제로 막는 quota 한도. 무제한으로 보이는 프리미엄 quota는 `fairUse.premium`으로 막는다                                              |
 | 받은 자리           | `FeatureGrant`(Aggregate), `FeatureGrants`, `GrantFeatureUseCase`      | 초대 보상 등으로 기능 한도에 더한 자리. 1 이상의 정수이고 출처 키(`sourceKey`) 하나에 한 번만 저장한다. 같은 키면 `duplicate`               |
-| 권한 판단 문        | `EntitlementReaderPort`, `AccessReadConsistency`                       | 다른 Context가 묻는 `can`·`getFeatureLimit`(캐시)과 잠금 뒤 재확인 `canInTransaction`·`getFeatureLimitInTransaction`(캐시 없이 최신)        |
+| 권한 판단 문        | `EntitlementReaderPort`, `AccessReadConsistency`                       | 다른 Context가 묻는 `can`·`findFeatureLimit`(캐시)과 잠금 뒤 재확인 `canInTransaction`·`findFeatureLimitInTransaction`(캐시 없이 최신)      |
 | 권한 캐시           | `EntitlementCachePort`, `EntitlementCacheInvalidatorPort`              | 사용자 권한 상태 10분 캐시. 끝나는 시각을 함께 담아 TTL 안에서도 넘기지 않고, 상태를 바꾼 쪽이 커밋 뒤 비운다                               |
 | featureQuota        | `FeatureQuotaState`, `resolveFeatureQuota`, `FeatureQuotaReadModel`    | 기능 하나의 한도·사용량·남은 수·초기화 시각·길이 상한. 한도 오류 details와 응답에 같은 모양으로 싣는다                                      |
 | 권한 현황           | `EntitlementUsageReadModel`, `GetEntitlementUsageUseCase`              | `GET /v1/entitlements`가 돌려주는 모든 기능의 featureQuota와 요금제 비교(`plans`, `feature-grants` slice). 캐시 없이 최신 권한으로 계산한다 |

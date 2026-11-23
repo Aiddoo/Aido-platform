@@ -32,7 +32,7 @@ export class StubUserBriefReader extends UserBriefReaderPort {
     this.#users.set(seed.userId, seed);
   }
 
-  async findByUserIds(userIds: readonly UserId[]): Promise<UserBriefReadModel[]> {
+  async listByUserIds(userIds: readonly UserId[]): Promise<UserBriefReadModel[]> {
     return userIds.flatMap((userId) => {
       const seed = this.#users.get(userId.value);
       return seed == null ? [] : [toBrief(seed)];

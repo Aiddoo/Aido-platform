@@ -787,7 +787,7 @@ describe("QuotaLedger 원장·카운터·멱등 (실제 PostgreSQL)", () => {
           .set({ role, subscriptionStatus, aiUsageCount: FREE_AI_LIMIT })
           .where(eq(userTable.id, userId));
         expect(
-          await entitlement.getFeatureLimit(UserId.reconstitute(userId), "AI_PARSE"),
+          await entitlement.findFeatureLimit(UserId.reconstitute(userId), "AI_PARSE"),
         ).toBeNull();
         await client
           .update(userTable)

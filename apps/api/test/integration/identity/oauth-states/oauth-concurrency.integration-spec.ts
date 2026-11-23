@@ -18,6 +18,7 @@ import { linkedAccount, oAuthState, user as userTable } from "#api/platform/data
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
+import { FakeOAuthIdentityProviderRegistry } from "#test/doubles/identity/fake-oauth-provider-registry";
 import { CountingOAuthIdentityProvider } from "#test/doubles/identity/stub-oauth-identity-provider";
 import { FakeEmailSender } from "#test/doubles/notification/fake-email-sender";
 import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
@@ -51,7 +52,9 @@ describe("OAuth 교환과 로그인 수단 변경 (실제 PostgreSQL)", () => {
     client = await database.start();
     provider = new CountingOAuthIdentityProvider();
     module = await createAuthTestModule(client, new FakeEmailSender(), {
-      oauthProviderRegistry: new Map([[provider.provider, provider]]),
+      oauthProviderRegistry: new FakeOAuthIdentityProviderRegistry(
+        new Map([[provider.provider, provider]]),
+      ),
     });
     accounts = module.get(DrizzleLinkedAccountsRepository);
     states = module.get(DrizzleOAuthStateRepository);

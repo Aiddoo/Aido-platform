@@ -120,7 +120,7 @@ export class SweepBillingNoticesUseCase {
     now: Temporal.Instant,
   ): Promise<BillingNoticeBatchResult> {
     const noticeable = candidates.filter((notice) => notice.isNoticeable());
-    const quietUserIds = await this.#dependencies.quietHoursReader.findUsersInQuietHours(
+    const quietUserIds = await this.#dependencies.quietHoursReader.listUsersInQuietHours(
       noticeable.map((notice) => notice.userId),
       now,
     );

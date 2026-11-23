@@ -50,7 +50,7 @@ export interface LoginWithOAuthTokenCommand {
 }
 
 interface LoginWithOAuthTokenDependencies {
-  readonly registry: Pick<OAuthIdentityProviderRegistryPort, "get">;
+  readonly registry: Pick<OAuthIdentityProviderRegistryPort, "find">;
   readonly userRepository: Pick<UserRepositoryPort, "findById" | "findByEmail">;
   readonly accountRepository: Pick<LinkedAccountsRepositoryPort, "findUserIdByProviderAccountId">;
   readonly securityLogRepository: Pick<SecurityLogRepositoryPort, "create">;
@@ -89,7 +89,7 @@ export class LoginWithOAuthTokenUseCase {
   }
 
   async execute(input: LoginWithOAuthTokenCommand): Promise<SocialLoginReadModel> {
-    const strategy = this.#dependencies.registry.get(input.provider);
+    const strategy = this.#dependencies.registry.find(input.provider);
     if (strategy == null) {
       throw unsupportedOAuthProvider(input.provider);
     }

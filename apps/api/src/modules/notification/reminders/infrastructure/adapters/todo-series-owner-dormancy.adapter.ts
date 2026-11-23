@@ -35,7 +35,7 @@ export class TodoSeriesOwnerDormancyAdapter extends TodoSeriesOwnerDormancyPort 
   }
 
   async findDormantSince(userId: UserId): Promise<string | null> {
-    const [account] = await this.#activityReader.findActiveAccounts([userId]);
+    const [account] = await this.#activityReader.listActiveAccounts([userId]);
     if (account == null) {
       return null;
     }

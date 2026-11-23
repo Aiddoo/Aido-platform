@@ -248,7 +248,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     ]);
     const entitlement = context.module.get(EntitlementReaderPort);
     expect(
-      await entitlement.getFeatureLimitInTransaction(UserId.reconstitute(inviterId), "FRIEND"),
+      await entitlement.findFeatureLimitInTransaction(UserId.reconstitute(inviterId), "FRIEND"),
     ).toBeNull();
     const reader = context.module.get(InviteRedemptionReaderPort);
     expect(await reader.summarizeByInviterId(UserId.reconstitute(inviterId))).toEqual({
@@ -475,7 +475,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     ).toBe("ADMIN");
     const entitlement = context.module.get(EntitlementReaderPort);
     expect(
-      await entitlement.getFeatureLimitInTransaction(UserId.reconstitute(inviterId), "FRIEND"),
+      await entitlement.findFeatureLimitInTransaction(UserId.reconstitute(inviterId), "FRIEND"),
     ).toBeNull();
   });
 

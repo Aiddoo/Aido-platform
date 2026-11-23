@@ -174,7 +174,7 @@ describe("푸시 기기 보고 (실제 PostgreSQL)", () => {
     // When
     const tokens = await new DrizzlePushTokenRepository(
       transactionHost,
-    ).findActivePushTokensByUsers([UserId.reconstitute(firstUserId)]);
+    ).listActivePushTokensByUsers([UserId.reconstitute(firstUserId)]);
 
     // Then
     // 재방문 알림을 막지 않으려 세션으로 거르지 않는다. 앱이 공개 해제로 뺀다

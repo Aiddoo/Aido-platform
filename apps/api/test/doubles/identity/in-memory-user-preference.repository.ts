@@ -91,7 +91,7 @@ export class InMemoryUserPreferenceRepository extends UserPreferenceRepositoryPo
     return this.stored(userId.value) ?? null;
   }
 
-  async findReadModelsByUserIds(userIds: readonly UserId[]): Promise<UserPreferenceReadModel[]> {
+  async listReadModelsByUserIds(userIds: readonly UserId[]): Promise<UserPreferenceReadModel[]> {
     return this.all.filter((record) => userIds.some((userId) => userId.value === record.userId));
   }
 

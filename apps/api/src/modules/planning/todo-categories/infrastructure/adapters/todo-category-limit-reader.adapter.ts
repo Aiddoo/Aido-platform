@@ -13,14 +13,14 @@ import {
 export class TodoCategoryLimitReaderAdapter extends TodoCategoryLimitReaderPort {
   readonly #entitlementReader: Pick<
     EntitlementReaderPort,
-    "getFeatureLimit" | "getFeatureLimitInTransaction" | "getFeatureQuotaInTransaction"
+    "findFeatureLimit" | "findFeatureLimitInTransaction" | "getFeatureQuotaInTransaction"
   >;
 
   constructor(
     @Inject(EntitlementReaderPort)
     entitlementReader: Pick<
       EntitlementReaderPort,
-      "getFeatureLimit" | "getFeatureLimitInTransaction" | "getFeatureQuotaInTransaction"
+      "findFeatureLimit" | "findFeatureLimitInTransaction" | "getFeatureQuotaInTransaction"
     >,
   ) {
     super();
@@ -28,11 +28,11 @@ export class TodoCategoryLimitReaderAdapter extends TodoCategoryLimitReaderPort 
   }
 
   readLimit(userId: UserId): Promise<number | null> {
-    return this.#entitlementReader.getFeatureLimit(userId, "TODO_CATEGORY");
+    return this.#entitlementReader.findFeatureLimit(userId, "TODO_CATEGORY");
   }
 
   readLimitInTransaction(userId: UserId): Promise<number | null> {
-    return this.#entitlementReader.getFeatureLimitInTransaction(userId, "TODO_CATEGORY");
+    return this.#entitlementReader.findFeatureLimitInTransaction(userId, "TODO_CATEGORY");
   }
 
   readFeatureQuotaInTransaction(userId: UserId, count: number): Promise<TodoCategoryFeatureQuota> {

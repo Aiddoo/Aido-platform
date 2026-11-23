@@ -9,7 +9,7 @@ import {
 } from "../../push-devices/notification-push-devices.public.js";
 
 interface NoActiveTokenReasonReaderDependencies {
-  readonly pushDeviceRepository: Pick<PushDeviceRepositoryPort, "findPermissionStatusesByUsers">;
+  readonly pushDeviceRepository: Pick<PushDeviceRepositoryPort, "listPermissionStatusesByUsers">;
   readonly clock: ClockPort;
 }
 
@@ -28,7 +28,7 @@ export class NoActiveTokenReasonReader {
       return new Map();
     }
     const statusesByUser =
-      await this.#dependencies.pushDeviceRepository.findPermissionStatusesByUsers(
+      await this.#dependencies.pushDeviceRepository.listPermissionStatusesByUsers(
         userIds.map((userId) => UserId.reconstitute(userId)),
         this.#dependencies.clock.now().subtract({ hours: 24 * PUSH_DEVICE_STALE_AFTER_DAYS }),
       );

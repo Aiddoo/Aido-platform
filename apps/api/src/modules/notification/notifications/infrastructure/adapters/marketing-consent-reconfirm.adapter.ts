@@ -24,7 +24,7 @@ export class MarketingConsentReconfirmAdapter implements MarketingConsentReconfi
     readonly afterUserId?: UserId;
     readonly limit: number;
   }): Promise<MarketingReconfirmRecipient[]> {
-    return this.#userSettingsAccess.findMarketingReconfirmTargets({
+    return this.#userSettingsAccess.listMarketingReconfirmTargets({
       cutoff: params.cutoff,
       afterUserId: params.afterUserId,
       limit: params.limit,

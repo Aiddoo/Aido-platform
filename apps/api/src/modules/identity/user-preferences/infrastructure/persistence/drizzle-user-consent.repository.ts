@@ -79,7 +79,7 @@ export class DrizzleUserConsentRepository extends UserConsentRepositoryPort {
     });
   }
 
-  async findByUserIds(userIds: readonly UserId[]): Promise<UserConsentReadModel[]> {
+  async listByUserIds(userIds: readonly UserId[]): Promise<UserConsentReadModel[]> {
     if (userIds.length === 0) {
       return [];
     }
@@ -89,7 +89,7 @@ export class DrizzleUserConsentRepository extends UserConsentRepositoryPort {
     return rows.map(toUserConsentReadModel);
   }
 
-  async findMarketingReconfirmTargets(
+  async listMarketingReconfirmTargets(
     params: FindMarketingReconfirmTargetsParams,
   ): Promise<MarketingReconfirmTarget[]> {
     const rows = await this.#db

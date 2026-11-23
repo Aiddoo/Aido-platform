@@ -52,21 +52,21 @@ class StubTierEntitlementReader extends StubCurrentUserAccess implements Entitle
   }
 
   async canInTransaction(): Promise<boolean> {
-    throw new Error("휴면 판정은 canInTx를 부르지 않는다");
+    throw new Error("휴면 판정은 canInTransaction을 부르지 않는다");
   }
 
-  async getFeatureLimit(): Promise<number | null> {
-    throw new Error("휴면 판정은 getFeatureLimit을 부르지 않는다");
+  async findFeatureLimit(): Promise<number | null> {
+    throw new Error("휴면 판정은 findFeatureLimit을 부르지 않는다");
   }
 
-  async getFeatureLimitInTransaction(): Promise<number | null> {
-    throw new Error("휴면 판정은 getFeatureLimitInTx를 부르지 않는다");
+  async findFeatureLimitInTransaction(): Promise<number | null> {
+    throw new Error("휴면 판정은 findFeatureLimitInTransaction을 부르지 않는다");
   }
 
   async getFeatureQuotaInTransaction(): ReturnType<
     EntitlementReaderPort["getFeatureQuotaInTransaction"]
   > {
-    throw new Error("휴면 판정은 getFeatureQuotaInTx를 부르지 않는다");
+    throw new Error("휴면 판정은 getFeatureQuotaInTransaction을 부르지 않는다");
   }
 }
 

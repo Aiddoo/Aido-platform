@@ -11,8 +11,8 @@ export interface FindPushTokensParams {
 
 // 등록한 Expo 토큰을 읽고 기기 보고 밖의 경로(해제·세션 정리·무효 토큰)로 지운다
 export abstract class PushTokenRepositoryPort {
-  abstract findPushTokensByUser(params: FindPushTokensParams): Promise<PushTokenReadModel[]>;
-  abstract findActivePushTokensByUsers(userIds: readonly UserId[]): Promise<PushTokenReadModel[]>;
+  abstract listPushTokensByUser(params: FindPushTokensParams): Promise<PushTokenReadModel[]>;
+  abstract listActivePushTokensByUsers(userIds: readonly UserId[]): Promise<PushTokenReadModel[]>;
   abstract deletePushTokensByDevice(
     userId: UserId,
     deviceId: PushDeviceId,

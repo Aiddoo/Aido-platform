@@ -14,7 +14,7 @@ export class QuietHoursReaderAdapter implements QuietHoursReaderPort {
     this.#reader = reader;
   }
 
-  findUsersInQuietHours(
+  listUsersInQuietHours(
     userIds: readonly UserId[],
     at: Temporal.Instant,
   ): Promise<ReadonlySet<string>> {

@@ -45,7 +45,7 @@ export class UserSettingsAccessAdapter
   readonly #updateMarketingPushConsentUseCase: UpdateMarketingPushConsentUseCase;
   readonly #consentRepository: Pick<
     UserConsentRepositoryPort,
-    "findMarketingReconfirmTargets" | "claimMarketingReconfirm"
+    "listMarketingReconfirmTargets" | "claimMarketingReconfirm"
   >;
 
   constructor(
@@ -61,7 +61,7 @@ export class UserSettingsAccessAdapter
     @Inject(UserConsentRepositoryPort)
     consentRepository: Pick<
       UserConsentRepositoryPort,
-      "findMarketingReconfirmTargets" | "claimMarketingReconfirm"
+      "listMarketingReconfirmTargets" | "claimMarketingReconfirm"
     >,
   ) {
     this.#seedUserSettingsUseCase = seedUserSettingsUseCase;
@@ -98,7 +98,7 @@ export class UserSettingsAccessAdapter
     return record?.timezone ?? null;
   }
 
-  findPreferenceReadModelsByUserIds(userIds: readonly UserId[]) {
+  listPreferenceReadModelsByUserIds(userIds: readonly UserId[]) {
     return this.#getPreferenceReadModelsUseCase.execute({
       userIds: userIds.map((userId) => userId.value),
     });
@@ -108,7 +108,7 @@ export class UserSettingsAccessAdapter
     return this.#getConsentReadModelUseCase.execute({ userId: userId.value });
   }
 
-  findConsentReadModelsByUserIds(userIds: readonly UserId[]) {
+  listConsentReadModelsByUserIds(userIds: readonly UserId[]) {
     return this.#getConsentReadModelsUseCase.execute({
       userIds: userIds.map((userId) => userId.value),
     });
@@ -126,10 +126,10 @@ export class UserSettingsAccessAdapter
     await this.#updateMarketingPushConsentUseCase.execute({ userId: userId.value, agreed });
   }
 
-  findMarketingReconfirmTargets(
+  listMarketingReconfirmTargets(
     params: FindMarketingReconfirmTargetsParams,
   ): Promise<MarketingReconfirmTarget[]> {
-    return this.#consentRepository.findMarketingReconfirmTargets(params);
+    return this.#consentRepository.listMarketingReconfirmTargets(params);
   }
 
   claimMarketingReconfirm(

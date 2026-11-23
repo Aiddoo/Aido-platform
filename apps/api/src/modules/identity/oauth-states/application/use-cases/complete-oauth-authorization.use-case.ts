@@ -29,7 +29,7 @@ export interface CompletedOAuthAuthorizationReadModel {
 }
 
 interface CompleteOAuthAuthorizationDependencies {
-  readonly registry: Pick<OAuthIdentityProviderRegistryPort, "get">;
+  readonly registry: Pick<OAuthIdentityProviderRegistryPort, "find">;
   readonly oauthStateRepository: Pick<
     OAuthStateRepositoryPort,
     "findByState" | "generateExchangeCode" | "saveExchangeData" | "saveLinkingData"
@@ -50,7 +50,7 @@ export class CompleteOAuthAuthorizationUseCase {
     input: CompleteOAuthAuthorizationCommand,
   ): Promise<CompletedOAuthAuthorizationReadModel> {
     const { provider, code, state, metadata } = input;
-    const strategy = this.#dependencies.registry.get(provider);
+    const strategy = this.#dependencies.registry.find(provider);
     if (strategy == null) {
       throw unsupportedOAuthProvider(provider);
     }

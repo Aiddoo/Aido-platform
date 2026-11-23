@@ -52,5 +52,5 @@ export abstract class OAuthIdentityProviderPort {
 }
 
 export abstract class OAuthIdentityProviderRegistryPort {
-  abstract get(provider: AccountProvider): OAuthIdentityProviderPort | undefined;
+  abstract find(provider: AccountProvider): OAuthIdentityProviderPort | null;
 }

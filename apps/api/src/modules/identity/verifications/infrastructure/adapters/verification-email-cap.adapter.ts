@@ -36,7 +36,7 @@ export class VerificationEmailCapAdapter extends VerificationEmailCapPort {
     this.#cacheService = cacheService;
   }
 
-  async findSentAts(bucket: VerificationEmailCapBucket): Promise<readonly Temporal.Instant[]> {
+  async listSentAts(bucket: VerificationEmailCapBucket): Promise<readonly Temporal.Instant[]> {
     const stored = await this.#cacheService.get(this.#key(bucket), SENT_ATS_SCHEMA);
     return (stored ?? []).map((sentAt) => Temporal.Instant.from(sentAt));
   }

@@ -23,7 +23,7 @@ export class DrizzlePushTokenRepository implements PushTokenRepositoryPort {
     this.#transactionHost = transactionHost;
   }
 
-  findPushTokensByUser(params: FindPushTokensParams): Promise<PushTokenReadModel[]> {
+  listPushTokensByUser(params: FindPushTokensParams): Promise<PushTokenReadModel[]> {
     return this.#db
       .select()
       .from(pushToken)
@@ -36,7 +36,7 @@ export class DrizzlePushTokenRepository implements PushTokenRepositoryPort {
       .orderBy(desc(pushToken.updatedAt), desc(pushToken.id));
   }
 
-  findActivePushTokensByUsers(userIds: readonly UserId[]): Promise<PushTokenReadModel[]> {
+  listActivePushTokensByUsers(userIds: readonly UserId[]): Promise<PushTokenReadModel[]> {
     return this.#db
       .select()
       .from(pushToken)
