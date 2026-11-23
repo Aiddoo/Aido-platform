@@ -21,7 +21,6 @@ import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscripti
 import { useGetOfferingsQueryOptions } from '@src/features/billing/subscription/queries/subscription.queries';
 import type { SubscriptionView } from '@src/features/billing/subscription/schemas/subscription-params.schema';
 import { toSubscriptionLoadFailure } from '@src/features/billing/subscription/utils/subscription-failure.view-model';
-import { UserPolicy } from '@src/features/identity/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { PushPermissionToggle } from '@src/features/notification/components/push-permission-toggle';
 import { useTrack } from '@src/shared/analytics';
@@ -277,11 +276,11 @@ SubscriptionScreen.Loading = function Loading() {
   const isOnline = useIsOnline();
   const [{ view }] = useSubscriptionParams();
   const [pathname] = useCheckoutRoute();
-  const { data: hasPremiumAccess = false } = useQuery({
-    ...useGetMeQueryOptions(),
-    select: UserPolicy.hasPremiumAccess,
+  const { data: hasFullAccess = false } = useQuery({
+    ...useGetEntitlementsQueryOptions(),
+    select: EntitlementPolicy.hasFullAccess,
   });
-  const isPlansShape = view === 'plans' || pathname === '/paywall' || !hasPremiumAccess;
+  const isPlansShape = view === 'plans' || pathname === '/paywall' || !hasFullAccess;
 
   // 오프라인이면 조회가 멈춰 스켈레톤이 끝나지 않는다. 연결되면 멈춘 조회가 이어서 화면을 채운다
   if (!isOnline) {

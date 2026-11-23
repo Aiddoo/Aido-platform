@@ -12,7 +12,7 @@ export const userSchema = userSummarySchema.extend({
   subscriptionExpiresAt: instantSchema.nullable(),
   providers: z.array(z.enum(ACCOUNT_PROVIDERS)),
   premiumAccess: premiumAccessSchema,
-  /** 서버가 만료·유예까지 따진 구독·보상 효력(ADMIN 미반영). 앱의 결제 사용자 판별은 UserPolicy.hasPremiumAccess 하나다 */
+  /** 서버가 만료·유예까지 따진 구독·보상 효력(ADMIN 미반영). 화면의 프리미엄 판별은 EntitlementPolicy.hasFullAccess다 */
   isPremium: z.boolean(),
   createdAt: instantSchema,
 });
@@ -30,11 +30,6 @@ function isAdmin(user: User) {
   return user.role === USER_ROLE.ADMIN;
 }
 
-/** 서버의 isPremium은 ADMIN을 반영하지 않는다. 앱의 "결제 사용자" 판별은 여기 하나다 */
-function hasPremiumAccess(user: User) {
-  return isAdmin(user) || user.isPremium;
-}
-
 /** 역할·프리미엄 효력·기간이 바뀌면 서버가 주는 한도·사용량도 달라진다 */
 function hasEntitlementChanged(previous: User, next: User) {
   return (
@@ -47,6 +42,5 @@ function hasEntitlementChanged(previous: User, next: User) {
 export const UserPolicy = {
   hasCredential,
   isAdmin,
-  hasPremiumAccess,
   hasEntitlementChanged,
 } as const;
