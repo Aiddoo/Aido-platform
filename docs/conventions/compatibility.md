@@ -48,26 +48,26 @@
 - `Todo.scheduledLocalTime` NULL 허용(DB 칸, `TodoSchedule.reconstitute`, 친구 할 일 응답 mapper, 리마인드 회차 키): 1.14.2 서버는 이 칸을 몰라, 그 서버가 시간을 지운 행은 순간(`scheduledTime`)이 비고 벽시계만 낡은 채 남을 수 있다. 그래서 순간이 없으면 벽시계도 없는 것으로 읽는다. 롤백 바닥이 1.15.2 이상(`20261116151519_drop_retired_columns`)이라 새로 생기지 않는다. 반대로 순간만 있고 벽시계가 빈 행은 운영 읽기 전용 확인(2026-11)에서 0건이라 그 대체(시간대 재계산의 건너뛴 수, 순간에서 벽시계 다시 읽기)는 지웠다. 운영에서 `scheduledTime IS NULL AND scheduledLocalTime IS NOT NULL`이 0건이면 두 칸이 함께 비거나 함께 차는 CHECK migration을 더하고 읽기 대체를 지운다.
 - `GET /v1/todos/{id}/details`의 `permissions.canNudge` 의미(2026-11-18, `0d5cb46ed`·`248c4b043`): 전에는 주인이 아니면 `true`였고 지금은 주인 아님·끝내지 않음·보는 사람 `X-Timezone`의 오늘·맞팔 친구를 모두 만족할 때만 `true`다. 콕 보내기(`POST /v1/nudges`)가 받아 주는 할 일과 같은 규칙(`canNudgeTodoOn`·`MutualFriendReaderPort`)이라, `false`를 받은 출시 앱이 콕 버튼을 숨겨도 서버가 400 `NUDGE_1106`이나 친구 오류로 거절했을 요청뿐이다. 응답 모양·OpenAPI는 같다. 영구(값의 뜻은 콕 보내기 규칙을 따른다).
 
-모바일은 최신 코드(1.15.2)만 둔다. 앱은 옛 앱·옛 서버를 위한 분기와 대체 경로, mapper 기본값을 두지 않고 지금 서버가 주는 값만 받는다. 남기는 것은 셋이다.
+모바일은 최신 출시 코드(1.16.0)만 둔다. 앱은 옛 앱·옛 서버를 위한 분기와 대체 경로, mapper 기본값을 두지 않고 지금 서버가 주는 값만 받는다. 남기는 것은 셋이다.
 
 1. 업그레이드한 기기의 저장 값: 아래 표의 코드로 한 번 옮기거나 읽는다.
 2. 이미 퍼진 링크: 초대 링크, 위젯 URI, 공개 딥링크.
 3. 앞으로 서버가 더할 값: 열거의 계약 `.catch`와 `parse{X}`의 `null`.
 
-그래서 1.15.2 앱은 알림 옛 필드(type·action·context·routing)로 목적지를 계산하지 않는다. 그 길(`toLegacyFieldsDestination`)은 지웠고, 알림 목적지는 서버 `navigation`을 mapper(`toNotificationTarget`)가 바꾼 앱 target 하나다. navigation이 없거나 틀리거나 푸시 data를 읽지 못하면 알림함으로 연다. 옛 댓글 route(`/todo/[todoId]/comments/[commentId]`)도 지운다. 댓글 위치는 `/todo/[todoId]?comment=`다.
+그래서 앱은 알림 옛 필드(type·action·context·routing)로 목적지를 계산하지 않는다. 알림 목적지는 서버 `navigation`을 mapper(`toNotificationTarget`)가 바꾼 앱 target 하나다. navigation이 없거나 틀리거나 푸시 data를 읽지 못하면 알림함으로 연다. 댓글 위치는 `/todo/[todoId]?comment=` 하나다.
 
-알림함 행의 `navigation`은 서버 1.15.1부터 실린다. 그래서 앱 1.15.2보다 서버 1.15.1 이상을 먼저 배포하고, 그 뒤에는 서버를 1.15.1 아래로 되돌리지 않고 수정 배포로 대응한다. 이번 릴리스는 서버 1.15.2를 앱과 함께 배포한다.
+알림함 행의 `navigation`은 서버 1.15.1부터 실린다. 서버를 1.15.1 아래로 되돌리지 않고 수정 배포로 대응한다.
 
 기기에 이미 남은 값과 링크를 읽는 앱 코드도 외부 계약이다. 새 앱이 쓰지 않는 모양을 읽어 옮기거나 받아 준다.
 
-| 코드(앱)                                                                                                        | 읽는 것                                                                                                                 | 지울 시점                                                                                 |
-| --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `shared/infra/storage/encrypted-draft-storage.ts` `deleteLegacyDrafts`                                          | 암호화 전 MMKV `aido.drafts`. 읽지 않고 파일째 지운다. 평문 초안이 기기에 남지 않게 옮기지 않는다                       | 1.15.x 이하 설치가 0이 된 뒤(먼저 지우면 평문 초안이 남는다)                              |
-| 피드 푸시 안내 저장 값(`pushNoticeDismissedAtStoredValue`, `aido_push_permission_prompt_dismissed_v1:{userId}`) | 1.14.x까지 쓰던 피드 안내 닫은 시각 key. 저장 값 정의로 옮겨도 이 key로 읽고 쓴다                                       | 영구(기기 저장 key)                                                                       |
-| `activation-progress-storage.schema.ts`                                                                         | 1.14.x가 남긴 `pushRegistrationUnlockedAt`은 읽지 않고 버린다                                                           | 지울 코드 없음(스키마가 모르는 칸을 버린다)                                               |
-| `plan-review-form.schema.ts` `restoreDraftDateKey`                                                              | 저장 시간대 없이 ISO 시각으로 남긴 말로 메모 계획 카드의 날짜(voice-note-draft.repository의 `getTimeZone`)              | 2026-12-11 이후(1.15.0 출시 2026-11-11 + 초안 보관 기간 `VOICE_NOTE_RETENTION_DAYS` 30일) |
-| `voice-note-draft.schema.ts`의 새 칸 `.default`                                                                 | 칸이 생기기 전에 저장한 말로 메모 초안                                                                                  | 2026-12-11 이후(1.15.0 출시 2026-11-11 + 초안 보관 기간 `VOICE_NOTE_RETENTION_DAYS` 30일) |
-| `query-cache-persistence.ts` `removePlaintextQueryCache`                                                        | 조회 캐시 암호화 전 기본 MMKV에 평문으로 남긴 `aido.query-cache:*`·`aido.query-cache.owner`. 읽지 않고 시작할 때 지운다 | 1.15.x 이하 설치가 0이 된 뒤(먼저 지우면 평문 캐시가 남는다)                              |
+| 코드(앱)                                                                                                        | 읽는 것                                                                                                                 | 지울 시점                                                                                        |
+| --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `shared/infra/storage/encrypted-draft-storage.ts` `deleteLegacyDrafts`                                          | 암호화 전 MMKV `aido.drafts`. 읽지 않고 파일째 지운다. 평문 초안이 기기에 남지 않게 옮기지 않는다                       | 1.15.x 이하 설치가 0이 된 뒤(먼저 지우면 평문 초안이 남는다)                                     |
+| 피드 푸시 안내 저장 값(`pushNoticeDismissedAtStoredValue`, `aido_push_permission_prompt_dismissed_v1:{userId}`) | 1.14.x까지 쓰던 피드 안내 닫은 시각 key. 저장 값 정의로 옮겨도 이 key로 읽고 쓴다                                       | 영구(기기 저장 key)                                                                              |
+| `activation-progress-storage.schema.ts`                                                                         | 1.14.x가 남긴 `pushRegistrationUnlockedAt`은 읽지 않고 버린다                                                           | 지울 코드 없음(스키마가 모르는 칸을 버린다)                                                      |
+| `plan-review-form.schema.ts` `restoreDraftDateKey`                                                              | 저장 시간대 없이 ISO 시각으로 남긴 말로 메모 계획 카드의 날짜(voice-note-draft.repository의 `getTimeZone`)              | 2026-12-11 이후(1.15.0 스토어 출시 2026-11-11 + 초안 보관 기간 `VOICE_NOTE_RETENTION_DAYS` 30일) |
+| `voice-note-draft.schema.ts`의 새 칸 `.default`                                                                 | 칸이 생기기 전에 저장한 말로 메모 초안                                                                                  | 2026-12-11 이후(1.15.0 스토어 출시 2026-11-11 + 초안 보관 기간 `VOICE_NOTE_RETENTION_DAYS` 30일) |
+| `query-cache-persistence.ts` `removePlaintextQueryCache`                                                        | 조회 캐시 암호화 전 기본 MMKV에 평문으로 남긴 `aido.query-cache:*`·`aido.query-cache.owner`. 읽지 않고 시작할 때 지운다 | 1.15.x 이하 설치가 0이 된 뒤(먼저 지우면 평문 캐시가 남는다)                                     |
 
 코드에 남기는 제거 표시는 `지운다(compatibility.md)` 문구와 이 표의 시점으로 적어 `git grep '지운다(compatibility.md)'` 한 번으로 이 표의 행을 모두 찾는다. 지우지 않는 행(영구·다시 묻게 됨)은 코드에도 남기는 이유를 적는다.
 

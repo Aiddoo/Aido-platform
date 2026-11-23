@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { TextProps as RNTextProps } from 'react-native';
 
 export type TextTone =
@@ -35,7 +36,7 @@ export interface TextProps extends Omit<RNTextProps, 'style'> {
   underline?: boolean;
   className?: string;
   style?: RNTextProps['style'];
-  children?: React.ReactNode;
+  children?: ReactNode;
 }
 
 export interface HeadingProps extends TextProps {
