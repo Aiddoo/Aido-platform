@@ -55,7 +55,7 @@ export const aiReportSchema = z.object({
     endDate: dateSchema,
   }),
   stats: reportStatsSchema.extend({
-    perfectDays: z.int().nonnegative().nullable().optional().meta({
+    perfectDays: z.int().nonnegative().nullable().meta({
       description:
         "기간에서 할 일이 하나 이상이고 모두 끝낸 날 수(달력 물고기와 같은 규칙). 날마다 기록이 없는 1.16.0 전 리포트는 null",
     }),
@@ -65,7 +65,7 @@ export const aiReportSchema = z.object({
   timePatterns: z.array(timePatternItemSchema).meta({
     description: "끝낸 할 일이 있는 시간대. 많이 끝낸 시간부터, 같은 수면 이른 시간부터",
   }),
-  peakHour: z.int().min(0).max(23).nullable().optional().meta({
+  peakHour: z.int().min(0).max(23).nullable().meta({
     description: "주로 끝낸 시간(0~23). 같은 수면 이른 시간이고 끝낸 할 일이 없으면 null",
   }),
   aiSummary: z.string(),

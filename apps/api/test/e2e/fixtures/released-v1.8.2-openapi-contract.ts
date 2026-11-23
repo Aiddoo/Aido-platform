@@ -108,8 +108,11 @@ export const RELEASED_V1_8_2_OPENAPI_CONTRACT = {
 	/** 1.16.1: AI 리포트 응답(AiReportResponseDto·AiReportListResponseDto·ReportStatusResponseDto)의 stats에 선택 칸 perfectDays(nullable), 리포트에 선택 칸 peakHour(nullable)만 추가. 둘 다 저장된 dailyCompletions·timePatterns에서 서버가 정하고 기존 칸·필수 여부는 같으며 출시 앱의 Zod는 strip 모드라 새 키를 버린다. ai-report-response.mapper.spec.ts가 값을, test:contract가 모양을 확인한다. */
 	preReportServerOwnedSchemasFingerprint:
 		"cd3c72f9fb4f065dcf4927a7b48e469b26cc17c31d24ac70c1262f64ed680bd7",
-	schemasFingerprint:
+	/** 1.16.1: 서버가 늘 보내는 할 일 상세 permissions.canThank, AI 리포트 stats.perfectDays(nullable)·peakHour(nullable)를 응답 계약에서 필수로 둔다. 서버 응답은 그대로이고 출시 앱의 Zod는 strip 모드라 새 키를 버린다. 앱 1.16.1이 이 값을 쓰기 시작해 선택으로 두면 옛 서버 분기가 생긴다. test:contract가 모양을 확인한다. */
+	preServerOwnedRequiredSchemasFingerprint:
 		"003ce5125acb528bdd9570a5f83fee8e10766f3a3b1168ac3d2bc6161bb30120",
+	schemasFingerprint:
+		"aa92b66ded6f0c224902f7cc9c85918d12d213d6cfd36612e07b5606d8814c3d",
 	/** 1.13.0: GET /todos/summary에 선택 date 쿼리(오늘·내일)만 추가. 생략 시 기존 응답과 같아 구버전 앱은 영향이 없다. */
 	preTodoSummaryDatePathsFingerprint:
 		"dbd292400174ee0cd55f6679b006be195dae5e39fbc1f7dde0e275e13d5bc184",
