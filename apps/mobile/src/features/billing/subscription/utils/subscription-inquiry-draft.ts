@@ -23,7 +23,7 @@ export function toSubscriptionInquiryDraft({
   diagnosticCode,
   installation,
 }: SubscriptionInquiryDraftInput) {
-  const subjectLine = subject.replace(/\s*\n\s*/g, ' ');
+  const subjectLine = subject.replaceAll(/\s*\n\s*/g, ' ');
 
   if (installation?.currentVersion == null || installation.platform == null) {
     return t('subscription:inquiryDraft.withoutDevice', {

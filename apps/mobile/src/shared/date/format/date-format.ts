@@ -147,7 +147,7 @@ export function formatYearAwareDateKeyLabel(
 
 /** 오전/오후와 시각이 줄바꿈으로 갈라지지 않게 사이를 줄바꿈 없는 공백으로 잇는다 */
 function keepTimeTogether(label: string): string {
-  return label.replace(/ /g, '\u00A0');
+  return label.replaceAll(' ', '\u00A0');
 }
 
 export function formatClockTime(

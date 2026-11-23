@@ -25,7 +25,7 @@ export interface InvalidInviteCodeCharacter {
 }
 
 export function normalizeInviteCode(raw: string) {
-  return raw.replace(/[\s-]/gu, '').toUpperCase();
+  return raw.replaceAll(/[\s-]/gu, '').toUpperCase();
 }
 
 // 한글 키보드의 전각 영숫자·하이픈(ＫＡ－７)을 반각으로 바꾼 뒤 서버와 같이 검증한다. 코드가 아니면 null

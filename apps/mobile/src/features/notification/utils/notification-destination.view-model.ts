@@ -50,7 +50,7 @@ export function isViewingNotificationDestination(
     Object.entries(params).map(([key, value]) => [key, toParamText(value)] as const),
   );
   const pathParams = new Set<string>();
-  const targetPathname = pathname.replace(DYNAMIC_SEGMENT, (_segment, name: string) => {
+  const targetPathname = pathname.replaceAll(DYNAMIC_SEGMENT, (_segment, name: string) => {
     pathParams.add(name);
     return targetParams.get(name) ?? '';
   });

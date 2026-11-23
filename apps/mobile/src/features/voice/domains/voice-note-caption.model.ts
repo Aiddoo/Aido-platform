@@ -51,7 +51,7 @@ function splitIntoCaptionSentences(text: string): string[] {
 }
 
 function removeSpaces(text: string) {
-  return text.replace(/\s/g, '');
+  return text.replaceAll(/\s/g, '');
 }
 
 // 공백을 뺀 글자 수로 센 각 조각의 시작 위치

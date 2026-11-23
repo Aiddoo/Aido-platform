@@ -38,7 +38,7 @@ const FALLBACK_NUMBER_STYLE: StoreNumberStyle = {
 
 function formatWithStyle(amount: number, style: StoreNumberStyle): string {
   const [integerPart = '0', fractionPart] = amount.toFixed(style.fractionDigits).split('.');
-  const groupedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, style.groupSeparator);
+  const groupedInteger = integerPart.replaceAll(/\B(?=(\d{3})+(?!\d))/g, style.groupSeparator);
 
   return fractionPart == null || style.decimalSeparator == null
     ? groupedInteger
