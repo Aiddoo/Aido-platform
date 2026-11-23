@@ -96,7 +96,7 @@ export class InMemoryUserPreferenceRepository extends UserPreferenceRepositoryPo
   }
 
   async save(preference: UserPreference): Promise<boolean> {
-    const userId = preference.id.value;
+    const userId = preference.userId.value;
     if (preference.isNew()) {
       const { settings, streak, consent } = preference.toPrimitives();
       if (this.#records.has(userId)) {

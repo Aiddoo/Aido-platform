@@ -115,9 +115,8 @@ export class OnTodoToggledUseCase {
       return false;
     }
 
-    const yesterdayStats = await this.#statsForDay(preference.id, today.subtract({ days: 1 }));
-    const hadYesterdayCompletion =
-      yesterdayStats.total > 0 && yesterdayStats.total === yesterdayStats.completed;
+    const yesterdayStats = await this.#statsForDay(preference.userId, today.subtract({ days: 1 }));
+    const hadYesterdayCompletion = isAllCompleted(yesterdayStats.completed, yesterdayStats.total);
     return preference.recordTodoReopened(today, hadYesterdayCompletion);
   }
 }

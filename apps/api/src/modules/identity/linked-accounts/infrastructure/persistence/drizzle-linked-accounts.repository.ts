@@ -56,7 +56,7 @@ export class DrizzleLinkedAccountsRepository extends LinkedAccountsRepositoryPor
   }
 
   async save(linkedAccounts: LinkedAccounts): Promise<boolean> {
-    const userId = linkedAccounts.id.value;
+    const userId = linkedAccounts.userId.value;
     return (
       (await this.#deleteUnlinked(userId, linkedAccounts.unlinkedSinceLoad())) &&
       (await this.#insertLinked(userId, linkedAccounts.linkedSinceLoad())) &&

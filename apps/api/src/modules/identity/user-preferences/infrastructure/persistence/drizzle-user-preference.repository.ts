@@ -55,7 +55,7 @@ export class DrizzleUserPreferenceRepository extends UserPreferenceRepositoryPor
   }
 
   async save(preference: UserPreference): Promise<boolean> {
-    const userId = preference.id.value;
+    const userId = preference.userId.value;
     if (preference.isNew()) {
       const { settings, streak, consent } = preference.toPrimitives();
       await this.#db.insert(userPreference).values({ userId, ...settings, ...streak });
