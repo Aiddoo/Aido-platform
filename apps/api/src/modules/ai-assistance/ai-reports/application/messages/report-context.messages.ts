@@ -21,7 +21,7 @@ export interface ReportPromptInput {
   readonly previousTips: readonly string[] | null;
 }
 
-export interface ReportFocusItem {
+interface ReportFocusItem {
   /** 모델이 insightKey로 되돌려 주는 값. 카테고리는 c1…, 요일은 MON… */
   readonly key: string;
   readonly name: string;

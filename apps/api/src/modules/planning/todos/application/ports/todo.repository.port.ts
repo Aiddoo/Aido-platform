@@ -26,7 +26,7 @@ export interface RebasedInstant {
   readonly scheduledTime: Temporal.Instant;
 }
 
-export type TodoSortNeighbor = "previous" | "next";
+type TodoSortNeighbor = "previous" | "next";
 
 export type TodoSortEdge = "first" | "last";
 

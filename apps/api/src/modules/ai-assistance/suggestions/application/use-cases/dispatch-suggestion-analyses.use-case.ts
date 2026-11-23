@@ -14,7 +14,7 @@ import type {
 import type { SuggestionAnalysisRunRepositoryPort } from "../ports/suggestion-analysis-run.repository.port.js";
 import { SuggestionLockKeys } from "../suggestions.lock-keys.js";
 
-export interface SuggestionAnalysisTarget {
+interface SuggestionAnalysisTarget {
   readonly userId: UserId;
   readonly timeZone: string;
 }

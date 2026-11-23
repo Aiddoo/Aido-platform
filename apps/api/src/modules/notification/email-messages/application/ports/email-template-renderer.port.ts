@@ -12,8 +12,8 @@ export interface VerificationCodeTemplateData {
   readonly expiryMinutes: number;
 }
 
-export type PasswordResetTemplateData = VerificationCodeTemplateData;
-export type PasswordSetupTemplateData = VerificationCodeTemplateData;
+type PasswordResetTemplateData = VerificationCodeTemplateData;
+type PasswordSetupTemplateData = VerificationCodeTemplateData;
 
 export interface InquiryTemplateData {
   readonly userEmail: string;

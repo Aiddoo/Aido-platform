@@ -245,10 +245,7 @@ export function resolveFeatureQuota(params: {
 }
 
 /** 요금제 하나의 기능 값. 받은 자리 없이 resolveFeatureQuota와 같은 계산이다 */
-export type PlanFeatureLimit = Pick<
-  FeatureQuotaState,
-  "allowed" | "limit" | "isFairUse" | "perUse"
->;
+type PlanFeatureLimit = Pick<FeatureQuotaState, "allowed" | "limit" | "isFairUse" | "perUse">;
 
 export type PlanComparison = Readonly<Record<Plan, PlanFeatureLimit>>;
 

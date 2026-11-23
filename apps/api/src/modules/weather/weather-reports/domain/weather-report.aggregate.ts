@@ -37,7 +37,7 @@ export interface WeatherReportCurrent {
   readonly precipitationIntensity: number;
 }
 
-export interface WeatherReportNextHourPeriod {
+interface WeatherReportNextHourPeriod {
   readonly condition: WeatherNextHourCondition;
   /** 공급자가 형태 없이 강수로만 알리면 null */
   readonly precipitationType: WeatherPrecipitationType | null;
@@ -47,7 +47,7 @@ export interface WeatherReportNextHourPeriod {
   readonly precipitationIntensity: number;
 }
 
-export interface WeatherReportMinute {
+interface WeatherReportMinute {
   readonly startsAt: Temporal.Instant;
   readonly precipitationChance: number;
   readonly precipitationIntensity: number;

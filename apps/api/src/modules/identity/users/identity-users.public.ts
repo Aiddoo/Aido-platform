@@ -9,7 +9,6 @@ export {
 export type {
   UserAccountIdentityReadModel,
   UserBriefReadModel,
-  UserSearchMatchReadModel,
 } from "./application/read-models/user-brief.read-model.js";
 export { UserMutationLockPort } from "./application/ports/user-mutation-lock.port.js";
 export { UserProfileInvalidatorPort } from "./application/ports/user-profile-invalidator.port.js";
@@ -36,7 +35,6 @@ export {
 } from "./infrastructure/persistence/user-audience.query-fragment.js";
 export { userLastActivity } from "./infrastructure/persistence/user-activity.query-fragment.js";
 export {
-  type UserRecipients,
   userLastActivityOf,
   userProfileNameOf,
   userRecipients,

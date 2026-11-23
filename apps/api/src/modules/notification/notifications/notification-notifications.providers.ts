@@ -55,7 +55,7 @@ import { DrizzleNotificationReader } from "./infrastructure/persistence/drizzle-
 import { DrizzleNotificationRepository } from "./infrastructure/persistence/drizzle-notification.repository.js";
 
 // 테스트 하네스가 발송·설정 어댑터만 바꿔 끼우도록 저장소·조회 어댑터를 따로 묶는다
-export const NOTIFICATION_NOTIFICATIONS_PERSISTENCE_PROVIDERS = [
+const NOTIFICATION_NOTIFICATIONS_PERSISTENCE_PROVIDERS = [
   { provide: NotificationRepositoryPort, useClass: DrizzleNotificationRepository },
   // 조회기 하나가 알림함 목록과 중복 발송 이력을 함께 맡는다
   DrizzleNotificationReader,
