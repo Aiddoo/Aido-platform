@@ -586,14 +586,14 @@
       }
     },
     {
-      // apps/mobile/.oxlintrc.json이 extends로 이 override를 받으면 globs는 apps/mobile 기준이라 앱 도구는 store-metadata·.maestro로 적는다
-      // plugins/(Expo config plugin)는 고치면 Expo fingerprint가 바뀌어 OTA가 막히므로 스토어 빌드 층에서만 바꾼다
+      // apps/mobile/.oxlintrc.json이 extends로 이 override를 받으면 globs는 apps/mobile 기준이라 앱 도구는 store-metadata·plugins·.maestro로 적는다
       "files": [
         "scripts/**/*.{js,mjs,cjs,ts}",
         "tooling/**/*.{js,mjs,cjs,mts,ts}",
         "turbo/generators/**/*.{mjs,ts}",
         "apps/api/scripts/**/*.{cjs,mjs,ts}",
         "store-metadata/**/*.mjs",
+        "plugins/**/*.{js,mjs}",
         ".maestro/**/scripts/*.{js,ts}"
       ],
       "rules": {

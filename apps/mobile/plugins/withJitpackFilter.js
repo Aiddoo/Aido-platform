@@ -11,7 +11,7 @@ const withJitpackFilter = (config) => {
     let buildGradle = config.modResults.contents;
 
     // 1) JitPack content filter
-    buildGradle = buildGradle.replace(
+    buildGradle = buildGradle.replaceAll(
       /maven\s*\{\s*url\s*['"]https:\/\/www\.jitpack\.io['"]\s*\}/g,
       `maven {
             url 'https://www.jitpack.io'

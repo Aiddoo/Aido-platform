@@ -7,9 +7,9 @@ const { withGradleProperties } = require('expo/config-plugins');
  * 릴리즈 빌드(Kotlin 컴파일 + lintVitalAnalyzeRelease 병렬 실행)에서
  * Metaspace가 고갈되어 `OutOfMemoryError: Metaspace`로 실패합니다.
  */
-const JVM_ARGS = '-Xmx4096m -XX:MaxMetaspaceSize=1024m -XX:+HeapDumpOnOutOfMemoryError';
+const JVM_MEMORY_OPTIONS = '-Xmx4096m -XX:MaxMetaspaceSize=1024m -XX:+HeapDumpOnOutOfMemoryError';
 
-const withGradleJvmArgs = (config) => {
+const withGradleJvmMemory = (config) => {
   return withGradleProperties(config, (config) => {
     const properties = config.modResults.filter(
       (item) => !(item.type === 'property' && item.key === 'org.gradle.jvmargs'),
@@ -18,7 +18,7 @@ const withGradleJvmArgs = (config) => {
     properties.push({
       type: 'property',
       key: 'org.gradle.jvmargs',
-      value: JVM_ARGS,
+      value: JVM_MEMORY_OPTIONS,
     });
 
     config.modResults = properties;
@@ -26,4 +26,4 @@ const withGradleJvmArgs = (config) => {
   });
 };
 
-module.exports = withGradleJvmArgs;
+module.exports = withGradleJvmMemory;
