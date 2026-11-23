@@ -5,14 +5,12 @@ import { z } from 'zod';
 import { type PushPermission, PushPermissionPolicy } from './push-permission.model';
 
 /** 이 기기가 서버에 남긴 푸시 등록. 끝난 세션의 해제는 서버가 가진 토큰과 맞아야 지워진다 */
-export const pushRegistrationSchema = z
-  .object({
-    /** 마지막으로 보고에 성공한 토큰. 거절·미결정이거나 아직 보고하지 않았으면 null */
-    reportedToken: z.string().nullable(),
-    /** 온라인 로그아웃 없이 세션이 끝나 아직 풀지 못한 해제를 요청한 시각 */
-    releaseRequestedAt: instantSchema.nullable(),
-  })
-  .strip();
+export const pushRegistrationSchema = z.object({
+  /** 마지막으로 보고에 성공한 토큰. 거절·미결정이거나 아직 보고하지 않았으면 null */
+  reportedToken: z.string().nullable(),
+  /** 온라인 로그아웃 없이 세션이 끝나 아직 풀지 못한 해제를 요청한 시각 */
+  releaseRequestedAt: instantSchema.nullable(),
+});
 export type PushRegistration = z.infer<typeof pushRegistrationSchema>;
 
 /** 보고한 적도, 풀 해제도 없는 기기 */

@@ -10,11 +10,7 @@ import { findInvalidCharacters, inviteCodeSchema } from '../domains/invite-code.
 export const inviteCodeFormSchema = z.object({
   inviteCode: z
     .string()
-    .superRefine((raw, context) => {
-      if (findInvalidCharacters(raw).length > 0) {
-        context.addIssue({ code: 'custom', message: 'invalid characters' });
-      }
-    })
+    .refine((raw) => findInvalidCharacters(raw).length === 0, { error: 'invalid characters' })
     .min(INVITE_CODE.LENGTH)
     .pipe(inviteCodeSchema),
 });
