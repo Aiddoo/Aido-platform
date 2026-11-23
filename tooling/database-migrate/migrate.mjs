@@ -1,16 +1,13 @@
 import { execFileSync } from 'node:child_process';
-import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
 
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import pg from 'pg';
 
-const require = createRequire(import.meta.url);
+import { assertDatabaseUrlIsSafe } from '../../apps/api/scripts/guard-database-url.mjs';
+
 const apiDirectory = resolve(import.meta.dirname, '../../apps/api');
-const { assertDatabaseUrlIsSafe } = require(
-  resolve(apiDirectory, 'scripts/guard-database-url.cjs'),
-);
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {

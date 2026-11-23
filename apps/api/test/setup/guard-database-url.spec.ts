@@ -1,4 +1,4 @@
-import { assertDatabaseUrlIsSafe } from "../../scripts/guard-database-url.cjs";
+import { assertDatabaseUrlIsSafe } from "../../scripts/guard-database-url.mjs";
 
 const REMOTE_URL =
   "postgresql://admin:s3cret@aido-db.abc123.ap-northeast-2.rds.amazonaws.com:5432/aido";
