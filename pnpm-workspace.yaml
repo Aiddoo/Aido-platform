@@ -115,6 +115,7 @@ catalogs:
     '@expo/material-symbols': '0.1.1'
     '@expo/metro-runtime': '~58.0.17'
     '@expo/ui': '~58.0.29'
+    '@lodev09/react-native-true-sheet': '4.1.2'
     '@react-native-community/datetimepicker': '9.2.1'
     '@react-native/jest-preset': '0.88.1'
     '@sentry/react-native': '~8.28.1'
@@ -142,7 +143,6 @@ catalogs:
     'expo-haptics': '~58.0.8'
     'expo-image': '~58.0.18'
     'expo-keep-awake': '~58.0.4'
-    'expo-linear-gradient': '~58.0.4'
     'expo-linking': '~58.0.17'
     'expo-localization': '~58.0.5'
     'expo-location': '~58.0.22'
@@ -158,7 +158,7 @@ catalogs:
     'expo-updates': '~58.0.22'
     'expo-web-browser': '~58.1.0'
     'expo-widgets': '~58.0.29'
-    'heroui-native': '1.0.11'
+    'heroui-native': '1.1.1'
     'jest': '30.5.2'
     'jest-expo': '~58.0.15'
     'react': '19.3.0'
@@ -201,7 +201,6 @@ catalogs:
 
 patchedDependencies:
   '@sentry/react-native@8.28.1': patches/@sentry__react-native@8.28.1.patch
-  '@gorhom/bottom-sheet@5.2.14': patches/@gorhom__bottom-sheet@5.2.14.patch
   react-native-screens@4.30.1: patches/react-native-screens@4.30.1.patch
   expo-widgets@58.0.29: patches/expo-widgets@58.0.29.patch
 auditConfig:
