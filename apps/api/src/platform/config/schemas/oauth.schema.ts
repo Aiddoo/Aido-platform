@@ -65,3 +65,6 @@ export function hasOAuthProvider(config: OAuthConfig): boolean {
 
   return hasGoogle || hasKakao || hasNaver || hasApple;
 }
+
+// APPLE_JWKS_URL을 비우면 이 공식 주소를 쓰고, 운영은 다른 주소를 거부한다(production-readiness.ts)
+export const APPLE_JWKS_URL = "https://appleid.apple.com/auth/keys";

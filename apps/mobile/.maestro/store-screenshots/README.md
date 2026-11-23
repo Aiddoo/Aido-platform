@@ -35,6 +35,7 @@ pnpm --filter mobile store:screens reset all     # 끝나면 데모 계정 삭�
 ## 데모 데이터 (`scripts/demo-seed.ts`, 내용은 `scripts/demo-content.json`)
 
 계정은 실제 가입 API로 만들고 이메일 인증만 로컬 DB에서 표시한다. 비밀번호는 무작위로 만들어 gitignore된 `.env.screens`에만 쓴다.
+키 이름과 셸로 주는 실행 옵션(`SCREENS_IOS_APP` 등)은 [.env.screens.example](.env.screens.example)에 있다.
 친구·과거 기록처럼 API로 만들 수 없는 것(지난 날짜 완료, 활동일, 보상 지급 결과)은 로컬 DB에 실제 지급 결과와 같은 행으로 넣는다.
 
 | 언어 | 계정                 | 이메일(@demo.aido.kr) | 내용                                                                                                |

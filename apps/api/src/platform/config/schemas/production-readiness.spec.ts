@@ -1,4 +1,5 @@
 import { validateEnv } from "./env.schema.js";
+import { APPLE_JWKS_URL } from "./oauth.schema.js";
 import { productionConfigWarnings } from "./production-readiness.js";
 
 const SECRET_VALUES = {
@@ -10,10 +11,12 @@ const SECRET_VALUES = {
   GOOGLE_CLIENT_SECRET: "google-client-secret-value",
 };
 
+const DATABASE_URL_WITHOUT_SSL_MODE = "postgresql://postgres:password@db.example.com:5432/aido";
+
 const PRODUCTION = {
   NODE_ENV: "production",
   APP_ENV: "production",
-  DATABASE_URL: "postgresql://postgres:password@db.example.com:5432/aido",
+  DATABASE_URL: `${DATABASE_URL_WITHOUT_SSL_MODE}?sslmode=verify-full`,
   GOOGLE_CLIENT_ID: "google-client-id",
   WEATHERKIT_TEAM_ID: "TEAMID1234",
   WEATHERKIT_KEY_ID: "KEYID12345",
@@ -72,6 +75,28 @@ describe("운영 시작 검증 — 위험한 조합 거부", () => {
       change: { WEATHERKIT_PRIVATE_KEY: undefined },
       key: "WEATHERKIT_PRIVATE_KEY",
     },
+    {
+      name: "sslmode 없는 DB 주소",
+      change: { DATABASE_URL: DATABASE_URL_WITHOUT_SSL_MODE },
+      key: "DATABASE_URL",
+    },
+    ...["disable", "allow", "prefer"].map((sslMode) => ({
+      name: `평문으로 물러설 수 있는 sslmode=${sslMode}`,
+      change: {
+        DATABASE_URL: `${DATABASE_URL_WITHOUT_SSL_MODE}?sslmode=${sslMode}`,
+      },
+      key: "DATABASE_URL",
+    })),
+    {
+      name: "DB 인증서 검증 끔",
+      change: { DATABASE_SSL_ALLOW_UNVERIFIED: "true" },
+      key: "DATABASE_SSL_ALLOW_UNVERIFIED",
+    },
+    {
+      name: "Apple 공식이 아닌 JWKS 주소",
+      change: { APPLE_JWKS_URL: "https://jwks.example.com/auth/keys" },
+      key: "APPLE_JWKS_URL",
+    },
   ])("$name이면 키 이름으로 시작을 거부하고 값은 싣지 않는다", ({ change, key }) => {
     // Given
     const env = { ...PRODUCTION, ...change };
@@ -84,6 +109,24 @@ describe("운영 시작 검증 — 위험한 조합 거부", () => {
     for (const secret of Object.values(SECRET_VALUES)) {
       expect(error).not.toContain(secret);
     }
+  });
+
+  it.each([
+    ...["require", "verify-ca"].map((sslMode) => ({
+      name: `sslmode=${sslMode}`,
+      change: { DATABASE_URL: `${DATABASE_URL_WITHOUT_SSL_MODE}?sslmode=${sslMode}` },
+    })),
+    { name: "Apple 공식 JWKS 주소", change: { APPLE_JWKS_URL } },
+    { name: "DB 인증서 검증 켬", change: { DATABASE_SSL_ALLOW_UNVERIFIED: "false" } },
+  ])("$name이면 운영 시작을 허용한다", ({ change }) => {
+    // Given
+    const env = { ...PRODUCTION, ...change };
+
+    // When
+    const error = startupError(env);
+
+    // Then
+    expect(error).toBe("");
   });
 
   it("APP_ENV가 없던 옛 운영 배포(NODE_ENV=production)도 같은 규칙을 지킨다", () => {

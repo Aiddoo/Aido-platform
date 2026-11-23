@@ -63,6 +63,8 @@ env를 더하거나 읽는 위치를 바꿀 때, 운영 env를 준비할 때 읽
 - `REVENUECAT_WEBHOOK_SECRET`이 없다(웹훅 서명을 검증할 수 없다).
 - 로그인 공급자가 하나도 없다, WeatherKit 네 값 중 빠진 것이 있다.
 - staging·production에서 `INVITE_ENABLED=true`인데 `INVITE_CLAIM_HASH_SECRET`이 32자 미만이다.
+- `DATABASE_URL`의 `sslmode`가 `require`·`verify-ca`·`verify-full`이 아니거나 `DATABASE_SSL_ALLOW_UNVERIFIED=true`다.
+- `APPLE_JWKS_URL`이 Apple 공식 주소가 아니다(비우면 공식 주소를 쓴다).
 
 `SENTRY_DSN`이 없으면 시작은 하고 `config.recommended-value.missing` 경고를 남긴다. 개발 도구는 로컬 실행에서만 유도해 운영에서 켤 설정이 없다. `TOKEN_ENCRYPTION_SALT`는 지금 운영이 기본 salt를 쓰므로 요구하지 않는다. 운영 env 예시 키 구성이 이 검증을 통과하는지는 `production-env.spec.ts`가 본다. 새 공급자·스위치를 더하면 "운영에서 이 값이면 안 된다"를 같은 검증에 더하고 schema spec으로 확인한다.
 
@@ -74,7 +76,7 @@ env를 더하거나 읽는 위치를 바꿀 때, 운영 env를 준비할 때 읽
 | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | DATABASE_URL                                                            | API DB. pg-boss도 같은 DB(`JOB_SCHEMA` 기본 `pgboss`). 운영은 최소 권한 역할 `aido_app`의 주소이고 migration은 `.env.migrate`의 소유자 주소로 돈다([배포](deployment.md#서버-설정과-관리)). migrate 도구만 `PGBOSS_DATABASE_URL`을 따로 받을 수 있다 |
 | DATABASE_POOL_MAX / _IDLE_TIMEOUT_MS / _CONNECTION_TIMEOUT_MS           | 10 / 비우면 pg 기본값(유휴 10초) / 연결 대기 5초                                                                                                                                                                                                     |
-| DATABASE_SSL_ALLOW_UNVERIFIED                                           | 기본 false. `sslmode`가 있으면 RDS CA(`NODE_EXTRA_CA_CERTS`)로 인증서를 검증하고, 비상시에만 true로 끈다([보안](security.md))                                                                                                                        |
+| DATABASE_SSL_ALLOW_UNVERIFIED                                           | 기본 false. `sslmode`가 있으면 RDS CA(`NODE_EXTRA_CA_CERTS`)로 인증서를 검증한다. 운영은 true면 시작을 거부한다([보안](security.md))                                                                                                                 |
 | NODE_ENV / APP_ENV                                                      | 런타임 모드 / 배포 환경. 런타임 판단은 배포 환경을 따른다([배포 환경](#배포-환경))                                                                                                                                                                   |
 | PORT                                                                    | host 기본 8080, API container 8080                                                                                                                                                                                                                   |
 | JWT_SECRET / JWT_REFRESH_SECRET / TOKEN_ENCRYPTION_KEY                  | 시작 검증에 필요한 32자 이상 값. `TOKEN_ENCRYPTION_SALT`는 선택(바꾸지 않는다)                                                                                                                                                                       |
