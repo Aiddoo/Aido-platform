@@ -9,7 +9,7 @@ export class StubTodoCommentBlockReader extends TodoCommentBlockReaderPort {
     this.#blockedPairs.add(`${blockerId}:${blockedId}`);
   }
 
-  async findBlockedCounterpartIds(
+  async listBlockedCounterpartIds(
     viewerId: UserId,
     candidateUserIds: readonly UserId[],
   ): Promise<ReadonlySet<string>> {

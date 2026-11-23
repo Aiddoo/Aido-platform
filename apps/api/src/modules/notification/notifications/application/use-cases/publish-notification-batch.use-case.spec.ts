@@ -16,7 +16,7 @@ function createUseCase() {
   const useCase = new PublishNotificationBatchUseCase({
     sendBatchNotification: sent.batch,
     todoTargetReader: {
-      findTodoTargets: async () =>
+      listTodoTargets: async () =>
         new Map([[42, { ownerId: UserId.reconstitute("owner-1"), date: "2026-10-27" }]]),
     },
   });

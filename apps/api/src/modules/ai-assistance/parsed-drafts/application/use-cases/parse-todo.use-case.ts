@@ -44,7 +44,7 @@ interface ResolvedParseTodoCommand extends Omit<ParseTodoCommand, "requestedLoca
 interface ParseTodoDependencies {
   readonly generator: Pick<AiGeneratorPort, "generate">;
   readonly consentReader: Pick<AiDataSharingConsentReaderPort, "getAiDataSharingConsent">;
-  readonly categoryReader: Pick<UserCategoryReaderPort, "findByUserId">;
+  readonly categoryReader: Pick<UserCategoryReaderPort, "listByUserId">;
   readonly quota: Pick<QuotaLedgerPort, "reserve">;
   readonly chargedGeneration: Pick<ChargedGenerationPort, "settle">;
   readonly clock: ClockPort;
@@ -103,7 +103,7 @@ export class ParseTodoUseCase {
 
     // 사용자가 카테고리를 고른 요청은 목록을 보내지 않아 토큰을 아낀다.
     const userCategories =
-      categoryId == null ? await this.#dependencies.categoryReader.findByUserId(owner) : [];
+      categoryId == null ? await this.#dependencies.categoryReader.listByUserId(owner) : [];
     const built = definition.build({ text, timezone, now: at, categories: userCategories }, locale);
     const logBase = { task: definition.id, promptVersion: definition.version, userId } as const;
 

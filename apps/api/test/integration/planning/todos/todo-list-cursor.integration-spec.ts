@@ -65,7 +65,7 @@ describe("할 일 목록 커서 (실제 PostgreSQL)", () => {
     const owner = await givenOwnerWithPublicTodos("CURSORA1", 3);
 
     // When
-    const page = await repository.findManyByUserId({
+    const page = await repository.listByUserId({
       userId: owner.userId,
       cursor: owner.todoIds[0],
       size: 10,
@@ -81,17 +81,17 @@ describe("할 일 목록 커서 (실제 PostgreSQL)", () => {
     const stranger = await givenOwnerWithPublicTodos("CURSORB1", 1);
 
     // When
-    const own = await repository.findManyByUserId({
+    const own = await repository.listByUserId({
       userId: owner.userId,
       cursor: stranger.todoIds[0],
       size: 10,
     });
-    const friend = await repository.findPublicTodosByUserId({
+    const friend = await repository.listPublicTodosByUserId({
       friendUserId: owner.userId,
       cursor: stranger.todoIds[0],
       size: 10,
     });
-    const unknown = await repository.findManyByUserId({
+    const unknown = await repository.listByUserId({
       userId: owner.userId,
       cursor: 2_147_483_647,
       size: 10,

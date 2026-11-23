@@ -27,13 +27,13 @@ import { ReminderLogEvent } from "../reminders.log-events.js";
 interface OnboardingStrategyDependencies {
   readonly reader: Pick<
     ReEngagementReaderPort,
-    "countCompletedTodosByUsers" | "findOnboardingCandidates"
+    "countCompletedTodosByUsers" | "listOnboardingCandidates"
   >;
   readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "getUserLocales">;
   readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
   readonly notificationHistoryReader: Pick<
     NotificationHistoryReaderPort,
-    "findAlreadyNotifiedUserIds"
+    "listAlreadyNotifiedUserIds"
   >;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
@@ -57,7 +57,7 @@ export class SendOnboardingUseCase implements TimezoneReminderStrategyPort {
     }
 
     // 가입 0~7일 + 해당 timezone 유저 조회
-    const users = await this.#dependencies.reader.findOnboardingCandidates({
+    const users = await this.#dependencies.reader.listOnboardingCandidates({
       timezones,
       createdSince: range.since,
     });
@@ -78,7 +78,7 @@ export class SendOnboardingUseCase implements TimezoneReminderStrategyPort {
 
     // 오늘 SYSTEM_NOTICE 중복 방지
     const alreadyNotified =
-      await this.#dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds({
+      await this.#dependencies.notificationHistoryReader.listAlreadyNotifiedUserIds({
         userIds: eligibleUsers.map(({ user }) => UserId.reconstitute(user.id)),
         type: "SYSTEM_NOTICE",
         notificationDate: today,

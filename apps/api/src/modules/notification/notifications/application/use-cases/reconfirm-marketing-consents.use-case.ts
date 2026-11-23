@@ -47,7 +47,7 @@ interface ReconfirmMarketingConsentsDependencies {
   readonly reconfirmAccess: MarketingConsentReconfirmPort;
   readonly localeReader: Pick<NotificationRecipientLocaleReaderPort, "getLocales">;
   readonly timezoneReader: NotificationRecipientTimezoneReaderPort;
-  readonly quietHoursReader: Pick<PushQuietHoursReaderPort, "findUsersInQuietHours">;
+  readonly quietHoursReader: Pick<PushQuietHoursReaderPort, "listUsersInQuietHours">;
   readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
@@ -73,13 +73,13 @@ export class ReconfirmMarketingConsentsUseCase {
     let hasRemaining = false;
 
     for (let batch = 0; batch < MARKETING_CONSENT_RECONFIRM.MAX_BATCHES_PER_RUN; batch++) {
-      const targets = await this.#dependencies.reconfirmAccess.findMarketingReconfirmTargets({
+      const targets = await this.#dependencies.reconfirmAccess.listMarketingReconfirmTargets({
         cutoff,
         ...(afterUserId != null && { afterUserId }),
         limit: MARKETING_CONSENT_RECONFIRM.BATCH_SIZE,
       });
       const targetUserIds = targets.map((target) => target.userId);
-      const quietUserIds = await this.#dependencies.quietHoursReader.findUsersInQuietHours(
+      const quietUserIds = await this.#dependencies.quietHoursReader.listUsersInQuietHours(
         targetUserIds,
         input.now,
       );

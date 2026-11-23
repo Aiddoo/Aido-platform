@@ -45,15 +45,15 @@
 
 ## Repository 메서드
 
-| 접두사              | 반환        | 비고                                 |
-| ------------------- | ----------- | ------------------------------------ |
-| `find*`             | `T \| null` | 캐시 miss도 `null`(`undefined` 금지) |
-| `list*`             | `T[]`       |                                      |
-| `count*`            | `number`    |                                      |
-| `exists*`           | `boolean`   |                                      |
-| `nextId()`          | Id VO       | 묶음은 `nextIds(count)` 한 쿼리      |
-| `save(aggregate)`   | `void`      | insert-or-update                     |
-| `delete(aggregate)` | `void`      |                                      |
+| 접두사              | 반환        | 비고                                                                        |
+| ------------------- | ----------- | --------------------------------------------------------------------------- |
+| `find*`             | `T \| null` | 캐시 miss도 `null`(`undefined` 금지)                                        |
+| `list*`             | `T[]`       | 키로 묶은 결과는 `ReadonlyMap`·`ReadonlySet`도 `list*`다. 빈 결과는 빈 묶음 |
+| `count*`            | `number`    |                                                                             |
+| `exists*`           | `boolean`   |                                                                             |
+| `nextId()`          | Id VO       | 묶음은 `nextIds(count)` 한 쿼리                                             |
+| `save(aggregate)`   | `void`      | insert-or-update                                                            |
+| `delete(aggregate)` | `void`      |                                                                             |
 
 집합 원자 연산은 업무 이름(`shiftSortOrders`)으로 짓는다. Aggregate 없이 작업 행을 옮기는 작업 원장 저장소도 같다([영속성](persistence.md#repository와-reader)). `-1` 같은 sentinel 대신 `null`을 쓴다. Repository는 로그·enqueue·캐시 정리를 하지 않는다(부수효과는 UseCase에 보이게).
 

@@ -68,7 +68,7 @@ describe("SendNudgeSuggestUseCase — 찔러보기 제안 전략", () => {
     // Then
     expect(result).toEqual({ sent: 1 });
     expect(reader.queries).toContainEqual({
-      method: "findNudgeSuggestFollows",
+      method: "listNudgeSuggestFollows",
       params: {
         candidateIds: ["user-1"],
         // 서울 현지 2024-01-09 자정부터 2024-01-14 자정까지

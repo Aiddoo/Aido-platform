@@ -10,7 +10,7 @@ import type { TodoCategoryId } from "../../domain/todo-category-id.vo.js";
 interface TodoCategoryReaderDependencies {
   readonly repository: Pick<
     TodoCategoryRepositoryPort,
-    "findManyByUserId" | "findByIdAndUserId" | "countByUserId"
+    "listByUserId" | "findByIdAndUserId" | "countByUserId"
   >;
 }
 
@@ -24,7 +24,7 @@ export class TodoCategoryReaderAdapter
   }
 
   listForUser(userId: UserId): Promise<TodoCategoryWithCountReadModel[]> {
-    return this.#dependencies.repository.findManyByUserId(userId);
+    return this.#dependencies.repository.listByUserId(userId);
   }
 
   countCategories(userId: UserId): Promise<number> {

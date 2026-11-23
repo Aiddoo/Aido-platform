@@ -19,7 +19,7 @@ export class MarketingConsentReconfirmAdapter implements MarketingConsentReconfi
     this.#userSettingsAccess = userSettingsAccess;
   }
 
-  findMarketingReconfirmTargets(params: {
+  listMarketingReconfirmTargets(params: {
     readonly cutoff: Temporal.Instant;
     readonly afterUserId?: UserId;
     readonly limit: number;

@@ -19,7 +19,7 @@ describe("PublishNotificationUseCase", () => {
     const useCase = new PublishNotificationUseCase({
       sendNotification: sent.single,
       todoTargetReader: {
-        findTodoTargets: async () =>
+        listTodoTargets: async () =>
           new Map([[42, { ownerId: UserId.reconstitute("owner-1"), date: "2026-10-27" }]]),
       },
     });

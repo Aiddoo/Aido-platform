@@ -62,7 +62,7 @@ export class DrizzleRetentionAssignmentRepository implements RetentionAssignment
     return assignment ?? null;
   }
 
-  async findByIds(
+  async listByIds(
     ids: readonly RetentionAssignmentId[],
   ): Promise<ReadonlyMap<string, RetentionAssignment>> {
     if (ids.length === 0) {
@@ -99,7 +99,7 @@ export class DrizzleRetentionAssignmentRepository implements RetentionAssignment
     return true;
   }
 
-  async findDueStages(params: {
+  async listDueStages(params: {
     readonly dueAt: Temporal.Instant;
     readonly after?: RetentionStageCursorReadModel;
     readonly limit: number;

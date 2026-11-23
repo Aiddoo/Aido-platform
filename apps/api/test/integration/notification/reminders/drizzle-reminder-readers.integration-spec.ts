@@ -133,7 +133,7 @@ describe("리마인더 Drizzle reader 주간 달성 집계·설정 조회 (실�
       });
 
       // When
-      const users = await createReader().reEngagement.findWinbackUsers({
+      const users = await createReader().reEngagement.listWinbackUsers({
         timezones: ["Asia/Seoul"],
         inactiveSince: Temporal.Instant.from("2026-10-10T00:00:00Z"),
         inactiveUntil: Temporal.Instant.from("2026-11-07T00:00:00Z"),
@@ -168,7 +168,7 @@ describe("리마인더 Drizzle reader 주간 달성 집계·설정 조회 (실�
       });
 
       // When
-      const users = await createReader().reEngagement.findStreakAtRiskUsers({
+      const users = await createReader().reEngagement.listStreakAtRiskUsers({
         timezones: ["Asia/Seoul"],
         today: TODAY,
         tomorrow: TOMORROW,
@@ -199,7 +199,7 @@ describe("리마인더 Drizzle reader 주간 달성 집계·설정 조회 (실�
       });
 
       // When
-      const users = await createReader().reEngagement.findSocialDigestCandidates({
+      const users = await createReader().reEngagement.listSocialDigestCandidates({
         timezones: ["Asia/Seoul"],
         today: TODAY,
         tomorrow: TOMORROW,
@@ -225,7 +225,7 @@ describe("리마인더 Drizzle reader 주간 달성 집계·설정 조회 (실�
       const idle = await givenReEngagementUser({ timezone: "Asia/Seoul", profileName: "쉼" });
 
       // When
-      const friends = await createReader().reEngagement.findFriendsWithTodayTodos({
+      const friends = await createReader().reEngagement.listFriendsWithTodayTodos({
         friendIds: [
           UserId.reconstitute(named),
           UserId.reconstitute(withoutProfile),
@@ -325,38 +325,38 @@ describe("리마인더 Drizzle reader 주간 달성 집계·설정 조회 (실�
       const reader = createReader();
       const reads = {
         premiumMorning: (timezones: readonly string[]) =>
-          reader.scheduledReminder.findPremiumMorningReminderUsers({
+          reader.scheduledReminder.listPremiumMorningReminderUsers({
             timezones,
             times: [{ hour: 8, minute: 0 }],
             today: TODAY,
             tomorrow: TOMORROW,
           }),
         freeMorning: (timezones: readonly string[]) =>
-          reader.scheduledReminder.findFreeMorningReminderUsers({
+          reader.scheduledReminder.listFreeMorningReminderUsers({
             timezones,
             today: TODAY,
             tomorrow: TOMORROW,
           }),
         premiumEvening: (timezones: readonly string[]) =>
-          reader.scheduledReminder.findPremiumEveningReminderUsers({
+          reader.scheduledReminder.listPremiumEveningReminderUsers({
             timezones,
             times: [{ hour: 19, minute: 0 }],
             today: TODAY,
             tomorrow: TOMORROW,
           }),
         lunchNudge: (timezones: readonly string[]) =>
-          reader.scheduledReminder.findLunchNudgeUsers({
+          reader.scheduledReminder.listLunchNudgeUsers({
             timezones,
             today: TODAY,
             tomorrow: TOMORROW,
           }),
         weatherMorning: (timezones: readonly string[]) =>
-          reader.weatherReminder.findWeatherMorningUsersWithLocation({
+          reader.weatherReminder.listWeatherMorningUsersWithLocation({
             timezones,
             times: [{ hour: 8, minute: 0 }],
           }),
         activeUsers: (timezones: readonly string[]) =>
-          reader.reEngagement.findActiveUsersInTimezones(timezones),
+          reader.reEngagement.listActiveUsersInTimezones(timezones),
       };
 
       for (const [name, read] of Object.entries(reads)) {
@@ -376,19 +376,19 @@ describe("리마인더 Drizzle reader 주간 달성 집계·설정 조회 (실�
       const reader = createReader();
 
       // When
-      const morning = await reader.scheduledReminder.findPremiumMorningReminderUsers({
+      const morning = await reader.scheduledReminder.listPremiumMorningReminderUsers({
         timezones: GROUP,
         times: [{ hour: 8, minute: 0 }],
         today: TODAY,
         tomorrow: TOMORROW,
       });
-      const evening = await reader.scheduledReminder.findPremiumEveningReminderUsers({
+      const evening = await reader.scheduledReminder.listPremiumEveningReminderUsers({
         timezones: GROUP,
         times: [{ hour: 19, minute: 0 }],
         today: TODAY,
         tomorrow: TOMORROW,
       });
-      const weather = await reader.weatherReminder.findWeatherMorningUsersWithLocation({
+      const weather = await reader.weatherReminder.listWeatherMorningUsersWithLocation({
         timezones: GROUP,
         times: [{ hour: 8, minute: 0 }],
       });

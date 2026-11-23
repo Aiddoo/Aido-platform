@@ -14,12 +14,12 @@ import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-st
 import { ReminderLogEvent } from "../reminders.log-events.js";
 
 interface WeeklyReportStrategyDependencies {
-  readonly reader: Pick<ScheduledReminderReaderPort, "findWeeklyReportRecipients">;
+  readonly reader: Pick<ScheduledReminderReaderPort, "listWeeklyReportRecipients">;
   readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "getUserLocales">;
   readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
   readonly notificationHistoryReader: Pick<
     NotificationHistoryReaderPort,
-    "findAlreadyNotifiedUserIds"
+    "listAlreadyNotifiedUserIds"
   >;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
@@ -36,7 +36,7 @@ export class SendWeeklyReportUseCase implements TimezoneReminderStrategyPort {
     const weekAgo = today.subtract({ days: 7 });
 
     // 오케스트레이터가 월요일 09:00에만 호출 → 프리미엄 유저 대상
-    const users = await this.#dependencies.reader.findWeeklyReportRecipients({
+    const users = await this.#dependencies.reader.listWeeklyReportRecipients({
       timezones,
       periodStart: weekAgo,
       periodEnd: today,
@@ -47,7 +47,7 @@ export class SendWeeklyReportUseCase implements TimezoneReminderStrategyPort {
     }
 
     const alreadyNotified =
-      await this.#dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds({
+      await this.#dependencies.notificationHistoryReader.listAlreadyNotifiedUserIds({
         userIds: users.map((u) => UserId.reconstitute(u.id)),
         type: "WEEKLY_REPORT",
         notificationDate: today,

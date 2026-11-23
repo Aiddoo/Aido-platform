@@ -45,7 +45,7 @@ interface ListTodoCommentThreadsDependencies {
   readonly reader: Pick<TodoCommentReaderPort, "findComment">;
   readonly threadReader: Pick<TodoCommentThreadReaderPort, "listThreads">;
   readonly likeReader: Pick<TodoCommentLikeReaderPort, "listLikedCommentIds">;
-  readonly blockReader: Pick<TodoCommentBlockReaderPort, "findBlockedCounterpartIds">;
+  readonly blockReader: Pick<TodoCommentBlockReaderPort, "listBlockedCounterpartIds">;
   readonly cursorCodec: Pick<TodoCommentCursorCodecPort, "decodeThreads" | "encodeThreads">;
 }
 
@@ -84,7 +84,7 @@ export class ListTodoCommentThreadsUseCase {
     );
     const [likedCommentIds, blockedAuthorIds] = await Promise.all([
       likeReader.listLikedCommentIds(listCommentIds(comments), viewerId),
-      blockReader.findBlockedCounterpartIds(viewerId, [
+      blockReader.listBlockedCounterpartIds(viewerId, [
         ...listCommentAuthorIds(comments),
         ...window.items.flatMap((item) =>
           item.participantAuthors.map((author) => UserId.reconstitute(author.id)),

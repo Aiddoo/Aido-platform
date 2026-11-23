@@ -36,10 +36,10 @@ export async function activateRetentionAssignment(
 }
 
 export async function retentionAssignmentOf(
-  repository: Pick<RetentionAssignmentRepositoryPort, "findByIds">,
+  repository: Pick<RetentionAssignmentRepositoryPort, "listByIds">,
   assignmentId: string,
 ): Promise<RetentionAssignment> {
-  const assignments = await repository.findByIds([
+  const assignments = await repository.listByIds([
     RetentionAssignmentId.reconstitute(assignmentId),
   ]);
   const assignment = assignments.get(assignmentId);

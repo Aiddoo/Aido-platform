@@ -57,8 +57,8 @@ type ParsedMemo = Omit<ParsedDraftReadModel<ParsedMemoTodo>, "featureQuota">;
 interface ParseMemoDependencies {
   readonly generator: Pick<AiGeneratorPort, "generate">;
   readonly consentReader: Pick<AiDataSharingConsentReaderPort, "getAiDataSharingConsent">;
-  readonly categoryReader: Pick<UserCategoryReaderPort, "findByUserId">;
-  readonly upcomingTodoReader: Pick<UpcomingTodoReaderPort, "findByUserId">;
+  readonly categoryReader: Pick<UserCategoryReaderPort, "listByUserId">;
+  readonly upcomingTodoReader: Pick<UpcomingTodoReaderPort, "listByUserId">;
   readonly quota: Pick<QuotaLedgerPort, "reserve" | "reopen">;
   readonly chargedGeneration: Pick<ChargedGenerationPort, "settle">;
   readonly clock: ClockPort;
@@ -119,8 +119,8 @@ export class ParseMemoUseCase {
     const at = instantToDate(this.#dependencies.clock.now());
 
     const [userCategories, upcomingTodos] = await Promise.all([
-      this.#dependencies.categoryReader.findByUserId(owner),
-      this.#dependencies.upcomingTodoReader.findByUserId(owner, timezone),
+      this.#dependencies.categoryReader.listByUserId(owner),
+      this.#dependencies.upcomingTodoReader.listByUserId(owner, timezone),
     ]);
     const built = buildWithinLimit(
       definition,

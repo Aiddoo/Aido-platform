@@ -18,10 +18,7 @@ interface StagedTodoCreatorDependencies {
   readonly writeSeries: Pick<WriteTodoSeriesUseCase, "execute">;
   readonly publishCreated: Pick<PublishTodoCreatedUseCase, "execute">;
   readonly publishSeriesStarted: Pick<PublishTodoSeriesStartedUseCase, "execute">;
-  readonly todoReadRepository: Pick<
-    TodoReadRepositoryPort,
-    "findByIdAndUserId" | "findManyBySeriesId"
-  >;
+  readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findByIdAndUserId" | "listBySeriesId">;
   readonly timezoneResolver: Pick<ResolveTodoTimezoneUseCase, "execute">;
 }
 
@@ -67,7 +64,7 @@ export class StageTodoCreationUseCase {
     repeat: NonNullable<CreateTodoData["repeat"]>,
   ): Promise<StagedTodoCreation> {
     const started = await this.#dependencies.writeSeries.execute({ data: input, repeat });
-    const todos = await this.#dependencies.todoReadRepository.findManyBySeriesId(
+    const todos = await this.#dependencies.todoReadRepository.listBySeriesId(
       input.userId,
       started.series.id,
     );

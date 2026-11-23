@@ -9,7 +9,7 @@ export interface MarketingReconfirmRecipient {
 // 광고성 수신 동의 2년 재확인 대상 조회·표시(identity 동의 기록에 연결)
 export abstract class MarketingConsentReconfirmPort {
   // 활성 사용자 중 광고성 동의(또는 마지막 재확인)가 cutoff 이전인 사용자를 userId 순으로 읽는다
-  abstract findMarketingReconfirmTargets(params: {
+  abstract listMarketingReconfirmTargets(params: {
     readonly cutoff: Temporal.Instant;
     readonly afterUserId?: UserId;
     readonly limit: number;

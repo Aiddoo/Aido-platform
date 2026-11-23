@@ -38,11 +38,11 @@ export abstract class UserNotificationSettingsPort {
   abstract upsertPushTimezone(userId: UserId, timezone: string): Promise<void>;
   abstract upsertPushLocale(userId: UserId, locale: string): Promise<void>;
   abstract findPreferenceReadModel(userId: UserId): Promise<NotificationDeliveryPreference | null>;
-  abstract findPreferenceReadModelsByUserIds(
+  abstract listPreferenceReadModelsByUserIds(
     userIds: readonly UserId[],
   ): Promise<NotificationDeliveryPreferenceWithUserId[]>;
   abstract findConsentReadModel(userId: UserId): Promise<NotificationMarketingConsent | null>;
-  abstract findConsentReadModelsByUserIds(
+  abstract listConsentReadModelsByUserIds(
     userIds: readonly UserId[],
   ): Promise<NotificationMarketingConsentWithUserId[]>;
   abstract updateMarketingPushConsent(userId: UserId, agreed: boolean): Promise<void>;

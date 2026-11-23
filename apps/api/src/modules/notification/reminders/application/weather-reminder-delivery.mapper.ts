@@ -29,7 +29,7 @@ export interface WeatherReminderDeliveryDependencies {
   readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
   readonly notificationHistoryReader: Pick<
     NotificationHistoryReaderPort,
-    "findAlreadyNotifiedUserIds"
+    "listAlreadyNotifiedUserIds"
   >;
 }
 
@@ -84,7 +84,7 @@ export async function filterUnnotifiedWeatherUsers<TUser extends { readonly id: 
   if (users.length === 0) {
     return [];
   }
-  const alreadyNotified = await historyReader.findAlreadyNotifiedUserIds({
+  const alreadyNotified = await historyReader.listAlreadyNotifiedUserIds({
     userIds: users.map((user) => UserId.reconstitute(user.id)),
     type,
     notificationDate: today,

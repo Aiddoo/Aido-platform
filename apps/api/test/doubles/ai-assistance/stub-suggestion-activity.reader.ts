@@ -8,11 +8,11 @@ export class StubSuggestionActivityReader extends SuggestionActivityReaderPort {
   todos: TodoSummaryForAnalysis[] = [];
   history: SuggestionHistoryItem[] = [];
 
-  async findRecentTodos(): Promise<TodoSummaryForAnalysis[]> {
+  async listRecentTodos(): Promise<TodoSummaryForAnalysis[]> {
     return structuredClone(this.todos);
   }
 
-  async findRecentResponded(): Promise<SuggestionHistoryItem[]> {
+  async listRecentResponded(): Promise<SuggestionHistoryItem[]> {
     return structuredClone(this.history);
   }
 }

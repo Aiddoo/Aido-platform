@@ -325,7 +325,7 @@ describe("Planning 카테고리 상태·조회·트랜잭션 (실제 PostgreSQL)
     await unitOfWork.run(() => provisioner.seed(UserId.reconstitute(userId), locale));
 
     // Then
-    const categories = await repository.findManyByUserId(UserId.reconstitute(userId));
+    const categories = await repository.listByUserId(UserId.reconstitute(userId));
     expect(categories.map(({ name }) => name)).toEqual(expect.arrayContaining([...names]));
   });
 });

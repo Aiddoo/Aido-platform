@@ -131,7 +131,7 @@ export class DrizzleNudgeRepository implements NudgeRepositoryPort {
   }
 
   async findTargetTodo(todoId: TodoId): Promise<NudgeTargetTodo | null> {
-    const [todo] = await this.#todoBriefReader.findByIds([todoId]);
+    const [todo] = await this.#todoBriefReader.listByIds([todoId]);
     return todo == null ? null : toNudgeTargetTodo(todo);
   }
 

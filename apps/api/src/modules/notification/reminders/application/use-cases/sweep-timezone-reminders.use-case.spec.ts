@@ -80,7 +80,7 @@ class StubPreferenceReader extends SchedulerPreferenceReaderPort {
   timezones: string[] = [];
   failWith: Error | null = null;
 
-  async findActiveTimezones(): Promise<string[]> {
+  async listActiveTimezones(): Promise<string[]> {
     if (this.failWith != null) {
       throw this.failWith;
     }
@@ -309,7 +309,7 @@ describe("타임존 리마인더 — 매분 sweep·시각 변경 따라잡기·�
 
       // Then
       const premiumQueries = reader.queries.filter(
-        ({ method }) => method === "findPremiumMorningReminderUsers",
+        ({ method }) => method === "listPremiumMorningReminderUsers",
       );
       expect(premiumQueries).toHaveLength(5);
       expect(premiumQueries.flatMap(({ params }) => params.timezones).toSorted()).toEqual(

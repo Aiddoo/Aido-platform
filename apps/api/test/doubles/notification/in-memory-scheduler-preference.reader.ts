@@ -28,7 +28,7 @@ export class InMemorySchedulerPreferenceReader extends SchedulerPreferenceReader
     return `preference-user-${this.#sequence}`;
   }
 
-  async findActiveTimezones(): Promise<string[]> {
+  async listActiveTimezones(): Promise<string[]> {
     const timezones = new Set([...this.#preferences.values()].map(({ timezone }) => timezone));
     return [...timezones].filter((timezone) => normalizeIanaTimezone(timezone) != null);
   }

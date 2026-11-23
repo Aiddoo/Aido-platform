@@ -25,7 +25,7 @@ export function describeSchedulerPreferenceReaderContract(
       await subject.givenPreference({ timezone: "Invalid/Timezone", locale: "ko" });
 
       // When
-      const timezones = await subject.reader.findActiveTimezones();
+      const timezones = await subject.reader.listActiveTimezones();
 
       // Then
       expect(timezones.toSorted()).toEqual(["America/New_York", "Asia/Seoul", "US/Eastern"]);

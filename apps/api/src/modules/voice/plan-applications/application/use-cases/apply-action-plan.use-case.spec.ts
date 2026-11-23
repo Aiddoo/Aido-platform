@@ -87,7 +87,7 @@ function setup(ownedCategoryIds: readonly number[] = [1]) {
       },
     },
     contextReader: {
-      findOwnedCategoryIds: async () => {
+      listOwnedCategoryIds: async () => {
         order.push("categories");
         return new Set(ownedCategoryIds);
       },
@@ -120,7 +120,7 @@ function setup(ownedCategoryIds: readonly number[] = [1]) {
       },
     },
     todoReader: {
-      findManyByIds: async (_userId, ids) => ids.map((id) => todoResponse(id.value)),
+      listByIds: async (_userId, ids) => ids.map((id) => todoResponse(id.value)),
     },
     clock: new FixedClock(Temporal.Instant.from("2027-01-04T00:00:00Z")),
     logger: new SilentLogger(),

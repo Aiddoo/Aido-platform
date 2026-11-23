@@ -32,7 +32,7 @@ interface ListTodoCommentRepliesDependencies {
   readonly reader: Pick<TodoCommentReaderPort, "findComment">;
   readonly replyReader: Pick<TodoCommentReplyReaderPort, "listReplies">;
   readonly likeReader: Pick<TodoCommentLikeReaderPort, "listLikedCommentIds">;
-  readonly blockReader: Pick<TodoCommentBlockReaderPort, "findBlockedCounterpartIds">;
+  readonly blockReader: Pick<TodoCommentBlockReaderPort, "listBlockedCounterpartIds">;
   readonly cursorCodec: Pick<TodoCommentCursorCodecPort, "decodeReplies" | "encodeReplies">;
 }
 
@@ -70,7 +70,7 @@ export class ListTodoCommentRepliesUseCase {
 
     const [likedCommentIds, blockedAuthorIds] = await Promise.all([
       likeReader.listLikedCommentIds(listCommentIds(window.items), viewerId),
-      blockReader.findBlockedCounterpartIds(viewerId, listCommentAuthorIds(window.items)),
+      blockReader.listBlockedCounterpartIds(viewerId, listCommentAuthorIds(window.items)),
     ]);
     const first = window.items.at(0);
     const last = window.items.at(-1);

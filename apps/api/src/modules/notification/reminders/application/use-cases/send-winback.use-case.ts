@@ -23,12 +23,12 @@ import type { WinbackUserReadModel } from "../read-models/scheduler.read-model.j
 import { ReminderLogEvent } from "../reminders.log-events.js";
 
 interface WinbackStrategyDependencies {
-  readonly reader: Pick<ReEngagementReaderPort, "findWinbackUsers">;
+  readonly reader: Pick<ReEngagementReaderPort, "listWinbackUsers">;
   readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "getUserLocales">;
   readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
   readonly notificationHistoryReader: Pick<
     NotificationHistoryReaderPort,
-    "findAlreadyNotifiedUserIds" | "findWinbackStagesSince"
+    "listAlreadyNotifiedUserIds" | "listWinbackStagesSince"
   >;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
@@ -56,7 +56,7 @@ export class SendWinbackUseCase implements TimezoneReminderStrategyPort {
     }
 
     // 3~30일 미접속 유저
-    const users = await this.#dependencies.reader.findWinbackUsers({
+    const users = await this.#dependencies.reader.listWinbackUsers({
       timezones,
       inactiveSince: range.since,
       inactiveUntil: range.until,
@@ -68,7 +68,7 @@ export class SendWinbackUseCase implements TimezoneReminderStrategyPort {
 
     // 오늘 WINBACK 중복 방지
     const alreadyNotified =
-      await this.#dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds({
+      await this.#dependencies.notificationHistoryReader.listAlreadyNotifiedUserIds({
         userIds: users.map((u) => UserId.reconstitute(u.id)),
         type: "WINBACK",
         notificationDate: today,
@@ -82,7 +82,7 @@ export class SendWinbackUseCase implements TimezoneReminderStrategyPort {
 
     const checks = toWinbackChecks(filteredUsers, today);
     // 단계는 쉬는 동안 한 번씩이다. 마지막 활동 뒤 받은 단계를 한 번에 읽는다
-    const sentStages = await this.#dependencies.notificationHistoryReader.findWinbackStagesSince({
+    const sentStages = await this.#dependencies.notificationHistoryReader.listWinbackStagesSince({
       recipients: checks.map(({ userId, lastActiveAt }) => ({
         userId: UserId.reconstitute(userId),
         since: lastActiveAt,

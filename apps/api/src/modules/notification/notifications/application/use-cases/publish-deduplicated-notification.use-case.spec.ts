@@ -19,7 +19,7 @@ describe("PublishDeduplicatedNotificationUseCase", () => {
     const useCase = new PublishDeduplicatedNotificationUseCase({
       sendNotificationWithDeduplication: sent.deduplicated,
       todoTargetReader: {
-        findTodoTargets: async () =>
+        listTodoTargets: async () =>
           new Map([[42, { ownerId: UserId.reconstitute("owner-1"), date: "2026-10-27" }]]),
       },
     });

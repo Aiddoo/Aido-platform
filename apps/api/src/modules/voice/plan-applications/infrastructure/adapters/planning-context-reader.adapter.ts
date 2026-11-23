@@ -27,7 +27,7 @@ function toPlanningTimeZone(raw: string): TimeZone {
 @Injectable()
 export class PlanningContextReaderAdapter implements PlanningContextReaderPort {
   readonly #categoryReader: Pick<TodoCategoryReaderPort, "listForUser">;
-  readonly #todoReader: Pick<TodoPlanReaderPort, "findUpcoming">;
+  readonly #todoReader: Pick<TodoPlanReaderPort, "listUpcoming">;
   readonly #clock: ClockPort;
 
   constructor(
@@ -44,7 +44,7 @@ export class PlanningContextReaderAdapter implements PlanningContextReaderPort {
     const today = localDateOf(this.#clock.now(), toPlanningTimeZone(timezone));
     const [categories, upcomingTodos] = await Promise.all([
       this.#categoryReader.listForUser(userId),
-      this.#todoReader.findUpcoming(userId, {
+      this.#todoReader.listUpcoming(userId, {
         fromDate: today,
         limit: PLANNING_UPCOMING_TODO_LIMIT,
       }),
@@ -57,7 +57,7 @@ export class PlanningContextReaderAdapter implements PlanningContextReaderPort {
     };
   }
 
-  async findOwnedCategoryIds(userId: UserId): Promise<ReadonlySet<number>> {
+  async listOwnedCategoryIds(userId: UserId): Promise<ReadonlySet<number>> {
     const categories = await this.#categoryReader.listForUser(userId);
     return new Set(categories.map((category) => category.id));
   }

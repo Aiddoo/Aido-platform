@@ -39,7 +39,7 @@ export class KasiSunTimeAdapter implements SunTimeProviderPort {
     this.#policy = policies.get(KASI_POLICY);
   }
 
-  async getSunTime(lat: number, lon: number, at: Temporal.Instant): Promise<SunTime | null> {
+  async findSunTime(lat: number, lon: number, at: Temporal.Instant): Promise<SunTime | null> {
     try {
       const apiKey = this.#config.kmaApiKey;
       if (apiKey == null || apiKey === "") {

@@ -50,7 +50,7 @@ interface GetTodoConversationDependencies {
   readonly reader: Pick<TodoCommentReaderPort, "listComments">;
   readonly conversationReader: Pick<TodoConversationReaderPort, "listConversation">;
   readonly likeReader: Pick<TodoCommentLikeReaderPort, "listLikedCommentIds">;
-  readonly blockReader: Pick<TodoCommentBlockReaderPort, "findBlockedCounterpartIds">;
+  readonly blockReader: Pick<TodoCommentBlockReaderPort, "listBlockedCounterpartIds">;
   readonly cursorCodec: Pick<
     TodoCommentCursorCodecPort,
     "decodeConversation" | "encodeConversation"
@@ -110,7 +110,7 @@ export class GetTodoConversationUseCase {
     const visibleComments = [...window.items, ...precedingThreadComments];
     const [likedCommentIds, blockedAuthorIds] = await Promise.all([
       likeReader.listLikedCommentIds(listCommentIds(visibleComments), viewerId),
-      blockReader.findBlockedCounterpartIds(viewerId, listCommentAuthorIds(visibleComments)),
+      blockReader.listBlockedCounterpartIds(viewerId, listCommentAuthorIds(visibleComments)),
     ]);
     const first = window.items.at(0);
     const last = window.items.at(-1);

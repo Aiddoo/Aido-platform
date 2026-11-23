@@ -324,7 +324,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     const recent = await fixture("recent");
 
     // When
-    const pending = await old.receipts.findPendingTicketIds({
+    const pending = await old.receipts.listPendingTicketIds({
       channel: "EXPO",
       window: pushReceiptCheckWindow(AT_INSTANT, EXPO_PUSH_CHANNEL_CONFIG.timing.receipt),
       limit: 1,
@@ -345,7 +345,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     const window = pushReceiptCheckWindow(AT_INSTANT, EXPO_PUSH_CHANNEL_CONFIG.timing.receipt);
 
     // When
-    const pending = await expo.receipts.findPendingTicketIds({
+    const pending = await expo.receipts.listPendingTicketIds({
       channel: "EXPO",
       window,
       limit: 900,
@@ -372,7 +372,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     });
 
     // When
-    const pending = await waiting.receipts.findPendingTicketIds({
+    const pending = await waiting.receipts.listPendingTicketIds({
       channel: "EXPO",
       window: pushReceiptCheckWindow(AT_INSTANT, EXPO_PUSH_CHANNEL_CONFIG.timing.receipt),
       limit: 900,
@@ -430,7 +430,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
       results: [],
       checkedAt: AT_INSTANT,
     });
-    const pending = await stuck.receipts.findPendingTicketIds({
+    const pending = await stuck.receipts.listPendingTicketIds({
       channel: "EXPO",
       window: pushReceiptCheckWindow(AT_INSTANT, EXPO_PUSH_CHANNEL_CONFIG.timing.receipt),
       limit: 1,

@@ -10,7 +10,7 @@ import {
 } from "../../domain/quiet-hours.domain-service.js";
 
 interface PushQuietHoursReaderAdapterDependencies {
-  readonly userSettings: Pick<UserNotificationSettingsPort, "findPreferenceReadModelsByUserIds">;
+  readonly userSettings: Pick<UserNotificationSettingsPort, "listPreferenceReadModelsByUserIds">;
 }
 
 // 발송 경로와 같은 배송 시간대 해석과 야간 판정으로 사용자를 한 번에 고른다
@@ -21,7 +21,7 @@ export class PushQuietHoursReaderAdapter implements PushQuietHoursReaderPort {
     this.#dependencies = dependencies;
   }
 
-  async findUsersInQuietHours(
+  async listUsersInQuietHours(
     users: readonly UserId[],
     instant: Temporal.Instant,
   ): Promise<ReadonlySet<string>> {
@@ -31,7 +31,7 @@ export class PushQuietHoursReaderAdapter implements PushQuietHoursReaderPort {
 
     const userIds = users.map((user) => user.value);
     const preferences =
-      await this.#dependencies.userSettings.findPreferenceReadModelsByUserIds(users);
+      await this.#dependencies.userSettings.listPreferenceReadModelsByUserIds(users);
     const timezones = new Map(
       preferences.map((preference) => [preference.userId.value, preference.timezone]),
     );

@@ -52,7 +52,7 @@ export class InMemoryWeeklyAchievementStatsReader extends WeeklyAchievementStats
     return this.#countTodoDaysByUser(params, (todo) => todo.completed);
   }
 
-  async findFreeRecipientIds(userIds: readonly UserId[]): Promise<Set<string>> {
+  async listFreeRecipientIds(userIds: readonly UserId[]): Promise<Set<string>> {
     return new Set(
       userIds
         .map((userId) => userId.value)

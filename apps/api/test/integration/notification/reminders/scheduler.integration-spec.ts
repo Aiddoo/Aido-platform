@@ -72,7 +72,7 @@ describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
 
   // ── Port mocks ──────────────────────────────────────────────────────
   const mockPreferenceReader = {
-    findActiveTimezones: vi.fn(),
+    listActiveTimezones: vi.fn(),
     getUserLocales: vi.fn(),
   };
 
@@ -131,7 +131,7 @@ describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
     vi.clearAllMocks();
 
     // 기본: 활성 타임존 조회 결과
-    mockPreferenceReader.findActiveTimezones.mockResolvedValue(["Asia/Seoul"]);
+    mockPreferenceReader.listActiveTimezones.mockResolvedValue(["Asia/Seoul"]);
   });
 
   afterEach(() => {
@@ -262,7 +262,7 @@ describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
       // Given
       vi.setSystemTime(new Date("2026-03-15T23:00:00Z"));
 
-      mockPreferenceReader.findActiveTimezones.mockResolvedValue([
+      mockPreferenceReader.listActiveTimezones.mockResolvedValue([
         "America/New_York",
         "Asia/Seoul",
       ]);
@@ -295,7 +295,7 @@ describe("SweepTimezoneRemindersUseCase 통합 테스트 (Mock 포트)", () => {
     it("활성 타임존 없는 경우 — 전략이 실행되지 않는다", async () => {
       // Given
       vi.setSystemTime(new Date("2026-03-15T23:00:00Z"));
-      mockPreferenceReader.findActiveTimezones.mockResolvedValue([]);
+      mockPreferenceReader.listActiveTimezones.mockResolvedValue([]);
 
       // When
       await orchestrator.execute();

@@ -4,12 +4,12 @@ import { InMemoryNotificationRepository } from "#test/doubles/notification/in-me
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createInboxNotificationFixture } from "#test/fixtures/notification/notification.fixture";
 
-import type { FindAlreadyNotifiedUserIdsQuery } from "../../application/ports/notification-history.reader.port.js";
+import type { ListAlreadyNotifiedUserIdsQuery } from "../../application/ports/notification-history.reader.port.js";
 import { CachedNotificationHistoryAdapter } from "./cached-notification-history.adapter.js";
 
 const NOTIFICATION_DATE = Temporal.PlainDate.from("2026-03-09");
 
-const query: FindAlreadyNotifiedUserIdsQuery = {
+const query: ListAlreadyNotifiedUserIdsQuery = {
   userIds: [UserId.reconstitute("user-1"), UserId.reconstitute("user-2")],
   type: "FRIEND_COMPLETED",
   notificationDate: NOTIFICATION_DATE,
@@ -48,7 +48,7 @@ describe("CachedNotificationHistoryAdapter — 이미 알림 받은 사용자 �
     ]);
 
     // When
-    const result = await reader.findAlreadyNotifiedUserIds(query);
+    const result = await reader.listAlreadyNotifiedUserIds(query);
 
     // Then
     expect(result).toEqual(new Set(["user-1"]));
@@ -59,7 +59,7 @@ describe("CachedNotificationHistoryAdapter — 이미 알림 받은 사용자 �
     const { reader, notificationDeduplication } = setup();
 
     // When
-    const result = await reader.findAlreadyNotifiedUserIds(query);
+    const result = await reader.listAlreadyNotifiedUserIds(query);
 
     // Then
     expect(result).toEqual(new Set(["user-2"]));

@@ -67,7 +67,7 @@ describe("SendEveningReminderUseCase — 저녁 리마인더 전략", () => {
     });
     expect(reader.queries).toEqual([
       {
-        method: "findPremiumEveningReminderUsers",
+        method: "listPremiumEveningReminderUsers",
         params: expect.objectContaining({
           timezones: ["Asia/Seoul"],
           times: [{ hour: 20, minute: 30 }],
@@ -97,8 +97,8 @@ describe("SendEveningReminderUseCase — 저녁 리마인더 전략", () => {
       recipients: [{ userId: TEST_CUID.USER_2, timezone: "Asia/Seoul" }],
     });
     expect(reader.queriedMethods()).toEqual([
-      "findPremiumEveningReminderUsers",
-      "findFreeEveningReminderUsers",
+      "listPremiumEveningReminderUsers",
+      "listFreeEveningReminderUsers",
     ]);
   });
 
@@ -116,7 +116,7 @@ describe("SendEveningReminderUseCase — 저녁 리마인더 전략", () => {
 
     // Then
     expect(result).toEqual({ sent: 0, recipients: [] });
-    expect(reader.queriedMethods()).toEqual(["findPremiumEveningReminderUsers"]);
+    expect(reader.queriedMethods()).toEqual(["listPremiumEveningReminderUsers"]);
   });
 
   it("어제 완료하고 오늘도 전체 완료한 사용자는 이어진 연속 기록으로 완료 메시지를 받는다", async () => {

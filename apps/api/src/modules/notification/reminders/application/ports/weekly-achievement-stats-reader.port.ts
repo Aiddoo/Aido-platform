@@ -14,5 +14,5 @@ export abstract class WeeklyAchievementStatsReaderPort {
   abstract groupTotalTodosByUser(params: WeeklyStatsParams): Promise<UserTodoCountReadModel[]>;
   abstract groupCompletedTodosByUser(params: WeeklyStatsParams): Promise<UserTodoCountReadModel[]>;
   /** 주간 달성 푸시 대상인 무료(비구독·비관리자) 사용자 ID */
-  abstract findFreeRecipientIds(userIds: readonly UserId[]): Promise<Set<string>>;
+  abstract listFreeRecipientIds(userIds: readonly UserId[]): Promise<Set<string>>;
 }

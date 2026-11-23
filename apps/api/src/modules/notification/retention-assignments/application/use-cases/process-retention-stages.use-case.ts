@@ -38,7 +38,7 @@ export const RETENTION_STAGE_SWEEP = {
 interface ProcessRetentionStagesDependencies {
   readonly repository: Pick<
     RetentionAssignmentRepositoryPort,
-    "findByIds" | "findDueStages" | "save"
+    "listByIds" | "listDueStages" | "save"
   >;
   readonly notificationPublisher: Pick<PublishNotificationUseCase, "execute">;
   readonly config: Pick<RetentionConfigPort, "enabled">;
@@ -61,12 +61,12 @@ export class ProcessRetentionStagesUseCase {
     const dueAt = this.#now();
     let after: RetentionStageCursorReadModel | undefined;
     for (let batch = 0; batch < RETENTION_STAGE_SWEEP.MAX_BATCHES_PER_RUN; batch++) {
-      const candidates = await this.#dependencies.repository.findDueStages({
+      const candidates = await this.#dependencies.repository.listDueStages({
         dueAt,
         ...(after != null && { after }),
         limit: RETENTION_STAGE_SWEEP.BATCH_SIZE,
       });
-      const assignments = await this.#dependencies.repository.findByIds(
+      const assignments = await this.#dependencies.repository.listByIds(
         uniqBy(candidates, (candidate) => candidate.assignmentId).map((candidate) =>
           RetentionAssignmentId.reconstitute(candidate.assignmentId),
         ),

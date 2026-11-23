@@ -124,7 +124,7 @@ export class InMemoryFriendReader extends FriendReaderPort {
       .length;
   }
 
-  async findRelationsWith(
+  async listRelationsWith(
     viewerId: UserId,
     userIds: readonly UserId[],
   ): Promise<FriendRelationReadModel[]> {

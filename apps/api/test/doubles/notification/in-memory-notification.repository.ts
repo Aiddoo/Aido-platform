@@ -3,9 +3,9 @@ import { isPlainObject, uniq } from "es-toolkit";
 import { duplicateNotification } from "#api/modules/notification/notifications/application/notifications.errors";
 import type {
   ExistsRecentNotificationQuery,
-  FindAlreadyNotifiedUserIdsQuery,
-  FindNudgeSuggestedFriendsQuery,
-  FindWinbackStagesSinceQuery,
+  ListAlreadyNotifiedUserIdsQuery,
+  ListNudgeSuggestedFriendsQuery,
+  ListWinbackStagesSinceQuery,
   NotificationHistoryReaderPort,
 } from "#api/modules/notification/notifications/application/ports/notification-history.reader.port";
 import type {
@@ -282,7 +282,7 @@ export class InMemoryNotificationRepository
     );
   }
 
-  async findAlreadyNotifiedUserIds(query: FindAlreadyNotifiedUserIdsQuery): Promise<Set<string>> {
+  async listAlreadyNotifiedUserIds(query: ListAlreadyNotifiedUserIdsQuery): Promise<Set<string>> {
     const { notificationDate } = query;
     return new Set(
       [...this.#rows.values()]
@@ -298,8 +298,8 @@ export class InMemoryNotificationRepository
     );
   }
 
-  async findWinbackStagesSince(
-    query: FindWinbackStagesSinceQuery,
+  async listWinbackStagesSince(
+    query: ListWinbackStagesSinceQuery,
   ): Promise<ReadonlyMap<string, ReadonlySet<string>>> {
     const stagesByUserId = new Map<string, Set<string>>();
     for (const { userId, since } of query.recipients) {
@@ -319,8 +319,8 @@ export class InMemoryNotificationRepository
     return stagesByUserId;
   }
 
-  async findNudgeSuggestedFriends(
-    query: FindNudgeSuggestedFriendsQuery,
+  async listNudgeSuggestedFriends(
+    query: ListNudgeSuggestedFriendsQuery,
   ): Promise<ReadonlyMap<string, ReadonlySet<string>>> {
     const friendsByUserId = new Map<string, Set<string>>();
     for (const row of this.#rows.values()) {

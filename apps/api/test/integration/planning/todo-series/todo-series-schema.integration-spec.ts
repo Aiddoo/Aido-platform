@@ -630,12 +630,12 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
         }),
       );
       // When
-      const first = await repository().findDueBatch({
+      const first = await repository().listDueBatch({
         through: Temporal.PlainDate.from("2026-12-01"),
         afterId: null,
         limit: 2,
       });
-      const second = await repository().findDueBatch({
+      const second = await repository().listDueBatch({
         through: Temporal.PlainDate.from("2026-12-01"),
         afterId: first.at(-1)?.id ?? null,
         limit: 2,

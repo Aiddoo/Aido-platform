@@ -7,8 +7,8 @@ import type { NotificationTodoTargetReaderPort } from "./ports/notification-todo
 
 function createTodoTargetReader(
   targets = new Map([[42, { ownerId: UserId.reconstitute("owner-1"), date: "2026-10-27" }]]),
-): Pick<NotificationTodoTargetReaderPort, "findTodoTargets"> {
-  return { findTodoTargets: vi.fn().mockResolvedValue(targets) };
+): Pick<NotificationTodoTargetReaderPort, "listTodoTargets"> {
+  return { listTodoTargets: vi.fn().mockResolvedValue(targets) };
 }
 
 describe("withTodoTargets", () => {
@@ -22,7 +22,7 @@ describe("withTodoTargets", () => {
 
     // Then
     expect(result).toEqual([input]);
-    expect(todoTargetReader.findTodoTargets).not.toHaveBeenCalled();
+    expect(todoTargetReader.listTodoTargets).not.toHaveBeenCalled();
   });
 
   it("할 일 알림은 기존 metadata를 지키며 할 일 주인과 날짜를 더하고 지워진 할 일은 그대로 둔다", async () => {

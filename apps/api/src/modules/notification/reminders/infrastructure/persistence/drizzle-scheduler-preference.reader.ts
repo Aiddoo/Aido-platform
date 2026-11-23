@@ -29,7 +29,7 @@ export class DrizzleSchedulerPreferenceReader implements SchedulerPreferenceRead
     this.#cacheService = cacheService;
   }
 
-  async findActiveTimezones(): Promise<string[]> {
+  async listActiveTimezones(): Promise<string[]> {
     return this.#cacheService.wrap({
       key: ReminderCacheKey.activeTimezones(),
       schema: z.array(z.string()),

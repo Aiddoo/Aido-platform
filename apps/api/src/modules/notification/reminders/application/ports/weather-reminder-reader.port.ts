@@ -16,16 +16,16 @@ export interface WeatherReminderParams {
 }
 
 export abstract class WeatherReminderReaderPort {
-  abstract findWeatherMorningUsersWithLocation(
+  abstract listWeatherMorningUsersWithLocation(
     params: WeatherReminderParams,
   ): Promise<WeatherReminderUserReadModel[]>;
-  abstract findWeatherMorningFallbackUsers(
+  abstract listWeatherMorningFallbackUsers(
     params: WeatherReminderParams,
   ): Promise<WeatherFallbackUserReadModel[]>;
-  abstract findWeatherEveningUsersWithLocation(
+  abstract listWeatherEveningUsersWithLocation(
     params: WeatherReminderParams,
   ): Promise<WeatherReminderUserReadModel[]>;
-  abstract findWeatherEveningFallbackUsers(
+  abstract listWeatherEveningFallbackUsers(
     params: WeatherReminderParams,
   ): Promise<WeatherFallbackUserReadModel[]>;
 }

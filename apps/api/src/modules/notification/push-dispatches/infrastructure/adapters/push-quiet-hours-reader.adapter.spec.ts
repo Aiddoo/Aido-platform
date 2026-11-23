@@ -5,7 +5,7 @@ import { PushQuietHoursReaderAdapter } from "./push-quiet-hours-reader.adapter.j
 function createReader(timezones: Readonly<Record<string, string>>) {
   return new PushQuietHoursReaderAdapter({
     userSettings: {
-      findPreferenceReadModelsByUserIds: async (users) =>
+      listPreferenceReadModelsByUserIds: async (users) =>
         users.flatMap(({ value: userId }) => {
           const timezone = timezones[userId];
           if (timezone == null) {
@@ -48,7 +48,7 @@ describe("PushQuietHoursReaderAdapter", () => {
     const at = Temporal.Instant.from("2028-02-26T17:00:00.000Z");
 
     // When
-    const quiet = await reader.findUsersInQuietHours(
+    const quiet = await reader.listUsersInQuietHours(
       ["seoul", "losAngeles", "legacyUtc", "missing"].map((userId) => UserId.reconstitute(userId)),
       at,
     );
@@ -74,7 +74,7 @@ describe("PushQuietHoursReaderAdapter", () => {
     const reader = createReader({ losAngeles: "America/Los_Angeles" });
 
     // When
-    const result = await reader.findUsersInQuietHours(
+    const result = await reader.listUsersInQuietHours(
       [UserId.reconstitute("losAngeles")],
       Temporal.Instant.from(at),
     );

@@ -6,9 +6,9 @@ import { NotificationLogEvent } from "../../application/notifications.log-events
 import type { NotificationDeduplicationPort } from "../../application/ports/notification-deduplication.port.js";
 import type {
   ExistsRecentNotificationQuery,
-  FindAlreadyNotifiedUserIdsQuery,
-  FindNudgeSuggestedFriendsQuery,
-  FindWinbackStagesSinceQuery,
+  ListAlreadyNotifiedUserIdsQuery,
+  ListNudgeSuggestedFriendsQuery,
+  ListWinbackStagesSinceQuery,
   NotificationHistoryReaderPort,
 } from "../../application/ports/notification-history.reader.port.js";
 
@@ -33,7 +33,7 @@ export class CachedNotificationHistoryAdapter implements NotificationHistoryRead
     return this.#dependencies.databaseReader.existsRecentNotification(query);
   }
 
-  async findAlreadyNotifiedUserIds(params: FindAlreadyNotifiedUserIdsQuery): Promise<Set<string>> {
+  async listAlreadyNotifiedUserIds(params: ListAlreadyNotifiedUserIdsQuery): Promise<Set<string>> {
     const knownRecipients = await this.#dependencies.notificationDeduplication.readKnownRecipients(
       params.type,
       params.notificationDate,
@@ -43,7 +43,7 @@ export class CachedNotificationHistoryAdapter implements NotificationHistoryRead
       return knownRecipients;
     }
 
-    const fromDatabase = await this.#dependencies.databaseReader.findAlreadyNotifiedUserIds(params);
+    const fromDatabase = await this.#dependencies.databaseReader.listAlreadyNotifiedUserIds(params);
     this.#dependencies.notificationDeduplication
       .warmRecipients(
         params.type,
@@ -60,16 +60,16 @@ export class CachedNotificationHistoryAdapter implements NotificationHistoryRead
   }
 
   // 단계·주마다 한 번인 재방문 알림은 배포로 비는 메모리가 아니라 알림 행으로 판단한다
-  findWinbackStagesSince(
-    query: FindWinbackStagesSinceQuery,
+  listWinbackStagesSince(
+    query: ListWinbackStagesSinceQuery,
   ): Promise<ReadonlyMap<string, ReadonlySet<string>>> {
-    return this.#dependencies.databaseReader.findWinbackStagesSince(query);
+    return this.#dependencies.databaseReader.listWinbackStagesSince(query);
   }
 
-  findNudgeSuggestedFriends(
-    query: FindNudgeSuggestedFriendsQuery,
+  listNudgeSuggestedFriends(
+    query: ListNudgeSuggestedFriendsQuery,
   ): Promise<ReadonlyMap<string, ReadonlySet<string>>> {
-    return this.#dependencies.databaseReader.findNudgeSuggestedFriends(query);
+    return this.#dependencies.databaseReader.listNudgeSuggestedFriends(query);
   }
 
   hasMilestoneNotification(userId: UserId, milestone: NotificationMilestone): Promise<boolean> {

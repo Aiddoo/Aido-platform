@@ -26,7 +26,7 @@ export class TodoSeriesOwnerAdapter implements TodoSeriesOwnerPort {
     this.#entitlementReader = entitlementReader;
   }
 
-  async findOperatingOwners(
+  async listOperatingOwners(
     userIds: readonly UserId[],
   ): Promise<ReadonlyMap<string, SeriesOwnerActivity>> {
     const accounts = await this.#activityReader.listActiveAccounts(userIds);

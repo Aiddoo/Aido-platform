@@ -73,7 +73,7 @@ export class InMemoryTodoOccurrenceWriter extends TodoOccurrenceWriterPort {
     return created;
   }
 
-  async findOccurrencesFrom(
+  async listOccurrencesFrom(
     seriesIds: readonly TodoSeriesId[],
     fromDate: string,
   ): Promise<readonly TodoOccurrenceReadModel[]> {
@@ -108,7 +108,7 @@ export class InMemoryTodoOccurrenceWriter extends TodoOccurrenceWriterPort {
     if (isEmptyObject(values)) {
       return 0;
     }
-    const open = (await this.findOccurrencesFrom([seriesId], fromDate)).filter(
+    const open = (await this.listOccurrencesFrom([seriesId], fromDate)).filter(
       (row) => !row.completed,
     );
     for (const row of open) {

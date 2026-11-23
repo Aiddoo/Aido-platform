@@ -25,7 +25,7 @@ export interface GetWeatherConditionsDependencies {
   readonly userLocationRepository: Pick<UserLocationRepositoryPort, "findByUserId">;
   readonly airQualityProvider: Pick<AirQualityProviderPort, "findAirQuality">;
   readonly lifestyleIndexProvider: Pick<LifestyleIndexProviderPort, "getIndex">;
-  readonly sunTimeProvider: Pick<SunTimeProviderPort, "getSunTime">;
+  readonly sunTimeProvider: Pick<SunTimeProviderPort, "findSunTime">;
   readonly readWeatherForecast: Pick<ReadWeatherForecastUseCase, "execute">;
   readonly weatherProvider: Pick<WeatherForecastProviderPort, "timeZone">;
   readonly weatherCache: Pick<WeatherForecastCachePort, "findConditions" | "setConditions">;
@@ -66,7 +66,7 @@ export class GetWeatherConditionsUseCase {
         currentTemp,
         windSpeed,
       }),
-      this.#dependencies.sunTimeProvider.getSunTime(location.latitude, location.longitude, target),
+      this.#dependencies.sunTimeProvider.findSunTime(location.latitude, location.longitude, target),
     ]);
 
     const air = airResult.status === "fulfilled" ? airResult.value : null;

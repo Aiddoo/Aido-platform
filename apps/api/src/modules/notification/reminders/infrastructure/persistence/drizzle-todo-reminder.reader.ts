@@ -18,7 +18,7 @@ export class DrizzleTodoReminderReader implements TodoReminderReaderPort {
     this.#transactionHost = transactionHost;
   }
 
-  async findActiveTodos(
+  async listActiveTodos(
     todoIds: readonly TodoId[],
   ): Promise<ReadonlyMap<number, ActiveTodoReadModel>> {
     if (todoIds.length === 0) {

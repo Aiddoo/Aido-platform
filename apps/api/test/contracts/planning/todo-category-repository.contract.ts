@@ -132,7 +132,7 @@ export function describeTodoCategoryRepositoryContract(
       await context.seedTodo(later.id.value);
 
       // When
-      const list = await context.categoryRepository.findManyByUserId(
+      const list = await context.categoryRepository.listByUserId(
         UserId.reconstitute(TODO_FIXTURE_USER_ID),
       );
       const single = await context.categoryRepository.findByIdWithCount(later.id);

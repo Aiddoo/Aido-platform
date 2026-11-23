@@ -337,7 +337,7 @@ export function describeTodoRepositoryContract(
         seriesId,
         [{ title: "물병 채우기" }, { title: "마시기" }],
       );
-      const rows = await context.occurrenceWriter.findOccurrencesFrom([seriesId], "2026-11-10");
+      const rows = await context.occurrenceWriter.listOccurrencesFrom([seriesId], "2026-11-10");
 
       // Then
       expect(created).toEqual([

@@ -35,16 +35,16 @@ export class StubReEngagementReader extends ReEngagementReaderPort {
   streakAtRiskUsers: UserWithTodosAndStreakReadModel[] = [];
   readonly queries: ReEngagementQuery[] = [];
 
-  async findWinbackUsers(params: InactiveWindowParams): Promise<WinbackUserReadModel[]> {
-    this.queries.push({ method: "findWinbackUsers", params });
+  async listWinbackUsers(params: InactiveWindowParams): Promise<WinbackUserReadModel[]> {
+    this.queries.push({ method: "listWinbackUsers", params });
     return this.winbackUsers;
   }
 
-  async findOnboardingCandidates(params: {
+  async listOnboardingCandidates(params: {
     timezones: readonly string[];
     createdSince: Temporal.Instant;
   }): Promise<OnboardingCandidateReadModel[]> {
-    this.queries.push({ method: "findOnboardingCandidates", params });
+    this.queries.push({ method: "listOnboardingCandidates", params });
     return this.onboardingCandidates;
   }
 
@@ -54,58 +54,58 @@ export class StubReEngagementReader extends ReEngagementReaderPort {
     return this.completedTodoCounts.filter((row) => userIds.includes(row.userId));
   }
 
-  async findActiveUsersInTimezones(timezones: readonly string[]): Promise<ActiveUserReadModel[]> {
-    this.queries.push({ method: "findActiveUsersInTimezones", params: [...timezones] });
+  async listActiveUsersInTimezones(timezones: readonly string[]): Promise<ActiveUserReadModel[]> {
+    this.queries.push({ method: "listActiveUsersInTimezones", params: [...timezones] });
     return this.activeUsers;
   }
 
-  async findNudgeSuggestFollows(params: {
+  async listNudgeSuggestFollows(params: {
     candidateIds: readonly UserId[];
     activeSince: Temporal.Instant;
     activeUntil: Temporal.Instant;
   }): Promise<NudgeSuggestFollowReadModel[]> {
     const candidateIds = params.candidateIds.map((candidateId) => candidateId.value);
-    this.queries.push({ method: "findNudgeSuggestFollows", params: { ...params, candidateIds } });
+    this.queries.push({ method: "listNudgeSuggestFollows", params: { ...params, candidateIds } });
     return this.nudgeSuggestFollows.filter(
       (follow) =>
         candidateIds.includes(follow.followerId) || candidateIds.includes(follow.followingId),
     );
   }
 
-  async findSocialDigestCandidates(
+  async listSocialDigestCandidates(
     params: SocialDigestCandidateParams,
   ): Promise<SocialDigestCandidateReadModel[]> {
     const recipientUserIds = params.recipientUserIds.map((userId) => userId.value);
     this.queries.push({
-      method: "findSocialDigestCandidates",
+      method: "listSocialDigestCandidates",
       params: { ...params, recipientUserIds },
     });
     return this.socialDigestCandidates.filter((user) => recipientUserIds.includes(user.id));
   }
 
-  async findAcceptedFollows(candidates: readonly UserId[]): Promise<FollowPairReadModel[]> {
+  async listAcceptedFollows(candidates: readonly UserId[]): Promise<FollowPairReadModel[]> {
     const candidateIds = candidates.map((candidateId) => candidateId.value);
-    this.queries.push({ method: "findAcceptedFollows", params: candidateIds });
+    this.queries.push({ method: "listAcceptedFollows", params: candidateIds });
     return this.acceptedFollows.filter(
       (follow) =>
         candidateIds.includes(follow.followerId) || candidateIds.includes(follow.followingId),
     );
   }
 
-  async findFriendsWithTodayTodos(params: {
+  async listFriendsWithTodayTodos(params: {
     friendIds: readonly UserId[];
     today: Temporal.PlainDate;
     tomorrow: Temporal.PlainDate;
   }): Promise<FriendWithTodosReadModel[]> {
     const friendIds = params.friendIds.map((friendId) => friendId.value);
-    this.queries.push({ method: "findFriendsWithTodayTodos", params: { ...params, friendIds } });
+    this.queries.push({ method: "listFriendsWithTodayTodos", params: { ...params, friendIds } });
     return this.friendsWithTodayTodos.filter((friend) => friendIds.includes(friend.id));
   }
 
-  async findStreakAtRiskUsers(
+  async listStreakAtRiskUsers(
     params: TodayRangeParams,
   ): Promise<UserWithTodosAndStreakReadModel[]> {
-    this.queries.push({ method: "findStreakAtRiskUsers", params });
+    this.queries.push({ method: "listStreakAtRiskUsers", params });
     return this.streakAtRiskUsers;
   }
 

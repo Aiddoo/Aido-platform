@@ -156,13 +156,13 @@ describe("친구 완료 알림의 commit 후 영속 발행 (컴포넌트)", () =
       upsertPushTimezone: vi.fn(),
       upsertPushLocale: vi.fn(),
       findPreferenceReadModel: vi.fn(),
-      findPreferenceReadModelsByUserIds: vi.fn().mockResolvedValue([]),
+      listPreferenceReadModelsByUserIds: vi.fn().mockResolvedValue([]),
       findConsentReadModel: vi.fn(),
-      findConsentReadModelsByUserIds: vi.fn(),
+      listConsentReadModelsByUserIds: vi.fn(),
       updateMarketingPushConsent: vi.fn(),
     };
     const notificationHistoryReader = {
-      findAlreadyNotifiedUserIds: vi.fn().mockResolvedValue(new Set<string>()),
+      listAlreadyNotifiedUserIds: vi.fn().mockResolvedValue(new Set<string>()),
     };
     executePublish = vi.fn(async (input) => {
       expect(unitOfWork.storage.getStore()?.closed).toBe(true);

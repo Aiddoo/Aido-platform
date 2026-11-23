@@ -77,8 +77,8 @@ describe("SendMorningReminderUseCase — 아침 리마인더 전략", () => {
     // Then
     expect(result).toEqual({ sent: 1 });
     expect(reader.queriedMethods()).toEqual([
-      "findPremiumMorningReminderUsers",
-      "findFreeMorningReminderUsers",
+      "listPremiumMorningReminderUsers",
+      "listFreeMorningReminderUsers",
     ]);
     expect(sent().map(({ userId }) => userId)).toEqual([TEST_CUID.USER_2]);
   });
@@ -93,7 +93,7 @@ describe("SendMorningReminderUseCase — 아침 리마인더 전략", () => {
 
     // Then
     expect(result).toEqual({ sent: 0 });
-    expect(reader.queriedMethods()).toEqual(["findPremiumMorningReminderUsers"]);
+    expect(reader.queriedMethods()).toEqual(["listPremiumMorningReminderUsers"]);
   });
 
   it("특정 사용자만 다시 보는 catch-up에서는 08:00이어도 무료 사용자를 조회하지 않는다", async () => {
@@ -112,7 +112,7 @@ describe("SendMorningReminderUseCase — 아침 리마인더 전략", () => {
     expect(result).toEqual({ sent: 0 });
     expect(reader.queries).toEqual([
       {
-        method: "findPremiumMorningReminderUsers",
+        method: "listPremiumMorningReminderUsers",
         params: expect.objectContaining({ userId: UserId.reconstitute(TEST_CUID.USER_1) }),
       },
     ]);

@@ -20,12 +20,12 @@ import { ReminderLogEvent } from "../reminders.log-events.js";
  * 고정 시간(12:30) 전용 — 프리미엄 커스텀 시간 미지원.
  */
 interface LunchNudgeStrategyDependencies {
-  readonly reader: Pick<ScheduledReminderReaderPort, "findLunchNudgeUsers">;
+  readonly reader: Pick<ScheduledReminderReaderPort, "listLunchNudgeUsers">;
   readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "getUserLocales">;
   readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
   readonly notificationHistoryReader: Pick<
     NotificationHistoryReaderPort,
-    "findAlreadyNotifiedUserIds"
+    "listAlreadyNotifiedUserIds"
   >;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
@@ -41,7 +41,7 @@ export class SendLunchNudgeUseCase implements TimezoneReminderStrategyPort {
     const { timezones, today, tomorrow } = timezoneContext;
 
     // 오늘 할일이 있지만 완료가 0개인 유저 조회
-    const users = await this.#dependencies.reader.findLunchNudgeUsers({
+    const users = await this.#dependencies.reader.listLunchNudgeUsers({
       timezones,
       today,
       tomorrow,
@@ -53,7 +53,7 @@ export class SendLunchNudgeUseCase implements TimezoneReminderStrategyPort {
 
     // 중복 방지
     const alreadyNotified =
-      await this.#dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds({
+      await this.#dependencies.notificationHistoryReader.listAlreadyNotifiedUserIds({
         userIds: users.map((u) => UserId.reconstitute(u.id)),
         type: "LUNCH_NUDGE",
         notificationDate: today,

@@ -77,7 +77,7 @@ export class InMemoryTodoSeriesRepository extends TodoSeriesRepositoryPort {
       (series) => series.userId.equals(userId) && series.isActive(),
     );
   }
-  async findDueBatch(query: DueTodoSeriesQuery): Promise<readonly TodoSeriesRef[]> {
+  async listDueBatch(query: DueTodoSeriesQuery): Promise<readonly TodoSeriesRef[]> {
     return [...this.store.values()]
       .filter((series) => {
         const next = series.nextOccurrenceDate;
@@ -91,7 +91,7 @@ export class InMemoryTodoSeriesRepository extends TodoSeriesRepositoryPort {
       .sort((left, right) => left.id.value.localeCompare(right.id.value))
       .slice(0, query.limit);
   }
-  async findIdsBehind(
+  async listIdsBehind(
     userId: UserId,
     through: Temporal.PlainDate,
   ): Promise<readonly TodoSeriesId[]> {

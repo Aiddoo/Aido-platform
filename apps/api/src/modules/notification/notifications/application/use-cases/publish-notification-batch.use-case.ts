@@ -6,7 +6,7 @@ import type { SendBatchNotificationUseCase } from "./send-batch-notification.use
 
 interface PublishNotificationBatchDependencies {
   readonly sendBatchNotification: Pick<SendBatchNotificationUseCase, "execute">;
-  readonly todoTargetReader: Pick<NotificationTodoTargetReaderPort, "findTodoTargets">;
+  readonly todoTargetReader: Pick<NotificationTodoTargetReaderPort, "listTodoTargets">;
 }
 
 // 정기 알림·관리자 공지처럼 여러 사람에게 한 번에 만드는 발행이다

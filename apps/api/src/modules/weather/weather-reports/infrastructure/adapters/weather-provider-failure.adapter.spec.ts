@@ -78,7 +78,7 @@ describe("날씨 공급자 어댑터 — 실패 응답 처리", () => {
       const adapter = new KasiSunTimeAdapter(CONFIG, createHttp(respond), createPolicies());
 
       // When
-      const result = await adapter.getSunTime(
+      const result = await adapter.findSunTime(
         37.5665,
         126.978,
         Temporal.Instant.from("2026-07-23T00:00:00Z"),

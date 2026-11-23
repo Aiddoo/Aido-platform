@@ -211,10 +211,10 @@ describe.each(SUPPORTED_LOCALES)("%s 주간 성취 문구의 기간", (locale) =
           return [{ userId, count: 8 }];
         },
         groupCompletedTodosByUser: async () => [{ userId, count: 3 }],
-        findFreeRecipientIds: async () => new Set([userId]),
+        listFreeRecipientIds: async () => new Set([userId]),
       },
       preferenceReader: { getUserLocales: async () => () => locale },
-      notificationHistoryReader: { findAlreadyNotifiedUserIds: async () => new Set() },
+      notificationHistoryReader: { listAlreadyNotifiedUserIds: async () => new Set() },
       weeklyAchievementWriter: {
         execute: async (input) => {
           writtenRecords.push(input.records);

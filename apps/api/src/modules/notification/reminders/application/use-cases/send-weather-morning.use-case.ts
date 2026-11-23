@@ -46,13 +46,13 @@ const NOTIFICATION_TYPE = "WEATHER_MORNING";
 interface WeatherMorningStrategyDependencies {
   readonly reader: Pick<
     WeatherReminderReaderPort,
-    "findWeatherMorningFallbackUsers" | "findWeatherMorningUsersWithLocation"
+    "listWeatherMorningFallbackUsers" | "listWeatherMorningUsersWithLocation"
   >;
   readonly todoReader: Pick<WeatherBriefingTodoReaderPort, "listTodayTodos">;
   readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
   readonly notificationHistoryReader: Pick<
     NotificationHistoryReaderPort,
-    "findAlreadyNotifiedUserIds"
+    "listAlreadyNotifiedUserIds"
   >;
   readonly weatherReportReader: Pick<ReminderWeatherReportReaderPort, "readReports">;
   readonly clock: Pick<ClockPort, "now">;
@@ -170,7 +170,7 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
   }
 
   async #findTargets(timezoneContext: TimezoneContext, today: Temporal.PlainDate) {
-    const rows = await this.#dependencies.reader.findWeatherMorningUsersWithLocation({
+    const rows = await this.#dependencies.reader.listWeatherMorningUsersWithLocation({
       timezones: timezoneContext.timezones,
       times: timezoneContext.reminderTimes,
       userId:
@@ -209,7 +209,7 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
     timezoneContext: TimezoneContext,
     today: Temporal.PlainDate,
   ): Promise<number> {
-    const users = await this.#dependencies.reader.findWeatherMorningFallbackUsers({
+    const users = await this.#dependencies.reader.listWeatherMorningFallbackUsers({
       timezones: timezoneContext.timezones,
       times: timezoneContext.reminderTimes,
       userId:

@@ -37,7 +37,7 @@ export interface TodoSummaryResult {
 interface GetTodoSummaryDependencies {
   readonly todoReadRepository: Pick<
     TodoReadRepositoryPort,
-    "getTodayTodoStats" | "findTodayTopTodos"
+    "getTodayTodoStats" | "listTodayTopTodos"
   >;
   readonly streakPort: Pick<StreakPort, "getStreakContext">;
   readonly seriesCatchUp: Pick<CatchUpTodoSeriesUseCase, "execute">;
@@ -62,7 +62,7 @@ export class GetTodoSummaryUseCase {
     const [stats, topTodos, streakContext] = await Promise.all([
       this.#dependencies.todoReadRepository.getTodayTodoStats(ownerId, date),
 
-      this.#dependencies.todoReadRepository.findTodayTopTodos(
+      this.#dependencies.todoReadRepository.listTodayTopTodos(
         ownerId,
         date,
         TODAY_SUMMARY_TOP_TODOS_MAX,

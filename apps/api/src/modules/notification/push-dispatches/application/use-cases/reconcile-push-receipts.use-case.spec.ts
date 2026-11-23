@@ -38,7 +38,7 @@ class StubReceiptRepository implements ReceiptRepository {
   readonly expiredBefore: Temporal.Instant[] = [];
   expiredCount = 0;
 
-  async findPendingTicketIds({
+  async listPendingTicketIds({
     window,
     limit,
   }: {

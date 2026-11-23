@@ -117,17 +117,17 @@ export function describeTodoSeriesRepositoryContract(
       const active = await context.seriesRepository.countActiveByUserId(
         UserId.reconstitute(TODO_FIXTURE_USER_ID),
       );
-      const firstBatch = await context.seriesRepository.findDueBatch({
+      const firstBatch = await context.seriesRepository.listDueBatch({
         through: Temporal.PlainDate.from("2026-11-11"),
         afterId: null,
         limit: 1,
       });
-      const nextBatch = await context.seriesRepository.findDueBatch({
+      const nextBatch = await context.seriesRepository.listDueBatch({
         through: Temporal.PlainDate.from("2026-11-11"),
         afterId: firstBatch.at(-1)?.id ?? null,
         limit: 5,
       });
-      const behind = await context.seriesRepository.findIdsBehind(
+      const behind = await context.seriesRepository.listIdsBehind(
         UserId.reconstitute(TODO_FIXTURE_USER_ID),
         Temporal.PlainDate.from("2026-11-10"),
       );

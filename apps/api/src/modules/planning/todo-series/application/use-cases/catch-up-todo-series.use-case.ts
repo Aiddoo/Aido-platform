@@ -18,8 +18,8 @@ export const TODO_SERIES_CATCH_UP_BUDGET = {
 } as const;
 
 interface TodoSeriesCatchUpDependencies {
-  readonly seriesRepository: Pick<TodoSeriesRepositoryPort, "findIdsBehind">;
-  readonly seriesOwner: Pick<TodoSeriesOwnerPort, "findOperatingOwners">;
+  readonly seriesRepository: Pick<TodoSeriesRepositoryPort, "listIdsBehind">;
+  readonly seriesOwner: Pick<TodoSeriesOwnerPort, "listOperatingOwners">;
   readonly clock: ClockPort;
   readonly dueRunner: Pick<MaterializeTodoSeriesUseCase, "execute">;
   readonly logger: Pick<ApplicationLoggerPort, "log" | "warn">;
@@ -72,10 +72,10 @@ export class CatchUpTodoSeriesUseCase {
     const { seriesRepository, seriesOwner, logger } = this.#dependencies;
     try {
       const ownerId = UserId.reconstitute(userId);
-      const behindIds = await seriesRepository.findIdsBehind(ownerId, through);
+      const behindIds = await seriesRepository.listIdsBehind(ownerId, through);
       // 세션 캐시(30초) 동안은 정지·탈퇴 대기 계정의 토큰도 통과한다.
       const seriesIds =
-        behindIds.length > 0 && (await seriesOwner.findOperatingOwners([ownerId])).has(userId)
+        behindIds.length > 0 && (await seriesOwner.listOperatingOwners([ownerId])).has(userId)
           ? behindIds
           : [];
       const { createdCount, failedCount, timedOut } = await this.#materializeAll(userId, seriesIds);

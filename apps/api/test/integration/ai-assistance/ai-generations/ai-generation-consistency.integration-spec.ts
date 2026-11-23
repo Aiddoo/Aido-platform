@@ -322,7 +322,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       );
 
       // When
-      const todos = await activity.findRecentTodos(
+      const todos = await activity.listRecentTodos(
         UserId.reconstitute(userId),
         suggestionAnalysisPeriod({ at, timeZone: timezone }),
       );

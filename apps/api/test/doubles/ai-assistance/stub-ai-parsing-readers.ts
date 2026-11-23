@@ -9,7 +9,7 @@ export class StubAiUserCategoryReader implements UserCategoryReaderPort {
   readonly categories = new Map<string, Array<{ id: number; name: string }>>();
   readCount = 0;
   failWith: Error | null = null;
-  async findByUserId(userId: UserId): Promise<Array<{ id: number; name: string }>> {
+  async listByUserId(userId: UserId): Promise<Array<{ id: number; name: string }>> {
     this.readCount += 1;
     const failure = this.failWith;
     if (failure != null) {
@@ -21,8 +21,8 @@ export class StubAiUserCategoryReader implements UserCategoryReaderPort {
 }
 
 export class StubUpcomingTodoReader implements UpcomingTodoReaderPort {
-  todos: Awaited<ReturnType<UpcomingTodoReaderPort["findByUserId"]>> = [];
-  async findByUserId() {
+  todos: Awaited<ReturnType<UpcomingTodoReaderPort["listByUserId"]>> = [];
+  async listByUserId() {
     return this.todos;
   }
 }

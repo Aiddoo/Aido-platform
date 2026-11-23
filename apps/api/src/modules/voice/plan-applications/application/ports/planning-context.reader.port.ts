@@ -4,5 +4,5 @@ import type { PlanningContextReadModel } from "../read-models/planning-context.r
 
 export abstract class PlanningContextReaderPort {
   abstract read(userId: UserId, timezone: string): Promise<PlanningContextReadModel>;
-  abstract findOwnedCategoryIds(userId: UserId): Promise<ReadonlySet<number>>;
+  abstract listOwnedCategoryIds(userId: UserId): Promise<ReadonlySet<number>>;
 }

@@ -58,7 +58,7 @@ export abstract class TodoOccurrenceWriterPort {
   ): Promise<readonly CreatedOccurrence[]>;
 
   // fromDate 이후(포함) 회차를 회차 날짜 순으로 준다. 옮긴 회차도 원래 회차 날짜로 찾는다
-  abstract findOccurrencesFrom(
+  abstract listOccurrencesFrom(
     seriesIds: readonly TodoSeriesId[],
     fromDate: string,
   ): Promise<readonly TodoOccurrenceReadModel[]>;

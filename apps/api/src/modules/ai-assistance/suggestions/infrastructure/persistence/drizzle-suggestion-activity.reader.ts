@@ -25,7 +25,7 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
     this.#transactionHost = transactionHost;
   }
 
-  async findRecentTodos(
+  async listRecentTodos(
     userId: UserId,
     period: SuggestionAnalysisPeriod,
   ): Promise<TodoSummaryForAnalysis[]> {
@@ -50,7 +50,7 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
     }));
   }
 
-  async findRecentResponded(
+  async listRecentResponded(
     userId: UserId,
     since: Temporal.Instant,
   ): Promise<SuggestionHistoryItem[]> {

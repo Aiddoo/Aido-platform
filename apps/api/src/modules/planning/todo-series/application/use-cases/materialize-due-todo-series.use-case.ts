@@ -45,7 +45,7 @@ const EMPTY_RESULT: MaterializeDueTodoSeriesResult = {
 };
 
 interface MaterializeDueTodoSeriesDependencies {
-  readonly seriesRepository: Pick<TodoSeriesRepositoryPort, "findDueBatch">;
+  readonly seriesRepository: Pick<TodoSeriesRepositoryPort, "listDueBatch">;
   readonly seriesOwner: TodoSeriesOwnerPort;
   readonly dueRunner: Pick<MaterializeTodoSeriesUseCase, "execute">;
   readonly alert: OperationalAlertPort;
@@ -83,7 +83,7 @@ export class MaterializeDueTodoSeriesUseCase {
     let totals: MaterializeDueTodoSeriesResult = EMPTY_RESULT;
 
     while (!totals.timedOut) {
-      const dueBatch: readonly TodoSeriesRef[] = await seriesRepository.findDueBatch({
+      const dueBatch: readonly TodoSeriesRef[] = await seriesRepository.listDueBatch({
         through,
         afterId,
         limit: batchSize,
@@ -112,7 +112,7 @@ export class MaterializeDueTodoSeriesUseCase {
     isPastDeadline: () => boolean,
   ): Promise<MaterializeDueTodoSeriesResult> {
     const { logger, seriesOwner, dueRunner } = this.#dependencies;
-    const owners = await seriesOwner.findOperatingOwners(
+    const owners = await seriesOwner.listOperatingOwners(
       uniqBy(
         dueBatch.map(({ userId }) => userId),
         (userId) => userId.value,

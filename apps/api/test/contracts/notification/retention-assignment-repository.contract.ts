@@ -47,7 +47,7 @@ async function dueStagesOf(
   repository: RetentionAssignmentRepositoryPort,
   dueAt: Temporal.Instant = ALL_DUE_AT,
 ): Promise<RetentionStageCandidateReadModel[]> {
-  return repository.findDueStages({ dueAt, limit: 200 });
+  return repository.listDueStages({ dueAt, limit: 200 });
 }
 
 function stageNamesOf(candidates: readonly RetentionStageCandidateReadModel[]): string[] {
@@ -187,7 +187,7 @@ export function describeRetentionAssignmentRepositoryContract(
       const paged: string[] = [];
       let after: { createdAt: Temporal.Instant; stageId: string } | undefined;
       for (;;) {
-        const page = await repository.findDueStages({
+        const page = await repository.listDueStages({
           dueAt: ALL_DUE_AT,
           limit: 3,
           ...(after != null && { after }),

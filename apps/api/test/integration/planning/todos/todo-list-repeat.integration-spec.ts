@@ -117,10 +117,10 @@ describe("할 일 목록의 반복 정보 조회 (실제 PostgreSQL)", () => {
     await seedOccurrences(40);
     // When
     const small = await countStatements(() =>
-      repository.findManyByUserId({ userId: UserId.reconstitute(userId), size: 3 }),
+      repository.listByUserId({ userId: UserId.reconstitute(userId), size: 3 }),
     );
     const large = await countStatements(() =>
-      repository.findManyByUserId({ userId: UserId.reconstitute(userId), size: 30 }),
+      repository.listByUserId({ userId: UserId.reconstitute(userId), size: 30 }),
     );
     // Then
     expect(small.result).toHaveLength(4);
@@ -139,7 +139,7 @@ describe("할 일 목록의 반복 정보 조회 (실제 PostgreSQL)", () => {
     });
     await seedTodos(1, { title: "단일", sortOrder: 1 });
     // When
-    const result = await repository.findManyByUserId({
+    const result = await repository.listByUserId({
       userId: UserId.reconstitute(userId),
       size: 10,
     });
@@ -162,7 +162,7 @@ describe("할 일 목록의 반복 정보 조회 (실제 PostgreSQL)", () => {
     // Given
     await seedTodos(1, { seriesId: "orphan-group" });
     // When
-    const result = await repository.findManyByUserId({
+    const result = await repository.listByUserId({
       userId: UserId.reconstitute(userId),
       size: 10,
     });
@@ -175,7 +175,7 @@ describe("할 일 목록의 반복 정보 조회 (실제 PostgreSQL)", () => {
     await seedOccurrences(2, { visibility: "PUBLIC" });
     // When
     const { result, count } = await countStatements(() =>
-      repository.findPublicTodosByUserId({ friendUserId: UserId.reconstitute(userId), size: 10 }),
+      repository.listPublicTodosByUserId({ friendUserId: UserId.reconstitute(userId), size: 10 }),
     );
     // Then
     expect(result).toHaveLength(2);

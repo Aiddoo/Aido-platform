@@ -171,7 +171,7 @@ export class DrizzleFriendReader implements FriendReaderPort {
     );
   }
 
-  async findRelationsWith(
+  async listRelationsWith(
     viewerId: UserId,
     userIds: readonly UserId[],
   ): Promise<FriendRelationReadModel[]> {

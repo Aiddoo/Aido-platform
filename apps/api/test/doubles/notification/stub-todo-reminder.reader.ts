@@ -8,7 +8,7 @@ export class StubTodoReminderReader extends TodoReminderReaderPort {
   failWith: Error | null = null;
   readCount = 0;
 
-  async findActiveTodos(
+  async listActiveTodos(
     todoIds: readonly TodoId[],
   ): Promise<ReadonlyMap<number, ActiveTodoReadModel>> {
     this.readCount += 1;

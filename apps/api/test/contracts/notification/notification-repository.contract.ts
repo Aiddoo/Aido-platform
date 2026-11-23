@@ -558,13 +558,13 @@ export function describeNotificationRepositoryContract(
         });
 
         // When
-        const notified = await historyReader.findAlreadyNotifiedUserIds({
+        const notified = await historyReader.listAlreadyNotifiedUserIds({
           userIds: [UserId.reconstitute(USER_ID), UserId.reconstitute(OTHER_USER_ID)],
           type: "FRIEND_COMPLETED",
           notificationDate,
           friendId: UserId.reconstitute(NOTIFICATION_FIXTURE_ACTOR_ID),
         });
-        const otherFriend = await historyReader.findAlreadyNotifiedUserIds({
+        const otherFriend = await historyReader.listAlreadyNotifiedUserIds({
           userIds: [UserId.reconstitute(USER_ID), UserId.reconstitute(OTHER_USER_ID)],
           type: "FRIEND_COMPLETED",
           notificationDate,
@@ -589,7 +589,7 @@ export function describeNotificationRepositoryContract(
         });
 
         // When
-        const stages = await historyReader.findWinbackStagesSince({
+        const stages = await historyReader.listWinbackStagesSince({
           recipients: [
             {
               userId: UserId.reconstitute(USER_ID),
@@ -601,7 +601,7 @@ export function describeNotificationRepositoryContract(
             },
           ],
         });
-        const none = await historyReader.findWinbackStagesSince({ recipients: [] });
+        const none = await historyReader.listWinbackStagesSince({ recipients: [] });
 
         // Then
         expect(
@@ -630,7 +630,7 @@ export function describeNotificationRepositoryContract(
         });
 
         // When
-        const friends = await historyReader.findNudgeSuggestedFriends({
+        const friends = await historyReader.listNudgeSuggestedFriends({
           userIds: [UserId.reconstitute(USER_ID), UserId.reconstitute(OTHER_USER_ID)],
           start: Temporal.PlainDate.from("2026-03-02"),
           end: Temporal.PlainDate.from("2026-03-09"),

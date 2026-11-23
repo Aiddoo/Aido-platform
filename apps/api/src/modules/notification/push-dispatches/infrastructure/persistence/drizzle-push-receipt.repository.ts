@@ -51,7 +51,7 @@ export class DrizzlePushReceiptRepository implements PushReceiptRepositoryPort {
     this.#clock = clock;
   }
 
-  async findPendingTicketIds({
+  async listPendingTicketIds({
     channel,
     window,
     limit,

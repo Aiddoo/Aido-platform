@@ -5,8 +5,8 @@ import type { TodoCategoryId } from "#api/modules/planning/todo-categories/domai
 import type { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-series-id.vo";
 import { TodoSeries } from "#api/modules/planning/todo-series/domain/todo-series.aggregate";
 import type {
-  FindFriendTodosParams,
-  FindTodosParams,
+  ListFriendTodosParams,
+  ListTodosParams,
 } from "#api/modules/planning/todos/application/ports/todo-read.repository.port";
 import { TodoReadRepositoryPort } from "#api/modules/planning/todos/application/ports/todo-read.repository.port";
 import type { TodaySummaryTodoReadModel } from "#api/modules/planning/todos/application/read-models/today-summary-todo.read-model";
@@ -27,7 +27,7 @@ export class InMemoryTodoReadRepository extends TodoReadRepositoryPort {
   dayStats = { total: 0, completed: 0 };
   topTodos: TodaySummaryTodoReadModel[] = [];
   // 기간·한도처럼 UseCase가 정해 넘기는 조회 조건을 확인한다
-  readonly listQueries: FindTodosParams[] = [];
+  readonly listQueries: ListTodosParams[] = [];
   readonly dayStatsQueries: { readonly userId: UserId; readonly day: Temporal.PlainDate }[] = [];
   readonly topTodosQueries: {
     readonly userId: UserId;
@@ -58,10 +58,10 @@ export class InMemoryTodoReadRepository extends TodoReadRepositoryPort {
     record.category = this.categories.get(record.categoryId) ?? null;
     return createTodoReadModelFromRecord(record);
   }
-  async findOwnerIds(ids: readonly TodoId[]): Promise<string[]> {
+  async listOwnerIds(ids: readonly TodoId[]): Promise<string[]> {
     return uniq(ids.flatMap((id) => this.records.get(id.value)?.userId ?? []));
   }
-  async findManyBySeriesId(userId: UserId, seriesId: TodoSeriesId): Promise<TodoReadModel[]> {
+  async listBySeriesId(userId: UserId, seriesId: TodoSeriesId): Promise<TodoReadModel[]> {
     const records = [...this.records.values()]
       .filter((record) => record.userId === userId.value && record.seriesId === seriesId.value)
       .sort((left, right) => left.sortOrder - right.sortOrder);
@@ -74,11 +74,11 @@ export class InMemoryTodoReadRepository extends TodoReadRepositoryPort {
     }
     return responses;
   }
-  async findManyByUserId(params: FindTodosParams): Promise<TodoReadModel[]> {
+  async listByUserId(params: ListTodosParams): Promise<TodoReadModel[]> {
     this.listQueries.push(params);
     return structuredClone(this.queryResults);
   }
-  async findPublicTodosByUserId(_params: FindFriendTodosParams): Promise<FriendTodoReadModel[]> {
+  async listPublicTodosByUserId(_params: ListFriendTodosParams): Promise<FriendTodoReadModel[]> {
     return structuredClone(this.queryResults);
   }
   async countCategoryUsage(userId: UserId, categoryId: TodoCategoryId): Promise<number> {
@@ -118,7 +118,7 @@ export class InMemoryTodoReadRepository extends TodoReadRepositoryPort {
     this.dayStatsQueries.push({ userId, day: today });
     return { ...this.dayStats };
   }
-  async findTodayTopTodos(
+  async listTodayTopTodos(
     userId: UserId,
     today: Temporal.PlainDate,
     limit: number,

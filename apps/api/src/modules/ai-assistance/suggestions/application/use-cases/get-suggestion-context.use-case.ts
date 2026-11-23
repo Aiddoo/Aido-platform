@@ -17,7 +17,7 @@ export interface GetSuggestionContextQuery {
 interface GetSuggestionContextDependencies {
   readonly activityReader: Pick<
     SuggestionActivityReaderPort,
-    "findRecentTodos" | "findRecentResponded"
+    "listRecentTodos" | "listRecentResponded"
   >;
   readonly repeatingTitleReader: Pick<RepeatingTodoTitleReaderPort, "listActiveTitles">;
   readonly clock: ClockPort;
@@ -33,11 +33,11 @@ export class GetSuggestionContextUseCase {
   async execute(query: GetSuggestionContextQuery): Promise<SuggestionContextReadModel> {
     const now = this.#dependencies.clock.now();
     const [todos, suggestionHistory, repeatingTitles] = await Promise.all([
-      this.#dependencies.activityReader.findRecentTodos(
+      this.#dependencies.activityReader.listRecentTodos(
         query.userId,
         suggestionAnalysisPeriod({ at: now, timeZone: query.timezone }),
       ),
-      this.#dependencies.activityReader.findRecentResponded(
+      this.#dependencies.activityReader.listRecentResponded(
         query.userId,
         now.subtract({ hours: 24 * HISTORY_DAYS }),
       ),

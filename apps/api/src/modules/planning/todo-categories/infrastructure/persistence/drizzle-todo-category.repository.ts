@@ -117,7 +117,7 @@ export class DrizzleTodoCategoryRepository implements TodoCategoryRepositoryPort
     return row == null ? null : toTodoCategoryWithCountReadModel(row);
   }
 
-  async findManyByUserId(userId: UserId): Promise<TodoCategoryWithCountReadModel[]> {
+  async listByUserId(userId: UserId): Promise<TodoCategoryWithCountReadModel[]> {
     const rows = await this.#selectWithCount()
       .where(eq(todoCategory.userId, userId.value))
       .orderBy(asc(todoCategory.sortOrder), asc(todoCategory.id));

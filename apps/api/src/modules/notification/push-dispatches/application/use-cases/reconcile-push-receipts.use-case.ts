@@ -32,7 +32,7 @@ import { PushDispatchLogEvent } from "../push-dispatches.log-events.js";
 interface ReconcilePushReceiptsDependencies {
   readonly pushReceiptRepository: Pick<
     PushReceiptRepositoryPort,
-    "expireUnreceipted" | "findPendingTicketIds" | "recordPushReceipts"
+    "expireUnreceipted" | "listPendingTicketIds" | "recordPushReceipts"
   >;
   readonly pushTokenRepository: Pick<PushTokenRepositoryPort, "deactivateInvalidTokens">;
   readonly channels: Pick<PushChannelRegistryPort, "forChannel">;
@@ -94,7 +94,7 @@ export class ReconcilePushReceiptsUseCase {
       if (elapsedMs >= PUSH_RECEIPT_POLICY.runBudgetMs) {
         return;
       }
-      const ticketIds = await this.#dependencies.pushReceiptRepository.findPendingTicketIds({
+      const ticketIds = await this.#dependencies.pushReceiptRepository.listPendingTicketIds({
         channel: channel.channel,
         window: pushReceiptCheckWindow(this.#dependencies.clock.now(), receiptTiming),
         limit: PUSH_RECEIPT_POLICY.batchSize,

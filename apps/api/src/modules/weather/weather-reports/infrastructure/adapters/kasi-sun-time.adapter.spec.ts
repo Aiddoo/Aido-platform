@@ -44,7 +44,7 @@ describe("KasiSunTimeAdapter — KASI 일출일몰 프로바이더", () => {
     vi.restoreAllMocks();
   });
 
-  describe("getSunTime", () => {
+  describe("findSunTime", () => {
     const lat = 37.5;
     const lon = 126.9;
     const date = Temporal.Instant.from("2024-07-15T00:00:00Z");
@@ -71,7 +71,7 @@ describe("KasiSunTimeAdapter — KASI 일출일몰 프로바이더", () => {
       );
 
       // When
-      const result = await provider.getSunTime(lat, lon, date);
+      const result = await provider.findSunTime(lat, lon, date);
 
       // Then
       expect(result).not.toBeNull();
@@ -84,7 +84,7 @@ describe("KasiSunTimeAdapter — KASI 일출일몰 프로바이더", () => {
       config.kmaApiKey = undefined;
 
       // When
-      const result = await provider.getSunTime(lat, lon, date);
+      const result = await provider.findSunTime(lat, lon, date);
 
       // Then
       expect(result).toBeNull();
@@ -102,7 +102,7 @@ describe("KasiSunTimeAdapter — KASI 일출일몰 프로바이더", () => {
       );
 
       // When
-      const result = await provider.getSunTime(lat, lon, date);
+      const result = await provider.findSunTime(lat, lon, date);
 
       // Then
       expect(result).toBeNull();
@@ -125,7 +125,7 @@ describe("KasiSunTimeAdapter — KASI 일출일몰 프로바이더", () => {
       );
 
       // When
-      const result = await provider.getSunTime(lat, lon, date);
+      const result = await provider.findSunTime(lat, lon, date);
 
       // Then
       expect(result).toBeNull();
@@ -145,7 +145,7 @@ describe("KasiSunTimeAdapter — KASI 일출일몰 프로바이더", () => {
       ),
     );
     // When
-    const result = await provider.getSunTime(
+    const result = await provider.findSunTime(
       37.5665,
       126.978,
       Temporal.Instant.from("2026-07-23T16:00:00Z"),
@@ -167,7 +167,7 @@ describe("KasiSunTimeAdapter — KASI 일출일몰 프로바이더", () => {
     const warnLog = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
 
     // When
-    const result = await provider.getSunTime(
+    const result = await provider.findSunTime(
       37.5665,
       126.978,
       Temporal.Instant.from("2026-07-23T00:00:00Z"),

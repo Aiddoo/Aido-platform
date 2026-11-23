@@ -23,7 +23,7 @@ function createRecordingPublisher(published: PublishedNotification[]): PublishNo
         return null;
       },
     },
-    todoTargetReader: { findTodoTargets: async () => new Map() },
+    todoTargetReader: { listTodoTargets: async () => new Map() },
   });
 }
 

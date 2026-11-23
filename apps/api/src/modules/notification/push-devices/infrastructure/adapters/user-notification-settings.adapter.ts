@@ -39,7 +39,7 @@ export class UserNotificationSettingsAdapter implements UserNotificationSettings
     return this.#userSettingsAccess.findPreferenceReadModel(userId);
   }
 
-  async findPreferenceReadModelsByUserIds(
+  async listPreferenceReadModelsByUserIds(
     userIds: readonly UserId[],
   ): Promise<NotificationDeliveryPreferenceWithUserId[]> {
     const preferences = await this.#userSettingsAccess.listPreferenceReadModelsByUserIds(userIds);
@@ -53,7 +53,7 @@ export class UserNotificationSettingsAdapter implements UserNotificationSettings
     return this.#userSettingsAccess.findConsentReadModel(userId);
   }
 
-  async findConsentReadModelsByUserIds(
+  async listConsentReadModelsByUserIds(
     userIds: readonly UserId[],
   ): Promise<NotificationMarketingConsentWithUserId[]> {
     const consents = await this.#userSettingsAccess.listConsentReadModelsByUserIds(userIds);

@@ -88,7 +88,7 @@ export function describeTodoReadRepositoryContract(
       }
 
       // When
-      const owners = await context.todoReadRepository.findOwnerIds([
+      const owners = await context.todoReadRepository.listOwnerIds([
         ...ids,
         TodoId.reconstitute(999_999),
       ]);
@@ -97,7 +97,7 @@ export function describeTodoReadRepositoryContract(
       expect(owners.toSorted()).toEqual(
         [TODO_FIXTURE_USER_ID, TODO_FIXTURE_OTHER_USER_ID].toSorted(),
       );
-      expect(await context.todoReadRepository.findOwnerIds([])).toEqual([]);
+      expect(await context.todoReadRepository.listOwnerIds([])).toEqual([]);
     });
 
     it("완료한 할 일 수는 자기 것만 세고 상한에서 멈춘다", async () => {

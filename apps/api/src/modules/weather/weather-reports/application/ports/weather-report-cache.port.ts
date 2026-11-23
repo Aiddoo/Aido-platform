@@ -22,7 +22,7 @@ export abstract class WeatherReportCachePort {
   ): Promise<WeatherReport | null>;
 
   /** 측정값은 1시간, 측정 없음(null)은 30분 저장한다. load 실패는 저장하지 않아 다음 요청이 다시 조회한다. */
-  abstract getOrLoadAirQuality(
+  abstract findOrLoadAirQuality(
     cell: GeoCell,
     load: () => Promise<AirQuality | null>,
   ): Promise<AirQuality | null>;

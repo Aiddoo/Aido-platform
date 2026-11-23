@@ -74,7 +74,7 @@ interface WriteTodoCommentChainDependencies {
   >;
   readonly engagementCounter: Pick<TodoEngagementCounterPort, "increaseCommentCount">;
   readonly notification: Pick<TodoCommentNotificationPort, "notifyCommentsWritten">;
-  readonly blockReader: Pick<TodoCommentBlockReaderPort, "findBlockedCounterpartIds">;
+  readonly blockReader: Pick<TodoCommentBlockReaderPort, "listBlockedCounterpartIds">;
   readonly todoViewCache: Pick<TodoViewCacheInvalidatorPort, "invalidateForTodo">;
   readonly logger: ApplicationLoggerPort;
 }
@@ -201,7 +201,7 @@ export class WriteTodoCommentChainUseCase {
         throw commentNotFound(parentId);
       }
       if (replyTarget != null) {
-        const blockedIds = await blockReader.findBlockedCounterpartIds(authorId, [
+        const blockedIds = await blockReader.listBlockedCounterpartIds(authorId, [
           replyTarget.authorId,
         ]);
         if (blockedIds.has(replyTarget.authorId.value)) {

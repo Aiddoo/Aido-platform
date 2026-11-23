@@ -40,7 +40,7 @@ interface LikeTodoCommentDependencies {
   readonly repository: Pick<TodoCommentRepositoryPort, "findByIdAndTodoId" | "save">;
   readonly likeRepository: Pick<TodoCommentLikeRepositoryPort, "findByCommentIdAndUserId" | "save">;
   readonly notification: Pick<TodoCommentNotificationPort, "notifyCommentLiked">;
-  readonly blockReader: Pick<TodoCommentBlockReaderPort, "findBlockedCounterpartIds">;
+  readonly blockReader: Pick<TodoCommentBlockReaderPort, "listBlockedCounterpartIds">;
   readonly logger: ApplicationLoggerPort;
 }
 
@@ -92,7 +92,7 @@ export class LikeTodoCommentUseCase {
       throw commentNotFound(commentId);
     }
     comment.assertActive();
-    const blockedIds = await blockReader.findBlockedCounterpartIds(userId, [comment.authorId]);
+    const blockedIds = await blockReader.listBlockedCounterpartIds(userId, [comment.authorId]);
     if (blockedIds.has(comment.authorId.value)) {
       throw blockedCounterpart();
     }

@@ -4,7 +4,7 @@ import { clampPageSize, type CursorPage, toCursorPage } from "#api/shared/applic
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
-import type { FindTodosParams } from "../ports/todo-read.repository.port.js";
+import type { ListTodosParams } from "../ports/todo-read.repository.port.js";
 import type { TodoReadModel } from "../read-models/todo.read-model.js";
 import { invalidDateRange } from "../todos.errors.js";
 
@@ -21,7 +21,7 @@ interface GetTodosParams {
 export type GetTodosInput = GetTodosParams;
 
 interface GetTodosDependencies {
-  readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findManyByUserId">;
+  readonly todoReadRepository: Pick<TodoReadRepositoryPort, "listByUserId">;
   readonly seriesCatchUp: Pick<CatchUpTodoSeriesUseCase, "execute">;
 }
 
@@ -46,7 +46,7 @@ export class ListTodosUseCase {
     const cursor = input.cursor;
     const size = clampPageSize(input.size);
 
-    const repositoryQuery: FindTodosParams = {
+    const repositoryQuery: ListTodosParams = {
       userId: UserId.reconstitute(input.userId),
       cursor,
       size,
@@ -57,7 +57,7 @@ export class ListTodosUseCase {
       endDate: input.endDate,
     };
 
-    const rows = await this.#dependencies.todoReadRepository.findManyByUserId(repositoryQuery);
+    const rows = await this.#dependencies.todoReadRepository.listByUserId(repositoryQuery);
 
     return toCursorPage({ rows, size, toCursor: (todo) => todo.id });
   }

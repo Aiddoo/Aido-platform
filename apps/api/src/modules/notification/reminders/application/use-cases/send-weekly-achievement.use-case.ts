@@ -18,13 +18,13 @@ import { ReminderLogEvent } from "../reminders.log-events.js";
 interface WeeklyAchievementStrategyDependencies {
   readonly reader: Pick<
     WeeklyAchievementStatsReaderPort,
-    "findFreeRecipientIds" | "groupCompletedTodosByUser" | "groupTotalTodosByUser"
+    "listFreeRecipientIds" | "groupCompletedTodosByUser" | "groupTotalTodosByUser"
   >;
   readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "getUserLocales">;
   readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
   readonly notificationHistoryReader: Pick<
     NotificationHistoryReaderPort,
-    "findAlreadyNotifiedUserIds"
+    "listAlreadyNotifiedUserIds"
   >;
   readonly weeklyAchievementWriter: Pick<WeeklyAchievementWriterPort, "execute">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
@@ -51,7 +51,7 @@ export class SendWeeklyAchievementUseCase implements TimezoneReminderStrategyPor
     if (completedUserIds.length === 0) {
       return { sent: 0 };
     }
-    const freeRecipientIds = await this.#dependencies.reader.findFreeRecipientIds(
+    const freeRecipientIds = await this.#dependencies.reader.listFreeRecipientIds(
       completedUserIds.map((userId) => UserId.reconstitute(userId)),
     );
     const notifiableUserIds = completedUserIds.filter((userId) => freeRecipientIds.has(userId));
@@ -60,7 +60,7 @@ export class SendWeeklyAchievementUseCase implements TimezoneReminderStrategyPor
     }
 
     const alreadyNotified =
-      await this.#dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds({
+      await this.#dependencies.notificationHistoryReader.listAlreadyNotifiedUserIds({
         userIds: notifiableUserIds.map((userId) => UserId.reconstitute(userId)),
         type: "WEEKLY_ACHIEVEMENT",
         notificationDate: today,

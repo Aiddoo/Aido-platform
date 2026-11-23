@@ -267,9 +267,9 @@ function notificationProviders(pushProvider: FakePushChannel): Provider[] {
     {
       provide: MarketingConsentReconfirmPort,
       useValue: {
-        findMarketingReconfirmTargets: unexpectedUseCase.execute,
+        listMarketingReconfirmTargets: unexpectedUseCase.execute,
         claimMarketingReconfirm: unexpectedUseCase.execute,
-      },
+      } satisfies MarketingConsentReconfirmPort,
     },
     {
       provide: CacheStorePort,
@@ -378,7 +378,7 @@ function createDatabaseBackedSettingsPort(database: Database): UserNotificationS
     upsertPushLocale: (userId, locale) => upsertPreference(userId.value, { locale }),
     findPreferenceReadModel: async (userId): Promise<UserPreferenceReadModel | null> =>
       (await database.query.userPreference.findFirst({ where: { userId: userId.value } })) ?? null,
-    findPreferenceReadModelsByUserIds: async (userIds) => {
+    listPreferenceReadModelsByUserIds: async (userIds) => {
       if (userIds.length === 0) {
         return [];
       }
@@ -392,7 +392,7 @@ function createDatabaseBackedSettingsPort(database: Database): UserNotificationS
     },
     findConsentReadModel: async (userId): Promise<UserConsentReadModel | null> =>
       (await database.query.userConsent.findFirst({ where: { userId: userId.value } })) ?? null,
-    findConsentReadModelsByUserIds: async (userIds) => {
+    listConsentReadModelsByUserIds: async (userIds) => {
       if (userIds.length === 0) {
         return [];
       }

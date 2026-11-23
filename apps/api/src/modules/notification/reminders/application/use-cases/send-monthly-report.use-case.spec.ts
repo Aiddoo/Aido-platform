@@ -47,7 +47,7 @@ describe("SendMonthlyReportUseCase — 월간 리포트 전략", () => {
     expect(result).toEqual({ sent: 1 });
     expect(reader.queries).toEqual([
       {
-        method: "findMonthlyReportRecipients",
+        method: "listMonthlyReportRecipients",
         params: {
           timezones: ["Asia/Seoul"],
           periodStart: Temporal.PlainDate.from("2024-01-01"),

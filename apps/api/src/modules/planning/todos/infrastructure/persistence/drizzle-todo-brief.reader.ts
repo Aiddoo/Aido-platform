@@ -44,7 +44,7 @@ export class DrizzleTodoBriefReader implements TodoBriefReaderPort {
     this.#transactionHost = transactionHost;
   }
 
-  async findByIds(todoIds: readonly TodoId[]): Promise<TodoBriefReadModel[]> {
+  async listByIds(todoIds: readonly TodoId[]): Promise<TodoBriefReadModel[]> {
     if (todoIds.length === 0) {
       return [];
     }

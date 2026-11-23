@@ -26,46 +26,46 @@ export class StubScheduledReminderReader extends ScheduledReminderReaderPort {
   monthlyReportRecipients: UserIdReadModel[] = [];
   readonly queries: ScheduledReminderQuery[] = [];
 
-  async findPremiumMorningReminderUsers(
+  async listPremiumMorningReminderUsers(
     params: CustomTimeReminderParams,
   ): Promise<ReminderCountUserReadModel[]> {
-    this.queries.push({ method: "findPremiumMorningReminderUsers", params });
+    this.queries.push({ method: "listPremiumMorningReminderUsers", params });
     return this.premiumMorningUsers;
   }
 
-  async findFreeMorningReminderUsers(
+  async listFreeMorningReminderUsers(
     params: FixedTimeReminderParams,
   ): Promise<ReminderCountUserReadModel[]> {
-    this.queries.push({ method: "findFreeMorningReminderUsers", params });
+    this.queries.push({ method: "listFreeMorningReminderUsers", params });
     return this.freeMorningUsers;
   }
 
-  async findPremiumEveningReminderUsers(
+  async listPremiumEveningReminderUsers(
     params: CustomTimeReminderParams,
   ): Promise<EveningReminderUserReadModel[]> {
-    this.queries.push({ method: "findPremiumEveningReminderUsers", params });
+    this.queries.push({ method: "listPremiumEveningReminderUsers", params });
     return this.premiumEveningUsers;
   }
 
-  async findFreeEveningReminderUsers(
+  async listFreeEveningReminderUsers(
     params: FixedTimeReminderParams,
   ): Promise<EveningReminderUserReadModel[]> {
-    this.queries.push({ method: "findFreeEveningReminderUsers", params });
+    this.queries.push({ method: "listFreeEveningReminderUsers", params });
     return this.freeEveningUsers;
   }
 
-  async findLunchNudgeUsers(params: FixedTimeReminderParams): Promise<UserIdReadModel[]> {
-    this.queries.push({ method: "findLunchNudgeUsers", params });
+  async listLunchNudgeUsers(params: FixedTimeReminderParams): Promise<UserIdReadModel[]> {
+    this.queries.push({ method: "listLunchNudgeUsers", params });
     return this.lunchNudgeUsers;
   }
 
-  async findWeeklyReportRecipients(params: PeriodReportParams): Promise<UserIdReadModel[]> {
-    this.queries.push({ method: "findWeeklyReportRecipients", params });
+  async listWeeklyReportRecipients(params: PeriodReportParams): Promise<UserIdReadModel[]> {
+    this.queries.push({ method: "listWeeklyReportRecipients", params });
     return this.weeklyReportRecipients;
   }
 
-  async findMonthlyReportRecipients(params: PeriodReportParams): Promise<UserIdReadModel[]> {
-    this.queries.push({ method: "findMonthlyReportRecipients", params });
+  async listMonthlyReportRecipients(params: PeriodReportParams): Promise<UserIdReadModel[]> {
+    this.queries.push({ method: "listMonthlyReportRecipients", params });
     return this.monthlyReportRecipients;
   }
 

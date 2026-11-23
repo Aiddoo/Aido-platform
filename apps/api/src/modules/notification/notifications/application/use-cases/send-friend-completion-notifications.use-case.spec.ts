@@ -10,7 +10,7 @@ import type { CreateNotificationData } from "../../../shared/domain/notification
 import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../../shared/domain/transactional-notification-campaign.constants.js";
 import { DuplicateNotificationError } from "../notifications.errors.js";
 import type { NotificationHistoryReaderPort } from "../ports/notification-history.reader.port.js";
-import type { FindAlreadyNotifiedUserIdsQuery } from "../ports/notification-history.reader.port.js";
+import type { ListAlreadyNotifiedUserIdsQuery } from "../ports/notification-history.reader.port.js";
 import type { FinalizeBatchNotificationUseCase } from "./finalize-batch-notification.use-case.js";
 import type { PersistBatchNotificationUseCase } from "./persist-batch-notification.use-case.js";
 import { SendFriendCompletionNotificationsUseCase } from "./send-friend-completion-notifications.use-case.js";
@@ -28,7 +28,7 @@ const input = {
 
 class RecordingHistoryReader implements Pick<
   NotificationHistoryReaderPort,
-  "findAlreadyNotifiedUserIds"
+  "listAlreadyNotifiedUserIds"
 > {
   readonly #events: string[];
   readonly #history: InMemoryNotificationRepository;
@@ -38,15 +38,15 @@ class RecordingHistoryReader implements Pick<
     this.#history = history;
   }
 
-  async findAlreadyNotifiedUserIds(query: FindAlreadyNotifiedUserIdsQuery): Promise<Set<string>> {
+  async listAlreadyNotifiedUserIds(query: ListAlreadyNotifiedUserIdsQuery): Promise<Set<string>> {
     this.#events.push("dedup-read");
-    return this.#history.findAlreadyNotifiedUserIds(query);
+    return this.#history.listAlreadyNotifiedUserIds(query);
   }
 }
 
 class RecordingPreferenceReader implements Pick<
   UserNotificationSettingsPort,
-  "findPreferenceReadModelsByUserIds"
+  "listPreferenceReadModelsByUserIds"
 > {
   readonly #events: string[];
 
@@ -54,7 +54,7 @@ class RecordingPreferenceReader implements Pick<
     this.#events = events;
   }
 
-  async findPreferenceReadModelsByUserIds(): Promise<never[]> {
+  async listPreferenceReadModelsByUserIds(): Promise<never[]> {
     this.#events.push("preference-read");
     return [];
   }

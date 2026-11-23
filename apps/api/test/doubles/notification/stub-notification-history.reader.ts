@@ -1,8 +1,8 @@
 import type { NotificationHistoryReaderPort } from "#api/modules/notification/notifications/application/ports/notification-history.reader.port";
 import type {
-  FindAlreadyNotifiedUserIdsQuery,
-  FindNudgeSuggestedFriendsQuery,
-  FindWinbackStagesSinceQuery,
+  ListAlreadyNotifiedUserIdsQuery,
+  ListNudgeSuggestedFriendsQuery,
+  ListWinbackStagesSinceQuery,
 } from "#api/modules/notification/notifications/application/ports/notification-history.reader.port";
 import type { NotificationType } from "#api/modules/notification/shared/domain/notification-type.constants";
 
@@ -25,11 +25,11 @@ interface SentNudgeSuggestion {
 // 알림 타입별로 이미 받은 사용자를 두고 물어본 조회를 남긴다. 날짜를 주지 않으면 모든 날에 받은 것으로 본다
 export class StubNotificationHistoryReader implements Pick<
   NotificationHistoryReaderPort,
-  "findAlreadyNotifiedUserIds" | "findNudgeSuggestedFriends" | "findWinbackStagesSince"
+  "listAlreadyNotifiedUserIds" | "listNudgeSuggestedFriends" | "listWinbackStagesSince"
 > {
-  readonly queries: FindAlreadyNotifiedUserIdsQuery[] = [];
-  readonly winbackStageQueries: FindWinbackStagesSinceQuery[] = [];
-  readonly nudgeSuggestionQueries: FindNudgeSuggestedFriendsQuery[] = [];
+  readonly queries: ListAlreadyNotifiedUserIdsQuery[] = [];
+  readonly winbackStageQueries: ListWinbackStagesSinceQuery[] = [];
+  readonly nudgeSuggestionQueries: ListNudgeSuggestedFriendsQuery[] = [];
   readonly #notifiedByKey = new Map<string, Set<string>>();
   readonly #winbackStages: SentWinbackStage[] = [];
   readonly #nudgeSuggestions: SentNudgeSuggestion[] = [];
@@ -55,7 +55,7 @@ export class StubNotificationHistoryReader implements Pick<
     this.#nudgeSuggestions.push(sent);
   }
 
-  async findAlreadyNotifiedUserIds(query: FindAlreadyNotifiedUserIdsQuery): Promise<Set<string>> {
+  async listAlreadyNotifiedUserIds(query: ListAlreadyNotifiedUserIdsQuery): Promise<Set<string>> {
     this.queries.push({ ...query, userIds: [...query.userIds] });
     const notified = new Set([
       ...(this.#notifiedByKey.get(query.type) ?? []),
@@ -66,8 +66,8 @@ export class StubNotificationHistoryReader implements Pick<
     );
   }
 
-  async findWinbackStagesSince(
-    query: FindWinbackStagesSinceQuery,
+  async listWinbackStagesSince(
+    query: ListWinbackStagesSinceQuery,
   ): Promise<ReadonlyMap<string, ReadonlySet<string>>> {
     this.winbackStageQueries.push(query);
     return groupValues(
@@ -82,8 +82,8 @@ export class StubNotificationHistoryReader implements Pick<
     );
   }
 
-  async findNudgeSuggestedFriends(
-    query: FindNudgeSuggestedFriendsQuery,
+  async listNudgeSuggestedFriends(
+    query: ListNudgeSuggestedFriendsQuery,
   ): Promise<ReadonlyMap<string, ReadonlySet<string>>> {
     this.nudgeSuggestionQueries.push(query);
     return groupValues(

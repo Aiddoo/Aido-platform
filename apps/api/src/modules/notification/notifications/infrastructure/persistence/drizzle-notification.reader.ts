@@ -10,9 +10,9 @@ import type { NotificationMilestone } from "../../../shared/domain/notification-
 import type { NotificationType } from "../../../shared/domain/notification-type.constants.js";
 import type {
   ExistsRecentNotificationQuery,
-  FindAlreadyNotifiedUserIdsQuery,
-  FindNudgeSuggestedFriendsQuery,
-  FindWinbackStagesSinceQuery,
+  ListAlreadyNotifiedUserIdsQuery,
+  ListNudgeSuggestedFriendsQuery,
+  ListWinbackStagesSinceQuery,
   NotificationHistoryReaderPort,
 } from "../../application/ports/notification-history.reader.port.js";
 import type {
@@ -125,7 +125,7 @@ export class DrizzleNotificationReader
     return row != null;
   }
 
-  async findAlreadyNotifiedUserIds(query: FindAlreadyNotifiedUserIdsQuery): Promise<Set<string>> {
+  async listAlreadyNotifiedUserIds(query: ListAlreadyNotifiedUserIdsQuery): Promise<Set<string>> {
     const rows = await this.#db
       .select({ userId: notification.userId, count: count() })
       .from(notification)
@@ -145,8 +145,8 @@ export class DrizzleNotificationReader
   }
 
   // 가장 이른 기준 시각 뒤의 행을 (userId, type) 인덱스로 한 번에 읽고 사용자마다 자기 기준 시각으로 거른다
-  async findWinbackStagesSince(
-    query: FindWinbackStagesSinceQuery,
+  async listWinbackStagesSince(
+    query: ListWinbackStagesSinceQuery,
   ): Promise<ReadonlyMap<string, ReadonlySet<string>>> {
     const sinceByUserId = new Map(
       query.recipients.map(({ userId, since }) => [userId.value, since]),
@@ -179,8 +179,8 @@ export class DrizzleNotificationReader
     );
   }
 
-  async findNudgeSuggestedFriends(
-    query: FindNudgeSuggestedFriendsQuery,
+  async listNudgeSuggestedFriends(
+    query: ListNudgeSuggestedFriendsQuery,
   ): Promise<ReadonlyMap<string, ReadonlySet<string>>> {
     if (query.userIds.length === 0) {
       return new Map();

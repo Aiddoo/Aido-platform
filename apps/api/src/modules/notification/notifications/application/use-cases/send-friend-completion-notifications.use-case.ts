@@ -26,14 +26,14 @@ export interface SendFriendCompletionNotificationsInput {
 interface SendFriendCompletionNotificationsDependencies {
   readonly notificationHistoryReader: Pick<
     NotificationHistoryReaderPort,
-    "findAlreadyNotifiedUserIds"
+    "listAlreadyNotifiedUserIds"
   >;
   readonly persistBatch: Pick<PersistBatchNotificationUseCase, "execute">;
   readonly finalizeBatch: Pick<FinalizeBatchNotificationUseCase, "execute">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly userNotificationSettings: Pick<
     UserNotificationSettingsPort,
-    "findPreferenceReadModelsByUserIds"
+    "listPreferenceReadModelsByUserIds"
   >;
   readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "debug" | "log">;
@@ -56,7 +56,7 @@ export class SendFriendCompletionNotificationsUseCase {
 
     const notificationDate = localDateIn(this.#dependencies.clock.now(), input.timezone);
     const alreadyNotifiedUserIds =
-      await this.#dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds({
+      await this.#dependencies.notificationHistoryReader.listAlreadyNotifiedUserIds({
         userIds: input.notifyUserIds.map((userId) => UserId.reconstitute(userId)),
         type: "FRIEND_COMPLETED",
         notificationDate,
@@ -104,7 +104,7 @@ export class SendFriendCompletionNotificationsUseCase {
     },
   ): Promise<CreateNotificationData[]> {
     const preferences =
-      await this.#dependencies.userNotificationSettings.findPreferenceReadModelsByUserIds(
+      await this.#dependencies.userNotificationSettings.listPreferenceReadModelsByUserIds(
         target.recipientUserIds.map((userId) => UserId.reconstitute(userId)),
       );
     const storedLocaleByUserId = new Map(

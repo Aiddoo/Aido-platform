@@ -142,7 +142,7 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
     });
 
     // When
-    const candidates = await repository.findDueStages({ dueAt: ALL_DUE_AT, limit: 200 });
+    const candidates = await repository.listDueStages({ dueAt: ALL_DUE_AT, limit: 200 });
 
     // Then
     expect(candidates).toHaveLength(4);
@@ -226,7 +226,7 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
     ]);
 
     // When
-    const candidates = await repository.findDueStages({ dueAt: ALL_DUE_AT, limit: 200 });
+    const candidates = await repository.listDueStages({ dueAt: ALL_DUE_AT, limit: 200 });
 
     // Then
     const invalidTimezoneCandidates = candidates.filter(
@@ -268,7 +268,7 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
     });
 
     // When
-    const candidates = await staleTzdataRepository.findDueStages({
+    const candidates = await staleTzdataRepository.listDueStages({
       dueAt: ALL_DUE_AT,
       limit: 200,
     });
@@ -382,7 +382,7 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
     const mismatches: string[] = [];
     for (const dueAt of dueAts) {
       const selected = new Set(
-        (await repository.findDueStages({ dueAt, limit: 200 })).map(({ stageId }) => stageId),
+        (await repository.listDueStages({ dueAt, limit: 200 })).map(({ stageId }) => stageId),
       );
       for (const stage of stages) {
         const expected = isRetentionStageDue(stage.stage, {

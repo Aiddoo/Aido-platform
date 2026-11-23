@@ -9,7 +9,7 @@ export interface NotificationTodoTarget {
 }
 
 export abstract class NotificationTodoTargetReaderPort {
-  abstract findTodoTargets(
+  abstract listTodoTargets(
     todoIds: readonly TodoId[],
   ): Promise<ReadonlyMap<number, NotificationTodoTarget>>;
 }

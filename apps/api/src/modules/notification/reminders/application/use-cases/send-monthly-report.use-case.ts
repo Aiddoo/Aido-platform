@@ -14,12 +14,12 @@ import type { TimezoneReminderStrategyPort } from "../ports/timezone-reminder-st
 import { ReminderLogEvent } from "../reminders.log-events.js";
 
 interface MonthlyReportStrategyDependencies {
-  readonly reader: Pick<ScheduledReminderReaderPort, "findMonthlyReportRecipients">;
+  readonly reader: Pick<ScheduledReminderReaderPort, "listMonthlyReportRecipients">;
   readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "getUserLocales">;
   readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
   readonly notificationHistoryReader: Pick<
     NotificationHistoryReaderPort,
-    "findAlreadyNotifiedUserIds"
+    "listAlreadyNotifiedUserIds"
   >;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
@@ -36,7 +36,7 @@ export class SendMonthlyReportUseCase implements TimezoneReminderStrategyPort {
     const monthAgo = today.subtract({ months: 1 });
 
     // 오케스트레이터가 매월 1일 10:00에만 호출 → 프리미엄 유저 대상
-    const users = await this.#dependencies.reader.findMonthlyReportRecipients({
+    const users = await this.#dependencies.reader.listMonthlyReportRecipients({
       timezones,
       periodStart: monthAgo,
       periodEnd: today,
@@ -47,7 +47,7 @@ export class SendMonthlyReportUseCase implements TimezoneReminderStrategyPort {
     }
 
     const alreadyNotified =
-      await this.#dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds({
+      await this.#dependencies.notificationHistoryReader.listAlreadyNotifiedUserIds({
         userIds: users.map((u) => UserId.reconstitute(u.id)),
         type: "MONTHLY_REPORT",
         notificationDate: today,
