@@ -1,12 +1,13 @@
 import { STORE_RENEWAL_GRACE_MS } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
+import { toIsoString } from "#api/shared/domain/time/instant";
 
 import { USER_PROFILE_CACHE_TTL_MS, userProfileTtlMs } from "./user-profile-cache.keyspace.js";
 
-const AT = new Date("2026-11-03T00:00:00.000Z");
+const AT = Temporal.Instant.from("2026-11-03T00:00:00.000Z");
 const SECOND_MS = 1000;
 
-function isoAfter(ms: number): string {
-  return new Date(AT.getTime() + ms).toISOString();
+function isoAfter(milliseconds: number): string {
+  return toIsoString(AT.add({ milliseconds }));
 }
 
 describe("userProfileTtlMs — 프로필 캐시 TTL", () => {
@@ -59,6 +60,17 @@ describe("userProfileTtlMs — 프로필 캐시 TTL", () => {
       },
       AT,
     );
+
+    // Then
+    expect(ttl).toBe(SECOND_MS);
+  });
+
+  it("지금이 ms보다 정밀해도 Redis PX에 넣을 정수 ms다", () => {
+    // Given
+    const atWithNanoseconds = Temporal.Instant.from("2026-11-03T00:00:00.000123456Z");
+
+    // When
+    const ttl = userProfileTtlMs({ subscriptionExpiresAt: isoAfter(SECOND_MS) }, atWithNanoseconds);
 
     // Then
     expect(ttl).toBe(SECOND_MS);

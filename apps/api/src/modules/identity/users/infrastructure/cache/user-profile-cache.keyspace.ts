@@ -1,6 +1,5 @@
 import { storeRenewalGraceEndsAt } from "#api/modules/billing/subscriptions/billing-subscriptions.public";
 import { cacheKey } from "#api/platform/cache/keyspace/cache-key";
-import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 
 export const USER_PROFILE_CACHE_TTL_MS = 5 * 60_000;
 // 출시 서버가 쓰던 keyspace 이름(auth)을 그대로 써야 배포 중 두 버전이 같은 캐시를 지운다
@@ -23,7 +22,10 @@ interface UserProfilePremiumBoundaries {
  * 프리미엄 경계를 넘긴 프로필을 캐시에서 주지 않도록 TTL을 다음 경계까지로 줄인다.
  * 쓰기 없이 시간만 지나 바뀌는 상태라 웹훅·정리 작업의 무효화만으로는 알 수 없다.
  */
-export function userProfileTtlMs(profile: UserProfilePremiumBoundaries | null, at: Date): number {
+export function userProfileTtlMs(
+  profile: UserProfilePremiumBoundaries | null,
+  at: Temporal.Instant,
+): number {
   if (profile == null) {
     return USER_PROFILE_CACHE_TTL_MS;
   }
@@ -32,9 +34,14 @@ export function userProfileTtlMs(profile: UserProfilePremiumBoundaries | null, a
     profile.premiumEndsAt,
     profile.premiumPeriodEndsAt,
   ]
-    .flatMap((iso) => (iso == null ? [] : [new Date(iso)]))
-    .flatMap((endsAt) => [endsAt, instantToDate(storeRenewalGraceEndsAt(instantFromDate(endsAt)))])
-    .map((boundary) => boundary.getTime() - at.getTime())
+    .flatMap((iso) => (iso == null ? [] : [Temporal.Instant.from(iso)]))
+    .flatMap((endsAt) => [endsAt, storeRenewalGraceEndsAt(endsAt)])
+    // Redis PX는 정수 ms라 ns 정밀도를 올림한다. 내림하면 1ms 안에 남은 경계가 0이 돼 기본 TTL로 늘어난다
+    .map((boundary) =>
+      at
+        .until(boundary, { smallestUnit: "millisecond", roundingMode: "ceil" })
+        .total("milliseconds"),
+    )
     .filter((remainingMs) => remainingMs > 0);
   return Math.min(USER_PROFILE_CACHE_TTL_MS, ...untilBoundaries);
 }

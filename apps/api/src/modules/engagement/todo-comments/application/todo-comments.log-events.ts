@@ -28,9 +28,7 @@ export async function settleAfterCommit(
   logger: ApplicationLoggerPort,
   tasks: readonly AfterCommitTask[],
 ): Promise<void> {
-  const settled = await Promise.allSettled(
-    tasks.map((task) => Promise.resolve().then(() => task.run())),
-  );
+  const settled = await Promise.allSettled(tasks.map((task) => Promise.try(() => task.run())));
 
   for (const [index, task] of tasks.entries()) {
     const result = settled[index];
