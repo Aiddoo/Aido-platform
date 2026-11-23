@@ -32,6 +32,7 @@ interface NotificationProps {
   readonly createdAt: Temporal.Instant;
 }
 
+// 작업 원장 행이다. 발행은 중복 방지 인덱스로 거르는 집합 insert라 저장소가 만들고, 읽음처럼 한 행을 바꿀 때만 복원한다
 export class Notification extends AggregateRoot<NotificationId, NotificationProps> {
   static reconstitute(primitives: NotificationPrimitives): Notification {
     return new Notification(NotificationId.reconstitute(primitives.id), {
