@@ -45,4 +45,6 @@ import { Popover, PressableFeedback } from 'heroui-native';
 
 기본 간격은 `HINT_OFFSET`이다. 옆 요소를 건너 펴려면 호출부가 건너뛸 거리에 이 값을 더해 `offset`으로 넘긴다(메모 화면).
 
+네이티브 시트(`BottomSheet`·`KeyboardBottomSheet`) 안의 대상은 `measure`가 시트 안 좌표를 주므로, `HintPopoverContent`가 시트의 화면 위치를 더해 대상 자리를 고친다. 시트 안에 heroui `Popover`를 직접 그리지 않고 `HintPopoverContent`를 쓴다.
+
 위아래로 열면 입력 칸을 덮는 대상(시트 아래쪽 줄의 버튼)은 `placement="left"`, `align="center"`로 연다. heroui는 `avoidCollisions`와 상관없이 말풍선을 홈 표시줄 여백 위로 올려, 대상 줄보다 높은 말풍선은 위 줄(추가 시트의 칩)을 덮는다. 그래서 이런 안내는 `isPassThrough`로 덮인 칩도 바로 눌리게 한다. 폭은 대상과 화면 왼쪽 끝(왼쪽 레일) 사이로 줄어든다(`getHintWidth`). `right`도 같은 규칙으로 오른쪽 레일까지 줄인다. 키보드는 Android에서 말풍선 위에 그려지므로 아래로 열면 가려진다.

@@ -2,11 +2,12 @@ import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { cn } from '@src/shared/utils/cn';
 import { Popover, usePopover } from 'heroui-native';
-import type { ComponentProps, ReactNode } from 'react';
+import { type ComponentProps, type ReactNode, useLayoutEffect, useRef } from 'react';
 import { useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { match } from 'ts-pattern';
 
+import { useSheetScreenPosition } from '../bottom-sheet/sheet-screen-position';
 import { Box } from '../box/box';
 import { HStack } from '../h-stack/h-stack';
 import { type StyledIcon } from '../icon/create-styled-icon';
@@ -116,6 +117,27 @@ function getHintWidth({
     .otherwise(() => widest);
 }
 
+/** 네이티브 시트 안에서 잰 대상 자리를 화면 좌표로 고쳐, 시트 위 층에 그리는 말풍선이 대상에 붙게 한다 */
+function useSheetAnchoredTrigger() {
+  const toScreenPosition = useSheetScreenPosition();
+  const { triggerPosition, setTriggerPosition } = usePopover();
+  const screenPositionRef = useRef(triggerPosition);
+
+  useLayoutEffect(() => {
+    if (
+      toScreenPosition == null ||
+      triggerPosition == null ||
+      triggerPosition === screenPositionRef.current
+    ) {
+      return;
+    }
+    toScreenPosition(triggerPosition, (screenPosition) => {
+      screenPositionRef.current = screenPosition;
+      setTriggerPosition(screenPosition);
+    });
+  }, [toScreenPosition, triggerPosition, setTriggerPosition]);
+}
+
 export function HintPopoverContent({
   Icon,
   title,
@@ -140,6 +162,7 @@ export function HintPopoverContent({
     right: rightInset,
   } = useSafeAreaInsets();
   const { triggerPosition, contentLayout } = usePopover();
+  useSheetAnchoredTrigger();
 
   const resolvedPlacement = getHintPlacement({
     placement,
