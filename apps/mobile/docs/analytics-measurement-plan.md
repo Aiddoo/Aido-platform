@@ -21,7 +21,7 @@ GA로 무엇을 보고 어떤 결정을 내리는지, 퍼널·지표 정의를 �
 | device·app-config  | [activation](../src/features/device/activation/constants/activation.events.ts) · [coachmark](../src/features/device/coachmark/constants/coachmark.events.ts) · [store-review](../src/features/device/store-review/constants/store-review.events.ts) · [widget](../src/features/device/widget/constants/widget.events.ts) · [app-version](../src/features/app-config/app-version/constants/app-version.events.ts) · [whats-new](../src/features/app-config/whats-new/constants/whats-new.events.ts) |
 
 - AI 제안·리포트 이벤트: `ai_suggestions_viewed`(`state`, `suggestion_count`), `ai_suggestion_analysis_requested`(`source`), `ai_suggestion_acted`(`action`, `source`), `ai_report_chart_tapped`(`chart`: 리포트 상세 `daily_completions`·`completion_hours`, 목록 최근 카드 `completion_trend`, 리포트 없이 할 일 기록만 그린 `this_week_record`). 값은 각 `constants/*.events.ts`가 원본이다.
-- 무료 예시 리포트(`/reports/sample`, 1.16.0부터)는 차트를 눌러도 `ai_report_chart_tapped`·기능 귀속 성공을 보내지 않는다. 연 횟수는 `screen_view`(`/reports/sample`)로 센다. 같은 화면의 결제 안내는 `premium_gate_shown`·`premium_gate_cta_tapped`의 `surface=report_sample`이고, 목록 안내(`report_list`)를 거쳐 열려 한 사용자가 두 번 노출될 수 있어 게이트 퍼널은 이벤트 수가 아니라 사용자로 본다.
+- 무료 예시 리포트(`/reports/sample`)는 차트를 눌러도 `ai_report_chart_tapped`·기능 귀속 성공을 보내지 않는다. 연 횟수는 `screen_view`(`/reports/sample`)로 센다. 같은 화면의 결제 안내는 `premium_gate_shown`·`premium_gate_cta_tapped`의 `surface=report_sample`이고, 목록 안내(`report_list`)를 거쳐 열려 한 사용자가 두 번 노출될 수 있어 게이트 퍼널은 이벤트 수가 아니라 사용자로 본다.
 - 기능 발견(`feature_card_cta` → `feature_action_success`)의 `feature` 값은 [feature-key](../src/shared/analytics/feature-key.ts)가 원본이다. 1.16.0 소개(캠페인 `feature-discovery-1.16.0`)는 `ai_suggestion`(제안을 반복 할 일로 만듦)과 `ai_report`(리포트 상세 차트를 처음 누름)를 성공으로 센다. 이번 주 기록(`this_week_record`)은 리포트가 아니라 할 일 기록이라 1.16.0 출시 전에 성공에서 뺐다.
 - 보내는 곳은 `git grep -n "'<이벤트 이름>'" -- apps/mobile/src`로 찾는다. 전송은 `track()`·`useTrack().trackEvent()` → `createFirebaseAnalytics` → `logEvent`이고, 자동 화면 수집은 꺼 두고(`firebase.json`) `useScreenTracking`이 route 템플릿으로 `screen_view`를 보낸다.
 - 숫자 엔터티 id(`todo_id`·`memo_id` 등)는 개인정보는 아니지만 고카디널리티라 커스텀 측정기준으로 등록하지 않는다([GA 콘솔 설정](./analytics-ga-console.md#b-커스텀-측정기준)).
@@ -30,27 +30,13 @@ GA로 무엇을 보고 어떤 결정을 내리는지, 퍼널·지표 정의를 �
 
 사용자가 본 경로 보기 한 번이다. 이름은 route 템플릿(`/todo/[todoId]`)이다. 보내는 장치와 규칙은 [관측](./observability.md#화면-조회)이 원본이다.
 
-| 센다                                                                                  | 세지 않는다                                                                      |
-| ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| 경로가 바뀐 화면(시트 route 포함), 같은 템플릿의 다른 대상(`/todo/1` → `/todo/2`)     | query만 바뀜(날짜·친구·보기 탭, 탭은 `view_tab_changed`가 맡는다)                |
-| 상세·시트에서 돌아온 아래 화면                                                        | 스플래시 뒤로 지나가는 입구 `/`·`/loading`·`/auth/[provider]`(1.15.2부터)        |
-| 넓은 화면에서 목록 옆 칸에 고른 상세. 좁은 화면과 같은 상세 이름으로 센다(1.15.2부터) | 넓은 화면에서 칸을 닫음(목록은 줄곧 보였다), 칸의 상세를 접어 상세 화면으로 넘김 |
+| 센다                                                                              | 세지 않는다                                                                      |
+| --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| 경로가 바뀐 화면(시트 route 포함), 같은 템플릿의 다른 대상(`/todo/1` → `/todo/2`) | query만 바뀜(날짜·친구·보기 탭, 탭은 `view_tab_changed`가 맡는다)                |
+| 상세·시트에서 돌아온 아래 화면                                                    | 스플래시 뒤로 지나가는 입구 `/`·`/loading`·`/auth/[provider]`                    |
+| 넓은 화면에서 목록 옆 칸에 고른 상세. 좁은 화면과 같은 상세 이름으로 센다         | 넓은 화면에서 칸을 닫음(목록은 줄곧 보였다), 칸의 상세를 접어 상세 화면으로 넘김 |
 
-진입·노출 이벤트(`weather_opened`, `paywall_viewed` 등)는 같은 이동의 `screen_view` 뒤에 나간다(1.15.2부터). 그래서 그 이벤트의 "페이지 제목 및 화면 이름" 측정기준이 앞 화면이 아니라 그 화면이다.
-
-### 1.15.2에서 바뀐 숫자
-
-이벤트 이름과 params는 그대로다. 기본 보고서의 정의가 바뀌는 것만 있다. GA에 1.15.2 스토어 공개일(단계적 출시면 시작일)로 "1.15.2 screen_view 정리(입구·가드 화면 제외, 넓은 화면 칸 상세 추가)" 주석을 달고, 앞뒤는 `앱 버전` 측정기준으로 나눠 비교한다.
-
-| 바뀐 것                                                           | 영향                                                                                                                                                                                                                                                                                                                            |
-| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 입구 화면 3개를 `screen_view`에서 뺌                              | 콜드 스타트마다 최대 3번, 로그인·로그아웃마다 1번 덜 센다. "페이지 및 화면"의 조회수 합계·세션당 조회수가 줄고 `/`·`/loading`·`/auth/[provider]` 행이 사라진다. GA4 참여 세션 조건(화면 2회 이상)이 콜드 스타트마다 채워지던 것이 빠져 **참여 세션·참여율이 준다**. 사용자 수, §4의 KPI·퍼널·키 이벤트·잠재고객 정의는 그대로다 |
-| 인증 가드가 막은 화면을 `screen_view`에서 뺌                      | 가입·이메일 로그인·이메일 인증을 마칠 때마다 `/login` 조회가 1번 준다(1.15.1부터 있던 유령). 화면 경로로 보는 가입 흐름에 가입 뒤 `/login`으로 돌아간 단계가 없어진다. 피드가 아닌 화면에서 로그아웃·세션 만료할 때마다 `/feed`도 1번 준다. KPI·퍼널 정의는 그대로다                                                            |
-| 넓은 화면 칸 상세를 셈                                            | iPad·폴더블의 `/todo/[todoId]`·`/memo/[memoId]` 조회가 늘어 폰과 같은 기준이 된다                                                                                                                                                                                                                                               |
-| 진입·노출 이벤트의 화면 이름                                      | 앞 화면에서 그 화면으로 바뀐다. 이 측정기준으로 자르는 보고서는 없다                                                                                                                                                                                                                                                            |
-| `badge_summary_viewed`, `push_permission_prompt_shown{feed_card}` | 뒤 탭 재조회·카드가 숨었다 다시 보일 때 다시 세던 것이 빠져 조금 준다. `feed_card` 노출 대비 `push_permission_requested` 비율은 조금 오른다. 쓰는 퍼널은 없다                                                                                                                                                                   |
-| `invite_link_opened`                                              | 루트 "다시 시도" 뒤 같은 링크를 다시 세던 것이 빠진다. 초대 퍼널은 그대로다                                                                                                                                                                                                                                                     |
-| `weather_opened`                                                  | 1.15.1과 같다. 1.15.2에서 날씨 화면을 Stack에 하나만 두며 생길 뻔한 감소(남은 날씨를 알림으로 다시 열면 세지 않음)를 연 시각으로 막았다. 날씨 채택 KPI ①·날씨 퍼널 2개·잠재고객 "날씨 사용자"·카드 7은 이어서 본다                                                                                                              |
+진입·노출 이벤트(`weather_opened`, `paywall_viewed` 등)는 같은 이동의 `screen_view` 뒤에 나간다. 그래서 그 이벤트의 "페이지 제목 및 화면 이름" 측정기준이 앞 화면이 아니라 그 화면이다.
 
 ## 2. RevenueCat → GA 이벤트 (Firebase 연동)
 

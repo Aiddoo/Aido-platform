@@ -106,7 +106,7 @@ AI 제안 분석은 매시 정각 dispatch가 사용자 현지 09시대(따라�
 
 공지(`SYSTEM_NOTICE`·`ADMIN_BROADCAST`·`ADMIN_TARGETED`)는 종류만으로 갈 곳을 정할 수 없어 `DEEP_LINK` url에 앱 경로를 싣는다. 경로는 `@aido/api/vocabulary`의 `NOTICE_DEEP_LINK_PATH`(`/feed`, `/achievements`, `/weather`, `/friends`, `/friends/invite`, `/settings/subscription`, `/settings/notifications`) 중에서만 고른다. 1.13.0 앱은 이 경로만 열고 모르는 경로·쿼리·상세 id 경로는 이동하지 않는다. 이전 앱의 동작과 버전 나눠 보내기는 [관리자 공지 링크와 앱 버전](notifications.md#관리자-공지-링크와-앱-버전)이다. url은 추가 필드라 기존 payload·응답 모양은 바뀌지 않는다.
 
-### 푸시 navigation (1.14.1+)
+### 푸시 navigation
 
 push data의 `navigation`은 알림을 눌렀을 때 열 화면을 `kind`로 판별하는 유니온이다(`@aido/api`의 `notificationNavigationSchema`, kind 값은 `@aido/api/vocabulary`의 `NOTIFICATION_NAVIGATION_KIND`). 서버는 `toNotificationNavigation`(`push-dispatches/infrastructure/adapters/notification-navigation.mapper.ts`, 판정은 `shared/domain/notification-navigation.domain-service.ts`) 하나에서 kind별로 만들고, 앱은 `match(navigation).exhaustive()`로 목적지를 고른다.
 
@@ -121,7 +121,7 @@ push data의 `navigation`은 알림을 눌렀을 때 열 화면을 `kind`로 판
 | `EXTERNAL_URL`       | `url`(http(s)), `presentation`(`BROWSER`·`WEBVIEW`)                                                                            | `BROWSER`·`WEBVIEW` 액션                                                                                                                                              |
 | 화면만               | —                                                                                                                              | `FEED`, `FRIENDS`, `FRIEND_REQUESTS`, `WEATHER`, `ACHIEVEMENTS`, `REPORTS`, `SUGGESTIONS`, `INVITE`, `SUBSCRIPTION`, `NOTIFICATIONS`, `NOTIFICATION_SETTINGS`, `NONE` |
 
-목적지는 1.14.0 앱이 `type`·`action`·`context`·`routing`으로 고르던 곳과 같다. 그래서 `type`(`TODO_SHARED` 등 기존 값 포함)·`action`·`context`·`routing`은 구 앱 호환용으로 계속 함께 싣는다. 계약을 통과하지 못하는 값이면 `navigation`을 싣지 않고, 앱 schema도 모양이 틀린 `navigation`만 버려 기존 필드로 이동한다. 알림함 REST 응답(`NotificationListResponseDto`)은 배포 앱 fingerprint에 고정돼 있어 `navigation`을 더하지 않는다.
+목적지는 `navigation`을 모르는 구 앱이 `type`·`action`·`context`·`routing`으로 고르는 곳과 같다. 그래서 `type`(`TODO_SHARED` 등 기존 값 포함)·`action`·`context`·`routing`은 구 앱 호환용으로 계속 함께 싣는다. 계약을 통과하지 못하는 값이면 `navigation`을 싣지 않고, 앱 schema도 모양이 틀린 `navigation`만 버려 기존 필드로 이동한다. 알림함 REST 응답(`NotificationListResponseDto`)은 배포 앱 fingerprint에 고정돼 있어 `navigation`을 더하지 않는다.
 
 | 공지         | url                                                                                           |
 | ------------ | --------------------------------------------------------------------------------------------- |
@@ -185,11 +185,11 @@ push data의 `navigation`은 알림을 눌렀을 때 열 화면을 `kind`로 판
 - 과거에 저장된 유효한 IANA 별칭은 원래 저장값으로 스윕해 조회 조건과 일치시킨다. 이를 정규 이름으로만 합치면 기존 별칭 사용자가 누락되므로, 신규 입력부터 점진적으로 정규화한다.
 - 모든 고정 시각, 로컬 날짜 중복 키, 참여 유도 일일 한도는 IANA 타임존과 DST를 반영한다.
 - 사용자가 고른 아침·저녁 리마인더와 아침·저녁 날씨 알림 시각은 그 분에만 울린다(멈춘 사이 놓친 분은 sweep의 15분 따라잡기가 보낸다). 같은 현지 날짜에는 한 번이다. 봄 DST로 없는 시각(뉴욕 3월 02:30)은 틈 바로 뒤 첫 분(03:00)에, 가을에 두 번 오는 시각(뉴욕 11월 01:30)은 앞의 것에만 보낸다(`reminderTimesDueAt`).
-- 온보딩 Day·윈백 비활성 일수·찔러보기 친구 쉰 날은 시간대 묶음의 현지 달력 날짜로 센다(`localDaysSince`). 2026-11 이전에는 UTC 자정 기준 24시간 단위로 세어, 서울 19시 가입자가 Day 1 안내를 현지 셋째 날에 받는 등 가입 시각에 따라 하루씩 밀렸다.
+- 온보딩 Day·윈백 비활성 일수·찔러보기 친구 쉰 날은 시간대 묶음의 현지 달력 날짜로 센다(`localDaysSince`). UTC 자정 기준 24시간 단위로 세지 않는다(가입 시각에 따라 안내가 하루씩 밀린다).
 
 ## 구버전 클라이언트 호환성
 
-v1.0.0~v1.4.0이 요구한 푸시 data 필드 `notificationId`, `type`, `action`, `context`의 이름과 의미는 바꾸지 않는다. v1.5 계열의 `dispatchId`, `campaignKey`, `variantId`, `purpose`, `marketingOptOutToken`은 모두 optional 추가 필드다. 1.14.1의 `navigation`도 optional 추가 필드다. 과거 Zod object는 알 수 없는 optional 필드를 제거하므로 그대로 파싱된다.
+모든 출시 앱이 요구하는 푸시 data 필드 `notificationId`, `type`, `action`, `context`의 이름과 의미는 바꾸지 않는다. 그 뒤에 더한 `dispatchId`, `campaignKey`, `variantId`, `purpose`, `marketingOptOutToken`, `navigation`은 모두 optional이고, 새 필드도 optional로만 더한다. 구 앱 Zod object는 알 수 없는 optional 필드를 제거하므로 그대로 파싱된다.
 
 호환성 테스트는 Git 릴리스 이력의 실제 알림 타입 enum을 반영한 v1.0–v1.1, v1.2–v1.4 스키마와 현재 `pushNotificationDataSchema`로 같은 서버 payload를 각각 파싱한다. OpenAPI paths/components 스냅샷도 별도로 고정한다.
 

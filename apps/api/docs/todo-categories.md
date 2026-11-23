@@ -44,4 +44,4 @@ todos slice의 [RemoveCategoryTodosUseCase](../src/modules/planning/todos/applic
 
 ## 성능
 
-[category-deletion.performance-spec](../test/performance/category-deletion.performance-spec.ts)이 할 일 5,000개(하위 항목 1만·댓글 1천·조회 2,500·찌르기 500·리마인더 작업 5천·반복 20개)와 다른 사용자 2만 행을 넣고 잰다. 로컬 Testcontainers PostgreSQL 16(2026-11-11)에서 옮기기 73~76ms, 함께 지우기 162~174ms, 각 13문장이다. 운영 최대는 카테고리당 419개라 요청 안에서 동기로 끝내고 별도 정리 작업·경보를 두지 않는다.
+옮기기·함께 지우기는 요청 안에서 동기로 끝내고 별도 정리 작업·경보를 두지 않는다. [category-deletion.performance-spec](../test/performance/category-deletion.performance-spec.ts)이 큰 카테고리(데이터 크기는 spec)를 넣고 두 경로의 시간과 SQL 문장 수를 잰다. 삭제 쿼리를 바꾸면 이 spec을 다시 돌리고 결과는 PR에 적는다.
