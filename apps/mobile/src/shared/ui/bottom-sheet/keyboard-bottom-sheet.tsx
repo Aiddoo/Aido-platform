@@ -1,10 +1,11 @@
 import { BottomSheet as HeroBottomSheet } from 'heroui-native';
-import { type ReactNode, useLayoutEffect, useRef } from 'react';
-import { ScrollView, type ScrollViewInstance, useWindowDimensions } from 'react-native';
+import { type ComponentRef, type ReactNode, useLayoutEffect, useRef } from 'react';
+import { ScrollView, type ScrollViewInstance, useWindowDimensions, type View } from 'react-native';
 import { useKeyboardContext } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SHARED_SHEET_STYLES, SHEET_CONTENT_PADDING } from './bottom-sheet.constants';
+import { SheetScreenPositionProvider } from './sheet-screen-position';
 import { useSheetPresentation } from './use-sheet-presentation';
 import { useSheetSurface } from './use-sheet-surface';
 
@@ -45,6 +46,7 @@ export function KeyboardBottomSheet({
 }: KeyboardBottomSheetProps) {
   const { setEnabled } = useKeyboardContext();
   const scrollableRef = useRef<ScrollViewInstance>(null);
+  const contentRef = useRef<ComponentRef<typeof View>>(null);
   const { sheetRef, onWillDismiss, onDidDismiss } = useSheetPresentation({
     isOpen,
     onOpenChange,
@@ -81,15 +83,17 @@ export function KeyboardBottomSheet({
       onWillDismiss={onWillDismiss}
       onDidDismiss={onDidDismiss}
     >
-      <HeroBottomSheet.Content style={SHARED_SHEET_STYLES.container}>
-        <ScrollView
-          ref={scrollableRef}
-          contentContainerStyle={SHARED_SHEET_STYLES.body}
-          keyboardShouldPersistTaps="always"
-          bounces={false}
-        >
-          {children}
-        </ScrollView>
+      <HeroBottomSheet.Content ref={contentRef} style={SHARED_SHEET_STYLES.container}>
+        <SheetScreenPositionProvider originRef={contentRef}>
+          <ScrollView
+            ref={scrollableRef}
+            contentContainerStyle={SHARED_SHEET_STYLES.body}
+            keyboardShouldPersistTaps="always"
+            bounces={false}
+          >
+            {children}
+          </ScrollView>
+        </SheetScreenPositionProvider>
         {footer != null && (
           <HeroBottomSheet.Footer
             isSticky

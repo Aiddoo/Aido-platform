@@ -291,6 +291,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         // expo-file-system·expo-image가 더한다. 녹음과 공유 이미지는 앱 전용 폴더만 쓰고 외부 저장소를 읽거나 쓰지 않는다.
         'android.permission.READ_EXTERNAL_STORAGE',
         'android.permission.WRITE_EXTERNAL_STORAGE',
+        // expo-network가 더한다. 온라인 여부는 ConnectivityManager로만 읽는다. Play는 이 권한을 android.hardware.wifi
+        // 필수 기능으로 보고 Wi-Fi 없는 기기(태블릿·Desktop·XR)에서 설치를 막는다.
+        'android.permission.ACCESS_WIFI_STATE',
         // expo-location이 더한다. 날씨는 약 5km 격자라 대략적 위치(COARSE)로 충분하다. Play는 정확한 위치에
         // 데이터 보안 신고와 별도 권한 신고(2027-01-27 의무)를 요구하므로 대략적 위치만 받는다.
         'android.permission.ACCESS_FINE_LOCATION',

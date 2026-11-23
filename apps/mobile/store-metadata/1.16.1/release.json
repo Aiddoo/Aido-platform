@@ -4,32 +4,39 @@
   "patchNotes": {
     "appStore": {
       "ko": [
-        "아래에서 올라오는 창을 기기 기본 창으로 바꿔, 끌어 내리기와 키보드가 더 자연스러워요.",
-        "AI 리포트(프리미엄)의 ‘모두 끝낸 날’을 연속 기록과 같은 기준으로 세고, ‘주로 끝낸 시간’도 늘 같은 기준으로 골라요.",
-        "결제·분석·오류 보고에 쓰는 부품을 새 버전으로 바꿔 더 안정적으로 움직여요.",
-        "iPad와 Mac에서 친구 찾기를 열면 앱이 닫히던 문제를 고쳤어요.",
-        "자정이 지난 뒤 홈 화면 위젯이 지난 날짜의 요약을 불러오려 하던 문제를 고쳤어요."
+        "아래에서 올라오는 창을 iOS 기본 시트로 바꿔, 끌어 내려 닫기와 키보드 입력이 더 자연스러워요.",
+        "AI 리포트(프리미엄)의 ‘모두 끝낸 날’을 연속 기록과 같은 기준으로 세고, 가장 많이 끝낸 시간이 여럿이면 더 이른 시간을 보여 드려요.",
+        "결제·분석·오류 보고 기능을 새 버전으로 올려 더 안정적으로 동작해요.",
+        "iPad와 Mac에서 친구 검색을 열면 앱이 닫히던 문제를 고쳤어요.",
+        "자정 직후 홈 화면 위젯 요약을 불러올 때 생기던 오류를 고쳤어요."
       ],
       "en": [
-        "Sheets that slide up from the bottom now use your device's native sheets, so swiping down and typing feel more natural.",
-        "AI reports (Premium) count “Perfect days” the same way as your streak, and pick “When you usually finish” the same way every time.",
-        "We updated the parts we use for payments, analytics, and error reporting so the app runs more reliably.",
-        "Fixed the app closing when you opened Find friends on iPad or Mac.",
-        "Fixed the home screen widget trying to load the previous day's summary after midnight."
+        "Sheets that slide up from the bottom now use native iOS sheets, so swiping down to close and typing feel more natural.",
+        "AI reports (Premium) now count “Perfect days” the same way as your streak. If several hours tie for the most to-dos finished, we show the earliest.",
+        "We updated the components behind payments, analytics, and crash reporting for better stability.",
+        "Fixed the app closing when you opened friend search on iPad and Mac.",
+        "Fixed an error when the Home Screen widget loaded its summary right after midnight."
+      ],
+      "en-GB": [
+        "Sheets that slide up from the bottom now use native iOS sheets, so swiping down to close and typing feel more natural.",
+        "AI reports (Premium) now count ‘Perfect days’ the same way as your streak. If several hours tie for the most to-dos finished, we show the earliest.",
+        "We've updated the components behind payments, analytics and crash reporting for better stability.",
+        "Fixed the app closing when opening friend search on iPad and Mac.",
+        "Fixed an error when the Home Screen widget loaded its summary just after midnight."
       ]
     },
     "googlePlay": {
       "ko": [
-        "아래에서 올라오는 창을 기기 기본 창으로 바꿔, 끌어 내리기와 키보드가 더 자연스러워요.",
+        "아래에서 올라오는 창을 Android 기본 시트로 바꿔, 끌어서 닫기와 키보드 입력이 더 매끄러워요.",
         "AI 리포트(프리미엄)의 ‘모두 끝낸 날’을 연속 기록과 같은 기준으로 세요.",
-        "결제·분석 부품을 새 버전으로 바꿔 더 안정적으로 움직여요.",
-        "자정이 지난 뒤 홈 화면 위젯이 지난 날짜의 요약을 불러오려 하던 문제를 고쳤어요."
+        "결제·분석 기능을 새 버전으로 올려 더 안정적으로 동작해요.",
+        "자정 직후 홈 화면 위젯 요약을 불러올 때 생기던 오류를 고쳤어요."
       ],
       "en": [
-        "Sheets now use native Android sheets, so swiping and typing feel more natural.",
-        "AI reports (Premium) count Perfect days like your streak.",
-        "Updated payment and analytics parts for stability.",
-        "Fixed the home screen widget loading yesterday's summary after midnight."
+        "Sheets now use native Android bottom sheets, so swiping to close and typing feel smoother.",
+        "AI reports (Premium) count Perfect days the same way as your streak.",
+        "Updated payment and analytics components for better stability.",
+        "Fixed a home screen widget error right after midnight."
       ]
     }
   }

@@ -10,8 +10,8 @@ HeroUI `BottomSheet`(heroui-native 1.1.1, 네이티브 시트 `@lodev09/react-na
 - **닫힘 알림:** `onCloseStart`는 `onWillDismiss`, `onOpenChange(false)`는 `onDidDismiss`(애니메이션이 끝난 뒤)다. 어떻게 닫혔든 한 번 온다. 열기가 실패하면 `bottom_sheet`로 보고하고 닫힌 것으로 알려 route 시트의 투명한 화면이 터치를 막지 않는다.
 - **Context:** 시트 내용은 같은 React 트리에 그려져 주변 Context를 그대로 읽는다.
 - **스크롤:** 내용 스크롤은 시트의 `scrollableRef`에 붙인다. 시트가 이 스크롤로 끌기·안쪽 스크롤·키보드 inset·`auto` 높이를 맞춘다. 시트 안에 세로 스크롤 컨테이너를 또 두지 않는다.
-- **면:** `useSheetSurface`가 모든 시트에 같은 면 색(`bg-white dark:bg-gray-1`)·모서리(`SHEET_RADIUS`)·손잡이 색을 준다. 불투명한 색이라 iOS 26 Liquid Glass 재질 대신 앱 면 색이 보인다.
-- **위에 뜨는 것:** HeroUI `Dialog`·`Toast`·`Popover`는 떠 있는 시트 위의 네이티브 층(`TrueSheetOverlay`)에 그려진다.
+- **면:** `useSheetSurface`가 모든 시트에 같은 면 색(`bg-white dark:bg-gray-1`)·모서리(`SHEET_RADIUS`)·손잡이(36×4, `bg-gray-4`, `adaptive: false`)를 준다. iOS 26.1+는 `backgroundColor`를 Liquid Glass 위 색 효과로만 칠하므로 같은 색을 `backgroundStyle`로도 깔아 정확한 면 색을 보인다.
+- **위에 뜨는 것:** HeroUI `Dialog`·`Toast`·`Popover`는 떠 있는 시트 위의 네이티브 층(`TrueSheetOverlay`)에 그려진다. 시트 안 뷰의 `measure`는 시트가 뜬 자리가 아니라 React 트리 속 시트 자리 기준이라, 시트가 `SheetScreenPositionProvider`로 화면 좌표 변환을 주고 `HintPopoverContent`가 대상 자리(`setTriggerPosition`)를 고친다.
 
 ## 사용법
 

@@ -30,6 +30,7 @@
 - **문법**: 서버·앱·도구에 `replaceAll`·`for…of`·ts-pattern `exhaustive`·es-toolkit 정렬 같은 최신 문법을 lint로 고정했다. 앱은 Hermes가 지원하는 API만 쓴다. RNTL 14 `fireEvent`·`render`는 Promise를 기다린다.
 - **앱 JS**: TanStack Query 5.108.3(세 패키지 함께), i18next 27.2.4, react-i18next 18.0.3, `@hookform/resolvers` 7.0.8, tailwind-merge 3.7.1, uniwind 1.14.0.
 - **앱 네이티브**: Expo 58.0.26과 SDK 58 권장 버전(`npx expo install --check` 기준), `@sentry/react-native` 8.28.1(새 인증서로 서명한 Cocoa SDK), `react-native-purchases` 11.0.4, `@react-native-firebase/app`·`analytics` 26.4.2. 시트는 heroui-native 1.1.1과 `@lodev09/react-native-true-sheet` 4.1.2(설정 플러그인 없음)이고 `@gorhom/bottom-sheet`와 패치, `expo-linear-gradient`(ScrollShadow 기본 그라디언트로 대체)를 지웠다. fingerprint가 바뀌어 스토어 빌드가 필요하다.
+- **Android 권한**: `expo-network`가 더하는 `ACCESS_WIFI_STATE`를 `blockedPermissions`로 뺐다. 앱은 온라인 여부를 `ConnectivityManager`로만 읽고, Play는 이 권한을 `android.hardware.wifi` 필수 기능으로 보아 Wi-Fi 없는 기기에서 설치를 막는다.
 - **문서**: 같은 규칙을 주인 문서 한 곳에 두고 나머지는 링크한다. 아직 목표 모양이 아닌 코드는 [#1785](https://github.com/Aiddoo/Aido-platform/issues/1785)가 가리킨다.
 - **버전**: 앱 1.16.1. 빌드 번호(EAS remote)와 서버·`@aido/api` 버전은 그대로다.
 

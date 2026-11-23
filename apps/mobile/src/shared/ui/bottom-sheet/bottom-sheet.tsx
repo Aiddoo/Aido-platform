@@ -1,9 +1,10 @@
 import { BottomSheet as HeroBottomSheet } from 'heroui-native';
-import { type ReactNode, useRef } from 'react';
+import { type ComponentRef, type ReactNode, useRef } from 'react';
 import { ScrollView, type ScrollViewInstance, View } from 'react-native';
 
 import { SHARED_SHEET_STYLES } from './bottom-sheet.constants';
 import { SheetFixedHeaderContext } from './sheet-header-layout';
+import { SheetScreenPositionProvider } from './sheet-screen-position';
 import { useSheetPresentation } from './use-sheet-presentation';
 import { useSheetSurface } from './use-sheet-surface';
 
@@ -29,6 +30,7 @@ export function BottomSheet({
   hasFixedHeader = false,
 }: BottomSheetProps) {
   const scrollableRef = useRef<ScrollViewInstance>(null);
+  const contentRef = useRef<ComponentRef<typeof View>>(null);
   const { sheetRef, onWillDismiss, onDidDismiss } = useSheetPresentation({
     isOpen,
     onOpenChange,
@@ -44,22 +46,24 @@ export function BottomSheet({
       onWillDismiss={onWillDismiss}
       onDidDismiss={onDidDismiss}
     >
-      <HeroBottomSheet.Content style={SHARED_SHEET_STYLES.container}>
-        {hasFixedHeader ? (
-          <SheetFixedHeaderContext value={scrollableRef}>
-            <View style={SHARED_SHEET_STYLES.body}>{children}</View>
-          </SheetFixedHeaderContext>
-        ) : (
-          <ScrollView
-            ref={scrollableRef}
-            contentContainerStyle={SHARED_SHEET_STYLES.body}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            bounces={false}
-          >
-            {children}
-          </ScrollView>
-        )}
+      <HeroBottomSheet.Content ref={contentRef} style={SHARED_SHEET_STYLES.container}>
+        <SheetScreenPositionProvider originRef={contentRef}>
+          {hasFixedHeader ? (
+            <SheetFixedHeaderContext value={scrollableRef}>
+              <View style={SHARED_SHEET_STYLES.body}>{children}</View>
+            </SheetFixedHeaderContext>
+          ) : (
+            <ScrollView
+              ref={scrollableRef}
+              contentContainerStyle={SHARED_SHEET_STYLES.body}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              bounces={false}
+            >
+              {children}
+            </ScrollView>
+          )}
+        </SheetScreenPositionProvider>
         {footer != null && (
           <HeroBottomSheet.Footer
             isSticky
