@@ -357,8 +357,8 @@ const DEFAULT_ABBREVIATIONS = {
 function splitIdentifierWords(name) {
   return name
     .replace(/^#/u, '')
-    .replace(/([a-z0-9])([A-Z])/gu, '$1 $2')
-    .replace(/([A-Z]+)([A-Z][a-z])/gu, '$1 $2')
+    .replaceAll(/([a-z0-9])([A-Z])/gu, '$1 $2')
+    .replaceAll(/([A-Z]+)([A-Z][a-z])/gu, '$1 $2')
     .split(/[\s_$]+/u)
     .filter((word) => word.length > 0)
     .map((word) => word.toLowerCase());

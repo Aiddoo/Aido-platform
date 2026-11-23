@@ -409,12 +409,12 @@ function isFirstArgumentOf(node, hookNames) {
 }
 
 /** `useEffect(() => …)`·`useFocusEffect(useCallback(() => …))`의 본문 함수 */
-function isEffectBody(fn) {
-  if (isFirstArgumentOf(fn, EFFECT_HOOKS)) {
+function isEffectBody(functionNode) {
+  if (isFirstArgumentOf(functionNode, EFFECT_HOOKS)) {
     return true;
   }
-  const { parent } = fn;
-  return isFirstArgumentOf(fn, CALLBACK_HOOKS) && isFirstArgumentOf(parent, EFFECT_HOOKS);
+  const { parent } = functionNode;
+  return isFirstArgumentOf(functionNode, CALLBACK_HOOKS) && isFirstArgumentOf(parent, EFFECT_HOOKS);
 }
 
 // 보기 하나에 장치 하나다. 경로 보기는 전역 screen_view, 경로가 아닌 보기는 useTrackView가 key마다 한 번 보낸다.
@@ -427,8 +427,8 @@ const noTrackingInEffect = {
         if (!isTrackingCall(node.callee)) {
           return;
         }
-        const fn = findEnclosingFunction(node);
-        if (fn == null || !isEffectBody(fn)) {
+        const functionNode = findEnclosingFunction(node);
+        if (functionNode == null || !isEffectBody(functionNode)) {
           return;
         }
         context.report({

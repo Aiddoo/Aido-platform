@@ -266,7 +266,9 @@ function forEachTypeField(type, localTypes, visit, visited = new Set()) {
       return;
     case 'TSUnionType':
     case 'TSIntersectionType':
-      type.types.forEach(walk);
+      for (const member of type.types) {
+        walk(member);
+      }
       return;
     case 'TSArrayType':
       walk(type.elementType);
@@ -280,7 +282,9 @@ function forEachTypeField(type, localTypes, visit, visited = new Set()) {
       }
       return;
     case 'TSTypeReference': {
-      getTypeArgumentList(type).forEach(walk);
+      for (const argument of getTypeArgumentList(type)) {
+        walk(argument);
+      }
       const name = getReferenceName(type);
       const declaration = name == null ? null : localTypes.get(name);
       if (declaration == null || visited.has(name)) {
