@@ -22,14 +22,14 @@ export const webhookSchema = z.object({
     .string()
     .optional()
     .refine((value) => !value || value.startsWith("https://discord.com/api/webhooks/"), {
-      message:
+      error:
         "DISCORD_SIGNUP_WEBHOOK_URL must be a valid Discord webhook URL (https://discord.com/api/webhooks/...)",
     }),
   DISCORD_PAYMENT_WEBHOOK_URL: z
     .string()
     .optional()
     .refine((value) => !value || value.startsWith("https://discord.com/api/webhooks/"), {
-      message:
+      error:
         "DISCORD_PAYMENT_WEBHOOK_URL must be a valid Discord webhook URL (https://discord.com/api/webhooks/...)",
     }),
 });

@@ -57,17 +57,17 @@ const FollowMutualJobDataSchema = z.object({
 });
 
 const NudgeSentJobDataSchema = z.object({
-  nudgeId: z.number().int(),
+  nudgeId: z.int(),
   senderId: z.string().min(1),
   receiverId: z.string().min(1),
   senderName: z.string(),
-  todoId: z.number().int().optional(),
+  todoId: z.int().optional(),
   todoTitle: z.string().optional(),
   message: z.string().optional(),
 });
 
 const CheerSentJobDataSchema = z.object({
-  cheerId: z.number().int(),
+  cheerId: z.int(),
   senderId: z.string().min(1),
   receiverId: z.string().min(1),
   senderName: z.string(),

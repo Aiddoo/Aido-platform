@@ -35,17 +35,17 @@ export interface ScheduleRunWindow {
 }
 
 const scheduleOptionsSchema = z.looseObject({
-  deleteAfterSeconds: z.number().int().positive().optional(),
+  deleteAfterSeconds: z.int().positive().optional(),
 });
 
 const runCountsRowSchema = z.object({
-  ordinal: z.number().int(),
-  completed: z.number().int(),
-  failed: z.number().int(),
+  ordinal: z.int(),
+  completed: z.int(),
+  failed: z.int(),
   oldestPendingCreatedAtMs: z.number().nullable(),
 });
 
-const arrivalsRowSchema = z.object({ name: z.string(), arrivals: z.number().int() });
+const arrivalsRowSchema = z.object({ name: z.string(), arrivals: z.int() });
 
 const NO_RUNS: ScheduleRunCounts = { completed: 0, failed: 0, oldestPendingCreatedAt: null };
 

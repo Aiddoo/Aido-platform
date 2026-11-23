@@ -104,6 +104,22 @@
           {
             "property": "passthrough",
             "message": "Zod 4에서 .passthrough()는 옛 문법입니다. z.looseObject를 씁니다."
+          },
+          {
+            "property": "strict",
+            "message": "Zod 4에서 .strict()는 옛 문법입니다. z.strictObject를 씁니다."
+          },
+          {
+            "property": "merge",
+            "message": "Zod 4에서 .merge()는 옛 문법입니다. .extend(other.shape)나 펼친 shape로 합칩니다."
+          },
+          {
+            "property": "superRefine",
+            "message": "Zod 4에서 .superRefine()은 옛 문법입니다. .check()나 .refine()을 씁니다."
+          },
+          {
+            "property": "errorMap",
+            "message": "Zod 4에서 errorMap은 옛 문법입니다. error 옵션을 씁니다."
           }
         ]
       }

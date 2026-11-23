@@ -26,7 +26,7 @@ const RETRY: JobRetryPolicy = {
 };
 
 const documentSchema = z.object({
-  documentId: z.number().int(),
+  documentId: z.int(),
   // 옛 작업에 없던 필드도 소비 때 parse로 기본값을 채운다
   locale: z.string().default("ko"),
 });

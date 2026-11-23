@@ -1,8 +1,5 @@
 import { z } from "zod";
 
-/**
- * 데이터베이스 설정 스키마
- */
 export const databaseSchema = z.object({
   DATABASE_URL: z
     .url("DATABASE_URL must be a valid URL")

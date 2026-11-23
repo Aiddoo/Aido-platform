@@ -26,7 +26,7 @@ const HEAP_GROWTH_LIMIT_BYTES = 4 * 1024 * 1024;
 const USER_COUNT = 20;
 const MB = 1024 * 1024;
 
-const soakJobSchema = z.object({ userId: z.string(), sequence: z.number().int() });
+const soakJobSchema = z.object({ userId: z.string(), sequence: z.int() });
 const createdTodoSchema = z.object({ data: z.object({ todo: z.object({ id: z.number() }) }) });
 
 const SOAK_QUEUE = defineQueue({

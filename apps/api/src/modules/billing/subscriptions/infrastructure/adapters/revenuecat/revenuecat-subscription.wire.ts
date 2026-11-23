@@ -7,7 +7,7 @@ import { z } from "zod";
 const revenueCatSubscriptionSchema = z.object({
   id: z.string().min(1),
   product_id: z.string().min(1).nullable(),
-  current_period_ends_at: z.number().int().nullable(),
+  current_period_ends_at: z.int().nullable(),
   gives_access: z.boolean(),
   // 새 값이 생겨도 대조를 막지 않도록 문자열로 받고 아는 값만 해석한다
   auto_renewal_status: z.string(),

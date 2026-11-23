@@ -27,11 +27,6 @@ import { type RetentionConfig, retentionSchema } from "./retention.schema.js";
 import { type SecurityConfig, securitySchema } from "./security.schema.js";
 import { type WebhookConfig, webhookSchema } from "./webhook.schema.js";
 
-// 스키마 재export
-
-/**
- * 통합 환경변수 스키마
- */
 export const envSchema = z
   .object({
     ...appSchema.shape,
@@ -58,9 +53,6 @@ export const envSchema = z
   .check(validateCacheConfig)
   .check(validateJwtLifetimes);
 
-/**
- * 환경변수 전체 타입
- */
 export type EnvConfig = AppConfig &
   CacheEnvConfig &
   DatabaseConfig &
@@ -82,10 +74,7 @@ export type EnvConfig = AppConfig &
 /** 시작 검증. 스키마 위에 운영에서 위험한 조합을 거부하는 규칙을 더한다. */
 const startupEnvSchema = envSchema.check(validateProductionReadiness);
 
-/**
- * 환경변수 검증 함수. @nestjs/config의 validate 옵션에 전달한다.
- * 오류는 키 이름과 규칙만 모아 한 번에 알리고 값은 싣지 않는다.
- */
+// 오류는 키 이름과 규칙만 모아 한 번에 알리고 값은 싣지 않는다
 export function validateEnv(config: Record<string, unknown>): EnvConfig {
   const result = startupEnvSchema.safeParse(config);
 

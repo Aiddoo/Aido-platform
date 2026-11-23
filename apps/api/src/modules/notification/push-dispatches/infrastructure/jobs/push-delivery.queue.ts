@@ -30,8 +30,8 @@ export const PUSH_DELIVERY_PRIORITY = {
 } as const satisfies Record<PushDeliveryLane, number>;
 
 const PushDeliveryPublicationSchema = z.strictObject({
-  dispatchId: z.number().int().positive(),
-  publishAttempt: z.number().int().positive(),
+  dispatchId: z.int().positive(),
+  publishAttempt: z.int().positive(),
 });
 
 const PushDeliveryPublicationBatchSchema = z

@@ -2,10 +2,6 @@ import { z } from "zod";
 
 import { type AppEnvironment, type NodeEnvironment, resolveAppEnvironment } from "./app.schema.js";
 
-/**
- * 외부 서비스 연동 설정 스키마
- * 향후 확장용 - 현재는 선택적
- */
 export const externalSchema = z.object({
   REVENUECAT_WEBHOOK_SECRET: z.string().optional(),
   /** 운영 알림의 RevenueCat 고객 화면 링크용 공개 프로젝트 ID(비밀 아님) */
@@ -16,7 +12,6 @@ export const externalSchema = z.object({
    */
   REVENUECAT_API_V2_SECRET_KEY: z.string().min(1).optional(),
 
-  // Redis 캐시/세션 (선택) - 빈 문자열 허용
   REDIS_URL: z
     .string()
     .optional()
@@ -24,7 +19,6 @@ export const externalSchema = z.object({
       error: "REDIS_URL must be a valid Redis URL (redis:// or rediss://)",
     }),
 
-  // Sentry 에러 모니터링 (선택) - 빈 문자열 허용
   SENTRY_DSN: z
     .string()
     .optional()
