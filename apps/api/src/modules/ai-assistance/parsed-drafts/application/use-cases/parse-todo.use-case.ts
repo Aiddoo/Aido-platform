@@ -16,7 +16,7 @@ import {
 import { generateWithPrompt } from "../../../ai-generations/application/messages/prompt-definition.messages.js";
 import type { AiGeneratorPort } from "../../../ai-generations/application/ports/ai-generator.port.js";
 import type { UserLocalePreferenceReaderPort } from "../../../ai-generations/application/ports/user-locale-preference.reader.port.js";
-import { resolveRequestLocale } from "../../../ai-generations/application/request-locale.reader.js";
+import { resolveRequestLocale } from "../../../ai-generations/application/request-locale.mapper.js";
 import { parseTodoPrompt } from "../messages/parse-todo-prompt.messages.js";
 import { toParseMeta } from "../parse-meta.mapper.js";
 import type { ChargedGenerationPort } from "../ports/charged-generation.port.js";

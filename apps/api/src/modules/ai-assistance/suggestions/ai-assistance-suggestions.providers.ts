@@ -17,17 +17,18 @@ import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port"
 
 import { AiGeneratorPort } from "../ai-generations/application/ports/ai-generator.port.js";
 import { UserLocalePreferenceReaderPort } from "../ai-generations/application/ports/user-locale-preference.reader.port.js";
-import { ScheduledAiConsentReader } from "../ai-generations/application/scheduled-ai-consent.reader.js";
+import { CheckScheduledAiConsentUseCase } from "../ai-generations/application/use-cases/check-scheduled-ai-consent.use-case.js";
 import { aiAssistanceSuggestionsConfig } from "./ai-assistance-suggestions.config.js";
 import { OnDemandSuggestionAnalysisConfigPort } from "./application/ports/on-demand-suggestion-analysis-config.port.js";
 import { SuggestionActivityReaderPort } from "./application/ports/suggestion-activity.reader.port.js";
 import { SuggestionAnalysisEnqueuerPort } from "./application/ports/suggestion-analysis-enqueuer.port.js";
 import { SuggestionAnalysisRunRepositoryPort } from "./application/ports/suggestion-analysis-run.repository.port.js";
 import { SuggestionRepositoryPort } from "./application/ports/suggestion.repository.port.js";
-import { SuggestionAnalysisStateReader } from "./application/suggestion-analysis-state.reader.js";
-import { SuggestionContextReader } from "./application/suggestion-context.reader.js";
 import { AnalyzeAndCreateSuggestionsUseCase } from "./application/use-cases/analyze-and-create-suggestions.use-case.js";
+import { CountRecentSuggestionTodosUseCase } from "./application/use-cases/count-recent-suggestion-todos.use-case.js";
 import { DispatchSuggestionAnalysesUseCase } from "./application/use-cases/dispatch-suggestion-analyses.use-case.js";
+import { GetSuggestionAnalysisStateUseCase } from "./application/use-cases/get-suggestion-analysis-state.use-case.js";
+import { GetSuggestionContextUseCase } from "./application/use-cases/get-suggestion-context.use-case.js";
 import { HandleSuggestionActionUseCase } from "./application/use-cases/handle-suggestion-action.use-case.js";
 import { ListPendingSuggestionsUseCase } from "./application/use-cases/list-pending-suggestions.use-case.js";
 import { RequestSuggestionAnalysisUseCase } from "./application/use-cases/request-suggestion-analysis.use-case.js";
@@ -53,16 +54,19 @@ export const AI_ASSISTANCE_SUGGESTIONS_PROVIDERS = [
       config: ConfigType<typeof aiAssistanceSuggestionsConfig>,
     ): OnDemandSuggestionAnalysisConfigPort => ({ isEnabled: config.onDemandEnabled }),
   },
-  provideUseCase(SuggestionContextReader, {
+  provideUseCase(GetSuggestionContextUseCase, {
     activityReader: SuggestionActivityReaderPort,
     repeatingTitleReader: RepeatingTodoTitleReaderPort,
     clock: ClockPort,
   }),
-  provideUseCase(SuggestionAnalysisStateReader, {
-    runs: SuggestionAnalysisRunRepositoryPort,
+  provideUseCase(CountRecentSuggestionTodosUseCase, {
     todoCountReader: SingleTodoCountReaderPort,
-    scheduledAiConsent: ScheduledAiConsentReader,
     timezoneReader: UserTimezoneReaderPort,
+  }),
+  provideUseCase(GetSuggestionAnalysisStateUseCase, {
+    runs: SuggestionAnalysisRunRepositoryPort,
+    countRecentTodos: CountRecentSuggestionTodosUseCase,
+    scheduledAiConsent: CheckScheduledAiConsentUseCase,
     onDemandConfig: OnDemandSuggestionAnalysisConfigPort,
     clock: ClockPort,
   }),
@@ -72,7 +76,8 @@ export const AI_ASSISTANCE_SUGGESTIONS_PROVIDERS = [
     runs: SuggestionAnalysisRunRepositoryPort,
     suggestions: SuggestionRepositoryPort,
     enqueuer: SuggestionAnalysisEnqueuerPort,
-    analysisState: SuggestionAnalysisStateReader,
+    analysisState: GetSuggestionAnalysisStateUseCase,
+    countRecentTodos: CountRecentSuggestionTodosUseCase,
     unitOfWork: UnitOfWorkPort,
     mutationLock: MutationLockPort,
     clock: ClockPort,
@@ -89,10 +94,10 @@ export const AI_ASSISTANCE_SUGGESTIONS_PROVIDERS = [
     repository: SuggestionRepositoryPort,
     runs: SuggestionAnalysisRunRepositoryPort,
     generator: AiGeneratorPort,
-    scheduledAiConsent: ScheduledAiConsentReader,
+    scheduledAiConsent: CheckScheduledAiConsentUseCase,
     unitOfWork: UnitOfWorkPort,
     mutationLock: MutationLockPort,
-    contextBuilder: SuggestionContextReader,
+    suggestionContext: GetSuggestionContextUseCase,
     entitlementReader: EntitlementReaderPort,
     userMutationLock: UserMutationLockPort,
     clock: ClockPort,
@@ -100,7 +105,7 @@ export const AI_ASSISTANCE_SUGGESTIONS_PROVIDERS = [
   }),
   provideUseCase(ListPendingSuggestionsUseCase, {
     repository: SuggestionRepositoryPort,
-    analysisState: SuggestionAnalysisStateReader,
+    analysisState: GetSuggestionAnalysisStateUseCase,
     entitlementReader: EntitlementReaderPort,
     clock: ClockPort,
     logger: loggerFor(ListPendingSuggestionsUseCase),

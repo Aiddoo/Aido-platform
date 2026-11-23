@@ -24,10 +24,8 @@ import {
 } from "../../../ai-generations/application/ai-generations.log-events.js";
 import { generateWithPrompt } from "../../../ai-generations/application/messages/prompt-definition.messages.js";
 import type { AiGeneratorPort } from "../../../ai-generations/application/ports/ai-generator.port.js";
-import type {
-  ScheduledAiConsentReadModel,
-  ScheduledAiConsentReader,
-} from "../../../ai-generations/application/scheduled-ai-consent.reader.js";
+import type { ScheduledAiConsentReadModel } from "../../../ai-generations/application/read-models/scheduled-ai-consent.read-model.js";
+import type { CheckScheduledAiConsentUseCase } from "../../../ai-generations/application/use-cases/check-scheduled-ai-consent.use-case.js";
 import { resolveSuggestedCategoryId } from "../../domain/category-resolver.domain-service.js";
 import type {
   SuggestionAnalysisResult,
@@ -49,9 +47,9 @@ import { suggestionPromptFor } from "../messages/suggestion-prompt.messages.js";
 import type { SuggestionAnalysisRunRepositoryPort } from "../ports/suggestion-analysis-run.repository.port.js";
 import type { SuggestionRepositoryPort } from "../ports/suggestion.repository.port.js";
 import type { SuggestionContextReadModel } from "../read-models/suggestion-context.read-model.js";
-import type { SuggestionContextReader } from "../suggestion-context.reader.js";
 import { SuggestionLockKeys } from "../suggestions.lock-keys.js";
 import { SuggestionLogEvent } from "../suggestions.log-events.js";
+import type { GetSuggestionContextUseCase } from "./get-suggestion-context.use-case.js";
 
 interface AnalyzeAndCreateSuggestionsDependencies {
   readonly repository: Pick<
@@ -60,11 +58,11 @@ interface AnalyzeAndCreateSuggestionsDependencies {
   >;
   readonly runs: Pick<SuggestionAnalysisRunRepositoryPort, "findByUserId" | "save">;
   readonly generator: Pick<AiGeneratorPort, "generate">;
-  readonly scheduledAiConsent: Pick<ScheduledAiConsentReader, "find">;
+  readonly scheduledAiConsent: Pick<CheckScheduledAiConsentUseCase, "execute">;
   readonly clock: ClockPort;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly mutationLock: Pick<MutationLockPort, "acquire">;
-  readonly contextBuilder: Pick<SuggestionContextReader, "build">;
+  readonly suggestionContext: Pick<GetSuggestionContextUseCase, "execute">;
   readonly logger: Pick<ApplicationLoggerPort, "log" | "warn">;
   readonly entitlementReader: Pick<EntitlementReaderPort, "canInTransaction">;
   readonly userMutationLock: Pick<UserMutationLockPort, "lockById">;
@@ -141,11 +139,14 @@ export class AnalyzeAndCreateSuggestionsUseCase {
     if (!(await this.#dependencies.entitlementReader.canInTransaction(owner, "AI_SUGGESTION"))) {
       return this.#skip(command, "NOT_PREMIUM", null);
     }
-    const consent = await this.#dependencies.scheduledAiConsent.find(owner);
+    const consent = await this.#dependencies.scheduledAiConsent.execute(owner);
     if (!consent.allowed) {
       return this.#skip(command, "CONSENT_MISSING", null);
     }
-    const context = await this.#dependencies.contextBuilder.build(owner, command.timezone);
+    const context = await this.#dependencies.suggestionContext.execute({
+      userId: owner,
+      timezone: command.timezone,
+    });
     const recentTodoCount = context.todos.length;
     if (!hasEnoughRecentTodos(recentTodoCount)) {
       return this.#skip(command, "NO_RECENT_TODOS", recentTodoCount);

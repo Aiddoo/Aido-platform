@@ -19,7 +19,7 @@ import {
 import { generateWithPrompt } from "../../../ai-generations/application/messages/prompt-definition.messages.js";
 import type { AiGeneratorPort } from "../../../ai-generations/application/ports/ai-generator.port.js";
 import type { UserLocalePreferenceReaderPort } from "../../../ai-generations/application/ports/user-locale-preference.reader.port.js";
-import { resolveRequestLocale } from "../../../ai-generations/application/request-locale.reader.js";
+import { resolveRequestLocale } from "../../../ai-generations/application/request-locale.mapper.js";
 import { fingerprintRequest } from "../../../shared/domain/request-fingerprint.domain-service.js";
 import type { ParsedMemoTodo } from "../../domain/parsed-drafts.constants.js";
 import {

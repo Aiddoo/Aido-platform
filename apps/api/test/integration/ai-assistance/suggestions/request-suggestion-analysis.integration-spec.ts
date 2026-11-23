@@ -48,8 +48,10 @@ describe("RequestSuggestionAnalysisUseCase (실제 PostgreSQL 잠금)", () => {
       suggestions: new DrizzleSuggestionRepository(transactionHost),
       enqueuer,
       analysisState: {
-        readRecentTodoCount: async () => ({ timeZone: "Asia/Seoul", recentTodoCount: 3 }),
-        read: async () => ({ state: "ANALYZING", canRequestNow: false, nextAnalysisAt: NOW }),
+        execute: async () => ({ state: "ANALYZING", canRequestNow: false, nextAnalysisAt: NOW }),
+      },
+      countRecentTodos: {
+        execute: async () => ({ timeZone: "Asia/Seoul", recentTodoCount: 3 }),
       },
       unitOfWork: uow,
       mutationLock: new PostgresMutationLockAdapter(transactionHost),

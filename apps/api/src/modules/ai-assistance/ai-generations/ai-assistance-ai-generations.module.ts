@@ -9,7 +9,7 @@ import { aiAssistanceAiGenerationsConfig } from "./ai-assistance-ai-generations.
 import { AI_ASSISTANCE_AI_GENERATIONS_PROVIDERS } from "./ai-assistance-ai-generations.providers.js";
 import { AiGeneratorPort } from "./application/ports/ai-generator.port.js";
 import { UserLocalePreferenceReaderPort } from "./application/ports/user-locale-preference.reader.port.js";
-import { ScheduledAiConsentReader } from "./application/scheduled-ai-consent.reader.js";
+import { CheckScheduledAiConsentUseCase } from "./application/use-cases/check-scheduled-ai-consent.use-case.js";
 
 /**
  * AI 업체 연결·폴백·회로·비용 예산과 모든 AI 작업이 함께 쓰는 요청 문맥(동의·언어·앱 버전).
@@ -23,6 +23,6 @@ import { ScheduledAiConsentReader } from "./application/scheduled-ai-consent.rea
     NotificationPushDevicesModule,
   ],
   providers: [...AI_ASSISTANCE_AI_GENERATIONS_PROVIDERS],
-  exports: [AiGeneratorPort, UserLocalePreferenceReaderPort, ScheduledAiConsentReader],
+  exports: [AiGeneratorPort, UserLocalePreferenceReaderPort, CheckScheduledAiConsentUseCase],
 })
 export class AiAssistanceAiGenerationsModule {}

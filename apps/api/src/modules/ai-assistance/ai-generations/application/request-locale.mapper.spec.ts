@@ -1,7 +1,7 @@
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { StubUserLocalePreferenceReader } from "#test/doubles/ai-assistance/stub-ai-parsing-readers";
 
-import { resolveRequestLocale } from "./request-locale.reader.js";
+import { resolveRequestLocale } from "./request-locale.mapper.js";
 
 const USER_ID = UserId.reconstitute("user-1");
 

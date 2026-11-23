@@ -6,16 +6,17 @@ import type {
   AiTaskOutputs,
   AiGeneratorPort,
 } from "#api/modules/ai-assistance/ai-generations/application/ports/ai-generator.port";
-import { ScheduledAiConsentReader } from "#api/modules/ai-assistance/ai-generations/application/scheduled-ai-consent.reader";
+import { CheckScheduledAiConsentUseCase } from "#api/modules/ai-assistance/ai-generations/application/use-cases/check-scheduled-ai-consent.use-case";
 import type { AiGeneration } from "#api/modules/ai-assistance/ai-generations/domain/ai-generation.aggregate";
 import { GenerateReportUseCase } from "#api/modules/ai-assistance/ai-reports/application/use-cases/generate-report.use-case";
-import { SuggestionAnalysisStateReader } from "#api/modules/ai-assistance/suggestions/application/suggestion-analysis-state.reader";
-import { SuggestionContextReader } from "#api/modules/ai-assistance/suggestions/application/suggestion-context.reader";
 import {
   type AnalyzeAndCreateSuggestionsCommand,
   AnalyzeAndCreateSuggestionsUseCase,
 } from "#api/modules/ai-assistance/suggestions/application/use-cases/analyze-and-create-suggestions.use-case";
+import { CountRecentSuggestionTodosUseCase } from "#api/modules/ai-assistance/suggestions/application/use-cases/count-recent-suggestion-todos.use-case";
 import { DispatchSuggestionAnalysesUseCase } from "#api/modules/ai-assistance/suggestions/application/use-cases/dispatch-suggestion-analyses.use-case";
+import { GetSuggestionAnalysisStateUseCase } from "#api/modules/ai-assistance/suggestions/application/use-cases/get-suggestion-analysis-state.use-case";
+import { GetSuggestionContextUseCase } from "#api/modules/ai-assistance/suggestions/application/use-cases/get-suggestion-context.use-case";
 import { RequestSuggestionAnalysisUseCase } from "#api/modules/ai-assistance/suggestions/application/use-cases/request-suggestion-analysis.use-case";
 import { SuggestionAnalysisRun } from "#api/modules/ai-assistance/suggestions/domain/suggestion-analysis-run.entity";
 import type { SuggestionPick } from "#api/modules/ai-assistance/suggestions/domain/suggestion-candidates.domain-service";
@@ -112,12 +113,12 @@ export function createAiAssistanceFixture() {
   const clientAppVersion = new StubAiClientAppVersion();
   const logger = new RecordingApplicationLogger();
   const clock = new DateClock();
-  const scheduledAiConsent = new ScheduledAiConsentReader({
+  const scheduledAiConsent = new CheckScheduledAiConsentUseCase({
     consentReader: aiDataSharingConsent,
     clientAppVersion,
     clock,
   });
-  const contextBuilder = new SuggestionContextReader({
+  const suggestionContext = new GetSuggestionContextUseCase({
     activityReader,
     repeatingTitleReader,
     clock,
@@ -129,17 +130,20 @@ export function createAiAssistanceFixture() {
     scheduledAiConsent,
     unitOfWork,
     mutationLock,
-    contextBuilder,
+    suggestionContext,
     clock,
     logger,
     entitlementReader: access,
     userMutationLock: access,
   });
-  const analysisState = new SuggestionAnalysisStateReader({
-    runs,
+  const countRecentTodos = new CountRecentSuggestionTodosUseCase({
     todoCountReader,
-    scheduledAiConsent,
     timezoneReader,
+  });
+  const analysisState = new GetSuggestionAnalysisStateUseCase({
+    runs,
+    countRecentTodos,
+    scheduledAiConsent,
     onDemandConfig,
     clock,
   });
@@ -150,6 +154,7 @@ export function createAiAssistanceFixture() {
     suggestions: repository,
     enqueuer,
     analysisState,
+    countRecentTodos,
     unitOfWork,
     mutationLock,
     clock,
@@ -192,7 +197,7 @@ export function createAiAssistanceFixture() {
     aiDataSharingConsent,
     clientAppVersion,
     logger,
-    contextBuilder,
+    suggestionContext,
     analyze,
     request,
     dispatch,

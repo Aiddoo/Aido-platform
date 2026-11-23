@@ -8,8 +8,8 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { SuggestionRepositoryPort } from "../ports/suggestion.repository.port.js";
 import type { PendingSuggestionsReadModel } from "../read-models/suggestion-analysis.read-model.js";
-import type { SuggestionAnalysisStateReader } from "../suggestion-analysis-state.reader.js";
 import { SuggestionLogEvent } from "../suggestions.log-events.js";
+import type { GetSuggestionAnalysisStateUseCase } from "./get-suggestion-analysis-state.use-case.js";
 
 export interface ListPendingSuggestionsQuery {
   readonly userId: string;
@@ -17,7 +17,7 @@ export interface ListPendingSuggestionsQuery {
 
 interface ListPendingSuggestionsDependencies {
   readonly repository: Pick<SuggestionRepositoryPort, "listPendingByUserId">;
-  readonly analysisState: Pick<SuggestionAnalysisStateReader, "read">;
+  readonly analysisState: Pick<GetSuggestionAnalysisStateUseCase, "execute">;
   readonly entitlementReader: Pick<EntitlementReaderPort, "can">;
   readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "warn">;
@@ -43,7 +43,10 @@ export class ListPendingSuggestionsUseCase {
       userId,
       this.#dependencies.clock.now(),
     );
-    const analysis = await this.#dependencies.analysisState.read(userId, suggestions.length);
+    const analysis = await this.#dependencies.analysisState.execute({
+      userId,
+      pendingCount: suggestions.length,
+    });
     return { suggestions, analysis };
   }
 }

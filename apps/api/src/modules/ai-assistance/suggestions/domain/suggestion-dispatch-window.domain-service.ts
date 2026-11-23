@@ -59,7 +59,7 @@ export function nextSuggestionDispatchAt(
   return dispatchAt(today.add({ days: 1 }));
 }
 
-// 상태·지금 받기의 할 일 수와 분석 문맥(SuggestionContextReader)이 어긋나지 않게 모두 이 구간을 센다
+// 상태·지금 받기의 할 일 수와 분석 문맥(GetSuggestionContextUseCase)이 어긋나지 않게 모두 이 구간을 센다
 export function suggestionAnalysisPeriod(
   input: SuggestionDispatchMoment,
 ): SuggestionAnalysisPeriod {
