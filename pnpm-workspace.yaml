@@ -114,29 +114,29 @@ catalogs:
   expo58:
     '@expo/material-symbols': '0.1.1'
     '@expo/metro-runtime': '~58.0.17'
-    '@expo/ui': '~58.0.28'
+    '@expo/ui': '~58.0.29'
     '@react-native-community/datetimepicker': '9.2.1'
     '@react-native/jest-preset': '0.88.1'
-    '@sentry/react-native': '~8.28.0'
+    '@sentry/react-native': '~8.28.1'
     '@shopify/flash-list': '2.3.2'
     '@shopify/react-native-skia': '2.14.0'
     '@types/jest': '30.0.0'
     '@types/react': '19.3.0'
     'babel-preset-expo': '~58.0.25'
-    'expo': '58.0.25'
+    'expo': '58.0.26'
     'expo-apple-authentication': '~58.0.3'
     'expo-application': '~58.1.2'
     'expo-asset': '~58.0.21'
     'expo-audio': '~58.0.12'
-    'expo-auth-session': '~58.0.18'
+    'expo-auth-session': '~58.0.19'
     'expo-blur': '~58.0.6'
     'expo-build-properties': '~58.0.12'
     'expo-clipboard': '~58.0.4'
     'expo-constants': '~58.0.16'
     'expo-crypto': '~58.0.8'
-    'expo-dev-client': '~58.0.20'
+    'expo-dev-client': '~58.0.21'
     'expo-device': '~58.0.5'
-    'expo-file-system': '~58.0.13'
+    'expo-file-system': '~58.0.14'
     'expo-font': '~58.0.12'
     'expo-glass-effect': '~58.0.5'
     'expo-haptics': '~58.0.8'
@@ -148,7 +148,7 @@ catalogs:
     'expo-location': '~58.0.22'
     'expo-network': '~58.0.5'
     'expo-notifications': '~58.1.9'
-    'expo-router': '~58.0.31'
+    'expo-router': '~58.0.32'
     'expo-screen-orientation': '~58.0.4'
     'expo-secure-store': '~58.0.3'
     'expo-sharing': '~58.0.23'
@@ -156,11 +156,11 @@ catalogs:
     'expo-store-review': '~58.0.3'
     'expo-system-ui': '~58.0.7'
     'expo-updates': '~58.0.22'
-    'expo-web-browser': '~58.0.8'
-    'expo-widgets': '~58.0.28'
+    'expo-web-browser': '~58.1.0'
+    'expo-widgets': '~58.0.29'
     'heroui-native': '1.0.11'
     'jest': '30.5.2'
-    'jest-expo': '~58.0.14'
+    'jest-expo': '~58.0.15'
     'react': '19.3.0'
     'react-dom': '19.3.0'
     'react-native': '0.88.1'
@@ -200,10 +200,10 @@ catalogs:
     'nestjs-pino': '5.3.2'
 
 patchedDependencies:
-  '@sentry/react-native@8.28.0': patches/@sentry__react-native@8.28.0.patch
+  '@sentry/react-native@8.28.1': patches/@sentry__react-native@8.28.1.patch
   '@gorhom/bottom-sheet@5.2.14': patches/@gorhom__bottom-sheet@5.2.14.patch
   react-native-screens@4.30.1: patches/react-native-screens@4.30.1.patch
-  expo-widgets@58.0.28: patches/expo-widgets@58.0.28.patch
+  expo-widgets@58.0.29: patches/expo-widgets@58.0.29.patch
 auditConfig:
   # 빌드 도구에만 있는 권고라 위험을 수용한다. 상위 패키지가 고친 버전을 받으면 지운다.
   # - GHSA-g3hv-75wg-m249(minimatch <11.0.1): @expo/fingerprint가 기본 optimizationLevel 1로 써서 해당 없다고
