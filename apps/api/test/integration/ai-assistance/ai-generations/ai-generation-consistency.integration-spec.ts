@@ -36,6 +36,7 @@ import { DrizzleSuggestionRepository } from "#api/modules/ai-assistance/suggesti
 import { GetAiDataSharingConsentUseCase } from "#api/modules/identity/user-preferences/application/use-cases/get-ai-data-sharing-consent.use-case";
 import { AiDataSharingConsentReaderAdapter } from "#api/modules/identity/user-preferences/infrastructure/adapters/ai-data-sharing-consent-reader.adapter";
 import { DrizzleUserConsentRepository } from "#api/modules/identity/user-preferences/infrastructure/persistence/drizzle-user-consent.repository";
+import { RandomUserTagGeneratorAdapter } from "#api/modules/identity/users/infrastructure/adapters/user-tag-generator.adapter";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { DrizzleClientAppVersionReader } from "#api/modules/notification/push-devices/infrastructure/persistence/drizzle-client-app-version.reader";
 import { DrizzleRepeatingTodoTitleReader } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-repeating-todo-title.reader";
@@ -127,7 +128,11 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     suggestions = new DrizzleSuggestionRepository(fixture.transactionHost);
     activity = new DrizzleSuggestionActivityReader(fixture.transactionHost);
     reports = new DrizzleAiReportRepository(fixture.transactionHost);
-    users = new DrizzleUserRepository(fixture.transactionHost, new DateClock());
+    users = new DrizzleUserRepository(
+      fixture.transactionHost,
+      new DateClock(),
+      new RandomUserTagGeneratorAdapter(),
+    );
     userId = createEntityId();
     await client
       .insert(userTable)

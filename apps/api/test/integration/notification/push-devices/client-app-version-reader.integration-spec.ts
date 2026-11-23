@@ -1,4 +1,5 @@
 import { LatestClientAppVersionAdapter } from "#api/modules/ai-assistance/ai-generations/infrastructure/adapters/latest-client-app-version.adapter";
+import { RandomUserTagGeneratorAdapter } from "#api/modules/identity/users/infrastructure/adapters/user-tag-generator.adapter";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { DrizzleClientAppVersionReader } from "#api/modules/notification/push-devices/infrastructure/persistence/drizzle-client-app-version.reader";
 import { pushToken, user as userTable } from "#api/platform/database/schema/index";
@@ -32,7 +33,11 @@ describe("사용자 앱 버전 조회 (실제 PostgreSQL)", () => {
     userId = user.id;
     const { transactionHost } = createDatabaseTransactionFixture(client);
     reader = new DrizzleClientAppVersionReader(transactionHost);
-    users = new DrizzleUserRepository(transactionHost, new DateClock());
+    users = new DrizzleUserRepository(
+      transactionHost,
+      new DateClock(),
+      new RandomUserTagGeneratorAdapter(),
+    );
   });
 
   afterAll(async () => {

@@ -1,6 +1,6 @@
 import { ACCOUNT_DELETION } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
-import { Injectable, Logger, Optional } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { and, asc, eq, gt, inArray, isNotNull, isNull, lte, ne, sql } from "drizzle-orm";
 
 import { IdentityPersistenceConflict } from "#api/modules/identity/shared/domain/identity.errors";
@@ -10,6 +10,7 @@ import type {
   UserActivityReaderPort,
 } from "#api/modules/identity/users/application/ports/user-activity.reader.port";
 import type { UserAppVersionReaderPort } from "#api/modules/identity/users/application/ports/user-app-version.reader.port";
+import { UserTagGeneratorPort } from "#api/modules/identity/users/application/ports/user-tag-generator.port";
 import {
   type UserProfileReadModel,
   UserRepositoryPort,
@@ -31,7 +32,6 @@ import { localDateIn } from "#api/shared/domain/time/timezone-name";
 import { userTagCollided, userTagGenerationFailed } from "../../application/users.errors.js";
 import type { User } from "../../domain/user.aggregate.js";
 import { toUser, toUserRow } from "./user-row.mapper.js";
-import { generateUserTag } from "./user-tag.adapter.js";
 
 type UserInsert = typeof user.$inferInsert;
 
@@ -55,18 +55,17 @@ export class DrizzleUserRepository
 
   readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
   readonly #clock: ClockPort;
-  readonly #generateTag: () => string;
+  readonly #userTagGenerator: UserTagGeneratorPort;
 
   constructor(
     transactionHost: TransactionHost<DrizzleTransactionalAdapter>,
     clock: ClockPort,
-    // 태그 충돌 integration 테스트만 정한 태그를 넘긴다. Nest는 넘기지 않아 무작위 태그다
-    @Optional() generateTag: () => string = generateUserTag,
+    userTagGenerator: UserTagGeneratorPort,
   ) {
     super();
     this.#transactionHost = transactionHost;
     this.#clock = clock;
-    this.#generateTag = generateTag;
+    this.#userTagGenerator = userTagGenerator;
   }
 
   async findByEmail(email: string): Promise<User | null> {
@@ -281,7 +280,7 @@ export class DrizzleUserRepository
 
   async #generateUniqueUserTag(): Promise<string> {
     for (let i = 0; i < MAX_USER_TAG_RETRIES; i++) {
-      const tag = this.#generateTag();
+      const tag = this.#userTagGenerator.generate();
       const exists = await this.#db.query.user.findFirst({
         columns: { id: true },
         where: { userTag: tag },

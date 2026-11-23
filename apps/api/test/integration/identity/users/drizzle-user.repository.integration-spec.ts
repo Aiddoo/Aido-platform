@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 
 import { User } from "#api/modules/identity/users/domain/user.aggregate";
+import { RandomUserTagGeneratorAdapter } from "#api/modules/identity/users/infrastructure/adapters/user-tag-generator.adapter";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { user } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -30,7 +31,11 @@ describe("DrizzleUserRepository (실제 PostgreSQL)", () => {
 
   function createRepository(): DrizzleUserRepository {
     const { transactionHost } = createDatabaseTransactionFixture(client);
-    return new DrizzleUserRepository(transactionHost, new DateClock());
+    return new DrizzleUserRepository(
+      transactionHost,
+      new DateClock(),
+      new RandomUserTagGeneratorAdapter(),
+    );
   }
 
   describeUserRepositoryContract(async () => createRepository());

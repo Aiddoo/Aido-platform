@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { DELETED_COMMENT_AUTHOR } from "#api/modules/engagement/todo-comments/domain/todo-comments.constants";
 import { GetGrowthSummaryUseCase } from "#api/modules/identity/users/application/use-cases/get-growth-summary.use-case";
+import { RandomUserTagGeneratorAdapter } from "#api/modules/identity/users/infrastructure/adapters/user-tag-generator.adapter";
 import { DrizzleGrowthMetricsReader } from "#api/modules/identity/users/infrastructure/persistence/drizzle-growth-metrics.reader";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { RepeatableReadGrowthMetricsSnapshotAdapter } from "#api/modules/identity/users/infrastructure/persistence/repeatable-read-growth-metrics-snapshot.adapter";
@@ -41,7 +42,11 @@ describe("성장 지표 — identity 활동일·planning 할 일 조회 (실제 
     testDb = new TestDatabase();
     client = await testDb.start();
     const { transactionHost } = createDatabaseTransactionFixture(client);
-    activityWriter = new DrizzleUserRepository(transactionHost, new DateClock());
+    activityWriter = new DrizzleUserRepository(
+      transactionHost,
+      new DateClock(),
+      new RandomUserTagGeneratorAdapter(),
+    );
     growthSummary = new GetGrowthSummaryUseCase({
       growthMetricsReader: new DrizzleGrowthMetricsReader(transactionHost),
       todoActivationReader: new DrizzleTodoActivationReader(transactionHost),
@@ -290,6 +295,7 @@ function createActivityWriter(client: TestDatabaseClient): DrizzleUserRepository
   return new DrizzleUserRepository(
     createDatabaseTransactionFixture(client).transactionHost,
     new DateClock(),
+    new RandomUserTagGeneratorAdapter(),
   );
 }
 

@@ -11,9 +11,11 @@ import { UserProfileInvalidatorPort } from "./application/ports/user-profile-inv
 import { UserSearchReaderPort } from "./application/ports/user-search.reader.port.js";
 import { UserSignupReaderPort } from "./application/ports/user-signup.reader.port.js";
 import { UserSubscriptionProjectionPort } from "./application/ports/user-subscription-projection.port.js";
+import { UserTagGeneratorPort } from "./application/ports/user-tag-generator.port.js";
 import { UserRepositoryPort } from "./application/ports/user.repository.port.js";
 import { UserMutationLockAdapter } from "./infrastructure/adapters/user-mutation-lock.adapter.js";
 import { UserProfileCacheAdapter } from "./infrastructure/adapters/user-profile-cache.adapter.js";
+import { RandomUserTagGeneratorAdapter } from "./infrastructure/adapters/user-tag-generator.adapter.js";
 import { DrizzleSecurityLogRepository } from "./infrastructure/persistence/drizzle-security-log.repository.js";
 import { DrizzleStoreAppUserReader } from "./infrastructure/persistence/drizzle-store-app-user.reader.js";
 import { DrizzleUserAiUsageCounterAdapter } from "./infrastructure/persistence/drizzle-user-ai-usage-counter.adapter.js";
@@ -30,6 +32,7 @@ import { DrizzleUserRepository } from "./infrastructure/persistence/drizzle-user
 @Module({
   providers: [
     { provide: UserRepositoryPort, useClass: DrizzleUserRepository },
+    { provide: UserTagGeneratorPort, useClass: RandomUserTagGeneratorAdapter },
     { provide: SecurityLogRepositoryPort, useClass: DrizzleSecurityLogRepository },
     { provide: UserMutationLockPort, useClass: UserMutationLockAdapter },
     { provide: UserProfileInvalidatorPort, useClass: UserProfileCacheAdapter },

@@ -6,6 +6,7 @@ import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructur
 import { user } from "#api/platform/database/schema/index";
 import { ApplicationException } from "#api/shared/application/application.exception";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { StubUserTagGenerator } from "#test/doubles/identity/stub-user-tag-generator";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { createDatabaseTransactionFixture, createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -49,7 +50,7 @@ describe("DrizzleUserRepository 태그 충돌 (실제 PostgreSQL)", () => {
     const repository = new DrizzleUserRepository(
       transactionHost,
       new DateClock(),
-      () => CLASHING_TAG,
+      new StubUserTagGenerator(CLASHING_TAG),
     );
 
     // When

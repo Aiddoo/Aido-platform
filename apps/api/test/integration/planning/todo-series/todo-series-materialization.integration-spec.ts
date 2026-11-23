@@ -2,6 +2,7 @@ import { Logger } from "@nestjs/common";
 import { and, eq, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 
+import { RandomUserTagGeneratorAdapter } from "#api/modules/identity/users/infrastructure/adapters/user-tag-generator.adapter";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { TodoTitle } from "#api/modules/planning/shared/domain/todo-title.vo";
 import { MaterializeDueTodoSeriesUseCase } from "#api/modules/planning/todo-series/application/use-cases/materialize-due-todo-series.use-case";
@@ -107,7 +108,11 @@ describe("회차 채우기 작업 (실제 PostgreSQL)", () => {
       clock: new DateClock(),
       seriesRepository,
       seriesOwner: new TodoSeriesOwnerAdapter(
-        new DrizzleUserRepository(fixture.transactionHost, new DateClock()),
+        new DrizzleUserRepository(
+          fixture.transactionHost,
+          new DateClock(),
+          new RandomUserTagGeneratorAdapter(),
+        ),
         entitlements,
       ),
       dueRunner: new MaterializeTodoSeriesUseCase({

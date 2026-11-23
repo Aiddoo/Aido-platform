@@ -3,6 +3,7 @@ import { vi } from "vitest";
 import { z } from "zod";
 
 import { PurgeDeletedAccountsUseCase } from "#api/modules/identity/users/application/use-cases/purge-deleted-accounts.use-case";
+import { RandomUserTagGeneratorAdapter } from "#api/modules/identity/users/infrastructure/adapters/user-tag-generator.adapter";
 import { DrizzleSecurityLogRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-security-log.repository";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { securityLog, user as userTable } from "#api/platform/database/schema/index";
@@ -30,6 +31,7 @@ describe("DrizzleUserRepository 통합 테스트 — 계정 생명주기", () =>
     repository = new DrizzleUserRepository(
       createDatabaseTransactionFixture(client).transactionHost,
       new DateClock(),
+      new RandomUserTagGeneratorAdapter(),
     );
   });
 
@@ -129,7 +131,11 @@ describe("DrizzleUserRepository 통합 테스트 — 계정 생명주기", () =>
 
   function givenPurge() {
     const transaction = createDatabaseTransactionFixture(client);
-    const userRepository = new DrizzleUserRepository(transaction.transactionHost, new DateClock());
+    const userRepository = new DrizzleUserRepository(
+      transaction.transactionHost,
+      new DateClock(),
+      new RandomUserTagGeneratorAdapter(),
+    );
     const securityLogRepository = new DrizzleSecurityLogRepository(transaction.transactionHost);
     const notificationCleanup = {
       cleanupInTransaction: async () => ({ affectedUserIds: [] }),

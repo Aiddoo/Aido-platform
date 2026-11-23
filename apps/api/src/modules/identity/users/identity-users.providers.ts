@@ -42,6 +42,7 @@ import { UserProfileCachePort } from "./application/ports/user-profile-cache.por
 import { UserProfileInvalidatorPort } from "./application/ports/user-profile-invalidator.port.js";
 import { UserProvisioningSeederPort } from "./application/ports/user-provisioning-seeder.port.js";
 import { UserRegistrationNotifierPort } from "./application/ports/user-registration-notifier.port.js";
+import { UserTagGeneratorPort } from "./application/ports/user-tag-generator.port.js";
 import { UserRepositoryPort } from "./application/ports/user.repository.port.js";
 import { DeleteAccountUseCase } from "./application/use-cases/delete-account.use-case.js";
 import { GetCurrentUserUseCase } from "./application/use-cases/get-current-user.use-case.js";
@@ -56,6 +57,7 @@ import { UpdateProfileUseCase } from "./application/use-cases/update-profile.use
 import { RetentionEnrollerAdapter } from "./infrastructure/adapters/retention-enroller.adapter.js";
 import { UserProfileCacheAdapter } from "./infrastructure/adapters/user-profile-cache.adapter.js";
 import { UserProvisioningSeederAdapter } from "./infrastructure/adapters/user-provisioning-seeder.adapter.js";
+import { RandomUserTagGeneratorAdapter } from "./infrastructure/adapters/user-tag-generator.adapter.js";
 import { DrizzleGrowthMetricsReader } from "./infrastructure/persistence/drizzle-growth-metrics.reader.js";
 import { DrizzleUserRepository } from "./infrastructure/persistence/drizzle-user.repository.js";
 import { RepeatableReadGrowthMetricsSnapshotAdapter } from "./infrastructure/persistence/repeatable-read-growth-metrics-snapshot.adapter.js";
@@ -188,6 +190,7 @@ export const IDENTITY_USERS_PROVIDERS = [
   // 폐기한 세션의 푸시 기기를 놓는 ACL이다. 세션을 폐기하는 slice마다 notification 기기 조회 Module에서 받는다
   { provide: UserProfileCachePort, useClass: UserProfileCacheAdapter },
   { provide: UserActivityWriterPort, useClass: DrizzleUserRepository },
+  { provide: UserTagGeneratorPort, useClass: RandomUserTagGeneratorAdapter },
   { provide: UserProvisioningSeederPort, useClass: UserProvisioningSeederAdapter },
   { provide: RetentionEnrollerPort, useClass: RetentionEnrollerAdapter },
   userRegistrationNotifierProvider,
