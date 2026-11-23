@@ -79,7 +79,7 @@ export class InMemoryTodoCategoryRepository extends TodoCategoryRepositoryPort {
     return category == null ? null : this.#withCount(category);
   }
 
-  async findManyByUserId(userId: UserId): Promise<TodoCategoryWithCountReadModel[]> {
+  async listByUserId(userId: UserId): Promise<TodoCategoryWithCountReadModel[]> {
     return [...this.#categories.values()]
       .filter((category) => category.userId.equals(userId))
       .toSorted((left, right) => left.sortOrder - right.sortOrder || left.id.value - right.id.value)

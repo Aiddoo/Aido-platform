@@ -5,7 +5,7 @@ import {
 } from '../__tests__/weather-report.fixtures';
 import { WeatherIndicatorPolicy } from './weather-indicator.model';
 
-describe('getPollutantGrade', () => {
+describe('findPollutantGrade', () => {
   it.each([
     ['pm10', 30, 'good'],
     ['pm10', 31, 'moderate'],
@@ -21,7 +21,7 @@ describe('getPollutantGrade', () => {
     const airQuality = createAirQuality(pollutant === 'pm10' ? { pm10: value } : { pm25: value });
 
     // When
-    const grade = WeatherIndicatorPolicy.getPollutantGrade(airQuality, pollutant);
+    const grade = WeatherIndicatorPolicy.findPollutantGrade(airQuality, pollutant);
 
     // Then
     expect(grade).toBe(expected);
@@ -32,7 +32,7 @@ describe('getPollutantGrade', () => {
     const airQuality = createAirQuality({ pm10: 200, pm25: null });
 
     // When
-    const grade = WeatherIndicatorPolicy.getPollutantGrade(airQuality, 'pm25');
+    const grade = WeatherIndicatorPolicy.findPollutantGrade(airQuality, 'pm25');
 
     // Then
     expect(grade).toBeNull();
@@ -43,7 +43,7 @@ describe('getPollutantGrade', () => {
     const airQuality = createAirQuality({ pm10: 200, pm25: 10 });
 
     // When
-    const grade = WeatherIndicatorPolicy.getPollutantGrade(airQuality, 'pm25');
+    const grade = WeatherIndicatorPolicy.findPollutantGrade(airQuality, 'pm25');
 
     // Then
     expect(grade).toBe('good');
@@ -70,7 +70,7 @@ describe('getUvLevel', () => {
   });
 });
 
-describe('getCompassDirection', () => {
+describe('findCompassDirection', () => {
   it.each([
     [0, 'n'],
     [22, 'n'],
@@ -83,7 +83,7 @@ describe('getCompassDirection', () => {
     [null, null],
   ] as const)('풍향 %s도는 %s 방위로 보여 준다', (windDirection, expected) => {
     // When
-    const direction = WeatherIndicatorPolicy.getCompassDirection(
+    const direction = WeatherIndicatorPolicy.findCompassDirection(
       createCurrentWeather({ windDirection }),
     );
 

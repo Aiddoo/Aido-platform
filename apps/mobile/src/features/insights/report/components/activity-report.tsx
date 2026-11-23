@@ -33,12 +33,7 @@ import { match, P } from 'ts-pattern';
 
 import type { ReportChart } from '../constants/report.events';
 import { isReportUnavailableError } from '../domains/report.error';
-import {
-  type AiReport,
-  type DailyCompletion,
-  ReportPolicy,
-  type ReportType,
-} from '../domains/report.model';
+import { type AiReport, type DailyCompletion, type ReportType } from '../domains/report.model';
 import { useGetReportDetailQueryOptions } from '../queries/report.queries';
 import { reportParamsSchema } from '../schemas/report-params.schema';
 import {
@@ -100,7 +95,7 @@ ActivityReport.Receipt = function Receipt({
 }: ActivityReportReceiptProps) {
   const { t } = useTranslation('ai');
 
-  const peakHour = ReportPolicy.getPeakHour(report);
+  const { peakHour } = report;
 
   return (
     <ScallopedContainer>
@@ -117,12 +112,10 @@ ActivityReport.Receipt = function Receipt({
                 label={t('report.card.completed')}
                 value={`${report.stats.completedTodos}/${report.stats.totalTodos}`}
               />
-              {report.dailyCompletions != null && (
+              {report.stats.perfectDays != null && (
                 <Stat
                   label={t('report.card.perfectDays')}
-                  value={t('report.card.days', {
-                    count: ReportPolicy.getPerfectDayCount(report),
-                  })}
+                  value={t('report.card.days', { count: report.stats.perfectDays })}
                 />
               )}
               <Stat

@@ -13,7 +13,7 @@ import { ApiSuccessResponse } from "../swagger/decorators/api-response.decorator
 import { ResponseContractInterceptor } from "./response-contract.interceptor.js";
 import { ResponseTransformInterceptor } from "./response-transform.interceptor.js";
 
-const memoSchema = z.object({ id: z.number().int(), createdAt: z.iso.datetime() });
+const memoSchema = z.object({ id: z.int(), createdAt: z.iso.datetime() });
 
 @Controller("contract")
 class ContractFixtureController {

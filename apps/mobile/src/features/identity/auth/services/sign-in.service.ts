@@ -1,5 +1,5 @@
 import type { ApiError } from '@src/core/errors/api-error';
-import { err, ok, type Result } from '@src/core/errors/result';
+import { fail, ok, type Result } from '@src/core/errors/result';
 import type { AppLogger } from '@src/core/ports/app-logger';
 import type { AppleSignInResult, SocialAuthGateway } from '@src/core/ports/social-auth-gateway';
 import type { TokenStore } from '@src/core/ports/token-store';
@@ -152,12 +152,12 @@ export class SignInService {
         }
         // 서버가 실어 보낸 오류 코드면 errors 카탈로그의 문구를 쓴다. 빈 문자열은 오류가 없는 것으로 본다
         if (queryParams.error || queryParams.error_description) {
-          return err(new BusinessError(queryParams.error ?? AUTH_ERROR_CODE.PROVIDER_ERROR));
+          return fail(new BusinessError(queryParams.error ?? AUTH_ERROR_CODE.PROVIDER_ERROR));
         }
-        return err(new BusinessError(AUTH_ERROR_CODE.NO_CODE_RECEIVED));
+        return fail(new BusinessError(AUTH_ERROR_CODE.NO_CODE_RECEIVED));
       })
-      .with({ type: 'cancelled' }, () => err(new BusinessError(AUTH_ERROR_CODE.LOGIN_CANCELLED)))
-      .with({ type: 'failed' }, () => err(new BusinessError(AUTH_ERROR_CODE.UNKNOWN)))
+      .with({ type: 'cancelled' }, () => fail(new BusinessError(AUTH_ERROR_CODE.LOGIN_CANCELLED)))
+      .with({ type: 'failed' }, () => fail(new BusinessError(AUTH_ERROR_CODE.UNKNOWN)))
       .exhaustive();
   };
 
@@ -167,15 +167,15 @@ export class SignInService {
     return match(result)
       .returnType<Result<AppleCredential, BusinessError>>()
       .with({ type: 'success' }, (credential) => ok(credential))
-      .with({ type: 'cancelled' }, () => err(new BusinessError(AUTH_ERROR_CODE.LOGIN_CANCELLED)))
-      .with({ type: 'no-token' }, () => err(new BusinessError(AUTH_ERROR_CODE.APPLE_NO_TOKEN)))
+      .with({ type: 'cancelled' }, () => fail(new BusinessError(AUTH_ERROR_CODE.LOGIN_CANCELLED)))
+      .with({ type: 'no-token' }, () => fail(new BusinessError(AUTH_ERROR_CODE.APPLE_NO_TOKEN)))
       .with({ type: 'invalid-response' }, () =>
-        err(new BusinessError(AUTH_ERROR_CODE.APPLE_INVALID_RESPONSE)),
+        fail(new BusinessError(AUTH_ERROR_CODE.APPLE_INVALID_RESPONSE)),
       )
       .with({ type: 'unavailable' }, () =>
-        err(new BusinessError(AUTH_ERROR_CODE.APPLE_UNAVAILABLE)),
+        fail(new BusinessError(AUTH_ERROR_CODE.APPLE_UNAVAILABLE)),
       )
-      .with({ type: 'failed' }, () => err(new BusinessError(AUTH_ERROR_CODE.UNKNOWN)))
+      .with({ type: 'failed' }, () => fail(new BusinessError(AUTH_ERROR_CODE.UNKNOWN)))
       .exhaustive();
   };
 }

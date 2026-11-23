@@ -77,7 +77,7 @@ export class WeatherReportCache implements WeatherReportCachePort {
     return cached == null ? null : toWeatherReport(cached, cell);
   }
 
-  getOrLoadAirQuality(
+  findOrLoadAirQuality(
     cell: GeoCell,
     load: () => Promise<AirQuality | null>,
   ): Promise<AirQuality | null> {

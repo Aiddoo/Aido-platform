@@ -50,6 +50,7 @@ export const DEMO_REPORT = {
     completionRate: 78,
     prevCompletionRate: 66,
     streakDays: 7,
+    perfectDays: 2,
   },
   dailyCompletions: [
     { total: 5, completed: 4 },
@@ -70,6 +71,7 @@ export const DEMO_REPORT = {
     { hour: 21, count: 5 },
     { hour: 22, count: 2 },
   ],
+  peakHour: 7,
 } as const;
 
 /** 무료로 보는 이번 주 기록이다. 목요일을 오늘로 두어 금·토·일은 아직 오지 않은 날로 보인다 */

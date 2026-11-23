@@ -411,7 +411,7 @@ ReportList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
 ReportList.Empty = function Empty() {
   const { t } = useTranslation('ai');
   const [reportType] = useReportType();
-  const { timeZone } = useDateFormatContext();
+  const { timezone } = useDateFormatContext();
   const now = useMinuteNow();
   // 상태 쿼리의 로딩·오류는 ReportStatusBanner 경계가 맡는다. 여기서 읽으면 한 오류가 두 곳에 뜬다
   const { data: status } = useQuery(useGetReportStatusQueryOptions());
@@ -429,7 +429,7 @@ ReportList.Empty = function Empty() {
         <TextSkeleton size="b3" className="mx-auto w-48" />
       ) : (
         <Text size="b3" shade={7} align="center">
-          {match(ReportStatusPolicy.getDaysUntilReport(status, reportType, { now, timeZone }))
+          {match(ReportStatusPolicy.getDaysUntilReport(status, reportType, { now, timezone }))
             .with(0, () => t('report.list.arrivalToday', { type: reportLabel }))
             .otherwise((count) => t('report.list.arrivalInDays', { count, type: reportLabel }))}
         </Text>

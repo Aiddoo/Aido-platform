@@ -19,7 +19,7 @@ function bucketKey(bucket: VerificationEmailCapBucket): string {
 export class InMemoryVerificationEmailCap extends VerificationEmailCapPort {
   readonly #sentAts = new Map<string, readonly Temporal.Instant[]>();
 
-  async findSentAts(bucket: VerificationEmailCapBucket): Promise<readonly Temporal.Instant[]> {
+  async listSentAts(bucket: VerificationEmailCapBucket): Promise<readonly Temporal.Instant[]> {
     return this.#sentAts.get(bucketKey(bucket)) ?? [];
   }
 

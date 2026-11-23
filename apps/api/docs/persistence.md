@@ -4,7 +4,7 @@ Repository·Reader·스키마·마이그레이션·DB 오류 번역을 바꿀 �
 
 ## 정본
 
-`drizzle-orm`·`drizzle-kit` `1.0.0-rc.5`(catalog `drizzle1`), `@nestjs/drizzle`(Pool 수명주기), 공식 트랜잭션 어댑터 `@nestjs-cls/transactional-adapter-drizzle-orm`을 쓴다.
+`drizzle-orm`·`drizzle-kit` `1.0.0-rc.6`(catalog `drizzle1`), `@nestjs/drizzle`(Pool 수명주기), 공식 트랜잭션 어댑터 `@nestjs-cls/transactional-adapter-drizzle-orm`을 쓴다.
 
 | 항목            | 경로/명령                                                                            |
 | --------------- | ------------------------------------------------------------------------------------ |
@@ -32,7 +32,7 @@ Repository·Reader·스키마·마이그레이션·DB 오류 번역을 바꿀 �
 - Reader 사례: 댓글은 조회 묶음마다 Reader 하나다. [DrizzleTodoCommentThreadReader](../src/modules/engagement/todo-comments/infrastructure/persistence/drizzle-todo-comment-thread.reader.ts)는 묶음 머리를 root keyset으로 읽고 대표 답글·참여자를 LATERAL로 붙이며, 대화·답글·접근 확인은 각자 Reader가 같은 응답 칸 매퍼(`todo-comment-read-model.mapper.ts`)를 쓴다. 좋아요 여부는 `todo-comment-likes` slice의 Reader가 page 단위로 읽는다(viewer 상태·cursor 문맥이 있어 공유 캐시를 쓰지 않는다).
 - 다른 Context의 테이블은 읽지도 쓰지도 않는다. 필요한 projection은 소유 Context가 public 조회 포트로 열고 그 Context의 Reader가 SQL을 가진다([아키텍처](architecture.md#의존-규칙과-강제)).
 
-**작업 원장(work ledger) 저장소**: Aggregate 없이 작업 행을 집합으로 옮기는 저장소다. 푸시 발송(`DrizzlePushDeliveryOutboxRepository`, 단계별 `DrizzlePushDeliveryClaimRepository`·`DrizzlePushDeliveryFinalizationRepository`·`DrizzlePushDeliveryLeaseRepository`, `DrizzlePushReceiptRepository`), 결제 안내(`DrizzleTrialEndingNoticeRepository`·`DrizzleUpcomingRenewalNoticeRepository`·`DrizzlePremiumGrantEndingNoticeRepository`), 구독 처리 원장(`DrizzleSubscriptionEventReceiptRepository`), 지운 계정의 댓글 정리(`DrizzleTodoCommentPurgeRepository`), 초대 보상 지급·이력(`DrizzleRewardGrantRepository`·`DrizzleRewardClaimRepository`)이 그렇다. 리텐션 배정(`DrizzleRetentionAssignmentRepository`)은 Aggregate 저장소다. 단계 후보는 집합 조회(`findDueStages`)로 고르고, 배정은 묶음마다 `findByIds`로 읽어 `save`가 바뀐 단계만 `status = 'SCHEDULED'` 조건 UPDATE로 쓴다. Aggregate 저장소도 많은 행을 한 문장으로 바꾸는 경로만 같은 묶음 메서드를 둔다(지운 글의 좋아요를 모두 끄는 `unlikeAllByCommentId`, 이전한 사용자의 구독 체인을 모두 옮기는 `takeOverChains`). 여기서는 `find*`·`save` 대신 업무 이름의 집합 연산(`claim`·`finalizeResults`·`expireUnreceipted`)을 둔다(소유자 결정, [이름 사전](conventions.md#repository-메서드)). 경합은 조건부 UPDATE·세대 fence·정렬된 행 잠금이 막고, 로그·발송·enqueue는 그대로 UseCase가 한다.
+**작업 원장(work ledger) 저장소**: Aggregate 없이 작업 행을 집합으로 옮기는 저장소다. 푸시 발송(`DrizzlePushDeliveryOutboxRepository`, 단계별 `DrizzlePushDeliveryClaimRepository`·`DrizzlePushDeliveryFinalizationRepository`·`DrizzlePushDeliveryLeaseRepository`, `DrizzlePushReceiptRepository`), 결제 안내(`DrizzleTrialEndingNoticeRepository`·`DrizzleUpcomingRenewalNoticeRepository`·`DrizzlePremiumGrantEndingNoticeRepository`), 구독 처리 원장(`DrizzleSubscriptionEventReceiptRepository`), 지운 계정의 댓글 정리(`DrizzleTodoCommentPurgeRepository`), 초대 보상 지급·이력(`DrizzleRewardGrantRepository`·`DrizzleRewardClaimRepository`)이 그렇다. 리텐션 배정(`DrizzleRetentionAssignmentRepository`)은 Aggregate 저장소다. 단계 후보는 집합 조회(`listDueStages`)로 고르고, 배정은 묶음마다 `listByIds`로 읽어 `save`가 바뀐 단계만 `status = 'SCHEDULED'` 조건 UPDATE로 쓴다. Aggregate 저장소도 많은 행을 한 문장으로 바꾸는 경로만 같은 묶음 메서드를 둔다(지운 글의 좋아요를 모두 끄는 `unlikeAllByCommentId`, 이전한 사용자의 구독 체인을 모두 옮기는 `takeOverChains`). 여기서는 `find*`·`save` 대신 업무 이름의 집합 연산(`claim`·`finalizeResults`·`expireUnreceipted`)을 둔다(소유자 결정, [이름 사전](conventions.md#repository-메서드)). 경합은 조건부 UPDATE·세대 fence·정렬된 행 잠금이 막고, 로그·발송·enqueue는 그대로 UseCase가 한다.
 
 ## 저장과 잠금
 
@@ -65,6 +65,8 @@ Repository·Reader·스키마·마이그레이션·DB 오류 번역을 바꿀 �
 | pg-boss 테이블 조회·SQL 브리지                                              | `pg-boss-schedule-run.reader.ts`, `drizzle-pg-boss.database.ts` |
 | 연결 확인 `SELECT 1`                                                        | `DatabaseHealthIndicator`                                       |
 
+`db.execute` 결과는 칸 코덱을 거치지 않고 pg 기본 파서로 읽힌다(Drizzle 1.0 rc.6부터). 시간대 없는 `timestamp`는 프로세스 시간대로 읽혀 어긋나므로 SQL에서 `::TEXT`로 받아 `raw-timestamp.schema.ts`로 바꾼다.
+
 ## 시간 칼럼
 
 | 값        | DB                                | 서버 타입            |
@@ -90,7 +92,7 @@ Repository·Reader·스키마·마이그레이션·DB 오류 번역을 바꿀 �
 | 연결 대기                             | `DATABASE_POOL_CONNECTION_TIMEOUT_MS` 5s, 넘으면 503으로 빨리 실패                                                                                                                                            |
 | `query_timeout`(클라이언트)           | 20s(pg-boss 풀 65s). 서버 `statement_timeout`보다 길어 평소에는 서버가 먼저 취소하고, DB가 답하지 않을 때만 끊는다                                                                                            |
 | 크기                                  | 앱 `DATABASE_POOL_MAX` 10 + pg-boss `JOB_POOL_MAX` 3(TimeZone·lock·유휴 트랜잭션 상한·TLS·유휴·연결 대기는 앱 풀과 같다). 메모리 때문에 늘리지 않는다                                                         |
-| TLS                                   | URL에 `sslmode`(운영 `require`)가 있으면 TLS로 연결하고 인증서를 검증한다(이미지의 RDS CA `NODE_EXTRA_CA_CERTS`). 규칙은 [보안](security.md)                                                                  |
+| TLS                                   | URL에 `sslmode`(운영 `verify-full`)가 있으면 TLS로 연결하고 인증서를 검증한다(이미지의 RDS CA `NODE_EXTRA_CA_CERTS`). 규칙은 [보안](security.md)                                                              |
 
 ## DB 오류 번역
 

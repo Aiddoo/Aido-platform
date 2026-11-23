@@ -1,13 +1,12 @@
 import type { Provider } from "@nestjs/common";
 
+import { SessionPushDeviceReleaserPort } from "#api/modules/notification/push-devices/notification-push-devices.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
 import { SessionCachePort } from "../sessions/application/ports/session-cache.port.js";
-import { SessionPushDeviceReleaserPort } from "../sessions/application/ports/session-push-device-releaser.port.js";
 import { SessionRepositoryPort } from "../sessions/application/ports/session.repository.port.js";
-import { SessionPushDeviceReleaserAdapter } from "../sessions/infrastructure/adapters/session-push-device-releaser.adapter.js";
 import { SecurityLogRepositoryPort } from "../users/application/ports/security-log.repository.port.js";
 import { UserMutationLockPort } from "../users/application/ports/user-mutation-lock.port.js";
 import { UserProfileInvalidatorPort } from "../users/application/ports/user-profile-invalidator.port.js";
@@ -130,7 +129,6 @@ export const setPasswordProvider = provideUseCase(SetPasswordUseCase, {
 
 export const IDENTITY_LINKED_ACCOUNTS_PROVIDERS = [
   // 폐기한 세션의 푸시 기기를 놓는 ACL이다. 세션을 폐기하는 slice마다 notification 기기 조회 Module에서 받는다
-  { provide: SessionPushDeviceReleaserPort, useClass: SessionPushDeviceReleaserAdapter },
   { provide: LinkedAccountsRepositoryPort, useClass: DrizzleLinkedAccountsRepository },
   { provide: PasswordHasherPort, useClass: Argon2PasswordHasherAdapter },
   { provide: PasswordResetCooldownPort, useClass: PasswordResetCooldownAdapter },

@@ -42,7 +42,7 @@ export function isOneTimeMilestone(milestone: Pick<InviterRewardMilestone, 'repe
   return milestone.repeatEvery == null;
 }
 
-export function getRemainingToNextMilestone(invite: Invite) {
+export function findRemainingToNextMilestone(invite: Invite) {
   return invite.nextMilestone == null
     ? null
     : calculateRemainingInvites(invite.qualifiedCount, invite.nextMilestone.qualifiedCount);
@@ -92,7 +92,7 @@ export function getProgress(invite: Invite) {
 }
 
 export const InvitePolicy = {
-  getRemainingToNextMilestone,
+  findRemainingToNextMilestone,
   getNextPremiumDays,
   getNextFriendSlots,
   getEarnedPremiumDays,

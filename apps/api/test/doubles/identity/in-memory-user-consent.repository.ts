@@ -86,11 +86,11 @@ export class InMemoryUserConsentRepository extends UserConsentRepositoryPort {
     });
   }
 
-  async findByUserIds(userIds: readonly UserId[]): Promise<UserConsentReadModel[]> {
+  async listByUserIds(userIds: readonly UserId[]): Promise<UserConsentReadModel[]> {
     return this.all.filter((record) => userIds.some((userId) => userId.value === record.userId));
   }
 
-  async findMarketingReconfirmTargets(
+  async listMarketingReconfirmTargets(
     params: FindMarketingReconfirmTargetsParams,
   ): Promise<MarketingReconfirmTarget[]> {
     const { cutoff, afterUserId, limit } = params;

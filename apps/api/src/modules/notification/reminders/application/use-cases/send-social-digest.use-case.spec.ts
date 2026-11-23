@@ -59,7 +59,7 @@ describe("SendSocialDigestUseCase — 소셜 다이제스트 전략", () => {
     // Then
     expect(result).toEqual({ sent: 1 });
     expect(reader.queries[0]).toEqual({
-      method: "findSocialDigestCandidates",
+      method: "listSocialDigestCandidates",
       params: {
         timezones: ["Asia/Seoul"],
         today: timezoneContext.today,
@@ -169,7 +169,7 @@ describe("SendSocialDigestUseCase — 소셜 다이제스트 전략", () => {
     // Then
     expect(result).toEqual({ sent: 0 });
     expect(publisher.published).toEqual([]);
-    expect(reader.queriedMethods()).not.toContain("findFriendsWithTodayTodos");
+    expect(reader.queriedMethods()).not.toContain("listFriendsWithTodayTodos");
   });
 
   it("오늘 이미 소셜 다이제스트를 받은 사용자를 제외한다", async () => {

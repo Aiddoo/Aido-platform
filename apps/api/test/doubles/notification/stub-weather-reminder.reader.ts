@@ -13,25 +13,25 @@ export class StubWeatherReminderReader extends WeatherReminderReaderPort {
   usersWithLocation: WeatherReminderUserReadModel[] = [];
   fallbackUsers: WeatherFallbackUserReadModel[] = [];
 
-  async findWeatherMorningUsersWithLocation(
+  async listWeatherMorningUsersWithLocation(
     params: WeatherReminderParams,
   ): Promise<WeatherReminderUserReadModel[]> {
     this.userParams.push(params);
     return this.usersWithLocation;
   }
 
-  async findWeatherMorningFallbackUsers(): Promise<WeatherFallbackUserReadModel[]> {
+  async listWeatherMorningFallbackUsers(): Promise<WeatherFallbackUserReadModel[]> {
     return this.fallbackUsers;
   }
 
-  async findWeatherEveningUsersWithLocation(
+  async listWeatherEveningUsersWithLocation(
     params: WeatherReminderParams,
   ): Promise<WeatherReminderUserReadModel[]> {
     this.userParams.push(params);
     return this.usersWithLocation;
   }
 
-  async findWeatherEveningFallbackUsers(): Promise<WeatherFallbackUserReadModel[]> {
+  async listWeatherEveningFallbackUsers(): Promise<WeatherFallbackUserReadModel[]> {
     return this.fallbackUsers;
   }
 }

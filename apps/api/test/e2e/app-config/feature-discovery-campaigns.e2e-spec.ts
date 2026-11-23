@@ -56,7 +56,7 @@ describe("기능 발견 설정 (E2E)", () => {
     };
     vi.spyOn(getFeatureDiscoveryCampaign, "execute").mockReturnValueOnce(
       createFeatureDiscoveryCampaignFixture({
-        campaignId: response.campaignId,
+        id: response.campaignId,
         minAppVersion: response.minAppVersion,
         launchedAt: Temporal.Instant.from(response.launchedAt),
         autoOpen: response.autoOpen,

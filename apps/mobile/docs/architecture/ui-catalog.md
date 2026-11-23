@@ -16,26 +16,26 @@ UI는 heroui-native → `shared/ui` → React Native 순서로 고른다. 같은
 
 ## 역할별 부품
 
-굵은 이름은 1.15.2에서 새로 만든 공용 부품이다. 아직 옮기지 않은 자리는 [1.15.2 다음 버전 후보](../../../../docs/releases/1.15.2/README.md#다음-버전-후보)에 있다.
+역할마다 쓸 부품은 하나다. 아직 이 부품으로 옮기지 않은 자리는 [다음 버전 후보 이슈(#1785)](https://github.com/Aiddoo/Aido-platform/issues/1785)에 있다.
 
 | 역할                | 쓸 것                                                                                                                                          | 판정                                                                                                                                                              |
 | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 레이아웃·글자       | `Box`·`HStack`·`VStack`·`Grid`·`Spacing`·`ReadableContent`·`AdaptivePane`·`SafeAreaScrollView`, `Text`·`H1`~`H4`·`TextSkeleton`·`WordWrapText` | 유지. heroui Typography는 앱 11단계 크기 × 글꼴 5단계를 대신하지 못한다                                                                                           |
 | 버튼·아이콘·닫기    | `Button`·`IconButton`·`TextButton`(heroui 확장), `KeyboardAdaptiveButton`, heroui `CloseButton`                                                | 유지                                                                                                                                                              |
 | 목록·설정 행        | `ListRow`, `SettingsListGroup`(`ListGroup` 확장, 빈 카드 `.Empty`), `InfiniteList`                                                             | 유지. 빈 상태를 다시 그리지 않는다                                                                                                                                |
-| 카드                | **`SurfaceCard`**                                                                                                                              | 직접 만든 카드와 직접 쓴 `Card`를 옮긴다                                                                                                                          |
+| 카드                | `SurfaceCard`                                                                                                                                  | 카드를 직접 만들거나 heroui `Card`를 바로 쓰지 않는다                                                                                                             |
 | 영수증 카드         | `ScallopedContainer`                                                                                                                           | 위아래 물결 가장자리 카드. AI 제안·리포트·구독·초대 혜택. 한 흐름은 영수증 하나에 담고 머리와 줄은 `DashedDivider`로 잇는다                                       |
-| 입력                | `Input`·`TextArea`·`BottomSheetInput`, `PasswordInput`(auth 기능)                                                                              | 유지([이유](#직접-만든-부품을-둔-이유))                                                                                                                           |
-| OTP·선택·체크·토글  | heroui `InputOTP`, `RadioGroup` + `ChoiceRadio`, **`Checkbox`**(shared 확장), `ControlField`(`SettingsListGroup.Toggle`)                       | 고르는 입력은 `RadioGroup.Item`                                                                                                                                   |
-| 칩                  | **`LabelChip`**, 누르는 칩은 `ActionButton`                                                                                                    | soft 칩 복제를 옮긴다                                                                                                                                             |
-| 시트·다이얼로그     | `ConfirmDialog`(`useConfirmDialog().openAsync({ onConfirm })`, route가 그리면 `isOpen`·`onFinish`), **`useOpenSheet`**, **`RouteBottomSheet`** | [시트](#시트)                                                                                                                                                     |
-| 팝오버·메뉴         | heroui `Popover` + `HintPopoverContent`, heroui `Menu` + `MenuActionItem` + **`MenuContent`**                                                  | 위험 항목 빨강은 하나                                                                                                                                             |
-| 토스트·안내         | `useAppToast`, `InlineAlert`, `OfflineBanner`, **`QueryErrorFallback.Inline`**                                                                 | 흐름 안 배너는 `InlineAlert` 하나                                                                                                                                 |
+| 입력                | `Input`·`TextArea`(시트 안에서도 같다), `PasswordInput`(auth 기능)                                                                             | 유지([이유](#직접-만든-부품을-둔-이유))                                                                                                                           |
+| OTP·선택·체크·토글  | heroui `InputOTP`, `RadioGroup` + `ChoiceRadio`, `Checkbox`(shared 확장), `ControlField`(`SettingsListGroup.Toggle`)                           | 고르는 입력은 `RadioGroup.Item`                                                                                                                                   |
+| 칩                  | `LabelChip`, 누르는 칩은 `ActionButton`                                                                                                        | soft 칩을 다시 만들지 않는다                                                                                                                                      |
+| 시트·다이얼로그     | `ConfirmDialog`(`useConfirmDialog().openAsync({ onConfirm })`, route가 그리면 `isOpen`·`onFinish`), `useOpenSheet`, `RouteBottomSheet`         | [시트](#시트)                                                                                                                                                     |
+| 팝오버·메뉴         | heroui `Popover` + `HintPopoverContent`, heroui `Menu` + `MenuActionItem` + `MenuContent`                                                      | 위험 항목 빨강은 하나                                                                                                                                             |
+| 토스트·안내         | `useAppToast`, `InlineAlert`, `OfflineBanner`, `QueryErrorFallback.Inline`                                                                     | 흐름 안 배너는 `InlineAlert` 하나                                                                                                                                 |
 | 오류·빈 상태        | `QueryErrorBoundary`, `Result` + `shared/ui/illustration`의 그림                                                                               | 톤은 [design](../design.md#일러스트와-캐릭터)                                                                                                                     |
 | 스켈레톤·스피너     | heroui `Skeleton`·`Spinner`, `TextSkeleton`(`Omit<ComponentProps<typeof Skeleton>, …>`)                                                        | 스피너 색은 `useResolvedColor`                                                                                                                                    |
-| 탭·구분선·스크롤 끝 | `ViewTabs` + `LineTabTrigger`·`SegmentTabTrigger`, heroui `Accordion`, heroui `Separator` + `DashedDivider`, **`ScrollFade`**                  | 실선 구분선은 토큰 하나                                                                                                                                           |
-| 이미지·비율·캐릭터  | `Image`, `FeatureMedia`, `AspectRatio`, **`Mascot`**                                                                                           | 비율을 직접 계산하지 않는다                                                                                                                                       |
-| 시간 고르기         | **`TimeSpinner`** + `openAndroidTimePicker()`                                                                                                  | 설정·할 일 시간 피커를 하나로                                                                                                                                     |
+| 탭·구분선·스크롤 끝 | `ViewTabs` + `LineTabTrigger`·`SegmentTabTrigger`, heroui `Accordion`, heroui `Separator` + `DashedDivider`, `ScrollFade`                      | 실선 구분선은 토큰 하나                                                                                                                                           |
+| 이미지·비율·캐릭터  | `Image`, `FeatureMedia`, `AspectRatio`, `Mascot`                                                                                               | 비율을 직접 계산하지 않는다                                                                                                                                       |
+| 시간 고르기         | `TimeSpinner` + `openAndroidTimePicker()`                                                                                                      | 설정·할 일 시간 피커를 하나로                                                                                                                                     |
 | 크기 재기           | `useLayoutSize()`, Skia는 감싼 View `onLayout` → shared value(프레임마다 그리는 Canvas만 `onSize`, [ui](./ui.md#모션과-skia))                  | 재기 전은 `null`이고 첫 프레임은 어림값으로 그린다. `onLayout` → `setSize`를 직접 쓰지 않는다                                                                     |
 | 일별 완료 막대      | `DailyCompletionChart` + `.Loading`(`insights/report`, 누르기)                                                                                 | 리포트 모델을 모르는 controlled 차트. 무료 이번 주·리포트 상세가 함께 쓴다. 탭은 `CHART_TAP_MAX_DISTANCE_PT`보다 움직이면 실패해 세로 스크롤이 칸을 고르지 않는다 |
 | 시간대 완료 막대    | `CompletionHourChart` + `.Loading`(`insights/report`, 가로로 밀기·누르기)                                                                      | 24칸. 눈금은 잰 폭과 글꼴 단계에서 라벨이 들어가는 가장 촘촘한 간격(3·6·12시간)이다                                                                               |
@@ -44,30 +44,30 @@ UI는 heroui-native → `shared/ui` → React Native 순서로 고른다. 같은
 
 ## 새 공용 부품의 인터페이스
 
-- **`SurfaceCard`**(있음): `Omit<ComponentProps<typeof Surface>, 'variant'>` + `surface: 'screen' | 'sheet'`. `variant="transparent"`로 그려 `SurfaceContext`를 만들지 않고, `rounded-2xl bg-gray-1` 면이다.
-- **`LabelChip`**(있음): heroui `Chip` + 자식 `Text` + soft 색 매핑. 글자 크기는 칩 크기를 따른다(`sm` → `e1`, `md`·`lg` → `b3`). soft 변형만 지원하고 섹션 머리 알약(`secondary`, `b4`)과 누르는 제안 칩은 아직 옮기지 않았다. 글자 색은 [design의 주황 두 가지](../design.md#주황-두-가지)를 따른다.
-- **`MenuContent`**(있음): `Menu.Portal` + `Menu.Overlay` + 앱 겉모양을 한 번에 둔 `Menu.Content` 확장이다. 항목은 `MenuActionItem`(위험하면 `variant="danger"`), 고르는 메뉴는 `Menu.Item` + `Menu.ItemIndicator`다.
-- **`Checkbox`**(있음): heroui `Checkbox` 확장. 앱 체크박스 겉모양이고 `isSelected`/`onSelectedChange`를 그대로 쓴다. features에서 heroui `Checkbox`를 직접 import하지 않는다.
-- **`ScrollFade`**(있음): `surface: 'screen' | 'sheet'`. 화면·시트 스크롤의 잘리는 쪽을 흐리게 덮는다(`ScreenScrollShadow`·`SheetScrollShadow`를 대신한다).
-- **`Mascot`**(있음): `name`, `size?`, `isCentered`. 고양이 이미지를 직접 import하지 않는다.
-- **`TimeSpinner`**(있음): `value`·`onChange`(`TimeOfDay`), `timeFormat`, `minimum`, `maximum`. iOS 휠이고 Android 시스템 피커는 `openAndroidTimePicker({ value, timeFormat })`(`Promise<TimeOfDay | null>`)다.
-- **`RouteBottomSheet`**(있음): `fallbackHref`, `loading`, `children`·`footer`는 `(sheet) => ReactNode`. 대상이 있는 시트 route의 껍데기 하나(떠나기·경계·문의)이고 대상은 `useSheetTodo` 같은 route 훅으로 읽는다. 입력이 있으면 `RouteKeyboardBottomSheet`다.
-- **`useOpenSheet()`**(있음): `openSheet(render, options)`. route 문맥이 없는 시트(폼에 묶인 피커)를 띄우고 고른 값을 돌려준다(취소는 `undefined`). 폼이 `footer`를 가진 입력 시트는 `useOpenKeyboardSheet()`다([overlay](../../src/shared/ui/overlay/overlay.md)).
-- **`QueryErrorFallback.Inline`**(있음): 블록 안 "실패 + 다시 시도" 한 줄이다. `hasInquiry`를 켜면 문의하기가 붙는다.
+- **`SurfaceCard`**: `Omit<ComponentProps<typeof Surface>, 'variant'>` + `surface: 'screen' | 'sheet'`. `variant="transparent"`로 그려 `SurfaceContext`를 만들지 않고, `rounded-2xl bg-gray-1` 면이다.
+- **`LabelChip`**: heroui `Chip` + 자식 `Text` + soft 색 매핑. 글자 크기는 칩 크기를 따른다(`sm` → `e1`, `md`·`lg` → `b3`). soft 변형만 지원하고 섹션 머리 알약(`secondary`, `b4`)과 누르는 제안 칩은 아직 옮기지 않았다. 글자 색은 [design의 주황 두 가지](../design.md#주황-두-가지)를 따른다.
+- **`MenuContent`**: `Menu.Portal` + `Menu.Overlay` + 앱 겉모양을 한 번에 둔 `Menu.Content` 확장이다. 항목은 `MenuActionItem`(위험하면 `variant="danger"`), 고르는 메뉴는 `Menu.Item` + `Menu.ItemIndicator`다.
+- **`Checkbox`**: heroui `Checkbox` 확장. 앱 체크박스 겉모양이고 `isSelected`/`onSelectedChange`를 그대로 쓴다. features에서 heroui `Checkbox`를 직접 import하지 않는다.
+- **`ScrollFade`**: `surface: 'screen' | 'sheet'`. 화면·시트 스크롤의 잘리는 쪽을 흐리게 덮는다(`ScreenScrollShadow`·`SheetScrollShadow`를 대신한다).
+- **`Mascot`**: `name`, `size?`, `isCentered`. 고양이 이미지를 직접 import하지 않는다.
+- **`TimeSpinner`**: `value`·`onChange`(`TimeOfDay`), `timeFormat`, `minimum`, `maximum`. iOS 휠이고 Android 시스템 피커는 `openAndroidTimePicker({ value, timeFormat })`(`Promise<TimeOfDay | null>`)다.
+- **`RouteBottomSheet`**: `fallbackHref`, `loading`, `children`·`footer`는 `(sheet) => ReactNode`. 대상이 있는 시트 route의 껍데기 하나(떠나기·경계·문의)이고 대상은 `useSheetTodo` 같은 route 훅으로 읽는다. 입력이 있으면 `RouteKeyboardBottomSheet`다.
+- **`useOpenSheet()`**: `openSheet(render, options)`. route 문맥이 없는 시트(폼에 묶인 피커)를 띄우고 고른 값을 돌려준다(취소는 `undefined`). 폼이 `footer`를 가진 입력 시트는 `useOpenKeyboardSheet()`다([overlay](../../src/shared/ui/overlay/overlay.md)).
+- **`QueryErrorFallback.Inline`**: 블록 안 "실패 + 다시 시도" 한 줄이다. `hasInquiry`를 켜면 문의하기가 붙는다.
 
 ## 직접 만든 부품을 둔 이유
 
 원본으로 바꿨을 때 화면·동작이 같다고 보일 수 없으면 유지한다. heroui 업데이트가 이유를 풀면 바꾼다.
 
-| 부품                      | 원본                                        | 유지 이유                                                                                                                                                                                                                |
-| ------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `Input`, `TextArea`       | `TextField`·`Input`·`TextArea`·`FieldError` | 시트 키보드 대상(gorhom `BottomSheetTextInput`이 UI 스레드에서 바꾸고 등록·정리한다. `isBottomSheetAware`는 1.0.11에 없다), `FieldError`가 자리를 잡지 않아 오류가 뜨면 아래가 밀린다, heroui `TextArea`는 높이 고정이다 |
-| `PasswordInput`           | `InputGroup`                                | `InputGroup.Input`이 heroui `Input`이라 위 차이를 갖고, `Suffix`가 묶음 높이에 절대 위치라 라벨·오류 줄을 다시 만들어야 한다. `Input`과 함께 옮긴다                                                                      |
-| `HintPopoverContent`      | `Popover`의 `avoidCollisions`               | heroui는 위아래를 뒤집지 않고 위치만 자른다. `getHintPlacement`는 자리가 많은 쪽으로 뒤집고, 왼쪽 폭 계산(`getHintWidth`)도 heroui에 없다                                                                                |
-| `AppToast`                | `Toast.Title`·`.Description`·`.Action`      | heroui 글자가 고정 크기라 앱 글꼴 5단계를 따르지 않는다                                                                                                                                                                  |
-| `ActionButton`, 누르는 칩 | heroui `Chip`                               | `Chip`은 `PressableFeedback`이 아니라 눌림 크기 변화가 사라진다                                                                                                                                                          |
-| `ListRow`                 | `ListGroup.Item`                            | 제목·설명이 heroui 글꼴이고 안쪽 여백이 달라 모양이 바뀐다                                                                                                                                                               |
-| 요금제 선택 카드          | heroui `Card`                               | 고른 테두리(`border-2`)가 UI 스레드에서 전환되고 `SurfaceCard`와 역할·모서리가 달라 `AnimatedCard`로 둔다(`subscription-plan-input`, 로딩 `plan-picker`)                                                                 |
+| 부품                      | 원본                                        | 유지 이유                                                                                                                                                        |
+| ------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Input`, `TextArea`       | `TextField`·`Input`·`TextArea`·`FieldError` | `FieldError`가 자리를 잡지 않아 오류가 뜨면 아래가 밀린다, heroui `TextArea`는 높이 고정이다. 시트 안 키보드는 네이티브 시트(1.1.1)가 맡아 시트 전용 입력이 없다 |
+| `PasswordInput`           | `InputGroup`                                | `InputGroup.Input`이 heroui `Input`이라 위 차이를 갖고, `Suffix`가 묶음 높이에 절대 위치라 라벨·오류 줄을 다시 만들어야 한다. `Input`과 함께 옮긴다              |
+| `HintPopoverContent`      | `Popover`의 `avoidCollisions`               | heroui는 위아래를 뒤집지 않고 위치만 자른다. `getHintPlacement`는 자리가 많은 쪽으로 뒤집고, 왼쪽 폭 계산(`getHintWidth`)도 heroui에 없다                        |
+| `AppToast`                | `Toast.Title`·`.Description`·`.Action`      | heroui 글자가 고정 크기라 앱 글꼴 5단계를 따르지 않는다                                                                                                          |
+| `ActionButton`, 누르는 칩 | heroui `Chip`                               | `Chip`은 `PressableFeedback`이 아니라 눌림 크기 변화가 사라진다                                                                                                  |
+| `ListRow`                 | `ListGroup.Item`                            | 제목·설명이 heroui 글꼴이고 안쪽 여백이 달라 모양이 바뀐다                                                                                                       |
+| 요금제 선택 카드          | heroui `Card`                               | 고른 테두리(`border-2`)가 UI 스레드에서 전환되고 `SurfaceCard`와 역할·모서리가 달라 `AnimatedCard`로 둔다(`subscription-plan-input`, 로딩 `plan-picker`)         |
 
 - 입력의 초점·선택 색은 이제 테마([design](../design.md#테마-토큰))로 맞출 수 있어 유지 이유가 아니다. `maxLength`가 있으면 글자 수를 자동으로 보인다.
 
@@ -101,7 +101,7 @@ UI는 heroui-native → `shared/ui` → React Native 순서로 고른다. 같은
 | `RouteKeyboardBottomSheet` | 입력이 있는 대상 시트 route                                          |
 
 - 내용은 `children` 흐름에 두고, 작은 화면·큰 글자·키보드에도 보여야 할 주 버튼만 `footer`에 둔다. 시트 안에 세로 스크롤을 또 두지 않는다.
-- 아래 시트 입력으로 포커스를 돌릴 때는 `onCloseStart`에서 한다. "확인"이 머리글에 있으면 `hasFixedHeader` + `SheetHeaderLayout`이다. 배치(Duo 접힘선·레일, iPad 여백)는 `getSheetLayout`이 정한다.
+- 아래 시트 입력으로 포커스를 돌릴 때는 `onCloseStart`에서 한다. "확인"이 머리글에 있으면 `hasFixedHeader` + `SheetHeaderLayout`이다. 시트는 heroui-native 1.1.1 네이티브 시트(TrueSheet)라 배치·키보드·끌기는 네이티브가 정한다.
 - 상세 계약은 `src/shared/ui/bottom-sheet/bottom-sheet.md`에 있다.
 
 ## 이름

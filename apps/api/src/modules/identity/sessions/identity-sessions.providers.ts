@@ -1,6 +1,7 @@
 import type { Provider } from "@nestjs/common";
 
 import { EntitlementCacheInvalidatorPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
+import { SessionPushDeviceReleaserPort } from "#api/modules/notification/push-devices/notification-push-devices.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
@@ -20,7 +21,6 @@ import { RestoreAccountUseCase } from "../users/application/use-cases/restore-ac
 import { ConsumeVerificationCodeUseCase } from "../verifications/application/use-cases/consume-verification-code.use-case.js";
 import { LoginAttemptRepositoryPort } from "./application/ports/login-attempt.repository.port.js";
 import { SessionCachePort } from "./application/ports/session-cache.port.js";
-import { SessionPushDeviceReleaserPort } from "./application/ports/session-push-device-releaser.port.js";
 import { SessionRepositoryPort } from "./application/ports/session.repository.port.js";
 import { TokenIssuerPort } from "./application/ports/token-issuer.port.js";
 import { TokenVerifierPort } from "./application/ports/token-verifier.port.js";
@@ -40,7 +40,6 @@ import { RevokeSessionUseCase } from "./application/use-cases/revoke-session.use
 import { VerifyEmailUseCase } from "./application/use-cases/verify-email.use-case.js";
 import { JwtTokenIssuerAdapter } from "./infrastructure/adapters/jwt-token-issuer.adapter.js";
 import { JwtTokenVerifierAdapter } from "./infrastructure/adapters/jwt-token-verifier.adapter.js";
-import { SessionPushDeviceReleaserAdapter } from "./infrastructure/adapters/session-push-device-releaser.adapter.js";
 
 export const createSessionProvider = provideUseCase(CreateSessionUseCase, {
   sessionRepository: SessionRepositoryPort,
@@ -175,7 +174,6 @@ export const IDENTITY_SESSIONS_PROVIDERS = [
   { provide: TokenIssuerPort, useClass: JwtTokenIssuerAdapter },
   { provide: TokenVerifierPort, useClass: JwtTokenVerifierAdapter },
   // 폐기한 세션의 푸시 기기를 놓는 ACL이다. 세션을 폐기하는 slice마다 notification 기기 조회 Module에서 받는다
-  { provide: SessionPushDeviceReleaserPort, useClass: SessionPushDeviceReleaserAdapter },
   createSessionProvider,
   authenticateSessionProvider,
   listActiveSessionsProvider,

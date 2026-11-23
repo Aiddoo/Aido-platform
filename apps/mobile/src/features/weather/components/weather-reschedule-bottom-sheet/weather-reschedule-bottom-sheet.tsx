@@ -90,7 +90,7 @@ function RescheduleTodoList({
   const [todoIds, setTodoIds] = useWeatherRescheduleTodoIds();
   const [linkReason] = useWeatherRescheduleReason();
   const todayKey = useTodayKey();
-  const { timeZone } = useDateFormatContext();
+  const { timezone } = useDateFormatContext();
   const [{ data: report }, { data: todoList }, { data: preference }] = useSuspenseQueries({
     queries: [
       { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.briefing },
@@ -102,7 +102,7 @@ function RescheduleTodoList({
   const affectedTodos = getRescheduleTodos(
     report,
     todoList.todos.map((todo) =>
-      WeatherBriefingPolicy.toBriefingTodo(todo, { date: todayKey, timeZone }),
+      WeatherBriefingPolicy.toBriefingTodo(todo, { date: todayKey, timezone }),
     ),
     { now, linkedTodoIds: todoIds },
   );

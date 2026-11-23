@@ -84,10 +84,9 @@ export function clearFeatureAttributions(
   accountId: string,
 ): void {
   const prefix = toFeatureAttributionKeyPrefix(accountId);
-  storage
-    .keys()
-    .filter((key) => key.startsWith(prefix))
-    .forEach((key) => storage.remove(key));
+  for (const key of storage.keys().filter((key) => key.startsWith(prefix))) {
+    storage.remove(key);
+  }
 }
 
 interface AttributedFeatureSuccessPorts {

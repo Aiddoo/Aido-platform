@@ -22,9 +22,9 @@ export abstract class UserConsentRepositoryPort {
   abstract findByUserId(userId: UserId): Promise<UserConsentReadModel | null>;
   /** 동의 행이 없으면 아직 답하지 않은 동의다 */
   abstract getAiDataSharingConsent(userId: UserId): Promise<AiDataSharingConsent>;
-  abstract findByUserIds(userIds: readonly UserId[]): Promise<UserConsentReadModel[]>;
+  abstract listByUserIds(userIds: readonly UserId[]): Promise<UserConsentReadModel[]>;
   /** 활성 사용자 중 광고성 동의(또는 마지막 재확인)가 cutoff 이전인 사용자를 userId 순으로 읽는다. */
-  abstract findMarketingReconfirmTargets(
+  abstract listMarketingReconfirmTargets(
     params: FindMarketingReconfirmTargetsParams,
   ): Promise<MarketingReconfirmTarget[]>;
   /**

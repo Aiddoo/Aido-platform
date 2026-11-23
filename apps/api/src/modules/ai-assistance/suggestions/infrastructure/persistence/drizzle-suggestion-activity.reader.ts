@@ -8,17 +8,12 @@ import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { localDateTimeAt } from "../../../shared/domain/user-calendar.domain-service.js";
 import { SuggestionActivityReaderPort } from "../../application/ports/suggestion-activity.reader.port.js";
 import type { SuggestionAnalysisPeriod } from "../../domain/suggestion-dispatch-window.domain-service.js";
 import type {
   SuggestionHistoryItem,
   TodoSummaryForAnalysis,
 } from "../../domain/suggestions.constants.js";
-
-function toWallClock(local: Temporal.ZonedDateTime): string {
-  return local.toPlainTime().toString({ smallestUnit: "minute" });
-}
 
 /** 제안 분석용 활동 projection. 할 일은 planning이 연 하위 질의로 읽는다. */
 @Injectable()
@@ -30,10 +25,9 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
     this.#transactionHost = transactionHost;
   }
 
-  async findRecentTodos(
+  async listRecentTodos(
     userId: UserId,
     period: SuggestionAnalysisPeriod,
-    timezone: string,
   ): Promise<TodoSummaryForAnalysis[]> {
     const recent = nonRepeatingTodosStartingWithin(userId, {
       from: period.from,
@@ -49,17 +43,14 @@ export class DrizzleSuggestionActivityReader extends SuggestionActivityReaderPor
     return todos.toReversed().map((t) => ({
       title: t.title,
       startDate: t.startDate.toString(),
-      scheduledTime:
-        t.scheduledTime == null
-          ? null
-          : (t.scheduledLocalTime ?? toWallClock(localDateTimeAt(t.scheduledTime, timezone))),
+      scheduledTime: t.scheduledLocalTime,
       categoryId: t.categoryId,
       completed: t.completed,
       categoryName: requireRecord(t.categoryName),
     }));
   }
 
-  async findRecentResponded(
+  async listRecentResponded(
     userId: UserId,
     since: Temporal.Instant,
   ): Promise<SuggestionHistoryItem[]> {

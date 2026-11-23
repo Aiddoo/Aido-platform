@@ -39,7 +39,7 @@ export interface ReportContentDependencies {
     "findRecentByTarget" | "countByReporterSince" | "save"
   >;
   // 탈퇴·비활성 사용자는 신고 대상이 아니다. 운영자 알림의 태그도 여기서 읽는다
-  readonly userBriefReader: Pick<UserBriefReaderPort, "existsActiveUser" | "findByUserIds">;
+  readonly userBriefReader: Pick<UserBriefReaderPort, "existsActiveUser" | "listByUserIds">;
   readonly notifier: Pick<UserReportNotifierPort, "notifyOperators">;
   readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "log" | "warn">;
@@ -153,7 +153,7 @@ export class ReportContentUseCase {
   async #notifyOperators(report: UserReport): Promise<void> {
     const { userBriefReader, notifier, logger } = this.#dependencies;
     try {
-      const briefs = await userBriefReader.findByUserIds([report.reporterId, report.targetUserId]);
+      const briefs = await userBriefReader.listByUserIds([report.reporterId, report.targetUserId]);
       const userTags = new Map(briefs.map((brief) => [brief.userId.value, brief.userTag]));
       const delivery = await notifier.notifyOperators(toSubmission(report, userTags));
       if (delivery.status === "rejected") {

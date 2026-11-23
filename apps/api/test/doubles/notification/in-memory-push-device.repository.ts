@@ -91,7 +91,7 @@ export class InMemoryPushDeviceRepository extends PushDeviceRepositoryPort {
     );
   }
 
-  async findPermissionStatusesByUsers(
+  async listPermissionStatusesByUsers(
     users: readonly UserId[],
     reportedSince: Temporal.Instant,
   ): Promise<ReadonlyMap<string, readonly PushPermissionStatus[]>> {

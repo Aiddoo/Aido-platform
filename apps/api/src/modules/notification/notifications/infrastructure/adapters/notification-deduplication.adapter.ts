@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { groupBy } from "es-toolkit";
 
 import { DedupProviderPort } from "#api/platform/dedup/dedup-provider.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -23,19 +24,15 @@ export class NotificationDeduplicationAdapter implements NotificationDeduplicati
   }
 
   async recordNotifiedUsers(records: NotificationDeduplicationEntry[]): Promise<void> {
-    const groups = new Map<string, string[]>();
-    for (const record of records) {
-      const key = notificationDeduplicationKey(record.type, record.notificationDate);
-      const userIds = groups.get(key) ?? [];
-      userIds.push(record.userId.value);
-      groups.set(key, userIds);
-    }
+    const recordsByKey = groupBy(records, (record) =>
+      notificationDeduplicationKey(record.type, record.notificationDate),
+    );
 
     await Promise.all(
-      [...groups.entries()].map(([key, userIds]) =>
+      Object.entries(recordsByKey).map(([key, keyRecords]) =>
         this.#dedupProvider.addMembers(
           key,
-          [NOTIFICATION_DEDUPLICATION_SENTINEL, ...userIds],
+          [NOTIFICATION_DEDUPLICATION_SENTINEL, ...keyRecords.map((record) => record.userId.value)],
           NOTIFICATION_DEDUPLICATION_TTL_MS,
         ),
       ),

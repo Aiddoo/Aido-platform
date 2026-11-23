@@ -38,7 +38,7 @@ export interface TimezoneContext {
  * 그 날 그 시:분이 처음 오는 순간. 봄 DST 틈에 없는 시각은 틈 바로 뒤 첫 순간이고, 가을에 두 번 오는 시각은 앞의 것이다.
  * 오프셋을 직접 계산하지 않고 Temporal의 disambiguation과 시간대 전환으로 정한다.
  */
-export function firstOccurrenceOf(
+function firstOccurrenceOf(
   date: Temporal.PlainDate,
   time: Temporal.PlainTime,
   timezone: string,

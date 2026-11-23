@@ -4,7 +4,7 @@ import { uniq } from "es-toolkit";
 
 import { UserPreferenceReaderPort } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { resolveDeliveryTimezone } from "#api/shared/domain/time/time-zone-name";
+import { resolveDeliveryTimezone } from "#api/shared/domain/time/timezone-name";
 
 import {
   type NotificationDeliveryPreference,
@@ -63,7 +63,7 @@ export class CachedNotificationRecipientPreferenceAdapter
     if (uniqueUserIds.length === 0) {
       return recipientLocaleOf(new Map());
     }
-    const preferences = await this.#userSettings.findPreferenceReadModelsByUserIds(
+    const preferences = await this.#userSettings.listPreferenceReadModelsByUserIds(
       uniqueUserIds.map((userId) => UserId.reconstitute(userId)),
     );
     return recipientLocaleOf(
@@ -76,7 +76,7 @@ export class CachedNotificationRecipientPreferenceAdapter
     if (uniqueUserIds.length === 0) {
       return new Map();
     }
-    const preferences = await this.#userSettings.findPreferenceReadModelsByUserIds(
+    const preferences = await this.#userSettings.listPreferenceReadModelsByUserIds(
       uniqueUserIds.map((userId) => UserId.reconstitute(userId)),
     );
     const timezones = new Map(

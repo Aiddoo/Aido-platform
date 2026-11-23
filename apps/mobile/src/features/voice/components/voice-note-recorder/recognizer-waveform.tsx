@@ -24,7 +24,7 @@ import {
   appendLevelFrame,
   appendTimelineBar,
   createLevelSampler,
-  getTimelineLevel,
+  findTimelineLevel,
   type LevelSampler,
   toRoundedBar,
   withFlagBars,
@@ -104,7 +104,7 @@ function addLevelBars(
   'worklet';
   const sideCount = getSideCount(width);
   for (let slot = 0; slot <= sideCount * 2; slot += 1) {
-    const level = getTimelineLevel(levels, slot, sideCount);
+    const level = findTimelineLevel(levels, slot, sideCount);
     if (level != null && level >= SPEECH_LEVEL_THRESHOLD === (kind === 'speech')) {
       const barHeight = Math.max(
         height * WAVEFORM_BAR.minHeightRatio,
@@ -157,7 +157,7 @@ function WaveformTimeline({ waveform, flagIndexes, className }: WaveformTimeline
     'worklet';
     const sideCount = getSideCount(width);
     for (let slot = 0; slot <= sideCount * 2; slot += 1) {
-      if (getTimelineLevel(levels, slot, sideCount) == null) {
+      if (findTimelineLevel(levels, slot, sideCount) == null) {
         builder.addRRect(
           toRoundedBar(
             getSlotLeft(width, slot, sideCount),

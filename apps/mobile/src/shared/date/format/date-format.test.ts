@@ -17,8 +17,8 @@ import {
 } from './date-format';
 
 const date = new Date('2026-10-01T00:05:00Z');
-const KO_SEOUL: DateFormatContext = { locale: 'ko-KR', timeZone: 'Asia/Seoul' };
-const EN_SEOUL: DateFormatContext = { locale: 'en-US', timeZone: 'Asia/Seoul' };
+const KO_SEOUL: DateFormatContext = { locale: 'ko-KR', timezone: 'Asia/Seoul' };
+const EN_SEOUL: DateFormatContext = { locale: 'en-US', timezone: 'Asia/Seoul' };
 
 describe('native date formatting', () => {
   it('명시한 로케일과 시간대로 날짜를 표시한다', () => {
@@ -26,7 +26,7 @@ describe('native date formatting', () => {
     const seoul = formatDateLabel(date, 'fullDate', KO_SEOUL);
     const losAngeles = formatDateLabel(date, 'fullDate', {
       locale: 'en-US',
-      timeZone: 'America/Los_Angeles',
+      timezone: 'America/Los_Angeles',
     });
 
     // Then
@@ -38,7 +38,7 @@ describe('native date formatting', () => {
     // When
     const label = formatDateLabel(new Date('invalid'), 'fullDate', {
       locale: 'ko-KR',
-      timeZone: 'UTC',
+      timezone: 'UTC',
     });
 
     // Then
@@ -91,7 +91,7 @@ describe('formatClockTime', () => {
 
   it('24시간제 자정을 24:00이 아닌 00:05로 표시한다', () => {
     // When
-    const result = formatClockTime(date, 'TWENTY_FOUR_HOUR', { locale: 'en-US', timeZone: 'UTC' });
+    const result = formatClockTime(date, 'TWENTY_FOUR_HOUR', { locale: 'en-US', timezone: 'UTC' });
 
     // Then
     expect(result).toBe('00:05');
@@ -130,9 +130,9 @@ describe('formatClockTime', () => {
     ['America/Los_Angeles', 'en-US', '2026-12-31T13:15:00.000Z', 'TWENTY_FOUR_HOUR', '05:15'],
     ['America/Los_Angeles', 'en-US', '2028-02-29T12:00:00.000Z', 'TWELVE_HOUR', '4:00\u00A0AM'],
     ['America/Los_Angeles', 'en-US', '2028-02-29T12:00:00.000Z', 'TWENTY_FOUR_HOUR', '04:00'],
-  ] as const)('%s %s %s %s는 이전과 같은 글자다', (timeZone, locale, iso, timeFormat, expected) => {
+  ] as const)('%s %s %s %s는 이전과 같은 글자다', (timezone, locale, iso, timeFormat, expected) => {
     // When
-    const label = formatClockTime(toInstant(iso), timeFormat, { locale, timeZone });
+    const label = formatClockTime(toInstant(iso), timeFormat, { locale, timezone });
 
     // Then
     expect(label).toBe(expected);
@@ -193,7 +193,7 @@ describe('formatInstantHour', () => {
     const en = formatInstantHour(instant, 'TWELVE_HOUR', EN_SEOUL);
     const losAngeles = formatInstantHour(instant, 'TWENTY_FOUR_HOUR', {
       locale: 'ko-KR',
-      timeZone: 'America/Los_Angeles',
+      timezone: 'America/Los_Angeles',
     });
 
     // Then
@@ -254,7 +254,7 @@ describe('formatDateKeyLabel', () => {
   it('DateString은 기기 시간대와 무관하게 그 날짜로 표시한다', () => {
     // Given
     // 서울보다 하루 늦은 시간대
-    const losAngeles = { locale: 'ko-KR', timeZone: 'America/Los_Angeles' } as const;
+    const losAngeles = { locale: 'ko-KR', timezone: 'America/Los_Angeles' } as const;
 
     // When
     const ko = formatDateKeyLabel(createDateKey('2026-10-20'), 'fullDate', losAngeles);
@@ -294,7 +294,7 @@ describe('formatDateKeyLabel', () => {
     // When
     const label = formatDateKeyLabel(createDateKey(dateKey), kind, {
       locale,
-      timeZone: 'Asia/Seoul',
+      timezone: 'Asia/Seoul',
     });
 
     // Then
@@ -306,8 +306,8 @@ describe('formatYearLabel', () => {
   it.each([
     { context: KO_SEOUL, expected: '2026년' },
     { context: EN_SEOUL, expected: '2026' },
-    { context: { locale: 'ko-KR', timeZone: 'Pacific/Kiritimati' } as const, expected: '2026년' },
-    { context: { locale: 'en-US', timeZone: 'Pacific/Pago_Pago' } as const, expected: '2026' },
+    { context: { locale: 'ko-KR', timezone: 'Pacific/Kiritimati' } as const, expected: '2026년' },
+    { context: { locale: 'en-US', timezone: 'Pacific/Pago_Pago' } as const, expected: '2026' },
   ])('$context.locale·$context.timeZone에서 2026은 $expected다', ({ context, expected }) => {
     // When
     const label = formatYearLabel(2026, context);
@@ -320,8 +320,8 @@ describe('formatYearLabel', () => {
 describe('formatYearAwareDateLabel', () => {
   // 2026-12-31T16:00Z = 서울 2027-01-01 01:00, LA 2026-12-31 08:00
   const NEW_YEAR_BOUNDARY = toInstant('2026-12-31T16:00:00Z');
-  const LA_EN: DateFormatContext = { locale: 'en-US', timeZone: 'America/Los_Angeles' };
-  const LA_KO: DateFormatContext = { locale: 'ko-KR', timeZone: 'America/Los_Angeles' };
+  const LA_EN: DateFormatContext = { locale: 'en-US', timezone: 'America/Los_Angeles' };
+  const LA_KO: DateFormatContext = { locale: 'ko-KR', timezone: 'America/Los_Angeles' };
 
   it.each([
     ['서울에서 오늘이 2027-01-01이면 새해 첫날이라 연도를 뺀다', '2027-01-01', KO_SEOUL, '1월 1일'],
@@ -381,7 +381,7 @@ describe('formatYearAwareDateKeyLabel', () => {
       createDateKey(todayDateKey),
       {
         locale,
-        timeZone: 'America/Los_Angeles',
+        timezone: 'America/Los_Angeles',
       },
     );
 
@@ -444,7 +444,7 @@ describe('formatRelativeTimeWith', () => {
   it('25시간인 서머타임 해제일은 24시간이 넘어도 같은 날이면 시간으로 쓴다', () => {
     // Given
     // LA 2026-11-01 00:10(PDT)부터 23:50(PST)까지
-    const losAngeles: DateFormatContext = { locale: 'en-US', timeZone: 'America/Los_Angeles' };
+    const losAngeles: DateFormatContext = { locale: 'en-US', timezone: 'America/Los_Angeles' };
 
     // When
     const label = formatRelativeTimeWith(
@@ -501,9 +501,9 @@ describe('formatDateLabel monthDay 윤일 경계', () => {
     ['ko-KR', 'America/Los_Angeles', '2월 29일'],
     ['en-US', 'Asia/Seoul', 'Mar 1'],
     ['en-US', 'America/Los_Angeles', 'Feb 29'],
-  ] as const)('%s·%s에서는 %s로 표시한다', (locale, timeZone, expected) => {
+  ] as const)('%s·%s에서는 %s로 표시한다', (locale, timezone, expected) => {
     // When
-    const result = formatDateLabel(LEAP_DAY_BOUNDARY, 'monthDay', { locale, timeZone });
+    const result = formatDateLabel(LEAP_DAY_BOUNDARY, 'monthDay', { locale, timezone });
 
     // Then
     expect(result).toBe(expected);
@@ -511,7 +511,7 @@ describe('formatDateLabel monthDay 윤일 경계', () => {
 });
 
 describe('formatHHmmTime', () => {
-  const koSeoul = { locale: 'ko-KR', timeZone: 'Asia/Seoul' } as const;
+  const koSeoul = { locale: 'ko-KR', timezone: 'Asia/Seoul' } as const;
 
   it('HH:mm 시각을 사용자 시간 형식과 표시 언어로 바꾼다', () => {
     // When
@@ -550,7 +550,7 @@ describe('formatHHmmTime', () => {
     ['en-US', '23:59', 'TWENTY_FOUR_HOUR', '23:59'],
   ] as const)('%s %s %s는 이전과 같은 글자다', (locale, time, timeFormat, expected) => {
     // When
-    const label = formatHHmmTime(time, timeFormat, { locale, timeZone: 'Asia/Seoul' });
+    const label = formatHHmmTime(time, timeFormat, { locale, timezone: 'Asia/Seoul' });
 
     // Then
     expect(label).toBe(expected);
@@ -656,9 +656,9 @@ describe('formatDateLabel', () => {
     ['America/Los_Angeles', 'en-US', '2028-02-29T12:00:00.000Z', 'dayNumber', '29'],
     ['America/Los_Angeles', 'en-US', '2028-02-29T12:00:00.000Z', 'yearShortMonth', 'Feb 2028'],
     ['America/Los_Angeles', 'en-US', '2028-02-29T12:00:00.000Z', 'weekday', 'Tue'],
-  ] as const)('%s %s %s %s는 이전과 같은 글자다', (timeZone, locale, iso, kind, expected) => {
+  ] as const)('%s %s %s %s는 이전과 같은 글자다', (timezone, locale, iso, kind, expected) => {
     // When
-    const label = formatDateLabel(toInstant(iso), kind, { locale, timeZone });
+    const label = formatDateLabel(toInstant(iso), kind, { locale, timezone });
 
     // Then
     expect(label).toBe(expected);

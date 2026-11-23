@@ -1,5 +1,5 @@
-import { TodoCommentId } from "#api/modules/engagement/shared/domain/todo-comment-id.vo";
 import type { TodoCommentLikeRepositoryPort } from "#api/modules/engagement/todo-comment-likes/application/ports/todo-comment-like.repository.port";
+import { TodoCommentId } from "#api/modules/engagement/todo-comments/domain/todo-comment-id.vo";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createTodoCommentLikeFixture } from "#test/fixtures/engagement/todo-comment-like.fixture";
 import {

@@ -158,7 +158,7 @@ describe('QueryErrorBoundary 관측', () => {
     );
 
     // When
-    fireEvent.press(screen.getByTestId('query-error-inquiry'));
+    await fireEvent.press(screen.getByTestId('query-error-inquiry'));
 
     // Then
     expect(screen.getByText('다시 시도')).toBeTruthy();

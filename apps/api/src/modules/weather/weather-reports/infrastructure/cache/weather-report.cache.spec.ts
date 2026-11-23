@@ -188,11 +188,11 @@ describe("WeatherReportCache — 대기질", () => {
   it("측정값은 1시간 저장해 그동안 다시 부르지 않는다", async () => {
     // Given
     const load = counting(async () => ({ pm10: 32, pm25: 18 }));
-    await cache.getOrLoadAirQuality(CELL, load);
+    await cache.findOrLoadAirQuality(CELL, load);
     vi.setSystemTime(NOW.add({ minutes: 59 }).epochMilliseconds);
 
     // When
-    const cached = await cache.getOrLoadAirQuality(CELL, load);
+    const cached = await cache.findOrLoadAirQuality(CELL, load);
 
     // Then
     expect(cached).toEqual({ pm10: 32, pm25: 18 });
@@ -202,14 +202,14 @@ describe("WeatherReportCache — 대기질", () => {
   it("측정 없음(null)은 30분 저장하고 그 뒤 다시 부른다", async () => {
     // Given
     const load = counting(async () => null);
-    await cache.getOrLoadAirQuality(CELL, load);
+    await cache.findOrLoadAirQuality(CELL, load);
     vi.setSystemTime(NOW.add({ minutes: 29 }).epochMilliseconds);
-    const duringNoData = await cache.getOrLoadAirQuality(CELL, load);
+    const duringNoData = await cache.findOrLoadAirQuality(CELL, load);
     const loadsDuringNoData = loads;
     vi.setSystemTime(NOW.add({ minutes: 30, seconds: 1 }).epochMilliseconds);
 
     // When
-    await cache.getOrLoadAirQuality(CELL, load);
+    await cache.findOrLoadAirQuality(CELL, load);
 
     // Then
     expect(duringNoData).toBeNull();
@@ -222,10 +222,10 @@ describe("WeatherReportCache — 대기질", () => {
     const failing = counting(async () => {
       throw new Error("airkorea 500");
     });
-    await expect(cache.getOrLoadAirQuality(CELL, failing)).rejects.toThrow();
+    await expect(cache.findOrLoadAirQuality(CELL, failing)).rejects.toThrow();
 
     // When
-    const recovered = await cache.getOrLoadAirQuality(
+    const recovered = await cache.findOrLoadAirQuality(
       CELL,
       counting(async () => ({ pm10: 10, pm25: 5 })),
     );

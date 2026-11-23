@@ -1,6 +1,6 @@
 import type { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 
-import type { TodoCommentId } from "../../../shared/domain/todo-comment-id.vo.js";
+import type { TodoCommentId } from "../../domain/todo-comment-id.vo.js";
 import type {
   TodoCommentReadModel,
   TodoCommentWindowReadModel,
@@ -18,7 +18,7 @@ export interface ListTodoCommentRepliesParams {
 /** 묶음 하나의 답글을 작성 순으로 읽는다 */
 export abstract class TodoCommentReplyReaderPort {
   /** 기준 답글을 찾지 못하면 null */
-  abstract listReplies(
+  abstract findReplyWindow(
     params: ListTodoCommentRepliesParams,
   ): Promise<TodoCommentWindowReadModel<TodoCommentReadModel> | null>;
 }

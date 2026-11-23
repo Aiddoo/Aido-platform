@@ -45,7 +45,7 @@ import { BRIEFING_ROW_TONES, type BriefingRowTone } from '../constants/weather-c
 import {
   type BriefingResult,
   getBriefingState,
-  getWeatherBriefing,
+  findWeatherBriefing,
   WeatherBriefingPolicy,
 } from '../domains/weather-briefing.model';
 import type { HourlyForecastEntry } from '../domains/weather-report.model';
@@ -77,7 +77,7 @@ type SuggestTodoAction = Extract<BriefingAction, { kind: 'suggestTodo' }>;
 export function WeatherBriefing() {
   const todayKey = useTodayKey();
   const now = useMinuteNow();
-  const { timeZone: deviceTimeZone } = useDateFormatContext();
+  const { timezone: deviceTimezone } = useDateFormatContext();
   const { data: report } = useQuery({
     ...useGetWeatherReportQueryOptions(),
     select: WeatherReportSelect.briefing,
@@ -86,7 +86,7 @@ export function WeatherBriefing() {
     queries: [useGetTodosByDateQueryOptions({ date: todayKey }), useGetPreferenceQueryOptions()],
   });
 
-  const state = getBriefingState(report, { now, deviceTimeZone });
+  const state = getBriefingState(report, { now, deviceTimezone });
 
   if (report == null || state === 'loading') {
     return <WeatherBriefing.Loading />;
@@ -95,10 +95,10 @@ export function WeatherBriefing() {
     return <WeatherBriefing.Empty />;
   }
 
-  const briefing = getWeatherBriefing(
+  const briefing = findWeatherBriefing(
     report,
     todoList.todos.map((todo) =>
-      WeatherBriefingPolicy.toBriefingTodo(todo, { date: todayKey, timeZone: deviceTimeZone }),
+      WeatherBriefingPolicy.toBriefingTodo(todo, { date: todayKey, timezone: deviceTimezone }),
     ),
     { now },
   );
@@ -434,7 +434,7 @@ WeatherBriefing.SuggestTodoButton = function SuggestTodoButton({
 }) {
   const translate = useTranslateBriefingCopy();
   const todayKey = useTodayKey();
-  const { timeZone } = useDateFormatContext();
+  const { timezone } = useDateFormatContext();
   const push = useSingleTap(router.push);
   const { trackEvent } = useTrack();
 
@@ -445,7 +445,7 @@ WeatherBriefing.SuggestTodoButton = function SuggestTodoButton({
       params: {
         date: todayKey,
         title: translate(action.title),
-        time: action.scheduledAt == null ? undefined : toHHmm(action.scheduledAt, timeZone),
+        time: action.scheduledAt == null ? undefined : toHHmm(action.scheduledAt, timezone),
       },
     });
   };

@@ -66,7 +66,7 @@ export class SigningKeyRing {
     return this.#keys[0] ?? this.#legacy;
   }
 
-  /** kid 없이 JWT_SECRET으로 서명해 이미 보낸 댓글 커서·광고 수신 거부 링크를 검증한다. 운영에 *_SIGNING_KEYS를 넣고 1.15.2에서 JWT_SECRET 대체를 지운다. */
+  // kid 없이 JWT_SECRET으로 서명해 이미 보낸 댓글 커서·수신 거부 토큰을 검증한다. 2027-02-21 이후에 지운다(compatibility.md)
   get legacy(): SigningKey {
     return this.#legacy;
   }

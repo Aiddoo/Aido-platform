@@ -58,7 +58,7 @@ interface NotificationItemProps {
 
 export function NotificationList() {
   const [category] = useNotificationCategory();
-  const { currentLocalDateKey, currentTimeZone } = useLocalDate();
+  const { currentLocalDateKey, currentTimezone } = useLocalDate();
   const {
     data: listItems,
     fetchNextPage,
@@ -70,7 +70,7 @@ export function NotificationList() {
       category,
       limit: NOTIFICATION_PAGE_SIZE,
       todayDateKey: currentLocalDateKey,
-      timeZone: currentTimeZone,
+      timezone: currentTimezone,
     }),
   );
   const queryClient = useQueryClient();

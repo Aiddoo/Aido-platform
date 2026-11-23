@@ -1,6 +1,6 @@
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { localDateIn, resolveDeliveryTimezone } from "#api/shared/domain/time/time-zone-name";
+import { localDateIn, resolveDeliveryTimezone } from "#api/shared/domain/time/timezone-name";
 
 import type { NotificationDeliveryPreference } from "../../../shared/application/ports/user-notification-settings.port.js";
 import type { NotificationRecipientPreferenceReaderPort } from "../ports/notification-recipient-preference.reader.port.js";

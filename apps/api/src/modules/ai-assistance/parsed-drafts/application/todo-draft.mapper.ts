@@ -6,6 +6,7 @@ import {
   parsedTodoDataSchema,
 } from "@aido/api/contracts/ai/v1";
 import { AI_PARSE_LIMITS, type Localized, type SupportedLocale } from "@aido/api/vocabulary";
+import { clamp } from "es-toolkit";
 
 import { truncateGraphemes } from "#api/shared/domain/utils/grapheme.util";
 
@@ -65,7 +66,7 @@ export interface DraftNormalizeContext {
 /** 보이지 않는 문자·연속 공백을 정리하고 제목 상한으로 자른다. */
 export function cleanTitle(value: string): string {
   return truncateGraphemes(
-    removeInvisibleCharacters(value).replace(/\s+/g, " ").trim(),
+    removeInvisibleCharacters(value).replaceAll(/\s+/g, " ").trim(),
     TITLE_MAX_LENGTH,
   );
 }
@@ -100,7 +101,7 @@ export function normalizeTodoDraft(
   if (draft.intent === "NO_ACTION") {
     const schedule = resolveTodoSchedule(NO_ACTION_SCHEDULE, {
       now: context.now,
-      timeZone: context.timezone,
+      timezone: context.timezone,
     });
     return {
       todo: parsedTodoDataSchema.parse({
@@ -126,7 +127,7 @@ export function normalizeTodoDraft(
     title = fallbackTitle === "" ? NO_ACTION_TITLE[context.locale] : fallbackTitle;
     warnings.push("TITLE_FALLBACK");
   }
-  const schedule = resolveTodoSchedule(draft, { now: context.now, timeZone: context.timezone });
+  const schedule = resolveTodoSchedule(draft, { now: context.now, timezone: context.timezone });
   warnings.push(...schedule.warnings);
   const categoryId =
     draft.categoryId != null && context.ownedCategoryIds.has(draft.categoryId)
@@ -174,7 +175,7 @@ export function normalizeMemoDraft(
   const hasNoAction = kept.length === 0;
   const totalTaskCount = hasNoAction
     ? 0
-    : Math.min(Math.max(tasks.length, memo.totalTaskCount ?? 0), MEMO_TOTAL_TASK_COUNT_MAX);
+    : clamp(Math.max(tasks.length, memo.totalTaskCount ?? 0), 0, MEMO_TOTAL_TASK_COUNT_MAX);
   if (totalTaskCount > AI_PARSE_LIMITS.MEMO_MAX_TODOS) {
     warnings.push("TODOS_TRUNCATED");
   }

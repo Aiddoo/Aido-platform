@@ -58,9 +58,9 @@ interface ApplyActionPlanDependencies {
     PlanApplicationRepositoryPort,
     "findByIdempotencyKey" | "save"
   >;
-  readonly contextReader: Pick<PlanningContextReaderPort, "findOwnedCategoryIds">;
+  readonly contextReader: Pick<PlanningContextReaderPort, "listOwnedCategoryIds">;
   readonly todoCreator: Pick<StagedTodoCreatorPort, "stage">;
-  readonly todoReader: Pick<TodoPlanReaderPort, "findManyByIds">;
+  readonly todoReader: Pick<TodoPlanReaderPort, "listByIds">;
   readonly memoWriter: Pick<PlanMemoWriterPort, "create" | "findById" | "delete">;
   readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
@@ -114,7 +114,7 @@ export class ApplyActionPlanUseCase {
       }
 
       await this.#assertSourceMemoExists(owner, sourceMemo);
-      plan.assertCategoriesOwned(await contextReader.findOwnedCategoryIds(owner));
+      plan.assertCategoriesOwned(await contextReader.listOwnedCategoryIds(owner));
       return { kind: "applied", applied: await this.#apply(plan, command, requestHash) };
     });
 
@@ -196,7 +196,7 @@ export class ApplyActionPlanUseCase {
     const { memoId } = application;
 
     const [todos, memo] = await Promise.all([
-      todoReader.findManyByIds(application.userId, application.todoIds),
+      todoReader.listByIds(application.userId, application.todoIds),
       memoId == null ? null : memoWriter.findById(memoId, application.userId),
     ]);
     return { todos, memo };

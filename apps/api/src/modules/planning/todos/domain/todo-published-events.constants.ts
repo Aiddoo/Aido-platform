@@ -16,7 +16,7 @@ export type TodoChangeEventName = (typeof TODO_CHANGE_EVENT_NAMES)[number];
 
 // 구독 Context가 defineEventSubscription의 payloadSchema로 쓴다. 발행 쪽 toPayload와 모양이 같아야 한다
 export const todoChangedPayloadSchema = z.object({
-  todoId: z.number().int(),
+  todoId: z.int(),
   userId: z.string(),
   occurredAt: z.iso.datetime(),
 });

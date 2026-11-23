@@ -5,7 +5,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
-  NotificationHistoryReader,
+  NotificationHistoryReaderPort,
   PublishNotificationBatchUseCase,
 } from "../../../notifications/notification-notifications.public.js";
 import { createSocialDigestNotificationMessage } from "../../../shared/application/messages/scheduler-notification.messages.js";
@@ -25,11 +25,14 @@ import { ReminderLogEvent } from "../reminders.log-events.js";
 interface SocialDigestStrategyDependencies {
   readonly reader: Pick<
     ReEngagementReaderPort,
-    "findAcceptedFollows" | "findFriendsWithTodayTodos" | "findSocialDigestCandidates"
+    "listAcceptedFollows" | "listFriendsWithTodayTodos" | "listSocialDigestCandidates"
   >;
   readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "getUserLocales">;
   readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
-  readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
+  readonly notificationHistoryReader: Pick<
+    NotificationHistoryReaderPort,
+    "listAlreadyNotifiedUserIds"
+  >;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
@@ -56,7 +59,7 @@ export class SendSocialDigestUseCase implements TimezoneReminderStrategyPort {
 
     const candidateIds = candidates.map((u) => u.id);
 
-    const allFollows = await this.#dependencies.reader.findAcceptedFollows(
+    const allFollows = await this.#dependencies.reader.listAcceptedFollows(
       candidateIds.map((candidateId) => UserId.reconstitute(candidateId)),
     );
 
@@ -66,7 +69,7 @@ export class SendSocialDigestUseCase implements TimezoneReminderStrategyPort {
       return { sent: 0 };
     }
 
-    const friendsWithTodos = await this.#dependencies.reader.findFriendsWithTodayTodos({
+    const friendsWithTodos = await this.#dependencies.reader.listFriendsWithTodayTodos({
       friendIds: [...allFriendIds].map((friendId) => UserId.reconstitute(friendId)),
       today,
       tomorrow,
@@ -126,7 +129,7 @@ export class SendSocialDigestUseCase implements TimezoneReminderStrategyPort {
   ): Promise<SocialDigestCandidateReadModel[]> {
     const { timezones, today, tomorrow } = timezoneContext;
     // 해당 타임존 + 오늘 투두 미완료인 유저 조회
-    const users = await this.#dependencies.reader.findSocialDigestCandidates({
+    const users = await this.#dependencies.reader.listSocialDigestCandidates({
       timezones,
       today,
       tomorrow,
@@ -142,12 +145,12 @@ export class SendSocialDigestUseCase implements TimezoneReminderStrategyPort {
 
     // 중복 방지
     const [alreadyNotified, streakAtRiskNotified] = await Promise.all([
-      this.#dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds({
+      this.#dependencies.notificationHistoryReader.listAlreadyNotifiedUserIds({
         userIds: incompleteUsers.map((u) => UserId.reconstitute(u.id)),
         type: "SOCIAL_DIGEST",
         notificationDate: today,
       }),
-      this.#dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds({
+      this.#dependencies.notificationHistoryReader.listAlreadyNotifiedUserIds({
         userIds: incompleteUsers.map((u) => UserId.reconstitute(u.id)),
         type: "STREAK_AT_RISK",
         notificationDate: today,

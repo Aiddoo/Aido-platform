@@ -28,16 +28,18 @@ describe('RELEASES', () => {
 
   it('여러 단계 소개는 최근 두 출시에만 남고 최신 출시가 맨 앞이다', () => {
     // Given
-    const latestTwoIds = orderBy(RELEASES, [(release) => release.releasedOn], ['desc'])
-      .slice(0, 2)
-      .map((release) => release.id);
+    const latestTwoIds = new Set(
+      orderBy(RELEASES, [(release) => release.releasedOn], ['desc'])
+        .slice(0, 2)
+        .map((release) => release.id),
+    );
 
     // When
     const tourIds = RELEASES.flatMap((release) => WhatsNewPolicy.findTourId(release) ?? []);
 
     // Then
     expect(getLatestTourReleaseId()).toBe(getLatestRelease(RELEASES).id);
-    expect(tourIds.every((id) => latestTwoIds.includes(id))).toBe(true);
+    expect(tourIds.every((id) => latestTwoIds.has(id))).toBe(true);
     expect(tourIds).toHaveLength(tourReleaseIdSchema.options.length);
   });
 

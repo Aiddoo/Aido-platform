@@ -16,7 +16,7 @@ export const featureAttributionStoredValue = defineStoredValue({
     z.object({
       campaignId: z.string().min(1),
       feature: z.enum(FEATURE_KEYS),
-      expiresAt: z.number().int().positive(),
+      expiresAt: z.int().positive(),
     }),
   ),
   fallback: null,

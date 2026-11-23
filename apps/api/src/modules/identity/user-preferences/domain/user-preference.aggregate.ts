@@ -10,6 +10,7 @@ import {
   UserConsent,
   type UserConsentPrimitives,
 } from "./user-consent.entity.js";
+import { UserPreferenceId } from "./user-preference-id.vo.js";
 import type { TimeFormatValue } from "./user-preference.constants.js";
 
 // 저장소가 바뀐 칸을 칸 이름으로 고르도록 type으로 둔다
@@ -52,6 +53,7 @@ export interface UserPreferenceChanges {
 }
 
 interface UserPreferenceProps {
+  readonly userId: UserId;
   settings: UserPreferenceSettings;
   isSettingsStored: boolean;
   streak: Streak | null;
@@ -82,13 +84,14 @@ export const DEFAULT_USER_PREFERENCE_SETTINGS: UserPreferenceSettings = {
 const STREAK_MILESTONE_DAYS = 3;
 
 /** 사용자 설정·연속 완료·동의. 설정·동의는 바꾼 칸만, 연속 완료는 읽은 값이 그대로일 때만 저장한다 */
-export class UserPreference extends AggregateRoot<UserId, UserPreferenceProps> {
+export class UserPreference extends AggregateRoot<UserPreferenceId, UserPreferenceProps> {
   // 가입 트랜잭션이 기본 설정과 받은 동의로 두 행을 만든다
   static create(params: {
     readonly userId: UserId;
     readonly consent: ConsentAgreement;
   }): UserPreference {
-    return new UserPreference(params.userId, {
+    return new UserPreference(UserPreferenceId.reconstitute(params.userId.value), {
+      userId: params.userId,
       settings: DEFAULT_USER_PREFERENCE_SETTINGS,
       isSettingsStored: true,
       streak: Streak.reconstitute({ currentStreak: 0, longestStreak: 0, lastCompletedDate: null }),
@@ -97,7 +100,8 @@ export class UserPreference extends AggregateRoot<UserId, UserPreferenceProps> {
   }
 
   static reconstitute(primitives: UserPreferencePrimitives): UserPreference {
-    const preference = new UserPreference(UserId.reconstitute(primitives.userId), {
+    const preference = new UserPreference(UserPreferenceId.reconstitute(primitives.userId), {
+      userId: UserId.reconstitute(primitives.userId),
       settings: primitives.settings ?? DEFAULT_USER_PREFERENCE_SETTINGS,
       isSettingsStored: primitives.settings != null,
       streak: primitives.streak == null ? null : Streak.reconstitute(primitives.streak),
@@ -108,6 +112,10 @@ export class UserPreference extends AggregateRoot<UserId, UserPreferenceProps> {
   }
 
   #loaded: UserPreferencePrimitives | null = null;
+
+  get userId(): UserId {
+    return this.props.userId;
+  }
 
   get settings(): UserPreferenceSettings {
     return this.props.settings;
@@ -212,7 +220,7 @@ export class UserPreference extends AggregateRoot<UserId, UserPreferenceProps> {
 
   toPrimitives(): UserPreferencePrimitives {
     return {
-      userId: this.id.value,
+      userId: this.props.userId.value,
       settings: this.props.isSettingsStored ? this.props.settings : null,
       streak: this.streakState,
       consent: this.props.consent.toPrimitives(),

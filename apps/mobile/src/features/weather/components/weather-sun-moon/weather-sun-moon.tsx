@@ -24,7 +24,7 @@ import {
   WeatherReportSelect,
 } from '../../queries/weather.queries';
 import {
-  getSunArcPosition,
+  findSunArcPosition,
   isSunBelowHorizon,
   SUN_ARC_VIEWBOX,
 } from '../../utils/sun-arc.geometry';
@@ -133,7 +133,7 @@ export function WeatherSunMoon() {
       </HStack>
       <Spacing size={8} />
       <WeatherSunArc
-        position={getSunArcPosition(today, now)}
+        position={findSunArcPosition(today, now)}
         isNight={isSunBelowHorizon(today, now)}
       />
       {sunEvents.kind === 'regular' && (

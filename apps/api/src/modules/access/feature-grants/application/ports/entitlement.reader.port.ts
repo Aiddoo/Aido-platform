@@ -21,8 +21,8 @@ export abstract class EntitlementReaderPort {
   /** 활성 UoW에서 캐시 없이 최신 상태로 다시 판단한다. 잠금 뒤 재확인에 쓴다. */
   abstract canInTransaction(userId: UserId, feature: PlanFeature): Promise<boolean>;
   /** quota·resource 표시 한도(받은 자리 포함). null은 무제한이다. */
-  abstract getFeatureLimit(userId: UserId, feature: PlanLimitFeatureKey): Promise<number | null>;
-  abstract getFeatureLimitInTransaction(
+  abstract findFeatureLimit(userId: UserId, feature: PlanLimitFeatureKey): Promise<number | null>;
+  abstract findFeatureLimitInTransaction(
     userId: UserId,
     feature: PlanLimitFeatureKey,
   ): Promise<number | null>;

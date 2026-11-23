@@ -1,27 +1,11 @@
-import type { Breadcrumb } from '@src/core/observability/breadcrumb';
-import type { NetworkStatusGateway } from '@src/core/ports/network-status-gateway';
-import { createAnalyticsStub } from '@src/testing/core';
+import {
+  createAnalyticsStub,
+  createErrorReporterStub,
+  createNetworkStatusGatewayStub,
+} from '@src/testing/core';
 import { onlineManager } from '@tanstack/react-query';
 
 import { connectOnlineManager } from './online-manager';
-
-const createStubNetworkStatus = () => {
-  let emit: (isOnline: boolean) => void = () => {};
-  const gateway: NetworkStatusGateway = {
-    subscribe: (listener) => {
-      emit = listener;
-      return () => {
-        emit = () => {};
-      };
-    },
-  };
-  return { gateway, emit: (isOnline: boolean) => emit(isOnline) };
-};
-
-const createBreadcrumbRecorder = () => {
-  const breadcrumbs: Breadcrumb[] = [];
-  return { breadcrumbs, addBreadcrumb: (breadcrumb: Breadcrumb) => breadcrumbs.push(breadcrumb) };
-};
 
 describe('connectOnlineManager', () => {
   let disconnect: () => void = () => {};
@@ -32,11 +16,11 @@ describe('connectOnlineManager', () => {
 
   it('기기 연결이 끊겼다가 돌아오면 React Query 온라인 상태가 따라 바뀐다', () => {
     // Given
-    const network = createStubNetworkStatus();
-    const recorder = createBreadcrumbRecorder();
+    const network = createNetworkStatusGatewayStub();
+    const errorReporter = createErrorReporterStub();
     disconnect = connectOnlineManager({
-      networkStatus: network.gateway,
-      errorReporter: recorder,
+      networkStatus: network,
+      errorReporter,
       analytics: createAnalyticsStub(),
     });
 
@@ -52,11 +36,11 @@ describe('connectOnlineManager', () => {
 
   it('같은 상태가 반복돼도 전환마다 breadcrumb를 한 번만 남긴다', () => {
     // Given
-    const network = createStubNetworkStatus();
-    const recorder = createBreadcrumbRecorder();
+    const network = createNetworkStatusGatewayStub();
+    const errorReporter = createErrorReporterStub();
     disconnect = connectOnlineManager({
-      networkStatus: network.gateway,
-      errorReporter: recorder,
+      networkStatus: network,
+      errorReporter,
       analytics: createAnalyticsStub(),
     });
 
@@ -67,7 +51,7 @@ describe('connectOnlineManager', () => {
     network.emit(true);
 
     // Then
-    expect(recorder.breadcrumbs.map(({ message }) => message)).toEqual([
+    expect(errorReporter.addBreadcrumb.mock.calls.map(([{ message }]) => message)).toEqual([
       'network_offline',
       'network_online',
     ]);
@@ -76,11 +60,11 @@ describe('connectOnlineManager', () => {
   it('오프라인 구간마다 오프라인 배너 노출을 한 번만 센다', () => {
     // 연결된 기기
     // Given
-    const network = createStubNetworkStatus();
+    const network = createNetworkStatusGatewayStub();
     const analytics = createAnalyticsStub();
     disconnect = connectOnlineManager({
-      networkStatus: network.gateway,
-      errorReporter: createBreadcrumbRecorder(),
+      networkStatus: network,
+      errorReporter: createErrorReporterStub(),
       analytics,
     });
 
@@ -100,11 +84,11 @@ describe('connectOnlineManager', () => {
 
   it('연결을 해제하면 기기 상태 구독을 끝내고 온라인으로 되돌린다', () => {
     // Given
-    const network = createStubNetworkStatus();
-    const recorder = createBreadcrumbRecorder();
+    const network = createNetworkStatusGatewayStub();
+    const errorReporter = createErrorReporterStub();
     const disconnectNow = connectOnlineManager({
-      networkStatus: network.gateway,
-      errorReporter: recorder,
+      networkStatus: network,
+      errorReporter,
       analytics: createAnalyticsStub(),
     });
     network.emit(false);

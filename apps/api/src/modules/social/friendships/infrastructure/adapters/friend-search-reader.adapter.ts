@@ -42,7 +42,7 @@ export class FriendSearchReaderAdapter implements FriendSearchReaderPort {
       limit,
     });
     const relations = keyBy(
-      await this.#friendReader.findRelationsWith(
+      await this.#friendReader.listRelationsWith(
         viewerId,
         matches.map((match) => match.user.userId),
       ),

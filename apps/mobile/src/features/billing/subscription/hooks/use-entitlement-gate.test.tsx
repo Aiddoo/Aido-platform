@@ -17,7 +17,7 @@ import {
   createTestDi,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
-import { act, screen, userEvent, waitFor } from '@testing-library/react-native';
+import { screen, userEvent, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
 import {
@@ -216,9 +216,7 @@ describe('useEntitlementGate', () => {
     await screen.findByRole('button', { name: '나중에' });
 
     // When
-    await act(async () => {
-      unmount();
-    });
+    await unmount();
 
     // Then
     expect(readDismissals().AI_PARSE).toBeUndefined();
@@ -260,7 +258,7 @@ describe('useEntitlementGate', () => {
     const snapshot = queryClient.getQueryData<EntitlementSnapshot>(
       ENTITLEMENT_QUERY_KEYS.snapshot(),
     );
-    expect(snapshot && EntitlementPolicy.getRemainingCount(snapshot, 'AI_PARSE')).toBe(0);
+    expect(snapshot && EntitlementPolicy.findRemainingCount(snapshot, 'AI_PARSE')).toBe(0);
     expect(analytics.trackEvent).toHaveBeenCalledWith('limit_reached_shown', {
       feature: 'ai_parse',
       surface: 'add_todo_sheet',

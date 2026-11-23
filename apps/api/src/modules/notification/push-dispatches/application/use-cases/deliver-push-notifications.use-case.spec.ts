@@ -15,8 +15,8 @@ import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createNotificationDeliveryPreferenceFixture } from "#test/fixtures/notification/notification-delivery-preference.fixture";
 import { createNotificationDraftFixture } from "#test/fixtures/notification/notification.fixture";
 
+import { NotificationId } from "../../../notifications/domain/notification-id.vo.js";
 import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
-import { NotificationId } from "../../../shared/domain/notification-id.vo.js";
 import type {
   PushDeliveryEligibilityDecision,
   PushDeliverySettingsDecision,

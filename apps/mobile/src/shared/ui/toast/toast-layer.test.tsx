@@ -58,11 +58,11 @@ function listInTreeOrder(root: HostNode, toast: HostNode | undefined) {
     if (node.props.testID === 'sheet') {
       order.push('sheet');
     }
-    node.children.forEach((child) => {
+    for (const child of node.children) {
       if (typeof child !== 'string') {
         visit(child);
       }
-    });
+    }
   };
   visit(root);
   return order;

@@ -35,20 +35,6 @@ describe("할 일 Read Model 행 매퍼", () => {
     });
   });
 
-  it("순간이 없는 옛 행은 남은 벽시계 칸을 버린다", () => {
-    // Given
-    const row = {
-      ...createPlanningTodoRecordFixture({ userId: "user-123" }),
-      scheduledLocalTime: "09:00",
-    };
-
-    // When
-    const todo = toFriendTodoReadModel({ ...row, scheduledTime: null });
-
-    // Then
-    expect(todo.scheduledLocalTime).toBeNull();
-  });
-
   it("규칙이 없으면 repeat와 occurrenceDate가 null이다", () => {
     // Given
     const row = createPlanningTodoRecordFixture({ userId: "user-123" });

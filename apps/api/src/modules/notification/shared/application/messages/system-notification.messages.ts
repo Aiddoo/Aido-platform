@@ -1,7 +1,8 @@
 import { type SubscriptionPlanType, type SupportedLocale } from "@aido/api/vocabulary";
+import { match } from "ts-pattern";
 
 import { instantFromDate } from "#api/shared/domain/time/instant";
-import { localDateIn } from "#api/shared/domain/time/time-zone-name";
+import { localDateIn } from "#api/shared/domain/time/timezone-name";
 
 import type { NotificationMilestone } from "../../domain/notification-milestone.constants.js";
 import type {
@@ -183,46 +184,52 @@ export function createWinbackNotificationMessage({
 export function createOnboardingNotificationMessage(
   input: OnboardingNotificationInput,
 ): NotificationMessage {
-  const { day, locale, variantContext } = input;
+  const { locale, variantContext } = input;
   const options = { locale, variantContext };
-  switch (day) {
-    case 0:
-      return renderNotificationTemplate(SYSTEM_COPY.ONBOARDING_DAY0, {
+  return match(input)
+    .with({ day: 0 }, () =>
+      renderNotificationTemplate(SYSTEM_COPY.ONBOARDING_DAY0, {
         ...options,
         facts: {},
         templateKey: "onboarding.day_0",
-      });
-    case 1:
-      return renderNotificationTemplate(SYSTEM_COPY.ONBOARDING_DAY1, {
+      }),
+    )
+    .with({ day: 1 }, () =>
+      renderNotificationTemplate(SYSTEM_COPY.ONBOARDING_DAY1, {
         ...options,
         facts: {},
         templateKey: "onboarding.day_1",
-      });
-    case 2:
-      return renderNotificationTemplate(SYSTEM_COPY.ONBOARDING_DAY2, {
+      }),
+    )
+    .with({ day: 2 }, () =>
+      renderNotificationTemplate(SYSTEM_COPY.ONBOARDING_DAY2, {
         ...options,
         facts: {},
         templateKey: "onboarding.day_2",
-      });
-    case 3:
-      return renderNotificationTemplate(SYSTEM_COPY.ONBOARDING_DAY3, {
+      }),
+    )
+    .with({ day: 3 }, () =>
+      renderNotificationTemplate(SYSTEM_COPY.ONBOARDING_DAY3, {
         ...options,
         facts: {},
         templateKey: "onboarding.day_3",
-      });
-    case 5:
-      return renderNotificationTemplate(SYSTEM_COPY.ONBOARDING_DAY5, {
+      }),
+    )
+    .with({ day: 5 }, ({ completedCount }) =>
+      renderNotificationTemplate(SYSTEM_COPY.ONBOARDING_DAY5, {
         ...options,
-        facts: { completedCount: input.completedCount },
+        facts: { completedCount },
         templateKey: "onboarding.day_5",
-      });
-    case 7:
-      return renderNotificationTemplate(SYSTEM_COPY.ONBOARDING_DAY7, {
+      }),
+    )
+    .with({ day: 7 }, ({ completedCount }) =>
+      renderNotificationTemplate(SYSTEM_COPY.ONBOARDING_DAY7, {
         ...options,
-        facts: { completedCount: input.completedCount },
+        facts: { completedCount },
         templateKey: "onboarding.day_7",
-      });
-  }
+      }),
+    )
+    .exhaustive();
 }
 
 const MILESTONE_COPY = {

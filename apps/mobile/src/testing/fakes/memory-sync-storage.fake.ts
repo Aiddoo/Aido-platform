@@ -35,7 +35,9 @@ export function createMemorySyncStorage(): MemorySyncStorage {
     clear: jest.fn(() => {
       const keys = [...values.keys()];
       values.clear();
-      keys.forEach(notify);
+      for (const key of keys) {
+        notify(key);
+      }
     }),
     subscribe: jest.fn((key: string, listener: () => void) => {
       const listeners = listenersByKey.get(key) ?? new Set<() => void>();
@@ -45,7 +47,6 @@ export function createMemorySyncStorage(): MemorySyncStorage {
         listeners.delete(listener);
       };
     }),
-    getListenerCount: () =>
-      sumBy(Array.from(listenersByKey.values()), (listeners) => listeners.size),
+    getListenerCount: () => sumBy([...listenersByKey.values()], (listeners) => listeners.size),
   };
 }

@@ -16,7 +16,6 @@ import {
 } from "#api/platform/cache/generation-guarded-cache";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantToDate } from "#api/shared/domain/time/instant";
 
 import type {
   CachedUserProfile,
@@ -84,7 +83,7 @@ export class UserProfileCacheAdapter implements UserProfileCachePort, UserProfil
         const loaded = await factory();
         return loaded == null ? undefined : { ...loaded, id: loaded.id.value };
       },
-      ttlMs: (cached) => userProfileTtlMs(cached ?? null, instantToDate(this.#clock.now())),
+      ttlMs: (cached) => userProfileTtlMs(cached ?? null, this.#clock.now()),
     });
     return profile == null ? null : { ...profile, id: UserId.reconstitute(profile.id) };
   }

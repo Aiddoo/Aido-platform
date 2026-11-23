@@ -1,4 +1,4 @@
-import { completionRate } from "@aido/api/vocabulary";
+import { completionRate, isAllCompleted } from "@aido/api/vocabulary";
 
 import { ValueObject } from "#api/shared/domain/model/value-object";
 
@@ -39,6 +39,6 @@ export class TodoCompletionCount extends ValueObject<TodoCompletionCountValue> {
 
   /** 할 일이 하나 이상이고 모두 끝냈다 */
   isAllCompleted(): boolean {
-    return this.value.total > 0 && this.value.completed === this.value.total;
+    return isAllCompleted(this.value.completed, this.value.total);
   }
 }

@@ -13,6 +13,7 @@ import { PersistBatchNotificationUseCase } from "#api/modules/notification/notif
 import { PublishNotificationBatchUseCase } from "#api/modules/notification/notifications/application/use-cases/publish-notification-batch.use-case";
 import { SendBatchNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-batch-notification.use-case";
 import { SendNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-notification.use-case";
+import { NotificationId } from "#api/modules/notification/notifications/domain/notification-id.vo";
 import { DrizzleNotificationTodoTargetReader } from "#api/modules/notification/notifications/infrastructure/persistence/drizzle-notification-todo-target.reader";
 import { DrizzleNotificationRepository } from "#api/modules/notification/notifications/infrastructure/persistence/drizzle-notification.repository";
 import { PublishNotificationUseCase } from "#api/modules/notification/notifications/notification-notifications.public";
@@ -32,7 +33,6 @@ import {
 } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder.queue";
 import { DrizzleTodoReminderReader } from "#api/modules/notification/reminders/infrastructure/persistence/drizzle-todo-reminder.reader";
 import { notificationRetentionAssignmentsConfig } from "#api/modules/notification/retention-assignments/notification-retention-assignments.config";
-import { NotificationId } from "#api/modules/notification/shared/domain/notification-id.vo";
 import { DrizzleTodoSeriesRepository } from "#api/modules/planning/todo-series/infrastructure/persistence/drizzle-todo-series.repository";
 import { ApplyTodoEventsUseCase } from "#api/modules/planning/todos/application/use-cases/apply-todo-events.use-case";
 import { RebaseTodoTimezoneUseCase } from "#api/modules/planning/todos/application/use-cases/rebase-todo-timezone.use-case";

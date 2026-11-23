@@ -301,8 +301,8 @@ describe('구독 화면', () => {
 
     // When
     await act(async () => {
-      fireEvent.press(button);
-      fireEvent.press(button);
+      await fireEvent.press(button);
+      await fireEvent.press(button);
     });
 
     // Then

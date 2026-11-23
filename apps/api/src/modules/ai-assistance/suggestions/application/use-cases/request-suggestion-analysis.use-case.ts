@@ -19,9 +19,10 @@ import type {
   RecentTodoCountReadModel,
   SuggestionAnalysisReadModel,
 } from "../read-models/suggestion-analysis.read-model.js";
-import type { SuggestionAnalysisStateReader } from "../suggestion-analysis-state.reader.js";
 import { SuggestionLockKeys } from "../suggestions.lock-keys.js";
 import { SuggestionLogEvent } from "../suggestions.log-events.js";
+import type { CountRecentSuggestionTodosUseCase } from "./count-recent-suggestion-todos.use-case.js";
+import type { GetSuggestionAnalysisStateUseCase } from "./get-suggestion-analysis-state.use-case.js";
 
 export interface RequestSuggestionAnalysisCommand {
   readonly userId: string;
@@ -33,7 +34,8 @@ interface RequestSuggestionAnalysisDependencies {
   readonly runs: Pick<SuggestionAnalysisRunRepositoryPort, "findByUserId" | "save">;
   readonly suggestions: Pick<SuggestionRepositoryPort, "listPendingByUserId">;
   readonly enqueuer: Pick<SuggestionAnalysisEnqueuerPort, "enqueue">;
-  readonly analysisState: Pick<SuggestionAnalysisStateReader, "read" | "readRecentTodoCount">;
+  readonly analysisState: Pick<GetSuggestionAnalysisStateUseCase, "execute">;
+  readonly countRecentTodos: Pick<CountRecentSuggestionTodosUseCase, "execute">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly mutationLock: Pick<MutationLockPort, "acquire">;
   readonly clock: ClockPort;
@@ -65,15 +67,15 @@ export class RequestSuggestionAnalysisUseCase {
     }
     const now = this.#dependencies.clock.now();
     // 아침 배치와 같은 날짜를 쓰려고 요청 헤더가 아니라 저장된 시간대로 정한다
-    const recentTodos = await this.#dependencies.analysisState.readRecentTodoCount(userId, now);
+    const recentTodos = await this.#dependencies.countRecentTodos.execute({ userId, now });
     if (!hasEnoughRecentTodos(recentTodos.recentTodoCount)) {
       return this.#readState(userId, recentTodos);
     }
     const job = {
       userId,
-      localDate: suggestionDispatchLocalDate({ at: now, timeZone: recentTodos.timeZone }),
+      localDate: suggestionDispatchLocalDate({ at: now, timezone: recentTodos.timezone }),
       trigger: "ON_DEMAND",
-      timeZone: recentTodos.timeZone,
+      timezone: recentTodos.timezone,
     } as const;
     const requested = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([SuggestionLockKeys.analysisRun(userId)]);
@@ -103,6 +105,10 @@ export class RequestSuggestionAnalysisUseCase {
       userId,
       this.#dependencies.clock.now(),
     );
-    return this.#dependencies.analysisState.read(userId, pending.length, recentTodos);
+    return this.#dependencies.analysisState.execute({
+      userId,
+      pendingCount: pending.length,
+      recentTodos,
+    });
   }
 }

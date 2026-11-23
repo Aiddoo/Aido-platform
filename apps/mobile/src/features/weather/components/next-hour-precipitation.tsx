@@ -78,7 +78,7 @@ export function NextHourPrecipitation() {
   });
   const now = useMinuteNow();
   const toMessage = useFormatPrecipitationMessage({
-    timeZone: weather.location.timezone,
+    timezone: weather.location.timezone,
     timeFormat: preference.timeFormat,
     now,
   });
@@ -94,7 +94,7 @@ export function NextHourPrecipitation() {
     ) : (
       <NextHourPrecipitation.HourlyOutlook
         outlook={outlook}
-        timeZone={weather.location.timezone}
+        timezone={weather.location.timezone}
         timeFormat={preference.timeFormat}
         now={now}
       />
@@ -136,18 +136,18 @@ export function NextHourPrecipitation() {
 /** 분 단위 예보가 없는 지역(국내 등)은 그래프 대신 6시간 안에 비가 오는 첫 시간을 한 줄로 알린다. */
 NextHourPrecipitation.HourlyOutlook = function HourlyOutlook({
   outlook,
-  timeZone,
+  timezone,
   timeFormat,
   now,
 }: {
   outlook: HourlyPrecipitationOutlook;
-  timeZone: string;
+  timezone: string;
   timeFormat: TimeFormat;
   now: Instant;
 }) {
   const { t } = useTranslation('weather');
-  const dateFormat = useLocationDateFormat(timeZone);
-  const localTime = useFormatLocalTime(timeZone, now);
+  const dateFormat = useLocationDateFormat(timezone);
+  const localTime = useFormatLocalTime(timezone, now);
   const iconSize = Math.round(HOURLY_OUTLOOK_ICON_SIZE * useFontScaleRatio());
   const { hour, isOngoing } = outlook;
   const isSnow = WeatherReportPolicy.isFrozenPrecipitation(hour.precipitationType);
@@ -329,17 +329,17 @@ interface PrecipitationMessage {
 
 /** 시각은 위치 시간대로 말하고, 위치 벽시계가 기기와 다르면 '현지'를 붙인다 */
 function useFormatPrecipitationMessage({
-  timeZone,
+  timezone,
   timeFormat,
   now,
 }: {
-  timeZone: string;
+  timezone: string;
   timeFormat: TimeFormat;
   now: Instant;
 }) {
   const { t } = useTranslation('weather');
-  const dateFormat = useLocationDateFormat(timeZone);
-  const localTime = useFormatLocalTime(timeZone, now);
+  const dateFormat = useLocationDateFormat(timezone);
+  const localTime = useFormatLocalTime(timezone, now);
 
   const formatMoment = (date: Instant, precision: PrecipitationPrecision) =>
     localTime(

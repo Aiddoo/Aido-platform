@@ -15,18 +15,18 @@
 
 목록 줄은 데이터만 갖는다: `id`(route·지표 키), `version`·`releasedOn`(패치 노트), `titleKey`·`descriptionKey`, 선택 `cta`, 서버가 자동으로 열 수 있는 출시에만 `campaignId`. 줄은 기능이 주인공이고 버전·날짜(`v1.15.0 · 11월 10일 업데이트`)는 아래 조용한 글자다. 소개는 `WhatsNewPolicy.findTourId`가 `TOUR_RELEASE_IDS`로 찾는다. 소개가 없는 id로 `/whats-new`에 들어오면 최신 소개를 연다.
 
-1.15.2에서 친구 초대 줄과 소개(id `1.14.0`, 버전 `1.13.0`)를 지웠다. `/whats-new?releaseId=1.14.0`으로 남은 링크는 최신 소개를 열고, 지표의 `release_id: 1.14.0` 기록은 그대로 남아 이 id를 다시 쓰지 않는다. 이벤트 이름은 바꾸지 않았다.
+줄을 지워도 그 id로 남은 `/whats-new?releaseId=…` 링크는 최신 소개를 연다. 지운 출시 id·캠페인 id는 지표(`release_id`·`campaign_id`)와 기기 본 기록 키에 남으므로 다시 쓰지 않고, 이벤트 이름은 바꾸지 않는다.
 
-1.16.0에서 1.15.0 줄의 `campaignId`(`feature-discovery-2026-12`)를 지워 그 소개는 목록에서만 연다. 캠페인 id는 1.16.0부터 `feature-discovery-<출시 id>`(예 `feature-discovery-1.16.0`)다. 날짜로 지은 이전 값(`feature-discovery-2026-08`, `2026-11` 친구 초대, `2026-12` 1.15.0)은 만든 달 기준이라 같은 달의 두 출시가 겹쳐 실제와 다른 달로 밀렸다. 쓴 값은 지표의 `campaign_id`와 기기 본 기록 키에 남아 다시 쓰지 않는다.
+캠페인 id는 `feature-discovery-<출시 id>`(예 `feature-discovery-1.16.0`)다. 날짜로 짓지 않는다(같은 달의 두 출시가 겹친다). 자동으로 열지 않을 출시 줄에는 `campaignId`를 두지 않아 목록에서만 연다.
 
 ## 운영이 띄울 소개를 고르는 법
 
-서버 `GET /v1/app-config/feature-discovery`가 env로 정하고, 앱은 응답의 `campaignId`와 같은 `campaignId`를 가진 출시를 찾는다. 앱이 모르는 id면 띄우지 않는다. 그래서 1.15.1 앱에서도 운영이 1.15.0 소개를 계속 띄울 수 있다. v1 응답 계약은 바꾸지 않는다(구 앱이 엄격하게 검사한다).
+서버 `GET /v1/app-config/feature-discovery`가 env로 정하고, 앱은 응답의 `campaignId`와 같은 `campaignId`를 가진 출시를 찾는다. 앱이 모르는 id면 띄우지 않는다. 그래서 새 앱에서도 운영이 앞 출시의 소개를 계속 띄울 수 있다. v1 응답 계약은 바꾸지 않는다(구 앱이 엄격하게 검사한다).
 
 | env                                 | 뜻                                                                                 |
 | ----------------------------------- | ---------------------------------------------------------------------------------- |
 | `FEATURE_DISCOVERY_ENABLED`         | 끄면 자동 열기, 새 기능 표시, 피드 카드가 모두 없다. 목록과 소개는 그대로 열린다   |
-| `FEATURE_DISCOVERY_CAMPAIGN_ID`     | 띄울 출시의 `campaignId`(지금 `feature-discovery-1.16.0` = 1.16.0)                 |
+| `FEATURE_DISCOVERY_CAMPAIGN_ID`     | 띄울 출시의 `campaignId`(예 `feature-discovery-1.16.0`)                            |
 | `FEATURE_DISCOVERY_MIN_APP_VERSION` | 그 소개를 번들한 첫 앱 버전. 낮은 앱은 열지 않는다                                 |
 | `FEATURE_DISCOVERY_AUTO_OPEN`       | 끄면 자동으로 열지 않고 목록에서만 연다                                            |
 | `FEATURE_DISCOVERY_LAUNCHED_AT`     | 켜면 필수. 1.15.0 이하 앱만 읽고(그 전 가입자에게만 자동), 1.15.1 앱은 읽지 않는다 |

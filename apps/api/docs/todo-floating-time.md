@@ -82,13 +82,12 @@ worker → 규칙 시간대 변경 → 500행씩: 잠금 → 최신 시간대 �
 | 리마인드 예약                                  | 지연 작업 시각                       | 없음. 완료 전이고 앞으로인 회차만 예약한다                       |
 | 날씨 아침 푸시 `WeatherBriefingTodoReaderPort` | 오늘 남은 시간의 할 일 + 예보 맞추기 | 없음. 완료 전·지금 이후만 읽고, 같은 저장 시간대로 계산한 값이다 |
 | 응답 `scheduledTime`(소유자·친구·댓글)         | 출시 앱 표시                         | 좋아진다. 지난 할 일도 새 시간대에서 고른 시각으로 보인다        |
-| AI 제안 기록 `DrizzleSuggestionActivityReader` | 벽시계가 빈 옛 행의 대체값           | 없음. 벽시계가 있으면 그것을 쓴다                                |
 
 리포트·통계·연속 기록·달성은 `startDate`와 `completedAt`을 쓰고, 목록 정렬은 `sortOrder`다. `scheduledTime`을 읽지 않는다.
 
 ## 관측과 실패
 
-- 완료 로그 `planning.todo.timezone-rebase.completed`: `outcome`(`COMPLETED`·`SUPERSEDED`·`NO_PREFERENCE`), `scannedCount`, `rebasedCount`, `skippedCount`, `seriesCount`, `timezone`, `durationMs`. 제목은 남기지 않는다.
+- 완료 로그 `planning.todo.timezone-rebase.completed`: `outcome`(`COMPLETED`·`SUPERSEDED`·`NO_PREFERENCE`), `scannedCount`, `rebasedCount`, `seriesCount`, `timezone`, `durationMs`. 제목은 남기지 않는다.
 - 시도별 실패 `planning.todo.timezone-rebase.failed`. pg-boss가 3번 다시 시도하고(30초, 백오프) 마지막 시도까지 실패하면 경보 `planning.todo-timezone-rebase.failed`가 오른다. 이때 그 사용자의 알림은 옛 시각이다. 표시는 벽시계라 맞다.
 - 개발·스테이징 `/health`의 job 상태에 `todo-timezone-rebase.v1` 대기·실행·실패 수가 보인다(운영 공개 응답은 상태만 준다).
 - 탈퇴·설정 없는 사용자는 `NO_PREFERENCE`로 조용히 끝난다. 정지·휴면 사용자도 그대로 계산하고 발송은 기존 리마인더 처리가 건너뛴다.

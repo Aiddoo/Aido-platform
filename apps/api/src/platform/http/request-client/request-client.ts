@@ -13,7 +13,7 @@ import {
   type SupportedLocale,
 } from "@aido/api/vocabulary";
 
-import { normalizeIanaTimezone } from "#api/shared/domain/time/time-zone-name";
+import { normalizeIanaTimezone } from "#api/shared/domain/time/timezone-name";
 
 /** 앱이 매 요청에 보내는 헤더를 요청당 한 번 정규화한 값. 확인되지 않은 값은 null이다. */
 export interface RequestClient {
@@ -62,12 +62,12 @@ export function normalizeDevicePlatform(value: string | undefined): DeviceType |
 
 /** 제어·방향 제어 문자를 지우고 표시 한도로 자른 기기 이름. 남는 글자가 없으면 null */
 export function normalizeDeviceName(value: string | undefined): string | null {
-  const name = Array.from(
-    (value ?? "")
+  const name = [
+    ...(value ?? "")
       .replaceAll(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/gu, " ")
       .replaceAll(/\s+/gu, " ")
       .trim(),
-  )
+  ]
     .slice(0, DEVICE_NAME_MAX_LENGTH)
     .join("")
     .trim();

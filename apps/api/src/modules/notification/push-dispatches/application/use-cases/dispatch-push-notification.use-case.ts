@@ -22,10 +22,10 @@ import {
   supportsFeatureDiscoveryMarketing,
 } from "../../domain/feature-marketing-capability.domain-service.js";
 import { carriesUnreadBadge, pushBadgeFor } from "../../domain/push-badge.domain-service.js";
-import type { NoActiveTokenReasonReader } from "../no-active-token-reason.reader.js";
 import type { PushMessageContent, PushSendResult } from "../ports/push-channel.port.js";
 import { countOutcomes, tokensToRevoke } from "../push-delivery-results.mapper.js";
 import { PushDispatchLogEvent } from "../push-dispatches.log-events.js";
+import type { ResolveNoActiveTokenReasonsUseCase } from "./resolve-no-active-token-reasons.use-case.js";
 import type { SendPushMessagesUseCase } from "./send-push-messages.use-case.js";
 
 export interface DispatchPushNotificationCommand {
@@ -46,13 +46,13 @@ export type SinglePushNotificationDeliveryResult =
 interface DispatchPushNotificationDependencies {
   readonly pushTokenRepository: Pick<
     PushTokenRepositoryPort,
-    "deactivateInvalidTokens" | "findPushTokensByUser"
+    "deactivateInvalidTokens" | "listPushTokensByUser"
   >;
   readonly sendMessages: Pick<SendPushMessagesUseCase, "execute">;
   readonly unreadCounts: Pick<UnreadNotificationCountReaderPort, "countUnreadByUsers">;
-  readonly activePushTokenReader: Pick<ActivePushTokenReaderPort, "findByUserId">;
+  readonly activePushTokenReader: Pick<ActivePushTokenReaderPort, "listByUserId">;
   readonly pushTokenCache: Pick<PushTokenCachePort, "invalidatePushTokens">;
-  readonly noActiveTokenReasons: Pick<NoActiveTokenReasonReader, "findReason">;
+  readonly noActiveTokenReasons: Pick<ResolveNoActiveTokenReasonsUseCase, "execute">;
   readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "debug" | "warn">;
 }
@@ -128,14 +128,14 @@ export class DispatchPushNotificationUseCase {
     const requiresFeatureCapability = data.campaignKey === FEATURE_DISCOVERY_CAMPAIGN_KEY;
     const requiresAppVersion = notificationMinAppVersion(data.type) != null;
     if (requiresFeatureCapability || requiresAppVersion) {
-      const records = await this.#dependencies.pushTokenRepository.findPushTokensByUser({
+      const records = await this.#dependencies.pushTokenRepository.listPushTokensByUser({
         userId: UserId.reconstitute(data.userId),
         activeOnly: true,
       });
       if (records.length === 0) {
         return {
           status: "skipped",
-          reason: await this.#dependencies.noActiveTokenReasons.findReason(data.userId),
+          reason: await this.#noActiveTokenReason(data.userId),
         };
       }
 
@@ -151,14 +151,19 @@ export class DispatchPushNotificationUseCase {
         : { status: "skipped", reason: "UNSUPPORTED_APP_CAPABILITY" };
     }
 
-    const tokens = await this.#dependencies.activePushTokenReader.findByUserId(
+    const tokens = await this.#dependencies.activePushTokenReader.listByUserId(
       UserId.reconstitute(data.userId),
     );
     return tokens.length > 0
       ? { status: "resolved", tokens }
       : {
           status: "skipped",
-          reason: await this.#dependencies.noActiveTokenReasons.findReason(data.userId),
+          reason: await this.#noActiveTokenReason(data.userId),
         };
+  }
+
+  async #noActiveTokenReason(userId: string): Promise<PushDispatchSkipReason> {
+    const reasons = await this.#dependencies.noActiveTokenReasons.execute([userId]);
+    return reasons.get(userId) ?? "NO_ACTIVE_TOKEN";
   }
 }

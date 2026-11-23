@@ -4,7 +4,7 @@ import { ActivityReport } from '@src/features/insights/report/components/activit
 import { CompletionHourChart } from '@src/features/insights/report/components/completion-hour-chart';
 import { CompletionRateHeadline } from '@src/features/insights/report/components/completion-rate-headline';
 import { DailyCompletionChart } from '@src/features/insights/report/components/daily-completion-chart';
-import { type AiReport, ReportPolicy } from '@src/features/insights/report/domains/report.model';
+import type { AiReport } from '@src/features/insights/report/domains/report.model';
 import {
   formatDailyValueLine,
   getHourlyCompletionCounts,
@@ -63,7 +63,7 @@ export function ReportSummaryDemo() {
 export function ReportHoursDemo() {
   const report = useDemoReport();
 
-  const peakHour = ReportPolicy.getPeakHour(report);
+  const { peakHour } = report;
 
   return (
     <WhatsNewStep.Stage>
@@ -211,6 +211,7 @@ function useDemoReport(): AiReport {
     stats: DEMO_REPORT.stats,
     categoryBreakdown: [],
     timePatterns: [...DEMO_REPORT.timePatterns],
+    peakHour: DEMO_REPORT.peakHour,
     dailyCompletions: [...DEMO_REPORT_DAYS],
     aiSummary: t('v1_16_0.demo.coach.summary'),
     aiTips: [t('v1_16_0.demo.coach.tips.morning'), t('v1_16_0.demo.coach.tips.evening')],

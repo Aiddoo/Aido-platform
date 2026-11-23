@@ -1,31 +1,31 @@
-import { vi } from "vitest";
-
 import type {
   AiGenerationRequest,
   AiTaskId,
   AiTaskOutputs,
   AiGeneratorPort,
 } from "#api/modules/ai-assistance/ai-generations/application/ports/ai-generator.port";
-import { ScheduledAiConsentReader } from "#api/modules/ai-assistance/ai-generations/application/scheduled-ai-consent.reader";
+import { CheckScheduledAiConsentUseCase } from "#api/modules/ai-assistance/ai-generations/application/use-cases/check-scheduled-ai-consent.use-case";
 import type { AiGeneration } from "#api/modules/ai-assistance/ai-generations/domain/ai-generation.aggregate";
 import { GenerateReportUseCase } from "#api/modules/ai-assistance/ai-reports/application/use-cases/generate-report.use-case";
-import { SuggestionAnalysisStateReader } from "#api/modules/ai-assistance/suggestions/application/suggestion-analysis-state.reader";
-import { SuggestionContextReader } from "#api/modules/ai-assistance/suggestions/application/suggestion-context.reader";
 import {
   type AnalyzeAndCreateSuggestionsCommand,
   AnalyzeAndCreateSuggestionsUseCase,
 } from "#api/modules/ai-assistance/suggestions/application/use-cases/analyze-and-create-suggestions.use-case";
+import { CountRecentSuggestionTodosUseCase } from "#api/modules/ai-assistance/suggestions/application/use-cases/count-recent-suggestion-todos.use-case";
 import { DispatchSuggestionAnalysesUseCase } from "#api/modules/ai-assistance/suggestions/application/use-cases/dispatch-suggestion-analyses.use-case";
+import { GetSuggestionAnalysisStateUseCase } from "#api/modules/ai-assistance/suggestions/application/use-cases/get-suggestion-analysis-state.use-case";
+import { GetSuggestionContextUseCase } from "#api/modules/ai-assistance/suggestions/application/use-cases/get-suggestion-context.use-case";
 import { RequestSuggestionAnalysisUseCase } from "#api/modules/ai-assistance/suggestions/application/use-cases/request-suggestion-analysis.use-case";
+import { SuggestionAnalysisRun } from "#api/modules/ai-assistance/suggestions/domain/suggestion-analysis-run.entity";
 import type { SuggestionPick } from "#api/modules/ai-assistance/suggestions/domain/suggestion-candidates.domain-service";
 import { Suggestion } from "#api/modules/ai-assistance/suggestions/domain/suggestion.aggregate";
 import type { TodoSummaryForAnalysis } from "#api/modules/ai-assistance/suggestions/domain/suggestions.constants";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { FakeAiGenerator } from "#test/doubles/ai-assistance/fake-ai.generator";
 import { InMemoryAiReportRepository } from "#test/doubles/ai-assistance/in-memory-ai-report.repository";
 import { InMemorySuggestionAnalysisRunRepository } from "#test/doubles/ai-assistance/in-memory-suggestion-analysis-run.repository";
 import { InMemorySuggestionRepository } from "#test/doubles/ai-assistance/in-memory-suggestion.repository";
 import { RecordingSuggestionAnalysisEnqueuer } from "#test/doubles/ai-assistance/recording-suggestion-analysis-enqueuer";
-import { createSpyApplicationLogger } from "#test/doubles/ai-assistance/spy-application-logger";
 import { StubAiDataSharingConsentReader } from "#test/doubles/ai-assistance/stub-ai-data-sharing-consent.reader";
 import {
   StubAiClientAppVersion,
@@ -37,11 +37,12 @@ import { StubRepeatingTodoTitleReader } from "#test/doubles/ai-assistance/stub-r
 import { StubSingleTodoCountReader } from "#test/doubles/ai-assistance/stub-single-todo-count.reader";
 import { StubSuggestionActivityReader } from "#test/doubles/ai-assistance/stub-suggestion-activity.reader";
 import { StubUserTimezoneReader } from "#test/doubles/ai-assistance/stub-user-timezone.reader";
-import { DateClock } from "#test/doubles/platform/date-clock";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
+import { RecordingApplicationLogger } from "#test/doubles/platform/recording-application-logger";
 import { RecordingMutationLock } from "#test/doubles/platform/recording-mutation-lock";
 import { createReportAiResponse } from "#test/fixtures/ai-assistance/ai-response.fixture";
 
-const AI_ASSISTANCE_TIME = new Date("2026-03-22T12:00:00Z");
+const AI_ASSISTANCE_TIME = Temporal.Instant.from("2026-03-22T12:00:00Z");
 /** 고정 시각(서울 21:00)의 현지 날짜 */
 export const AI_ASSISTANCE_TODAY = Temporal.PlainDate.from("2026-03-22");
 
@@ -87,7 +88,7 @@ export function pauseAiResponse(provider: GatedFakeAiGenerator) {
   return { entered, release };
 }
 
-export function createAiAssistanceFixture() {
+export function createAiAssistanceFixture({ now = AI_ASSISTANCE_TIME } = {}) {
   const userId = "ai-fixture-user";
   const unitOfWork = new StubAiGenerationUnitOfWork();
   const access = new StubAiGenerationAccess(unitOfWork);
@@ -108,14 +109,14 @@ export function createAiAssistanceFixture() {
   const generator = new GatedFakeAiGenerator();
   const aiDataSharingConsent = new StubAiDataSharingConsentReader();
   const clientAppVersion = new StubAiClientAppVersion();
-  const logger = createSpyApplicationLogger();
-  const clock = new DateClock();
-  const scheduledAiConsent = new ScheduledAiConsentReader({
+  const logger = new RecordingApplicationLogger();
+  const clock = new FixedClock(now);
+  const scheduledAiConsent = new CheckScheduledAiConsentUseCase({
     consentReader: aiDataSharingConsent,
     clientAppVersion,
     clock,
   });
-  const contextBuilder = new SuggestionContextReader({
+  const suggestionContext = new GetSuggestionContextUseCase({
     activityReader,
     repeatingTitleReader,
     clock,
@@ -127,17 +128,20 @@ export function createAiAssistanceFixture() {
     scheduledAiConsent,
     unitOfWork,
     mutationLock,
-    contextBuilder,
+    suggestionContext,
     clock,
     logger,
     entitlementReader: access,
     userMutationLock: access,
   });
-  const analysisState = new SuggestionAnalysisStateReader({
-    runs,
+  const countRecentTodos = new CountRecentSuggestionTodosUseCase({
     todoCountReader,
-    scheduledAiConsent,
     timezoneReader,
+  });
+  const analysisState = new GetSuggestionAnalysisStateUseCase({
+    runs,
+    countRecentTodos,
+    scheduledAiConsent,
     onDemandConfig,
     clock,
   });
@@ -148,6 +152,7 @@ export function createAiAssistanceFixture() {
     suggestions: repository,
     enqueuer,
     analysisState,
+    countRecentTodos,
     unitOfWork,
     mutationLock,
     clock,
@@ -190,7 +195,8 @@ export function createAiAssistanceFixture() {
     aiDataSharingConsent,
     clientAppVersion,
     logger,
-    contextBuilder,
+    clock,
+    suggestionContext,
     analyze,
     request,
     dispatch,
@@ -211,6 +217,26 @@ export function createAnalyzeCommand(
     isFinalAttempt: false,
     ...overrides,
   };
+}
+
+// 요청 UseCase가 enqueue와 함께 만드는 실행 기록을 먼저 두고 분석한다. 이미 둔 기록은 그대로 쓴다
+export async function analyzeQueuedSuggestions(
+  fixture: ReturnType<typeof createAiAssistanceFixture>,
+  overrides: Partial<AnalyzeAndCreateSuggestionsCommand> = {},
+) {
+  const command = createAnalyzeCommand(fixture, overrides);
+  const owner = UserId.reconstitute(fixture.userId);
+  if ((await fixture.runs.findByUserId(owner)) == null) {
+    await fixture.runs.save(
+      SuggestionAnalysisRun.create({
+        userId: owner,
+        localDate: command.localDate,
+        trigger: command.trigger,
+        now: fixture.clock.now(),
+      }),
+    );
+  }
+  return fixture.analyze.execute(command);
 }
 
 /** 모델이 고른 제안 후보. 기본 기록의 후보 a1은 "책 읽기 10분"(월요일 3회 완료)이다. */
@@ -267,23 +293,9 @@ export function seedPendingSuggestion(
       suggestedCategoryId: 7,
       status: "PENDING",
       expiresAt: Temporal.Instant.from("2026-04-05T12:00:00Z"),
-      createdAt: Temporal.Instant.from(AI_ASSISTANCE_TIME.toISOString()),
-      updatedAt: Temporal.Instant.from(AI_ASSISTANCE_TIME.toISOString()),
+      createdAt: AI_ASSISTANCE_TIME,
+      updatedAt: AI_ASSISTANCE_TIME,
       evidence: null,
     }),
   );
-}
-
-export async function withAiAssistanceTime<T>(
-  work: () => Promise<T> | T,
-  date = AI_ASSISTANCE_TIME,
-): Promise<T> {
-  vi.useFakeTimers({ toFake: ["Date"] });
-  vi.setSystemTime(date);
-  try {
-    return await work();
-  } finally {
-    vi.useRealTimers();
-    vi.restoreAllMocks();
-  }
 }

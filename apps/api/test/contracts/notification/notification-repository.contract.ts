@@ -4,8 +4,8 @@ import type { NotificationInboxReaderPort } from "#api/modules/notification/noti
 import { type NotificationRepositoryPort } from "#api/modules/notification/notifications/application/ports/notification.repository.port";
 import type { UnreadNotificationCountReaderPort } from "#api/modules/notification/notifications/application/ports/unread-notification-count.reader.port";
 import type { InboxNotificationReadModel } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
+import { NotificationId } from "#api/modules/notification/notifications/domain/notification-id.vo";
 import type { CreateNotificationData } from "#api/modules/notification/shared/domain/notification-draft.constants";
-import { NotificationId } from "#api/modules/notification/shared/domain/notification-id.vo";
 import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
@@ -558,13 +558,13 @@ export function describeNotificationRepositoryContract(
         });
 
         // When
-        const notified = await historyReader.findAlreadyNotifiedUserIds({
+        const notified = await historyReader.listAlreadyNotifiedUserIds({
           userIds: [UserId.reconstitute(USER_ID), UserId.reconstitute(OTHER_USER_ID)],
           type: "FRIEND_COMPLETED",
           notificationDate,
           friendId: UserId.reconstitute(NOTIFICATION_FIXTURE_ACTOR_ID),
         });
-        const otherFriend = await historyReader.findAlreadyNotifiedUserIds({
+        const otherFriend = await historyReader.listAlreadyNotifiedUserIds({
           userIds: [UserId.reconstitute(USER_ID), UserId.reconstitute(OTHER_USER_ID)],
           type: "FRIEND_COMPLETED",
           notificationDate,
@@ -589,7 +589,7 @@ export function describeNotificationRepositoryContract(
         });
 
         // When
-        const stages = await historyReader.findWinbackStagesSince({
+        const stages = await historyReader.listWinbackStagesSince({
           recipients: [
             {
               userId: UserId.reconstitute(USER_ID),
@@ -601,7 +601,7 @@ export function describeNotificationRepositoryContract(
             },
           ],
         });
-        const none = await historyReader.findWinbackStagesSince({ recipients: [] });
+        const none = await historyReader.listWinbackStagesSince({ recipients: [] });
 
         // Then
         expect(
@@ -630,7 +630,7 @@ export function describeNotificationRepositoryContract(
         });
 
         // When
-        const friends = await historyReader.findNudgeSuggestedFriends({
+        const friends = await historyReader.listNudgeSuggestedFriends({
           userIds: [UserId.reconstitute(USER_ID), UserId.reconstitute(OTHER_USER_ID)],
           start: Temporal.PlainDate.from("2026-03-02"),
           end: Temporal.PlainDate.from("2026-03-09"),

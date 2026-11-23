@@ -34,7 +34,7 @@ class ContendedPreferenceRepository extends InMemoryUserPreferenceRepository {
     }
     conflict.meanwhile?.();
     if (conflict.committed != null) {
-      this.commitStreak(preference.id.value, conflict.committed);
+      this.commitStreak(preference.userId.value, conflict.committed);
     }
     return false;
   }

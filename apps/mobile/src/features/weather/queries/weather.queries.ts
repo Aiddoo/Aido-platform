@@ -26,7 +26,7 @@ import { match } from 'ts-pattern';
 
 import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
 import { FORECAST_DAYS } from '../constants/weather.constants';
-import { getHourlySummary } from '../domains/weather-hourly.model';
+import { findHourlySummary } from '../domains/weather-hourly.model';
 import { WeatherLocationPolicy } from '../domains/weather-location.model';
 import { type LocationReading } from '../domains/weather-location.model';
 import {
@@ -239,7 +239,7 @@ function selectHourly(report: WeatherReport, now: Instant) {
   return {
     location: report.location,
     timeline: toHourlyTimeline(report, now),
-    summary: getHourlySummary(report, now),
+    summary: findHourlySummary(report, now),
   };
 }
 

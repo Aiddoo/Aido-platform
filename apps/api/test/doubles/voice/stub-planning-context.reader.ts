@@ -18,7 +18,7 @@ export class StubPlanningContextReader extends PlanningContextReaderPort {
     return this.#context;
   }
 
-  async findOwnedCategoryIds(): Promise<ReadonlySet<number>> {
+  async listOwnedCategoryIds(): Promise<ReadonlySet<number>> {
     return new Set(this.#context.categories.map((category) => category.id));
   }
 }

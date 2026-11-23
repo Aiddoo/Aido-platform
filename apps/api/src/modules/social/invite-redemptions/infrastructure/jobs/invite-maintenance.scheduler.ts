@@ -3,7 +3,7 @@ import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import { runInBackground } from "#api/platform/jobs/non-blocking-init";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
-import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import { Timezone } from "#api/shared/domain/time/timezone.vo";
 
 import { InviteRedemptionLogEvent } from "../../application/invite-redemptions.log-events.js";
 import {
@@ -42,7 +42,7 @@ export class InviteMaintenanceScheduler implements OnModuleInit {
   async #catchUpIfNeeded(): Promise<void> {
     // 프로세서와 같은 시간대로 실행 날짜를 정해 catch-up 키와 재시도 날짜가 어긋나지 않게 한다
     const { timezone, catchUpHour } = INVITE_MAINTENANCE_SCHEDULE;
-    const local = this.#clock.now().toZonedDateTimeISO(TimeZone.create(timezone).value);
+    const local = this.#clock.now().toZonedDateTimeISO(Timezone.create(timezone).value);
     if (local.hour < catchUpHour) {
       return;
     }

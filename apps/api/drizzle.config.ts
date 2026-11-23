@@ -1,6 +1,6 @@
 import { defineConfig } from "drizzle-kit";
 
-import { assertDatabaseUrlIsSafe } from "./scripts/guard-database-url.cjs";
+import { assertDatabaseUrlIsSafe } from "./scripts/guard-database-url.mjs";
 
 const url =
   process.env.DATABASE_URL || "postgresql://placeholder:placeholder@localhost:5432/placeholder";

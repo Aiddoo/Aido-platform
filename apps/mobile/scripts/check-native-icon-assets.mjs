@@ -1,15 +1,14 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
 
 import { PROFILE_ICON_KEYS } from '@aido/api/vocabulary';
 import sharp from 'sharp';
 
 import { TAB_ICON_IMAGES } from './tab-icon-images.mjs';
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const root = resolve(import.meta.dirname, '..');
 const config = JSON.parse(
   execFileSync('pnpm', ['exec', 'expo', 'config', '--type', 'public', '--json'], {
     cwd: root,

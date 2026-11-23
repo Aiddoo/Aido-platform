@@ -42,7 +42,7 @@ import type { SendWinbackUseCase } from "./send-winback.use-case.js";
 export const TIMEZONE_REMINDER_SWEEP_CURSOR_KEY = "tz-reminder-sweep";
 
 interface SweepTimezoneRemindersDependencies {
-  readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "findActiveTimezones">;
+  readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "listActiveTimezones">;
   readonly enqueuer: Pick<TimezoneReminderEnqueuerPort, "enqueueSocialDigest">;
   readonly sweepCursor: Pick<SweepCursorPort, "findLastCompletedAt" | "markCompleted">;
   readonly exclusiveRunner: Pick<ExclusiveRunnerPort, "run">;
@@ -122,7 +122,7 @@ export class SweepTimezoneRemindersUseCase {
       });
     }
 
-    const timezones = await this.#dependencies.preferenceReader.findActiveTimezones();
+    const timezones = await this.#dependencies.preferenceReader.listActiveTimezones();
     for (const minute of minutes) {
       await this.#sweepMinute(minute, timezones);
       // 분을 끝낸 뒤에만 옮겨 중간에 멈추면 그 분부터 다시 처리한다. 다시 보내는 사용자는 일간 중복 방지가 막는다
@@ -141,7 +141,7 @@ export class SweepTimezoneRemindersUseCase {
     const results = await Promise.allSettled(
       groups.map(async (timezoneContext) => this.#sweepGroup(timezoneContext)),
     );
-    results.forEach((result, index) => {
+    for (const [index, result] of results.entries()) {
       if (result.status === "rejected") {
         this.#dependencies.logger.error({
           event: ReminderLogEvent.TIMEZONE_AWARE_REMINDER_TIMEZONE_FAILED,
@@ -149,7 +149,7 @@ export class SweepTimezoneRemindersUseCase {
           errorType: "strategy-execution",
         });
       }
-    });
+    }
   }
 
   async #sweepGroup(timezoneContext: TimezoneContext): Promise<void> {

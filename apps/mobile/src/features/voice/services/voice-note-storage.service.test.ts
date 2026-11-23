@@ -30,7 +30,7 @@ function createService() {
   const drafts = createVoiceNoteDraftRepository({
     storage,
     logger,
-    getTimeZone: () => 'Asia/Seoul',
+    getTimezone: () => 'Asia/Seoul',
   });
   const service = new VoiceNoteStorageService({
     drafts,
@@ -104,12 +104,12 @@ describe('VoiceNoteStorageService', () => {
     const { files, service, drafts, storage } = createService();
     const releasedNotes = Object.values(RELEASED_VOICE_NOTE_DRAFTS);
     const recordedAtMs = Date.parse('2026-12-04T00:00:00.000Z');
-    releasedNotes.forEach((released) => {
+    for (const released of releasedNotes) {
       storage.set(`aido_voice_note_draft_v1:user-1:${released.draftId}`, JSON.stringify(released));
-      released.recordings.forEach(({ fileName }) =>
-        files.addFile(OWNER_DIRECTORY, fileName, { modifiedAtMs: recordedAtMs }),
-      );
-    });
+      for (const { fileName } of released.recordings) {
+        files.addFile(OWNER_DIRECTORY, fileName, { modifiedAtMs: recordedAtMs });
+      }
+    }
     files.addFile(OWNER_DIRECTORY, 'orphan-0.wav', { modifiedAtMs: recordedAtMs });
 
     // When

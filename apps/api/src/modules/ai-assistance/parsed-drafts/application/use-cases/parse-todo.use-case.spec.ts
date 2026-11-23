@@ -31,10 +31,6 @@ function createFixture() {
 }
 
 describe("ParseTodoUseCase", () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it("모델이 고른 표현을 서버가 사용자 로컬 날짜·시각으로 계산하고 프롬프트 버전을 돌려준다", async () => {
     // Given
     const fixture = createFixture();
@@ -113,7 +109,7 @@ describe("ParseTodoUseCase", () => {
     expect([...fixture.quotaChargeRepository.all]).toMatchObject([
       { status: "REFUNDED", refundReason: "NO_ACTION" },
     ]);
-    expect(fixture.logger.log).toHaveBeenCalledWith(
+    expect(fixture.logger.messagesAt("log")).toContainEqual(
       expect.objectContaining({ outcome: "NO_ACTION", quotaCharged: false }),
     );
   });
@@ -228,9 +224,7 @@ describe("ParseTodoUseCase", () => {
     // Given
     const fixture = createFixture();
     fixture.generator.setInvalidResponse(createAiGenerationError("UPSTREAM"));
-    vi.spyOn(fixture.quotaChargeRepository, "saveIfUnchanged").mockRejectedValue(
-      new TypeError("db down"),
-    );
+    fixture.quotaChargeRepository.failSaves(new TypeError("db down"));
     // When
     const failure = await fixture.useCase.execute(fixture.input).catch((cause: unknown) => cause);
     // Then
@@ -241,14 +235,16 @@ describe("ParseTodoUseCase", () => {
   it("확정 뒤 한도를 읽지 못해도 결과를 살리고 featureQuota 없이 돌려주며 원인 종류만 남긴다", async () => {
     // Given
     const fixture = createFixture();
-    vi.spyOn(fixture.quota, "read").mockRejectedValue(new TypeError("db down"));
+    fixture.quota.read = async () => {
+      throw new TypeError("db down");
+    };
     // When
     const result = await fixture.useCase.execute(fixture.input);
     // Then
     expect(result.featureQuota).toBeNull();
     expect(result.draft.todos[0]).toBeDefined();
     expect([...fixture.quotaChargeRepository.all][0]).toMatchObject({ status: "COMMITTED" });
-    expect(fixture.logger.warn).toHaveBeenCalledWith({
+    expect(fixture.logger.messagesAt("warn")).toContainEqual({
       event: "ai-assistance.generation.quota-read.failed",
       feature: "AI_PARSE",
       task: "parse-todo",
@@ -322,7 +318,7 @@ describe("ParseTodoUseCase", () => {
     // Given
     const fixture = createFixture();
     const failure = new Error("category unavailable");
-    vi.spyOn(fixture.categoryReader, "findByUserId").mockRejectedValueOnce(failure);
+    fixture.categoryReader.failWith = failure;
     // When
     const execution = fixture.useCase.execute(fixture.input);
     // Then
@@ -350,7 +346,7 @@ describe("ParseTodoUseCase", () => {
       promptVersion: "parse-todo@10",
       agreedConsentVersion: "2026-10-26",
     });
-    expect(fixture.logger.log).toHaveBeenCalledWith({
+    expect(fixture.logger.messagesAt("log")).toContainEqual({
       event: "ai-assistance.generation.completed",
       task: "parse-todo",
       promptVersion: "parse-todo@10",
@@ -371,7 +367,7 @@ describe("ParseTodoUseCase", () => {
       userId: fixture.userId,
       warnings: [],
     });
-    expect(JSON.stringify(fixture.logger.log.mock.calls)).not.toContain("PRIVATE_TODO_TEXT");
+    expect(JSON.stringify(fixture.logger.callsAt("log"))).not.toContain("PRIVATE_TODO_TEXT");
   });
 
   it("동의 화면이 없던 앱처럼 동의 버전이 없으면 동의 버전 없이 생성기에 넘긴다", async () => {
@@ -387,11 +383,10 @@ describe("ParseTodoUseCase", () => {
   it("카테고리를 고른 요청은 카테고리 목록을 읽거나 프롬프트에 넣지 않는다", async () => {
     // Given
     const fixture = createFixture();
-    const read = vi.spyOn(fixture.categoryReader, "findByUserId");
     // When
     const result = await fixture.useCase.execute({ ...fixture.input, categoryId: 3 });
     // Then
-    expect(read).not.toHaveBeenCalled();
+    expect(fixture.categoryReader.readCount).toBe(0);
     expect(fixture.generator.getLastPrompt()).not.toContain("업무");
     expect(result.draft.todos[0].categoryId).toBe(3);
   });
@@ -414,7 +409,7 @@ describe("ParseTodoUseCase", () => {
     // Given
     const fixture = createFixture();
     const failure = new Error("preference unavailable");
-    vi.spyOn(fixture.localePreferenceReader, "read").mockRejectedValueOnce(failure);
+    fixture.localePreferenceReader.failWith = failure;
     // When
     const execution = fixture.useCase.execute({ ...fixture.input, requestedLocale: null });
     // Then

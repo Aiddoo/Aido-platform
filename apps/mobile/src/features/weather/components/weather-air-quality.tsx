@@ -72,7 +72,7 @@ WeatherAirQuality.Pollutant = function Pollutant({
   const labelMinScale = useMinimumFontScale('b4');
   const gradeMinScale = useMinimumFontScale(GRADE_FONT_SIZE);
   const value = airQuality[pollutant];
-  const grade = WeatherIndicatorPolicy.getPollutantGrade(airQuality, pollutant);
+  const grade = WeatherIndicatorPolicy.findPollutantGrade(airQuality, pollutant);
   const label = t(`airQuality.${pollutant}`);
   const gradeLabel = grade == null ? t('details.noValue') : t(AIR_GRADE_LABEL_KEYS[grade]);
   const valueLabel = value == null ? t('details.noValue') : t('airQuality.value', { value });

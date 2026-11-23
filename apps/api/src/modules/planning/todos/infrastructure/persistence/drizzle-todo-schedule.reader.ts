@@ -6,10 +6,7 @@ import { sortBy } from "es-toolkit";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { todo } from "#api/platform/database/schema/index";
 
-import {
-  localTimeIn,
-  resolveScheduledInstant,
-} from "../../../shared/domain/todo-calendar.domain-service.js";
+import { resolveScheduledInstant } from "../../../shared/domain/todo-calendar.domain-service.js";
 import {
   type TimedTodoQuery,
   TodoScheduleReaderPort,
@@ -62,11 +59,7 @@ export class DrizzleTodoScheduleReader implements TodoScheduleReaderPort {
       }
       const scheduledAt =
         Temporal.PlainDate.compare(startDate, date) < 0
-          ? resolveScheduledInstant(
-              date.toString(),
-              scheduledLocalTime ?? localTimeIn(scheduledTime, timezone),
-              timezone,
-            )
+          ? resolveScheduledInstant(date.toString(), scheduledLocalTime, timezone)
           : scheduledTime;
       if (scheduledAt == null) {
         return [];

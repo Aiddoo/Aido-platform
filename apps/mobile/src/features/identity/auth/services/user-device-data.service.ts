@@ -26,7 +26,7 @@ export class UserDeviceDataService {
 
   /** 한 저장소가 실패해도 나머지는 지운다 */
   clearForUser = (userId: string): void => {
-    Object.entries(this.#repositories).forEach(([name, repository]) => {
+    for (const [name, repository] of Object.entries(this.#repositories)) {
       try {
         repository.clear(userId);
       } catch (error) {
@@ -35,6 +35,6 @@ export class UserDeviceDataService {
           error: getErrorMessage(error),
         });
       }
-    });
+    }
   };
 }

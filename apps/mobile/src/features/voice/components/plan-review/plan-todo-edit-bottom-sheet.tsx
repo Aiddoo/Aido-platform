@@ -4,9 +4,9 @@ import {
   TodoScheduleChips,
   type TodoScheduleChipsValue,
 } from '@src/features/planning/todo/components/todo-schedule-chips';
-import { getScheduledTime, getVisibility } from '@src/features/planning/todo/domains/todo.model';
+import { findScheduledTime, getVisibility } from '@src/features/planning/todo/domains/todo.model';
 import { useTranslation } from '@src/shared/i18n';
-import { BottomSheetInput, Button, KeyboardBottomSheet, VStack } from '@src/shared/ui';
+import { Input, Button, KeyboardBottomSheet, VStack } from '@src/shared/ui';
 import { Controller, useForm, useFormState, useWatch, type UseFormReturn } from 'react-hook-form';
 
 import type { PlannedTodo } from '../../domains/voice-plan.model';
@@ -62,7 +62,7 @@ export function PlanTodoEditBottomSheet({
         control={form.control}
         name="todo.title"
         render={({ field: { value, onChange } }) => (
-          <BottomSheetInput
+          <Input
             accessibilityLabel={t('edit.titleLabel')}
             value={value}
             onChange={onChange}
@@ -122,7 +122,7 @@ function withScheduleChips(
     ...todo,
     startDate: next.startDate,
     endDate: next.endDate,
-    scheduledTime: getScheduledTime(next),
+    scheduledTime: findScheduledTime(next),
     repeat: next.repeat,
     visibility: next.visibility === previous.visibility ? todo.visibility : next.visibility,
     categoryId: next.categoryId === previous.categoryId ? todo.categoryId : next.categoryId,

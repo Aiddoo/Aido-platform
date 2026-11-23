@@ -110,9 +110,7 @@ describe("RefundAbandonedQuotaReservationsUseCase — 멈춘 예약 정리", () 
     fixture.clock.advanceBy({ milliseconds: 1 });
     const next = await fixture.reserve();
     fixture.clock.advanceBy({ milliseconds: QUOTA_RESERVATION_TAKEOVER_AFTER_MS });
-    vi.spyOn(fixture.quotaChargeRepository, "saveIfUnchanged").mockRejectedValueOnce(
-      new TypeError("db down"),
-    );
+    fixture.quotaChargeRepository.failSaves(new TypeError("db down"), 1);
 
     // When
     await fixture.refundAbandonedReservations.execute();

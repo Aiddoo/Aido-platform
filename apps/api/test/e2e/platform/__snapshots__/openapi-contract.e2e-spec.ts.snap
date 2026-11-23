@@ -241,6 +241,13 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               "id": {
                 "type": "number",
               },
+              "peakHour": {
+                "description": "주로 끝낸 시간(0~23). 같은 수면 이른 시간이고 끝낸 할 일이 없으면 null",
+                "maximum": 23,
+                "minimum": 0,
+                "nullable": true,
+                "type": "integer",
+              },
               "period": {
                 "type": "number",
               },
@@ -258,6 +265,13 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                     "maximum": 100,
                     "minimum": 0,
                     "type": "number",
+                  },
+                  "perfectDays": {
+                    "description": "기간에서 할 일이 하나 이상이고 모두 끝낸 날 수(달력 물고기와 같은 규칙). 날마다 기록이 없는 1.16.0 전 리포트는 null",
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "nullable": true,
+                    "type": "integer",
                   },
                   "prevCompletionRate": {
                     "maximum": 100,
@@ -282,10 +296,12 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                   "completionRate",
                   "prevCompletionRate",
                   "streakDays",
+                  "perfectDays",
                 ],
                 "type": "object",
               },
               "timePatterns": {
+                "description": "끝낸 할 일이 있는 시간대. 많이 끝낸 시간부터, 같은 수면 이른 시간부터",
                 "items": {
                   "properties": {
                     "count": {
@@ -329,6 +345,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               "categoryBreakdown",
               "dayPatterns",
               "timePatterns",
+              "peakHour",
               "aiSummary",
               "aiTips",
               "hasActivity",
@@ -502,6 +519,13 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
             "id": {
               "type": "number",
             },
+            "peakHour": {
+              "description": "주로 끝낸 시간(0~23). 같은 수면 이른 시간이고 끝낸 할 일이 없으면 null",
+              "maximum": 23,
+              "minimum": 0,
+              "nullable": true,
+              "type": "integer",
+            },
             "period": {
               "type": "number",
             },
@@ -519,6 +543,13 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                   "maximum": 100,
                   "minimum": 0,
                   "type": "number",
+                },
+                "perfectDays": {
+                  "description": "기간에서 할 일이 하나 이상이고 모두 끝낸 날 수(달력 물고기와 같은 규칙). 날마다 기록이 없는 1.16.0 전 리포트는 null",
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "nullable": true,
+                  "type": "integer",
                 },
                 "prevCompletionRate": {
                   "maximum": 100,
@@ -543,10 +574,12 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 "completionRate",
                 "prevCompletionRate",
                 "streakDays",
+                "perfectDays",
               ],
               "type": "object",
             },
             "timePatterns": {
+              "description": "끝낸 할 일이 있는 시간대. 많이 끝낸 시간부터, 같은 수면 이른 시간부터",
               "items": {
                 "properties": {
                   "count": {
@@ -590,6 +623,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
             "categoryBreakdown",
             "dayPatterns",
             "timePatterns",
+            "peakHour",
             "aiSummary",
             "aiTips",
             "hasActivity",
@@ -16490,6 +16524,13 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 "id": {
                   "type": "number",
                 },
+                "peakHour": {
+                  "description": "주로 끝낸 시간(0~23). 같은 수면 이른 시간이고 끝낸 할 일이 없으면 null",
+                  "maximum": 23,
+                  "minimum": 0,
+                  "nullable": true,
+                  "type": "integer",
+                },
                 "period": {
                   "type": "number",
                 },
@@ -16507,6 +16548,13 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                       "maximum": 100,
                       "minimum": 0,
                       "type": "number",
+                    },
+                    "perfectDays": {
+                      "description": "기간에서 할 일이 하나 이상이고 모두 끝낸 날 수(달력 물고기와 같은 규칙). 날마다 기록이 없는 1.16.0 전 리포트는 null",
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "nullable": true,
+                      "type": "integer",
                     },
                     "prevCompletionRate": {
                       "maximum": 100,
@@ -16531,10 +16579,12 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                     "completionRate",
                     "prevCompletionRate",
                     "streakDays",
+                    "perfectDays",
                   ],
                   "type": "object",
                 },
                 "timePatterns": {
+                  "description": "끝낸 할 일이 있는 시간대. 많이 끝낸 시간부터, 같은 수면 이른 시간부터",
                   "items": {
                     "properties": {
                       "count": {
@@ -16578,6 +16628,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 "categoryBreakdown",
                 "dayPatterns",
                 "timePatterns",
+                "peakHour",
                 "aiSummary",
                 "aiTips",
                 "hasActivity",
@@ -16742,6 +16793,13 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 "id": {
                   "type": "number",
                 },
+                "peakHour": {
+                  "description": "주로 끝낸 시간(0~23). 같은 수면 이른 시간이고 끝낸 할 일이 없으면 null",
+                  "maximum": 23,
+                  "minimum": 0,
+                  "nullable": true,
+                  "type": "integer",
+                },
                 "period": {
                   "type": "number",
                 },
@@ -16759,6 +16817,13 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                       "maximum": 100,
                       "minimum": 0,
                       "type": "number",
+                    },
+                    "perfectDays": {
+                      "description": "기간에서 할 일이 하나 이상이고 모두 끝낸 날 수(달력 물고기와 같은 규칙). 날마다 기록이 없는 1.16.0 전 리포트는 null",
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "nullable": true,
+                      "type": "integer",
                     },
                     "prevCompletionRate": {
                       "maximum": 100,
@@ -16783,10 +16848,12 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                     "completionRate",
                     "prevCompletionRate",
                     "streakDays",
+                    "perfectDays",
                   ],
                   "type": "object",
                 },
                 "timePatterns": {
+                  "description": "끝낸 할 일이 있는 시간대. 많이 끝낸 시간부터, 같은 수면 이른 시간부터",
                   "items": {
                     "properties": {
                       "count": {
@@ -16830,6 +16897,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 "categoryBreakdown",
                 "dayPatterns",
                 "timePatterns",
+                "peakHour",
                 "aiSummary",
                 "aiTips",
                 "hasActivity",
@@ -20985,11 +21053,16 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               "description": "현재 사용자의 콕 찌르기 가능 여부",
               "type": "boolean",
             },
+            "canThank": {
+              "description": "현재 사용자의 할 일이 콕 감사를 받는지(내 할 일·완료·공개). 기능 꺼짐(NUDGE_1111)은 보지 않는다",
+              "type": "boolean",
+            },
           },
           "required": [
             "canEdit",
             "canComment",
             "canNudge",
+            "canThank",
           ],
           "type": "object",
         },
@@ -57277,7 +57350,7 @@ TODO_0801: Todo를 찾을 수 없습니다.",
 - **종일 이벤트** (\`isAllDay=true\`): \`scheduledTime\`은 null
 - **시간 이벤트** (\`isAllDay=false\`): \`scheduledLocalTime\`(HH:mm)이 사용자가 고른 시각이고 어디서든 그 시각입니다
   - \`scheduledTime\`(UTC ISO 8601)은 날짜 + 벽시계 + 사용자 시간대로 만든 파생값이고 시간대가 바뀌면 다시 계산됩니다
-  - 표시는 \`scheduledLocalTime\`을 그대로 씁니다. 키가 없는 옛 서버 응답에서만 \`scheduledTime\`을 기기 시간대로 바꿉니다
+  - 표시는 \`scheduledLocalTime\`을 그대로 씁니다
 
 #### 에러 케이스
 
@@ -65074,7 +65147,7 @@ TODO_0831: 댓글을 찾을 수 없습니다.",
   },
   "/v1/todos/{todoId}/details": {
     "get": {
-      "description": "댓글 화면에 필요한 할 일, 주인, 내 권한과 조회수를 돌려줍니다. 할 일 주인이 아닌 사용자가 열면 조회수를 올립니다.",
+      "description": "댓글 화면에 필요한 할 일, 주인, 내 권한과 조회수를 돌려줍니다. 할 일 주인이 아닌 사용자가 열면 조회수를 올립니다. permissions.canThank는 콕 감사 보내기(PUT /v1/nudges/todos/{todoId}/thanks)가 받아 주는 할 일(내 할 일·완료·공개)일 때만 true입니다.",
       "operationId": "getTodoDetails",
       "parameters": [
         {

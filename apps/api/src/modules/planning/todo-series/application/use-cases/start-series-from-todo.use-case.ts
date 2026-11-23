@@ -62,8 +62,7 @@ export class StartSeriesFromTodoUseCase {
     if (todo == null) {
       throw todoNotFound(todoId);
     }
-    // 칸이 빈 옛 행도 사용자가 보던 시각을 규칙의 시각으로 쓴다
-    const scheduledLocalTime = todo.schedule.localTimeIn(timezone);
+    const { scheduledLocalTime } = todo.schedule;
     const now = this.#dependencies.clock.now();
     const { startDate } = todo.schedule;
     const series = TodoSeries.create({

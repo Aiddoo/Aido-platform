@@ -39,7 +39,7 @@ export class InMemoryUserNotificationSettings extends UserNotificationSettingsPo
     return this.preferences.get(userId) ?? null;
   }
 
-  async findPreferenceReadModelsByUserIds(
+  async listPreferenceReadModelsByUserIds(
     users: readonly UserId[],
   ): Promise<NotificationDeliveryPreferenceWithUserId[]> {
     const userIds = users.map((user) => user.value);
@@ -56,7 +56,7 @@ export class InMemoryUserNotificationSettings extends UserNotificationSettingsPo
     return this.consents.get(userId) ?? null;
   }
 
-  async findConsentReadModelsByUserIds(
+  async listConsentReadModelsByUserIds(
     users: readonly UserId[],
   ): Promise<NotificationMarketingConsentWithUserId[]> {
     const userIds = users.map((user) => user.value);

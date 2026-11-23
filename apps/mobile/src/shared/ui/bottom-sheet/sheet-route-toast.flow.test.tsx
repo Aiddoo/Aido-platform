@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import { getLastGorhomSheetProps } from '@src/testing/mocks/gorhom-bottom-sheet';
+import { startDismissingTopSheet } from '@src/testing/mocks/react-native-true-sheet-reanimated';
 import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen, within } from '@testing-library/react-native';
 import { noop } from 'es-toolkit';
@@ -76,7 +76,7 @@ describe('시트 route 토스트', () => {
     expect(within(sheetRoute).getAllByText('저장하지 못했어요')).not.toHaveLength(0);
 
     // When
-    await act(async () => getLastGorhomSheetProps().onAnimate(0, -1));
+    await act(async () => startDismissingTopSheet());
 
     // Then
     expect(within(sheetRoute).queryAllByText('저장하지 못했어요')).toEqual([]);
@@ -90,7 +90,7 @@ describe('시트 route 토스트', () => {
     await act(async () => {
       getOpenSheet()?.(() => <Text>날짜 고르기</Text>).catch(noop);
     });
-    await act(async () => getLastGorhomSheetProps().onAnimate(0, -1));
+    await act(async () => startDismissingTopSheet());
 
     // When
     await act(async () => {

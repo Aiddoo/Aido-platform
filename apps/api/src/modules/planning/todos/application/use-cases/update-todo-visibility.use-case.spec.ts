@@ -1,5 +1,4 @@
 import { ErrorCode } from "@aido/api/errors";
-import { vi } from "vitest";
 
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
@@ -16,10 +15,6 @@ describe("할 일 공개 범위 수정", () => {
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
     useCase = new UpdateTodoVisibilityUseCase(fixture);
   });
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it("비공개 전이를 저장하고 친구 목록 캐시와 이벤트에 반영한다", async () => {
     // Given
     await fixture.todoCache.storeFriendTodosFirstPageIfCurrent(

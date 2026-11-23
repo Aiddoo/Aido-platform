@@ -16,7 +16,7 @@ export interface UserBlockRelation {
 export abstract class UserBlockReaderPort {
   abstract getRelation(userId: UserId, otherUserId: UserId): Promise<UserBlockRelation>;
   /** candidateUserIds 중 viewerId와 어느 방향으로든 차단 관계인 사용자 ID. 한 번의 조회로 읽는다. */
-  abstract findBlockedCounterpartIds(
+  abstract listBlockedCounterpartIds(
     viewerId: UserId,
     candidateUserIds: readonly UserId[],
   ): Promise<ReadonlySet<string>>;

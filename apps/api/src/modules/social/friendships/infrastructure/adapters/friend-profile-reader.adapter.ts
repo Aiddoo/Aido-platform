@@ -23,7 +23,7 @@ export class FriendProfileReaderAdapter implements FriendProfileReaderPort {
   }
 
   async findDisplayName(userId: UserId): Promise<string | null> {
-    const [brief] = await this.#userBriefReader.findByUserIds([userId]);
+    const [brief] = await this.#userBriefReader.listByUserIds([userId]);
     return brief == null ? null : (brief.name ?? brief.userTag);
   }
 }

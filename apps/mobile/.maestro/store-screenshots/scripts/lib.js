@@ -5,10 +5,11 @@
 // 계정 정보는 shell의 MAESTRO_ 접두 변수로만 받는다(argv에 비밀번호를 싣지 않는다).
 // docs: maestro-flows/flow-control-and-logic/parameters-and-constants.md "Accessing shell variables"
 
-var LOCAL_API = /^http:\/\/(localhost|127\.0\.0\.1|\[::1\]|host\.docker\.internal|api)(:\d+)?\/?$/;
+const LOCAL_API =
+  /^http:\/\/(localhost|127\.0\.0\.1|\[::1\]|host\.docker\.internal|api)(:\d+)?\/?$/;
 
 function readConfig() {
-  var base =
+  const base =
     typeof QA_API_BASE_URL !== 'undefined' && QA_API_BASE_URL
       ? QA_API_BASE_URL
       : 'http://localhost:8080';
@@ -58,11 +59,11 @@ function readConfig() {
 }
 
 function call(base, method, path, token, body) {
-  var headers = { 'Content-Type': 'application/json', Accept: 'application/json' };
+  const headers = { 'Content-Type': 'application/json', Accept: 'application/json' };
   if (token) {
     headers.Authorization = 'Bearer ' + token;
   }
-  var response = http.request(base + path, {
+  const response = http.request(base + path, {
     method: method,
     headers: headers,
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -74,7 +75,7 @@ function call(base, method, path, token, body) {
 }
 
 function login(base, account) {
-  var data = call(base, 'POST', '/v1/auth/login', null, {
+  const data = call(base, 'POST', '/v1/auth/login', null, {
     email: account.email,
     password: account.password,
     deviceName: 'maestro',

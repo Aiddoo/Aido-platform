@@ -1,7 +1,7 @@
 import { AI_SUGGESTION_LIMITS } from "@aido/api/vocabulary";
 
-import { resolveTimezone } from "#api/shared/domain/time/time-zone-name";
-import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import { resolveTimezone } from "#api/shared/domain/time/timezone-name";
+import { Timezone } from "#api/shared/domain/time/timezone.vo";
 import { toZonedInstant } from "#api/shared/domain/time/zoned-time";
 
 import type { SuggestionAnalysisRun } from "./suggestion-analysis-run.entity.js";
@@ -14,7 +14,7 @@ const SUGGESTION_DISPATCH_CATCH_UP_HOURS = 3;
 
 interface SuggestionDispatchMoment {
   readonly at: Temporal.Instant;
-  readonly timeZone: string;
+  readonly timezone: string;
 }
 
 export interface SuggestionAnalysisPeriod {
@@ -23,12 +23,12 @@ export interface SuggestionAnalysisPeriod {
 }
 
 // 아침 배치·지금 받기·상태가 같은 날짜를 보도록 시간대를 저장하지 않은 사용자는 모두 서울로 본다
-export function resolveSuggestionTimeZone(storedTimeZone: string | null | undefined): string {
-  return resolveTimezone(storedTimeZone ?? TimeZone.SEOUL.value);
+export function resolveSuggestionTimezone(storedTimezone: string | null | undefined): string {
+  return resolveTimezone(storedTimezone ?? Timezone.SEOUL.value);
 }
 
 export function isInSuggestionDispatchWindow(input: SuggestionDispatchMoment): boolean {
-  const { hour } = input.at.toZonedDateTimeISO(input.timeZone);
+  const { hour } = input.at.toZonedDateTimeISO(input.timezone);
   return (
     SUGGESTION_DISPATCH_LOCAL_HOUR <= hour &&
     hour < SUGGESTION_DISPATCH_LOCAL_HOUR + SUGGESTION_DISPATCH_CATCH_UP_HOURS
@@ -36,7 +36,7 @@ export function isInSuggestionDispatchWindow(input: SuggestionDispatchMoment): b
 }
 
 export function suggestionDispatchLocalDate(input: SuggestionDispatchMoment): Temporal.PlainDate {
-  return input.at.toZonedDateTimeISO(input.timeZone).toPlainDate();
+  return input.at.toZonedDateTimeISO(input.timezone).toPlainDate();
 }
 
 // 오늘 요청 기록이 있으면 오늘 job key를 이미 써서 아침 배치가 건너뛰므로 다음 분석은 내일이다
@@ -49,7 +49,7 @@ export function nextSuggestionDispatchAt(
     toZonedInstant({
       date,
       time: Temporal.PlainTime.from({ hour: SUGGESTION_DISPATCH_LOCAL_HOUR }),
-      timeZone: TimeZone.create(input.timeZone),
+      timezone: Timezone.create(input.timezone),
     }).round({ smallestUnit: "hour", roundingMode: "ceil" });
   const todayDispatchAt = dispatchAt(today);
   const isTodayDispatchAhead = Temporal.Instant.compare(input.at, todayDispatchAt) < 0;
@@ -59,14 +59,14 @@ export function nextSuggestionDispatchAt(
   return dispatchAt(today.add({ days: 1 }));
 }
 
-// 상태·지금 받기의 할 일 수와 분석 문맥(SuggestionContextReader)이 어긋나지 않게 모두 이 구간을 센다
+// 상태·지금 받기의 할 일 수와 분석 문맥(GetSuggestionContextUseCase)이 어긋나지 않게 모두 이 구간을 센다
 export function suggestionAnalysisPeriod(
   input: SuggestionDispatchMoment,
 ): SuggestionAnalysisPeriod {
   return {
     from: suggestionDispatchLocalDate({
       at: input.at.subtract({ hours: 24 * AI_SUGGESTION_LIMITS.ANALYSIS_PERIOD_DAYS }),
-      timeZone: input.timeZone,
+      timezone: input.timezone,
     }),
     to: suggestionDispatchLocalDate(input),
   };

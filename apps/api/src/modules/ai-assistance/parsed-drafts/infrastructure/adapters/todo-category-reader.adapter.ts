@@ -15,7 +15,7 @@ export class TodoCategoryReaderAdapter extends UserCategoryReaderPort {
     this.#categoryReader = categoryReader;
   }
 
-  async findByUserId(userId: UserId): Promise<UserCategoryReadModel[]> {
+  async listByUserId(userId: UserId): Promise<UserCategoryReadModel[]> {
     const categories = await this.#categoryReader.listForUser(userId);
     return categories.map((category) => ({ id: category.id, name: category.name }));
   }

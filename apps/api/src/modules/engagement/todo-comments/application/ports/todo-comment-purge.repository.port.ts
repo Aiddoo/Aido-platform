@@ -2,7 +2,7 @@ import type { TodoId } from "#api/modules/planning/todos/planning-todos-queries.
 import type { TodoCommentCount } from "#api/modules/planning/todos/planning-todos.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { TodoCommentId } from "../../../shared/domain/todo-comment-id.vo.js";
+import type { TodoCommentId } from "../../domain/todo-comment-id.vo.js";
 
 export interface TodoCommentPurgePlan {
   /** 지울 사용자가 쓰거나 좋아요한 글이 있는 할 일. id 오름차순이다 */

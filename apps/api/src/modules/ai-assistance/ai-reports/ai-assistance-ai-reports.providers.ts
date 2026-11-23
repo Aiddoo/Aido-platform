@@ -8,7 +8,7 @@ import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port"
 
 import { AiGeneratorPort } from "../ai-generations/application/ports/ai-generator.port.js";
 import { UserLocalePreferenceReaderPort } from "../ai-generations/application/ports/user-locale-preference.reader.port.js";
-import { ScheduledAiConsentReader } from "../ai-generations/application/scheduled-ai-consent.reader.js";
+import { CheckScheduledAiConsentUseCase } from "../ai-generations/application/use-cases/check-scheduled-ai-consent.use-case.js";
 import { AiReportRepositoryPort } from "./application/ports/ai-report.repository.port.js";
 import { TodoStatsReaderPort } from "./application/ports/todo-stats.reader.port.js";
 import { GenerateReportUseCase } from "./application/use-cases/generate-report.use-case.js";
@@ -27,7 +27,7 @@ export const AI_ASSISTANCE_AI_REPORTS_PROVIDERS = [
     aiReportRepository: AiReportRepositoryPort,
     todoStatsReader: TodoStatsReaderPort,
     generator: AiGeneratorPort,
-    scheduledAiConsent: ScheduledAiConsentReader,
+    scheduledAiConsent: CheckScheduledAiConsentUseCase,
     entitlementReader: EntitlementReaderPort,
     userMutationLock: UserMutationLockPort,
     unitOfWork: UnitOfWorkPort,

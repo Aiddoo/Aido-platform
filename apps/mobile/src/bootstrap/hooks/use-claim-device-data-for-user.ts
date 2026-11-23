@@ -24,20 +24,21 @@ export function useClaimDeviceDataForUser(): void {
   const voiceNoteStorageService = useVoiceNoteStorageService();
   const isAuthenticated = status === 'authenticated';
   const [mountedAtMs] = useState(() => toEpochMs(getNowInstant()));
-  const { data: accountId, dataUpdatedAt } = useQuery({
+  const { data: latestAccountId, dataUpdatedAt } = useQuery({
     ...useGetMeQueryOptions(),
     enabled: isAuthenticated,
     throwOnError: false,
     select: selectAccountId,
   });
-  const meId = isAuthenticated && mountedAtMs <= dataUpdatedAt ? (accountId ?? null) : null;
+  const accountId =
+    isAuthenticated && mountedAtMs <= dataUpdatedAt ? (latestAccountId ?? null) : null;
 
   useEffect(() => {
-    if (meId != null) {
-      draftService.removeAllExceptOwner(meId);
-      queryCacheStorage.setOwner(meId);
-      voiceNoteStorageService.removeAllExceptOwner(meId);
-      voiceNoteStorageService.removeExpired(meId);
+    if (accountId != null) {
+      draftService.removeAllExceptOwner(accountId);
+      queryCacheStorage.setOwner(accountId);
+      voiceNoteStorageService.removeAllExceptOwner(accountId);
+      voiceNoteStorageService.removeExpired(accountId);
     }
-  }, [meId, draftService, queryCacheStorage, voiceNoteStorageService]);
+  }, [accountId, draftService, queryCacheStorage, voiceNoteStorageService]);
 }

@@ -11,11 +11,11 @@
 1. 사용자의 명시적 로그아웃(`LogOutDeviceService`)·탈퇴(`SignInService.deleteAccount`)
 2. `SessionManager.end()`: 서버의 확정적 refresh 거부, 2xx 응답 파싱 실패, 로컬 토큰 부재
 
-구조가 이 불변식을 강제한다. `TokenRefresher`에는 토큰 삭제도 이벤트 발행도 없다. 갱신기는 `RefreshOutcome`을 돌려줄 뿐이고 세션 수명은 `SessionManager`(`core/session/session-manager.ts`)만 소유한다. 갱신기가 세션을 끝낼 수 있던 것이 v1.4.0 사고의 구조적 원인이었다.
+구조가 이 불변식을 강제한다. `TokenRefresher`에는 토큰 삭제도 이벤트 발행도 없다. 갱신기는 `RefreshOutcome`을 돌려줄 뿐이고 세션 수명은 `SessionManager`(`core/session/session-manager.ts`)만 소유한다.
 
 그 외 어떤 코드도 토큰을 지우지 않는다. 특히:
 
-- **로컬 휴리스틱(플래그·앱 버전·MMKV 상태 비교)으로 토큰을 선제 삭제하지 않는다.** MMKV 플래그 부재는 재설치뿐 아니라 그 플래그가 없던 구버전에서의 업데이트도 뜻한다. v1.3.5의 첫 실행 가드가 이 오판으로 업데이트한 전체 유저를 강제 로그아웃시켰다(v1.4.0 사고, PR #591의 회귀).
+- **로컬 휴리스틱(플래그·앱 버전·MMKV 상태 비교)으로 토큰을 선제 삭제하지 않는다.** MMKV 플래그 부재는 재설치뿐 아니라 그 플래그가 없던 구버전에서의 업데이트도 뜻한다.
 
 ## 부팅 흐름 (`bootstrap/auth/resolve-initial-auth-status.ts`)
 

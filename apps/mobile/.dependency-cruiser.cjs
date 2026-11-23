@@ -18,7 +18,7 @@ function npm(names) {
 // 네이티브·외부 SDK는 shared/infra에서만 import한다(docs/architecture/structure.md#di포트수명). 예외 목록은 두지 않는다.
 // 이 목록에 넣지 않은 라이브러리와 이유:
 // - expo-router: 라우트 파일과 화면의 앱 뼈대다. 라우터 교체는 route 전체를 바꾸는 일이라 포트로 숨기지 않는다.
-// - UI 라이브러리(heroui-native, reanimated, gesture-handler, gorhom, expo-image, datetimepicker 등): 화면 그 자체다.
+// - UI 라이브러리(heroui-native, reanimated, gesture-handler, true-sheet, expo-image, datetimepicker 등): 화면 그 자체다.
 // - expo-widgets, @expo/ui, react-native-android-widget: 위젯은 네이티브가 직접 부르는 자기 조립 진입점이다.
 // - expo-constants: 위젯 headless 진입이 scheme을 읽고 env.ts가 빌드 값을 읽는다. Provider 밖 시작 값이다.
 // - expo-splash-screen: Provider가 뜨기 전부터 쓰는 부트스트랩 전용이다.

@@ -5,6 +5,7 @@ import { router, Stack } from 'expo-router';
 import { renderRouter } from 'expo-router/testing-library';
 import type { ComponentType, PropsWithChildren } from 'react';
 import { Fragment } from 'react';
+import type { SharedValue } from 'react-native-reanimated';
 
 import type { TestDi } from './di';
 import { createTestProviders, type TestProviderOptions } from './render';
@@ -13,6 +14,24 @@ import { createTestProviders, type TestProviderOptions } from './render';
 Object.assign(jest.requireMock<Record<string, unknown>>('expo-linking'), {
   useLinkingURL: jest.fn(() => null),
 });
+
+// 이 시험 도구는 Reanimated를 공식 mock으로 바꾸는데 그 공유 값에는 `modify`가 없어 heroui 1.1.1 토스트 묶음이 죽는다
+interface ReanimatedMock {
+  useSharedValue: <Value>(initialValue: Value) => SharedValue<Value>;
+}
+const reanimatedMock = jest.requireMock<ReanimatedMock>('react-native-reanimated');
+const useMockSharedValue = reanimatedMock.useSharedValue;
+reanimatedMock.useSharedValue = <Value,>(initialValue: Value) =>
+  new Proxy(useMockSharedValue(initialValue), {
+    get: (target, property, receiver) =>
+      property === 'modify'
+        ? (modifier?: (value: Value) => Value) => {
+            if (modifier != null) {
+              target.set(modifier(target.get()));
+            }
+          }
+        : Reflect.get(target, property, receiver),
+  });
 
 function EmptyScreen() {
   return null;

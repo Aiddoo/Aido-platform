@@ -7,7 +7,7 @@ import {
   createRescheduleOptionDto,
   createWeatherReport,
 } from '../__tests__/weather-report.fixtures';
-import { type BriefingTodo, getWeatherBriefing } from '../domains/weather-briefing.model';
+import { type BriefingTodo, findWeatherBriefing } from '../domains/weather-briefing.model';
 import type { WeatherReport } from '../domains/weather-report.model';
 import { type BriefingViewPorts, toBriefingView } from './weather-briefing.view-model';
 
@@ -47,7 +47,7 @@ const DEPS: BriefingViewPorts = {
 };
 
 function viewFor(report: WeatherReport, todos: BriefingTodo[]) {
-  const briefing = getWeatherBriefing(report, todos, { now: NOW });
+  const briefing = findWeatherBriefing(report, todos, { now: NOW });
   if (briefing == null) {
     throw new Error('서버 브리핑이 있는 리포트여야 한다');
   }

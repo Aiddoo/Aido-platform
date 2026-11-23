@@ -28,7 +28,7 @@ export class GetNudgeLimitUseCase {
   async execute(query: GetNudgeLimitQuery): Promise<NudgeDailyLimitReadModel> {
     const { nudgeRepository, limitReader, clock } = this.#dependencies;
     const userId = UserId.reconstitute(query.userId);
-    const window = dailySendWindowAt({ now: clock.now(), timeZone: query.timezone });
+    const window = dailySendWindowAt({ now: clock.now(), timezone: query.timezone });
     const [dailyLimit, used] = await Promise.all([
       limitReader.readLimit(userId),
       nudgeRepository.countSentBetween(userId, window),

@@ -3,8 +3,8 @@ import { createDateKey } from '@src/testing/date-key';
 
 import { formatReportPeriodLabel } from './report-period.view-model';
 
-const KO = { locale: 'ko-KR', timeZone: 'Asia/Seoul' } as const;
-const EN = { locale: 'en-US', timeZone: 'Asia/Seoul' } as const;
+const KO = { locale: 'ko-KR', timezone: 'Asia/Seoul' } as const;
+const EN = { locale: 'en-US', timezone: 'Asia/Seoul' } as const;
 const TODAY_KEY = createDateKey('2026-11-12');
 
 afterEach(async () => {

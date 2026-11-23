@@ -9,7 +9,7 @@ interface FriendStripRevealInput {
 }
 
 /** 선택한 친구가 줄에 다 보이면 null, 잘렸으면 가장자리 여유만 남기고 옮긴 스크롤 위치를 돌려준다. 맨 앞은 0 아래로 넘기지 않는다 */
-export function getFriendStripRevealOffset({
+export function findFriendStripRevealOffset({
   itemStart,
   itemWidth,
   scrollOffset,

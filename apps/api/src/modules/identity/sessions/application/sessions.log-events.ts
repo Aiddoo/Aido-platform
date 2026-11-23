@@ -3,7 +3,6 @@ export const SessionLogEvent = {
   USER_LOGGED_IN: "identity.user.login.succeeded",
   SESSION_LOGGED_OUT: "identity.session.logout.completed",
   ALL_SESSIONS_LOGGED_OUT: "identity.session.logout-all.completed",
-  SESSION_PUSH_DEVICE_RELEASE_FAILED: "identity.session.push-device-release.failed",
   SESSION_REVOKED: "identity.session.revoked",
   SESSION_TOKENS_REFRESHED: "identity.session.tokens.refreshed",
   SESSION_ROTATION_CONFLICT: "identity.session.rotation.conflict",

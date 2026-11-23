@@ -54,7 +54,9 @@ describe("toAiReportResponse", () => {
       completionRate: 80,
       prevCompletionRate: 70,
       streakDays: 3,
+      perfectDays: null,
     });
+    expect(result.peakHour).toBe(10);
     expect(result.categoryBreakdown).toHaveLength(1);
     expect(result.dayPatterns).toHaveLength(1);
     expect(result.timePatterns).toHaveLength(1);
@@ -62,6 +64,31 @@ describe("toAiReportResponse", () => {
     expect(result.aiTips).toEqual(["계속 이렇게 해봐!"]);
     expect(result.hasActivity).toBe(true);
     expect(result.generatedAt).toBe("2026-03-09T07:00:00.000Z");
+  });
+
+  it("저장된 날짜별 값으로 완벽한 날을 세고 같은 수 시간대는 이른 시간을 주로 끝낸 시간으로 준다", () => {
+    // Given
+    const report = AiReport.reconstitute(
+      makeProps({
+        timePatterns: [
+          { hour: 21, count: 3 },
+          { hour: 8, count: 3 },
+        ],
+        dailyCompletions: [
+          { date: Temporal.PlainDate.from("2026-03-02"), total: 2, completed: 2 },
+          { date: Temporal.PlainDate.from("2026-03-03"), total: 0, completed: 0 },
+          { date: Temporal.PlainDate.from("2026-03-04"), total: 3, completed: 1 },
+        ],
+      }),
+    );
+
+    // When
+    const result = toAiReportResponse(report, LOCAL_TODAY);
+
+    // Then
+    expect(result.stats.perfectDays).toBe(1);
+    expect(result.peakHour).toBe(8);
+    expect(result.timePatterns.map(({ hour }) => hour)).toEqual([8, 21]);
   });
 
   it("MONTHLY 타입의 periodLabel을 올바르게 생성해야 한다", () => {

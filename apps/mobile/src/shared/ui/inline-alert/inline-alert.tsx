@@ -98,7 +98,7 @@ export function InlineAlert({
           variant="ghost"
           className="size-5"
           hitSlop={CLOSE_HIT_SLOP}
-          accessibilityLabel={closeLabel ?? t('actions.close')}
+          aria-label={closeLabel ?? t('actions.close')}
           onPress={onClose}
         >
           <CloseIcon

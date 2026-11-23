@@ -3,6 +3,7 @@ import { useTodoApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { MINUTE_MS } from '@src/shared/constants/time-units';
+import { readDeviceLocalDateState } from '@src/shared/date/clock';
 import { addDaysToDateKey, type DateKey } from '@src/shared/date/date-key';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { queryOptions } from '@tanstack/react-query';
@@ -12,7 +13,11 @@ import type { TodoApi } from '../apis/todo.api';
 import { UPCOMING_TODO_WINDOW_DAYS } from '../constants/todo.constants';
 import { type DailyCompletionSummary } from '../domains/daily-completion.model';
 import type { CalendarDateRange, CompletionsByDate } from '../utils/calendar-grid.view-model';
-import { getTodoSummaryRefetchInterval, shouldPersistTodosByDate } from './todo-cache';
+import {
+  getTodoSummaryRefetchInterval,
+  isTodoSummaryDateRequestable,
+  shouldPersistTodosByDate,
+} from './todo-cache';
 import { TODO_QUERY_KEYS } from './todo-query-keys';
 
 export function useGetTodosByDateQueryOptions({ date }: { date: DateKey }) {
@@ -131,11 +136,22 @@ interface TodoSummaryQueryInput {
 export function useGetTodoSummaryQueryOptions({ date, userId, limit }: TodoSummaryQueryInput) {
   const todoApi = useTodoApi();
 
+  // 복귀·자정 직후 재조회는 날짜 state가 바뀌기 전에 돌 수 있어, 요청 헤더와 같은 기기 시계·시간대로 묻는 순간 다시 잰다
+  const isRequestable = () =>
+    userId != null &&
+    isTodoSummaryDateRequestable({
+      date,
+      todayKey: readDeviceLocalDateState().currentLocalDateKey,
+    });
+
   return queryOptions({
     queryKey: TODO_QUERY_KEYS.widgetSummaryByDate({ date, userId }),
     queryFn: async ({ signal }) => unwrap(await todoApi.getTodoSummary(date, signal)),
+    enabled: isRequestable,
     staleTime: MINUTE_MS,
-    refetchInterval: (query) => getTodoSummaryRefetchInterval(query.state, date),
+    // 간격 재조회는 enabled를 다시 보지 않아 자정이 지나도 이미 건 타이머가 옛 날짜로 묻는다. 간격 값으로도 끈다
+    refetchInterval: (query) =>
+      isRequestable() ? getTodoSummaryRefetchInterval(query.state, date) : false,
     select:
       limit == null
         ? undefined

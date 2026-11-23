@@ -1,431 +1,665 @@
 {
   "type": "base",
-  "version": "9",
+  "version": "10",
   "dialect": "postgres",
   "id": "bcfae448-825a-4b88-86b4-899b10c0aaa3",
-  "prevIds": ["00000000-0000-0000-0000-000000000000"],
+  "prevIds": [
+    "00000000-0000-0000-0000-000000000000"
+  ],
   "footprints": [
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "AccountProvider"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "AccountProvider"
+      ],
       "writes": [
         "s|enum|public.AccountProvider",
         "n|enum|public.AccountProvider",
         "e|enum|public.AccountProvider",
         "n|type|public.AccountProvider"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "FollowStatus"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "FollowStatus"
+      ],
       "writes": [
         "s|enum|public.FollowStatus",
         "n|enum|public.FollowStatus",
         "e|enum|public.FollowStatus",
         "n|type|public.FollowStatus"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "InviteRedemptionStatus"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "InviteRedemptionStatus"
+      ],
       "writes": [
         "s|enum|public.InviteRedemptionStatus",
         "n|enum|public.InviteRedemptionStatus",
         "e|enum|public.InviteRedemptionStatus",
         "n|type|public.InviteRedemptionStatus"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "InviteRejectionReason"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "InviteRejectionReason"
+      ],
       "writes": [
         "s|enum|public.InviteRejectionReason",
         "n|enum|public.InviteRejectionReason",
         "e|enum|public.InviteRejectionReason",
         "n|type|public.InviteRejectionReason"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "InviteStatus"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "InviteStatus"
+      ],
       "writes": [
         "s|enum|public.InviteStatus",
         "n|enum|public.InviteStatus",
         "e|enum|public.InviteStatus",
         "n|type|public.InviteStatus"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "NotificationActionType"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "NotificationActionType"
+      ],
       "writes": [
         "s|enum|public.NotificationActionType",
         "n|enum|public.NotificationActionType",
         "e|enum|public.NotificationActionType",
         "n|type|public.NotificationActionType"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "NotificationPurpose"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "NotificationPurpose"
+      ],
       "writes": [
         "s|enum|public.NotificationPurpose",
         "n|enum|public.NotificationPurpose",
         "e|enum|public.NotificationPurpose",
         "n|type|public.NotificationPurpose"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "NotificationType"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "NotificationType"
+      ],
       "writes": [
         "s|enum|public.NotificationType",
         "n|enum|public.NotificationType",
         "e|enum|public.NotificationType",
         "n|type|public.NotificationType"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "NudgeReplyKind"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "NudgeReplyKind"
+      ],
       "writes": [
         "s|enum|public.NudgeReplyKind",
         "n|enum|public.NudgeReplyKind",
         "e|enum|public.NudgeReplyKind",
         "n|type|public.NudgeReplyKind"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "Platform"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "Platform"
+      ],
       "writes": [
         "s|enum|public.Platform",
         "n|enum|public.Platform",
         "e|enum|public.Platform",
         "n|type|public.Platform"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "PremiumGrantSource"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "PremiumGrantSource"
+      ],
       "writes": [
         "s|enum|public.PremiumGrantSource",
         "n|enum|public.PremiumGrantSource",
         "e|enum|public.PremiumGrantSource",
         "n|type|public.PremiumGrantSource"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "PremiumGrantStatus"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "PremiumGrantStatus"
+      ],
       "writes": [
         "s|enum|public.PremiumGrantStatus",
         "n|enum|public.PremiumGrantStatus",
         "e|enum|public.PremiumGrantStatus",
         "n|type|public.PremiumGrantStatus"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "PushDeliveryMode"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "PushDeliveryMode"
+      ],
       "writes": [
         "s|enum|public.PushDeliveryMode",
         "n|enum|public.PushDeliveryMode",
         "e|enum|public.PushDeliveryMode",
         "n|type|public.PushDeliveryMode"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "PushDeliveryStatus"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "PushDeliveryStatus"
+      ],
       "writes": [
         "s|enum|public.PushDeliveryStatus",
         "n|enum|public.PushDeliveryStatus",
         "e|enum|public.PushDeliveryStatus",
         "n|type|public.PushDeliveryStatus"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "PushDispatchOutboxStatus"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "PushDispatchOutboxStatus"
+      ],
       "writes": [
         "s|enum|public.PushDispatchOutboxStatus",
         "n|enum|public.PushDispatchOutboxStatus",
         "e|enum|public.PushDispatchOutboxStatus",
         "n|type|public.PushDispatchOutboxStatus"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "PushDispatchStatus"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "PushDispatchStatus"
+      ],
       "writes": [
         "s|enum|public.PushDispatchStatus",
         "n|enum|public.PushDispatchStatus",
         "e|enum|public.PushDispatchStatus",
         "n|type|public.PushDispatchStatus"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "PushRateLimitPhase"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "PushRateLimitPhase"
+      ],
       "writes": [
         "s|enum|public.PushRateLimitPhase",
         "n|enum|public.PushRateLimitPhase",
         "e|enum|public.PushRateLimitPhase",
         "n|type|public.PushRateLimitPhase"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "ReportType"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "ReportType"
+      ],
       "writes": [
         "s|enum|public.ReportType",
         "n|enum|public.ReportType",
         "e|enum|public.ReportType",
         "n|type|public.ReportType"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "ResourceType"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "ResourceType"
+      ],
       "writes": [
         "s|enum|public.ResourceType",
         "n|enum|public.ResourceType",
         "e|enum|public.ResourceType",
         "n|type|public.ResourceType"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "RetentionExperimentStageName"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "RetentionExperimentStageName"
+      ],
       "writes": [
         "s|enum|public.RetentionExperimentStageName",
         "n|enum|public.RetentionExperimentStageName",
         "e|enum|public.RetentionExperimentStageName",
         "n|type|public.RetentionExperimentStageName"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "RetentionExperimentStageStatus"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "RetentionExperimentStageStatus"
+      ],
       "writes": [
         "s|enum|public.RetentionExperimentStageStatus",
         "n|enum|public.RetentionExperimentStageStatus",
         "e|enum|public.RetentionExperimentStageStatus",
         "n|type|public.RetentionExperimentStageStatus"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "RetentionExperimentVariant"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "RetentionExperimentVariant"
+      ],
       "writes": [
         "s|enum|public.RetentionExperimentVariant",
         "n|enum|public.RetentionExperimentVariant",
         "e|enum|public.RetentionExperimentVariant",
         "n|type|public.RetentionExperimentVariant"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "RetentionOutboxStatus"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "RetentionOutboxStatus"
+      ],
       "writes": [
         "s|enum|public.RetentionOutboxStatus",
         "n|enum|public.RetentionOutboxStatus",
         "e|enum|public.RetentionOutboxStatus",
         "n|type|public.RetentionOutboxStatus"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "RewardClaimKind"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "RewardClaimKind"
+      ],
       "writes": [
         "s|enum|public.RewardClaimKind",
         "n|enum|public.RewardClaimKind",
         "e|enum|public.RewardClaimKind",
         "n|type|public.RewardClaimKind"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "RewardGrantStatus"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "RewardGrantStatus"
+      ],
       "writes": [
         "s|enum|public.RewardGrantStatus",
         "n|enum|public.RewardGrantStatus",
         "e|enum|public.RewardGrantStatus",
         "n|type|public.RewardGrantStatus"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "RewardSourceType"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "RewardSourceType"
+      ],
       "writes": [
         "s|enum|public.RewardSourceType",
         "n|enum|public.RewardSourceType",
         "e|enum|public.RewardSourceType",
         "n|type|public.RewardSourceType"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "RewardType"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "RewardType"
+      ],
       "writes": [
         "s|enum|public.RewardType",
         "n|enum|public.RewardType",
         "e|enum|public.RewardType",
         "n|type|public.RewardType"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "SecurityEvent"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "SecurityEvent"
+      ],
       "writes": [
         "s|enum|public.SecurityEvent",
         "n|enum|public.SecurityEvent",
         "e|enum|public.SecurityEvent",
         "n|type|public.SecurityEvent"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "SubscriptionStatus"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "SubscriptionStatus"
+      ],
       "writes": [
         "s|enum|public.SubscriptionStatus",
         "n|enum|public.SubscriptionStatus",
         "e|enum|public.SubscriptionStatus",
         "n|type|public.SubscriptionStatus"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "SuggestionStatus"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "SuggestionStatus"
+      ],
       "writes": [
         "s|enum|public.SuggestionStatus",
         "n|enum|public.SuggestionStatus",
         "e|enum|public.SuggestionStatus",
         "n|type|public.SuggestionStatus"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "TimeFormat"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "TimeFormat"
+      ],
       "writes": [
         "s|enum|public.TimeFormat",
         "n|enum|public.TimeFormat",
         "e|enum|public.TimeFormat",
         "n|type|public.TimeFormat"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "TodoVisibility"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "TodoVisibility"
+      ],
       "writes": [
         "s|enum|public.TodoVisibility",
         "n|enum|public.TodoVisibility",
         "e|enum|public.TodoVisibility",
         "n|type|public.TodoVisibility"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "UserReportReason"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "UserReportReason"
+      ],
       "writes": [
         "s|enum|public.UserReportReason",
         "n|enum|public.UserReportReason",
         "e|enum|public.UserReportReason",
         "n|type|public.UserReportReason"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "UserReportStatus"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "UserReportStatus"
+      ],
       "writes": [
         "s|enum|public.UserReportStatus",
         "n|enum|public.UserReportStatus",
         "e|enum|public.UserReportStatus",
         "n|type|public.UserReportStatus"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "UserReportTargetType"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "UserReportTargetType"
+      ],
       "writes": [
         "s|enum|public.UserReportTargetType",
         "n|enum|public.UserReportTargetType",
         "e|enum|public.UserReportTargetType",
         "n|type|public.UserReportTargetType"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "UserRole"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "UserRole"
+      ],
       "writes": [
         "s|enum|public.UserRole",
         "n|enum|public.UserRole",
         "e|enum|public.UserRole",
         "n|type|public.UserRole"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "UserStatus"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "UserStatus"
+      ],
       "writes": [
         "s|enum|public.UserStatus",
         "n|enum|public.UserStatus",
         "e|enum|public.UserStatus",
         "n|type|public.UserStatus"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_enum",
-      "statementTarget": ["enum", "public", "VerificationType"],
+      "statementTarget": [
+        "enum",
+        "public",
+        "VerificationType"
+      ],
       "writes": [
         "s|enum|public.VerificationType",
         "n|enum|public.VerificationType",
         "e|enum|public.VerificationType",
         "n|type|public.VerificationType"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "ResourceBonus"],
+      "statementTarget": [
+        "table",
+        "public",
+        "ResourceBonus"
+      ],
       "writes": [
         "s|tbl|public.ResourceBonus",
         "n|tbl|public.ResourceBonus",
@@ -435,11 +669,18 @@
         "n|rel|public.ResourceBonus_pkey",
         "n|rel|public.ResourceBonus_sourceKey_key"
       ],
-      "reads": ["n|sch|public", "n|enum|public.ResourceType"]
+      "reads": [
+        "n|sch|public",
+        "n|enum|public.ResourceType"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "AiReport"],
+      "statementTarget": [
+        "table",
+        "public",
+        "AiReport"
+      ],
       "writes": [
         "s|tbl|public.AiReport",
         "n|tbl|public.AiReport",
@@ -449,11 +690,18 @@
         "n|rel|public.AiReport_pkey",
         "n|rel|public.AiReport_userId_type_year_period_key"
       ],
-      "reads": ["n|sch|public", "n|enum|public.ReportType"]
+      "reads": [
+        "n|sch|public",
+        "n|enum|public.ReportType"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "RecurringSuggestion"],
+      "statementTarget": [
+        "table",
+        "public",
+        "RecurringSuggestion"
+      ],
       "writes": [
         "s|tbl|public.RecurringSuggestion",
         "n|tbl|public.RecurringSuggestion",
@@ -462,11 +710,18 @@
         "n|type|public.RecurringSuggestion",
         "n|rel|public.RecurringSuggestion_pkey"
       ],
-      "reads": ["n|sch|public", "n|enum|public.SuggestionStatus"]
+      "reads": [
+        "n|sch|public",
+        "n|enum|public.SuggestionStatus"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "PremiumGrant"],
+      "statementTarget": [
+        "table",
+        "public",
+        "PremiumGrant"
+      ],
       "writes": [
         "s|tbl|public.PremiumGrant",
         "n|tbl|public.PremiumGrant",
@@ -484,7 +739,11 @@
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "Subscription"],
+      "statementTarget": [
+        "table",
+        "public",
+        "Subscription"
+      ],
       "writes": [
         "s|tbl|public.Subscription",
         "n|tbl|public.Subscription",
@@ -494,11 +753,18 @@
         "n|rel|public.Subscription_pkey",
         "n|rel|public.Subscription_revenueCatId_key"
       ],
-      "reads": ["n|sch|public", "n|enum|public.SubscriptionStatus"]
+      "reads": [
+        "n|sch|public",
+        "n|enum|public.SubscriptionStatus"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "SubscriptionEventReceipt"],
+      "statementTarget": [
+        "table",
+        "public",
+        "SubscriptionEventReceipt"
+      ],
       "writes": [
         "s|tbl|public.SubscriptionEventReceipt",
         "n|tbl|public.SubscriptionEventReceipt",
@@ -507,11 +773,17 @@
         "n|type|public.SubscriptionEventReceipt",
         "n|rel|public.SubscriptionEventReceipt_pkey"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "TodoComment"],
+      "statementTarget": [
+        "table",
+        "public",
+        "TodoComment"
+      ],
       "writes": [
         "s|tbl|public.TodoComment",
         "n|tbl|public.TodoComment",
@@ -521,11 +793,17 @@
         "n|rel|public.TodoComment_pkey",
         "n|rel|public.TodoComment_authorId_clientRequestId_key"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "TodoCommentLike"],
+      "statementTarget": [
+        "table",
+        "public",
+        "TodoCommentLike"
+      ],
       "writes": [
         "s|tbl|public.TodoCommentLike",
         "n|tbl|public.TodoCommentLike",
@@ -534,11 +812,17 @@
         "n|type|public.TodoCommentLike",
         "n|rel|public.TodoCommentLike_pkey"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "Account"],
+      "statementTarget": [
+        "table",
+        "public",
+        "Account"
+      ],
       "writes": [
         "s|tbl|public.Account",
         "n|tbl|public.Account",
@@ -549,11 +833,18 @@
         "n|rel|public.Account_provider_providerAccountId_key",
         "n|rel|public.Account_userId_provider_key"
       ],
-      "reads": ["n|sch|public", "n|enum|public.AccountProvider"]
+      "reads": [
+        "n|sch|public",
+        "n|enum|public.AccountProvider"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "LoginAttempt"],
+      "statementTarget": [
+        "table",
+        "public",
+        "LoginAttempt"
+      ],
       "writes": [
         "s|tbl|public.LoginAttempt",
         "n|tbl|public.LoginAttempt",
@@ -562,11 +853,18 @@
         "n|type|public.LoginAttempt",
         "n|rel|public.LoginAttempt_pkey"
       ],
-      "reads": ["n|sch|public", "n|enum|public.AccountProvider"]
+      "reads": [
+        "n|sch|public",
+        "n|enum|public.AccountProvider"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "OAuthState"],
+      "statementTarget": [
+        "table",
+        "public",
+        "OAuthState"
+      ],
       "writes": [
         "s|tbl|public.OAuthState",
         "n|tbl|public.OAuthState",
@@ -577,11 +875,18 @@
         "n|rel|public.OAuthState_exchangeCode_key",
         "n|rel|public.OAuthState_state_key"
       ],
-      "reads": ["n|sch|public", "n|enum|public.AccountProvider"]
+      "reads": [
+        "n|sch|public",
+        "n|enum|public.AccountProvider"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "SecurityLog"],
+      "statementTarget": [
+        "table",
+        "public",
+        "SecurityLog"
+      ],
       "writes": [
         "s|tbl|public.SecurityLog",
         "n|tbl|public.SecurityLog",
@@ -590,11 +895,18 @@
         "n|type|public.SecurityLog",
         "n|rel|public.SecurityLog_pkey"
       ],
-      "reads": ["n|sch|public", "n|enum|public.SecurityEvent"]
+      "reads": [
+        "n|sch|public",
+        "n|enum|public.SecurityEvent"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "Session"],
+      "statementTarget": [
+        "table",
+        "public",
+        "Session"
+      ],
       "writes": [
         "s|tbl|public.Session",
         "n|tbl|public.Session",
@@ -604,11 +916,17 @@
         "n|rel|public.Session_pkey",
         "n|rel|public.Session_refreshTokenHash_key"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "User"],
+      "statementTarget": [
+        "table",
+        "public",
+        "User"
+      ],
       "writes": [
         "s|tbl|public.User",
         "n|tbl|public.User",
@@ -629,7 +947,11 @@
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "UserActivityDay"],
+      "statementTarget": [
+        "table",
+        "public",
+        "UserActivityDay"
+      ],
       "writes": [
         "s|tbl|public.UserActivityDay",
         "n|tbl|public.UserActivityDay",
@@ -639,11 +961,17 @@
         "n|rel|public.UserActivityDay_pkey",
         "n|rel|public.UserActivityDay_userId_localDate_key"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "UserConsent"],
+      "statementTarget": [
+        "table",
+        "public",
+        "UserConsent"
+      ],
       "writes": [
         "s|tbl|public.UserConsent",
         "n|tbl|public.UserConsent",
@@ -653,11 +981,17 @@
         "n|rel|public.UserConsent_pkey",
         "n|rel|public.UserConsent_userId_key"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "UserLocation"],
+      "statementTarget": [
+        "table",
+        "public",
+        "UserLocation"
+      ],
       "writes": [
         "s|tbl|public.UserLocation",
         "n|tbl|public.UserLocation",
@@ -667,11 +1001,17 @@
         "n|rel|public.UserLocation_pkey",
         "n|rel|public.UserLocation_userId_key"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "UserPreference"],
+      "statementTarget": [
+        "table",
+        "public",
+        "UserPreference"
+      ],
       "writes": [
         "s|tbl|public.UserPreference",
         "n|tbl|public.UserPreference",
@@ -681,11 +1021,18 @@
         "n|rel|public.UserPreference_pkey",
         "n|rel|public.UserPreference_userId_key"
       ],
-      "reads": ["n|sch|public", "n|enum|public.TimeFormat"]
+      "reads": [
+        "n|sch|public",
+        "n|enum|public.TimeFormat"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "UserProfile"],
+      "statementTarget": [
+        "table",
+        "public",
+        "UserProfile"
+      ],
       "writes": [
         "s|tbl|public.UserProfile",
         "n|tbl|public.UserProfile",
@@ -695,11 +1042,17 @@
         "n|rel|public.UserProfile_pkey",
         "n|rel|public.UserProfile_userId_key"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "Verification"],
+      "statementTarget": [
+        "table",
+        "public",
+        "Verification"
+      ],
       "writes": [
         "s|tbl|public.Verification",
         "n|tbl|public.Verification",
@@ -709,11 +1062,18 @@
         "n|rel|public.Verification_pkey",
         "n|rel|public.Verification_token_key"
       ],
-      "reads": ["n|sch|public", "n|enum|public.VerificationType"]
+      "reads": [
+        "n|sch|public",
+        "n|enum|public.VerificationType"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "DailyCompletion"],
+      "statementTarget": [
+        "table",
+        "public",
+        "DailyCompletion"
+      ],
       "writes": [
         "s|tbl|public.DailyCompletion",
         "n|tbl|public.DailyCompletion",
@@ -723,11 +1083,17 @@
         "n|rel|public.DailyCompletion_pkey",
         "n|rel|public.DailyCompletion_userId_date_key"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "WeeklyAchievement"],
+      "statementTarget": [
+        "table",
+        "public",
+        "WeeklyAchievement"
+      ],
       "writes": [
         "s|tbl|public.WeeklyAchievement",
         "n|tbl|public.WeeklyAchievement",
@@ -737,11 +1103,17 @@
         "n|rel|public.WeeklyAchievement_pkey",
         "n|rel|public.WeeklyAchievement_userId_year_week_key"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "Memo"],
+      "statementTarget": [
+        "table",
+        "public",
+        "Memo"
+      ],
       "writes": [
         "s|tbl|public.Memo",
         "n|tbl|public.Memo",
@@ -750,11 +1122,17 @@
         "n|type|public.Memo",
         "n|rel|public.Memo_pkey"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "Notification"],
+      "statementTarget": [
+        "table",
+        "public",
+        "Notification"
+      ],
       "writes": [
         "s|tbl|public.Notification",
         "n|tbl|public.Notification",
@@ -772,7 +1150,11 @@
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "PushDailyBudget"],
+      "statementTarget": [
+        "table",
+        "public",
+        "PushDailyBudget"
+      ],
       "writes": [
         "s|tbl|public.PushDailyBudget",
         "n|tbl|public.PushDailyBudget",
@@ -782,11 +1164,17 @@
         "n|rel|public.PushDailyBudget_pkey",
         "n|rel|public.PushDailyBudget_userId_localDate_key"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "PushDeliveryAttempt"],
+      "statementTarget": [
+        "table",
+        "public",
+        "PushDeliveryAttempt"
+      ],
       "writes": [
         "s|tbl|public.PushDeliveryAttempt",
         "n|tbl|public.PushDeliveryAttempt",
@@ -797,11 +1185,18 @@
         "n|rel|public.PushDeliveryAttempt_dispatchId_pushTokenId_key",
         "n|rel|public.PushDeliveryAttempt_expoTicketId_key"
       ],
-      "reads": ["n|sch|public", "n|enum|public.PushDeliveryStatus"]
+      "reads": [
+        "n|sch|public",
+        "n|enum|public.PushDeliveryStatus"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "PushDispatch"],
+      "statementTarget": [
+        "table",
+        "public",
+        "PushDispatch"
+      ],
       "writes": [
         "s|tbl|public.PushDispatch",
         "n|tbl|public.PushDispatch",
@@ -819,7 +1214,11 @@
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "PushDispatchOutbox"],
+      "statementTarget": [
+        "table",
+        "public",
+        "PushDispatchOutbox"
+      ],
       "writes": [
         "s|tbl|public.PushDispatchOutbox",
         "n|tbl|public.PushDispatchOutbox",
@@ -836,7 +1235,11 @@
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "PushRateLimitReservation"],
+      "statementTarget": [
+        "table",
+        "public",
+        "PushRateLimitReservation"
+      ],
       "writes": [
         "s|tbl|public.PushRateLimitReservation",
         "n|tbl|public.PushRateLimitReservation",
@@ -845,11 +1248,18 @@
         "n|type|public.PushRateLimitReservation",
         "n|rel|public.PushRateLimitReservation_pkey"
       ],
-      "reads": ["n|sch|public", "n|enum|public.PushRateLimitPhase"]
+      "reads": [
+        "n|sch|public",
+        "n|enum|public.PushRateLimitPhase"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "PushToken"],
+      "statementTarget": [
+        "table",
+        "public",
+        "PushToken"
+      ],
       "writes": [
         "s|tbl|public.PushToken",
         "n|tbl|public.PushToken",
@@ -860,11 +1270,18 @@
         "n|rel|public.PushToken_token_key",
         "n|rel|public.PushToken_userId_deviceId_key"
       ],
-      "reads": ["n|sch|public", "n|enum|public.Platform"]
+      "reads": [
+        "n|sch|public",
+        "n|enum|public.Platform"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "RetentionExperimentAssignment"],
+      "statementTarget": [
+        "table",
+        "public",
+        "RetentionExperimentAssignment"
+      ],
       "writes": [
         "s|tbl|public.RetentionExperimentAssignment",
         "n|tbl|public.RetentionExperimentAssignment",
@@ -874,11 +1291,18 @@
         "n|rel|public.RetentionExperimentAssignment_pkey",
         "n|rel|public.RetentionExperimentAssignment_userId_experimentKey_key"
       ],
-      "reads": ["n|sch|public", "n|enum|public.RetentionExperimentVariant"]
+      "reads": [
+        "n|sch|public",
+        "n|enum|public.RetentionExperimentVariant"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "RetentionExperimentResult"],
+      "statementTarget": [
+        "table",
+        "public",
+        "RetentionExperimentResult"
+      ],
       "writes": [
         "s|tbl|public.RetentionExperimentResult",
         "n|tbl|public.RetentionExperimentResult",
@@ -888,11 +1312,17 @@
         "n|rel|public.RetentionExperimentResult_pkey",
         "n|rel|public.RetentionExperimentResult_assignmentId_key"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "RetentionExperimentStage"],
+      "statementTarget": [
+        "table",
+        "public",
+        "RetentionExperimentStage"
+      ],
       "writes": [
         "s|tbl|public.RetentionExperimentStage",
         "n|tbl|public.RetentionExperimentStage",
@@ -911,7 +1341,11 @@
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "RetentionPushOutbox"],
+      "statementTarget": [
+        "table",
+        "public",
+        "RetentionPushOutbox"
+      ],
       "writes": [
         "s|tbl|public.RetentionPushOutbox",
         "n|tbl|public.RetentionPushOutbox",
@@ -923,11 +1357,18 @@
         "n|rel|public.RetentionPushOutbox_notificationId_key",
         "n|rel|public.RetentionPushOutbox_stageId_key"
       ],
-      "reads": ["n|sch|public", "n|enum|public.RetentionOutboxStatus"]
+      "reads": [
+        "n|sch|public",
+        "n|enum|public.RetentionOutboxStatus"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "Todo"],
+      "statementTarget": [
+        "table",
+        "public",
+        "Todo"
+      ],
       "writes": [
         "s|tbl|public.Todo",
         "n|tbl|public.Todo",
@@ -936,11 +1377,18 @@
         "n|type|public.Todo",
         "n|rel|public.Todo_pkey"
       ],
-      "reads": ["n|sch|public", "n|enum|public.TodoVisibility"]
+      "reads": [
+        "n|sch|public",
+        "n|enum|public.TodoVisibility"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "TodoCategory"],
+      "statementTarget": [
+        "table",
+        "public",
+        "TodoCategory"
+      ],
       "writes": [
         "s|tbl|public.TodoCategory",
         "n|tbl|public.TodoCategory",
@@ -950,11 +1398,17 @@
         "n|rel|public.TodoCategory_pkey",
         "n|rel|public.TodoCategory_userId_name_key"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "TodoItem"],
+      "statementTarget": [
+        "table",
+        "public",
+        "TodoItem"
+      ],
       "writes": [
         "s|tbl|public.TodoItem",
         "n|tbl|public.TodoItem",
@@ -963,11 +1417,17 @@
         "n|type|public.TodoItem",
         "n|rel|public.TodoItem_pkey"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "TodoView"],
+      "statementTarget": [
+        "table",
+        "public",
+        "TodoView"
+      ],
       "writes": [
         "s|tbl|public.TodoView",
         "n|tbl|public.TodoView",
@@ -976,11 +1436,17 @@
         "n|type|public.TodoView",
         "n|rel|public.TodoView_pkey"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "Cheer"],
+      "statementTarget": [
+        "table",
+        "public",
+        "Cheer"
+      ],
       "writes": [
         "s|tbl|public.Cheer",
         "n|tbl|public.Cheer",
@@ -989,11 +1455,17 @@
         "n|type|public.Cheer",
         "n|rel|public.Cheer_pkey"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "Follow"],
+      "statementTarget": [
+        "table",
+        "public",
+        "Follow"
+      ],
       "writes": [
         "s|tbl|public.Follow",
         "n|tbl|public.Follow",
@@ -1003,11 +1475,18 @@
         "n|rel|public.Follow_pkey",
         "n|rel|public.Follow_followerId_followingId_key"
       ],
-      "reads": ["n|sch|public", "n|enum|public.FollowStatus"]
+      "reads": [
+        "n|sch|public",
+        "n|enum|public.FollowStatus"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "Invite"],
+      "statementTarget": [
+        "table",
+        "public",
+        "Invite"
+      ],
       "writes": [
         "s|tbl|public.Invite",
         "n|tbl|public.Invite",
@@ -1017,11 +1496,18 @@
         "n|rel|public.Invite_pkey",
         "n|rel|public.Invite_code_key"
       ],
-      "reads": ["n|sch|public", "n|enum|public.InviteStatus"]
+      "reads": [
+        "n|sch|public",
+        "n|enum|public.InviteStatus"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "InviteActiveDay"],
+      "statementTarget": [
+        "table",
+        "public",
+        "InviteActiveDay"
+      ],
       "writes": [
         "s|tbl|public.InviteActiveDay",
         "n|tbl|public.InviteActiveDay",
@@ -1030,11 +1516,17 @@
         "n|type|public.InviteActiveDay",
         "n|rel|public.InviteActiveDay_pkey"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "InviteRedemption"],
+      "statementTarget": [
+        "table",
+        "public",
+        "InviteRedemption"
+      ],
       "writes": [
         "s|tbl|public.InviteRedemption",
         "n|tbl|public.InviteRedemption",
@@ -1052,7 +1544,11 @@
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "Nudge"],
+      "statementTarget": [
+        "table",
+        "public",
+        "Nudge"
+      ],
       "writes": [
         "s|tbl|public.Nudge",
         "n|tbl|public.Nudge",
@@ -1061,11 +1557,18 @@
         "n|type|public.Nudge",
         "n|rel|public.Nudge_pkey"
       ],
-      "reads": ["n|sch|public", "n|enum|public.NudgeReplyKind"]
+      "reads": [
+        "n|sch|public",
+        "n|enum|public.NudgeReplyKind"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "ReminderNudge"],
+      "statementTarget": [
+        "table",
+        "public",
+        "ReminderNudge"
+      ],
       "writes": [
         "s|tbl|public.ReminderNudge",
         "n|tbl|public.ReminderNudge",
@@ -1074,11 +1577,17 @@
         "n|type|public.ReminderNudge",
         "n|rel|public.ReminderNudge_pkey"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "RewardClaim"],
+      "statementTarget": [
+        "table",
+        "public",
+        "RewardClaim"
+      ],
       "writes": [
         "s|tbl|public.RewardClaim",
         "n|tbl|public.RewardClaim",
@@ -1087,11 +1596,18 @@
         "n|type|public.RewardClaim",
         "n|rel|public.RewardClaim_pkey"
       ],
-      "reads": ["n|sch|public", "n|enum|public.RewardClaimKind"]
+      "reads": [
+        "n|sch|public",
+        "n|enum|public.RewardClaimKind"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "RewardGrant"],
+      "statementTarget": [
+        "table",
+        "public",
+        "RewardGrant"
+      ],
       "writes": [
         "s|tbl|public.RewardGrant",
         "n|tbl|public.RewardGrant",
@@ -1110,7 +1626,11 @@
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "UserBlock"],
+      "statementTarget": [
+        "table",
+        "public",
+        "UserBlock"
+      ],
       "writes": [
         "s|tbl|public.UserBlock",
         "n|tbl|public.UserBlock",
@@ -1120,11 +1640,17 @@
         "n|rel|public.UserBlock_pkey",
         "n|rel|public.UserBlock_blockerId_blockedId_key"
       ],
-      "reads": ["n|sch|public"]
+      "reads": [
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_table",
-      "statementTarget": ["table", "public", "UserReport"],
+      "statementTarget": [
+        "table",
+        "public",
+        "UserReport"
+      ],
       "writes": [
         "s|tbl|public.UserReport",
         "n|tbl|public.UserReport",
@@ -1142,7 +1668,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "ResourceBonus", "ResourceBonus_userId_resource_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "ResourceBonus",
+        "ResourceBonus_userId_resource_idx"
+      ],
       "writes": [
         "s|idx|public.ResourceBonus_userId_resource_idx",
         "n|idx|public.ResourceBonus_userId_resource_idx",
@@ -1158,7 +1689,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "AiReport", "AiReport_userId_type_generatedAt_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "AiReport",
+        "AiReport_userId_type_generatedAt_idx"
+      ],
       "writes": [
         "s|idx|public.AiReport_userId_type_generatedAt_idx",
         "n|idx|public.AiReport_userId_type_generatedAt_idx",
@@ -1175,7 +1711,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "AiReport", "AiReport_userId_type_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "AiReport",
+        "AiReport_userId_type_idx"
+      ],
       "writes": [
         "s|idx|public.AiReport_userId_type_idx",
         "n|idx|public.AiReport_userId_type_idx",
@@ -1254,7 +1795,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "PremiumGrant", "PremiumGrant_status_endsAt_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "PremiumGrant",
+        "PremiumGrant_status_endsAt_idx"
+      ],
       "writes": [
         "s|idx|public.PremiumGrant_status_endsAt_idx",
         "n|idx|public.PremiumGrant_status_endsAt_idx",
@@ -1270,7 +1816,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "PremiumGrant", "PremiumGrant_userId_status_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "PremiumGrant",
+        "PremiumGrant_userId_status_idx"
+      ],
       "writes": [
         "s|idx|public.PremiumGrant_userId_status_idx",
         "n|idx|public.PremiumGrant_userId_status_idx",
@@ -1286,18 +1837,32 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "Subscription", "Subscription_deletedAt_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "Subscription",
+        "Subscription_deletedAt_idx"
+      ],
       "writes": [
         "s|idx|public.Subscription_deletedAt_idx",
         "n|idx|public.Subscription_deletedAt_idx",
         "e|idx|public.Subscription_deletedAt_idx",
         "n|rel|public.Subscription_deletedAt_idx"
       ],
-      "reads": ["n|tbl|public.Subscription", "n|sch|public", "n|col|public.Subscription.deletedAt"]
+      "reads": [
+        "n|tbl|public.Subscription",
+        "n|sch|public",
+        "n|col|public.Subscription.deletedAt"
+      ]
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "Subscription", "Subscription_status_expiresAt_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "Subscription",
+        "Subscription_status_expiresAt_idx"
+      ],
       "writes": [
         "s|idx|public.Subscription_status_expiresAt_idx",
         "n|idx|public.Subscription_status_expiresAt_idx",
@@ -1313,14 +1878,23 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "Subscription", "Subscription_userId_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "Subscription",
+        "Subscription_userId_idx"
+      ],
       "writes": [
         "s|idx|public.Subscription_userId_idx",
         "n|idx|public.Subscription_userId_idx",
         "e|idx|public.Subscription_userId_idx",
         "n|rel|public.Subscription_userId_idx"
       ],
-      "reads": ["n|tbl|public.Subscription", "n|sch|public", "n|col|public.Subscription.userId"]
+      "reads": [
+        "n|tbl|public.Subscription",
+        "n|sch|public",
+        "n|col|public.Subscription.userId"
+      ]
     },
     {
       "statementType": "create_index",
@@ -1372,7 +1946,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "TodoComment", "TodoComment_todoId_rootId_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "TodoComment",
+        "TodoComment_todoId_rootId_idx"
+      ],
       "writes": [
         "s|idx|public.TodoComment_todoId_rootId_idx",
         "n|idx|public.TodoComment_todoId_rootId_idx",
@@ -1409,18 +1988,32 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "LoginAttempt", "LoginAttempt_createdAt_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "LoginAttempt",
+        "LoginAttempt_createdAt_idx"
+      ],
       "writes": [
         "s|idx|public.LoginAttempt_createdAt_idx",
         "n|idx|public.LoginAttempt_createdAt_idx",
         "e|idx|public.LoginAttempt_createdAt_idx",
         "n|rel|public.LoginAttempt_createdAt_idx"
       ],
-      "reads": ["n|tbl|public.LoginAttempt", "n|sch|public", "n|col|public.LoginAttempt.createdAt"]
+      "reads": [
+        "n|tbl|public.LoginAttempt",
+        "n|sch|public",
+        "n|col|public.LoginAttempt.createdAt"
+      ]
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "LoginAttempt", "LoginAttempt_email_createdAt_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "LoginAttempt",
+        "LoginAttempt_email_createdAt_idx"
+      ],
       "writes": [
         "s|idx|public.LoginAttempt_email_createdAt_idx",
         "n|idx|public.LoginAttempt_email_createdAt_idx",
@@ -1457,7 +2050,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "LoginAttempt", "LoginAttempt_provider_createdAt_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "LoginAttempt",
+        "LoginAttempt_provider_createdAt_idx"
+      ],
       "writes": [
         "s|idx|public.LoginAttempt_provider_createdAt_idx",
         "n|idx|public.LoginAttempt_provider_createdAt_idx",
@@ -1473,18 +2071,32 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "OAuthState", "OAuthState_expiresAt_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "OAuthState",
+        "OAuthState_expiresAt_idx"
+      ],
       "writes": [
         "s|idx|public.OAuthState_expiresAt_idx",
         "n|idx|public.OAuthState_expiresAt_idx",
         "e|idx|public.OAuthState_expiresAt_idx",
         "n|rel|public.OAuthState_expiresAt_idx"
       ],
-      "reads": ["n|tbl|public.OAuthState", "n|sch|public", "n|col|public.OAuthState.expiresAt"]
+      "reads": [
+        "n|tbl|public.OAuthState",
+        "n|sch|public",
+        "n|col|public.OAuthState.expiresAt"
+      ]
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "SecurityLog", "SecurityLog_event_createdAt_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "SecurityLog",
+        "SecurityLog_event_createdAt_idx"
+      ],
       "writes": [
         "s|idx|public.SecurityLog_event_createdAt_idx",
         "n|idx|public.SecurityLog_event_createdAt_idx",
@@ -1500,7 +2112,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "SecurityLog", "SecurityLog_ipAddress_createdAt_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "SecurityLog",
+        "SecurityLog_ipAddress_createdAt_idx"
+      ],
       "writes": [
         "s|idx|public.SecurityLog_ipAddress_createdAt_idx",
         "n|idx|public.SecurityLog_ipAddress_createdAt_idx",
@@ -1516,7 +2133,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "SecurityLog", "SecurityLog_userId_createdAt_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "SecurityLog",
+        "SecurityLog_userId_createdAt_idx"
+      ],
       "writes": [
         "s|idx|public.SecurityLog_userId_createdAt_idx",
         "n|idx|public.SecurityLog_userId_createdAt_idx",
@@ -1532,40 +2154,72 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "Session", "Session_expiresAt_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "Session",
+        "Session_expiresAt_idx"
+      ],
       "writes": [
         "s|idx|public.Session_expiresAt_idx",
         "n|idx|public.Session_expiresAt_idx",
         "e|idx|public.Session_expiresAt_idx",
         "n|rel|public.Session_expiresAt_idx"
       ],
-      "reads": ["n|tbl|public.Session", "n|sch|public", "n|col|public.Session.expiresAt"]
+      "reads": [
+        "n|tbl|public.Session",
+        "n|sch|public",
+        "n|col|public.Session.expiresAt"
+      ]
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "Session", "Session_tokenFamily_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "Session",
+        "Session_tokenFamily_idx"
+      ],
       "writes": [
         "s|idx|public.Session_tokenFamily_idx",
         "n|idx|public.Session_tokenFamily_idx",
         "e|idx|public.Session_tokenFamily_idx",
         "n|rel|public.Session_tokenFamily_idx"
       ],
-      "reads": ["n|tbl|public.Session", "n|sch|public", "n|col|public.Session.tokenFamily"]
+      "reads": [
+        "n|tbl|public.Session",
+        "n|sch|public",
+        "n|col|public.Session.tokenFamily"
+      ]
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "Session", "Session_userId_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "Session",
+        "Session_userId_idx"
+      ],
       "writes": [
         "s|idx|public.Session_userId_idx",
         "n|idx|public.Session_userId_idx",
         "e|idx|public.Session_userId_idx",
         "n|rel|public.Session_userId_idx"
       ],
-      "reads": ["n|tbl|public.Session", "n|sch|public", "n|col|public.Session.userId"]
+      "reads": [
+        "n|tbl|public.Session",
+        "n|sch|public",
+        "n|col|public.Session.userId"
+      ]
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "User", "User_deletedAt_createdAt_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "User",
+        "User_deletedAt_createdAt_idx"
+      ],
       "writes": [
         "s|idx|public.User_deletedAt_createdAt_idx",
         "n|idx|public.User_deletedAt_createdAt_idx",
@@ -1581,18 +2235,32 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "User", "User_deletedAt_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "User",
+        "User_deletedAt_idx"
+      ],
       "writes": [
         "s|idx|public.User_deletedAt_idx",
         "n|idx|public.User_deletedAt_idx",
         "e|idx|public.User_deletedAt_idx",
         "n|rel|public.User_deletedAt_idx"
       ],
-      "reads": ["n|tbl|public.User", "n|sch|public", "n|col|public.User.deletedAt"]
+      "reads": [
+        "n|tbl|public.User",
+        "n|sch|public",
+        "n|col|public.User.deletedAt"
+      ]
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "User", "User_deletedAt_lastActiveAt_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "User",
+        "User_deletedAt_lastActiveAt_idx"
+      ],
       "writes": [
         "s|idx|public.User_deletedAt_lastActiveAt_idx",
         "n|idx|public.User_deletedAt_lastActiveAt_idx",
@@ -1608,7 +2276,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "User", "User_status_deletedAt_lastLoginAt_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "User",
+        "User_status_deletedAt_lastLoginAt_idx"
+      ],
       "writes": [
         "s|idx|public.User_status_deletedAt_lastLoginAt_idx",
         "n|idx|public.User_status_deletedAt_lastLoginAt_idx",
@@ -1625,29 +2298,52 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "User", "User_status_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "User",
+        "User_status_idx"
+      ],
       "writes": [
         "s|idx|public.User_status_idx",
         "n|idx|public.User_status_idx",
         "e|idx|public.User_status_idx",
         "n|rel|public.User_status_idx"
       ],
-      "reads": ["n|tbl|public.User", "n|sch|public", "n|col|public.User.status"]
+      "reads": [
+        "n|tbl|public.User",
+        "n|sch|public",
+        "n|col|public.User.status"
+      ]
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "User", "User_subscriptionStatus_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "User",
+        "User_subscriptionStatus_idx"
+      ],
       "writes": [
         "s|idx|public.User_subscriptionStatus_idx",
         "n|idx|public.User_subscriptionStatus_idx",
         "e|idx|public.User_subscriptionStatus_idx",
         "n|rel|public.User_subscriptionStatus_idx"
       ],
-      "reads": ["n|tbl|public.User", "n|sch|public", "n|col|public.User.subscriptionStatus"]
+      "reads": [
+        "n|tbl|public.User",
+        "n|sch|public",
+        "n|col|public.User.subscriptionStatus"
+      ]
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "UserActivityDay", "UserActivityDay_firstSeenAt_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "UserActivityDay",
+        "UserActivityDay_firstSeenAt_idx"
+      ],
       "writes": [
         "s|idx|public.UserActivityDay_firstSeenAt_idx",
         "n|idx|public.UserActivityDay_firstSeenAt_idx",
@@ -1662,7 +2358,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "UserActivityDay", "UserActivityDay_localDate_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "UserActivityDay",
+        "UserActivityDay_localDate_idx"
+      ],
       "writes": [
         "s|idx|public.UserActivityDay_localDate_idx",
         "n|idx|public.UserActivityDay_localDate_idx",
@@ -1792,7 +2493,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "Verification", "Verification_userId_type_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "Verification",
+        "Verification_userId_type_idx"
+      ],
       "writes": [
         "s|idx|public.Verification_userId_type_idx",
         "n|idx|public.Verification_userId_type_idx",
@@ -1850,7 +2556,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "Memo", "Memo_userId_isPinned_sortOrder_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "Memo",
+        "Memo_userId_isPinned_sortOrder_idx"
+      ],
       "writes": [
         "s|idx|public.Memo_userId_isPinned_sortOrder_idx",
         "n|idx|public.Memo_userId_isPinned_sortOrder_idx",
@@ -1867,7 +2578,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "Memo", "Memo_userId_sortOrder_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "Memo",
+        "Memo_userId_sortOrder_idx"
+      ],
       "writes": [
         "s|idx|public.Memo_userId_sortOrder_idx",
         "n|idx|public.Memo_userId_sortOrder_idx",
@@ -1895,18 +2611,30 @@
         "e|idx|public.Notification_comment_actor_cleanup_idx",
         "n|rel|public.Notification_comment_actor_cleanup_idx"
       ],
-      "reads": ["n|tbl|public.Notification", "n|sch|public"]
+      "reads": [
+        "n|tbl|public.Notification",
+        "n|sch|public"
+      ]
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "Notification", "Notification_createdAt_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "Notification",
+        "Notification_createdAt_idx"
+      ],
       "writes": [
         "s|idx|public.Notification_createdAt_idx",
         "n|idx|public.Notification_createdAt_idx",
         "e|idx|public.Notification_createdAt_idx",
         "n|rel|public.Notification_createdAt_idx"
       ],
-      "reads": ["n|tbl|public.Notification", "n|sch|public", "n|col|public.Notification.createdAt"]
+      "reads": [
+        "n|tbl|public.Notification",
+        "n|sch|public",
+        "n|col|public.Notification.createdAt"
+      ]
     },
     {
       "statementType": "create_index",
@@ -1922,11 +2650,20 @@
         "e|idx|public.Notification_friend_actor_cleanup_idx",
         "n|rel|public.Notification_friend_actor_cleanup_idx"
       ],
-      "reads": ["n|tbl|public.Notification", "n|sch|public", "n|col|public.Notification.friendId"]
+      "reads": [
+        "n|tbl|public.Notification",
+        "n|sch|public",
+        "n|col|public.Notification.friendId"
+      ]
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "Notification", "Notification_todo_reminder_dedup"],
+      "statementTarget": [
+        "index",
+        "public",
+        "Notification",
+        "Notification_todo_reminder_dedup"
+      ],
       "writes": [
         "s|idx|public.Notification_todo_reminder_dedup",
         "n|idx|public.Notification_todo_reminder_dedup",
@@ -2008,7 +2745,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "Notification", "Notification_userId_type_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "Notification",
+        "Notification_userId_type_idx"
+      ],
       "writes": [
         "s|idx|public.Notification_userId_type_idx",
         "n|idx|public.Notification_userId_type_idx",
@@ -2089,7 +2831,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "PushDispatch", "PushDispatch_processing_lease_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "PushDispatch",
+        "PushDispatch_processing_lease_idx"
+      ],
       "writes": [
         "s|idx|public.PushDispatch_processing_lease_idx",
         "n|idx|public.PushDispatch_processing_lease_idx",
@@ -2104,7 +2851,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "PushDispatch", "PushDispatch_status_scheduledAt_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "PushDispatch",
+        "PushDispatch_status_scheduledAt_idx"
+      ],
       "writes": [
         "s|idx|public.PushDispatch_status_scheduledAt_idx",
         "n|idx|public.PushDispatch_status_scheduledAt_idx",
@@ -2230,7 +2982,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "PushToken", "PushToken_userId_isActive_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "PushToken",
+        "PushToken_userId_isActive_idx"
+      ],
       "writes": [
         "s|idx|public.PushToken_userId_isActive_idx",
         "n|idx|public.PushToken_userId_isActive_idx",
@@ -2353,7 +3110,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "Todo", "Todo_completed_scheduledTime_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "Todo",
+        "Todo_completed_scheduledTime_idx"
+      ],
       "writes": [
         "s|idx|public.Todo_completed_scheduledTime_idx",
         "n|idx|public.Todo_completed_scheduledTime_idx",
@@ -2369,18 +3131,32 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "Todo", "Todo_recurrenceGroupId_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "Todo",
+        "Todo_recurrenceGroupId_idx"
+      ],
       "writes": [
         "s|idx|public.Todo_recurrenceGroupId_idx",
         "n|idx|public.Todo_recurrenceGroupId_idx",
         "e|idx|public.Todo_recurrenceGroupId_idx",
         "n|rel|public.Todo_recurrenceGroupId_idx"
       ],
-      "reads": ["n|tbl|public.Todo", "n|sch|public", "n|col|public.Todo.recurrenceGroupId"]
+      "reads": [
+        "n|tbl|public.Todo",
+        "n|sch|public",
+        "n|col|public.Todo.recurrenceGroupId"
+      ]
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "Todo", "Todo_userId_categoryId_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "Todo",
+        "Todo_userId_categoryId_idx"
+      ],
       "writes": [
         "s|idx|public.Todo_userId_categoryId_idx",
         "n|idx|public.Todo_userId_categoryId_idx",
@@ -2396,7 +3172,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "Todo", "Todo_userId_completed_startDate_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "Todo",
+        "Todo_userId_completed_startDate_idx"
+      ],
       "writes": [
         "s|idx|public.Todo_userId_completed_startDate_idx",
         "n|idx|public.Todo_userId_completed_startDate_idx",
@@ -2413,7 +3194,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "Todo", "Todo_userId_sortOrder_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "Todo",
+        "Todo_userId_sortOrder_idx"
+      ],
       "writes": [
         "s|idx|public.Todo_userId_sortOrder_idx",
         "n|idx|public.Todo_userId_sortOrder_idx",
@@ -2429,7 +3215,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "Todo", "Todo_userId_startDate_endDate_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "Todo",
+        "Todo_userId_startDate_endDate_idx"
+      ],
       "writes": [
         "s|idx|public.Todo_userId_startDate_endDate_idx",
         "n|idx|public.Todo_userId_startDate_endDate_idx",
@@ -2446,7 +3237,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "TodoCategory", "TodoCategory_userId_sortOrder_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "TodoCategory",
+        "TodoCategory_userId_sortOrder_idx"
+      ],
       "writes": [
         "s|idx|public.TodoCategory_userId_sortOrder_idx",
         "n|idx|public.TodoCategory_userId_sortOrder_idx",
@@ -2462,7 +3258,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "TodoItem", "TodoItem_todoId_sortOrder_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "TodoItem",
+        "TodoItem_todoId_sortOrder_idx"
+      ],
       "writes": [
         "s|idx|public.TodoItem_todoId_sortOrder_idx",
         "n|idx|public.TodoItem_todoId_sortOrder_idx",
@@ -2478,7 +3279,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "TodoView", "TodoView_viewerId_createdAt_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "TodoView",
+        "TodoView_viewerId_createdAt_idx"
+      ],
       "writes": [
         "s|idx|public.TodoView_viewerId_createdAt_idx",
         "n|idx|public.TodoView_viewerId_createdAt_idx",
@@ -2494,7 +3300,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "Cheer", "Cheer_receiverId_createdAt_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "Cheer",
+        "Cheer_receiverId_createdAt_idx"
+      ],
       "writes": [
         "s|idx|public.Cheer_receiverId_createdAt_idx",
         "n|idx|public.Cheer_receiverId_createdAt_idx",
@@ -2510,7 +3321,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "Cheer", "Cheer_senderId_createdAt_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "Cheer",
+        "Cheer_senderId_createdAt_idx"
+      ],
       "writes": [
         "s|idx|public.Cheer_senderId_createdAt_idx",
         "n|idx|public.Cheer_senderId_createdAt_idx",
@@ -2526,7 +3342,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "Cheer", "Cheer_senderId_receiverId_createdAt_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "Cheer",
+        "Cheer_senderId_receiverId_createdAt_idx"
+      ],
       "writes": [
         "s|idx|public.Cheer_senderId_receiverId_createdAt_idx",
         "n|idx|public.Cheer_senderId_receiverId_createdAt_idx",
@@ -2543,7 +3364,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "Follow", "Follow_followerId_sortOrder_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "Follow",
+        "Follow_followerId_sortOrder_idx"
+      ],
       "writes": [
         "s|idx|public.Follow_followerId_sortOrder_idx",
         "n|idx|public.Follow_followerId_sortOrder_idx",
@@ -2559,7 +3385,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "Follow", "Follow_followerId_status_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "Follow",
+        "Follow_followerId_status_idx"
+      ],
       "writes": [
         "s|idx|public.Follow_followerId_status_idx",
         "n|idx|public.Follow_followerId_status_idx",
@@ -2575,7 +3406,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "Follow", "Follow_followingId_status_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "Follow",
+        "Follow_followingId_status_idx"
+      ],
       "writes": [
         "s|idx|public.Follow_followingId_status_idx",
         "n|idx|public.Follow_followingId_status_idx",
@@ -2591,18 +3427,32 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "Invite", "Invite_inviterId_active_key"],
+      "statementTarget": [
+        "index",
+        "public",
+        "Invite",
+        "Invite_inviterId_active_key"
+      ],
       "writes": [
         "s|idx|public.Invite_inviterId_active_key",
         "n|idx|public.Invite_inviterId_active_key",
         "e|idx|public.Invite_inviterId_active_key",
         "n|rel|public.Invite_inviterId_active_key"
       ],
-      "reads": ["n|tbl|public.Invite", "n|sch|public", "n|col|public.Invite.inviterId"]
+      "reads": [
+        "n|tbl|public.Invite",
+        "n|sch|public",
+        "n|col|public.Invite.inviterId"
+      ]
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "Invite", "Invite_inviterId_status_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "Invite",
+        "Invite_inviterId_status_idx"
+      ],
       "writes": [
         "s|idx|public.Invite_inviterId_status_idx",
         "n|idx|public.Invite_inviterId_status_idx",
@@ -2618,7 +3468,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "InviteRedemption", "InviteRedemption_inviteId_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "InviteRedemption",
+        "InviteRedemption_inviteId_idx"
+      ],
       "writes": [
         "s|idx|public.InviteRedemption_inviteId_idx",
         "n|idx|public.InviteRedemption_inviteId_idx",
@@ -2699,7 +3554,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "Nudge", "Nudge_receiverId_createdAt_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "Nudge",
+        "Nudge_receiverId_createdAt_idx"
+      ],
       "writes": [
         "s|idx|public.Nudge_receiverId_createdAt_idx",
         "n|idx|public.Nudge_receiverId_createdAt_idx",
@@ -2715,7 +3575,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "Nudge", "Nudge_receiverId_id_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "Nudge",
+        "Nudge_receiverId_id_idx"
+      ],
       "writes": [
         "s|idx|public.Nudge_receiverId_id_idx",
         "n|idx|public.Nudge_receiverId_id_idx",
@@ -2731,7 +3596,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "Nudge", "Nudge_senderId_createdAt_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "Nudge",
+        "Nudge_senderId_createdAt_idx"
+      ],
       "writes": [
         "s|idx|public.Nudge_senderId_createdAt_idx",
         "n|idx|public.Nudge_senderId_createdAt_idx",
@@ -2747,7 +3617,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "Nudge", "Nudge_senderId_id_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "Nudge",
+        "Nudge_senderId_id_idx"
+      ],
       "writes": [
         "s|idx|public.Nudge_senderId_id_idx",
         "n|idx|public.Nudge_senderId_id_idx",
@@ -2763,7 +3638,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "Nudge", "Nudge_senderId_todoId_createdAt_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "Nudge",
+        "Nudge_senderId_todoId_createdAt_idx"
+      ],
       "writes": [
         "s|idx|public.Nudge_senderId_todoId_createdAt_idx",
         "n|idx|public.Nudge_senderId_todoId_createdAt_idx",
@@ -2780,7 +3660,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "Nudge", "Nudge_thanked_sender_per_todo"],
+      "statementTarget": [
+        "index",
+        "public",
+        "Nudge",
+        "Nudge_thanked_sender_per_todo"
+      ],
       "writes": [
         "s|idx|public.Nudge_thanked_sender_per_todo",
         "n|idx|public.Nudge_thanked_sender_per_todo",
@@ -2796,18 +3681,32 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "Nudge", "Nudge_todoId_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "Nudge",
+        "Nudge_todoId_idx"
+      ],
       "writes": [
         "s|idx|public.Nudge_todoId_idx",
         "n|idx|public.Nudge_todoId_idx",
         "e|idx|public.Nudge_todoId_idx",
         "n|rel|public.Nudge_todoId_idx"
       ],
-      "reads": ["n|tbl|public.Nudge", "n|sch|public", "n|col|public.Nudge.todoId"]
+      "reads": [
+        "n|tbl|public.Nudge",
+        "n|sch|public",
+        "n|col|public.Nudge.todoId"
+      ]
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "Nudge", "Nudge_todoId_receiverId_thankedAt_id_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "Nudge",
+        "Nudge_todoId_receiverId_thankedAt_id_idx"
+      ],
       "writes": [
         "s|idx|public.Nudge_todoId_receiverId_thankedAt_id_idx",
         "n|idx|public.Nudge_todoId_receiverId_thankedAt_id_idx",
@@ -2890,7 +3789,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "RewardGrant", "RewardGrant_status_createdAt_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "RewardGrant",
+        "RewardGrant_status_createdAt_idx"
+      ],
       "writes": [
         "s|idx|public.RewardGrant_status_createdAt_idx",
         "n|idx|public.RewardGrant_status_createdAt_idx",
@@ -2906,7 +3810,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "UserBlock", "UserBlock_blockedId_blockerId_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "UserBlock",
+        "UserBlock_blockedId_blockerId_idx"
+      ],
       "writes": [
         "s|idx|public.UserBlock_blockedId_blockerId_idx",
         "n|idx|public.UserBlock_blockedId_blockerId_idx",
@@ -2922,7 +3831,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "UserBlock", "UserBlock_blockerId_createdAt_id_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "UserBlock",
+        "UserBlock_blockerId_createdAt_id_idx"
+      ],
       "writes": [
         "s|idx|public.UserBlock_blockerId_createdAt_id_idx",
         "n|idx|public.UserBlock_blockerId_createdAt_id_idx",
@@ -2939,7 +3853,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "UserReport", "UserReport_reporterId_createdAt_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "UserReport",
+        "UserReport_reporterId_createdAt_idx"
+      ],
       "writes": [
         "s|idx|public.UserReport_reporterId_createdAt_idx",
         "n|idx|public.UserReport_reporterId_createdAt_idx",
@@ -2978,7 +3897,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "UserReport", "UserReport_status_createdAt_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "UserReport",
+        "UserReport_status_createdAt_idx"
+      ],
       "writes": [
         "s|idx|public.UserReport_status_createdAt_idx",
         "n|idx|public.UserReport_status_createdAt_idx",
@@ -2994,7 +3918,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "UserReport", "UserReport_targetUserId_createdAt_idx"],
+      "statementTarget": [
+        "index",
+        "public",
+        "UserReport",
+        "UserReport_targetUserId_createdAt_idx"
+      ],
       "writes": [
         "s|idx|public.UserReport_targetUserId_createdAt_idx",
         "n|idx|public.UserReport_targetUserId_createdAt_idx",
@@ -3010,7 +3939,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "ResourceBonus"],
+      "statementTarget": [
+        "table",
+        "public",
+        "ResourceBonus"
+      ],
       "writes": [
         "s|fk|public.ResourceBonus.ResourceBonus_userId_fkey",
         "n|fk|public.ResourceBonus.ResourceBonus_userId_fkey",
@@ -3029,7 +3962,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "AiReport"],
+      "statementTarget": [
+        "table",
+        "public",
+        "AiReport"
+      ],
       "writes": [
         "s|fk|public.AiReport.AiReport_userId_fkey",
         "n|fk|public.AiReport.AiReport_userId_fkey",
@@ -3048,7 +3985,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "RecurringSuggestion"],
+      "statementTarget": [
+        "table",
+        "public",
+        "RecurringSuggestion"
+      ],
       "writes": [
         "s|fk|public.RecurringSuggestion.RecurringSuggestion_userId_fkey",
         "n|fk|public.RecurringSuggestion.RecurringSuggestion_userId_fkey",
@@ -3067,7 +4008,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "PremiumGrant"],
+      "statementTarget": [
+        "table",
+        "public",
+        "PremiumGrant"
+      ],
       "writes": [
         "s|fk|public.PremiumGrant.PremiumGrant_userId_fkey",
         "n|fk|public.PremiumGrant.PremiumGrant_userId_fkey",
@@ -3086,7 +4031,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "Subscription"],
+      "statementTarget": [
+        "table",
+        "public",
+        "Subscription"
+      ],
       "writes": [
         "s|fk|public.Subscription.Subscription_userId_fkey",
         "n|fk|public.Subscription.Subscription_userId_fkey",
@@ -3105,7 +4054,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "TodoComment"],
+      "statementTarget": [
+        "table",
+        "public",
+        "TodoComment"
+      ],
       "writes": [
         "s|fk|public.TodoComment.TodoComment_authorId_fkey",
         "n|fk|public.TodoComment.TodoComment_authorId_fkey",
@@ -3124,7 +4077,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "TodoComment"],
+      "statementTarget": [
+        "table",
+        "public",
+        "TodoComment"
+      ],
       "writes": [
         "s|fk|public.TodoComment.TodoComment_parentId_fkey",
         "n|fk|public.TodoComment.TodoComment_parentId_fkey",
@@ -3143,7 +4100,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "TodoComment"],
+      "statementTarget": [
+        "table",
+        "public",
+        "TodoComment"
+      ],
       "writes": [
         "s|fk|public.TodoComment.TodoComment_todoId_fkey",
         "n|fk|public.TodoComment.TodoComment_todoId_fkey",
@@ -3162,7 +4123,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "TodoCommentLike"],
+      "statementTarget": [
+        "table",
+        "public",
+        "TodoCommentLike"
+      ],
       "writes": [
         "s|fk|public.TodoCommentLike.TodoCommentLike_commentId_fkey",
         "n|fk|public.TodoCommentLike.TodoCommentLike_commentId_fkey",
@@ -3181,7 +4146,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "TodoCommentLike"],
+      "statementTarget": [
+        "table",
+        "public",
+        "TodoCommentLike"
+      ],
       "writes": [
         "s|fk|public.TodoCommentLike.TodoCommentLike_userId_fkey",
         "n|fk|public.TodoCommentLike.TodoCommentLike_userId_fkey",
@@ -3200,7 +4169,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "Account"],
+      "statementTarget": [
+        "table",
+        "public",
+        "Account"
+      ],
       "writes": [
         "s|fk|public.Account.Account_userId_fkey",
         "n|fk|public.Account.Account_userId_fkey",
@@ -3219,7 +4192,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "SecurityLog"],
+      "statementTarget": [
+        "table",
+        "public",
+        "SecurityLog"
+      ],
       "writes": [
         "s|fk|public.SecurityLog.SecurityLog_userId_fkey",
         "n|fk|public.SecurityLog.SecurityLog_userId_fkey",
@@ -3238,7 +4215,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "Session"],
+      "statementTarget": [
+        "table",
+        "public",
+        "Session"
+      ],
       "writes": [
         "s|fk|public.Session.Session_userId_fkey",
         "n|fk|public.Session.Session_userId_fkey",
@@ -3257,7 +4238,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "UserActivityDay"],
+      "statementTarget": [
+        "table",
+        "public",
+        "UserActivityDay"
+      ],
       "writes": [
         "s|fk|public.UserActivityDay.UserActivityDay_userId_fkey",
         "n|fk|public.UserActivityDay.UserActivityDay_userId_fkey",
@@ -3276,7 +4261,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "UserConsent"],
+      "statementTarget": [
+        "table",
+        "public",
+        "UserConsent"
+      ],
       "writes": [
         "s|fk|public.UserConsent.UserConsent_userId_fkey",
         "n|fk|public.UserConsent.UserConsent_userId_fkey",
@@ -3295,7 +4284,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "UserLocation"],
+      "statementTarget": [
+        "table",
+        "public",
+        "UserLocation"
+      ],
       "writes": [
         "s|fk|public.UserLocation.UserLocation_userId_fkey",
         "n|fk|public.UserLocation.UserLocation_userId_fkey",
@@ -3314,7 +4307,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "UserPreference"],
+      "statementTarget": [
+        "table",
+        "public",
+        "UserPreference"
+      ],
       "writes": [
         "s|fk|public.UserPreference.UserPreference_userId_fkey",
         "n|fk|public.UserPreference.UserPreference_userId_fkey",
@@ -3333,7 +4330,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "UserProfile"],
+      "statementTarget": [
+        "table",
+        "public",
+        "UserProfile"
+      ],
       "writes": [
         "s|fk|public.UserProfile.UserProfile_userId_fkey",
         "n|fk|public.UserProfile.UserProfile_userId_fkey",
@@ -3352,7 +4353,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "Verification"],
+      "statementTarget": [
+        "table",
+        "public",
+        "Verification"
+      ],
       "writes": [
         "s|fk|public.Verification.Verification_userId_fkey",
         "n|fk|public.Verification.Verification_userId_fkey",
@@ -3371,7 +4376,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "DailyCompletion"],
+      "statementTarget": [
+        "table",
+        "public",
+        "DailyCompletion"
+      ],
       "writes": [
         "s|fk|public.DailyCompletion.DailyCompletion_userId_fkey",
         "n|fk|public.DailyCompletion.DailyCompletion_userId_fkey",
@@ -3390,7 +4399,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "WeeklyAchievement"],
+      "statementTarget": [
+        "table",
+        "public",
+        "WeeklyAchievement"
+      ],
       "writes": [
         "s|fk|public.WeeklyAchievement.WeeklyAchievement_userId_fkey",
         "n|fk|public.WeeklyAchievement.WeeklyAchievement_userId_fkey",
@@ -3409,7 +4422,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "Memo"],
+      "statementTarget": [
+        "table",
+        "public",
+        "Memo"
+      ],
       "writes": [
         "s|fk|public.Memo.Memo_userId_fkey",
         "n|fk|public.Memo.Memo_userId_fkey",
@@ -3428,7 +4445,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "Notification"],
+      "statementTarget": [
+        "table",
+        "public",
+        "Notification"
+      ],
       "writes": [
         "s|fk|public.Notification.Notification_userId_fkey",
         "n|fk|public.Notification.Notification_userId_fkey",
@@ -3447,7 +4468,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "PushDailyBudget"],
+      "statementTarget": [
+        "table",
+        "public",
+        "PushDailyBudget"
+      ],
       "writes": [
         "s|fk|public.PushDailyBudget.PushDailyBudget_userId_fkey",
         "n|fk|public.PushDailyBudget.PushDailyBudget_userId_fkey",
@@ -3466,7 +4491,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "PushDeliveryAttempt"],
+      "statementTarget": [
+        "table",
+        "public",
+        "PushDeliveryAttempt"
+      ],
       "writes": [
         "s|fk|public.PushDeliveryAttempt.PushDeliveryAttempt_dispatchId_fkey",
         "n|fk|public.PushDeliveryAttempt.PushDeliveryAttempt_dispatchId_fkey",
@@ -3485,7 +4514,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "PushDeliveryAttempt"],
+      "statementTarget": [
+        "table",
+        "public",
+        "PushDeliveryAttempt"
+      ],
       "writes": [
         "s|fk|public.PushDeliveryAttempt.PushDeliveryAttempt_pushTokenId_fkey",
         "n|fk|public.PushDeliveryAttempt.PushDeliveryAttempt_pushTokenId_fkey",
@@ -3504,7 +4537,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "PushDispatch"],
+      "statementTarget": [
+        "table",
+        "public",
+        "PushDispatch"
+      ],
       "writes": [
         "s|fk|public.PushDispatch.PushDispatch_notificationId_fkey",
         "n|fk|public.PushDispatch.PushDispatch_notificationId_fkey",
@@ -3523,7 +4560,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "PushDispatch"],
+      "statementTarget": [
+        "table",
+        "public",
+        "PushDispatch"
+      ],
       "writes": [
         "s|fk|public.PushDispatch.PushDispatch_userId_fkey",
         "n|fk|public.PushDispatch.PushDispatch_userId_fkey",
@@ -3542,7 +4583,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "PushDispatchOutbox"],
+      "statementTarget": [
+        "table",
+        "public",
+        "PushDispatchOutbox"
+      ],
       "writes": [
         "s|fk|public.PushDispatchOutbox.PushDispatchOutbox_dispatchId_fkey",
         "n|fk|public.PushDispatchOutbox.PushDispatchOutbox_dispatchId_fkey",
@@ -3561,7 +4606,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "PushRateLimitReservation"],
+      "statementTarget": [
+        "table",
+        "public",
+        "PushRateLimitReservation"
+      ],
       "writes": [
         "s|fk|public.PushRateLimitReservation.PushRateLimitReservation_dispatchId_fkey",
         "n|fk|public.PushRateLimitReservation.PushRateLimitReservation_dispatchId_fkey",
@@ -3580,7 +4629,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "PushToken"],
+      "statementTarget": [
+        "table",
+        "public",
+        "PushToken"
+      ],
       "writes": [
         "s|fk|public.PushToken.PushToken_userId_fkey",
         "n|fk|public.PushToken.PushToken_userId_fkey",
@@ -3599,7 +4652,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "RetentionExperimentAssignment"],
+      "statementTarget": [
+        "table",
+        "public",
+        "RetentionExperimentAssignment"
+      ],
       "writes": [
         "s|fk|public.RetentionExperimentAssignment.RetentionExperimentAssignment_userId_fkey",
         "n|fk|public.RetentionExperimentAssignment.RetentionExperimentAssignment_userId_fkey",
@@ -3618,7 +4675,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "RetentionExperimentResult"],
+      "statementTarget": [
+        "table",
+        "public",
+        "RetentionExperimentResult"
+      ],
       "writes": [
         "s|fk|public.RetentionExperimentResult.RetentionExperimentResult_assignmentId_fkey",
         "n|fk|public.RetentionExperimentResult.RetentionExperimentResult_assignmentId_fkey",
@@ -3637,7 +4698,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "RetentionExperimentStage"],
+      "statementTarget": [
+        "table",
+        "public",
+        "RetentionExperimentStage"
+      ],
       "writes": [
         "s|fk|public.RetentionExperimentStage.RetentionExperimentStage_assignmentId_fkey",
         "n|fk|public.RetentionExperimentStage.RetentionExperimentStage_assignmentId_fkey",
@@ -3656,7 +4721,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "RetentionPushOutbox"],
+      "statementTarget": [
+        "table",
+        "public",
+        "RetentionPushOutbox"
+      ],
       "writes": [
         "s|fk|public.RetentionPushOutbox.RetentionPushOutbox_stageId_fkey",
         "n|fk|public.RetentionPushOutbox.RetentionPushOutbox_stageId_fkey",
@@ -3675,7 +4744,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "Todo"],
+      "statementTarget": [
+        "table",
+        "public",
+        "Todo"
+      ],
       "writes": [
         "s|fk|public.Todo.Todo_categoryId_fkey",
         "n|fk|public.Todo.Todo_categoryId_fkey",
@@ -3694,7 +4767,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "Todo"],
+      "statementTarget": [
+        "table",
+        "public",
+        "Todo"
+      ],
       "writes": [
         "s|fk|public.Todo.Todo_userId_fkey",
         "n|fk|public.Todo.Todo_userId_fkey",
@@ -3713,7 +4790,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "TodoCategory"],
+      "statementTarget": [
+        "table",
+        "public",
+        "TodoCategory"
+      ],
       "writes": [
         "s|fk|public.TodoCategory.TodoCategory_userId_fkey",
         "n|fk|public.TodoCategory.TodoCategory_userId_fkey",
@@ -3732,7 +4813,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "TodoItem"],
+      "statementTarget": [
+        "table",
+        "public",
+        "TodoItem"
+      ],
       "writes": [
         "s|fk|public.TodoItem.TodoItem_todoId_fkey",
         "n|fk|public.TodoItem.TodoItem_todoId_fkey",
@@ -3751,7 +4836,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "TodoView"],
+      "statementTarget": [
+        "table",
+        "public",
+        "TodoView"
+      ],
       "writes": [
         "s|fk|public.TodoView.TodoView_todoId_fkey",
         "n|fk|public.TodoView.TodoView_todoId_fkey",
@@ -3770,7 +4859,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "TodoView"],
+      "statementTarget": [
+        "table",
+        "public",
+        "TodoView"
+      ],
       "writes": [
         "s|fk|public.TodoView.TodoView_viewerId_fkey",
         "n|fk|public.TodoView.TodoView_viewerId_fkey",
@@ -3789,7 +4882,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "Cheer"],
+      "statementTarget": [
+        "table",
+        "public",
+        "Cheer"
+      ],
       "writes": [
         "s|fk|public.Cheer.Cheer_receiverId_fkey",
         "n|fk|public.Cheer.Cheer_receiverId_fkey",
@@ -3808,7 +4905,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "Cheer"],
+      "statementTarget": [
+        "table",
+        "public",
+        "Cheer"
+      ],
       "writes": [
         "s|fk|public.Cheer.Cheer_senderId_fkey",
         "n|fk|public.Cheer.Cheer_senderId_fkey",
@@ -3827,7 +4928,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "Follow"],
+      "statementTarget": [
+        "table",
+        "public",
+        "Follow"
+      ],
       "writes": [
         "s|fk|public.Follow.Follow_followerId_fkey",
         "n|fk|public.Follow.Follow_followerId_fkey",
@@ -3846,7 +4951,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "Follow"],
+      "statementTarget": [
+        "table",
+        "public",
+        "Follow"
+      ],
       "writes": [
         "s|fk|public.Follow.Follow_followingId_fkey",
         "n|fk|public.Follow.Follow_followingId_fkey",
@@ -3865,7 +4974,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "Invite"],
+      "statementTarget": [
+        "table",
+        "public",
+        "Invite"
+      ],
       "writes": [
         "s|fk|public.Invite.Invite_inviterId_fkey",
         "n|fk|public.Invite.Invite_inviterId_fkey",
@@ -3884,7 +4997,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "InviteActiveDay"],
+      "statementTarget": [
+        "table",
+        "public",
+        "InviteActiveDay"
+      ],
       "writes": [
         "s|fk|public.InviteActiveDay.InviteActiveDay_redemptionId_fkey",
         "n|fk|public.InviteActiveDay.InviteActiveDay_redemptionId_fkey",
@@ -3903,7 +5020,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "InviteRedemption"],
+      "statementTarget": [
+        "table",
+        "public",
+        "InviteRedemption"
+      ],
       "writes": [
         "s|fk|public.InviteRedemption.InviteRedemption_inviteeId_fkey",
         "n|fk|public.InviteRedemption.InviteRedemption_inviteeId_fkey",
@@ -3922,7 +5043,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "InviteRedemption"],
+      "statementTarget": [
+        "table",
+        "public",
+        "InviteRedemption"
+      ],
       "writes": [
         "s|fk|public.InviteRedemption.InviteRedemption_inviteId_fkey",
         "n|fk|public.InviteRedemption.InviteRedemption_inviteId_fkey",
@@ -3941,7 +5066,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "InviteRedemption"],
+      "statementTarget": [
+        "table",
+        "public",
+        "InviteRedemption"
+      ],
       "writes": [
         "s|fk|public.InviteRedemption.InviteRedemption_inviterId_fkey",
         "n|fk|public.InviteRedemption.InviteRedemption_inviterId_fkey",
@@ -3960,7 +5089,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "Nudge"],
+      "statementTarget": [
+        "table",
+        "public",
+        "Nudge"
+      ],
       "writes": [
         "s|fk|public.Nudge.Nudge_receiverId_fkey",
         "n|fk|public.Nudge.Nudge_receiverId_fkey",
@@ -3979,7 +5112,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "Nudge"],
+      "statementTarget": [
+        "table",
+        "public",
+        "Nudge"
+      ],
       "writes": [
         "s|fk|public.Nudge.Nudge_senderId_fkey",
         "n|fk|public.Nudge.Nudge_senderId_fkey",
@@ -3998,7 +5135,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "Nudge"],
+      "statementTarget": [
+        "table",
+        "public",
+        "Nudge"
+      ],
       "writes": [
         "s|fk|public.Nudge.Nudge_todoId_fkey",
         "n|fk|public.Nudge.Nudge_todoId_fkey",
@@ -4017,7 +5158,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "ReminderNudge"],
+      "statementTarget": [
+        "table",
+        "public",
+        "ReminderNudge"
+      ],
       "writes": [
         "s|fk|public.ReminderNudge.ReminderNudge_receiverId_fkey",
         "n|fk|public.ReminderNudge.ReminderNudge_receiverId_fkey",
@@ -4036,7 +5181,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "ReminderNudge"],
+      "statementTarget": [
+        "table",
+        "public",
+        "ReminderNudge"
+      ],
       "writes": [
         "s|fk|public.ReminderNudge.ReminderNudge_senderId_fkey",
         "n|fk|public.ReminderNudge.ReminderNudge_senderId_fkey",
@@ -4055,7 +5204,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "RewardGrant"],
+      "statementTarget": [
+        "table",
+        "public",
+        "RewardGrant"
+      ],
       "writes": [
         "s|fk|public.RewardGrant.RewardGrant_recipientId_fkey",
         "n|fk|public.RewardGrant.RewardGrant_recipientId_fkey",
@@ -4074,7 +5227,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "UserBlock"],
+      "statementTarget": [
+        "table",
+        "public",
+        "UserBlock"
+      ],
       "writes": [
         "s|fk|public.UserBlock.UserBlock_blockedId_fkey",
         "n|fk|public.UserBlock.UserBlock_blockedId_fkey",
@@ -4093,7 +5250,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "UserBlock"],
+      "statementTarget": [
+        "table",
+        "public",
+        "UserBlock"
+      ],
       "writes": [
         "s|fk|public.UserBlock.UserBlock_blockerId_fkey",
         "n|fk|public.UserBlock.UserBlock_blockerId_fkey",
@@ -4112,7 +5273,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "UserReport"],
+      "statementTarget": [
+        "table",
+        "public",
+        "UserReport"
+      ],
       "writes": [
         "s|fk|public.UserReport.UserReport_reporterId_fkey",
         "n|fk|public.UserReport.UserReport_reporterId_fkey",
@@ -4131,7 +5296,11 @@
     },
     {
       "statementType": "create_fk",
-      "statementTarget": ["table", "public", "UserReport"],
+      "statementTarget": [
+        "table",
+        "public",
+        "UserReport"
+      ],
       "writes": [
         "s|fk|public.UserReport.UserReport_targetUserId_fkey",
         "n|fk|public.UserReport.UserReport_targetUserId_fkey",
@@ -4447,43 +5616,72 @@
     {
       "schema": "public",
       "name": "AccountProvider",
-      "values": ["CREDENTIAL", "KAKAO", "APPLE", "GOOGLE", "NAVER"],
+      "values": [
+        "CREDENTIAL",
+        "KAKAO",
+        "APPLE",
+        "GOOGLE",
+        "NAVER"
+      ],
       "entityType": "enums"
     },
     {
       "schema": "public",
       "name": "FollowStatus",
-      "values": ["PENDING", "ACCEPTED"],
+      "values": [
+        "PENDING",
+        "ACCEPTED"
+      ],
       "entityType": "enums"
     },
     {
       "schema": "public",
       "name": "InviteRedemptionStatus",
-      "values": ["JOINED", "QUALIFIED", "REWARDED", "REJECTED"],
+      "values": [
+        "JOINED",
+        "QUALIFIED",
+        "REWARDED",
+        "REJECTED"
+      ],
       "entityType": "enums"
     },
     {
       "schema": "public",
       "name": "InviteRejectionReason",
-      "values": ["EXPIRED", "INVITER_MONTHLY_CAP"],
+      "values": [
+        "EXPIRED",
+        "INVITER_MONTHLY_CAP"
+      ],
       "entityType": "enums"
     },
     {
       "schema": "public",
       "name": "InviteStatus",
-      "values": ["ACTIVE", "REVOKED"],
+      "values": [
+        "ACTIVE",
+        "REVOKED"
+      ],
       "entityType": "enums"
     },
     {
       "schema": "public",
       "name": "NotificationActionType",
-      "values": ["DEEP_LINK", "BROWSER", "WEBVIEW", "NONE"],
+      "values": [
+        "DEEP_LINK",
+        "BROWSER",
+        "WEBVIEW",
+        "NONE"
+      ],
       "entityType": "enums"
     },
     {
       "schema": "public",
       "name": "NotificationPurpose",
-      "values": ["TRANSACTIONAL", "SCHEDULED_SERVICE", "ENGAGEMENT"],
+      "values": [
+        "TRANSACTIONAL",
+        "SCHEDULED_SERVICE",
+        "ENGAGEMENT"
+      ],
       "entityType": "enums"
     },
     {
@@ -4527,115 +5725,187 @@
     {
       "schema": "public",
       "name": "NudgeReplyKind",
-      "values": ["STARTING", "THANKFUL", "LATER"],
+      "values": [
+        "STARTING",
+        "THANKFUL",
+        "LATER"
+      ],
       "entityType": "enums"
     },
     {
       "schema": "public",
       "name": "Platform",
-      "values": ["IOS", "ANDROID"],
+      "values": [
+        "IOS",
+        "ANDROID"
+      ],
       "entityType": "enums"
     },
     {
       "schema": "public",
       "name": "PremiumGrantSource",
-      "values": ["INVITE"],
+      "values": [
+        "INVITE"
+      ],
       "entityType": "enums"
     },
     {
       "schema": "public",
       "name": "PremiumGrantStatus",
-      "values": ["BANKED", "ACTIVE", "ENDED", "REVOKED"],
+      "values": [
+        "BANKED",
+        "ACTIVE",
+        "ENDED",
+        "REVOKED"
+      ],
       "entityType": "enums"
     },
     {
       "schema": "public",
       "name": "PushDeliveryMode",
-      "values": ["SINGLE", "BATCH"],
+      "values": [
+        "SINGLE",
+        "BATCH"
+      ],
       "entityType": "enums"
     },
     {
       "schema": "public",
       "name": "PushDeliveryStatus",
-      "values": ["PENDING", "TICKET_ACCEPTED", "DELIVERED", "FAILED", "UNKNOWN"],
+      "values": [
+        "PENDING",
+        "TICKET_ACCEPTED",
+        "DELIVERED",
+        "FAILED",
+        "UNKNOWN"
+      ],
       "entityType": "enums"
     },
     {
       "schema": "public",
       "name": "PushDispatchOutboxStatus",
-      "values": ["PENDING", "PROCESSING", "PUBLISHED"],
+      "values": [
+        "PENDING",
+        "PROCESSING",
+        "PUBLISHED"
+      ],
       "entityType": "enums"
     },
     {
       "schema": "public",
       "name": "PushDispatchStatus",
-      "values": ["PENDING", "PROCESSING", "SENT", "SKIPPED", "FAILED", "HOLDOUT"],
+      "values": [
+        "PENDING",
+        "PROCESSING",
+        "SENT",
+        "SKIPPED",
+        "FAILED",
+        "HOLDOUT"
+      ],
       "entityType": "enums"
     },
     {
       "schema": "public",
       "name": "PushRateLimitPhase",
-      "values": ["GENERAL", "ENGAGEMENT"],
+      "values": [
+        "GENERAL",
+        "ENGAGEMENT"
+      ],
       "entityType": "enums"
     },
     {
       "schema": "public",
       "name": "ReportType",
-      "values": ["WEEKLY", "MONTHLY"],
+      "values": [
+        "WEEKLY",
+        "MONTHLY"
+      ],
       "entityType": "enums"
     },
     {
       "schema": "public",
       "name": "ResourceType",
-      "values": ["FRIEND"],
+      "values": [
+        "FRIEND"
+      ],
       "entityType": "enums"
     },
     {
       "schema": "public",
       "name": "RetentionExperimentStageName",
-      "values": ["D0", "D1", "D3", "D7"],
+      "values": [
+        "D0",
+        "D1",
+        "D3",
+        "D7"
+      ],
       "entityType": "enums"
     },
     {
       "schema": "public",
       "name": "RetentionExperimentStageStatus",
-      "values": ["SCHEDULED", "SKIPPED", "OUTBOXED", "EVALUATED"],
+      "values": [
+        "SCHEDULED",
+        "SKIPPED",
+        "OUTBOXED",
+        "EVALUATED"
+      ],
       "entityType": "enums"
     },
     {
       "schema": "public",
       "name": "RetentionExperimentVariant",
-      "values": ["CONTROL", "TREATMENT"],
+      "values": [
+        "CONTROL",
+        "TREATMENT"
+      ],
       "entityType": "enums"
     },
     {
       "schema": "public",
       "name": "RetentionOutboxStatus",
-      "values": ["PENDING", "PROCESSING", "PUBLISHED", "FAILED"],
+      "values": [
+        "PENDING",
+        "PROCESSING",
+        "PUBLISHED",
+        "FAILED"
+      ],
       "entityType": "enums"
     },
     {
       "schema": "public",
       "name": "RewardClaimKind",
-      "values": ["INSTALLATION", "IDENTITY"],
+      "values": [
+        "INSTALLATION",
+        "IDENTITY"
+      ],
       "entityType": "enums"
     },
     {
       "schema": "public",
       "name": "RewardGrantStatus",
-      "values": ["PENDING", "APPLIED", "FAILED"],
+      "values": [
+        "PENDING",
+        "APPLIED",
+        "FAILED"
+      ],
       "entityType": "enums"
     },
     {
       "schema": "public",
       "name": "RewardSourceType",
-      "values": ["INVITE_REDEMPTION"],
+      "values": [
+        "INVITE_REDEMPTION"
+      ],
       "entityType": "enums"
     },
     {
       "schema": "public",
       "name": "RewardType",
-      "values": ["PREMIUM_DAYS", "FRIEND_SLOT"],
+      "values": [
+        "PREMIUM_DAYS",
+        "FRIEND_SLOT"
+      ],
       "entityType": "enums"
     },
     {
@@ -4672,61 +5942,103 @@
     {
       "schema": "public",
       "name": "SubscriptionStatus",
-      "values": ["FREE", "ACTIVE", "EXPIRED", "CANCELLED"],
+      "values": [
+        "FREE",
+        "ACTIVE",
+        "EXPIRED",
+        "CANCELLED"
+      ],
       "entityType": "enums"
     },
     {
       "schema": "public",
       "name": "SuggestionStatus",
-      "values": ["PENDING", "ACCEPTED", "DISMISSED"],
+      "values": [
+        "PENDING",
+        "ACCEPTED",
+        "DISMISSED"
+      ],
       "entityType": "enums"
     },
     {
       "schema": "public",
       "name": "TimeFormat",
-      "values": ["TWELVE_HOUR", "TWENTY_FOUR_HOUR"],
+      "values": [
+        "TWELVE_HOUR",
+        "TWENTY_FOUR_HOUR"
+      ],
       "entityType": "enums"
     },
     {
       "schema": "public",
       "name": "TodoVisibility",
-      "values": ["PUBLIC", "PRIVATE"],
+      "values": [
+        "PUBLIC",
+        "PRIVATE"
+      ],
       "entityType": "enums"
     },
     {
       "schema": "public",
       "name": "UserReportReason",
-      "values": ["SPAM", "HARASSMENT", "INAPPROPRIATE", "IMPERSONATION", "OTHER"],
+      "values": [
+        "SPAM",
+        "HARASSMENT",
+        "INAPPROPRIATE",
+        "IMPERSONATION",
+        "OTHER"
+      ],
       "entityType": "enums"
     },
     {
       "schema": "public",
       "name": "UserReportStatus",
-      "values": ["OPEN", "RESOLVED"],
+      "values": [
+        "OPEN",
+        "RESOLVED"
+      ],
       "entityType": "enums"
     },
     {
       "schema": "public",
       "name": "UserReportTargetType",
-      "values": ["PROFILE", "TODO", "COMMENT", "NUDGE_MESSAGE", "CHEER_MESSAGE"],
+      "values": [
+        "PROFILE",
+        "TODO",
+        "COMMENT",
+        "NUDGE_MESSAGE",
+        "CHEER_MESSAGE"
+      ],
       "entityType": "enums"
     },
     {
       "schema": "public",
       "name": "UserRole",
-      "values": ["USER", "ADMIN"],
+      "values": [
+        "USER",
+        "ADMIN"
+      ],
       "entityType": "enums"
     },
     {
       "schema": "public",
       "name": "UserStatus",
-      "values": ["ACTIVE", "LOCKED", "SUSPENDED", "PENDING_VERIFY"],
+      "values": [
+        "ACTIVE",
+        "LOCKED",
+        "SUSPENDED",
+        "PENDING_VERIFY"
+      ],
       "entityType": "enums"
     },
     {
       "schema": "public",
       "name": "VerificationType",
-      "values": ["EMAIL_VERIFY", "PASSWORD_RESET", "PASSWORD_SETUP"],
+      "values": [
+        "EMAIL_VERIFY",
+        "PASSWORD_RESET",
+        "PASSWORD_SETUP"
+      ],
       "entityType": "enums"
     },
     {
@@ -11007,7 +12319,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -11042,7 +12353,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -11070,7 +12380,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -11098,7 +12407,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -11126,7 +12434,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -11154,7 +12461,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -11182,7 +12488,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -11210,7 +12515,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -11231,7 +12535,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -11259,7 +12562,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -11280,7 +12582,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -11322,7 +12623,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -11378,7 +12678,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -11406,7 +12705,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -11434,7 +12732,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -11455,7 +12752,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -11483,7 +12779,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -11511,7 +12806,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -11539,7 +12833,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -11560,7 +12853,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -11588,7 +12880,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -11616,7 +12907,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -11644,7 +12934,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -11665,7 +12954,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -11686,7 +12974,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -11707,7 +12994,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -11735,7 +13021,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -11756,7 +13041,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -11784,7 +13068,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -11819,7 +13102,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -11840,7 +13122,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -11861,7 +13142,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -11882,7 +13162,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -11903,7 +13182,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -11945,7 +13223,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -11973,7 +13250,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -12015,7 +13291,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -12064,7 +13339,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -12113,7 +13387,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -12141,7 +13414,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -12169,7 +13441,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -12197,7 +13468,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -12232,7 +13502,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -12260,7 +13529,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -12281,7 +13549,6 @@
       "where": "((metadata ->> 'senderId'::text) IS NOT NULL)",
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -12302,7 +13569,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -12323,7 +13589,6 @@
       "where": "(\"friendId\" IS NOT NULL)",
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -12358,7 +13623,6 @@
       "where": "((type = 'TODO_REMINDER'::\"NotificationType\") AND (\"todoId\" IS NOT NULL))",
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -12393,7 +13657,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -12428,7 +13691,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -12463,7 +13725,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -12491,7 +13752,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -12526,7 +13786,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -12554,7 +13813,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -12589,7 +13847,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -12610,7 +13867,6 @@
       "where": "(status = 'PROCESSING'::\"PushDispatchStatus\")",
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -12638,7 +13894,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -12673,7 +13928,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -12708,7 +13962,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -12736,7 +13989,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -12778,7 +14030,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -12813,7 +14064,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -12841,7 +14091,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -12876,7 +14125,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -12897,7 +14145,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -12932,7 +14179,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -12967,7 +14213,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -12995,7 +14240,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -13023,7 +14267,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -13044,7 +14287,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -13072,7 +14314,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -13107,7 +14348,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -13135,7 +14375,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -13170,7 +14409,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -13198,7 +14436,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -13226,7 +14463,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -13254,7 +14490,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -13282,7 +14517,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -13310,7 +14544,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -13345,7 +14578,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -13373,7 +14605,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -13401,7 +14632,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -13429,7 +14659,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -13450,7 +14679,6 @@
       "where": "(status = 'ACTIVE'::\"InviteStatus\")",
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -13478,7 +14706,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -13499,7 +14726,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -13534,7 +14760,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -13576,7 +14801,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -13604,7 +14828,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -13632,7 +14855,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -13660,7 +14882,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -13688,7 +14909,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -13716,7 +14936,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -13751,7 +14970,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -13779,7 +14997,6 @@
       "where": "(\"thankedAt\" IS NOT NULL)",
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -13800,7 +15017,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -13842,7 +15058,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -13870,7 +15085,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -13905,7 +15119,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -13940,7 +15153,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -13968,7 +15180,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -13996,7 +15207,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -14031,7 +15241,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -14059,7 +15268,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -14101,7 +15309,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -14129,7 +15336,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -14157,7 +15363,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -14165,10 +15370,14 @@
       "table": "ResourceBonus",
       "name": "ResourceBonus_userId_fkey",
       "nameExplicit": true,
-      "columns": ["userId"],
+      "columns": [
+        "userId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14178,10 +15387,14 @@
       "table": "AiReport",
       "name": "AiReport_userId_fkey",
       "nameExplicit": true,
-      "columns": ["userId"],
+      "columns": [
+        "userId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14191,10 +15404,14 @@
       "table": "RecurringSuggestion",
       "name": "RecurringSuggestion_userId_fkey",
       "nameExplicit": true,
-      "columns": ["userId"],
+      "columns": [
+        "userId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14204,10 +15421,14 @@
       "table": "PremiumGrant",
       "name": "PremiumGrant_userId_fkey",
       "nameExplicit": true,
-      "columns": ["userId"],
+      "columns": [
+        "userId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14217,10 +15438,14 @@
       "table": "Subscription",
       "name": "Subscription_userId_fkey",
       "nameExplicit": true,
-      "columns": ["userId"],
+      "columns": [
+        "userId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14230,10 +15455,14 @@
       "table": "TodoComment",
       "name": "TodoComment_authorId_fkey",
       "nameExplicit": true,
-      "columns": ["authorId"],
+      "columns": [
+        "authorId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "RESTRICT",
       "entityType": "fks"
@@ -14243,10 +15472,14 @@
       "table": "TodoComment",
       "name": "TodoComment_parentId_fkey",
       "nameExplicit": true,
-      "columns": ["parentId"],
+      "columns": [
+        "parentId"
+      ],
       "schemaTo": "public",
       "tableTo": "TodoComment",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14256,10 +15489,14 @@
       "table": "TodoComment",
       "name": "TodoComment_todoId_fkey",
       "nameExplicit": true,
-      "columns": ["todoId"],
+      "columns": [
+        "todoId"
+      ],
       "schemaTo": "public",
       "tableTo": "Todo",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14269,10 +15506,14 @@
       "table": "TodoCommentLike",
       "name": "TodoCommentLike_commentId_fkey",
       "nameExplicit": true,
-      "columns": ["commentId"],
+      "columns": [
+        "commentId"
+      ],
       "schemaTo": "public",
       "tableTo": "TodoComment",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14282,10 +15523,14 @@
       "table": "TodoCommentLike",
       "name": "TodoCommentLike_userId_fkey",
       "nameExplicit": true,
-      "columns": ["userId"],
+      "columns": [
+        "userId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "RESTRICT",
       "entityType": "fks"
@@ -14295,10 +15540,14 @@
       "table": "Account",
       "name": "Account_userId_fkey",
       "nameExplicit": true,
-      "columns": ["userId"],
+      "columns": [
+        "userId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14308,10 +15557,14 @@
       "table": "SecurityLog",
       "name": "SecurityLog_userId_fkey",
       "nameExplicit": true,
-      "columns": ["userId"],
+      "columns": [
+        "userId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "SET NULL",
       "entityType": "fks"
@@ -14321,10 +15574,14 @@
       "table": "Session",
       "name": "Session_userId_fkey",
       "nameExplicit": true,
-      "columns": ["userId"],
+      "columns": [
+        "userId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14334,10 +15591,14 @@
       "table": "UserActivityDay",
       "name": "UserActivityDay_userId_fkey",
       "nameExplicit": true,
-      "columns": ["userId"],
+      "columns": [
+        "userId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14347,10 +15608,14 @@
       "table": "UserConsent",
       "name": "UserConsent_userId_fkey",
       "nameExplicit": true,
-      "columns": ["userId"],
+      "columns": [
+        "userId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14360,10 +15625,14 @@
       "table": "UserLocation",
       "name": "UserLocation_userId_fkey",
       "nameExplicit": true,
-      "columns": ["userId"],
+      "columns": [
+        "userId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14373,10 +15642,14 @@
       "table": "UserPreference",
       "name": "UserPreference_userId_fkey",
       "nameExplicit": true,
-      "columns": ["userId"],
+      "columns": [
+        "userId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14386,10 +15659,14 @@
       "table": "UserProfile",
       "name": "UserProfile_userId_fkey",
       "nameExplicit": true,
-      "columns": ["userId"],
+      "columns": [
+        "userId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14399,10 +15676,14 @@
       "table": "Verification",
       "name": "Verification_userId_fkey",
       "nameExplicit": true,
-      "columns": ["userId"],
+      "columns": [
+        "userId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14412,10 +15693,14 @@
       "table": "DailyCompletion",
       "name": "DailyCompletion_userId_fkey",
       "nameExplicit": true,
-      "columns": ["userId"],
+      "columns": [
+        "userId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14425,10 +15710,14 @@
       "table": "WeeklyAchievement",
       "name": "WeeklyAchievement_userId_fkey",
       "nameExplicit": true,
-      "columns": ["userId"],
+      "columns": [
+        "userId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14438,10 +15727,14 @@
       "table": "Memo",
       "name": "Memo_userId_fkey",
       "nameExplicit": true,
-      "columns": ["userId"],
+      "columns": [
+        "userId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14451,10 +15744,14 @@
       "table": "Notification",
       "name": "Notification_userId_fkey",
       "nameExplicit": true,
-      "columns": ["userId"],
+      "columns": [
+        "userId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14464,10 +15761,14 @@
       "table": "PushDailyBudget",
       "name": "PushDailyBudget_userId_fkey",
       "nameExplicit": true,
-      "columns": ["userId"],
+      "columns": [
+        "userId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14477,10 +15778,14 @@
       "table": "PushDeliveryAttempt",
       "name": "PushDeliveryAttempt_dispatchId_fkey",
       "nameExplicit": true,
-      "columns": ["dispatchId"],
+      "columns": [
+        "dispatchId"
+      ],
       "schemaTo": "public",
       "tableTo": "PushDispatch",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14490,10 +15795,14 @@
       "table": "PushDeliveryAttempt",
       "name": "PushDeliveryAttempt_pushTokenId_fkey",
       "nameExplicit": true,
-      "columns": ["pushTokenId"],
+      "columns": [
+        "pushTokenId"
+      ],
       "schemaTo": "public",
       "tableTo": "PushToken",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14503,10 +15812,14 @@
       "table": "PushDispatch",
       "name": "PushDispatch_notificationId_fkey",
       "nameExplicit": true,
-      "columns": ["notificationId"],
+      "columns": [
+        "notificationId"
+      ],
       "schemaTo": "public",
       "tableTo": "Notification",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14516,10 +15829,14 @@
       "table": "PushDispatch",
       "name": "PushDispatch_userId_fkey",
       "nameExplicit": true,
-      "columns": ["userId"],
+      "columns": [
+        "userId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14529,10 +15846,14 @@
       "table": "PushDispatchOutbox",
       "name": "PushDispatchOutbox_dispatchId_fkey",
       "nameExplicit": true,
-      "columns": ["dispatchId"],
+      "columns": [
+        "dispatchId"
+      ],
       "schemaTo": "public",
       "tableTo": "PushDispatch",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14542,10 +15863,14 @@
       "table": "PushRateLimitReservation",
       "name": "PushRateLimitReservation_dispatchId_fkey",
       "nameExplicit": true,
-      "columns": ["dispatchId"],
+      "columns": [
+        "dispatchId"
+      ],
       "schemaTo": "public",
       "tableTo": "PushDispatch",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14555,10 +15880,14 @@
       "table": "PushToken",
       "name": "PushToken_userId_fkey",
       "nameExplicit": true,
-      "columns": ["userId"],
+      "columns": [
+        "userId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14568,10 +15897,14 @@
       "table": "RetentionExperimentAssignment",
       "name": "RetentionExperimentAssignment_userId_fkey",
       "nameExplicit": true,
-      "columns": ["userId"],
+      "columns": [
+        "userId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14581,10 +15914,14 @@
       "table": "RetentionExperimentResult",
       "name": "RetentionExperimentResult_assignmentId_fkey",
       "nameExplicit": true,
-      "columns": ["assignmentId"],
+      "columns": [
+        "assignmentId"
+      ],
       "schemaTo": "public",
       "tableTo": "RetentionExperimentAssignment",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14594,10 +15931,14 @@
       "table": "RetentionExperimentStage",
       "name": "RetentionExperimentStage_assignmentId_fkey",
       "nameExplicit": true,
-      "columns": ["assignmentId"],
+      "columns": [
+        "assignmentId"
+      ],
       "schemaTo": "public",
       "tableTo": "RetentionExperimentAssignment",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14607,10 +15948,14 @@
       "table": "RetentionPushOutbox",
       "name": "RetentionPushOutbox_stageId_fkey",
       "nameExplicit": true,
-      "columns": ["stageId"],
+      "columns": [
+        "stageId"
+      ],
       "schemaTo": "public",
       "tableTo": "RetentionExperimentStage",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14620,10 +15965,14 @@
       "table": "Todo",
       "name": "Todo_categoryId_fkey",
       "nameExplicit": true,
-      "columns": ["categoryId"],
+      "columns": [
+        "categoryId"
+      ],
       "schemaTo": "public",
       "tableTo": "TodoCategory",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "RESTRICT",
       "entityType": "fks"
@@ -14633,10 +15982,14 @@
       "table": "Todo",
       "name": "Todo_userId_fkey",
       "nameExplicit": true,
-      "columns": ["userId"],
+      "columns": [
+        "userId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14646,10 +15999,14 @@
       "table": "TodoCategory",
       "name": "TodoCategory_userId_fkey",
       "nameExplicit": true,
-      "columns": ["userId"],
+      "columns": [
+        "userId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14659,10 +16016,14 @@
       "table": "TodoItem",
       "name": "TodoItem_todoId_fkey",
       "nameExplicit": true,
-      "columns": ["todoId"],
+      "columns": [
+        "todoId"
+      ],
       "schemaTo": "public",
       "tableTo": "Todo",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14672,10 +16033,14 @@
       "table": "TodoView",
       "name": "TodoView_todoId_fkey",
       "nameExplicit": true,
-      "columns": ["todoId"],
+      "columns": [
+        "todoId"
+      ],
       "schemaTo": "public",
       "tableTo": "Todo",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14685,10 +16050,14 @@
       "table": "TodoView",
       "name": "TodoView_viewerId_fkey",
       "nameExplicit": true,
-      "columns": ["viewerId"],
+      "columns": [
+        "viewerId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14698,10 +16067,14 @@
       "table": "Cheer",
       "name": "Cheer_receiverId_fkey",
       "nameExplicit": true,
-      "columns": ["receiverId"],
+      "columns": [
+        "receiverId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14711,10 +16084,14 @@
       "table": "Cheer",
       "name": "Cheer_senderId_fkey",
       "nameExplicit": true,
-      "columns": ["senderId"],
+      "columns": [
+        "senderId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14724,10 +16101,14 @@
       "table": "Follow",
       "name": "Follow_followerId_fkey",
       "nameExplicit": true,
-      "columns": ["followerId"],
+      "columns": [
+        "followerId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14737,10 +16118,14 @@
       "table": "Follow",
       "name": "Follow_followingId_fkey",
       "nameExplicit": true,
-      "columns": ["followingId"],
+      "columns": [
+        "followingId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14750,10 +16135,14 @@
       "table": "Invite",
       "name": "Invite_inviterId_fkey",
       "nameExplicit": true,
-      "columns": ["inviterId"],
+      "columns": [
+        "inviterId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14763,10 +16152,14 @@
       "table": "InviteActiveDay",
       "name": "InviteActiveDay_redemptionId_fkey",
       "nameExplicit": true,
-      "columns": ["redemptionId"],
+      "columns": [
+        "redemptionId"
+      ],
       "schemaTo": "public",
       "tableTo": "InviteRedemption",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14776,10 +16169,14 @@
       "table": "InviteRedemption",
       "name": "InviteRedemption_inviteeId_fkey",
       "nameExplicit": true,
-      "columns": ["inviteeId"],
+      "columns": [
+        "inviteeId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14789,10 +16186,14 @@
       "table": "InviteRedemption",
       "name": "InviteRedemption_inviteId_fkey",
       "nameExplicit": true,
-      "columns": ["inviteId"],
+      "columns": [
+        "inviteId"
+      ],
       "schemaTo": "public",
       "tableTo": "Invite",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "SET NULL",
       "entityType": "fks"
@@ -14802,10 +16203,14 @@
       "table": "InviteRedemption",
       "name": "InviteRedemption_inviterId_fkey",
       "nameExplicit": true,
-      "columns": ["inviterId"],
+      "columns": [
+        "inviterId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "SET NULL",
       "entityType": "fks"
@@ -14815,10 +16220,14 @@
       "table": "Nudge",
       "name": "Nudge_receiverId_fkey",
       "nameExplicit": true,
-      "columns": ["receiverId"],
+      "columns": [
+        "receiverId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14828,10 +16237,14 @@
       "table": "Nudge",
       "name": "Nudge_senderId_fkey",
       "nameExplicit": true,
-      "columns": ["senderId"],
+      "columns": [
+        "senderId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14841,10 +16254,14 @@
       "table": "Nudge",
       "name": "Nudge_todoId_fkey",
       "nameExplicit": true,
-      "columns": ["todoId"],
+      "columns": [
+        "todoId"
+      ],
       "schemaTo": "public",
       "tableTo": "Todo",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14854,10 +16271,14 @@
       "table": "ReminderNudge",
       "name": "ReminderNudge_receiverId_fkey",
       "nameExplicit": true,
-      "columns": ["receiverId"],
+      "columns": [
+        "receiverId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14867,10 +16288,14 @@
       "table": "ReminderNudge",
       "name": "ReminderNudge_senderId_fkey",
       "nameExplicit": true,
-      "columns": ["senderId"],
+      "columns": [
+        "senderId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14880,10 +16305,14 @@
       "table": "RewardGrant",
       "name": "RewardGrant_recipientId_fkey",
       "nameExplicit": true,
-      "columns": ["recipientId"],
+      "columns": [
+        "recipientId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14893,10 +16322,14 @@
       "table": "UserBlock",
       "name": "UserBlock_blockedId_fkey",
       "nameExplicit": true,
-      "columns": ["blockedId"],
+      "columns": [
+        "blockedId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14906,10 +16339,14 @@
       "table": "UserBlock",
       "name": "UserBlock_blockerId_fkey",
       "nameExplicit": true,
-      "columns": ["blockerId"],
+      "columns": [
+        "blockerId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14919,10 +16356,14 @@
       "table": "UserReport",
       "name": "UserReport_reporterId_fkey",
       "nameExplicit": true,
-      "columns": ["reporterId"],
+      "columns": [
+        "reporterId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14932,10 +16373,14 @@
       "table": "UserReport",
       "name": "UserReport_targetUserId_fkey",
       "nameExplicit": true,
-      "columns": ["targetUserId"],
+      "columns": [
+        "targetUserId"
+      ],
       "schemaTo": "public",
       "tableTo": "User",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "entityType": "fks"
@@ -14944,7 +16389,10 @@
       "schema": "public",
       "table": "SubscriptionEventReceipt",
       "name": "SubscriptionEventReceipt_pkey",
-      "columns": ["provider", "eventId"],
+      "columns": [
+        "provider",
+        "eventId"
+      ],
       "nameExplicit": true,
       "entityType": "pks"
     },
@@ -14952,7 +16400,10 @@
       "schema": "public",
       "table": "TodoCommentLike",
       "name": "TodoCommentLike_pkey",
-      "columns": ["commentId", "userId"],
+      "columns": [
+        "commentId",
+        "userId"
+      ],
       "nameExplicit": true,
       "entityType": "pks"
     },
@@ -14960,7 +16411,10 @@
       "schema": "public",
       "table": "PushRateLimitReservation",
       "name": "PushRateLimitReservation_pkey",
-      "columns": ["dispatchId", "phase"],
+      "columns": [
+        "dispatchId",
+        "phase"
+      ],
       "nameExplicit": true,
       "entityType": "pks"
     },
@@ -14968,7 +16422,10 @@
       "schema": "public",
       "table": "TodoView",
       "name": "TodoView_pkey",
-      "columns": ["todoId", "viewerId"],
+      "columns": [
+        "todoId",
+        "viewerId"
+      ],
       "nameExplicit": true,
       "entityType": "pks"
     },
@@ -14976,7 +16433,10 @@
       "schema": "public",
       "table": "InviteActiveDay",
       "name": "InviteActiveDay_pkey",
-      "columns": ["redemptionId", "localDate"],
+      "columns": [
+        "redemptionId",
+        "localDate"
+      ],
       "nameExplicit": true,
       "entityType": "pks"
     },
@@ -14984,7 +16444,9 @@
       "schema": "public",
       "table": "ResourceBonus",
       "name": "ResourceBonus_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -14992,7 +16454,9 @@
       "schema": "public",
       "table": "AiReport",
       "name": "AiReport_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15000,7 +16464,9 @@
       "schema": "public",
       "table": "RecurringSuggestion",
       "name": "RecurringSuggestion_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15008,7 +16474,9 @@
       "schema": "public",
       "table": "PremiumGrant",
       "name": "PremiumGrant_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15016,7 +16484,9 @@
       "schema": "public",
       "table": "Subscription",
       "name": "Subscription_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15024,7 +16494,9 @@
       "schema": "public",
       "table": "TodoComment",
       "name": "TodoComment_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15032,7 +16504,9 @@
       "schema": "public",
       "table": "Account",
       "name": "Account_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15040,7 +16514,9 @@
       "schema": "public",
       "table": "LoginAttempt",
       "name": "LoginAttempt_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15048,7 +16524,9 @@
       "schema": "public",
       "table": "OAuthState",
       "name": "OAuthState_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15056,7 +16534,9 @@
       "schema": "public",
       "table": "SecurityLog",
       "name": "SecurityLog_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15064,7 +16544,9 @@
       "schema": "public",
       "table": "Session",
       "name": "Session_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15072,7 +16554,9 @@
       "schema": "public",
       "table": "User",
       "name": "User_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15080,7 +16564,9 @@
       "schema": "public",
       "table": "UserActivityDay",
       "name": "UserActivityDay_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15088,7 +16574,9 @@
       "schema": "public",
       "table": "UserConsent",
       "name": "UserConsent_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15096,7 +16584,9 @@
       "schema": "public",
       "table": "UserLocation",
       "name": "UserLocation_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15104,7 +16594,9 @@
       "schema": "public",
       "table": "UserPreference",
       "name": "UserPreference_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15112,7 +16604,9 @@
       "schema": "public",
       "table": "UserProfile",
       "name": "UserProfile_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15120,7 +16614,9 @@
       "schema": "public",
       "table": "Verification",
       "name": "Verification_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15128,7 +16624,9 @@
       "schema": "public",
       "table": "DailyCompletion",
       "name": "DailyCompletion_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15136,7 +16634,9 @@
       "schema": "public",
       "table": "WeeklyAchievement",
       "name": "WeeklyAchievement_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15144,7 +16644,9 @@
       "schema": "public",
       "table": "Memo",
       "name": "Memo_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15152,7 +16654,9 @@
       "schema": "public",
       "table": "Notification",
       "name": "Notification_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15160,7 +16664,9 @@
       "schema": "public",
       "table": "PushDailyBudget",
       "name": "PushDailyBudget_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15168,7 +16674,9 @@
       "schema": "public",
       "table": "PushDeliveryAttempt",
       "name": "PushDeliveryAttempt_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15176,7 +16684,9 @@
       "schema": "public",
       "table": "PushDispatch",
       "name": "PushDispatch_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15184,7 +16694,9 @@
       "schema": "public",
       "table": "PushDispatchOutbox",
       "name": "PushDispatchOutbox_pkey",
-      "columns": ["dispatchId"],
+      "columns": [
+        "dispatchId"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15192,7 +16704,9 @@
       "schema": "public",
       "table": "PushToken",
       "name": "PushToken_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15200,7 +16714,9 @@
       "schema": "public",
       "table": "RetentionExperimentAssignment",
       "name": "RetentionExperimentAssignment_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15208,7 +16724,9 @@
       "schema": "public",
       "table": "RetentionExperimentResult",
       "name": "RetentionExperimentResult_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15216,7 +16734,9 @@
       "schema": "public",
       "table": "RetentionExperimentStage",
       "name": "RetentionExperimentStage_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15224,7 +16744,9 @@
       "schema": "public",
       "table": "RetentionPushOutbox",
       "name": "RetentionPushOutbox_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15232,7 +16754,9 @@
       "schema": "public",
       "table": "Todo",
       "name": "Todo_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15240,7 +16764,9 @@
       "schema": "public",
       "table": "TodoCategory",
       "name": "TodoCategory_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15248,7 +16774,9 @@
       "schema": "public",
       "table": "TodoItem",
       "name": "TodoItem_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15256,7 +16784,9 @@
       "schema": "public",
       "table": "Cheer",
       "name": "Cheer_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15264,7 +16794,9 @@
       "schema": "public",
       "table": "Follow",
       "name": "Follow_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15272,7 +16804,9 @@
       "schema": "public",
       "table": "Invite",
       "name": "Invite_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15280,7 +16814,9 @@
       "schema": "public",
       "table": "InviteRedemption",
       "name": "InviteRedemption_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15288,7 +16824,9 @@
       "schema": "public",
       "table": "Nudge",
       "name": "Nudge_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15296,7 +16834,9 @@
       "schema": "public",
       "table": "ReminderNudge",
       "name": "ReminderNudge_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15304,7 +16844,9 @@
       "schema": "public",
       "table": "RewardClaim",
       "name": "RewardClaim_pkey",
-      "columns": ["claimHash"],
+      "columns": [
+        "claimHash"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15312,7 +16854,9 @@
       "schema": "public",
       "table": "RewardGrant",
       "name": "RewardGrant_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15320,7 +16864,9 @@
       "schema": "public",
       "table": "UserBlock",
       "name": "UserBlock_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15328,7 +16874,9 @@
       "schema": "public",
       "table": "UserReport",
       "name": "UserReport_pkey",
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "entityType": "pks"
     },
@@ -15337,7 +16885,9 @@
       "table": "ResourceBonus",
       "name": "ResourceBonus_sourceKey_key",
       "nameExplicit": true,
-      "columns": ["sourceKey"],
+      "columns": [
+        "sourceKey"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15346,7 +16896,12 @@
       "table": "AiReport",
       "name": "AiReport_userId_type_year_period_key",
       "nameExplicit": true,
-      "columns": ["userId", "type", "year", "period"],
+      "columns": [
+        "userId",
+        "type",
+        "year",
+        "period"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15355,7 +16910,9 @@
       "table": "PremiumGrant",
       "name": "PremiumGrant_sourceKey_key",
       "nameExplicit": true,
-      "columns": ["sourceKey"],
+      "columns": [
+        "sourceKey"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15364,7 +16921,9 @@
       "table": "Subscription",
       "name": "Subscription_revenueCatId_key",
       "nameExplicit": true,
-      "columns": ["revenueCatId"],
+      "columns": [
+        "revenueCatId"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15373,7 +16932,10 @@
       "table": "TodoComment",
       "name": "TodoComment_authorId_clientRequestId_key",
       "nameExplicit": true,
-      "columns": ["authorId", "clientRequestId"],
+      "columns": [
+        "authorId",
+        "clientRequestId"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15382,7 +16944,10 @@
       "table": "Account",
       "name": "Account_provider_providerAccountId_key",
       "nameExplicit": true,
-      "columns": ["provider", "providerAccountId"],
+      "columns": [
+        "provider",
+        "providerAccountId"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15391,7 +16956,10 @@
       "table": "Account",
       "name": "Account_userId_provider_key",
       "nameExplicit": true,
-      "columns": ["userId", "provider"],
+      "columns": [
+        "userId",
+        "provider"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15400,7 +16968,9 @@
       "table": "OAuthState",
       "name": "OAuthState_exchangeCode_key",
       "nameExplicit": true,
-      "columns": ["exchangeCode"],
+      "columns": [
+        "exchangeCode"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15409,7 +16979,9 @@
       "table": "OAuthState",
       "name": "OAuthState_state_key",
       "nameExplicit": true,
-      "columns": ["state"],
+      "columns": [
+        "state"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15418,7 +16990,9 @@
       "table": "Session",
       "name": "Session_refreshTokenHash_key",
       "nameExplicit": true,
-      "columns": ["refreshTokenHash"],
+      "columns": [
+        "refreshTokenHash"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15427,7 +17001,9 @@
       "table": "User",
       "name": "User_email_key",
       "nameExplicit": true,
-      "columns": ["email"],
+      "columns": [
+        "email"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15436,7 +17012,9 @@
       "table": "User",
       "name": "User_revenueCatUserId_key",
       "nameExplicit": true,
-      "columns": ["revenueCatUserId"],
+      "columns": [
+        "revenueCatUserId"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15445,7 +17023,9 @@
       "table": "User",
       "name": "User_userTag_key",
       "nameExplicit": true,
-      "columns": ["userTag"],
+      "columns": [
+        "userTag"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15454,7 +17034,10 @@
       "table": "UserActivityDay",
       "name": "UserActivityDay_userId_localDate_key",
       "nameExplicit": true,
-      "columns": ["userId", "localDate"],
+      "columns": [
+        "userId",
+        "localDate"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15463,7 +17046,9 @@
       "table": "UserConsent",
       "name": "UserConsent_userId_key",
       "nameExplicit": true,
-      "columns": ["userId"],
+      "columns": [
+        "userId"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15472,7 +17057,9 @@
       "table": "UserLocation",
       "name": "UserLocation_userId_key",
       "nameExplicit": true,
-      "columns": ["userId"],
+      "columns": [
+        "userId"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15481,7 +17068,9 @@
       "table": "UserPreference",
       "name": "UserPreference_userId_key",
       "nameExplicit": true,
-      "columns": ["userId"],
+      "columns": [
+        "userId"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15490,7 +17079,9 @@
       "table": "UserProfile",
       "name": "UserProfile_userId_key",
       "nameExplicit": true,
-      "columns": ["userId"],
+      "columns": [
+        "userId"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15499,7 +17090,9 @@
       "table": "Verification",
       "name": "Verification_token_key",
       "nameExplicit": true,
-      "columns": ["token"],
+      "columns": [
+        "token"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15508,7 +17101,10 @@
       "table": "DailyCompletion",
       "name": "DailyCompletion_userId_date_key",
       "nameExplicit": true,
-      "columns": ["userId", "date"],
+      "columns": [
+        "userId",
+        "date"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15517,7 +17113,11 @@
       "table": "WeeklyAchievement",
       "name": "WeeklyAchievement_userId_year_week_key",
       "nameExplicit": true,
-      "columns": ["userId", "year", "week"],
+      "columns": [
+        "userId",
+        "year",
+        "week"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15526,7 +17126,10 @@
       "table": "PushDailyBudget",
       "name": "PushDailyBudget_userId_localDate_key",
       "nameExplicit": true,
-      "columns": ["userId", "localDate"],
+      "columns": [
+        "userId",
+        "localDate"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15535,7 +17138,10 @@
       "table": "PushDeliveryAttempt",
       "name": "PushDeliveryAttempt_dispatchId_pushTokenId_key",
       "nameExplicit": true,
-      "columns": ["dispatchId", "pushTokenId"],
+      "columns": [
+        "dispatchId",
+        "pushTokenId"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15544,7 +17150,9 @@
       "table": "PushDeliveryAttempt",
       "name": "PushDeliveryAttempt_expoTicketId_key",
       "nameExplicit": true,
-      "columns": ["expoTicketId"],
+      "columns": [
+        "expoTicketId"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15553,7 +17161,9 @@
       "table": "PushDispatch",
       "name": "PushDispatch_notificationId_key",
       "nameExplicit": true,
-      "columns": ["notificationId"],
+      "columns": [
+        "notificationId"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15562,7 +17172,9 @@
       "table": "PushToken",
       "name": "PushToken_token_key",
       "nameExplicit": true,
-      "columns": ["token"],
+      "columns": [
+        "token"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15571,7 +17183,10 @@
       "table": "PushToken",
       "name": "PushToken_userId_deviceId_key",
       "nameExplicit": true,
-      "columns": ["userId", "deviceId"],
+      "columns": [
+        "userId",
+        "deviceId"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15580,7 +17195,10 @@
       "table": "RetentionExperimentAssignment",
       "name": "RetentionExperimentAssignment_userId_experimentKey_key",
       "nameExplicit": true,
-      "columns": ["userId", "experimentKey"],
+      "columns": [
+        "userId",
+        "experimentKey"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15589,7 +17207,9 @@
       "table": "RetentionExperimentResult",
       "name": "RetentionExperimentResult_assignmentId_key",
       "nameExplicit": true,
-      "columns": ["assignmentId"],
+      "columns": [
+        "assignmentId"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15598,7 +17218,10 @@
       "table": "RetentionExperimentStage",
       "name": "RetentionExperimentStage_assignmentId_stage_key",
       "nameExplicit": true,
-      "columns": ["assignmentId", "stage"],
+      "columns": [
+        "assignmentId",
+        "stage"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15607,7 +17230,9 @@
       "table": "RetentionExperimentStage",
       "name": "RetentionExperimentStage_notificationId_key",
       "nameExplicit": true,
-      "columns": ["notificationId"],
+      "columns": [
+        "notificationId"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15616,7 +17241,9 @@
       "table": "RetentionPushOutbox",
       "name": "RetentionPushOutbox_dispatchId_key",
       "nameExplicit": true,
-      "columns": ["dispatchId"],
+      "columns": [
+        "dispatchId"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15625,7 +17252,9 @@
       "table": "RetentionPushOutbox",
       "name": "RetentionPushOutbox_notificationId_key",
       "nameExplicit": true,
-      "columns": ["notificationId"],
+      "columns": [
+        "notificationId"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15634,7 +17263,9 @@
       "table": "RetentionPushOutbox",
       "name": "RetentionPushOutbox_stageId_key",
       "nameExplicit": true,
-      "columns": ["stageId"],
+      "columns": [
+        "stageId"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15643,7 +17274,10 @@
       "table": "TodoCategory",
       "name": "TodoCategory_userId_name_key",
       "nameExplicit": true,
-      "columns": ["userId", "name"],
+      "columns": [
+        "userId",
+        "name"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15652,7 +17286,10 @@
       "table": "Follow",
       "name": "Follow_followerId_followingId_key",
       "nameExplicit": true,
-      "columns": ["followerId", "followingId"],
+      "columns": [
+        "followerId",
+        "followingId"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15661,7 +17298,9 @@
       "table": "Invite",
       "name": "Invite_code_key",
       "nameExplicit": true,
-      "columns": ["code"],
+      "columns": [
+        "code"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15670,7 +17309,9 @@
       "table": "InviteRedemption",
       "name": "InviteRedemption_inviteeId_key",
       "nameExplicit": true,
-      "columns": ["inviteeId"],
+      "columns": [
+        "inviteeId"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15679,7 +17320,12 @@
       "table": "RewardGrant",
       "name": "RewardGrant_sourceType_sourceId_recipientId_rewardType_key",
       "nameExplicit": true,
-      "columns": ["sourceType", "sourceId", "recipientId", "rewardType"],
+      "columns": [
+        "sourceType",
+        "sourceId",
+        "recipientId",
+        "rewardType"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },
@@ -15688,7 +17334,10 @@
       "table": "UserBlock",
       "name": "UserBlock_blockerId_blockedId_key",
       "nameExplicit": true,
-      "columns": ["blockerId", "blockedId"],
+      "columns": [
+        "blockerId",
+        "blockedId"
+      ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
     },

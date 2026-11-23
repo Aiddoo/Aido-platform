@@ -53,13 +53,13 @@ describe('TermsAgreementBottomSheet', () => {
     // Given
     const { onValues } = await renderSheet();
     expect(await screen.findByRole('button', { name: SUBMIT })).toBeDisabled();
-    fireEvent.press(screen.getByText('[필수] 이용약관'));
+    await fireEvent.press(screen.getByText('[필수] 이용약관'));
     await waitFor(() => expect(screen.getByRole('button', { name: SUBMIT })).toBeDisabled());
 
     // When
-    fireEvent.press(screen.getByText('[필수] 개인정보 수집·이용'));
+    await fireEvent.press(screen.getByText('[필수] 개인정보 수집·이용'));
     await waitFor(() => expect(screen.getByRole('button', { name: SUBMIT })).toBeEnabled());
-    fireEvent.press(screen.getByRole('button', { name: SUBMIT }));
+    await fireEvent.press(screen.getByRole('button', { name: SUBMIT }));
 
     // Then
     await waitFor(() =>
@@ -76,13 +76,13 @@ describe('TermsAgreementBottomSheet', () => {
   it('모두 동의는 선택 묶음까지 켜고, 선택만 다시 끌 수 있다', async () => {
     // Given
     const { onValues } = await renderSheet();
-    fireEvent.press(await screen.findByText('모두 동의'));
+    await fireEvent.press(await screen.findByText('모두 동의'));
     await waitFor(() => expect(screen.getByRole('button', { name: SUBMIT })).toBeEnabled());
 
     // When
-    fireEvent.press(screen.getByText('[선택] 혜택·소식 받기 (앱 푸시·이메일)'));
+    await fireEvent.press(screen.getByText('[선택] 혜택·소식 받기 (앱 푸시·이메일)'));
     await waitFor(() => expect(screen.getByRole('button', { name: SUBMIT })).toBeEnabled());
-    fireEvent.press(screen.getByRole('button', { name: SUBMIT }));
+    await fireEvent.press(screen.getByRole('button', { name: SUBMIT }));
 
     // Then
     await waitFor(() =>

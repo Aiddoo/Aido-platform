@@ -8,7 +8,7 @@ import { mutationOptions, type QueryClient, useQueryClient } from '@tanstack/rea
 import { pick } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
-import { type Consent, getConsentResult } from '../domains/consent.model';
+import { type Consent, findConsentResult } from '../domains/consent.model';
 import { useConsentResultToast } from '../hooks/use-consent-result-toast';
 import { type ConsentAgreement } from '../schemas/consent-request.schema';
 import {
@@ -128,7 +128,7 @@ export function useUpdateMarketingConsentMutationOptions() {
     },
     onSuccess: (data, { agreed }) => {
       trackEvent(agreed ? 'marketing_opted_in' : 'marketing_opted_out', { source: 'settings' });
-      const result = getConsentResult({
+      const result = findConsentResult({
         agreedAt: data.marketingAgreedAt,
         withdrawnAt: data.marketingWithdrawnAt,
       });
@@ -180,7 +180,7 @@ export function useUpdateMarketingPushConsentMutationOptions() {
         .with({ agreed: true }, ({ source }) => trackEvent('marketing_push_opted_in', { source }))
         .with({ agreed: false }, ({ source }) => trackEvent('marketing_push_opted_out', { source }))
         .exhaustive();
-      const result = getConsentResult({
+      const result = findConsentResult({
         agreedAt: data.marketingPushAgreedAt,
         withdrawnAt: data.marketingPushWithdrawnAt,
       });

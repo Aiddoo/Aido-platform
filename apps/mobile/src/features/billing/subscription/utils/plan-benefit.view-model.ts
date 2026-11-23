@@ -13,12 +13,12 @@ function toMinutes(seconds: number | null): number | null {
 
 export function getPremiumBenefitAmounts(snapshot: EntitlementSnapshot) {
   return {
-    aiParse: EntitlementPolicy.getPlanLimit(snapshot, 'AI_PARSE', 'premium'),
-    voiceNote: EntitlementPolicy.getPlanLimit(snapshot, 'VOICE_NOTE', 'premium'),
+    aiParse: EntitlementPolicy.findPlanLimit(snapshot, 'AI_PARSE', 'premium'),
+    voiceNote: EntitlementPolicy.findPlanLimit(snapshot, 'VOICE_NOTE', 'premium'),
     voiceNoteMinutes: toMinutes(
-      EntitlementPolicy.getPlanMaxSeconds(snapshot, 'VOICE_NOTE', 'premium'),
+      EntitlementPolicy.findPlanMaxSeconds(snapshot, 'VOICE_NOTE', 'premium'),
     ),
-    category: EntitlementPolicy.getPlanLimit(snapshot, 'TODO_CATEGORY', 'premium'),
+    category: EntitlementPolicy.findPlanLimit(snapshot, 'TODO_CATEGORY', 'premium'),
   } as const;
 }
 
@@ -26,15 +26,15 @@ export function getPremiumBenefitAmounts(snapshot: EntitlementSnapshot) {
 export function getPlanBenefitAmounts(snapshot: EntitlementSnapshot) {
   return {
     free: {
-      aiParse: EntitlementPolicy.getFreeLimit(snapshot, 'AI_PARSE'),
-      voiceNote: EntitlementPolicy.getFreeLimit(snapshot, 'VOICE_NOTE'),
+      aiParse: EntitlementPolicy.findFreeLimit(snapshot, 'AI_PARSE'),
+      voiceNote: EntitlementPolicy.findFreeLimit(snapshot, 'VOICE_NOTE'),
       voiceNoteMinutes: toMinutes(
-        EntitlementPolicy.getPlanMaxSeconds(snapshot, 'VOICE_NOTE', 'free'),
+        EntitlementPolicy.findPlanMaxSeconds(snapshot, 'VOICE_NOTE', 'free'),
       ),
-      nudge: EntitlementPolicy.getFreeLimit(snapshot, 'NUDGE'),
-      cheer: EntitlementPolicy.getFreeLimit(snapshot, 'CHEER'),
-      friend: EntitlementPolicy.getFreeLimit(snapshot, 'FRIEND'),
-      category: EntitlementPolicy.getFreeLimit(snapshot, 'TODO_CATEGORY'),
+      nudge: EntitlementPolicy.findFreeLimit(snapshot, 'NUDGE'),
+      cheer: EntitlementPolicy.findFreeLimit(snapshot, 'CHEER'),
+      friend: EntitlementPolicy.findFreeLimit(snapshot, 'FRIEND'),
+      category: EntitlementPolicy.findFreeLimit(snapshot, 'TODO_CATEGORY'),
     },
     premium: getPremiumBenefitAmounts(snapshot),
   } as const;
@@ -61,8 +61,8 @@ export function getPlanComparison(
       .with('FRIEND', () => 'people')
       .with('TODO_CATEGORY', () => 'items')
       .exhaustive(),
-    free: EntitlementPolicy.getFreeLimit(snapshot, feature),
-    premium: EntitlementPolicy.getPlanLimit(snapshot, feature, 'premium'),
+    free: EntitlementPolicy.findFreeLimit(snapshot, feature),
+    premium: EntitlementPolicy.findPlanLimit(snapshot, feature, 'premium'),
   };
 }
 

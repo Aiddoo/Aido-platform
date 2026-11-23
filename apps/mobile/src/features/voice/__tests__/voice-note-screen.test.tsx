@@ -1,5 +1,5 @@
 import { ApiError } from '@src/core/errors/api-error';
-import { err, ok } from '@src/core/errors/result';
+import { fail, ok } from '@src/core/errors/result';
 import '@src/shared/i18n/init';
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/queries/entitlement-query-keys';
@@ -161,7 +161,7 @@ describe('VoiceNoteScreen', () => {
       const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       const { httpClient } = await renderVoiceNote({});
       httpClient.post.mockResolvedValue(
-        err(new ApiError('AI_1301', '실패', 503, { charged: false })),
+        fail(new ApiError('AI_1301', '실패', 503, { charged: false })),
       );
 
       // When
@@ -194,7 +194,7 @@ describe('VoiceNoteScreen', () => {
       // Given
       const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       const { httpClient } = await renderVoiceNote({});
-      httpClient.post.mockResolvedValue(err(new ApiError('AI_1312', '너무 김', 422)));
+      httpClient.post.mockResolvedValue(fail(new ApiError('AI_1312', '너무 김', 422)));
 
       // When
       await user.press(await screen.findByRole('button', { name: '정리하기' }));
@@ -458,7 +458,7 @@ describe('VoiceNoteScreen', () => {
         digest: createVoiceNoteDigest({ keyPoints: [] }),
         planDraft: emptyPlanDraft,
       });
-      httpClient.post.mockResolvedValue(err(new ApiError('AI_1318', '키 충돌', 409)));
+      httpClient.post.mockResolvedValue(fail(new ApiError('AI_1318', '키 충돌', 409)));
 
       // When
       await user.press(await screen.findByRole('button', { name: '메모로 저장' }));

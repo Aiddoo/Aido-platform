@@ -6,18 +6,20 @@ import { eq, inArray } from "drizzle-orm";
 import { ClsModule } from "nestjs-cls";
 import { vi } from "vitest";
 
-import { TodoCommentId } from "#api/modules/engagement/shared/domain/todo-comment-id.vo";
 import { TodoCommentPurgeRepositoryPort } from "#api/modules/engagement/todo-comments/application/ports/todo-comment-purge.repository.port";
 import { CleanUpAccountTodoCommentsUseCase } from "#api/modules/engagement/todo-comments/application/use-cases/clean-up-account-todo-comments.use-case";
 import { InvalidateCleanedTodoCachesUseCase } from "#api/modules/engagement/todo-comments/application/use-cases/invalidate-cleaned-todo-caches.use-case";
+import { TodoCommentId } from "#api/modules/engagement/todo-comments/domain/todo-comment-id.vo";
 import { DELETED_COMMENT_AUTHOR } from "#api/modules/engagement/todo-comments/domain/todo-comments.constants";
 import { TodoCommentAccountCleanupPort } from "#api/modules/engagement/todo-comments/engagement-todo-comments.public";
 import { TodoCommentAccountCleanupAdapter } from "#api/modules/engagement/todo-comments/infrastructure/adapters/todo-comment-account-cleanup.adapter";
 import { DrizzleTodoCommentPurgeRepository } from "#api/modules/engagement/todo-comments/infrastructure/persistence/drizzle-todo-comment-purge.repository";
 import { DrizzleTodoCommentReader } from "#api/modules/engagement/todo-comments/infrastructure/persistence/drizzle-todo-comment.reader";
 import { SecurityLogRepositoryPort } from "#api/modules/identity/users/application/ports/security-log.repository.port";
+import { UserTagGeneratorPort } from "#api/modules/identity/users/application/ports/user-tag-generator.port";
 import { UserRepositoryPort } from "#api/modules/identity/users/application/ports/user.repository.port";
 import { PurgeDeletedAccountsUseCase } from "#api/modules/identity/users/application/use-cases/purge-deleted-accounts.use-case";
+import { RandomUserTagGeneratorAdapter } from "#api/modules/identity/users/infrastructure/adapters/user-tag-generator.adapter";
 import { DrizzleSecurityLogRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-security-log.repository";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { NotificationCachePort } from "#api/modules/notification/notifications/application/ports/notification-cache.port";
@@ -277,6 +279,7 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
         DrizzleUserRepository,
         DrizzleSecurityLogRepository,
         { provide: UserRepositoryPort, useExisting: DrizzleUserRepository },
+        { provide: UserTagGeneratorPort, useClass: RandomUserTagGeneratorAdapter },
         { provide: SecurityLogRepositoryPort, useExisting: DrizzleSecurityLogRepository },
         accountNotificationCleanupProvider,
         accountTodoCommentCleanupProvider,

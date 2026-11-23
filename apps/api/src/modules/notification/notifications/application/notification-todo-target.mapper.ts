@@ -12,14 +12,14 @@ import type { NotificationTodoTargetReaderPort } from "./ports/notification-todo
  */
 export async function withTodoTargets(
   items: readonly CreateNotificationData[],
-  todoTargetReader: Pick<NotificationTodoTargetReaderPort, "findTodoTargets">,
+  todoTargetReader: Pick<NotificationTodoTargetReaderPort, "listTodoTargets">,
 ): Promise<CreateNotificationData[]> {
   const todoIds = uniq(items.flatMap((item) => (item.todoId == null ? [] : [item.todoId])));
   if (todoIds.length === 0) {
     return [...items];
   }
 
-  const targets = await todoTargetReader.findTodoTargets(
+  const targets = await todoTargetReader.listTodoTargets(
     todoIds.map((todoId) => TodoId.reconstitute(todoId)),
   );
   return items.map((item) => {

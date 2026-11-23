@@ -19,7 +19,7 @@ const TARGET_TYPE_LABELS = {
 } as const satisfies Record<UserReportTargetType, string>;
 
 // 운영자가 한국에 있어 접수 시각을 한국 시각으로 보여 준다
-const OPERATOR_TIME_ZONE = "Asia/Seoul";
+const OPERATOR_TIMEZONE = "Asia/Seoul";
 const MISSING_USER_TAG = "-";
 
 export interface UserReportEmailContent {
@@ -39,7 +39,7 @@ export interface UserReportEmailContent {
 
 // "2026-10-26 18:00 (KST)". 초 이하는 버린다
 function formatSubmittedAt(instant: Temporal.Instant): string {
-  const local = instant.toZonedDateTimeISO(OPERATOR_TIME_ZONE).toPlainDateTime();
+  const local = instant.toZonedDateTimeISO(OPERATOR_TIMEZONE).toPlainDateTime();
   return `${local.toPlainDate().toString()} ${local.toPlainTime().toString({ smallestUnit: "minute" })} (KST)`;
 }
 

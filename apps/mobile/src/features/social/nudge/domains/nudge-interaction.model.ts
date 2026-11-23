@@ -1,5 +1,4 @@
 import { NUDGE_REPLY_KINDS } from '@aido/api/vocabulary';
-import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { instantSchema } from '@src/shared/date/instant';
 import { cursorPageSchema } from '@src/shared/domains/cursor-page.model';
 import { userSummarySchema } from '@src/shared/domains/user-summary.model';
@@ -81,11 +80,6 @@ export function getNudgeInteractionStatus(nudge: NudgeInteraction): NudgeInterac
     .exhaustive();
 }
 
-// 완료한 공개 할 일의 주인만 인사를 받는다. 할 일은 주인만 고칠 수 있어 수정 권한으로 주인을 안다
-export function canThankTodo(todo: Todo, { canEditTodo }: { canEditTodo: boolean }): boolean {
-  return canEditTodo && todo.completed && todo.visibility === 'PUBLIC';
-}
-
 export function isReceivedBy(nudge: NudgeInteraction, userId: string): boolean {
   return nudge.receiverId === userId;
 }
@@ -137,8 +131,4 @@ export const NudgeInteractionPolicy = {
 export const NudgeThanksPreviewPolicy = {
   hasThankableRecipients,
   getThanksSummary,
-} as const;
-
-export const TodoThanksPolicy = {
-  canThankTodo,
 } as const;

@@ -1,7 +1,7 @@
 import type { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { NotificationId } from "../../../shared/domain/notification-id.vo.js";
+import type { NotificationId } from "../../../notifications/domain/notification-id.vo.js";
 
 export interface SnoozedReminderSchedule {
   readonly todoId: TodoId;

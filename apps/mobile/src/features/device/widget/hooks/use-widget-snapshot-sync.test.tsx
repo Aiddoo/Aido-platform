@@ -3,6 +3,9 @@ import { ok, type Result } from '@src/core/errors/result';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { createDailyCompletionsDto } from '@src/features/planning/todo/__tests__/todo.fixtures';
+import { invalidateWidgetSummary } from '@src/features/planning/todo/queries/todo-cache';
+import { DAY_MS } from '@src/shared/constants/time-units';
+import { addDaysToDateKey, dateKeySchema } from '@src/shared/date/date-key';
 import { writeStoredValue } from '@src/shared/storage/define-stored-value';
 import {
   createErrorReporterStub,
@@ -12,6 +15,7 @@ import {
   createTestQueryClient,
   createTestDi,
   createWidgetBridgeStub,
+  setupFakeTimersPerTest,
 } from '@src/testing/core';
 import { renderScreenHook } from '@src/testing/render';
 import { act, waitFor } from '@testing-library/react-native';
@@ -20,6 +24,9 @@ import { widgetHeadlessFailureStoredValue } from '../schemas/widget-headless-fai
 import { useWidgetSnapshotSync, type WidgetSyncAuthState } from './use-widget-snapshot-sync';
 
 const ACCOUNT_ID = 'account-a';
+const SERVER_LAGGING_DAYS = -1;
+// 서버 날짜를 따라잡는 첫 간격 재조회(todo-cache의 5s)
+const DATE_CATCH_UP_FIRST_DELAY_MS = 5_000;
 
 function createSummaryDto(date: unknown) {
   return {
@@ -65,6 +72,7 @@ async function renderSync({
 
   return {
     httpClient,
+    queryClient,
     widgetBridge,
     errorReporter,
     widgetStorage,
@@ -80,7 +88,53 @@ async function renderSync({
   };
 }
 
+function requestedSummaryDates(httpClient: ReturnType<typeof createHttpClientStub>) {
+  return httpClient.get.mock.calls.flatMap(([url, options]) =>
+    url === 'v1/todos/summary' ? [options?.params?.date] : [],
+  );
+}
+
 describe('useWidgetSnapshotSync', () => {
+  describe('자정을 넘긴 뒤 날짜가 아직 바뀌지 않은 재조회', () => {
+    setupFakeTimersPerTest({ now: new Date('2026-11-23T03:00:00.000Z') });
+
+    it('기기 시계로 이미 지난 날짜의 요약은 서버에 묻지 않고 새 오늘만 다시 묻는다', async () => {
+      // Given
+      const { httpClient, queryClient } = await renderSync({ authState: 'authenticated' });
+      await waitFor(() => expect(requestedSummaryDates(httpClient)).toHaveLength(2));
+      const [staleToday, newToday] = requestedSummaryDates(httpClient);
+      httpClient.get.mockClear();
+      jest.setSystemTime(Date.now() + DAY_MS);
+
+      // When
+      await act(() => invalidateWidgetSummary(queryClient));
+
+      // Then
+      expect(requestedSummaryDates(httpClient)).toEqual([newToday]);
+      expect(staleToday).not.toBe(newToday);
+    });
+
+    it('서버 날짜를 따라잡는 간격 재조회도 기기 시계로 이미 지난 날짜는 서버에 묻지 않는다', async () => {
+      // Given
+      const { httpClient } = await renderSync({
+        authState: 'authenticated',
+        getSummary: async (date) =>
+          ok(createSummaryDto(addDaysToDateKey(dateKeySchema.parse(date), SERVER_LAGGING_DAYS))),
+      });
+      await waitFor(() => expect(requestedSummaryDates(httpClient)).toHaveLength(2));
+      const [staleToday, newToday] = requestedSummaryDates(httpClient);
+      httpClient.get.mockClear();
+      jest.setSystemTime(Date.now() + DAY_MS);
+
+      // When
+      await act(() => jest.advanceTimersByTimeAsync(DATE_CATCH_UP_FIRST_DELAY_MS));
+
+      // Then
+      expect(requestedSummaryDates(httpClient)).toEqual([newToday]);
+      expect(staleToday).not.toBe(newToday);
+    });
+  });
+
   describe('로그아웃·탈퇴와 겹친 동기화', () => {
     it('로그아웃 뒤에 도착한 앞 계정의 요약은 위젯에 쓰지 않고 마지막 기록은 로그아웃이다', async () => {
       // Given
@@ -100,7 +154,9 @@ describe('useWidgetSnapshotSync', () => {
       // When
       await changeAuthState('unauthenticated');
       await act(async () => {
-        lateSummaries.forEach(({ settle }) => settle());
+        for (const { settle } of lateSummaries) {
+          settle();
+        }
       });
 
       // Then

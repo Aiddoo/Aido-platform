@@ -146,7 +146,7 @@ export function useSetMemoPinnedMutationOptions({ memoId }: { memoId: number }) 
   const haptics = useHaptics();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
-  const { timeZone } = useDateFormatContext();
+  const { timezone } = useDateFormatContext();
 
   return mutationOptions({
     // 오프라인에 멈춰 두면 버튼이 꺼진 채 남고 연결되는 순간 나도 모르게 실행된다. 바로 실패해 안내한다
@@ -169,7 +169,7 @@ export function useSetMemoPinnedMutationOptions({ memoId }: { memoId: number }) 
         rebaseDraftSource(draftService, createMemoDraftKey({ userId: accountId, memoId }), source);
         rebaseDraftSource(
           draftService,
-          createMemoPlanDraftKey({ userId: accountId, memoId, timeZone }),
+          createMemoPlanDraftKey({ userId: accountId, memoId, timezone }),
           source,
         );
         rebaseDraftSource(
@@ -271,7 +271,7 @@ export function useParseMemoMutationOptions({ memoId }: { memoId: number }) {
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
   const gate = useEntitlementGate('AI_PARSE', { surface: 'memo_detail' });
-  const { timeZone } = useDateFormatContext();
+  const { timezone } = useDateFormatContext();
 
   const forgetIdempotencyKey = () => {
     const accountId = getCachedMe(queryClient)?.id;
@@ -323,7 +323,7 @@ export function useParseMemoMutationOptions({ memoId }: { memoId: number }) {
       const accountId = getCachedMe(queryClient)?.id;
       if (accountId != null) {
         draftService.save(
-          createMemoPlanDraftKey({ userId: accountId, memoId, timeZone }),
+          createMemoPlanDraftKey({ userId: accountId, memoId, timezone }),
           createPlanReviewDraft(plan),
           { sourceUpdatedAt: getCurrentSourceUpdatedAt(variables) },
         );

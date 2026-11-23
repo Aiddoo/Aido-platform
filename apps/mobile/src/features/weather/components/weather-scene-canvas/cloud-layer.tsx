@@ -123,7 +123,7 @@ export function CloudLayer({
         const { scale, x, y } = cloudAt(index, time.get());
         const dx = (x - light.x) / (CLOUD_SPRITE.width * scale * OCCLUSION.bodyWidth);
         const dy = (y - light.y) / (CLOUD_SPRITE.height * scale * OCCLUSION.bodyHeight);
-        cover = Math.max(cover, 1 - Math.sqrt(dx * dx + dy * dy));
+        cover = Math.max(cover, 1 - Math.hypot(dx, dy));
       }
       return Math.max(0, cover) * occlusionWeight;
     },

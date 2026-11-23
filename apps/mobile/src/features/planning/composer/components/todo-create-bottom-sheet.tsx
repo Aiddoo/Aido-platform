@@ -30,8 +30,8 @@ import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
   BottomSheet,
-  BottomSheetInput,
-  BottomSheetTextArea,
+  Input,
+  TextArea,
   HStack,
   KeyboardBottomSheet,
   QueryErrorActions,
@@ -78,7 +78,7 @@ TodoCreateBottomSheet.Form = function Form({ onMemoChanged }: TodoCreateBottomSh
   const [{ categoryId: requestedCategoryId, title, time, startVoice }] =
     useRouteParams(todoCreateParamsSchema);
   const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
-  const categoryId = TodoCategoryPolicy.getInitialCategoryId(
+  const categoryId = TodoCategoryPolicy.findInitialCategoryId(
     categoriesResult.categories,
     requestedCategoryId ?? null,
   );
@@ -193,7 +193,7 @@ function TodoCreateForm({
   // 저장하면 시트가 내려가는 동안에도 같은 제목이 남아 있다. 그동안 다시 보내지 않는다
   const isSubmitLocked = isSubmitting || isSubmitSuccessful;
   const isSubmitDisabled = !isValid || isSubmitLocked;
-  const voiceDismissAction = VoiceCapturePolicy.getDismissAction(voice.state);
+  const voiceDismissAction = VoiceCapturePolicy.findDismissAction(voice.state);
 
   useOnScreenBlur(voice.interrupt);
   // 시트가 다 열린 뒤 한 번만 시작한다. 동의·마이크를 거절하면 시트에 남아 마이크로 다시 시도한다
@@ -281,7 +281,7 @@ function TodoCreateForm({
       backgroundDecoration={
         voice.state.status === 'listening' && <SheetEdgeGlow level={voice.level} />
       }
-      enableContentPanningGesture={isFormStep}
+      isDraggable={isFormStep}
       onDismissRequest={handleVoiceDismissRequest}
     >
       {match(voice.state)
@@ -332,7 +332,7 @@ function TodoCreateForm({
               render={({ field: { onChange, value, ref }, fieldState: { error } }) =>
                 voice.state.status === 'failed' || hasExceededTitleLimit ? (
                   // 넘친 글은 한 줄 칸으로 돌아가지 않고 칸 안에서 스크롤한다. maxLength는 Android가 200자 뒤를 지워 쓰지 않는다
-                  <BottomSheetTextArea
+                  <TextArea
                     ref={ref}
                     autoFocus={!voice.isRestarting}
                     placeholder={t('add.placeholder')}
@@ -355,7 +355,7 @@ function TodoCreateForm({
                     onSubmitEditing={handleTitleSubmit}
                   />
                 ) : (
-                  <BottomSheetInput
+                  <Input
                     ref={ref}
                     // 처음 안내는 키보드 없이 띄운다. 키보드 뒤로 잘리거나 첫 탭을 빼앗지 않게 하려는 것이다
                     autoFocus={!isVoiceHintShown && !isVoiceStartRequested && !voice.isRestarting}

@@ -1,5 +1,4 @@
 import { ErrorCode } from "@aido/api/errors";
-import { vi } from "vitest";
 
 import {
   createPlanningTodoFixture,
@@ -15,10 +14,6 @@ describe("할 일 상세 조회", () => {
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
     useCase = new GetTodoUseCase(fixture);
   });
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it("소유한 할 일의 실제 저장 상태를 응답한다", async () => {
     // Given
     await fixture.todoRepository.seedItem(1, { title: "하위 항목", sortOrder: 0 });

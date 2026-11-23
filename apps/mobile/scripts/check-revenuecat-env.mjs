@@ -1,6 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
 
 /** RevenueCat 공개 SDK 키 접두사. 다른 플랫폼 키가 들어가면 스토어가 상품을 주지 않는다 */
 const KEY_RULES = [
@@ -51,12 +50,14 @@ function readPublicExtra(root, appEnv) {
 }
 
 function main() {
-  const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+  const root = resolve(import.meta.dirname, '..');
   const problems = [];
   for (const appEnv of APP_ENVIRONMENTS) {
     const result = inspectRevenueCatExtra(readPublicExtra(root, appEnv), appEnv);
     console.log(`\n[${appEnv}]`);
-    result.rows.forEach(({ env, status }) => console.log(`  ${env}: ${status}`));
+    for (const { env, status } of result.rows) {
+      console.log(`  ${env}: ${status}`);
+    }
     problems.push(...result.problems);
   }
   if (problems.length > 0) {
@@ -70,6 +71,6 @@ function main() {
   console.log('\nRevenueCat 키 점검에 통과했어요.');
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (import.meta.main) {
   main();
 }

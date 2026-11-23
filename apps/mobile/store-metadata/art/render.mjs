@@ -14,7 +14,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 
 import sharp from 'sharp';
@@ -35,7 +35,7 @@ import {
   slotCopy,
 } from './storyboard.mjs';
 
-const HERE = dirname(fileURLToPath(import.meta.url));
+const HERE = import.meta.dirname;
 const MOBILE_ROOT = resolve(HERE, '../..');
 const STORE_LOCALE = {
   'app-store': { ko: 'ko', en: 'en' },
@@ -106,7 +106,7 @@ export function plan({ only, locales }) {
           continue;
         }
         const storeLocale = STORE_LOCALE[target.store][locale];
-        set.slots.forEach((slotId, index) => {
+        for (const [index, slotId] of set.slots.entries()) {
           jobs.push({
             type: 'screenshot',
             set,
@@ -124,7 +124,7 @@ export function plan({ only, locales }) {
               `${pad(index + 1)}_${slotId}.png`,
             ),
           });
-        });
+        }
       }
     }
   }
@@ -388,7 +388,7 @@ function glyphProblems(text) {
   const juaFile = join(HERE, 'fonts/jua-subset.txt');
   const handFile = join(HERE, 'fonts/hand-subset.txt');
   const available = new Set([...readFileSync(juaFile, 'utf8'), ...readFileSync(handFile, 'utf8')]);
-  const missing = [...new Set(text.replace(/\s/gu, ''))].filter((char) => !available.has(char));
+  const missing = [...new Set(text.replaceAll(/\s/gu, ''))].filter((char) => !available.has(char));
   return missing.length > 0
     ? [
         `서브셋에 없는 글자 ${missing.join('')} — node store-metadata/art/fonts/subset.mjs를 다시 실행하세요`,
@@ -464,7 +464,7 @@ function galleryHtml(entries, { preview, captureRoot }) {
     groups.get(key).push(entry);
   }
   const escape = (value) =>
-    String(value).replace(
+    String(value).replaceAll(
       /[&<>"]/gu,
       (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[char],
     );
@@ -491,7 +491,7 @@ function galleryHtml(entries, { preview, captureRoot }) {
         const captures = captureNeeds({ target, slot })
           .map(([, capture]) => capture.file)
           .join(' + ');
-        return `<tr><td>${pad(index + 1)}</td><td>${escape(slot.title)}</td><td>${escape(ko.tagline)}<br><b>${escape(ko.headline.replace(/[[\]]/gu, ''))}</b></td><td>${escape(en.tagline)}<br><b>${escape(en.headline.replace(/[[\]]/gu, ''))}</b></td><td><code>${escape(captures)}</code></td></tr>`;
+        return `<tr><td>${pad(index + 1)}</td><td>${escape(slot.title)}</td><td>${escape(ko.tagline)}<br><b>${escape(ko.headline.replaceAll(/[[\]]/gu, ''))}</b></td><td>${escape(en.tagline)}<br><b>${escape(en.headline.replaceAll(/[[\]]/gu, ''))}</b></td><td><code>${escape(captures)}</code></td></tr>`;
       })
       .join('');
     const sizes = set.targets
@@ -572,7 +572,7 @@ async function render({ out, captureRoot, preview, only, locales }) {
           .join(' + ');
         title = `${job.slotId} · ${job.slot.title}`;
         const copy = slotCopy(job.slot, job.target.store, job.locale);
-        caption = `${copy.tagline} / ${copy.headline.replace(/[[\]]/gu, '').replace('\n', ' ')}`;
+        caption = `${copy.tagline} / ${copy.headline.replaceAll(/[[\]]/gu, '').replace('\n', ' ')}`;
       } else {
         const [width, height] = job.scene.design;
         expected = { width: width * job.scene.scale, height: height * job.scene.scale };
@@ -598,7 +598,7 @@ async function render({ out, captureRoot, preview, only, locales }) {
         caption =
           job.locale == null
             ? '글자 없음(공용)'
-            : `${copy.tagline} / ${copy.headline.replace(/[[\]]/gu, '').replace('\n', ' ')}`;
+            : `${copy.tagline} / ${copy.headline.replaceAll(/[[\]]/gu, '').replace('\n', ' ')}`;
         source = '캡처 불필요';
       }
       const { report } = result;
@@ -713,7 +713,7 @@ function writeTodos({ out, captureRoot, locales }) {
       return `\`${relative(captureRoot, path)}\`${existsSync(path) ? '' : ' (없음)'}${capture.manual ? ' (직접 찍기)' : ''}`;
     });
     lines.push(
-      `- [ ] ${job.output.split('/').pop()} — ${slotCopy(job.slot, job.target.store, job.locale).headline.replace(/[[\]]/gu, '').replace('\n', ' ')} ← ${needed.join(' + ')}`,
+      `- [ ] ${job.output.split('/').pop()} — ${slotCopy(job.slot, job.target.store, job.locale).headline.replaceAll(/[[\]]/gu, '').replace('\n', ' ')} ← ${needed.join(' + ')}`,
     );
     folders.set(folder, lines);
   }
@@ -746,9 +746,9 @@ export function assetNames({ locales }) {
     });
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (import.meta.main) {
   const { positionals, values } = parseArgs({
-    args: process.argv.slice(2).filter((arg) => arg !== '--'),
+    args: process.argv.slice(2).filter((argument) => argument !== '--'),
     allowPositionals: true,
     options: {
       out: { type: 'string' },

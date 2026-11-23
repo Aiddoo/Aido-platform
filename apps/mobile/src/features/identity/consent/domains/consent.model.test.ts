@@ -2,7 +2,7 @@ import { AI_DATA_SHARING_CONSENT } from '@aido/api/vocabulary';
 import { toInstant } from '@src/shared/date/instant';
 
 import { createConsent } from '../__tests__/consent.fixtures';
-import { ConsentPolicy, getConsentResult } from './consent.model';
+import { ConsentPolicy, findConsentResult } from './consent.model';
 
 describe('hasAgreedToAiDataSharing', () => {
   it.each([
@@ -52,7 +52,7 @@ describe('shouldShowAiConsentRenewal', () => {
   );
 });
 
-describe('getConsentResult', () => {
+describe('findConsentResult', () => {
   const AT = toInstant('2026-11-09T03:00:00.000Z');
 
   it.each([
@@ -61,7 +61,7 @@ describe('getConsentResult', () => {
     ['둘 다 없으면(구 서버) 알리지 않음', { agreedAt: null, withdrawnAt: null }, null],
   ] as const)('%s 결과다', (_case, times, expected) => {
     // When
-    const result = getConsentResult(times);
+    const result = findConsentResult(times);
 
     // Then
     expect(result).toEqual(expected);

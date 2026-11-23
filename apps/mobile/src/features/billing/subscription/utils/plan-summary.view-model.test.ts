@@ -29,7 +29,7 @@ function createStoreSummary({
     toSubscriptionReceiptViewModel(toUser(me), {
       isStoreConfigured: true,
       now: NOW,
-      timeZone: 'Asia/Seoul',
+      timezone: 'Asia/Seoul',
     }),
   );
 }

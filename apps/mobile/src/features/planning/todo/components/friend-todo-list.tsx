@@ -46,7 +46,7 @@ interface FriendTodoListProps {
   /** 할 일 줄 오른쪽에 붙는 행동(콕 등). 친구·날짜 같은 화면 값은 부모가 한 번 읽어 담는다 */
   renderRowAction: (todo: Todo) => ReactNode;
   /** 길게 누른 메뉴의 열기 다음 동작(콕 등). 없으면 null */
-  getMenuAction: (todo: Todo) => FriendTodoMenuAction | null;
+  findMenuAction: (todo: Todo) => FriendTodoMenuAction | null;
   /** 친구에게 할 일이 없는 오늘 빈 화면에 붙는 행동(독촉 콕 등) */
   emptyAction: ReactNode;
 }
@@ -54,7 +54,7 @@ interface FriendTodoListProps {
 export function FriendTodoList({
   friendId,
   renderRowAction,
-  getMenuAction,
+  findMenuAction,
   emptyAction,
 }: FriendTodoListProps) {
   // 행마다 route 훅을 부르면 URL이 바뀔 때마다 행 수만큼 params를 다시 파싱한다. 목록이 한 번 읽어 넘긴다
@@ -87,7 +87,7 @@ export function FriendTodoList({
                 todo={todo}
                 isLinked={paneSizeClass === 'compact'}
                 renderAction={renderRowAction}
-                menuAction={getMenuAction(todo)}
+                menuAction={findMenuAction(todo)}
                 onOpenDetail={openTodoDetail}
               />
             ))}

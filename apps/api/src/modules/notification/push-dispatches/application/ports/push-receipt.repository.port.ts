@@ -12,7 +12,7 @@ export interface InvalidPushToken {
 
 export abstract class PushReceiptRepositoryPort {
   // 그 채널로 보낸 ticket 중 아직 확인하지 않았거나 확인한 지 재확인 간격이 지난 것을 오래된 확인 순으로 고른다
-  abstract findPendingTicketIds(query: {
+  abstract listPendingTicketIds(query: {
     readonly channel: PushChannel;
     readonly window: PushReceiptCheckWindow;
     readonly limit: number;

@@ -13,7 +13,6 @@ import type { MutationLockPort } from "#api/shared/application/ports/mutation-lo
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { TodoCommentId } from "../../../shared/domain/todo-comment-id.vo.js";
 import { CommentPlacement } from "../../domain/comment-placement.vo.js";
 import {
   fingerprintTodoCommentChain,
@@ -21,6 +20,7 @@ import {
   type TodoCommentChainRequest,
 } from "../../domain/todo-comment-chain.domain-service.js";
 import { TodoCommentContent } from "../../domain/todo-comment-content.vo.js";
+import { TodoCommentId } from "../../domain/todo-comment-id.vo.js";
 import { TodoCommentRequestId } from "../../domain/todo-comment-request-id.vo.js";
 import { TodoComment } from "../../domain/todo-comment.aggregate.js";
 import type { TodoCommentAccessReaderPort } from "../ports/todo-comment-access.reader.port.js";
@@ -74,7 +74,7 @@ interface WriteTodoCommentChainDependencies {
   >;
   readonly engagementCounter: Pick<TodoEngagementCounterPort, "increaseCommentCount">;
   readonly notification: Pick<TodoCommentNotificationPort, "notifyCommentsWritten">;
-  readonly blockReader: Pick<TodoCommentBlockReaderPort, "findBlockedCounterpartIds">;
+  readonly blockReader: Pick<TodoCommentBlockReaderPort, "listBlockedCounterpartIds">;
   readonly todoViewCache: Pick<TodoViewCacheInvalidatorPort, "invalidateForTodo">;
   readonly logger: ApplicationLoggerPort;
 }
@@ -201,7 +201,7 @@ export class WriteTodoCommentChainUseCase {
         throw commentNotFound(parentId);
       }
       if (replyTarget != null) {
-        const blockedIds = await blockReader.findBlockedCounterpartIds(authorId, [
+        const blockedIds = await blockReader.listBlockedCounterpartIds(authorId, [
           replyTarget.authorId,
         ]);
         if (blockedIds.has(replyTarget.authorId.value)) {

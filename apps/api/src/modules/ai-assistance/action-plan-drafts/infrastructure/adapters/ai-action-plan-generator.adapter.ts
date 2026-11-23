@@ -109,7 +109,7 @@ export class AiActionPlanGeneratorAdapter extends ActionPlanGeneratorPort {
       definition,
       { built, context: normalizeContext(input), userId: input.userId, signal: input.signal },
       {
-        toResult: (plan) => toActionPlanDraft(plan, { now: at, timeZone: input.timezone }),
+        toResult: (plan) => toActionPlanDraft(plan, { now: at, timezone: input.timezone }),
         keepsCharge: (plan) => plan.todos.length > 0,
       },
     );
@@ -133,7 +133,7 @@ export class AiActionPlanGeneratorAdapter extends ActionPlanGeneratorPort {
           title: digest.title,
           summary: digest.summary,
           keyPoints: digest.keyPoints,
-          plan: toActionPlanDraft(digest.plan, { now: at, timeZone: input.timezone }),
+          plan: toActionPlanDraft(digest.plan, { now: at, timezone: input.timezone }),
           isEmpty: isEmptyVoiceNoteDigest(digest),
         }),
         keepsCharge: (digest) => !isEmptyVoiceNoteDigest(digest),

@@ -47,7 +47,7 @@
     "remark-cli": "catalog:",
     "remark-validate-links": "catalog:",
     "tsx": "4.23.15",
-    "turbo": "2.11.11",
+    "turbo": "2.11.13",
     "vite": "catalog:"
   },
   "config": {
@@ -58,5 +58,5 @@
   "engines": {
     "node": ">=24.22.3 <27.0.0"
   },
-  "packageManager": "pnpm@12.18.0"
+  "packageManager": "pnpm@12.21.0"
 }

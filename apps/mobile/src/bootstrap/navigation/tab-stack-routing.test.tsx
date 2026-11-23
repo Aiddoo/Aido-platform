@@ -202,7 +202,9 @@ const WARM_CASES = WARM_STARTS.flatMap((start) =>
 );
 
 function emitSystemUrl(url: string) {
-  systemUrlListeners.forEach((listener) => listener({ url }));
+  for (const listener of systemUrlListeners) {
+    listener({ url });
+  }
 }
 
 /** 앱 루트 레이아웃(`AuthGateLayout`)처럼 `+native-intent`·`openEntryHref`가 지금 탭을 읽게 컨테이너를 묶는다 */

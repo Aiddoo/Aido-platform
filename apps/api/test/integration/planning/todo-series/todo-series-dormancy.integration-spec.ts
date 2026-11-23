@@ -3,6 +3,7 @@ import { eq, inArray, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 
 import type { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
+import { RandomUserTagGeneratorAdapter } from "#api/modules/identity/users/infrastructure/adapters/user-tag-generator.adapter";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { TodoSeriesOwnerDormancyAdapter } from "#api/modules/notification/reminders/infrastructure/adapters/todo-series-owner-dormancy.adapter";
 import { TodoReminderSchedulerAdapter } from "#api/modules/notification/reminders/infrastructure/jobs/todo-reminder-scheduler.adapter";
@@ -52,21 +53,21 @@ class StubTierEntitlementReader extends StubCurrentUserAccess implements Entitle
   }
 
   async canInTransaction(): Promise<boolean> {
-    throw new Error("휴면 판정은 canInTx를 부르지 않는다");
+    throw new Error("휴면 판정은 canInTransaction을 부르지 않는다");
   }
 
-  async getFeatureLimit(): Promise<number | null> {
-    throw new Error("휴면 판정은 getFeatureLimit을 부르지 않는다");
+  async findFeatureLimit(): Promise<number | null> {
+    throw new Error("휴면 판정은 findFeatureLimit을 부르지 않는다");
   }
 
-  async getFeatureLimitInTransaction(): Promise<number | null> {
-    throw new Error("휴면 판정은 getFeatureLimitInTx를 부르지 않는다");
+  async findFeatureLimitInTransaction(): Promise<number | null> {
+    throw new Error("휴면 판정은 findFeatureLimitInTransaction을 부르지 않는다");
   }
 
   async getFeatureQuotaInTransaction(): ReturnType<
     EntitlementReaderPort["getFeatureQuotaInTransaction"]
   > {
-    throw new Error("휴면 판정은 getFeatureQuotaInTx를 부르지 않는다");
+    throw new Error("휴면 판정은 getFeatureQuotaInTransaction을 부르지 않는다");
   }
 }
 
@@ -174,7 +175,11 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
 
   function seriesOwner() {
     return new TodoSeriesOwnerAdapter(
-      new DrizzleUserRepository(fixture.transactionHost, new DateClock()),
+      new DrizzleUserRepository(
+        fixture.transactionHost,
+        new DateClock(),
+        new RandomUserTagGeneratorAdapter(),
+      ),
       entitlements(),
     );
   }
@@ -596,7 +601,11 @@ describe("반복 할 일 휴면·복귀 (실제 PostgreSQL)", () => {
   describe("리마인더 발송 시점의 휴면", () => {
     function dormancy() {
       return new TodoSeriesOwnerDormancyAdapter(
-        new DrizzleUserRepository(fixture.transactionHost, new DateClock()),
+        new DrizzleUserRepository(
+          fixture.transactionHost,
+          new DateClock(),
+          new RandomUserTagGeneratorAdapter(),
+        ),
         entitlements(),
         new DateClock(),
       );

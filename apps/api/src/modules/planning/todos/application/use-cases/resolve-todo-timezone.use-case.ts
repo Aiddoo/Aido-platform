@@ -2,7 +2,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   normalizeIanaTimezone,
   resolveWallClockTimezone,
-} from "#api/shared/domain/time/time-zone-name";
+} from "#api/shared/domain/time/timezone-name";
 
 import type { TodoOwnerTimezonePort } from "../ports/todo-owner-timezone.port.js";
 

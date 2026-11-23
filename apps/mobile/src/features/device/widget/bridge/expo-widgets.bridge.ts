@@ -11,10 +11,10 @@ export function createExpoWidgetsBridge(): WidgetBridge {
   return {
     writeSnapshot: async (snapshot: WidgetSnapshot): Promise<void> => {
       const now = getNowInstant();
-      const { currentTimeZone } = readDeviceLocalDateState(now);
+      const { currentTimezone } = readDeviceLocalDateState(now);
       const entries = toWidgetTimelineEntries(snapshot, {
         now,
-        timeZone: currentTimeZone,
+        timezone: currentTimezone,
         appScheme,
       });
 

@@ -58,7 +58,7 @@ function createPathBuilder() {
           }
           return undefined;
         }
-        return (...args: unknown[]) => {
+        return (...callArguments: unknown[]) => {
           if (isDisposed) {
             throw new Error(`놓은 PathBuilder의 ${String(name)}를 불렀습니다`);
           }
@@ -69,7 +69,9 @@ function createPathBuilder() {
             }
             return path;
           }
-          commands.push(`${String(name)}(${args.map((arg) => JSON.stringify(arg)).join(',')})`);
+          commands.push(
+            `${String(name)}(${callArguments.map((arg) => JSON.stringify(arg)).join(',')})`,
+          );
           return builder;
         };
       },

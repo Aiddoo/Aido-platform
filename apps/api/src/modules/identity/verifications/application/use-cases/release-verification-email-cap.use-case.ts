@@ -17,7 +17,7 @@ export class ReleaseVerificationEmailCapUseCase {
     const { verificationEmailCap } = this.#dependencies;
     await Promise.all(
       reservation.buckets.map(async (bucket) => {
-        const sentAts = await verificationEmailCap.findSentAts(bucket);
+        const sentAts = await verificationEmailCap.listSentAts(bucket);
         const reservedIndex = sentAts.findIndex((sentAt) => sentAt.equals(reservation.sentAt));
         if (reservedIndex === -1) {
           return;

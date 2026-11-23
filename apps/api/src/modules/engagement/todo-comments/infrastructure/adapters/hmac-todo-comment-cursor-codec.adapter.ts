@@ -7,7 +7,6 @@ import { HmacTokenSigner } from "#api/platform/security/hmac-token-signer";
 import { SigningKeyRing } from "#api/platform/security/signing-key-ring";
 import { isEntityId } from "#api/shared/domain/model/entity-id";
 
-import { TodoCommentId } from "../../../shared/domain/todo-comment-id.vo.js";
 import {
   TodoCommentCursorCodecPort,
   type TodoCommentRepliesCursor,
@@ -26,6 +25,7 @@ import {
   type TodoConversationScope,
 } from "../../application/todo-comment-page.constants.js";
 import { invalidCommentRequest } from "../../application/todo-comments.errors.js";
+import { TodoCommentId } from "../../domain/todo-comment-id.vo.js";
 import {
   type EngagementTodoCommentsConfig,
   engagementTodoCommentsConfig,
@@ -35,7 +35,7 @@ const CURSOR_DOMAIN = {
   legacyPrefix: "todo-comment-cursor:v1:",
   keyedPrefix: "todo-comment-cursor:v2:",
 };
-const postgresCountSchema = z.number().int().min(0).max(2_147_483_647);
+const postgresCountSchema = z.int().min(0).max(2_147_483_647);
 const cursorPositionSchema = z.strictObject({
   rootLikeCount: postgresCountSchema,
   rootReplyCount: postgresCountSchema,
@@ -46,7 +46,7 @@ const conversationCursorSchema = z.strictObject({
   v: z.literal(1),
   kind: z.literal("conversation"),
   sort: z.enum(TODO_COMMENT_SORT),
-  todoId: z.number().int().positive(),
+  todoId: z.int().positive(),
   commentId: commentIdSchema,
   threadId: commentIdSchema,
   scope: z.enum(TODO_CONVERSATION_SCOPES),
@@ -57,7 +57,7 @@ const threadsCursorSchema = z.strictObject({
   v: z.literal(1),
   kind: z.literal("overview"),
   sort: z.enum(TODO_COMMENT_SORT),
-  todoId: z.number().int().positive(),
+  todoId: z.int().positive(),
   rootId: commentIdSchema,
   position: cursorPositionSchema,
   direction: directionSchema.optional(),
@@ -65,7 +65,7 @@ const threadsCursorSchema = z.strictObject({
 const repliesCursorSchema = z.strictObject({
   v: z.literal(1),
   kind: z.literal("replies"),
-  todoId: z.number().int().positive(),
+  todoId: z.int().positive(),
   threadCommentId: commentIdSchema,
   replyId: commentIdSchema,
   direction: directionSchema,

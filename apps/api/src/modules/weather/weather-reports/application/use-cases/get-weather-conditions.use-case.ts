@@ -1,6 +1,6 @@
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { resolveTimezone } from "#api/shared/domain/time/time-zone-name";
+import { resolveTimezone } from "#api/shared/domain/time/timezone-name";
 
 import { GeoCell } from "../../../shared/domain/geo-cell.vo.js";
 import type { UserLocationRepositoryPort } from "../../../user-locations/application/ports/user-location.repository.port.js";
@@ -25,9 +25,9 @@ export interface GetWeatherConditionsDependencies {
   readonly userLocationRepository: Pick<UserLocationRepositoryPort, "findByUserId">;
   readonly airQualityProvider: Pick<AirQualityProviderPort, "findAirQuality">;
   readonly lifestyleIndexProvider: Pick<LifestyleIndexProviderPort, "getIndex">;
-  readonly sunTimeProvider: Pick<SunTimeProviderPort, "getSunTime">;
+  readonly sunTimeProvider: Pick<SunTimeProviderPort, "findSunTime">;
   readonly readWeatherForecast: Pick<ReadWeatherForecastUseCase, "execute">;
-  readonly weatherProvider: Pick<WeatherForecastProviderPort, "timeZone">;
+  readonly weatherProvider: Pick<WeatherForecastProviderPort, "timezone">;
   readonly weatherCache: Pick<WeatherForecastCachePort, "findConditions" | "setConditions">;
   readonly logger: Pick<ApplicationLoggerPort, "warn">;
 }
@@ -66,7 +66,7 @@ export class GetWeatherConditionsUseCase {
         currentTemp,
         windSpeed,
       }),
-      this.#dependencies.sunTimeProvider.getSunTime(location.latitude, location.longitude, target),
+      this.#dependencies.sunTimeProvider.findSunTime(location.latitude, location.longitude, target),
     ]);
 
     const air = airResult.status === "fulfilled" ? airResult.value : null;
@@ -97,7 +97,7 @@ export class GetWeatherConditionsUseCase {
         grid: location.requireForecastGrid(),
         target,
       });
-      const forecastZone = resolveTimezone(this.#dependencies.weatherProvider.timeZone);
+      const forecastZone = resolveTimezone(this.#dependencies.weatherProvider.timezone);
       const currentHour = target.toZonedDateTimeISO(forecastZone).hour;
       const hourly = forecast.hourlyForecasts.find((h) => h.hour === currentHour);
       return {

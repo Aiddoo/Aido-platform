@@ -27,14 +27,18 @@ export class InMemoryCacheStore extends CacheStorePort {
   #hits = 0;
   #misses = 0;
 
-  constructor(options: { readonly defaultTtlMs: number; readonly maxItems: number }) {
+  constructor(options: {
+    readonly defaultTtlMs: number;
+    readonly maxItems: number;
+    // 테스트가 UseCase와 같은 FixedClock으로 만료를 옮길 때 넘긴다
+    readonly nowMs?: () => number;
+  }) {
     super();
     this.#defaultTtlMs = options.defaultTtlMs;
     this.#entries = new LRUCache({
       max: options.maxItems,
       ttl: options.defaultTtlMs,
-      // 만료를 Date.now로 재서 테스트의 가짜 시계(setSystemTime)를 그대로 따른다
-      perf: { now: () => Date.now() },
+      perf: { now: options.nowMs ?? (() => Date.now()) },
       // 시각을 타이머로 잠깐 캐시하지 않아 만료 판정이 매번 현재 시각을 본다
       ttlResolution: 0,
     });

@@ -1,6 +1,6 @@
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { TodoCommentId } from "../../../shared/domain/todo-comment-id.vo.js";
+import type { TodoCommentId } from "../../../todo-comments/domain/todo-comment-id.vo.js";
 import type { TodoCommentLike } from "../../domain/todo-comment-like.aggregate.js";
 
 export abstract class TodoCommentLikeRepositoryPort {

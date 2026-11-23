@@ -19,7 +19,7 @@ const newPassword = "NewPassword2!";
 // 이 요청이 현재 비밀번호를 확인한 뒤 저장하기 전에 다른 기기가 먼저 비밀번호를 바꾼다
 class PasswordChangedMeanwhileRepository extends InMemoryLinkedAccountsRepository {
   override async save(linkedAccounts: LinkedAccounts): Promise<boolean> {
-    const otherDevice = await super.findByUserId(linkedAccounts.id);
+    const otherDevice = await super.findByUserId(linkedAccounts.userId);
     if (
       otherDevice != null &&
       otherDevice.changePassword("digest:OtherDevice3!", AUTH_CREDENTIAL_NOW)

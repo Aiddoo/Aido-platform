@@ -10,7 +10,7 @@ import {
   type PushDispatchRepositoryPort,
 } from "../../../push-dispatches/notification-push-dispatches.public.js";
 import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
-import { NotificationId } from "../../../shared/domain/notification-id.vo.js";
+import { NotificationId } from "../../domain/notification-id.vo.js";
 import { withNotificationCopyRevision } from "../messages/notification-copy-revision.messages.js";
 import { pushDispatchIdMissing } from "../notifications.errors.js";
 import { type NotificationRepositoryPort } from "../ports/notification.repository.port.js";

@@ -24,10 +24,10 @@ import type { MutationLockPort } from "#api/shared/application/ports/mutation-lo
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import { Timezone } from "#api/shared/domain/time/timezone.vo";
 
+import { InviteId } from "../../../invites/domain/invite-id.vo.js";
 import { InviteCode } from "../../../shared/domain/invite-code.vo.js";
-import { InviteId } from "../../../shared/domain/invite-id.vo.js";
 import {
   decideInviteRedemption,
   type InviteRedeemDecision,
@@ -92,7 +92,7 @@ interface RedeemContext {
   readonly inviteeId: UserId;
   readonly claims: readonly RewardClaim[];
   readonly now: Temporal.Instant;
-  readonly timeZone: TimeZone;
+  readonly timezone: Timezone;
   readonly previous: InviteRedemption | null;
 }
 
@@ -153,7 +153,7 @@ export class RedeemInviteUseCase {
         claims,
         now,
         // 요청 헤더에서 정규화한 값을 그대로 고정한다. 알 수 없는 값은 활동일 계산이 UTC로 센다
-        timeZone: TimeZone.reconstitute(command.timezone),
+        timezone: Timezone.reconstitute(command.timezone),
         previous,
       });
     });
@@ -264,7 +264,7 @@ export class RedeemInviteUseCase {
       inviteeId,
       claims: context.claims,
       rewardEligible,
-      timeZone: context.timeZone,
+      timezone: context.timezone,
       now: context.now,
     });
     // 수락·보상은 이미 기록했으므로 그 사이 친구가 됐어도 REDEEMED로 답해 replay와 맞춘다

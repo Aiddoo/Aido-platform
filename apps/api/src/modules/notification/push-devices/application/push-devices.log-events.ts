@@ -1,6 +1,7 @@
 export const PushDeviceLogEvent = {
   RELEASE_SESSION_PUSH_DEVICES_RELEASED:
     "notification.delivery.release-session-push-devices.released",
+  RELEASE_SESSION_PUSH_DEVICES_FAILED: "notification.delivery.release-session-push-devices.failed",
   REPORT_PUSH_DEVICE_REPORTED: "notification.delivery.report-push-device.reported",
   REPORT_PUSH_DEVICE_OWNER_TRANSFERRED:
     "notification.delivery.report-push-device.owner.transferred",

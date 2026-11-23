@@ -53,7 +53,7 @@ function getRootElementName(name) {
 /** `dark:-mt-2!`처럼 변형 접두사·중요도 표시를 뗀 여백 유틸리티면 [토큰, 값] */
 function* spacingClassTokens(text) {
   for (const token of text.split(/\s+/u)) {
-    const utility = token.slice(token.lastIndexOf(':') + 1).replace(/^!|!$/gu, '');
+    const utility = token.slice(token.lastIndexOf(':') + 1).replaceAll(/^!|!$/gu, '');
     const match = SPACING_CLASS.exec(utility);
     if (match != null) {
       yield [token, match[1]];

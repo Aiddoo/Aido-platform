@@ -32,15 +32,15 @@ export function toWeeklyAchievementResponse(
 }
 
 export function toWeeklyAchievementListResponse(
-  list: WeeklyAchievementListReadModel,
+  achievements: WeeklyAchievementListReadModel,
   locale: SupportedLocale,
 ): WeeklyAchievementListResponse {
   return {
-    items: list.page.items.map((achievement) =>
-      toWeeklyAchievementResponse(achievement, locale, list.localToday),
+    items: achievements.page.items.map((achievement) =>
+      toWeeklyAchievementResponse(achievement, locale, achievements.localToday),
     ),
-    pagination: list.page.pagination,
-    summary: list.summary,
+    pagination: achievements.page.pagination,
+    summary: achievements.summary,
   };
 }
 

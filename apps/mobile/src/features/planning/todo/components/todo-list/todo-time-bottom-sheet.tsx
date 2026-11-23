@@ -4,7 +4,7 @@ import { useMutation } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 
 import type { TodoUpdateScope } from '../../domains/todo-repeat.model';
-import { getScheduledTime, hasScheduleChanged, TodoPolicy } from '../../domains/todo.model';
+import { findScheduledTime, hasScheduleChanged, TodoPolicy } from '../../domains/todo.model';
 import { useSelectTodoScope } from '../../hooks/use-select-todo-scope';
 import { useSheetTodo } from '../../hooks/use-sheet-todo';
 import { useUpdateTodoScheduleMutationOptions } from '../../queries/todo.mutations';
@@ -39,7 +39,7 @@ TodoTimeBottomSheet.TimeForm = function TimeForm({
   onClose: () => void;
   onTimeScheduled?: () => void;
 }) {
-  const { timeZone } = useDateFormatContext();
+  const { timezone } = useDateFormatContext();
   const todo = useSheetTodo({ onMissing: onClose });
   const updateSchedule = useMutation(useUpdateTodoScheduleMutationOptions());
   const scopeSelector = useSelectTodoScope();
@@ -49,7 +49,7 @@ TodoTimeBottomSheet.TimeForm = function TimeForm({
     return null;
   }
 
-  const localTime = TodoPolicy.getLocalTime(todo, timeZone);
+  const localTime = TodoPolicy.findLocalTime(todo, timezone);
 
   return (
     <TodoScopeStep step={scopeSelector}>
@@ -76,7 +76,7 @@ TodoTimeBottomSheet.TimeForm = function TimeForm({
                 input: {
                   startDate: todo.startDate,
                   endDate: todo.endDate,
-                  scheduledTime: getScheduledTime({ isAllDay, scheduledTime }),
+                  scheduledTime: findScheduledTime({ isAllDay, scheduledTime }),
                   isAllDay,
                 },
               },

@@ -1,4 +1,4 @@
-import { completionRate } from "@aido/api/vocabulary";
+import { completionRate, isAllCompleted } from "@aido/api/vocabulary";
 
 // 알림 문구 키와 같아야 해 값은 그대로 둔다
 const TODO_COMPLETION_MILESTONES = ["FIRST_COMPLETE", "COUNT_10", "COUNT_50", "COUNT_100"] as const;
@@ -29,7 +29,7 @@ export function milestoneForCount(completedCount: number): TodoCompletionMilesto
  * 할 일이 하나도 없는 날은 완료로 치지 않습니다.
  */
 export function isAllCompletedToday(stats: { total: number; completed: number }): boolean {
-  return stats.total > 0 && stats.total === stats.completed;
+  return isAllCompleted(stats.completed, stats.total);
 }
 
 // 홈·위젯 요약. 할 일이 없는 날은 완료로 치지 않는다

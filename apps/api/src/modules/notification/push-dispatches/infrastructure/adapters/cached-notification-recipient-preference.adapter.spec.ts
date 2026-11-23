@@ -31,7 +31,7 @@ class StubUserNotificationSettings extends UserNotificationSettingsPort {
     return this.preferenceRows.find((row) => row.userId === userId) ?? null;
   }
 
-  async findPreferenceReadModelsByUserIds(
+  async listPreferenceReadModelsByUserIds(
     users: readonly UserId[],
   ): Promise<NotificationDeliveryPreferenceWithUserId[]> {
     const userIds = users.map((user) => user.value);
@@ -45,7 +45,7 @@ class StubUserNotificationSettings extends UserNotificationSettingsPort {
     return null;
   }
 
-  async findConsentReadModelsByUserIds(): Promise<NotificationMarketingConsentWithUserId[]> {
+  async listConsentReadModelsByUserIds(): Promise<NotificationMarketingConsentWithUserId[]> {
     return [];
   }
 

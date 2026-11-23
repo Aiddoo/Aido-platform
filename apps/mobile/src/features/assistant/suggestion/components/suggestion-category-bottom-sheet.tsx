@@ -49,7 +49,7 @@ SuggestionCategoryBottomSheet.AcceptForm = function AcceptForm({
   const suggestion = useRetainedValue(
     list.suggestions.find((candidate) => candidate.id === suggestionId) ?? null,
   );
-  const defaultCategoryId = TodoCategoryPolicy.getInitialCategoryId(
+  const defaultCategoryId = TodoCategoryPolicy.findInitialCategoryId(
     categoriesData.categories,
     suggestion?.suggestedCategoryId ?? null,
   );

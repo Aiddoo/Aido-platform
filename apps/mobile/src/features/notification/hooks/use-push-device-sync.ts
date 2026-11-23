@@ -19,7 +19,7 @@ const APP_ACTIVE_SYNC_DELAY_MS = 1_000;
 interface UsePushDeviceSyncOptions {
   authStatus: AuthStatus;
   /** 앞에 떠 있는 채로 시간대가 바뀌면 복귀 이벤트가 없어 이 값으로 알아챈다 */
-  deviceTimeZone?: string;
+  deviceTimezone?: string;
   /** 보고가 성공하면 부른다. 값이 같아 요청을 건너뛴 때도 부르고, 세션이 끝나 보내지 않았거나 끝난 뒤 도착한 보고는 알리지 않는다 */
   onReported?: () => void;
 }
@@ -27,12 +27,12 @@ interface UsePushDeviceSyncOptions {
 /** 기기 등록을 서버와 맞춘다. 로그인한 동안은 권한·토큰을 보고하고, 로그아웃 상태에서는 끝난 세션의 해제를 다시 보낸다 */
 export function usePushDeviceSync({
   authStatus,
-  deviceTimeZone,
+  deviceTimezone,
   onReported,
 }: UsePushDeviceSyncOptions) {
   useReportPushDevice({
     isAuthenticated: authStatus === 'authenticated',
-    deviceTimeZone,
+    deviceTimezone,
     onReported,
   });
   useFlushPushDeviceRelease({ isSignedOut: authStatus === 'unauthenticated' });
@@ -41,11 +41,11 @@ export function usePushDeviceSync({
 /** 권한만 있고 토큰이 빠진 채로 남지 않게 여러 시점에 보고한다 */
 function useReportPushDevice({
   isAuthenticated,
-  deviceTimeZone,
+  deviceTimezone,
   onReported,
 }: {
   isAuthenticated: boolean;
-  deviceTimeZone: string | undefined;
+  deviceTimezone: string | undefined;
   onReported: (() => void) | undefined;
 }) {
   const pushNotification = usePushNotification();
@@ -82,7 +82,7 @@ function useReportPushDevice({
       removeResponseListener();
       i18n.off('languageChanged', handleLanguageChanged);
     };
-  }, [deviceTimeZone, isAuthenticated, pushNotification, reportPushDevice]);
+  }, [deviceTimezone, isAuthenticated, pushNotification, reportPushDevice]);
 
   useOnAppForeground(() => reporterRef.current?.syncSoon());
 }

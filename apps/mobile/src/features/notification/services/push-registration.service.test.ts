@@ -29,7 +29,7 @@ const NOW = toInstant('2026-11-12T09:00:00.000Z');
 
 function setup(
   gateway = createPushNotificationGatewayStub(),
-  getTimeZone = () => 'Asia/Seoul',
+  getTimezone = () => 'Asia/Seoul',
   storage = createMemoryKeyValueStorage(),
   getLanguage = () => 'ko',
 ) {
@@ -46,7 +46,7 @@ function setup(
     deviceIdService: { get: async () => DEVICE_ID },
     registrationRepository,
     logger,
-    getTimeZone,
+    getTimezone,
     getLanguage,
     sessionEpoch,
     now: () => NOW,
@@ -65,10 +65,10 @@ function setup(
 describe('PushRegistrationService.report', () => {
   it('값이 같아도 기기 시간대가 바뀌면 서버가 헤더를 읽도록 다시 보낸다', async () => {
     // Given
-    let timeZone = 'Asia/Seoul';
-    const { service, httpClient } = setup(undefined, () => timeZone);
+    let timezone = 'Asia/Seoul';
+    const { service, httpClient } = setup(undefined, () => timezone);
     await service.report();
-    timeZone = 'America/New_York';
+    timezone = 'America/New_York';
 
     // When
     await service.report();
@@ -97,10 +97,10 @@ describe('PushRegistrationService.report', () => {
 
   it('시간대 보고가 실패하면 다음 복귀 때 다시 보낸다', async () => {
     // Given
-    let timeZone = 'Asia/Seoul';
-    const { service, httpClient } = setup(undefined, () => timeZone);
+    let timezone = 'Asia/Seoul';
+    const { service, httpClient } = setup(undefined, () => timezone);
     await service.report();
-    timeZone = 'America/New_York';
+    timezone = 'America/New_York';
     httpClient.put.mockResolvedValueOnce({
       ok: false,
       error: createNotificationApiError(),
@@ -230,12 +230,12 @@ describe('PushRegistrationService.report', () => {
 
   it('토큰 발급이 실패해도 서버에 보고한 토큰이 있으면 그 토큰으로 보고해 시간대를 맞추고 등록은 지킨다', async () => {
     // Given
-    let timeZone = 'Asia/Seoul';
+    let timezone = 'Asia/Seoul';
     const gateway = createPushNotificationGatewayStub();
-    const { service, httpClient } = setup(gateway, () => timeZone);
+    const { service, httpClient } = setup(gateway, () => timezone);
     await service.report();
     gateway.getToken.mockRejectedValue(new Error('APNs timeout'));
-    timeZone = 'America/New_York';
+    timezone = 'America/New_York';
 
     // When
     const result = await service.report();
@@ -273,7 +273,7 @@ describe('PushRegistrationService.report', () => {
       }),
       registrationRepository: createPushRegistrationRepository(createMemoryKeyValueStorage()),
       logger: createAppLoggerStub(),
-      getTimeZone: () => 'Asia/Seoul',
+      getTimezone: () => 'Asia/Seoul',
       getLanguage: () => 'ko',
       sessionEpoch: createSessionEpoch(),
       now: () => NOW,
@@ -343,7 +343,7 @@ describe('PushRegistrationService.report', () => {
     expect(httpClient.put).toHaveBeenCalledTimes(2);
   });
 
-  it('서버 4xx는 Result.err로 돌려주고 다음 보고를 막지 않는다', async () => {
+  it('서버 4xx는 `fail`로 돌려주고 다음 보고를 막지 않는다', async () => {
     // Given
     const { service, httpClient } = setup();
     const apiError = createNotificationApiError();

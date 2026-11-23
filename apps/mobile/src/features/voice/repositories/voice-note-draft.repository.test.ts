@@ -48,13 +48,13 @@ const STORED_NOTE = {
   memoSavedAt: null,
 };
 
-function createRepository(timeZone = 'Asia/Seoul') {
+function createRepository(timezone = 'Asia/Seoul') {
   const storage = createMemorySyncStorage();
   const logger = createAppLoggerStub();
   const repository = createVoiceNoteDraftRepository({
     storage,
     logger,
-    getTimeZone: () => timeZone,
+    getTimezone: () => timezone,
   });
 
   return { storage, logger, repository };
@@ -283,7 +283,7 @@ describe('VoiceNoteDraftRepository', () => {
     const repository = createVoiceNoteDraftRepository({
       storage: createMemorySyncStorage(),
       logger: createAppLoggerStub(),
-      getTimeZone: () => 'Asia/Seoul',
+      getTimezone: () => 'Asia/Seoul',
     });
     const listener = jest.fn();
     repository.subscribe(listener);

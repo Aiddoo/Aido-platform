@@ -104,6 +104,22 @@
           {
             "property": "passthrough",
             "message": "Zod 4에서 .passthrough()는 옛 문법입니다. z.looseObject를 씁니다."
+          },
+          {
+            "property": "strict",
+            "message": "Zod 4에서 .strict()는 옛 문법입니다. z.strictObject를 씁니다."
+          },
+          {
+            "property": "merge",
+            "message": "Zod 4에서 .merge()는 옛 문법입니다. .extend(other.shape)나 펼친 shape로 합칩니다."
+          },
+          {
+            "property": "superRefine",
+            "message": "Zod 4에서 .superRefine()은 옛 문법입니다. .check()나 .refine()을 씁니다."
+          },
+          {
+            "property": "errorMap",
+            "message": "Zod 4에서 errorMap은 옛 문법입니다. error 옵션을 씁니다."
           }
         ]
       }
@@ -173,6 +189,16 @@
       ],
       "rules": {
         "aido/test-gwt-comments": "error"
+      }
+    },
+    {
+      "files": [
+        "apps/api/src/**/*.use-case.spec.ts",
+        "apps/api/test/fixtures/**/*.ts",
+        "apps/api/test/doubles/**/*.ts"
+      ],
+      "rules": {
+        "aido/no-vitest-mock": "error"
       }
     },
     {
@@ -512,6 +538,36 @@
       }
     },
     {
+      "files": ["apps/api/src/**/*.{ts,tsx}", "packages/api/src/**/*.ts"],
+      "excludeFiles": ["**/*.spec.ts", "**/*.integration-spec.ts", "**/*.test.ts"],
+      "rules": {
+        "aido/no-switch-statement": "error",
+        "eslint/no-var": "error",
+        "eslint/prefer-object-has-own": "error",
+        "eslint/prefer-object-spread": "error",
+        "unicorn/no-array-for-each": "error",
+        "unicorn/no-array-reverse": "error",
+        "unicorn/no-array-sort": "error",
+        "unicorn/prefer-array-find": "error",
+        "unicorn/prefer-array-flat": "error",
+        "unicorn/prefer-array-flat-map": "error",
+        "unicorn/prefer-array-some": "error",
+        "unicorn/prefer-at": "error",
+        "unicorn/prefer-date-now": "error",
+        "unicorn/prefer-includes": "error",
+        "unicorn/prefer-math-trunc": "error",
+        "unicorn/prefer-modern-math-apis": "error",
+        "unicorn/prefer-node-protocol": "error",
+        "unicorn/prefer-object-from-entries": "error",
+        "unicorn/prefer-optional-catch-binding": "error",
+        "unicorn/prefer-regexp-test": "error",
+        "unicorn/prefer-set-has": "error",
+        "unicorn/prefer-spread": "error",
+        "unicorn/prefer-string-replace-all": "error",
+        "unicorn/prefer-string-slice": "error"
+      }
+    },
+    {
       "files": ["apps/api/src/**/*.{ts,tsx}"],
       "excludeFiles": [
         "apps/api/src/**/*.public.ts",
@@ -527,6 +583,38 @@
           }
         ],
         "aido/no-re-export": "error"
+      }
+    },
+    {
+      // apps/mobile/.oxlintrc.json이 extends로 이 override를 받으면 globs는 apps/mobile 기준이라 앱 도구는 store-metadata·plugins·.maestro로 적는다
+      "files": [
+        "scripts/**/*.{js,mjs,cjs,ts}",
+        "tooling/**/*.{js,mjs,cjs,mts,ts}",
+        "turbo/generators/**/*.{mjs,ts}",
+        "apps/api/scripts/**/*.{cjs,mjs,ts}",
+        "store-metadata/**/*.mjs",
+        "plugins/**/*.{js,mjs}",
+        ".maestro/**/scripts/*.{js,ts}"
+      ],
+      "rules": {
+        "unicorn/prefer-string-replace-all": "error",
+        "unicorn/prefer-spread": "error",
+        "unicorn/prefer-at": "error",
+        "unicorn/prefer-node-protocol": "error",
+        "eslint/no-var": "error",
+        "eslint/prefer-object-spread": "error",
+        "unicorn/prefer-import-meta-properties": "error",
+        "unicorn/no-array-for-each": "error",
+        "unicorn/prefer-set-has": "error",
+        "unicorn/prefer-includes": "error",
+        "unicorn/prefer-array-find": "error",
+        "unicorn/prefer-array-some": "error",
+        "unicorn/prefer-array-flat-map": "error",
+        "unicorn/prefer-object-from-entries": "error",
+        "unicorn/prefer-date-now": "error",
+        "unicorn/prefer-optional-catch-binding": "error",
+        "eslint/prefer-object-has-own": "error",
+        "aido/no-abbreviation": "error"
       }
     }
   ]

@@ -3,7 +3,7 @@ import { ApiError } from '@src/core/errors/api-error';
 
 import {
   findTodoSeriesFailure,
-  getTodoSeriesLimit,
+  findTodoSeriesLimit,
   shouldRefreshTodos,
   shouldReopenRepeatPicker,
   type TodoSeriesFailure,
@@ -96,7 +96,7 @@ describe('shouldRefreshTodos', () => {
   );
 });
 
-describe('getTodoSeriesLimit', () => {
+describe('findTodoSeriesLimit', () => {
   it('서버 오류 상세의 한도를 그대로 쓴다', () => {
     // Given
     const error = new ApiError(ErrorCode.TODO_0842, '거절', HttpStatus.BAD_REQUEST, {
@@ -105,7 +105,7 @@ describe('getTodoSeriesLimit', () => {
     });
 
     // When
-    const limit = getTodoSeriesLimit(error);
+    const limit = findTodoSeriesLimit(error);
 
     // Then
     expect(limit).toBe(12);
@@ -116,7 +116,7 @@ describe('getTodoSeriesLimit', () => {
     const error = new ApiError(ErrorCode.TODO_0841, '없음', HttpStatus.NOT_FOUND);
 
     // When
-    const limit = getTodoSeriesLimit(error);
+    const limit = findTodoSeriesLimit(error);
 
     // Then
     expect(limit).toBeNull();

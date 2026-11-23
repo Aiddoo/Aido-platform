@@ -1,4 +1,4 @@
-import { completionRate, DAYS_OF_WEEK, type DayOfWeek } from "@aido/api/vocabulary";
+import { completionRate, DAYS_OF_WEEK, type DayOfWeek, isAllCompleted } from "@aido/api/vocabulary";
 import { groupBy, keyBy, mapValues, orderBy, range, sumBy } from "es-toolkit";
 
 import { plainDateFromDate } from "#api/shared/domain/time/plain-date";
@@ -99,9 +99,28 @@ export function computeDayPatterns(
   });
 }
 
-/**
- * 시간대별 패턴 계산
- */
+// 많이 끝낸 시간부터, 같은 수면 이른 시간부터다. 저장된 옛 리포트도 읽을 때 같은 순서로 맞춘다
+export function orderTimePatterns(patterns: readonly TimePatternItem[]): TimePatternItem[] {
+  return orderBy(patterns, ["count", "hour"], ["desc", "asc"]);
+}
+
+// 주로 끝낸 시간. 끝낸 할 일이 없으면 null이다
+export function findPeakHour(patterns: readonly TimePatternItem[]): number | null {
+  const [peak] = orderTimePatterns(patterns.filter(({ count }) => count > 0));
+  return peak?.hour ?? null;
+}
+
+// 기간에서 할 일을 모두 끝낸 날 수. 날짜별 값이 없는 1.16.0 전 리포트는 null이다
+export function countPerfectDays(
+  dailyCompletions: readonly DailyCompletionItem[] | null,
+): number | null {
+  if (dailyCompletions == null) {
+    return null;
+  }
+  return dailyCompletions.filter(({ completed, total }) => isAllCompleted(completed, total)).length;
+}
+
+/** 끝낸 할 일이 있는 시간대만 센다 */
 export function computeTimePatterns(
   completedTodos: CompletedTodoTime[],
   timezone: string,
@@ -115,10 +134,7 @@ export function computeTimePatterns(
     }
   }
 
-  // 활동이 있는 시간대만 반환
-  return Array.from(hourCounts.entries())
-    .map(([hour, count]) => ({ hour, count }))
-    .sort((a, b) => b.count - a.count);
+  return orderTimePatterns([...hourCounts].map(([hour, count]) => ({ hour, count })));
 }
 
 export function computeDailyCompletions(params: {
@@ -176,7 +192,7 @@ export function computeStreakDays(
       continue;
     }
 
-    if (completed === total) {
+    if (isAllCompleted(completed, total)) {
       streak++;
       cursor = cursor.subtract({ days: 1 });
     } else {

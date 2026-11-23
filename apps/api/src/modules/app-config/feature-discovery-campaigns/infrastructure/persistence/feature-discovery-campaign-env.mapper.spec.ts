@@ -47,7 +47,7 @@ describe("toFeatureDiscoveryCampaign — 환경 설정에 따른 기능 비활�
 
     // Then
     expect(campaign?.toPrimitives()).toEqual({
-      campaignId: "feature-discovery-2026-08",
+      id: "feature-discovery-2026-08",
       minAppVersion: "1.8.0",
       launchedAt: Temporal.Instant.from("2026-08-01T00:00:00.000Z"),
       autoOpen: true,

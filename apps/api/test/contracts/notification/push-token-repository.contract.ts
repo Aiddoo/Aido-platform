@@ -26,7 +26,7 @@ async function register(
 ): Promise<PushTokenReadModel> {
   const device = createRegisteringPushDeviceFixture(overrides);
   await subject.devices.save(device);
-  const records = await subject.tokens.findPushTokensByUser({ userId: device.userId });
+  const records = await subject.tokens.listPushTokensByUser({ userId: device.userId });
   const record = records.find((item) => item.deviceId === device.id.value);
   if (record == null) {
     throw new Error("push token fixture 누락");
@@ -44,7 +44,7 @@ function summaryOf(records: readonly PushTokenReadModel[]) {
 }
 
 async function tokensOf(repository: PushTokenRepositoryPort, userId: string) {
-  return summaryOf(await repository.findPushTokensByUser({ userId: UserId.reconstitute(userId) }));
+  return summaryOf(await repository.listPushTokensByUser({ userId: UserId.reconstitute(userId) }));
 }
 
 export interface PushTokenContractSubject {
@@ -78,8 +78,8 @@ export function describePushTokenRepositoryContract(
       await repository.deactivateInvalidTokens(["ExponentPushToken[1]"], PUSH_TOKEN_FIXTURE_NOW);
 
       // When
-      const all = await repository.findPushTokensByUser({ userId: UserId.reconstitute(USER_ID) });
-      const active = await repository.findPushTokensByUser({
+      const all = await repository.listPushTokensByUser({ userId: UserId.reconstitute(USER_ID) });
+      const active = await repository.listPushTokensByUser({
         userId: UserId.reconstitute(USER_ID),
         activeOnly: true,
       });
@@ -116,8 +116,8 @@ export function describePushTokenRepositoryContract(
       await repository.deactivateInvalidTokens(["ExponentPushToken[2]"], PUSH_TOKEN_FIXTURE_NOW);
 
       // When
-      const mine = await repository.findActivePushTokensByUsers([UserId.reconstitute(USER_ID)]);
-      const both = await repository.findActivePushTokensByUsers([
+      const mine = await repository.listActivePushTokensByUsers([UserId.reconstitute(USER_ID)]);
+      const both = await repository.listActivePushTokensByUsers([
         UserId.reconstitute(USER_ID),
         UserId.reconstitute(OTHER_USER_ID),
       ]);
@@ -150,7 +150,7 @@ export function describePushTokenRepositoryContract(
       );
 
       // Then
-      const tokens = await repository.findPushTokensByUser({
+      const tokens = await repository.listPushTokensByUser({
         userId: UserId.reconstitute(USER_ID),
       });
       expect(result.count).toBe(1);

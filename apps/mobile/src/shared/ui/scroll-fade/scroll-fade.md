@@ -16,7 +16,7 @@
 | --------- | --------------------- | --------------------------------------------------------------- |
 | `surface` | `'screen' \| 'sheet'` | 화면은 `bg-white`, 시트는 `bg-white`(다크 `bg-gray-1`)로 흐린다 |
 
-`ScrollShadow`에서 `LinearGradientComponent`·`color`·`size`를 뺀 나머지는 `...props`다.
+`ScrollShadow`에서 `LinearGradientComponent`·`color`·`size`를 뺀 나머지는 `...props`다. 흐림은 heroui-native 1.1.1의 기본 그라디언트(`backgroundImage`)로 그린다.
 
 ## 동작
 

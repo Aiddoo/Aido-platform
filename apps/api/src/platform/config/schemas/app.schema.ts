@@ -10,9 +10,6 @@ const APP_ENVIRONMENTS = ["development", "staging", "production"] as const;
 
 export type AppEnvironment = (typeof APP_ENVIRONMENTS)[number];
 
-/**
- * 애플리케이션 기본 설정 스키마
- */
 export const appSchema = z.object({
   NODE_ENV: z.enum(NODE_ENVIRONMENTS).default("development"),
   /**

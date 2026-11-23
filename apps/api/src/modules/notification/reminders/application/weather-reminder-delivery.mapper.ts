@@ -3,7 +3,7 @@ import type { SupportedLocale } from "@aido/api/vocabulary";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
-  NotificationHistoryReader,
+  NotificationHistoryReaderPort,
   PublishNotificationBatchUseCase,
 } from "../../notifications/notification-notifications.public.js";
 import type {
@@ -27,7 +27,10 @@ export type WeatherNotificationType = "WEATHER_MORNING" | "WEATHER_EVENING";
 
 export interface WeatherReminderDeliveryDependencies {
   readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
-  readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
+  readonly notificationHistoryReader: Pick<
+    NotificationHistoryReaderPort,
+    "listAlreadyNotifiedUserIds"
+  >;
 }
 
 interface WeatherReminderRecipient {
@@ -81,7 +84,7 @@ export async function filterUnnotifiedWeatherUsers<TUser extends { readonly id: 
   if (users.length === 0) {
     return [];
   }
-  const alreadyNotified = await historyReader.findAlreadyNotifiedUserIds({
+  const alreadyNotified = await historyReader.listAlreadyNotifiedUserIds({
     userIds: users.map((user) => UserId.reconstitute(user.id)),
     type,
     notificationDate: today,

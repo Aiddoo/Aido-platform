@@ -23,7 +23,7 @@ export abstract class PushDeviceRepositoryPort {
     sessionIds: readonly SessionId[],
   ): Promise<{ readonly userIds: readonly UserId[] }>;
   // reportedSince 이후 보고한 기기의 권한이고, 그런 기기가 없는 사용자는 Map에 없다
-  abstract findPermissionStatusesByUsers(
+  abstract listPermissionStatusesByUsers(
     userIds: readonly UserId[],
     reportedSince: Temporal.Instant,
   ): Promise<ReadonlyMap<string, readonly PushPermissionStatus[]>>;

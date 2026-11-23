@@ -5,7 +5,7 @@ import type { MutationLockPort } from "#api/shared/application/ports/mutation-lo
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { TodoCommentId } from "../../../shared/domain/todo-comment-id.vo.js";
+import { TodoCommentId } from "../../domain/todo-comment-id.vo.js";
 import type { TodoCommentAccessReaderPort } from "../ports/todo-comment-access.reader.port.js";
 import type { TodoCommentReaderPort } from "../ports/todo-comment.reader.port.js";
 import type { TodoCommentRepositoryPort } from "../ports/todo-comment.repository.port.js";

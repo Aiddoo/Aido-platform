@@ -76,7 +76,7 @@ export class DrizzleInvitedFriendReader implements InvitedFriendReaderPort {
       toCursor: (row) => row.inviteeId,
       toItems: async (pageRows): Promise<InvitedFriendReadModel[]> => {
         const invitees = keyBy(
-          await this.#userBriefReader.findByUserIds(
+          await this.#userBriefReader.listByUserIds(
             pageRows.map((row) => UserId.reconstitute(row.inviteeId)),
           ),
           (brief) => brief.userId.value,

@@ -39,9 +39,13 @@ jest.mock('expo-crypto', () => {
     },
   };
 });
-// 공식 mock은 CommonJS라 __esModule 표시가 없다. 그대로 두면 default import가
-// 모듈 객체 전체로 잡혀 "Element type is invalid: got object"로 죽어 감싼 모듈을 쓴다.
-jest.mock('@gorhom/bottom-sheet', () => require('./src/testing/mocks/gorhom-bottom-sheet'));
+// TrueSheet는 네이티브 모듈이다. heroui BottomSheet가 쓰는 reanimated 시트는 열고 닫히는 흐름을 흉내 내는 mock으로 바꾼다.
+jest.mock('@lodev09/react-native-true-sheet', () =>
+  require('@lodev09/react-native-true-sheet/mock'),
+);
+jest.mock('@lodev09/react-native-true-sheet/reanimated', () =>
+  require('./src/testing/mocks/react-native-true-sheet-reanimated'),
+);
 jest.mock('react-native-keyboard-controller', () =>
   require('./src/testing/mocks/react-native-keyboard-controller'),
 );

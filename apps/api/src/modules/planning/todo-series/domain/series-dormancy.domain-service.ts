@@ -1,4 +1,4 @@
-import { resolveDeliveryTimezone } from "#api/shared/domain/time/time-zone-name";
+import { resolveDeliveryTimezone } from "#api/shared/domain/time/timezone-name";
 
 import { addDaysToKey, localDateKeyAt } from "../../shared/domain/todo-calendar.domain-service.js";
 

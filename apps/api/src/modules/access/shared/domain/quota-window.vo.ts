@@ -1,5 +1,5 @@
 import { ValueObject } from "#api/shared/domain/model/value-object";
-import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import { Timezone } from "#api/shared/domain/time/timezone.vo";
 
 interface QuotaWindowValue {
   /** QuotaUsage·QuotaCharge의 기간 열 값(예: 2026-M04) */
@@ -10,17 +10,17 @@ interface QuotaWindowValue {
 }
 
 // 월간 quota 기간은 출시 앱 AI 사용량(/v1/ai/usage)과 같은 KST 달력 월이다. 사용자 시간대와 무관한 계약이다
-const MONTHLY_QUOTA_TIME_ZONE = TimeZone.SEOUL;
+const MONTHLY_QUOTA_TIMEZONE = Timezone.SEOUL;
 
 function startOfMonth(month: Temporal.PlainYearMonth): Temporal.Instant {
-  return month.toPlainDate({ day: 1 }).toZonedDateTime(MONTHLY_QUOTA_TIME_ZONE.value).toInstant();
+  return month.toPlainDate({ day: 1 }).toZonedDateTime(MONTHLY_QUOTA_TIMEZONE.value).toInstant();
 }
 
 /** 사용량을 세는 한 기간(KST 달력 월) */
 export class QuotaWindow extends ValueObject<QuotaWindowValue> {
   static create(now: Temporal.Instant): QuotaWindow {
     const month = now
-      .toZonedDateTimeISO(MONTHLY_QUOTA_TIME_ZONE.value)
+      .toZonedDateTimeISO(MONTHLY_QUOTA_TIMEZONE.value)
       .toPlainDate()
       .toPlainYearMonth();
     return new QuotaWindow({

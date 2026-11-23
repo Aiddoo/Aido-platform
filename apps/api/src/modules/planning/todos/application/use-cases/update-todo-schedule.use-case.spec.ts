@@ -1,5 +1,4 @@
 import { ErrorCode } from "@aido/api/errors";
-import { vi } from "vitest";
 
 import {
   createPlanningTodoFixture,
@@ -16,10 +15,6 @@ describe("할 일 일정 수정", () => {
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
     useCase = new UpdateTodoScheduleUseCase(fixture);
   });
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it("끝낸 할 일의 시각을 바꾸면 리마인더를 잡지 않고 지운다", async () => {
     // Given
     const record = fixture.records.get(1);

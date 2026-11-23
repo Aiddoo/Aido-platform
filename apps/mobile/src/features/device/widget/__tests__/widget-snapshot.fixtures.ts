@@ -20,7 +20,7 @@ export function createWidgetSnapshotContext(
     t: echoTranslate,
     locale: 'ko',
     now: toInstant('2026-07-12T09:00:00.000Z'),
-    timeZone: 'Asia/Seoul',
+    timezone: 'Asia/Seoul',
     ...overrides,
   };
 }

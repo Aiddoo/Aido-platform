@@ -1,3 +1,5 @@
+import { isAllCompleted } from "@aido/api/vocabulary";
+
 export interface EffectiveStreakResult {
   streak: number;
   isAtRisk: boolean;
@@ -20,7 +22,7 @@ export function computeEffectiveStreak(params: {
   const yesterday = today.subtract({ days: 1 });
 
   // 전체 완료 시: streak 갱신 여부 판별
-  if (todosCompleted === todosTotal && todosTotal > 0) {
+  if (isAllCompleted(todosCompleted, todosTotal)) {
     // 이미 반영됐거나, 서쪽으로 이동해 오늘이 마지막 완료일보다 앞선 경우(Streak.isCountedThrough와 같은 규칙)
     if (lastCompletedDate != null && Temporal.PlainDate.compare(lastCompletedDate, today) >= 0) {
       return { streak: currentStreak, isAtRisk: false };

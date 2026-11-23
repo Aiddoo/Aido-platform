@@ -1,12 +1,11 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
 
 import sharp from 'sharp';
 
 import { TAB_ICON_IMAGES } from './tab-icon-images.mjs';
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const root = resolve(import.meta.dirname, '..');
 await mkdir(resolve(root, 'assets/tab-icons'), { recursive: true });
 
 for (const { sourcePath, outputPath, size, density } of TAB_ICON_IMAGES) {

@@ -1,6 +1,7 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and, asc, desc, eq, isNull } from "drizzle-orm";
+import { match } from "ts-pattern";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { tupleGreaterThan, tupleLessThan } from "#api/platform/database/keyset";
@@ -74,23 +75,21 @@ function selectedRepliesOf(
       .orderBy(...candidateKey.map((column) => desc(column)))
       .limit(params.size + 1);
   const anchorRow = () => database.select(columnsOf(anchor)).from(anchor);
-  return database.$with("selected").as(() => {
-    switch (params.mode) {
-      case "INITIAL":
-        return database
+  return database.$with("selected").as(() =>
+    match(params.mode)
+      .with("INITIAL", () =>
+        database
           .select(columnsOf(candidateComment))
           .from(candidateComment)
           .where(visibleReply)
           .orderBy(...writtenOrder)
-          .limit(params.size + 1);
-      case "AFTER":
-        return after().unionAll(anchorRow());
-      case "BEFORE":
-        return before().unionAll(anchorRow());
-      case "AROUND":
-        return before().unionAll(anchorRow()).unionAll(after());
-    }
-  });
+          .limit(params.size + 1),
+      )
+      .with("AFTER", () => after().unionAll(anchorRow()))
+      .with("BEFORE", () => before().unionAll(anchorRow()))
+      .with("AROUND", () => before().unionAll(anchorRow()).unionAll(after()))
+      .exhaustive(),
+  );
 }
 
 @Injectable()
@@ -102,7 +101,7 @@ export class DrizzleTodoCommentReplyReader implements TodoCommentReplyReaderPort
   }
 
   /** 묶음 하나의 답글을 작성 순으로 읽는다. 지운 답글은 목록에서 빠지지만 cursor 위치로는 남는다 */
-  async listReplies(
+  async findReplyWindow(
     params: ListTodoCommentRepliesParams,
   ): Promise<TodoCommentWindowReadModel<TodoCommentReadModel> | null> {
     if (params.mode !== "INITIAL" && params.anchorReplyId == null) {

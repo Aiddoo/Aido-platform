@@ -1,9 +1,9 @@
 import { instantFromDate } from "#api/shared/domain/time/instant";
-import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import { Timezone } from "#api/shared/domain/time/timezone.vo";
 import { localDateOf } from "#api/shared/domain/time/zoned-time";
 
 function utcDateOf(at: Date): Temporal.PlainDate {
-  return localDateOf(instantFromDate(at), TimeZone.UTC);
+  return localDateOf(instantFromDate(at), Timezone.UTC);
 }
 
 /** 외부 공급자 한도·청구는 UTC 기준이라 사용량 기간도 UTC 달력으로 나눈다. */

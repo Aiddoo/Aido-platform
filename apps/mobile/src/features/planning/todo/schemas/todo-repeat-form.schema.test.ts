@@ -1,7 +1,7 @@
 import { createDateKey } from '@src/testing/date-key';
 
 import {
-  getTodoRepeatFormIssue,
+  findTodoRepeatFormIssue,
   todoRepeatFormSchema,
   toTodoRepeat,
   type TodoRepeatFormIssue,
@@ -48,7 +48,7 @@ describe('todoRepeatFormSchema', () => {
     const result = todoRepeatFormSchema.safeParse(values);
 
     // Then
-    expect(getTodoRepeatFormIssue(values)).toBe(issue);
+    expect(findTodoRepeatFormIssue(values)).toBe(issue);
     expect(result.success).toBe(false);
     expect(result.error?.issues[0]?.message).toBe(issue);
     expect(result.error?.issues[0]?.path).toEqual([path]);

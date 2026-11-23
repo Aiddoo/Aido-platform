@@ -1,7 +1,7 @@
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
-import { TodoCommentId } from "../../shared/domain/todo-comment-id.vo.js";
+import { TodoCommentId } from "../../todo-comments/domain/todo-comment-id.vo.js";
 import { TodoCommentLikeId } from "./todo-comment-like-id.vo.js";
 
 export interface TodoCommentLikePrimitives {

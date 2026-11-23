@@ -21,7 +21,7 @@ import { usePushDeviceSync } from './use-push-device-sync';
 
 interface SyncProps {
   status: AuthStatus;
-  deviceTimeZone?: string;
+  deviceTimezone?: string;
 }
 
 describe('usePushDeviceSync', () => {
@@ -50,7 +50,7 @@ describe('usePushDeviceSync', () => {
     });
     const httpClient = createHttpClientStub();
     httpClient.put.mockResolvedValue({ ok: true, value: createPushDeviceResponseDto() });
-    const timeZone = { current: 'Asia/Seoul' };
+    const timezone = { current: 'Asia/Seoul' };
     const onReported = jest.fn();
     const di = createTestDi({
       ports: {
@@ -58,14 +58,14 @@ describe('usePushDeviceSync', () => {
         pushNotification: gateway,
         appLifecycle,
         deviceIdStore: createMemoryDeviceIdStore('ios_device-123'),
-        getTimeZone: () => timeZone.current,
+        getTimezone: () => timezone.current,
       },
     });
 
     const initialProps: SyncProps = { status: authStatus };
     const hook = await renderScreenHook(
-      ({ status, deviceTimeZone }: SyncProps) =>
-        usePushDeviceSync({ authStatus: status, deviceTimeZone, onReported }),
+      ({ status, deviceTimezone }: SyncProps) =>
+        usePushDeviceSync({ authStatus: status, deviceTimezone, onReported }),
       { di, initialProps },
     );
     await act(() => jest.advanceTimersByTimeAsync(0));
@@ -74,7 +74,7 @@ describe('usePushDeviceSync', () => {
       ...hook,
       gateway,
       httpClient,
-      timeZone,
+      timezone,
       onReported,
       emitPushTap: () => responseListener?.(),
       appLifecycle,
@@ -126,9 +126,9 @@ describe('usePushDeviceSync', () => {
 
   it('시간대를 바꾸고 앱으로 돌아오면 요청이 없는 화면이어도 바로 보고한다', async () => {
     // Given
-    const { httpClient, timeZone, emitAppState } = await setup();
+    const { httpClient, timezone, emitAppState } = await setup();
     httpClient.put.mockClear();
-    timeZone.current = 'America/New_York';
+    timezone.current = 'America/New_York';
 
     // When
     await act(async () => {
@@ -159,9 +159,9 @@ describe('usePushDeviceSync', () => {
 
   it('푸시를 누르면 시간대가 바뀌었을 때 다시 보고한다', async () => {
     // Given
-    const { httpClient, timeZone, emitPushTap } = await setup();
+    const { httpClient, timezone, emitPushTap } = await setup();
     httpClient.put.mockClear();
-    timeZone.current = 'America/New_York';
+    timezone.current = 'America/New_York';
 
     // When
     await act(async () => {
@@ -175,12 +175,12 @@ describe('usePushDeviceSync', () => {
 
   it('앞에 떠 있는 동안 시간대가 바뀌면 복귀를 기다리지 않고 보고한다', async () => {
     // Given
-    const { httpClient, timeZone, rerender } = await setup();
+    const { httpClient, timezone, rerender } = await setup();
     httpClient.put.mockClear();
-    timeZone.current = 'America/New_York';
+    timezone.current = 'America/New_York';
 
     // When
-    await rerender({ status: 'authenticated', deviceTimeZone: 'America/New_York' });
+    await rerender({ status: 'authenticated', deviceTimezone: 'America/New_York' });
     await act(() => jest.advanceTimersByTimeAsync(0));
 
     // Then
@@ -189,9 +189,9 @@ describe('usePushDeviceSync', () => {
 
   it('보고가 성공할 때만 onReported를 부른다', async () => {
     // Given
-    const { httpClient, onReported, timeZone, emitAppState } = await setup();
+    const { httpClient, onReported, timezone, emitAppState } = await setup();
     expect(onReported).toHaveBeenCalledTimes(1);
-    timeZone.current = 'America/New_York';
+    timezone.current = 'America/New_York';
     httpClient.put.mockResolvedValueOnce({ ok: false, error: createNotificationApiError() });
 
     // When

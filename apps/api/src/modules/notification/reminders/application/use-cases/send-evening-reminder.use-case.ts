@@ -5,7 +5,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
-  NotificationHistoryReader,
+  NotificationHistoryReaderPort,
   PublishNotificationBatchUseCase,
 } from "../../../notifications/notification-notifications.public.js";
 import { createEveningReminderNotificationMessage } from "../../../shared/application/messages/scheduler-notification.messages.js";
@@ -23,10 +23,13 @@ import { ReminderLogEvent } from "../reminders.log-events.js";
 interface EveningReminderStrategyDependencies {
   readonly reader: Pick<
     ScheduledReminderReaderPort,
-    "findFreeEveningReminderUsers" | "findPremiumEveningReminderUsers"
+    "listFreeEveningReminderUsers" | "listPremiumEveningReminderUsers"
   >;
   readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
-  readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
+  readonly notificationHistoryReader: Pick<
+    NotificationHistoryReaderPort,
+    "listAlreadyNotifiedUserIds"
+  >;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
@@ -54,7 +57,7 @@ export class SendEveningReminderUseCase implements TimezoneReminderStrategyPort 
     const premiumUsers =
       reminderTimes.length === 0
         ? []
-        : await this.#dependencies.reader.findPremiumEveningReminderUsers({
+        : await this.#dependencies.reader.listPremiumEveningReminderUsers({
             timezones,
             times: reminderTimes,
             today,
@@ -72,7 +75,7 @@ export class SendEveningReminderUseCase implements TimezoneReminderStrategyPort 
 
     let freeUsers: EveningReminderUserReadModel[] = [];
     if (!userId && isFreeReminderTime) {
-      freeUsers = await this.#dependencies.reader.findFreeEveningReminderUsers({
+      freeUsers = await this.#dependencies.reader.listFreeEveningReminderUsers({
         timezones,
         today,
         tomorrow,
@@ -87,7 +90,7 @@ export class SendEveningReminderUseCase implements TimezoneReminderStrategyPort 
 
     // 중복 방지
     const alreadyNotified =
-      await this.#dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds({
+      await this.#dependencies.notificationHistoryReader.listAlreadyNotifiedUserIds({
         userIds: users.map((u) => UserId.reconstitute(u.id)),
         type: "EVENING_REMINDER",
         notificationDate: today,

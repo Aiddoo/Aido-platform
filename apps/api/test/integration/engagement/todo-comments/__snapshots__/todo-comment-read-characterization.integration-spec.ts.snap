@@ -11054,6 +11054,7 @@ exports[`댓글 읽기 응답 특성 (실제 PostgreSQL) > 상세는 주인이 �
         "canComment": true,
         "canEdit": true,
         "canNudge": false,
+        "canThank": false,
       },
       "todo": {
         "category": {
@@ -11117,6 +11118,7 @@ exports[`댓글 읽기 응답 특성 (실제 PostgreSQL) > 상세는 주인이 �
         "canComment": true,
         "canEdit": false,
         "canNudge": false,
+        "canThank": false,
       },
       "todo": {
         "category": {
@@ -11180,6 +11182,7 @@ exports[`댓글 읽기 응답 특성 (실제 PostgreSQL) > 상세는 주인이 �
         "canComment": true,
         "canEdit": false,
         "canNudge": false,
+        "canThank": false,
       },
       "todo": {
         "category": {
@@ -11243,6 +11246,7 @@ exports[`댓글 읽기 응답 특성 (실제 PostgreSQL) > 상세는 주인이 �
         "canComment": true,
         "canEdit": false,
         "canNudge": false,
+        "canThank": false,
       },
       "todo": {
         "category": {

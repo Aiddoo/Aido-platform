@@ -1,6 +1,6 @@
 import { ErrorCode, HttpStatus } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
-import { err, ok } from '@src/core/errors/result';
+import { fail, ok } from '@src/core/errors/result';
 import {
   createParentTodo,
   createSubTodo,
@@ -221,7 +221,7 @@ describe('AddSubTodoBottomSheet', () => {
     const viewingDate = createDateKey('2026-03-09');
     const httpClient = createHttpClientStub();
     httpClient.post.mockResolvedValue(
-      err(
+      fail(
         new ApiError(
           ErrorCode.SYS_0001,
           '잠시 후 다시 시도해주세요',

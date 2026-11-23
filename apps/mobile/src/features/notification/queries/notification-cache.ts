@@ -30,7 +30,7 @@ function withNotificationsPatched(
 }
 
 /** `notificationId`가 없으면 안 읽은 알림 전부 */
-function findUnreadNotificationIds(pages: NotificationPages | undefined, notificationId?: number) {
+function getUnreadNotificationIds(pages: NotificationPages | undefined, notificationId?: number) {
   return selectPageItems(pages ?? { pages: [] })
     .filter(
       (notification) =>
@@ -59,7 +59,7 @@ export async function optimisticallyMarkNotificationsRead(
   const notificationIds = uniq(
     queryClient
       .getQueriesData<NotificationPages>({ queryKey: NOTIFICATION_QUERY_KEYS.lists() })
-      .flatMap(([_queryKey, pages]) => findUnreadNotificationIds(pages, notificationId)),
+      .flatMap(([_queryKey, pages]) => getUnreadNotificationIds(pages, notificationId)),
   );
   const unreadCount = queryClient.getQueryData(NOTIFICATION_QUERY_KEYS.unreadCount());
   // 하나 읽기는 목록에 안 읽음으로 있을 때만 하나를 뺀다. 수를 아직 모르면 채우지 않고 서버 값을 기다린다

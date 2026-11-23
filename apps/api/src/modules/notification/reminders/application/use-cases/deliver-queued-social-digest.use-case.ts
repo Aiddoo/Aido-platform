@@ -7,14 +7,13 @@ import type { SendSocialDigestUseCase } from "./send-social-digest.use-case.js";
 
 export interface DeliverQueuedSocialDigestCommand {
   readonly timezone: string;
-  /** 배포 전에 등록된 지연 작업은 없을 수 있어 optional로 읽는다 */
-  readonly recipientUserIds?: readonly string[];
+  readonly recipientUserIds: readonly string[];
 }
 
 interface DeliverQueuedSocialDigestDependencies {
   readonly clock: Pick<ClockPort, "now">;
   readonly socialDigest: Pick<SendSocialDigestUseCase, "execute">;
-  readonly logger: Pick<ApplicationLoggerPort, "error" | "warn">;
+  readonly logger: Pick<ApplicationLoggerPort, "error">;
 }
 
 // 저녁 리마인더 90분 뒤 큐가 깨운 소셜 다이제스트를 그 리마인더를 받은 사람에게만 보낸다
@@ -27,13 +26,6 @@ export class DeliverQueuedSocialDigestUseCase {
 
   async execute(payload: DeliverQueuedSocialDigestCommand): Promise<void> {
     try {
-      if (!payload.recipientUserIds?.length) {
-        this.#dependencies.logger.warn({
-          event: ReminderLogEvent.TIMEZONE_AWARE_REMINDER_LEGACY_DIGEST_SKIPPED,
-          timezone: payload.timezone,
-        });
-        return;
-      }
       const timezoneContext = {
         ...timezoneContextAt(this.#dependencies.clock.now(), payload.timezone),
         localHour: 0,

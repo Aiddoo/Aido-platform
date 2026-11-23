@@ -2,7 +2,7 @@ import { ErrorCode, HttpStatus } from '@aido/api/errors';
 import { AI_DATA_SHARING_CONSENT } from '@aido/api/vocabulary';
 import '@src/shared/i18n/init';
 import { ApiError } from '@src/core/errors/api-error';
-import { err, ok } from '@src/core/errors/result';
+import { fail, ok } from '@src/core/errors/result';
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
 import { type EntitlementSnapshot } from '@src/features/billing/subscription/domains/entitlement.model';
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/queries/entitlement-query-keys';
@@ -156,8 +156,8 @@ async function renderEditor(
 async function editContent(content: string) {
   const input = await screen.findByDisplayValue('처음 메모');
   await act(async () => {
-    fireEvent(input, 'focus');
-    fireEvent.changeText(input, content);
+    await fireEvent(input, 'focus');
+    await fireEvent.changeText(input, content);
   });
 }
 
@@ -171,7 +171,7 @@ describe('MemoEditor', () => {
     // When
     await editContent('  고친 메모  ');
     await act(async () => {
-      fireEvent.press(await screen.findByLabelText('저장'));
+      await fireEvent.press(await screen.findByLabelText('저장'));
     });
 
     // Then
@@ -192,7 +192,7 @@ describe('MemoEditor', () => {
     // When
     await editContent('처음 메모  ');
     await act(async () => {
-      fireEvent.press(await screen.findByLabelText('저장'));
+      await fireEvent.press(await screen.findByLabelText('저장'));
     });
 
     // Then
@@ -208,7 +208,7 @@ describe('MemoEditor', () => {
     // When
     await waitFor(() => expect(screen.getByLabelText('뒤로 가기')).toBeTruthy());
     await act(async () => {
-      fireEvent.press(screen.getByLabelText('뒤로 가기'));
+      await fireEvent.press(screen.getByLabelText('뒤로 가기'));
     });
 
     // Then
@@ -283,7 +283,7 @@ describe('MemoEditor', () => {
 
       // When
       await act(async () => {
-        fireEvent.press(screen.getByLabelText('뒤로 가기'));
+        await fireEvent.press(screen.getByLabelText('뒤로 가기'));
       });
 
       // Then
@@ -301,7 +301,7 @@ describe('MemoEditor', () => {
 
     // When
     await act(async () => {
-      fireEvent.press(screen.getByLabelText('뒤로 가기'));
+      await fireEvent.press(screen.getByLabelText('뒤로 가기'));
     });
 
     // Then
@@ -315,20 +315,20 @@ describe('MemoEditor', () => {
     // Given
     const { httpClient, onLeave } = await renderEditor('stack');
     httpClient.post.mockResolvedValue(
-      err(new ApiError(ErrorCode.MEMO_2001, '메모 없음', HttpStatus.NOT_FOUND)),
+      fail(new ApiError(ErrorCode.MEMO_2001, '메모 없음', HttpStatus.NOT_FOUND)),
     );
     await waitFor(() =>
       expect(httpClient.get).toHaveBeenCalledWith('v1/todo-categories', expect.anything()),
     );
     await act(async () => {});
     await act(async () => {
-      fireEvent.press(await screen.findByText('할 일로 바꾸기'));
+      await fireEvent.press(await screen.findByText('할 일로 바꾸기'));
     });
     const sheet = await screen.findByTestId('memo-convert-sheet');
 
     // When
     await act(async () => {
-      fireEvent.press(within(sheet).getByLabelText('저장하기'));
+      await fireEvent.press(within(sheet).getByLabelText('저장하기'));
     });
 
     // Then
@@ -354,7 +354,7 @@ describe('MemoEditor', () => {
 
       // When
       await act(async () => {
-        fireEvent.press(await screen.findByText('할 일로 바꾸기'));
+        await fireEvent.press(await screen.findByText('할 일로 바꾸기'));
       });
 
       // Then
@@ -371,7 +371,7 @@ describe('MemoEditor', () => {
       // Given
       const { httpClient } = await renderEditor('stack');
       httpClient.patch.mockResolvedValue(
-        err(new ApiError(ErrorCode.MEMO_2001, '거절', HttpStatus.BAD_REQUEST)),
+        fail(new ApiError(ErrorCode.MEMO_2001, '거절', HttpStatus.BAD_REQUEST)),
       );
       await editContent('고친 메모');
       await waitFor(() =>
@@ -382,7 +382,7 @@ describe('MemoEditor', () => {
 
       // When
       await act(async () => {
-        fireEvent.press(await screen.findByText('할 일로 바꾸기'));
+        await fireEvent.press(await screen.findByText('할 일로 바꾸기'));
       });
 
       // Then
@@ -400,7 +400,7 @@ describe('MemoEditor', () => {
     // When
     await waitFor(() => expect(screen.getByLabelText('뒤로 가기')).toBeTruthy());
     await act(async () => {
-      fireEvent.press(screen.getByLabelText('뒤로 가기'));
+      await fireEvent.press(screen.getByLabelText('뒤로 가기'));
     });
 
     // Then
@@ -417,7 +417,7 @@ describe('MemoEditor', () => {
 
     // When
     await act(async () => {
-      fireEvent.press(screen.getByLabelText('뒤로 가기'));
+      await fireEvent.press(screen.getByLabelText('뒤로 가기'));
     });
 
     // Then
@@ -433,7 +433,7 @@ describe('MemoEditor', () => {
 
     // When
     await act(async () => {
-      fireEvent.press(screen.getByLabelText('뒤로 가기'));
+      await fireEvent.press(screen.getByLabelText('뒤로 가기'));
     });
 
     // Then
@@ -445,13 +445,13 @@ describe('MemoEditor', () => {
     // Given
     const { httpClient, onLeave } = await renderEditor('stack');
     httpClient.patch.mockResolvedValue(
-      err(new ApiError(ErrorCode.MEMO_2001, '거절', HttpStatus.BAD_REQUEST)),
+      fail(new ApiError(ErrorCode.MEMO_2001, '거절', HttpStatus.BAD_REQUEST)),
     );
     await editContent('고친 메모');
 
     // When
     await act(async () => {
-      fireEvent.press(screen.getByLabelText('뒤로 가기'));
+      await fireEvent.press(screen.getByLabelText('뒤로 가기'));
     });
 
     // Then
@@ -468,7 +468,7 @@ describe('MemoEditor', () => {
 
     // When
     await act(async () => {
-      fireEvent.press(screen.getByLabelText('뒤로 가기'));
+      await fireEvent.press(screen.getByLabelText('뒤로 가기'));
     });
 
     // Then
@@ -494,7 +494,7 @@ describe('MemoEditor', () => {
 
       // When
       await act(async () => {
-        fireEvent.press(await screen.findByLabelText('저장'));
+        await fireEvent.press(await screen.findByLabelText('저장'));
       });
 
       // Then
@@ -509,13 +509,13 @@ describe('MemoEditor', () => {
       httpClient.patch.mockResolvedValue(ok({ message: 'updated', memo: SAVED_MEMO_DTO }));
       await editContent('고친 메모');
       await act(async () => {
-        fireEvent.press(await screen.findByLabelText('저장'));
+        await fireEvent.press(await screen.findByLabelText('저장'));
       });
       await waitFor(() => expect(dismissKeyboard).toHaveBeenCalledTimes(1));
 
       // When
       await act(async () => {
-        fireEvent.press(screen.getByLabelText('뒤로 가기'));
+        await fireEvent.press(screen.getByLabelText('뒤로 가기'));
       });
 
       // Then
@@ -527,13 +527,13 @@ describe('MemoEditor', () => {
       // Given
       const { httpClient, onLeave } = await renderEditor('pane');
       httpClient.patch.mockResolvedValue(
-        err(new ApiError(ErrorCode.MEMO_2001, '거절', HttpStatus.BAD_REQUEST)),
+        fail(new ApiError(ErrorCode.MEMO_2001, '거절', HttpStatus.BAD_REQUEST)),
       );
       await editContent('고친 메모');
 
       // When
       await act(async () => {
-        fireEvent.press(await screen.findByLabelText('저장'));
+        await fireEvent.press(await screen.findByLabelText('저장'));
       });
 
       // Then
@@ -552,7 +552,7 @@ describe('MemoEditor', () => {
 
       // When
       await act(async () => {
-        fireEvent.press(await screen.findByLabelText('저장'));
+        await fireEvent.press(await screen.findByLabelText('저장'));
       });
 
       // Then
@@ -570,7 +570,7 @@ describe('MemoEditor', () => {
 
       // When
       await act(async () => {
-        fireEvent.press(screen.getByLabelText('뒤로 가기'));
+        await fireEvent.press(screen.getByLabelText('뒤로 가기'));
       });
 
       // Then
@@ -620,7 +620,7 @@ describe('MemoEditor', () => {
       const planDraftKey = createMemoPlanDraftKey({
         userId: 'account-1',
         memoId: MEMO_ID,
-        timeZone: 'Asia/Seoul',
+        timezone: 'Asia/Seoul',
       });
       await waitFor(() => expect(di.draftService.restore(planDraftKey).status).toBe('restored'));
       expect(router.push).not.toHaveBeenCalled();
@@ -725,7 +725,7 @@ describe('MemoEditor', () => {
       const { httpClient } = await renderForAiParse({ consent: createAgreedConsent() });
       httpClient.patch.mockResolvedValue(ok(AGREED_CONSENT_DTO));
       httpClient.post
-        .mockResolvedValueOnce(err(CONSENT_REQUIRED_ERROR))
+        .mockResolvedValueOnce(fail(CONSENT_REQUIRED_ERROR))
         .mockResolvedValueOnce(ok(createParseMemoResponseDto()));
       await startAiParse();
       await screen.findByTestId('ai-consent-sheet');
@@ -747,7 +747,7 @@ describe('MemoEditor', () => {
       // Given
       const { httpClient } = await renderForAiParse({ consent: createAgreedConsent() });
       httpClient.patch.mockResolvedValue(ok(AGREED_CONSENT_DTO));
-      httpClient.post.mockResolvedValue(err(CONSENT_REQUIRED_ERROR));
+      httpClient.post.mockResolvedValue(fail(CONSENT_REQUIRED_ERROR));
       await startAiParse();
       await screen.findByTestId('ai-consent-sheet');
 

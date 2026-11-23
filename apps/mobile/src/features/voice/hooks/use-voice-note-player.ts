@@ -111,7 +111,9 @@ function createVoiceNotePlayer({ playlist, parts, durationMs, logger }: CreatePl
 
   const notify = () => {
     ({ playback, memory } = getVoiceNotePlayback(status, parts, memory));
-    listeners.forEach((listener) => listener());
+    for (const listener of listeners) {
+      listener();
+    }
   };
 
   const handleStatus = (next: AudioPartPlaylistStatus) => {

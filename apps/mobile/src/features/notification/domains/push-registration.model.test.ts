@@ -7,7 +7,7 @@ const REPORTED_TOKEN = 'ExponentPushToken[reported]';
 const CURRENT_TOKEN = 'ExponentPushToken[current]';
 const REQUESTED_AT = toInstant('2026-11-11T00:00:00.000Z');
 
-describe('getReportToken', () => {
+describe('findReportToken', () => {
   it.each([
     ['허용했고 토큰을 받았으면 받은 토큰', 'GRANTED', CURRENT_TOKEN, REPORTED_TOKEN, CURRENT_TOKEN],
     [
@@ -25,7 +25,7 @@ describe('getReportToken', () => {
     const permission = createPushPermission({ status });
 
     // When
-    const token = PushRegistrationPolicy.getReportToken(registration, { permission, issuedToken });
+    const token = PushRegistrationPolicy.findReportToken(registration, { permission, issuedToken });
 
     // Then
     expect(token).toBe(expected);

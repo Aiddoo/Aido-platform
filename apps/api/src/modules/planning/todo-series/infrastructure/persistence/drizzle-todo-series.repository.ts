@@ -133,7 +133,7 @@ export class DrizzleTodoSeriesRepository implements TodoSeriesRepositoryPort {
     return updated.length;
   }
 
-  async findDueBatch(query: DueTodoSeriesQuery): Promise<readonly TodoSeriesRef[]> {
+  async listDueBatch(query: DueTodoSeriesQuery): Promise<readonly TodoSeriesRef[]> {
     const rows = await this.#db
       .select({ id: todoSeries.id, userId: todoSeries.userId })
       .from(todoSeries)
@@ -152,7 +152,7 @@ export class DrizzleTodoSeriesRepository implements TodoSeriesRepositoryPort {
     }));
   }
 
-  async findIdsBehind(
+  async listIdsBehind(
     userId: UserId,
     through: Temporal.PlainDate,
   ): Promise<readonly TodoSeriesId[]> {

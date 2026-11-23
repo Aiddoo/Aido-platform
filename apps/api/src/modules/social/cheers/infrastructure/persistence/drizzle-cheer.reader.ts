@@ -142,7 +142,7 @@ export class DrizzleCheerReader implements CheerReaderPort {
   }
 
   async #toCheerReadModels(rows: readonly CheerRow[]): Promise<CheerReadModel[]> {
-    const briefs = await this.#userBriefReader.findByUserIds(
+    const briefs = await this.#userBriefReader.listByUserIds(
       uniq(rows.flatMap((row) => [row.senderId, row.receiverId])).map((userId) =>
         UserId.reconstitute(userId),
       ),

@@ -44,7 +44,7 @@ export function WeatherRescheduleSubmitButton({
   const { t } = useTranslation(['weather', 'todo']);
   const toast = useAppToast();
   const queryClient = useQueryClient();
-  const { timeZone } = useDateFormatContext();
+  const { timezone } = useDateFormatContext();
   const showMutationError = useMutationErrorFeedback();
   const logger = useLogger();
   const { trackEvent } = useTrack();
@@ -127,7 +127,7 @@ export function WeatherRescheduleSubmitButton({
       targets.map(({ todo, startsAt }) =>
         updateSchedule.mutateAsync({
           todoId: todo.id,
-          input: WeatherReschedulePolicy.getMovedScheduleInput(todo, startsAt, timeZone),
+          input: WeatherReschedulePolicy.getMovedScheduleInput(todo, startsAt, timezone),
         }),
       ),
     );

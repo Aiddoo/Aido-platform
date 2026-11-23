@@ -1,9 +1,6 @@
 import { ValueObject } from "#api/shared/domain/model/value-object";
 
-import {
-  localTimeIn,
-  resolveScheduledInstant,
-} from "../../shared/domain/todo-calendar.domain-service.js";
+import { resolveScheduledInstant } from "../../shared/domain/todo-calendar.domain-service.js";
 import { scheduleEndsBeforeStart } from "./todos.errors.js";
 
 export interface TodoScheduleProps {
@@ -53,12 +50,8 @@ export class TodoSchedule extends ValueObject<TodoScheduleProps> {
     });
   }
 
-  /** 옛 서버가 시간을 지운 행은 칸이 낡아 있을 수 있어 순간이 없으면 벽시계도 없는 것으로 읽는다. */
   static reconstitute(props: TodoScheduleProps): TodoSchedule {
-    return new TodoSchedule({
-      ...props,
-      scheduledLocalTime: props.scheduledTime == null ? null : props.scheduledLocalTime,
-    });
+    return new TodoSchedule(props);
   }
 
   static #assertDateOrder({
@@ -95,11 +88,7 @@ export class TodoSchedule extends ValueObject<TodoScheduleProps> {
     // oxlint-disable-next-line aido/no-strict-nullish -- PATCH라 undefined는 기존 값 유지, null은 지우기다
     const keepsTime = partial.scheduledLocalTime === undefined;
     const clearsTime = keepsTime && partial.isAllDay === true;
-    const scheduledLocalTime = !keepsTime
-      ? (partial.scheduledLocalTime ?? null)
-      : clearsTime
-        ? null
-        : this.localTimeIn(timezone);
+    const scheduledLocalTime = this.#nextLocalTime(partial, { keepsTime, clearsTime });
     const startDate = partial.startDate ?? this.startDate;
     const rederives = !keepsTime || clearsTime || partial.startDate != null;
     const merged: TodoScheduleProps = {
@@ -122,16 +111,20 @@ export class TodoSchedule extends ValueObject<TodoScheduleProps> {
     return new TodoSchedule(merged);
   }
 
-  /** 칸이 빈 옛 행은 사용자가 보던 그대로 순간을 지금 시간대로 읽는다. */
-  localTimeIn(timezone: string): string | null {
-    const { scheduledLocalTime, scheduledTime } = this.value;
-    if (scheduledTime == null) {
-      return null;
-    }
-    return scheduledLocalTime ?? localTimeIn(scheduledTime, timezone);
-  }
-
   toPrimitives(): TodoScheduleProps {
     return { ...this.value };
+  }
+
+  #nextLocalTime(
+    partial: TodoSchedulePatch,
+    change: { readonly keepsTime: boolean; readonly clearsTime: boolean },
+  ): string | null {
+    if (!change.keepsTime) {
+      return partial.scheduledLocalTime ?? null;
+    }
+    if (change.clearsTime) {
+      return null;
+    }
+    return this.value.scheduledLocalTime;
   }
 }

@@ -20,8 +20,7 @@ export function toFriendTodoReadModel(row: TodoWithCategory): FriendTodoReadMode
     startDate: row.startDate.toString(),
     endDate: row.endDate?.toString() ?? null,
     scheduledTime: row.scheduledTime == null ? null : toIsoString(row.scheduledTime),
-    // 옛 서버가 시간을 지운 행은 칸이 낡았을 수 있다. 칸이 빈 행은 앱이 순간에서 읽는다.
-    scheduledLocalTime: row.scheduledTime == null ? null : row.scheduledLocalTime,
+    scheduledLocalTime: row.scheduledLocalTime,
     isAllDay: row.isAllDay,
     visibility: row.visibility,
     seriesId: row.seriesId,

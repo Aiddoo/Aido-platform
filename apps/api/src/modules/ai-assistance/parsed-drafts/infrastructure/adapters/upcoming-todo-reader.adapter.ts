@@ -11,7 +11,7 @@ import { UpcomingTodoReaderPort } from "../../application/ports/upcoming-todo.re
 
 @Injectable()
 export class UpcomingTodoReaderAdapter extends UpcomingTodoReaderPort {
-  readonly #todoReader: Pick<TodoPlanReaderPort, "findUpcoming">;
+  readonly #todoReader: Pick<TodoPlanReaderPort, "listUpcoming">;
   readonly #clock: ClockPort;
 
   constructor(todoReader: TodoPlanReaderPort, clock: ClockPort) {
@@ -20,8 +20,8 @@ export class UpcomingTodoReaderAdapter extends UpcomingTodoReaderPort {
     this.#clock = clock;
   }
 
-  findByUserId(userId: UserId, timezone: string): Promise<readonly ExistingTodo[]> {
-    return this.#todoReader.findUpcoming(userId, {
+  listByUserId(userId: UserId, timezone: string): Promise<readonly ExistingTodo[]> {
+    return this.#todoReader.listUpcoming(userId, {
       fromDate: localDateAt(this.#clock.now(), timezone),
       limit: PLANNING_UPCOMING_TODO_LIMIT,
     });

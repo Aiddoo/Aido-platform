@@ -1,9 +1,9 @@
+import type { ReminderTimezoneCachePort } from "#api/modules/notification/reminders/notification-reminders-queries.public";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { ReminderTimezoneCachePort } from "../ports/reminder-timezone-cache.port.js";
 import type { TodoTimezoneRebaseEnqueuerPort } from "../ports/todo-timezone-rebase-enqueuer.port.js";
 import type { UserPreferenceRepositoryPort } from "../ports/user-preference.repository.port.js";
 import type { UserSettingsCachePort } from "../ports/user-settings-cache.port.js";

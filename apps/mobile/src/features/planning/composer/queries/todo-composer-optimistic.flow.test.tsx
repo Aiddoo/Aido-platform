@@ -1,4 +1,4 @@
-import { err, ok } from '@src/core/errors/result';
+import { fail, ok } from '@src/core/errors/result';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/queries/todo-category-query-keys';
 import '@src/shared/i18n/init';
 import {
@@ -231,7 +231,7 @@ describe('useTodoMutations', () => {
         const respond = (result: 'ok' | 'fail') =>
           result === 'ok'
             ? respondWith({ id: 1 })
-            : createPendingResponse(err(createTodoApiError()));
+            : createPendingResponse(fail(createTodoApiError()));
         const addA = respond(a);
         const addB = respond(b);
         httpClient.post.mockReturnValueOnce(addA.response).mockReturnValueOnce(addB.response);
@@ -301,7 +301,7 @@ describe('useTodoMutations', () => {
           }),
         ]),
       );
-      const failedAdd = createPendingResponse(err(createTodoApiError()));
+      const failedAdd = createPendingResponse(fail(createTodoApiError()));
       const pendingToggle = respondWith({ id: 1 });
       httpClient.post.mockReturnValue(failedAdd.response);
       httpClient.patch.mockReturnValue(pendingToggle.response);
@@ -499,7 +499,7 @@ describe('useTodoMutations', () => {
           }),
         ]),
       );
-      const failedTitle = createPendingResponse(err(createTodoApiError()));
+      const failedTitle = createPendingResponse(fail(createTodoApiError()));
       const pendingToggle = respondWith({ id: 1 });
       httpClient.patch
         .mockReturnValueOnce(failedTitle.response)
@@ -541,7 +541,7 @@ describe('useTodoMutations', () => {
           }),
         ]),
       );
-      const failedDelete = createPendingResponse(err(createTodoApiError()));
+      const failedDelete = createPendingResponse(fail(createTodoApiError()));
       httpClient.delete.mockReturnValue(failedDelete.response);
 
       // When
@@ -605,7 +605,7 @@ describe('useTodoMutations', () => {
           }),
         ]),
       );
-      const failedReorder = createPendingResponse(err(createTodoApiError()));
+      const failedReorder = createPendingResponse(fail(createTodoApiError()));
       const pendingToggle = respondWith({ id: 1 });
       httpClient.patch
         .mockReturnValueOnce(failedReorder.response)
@@ -642,7 +642,7 @@ describe('useTodoMutations', () => {
       const { httpClient, queryClient, mutations } = await renderMutations();
       queryClient.setQueryData(LIST_DAY_1, toList([createParentTodo({ startDate: DAY_1 })]));
       queryClient.setQueryData(WEEK_COMPLETIONS, createCompletions(1, 0));
-      const failed = createPendingResponse(err(createTodoApiError()));
+      const failed = createPendingResponse(fail(createTodoApiError()));
       httpClient.patch.mockReturnValue(failed.response);
       const completions = () => queryClient.getQueryData<DailyCompletionsResult>(WEEK_COMPLETIONS);
 
@@ -733,7 +733,7 @@ describe('useTodoMutations', () => {
       queryClient.setQueryData<TodoDetails>(detailsKey, {
         todo,
         owner: { id: 'u', name: null, profileImage: null },
-        permissions: { canEdit: true, canComment: true, canNudge: false },
+        permissions: { canEdit: true, canComment: true, canNudge: false, canThank: false },
         metrics: { viewCount: 0, commentCount: 0 },
       });
       const pending = respondWith({ id: 1 });
@@ -766,7 +766,7 @@ describe('useTodoMutations', () => {
       queryClient.setQueryData(TODO_CATEGORY_QUERY_KEYS.list(), {
         categories: [{ ...CATEGORY, sortOrder: 0, todoCount: 0 }],
       });
-      const failed = createPendingResponse(err(createTodoApiError()));
+      const failed = createPendingResponse(fail(createTodoApiError()));
       httpClient.post.mockReturnValue(failed.response);
       const todos = () => queryClient.getQueryData<TodoListResult>(LIST_DAY_1)?.todos;
 
@@ -916,7 +916,7 @@ describe('useTodoMutations', () => {
         ]),
       );
       queryClient.setQueryData(WEEK_COMPLETIONS, createCompletions(2, 0));
-      const failed = createPendingResponse(err(createTodoApiError()));
+      const failed = createPendingResponse(fail(createTodoApiError()));
       httpClient.delete.mockReturnValue(failed.response);
       const totalTodos = () =>
         queryClient.getQueryData<DailyCompletionsResult>(WEEK_COMPLETIONS)?.completions[0]

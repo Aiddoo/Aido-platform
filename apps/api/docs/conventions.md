@@ -45,15 +45,15 @@
 
 ## Repository 메서드
 
-| 접두사              | 반환        | 비고                                 |
-| ------------------- | ----------- | ------------------------------------ |
-| `find*`             | `T \| null` | 캐시 miss도 `null`(`undefined` 금지) |
-| `list*`             | `T[]`       |                                      |
-| `count*`            | `number`    |                                      |
-| `exists*`           | `boolean`   |                                      |
-| `nextId()`          | Id VO       | 묶음은 `nextIds(count)` 한 쿼리      |
-| `save(aggregate)`   | `void`      | insert-or-update                     |
-| `delete(aggregate)` | `void`      |                                      |
+| 접두사              | 반환        | 비고                                                                        |
+| ------------------- | ----------- | --------------------------------------------------------------------------- |
+| `find*`             | `T \| null` | 캐시 miss도 `null`(`undefined` 금지)                                        |
+| `list*`             | `T[]`       | 키로 묶은 결과는 `ReadonlyMap`·`ReadonlySet`도 `list*`다. 빈 결과는 빈 묶음 |
+| `count*`            | `number`    |                                                                             |
+| `exists*`           | `boolean`   |                                                                             |
+| `nextId()`          | Id VO       | 묶음은 `nextIds(count)` 한 쿼리                                             |
+| `save(aggregate)`   | `void`      | insert-or-update                                                            |
+| `delete(aggregate)` | `void`      |                                                                             |
 
 집합 원자 연산은 업무 이름(`shiftSortOrders`)으로 짓는다. Aggregate 없이 작업 행을 옮기는 작업 원장 저장소도 같다([영속성](persistence.md#repository와-reader)). `-1` 같은 sentinel 대신 `null`을 쓴다. Repository는 로그·enqueue·캐시 정리를 하지 않는다(부수효과는 UseCase에 보이게).
 
@@ -84,6 +84,7 @@
 ## 변수·상수
 
 - 단위 접미사(`timeoutMs`, `ttlSeconds`), boolean은 `is/has/can/should`, 컬렉션은 복수형, id는 `memoId`. `data`·`info`·`item` 같은 뭉뚱그린 이름을 쓰지 않는다.
+- 시간대는 계약·DB·도메인·변수 모두 `timezone`(타입·클래스 `Timezone`, 상수 `_TIMEZONE`, 파일 `timezone-*`)이다. `timeZone`은 외부 API가 그 키를 정한 곳(`Intl.DateTimeFormat`·Temporal 옵션 `timeZone`, `timeZoneId`·`getTimeZoneTransition`, PostgreSQL `TimeZone` 설정)과 출시 앱이 받는 오류 details 키(`invalidTimezone`의 `{ field: "timeZone" }`)에서만 쓴다. 앱도 같은 규칙이다.
 - 축약어를 쓰지 않는다: `ctx` → `timezoneContext`, `tx` → `transaction`, `req`·`res` → `request`·`response`, `err`·`e` → `error`, `val` → `value`, `args`·`opts` → `parameters`·`options`, `cb`·`fn` → 역할 이름, `repo`·`svc`·`msg`·`idx`·`tmp` → 풀어 쓴 이름. 반복 인덱스 `index`와 업계 고유명(`id`·`url`·`ip`·`jwt`)은 이름 그대로다. 배포된 DTO·DB·payload 이름은 바꾸지 않는다(코드 `seriesId` ↔ DB `recurrenceGroupId`).
 - 상수는 `UPPER_SNAKE`이고 단위를 이름에 넣는다. 매직 넘버를 쓰지 않는다.
 
@@ -117,7 +118,8 @@
 - v1·v2 응답은 각 버전 매퍼에서 만든다. 버전·권한 분기를 한 함수에 섞지 않는다.
 - 함께 바뀌지 않으면 버그가 나는 것(계약·큐 payload·잠금 키)은 한 파일에 응집한다. Context 사이 매퍼 중복은 허용한다.
 - 계층을 그대로 통과하는 인자(tx·userId 드릴링)는 CLS·Command 객체로 없앤다.
-- 재발명하지 않는다: es-toolkit(`groupBy`·`keyBy`·`chunk`·`isEqual`·`retry`·`clamp`), ts-pattern, Zod, Temporal. `JSON.stringify` 비교는 `isEqual`로, 직접 짠 재시도 루프는 `retry` 또는 pg-boss 재시도로 바꾼다.
+- 재발명하지 않는다: es-toolkit(`groupBy`·`keyBy`·`chunk`·`isEqual`·`retry`·`clamp`·`orderBy`·`maxBy`·`sample`), ts-pattern, Zod, Temporal. `JSON.stringify` 비교는 `isEqual`로, 직접 짠 재시도 루프는 `retry` 또는 pg-boss 재시도로 바꾼다.
+- 운영 코드(`apps/api/src`·`packages/api/src`, spec 제외)는 `switch`를 쓰지 않는다(`aido/no-switch-statement`). 정렬은 제자리 `.sort` 대신 `orderBy`·`sortBy`, 비교 함수가 필요하면 `toSorted`다. `replaceAll`·`slice`·`for…of`·펼침·`Set#has`는 Oxlint `unicorn/*`가 강제한다.
 - 서버에서 남길 주석 이유의 예: 잠금 순서, Required UoW, 재시도·멱등, 오류 우선순위, 구 앱 호환.
 
 ## Nest 공식 패키지 판단

@@ -6,12 +6,12 @@ const KO_TRAILING_NYANG = /요[ \t]*냥/g;
 const EN_MEOW = /,?[ \t]*\bmeow\b[ \t]*/gi;
 
 const NORMALIZE_PERSONA: Localized<(text: string) => string> = {
-  ko: (text) => text.replace(KO_TRAILING_NYANG, "요"),
+  ko: (text) => text.replaceAll(KO_TRAILING_NYANG, "요"),
   en: (text) =>
     text
-      .replace(EN_MEOW, " ")
-      .replace(/ {2,}/g, " ")
-      .replace(/ +([.!?,])/g, "$1")
+      .replaceAll(EN_MEOW, " ")
+      .replaceAll(/ {2,}/g, " ")
+      .replaceAll(/ +([.!?,])/g, "$1")
       .trim(),
 };
 

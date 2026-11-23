@@ -40,7 +40,11 @@ interface DiscardedSessionStorage {
 function createSessionDraftStorage(): EncryptedSyncStorage {
   const values = new Map<string, string>();
   const listenersByKey = new Map<string, Set<() => void>>();
-  const notify = (key: string) => listenersByKey.get(key)?.forEach((listener) => listener());
+  const notify = (key: string) => {
+    for (const listener of listenersByKey.get(key) ?? []) {
+      listener();
+    }
+  };
 
   return {
     get: (key) => values.get(key),
@@ -56,7 +60,9 @@ function createSessionDraftStorage(): EncryptedSyncStorage {
     clear: () => {
       const keys = [...values.keys()];
       values.clear();
-      keys.forEach(notify);
+      for (const key of keys) {
+        notify(key);
+      }
     },
     subscribe: (key, listener) => {
       const listeners = listenersByKey.get(key) ?? new Set<() => void>();

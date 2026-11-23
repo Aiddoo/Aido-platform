@@ -149,7 +149,7 @@ const QUERY_PARAMS = /\nparams: [\s\S]*$/;
 const EMAIL = /[\w.+-]+@[\w-]+(?:\.[\w-]+)*\.[a-z][\w-]*/gi;
 
 function scrubText(value: string): string {
-  return value.replace(QUERY_PARAMS, "\nparams: [FILTERED]").replace(EMAIL, "[FILTERED]");
+  return value.replace(QUERY_PARAMS, "\nparams: [FILTERED]").replaceAll(EMAIL, "[FILTERED]");
 }
 
 /** 보내기 직전 마지막 정리. 수집 설정이 바뀌어도 인증 헤더·IP·본문·쿠키·DB 바인딩 값·이메일이 나가지 않게 한 번 더 지운다. */
@@ -178,7 +178,7 @@ export function scrubErrorEvent(event: Sentry.ErrorEvent): Sentry.ErrorEvent {
     delete event.request.data;
     delete event.request.cookies;
     if (typeof event.request.query_string === "string") {
-      event.request.query_string = event.request.query_string.replace(
+      event.request.query_string = event.request.query_string.replaceAll(
         FILTERED_QUERY_VALUE,
         "token=[FILTERED]",
       );

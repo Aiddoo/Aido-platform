@@ -1,10 +1,10 @@
 import '@src/shared/i18n/init';
 import { createDateKey } from '@src/testing/date-key';
-import { maxBy, range, sumBy } from 'es-toolkit';
+import { range, sumBy } from 'es-toolkit';
 
 import { TREND_WEEK_COUNT } from '../constants/report-chart.constants';
 import { SAMPLE_REPORT_COUNT } from '../constants/sample-report.constants';
-import { ReportPolicy, type ReportType } from '../domains/report.model';
+import type { ReportType } from '../domains/report.model';
 import { createSampleReport, getSampleTrendWeeks } from './sample-report.view-model';
 
 const TODAY_KEY = createDateKey('2026-11-17');
@@ -25,8 +25,8 @@ describe('createSampleReport', () => {
       completionRate: 78,
       prevCompletionRate: 72,
       streakDays: 3,
+      perfectDays: 3,
     });
-    expect(ReportPolicy.getPerfectDayCount(report)).toBe(3);
   });
 
   it('월간 예시는 지난달 1일부터 말일까지 날마다 기록이 있고 달 끝 5일을 모두 끝냈다', () => {
@@ -62,7 +62,7 @@ describe('createSampleReport', () => {
     );
 
     // Then
-    for (const { stats, dailyCompletions, categoryBreakdown, timePatterns } of reports) {
+    for (const { stats, dailyCompletions, categoryBreakdown, timePatterns, peakHour } of reports) {
       const days = dailyCompletions ?? [];
       expect(sumBy(days, (day) => day.total)).toBe(stats.totalTodos);
       expect(sumBy(days, (day) => day.completed)).toBe(stats.completedTodos);
@@ -71,7 +71,7 @@ describe('createSampleReport', () => {
       expect(sumBy(categoryBreakdown, (category) => category.completed)).toBe(stats.completedTodos);
       expect(sumBy(timePatterns, (pattern) => pattern.count)).toBe(stats.completedTodos);
       // 코치 글이 아침 7시대에 가장 많이 끝냈다고 말한다
-      expect(maxBy(timePatterns, (pattern) => pattern.count)?.hour).toBe(7);
+      expect(peakHour).toBe(7);
     }
   });
 

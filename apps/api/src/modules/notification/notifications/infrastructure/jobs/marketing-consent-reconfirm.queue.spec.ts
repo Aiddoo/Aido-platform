@@ -1,4 +1,4 @@
-import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import { Timezone } from "#api/shared/domain/time/timezone.vo";
 
 import {
   isWithinQuietHours,
@@ -22,10 +22,10 @@ const TIMEZONES = [
   "Pacific/Kiritimati",
 ];
 
-function isQuiet(instant: Temporal.Instant, timeZone: string): boolean {
+function isQuiet(instant: Temporal.Instant, timezone: string): boolean {
   return isWithinQuietHours({
     instant,
-    timeZone: TimeZone.reconstitute(timeZone),
+    timezone: Timezone.reconstitute(timezone),
     window: PUSH_QUIET_HOURS_WINDOW,
   });
 }
@@ -56,10 +56,10 @@ describe("광고성 동의 재확인 큐 계약", () => {
     const tenAmKst = Temporal.Instant.from("2026-07-15T01:00:00Z");
 
     // When
-    const quietAtTenKst = TIMEZONES.filter((timeZone) => isQuiet(tenAmKst, timeZone));
+    const quietAtTenKst = TIMEZONES.filter((timezone) => isQuiet(tenAmKst, timezone));
     const hourlyRuns = Array.from({ length: 24 }, (_, hour) => tenAmKst.add({ hours: hour }));
-    const neverDaytime = TIMEZONES.filter((timeZone) =>
-      hourlyRuns.every((run) => isQuiet(run, timeZone)),
+    const neverDaytime = TIMEZONES.filter((timezone) =>
+      hourlyRuns.every((run) => isQuiet(run, timezone)),
     );
 
     // Then

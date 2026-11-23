@@ -116,8 +116,8 @@ describe('날짜 key 기준 달력 주', () => {
     // 서울은 일요일 0시, LA는 토요일 오전인 같은 순간
     const instant = new Date('2026-10-31T15:00:00Z');
     const readWeeks = () =>
-      ['Asia/Seoul', 'America/Los_Angeles'].map((timeZone) => {
-        const todayDateKey = toDateKey(instant, timeZone);
+      ['Asia/Seoul', 'America/Los_Angeles'].map((timezone) => {
+        const todayDateKey = toDateKey(instant, timezone);
         return { todayDateKey, ...getCalendarWeek(todayDateKey) };
       });
     await i18n.changeLanguage(from);
@@ -191,9 +191,9 @@ describe('addDaysToDateKey — 날짜 key에 달력 일수 더하기', () => {
     const keys = range(800).map((offset) => addDaysToDateKey(start, offset));
 
     // Then
-    keys.forEach((key, offset) => {
+    for (const [offset, key] of keys.entries()) {
       expect(diffDateKeysInDays(start, key)).toBe(offset);
-    });
+    }
     expect(new Set(keys).size).toBe(800);
   });
 });

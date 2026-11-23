@@ -272,11 +272,11 @@ describe('AppProviders', () => {
   beforeEach(() => {
     // 앱 화면 묶음 레이아웃이 선언한 화면을 다 만들지 않아 expo-router가 화면마다 남기는 경고만 거른다
     const warn = console.warn;
-    jest.spyOn(console, 'warn').mockImplementation((...args: unknown[]) => {
-      if (String(args[0]).startsWith('[Layout children]')) {
+    jest.spyOn(console, 'warn').mockImplementation((...warnArguments: unknown[]) => {
+      if (String(warnArguments[0]).startsWith('[Layout children]')) {
         return;
       }
-      warn(...args);
+      warn(...warnArguments);
     });
   });
 

@@ -133,7 +133,7 @@ export class InviteNotifierAdapter extends InviteNotifierPort {
   }
 
   async isInQuietHours(userId: UserId, at: Temporal.Instant): Promise<boolean> {
-    const quietUserIds = await this.#quietHoursReader.findUsersInQuietHours([userId], at);
+    const quietUserIds = await this.#quietHoursReader.listUsersInQuietHours([userId], at);
     return quietUserIds.has(userId.value);
   }
 }

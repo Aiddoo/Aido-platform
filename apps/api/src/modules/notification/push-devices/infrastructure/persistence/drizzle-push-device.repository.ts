@@ -84,7 +84,7 @@ export class DrizzlePushDeviceRepository implements PushDeviceRepositoryPort {
     return { userIds: deleted.map((row) => UserId.reconstitute(row.userId)) };
   }
 
-  async findPermissionStatusesByUsers(
+  async listPermissionStatusesByUsers(
     userIds: readonly UserId[],
     reportedSince: Temporal.Instant,
   ): Promise<ReadonlyMap<string, readonly PushPermissionStatus[]>> {

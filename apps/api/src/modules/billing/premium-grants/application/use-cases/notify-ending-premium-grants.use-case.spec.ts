@@ -15,10 +15,10 @@ import {
   SUBSCRIPTION_FIXTURE_OTHER_USER_ID,
 } from "#test/fixtures/billing/subscription.fixture";
 
-import { SweepBillingNoticesUseCase } from "../../../shared/application/use-cases/sweep-billing-notices.use-case.js";
 import type { PremiumGrantEndingNotice } from "../../domain/premium-grant-ending-notice.entity.js";
 import type { PremiumGrant } from "../../domain/premium-grant.aggregate.js";
 import { NotifyEndingPremiumGrantsUseCase } from "./notify-ending-premium-grants.use-case.js";
+import { SweepBillingNoticesUseCase } from "./sweep-billing-notices.use-case.js";
 
 const NOW = PREMIUM_GRANT_FIXTURE_NOW;
 

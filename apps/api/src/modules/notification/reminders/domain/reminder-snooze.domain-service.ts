@@ -3,7 +3,7 @@ import { TODO_REMINDER_SNOOZE_MINUTES } from "@aido/api/vocabulary";
 import type { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { NotificationId } from "../../shared/domain/notification-id.vo.js";
+import type { NotificationId } from "../../notifications/domain/notification-id.vo.js";
 import type { NotificationType } from "../../shared/domain/notification-type.constants.js";
 import { isActionableTodoReminderStage } from "../../shared/domain/todo-reminder-stage.constants.js";
 import { REMINDER_LATE_SKIP_REASON } from "./notification-schedule.domain-service.js";

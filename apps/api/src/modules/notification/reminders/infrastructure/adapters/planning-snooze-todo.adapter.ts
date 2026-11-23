@@ -11,14 +11,14 @@ import type { SnoozeTodoReadModel } from "../../application/read-models/schedule
 /** 다시 알림을 걸 할 일의 주인과 완료 여부를 planning 조회 포트로 읽는다. */
 @Injectable()
 export class PlanningSnoozeTodoAdapter implements SnoozeTodoReaderPort {
-  readonly #todoBriefReader: Pick<TodoBriefReaderPort, "findByIds">;
+  readonly #todoBriefReader: Pick<TodoBriefReaderPort, "listByIds">;
 
   constructor(todoBriefReader: TodoBriefReaderPort) {
     this.#todoBriefReader = todoBriefReader;
   }
 
   async findTodo(todoId: TodoId): Promise<SnoozeTodoReadModel | null> {
-    const [todo] = await this.#todoBriefReader.findByIds([todoId]);
+    const [todo] = await this.#todoBriefReader.listByIds([todoId]);
     if (todo == null) {
       return null;
     }

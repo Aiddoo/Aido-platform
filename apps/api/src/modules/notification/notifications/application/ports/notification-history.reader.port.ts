@@ -12,19 +12,19 @@ export interface ExistsRecentNotificationQuery {
   readonly todoId?: TodoId;
 }
 
-export interface FindAlreadyNotifiedUserIdsQuery {
+export interface ListAlreadyNotifiedUserIdsQuery {
   readonly userIds: readonly UserId[];
   readonly type: NotificationType;
   readonly notificationDate: Temporal.PlainDate;
   readonly friendId?: UserId;
 }
 
-export interface FindWinbackStagesSinceQuery {
+export interface ListWinbackStagesSinceQuery {
   // 사용자마다 이 순간(마지막 활동) 뒤에 만든 알림만 센다
   readonly recipients: readonly { readonly userId: UserId; readonly since: Temporal.Instant }[];
 }
 
-export interface FindNudgeSuggestedFriendsQuery {
+export interface ListNudgeSuggestedFriendsQuery {
   readonly userIds: readonly UserId[];
   // 알림 날짜 [start, end)
   readonly start: Temporal.PlainDate;
@@ -34,14 +34,14 @@ export interface FindNudgeSuggestedFriendsQuery {
 // 중복 발송 판단에 쓰는 알림 이력 조회다
 export abstract class NotificationHistoryReaderPort {
   abstract existsRecentNotification(query: ExistsRecentNotificationQuery): Promise<boolean>;
-  abstract findAlreadyNotifiedUserIds(query: FindAlreadyNotifiedUserIdsQuery): Promise<Set<string>>;
+  abstract listAlreadyNotifiedUserIds(query: ListAlreadyNotifiedUserIdsQuery): Promise<Set<string>>;
   // 사용자 id → 받은 WINBACK 단계(metadata.stage)
-  abstract findWinbackStagesSince(
-    query: FindWinbackStagesSinceQuery,
+  abstract listWinbackStagesSince(
+    query: ListWinbackStagesSinceQuery,
   ): Promise<ReadonlyMap<string, ReadonlySet<string>>>;
   // 사용자 id → 찔러보라고 제안받은 친구 id
-  abstract findNudgeSuggestedFriends(
-    query: FindNudgeSuggestedFriendsQuery,
+  abstract listNudgeSuggestedFriends(
+    query: ListNudgeSuggestedFriendsQuery,
   ): Promise<ReadonlyMap<string, ReadonlySet<string>>>;
   abstract hasMilestoneNotification(
     userId: UserId,

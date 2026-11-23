@@ -141,9 +141,7 @@ describe('MutationErrorFeedback', () => {
     const { unmount } = await renderScreenHook(() => null, {
       di: createTestDi({ ports: { haptics, queryClient } }),
     });
-    await act(async () => {
-      unmount();
-    });
+    await unmount();
 
     // When
     await queryClient

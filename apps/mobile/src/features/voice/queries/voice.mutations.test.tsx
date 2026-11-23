@@ -1,7 +1,7 @@
 import { ErrorCode } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 import '@src/shared/i18n/init';
-import { err, ok, type Result } from '@src/core/errors/result';
+import { fail, ok, type Result } from '@src/core/errors/result';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
 import { Button } from '@src/shared/ui';
 import {
@@ -125,7 +125,7 @@ describe('useApplyActionPlanMutationOptions', () => {
     // When
     const { queryClient } = await renderApply(
       null,
-      err(new ApiError(ErrorCode.SYS_0001, '서버 오류', 500)),
+      fail(new ApiError(ErrorCode.SYS_0001, '서버 오류', 500)),
     );
 
     // Then
@@ -138,7 +138,7 @@ describe('useApplyActionPlanMutationOptions', () => {
     // When
     const { onMemoChanged } = await renderApply(
       42,
-      err(new ApiError('MEMO_2001', '메모 없음', 404)),
+      fail(new ApiError('MEMO_2001', '메모 없음', 404)),
     );
 
     // Then

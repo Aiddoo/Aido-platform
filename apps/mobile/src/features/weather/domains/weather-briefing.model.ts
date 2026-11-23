@@ -17,12 +17,12 @@ import type {
 } from './weather-report.model';
 import { isNowcastExpired } from './weather-report.model';
 
-const OVERCAST_CONDITIONS: readonly WeatherCondition[] = [
+const OVERCAST_CONDITIONS: ReadonlySet<WeatherCondition> = new Set([
   'CLOUDY',
   'MOSTLY_CLOUDY',
   'FOGGY',
   'HAZY',
-];
+]);
 
 /** 하위 할 일 진행. 하위 할 일이 없으면 null이다. */
 type BriefingSubTodoProgress = { completed: number; total: number } | null;
@@ -42,14 +42,14 @@ export interface BriefingTodo {
 /** 여러 날 할 일은 시작일이 어제여도 오늘 목록에 있어 보고 있는 날짜 + 벽시계 + 기기 시간대로 시각을 만든다 */
 function toBriefingTodo(
   todo: Todo,
-  { date, timeZone }: { date: DateKey; timeZone: string },
+  { date, timezone }: { date: DateKey; timezone: string },
 ): BriefingTodo {
-  const localTime = TodoPolicy.getLocalTime(todo, timeZone);
+  const localTime = TodoPolicy.findLocalTime(todo, timezone);
   return {
     id: todo.id,
     title: todo.title,
     localTime,
-    scheduledAt: localTime == null ? null : toZonedInstant({ date, time: localTime, timeZone }),
+    scheduledAt: localTime == null ? null : toZonedInstant({ date, time: localTime, timezone }),
     completed: todo.completed,
     subTodoProgress: SubTodoPolicy.hasSubTodos(todo.subTodos)
       ? SubTodoPolicy.getSubTodoStats(todo.subTodos)
@@ -152,7 +152,7 @@ function getAffectedTodos(
 
 function isOvercastNow(hourly: readonly HourlyForecastEntry[], now: Instant): boolean {
   const current = hourly[getHourIndexAt(hourly, now)];
-  return current != null && OVERCAST_CONDITIONS.includes(current.condition);
+  return current != null && OVERCAST_CONDITIONS.has(current.condition);
 }
 
 /** 서버 머리글이 할 일을 짚었는데 그 할 일이 오늘 목록에 없으면(지웠거나 지났으면) 알릴 날씨가 없는 카드다 */
@@ -165,7 +165,7 @@ function toCalmBriefing(todos: ForecastTodo[]): BriefingResult {
  * 목록에 기대는 표시만 고른다. 브리핑에서 체크해 완료해도 카드가 바뀌지 않도록 완료한 할 일도 줄로 남긴다.
  * 서버가 판단하지 못한 리포트(오늘 할 일 읽기 실패)는 null이다.
  */
-export function getWeatherBriefing(
+export function findWeatherBriefing(
   report: BriefingSource,
   todos: readonly BriefingTodo[],
   { now }: { now: Instant },
@@ -225,7 +225,7 @@ export function getWeatherBriefing(
 }
 
 /** 추천 시간대 안에서 지금 이후 첫 시간별 예보의 시작 시각. 30분 단위 시간대도 예보 칸에 맞는다. 모두 지났으면 제안하지 않는다. */
-function getSuggestedStartAt(
+function findSuggestedStartAt(
   range: HourWindow,
   hourly: readonly HourlyForecastEntry[],
   now: Instant,
@@ -244,14 +244,14 @@ type BriefingState = 'loading' | 'hidden' | 'visible';
 // 브리핑 카드는 예보의 브리핑 칸만 구독해 Policy 밖 함수로 두고 필요한 칸만 받는다
 export function getBriefingState(
   report: Pick<WeatherReport, 'location' | 'fetchedAt'> | undefined,
-  { now, deviceTimeZone }: { now: Instant; deviceTimeZone: string },
+  { now, deviceTimezone }: { now: Instant; deviceTimezone: string },
 ): BriefingState {
   if (report == null) {
     return 'loading';
   }
   if (
     isNowcastExpired(report, now) ||
-    !hasSameWallClock(now, report.location.timezone, deviceTimeZone)
+    !hasSameWallClock(now, report.location.timezone, deviceTimezone)
   ) {
     return 'hidden';
   }
@@ -273,7 +273,7 @@ export const WeatherBriefingPolicy = {
   isTodoWithinRange,
   getUncompletedTodoIds,
   toBriefingTodo,
-  getSuggestedStartAt,
+  findSuggestedStartAt,
   getForecastTodos,
   getAffectedTodos,
 } as const;

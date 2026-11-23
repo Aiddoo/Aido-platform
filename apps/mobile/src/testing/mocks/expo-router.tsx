@@ -37,9 +37,9 @@ function useRunFocusEffect(effect: () => void | (() => void)) {
  * jest.setup의 beforeEach가 불러 테스트마다 기본값에서 시작하게 한다.
  */
 export function resetExpoRouterMock() {
-  Object.values(router).forEach((method) => {
+  for (const method of Object.values(router)) {
     method.mockReset();
-  });
+  }
   router.canGoBack.mockReturnValue(true);
   router.canDismiss.mockReturnValue(false);
   useLocalSearchParams.mockReset().mockImplementation(() => ({}));

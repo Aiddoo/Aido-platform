@@ -7,7 +7,7 @@ import {
 } from 'react-native-reorderable-list';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { getReorderInstruction, type ReorderInstruction } from '../utils/get-reorder-instruction';
+import { findReorderInstruction, type ReorderInstruction } from '../utils/find-reorder-instruction';
 
 /** 바로 켜면 Android에서 행 위 스와이프를 끌기가 가져가 스크롤이 멈춘다. `panGesture`는 gesture-handler 2 타입이라 3과 맞지 않아 `panActivateAfterLongPress`를 쓴다 */
 const DRAG_ACTIVATION_DELAY_MS = 520;
@@ -75,7 +75,7 @@ export function useReorderableList<TItem, TId>({
   const handleReorder = ({ from, to }: ReorderableListReorderEvent) => {
     const shown = shownRef.current;
     const reorderedItems = reorderItems(shown.items, from, to);
-    const instruction = getReorderInstruction({ reorderedItems, from, to, getItemId });
+    const instruction = findReorderInstruction({ reorderedItems, from, to, getItemId });
     if (instruction == null || reorderedItems.some(isOptimistic)) {
       setHold(null);
       return;

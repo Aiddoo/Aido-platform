@@ -29,7 +29,7 @@ describe("FakeOAuthProviderRegistry", () => {
     fakeRegistry.setExchangeToken("GOOGLE", "success-code", "fake-id-token");
 
     // When
-    const result = await fakeRegistry.registry.get("GOOGLE")?.exchangeCode("success-code");
+    const result = await fakeRegistry.registry.find("GOOGLE")?.exchangeCode("success-code");
 
     // Then
     expect(result).toEqual({ token: "fake-id-token" });
@@ -44,7 +44,7 @@ describe("FakeOAuthProviderRegistry", () => {
     fakeRegistry.simulateExchangeFailure("GOOGLE", "invalid-code", new Error("exchange rejected"));
 
     // When
-    const result = fakeRegistry.registry.get("GOOGLE")?.exchangeCode("invalid-code");
+    const result = fakeRegistry.registry.find("GOOGLE")?.exchangeCode("invalid-code");
 
     // Then
     await expect(result).rejects.toThrow("exchange rejected");

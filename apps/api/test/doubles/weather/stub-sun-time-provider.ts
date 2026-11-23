@@ -10,7 +10,7 @@ export class StubSunTimeProvider extends SunTimeProviderPort {
   failure: Error | null = null;
 
   /** 결과는 UTC 날짜(`YYYY-MM-DD`)별로 정할 수 있다 */
-  async getSunTime(lat: number, lon: number, at: Temporal.Instant): Promise<SunTime | null> {
+  async findSunTime(lat: number, lon: number, at: Temporal.Instant): Promise<SunTime | null> {
     this.calls.push({ lat, lon, at });
     if (this.failure !== null) {
       throw this.failure;

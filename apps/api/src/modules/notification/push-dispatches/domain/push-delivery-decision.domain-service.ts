@@ -1,7 +1,7 @@
 import type { PushDispatchSkipReason } from "@aido/api/vocabulary";
 
-import { resolveTimezone } from "#api/shared/domain/time/time-zone-name";
-import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import { resolveTimezone } from "#api/shared/domain/time/timezone-name";
+import { Timezone } from "#api/shared/domain/time/timezone.vo";
 
 import type { CreateNotificationData } from "../../shared/domain/notification-draft.constants.js";
 import { todoReminderPushEndsAt } from "../../shared/domain/reminder-occurrence.domain-service.js";
@@ -67,13 +67,13 @@ export function decidePushExpiry<TCandidate>(
   input: PushExpiryDecisionInput<TCandidate>,
 ): PushDeliverySettingsDecision<TCandidate> {
   const { candidate, data } = input;
-  const timeZone = TimeZone.reconstitute(resolveTimezone(input.timezone));
+  const timezone = Timezone.reconstitute(resolveTimezone(input.timezone));
   const expiry = resolvePushExpiry({
     type: data.type,
     now: input.now,
-    timeZone,
+    timezone,
     expiresBeforeQuietHours: input.expiresBeforeQuietHours,
-    reminderEndsAt: data.type === "TODO_REMINDER" ? todoReminderPushEndsAt(data, timeZone) : null,
+    reminderEndsAt: data.type === "TODO_REMINDER" ? todoReminderPushEndsAt(data, timezone) : null,
   });
   if (expiry.status === "quiet-hours") {
     return skippedPushDelivery(

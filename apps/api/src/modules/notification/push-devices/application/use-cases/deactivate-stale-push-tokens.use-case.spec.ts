@@ -53,7 +53,7 @@ describe("DeactivateStalePushTokensUseCase", () => {
 
     // Then
     expect(result).toEqual({ deactivatedCount: 1, completed: true });
-    const activeTokens = await pushTokenRepository.findActivePushTokensByUsers(
+    const activeTokens = await pushTokenRepository.listActivePushTokensByUsers(
       ["user-stale", "user-boundary"].map((userId) => UserId.reconstitute(userId)),
     );
     expect(activeTokens.map(({ token }) => token).toSorted()).toEqual([

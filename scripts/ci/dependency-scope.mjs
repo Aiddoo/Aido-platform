@@ -2,7 +2,6 @@
 // 패키지 밖 파일(prod compose·deploy 스크립트·.dockerignore)이 들어간다.
 // 사용: node scripts/ci/dependency-scope.mjs <base> <head> >> "$GITHUB_OUTPUT"
 import { execFileSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
 
 const isDocumentation = (path) =>
   /\.(md|mdx)$/.test(path) ||
@@ -62,7 +61,7 @@ function changedPaths(base, head) {
   }
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (import.meta.main) {
   const paths = changedPaths(process.argv[2], process.argv[3]);
   const scope = { ...dependencyScope(paths), docs: touchesDocumentation(paths) };
   process.stdout.write(

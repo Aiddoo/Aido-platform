@@ -6,7 +6,7 @@ import type { TodoId } from "../../domain/todo-id.vo.js";
 import type { TodaySummaryTodoReadModel } from "../read-models/today-summary-todo.read-model.js";
 import type { FriendTodoReadModel, TodoReadModel } from "../read-models/todo.read-model.js";
 
-export interface FindTodosParams {
+export interface ListTodosParams {
   readonly userId: UserId;
   readonly cursor?: number;
   readonly size: number;
@@ -16,7 +16,7 @@ export interface FindTodosParams {
   readonly endDate?: Temporal.PlainDate;
 }
 
-export interface FindFriendTodosParams {
+export interface ListFriendTodosParams {
   readonly friendUserId: UserId;
   readonly cursor?: number;
   readonly size: number;
@@ -34,14 +34,14 @@ export abstract class TodoReadRepositoryPort {
   abstract findByIdAndUserId(id: TodoId, userId: UserId): Promise<TodoReadModel | null>;
 
   /** 할 일들의 소유자(중복 없이). 목록 캐시 키가 소유자 기준이라 이 한 컬럼이면 충분하다. 없는 할 일은 빠진다 */
-  abstract findOwnerIds(ids: readonly TodoId[]): Promise<string[]>;
+  abstract listOwnerIds(ids: readonly TodoId[]): Promise<string[]>;
 
   /** 반복 할 일의 회차 전체 (sortOrder asc — 생성 순서와 동일) */
-  abstract findManyBySeriesId(userId: UserId, seriesId: TodoSeriesId): Promise<TodoReadModel[]>;
+  abstract listBySeriesId(userId: UserId, seriesId: TodoSeriesId): Promise<TodoReadModel[]>;
 
-  abstract findManyByUserId(params: FindTodosParams): Promise<TodoReadModel[]>;
+  abstract listByUserId(params: ListTodosParams): Promise<TodoReadModel[]>;
 
-  abstract findPublicTodosByUserId(params: FindFriendTodosParams): Promise<FriendTodoReadModel[]>;
+  abstract listPublicTodosByUserId(params: ListFriendTodosParams): Promise<FriendTodoReadModel[]>;
 
   /** 카테고리 한도에 세는 수: 반복 아닌 미완료 + 진행 중 규칙 1개당 1 */
   abstract countCategoryUsage(userId: UserId, categoryId: TodoCategoryId): Promise<number>;
@@ -62,7 +62,7 @@ export abstract class TodoReadRepositoryPort {
    * 오늘 할 일 상위 목록 (홈 위젯용) — 미완료 우선, 이후 카테고리/정렬 순.
    * 단일 쿼리 + 필요한 컬럼만 조회한다 (전체 read model 대비 경량).
    */
-  abstract findTodayTopTodos(
+  abstract listTodayTopTodos(
     userId: UserId,
     today: Temporal.PlainDate,
     limit: number,

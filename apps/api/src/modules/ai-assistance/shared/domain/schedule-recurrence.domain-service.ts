@@ -193,7 +193,7 @@ function daysBetween(from: CalendarDay, to: CalendarDay): DayOfWeek[] {
 }
 
 function sortDays(days: readonly DayOfWeek[]): DayOfWeek[] {
-  return uniq(days).sort((left, right) => isoIndex(left) - isoIndex(right));
+  return uniq(days).toSorted((left, right) => isoIndex(left) - isoIndex(right));
 }
 
 function resolveDurationEnd({ forDuration }: RepeatRef, start: CalendarDay): CalendarDay {

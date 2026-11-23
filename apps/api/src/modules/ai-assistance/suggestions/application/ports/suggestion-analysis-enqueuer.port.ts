@@ -6,7 +6,7 @@ export interface SuggestionAnalysisJob {
   readonly userId: UserId;
   readonly localDate: Temporal.PlainDate;
   readonly trigger: SuggestionAnalysisTrigger;
-  readonly timeZone: string;
+  readonly timezone: string;
 }
 
 export abstract class SuggestionAnalysisEnqueuerPort {

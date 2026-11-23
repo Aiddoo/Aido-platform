@@ -23,7 +23,7 @@ export interface LinkOAuthAccountCommand {
 
 interface LinkOAuthAccountDependencies {
   readonly userMutationLock: Pick<UserMutationLockPort, "lockById">;
-  readonly registry: Pick<OAuthIdentityProviderRegistryPort, "get">;
+  readonly registry: Pick<OAuthIdentityProviderRegistryPort, "find">;
   readonly linkOAuthIdentity: Pick<LinkOAuthIdentityUseCase, "execute">;
   readonly unitOfWork: UnitOfWorkPort;
   readonly cacheService: Pick<UserProfileInvalidatorPort, "invalidateUserProfile">;
@@ -39,7 +39,7 @@ export class LinkOAuthAccountUseCase {
 
   async execute(input: LinkOAuthAccountCommand): Promise<{ message: string }> {
     const userId = UserId.reconstitute(input.userId);
-    const strategy = this.#dependencies.registry.get(input.provider);
+    const strategy = this.#dependencies.registry.find(input.provider);
     if (strategy == null) {
       throw invalidCredentials();
     }

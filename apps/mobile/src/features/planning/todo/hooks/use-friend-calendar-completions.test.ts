@@ -1,5 +1,5 @@
 import { ErrorCode } from '@aido/api/errors';
-import { err } from '@src/core/errors/result';
+import { fail } from '@src/core/errors/result';
 import { MINUTE_MS } from '@src/shared/constants/time-units';
 import { createHttpClientStub, createTestQueryClient, createTestDi } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
@@ -18,7 +18,7 @@ describe('useFriendCalendarCompletions', () => {
   it('볼 수 없는 친구면 고른 달 하나만 실패하고 앞뒤 달은 묻지 않는다', async () => {
     // Given
     const httpClient = createHttpClientStub();
-    httpClient.get.mockResolvedValue(err(createTodoApiError({ code: ErrorCode.FOLLOW_0906 })));
+    httpClient.get.mockResolvedValue(fail(createTodoApiError({ code: ErrorCode.FOLLOW_0906 })));
 
     // When
     const { result } = await renderScreenHook(

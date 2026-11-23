@@ -107,7 +107,7 @@ describe('canRequestSystemDialog', () => {
   });
 });
 
-describe('getAskMoment', () => {
+describe('findAskMoment', () => {
   const SIGNED_UP_AT = toInstant('2026-11-04T08:00:00.000Z');
   const NOT_ASKED = createPushPermission({ status: 'NOT_DETERMINED', canAskAgain: true });
   const DENIED = createPushPermission({ status: 'DENIED', canAskAgain: false });
@@ -141,7 +141,7 @@ describe('getAskMoment', () => {
     ],
   ] as const)('%s', (_label, permission, signedUpAt, prompt, expected) => {
     // When
-    const moment = PushPermissionPolicy.getAskMoment(permission, {
+    const moment = PushPermissionPolicy.findAskMoment(permission, {
       surface: 'onboarding',
       signedUpAt,
       prompt,
@@ -167,7 +167,7 @@ describe('getAskMoment', () => {
     ],
   ] as const)('할 일 시간을 정할 때 %s', (_label, permission, expected) => {
     // When
-    const moment = PushPermissionPolicy.getAskMoment(permission, { surface: 'todo-time' });
+    const moment = PushPermissionPolicy.findAskMoment(permission, { surface: 'todo-time' });
 
     // Then
     expect(moment).toBe(expected);
@@ -183,7 +183,7 @@ describe('getAskMoment', () => {
     '피드에서 %s',
     (_label, permission, hasUpcomingTimedTodo, noticeDismissedAt, expected) => {
       // When
-      const moment = PushPermissionPolicy.getAskMoment(permission, {
+      const moment = PushPermissionPolicy.findAskMoment(permission, {
         surface: 'feed',
         hasUpcomingTimedTodo,
         prompt: { noticeDismissedAt },

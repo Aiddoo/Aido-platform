@@ -1,4 +1,4 @@
-import { localDateIn } from "#api/shared/domain/time/time-zone-name";
+import { localDateIn } from "#api/shared/domain/time/timezone-name";
 
 import type { ForecastAvailability } from "../../application/ports/weather-forecast-provider.port.js";
 import { KMA_TIMEZONE } from "./kma.constants.js";

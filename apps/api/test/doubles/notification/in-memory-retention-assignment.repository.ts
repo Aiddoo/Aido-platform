@@ -139,7 +139,7 @@ export class InMemoryRetentionAssignmentRepository extends RetentionAssignmentRe
     return stored == null ? null : RetentionAssignment.reconstitute(stored);
   }
 
-  async findByIds(
+  async listByIds(
     ids: readonly RetentionAssignmentId[],
   ): Promise<ReadonlyMap<string, RetentionAssignment>> {
     for (const assignment of this.assignments) {
@@ -185,7 +185,7 @@ export class InMemoryRetentionAssignmentRepository extends RetentionAssignmentRe
     return true;
   }
 
-  async findDueStages(params: {
+  async listDueStages(params: {
     readonly dueAt: Temporal.Instant;
     readonly after?: RetentionStageCursorReadModel;
     readonly limit: number;

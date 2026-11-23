@@ -3,7 +3,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { NotificationId } from "../../../shared/domain/notification-id.vo.js";
+import { NotificationId } from "../../../notifications/domain/notification-id.vo.js";
 import {
   canSnoozeFromNotification,
   snoozedReminderFireAt,

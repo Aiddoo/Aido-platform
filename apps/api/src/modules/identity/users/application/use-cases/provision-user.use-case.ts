@@ -6,9 +6,10 @@ import type { AccountProvider } from "#api/modules/identity/linked-accounts/doma
 import { oauthAccountLinkConflict } from "#api/modules/identity/shared/domain/identity.errors";
 import type { UserStatus } from "#api/modules/identity/users/domain/users.constants";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
-import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import { type LinkedAccountsRepositoryPort } from "../../../linked-accounts/application/ports/linked-accounts.repository.port.js";
+import { User } from "../../domain/user.aggregate.js";
 import { type RetentionEnrollerPort } from "../ports/retention-enroller.port.js";
 import type {
   ProvisioningConsent,
@@ -16,7 +17,6 @@ import type {
 } from "../ports/user-provisioning-seeder.port.js";
 import { type UserRepositoryPort } from "../ports/user.repository.port.js";
 
-/** 신원 계정 유형 — 크레덴셜(이메일) 또는 소셜(OAuth) */
 type ProvisionAccount =
   | { kind: "credential"; hashedPassword: string }
   | { kind: "oauth"; provider: AccountProvider; providerAccountId: string };
@@ -34,7 +34,6 @@ export interface ProvisionUserCommand {
   locale: SupportedLocale;
 }
 
-/** 프로비저닝 결과 — 호출측이 사용하는 최소 신원 정보 */
 export interface ProvisionedUser {
   readonly id: string;
   readonly email: string;
@@ -51,7 +50,7 @@ export interface ProvisionedUser {
  * 경로별 처리는 호출측이 담당한다(IssueLoginUseCase와 동일한 범위 규율).
  */
 interface ProvisionUserDependencies {
-  readonly userRepository: Pick<UserRepositoryPort, "create" | "createProfile">;
+  readonly userRepository: Pick<UserRepositoryPort, "nextUserTag" | "save" | "createProfile">;
   readonly accountRepository: Pick<LinkedAccountsRepositoryPort, "nextId" | "save">;
   readonly seeder: UserProvisioningSeederPort;
   readonly retentionEnroller: Pick<RetentionEnrollerPort, "enrollNewUser">;
@@ -66,11 +65,16 @@ export class ProvisionUserUseCase {
   }
 
   async execute(input: ProvisionUserCommand): Promise<ProvisionedUser> {
-    const user = await this.#dependencies.userRepository.create({
+    const { userRepository, clock } = this.#dependencies;
+    const user = User.create({
+      id: UserId.generate(),
       email: input.email,
+      userTag: await userRepository.nextUserTag(),
       status: input.status,
-      emailVerifiedAt: input.emailVerifiedAt,
+      emailVerifiedAt: input.emailVerifiedAt ?? null,
+      now: clock.now(),
     });
+    await userRepository.save(user);
 
     await this.#linkFirstAccount(user.id, input.account);
 

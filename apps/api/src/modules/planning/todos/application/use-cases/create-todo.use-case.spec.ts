@@ -1,6 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
 import { type DayOfWeek, TODO_LIMITS, TODO_SERIES_LIMITS } from "@aido/api/vocabulary";
-import { vi } from "vitest";
 
 import { TodoCategoryId } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -39,10 +38,6 @@ describe("할 일 생성", () => {
       ),
     });
   });
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it.each([
     { name: "종일 기본값에 시간이 오면", isAllDay: true, scheduledTime: "09:30", allDay: false },
     { name: "시간 일정인데 시간이 없으면", isAllDay: false, scheduledTime: null, allDay: true },

@@ -5,11 +5,11 @@ import { z } from "zod";
 
 import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 
-import { TodoCommentId } from "../../../shared/domain/todo-comment-id.vo.js";
 import type {
   TodoCommentThreadReadModel,
   TodoConversationReadModel,
 } from "../../application/read-models/todo-comment.read-model.js";
+import { TodoCommentId } from "../../domain/todo-comment-id.vo.js";
 import { HmacTodoCommentCursorCodecAdapter } from "./hmac-todo-comment-cursor-codec.adapter.js";
 
 const record: TodoConversationReadModel = {

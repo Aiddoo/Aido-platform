@@ -10,7 +10,7 @@ import {
 } from "@aido/api/vocabulary";
 
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
-import { localDateIn } from "#api/shared/domain/time/time-zone-name";
+import { localDateIn } from "#api/shared/domain/time/timezone-name";
 
 import type { GeoCell } from "../../shared/domain/geo-cell.vo.js";
 import { WeatherReportId } from "./weather-report-id.vo.js";
@@ -37,7 +37,7 @@ export interface WeatherReportCurrent {
   readonly precipitationIntensity: number;
 }
 
-export interface WeatherReportNextHourPeriod {
+interface WeatherReportNextHourPeriod {
   readonly condition: WeatherNextHourCondition;
   /** 공급자가 형태 없이 강수로만 알리면 null */
   readonly precipitationType: WeatherPrecipitationType | null;
@@ -47,7 +47,7 @@ export interface WeatherReportNextHourPeriod {
   readonly precipitationIntensity: number;
 }
 
-export interface WeatherReportMinute {
+interface WeatherReportMinute {
   readonly startsAt: Temporal.Instant;
   readonly precipitationChance: number;
   readonly precipitationIntensity: number;

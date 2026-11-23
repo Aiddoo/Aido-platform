@@ -7,7 +7,7 @@ import {
   type Todo,
 } from '@src/features/planning/todo/domains/todo.model';
 import type { PlanTodoFormValues } from '@src/features/voice/schemas/plan-review-form.schema';
-import { getPlanTodoSubtitle } from '@src/features/voice/utils/plan-todo-subtitle.view-model';
+import { findPlanTodoSubtitle } from '@src/features/voice/utils/plan-todo-subtitle.view-model';
 import { formatTimeOfDay } from '@src/shared/date/format/date-format';
 import { toTimeOfDay } from '@src/shared/date/time-of-day';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -62,7 +62,7 @@ export function DemoTodoRow({
 
   return match(surface)
     .with('plan', () => {
-      const subtitle = getPlanTodoSubtitle(todo, { todayKey, timeFormat, dateFormatContext });
+      const subtitle = findPlanTodoSubtitle(todo, { todayKey, timeFormat, dateFormatContext });
       const unselectedClassName = !isSelected && UNSELECTED_TITLE_CLASS_NAME;
 
       return (

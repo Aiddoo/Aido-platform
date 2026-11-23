@@ -97,7 +97,7 @@ export function withFlagBars(
 }
 
 /** 재생선(levels의 마지막 칸) 양옆 sideCount칸 중 slot칸의 크기. 소리가 없는 자리는 null이다 */
-export function getTimelineLevel(
+export function findTimelineLevel(
   levels: readonly number[],
   slot: number,
   sideCount: number,

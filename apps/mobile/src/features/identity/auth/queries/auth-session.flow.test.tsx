@@ -3,7 +3,7 @@ import { resolveInitialAuthStatus } from '@src/bootstrap/auth/resolve-initial-au
 import { useClaimDeviceDataForUser } from '@src/bootstrap/hooks/use-claim-device-data-for-user';
 import { useSyncUserIdentity } from '@src/bootstrap/hooks/use-sync-user-identity';
 import { ApiError } from '@src/core/errors/api-error';
-import { err, ok } from '@src/core/errors/result';
+import { fail, ok } from '@src/core/errors/result';
 import { emitSessionConfirmed } from '@src/core/events/session-confirmed';
 import { emitSessionExpired } from '@src/core/events/session-expired';
 import { subscribeTodoCreated } from '@src/core/events/todo-created';
@@ -106,7 +106,7 @@ describe('로그아웃', () => {
 
   it.each([
     ['서버 성공', async () => ok({ message: '로그아웃되었습니다.' })],
-    ['서버 거부', async () => err(new ApiError(ErrorCode.SESSION_0701, '세션 없음', 401))],
+    ['서버 거부', async () => fail(new ApiError(ErrorCode.SESSION_0701, '세션 없음', 401))],
     ['서버 장애', () => Promise.reject(new ServerError(503))],
     ['시간 초과', () => Promise.reject(new TimeoutError())],
     ['연결 실패', () => Promise.reject(new NetworkError())],
@@ -455,7 +455,7 @@ describe('계정을 떠날 때의 Analytics 정리 순서', () => {
     // Given
     const { session, calls } = givenRecordedAnalytics();
     session.authHttp.delete.mockResolvedValue(
-      err(new ApiError(ErrorCode.USER_0602, '비밀번호 불일치', 400)),
+      fail(new ApiError(ErrorCode.USER_0602, '비밀번호 불일치', 400)),
     );
     const { result } = await session.renderSession(
       () => useMutation(useDeleteAccountMutationOptions()),
@@ -765,7 +765,7 @@ describe('탈퇴', () => {
     const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
     session.authHttp.delete.mockImplementation(async (url) =>
       url === 'v1/auth/account'
-        ? err(new ApiError(ErrorCode.USER_0602, '비밀번호 불일치', 400))
+        ? fail(new ApiError(ErrorCode.USER_0602, '비밀번호 불일치', 400))
         : ok({}),
     );
     const { result } = await session.renderSession(useDeleteProbe, 'authenticated');
@@ -793,7 +793,7 @@ describe('탈퇴', () => {
     const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
     session.authHttp.delete.mockImplementation(async (url) =>
       url === 'v1/auth/account'
-        ? err(new ApiError(ErrorCode.USER_0602, '비밀번호 불일치', 400))
+        ? fail(new ApiError(ErrorCode.USER_0602, '비밀번호 불일치', 400))
         : ok({}),
     );
     const { result } = await session.renderSession(useDeleteProbe, 'authenticated');
@@ -820,7 +820,7 @@ describe('탈퇴 실패와 푸시', () => {
     const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
     session.authHttp.delete.mockImplementation(async (url) =>
       url === 'v1/auth/account'
-        ? err(new ApiError(ErrorCode.USER_0602, '비밀번호 불일치', 400))
+        ? fail(new ApiError(ErrorCode.USER_0602, '비밀번호 불일치', 400))
         : ok({}),
     );
     const { result } = await session.renderSession(
@@ -1005,7 +1005,7 @@ describe('로그아웃 뒤 늦게 끝난 변경', () => {
   const ME_KEY = USER_QUERY_KEYS.me();
   const ACCOUNT_A = createCurrentUserDto({ userId: 'clz7x5p8k0001qz0z8z8z8z8a' });
   const ACCOUNT_B = createCurrentUserDto({ userId: 'clz7x5p8k0001qz0z8z8z8z8b' });
-  const REJECTED = err(new ApiError(ErrorCode.SYS_0001, '실패', 400));
+  const REJECTED = fail(new ApiError(ErrorCode.SYS_0001, '실패', 400));
 
   function givenSignedInAccountA() {
     const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
@@ -1342,8 +1342,12 @@ describe('토큰 만료', () => {
     global.fetch = jest.fn(async () => new Response(null, { status: 401 }));
     const session = createAuthSession({ tokenStore });
     // 부팅의 내 정보 조회는 바로 답하고 로그아웃이 보내는 요청만 실제 토큰 파이프라인으로 보낸다
-    session.authHttp.post.mockImplementation((...args) => http.post(...args));
-    session.authHttp.delete.mockImplementation((...args) => http.delete(...args));
+    session.authHttp.post.mockImplementation((...requestArguments) =>
+      http.post(...requestArguments),
+    );
+    session.authHttp.delete.mockImplementation((...requestArguments) =>
+      http.delete(...requestArguments),
+    );
     const { result } = await session.renderSession(
       () => ({ status: useAuthStatus(), logout: useMutation(useLogoutMutationOptions()) }),
       'authenticated',

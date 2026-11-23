@@ -1,6 +1,6 @@
 import { NIGHT_TIME_CONFIG } from "@aido/api/vocabulary";
 
-import type { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import type { Timezone } from "#api/shared/domain/time/timezone.vo";
 
 export interface QuietHoursWindow {
   // 이 시각부터 조용한 시간이다(포함)
@@ -17,11 +17,11 @@ export const PUSH_QUIET_HOURS_WINDOW: QuietHoursWindow = {
 
 export function isWithinQuietHours(params: {
   readonly instant: Temporal.Instant;
-  readonly timeZone: TimeZone;
+  readonly timezone: Timezone;
   readonly window: QuietHoursWindow;
 }): boolean {
   const { start, end } = params.window;
-  const localTime = params.instant.toZonedDateTimeISO(params.timeZone.value).toPlainTime();
+  const localTime = params.instant.toZonedDateTimeISO(params.timezone.value).toPlainTime();
   const afterStart = Temporal.PlainTime.compare(localTime, start) >= 0;
   const beforeEnd = Temporal.PlainTime.compare(localTime, end) < 0;
   // 시작이 끝보다 늦으면 자정을 넘는 구간이다
@@ -34,10 +34,10 @@ export function isWithinQuietHours(params: {
 /** 지금 뒤로 처음 조용한 시간이 시작하는 순간(받는 사람 현지 시각) */
 export function nextQuietHoursStart(params: {
   readonly instant: Temporal.Instant;
-  readonly timeZone: TimeZone;
+  readonly timezone: Timezone;
   readonly window: QuietHoursWindow;
 }): Temporal.Instant {
-  const local = params.instant.toZonedDateTimeISO(params.timeZone.value);
+  const local = params.instant.toZonedDateTimeISO(params.timezone.value);
   const today = local.withPlainTime(params.window.start).toInstant();
   return Temporal.Instant.compare(today, params.instant) > 0
     ? today

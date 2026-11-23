@@ -13,7 +13,7 @@ interface UseNowOptions {
 }
 
 /** 다음에 지금을 읽을 때까지의 ms. 남은 시간이 간격으로 떨어지지 않으면 그 나머지에 맞춘다 */
-function getNextReadDelayMs({
+function findNextReadDelayMs({
   now,
   tickMs,
   until,
@@ -40,7 +40,7 @@ function getNextReadDelayMs({
 export function useNow({ tickMs, until = null, isEnabled = true }: UseNowOptions = {}): Instant {
   const [now, setNow] = useState(getNowInstant);
   const isPastUntil = until != null && hasInstantPassed(until, now);
-  const delayMs = isEnabled && !isPastUntil ? getNextReadDelayMs({ now, tickMs, until }) : null;
+  const delayMs = isEnabled && !isPastUntil ? findNextReadDelayMs({ now, tickMs, until }) : null;
 
   // 켜지거나 끝나는 순간이 바뀌면 그 순간의 시각으로 바로 맞춰 첫 tick 전까지 시각이 틀리지 않게 한다
   const previousInputRef = useRef({ isEnabled, until });

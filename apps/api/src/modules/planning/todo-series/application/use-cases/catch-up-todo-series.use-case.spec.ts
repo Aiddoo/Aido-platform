@@ -1,5 +1,3 @@
-import { vi } from "vitest";
-
 import { TodoTitle } from "#api/modules/planning/shared/domain/todo-title.vo";
 import { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-series-id.vo";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -88,76 +86,71 @@ describe("복귀 회차 채우기", () => {
   it("커서가 앞서 있으면 쓰지 않고 같은 날 다시 조회하지 않는다", async () => {
     // Given
     await seedStale("series-1", "2027-02-04");
-    const findIdsBehind = vi.spyOn(fixture.todoSeriesRepository, "findIdsBehind");
     const service = catchUp();
     // When
     await service.execute(fixture.userId);
     await service.execute(fixture.userId);
     await service.execute(fixture.userId);
     // Then
-    expect(findIdsBehind).toHaveBeenCalledOnce();
+    expect(fixture.todoSeriesRepository.behindQueries).toHaveLength(1);
     expect(fixture.records.size).toBe(0);
     expect(fixture.logger.messages).toEqual([]);
   });
 
   it("UTC 날짜가 바뀌면 다시 한 번 조회한다", async () => {
     // Given
-    const findIdsBehind = vi.spyOn(fixture.todoSeriesRepository, "findIdsBehind");
     const service = catchUp();
     await service.execute(fixture.userId);
     fixture.clock.advanceBy({ hours: 21 });
     // When
     await service.execute(fixture.userId);
     // Then
-    expect(findIdsBehind).toHaveBeenCalledTimes(2);
-    const [owner, through] = findIdsBehind.mock.lastCall ?? [];
-    expect({ owner, through: through?.toString() }).toEqual({
-      owner: UserId.reconstitute(fixture.userId),
-      through: "2026-11-07",
+    const queries = fixture.todoSeriesRepository.behindQueries;
+    expect(queries).toHaveLength(2);
+    expect(queries.at(-1)).toEqual({
+      userId: UserId.reconstitute(fixture.userId),
+      through: Temporal.PlainDate.from("2026-11-07"),
     });
   });
 
   it("UTC 날짜가 하루 늦은 시간대의 오늘도 조회 범위에 넣는다", async () => {
     // Given
     fixture.clock.advanceBy({ hours: -11 });
-    const findIdsBehind = vi.spyOn(fixture.todoSeriesRepository, "findIdsBehind");
     // When
     await catchUp().execute(fixture.userId);
     // Then
-    const [owner, through] = findIdsBehind.mock.lastCall ?? [];
-    expect({ owner, through: through?.toString() }).toEqual({
-      owner: UserId.reconstitute(fixture.userId),
-      through: "2026-11-05",
-    });
+    expect(fixture.todoSeriesRepository.behindQueries).toEqual([
+      {
+        userId: UserId.reconstitute(fixture.userId),
+        through: Temporal.PlainDate.from("2026-11-05"),
+      },
+    ]);
   });
 
   it("같은 사용자의 동시 요청은 한 번의 복귀를 함께 기다린다", async () => {
     // Given
     await seedStale("series-1");
-    const materialize = vi.spyOn(dueRunner, "execute");
     const service = catchUp();
     // When
     await Promise.all([service.execute(fixture.userId), service.execute(fixture.userId)]);
     // Then
-    expect(materialize).toHaveBeenCalledOnce();
+    expect(fixture.todoSeriesRepository.behindQueries).toHaveLength(1);
     expect(fixture.records.size).toBe(91);
   });
 
   it("조회가 실패해도 요청으로 전파하지 않고 잠시 뒤 다시 시도한다", async () => {
     // Given
-    const findIdsBehind = vi
-      .spyOn(fixture.todoSeriesRepository, "findIdsBehind")
-      .mockRejectedValueOnce(new Error("연결 실패"));
+    fixture.todoSeriesRepository.failNextBehindQuery(new Error("연결 실패"));
     const service = catchUp();
     // When
     await expect(service.execute(fixture.userId)).resolves.toBeUndefined();
     await service.execute(fixture.userId);
-    const callsBeforeRetry = findIdsBehind.mock.calls.length;
+    const queriesBeforeRetry = fixture.todoSeriesRepository.behindQueries.length;
     fixture.clock.advanceBy({ milliseconds: TODO_SERIES_CATCH_UP_BUDGET.RETRY_AFTER_MS + 1 });
     await service.execute(fixture.userId);
     // Then
-    expect(callsBeforeRetry).toBe(1);
-    expect(findIdsBehind).toHaveBeenCalledTimes(2);
+    expect(queriesBeforeRetry).toBe(1);
+    expect(fixture.todoSeriesRepository.behindQueries).toHaveLength(2);
     expect(fixture.logger.messages).toContainEqual(
       expect.objectContaining({
         event: TodoSeriesLogEvent.CATCH_UP_FAILED,
@@ -171,19 +164,22 @@ describe("복귀 회차 채우기", () => {
     await seedStale("series-1");
     await seedStale("series-2");
     const materialize = fixture.occurrenceMaterializer.execute.bind(fixture.occurrenceMaterializer);
-    const spy = vi
-      .spyOn(fixture.occurrenceMaterializer, "execute")
-      .mockImplementationOnce(async () => {
+    let remainingFailures = 1;
+    fixture.occurrenceMaterializer.execute = async (...input) => {
+      if (remainingFailures > 0) {
+        remainingFailures -= 1;
         throw new Error("카테고리 없음");
-      })
-      .mockImplementation(materialize);
+      }
+      return materialize(...input);
+    };
     const service = catchUp();
     // When
     await service.execute(fixture.userId);
+    const filledBeforeRetry = fixture.records.size;
     fixture.clock.advanceBy({ milliseconds: TODO_SERIES_CATCH_UP_BUDGET.RETRY_AFTER_MS + 1 });
     await service.execute(fixture.userId);
     // Then
-    expect(spy).toHaveBeenCalledTimes(3);
+    expect(filledBeforeRetry).toBe(91);
     expect(fixture.records.size).toBe(182);
     expect(fixture.logger.messages).toContainEqual(
       expect.objectContaining({

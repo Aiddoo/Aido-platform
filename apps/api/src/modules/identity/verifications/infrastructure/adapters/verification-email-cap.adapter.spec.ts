@@ -20,7 +20,7 @@ describe("VerificationEmailCapAdapter — 이메일 hash로 센 기록", () => {
       },
       sentAts,
     );
-    const found = await cap.findSentAts({
+    const found = await cap.listSentAts({
       scope: "email-source",
       purpose: "PASSWORD_RESET",
       email: "user@example.com",
@@ -47,10 +47,10 @@ describe("VerificationEmailCapAdapter — 이메일 hash로 센 기록", () => {
     // When
     const sameBlock = await Promise.all(
       ["2001:db8:1:2::ffff", "2001:DB8:1:2:a:b:c:d"].map((sourceIp) =>
-        cap.findSentAts({ ...bucket, sourceIp }),
+        cap.listSentAts({ ...bucket, sourceIp }),
       ),
     );
-    const otherBlock = await cap.findSentAts({ ...bucket, sourceIp: "2001:db8:1:3::1" });
+    const otherBlock = await cap.listSentAts({ ...bucket, sourceIp: "2001:db8:1:3::1" });
 
     // Then
     expect(sameBlock).toEqual([[AUTH_FIXTURE_NOW], [AUTH_FIXTURE_NOW]]);
@@ -69,8 +69,8 @@ describe("VerificationEmailCapAdapter — 이메일 hash로 센 기록", () => {
     );
 
     // When
-    const otherPurpose = await cap.findSentAts({ scope: "email", purpose: "EMAIL_VERIFY", email });
-    const otherSource = await cap.findSentAts({
+    const otherPurpose = await cap.listSentAts({ scope: "email", purpose: "EMAIL_VERIFY", email });
+    const otherSource = await cap.listSentAts({
       scope: "email-source",
       purpose: "EMAIL_VERIFY",
       email,

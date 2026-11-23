@@ -37,7 +37,7 @@ export class DrizzleUserBriefReader implements UserBriefReaderPort {
     this.#transactionHost = transactionHost;
   }
 
-  async findByUserIds(userIds: readonly UserId[]): Promise<UserBriefReadModel[]> {
+  async listByUserIds(userIds: readonly UserId[]): Promise<UserBriefReadModel[]> {
     if (userIds.length === 0) {
       return [];
     }

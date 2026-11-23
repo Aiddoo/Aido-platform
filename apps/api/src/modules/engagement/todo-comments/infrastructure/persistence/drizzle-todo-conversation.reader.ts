@@ -3,6 +3,7 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, ne, or, type SQL } from "drizzle-orm";
 import { alias, type AnyPgColumn } from "drizzle-orm/pg-core";
+import { match } from "ts-pattern";
 
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { type KeysetOperand, tupleGreaterThan, tupleLessThan } from "#api/platform/database/keyset";
@@ -250,29 +251,31 @@ function selectedConversationOf(
   const scopeCondition = params.scope === "THREAD" ? sameThread : undefined;
   const anchorRow = () =>
     database.select(treeColumnsOf(tree)).from(tree).innerJoin(anchor, eq(tree.id, anchor.id));
-  return database.$with("selected").as(() => {
-    switch (params.mode) {
-      case "INITIAL":
-        return database
+  return database.$with("selected").as(() =>
+    match(params.mode)
+      .with("INITIAL", () =>
+        database
           .select(treeColumnsOf(tree))
           .from(tree)
           .where(visible)
           .orderBy(...order.displayOrder(tree, true))
-          .limit(params.size + 1);
-      case "AFTER":
-        return page(and(scopeCondition, afterAnchor), order.displayOrder(tree, true)).unionAll(
+          .limit(params.size + 1),
+      )
+      .with("AFTER", () =>
+        page(and(scopeCondition, afterAnchor), order.displayOrder(tree, true)).unionAll(
           anchorRow(),
-        );
-      case "BEFORE":
-        return page(and(scopeCondition, beforeAnchor), order.reverseOrder(tree)).unionAll(
-          anchorRow(),
-        );
-      case "FOCUS":
-        return page(and(sameThread, beforeAnchor), order.reverseOrder(tree))
+        ),
+      )
+      .with("BEFORE", () =>
+        page(and(scopeCondition, beforeAnchor), order.reverseOrder(tree)).unionAll(anchorRow()),
+      )
+      .with("FOCUS", () =>
+        page(and(sameThread, beforeAnchor), order.reverseOrder(tree))
           .unionAll(anchorRow())
-          .unionAll(page(and(sameThread, afterAnchor), order.displayOrder(tree, true)));
-    }
-  });
+          .unionAll(page(and(sameThread, afterAnchor), order.displayOrder(tree, true))),
+      )
+      .exhaustive(),
+  );
 }
 
 function rootPositionAt(
@@ -296,7 +299,7 @@ export class DrizzleTodoConversationReader implements TodoConversationReaderPort
     this.#transactionHost = transactionHost;
   }
 
-  async listConversation(
+  async findConversationWindow(
     params: ListTodoConversationParams,
   ): Promise<TodoConversationWindowReadModel | null> {
     const isCursorPage = params.mode === "AFTER" || params.mode === "BEFORE";

@@ -5,7 +5,7 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
-  BottomSheetTextArea,
+  TextArea,
   Button,
   H4,
   HStack,
@@ -148,7 +148,7 @@ export function ReportReasonBottomSheet({
             control={form.control}
             name="detail"
             render={({ field: { onChange, value, ref }, fieldState: { error } }) => (
-              <BottomSheetTextArea
+              <TextArea
                 ref={ref}
                 label={t('report.detailLabel')}
                 placeholder={t('report.detailPlaceholder')}

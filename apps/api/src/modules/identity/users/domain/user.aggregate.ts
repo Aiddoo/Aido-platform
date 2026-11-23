@@ -37,10 +37,37 @@ const GRACE_PERIOD = Temporal.Duration.from({ hours: 24 * ACCOUNT_DELETION.GRACE
 
 /** 로그인 가능 여부와 탈퇴·복구 상태를 가진 사용자 계정 */
 export class User extends AggregateRoot<UserId, UserProps> {
+  // 가입이 만든다. 역할·구독 칸은 기본값이고 구독 칸은 billing이 바꾼다
+  static create(params: {
+    readonly id: UserId;
+    readonly email: string;
+    readonly userTag: string;
+    readonly status: UserStatus;
+    readonly emailVerifiedAt: Temporal.Instant | null;
+    readonly now: Temporal.Instant;
+  }): User {
+    return new User(params.id, {
+      email: params.email,
+      userTag: params.userTag,
+      role: "USER",
+      status: params.status,
+      emailVerifiedAt: params.emailVerifiedAt,
+      subscriptionStatus: "FREE",
+      subscriptionExpiresAt: null,
+      createdAt: params.now,
+      deletedAt: null,
+    });
+  }
+
   static reconstitute(primitives: UserPrimitives): User {
     const { id, ...props } = primitives;
-    return new User(UserId.reconstitute(id), { ...props });
+    const user = new User(UserId.reconstitute(id), { ...props });
+    user.#isPersisted = true;
+    return user;
   }
+
+  // 저장소가 새 사용자를 넣을지, 읽은 사용자의 계정 상태 칸만 쓸지 가르는 기준이다
+  #isPersisted = false;
 
   get email(): string {
     return this.props.email;
@@ -68,6 +95,15 @@ export class User extends AggregateRoot<UserId, UserProps> {
 
   get deletedAt(): Temporal.Instant | null {
     return this.props.deletedAt;
+  }
+
+  isPersisted(): boolean {
+    return this.#isPersisted;
+  }
+
+  // 저장소가 넣은 뒤 부른다. 같은 객체를 다시 save하면 또 넣지 않고 바뀐 칸만 쓴다
+  markPersisted(): void {
+    this.#isPersisted = true;
   }
 
   isDeleted(): boolean {

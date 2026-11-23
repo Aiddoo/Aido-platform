@@ -133,10 +133,10 @@ export class PurgeDeletedAccountsUseCase {
         userId: userId.value,
       });
       const settlements = await Promise.allSettled([
-        Promise.resolve().then(() =>
+        Promise.try(() =>
           this.#dependencies.notificationCleanup.settleAfterCommit(cleanup.notification),
         ),
-        Promise.resolve().then(() =>
+        Promise.try(() =>
           this.#dependencies.todoCommentCleanup.settleAfterCommit(cleanup.todoComment),
         ),
       ]);

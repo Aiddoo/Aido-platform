@@ -1,7 +1,7 @@
 import '@src/shared/i18n/init';
 import { ErrorCode, HttpStatus } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
-import { err, ok } from '@src/core/errors/result';
+import { fail, ok } from '@src/core/errors/result';
 import { createPreferenceDto } from '@src/features/identity/preference/__tests__/preference.fixtures';
 import { QueryErrorBoundary } from '@src/shared/ui';
 import {
@@ -37,7 +37,7 @@ describe('FriendTodoList', () => {
     httpClient.get.mockImplementation(async (path: string) =>
       path === 'v1/auth/preference'
         ? ok(createPreferenceDto())
-        : err(new ApiError(ErrorCode.FOLLOW_0906, '친구가 아니에요', HttpStatus.FORBIDDEN)),
+        : fail(new ApiError(ErrorCode.FOLLOW_0906, '친구가 아니에요', HttpStatus.FORBIDDEN)),
     );
     const errorReporter = createErrorReporterStub();
 
@@ -50,7 +50,7 @@ describe('FriendTodoList', () => {
             <FriendTodoList
               friendId={FRIEND_ID}
               renderRowAction={() => null}
-              getMenuAction={() => null}
+              findMenuAction={() => null}
               emptyAction={null}
             />
           </Suspense>
@@ -88,7 +88,7 @@ describe('FriendTodoList', () => {
         <FriendTodoList
           friendId={FRIEND_ID}
           renderRowAction={() => null}
-          getMenuAction={() => null}
+          findMenuAction={() => null}
           emptyAction={null}
         />
       </Suspense>,

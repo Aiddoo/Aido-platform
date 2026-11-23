@@ -55,7 +55,6 @@ function analyzeJob(trigger: SuggestionAnalysisTrigger = "SCHEDULED") {
     data: {
       userId: "user-1",
       timezone: "America/Los_Angeles",
-      weatherGrid: null,
       localDate: "2026-11-16",
       trigger,
     },
@@ -111,28 +110,6 @@ describe("SuggestionAnalysisProcessor", () => {
       expect(publisher.published).toHaveLength(notified);
     },
   );
-
-  it("1.16.0 전에 쌓인 작업은 아침 배치로 보고 실행 시각의 현지 날짜로 분석한다", async () => {
-    // Given
-    const { processor, commands, publisher } = setup();
-
-    // When
-    await processor.process(
-      {
-        name: AiSuggestionJobName.ANALYZE,
-        data: { userId: "user-1", timezone: "America/Los_Angeles", weatherGrid: null },
-      },
-      1,
-    );
-
-    // Then
-    expect(commands[0]).toMatchObject({
-      localDate: Temporal.PlainDate.from("2026-11-16"),
-      trigger: "SCHEDULED",
-      isFinalAttempt: false,
-    });
-    expect(publisher.published).toHaveLength(1);
-  });
 
   it("디스패치 작업은 현지 제안 창 사용자를 고르는 디스패처에 넘긴다", async () => {
     // Given

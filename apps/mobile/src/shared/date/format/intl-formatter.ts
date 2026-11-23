@@ -1,6 +1,6 @@
 interface FormatterContext {
   locale: string;
-  timeZone: string;
+  timezone: string;
 }
 
 /** 파트로 숫자를 읽을 때 쓰는 고정 로케일. 표시 언어와 무관하다 */
@@ -14,7 +14,7 @@ export function getFormatter(
   context: FormatterContext,
   options: Intl.DateTimeFormatOptions,
 ): Intl.DateTimeFormat {
-  const key = JSON.stringify([context.locale, context.timeZone, options]);
+  const key = JSON.stringify([context.locale, context.timezone, options]);
   const cached = formatterCache.get(key);
   if (cached != null) {
     formatterCache.delete(key);
@@ -28,7 +28,7 @@ export function getFormatter(
   }
   const formatter = new Intl.DateTimeFormat(context.locale, {
     ...options,
-    timeZone: context.timeZone,
+    timeZone: context.timezone,
   });
   formatterCache.set(key, formatter);
   return formatter;

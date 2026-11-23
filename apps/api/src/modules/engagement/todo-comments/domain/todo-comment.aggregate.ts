@@ -2,9 +2,9 @@ import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.publi
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
-import { TodoCommentId } from "../../shared/domain/todo-comment-id.vo.js";
 import { CommentPlacement } from "./comment-placement.vo.js";
 import { TodoCommentContent } from "./todo-comment-content.vo.js";
+import { TodoCommentId } from "./todo-comment-id.vo.js";
 import {
   commentChangeForbidden,
   commentCountConflict,

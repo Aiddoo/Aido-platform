@@ -43,11 +43,11 @@ export class EntitlementReaderAdapter implements EntitlementReaderPort {
     return (await this.#featureEntitlement(userId, feature, "latest")).allowed;
   }
 
-  async getFeatureLimit(userId: UserId, feature: PlanLimitFeatureKey): Promise<number | null> {
+  async findFeatureLimit(userId: UserId, feature: PlanLimitFeatureKey): Promise<number | null> {
     return (await this.#featureEntitlement(userId, feature, "cached")).limit;
   }
 
-  async getFeatureLimitInTransaction(
+  async findFeatureLimitInTransaction(
     userId: UserId,
     feature: PlanLimitFeatureKey,
   ): Promise<number | null> {

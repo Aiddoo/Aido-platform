@@ -2,7 +2,6 @@ import { DrizzleTodoScheduleReader } from "#api/modules/planning/todos/infrastru
 import { todo, todoCategory, user } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
-import { instantFromDate } from "#api/shared/domain/time/instant";
 import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import {
   createTodoCategoryRowFixture,
@@ -184,33 +183,5 @@ describe("날씨 브리핑·알림 할 일 조회 (실제 PostgreSQL)", () => {
 
     // Then
     expect(todos).toEqual([]);
-  });
-
-  it("벽시계 칸이 빈 옛 여러 날 할 일은 시작 시각의 벽시계를 기기 시간대로 읽는다", async () => {
-    // Given
-    // 11월 로스앤젤레스는 UTC-8이다. 어제(11-01) 21:00 시작이라 오늘(11-02) 21:00 = 11-03 05:00Z
-    await givenTodos([
-      {
-        title: "옛 행",
-        startDate: dateColumn("2026-11-01"),
-        endDate: dateColumn("2026-11-02"),
-        scheduledLocalTime: null,
-        scheduledTime: Temporal.Instant.from("2026-11-02T05:00:00.000Z"),
-      },
-    ]);
-
-    // When
-    const todos = await reader.listPendingTimedTodos({
-      userIds: [UserId.reconstitute(userId)],
-      date: TODAY,
-      timezone: "America/Los_Angeles",
-      from: instantFromDate(new Date("2026-11-02T15:00:00.000Z")),
-      until: instantFromDate(new Date("2026-11-03T08:00:00.000Z")),
-    });
-
-    // Then
-    expect(todos.map(({ scheduledAt }) => scheduledAt.toString())).toEqual([
-      "2026-11-03T05:00:00Z",
-    ]);
   });
 });

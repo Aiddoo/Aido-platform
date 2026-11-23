@@ -1,6 +1,6 @@
 # 서버 테스트
 
-무엇을 어느 층에서 테스트할지, 어떻게 격리해 돌릴지 정할 때 읽는다. 공통 테스트 규칙(새 테스트는 중요한 로직에만, GWT 한 줄, 한국어 제목, stub 우선)은 [루트 AGENTS](../../../AGENTS.md#공통-코드-규칙)에 있다. AI 평가는 [AI](ai.md#평가)에 있다.
+무엇을 어느 층에서 테스트할지, 어떻게 격리해 돌릴지 정할 때 읽는다. 파일 이름과 형식은 [테스트 파일](../../../docs/conventions/testing.md)에 있다. AI 평가는 [AI](ai.md#평가)에 있다.
 
 ## 원칙
 
@@ -41,10 +41,11 @@ test/
 - 새 필드는 fixture 기본값 한곳에 더하고 시나리오에서는 차이만 덮어쓴다. fixture는 `create<Aggregate>Fixture(overrides)`가 `<Aggregate>.reconstitute`로 만든다. Aggregate가 아닌 값(Read Model·외부 응답·command)도 `create<Noun>Fixture(overrides)` 함수다. 객체형 fixture(`XFixture.create`)·fluent builder(`.withX().build()`)·barrel(`index.ts`·재수출)을 쓰지 않는다(Oxlint `aido/no-barrel-file`·`aido/no-re-export`).
 - DB에 직접 넣는 행은 `create<Noun>RowFixture(overrides)`(`<noun>-row.fixture.ts`)다. 저장소 `save`가 없는 테이블·다른 Context 테이블을 seed할 때만 쓰고, id·email 번호는 `fixture-sequence`가 테스트마다 1부터 센다.
 - 더블 파일은 `test/doubles/<context>/`에 종류 접두사로 둔다: `in-memory-<noun>.repository.ts`(상태를 가진 저장소), `stub-<noun>.adapter.ts`·`stub-<capability>.ts`(정한 값을 돌려줌), `fake-<capability>.ts`(단순한 실제 동작), `recording-<capability>.ts`(호출 기록). 여러 Context가 쓰는 기술 더블은 `doubles/platform/`이다.
-- 본문은 `// Given`·`// When`·`// Then` 한 줄 주석으로 나눈다. 합본(`// When / Then`)·꼬리 설명(`// Given - …`)·콜론을 쓰지 않는다([테스트 파일](../../../docs/conventions/testing.md)).
+- 본문 형식은 [테스트 파일](../../../docs/conventions/testing.md#2-형식)이다.
 - 포트 계약 suite(`describe<Noun>RepositoryContract(createRepository)`)를 InMemory(unit, `*.repository.port.spec.ts`)와 Drizzle(integration)이 같이 통과한다. 사례: [memo 계약](../test/contracts/notes/memo-repository.contract.ts)을 [unit](../src/modules/notes/memos/application/ports/memo.repository.port.spec.ts)·[integration](../test/integration/notes/memos/drizzle-memo.repository.integration-spec.ts)에서 돌린다.
 - UseCase spec은 파일 안의 작은 factory(`createCreateMemoUseCase({ memoRepository })`)로 기본 더블(`ImmediateUnitOfWork`·`RecordingMutationLock`·`FixedClock`·`SilentLogger`)을 두고 다른 부분만 덮어쓴다. 사례: [create-memo spec](../src/modules/notes/memos/application/use-cases/create-memo.use-case.spec.ts).
 - 테스트 더블은 손으로 쓴 InMemory·Fake·Stub·Recording이다. Nest가 주는 실제 객체(`ExecutionContextHost`, `TransactionHost`)가 있으면 그것을 쓴다. mock 라이브러리(`vitest-mock-extended`·`@suites/*`)와 깊은 mock을 쓰지 않는다. 실패를 주입하거나 호출 자체가 계약일 때도 작은 기록용 double(`RecordingOperationalAlert`·`RecordingMutationLock`)로 본다.
+- UseCase spec(`*.use-case.spec.ts`)과 그 spec이 쓰는 `test/fixtures`·`test/doubles`는 Oxlint `aido/no-vitest-mock`이 `vi.fn`·`vi.spyOn`·`vi.useFakeTimers`·`vi.setSystemTime`을 막는다. 실패 주입은 double의 `failNext…`·`failWith`, 시각은 `FixedClock`(시나리오 fixture는 `createAiAssistanceFixture({ now })`처럼 시각을 인자로 받고, 캐시 만료는 `InMemoryCacheStore`의 `nowMs`), 조회 조건은 double이 남긴 기록으로 본다.
 - `pnpm gen:api-slice`가 fixture·InMemory 저장소·계약·integration spec 뼈대를 함께 만든다.
 
 ```ts

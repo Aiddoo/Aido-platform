@@ -32,22 +32,22 @@ export interface PeriodReportParams {
 
 // 유료는 고른 시각, 무료는 고정 시각 쿼리를 따로 두어 전략이 "무료 조회 생략"을 정한다
 export abstract class ScheduledReminderReaderPort {
-  abstract findPremiumMorningReminderUsers(
+  abstract listPremiumMorningReminderUsers(
     params: CustomTimeReminderParams,
   ): Promise<ReminderCountUserReadModel[]>;
-  abstract findFreeMorningReminderUsers(
+  abstract listFreeMorningReminderUsers(
     params: FixedTimeReminderParams,
   ): Promise<ReminderCountUserReadModel[]>;
   /** 오늘 할 일이 있는 사용자만 */
-  abstract findPremiumEveningReminderUsers(
+  abstract listPremiumEveningReminderUsers(
     params: CustomTimeReminderParams,
   ): Promise<EveningReminderUserReadModel[]>;
   /** 오늘 할 일이 있는 사용자만 */
-  abstract findFreeEveningReminderUsers(
+  abstract listFreeEveningReminderUsers(
     params: FixedTimeReminderParams,
   ): Promise<EveningReminderUserReadModel[]>;
   /** 오늘 할 일이 있지만 하나도 끝내지 않은 사용자 */
-  abstract findLunchNudgeUsers(params: FixedTimeReminderParams): Promise<UserIdReadModel[]>;
-  abstract findWeeklyReportRecipients(params: PeriodReportParams): Promise<UserIdReadModel[]>;
-  abstract findMonthlyReportRecipients(params: PeriodReportParams): Promise<UserIdReadModel[]>;
+  abstract listLunchNudgeUsers(params: FixedTimeReminderParams): Promise<UserIdReadModel[]>;
+  abstract listWeeklyReportRecipients(params: PeriodReportParams): Promise<UserIdReadModel[]>;
+  abstract listMonthlyReportRecipients(params: PeriodReportParams): Promise<UserIdReadModel[]>;
 }

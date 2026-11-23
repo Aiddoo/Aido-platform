@@ -9,9 +9,11 @@ function copyOf(subscription: Subscription): Subscription {
   return Subscription.reconstitute(subscription.toPrimitives());
 }
 
+// failNextSave로 다음 저장 한 번을 그 오류로 실패시킨다
 export class InMemorySubscriptionRepository extends SubscriptionRepositoryPort {
   readonly #subscriptions = new Map<number, Subscription>();
   #sequence: number;
+  #nextSaveFailure: Error | null = null;
 
   constructor(subscriptions: readonly Subscription[] = []) {
     super();
@@ -70,7 +72,16 @@ export class InMemorySubscriptionRepository extends SubscriptionRepositoryPort {
     return owned.length;
   }
 
+  failNextSave(error: Error): void {
+    this.#nextSaveFailure = error;
+  }
+
   async save(subscription: Subscription): Promise<void> {
+    const failure = this.#nextSaveFailure;
+    if (failure != null) {
+      this.#nextSaveFailure = null;
+      throw failure;
+    }
     const existing = this.#subscriptions.get(subscription.id.value);
     // 시작 시각·결제 환경은 처음 저장한 값을 둔다
     this.#subscriptions.set(

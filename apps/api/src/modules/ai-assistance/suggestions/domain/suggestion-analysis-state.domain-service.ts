@@ -10,7 +10,7 @@ export interface SuggestionAnalysisFacts {
   readonly recentTodoCount: number;
   readonly run: SuggestionAnalysisRun | null;
   readonly now: Temporal.Instant;
-  readonly timeZone: string;
+  readonly timezone: string;
 }
 
 export function hasEnoughRecentTodos(recentTodoCount: number): boolean {
@@ -36,7 +36,7 @@ export function resolveSuggestionAnalysisState(
   if (run.isRunning(facts.now)) {
     return "ANALYZING";
   }
-  const today = suggestionDispatchLocalDate({ at: facts.now, timeZone: facts.timeZone });
+  const today = suggestionDispatchLocalDate({ at: facts.now, timezone: facts.timezone });
   if (run.isFinishedOn(today)) {
     return match(run.outcome)
       .returnType<AiSuggestionAnalysisState>()

@@ -53,7 +53,7 @@ export class DrizzleScheduledReminderReader implements ScheduledReminderReaderPo
     this.#clock = clock;
   }
 
-  async findPremiumMorningReminderUsers(
+  async listPremiumMorningReminderUsers(
     params: CustomTimeReminderParams,
   ): Promise<ReminderCountUserReadModel[]> {
     const { times, userId } = params;
@@ -80,7 +80,7 @@ export class DrizzleScheduledReminderReader implements ScheduledReminderReaderPo
     );
   }
 
-  async findFreeMorningReminderUsers(
+  async listFreeMorningReminderUsers(
     params: FixedTimeReminderParams,
   ): Promise<ReminderCountUserReadModel[]> {
     return this.#morningReminderUsers(
@@ -90,7 +90,7 @@ export class DrizzleScheduledReminderReader implements ScheduledReminderReaderPo
     );
   }
 
-  async findPremiumEveningReminderUsers(
+  async listPremiumEveningReminderUsers(
     params: CustomTimeReminderParams,
   ): Promise<EveningReminderUserReadModel[]> {
     const { times, userId } = params;
@@ -117,7 +117,7 @@ export class DrizzleScheduledReminderReader implements ScheduledReminderReaderPo
     );
   }
 
-  async findFreeEveningReminderUsers(
+  async listFreeEveningReminderUsers(
     params: FixedTimeReminderParams,
   ): Promise<EveningReminderUserReadModel[]> {
     return this.#eveningReminderUsers(
@@ -127,7 +127,7 @@ export class DrizzleScheduledReminderReader implements ScheduledReminderReaderPo
     );
   }
 
-  findLunchNudgeUsers(params: FixedTimeReminderParams): Promise<UserIdReadModel[]> {
+  listLunchNudgeUsers(params: FixedTimeReminderParams): Promise<UserIdReadModel[]> {
     const { timezones, today, tomorrow } = params;
     const recipients = userRecipients();
     return this.#db
@@ -143,11 +143,11 @@ export class DrizzleScheduledReminderReader implements ScheduledReminderReaderPo
       );
   }
 
-  findWeeklyReportRecipients(params: PeriodReportParams): Promise<UserIdReadModel[]> {
+  listWeeklyReportRecipients(params: PeriodReportParams): Promise<UserIdReadModel[]> {
     return this.#findPeriodReportRecipients(params);
   }
 
-  findMonthlyReportRecipients(params: PeriodReportParams): Promise<UserIdReadModel[]> {
+  listMonthlyReportRecipients(params: PeriodReportParams): Promise<UserIdReadModel[]> {
     return this.#findPeriodReportRecipients(params);
   }
 

@@ -28,7 +28,7 @@ export interface RemappedOccurrences {
 interface RemapFollowingOccurrencesDependencies {
   readonly occurrenceWriter: Pick<
     TodoOccurrenceWriterPort,
-    "findOccurrencesFrom" | "deleteMany" | "moveOccurrence" | "reassignOccurrences"
+    "listOccurrencesFrom" | "deleteMany" | "moveOccurrence" | "reassignOccurrences"
   >;
   readonly mutationLock: MutationLockPort;
 }
@@ -45,7 +45,7 @@ export class RemapFollowingOccurrencesUseCase {
   async execute(input: RemapFollowingOccurrencesInput): Promise<RemappedOccurrences> {
     const { pivotTodoId, source, following, target, pivot, now } = input;
     const { occurrenceWriter } = this.#dependencies;
-    const rows = await occurrenceWriter.findOccurrencesFrom(
+    const rows = await occurrenceWriter.listOccurrencesFrom(
       [source, ...following].map((segment) => segment.id),
       pivot.toString(),
     );

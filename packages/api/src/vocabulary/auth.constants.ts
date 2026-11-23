@@ -26,7 +26,7 @@ export function hasDisallowedPasswordCharacter(password: string): boolean {
 
 // 문자 집합 안에서 뜻이 바뀌는 \ ] ^ - 만 이스케이프한다. 지금 기호에는 없어 PATTERN 원문이 그대로다
 function escapeCharacterClass(characters: string): string {
-  return characters.replace(/[\\\]^-]/g, "\\$&");
+  return characters.replaceAll(/[\\\]^-]/g, "\\$&");
 }
 
 export const VERIFICATION_CODE = {

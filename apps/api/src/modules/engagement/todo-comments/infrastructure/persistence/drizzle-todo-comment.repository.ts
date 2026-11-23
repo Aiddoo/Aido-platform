@@ -11,9 +11,9 @@ import type { DrizzleTransactionalAdapter } from "#api/platform/database/databas
 import { todoComment as todoCommentTable } from "#api/platform/database/schema/engagement.schema";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { TodoCommentId } from "../../../shared/domain/todo-comment-id.vo.js";
 import { TodoCommentRepositoryPort } from "../../application/ports/todo-comment.repository.port.js";
 import { todoCommentIdempotencyRace } from "../../application/todo-comments.errors.js";
+import type { TodoCommentId } from "../../domain/todo-comment-id.vo.js";
 import type { TodoCommentRequestId } from "../../domain/todo-comment-request-id.vo.js";
 import type { TodoComment } from "../../domain/todo-comment.aggregate.js";
 import { toTodoComment, toTodoCommentRow } from "./todo-comment-row.mapper.js";

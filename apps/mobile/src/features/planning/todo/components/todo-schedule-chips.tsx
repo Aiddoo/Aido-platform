@@ -26,7 +26,7 @@ import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';
 
 import {
-  getScheduledTime,
+  findScheduledTime,
   isPrivateVisibility,
   type TodoSchedule,
   withScheduleRepeat,
@@ -143,7 +143,7 @@ function TimeChip({
   const dateFormatContext = useDateFormatContext();
   // 루트 overlay라 경계로 터지지 않게 Suspense 대신 상태로 읽는다. 읽지 못하면 설정 기본 표기다
   const { data: preference, isError } = useQuery(useGetPreferenceQueryOptions());
-  const displayedTime = getScheduledTime(value);
+  const displayedTime = findScheduledTime(value);
 
   // 설정을 읽는 동안 다른 표기로 먼저 보였다가 바뀌지 않게 카테고리 칩과 같은 자리 잡기를 보인다
   if (displayedTime != null && preference == null && !isError) {

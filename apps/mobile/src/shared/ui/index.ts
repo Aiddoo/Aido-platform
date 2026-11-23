@@ -12,7 +12,7 @@ export { Avatar } from './avatar/avatar';
 export { Barcode } from './barcode/barcode';
 export { BottomSheet } from './bottom-sheet/bottom-sheet';
 export { SHEET_RADIUS } from './bottom-sheet/bottom-sheet.constants';
-export { getChipRevealScrollX } from './bottom-sheet/get-chip-reveal-scroll-x';
+export { findChipRevealScrollX } from './bottom-sheet/find-chip-reveal-scroll-x';
 export {
   KeyboardBottomSheet,
   useKeyboardSheetBodyMaxHeight,
@@ -149,7 +149,6 @@ export { Image } from './image/image';
 export { InfiniteList, InfiniteListFooter } from './infinite-list/infinite-list';
 export { useFetchNextPage } from './infinite-list/use-fetch-next-page';
 export { InlineAlert } from './inline-alert/inline-alert';
-export { BottomSheetInput } from './input/bottom-sheet-input';
 export { Input } from './input/input';
 export { LabelChip } from './label-chip/label-chip';
 export { ListRow, type ListRowProps } from './list-row/list-row';
@@ -189,7 +188,6 @@ export { Steps } from './steps/steps';
 export { StyledSafeAreaView } from './styled-safe-area-view/styled-safe-area-view';
 export { SurfaceCard } from './surface-card/surface-card';
 export { LineTabTrigger, SegmentTabTrigger } from './tab-trigger/tab-trigger';
-export { BottomSheetTextArea } from './text-area/bottom-sheet-text-area';
 export { TextArea } from './text-area/text-area';
 export { TextButton } from './text-button/text-button';
 export { Text } from './text/text';

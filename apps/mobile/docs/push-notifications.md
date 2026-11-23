@@ -28,7 +28,7 @@ PushRegistrationService (features/notification/services) → PushDeviceApi (apis
 | `stores/push-onboarding-guard.store.ts`                                                              | 앱 화면 묶음이 그린 알림 화면 guard 값. 피드가 열 차례를 이 값으로 읽고 DI가 소유한다                                              |
 | `apis/notification.mapper.ts`                                                                        | `toNotificationTarget`: 서버 `navigation` → 앱 `NotificationTarget`. 알림함 항목도 같은 길이다                                     |
 | `domains/push-notification.model.ts`·`push-notification-response.model.ts`                           | 받은 푸시(`{ notificationId, type, target, … }`)와 누른 응답, 각자의 Policy                                                        |
-| `utils/notification-destination.view-model.ts`                                                       | `toNotificationDestination(target, { windowSizeClass, viewerId })`: target → 앱 경로·외부 링크                                     |
+| `utils/notification-destination.view-model.ts`                                                       | `toNotificationDestination(target, { windowSizeClass, accountId })`: target → 앱 경로·외부 링크                                    |
 | `hooks/use-notification-destination.ts`                                                              | `useResolveNotificationDestination`(창 크기·보는 사람으로 정함)·`useOpenNotificationDestination({ openRoute })`(연다)              |
 | `shared/navigation/open-entry-href.ts`                                                               | `openEntryHref(href)`: 켜진 앱에서 누른 푸시를 OS 링크처럼 보던 탭에 연다(Stack에 있으면 돌아가고 없으면 쌓는다)                   |
 
@@ -36,7 +36,7 @@ PushRegistrationService (features/notification/services) → PushDeviceApi (apis
 
 1. OS 권한을 읽는다. iOS 임시 허용(`PROVISIONAL`·`EPHEMERAL`)은 모두 `PROVISIONAL`로 바꾼다. 알림이 조용히 도착하므로 허용으로 본다.
 2. Android 알림 채널은 어댑터가 권한 창을 띄우기 전과 토큰을 받기 전에 만든다. Android 13+는 채널이 있어야 권한 창과 토큰 발급이 동작한다. 실패해도 권한은 읽고 보고한다.
-3. 허용 상태(`GRANTED`·`PROVISIONAL`)면 Expo 푸시 토큰을 받는다. `Device.isDevice`로 막지 않는다. Expo SDK 58에서는 시뮬레이터·에뮬레이터도 토큰을 받을 수 있다. 오프라인·APNs 없음·Play 서비스 없음·15초 초과로 실패하면 마지막으로 보고에 성공한 토큰(키체인 `pushRegistration`)으로 보고해 등록을 지키면서 권한·시간대·언어를 맞춘다. 한 번도 토큰을 받지 못한 허용 기기는 `token: null`로 보고한다. 지울 토큰이 없고, 1.15.1 서버는 허용 상태의 `null`에 저장된 토큰을 지킨다(이 앱은 그 서버 뒤에 나간다). 다음 복귀·토큰 변경·권한 요청 때 토큰을 다시 받는다. 거절·미결정이면 토큰 없이 권한만 보고한다. 판단은 `PushRegistrationPolicy.getReportToken`이다.
+3. 허용 상태(`GRANTED`·`PROVISIONAL`)면 Expo 푸시 토큰을 받는다. `Device.isDevice`로 막지 않는다. Expo SDK 58에서는 시뮬레이터·에뮬레이터도 토큰을 받을 수 있다. 오프라인·APNs 없음·Play 서비스 없음·15초 초과로 실패하면 마지막으로 보고에 성공한 토큰(키체인 `pushRegistration`)으로 보고해 등록을 지키면서 권한·시간대·언어를 맞춘다. 한 번도 토큰을 받지 못한 허용 기기는 `token: null`로 보고한다. 지울 토큰이 없고, 1.15.1 서버는 허용 상태의 `null`에 저장된 토큰을 지킨다(이 앱은 그 서버 뒤에 나간다). 다음 복귀·토큰 변경·권한 요청 때 토큰을 다시 받는다. 거절·미결정이면 토큰 없이 권한만 보고한다. 판단은 `PushRegistrationPolicy.findReportToken`이다.
 4. `PUT /v1/notifications/push-devices/{deviceId}`로 `{ permission, token, payloadVersion }`을 보낸다. 같은 값을 이번 세션에 이미 보냈으면 요청하지 않는다(`force`로 무시). 웹은 보내지 않는다.
 
 ## 보고 시점
@@ -56,7 +56,7 @@ PushRegistrationService (features/notification/services) → PushDeviceApi (apis
 
 ## 권한 묻기
 
-시스템 권한 창은 iOS에서 한 번만 뜬다. 그래서 묻는 순간을 `PushPermissionPolicy.getAskMoment(permission, context)` 한 곳이 정한다. 허용(`GRANTED`·`PROVISIONAL`)이면 어디서도 묻지 않는다.
+시스템 권한 창은 iOS에서 한 번만 뜬다. 그래서 묻는 순간을 `PushPermissionPolicy.findAskMoment(permission, context)` 한 곳이 정한다. 허용(`GRANTED`·`PROVISIONAL`)이면 어디서도 묻지 않는다.
 
 | 곳(`surface`)          | 조건                                                   | 결과(`PUSH_ASK_MOMENT`)                                                                  |
 | ---------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
@@ -101,7 +101,7 @@ PushRegistrationService (features/notification/services) → PushDeviceApi (apis
 - 로그아웃·탈퇴·세션 만료는 OS 알림 센터에 이미 도착한 알림을 지운다(`SessionCleanupService` → `PushNotificationGateway.dismissDelivered`). 페이로드에 받는 사람이 없어 남기면 공용 기기에서 다음 계정이 앞 계정의 알림 문구를 본다(눌러도 소유 확인에서 버려진다). 만료 뒤에도 지우는 것은 다음에 다른 계정이 로그인할 수 있어서다. 로그인한 적 없는 시작과 판정 실패는 세션이 살아 있을 수 있어 지우지 않는다. 지우기가 실패해도 다른 정리는 계속하고 경고만 남긴다. 배지는 아래처럼 미인증이면 0이 된다.
 - 탈퇴는 앱이 해제하지 않는다. 서버 탈퇴가 전 세션과 기기를 함께 푼다. 탈퇴 전에 풀면 비밀번호 오류에도 이 기기의 알림이 끊긴다.
 - 앱 아이콘 배지는 알림함의 안 읽은 수 조회(`useGetUnreadCountQueryOptions`) 하나를 따른다. `NotificationProvider`의 `useNotificationBadgeSync`가 로그인한 동안 이 조회를 구독해, 앱이 앞으로 올 때(`focusManager`, `staleTime: 0`)·다시 연결될 때·푸시 수신과 읽음 처리의 무효화·낙관적 수정 때마다 배지를 그 수로 맞춘다. 그래서 다른 기기에서 읽거나 받은 알림도 이 기기를 열면 배지에 반영된다. 서버는 1.17.0 이상 기기에 푸시마다 그때의 안 읽은 수를 `badge`로 실어 앱이 꺼져 있어도 아이콘이 맞는다([서버 푸시 발송](../../api/docs/push-delivery.md#배지와-중복-배너)). 그 값은 이 기기의 캐시와 어긋날 수 있어 조회가 끝날 때마다(`dataUpdatedAt`) 받은 수가 같아도 배지를 다시 쓴다. 배지만 따로 서버에 묻지 않는다. 읽음 처리(`NOTIFICATION_MUTATION_KEYS.writes()`)는 실패하면 그 알림만 안 읽음으로 되돌리고, 마지막 처리가 끝날 때만 다시 받아 배지가 앞 처리의 값으로 깜빡이지 않는다.
-- 콜드 스타트의 인증 확인 중(`loading`·`locked`)에는 배지를 건드리지 않고, 로그아웃(`unauthenticated`)일 때만 지운다(`NotificationBadgePolicy.getBadgeCount`).
+- 콜드 스타트의 인증 확인 중(`loading`·`locked`)에는 배지를 건드리지 않고, 로그아웃(`unauthenticated`)일 때만 지운다(`NotificationBadgePolicy.findBadgeCount`).
 
 ## 눌린 푸시 처리
 
@@ -139,7 +139,7 @@ Expo Router 권장대로 루트 레이아웃의 관찰 훅 하나가 `getLastNot
 | 모르는 종류·분석 칸·수신 거부 토큰이 틀림 | 그 칸만 버리고(`null`) 종류·목적지는 그대로 연다(로그를 남긴다)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | data를 읽지 못함                          | `parsePushNotification`의 `notification`이 `null`이면 로그를 남기고 버리지 않은 채 알림함으로 연다(`createUnreadablePushNotification`)                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | 수신 거부 버튼                            | 인증 없이 공개 API로 보낸다. 다음 탭에 밀리지 않게 슬롯을 따로 두고 실패하면 포그라운드 복귀 때 다시 보낸다(10분)                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| 리마인드 알림 버튼                        | 완료·10분 뒤 다시(`TODO_REMINDER`)도 같은 슬롯(인증 대기·10분 만료·처리 기억)과 소유 확인을 거쳐 기본 탭의 할 일 화면에 내린 뒤 한다(`getTodoReminderAction`). 버튼은 서버가 60·10분·다시 알림 단계에만 싣고 반복 알림 멈춤 안내에는 싣지 않는다(푸시 data에 단계가 없어 앱은 다시 거르지 않는다). 완료는 화면과 같은 상세 조회를 새로 받아 서버가 이미 끝냈다고 하면 보내지 않고, 아니면 할 일 완료 mutation이다. 다시 알림은 `POST v1/todo-reminders/{todoId}/snoozes`다. 이미 끝낸 할 일은 토스트로만, 지운 할 일(`TODO_0801`)은 할 일 화면의 볼 수 없음 안내로만 알린다             |
+| 리마인드 알림 버튼                        | 완료·10분 뒤 다시(`TODO_REMINDER`)도 같은 슬롯(인증 대기·10분 만료·처리 기억)과 소유 확인을 거쳐 기본 탭의 할 일 화면에 내린 뒤 한다(`findTodoReminderAction`). 버튼은 서버가 60·10분·다시 알림 단계에만 싣고 반복 알림 멈춤 안내에는 싣지 않는다(푸시 data에 단계가 없어 앱은 다시 거르지 않는다). 완료는 화면과 같은 상세 조회를 새로 받아 서버가 이미 끝냈다고 하면 보내지 않고, 아니면 할 일 완료 mutation이다. 다시 알림은 `POST v1/todo-reminders/{todoId}/snoozes`다. 이미 끝낸 할 일은 토스트로만, 지운 할 일(`TODO_0801`)은 할 일 화면의 볼 수 없음 안내로만 알린다            |
 | 버튼을 처리한 알림                        | 수신 거부·완료·다시 알림 응답을 끝내면(성공·만료·남의 알림·열기 실패 모두) 그 알림을 OS 알림 센터에서 지운다(`PushNotificationResponsePolicy.shouldDismissNotification` → `PushNotificationGateway.dismissNotification`). Android 알림 버튼은 알림을 닫지 않아, 남기면 다른 버튼을 눌러 `NOTIFICATION_1007`과 "이미 완료한 할 일이에요"만 받는다. 실패해 다시 보낼 수신 거부는 끝나기 전이라 지우지 않는다. 본문 탭은 OS가 하는 대로 두고, 지우기 실패는 경고만 남긴다. 58.1.9 `dismissNotificationAsync`는 iOS `removeDeliveredNotifications`, Android 응답 identifier(`tag`)로 지운다 |
 | 알림함 항목                               | 서버가 푸시와 같은 계산으로 싣는 `navigation`을 따른다(서버 1.15.1+, [배포 순서](../../../docs/conventions/compatibility.md#2-외부-계약-바꾸지-않는다)). 알림함을 여는 항목은 같은 화면을 다시 열지 않는다. iOS 좁은 화면에서 읽은 알림이 할 일·콕 상세로 가면 길게 눌러 목적지를 미리본다([Link](./architecture/state-and-routing.md#link))                                                                                                                                                                                                                                            |
 

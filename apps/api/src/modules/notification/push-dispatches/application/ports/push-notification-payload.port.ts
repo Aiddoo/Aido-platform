@@ -2,8 +2,8 @@ import type { SupportedLocale } from "@aido/api/vocabulary";
 
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import type { NotificationId } from "../../../notifications/domain/notification-id.vo.js";
 import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
-import type { NotificationId } from "../../../shared/domain/notification-id.vo.js";
 import type { PushDispatchId } from "../../domain/push-dispatch-id.vo.js";
 import type { PushMessageContent } from "./push-channel.port.js";
 

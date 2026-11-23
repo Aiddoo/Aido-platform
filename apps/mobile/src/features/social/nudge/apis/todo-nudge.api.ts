@@ -10,7 +10,7 @@ import {
   sendNudgeThanksResponseSchema,
 } from '@aido/api/contracts/nudge/v1';
 import type { ApiError } from '@src/core/errors/api-error';
-import { err, type Result } from '@src/core/errors/result';
+import { fail, type Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http-client';
 import { BusinessError } from '@src/shared/errors';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
@@ -58,7 +58,7 @@ export class TodoNudgeApi {
     input: CreateNudgeInput,
   ): Promise<Result<SendTodoNudgeResult, TodoNudgeApiError>> => {
     if (isMessageTooLong(input)) {
-      return err(new BusinessError(TODO_NUDGE_ERROR_CODE.MESSAGE_TOO_LONG));
+      return fail(new BusinessError(TODO_NUDGE_ERROR_CODE.MESSAGE_TOO_LONG));
     }
 
     return parseApiResponse(
@@ -77,7 +77,7 @@ export class TodoNudgeApi {
     input: CreateRemindNudgeInput,
   ): Promise<Result<SendTodoNudgeResult, TodoNudgeApiError>> => {
     if (isMessageTooLong(input)) {
-      return err(new BusinessError(TODO_NUDGE_ERROR_CODE.MESSAGE_TOO_LONG));
+      return fail(new BusinessError(TODO_NUDGE_ERROR_CODE.MESSAGE_TOO_LONG));
     }
 
     return parseApiResponse(

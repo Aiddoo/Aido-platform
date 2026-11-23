@@ -743,7 +743,9 @@ function createTimerSlots<TKey extends string>() {
     clear,
     has: (key: TKey) => slots.has(key),
     clearAll: () => {
-      slots.forEach((timer) => clearTimeout(timer));
+      for (const timer of slots.values()) {
+        clearTimeout(timer);
+      }
       slots.clear();
     },
   };

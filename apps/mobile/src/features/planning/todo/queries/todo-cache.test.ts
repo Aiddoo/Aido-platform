@@ -14,6 +14,7 @@ import {
   invalidateTodoDependentQueries,
   invalidateTodos,
   invalidateTodoSummaries,
+  isTodoSummaryDateRequestable,
   settleTodoWrite,
   shouldPersistTodosByDate,
   syncDailyCompletionWithList,
@@ -152,7 +153,7 @@ describe('todo-cache', () => {
       queryClient.setQueryData(TODO_QUERY_KEYS.detail({ todoId: 7 }), {
         todo: multiDay,
         owner: { id: 'u', name: null, profileImage: null },
-        permissions: { canEdit: true, canComment: true, canNudge: false },
+        permissions: { canEdit: true, canComment: true, canNudge: false, canThank: false },
         metrics: { viewCount: 0, commentCount: 0 },
       });
 
@@ -291,10 +292,10 @@ describe('todo-cache', () => {
     it('낡음 표시를 기다리는 사이 이 쓰기가 끝나도 다른 쓰기가 남아 있으면 다시 받지 않는다', async () => {
       // Given
       const client = createSeededClient();
-      const queryFn = jest.fn(async () => toList([]));
+      const fetchList = jest.fn(async () => toList([]));
       const unsubscribe = new QueryObserver(client, {
         queryKey: TODO_QUERY_KEYS.listByDate({ date: DAY }),
-        queryFn,
+        queryFn: fetchList,
         staleTime: Infinity,
       }).subscribe(noop);
       const finishOtherWrite = startWrite(client);
@@ -327,7 +328,7 @@ describe('todo-cache', () => {
       // Then
       expect(client.isMutating({ mutationKey: TODO_MUTATION_KEYS.listWrites() })).toBe(1);
       expect(isInvalidated(client, TODO_QUERY_KEYS.listByDate({ date: DAY }))).toBe(true);
-      expect(queryFn).not.toHaveBeenCalled();
+      expect(fetchList).not.toHaveBeenCalled();
       await finishOtherWrite();
       unsubscribe();
     });
@@ -491,6 +492,23 @@ describe('todo-cache', () => {
       // Then
       expect(monthEnd).toBe(true);
       expect(yearEnd).toBe(true);
+    });
+  });
+
+  describe('isTodoSummaryDateRequestable', () => {
+    const todayKey = createDateKey('2026-12-31');
+
+    it.each([
+      ['2026-12-30', false],
+      ['2026-12-31', true],
+      ['2027-01-01', true],
+      ['2027-01-21', false],
+    ])('%s 요약은 서버에 물을 수 있는지 %s다', (date, expected) => {
+      // When
+      const result = isTodoSummaryDateRequestable({ date: createDateKey(date), todayKey });
+
+      // Then
+      expect(result).toBe(expected);
     });
   });
 

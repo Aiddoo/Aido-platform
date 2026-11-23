@@ -2,7 +2,7 @@ import type { TodoCommentSort } from "@aido/api/vocabulary";
 
 import type { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 
-import type { TodoCommentId } from "../../../shared/domain/todo-comment-id.vo.js";
+import type { TodoCommentId } from "../../domain/todo-comment-id.vo.js";
 import type {
   TodoCommentRootPositionReadModel,
   TodoCommentThreadItemReadModel,
@@ -23,7 +23,7 @@ export interface ListTodoCommentThreadsParams {
 /** 묶음 머리 댓글을 최신·인기순으로 읽고 묶음마다 대표 답글과 참여자를 붙인다 */
 export abstract class TodoCommentThreadReaderPort {
   /** 기준 묶음을 찾지 못하면 null */
-  abstract listThreads(
+  abstract findThreadWindow(
     params: ListTodoCommentThreadsParams,
   ): Promise<TodoCommentWindowReadModel<TodoCommentThreadItemReadModel> | null>;
 }

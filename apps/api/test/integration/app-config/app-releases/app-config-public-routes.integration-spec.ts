@@ -69,7 +69,7 @@ describe("app-config 공개 조회 route (Integration)", () => {
   it("활성 캠페인은 응답 인터셉터가 있어도 래핑 없이 전체 설정을 제공한다", async () => {
     // Given
     campaignRepository.campaign = createFeatureDiscoveryCampaignFixture({
-      campaignId: enabledCampaign.campaignId,
+      id: enabledCampaign.campaignId,
       minAppVersion: enabledCampaign.minAppVersion,
       launchedAt: Temporal.Instant.from(enabledCampaign.launchedAt),
     });
@@ -86,7 +86,7 @@ describe("app-config 공개 조회 route (Integration)", () => {
   it("운영 중 kill switch가 꺼지면 같은 앱의 다음 요청에 바로 반영된다", async () => {
     // Given
     campaignRepository.campaign = createFeatureDiscoveryCampaignFixture({
-      campaignId: enabledCampaign.campaignId,
+      id: enabledCampaign.campaignId,
       minAppVersion: enabledCampaign.minAppVersion,
       launchedAt: Temporal.Instant.from(enabledCampaign.launchedAt),
     });

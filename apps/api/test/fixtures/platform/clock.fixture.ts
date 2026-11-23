@@ -1,4 +1,4 @@
-import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import { Timezone } from "#api/shared/domain/time/timezone.vo";
 import { toZonedInstant } from "#api/shared/domain/time/zoned-time";
 
 // vi.useFakeTimers는 Date만 움직이고 Temporal.Now는 그대로라 테스트 시드의 지금은 Date.now()에서 만든다
@@ -30,7 +30,7 @@ export function wallClockInstant(
   return toZonedInstant({
     date: Temporal.PlainDate.from(date),
     time: Temporal.PlainTime.from(time),
-    timeZone: TimeZone.create(timezone),
+    timezone: Timezone.create(timezone),
   });
 }
 

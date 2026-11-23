@@ -22,29 +22,29 @@ describe('TodoApi', () => {
       name: 'createTodo',
       call: (api: TodoApi) => api.createTodo(createTodoFormValues({ title: '테스트' })),
       method: 'post',
-      args: ['v1/todos', expect.any(Object)],
+      requestArguments: ['v1/todos', expect.any(Object)],
     },
     {
       name: 'toggleTodoComplete',
       call: (api: TodoApi) => api.toggleTodoComplete(1, { completed: true }),
       method: 'patch',
-      args: ['v1/todos/1/complete', { completed: true }],
+      requestArguments: ['v1/todos/1/complete', { completed: true }],
     },
     {
       name: 'reorderTodo',
       call: (api: TodoApi) => api.reorderTodo(1, { position: 'after', targetTodoId: 2 }),
       method: 'patch',
-      args: ['v1/todos/1/reorder', { position: 'after', targetTodoId: 2 }],
+      requestArguments: ['v1/todos/1/reorder', { position: 'after', targetTodoId: 2 }],
     },
     {
       name: 'changeTodoCategory',
       call: (api: TodoApi) => api.changeTodoCategory(1, { categoryId: 2 }),
       method: 'patch',
-      args: ['v1/todos/1/category', { categoryId: 2 }],
+      requestArguments: ['v1/todos/1/category', { categoryId: 2 }],
     },
   ] as const)(
     '$name은 계약 경로로 보내고 응답을 할 일로 바꾼다',
-    async ({ call, method, args }) => {
+    async ({ call, method, requestArguments }) => {
       // Given
       const { httpClient, api } = createSut();
       const response = ok({ message: 'ok', todo: createTodoDto() });
@@ -55,7 +55,7 @@ describe('TodoApi', () => {
       const result = await call(api);
 
       // Then
-      expect(httpClient[method]).toHaveBeenCalledWith(...args);
+      expect(httpClient[method]).toHaveBeenCalledWith(...requestArguments);
       expect(result.ok).toBe(true);
     },
   );

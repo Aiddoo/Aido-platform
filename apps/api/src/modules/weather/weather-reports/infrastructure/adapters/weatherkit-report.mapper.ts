@@ -8,7 +8,7 @@ import type {
 import { clamp, minBy, round, sortBy } from "es-toolkit";
 import { match } from "ts-pattern";
 
-import { localDateIn } from "#api/shared/domain/time/time-zone-name";
+import { localDateIn } from "#api/shared/domain/time/timezone-name";
 
 import type { GeoCell } from "../../../shared/domain/geo-cell.vo.js";
 import {

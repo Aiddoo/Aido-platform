@@ -1,8 +1,10 @@
+import { isAllCompleted } from "@aido/api/vocabulary";
+
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { localDateIn } from "#api/shared/domain/time/time-zone-name";
+import { localDateIn } from "#api/shared/domain/time/timezone-name";
 
 import type { UserPreference } from "../../domain/user-preference.aggregate.js";
 import type { StreakMilestoneNotifierPort } from "../ports/streak-milestone-notifier.port.js";
@@ -57,7 +59,7 @@ export class OnTodoToggledUseCase {
           return;
         }
 
-        const allCompleted = stats.total === stats.completed;
+        const allCompleted = isAllCompleted(stats.completed, stats.total);
         if (!(await this.#recordTransition(preference, today, allCompleted))) {
           return;
         }
@@ -113,9 +115,8 @@ export class OnTodoToggledUseCase {
       return false;
     }
 
-    const yesterdayStats = await this.#statsForDay(preference.id, today.subtract({ days: 1 }));
-    const hadYesterdayCompletion =
-      yesterdayStats.total > 0 && yesterdayStats.total === yesterdayStats.completed;
+    const yesterdayStats = await this.#statsForDay(preference.userId, today.subtract({ days: 1 }));
+    const hadYesterdayCompletion = isAllCompleted(yesterdayStats.completed, yesterdayStats.total);
     return preference.recordTodoReopened(today, hadYesterdayCompletion);
   }
 }

@@ -22,7 +22,7 @@ export abstract class TodoCategoryRepositoryPort {
 
   abstract findByIdAndUserId(id: TodoCategoryId, userId: UserId): Promise<TodoCategory | null>;
   abstract findByIdWithCount(id: TodoCategoryId): Promise<TodoCategoryWithCountReadModel | null>;
-  abstract findManyByUserId(userId: UserId): Promise<TodoCategoryWithCountReadModel[]>;
+  abstract listByUserId(userId: UserId): Promise<TodoCategoryWithCountReadModel[]>;
 
   abstract countByUserId(userId: UserId): Promise<number>;
   abstract existsByUserIdAndName(

@@ -5,7 +5,7 @@ import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  BottomSheetTextArea,
+  TextArea,
   Button,
   H4,
   KeyboardBottomSheet,
@@ -170,7 +170,7 @@ function NudgeMessageSheet({
             control={form.control}
             name="message"
             render={({ field, fieldState }) => (
-              <BottomSheetTextArea
+              <TextArea
                 ref={field.ref}
                 label={t('nudge.to', { name: receiver.displayName })}
                 isInvalid={fieldState.error != null}

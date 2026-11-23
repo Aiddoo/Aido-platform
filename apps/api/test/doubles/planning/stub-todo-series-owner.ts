@@ -10,7 +10,7 @@ export class StubTodoSeriesOwner extends TodoSeriesOwnerPort {
   /** 정지·탈퇴 대기 계정 */
   readonly suspendedUserIds = new Set<string>();
   exemptionChecks = 0;
-  async findOperatingOwners(
+  async listOperatingOwners(
     userIds: readonly UserId[],
   ): Promise<ReadonlyMap<string, SeriesOwnerActivity>> {
     return new Map(

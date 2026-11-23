@@ -159,10 +159,10 @@ export function describeWeeklyAchievementStatsReaderContract(
       const otherFree = await subject.givenUser({ timezone: SEOUL, plan: "FREE" });
 
       // When
-      const recipients = await subject.reader.findFreeRecipientIds(
+      const recipients = await subject.reader.listFreeRecipientIds(
         [free, premium, admin].map((userId) => UserId.reconstitute(userId)),
       );
-      const none = await subject.reader.findFreeRecipientIds([]);
+      const none = await subject.reader.listFreeRecipientIds([]);
 
       // Then
       expect([...recipients]).toEqual([free]);

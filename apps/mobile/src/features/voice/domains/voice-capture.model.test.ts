@@ -550,7 +550,7 @@ describe('shouldAutoFinish', () => {
   });
 });
 
-describe('getDismissAction', () => {
+describe('findDismissAction', () => {
   const createReview = (actions: unknown[]) =>
     VoiceCapturePolicy.reduceVoiceCapture(createCaptureState({ status: 'planning' }), {
       type: 'planned',
@@ -572,21 +572,23 @@ describe('getDismissAction', () => {
 
     // When
     const actions = {
-      idle: VoiceCapturePolicy.getDismissAction(createCaptureState({ status: 'idle' })),
-      failed: VoiceCapturePolicy.getDismissAction(
+      idle: VoiceCapturePolicy.findDismissAction(createCaptureState({ status: 'idle' })),
+      failed: VoiceCapturePolicy.findDismissAction(
         createCaptureState({ status: 'failed', reason: 'planning-failed' }),
       ),
-      preparing: VoiceCapturePolicy.getDismissAction(createCaptureState({ status: 'preparing' })),
-      listening: VoiceCapturePolicy.getDismissAction(
+      preparing: VoiceCapturePolicy.findDismissAction(createCaptureState({ status: 'preparing' })),
+      listening: VoiceCapturePolicy.findDismissAction(
         createCaptureState({ status: 'listening', listeningSince: NOW }),
       ),
-      paused: VoiceCapturePolicy.getDismissAction(
+      paused: VoiceCapturePolicy.findDismissAction(
         createCaptureState({ status: 'paused', cause: 'user' }),
       ),
-      finalizing: VoiceCapturePolicy.getDismissAction(createCaptureState({ status: 'finalizing' })),
-      planning: VoiceCapturePolicy.getDismissAction(createCaptureState({ status: 'planning' })),
-      emptyReview: VoiceCapturePolicy.getDismissAction(createReview([])),
-      review: VoiceCapturePolicy.getDismissAction(createReview([memoAction])),
+      finalizing: VoiceCapturePolicy.findDismissAction(
+        createCaptureState({ status: 'finalizing' }),
+      ),
+      planning: VoiceCapturePolicy.findDismissAction(createCaptureState({ status: 'planning' })),
+      emptyReview: VoiceCapturePolicy.findDismissAction(createReview([])),
+      review: VoiceCapturePolicy.findDismissAction(createReview([memoAction])),
     };
 
     // Then

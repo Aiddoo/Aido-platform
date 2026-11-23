@@ -37,7 +37,7 @@ export function VoiceNotePlanTodos({ className, onMemoChanged }: VoiceNotePlanTo
   const [{ data: categoriesResult }] = useSuspenseQueries({
     queries: [useGetTodoCategoriesQueryOptions(), useGetPreferenceQueryOptions()],
   });
-  const fallbackCategoryId = TodoCategoryPolicy.getInitialCategoryId(
+  const fallbackCategoryId = TodoCategoryPolicy.findInitialCategoryId(
     categoriesResult.categories,
     null,
   );

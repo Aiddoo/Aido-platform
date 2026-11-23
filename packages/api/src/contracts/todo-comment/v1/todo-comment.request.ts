@@ -72,19 +72,19 @@ export const createTodoCommentChainSchema = z
   .check(({ value, issues }) => {
     const seen = new Set<string>();
 
-    value.items.forEach((item, index) => {
-      if (seen.has(item.clientRequestId)) {
+    for (const [index, comment] of value.items.entries()) {
+      if (seen.has(comment.clientRequestId)) {
         issues.push({
           code: "custom",
           input: value,
           message: "댓글 요청 ID는 한 요청 안에서 중복될 수 없습니다.",
           path: ["items", index, "clientRequestId"],
         });
-        return;
+        continue;
       }
 
-      seen.add(item.clientRequestId);
-    });
+      seen.add(comment.clientRequestId);
+    }
   })
   .meta({ description: "할 일 댓글 이어 쓰기 요청" });
 

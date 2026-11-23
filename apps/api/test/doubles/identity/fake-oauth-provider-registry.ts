@@ -59,7 +59,7 @@ class FakeOAuthIdentityProvider extends OAuthIdentityProviderPort {
   }
 }
 
-class FakeOAuthIdentityProviderRegistry extends OAuthIdentityProviderRegistryPort {
+export class FakeOAuthIdentityProviderRegistry extends OAuthIdentityProviderRegistryPort {
   readonly #providers: OAuthIdentityProviders;
 
   constructor(providers: OAuthIdentityProviders) {
@@ -67,8 +67,8 @@ class FakeOAuthIdentityProviderRegistry extends OAuthIdentityProviderRegistryPor
     this.#providers = providers;
   }
 
-  get(provider: AccountProvider): OAuthIdentityProviderPort | undefined {
-    return this.#providers.get(provider);
+  find(provider: AccountProvider): OAuthIdentityProviderPort | null {
+    return this.#providers.get(provider) ?? null;
   }
 }
 

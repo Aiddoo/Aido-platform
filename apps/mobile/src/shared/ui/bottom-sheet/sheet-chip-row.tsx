@@ -1,6 +1,5 @@
 import type { ComponentProps } from 'react';
-import { StyleSheet } from 'react-native';
-import { ScrollView } from 'react-native-gesture-handler';
+import { ScrollView, StyleSheet } from 'react-native';
 
 import { SHEET_CONTENT_PADDING } from './bottom-sheet.constants';
 

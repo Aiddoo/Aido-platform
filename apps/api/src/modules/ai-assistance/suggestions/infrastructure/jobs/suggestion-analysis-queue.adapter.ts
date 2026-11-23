@@ -21,9 +21,7 @@ function toQueuedJob(job: SuggestionAnalysisJob) {
       name: AiSuggestionJobName.ANALYZE,
       data: {
         userId: job.userId.value,
-        timezone: job.timeZone,
-        // 배포가 겹치는 동안 1.15 worker가 이 칸 없이는 job을 받지 않는다. 날씨 문맥만 빠진다
-        weatherGrid: null,
+        timezone: job.timezone,
         localDate,
         trigger: job.trigger,
       } satisfies AiSuggestionAnalyzeData,

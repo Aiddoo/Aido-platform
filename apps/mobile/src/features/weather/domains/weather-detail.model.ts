@@ -19,11 +19,11 @@ interface TimeWindow {
 function findSunscreenWindow(
   hourly: readonly HourlyForecastEntry[],
   now: Instant,
-  timeZone: string,
+  timezone: string,
 ): TimeWindow | null {
-  const todayKey = toDateKey(now, timeZone);
+  const todayKey = toDateKey(now, timezone);
   const strongHours = WeatherReportPolicy.getUpcomingHours(hourly, now).filter(
-    (hour) => toDateKey(hour.startsAt, timeZone) === todayKey && hour.uvIndex >= SUNSCREEN_UV_INDEX,
+    (hour) => toDateKey(hour.startsAt, timezone) === todayKey && hour.uvIndex >= SUNSCREEN_UV_INDEX,
   );
   const first = strongHours[0];
   const last = strongHours.at(-1);

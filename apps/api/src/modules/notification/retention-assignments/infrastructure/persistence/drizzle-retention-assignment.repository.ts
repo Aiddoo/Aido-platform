@@ -14,7 +14,7 @@ import {
   retentionExperimentStage,
 } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { normalizeIanaTimezone } from "#api/shared/domain/time/time-zone-name";
+import { normalizeIanaTimezone } from "#api/shared/domain/time/timezone-name";
 
 import { resolveRecipientLocale } from "../../../shared/domain/recipient-locale.domain-service.js";
 import type { RetentionAssignmentRepositoryPort } from "../../application/ports/retention-assignment.repository.port.js";
@@ -62,7 +62,7 @@ export class DrizzleRetentionAssignmentRepository implements RetentionAssignment
     return assignment ?? null;
   }
 
-  async findByIds(
+  async listByIds(
     ids: readonly RetentionAssignmentId[],
   ): Promise<ReadonlyMap<string, RetentionAssignment>> {
     if (ids.length === 0) {
@@ -99,7 +99,7 @@ export class DrizzleRetentionAssignmentRepository implements RetentionAssignment
     return true;
   }
 
-  async findDueStages(params: {
+  async listDueStages(params: {
     readonly dueAt: Temporal.Instant;
     readonly after?: RetentionStageCursorReadModel;
     readonly limit: number;

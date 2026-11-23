@@ -43,7 +43,9 @@ export function useIsCoachmarkSettled({
     );
 
     return () => {
-      subscriptions.forEach((subscription) => subscription.remove());
+      for (const subscription of subscriptions) {
+        subscription.remove();
+      }
     };
   }, [isVisible]);
 

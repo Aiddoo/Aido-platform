@@ -5,7 +5,7 @@ import {
 } from "@aido/api/vocabulary";
 import { orderBy } from "es-toolkit";
 
-import { localDateIn } from "#api/shared/domain/time/time-zone-name";
+import { localDateIn } from "#api/shared/domain/time/timezone-name";
 
 import type { WeatherReportHour } from "./weather-report.aggregate.js";
 

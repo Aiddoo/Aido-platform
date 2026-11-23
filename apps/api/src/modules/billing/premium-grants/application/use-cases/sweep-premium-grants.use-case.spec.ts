@@ -112,11 +112,7 @@ describe("SweepPremiumGrantsUseCase — 보상 기간 정리", () => {
       ],
       [SUBSCRIPTION_FIXTURE_USER_ID, SUBSCRIPTION_FIXTURE_OTHER_USER_ID],
     );
-    const update = projection.update.bind(projection);
-    vi.spyOn(projection, "update").mockImplementationOnce(async () => {
-      throw new Error("deadlock");
-    });
-    vi.spyOn(projection, "update").mockImplementation(update);
+    projection.failNextUpdate(new Error("deadlock"));
 
     // When
     const result = await useCase.execute({ now: LATER });

@@ -26,7 +26,11 @@ export function useDemoScript({
     const timers = range(1, frameCount + 1).map((next) =>
       setTimeout(() => setFrame(next), startDelayMs + (next - 1) * frameMs),
     );
-    return () => timers.forEach(clearTimeout);
+    return () => {
+      for (const timer of timers) {
+        clearTimeout(timer);
+      }
+    };
   }, [frameCount, frameMs, isReducedMotion, startDelayMs]);
 
   return isReducedMotion ? frameCount : frame;

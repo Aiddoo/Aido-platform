@@ -8,7 +8,7 @@ const inviter = {
   profileImage: 'orange_tabby',
 };
 
-describe('getFriendship', () => {
+describe('findFriendship', () => {
   it.each(['FRIENDS', 'REQUESTED'] as const)(
     '새로 수락해 %s가 되면 그 친구 상태를 반환한다',
     (friendship) => {
@@ -16,7 +16,7 @@ describe('getFriendship', () => {
       const result = createRedemptionResult({ friendship });
 
       // When
-      const actual = InviteRedemptionPolicy.getFriendship(result);
+      const actual = InviteRedemptionPolicy.findFriendship(result);
 
       // Then
       expect(actual).toBe(friendship);
@@ -28,7 +28,7 @@ describe('getFriendship', () => {
     const result = { outcome: 'ALREADY_FRIENDS' as const, inviter };
 
     // When
-    const actual = InviteRedemptionPolicy.getFriendship(result);
+    const actual = InviteRedemptionPolicy.findFriendship(result);
 
     // Then
     expect(actual).toBeNull();
@@ -116,7 +116,7 @@ describe('getGrantedPremiumDays', () => {
   });
 });
 
-describe('getMissingRewardReason', () => {
+describe('findMissingRewardReason', () => {
   it.each([
     ['보상을 받았으면', createRedemptionResult(), null],
     ['같은 기기로 다시 받으려 했으면', createRedemptionResult({ rewards: [] }), 'already-claimed'],
@@ -128,7 +128,7 @@ describe('getMissingRewardReason', () => {
     ['이미 친구였으면', { outcome: 'ALREADY_FRIENDS' as const, inviter }, null],
   ])('%s %s를 반환한다', (_case, result, expected) => {
     // When
-    const reason = InviteRedemptionPolicy.getMissingRewardReason(result);
+    const reason = InviteRedemptionPolicy.findMissingRewardReason(result);
 
     // Then
     expect(reason).toBe(expected);

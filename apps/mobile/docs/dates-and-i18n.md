@@ -13,11 +13,12 @@
 | 벽시계    | 모델·전송은 `HH:mm`(`timeOfDaySchema`), 계산·피커는 `TimeOfDay`(`{ hour, minute }`, `toTimeOfDay`·`isTimeOfDayInRange` 포함)                                                     | `shared/date/time-of-day.ts` |
 | 시간대    | IANA 이름. 기기 값은 `getDeviceTimezone()`(`shared/infra/localization`)                                                                                                          | `shared/date/zoned.ts`(계산) |
 
+- 시간대 이름은 `timezone`(`currentTimezone`, `DateFormatContext.timezone`)이다. `timeZone`은 그 키를 요구하는 API(`Intl.DateTimeFormat` 옵션, expo-localization `Calendar`, 피커 `timeZoneName`)와 이미 저장된 `aido_device_timezone_v1` 값에만 쓴다.
 - 모델·캐시·전송은 문자열 brand다. 문자열은 같은 값이면 같은 참조라 재조회에도 구조 공유가 유지된다. 순간의 사전순 비교(`a < b`)는 오프셋이 다르면 틀리므로 쓰지 않는다.
-- 날짜 key 계산(`addDaysToDateKey`·`getMonthStartDateKey`·`toDateKey(instant, timeZone)` 등)은 `DateKey`만 받고 돌려준다. 계산 결과는 `isDateKey`(스키마와 같은 규칙)로 좁혀 칸마다 Zod를 거치지 않고, 0000~9999년을 벗어나면 던진다. 테스트 리터럴은 `src/testing/date-key.ts`의 `createDateKey('2026-11-12')`로 만든다.
+- 날짜 key 계산(`addDaysToDateKey`·`getMonthStartDateKey`·`toDateKey(instant, timezone)` 등)은 `DateKey`만 받고 돌려준다. 계산 결과는 `isDateKey`(스키마와 같은 규칙)로 좁혀 칸마다 Zod를 거치지 않고, 0000~9999년을 벗어나면 던진다. 테스트 리터럴은 `src/testing/date-key.ts`의 `createDateKey('2026-11-12')`로 만든다.
 - `Date`는 `shared/date/native-date.ts`를 지나는 네이티브 피커·달력·파일 수정 시각 경계에서만 만든다. 앱 모델에 `Date`를 두지 않는다.
 - Hermes에는 Temporal이 없고 폴리필도 쓰지 않는다([Temporal spike](#temporal-spike)). 날짜 key 산술은 `date-key.ts`의 순수 계산(Hinnant의 civil 날짜 ↔ 일수 변환), 순간 직렬화는 `Date#toISOString`, 시간대 변환(`zoned.ts`)은 캐시한 `Intl.DateTimeFormat`이다. 테스트는 서버와 같은 Node 26 네이티브 Temporal을 정답으로 비교한다(`src/testing/temporal-oracle.ts`). `dayjs`·`temporal-polyfill` import는 depcruise(`date-library-dayjs`·`date-library-temporal`)가 막는다.
-- 같은 계산의 서버↔앱 이름은 [공통 기준의 표](../../../docs/conventions/dates.md#1-값의-종류)에 있다. 날짜 + 벽시계 → 순간은 `toZonedInstant({ date, time, timeZone })` 하나이고 겹치는 시각은 앞쪽, 없는 시각은 전환 뒤 순간이다(Temporal `compatible`). 순간 직렬화는 `Date#toISOString`이라 서버 `toIsoString`(ms 3자리 내림)과 바이트 단위로 같다.
+- 같은 계산의 서버↔앱 이름은 [공통 기준의 표](../../../docs/conventions/dates.md#1-값의-종류)에 있다. 날짜 + 벽시계 → 순간은 `toZonedInstant({ date, time, timezone })` 하나이고 겹치는 시각은 앞쪽, 없는 시각은 전환 뒤 순간이다(Temporal `compatible`). 순간 직렬화는 `Date#toISOString`이라 서버 `toIsoString`(ms 3자리 내림)과 바이트 단위로 같다.
 - 표시는 캐시된 `Intl.DateTimeFormat` 하나다. 새 포매터를 만들지 않는다.
 
 ```text
@@ -54,16 +55,16 @@ shared/date/
 
 ### 표시
 
-`shared/date/format/`의 helper만 쓴다. 모두 `DateFormatContext { locale, timeZone }`를 인자로 받고 컴포넌트는 `useDateFormatContext()`로 읽는다. 카탈로그에 날짜 형식을 넣거나 화면에서 포맷을 다시 만들지 않는다.
+`shared/date/format/`의 helper만 쓴다. 모두 `DateFormatContext { locale, timezone }`를 인자로 받고 컴포넌트는 `useDateFormatContext()`로 읽는다. 카탈로그에 날짜 형식을 넣거나 화면에서 포맷을 다시 만들지 않는다.
 
 - 달력 날짜 `formatDateKeyLabel`, 순간 `formatDateLabel`, 벽시계 `formatTimeOfDay`, 시각 `formatClockTime`, 시 `formatHourLabel`(ko "오후 3시"·"15시", en "3 PM". en 24시간제는 시 단위 글자가 없어 "15:00"), year-aware 변형(`date-format.ts`, Intl만 쓴다).
 - 카탈로그 문구가 필요한 것은 `date-labels.ts`의 label helper다. 상대 시간 `formatRelativeTimeLabel`(하루가 지나면 달력 날짜로 "어제"·"n일 전"), 오늘·내일 `formatRelativeDayLabel`(`common:relativeDay`), 주차 `formatCalendarWeekLabel`·`formatIsoWeekLabel`, 요일 목록 `formatDaysOfWeek`(구분자 `common:daysOfWeekSeparator`, ko "·", en ", "), 기간 `formatDateKeyRange`·`formatDateKeyCompactRange`와 날짜가 아닌 범위 `formatRangeLabel`(구분자 `common:dateRange.full|compact`, ko "~", en "–")이다. 범위 구분자를 코드나 기능 카탈로그에 다시 쓰지 않는다.
 - 할 일 기간 한 줄(일정 칩·상세·음성 계획 카드·삭제 확인)은 `formatTodoPeriod` 하나다. 오늘·내일은 말로, 여러 날은 짧은 범위다.
-- 할 일 시각은 `TodoPolicy.getLocalTime(todo, timeZone)` 하나만 표시·수정 기본값에 쓴다. 설정을 읽지 못한 시간 표기는 `USER_PREFERENCE_DEFAULTS.TIME_FORMAT`이다.
+- 할 일 시각은 `TodoPolicy.findLocalTime(todo, timezone)` 하나만 표시·수정 기본값에 쓴다. 설정을 읽지 못한 시간 표기는 `USER_PREFERENCE_DEFAULTS.TIME_FORMAT`이다.
 
 ### 시간 피커
 
-시간 입력은 `shared/ui/time-picker`의 `<TimeSpinner value onChange timeFormat minimum maximum />` 하나다. Android 시스템 시계는 `openAndroidTimePicker()`(`DateTimePickerAndroid.open`)를 쓴다. 설정(알림 시각)과 할 일 시간이 같은 부품을 쓴다. 피커와는 시와 분(`TimeOfDay`)만 주고받고 할 일 날짜나 앱 시간대를 넘기지 않는다. 피커는 `timeZoneName={PICKER_TIME_ZONE}`(UTC)으로 그리고 JS는 같은 UTC로 `Date`를 만들고 읽어(`toPickerDate`·`getPickerTimeOfDay`) 서머타임 전환일에도, 기기 시간대가 JS 런타임과 어긋나도 02:30이 다른 시각으로 밀리지 않는다. 날씨 시간 범위는 `@aido/api/vocabulary`의 `WEATHER_HOUR_RANGE`를 쓴다(알림 시간 범위와 다르다).
+시간 입력은 `shared/ui/time-picker`의 `<TimeSpinner value onChange timeFormat minimum maximum />` 하나다. Android 시스템 시계는 `openAndroidTimePicker()`(`DateTimePickerAndroid.open`)를 쓴다. 설정(알림 시각)과 할 일 시간이 같은 부품을 쓴다. 피커와는 시와 분(`TimeOfDay`)만 주고받고 할 일 날짜나 앱 시간대를 넘기지 않는다. 피커는 `timeZoneName={PICKER_TIMEZONE}`(UTC)으로 그리고 JS는 같은 UTC로 `Date`를 만들고 읽어(`toPickerDate`·`getPickerTimeOfDay`) 서머타임 전환일에도, 기기 시간대가 JS 런타임과 어긋나도 02:30이 다른 시각으로 밀리지 않는다. 날씨 시간 범위는 `@aido/api/vocabulary`의 `WEATHER_HOUR_RANGE`를 쓴다(알림 시간 범위와 다르다).
 
 ### 숫자
 

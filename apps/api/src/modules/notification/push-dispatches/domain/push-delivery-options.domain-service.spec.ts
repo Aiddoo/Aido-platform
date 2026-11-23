@@ -1,4 +1,4 @@
-import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import { Timezone } from "#api/shared/domain/time/timezone.vo";
 
 import type { NotificationType } from "../../shared/domain/notification-type.constants.js";
 import { type PushExpiryInput, resolvePushExpiry } from "./push-delivery-options.domain-service.js";
@@ -10,7 +10,7 @@ const SEOUL_MORNING = Temporal.Instant.from("2026-11-18T01:00:00Z");
 function expiryOf(overrides: Partial<PushExpiryInput> & Pick<PushExpiryInput, "type">) {
   return resolvePushExpiry({
     now: SEOUL_MORNING,
-    timeZone: TimeZone.reconstitute("Asia/Seoul"),
+    timezone: Timezone.reconstitute("Asia/Seoul"),
     expiresBeforeQuietHours: false,
     reminderEndsAt: null,
     ...overrides,
@@ -86,7 +86,7 @@ describe("resolvePushExpiry — 받는 사람 기준 푸시 보관 시간", () =
         type: "FRIEND_COMPLETED",
         // 아바나 2026-03-07 23:00(-05:00). 다음 날은 01:00(-04:00)에 시작한다
         now: Temporal.Instant.from("2026-03-08T04:00:00Z"),
-        timeZone: TimeZone.reconstitute("America/Havana"),
+        timezone: Timezone.reconstitute("America/Havana"),
       });
 
       // Then
@@ -136,7 +136,7 @@ describe("resolvePushExpiry — 받는 사람 기준 푸시 보관 시간", () =
       const expiry = expiryOf({
         type: "STREAK_AT_RISK",
         now: Temporal.Instant.from("2026-11-18T11:15:00Z"),
-        timeZone: TimeZone.reconstitute("America/Los_Angeles"),
+        timezone: Timezone.reconstitute("America/Los_Angeles"),
         expiresBeforeQuietHours: true,
       });
 
@@ -149,7 +149,7 @@ describe("resolvePushExpiry — 받는 사람 기준 푸시 보관 시간", () =
       const expiry = expiryOf({
         type: "LUNCH_NUDGE",
         now: Temporal.Instant.from("2026-03-09T03:15:00Z"),
-        timeZone: TimeZone.reconstitute("America/Los_Angeles"),
+        timezone: Timezone.reconstitute("America/Los_Angeles"),
         expiresBeforeQuietHours: true,
       });
 

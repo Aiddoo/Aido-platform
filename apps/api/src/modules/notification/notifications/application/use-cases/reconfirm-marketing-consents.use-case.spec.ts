@@ -21,7 +21,7 @@ function createReconfirm(
   const sent: CreateNotificationData[] = [];
   const useCase = new ReconfirmMarketingConsentsUseCase({
     reconfirmAccess: {
-      findMarketingReconfirmTargets: async (params) => {
+      listMarketingReconfirmTargets: async (params) => {
         cutoffs.push(params.cutoff);
         return targets
           .filter((target) => !reconfirmed.has(target.userId.value))
@@ -47,7 +47,7 @@ function createReconfirm(
         new Map(userIds.map((userId) => [userId.value, "Asia/Seoul"])),
     },
     quietHoursReader: {
-      findUsersInQuietHours: async (users) =>
+      listUsersInQuietHours: async (users) =>
         new Set(users.map((user) => user.value).filter((userId) => quietUserIds.has(userId))),
     },
     notificationPublisher: {

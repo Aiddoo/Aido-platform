@@ -1,7 +1,7 @@
 import type { FriendTodoReadModel } from "#api/modules/planning/todos/planning-todos.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { TodoCommentId } from "../../../shared/domain/todo-comment-id.vo.js";
+import { TodoCommentId } from "../../domain/todo-comment-id.vo.js";
 import type { TodoDetailsPermissions } from "../../domain/todo-comment-permission.domain-service.js";
 
 /** 댓글 응답을 만드는 데 필요한 저장소 독립 조회 결과 */

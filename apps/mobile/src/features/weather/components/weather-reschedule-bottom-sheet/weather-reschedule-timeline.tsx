@@ -17,8 +17,8 @@ const MIN_BAR_HEIGHT = 2;
 export function WeatherRescheduleTimeline({ hours }: { hours: HourlyForecastEntry[] }) {
   const { t } = useTranslation('weather');
   const todayKey = useTodayKey();
-  const { timeZone } = useDateFormatContext();
-  const todayHours = hours.filter((hour) => toDateKey(hour.startsAt, timeZone) === todayKey);
+  const { timezone } = useDateFormatContext();
+  const todayHours = hours.filter((hour) => toDateKey(hour.startsAt, timezone) === todayKey);
 
   if (todayHours.length === 0) {
     return null;

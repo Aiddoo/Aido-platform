@@ -1,14 +1,7 @@
-New
-- AI suggestions (Premium) find to-dos you repeat and say why. Check now gets them instantly.
-- AI reports (Premium) chart your days, with tips from your AI coach.
-- Preview AI features and this week's record for free.
-- Turn off just AI alerts in Settings.
-
 Improvements
-- To-dos differing only in spacing or emoji count as one.
-- Repeating to-dos aren't suggested again.
-- TalkBack reads charts aloud.
+- Sheets now use native Android sheets, so swiping and typing feel more natural.
+- AI reports (Premium) count Perfect days like your streak.
+- Updated payment and analytics parts for stability.
 
 Bug fixes
-- Fixed the shown report arrival time.
-- Fixed suggestions with many to-dos.
+- Fixed the home screen widget loading yesterday's summary after midnight.

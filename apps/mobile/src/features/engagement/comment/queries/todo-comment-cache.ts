@@ -80,7 +80,7 @@ export function cancelTodoCommentQueries(
   });
 }
 
-export function findTodoCommentPlacements(
+export function getTodoCommentPlacements(
   queryClient: QueryClient,
   { todoId, comment }: TodoCommentCacheInput & { comment: TodoComment },
 ): TodoCommentPlacements {

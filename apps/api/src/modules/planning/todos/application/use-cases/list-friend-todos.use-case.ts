@@ -4,7 +4,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { type FriendPort } from "../ports/friend.port.js";
 import { type TodoCachePort } from "../ports/todo-cache.port.js";
 import { type TodoReadRepositoryPort } from "../ports/todo-read.repository.port.js";
-import type { FindFriendTodosParams } from "../ports/todo-read.repository.port.js";
+import type { ListFriendTodosParams } from "../ports/todo-read.repository.port.js";
 import type { FriendTodoReadModel } from "../read-models/todo.read-model.js";
 import { friendTodosForbidden, invalidDateRange } from "../todos.errors.js";
 
@@ -20,7 +20,7 @@ interface GetFriendTodosParams {
 export type GetFriendTodosInput = GetFriendTodosParams;
 
 interface GetFriendTodosDependencies {
-  readonly todoReadRepository: Pick<TodoReadRepositoryPort, "findPublicTodosByUserId">;
+  readonly todoReadRepository: Pick<TodoReadRepositoryPort, "listPublicTodosByUserId">;
   readonly friendPort: Pick<FriendPort, "isMutualFriend">;
   readonly todoCache: Pick<
     TodoCachePort,
@@ -73,7 +73,7 @@ export class ListFriendTodosUseCase {
       }
     }
 
-    const repositoryQuery: FindFriendTodosParams = {
+    const repositoryQuery: ListFriendTodosParams = {
       friendUserId: friendId,
       cursor,
       size,
@@ -82,7 +82,7 @@ export class ListFriendTodosUseCase {
     };
 
     const rows =
-      await this.#dependencies.todoReadRepository.findPublicTodosByUserId(repositoryQuery);
+      await this.#dependencies.todoReadRepository.listPublicTodosByUserId(repositoryQuery);
 
     const response = toCursorPage({ rows, size, toCursor: (todo) => todo.id });
 

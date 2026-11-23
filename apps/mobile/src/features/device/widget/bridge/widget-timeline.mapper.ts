@@ -11,16 +11,16 @@ import { type WidgetSnapshot } from '../schemas/widget-snapshot-storage.schema';
 interface WidgetTimelineContext {
   now: Instant;
   /** LocalDateProvider와 같은 기기 시간대 — 자정 경계를 이 시간대로 계산한다 */
-  timeZone: string;
+  timezone: string;
   appScheme: string;
 }
 
 // [지금: 오늘] → [다음 자정: 내일(없으면 stale)] → [그다음 자정: stale]이고 WidgetKit이 앱 없이 자정에 넘긴다
 export function toWidgetTimelineEntries(
   snapshot: WidgetSnapshot,
-  { now, timeZone, appScheme }: WidgetTimelineContext,
+  { now, timezone, appScheme }: WidgetTimelineContext,
 ): WidgetTimelineEntry<WidgetProps>[] {
-  const current = WidgetSnapshotPolicy.getDay(snapshot, toDateKey(now, timeZone));
+  const current = WidgetSnapshotPolicy.getDay(snapshot, toDateKey(now, timezone));
   const entries: WidgetTimelineEntry<WidgetProps>[] = [
     { date: instantToDate(now), props: toWidgetProps(current.day, current.renderState, appScheme) },
   ];
@@ -28,8 +28,8 @@ export function toWidgetTimelineEntries(
     return entries;
   }
 
-  const firstBoundary = getNextLocalMidnight(now, timeZone);
-  const nextDay = snapshot.days.find((day) => day.date === toDateKey(firstBoundary, timeZone));
+  const firstBoundary = getNextLocalMidnight(now, timezone);
+  const nextDay = snapshot.days.find((day) => day.date === toDateKey(firstBoundary, timezone));
   if (nextDay == null) {
     entries.push({
       date: instantToDate(firstBoundary),
@@ -41,7 +41,7 @@ export function toWidgetTimelineEntries(
   entries.push(
     { date: instantToDate(firstBoundary), props: toWidgetProps(nextDay, nextDay.state, appScheme) },
     {
-      date: instantToDate(getNextLocalMidnight(firstBoundary, timeZone)),
+      date: instantToDate(getNextLocalMidnight(firstBoundary, timezone)),
       props: toWidgetProps(nextDay, 'stale', appScheme),
     },
   );

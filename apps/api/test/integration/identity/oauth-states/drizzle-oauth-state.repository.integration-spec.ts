@@ -1,3 +1,4 @@
+import { OAuthState } from "#api/modules/identity/oauth-states/domain/oauth-state.aggregate";
 import { DrizzleOAuthStateRepository } from "#api/modules/identity/oauth-states/infrastructure/persistence/drizzle-oauth-state.repository";
 import { oAuthState } from "#api/platform/database/schema/index";
 import { EncryptionService } from "#api/platform/encryption/encryption.service";
@@ -39,12 +40,17 @@ describe("DrizzleOAuthStateRepository (실제 PostgreSQL)", () => {
   it("교환 토큰은 암호문으로 저장한다", async () => {
     // Given
     const repository = createRepository();
-    await repository.create({
-      state: "encrypted-state",
-      provider: "GOOGLE",
-      redirectUri: "aido://auth/callback",
-      expiresAt: AUTH_FIXTURE_NOW.add({ minutes: 10 }),
-    });
+    await repository.save(
+      OAuthState.create({
+        id: await repository.nextId(),
+        state: "encrypted-state",
+        provider: "GOOGLE",
+        redirectUri: "aido://auth/callback",
+        mode: null,
+        initiatingUserId: null,
+        now: AUTH_FIXTURE_NOW,
+      }),
+    );
     const created = await repository.findByState("encrypted-state", AUTH_FIXTURE_NOW);
     if (created == null) {
       throw new Error("OAuth state가 없다");

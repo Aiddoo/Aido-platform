@@ -7,7 +7,7 @@ import { StubReEngagementReader } from "#test/doubles/notification/stub-re-engag
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createTimezoneContextFixture } from "#test/fixtures/notification/timezone-context.fixture";
 
-import { NotificationHistoryReader } from "../../../notifications/application/notification-history.reader.js";
+import { CachedNotificationHistoryAdapter } from "../../../notifications/infrastructure/adapters/cached-notification-history.adapter.js";
 import { createWinbackNotificationMessage } from "../../../shared/application/messages/system-notification.messages.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
 import { SendWinbackUseCase } from "./send-winback.use-case.js";
@@ -43,7 +43,7 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
     // Then
     expect(reader.queries).toEqual([
       {
-        method: "findWinbackUsers",
+        method: "listWinbackUsers",
         params: {
           timezones: ["Asia/Seoul"],
           // 서울 현지 2023-12-17 자정부터 2024-01-14 자정까지(그 경계 순간은 2일이라 거른다)
@@ -231,9 +231,9 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
             count: (await notifications.createManyNotificationsAndReturn(items)).length,
           }),
         },
-        notificationHistoryReader: new NotificationHistoryReader({
+        notificationHistoryReader: new CachedNotificationHistoryAdapter({
           notificationDeduplication: new InMemoryNotificationDeduplication(),
-          notificationHistoryReader: notifications,
+          databaseReader: notifications,
           logger: new SilentLogger(),
         }),
         logger: new SilentLogger(),

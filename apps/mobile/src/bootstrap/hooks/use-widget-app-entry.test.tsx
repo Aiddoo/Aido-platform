@@ -33,7 +33,9 @@ const linkListeners = new Set<(url: string) => void>();
 /** 실행 중인 앱에 위젯 링크가 들어온다(Linking `url` 이벤트, 탭마다 한 번) */
 async function openLink(url: string) {
   await act(() => {
-    linkListeners.forEach((listener) => listener(url));
+    for (const listener of linkListeners) {
+      listener(url);
+    }
   });
 }
 
@@ -54,7 +56,9 @@ describe('종료된 앱의 위젯 명령 복원', () => {
     await act(() => {
       const pending = [...frames.values()];
       frames.clear();
-      pending.forEach((callback) => callback(Date.now()));
+      for (const callback of pending) {
+        callback(Date.now());
+      }
     });
   }
 

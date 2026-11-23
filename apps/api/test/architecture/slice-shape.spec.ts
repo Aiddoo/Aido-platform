@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { basename, join, relative, resolve } from "node:path";
 
+import { match } from "ts-pattern";
 import ts from "typescript";
 
 const modulesRoot = resolve(import.meta.dirname, "../../src/modules");
@@ -16,6 +17,11 @@ const SLICE_SHAPE_RULES = [
   "-queries Module은 아무것도 import하지 않고 포트만 내보낸다",
   "-queries Module에는 controller가 없다",
   "-queries.public은 -queries Module·포트·Read Model·조회 조각·id VO·발행 이벤트 계약만 다시 내보낸다",
+  "저장 Aggregate의 식별자는 <Aggregate>Id VO다",
+  "application에는 구체 Reader를 두지 않는다(포트는 *.reader.port.ts)",
+  "<context>/shared에 UseCase가 없다",
+  "포트 조회 메서드는 find는 T | null, list는 목록, get은 null 없는 값을 돌려준다",
+  "reconstitute가 있는 Aggregate는 create·toPrimitives도 있다",
 ] as const;
 type SliceShapeRule = (typeof SLICE_SHAPE_RULES)[number];
 
@@ -49,6 +55,17 @@ const DOCUMENTED_EXCEPTIONS: readonly (SliceShapeViolation & { readonly reason: 
     path: "planning/todos/planning-todo-ports.module.ts",
     reason:
       "todos 기능 Module이 todo-series 기능 Module을 import하고 todo-series가 할 일 저장·리마인더 포트를 써서, 두 Module이 함께 쓰는 포트 바인딩을 한 곳에 둔다(없애면 Module 순환이거나 9개 바인딩 중복)",
+  },
+  {
+    rule: "reconstitute가 있는 Aggregate는 create·toPrimitives도 있다",
+    path: "notification/notifications/domain/notification.aggregate.ts#Notification",
+    reason:
+      "작업 원장 행이다. 발행은 중복 방지 인덱스로 거르는 집합 insert라 저장소가 만들고 읽음 전이만 복원한다(domain-modeling.md)",
+  },
+  {
+    rule: "reconstitute가 있는 Aggregate는 create·toPrimitives도 있다",
+    path: "app-config/feature-discovery-campaigns/domain/feature-discovery-campaign.aggregate.ts#FeatureDiscoveryCampaign",
+    reason: "운영 env에서 복원만 하고 서버가 만들거나 저장하지 않는다(domain-modeling.md)",
   },
 ];
 
@@ -301,6 +318,166 @@ function checkQueriesPublic(slice: Slice): string[] {
     .map((source) => `${file.path}#${source}`);
 }
 
+// 생성만 하는 Aggregate는 저장·참조할 id가 없어 null을 넘긴다(domain-modeling.md)
+function checkAggregateIds(files: readonly SourceFile[]): string[] {
+  return files.flatMap((file) =>
+    file.source.statements.flatMap((statement) => {
+      if (!ts.isClassDeclaration(statement) || statement.name == null) {
+        return [];
+      }
+      const aggregateRoot = (statement.heritageClauses ?? [])
+        .flatMap((clause) => clause.types)
+        .find((type) => type.expression.getText(file.source) === "AggregateRoot");
+      const idType = aggregateRoot?.typeArguments?.[0]?.getText(file.source);
+      const aggregateName = statement.name.text;
+      return aggregateRoot == null || idType === "null" || idType === `${aggregateName}Id`
+        ? []
+        : [`${file.path}#${aggregateName}`];
+    }),
+  );
+}
+
+function hasMethod(declaration: ts.ClassDeclaration, name: string, isStatic: boolean): boolean {
+  return declaration.members.some(
+    (member) =>
+      ts.isMethodDeclaration(member) &&
+      member.name.getText() === name &&
+      (ts.getModifiers(member) ?? []).some(
+        (modifier) => modifier.kind === ts.SyntaxKind.StaticKeyword,
+      ) === isStatic,
+  );
+}
+
+// 복원만 있으면 새 상태를 만드는 규칙이 어디에도 없다. 생성만 하는 Aggregate(AggregateRoot<null>)는 복원하지 않는다
+function checkAggregateFactories(files: readonly SourceFile[]): string[] {
+  return files.flatMap((file) =>
+    file.source.statements.flatMap((statement) => {
+      if (!ts.isClassDeclaration(statement) || statement.name == null) {
+        return [];
+      }
+      const aggregateRoot = (statement.heritageClauses ?? [])
+        .flatMap((clause) => clause.types)
+        .find((type) => type.expression.getText(file.source) === "AggregateRoot");
+      const isCreateOnly = aggregateRoot?.typeArguments?.[0]?.getText(file.source) === "null";
+      if (aggregateRoot == null || isCreateOnly || !hasMethod(statement, "reconstitute", true)) {
+        return [];
+      }
+      return hasMethod(statement, "create", true) && hasMethod(statement, "toPrimitives", false)
+        ? []
+        : [`${file.path}#${statement.name.text}`];
+    }),
+  );
+}
+
+const CONCRETE_READER_FILE = /\/application\/(?:[a-z-]+\/)*[a-z-]+\.reader\.ts$/;
+
+function checkConcreteReaders(files: readonly SourceFile[]): string[] {
+  return files.filter((file) => CONCRETE_READER_FILE.test(file.path)).map((file) => file.path);
+}
+
+function checkSharedUseCases(files: readonly SourceFile[]): string[] {
+  return files
+    .filter((file) => file.path.includes("/application/use-cases/"))
+    .map((file) => file.path);
+}
+
+const PORT_FILE = /\/application\/ports\/[a-z.-]+\.port\.ts$/;
+const READ_VERBS = ["find", "list", "get"] as const;
+type ReadVerb = (typeof READ_VERBS)[number];
+const COLLECTION_TYPES = new Set([
+  "Array",
+  "ReadonlyArray",
+  "Map",
+  "ReadonlyMap",
+  "Set",
+  "ReadonlySet",
+  "CursorPage",
+]);
+
+function unwrapPromise(type: ts.TypeNode, source: ts.SourceFile): ts.TypeNode {
+  const [awaited] = ts.isTypeReferenceNode(type) ? (type.typeArguments ?? []) : [];
+  return awaited != null &&
+    ts.isTypeReferenceNode(type) &&
+    type.typeName.getText(source) === "Promise"
+    ? awaited
+    : type;
+}
+
+function isNullType(type: ts.TypeNode): boolean {
+  return ts.isLiteralTypeNode(type) && type.literal.kind === ts.SyntaxKind.NullKeyword;
+}
+
+function isUndefinedType(type: ts.TypeNode): boolean {
+  return type.kind === ts.SyntaxKind.UndefinedKeyword || type.kind === ts.SyntaxKind.VoidKeyword;
+}
+
+function isCollectionType(
+  type: ts.TypeNode,
+  aliases: ReadonlyMap<string, ts.TypeNode>,
+  source: ts.SourceFile,
+): boolean {
+  const target = ts.isTypeOperatorNode(type) ? type.type : type;
+  if (ts.isArrayTypeNode(target)) {
+    return true;
+  }
+  if (!ts.isTypeReferenceNode(target)) {
+    return false;
+  }
+  const name = target.typeName.getText(source);
+  const alias = aliases.get(name);
+  return COLLECTION_TYPES.has(name) || (alias != null && isCollectionType(alias, aliases, source));
+}
+
+function readVerbOf(methodName: string): ReadVerb | null {
+  return READ_VERBS.find((verb) => new RegExp(`^${verb}(?:[A-Z]|$)`).test(methodName)) ?? null;
+}
+
+// conventions.md Repository 메서드 표: find*는 T | null, list*는 목록(배열·Map·Set·CursorPage), get*은 늘 값
+function breaksReadMethodShape(
+  verb: ReadVerb,
+  returnType: ts.TypeNode,
+  aliases: ReadonlyMap<string, ts.TypeNode>,
+  source: ts.SourceFile,
+): boolean {
+  const resolved = unwrapPromise(returnType, source);
+  const members = ts.isUnionTypeNode(resolved) ? [...resolved.types] : [resolved];
+  const values = members.filter((member) => !isNullType(member) && !isUndefinedType(member));
+  const hasNull = members.some(isNullType);
+  const hasUndefined = members.some(isUndefinedType);
+  const returnsCollection =
+    values.length > 0 && values.every((member) => isCollectionType(member, aliases, source));
+  return match(verb)
+    .with("find", () => !hasNull || hasUndefined || returnsCollection)
+    .with("list", () => !returnsCollection || hasNull || hasUndefined)
+    .with("get", () => hasNull || hasUndefined)
+    .exhaustive();
+}
+
+function checkPortReadMethods(files: readonly SourceFile[]): string[] {
+  return files
+    .filter((file) => PORT_FILE.test(file.path))
+    .flatMap((file) => {
+      const aliases = new Map(
+        file.source.statements
+          .filter((statement) => ts.isTypeAliasDeclaration(statement))
+          .map((statement) => [statement.name.text, statement.type] as const),
+      );
+      return file.source.statements
+        .filter((statement) => ts.isClassDeclaration(statement))
+        .flatMap((statement) => [...statement.members])
+        .flatMap((member) => {
+          const name = ts.isMethodDeclaration(member) ? member.name.getText(file.source) : "";
+          const verb = readVerbOf(name);
+          const returnType = ts.isMethodDeclaration(member) ? member.type : undefined;
+          return verb != null &&
+            returnType != null &&
+            breaksReadMethodShape(verb, returnType, aliases, file.source)
+            ? [`${file.path}#${name}`]
+            : [];
+        });
+    });
+}
+
 function collectViolations(contexts: readonly ContextFolder[]): SliceShapeViolation[] {
   const sliceChecks: readonly [SliceShapeRule, (slice: Slice) => string[]][] = [
     ["slice마다 Aggregate Root가 하나다", checkAggregateRootCount],
@@ -333,7 +510,33 @@ function collectViolations(contexts: readonly ContextFolder[]): SliceShapeViolat
       .filter((file) => findAggregateRootNames(file).length > 0)
       .map((file) => ({ rule: "<context>/shared에 Aggregate가 없다" as const, path: file.path })),
   );
-  return [...sliceViolations, ...contextRootViolations, ...sharedAggregateViolations];
+  const sharedFiles = contexts.flatMap((context) => context.sharedFiles);
+  const moduleFiles = [...slices.flatMap((slice) => slice.files), ...sharedFiles];
+  const fileChecks: readonly [SliceShapeRule, string[]][] = [
+    ["저장 Aggregate의 식별자는 <Aggregate>Id VO다", checkAggregateIds(moduleFiles)],
+    [
+      "application에는 구체 Reader를 두지 않는다(포트는 *.reader.port.ts)",
+      checkConcreteReaders(moduleFiles),
+    ],
+    ["<context>/shared에 UseCase가 없다", checkSharedUseCases(sharedFiles)],
+    [
+      "포트 조회 메서드는 find는 T | null, list는 목록, get은 null 없는 값을 돌려준다",
+      checkPortReadMethods(moduleFiles),
+    ],
+    [
+      "reconstitute가 있는 Aggregate는 create·toPrimitives도 있다",
+      checkAggregateFactories(moduleFiles),
+    ],
+  ];
+  const fileViolations = fileChecks.flatMap(([rule, paths]) =>
+    paths.map((path) => ({ rule, path })),
+  );
+  return [
+    ...sliceViolations,
+    ...contextRootViolations,
+    ...sharedAggregateViolations,
+    ...fileViolations,
+  ];
 }
 
 function pathsOf(violations: readonly SliceShapeViolation[], rule: SliceShapeRule): string[] {

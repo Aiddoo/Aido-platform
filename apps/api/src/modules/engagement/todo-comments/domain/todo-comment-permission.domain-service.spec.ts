@@ -133,10 +133,49 @@ describe("할 일 댓글 접근 권한", () => {
     "$name은 콕 보내기 규칙대로 canNudge가 $canNudge다",
     ({ isOwner, isMutualFriend, isNudgeableToday, canNudge }) => {
       // When
-      const permissions = getTodoDetailsPermissions({ isOwner, isMutualFriend, isNudgeableToday });
+      const permissions = getTodoDetailsPermissions({
+        isOwner,
+        isMutualFriend,
+        isNudgeableToday,
+        isThankable: false,
+      });
 
       // Then
-      expect(permissions).toEqual({ canEdit: isOwner, canComment: true, canNudge });
+      expect(permissions).toEqual({
+        canEdit: isOwner,
+        canComment: true,
+        canNudge,
+        canThank: false,
+      });
     },
   );
+
+  it.each([
+    {
+      name: "감사를 받는 내 할 일",
+      isOwner: true,
+      isThankable: true,
+      canNudge: false,
+      canThank: true,
+    },
+    {
+      name: "감사를 받지 않는 내 할 일",
+      isOwner: true,
+      isThankable: false,
+      canNudge: false,
+      canThank: false,
+    },
+    { name: "남의 할 일", isOwner: false, isThankable: true, canNudge: true, canThank: false },
+  ])("$name은 canThank가 $canThank다", ({ isOwner, isThankable, canNudge, canThank }) => {
+    // When
+    const permissions = getTodoDetailsPermissions({
+      isOwner,
+      isMutualFriend: true,
+      isNudgeableToday: true,
+      isThankable,
+    });
+
+    // Then
+    expect(permissions).toEqual({ canEdit: isOwner, canComment: true, canNudge, canThank });
+  });
 });

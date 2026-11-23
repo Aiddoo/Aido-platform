@@ -1,5 +1,5 @@
 import type { LocationGateway } from '@src/core/ports/location-gateway';
-import { ApiError, err, NetworkError, ok, type Result } from '@src/shared/errors';
+import { ApiError, fail, NetworkError, ok, type Result } from '@src/shared/errors';
 import {
   createAppLoggerStub,
   createHttpClientStub,
@@ -22,9 +22,10 @@ setupFakeTimersPerTest();
 
 /** 역지오코딩과 위치 등록은 테스트가 풀 때까지 끝나지 않는다 */
 function setup() {
-  const gateway = createLocationGatewayStub();
-  gateway.getPermission.mockResolvedValue({ isGranted: true, canAskAgain: true });
-  gateway.getCoordinates.mockResolvedValue(SEOUL);
+  const gateway = createLocationGatewayStub({
+    permission: { isGranted: true, canAskAgain: true },
+    coordinates: SEOUL,
+  });
   const place = Promise.withResolvers<Place>();
   gateway.getPlace.mockReturnValue(place.promise);
   const httpClient = createHttpClientStub();
@@ -101,11 +102,11 @@ describe('WeatherLocationService.resolveLocation', () => {
     // When
     const resolving = resolveLocation();
     place.resolve(SEOUL_PLACE);
-    registration.resolve(err(rejected));
+    registration.resolve(fail(rejected));
     const result = await resolving;
 
     // Then
-    expect(result).toEqual(err(rejected));
+    expect(result).toEqual(fail(rejected));
     expect(logger.warn).toHaveBeenCalledWith('weather.location-register.failed', {
       serverErrorCode: 'SYS_0001',
     });

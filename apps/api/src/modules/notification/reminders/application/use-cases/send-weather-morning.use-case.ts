@@ -8,10 +8,10 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
-import { resolveTimezone } from "#api/shared/domain/time/time-zone-name";
+import { resolveTimezone } from "#api/shared/domain/time/timezone-name";
 
 import type {
-  NotificationHistoryReader,
+  NotificationHistoryReaderPort,
   PublishNotificationBatchUseCase,
 } from "../../../notifications/notification-notifications.public.js";
 import { formatWeatherNotificationTime } from "../../../shared/application/messages/notification-copy-format.messages.js";
@@ -46,11 +46,14 @@ const NOTIFICATION_TYPE = "WEATHER_MORNING";
 interface WeatherMorningStrategyDependencies {
   readonly reader: Pick<
     WeatherReminderReaderPort,
-    "findWeatherMorningFallbackUsers" | "findWeatherMorningUsersWithLocation"
+    "listWeatherMorningFallbackUsers" | "listWeatherMorningUsersWithLocation"
   >;
   readonly todoReader: Pick<WeatherBriefingTodoReaderPort, "listTodayTodos">;
   readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
-  readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
+  readonly notificationHistoryReader: Pick<
+    NotificationHistoryReaderPort,
+    "listAlreadyNotifiedUserIds"
+  >;
   readonly weatherReportReader: Pick<ReminderWeatherReportReaderPort, "readReports">;
   readonly clock: Pick<ClockPort, "now">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
@@ -167,7 +170,7 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
   }
 
   async #findTargets(timezoneContext: TimezoneContext, today: Temporal.PlainDate) {
-    const rows = await this.#dependencies.reader.findWeatherMorningUsersWithLocation({
+    const rows = await this.#dependencies.reader.listWeatherMorningUsersWithLocation({
       timezones: timezoneContext.timezones,
       times: timezoneContext.reminderTimes,
       userId:
@@ -187,15 +190,15 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
   ): Promise<WeatherReminderTodoReadModel[]> {
     const targetsByTimezone = groupBy(targets, (user) => user.timezone);
     const todosByTimezone = await Promise.all(
-      Object.entries(targetsByTimezone).map(([timezone, users]) => {
-        const timeZone = resolveTimezone(timezone);
-        const date = now.toZonedDateTimeISO(timeZone).toPlainDate();
+      Object.entries(targetsByTimezone).map(([storedTimezone, users]) => {
+        const timezone = resolveTimezone(storedTimezone);
+        const date = now.toZonedDateTimeISO(timezone).toPlainDate();
         return this.#dependencies.todoReader.listTodayTodos({
           userIds: users.map((user) => UserId.reconstitute(user.id)),
           date,
           timezone,
           from: now,
-          until: date.add({ days: 1 }).toZonedDateTime(timeZone).toInstant(),
+          until: date.add({ days: 1 }).toZonedDateTime(timezone).toInstant(),
         });
       }),
     );
@@ -206,7 +209,7 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
     timezoneContext: TimezoneContext,
     today: Temporal.PlainDate,
   ): Promise<number> {
-    const users = await this.#dependencies.reader.findWeatherMorningFallbackUsers({
+    const users = await this.#dependencies.reader.listWeatherMorningFallbackUsers({
       timezones: timezoneContext.timezones,
       times: timezoneContext.reminderTimes,
       userId:

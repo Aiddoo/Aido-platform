@@ -52,7 +52,7 @@ function setUp(
 }
 
 async function sortOrders(repository: InMemoryTodoCategoryRepository): Promise<number[][]> {
-  return (await repository.findManyByUserId(UserId.reconstitute(USER_ID))).map((category) => [
+  return (await repository.listByUserId(UserId.reconstitute(USER_ID))).map((category) => [
     category.id,
     category.sortOrder,
   ]);

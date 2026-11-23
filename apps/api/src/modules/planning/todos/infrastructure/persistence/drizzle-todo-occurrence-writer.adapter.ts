@@ -84,7 +84,7 @@ export class DrizzleTodoOccurrenceWriterAdapter implements TodoOccurrenceWriterP
     }));
   }
 
-  async findOccurrencesFrom(
+  async listOccurrencesFrom(
     seriesIds: readonly TodoSeriesId[],
     fromDate: string,
   ): Promise<readonly TodoOccurrenceReadModel[]> {

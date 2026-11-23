@@ -13,8 +13,8 @@ if (process.platform !== 'darwin') {
   throw new Error('IPA linkage validation requires macOS Xcode tools.');
 }
 
-const run = (command, args) =>
-  execFileSync(command, args, { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
+const run = (command, commandArguments) =>
+  execFileSync(command, commandArguments, { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
 const directory = mkdtempSync(join(tmpdir(), 'aido-ipa-linkage-'));
 run('/usr/bin/unzip', ['-q', resolve(ipa), '-d', directory]);
 const payload = join(directory, 'Payload');

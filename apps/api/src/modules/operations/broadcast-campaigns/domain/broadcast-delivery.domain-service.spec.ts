@@ -1,12 +1,12 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import { Timezone } from "#api/shared/domain/time/timezone.vo";
 
 import { resolveRecipientStartAfter } from "./broadcast-delivery.domain-service.js";
 import { BroadcastDelivery } from "./broadcast-delivery.vo.js";
 
-const SEOUL = TimeZone.create("Asia/Seoul");
-const LOS_ANGELES = TimeZone.create("America/Los_Angeles");
+const SEOUL = Timezone.create("Asia/Seoul");
+const LOS_ANGELES = Timezone.create("America/Los_Angeles");
 
 function localTimeAt(date: string, localTime: string): BroadcastDelivery {
   return BroadcastDelivery.create({ mode: "RECIPIENT_LOCAL_TIME", localTime, date });
@@ -20,7 +20,7 @@ describe("resolveRecipientStartAfter — 수신자 현지 시각 발송", () => 
     // When
     const startAfter = resolveRecipientStartAfter({
       delivery: BroadcastDelivery.create({ mode: "NOW" }),
-      timeZone: SEOUL,
+      timezone: SEOUL,
       now,
     });
 
@@ -33,8 +33,8 @@ describe("resolveRecipientStartAfter — 수신자 현지 시각 발송", () => 
     const delivery = localTimeAt("2026-11-11", "10:00");
 
     // When
-    const seoul = resolveRecipientStartAfter({ delivery, timeZone: SEOUL, now });
-    const losAngeles = resolveRecipientStartAfter({ delivery, timeZone: LOS_ANGELES, now });
+    const seoul = resolveRecipientStartAfter({ delivery, timezone: SEOUL, now });
+    const losAngeles = resolveRecipientStartAfter({ delivery, timezone: LOS_ANGELES, now });
 
     // Then
     // 서울 10:00(UTC 01:00), LA 10:00(UTC 18:00)
@@ -48,8 +48,8 @@ describe("resolveRecipientStartAfter — 수신자 현지 시각 발송", () => 
     const delivery = localTimeAt("2026-11-10", "08:00");
 
     // When
-    const seoul = resolveRecipientStartAfter({ delivery, timeZone: SEOUL, now });
-    const losAngeles = resolveRecipientStartAfter({ delivery, timeZone: LOS_ANGELES, now });
+    const seoul = resolveRecipientStartAfter({ delivery, timezone: SEOUL, now });
+    const losAngeles = resolveRecipientStartAfter({ delivery, timezone: LOS_ANGELES, now });
 
     // Then
     expect(seoul?.toString()).toBe("2026-11-10T23:00:00Z");
@@ -62,7 +62,7 @@ describe("resolveRecipientStartAfter — 수신자 현지 시각 발송", () => 
     const delivery = localTimeAt("2026-10-01", "10:00");
 
     // When
-    const startAfter = resolveRecipientStartAfter({ delivery, timeZone: SEOUL, now });
+    const startAfter = resolveRecipientStartAfter({ delivery, timezone: SEOUL, now });
 
     // Then
     // 서울은 오늘 10:00(UTC 01:00)이 아직 오지 않았다
@@ -77,7 +77,7 @@ describe("resolveRecipientStartAfter — 수신자 현지 시각 발송", () => 
     // When
     const startAfter = resolveRecipientStartAfter({
       delivery,
-      timeZone: LOS_ANGELES,
+      timezone: LOS_ANGELES,
       now: Temporal.Instant.from("2027-03-01T00:00:00Z"),
     });
 

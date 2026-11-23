@@ -65,10 +65,10 @@ function thankedOnTodo(todoId: TodoId, receiverId: UserId): SQL | undefined {
 
 // 감사는 받은 사람이 소유한 공개 할 일에서만 한다. 할 일은 planning이 소유해 조회 포트로 확인한다
 async function isThanksTodo(
-  todoBriefReader: Pick<TodoBriefReaderPort, "findByIds">,
+  todoBriefReader: Pick<TodoBriefReaderPort, "listByIds">,
   query: NudgeThanksCandidateQuery,
 ): Promise<boolean> {
-  const [todo] = await todoBriefReader.findByIds([query.todoId]);
+  const [todo] = await todoBriefReader.listByIds([query.todoId]);
   return todo != null && todo.visibility === "PUBLIC" && todo.ownerId.equals(query.ownerId);
 }
 
@@ -98,7 +98,7 @@ async function thanksCandidateCondition(
 // 감사 저장(저장소)과 감사 미리보기(조회)가 같은 후보를 고르도록 한 곳에 둔다. id 내림차순이다
 export async function listThanksCandidateIds(source: {
   readonly db: NudgeQueryExecutor;
-  readonly todoBriefReader: Pick<TodoBriefReaderPort, "findByIds">;
+  readonly todoBriefReader: Pick<TodoBriefReaderPort, "listByIds">;
   readonly query: NudgeThanksCandidateQuery;
 }): Promise<number[]> {
   const { db, todoBriefReader, query } = source;
@@ -226,7 +226,7 @@ export class DrizzleNudgeReader implements NudgeReaderPort {
     todoId: TodoId,
     ownerId: UserId,
   ): Promise<NudgeInteractionTodoReadModel | null> {
-    const [todo] = await this.#todoBriefReader.findByIds([todoId]);
+    const [todo] = await this.#todoBriefReader.listByIds([todoId]);
     if (todo == null || !todo.ownerId.equals(ownerId)) {
       return null;
     }
@@ -380,14 +380,14 @@ export class DrizzleNudgeReader implements NudgeReaderPort {
   }
 
   async #findUsers(userIds: readonly string[]): Promise<Record<string, UserBriefReadModel>> {
-    const briefs = await this.#userBriefReader.findByUserIds(
+    const briefs = await this.#userBriefReader.listByUserIds(
       uniq(userIds).map((userId) => UserId.reconstitute(userId)),
     );
     return keyBy(briefs, (brief) => brief.userId.value);
   }
 
   async #findTodos(todoIds: readonly number[]): Promise<Record<number, TodoBriefReadModel>> {
-    const todos = await this.#todoBriefReader.findByIds(
+    const todos = await this.#todoBriefReader.listByIds(
       uniq(todoIds).map((todoId) => TodoId.reconstitute(todoId)),
     );
     return keyBy(todos, (todo) => todo.todoId.value);

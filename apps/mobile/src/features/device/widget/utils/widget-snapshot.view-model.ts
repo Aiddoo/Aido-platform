@@ -85,7 +85,7 @@ export function toWidgetWeek(
   const completions = keyBy(weekCompletions ?? [], (completion) => completion.date);
   const dateFormatContext: DateFormatContext = {
     locale: APP_LOCALES[locale].intlLocale,
-    timeZone: 'UTC',
+    timezone: 'UTC',
   };
   const week = getCalendarWeek(summary.date);
   const days = range(7).map((dayOffset) => {

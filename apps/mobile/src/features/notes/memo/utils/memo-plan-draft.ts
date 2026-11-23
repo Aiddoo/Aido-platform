@@ -8,16 +8,16 @@ import { memoPlanRequestDraftSchema } from '../schemas/memo-draft.schema';
 export function createMemoPlanDraftKey({
   userId,
   memoId,
-  timeZone,
+  timezone,
 }: {
   userId: string;
   memoId: number;
-  timeZone: string;
+  timezone: string;
 }) {
   return createPlanReviewDraftKey({
     userId,
     target: [memoId],
-    timeZone,
+    timezone,
   });
 }
 

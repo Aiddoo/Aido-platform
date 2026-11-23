@@ -4,7 +4,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
-  NotificationHistoryReader,
+  NotificationHistoryReaderPort,
   PublishNotificationBatchUseCase,
 } from "../../../notifications/notification-notifications.public.js";
 import {
@@ -25,10 +25,13 @@ import { ReminderLogEvent } from "../reminders.log-events.js";
 interface MorningReminderStrategyDependencies {
   readonly reader: Pick<
     ScheduledReminderReaderPort,
-    "findFreeMorningReminderUsers" | "findPremiumMorningReminderUsers"
+    "listFreeMorningReminderUsers" | "listPremiumMorningReminderUsers"
   >;
   readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
-  readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
+  readonly notificationHistoryReader: Pick<
+    NotificationHistoryReaderPort,
+    "listAlreadyNotifiedUserIds"
+  >;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
@@ -48,7 +51,7 @@ export class SendMorningReminderUseCase implements TimezoneReminderStrategyPort 
     const premiumUsers =
       reminderTimes.length === 0
         ? []
-        : await this.#dependencies.reader.findPremiumMorningReminderUsers({
+        : await this.#dependencies.reader.listPremiumMorningReminderUsers({
             timezones,
             times: reminderTimes,
             today,
@@ -66,7 +69,7 @@ export class SendMorningReminderUseCase implements TimezoneReminderStrategyPort 
 
     let freeUsers: ReminderCountUserReadModel[] = [];
     if (!userId && isFreeReminderTime) {
-      freeUsers = await this.#dependencies.reader.findFreeMorningReminderUsers({
+      freeUsers = await this.#dependencies.reader.listFreeMorningReminderUsers({
         timezones,
         today,
         tomorrow,
@@ -81,7 +84,7 @@ export class SendMorningReminderUseCase implements TimezoneReminderStrategyPort 
 
     // 중복 방지: 이미 오늘 아침 리마인더를 받은 사용자 제외
     const alreadyNotified =
-      await this.#dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds({
+      await this.#dependencies.notificationHistoryReader.listAlreadyNotifiedUserIds({
         userIds: users.map((u) => UserId.reconstitute(u.id)),
         type: "MORNING_REMINDER",
         notificationDate: today,

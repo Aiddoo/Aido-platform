@@ -69,12 +69,12 @@ describe('createSentryErrorReporter', () => {
     }
 
     // Then
-    severities.forEach((severity, index) => {
+    for (const [index, severity] of severities.entries()) {
       expect(captureMessage).toHaveBeenNthCalledWith(index + 1, 'session_expired', {
         level: severity,
         tags: {},
       });
-    });
+    }
   });
 
   it('addBreadcrumb는 category/level(기본 info)/data를 Sentry breadcrumb로 매핑한다', () => {

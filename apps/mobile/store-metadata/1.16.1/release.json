@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 2,
+  "releaseVersion": "1.16.1",
+  "patchNotes": {
+    "appStore": {
+      "ko": [
+        "아래에서 올라오는 창을 기기 기본 창으로 바꿔, 끌어 내리기와 키보드가 더 자연스러워요.",
+        "AI 리포트(프리미엄)의 ‘모두 끝낸 날’을 연속 기록과 같은 기준으로 세고, ‘주로 끝낸 시간’도 늘 같은 기준으로 골라요.",
+        "결제·분석·오류 보고에 쓰는 부품을 새 버전으로 바꿔 더 안정적으로 움직여요.",
+        "iPad와 Mac에서 친구 찾기를 열면 앱이 닫히던 문제를 고쳤어요.",
+        "자정이 지난 뒤 홈 화면 위젯이 지난 날짜의 요약을 불러오려 하던 문제를 고쳤어요."
+      ],
+      "en": [
+        "Sheets that slide up from the bottom now use your device's native sheets, so swiping down and typing feel more natural.",
+        "AI reports (Premium) count “Perfect days” the same way as your streak, and pick “When you usually finish” the same way every time.",
+        "We updated the parts we use for payments, analytics, and error reporting so the app runs more reliably.",
+        "Fixed the app closing when you opened Find friends on iPad or Mac.",
+        "Fixed the home screen widget trying to load the previous day's summary after midnight."
+      ]
+    },
+    "googlePlay": {
+      "ko": [
+        "아래에서 올라오는 창을 기기 기본 창으로 바꿔, 끌어 내리기와 키보드가 더 자연스러워요.",
+        "AI 리포트(프리미엄)의 ‘모두 끝낸 날’을 연속 기록과 같은 기준으로 세요.",
+        "결제·분석 부품을 새 버전으로 바꿔 더 안정적으로 움직여요.",
+        "자정이 지난 뒤 홈 화면 위젯이 지난 날짜의 요약을 불러오려 하던 문제를 고쳤어요."
+      ],
+      "en": [
+        "Sheets now use native Android sheets, so swiping and typing feel more natural.",
+        "AI reports (Premium) count Perfect days like your streak.",
+        "Updated payment and analytics parts for stability.",
+        "Fixed the home screen widget loading yesterday's summary after midnight."
+      ]
+    }
+  }
+}

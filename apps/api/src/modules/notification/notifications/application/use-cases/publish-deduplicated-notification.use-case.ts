@@ -9,7 +9,7 @@ interface PublishDeduplicatedNotificationDependencies {
     SendNotificationWithDeduplicationUseCase,
     "execute"
   >;
-  readonly todoTargetReader: Pick<NotificationTodoTargetReaderPort, "findTodoTargets">;
+  readonly todoTargetReader: Pick<NotificationTodoTargetReaderPort, "listTodoTargets">;
 }
 
 // 같은 사용자·종류·대상의 알림이 중복 창 안에 있으면 만들지 않는 발행이다

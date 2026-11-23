@@ -19,7 +19,7 @@ import {
 } from "../../../ai-generations/application/ai-generations.log-events.js";
 import { generateWithPrompt } from "../../../ai-generations/application/messages/prompt-definition.messages.js";
 import type { AiGeneratorPort } from "../../../ai-generations/application/ports/ai-generator.port.js";
-import type { ScheduledAiConsentReader } from "../../../ai-generations/application/scheduled-ai-consent.reader.js";
+import type { CheckScheduledAiConsentUseCase } from "../../../ai-generations/application/use-cases/check-scheduled-ai-consent.use-case.js";
 import { localDateAt } from "../../../shared/domain/user-calendar.domain-service.js";
 import { AiReport } from "../../domain/ai-report.aggregate.js";
 import type {
@@ -60,7 +60,7 @@ interface GenerateReportDependencies {
   >;
   readonly todoStatsReader: Pick<TodoStatsReaderPort, "fetchAggregationInputs">;
   readonly generator: Pick<AiGeneratorPort, "generate">;
-  readonly scheduledAiConsent: Pick<ScheduledAiConsentReader, "find">;
+  readonly scheduledAiConsent: Pick<CheckScheduledAiConsentUseCase, "execute">;
   readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "log" | "debug" | "warn" | "error">;
   readonly entitlementReader: Pick<EntitlementReaderPort, "canInTransaction">;
@@ -280,7 +280,7 @@ export class GenerateReportUseCase {
     }
 
     const owner = UserId.reconstitute(userId);
-    const consent = await this.#dependencies.scheduledAiConsent.find(owner);
+    const consent = await this.#dependencies.scheduledAiConsent.execute(owner);
     if (!consent.allowed) {
       this.#dependencies.logger.debug({ event: AiReportLogEvent.AI_SKIPPED_NO_CONSENT, userId });
       return buildNoAiConsentContent(input, locale);

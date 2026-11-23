@@ -79,7 +79,7 @@ export function createTodoApiError({
 export const createTodoDetails = defineFixture(todoDetailsSchema, {
   todo: createParentTodo(),
   owner: { id: 'clz7x5p8k0010qz0z8z8z8z8z', name: '친구', profileImage: null },
-  permissions: { canEdit: false, canComment: true, canNudge: true },
+  permissions: { canEdit: false, canComment: true, canNudge: true, canThank: false },
   metrics: { viewCount: 0, commentCount: 0 },
 });
 

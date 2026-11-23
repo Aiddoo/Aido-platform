@@ -2,9 +2,8 @@ import {
   type OAuthLinkingData,
   type OAuthLoginExchangeData,
   OAuthStateRepositoryPort,
-  type NewOAuthState,
 } from "#api/modules/identity/oauth-states/application/ports/oauth-state.repository.port";
-import type { OAuthStateId } from "#api/modules/identity/oauth-states/domain/oauth-state-id.vo";
+import { OAuthStateId } from "#api/modules/identity/oauth-states/domain/oauth-state-id.vo";
 import {
   OAuthState,
   type OAuthStatePrimitives,
@@ -31,26 +30,14 @@ export class InMemoryOAuthStateRepository extends OAuthStateRepositoryPort {
     return [...this.#states.values()];
   }
 
-  async create(input: NewOAuthState): Promise<void> {
+  async nextId(): Promise<OAuthStateId> {
     this.#sequence += 1;
-    this.#states.set(this.#sequence, {
-      id: this.#sequence,
-      state: input.state,
-      provider: input.provider,
-      redirectUri: input.redirectUri,
-      mode: input.mode ?? null,
-      initiatingUserId: input.initiatingUserId?.value ?? null,
-      exchangeCode: null,
-      accessToken: null,
-      refreshToken: null,
-      userId: null,
-      userName: null,
-      profileImage: null,
-      accountRestored: null,
-      isNewUser: null,
-      expiresAt: input.expiresAt,
-      exchangedAt: null,
-    });
+    return OAuthStateId.reconstitute(this.#sequence);
+  }
+
+  seed(state: OAuthState): void {
+    this.#states.set(state.id.value, state.toPrimitives());
+    this.#sequence = Math.max(this.#sequence, state.id.value);
   }
 
   async findByState(state: string, now: Temporal.Instant): Promise<OAuthState | null> {
@@ -106,6 +93,11 @@ export class InMemoryOAuthStateRepository extends OAuthStateRepositoryPort {
   }
 
   async save(entity: OAuthState): Promise<boolean> {
+    if (!entity.isPersisted()) {
+      this.#states.set(entity.id.value, entity.toPrimitives());
+      entity.markPersisted();
+      return true;
+    }
     const { exchangedAt, exchangeCode } = entity.toPrimitives();
     const state = this.#states.get(entity.id.value);
     if (

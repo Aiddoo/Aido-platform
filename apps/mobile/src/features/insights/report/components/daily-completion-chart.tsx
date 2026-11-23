@@ -77,25 +77,25 @@ export function DailyCompletionChart({
   };
   const trackPath = useRebuiltPath(readBars, (builder, rects) => {
     'worklet';
-    rects.forEach((bar, index) => {
+    for (const [index, bar] of rects.entries()) {
       if (deferredValues[index]?.isUpcoming !== true) {
         builder.addRRect(bar.track);
       }
-    });
+    }
   });
   const upcomingTrackPath = useRebuiltPath(readBars, (builder, rects) => {
     'worklet';
-    rects.forEach((bar, index) => {
+    for (const [index, bar] of rects.entries()) {
       if (deferredValues[index]?.isUpcoming === true) {
         builder.addRRect(bar.track);
       }
-    });
+    }
   });
   const fillPath = useRebuiltPath(readBars, (builder, rects) => {
     'worklet';
-    rects.forEach((bar) => {
+    for (const bar of rects) {
       builder.addRect(bar.fill);
-    });
+    }
   });
   const selectedFillPath = useRebuiltPath(readBars, (builder, rects) => {
     'worklet';

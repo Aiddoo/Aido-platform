@@ -1,10 +1,11 @@
 import type { SupportedLocale } from "@aido/api/vocabulary";
+import { maxBy } from "es-toolkit";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
-  NotificationHistoryReader,
+  NotificationHistoryReaderPort,
   PublishNotificationBatchUseCase,
 } from "../../../notifications/notification-notifications.public.js";
 import { createNudgeSuggestionNotificationMessage } from "../../../shared/application/messages/scheduler-notification.messages.js";
@@ -29,13 +30,13 @@ import { ReminderLogEvent } from "../reminders.log-events.js";
 interface NudgeSuggestStrategyDependencies {
   readonly reader: Pick<
     ReEngagementReaderPort,
-    "findActiveUsersInTimezones" | "findNudgeSuggestFollows"
+    "listActiveUsersInTimezones" | "listNudgeSuggestFollows"
   >;
   readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "getUserLocales">;
   readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
   readonly notificationHistoryReader: Pick<
-    NotificationHistoryReader,
-    "findAlreadyNotifiedUserIds" | "findNudgeSuggestedFriends"
+    NotificationHistoryReaderPort,
+    "listAlreadyNotifiedUserIds" | "listNudgeSuggestedFriends"
   >;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
@@ -71,7 +72,7 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
     const candidateSet = new Set(candidateIds);
 
     // 배치 1: 모든 candidate의 비활성 맞팔 친구를 한 번에 조회
-    const allFollows = await this.#dependencies.reader.findNudgeSuggestFollows({
+    const allFollows = await this.#dependencies.reader.listNudgeSuggestFollows({
       candidateIds: candidateIds.map((candidateId) => UserId.reconstitute(candidateId)),
       activeSince: range.since,
       activeUntil: range.until,
@@ -82,7 +83,7 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
     // 배치 2: 이번 ISO 주에 이미 제안한 (받는 사람, 친구) 쌍을 한 번에 읽는다
     const week = isoWeekRangeOf(today);
     const suggestedFriends =
-      await this.#dependencies.notificationHistoryReader.findNudgeSuggestedFriends({
+      await this.#dependencies.notificationHistoryReader.listNudgeSuggestedFriends({
         userIds: candidates.map((user) => UserId.reconstitute(user.id)),
         start: week.start,
         end: week.end,
@@ -125,7 +126,7 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
     today: Temporal.PlainDate,
   ): Promise<ActiveUserReadModel[]> {
     // 이 타임존의 활성 유저 목록
-    const activeUsers = await this.#dependencies.reader.findActiveUsersInTimezones(timezones);
+    const activeUsers = await this.#dependencies.reader.listActiveUsersInTimezones(timezones);
 
     if (activeUsers.length === 0) {
       return [];
@@ -133,7 +134,7 @@ export class SendNudgeSuggestUseCase implements TimezoneReminderStrategyPort {
 
     // 이미 오늘 NUDGE_SUGGEST 받은 유저 제외
     const alreadyNotified =
-      await this.#dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds({
+      await this.#dependencies.notificationHistoryReader.listAlreadyNotifiedUserIds({
         userIds: activeUsers.map((u) => UserId.reconstitute(u.id)),
         type: "NUDGE_SUGGEST",
         notificationDate: today,
@@ -190,10 +191,9 @@ function toNudgeSuggestNotification({
       return FRIEND_INACTIVE_DAYS.MIN <= days && days <= FRIEND_INACTIVE_DAYS.MAX
         ? [{ ...friend, days }]
         : [];
-    })
-    .sort((a, b) => b.days - a.days);
+    });
 
-  const target = eligibleFriends[0];
+  const target = maxBy(eligibleFriends, (friend) => friend.days);
 
   if (target == null || target.lastActiveAt == null) {
     return null;

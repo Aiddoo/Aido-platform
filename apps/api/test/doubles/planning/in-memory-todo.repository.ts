@@ -185,12 +185,13 @@ export class InMemoryTodoRepository extends TodoRepositoryPort {
         (record) =>
           record.userId === query.userId.value &&
           record.scheduledTime != null &&
+          record.scheduledLocalTime != null &&
           (query.afterId == null || record.id > query.afterId.value),
       )
       .sort((left, right) => left.id - right.id)
       .slice(0, query.limit)
       .flatMap((record) =>
-        record.scheduledTime == null
+        record.scheduledTime == null || record.scheduledLocalTime == null
           ? []
           : [
               {

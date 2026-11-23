@@ -1,8 +1,8 @@
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
-import { NotificationId } from "../../shared/domain/notification-id.vo.js";
 import type { NotificationType } from "../../shared/domain/notification-type.constants.js";
+import { NotificationId } from "./notification-id.vo.js";
 import { notificationAccessDenied } from "./notifications.errors.js";
 
 export interface NotificationPrimitives {
@@ -32,6 +32,7 @@ interface NotificationProps {
   readonly createdAt: Temporal.Instant;
 }
 
+// 작업 원장 행이다. 발행은 중복 방지 인덱스로 거르는 집합 insert라 저장소가 만들고, 읽음처럼 한 행을 바꿀 때만 복원한다
 export class Notification extends AggregateRoot<NotificationId, NotificationProps> {
   static reconstitute(primitives: NotificationPrimitives): Notification {
     return new Notification(NotificationId.reconstitute(primitives.id), {

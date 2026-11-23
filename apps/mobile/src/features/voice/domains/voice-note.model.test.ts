@@ -11,7 +11,7 @@ import {
 } from '../__tests__/voice-note.fixtures';
 import { createPlanReviewDraft } from '../utils/plan-review-draft';
 import {
-  findRecordingIndexAt,
+  getRecordingIndexAt,
   VoiceNotePolicy,
   createVoiceNote,
   createDigestInput,
@@ -387,7 +387,7 @@ describe('hasEmptyPlan', () => {
   });
 });
 
-describe('findRecordingIndexAt', () => {
+describe('getRecordingIndexAt', () => {
   const recordings = [{ startMs: 0 }, { startMs: 30_000 }, { startMs: 90_000 }];
 
   it.each([
@@ -397,7 +397,7 @@ describe('findRecordingIndexAt', () => {
     [120_000, 2],
   ])('%dms는 %d번째 조각이다', (positionMs, index) => {
     // When
-    const found = findRecordingIndexAt(recordings, positionMs);
+    const found = getRecordingIndexAt(recordings, positionMs);
 
     // Then
     expect(found).toBe(index);

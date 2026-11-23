@@ -1,16 +1,8 @@
-New
-- AI suggestions (Premium): Aido spots the to-dos you do often in the last 2 weeks and suggests making them repeat. You'll also see why, like “Done 4 of 4 times in the last 2 weeks.”
-- Get them now: No need to wait for the morning. Tap Check now to get suggestions right away.
-- AI reports (Premium): Simple charts show how much you got done, what you finished each day, and the time you usually finish. Your AI coach adds a small tip for next time.
-- Free previews: Without a subscription, see what you finished this week and preview sample AI suggestions and reports.
-- Choose your alerts: Turn off AI suggestion and report alerts on their own in Settings.
-
 Improvements
-- To-dos that differ only in spacing or emoji, like “Workout” and “Work out,” are treated as the same.
-- To-dos you already set to repeat aren't suggested again.
-- AI suggestion alerts arrive at 9 AM.
-- With VoiceOver on, charts read out the record for the day or hour you pick.
+- Sheets that slide up from the bottom now use your device's native sheets, so swiping down and typing feel more natural.
+- AI reports (Premium) count “Perfect days” the same way as your streak, and pick “When you usually finish” the same way every time.
+- We updated the parts we use for payments, analytics, and error reporting so the app runs more reliably.
 
 Bug fixes
-- Fixed the time we said your report would arrive not matching when it actually arrived.
-- Fixed AI suggestions not arriving when you have a lot of to-dos.
+- Fixed the app closing when you opened Find friends on iPad or Mac.
+- Fixed the home screen widget trying to load the previous day's summary after midnight.

@@ -45,7 +45,7 @@ export function useQuickPlanRequest({ onSubscribe }: UseQuickPlanRequestOptions)
       planRequestRef.current = null;
       return { plan, isCharged };
     } catch (error) {
-      planRequestRef.current = PlanRequestPolicy.getRequestToRetry(request, error);
+      planRequestRef.current = PlanRequestPolicy.findRequestToRetry(request, error);
       if (isAiDataSharingConsentRequiredError(error) && !hasAskedConsentRef.current) {
         hasAskedConsentRef.current = true;
         if (await aiConsent.requestAgreement()) {

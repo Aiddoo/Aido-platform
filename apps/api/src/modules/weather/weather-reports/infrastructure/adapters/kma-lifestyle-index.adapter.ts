@@ -109,14 +109,14 @@ export class KmaLifestyleIndexAdapter implements LifestyleIndexProviderPort {
     if (!parsedResponse.success) {
       return this.#unavailable("invalid_structure");
     }
-    const data = parsedResponse.data;
+    const uvIndexResponse = parsedResponse.data;
 
-    const resultCode = data.response?.header?.resultCode;
+    const resultCode = uvIndexResponse.response?.header?.resultCode;
     if (resultCode !== "00") {
       return this.#unavailable("provider_result");
     }
 
-    const items = data.response?.body?.items?.item;
+    const items = uvIndexResponse.response?.body?.items?.item;
     if (!items || items.length === 0) {
       return this.#unavailable("missing_item");
     }

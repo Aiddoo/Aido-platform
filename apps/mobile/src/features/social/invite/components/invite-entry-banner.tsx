@@ -21,10 +21,7 @@ export function InviteEntryBanner({
   const openMyInvite = useOpenMyInvite();
   const isInviteAvailable = useIsInviteAvailable();
   const userId = useMyAccountId();
-  const { data: summary } = useQuery({
-    ...useGetTodoSummaryQueryOptions({ date: todayKey, userId }),
-    enabled: userId != null,
-  });
+  const { data: summary } = useQuery(useGetTodoSummaryQueryOptions({ date: todayKey, userId }));
   // 닫은 날은 저장소가 원본이다. 저장 값을 구독해 다른 화면에서 닫아도 따라간다
   const [dismissedOn, setDismissedOn] = useStoredValue(allDoneBannerStoredValue, userId);
 

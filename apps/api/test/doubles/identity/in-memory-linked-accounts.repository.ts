@@ -99,7 +99,7 @@ export class InMemoryLinkedAccountsRepository extends LinkedAccountsRepositoryPo
   }
 
   async save(linkedAccounts: LinkedAccounts): Promise<boolean> {
-    const userId = linkedAccounts.id.value;
+    const userId = linkedAccounts.userId.value;
     for (const account of linkedAccounts.unlinkedSinceLoad()) {
       if (!this.#rows.delete(account.id.value)) {
         return false;

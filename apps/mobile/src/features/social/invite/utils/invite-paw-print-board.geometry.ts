@@ -183,7 +183,7 @@ export function createPawPrintBoard(
     isComplete: counts.pawPrintedCount >= firstIndex + PAW_PRINT_BOARD_SIZE,
     waitingOverflowCount: calculateWaitingOverflow(counts, firstIndex + PAW_PRINT_BOARD_SIZE),
     rows: rowIndexes.map((indexes, rowIndex) => {
-      const orderedIndexes = rowIndex % 2 === 0 ? indexes : [...indexes].reverse();
+      const orderedIndexes = rowIndex % 2 === 0 ? indexes : indexes.toReversed();
       const lastIndex = indexes.at(-1) ?? firstIndex;
       const isLastRow = rowIndex === rowIndexes.length - 1;
 

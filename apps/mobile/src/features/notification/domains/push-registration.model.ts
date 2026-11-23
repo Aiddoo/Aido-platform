@@ -5,14 +5,12 @@ import { z } from 'zod';
 import { type PushPermission, PushPermissionPolicy } from './push-permission.model';
 
 /** 이 기기가 서버에 남긴 푸시 등록. 끝난 세션의 해제는 서버가 가진 토큰과 맞아야 지워진다 */
-export const pushRegistrationSchema = z
-  .object({
-    /** 마지막으로 보고에 성공한 토큰. 거절·미결정이거나 아직 보고하지 않았으면 null */
-    reportedToken: z.string().nullable(),
-    /** 온라인 로그아웃 없이 세션이 끝나 아직 풀지 못한 해제를 요청한 시각 */
-    releaseRequestedAt: instantSchema.nullable(),
-  })
-  .strip();
+export const pushRegistrationSchema = z.object({
+  /** 마지막으로 보고에 성공한 토큰. 거절·미결정이거나 아직 보고하지 않았으면 null */
+  reportedToken: z.string().nullable(),
+  /** 온라인 로그아웃 없이 세션이 끝나 아직 풀지 못한 해제를 요청한 시각 */
+  releaseRequestedAt: instantSchema.nullable(),
+});
 export type PushRegistration = z.infer<typeof pushRegistrationSchema>;
 
 /** 보고한 적도, 풀 해제도 없는 기기 */
@@ -21,7 +19,7 @@ export function createEmptyPushRegistration(): PushRegistration {
 }
 
 /** 토큰을 못 받아도 서버가 가진 토큰으로 권한·시간대·언어를 보고해 등록을 지킨다. 토큰을 한 번도 못 받은 허용 기기는 null로 보고한다(서버는 허용 상태의 null에 저장된 토큰을 지킨다) */
-function getReportToken(
+function findReportToken(
   registration: PushRegistration,
   { permission, issuedToken }: { permission: PushPermission; issuedToken: string | null },
 ): string | null {
@@ -56,7 +54,7 @@ function recordReleased(registration: PushRegistration): PushRegistration {
 }
 
 export const PushRegistrationPolicy = {
-  getReportToken,
+  findReportToken,
   recordReported,
   requestRelease,
   hasPendingRelease,

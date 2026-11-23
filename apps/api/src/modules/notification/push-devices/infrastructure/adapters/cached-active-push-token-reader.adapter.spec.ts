@@ -56,7 +56,7 @@ describe("CachedActivePushTokenReaderAdapter - 활성 푸시 토큰 cache-aside"
     ]);
 
     // When
-    const result = await reader.findByUserId(UserId.reconstitute(userId));
+    const result = await reader.listByUserId(UserId.reconstitute(userId));
 
     // Then
     const key = PushTokenCacheKey.pushTokens(userId);
@@ -76,7 +76,7 @@ describe("CachedActivePushTokenReaderAdapter - 활성 푸시 토큰 cache-aside"
     await cache.set(PushTokenCacheKey.pushTokens(userId), [expoToken("ExponentPushToken[cached]")]);
 
     // When
-    const result = await reader.findByUserId(UserId.reconstitute(userId));
+    const result = await reader.listByUserId(UserId.reconstitute(userId));
 
     // Then
     expect(result).toEqual([expoToken("ExponentPushToken[cached]")]);
@@ -103,10 +103,10 @@ describe("CachedActivePushTokenReaderAdapter - 활성 푸시 토큰 cache-aside"
     await cache.set(PushTokenCacheKey.pushTokens(cachedUserId), [
       expoToken("ExponentPushToken[cached]"),
     ]);
-    const findActive = vi.spyOn(pushTokenRepository, "findActivePushTokensByUsers");
+    const findActive = vi.spyOn(pushTokenRepository, "listActivePushTokensByUsers");
 
     // When
-    const result = await reader.findByUserIds([
+    const result = await reader.listByUserIds([
       UserId.reconstitute(cachedUserId),
       UserId.reconstitute(loadedUserId),
       UserId.reconstitute(tokenlessUserId),
@@ -141,15 +141,15 @@ describe("CachedActivePushTokenReaderAdapter - 활성 푸시 토큰 cache-aside"
       { userId, token: "ExponentPushToken[before-commit]" },
     ]);
     const invalidator = new PushTokenCacheAdapter(cache);
-    const findTokens = pushTokenRepository.findPushTokensByUser.bind(pushTokenRepository);
-    vi.spyOn(pushTokenRepository, "findPushTokensByUser").mockImplementationOnce(async (query) => {
+    const findTokens = pushTokenRepository.listPushTokensByUser.bind(pushTokenRepository);
+    vi.spyOn(pushTokenRepository, "listPushTokensByUser").mockImplementationOnce(async (query) => {
       const stale = await findTokens(query);
       await invalidator.invalidatePushTokens(UserId.reconstitute(userId));
       return stale;
     });
 
     // When
-    await reader.findByUserId(UserId.reconstitute(userId));
+    await reader.listByUserId(UserId.reconstitute(userId));
 
     // Then
     await expect(
@@ -166,11 +166,11 @@ describe("CachedActivePushTokenReaderAdapter - 활성 푸시 토큰 cache-aside"
       expoToken("ExponentPushToken[cached]"),
     ]);
     await cache.set(PushTokenCacheKey.pushTokens("user-without-token"), []);
-    const findActive = vi.spyOn(pushTokenRepository, "findActivePushTokensByUsers");
+    const findActive = vi.spyOn(pushTokenRepository, "listActivePushTokensByUsers");
     const mset = vi.spyOn(cache, "mset");
 
     // When
-    const result = await reader.findByUserIds([
+    const result = await reader.listByUserIds([
       UserId.reconstitute("user-with-token"),
       UserId.reconstitute("user-without-token"),
     ]);
@@ -190,7 +190,7 @@ describe("CachedActivePushTokenReaderAdapter - 활성 푸시 토큰 cache-aside"
     await cache.set(PushTokenCacheKey.pushTokens(userId), ["ExponentPushToken[db]"]);
 
     // When
-    const result = await reader.findByUserId(UserId.reconstitute(userId));
+    const result = await reader.listByUserId(UserId.reconstitute(userId));
 
     // Then
     expect(result).toEqual([expoToken("ExponentPushToken[db]", "1.15.1")]);
@@ -212,7 +212,7 @@ describe("CachedActivePushTokenReaderAdapter - 활성 푸시 토큰 cache-aside"
     ]);
 
     // When
-    const result = await reader.findByUserIds([UserId.reconstitute(userId)]);
+    const result = await reader.listByUserIds([UserId.reconstitute(userId)]);
 
     // Then
     expect([...result]).toEqual([
@@ -229,7 +229,7 @@ describe("CachedActivePushTokenReaderAdapter - 활성 푸시 토큰 cache-aside"
     ]);
 
     // When
-    const result = await reader.findByUserIds([UserId.reconstitute(userId)]);
+    const result = await reader.listByUserIds([UserId.reconstitute(userId)]);
 
     // Then
     expect([...result]).toEqual([[userId, [expoToken("ExponentPushToken[expo]")]]]);
@@ -239,10 +239,10 @@ describe("CachedActivePushTokenReaderAdapter - 활성 푸시 토큰 cache-aside"
     // Given
     const { cache, pushTokenRepository, reader } = createFixture();
     const mget = vi.spyOn(cache, "mget");
-    const findActive = vi.spyOn(pushTokenRepository, "findActivePushTokensByUsers");
+    const findActive = vi.spyOn(pushTokenRepository, "listActivePushTokensByUsers");
 
     // When
-    const result = await reader.findByUserIds([]);
+    const result = await reader.listByUserIds([]);
 
     // Then
     expect(result.size).toBe(0);

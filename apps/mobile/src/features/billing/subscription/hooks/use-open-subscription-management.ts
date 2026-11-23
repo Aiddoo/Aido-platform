@@ -27,7 +27,7 @@ export function useOpenSubscriptionManagement() {
   const openInquiry = useOpenSubscriptionInquiry();
 
   return useSingleTap(async () => {
-    const { managementUrl, productId } = await subscriptionService.findManagementSource(
+    const { managementUrl, productId } = await subscriptionService.getManagementSource(
       process.env.EXPO_OS === 'android' ? 'PLAY_STORE' : 'APP_STORE',
     );
     // 스토어 구독이 없거나 서버가 준 프리미엄(프로모션·초대)이면 RevenueCat이 주소를 주지 않아 직접 만든다

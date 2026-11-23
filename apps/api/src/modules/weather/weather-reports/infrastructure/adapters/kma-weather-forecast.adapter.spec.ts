@@ -68,7 +68,7 @@ describe("KMA 예보 HTTP 요청·오류 계약", () => {
     });
     expect(result.date).toBe(TARGET);
     expect(result.hourlyForecasts[0]?.temperature).toBe(25);
-    expect(provider.timeZone).toBe("Asia/Seoul");
+    expect(provider.timezone).toBe("Asia/Seoul");
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 

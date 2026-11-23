@@ -9,7 +9,7 @@ import type { MutationLockPort } from "#api/shared/application/ports/mutation-lo
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { TodoCommentId } from "../../../shared/domain/todo-comment-id.vo.js";
+import { TodoCommentId } from "../../domain/todo-comment-id.vo.js";
 import type { TodoCommentAccessReaderPort } from "../ports/todo-comment-access.reader.port.js";
 import type { TodoCommentBlockReaderPort } from "../ports/todo-comment-block-reader.port.js";
 import type { TodoCommentNotificationPort } from "../ports/todo-comment-notification.port.js";
@@ -40,7 +40,7 @@ interface LikeTodoCommentDependencies {
   readonly repository: Pick<TodoCommentRepositoryPort, "findByIdAndTodoId" | "save">;
   readonly likeRepository: Pick<TodoCommentLikeRepositoryPort, "findByCommentIdAndUserId" | "save">;
   readonly notification: Pick<TodoCommentNotificationPort, "notifyCommentLiked">;
-  readonly blockReader: Pick<TodoCommentBlockReaderPort, "findBlockedCounterpartIds">;
+  readonly blockReader: Pick<TodoCommentBlockReaderPort, "listBlockedCounterpartIds">;
   readonly logger: ApplicationLoggerPort;
 }
 
@@ -92,7 +92,7 @@ export class LikeTodoCommentUseCase {
       throw commentNotFound(commentId);
     }
     comment.assertActive();
-    const blockedIds = await blockReader.findBlockedCounterpartIds(userId, [comment.authorId]);
+    const blockedIds = await blockReader.listBlockedCounterpartIds(userId, [comment.authorId]);
     if (blockedIds.has(comment.authorId.value)) {
       throw blockedCounterpart();
     }

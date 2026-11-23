@@ -70,7 +70,7 @@ interface ReminderDraft {
 export class TodoReminderQueueProcessor implements OnModuleInit {
   readonly #logger = new Logger(TodoReminderQueueProcessor.name);
 
-  readonly #reader: Pick<TodoReminderReaderPort, "findActiveTodos">;
+  readonly #reader: Pick<TodoReminderReaderPort, "listActiveTodos">;
   readonly #seriesOwnerDormancy: Pick<TodoSeriesOwnerDormancyPort, "findDormantSince">;
   readonly #notificationPublisher: Pick<PublishNotificationUseCase, "execute">;
   readonly #notificationBatchPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
@@ -80,7 +80,7 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
   readonly #lateSkips: Pick<RecordReminderLateSkipUseCase, "execute">;
 
   constructor(
-    @Inject(TodoReminderReaderPort) reader: Pick<TodoReminderReaderPort, "findActiveTodos">,
+    @Inject(TodoReminderReaderPort) reader: Pick<TodoReminderReaderPort, "listActiveTodos">,
     @Inject(TodoSeriesOwnerDormancyPort)
     seriesOwnerDormancy: Pick<TodoSeriesOwnerDormancyPort, "findDormantSince">,
     @Inject(PublishNotificationUseCase)
@@ -164,7 +164,7 @@ export class TodoReminderQueueProcessor implements OnModuleInit {
     const userIds = uniq(jobs.map(({ data: job }) => job.data.userId));
     // 트랜잭션 밖의 서로 다른 읽기라 함께 보낸다
     const [todos, localeOf] = await Promise.all([
-      this.#reader.findActiveTodos(reminderTodoIds),
+      this.#reader.listActiveTodos(reminderTodoIds),
       this.#recipientLocaleReader.getLocales(userIds.map((userId) => UserId.reconstitute(userId))),
     ]);
     return {

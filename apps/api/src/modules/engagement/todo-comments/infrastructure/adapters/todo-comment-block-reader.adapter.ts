@@ -13,10 +13,10 @@ export class TodoCommentBlockReaderAdapter implements TodoCommentBlockReaderPort
     this.#userBlockReader = userBlockReader;
   }
 
-  findBlockedCounterpartIds(
+  listBlockedCounterpartIds(
     viewerId: UserId,
     candidateUserIds: readonly UserId[],
   ): Promise<ReadonlySet<string>> {
-    return this.#userBlockReader.findBlockedCounterpartIds(viewerId, candidateUserIds);
+    return this.#userBlockReader.listBlockedCounterpartIds(viewerId, candidateUserIds);
   }
 }

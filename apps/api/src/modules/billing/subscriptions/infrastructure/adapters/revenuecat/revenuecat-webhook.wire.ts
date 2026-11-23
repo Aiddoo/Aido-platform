@@ -3,7 +3,7 @@ import { z } from "zod";
 
 // RevenueCat이 이벤트·스토어를 더해도 검증에 실패하지 않게 type·store는 문자열로, 모르는 필드도 받는다.
 // https://www.revenuecat.com/docs/integrations/webhooks/event-types-and-fields
-export const revenueCatEventSchema = z.looseObject({
+const revenueCatEventSchema = z.looseObject({
   id: z.string().optional(),
   type: z.string().min(1),
   app_user_id: z.string().min(1),
@@ -51,7 +51,7 @@ export type RevenueCatWebhookPayload = z.infer<typeof revenueCatWebhookPayloadSc
  *
  * @see https://www.revenuecat.com/docs/integrations/webhooks/event-types-and-fields
  */
-export const revenueCatTransferEventSchema = z.looseObject({
+const revenueCatTransferEventSchema = z.looseObject({
   id: z.string().optional(),
   type: z.literal("TRANSFER"),
   event_timestamp_ms: z.number().optional(),

@@ -10,12 +10,12 @@ import { toSubscriptionReceiptViewModel } from '../utils/subscription-receipt.vi
 export function useSubscriptionReceipt() {
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const session = usePurchasesSession();
-  const { currentTimeZone } = useLocalDate();
+  const { currentTimezone } = useLocalDate();
   const now = useMinuteNow();
 
   return toSubscriptionReceiptViewModel(user, {
     isStoreConfigured: session.isConfigured(),
     now,
-    timeZone: currentTimeZone,
+    timezone: currentTimezone,
   });
 }

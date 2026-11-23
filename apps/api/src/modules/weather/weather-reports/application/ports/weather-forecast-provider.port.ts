@@ -16,7 +16,7 @@ export abstract class WeatherForecastProviderPort {
   /** 로그에 남기는 공급자 식별자 */
   abstract readonly name: string;
   /** 정규화한 시간별 예보의 지역 시간대 */
-  abstract readonly timeZone: string;
+  abstract readonly timezone: string;
   /** 요청 순간의 예보를 줄 수 있는 발표를 고른다. 어느 발표에도 없는 날짜면 UNAVAILABLE이다. */
   abstract resolveAvailability(params: {
     readonly target: Temporal.Instant;

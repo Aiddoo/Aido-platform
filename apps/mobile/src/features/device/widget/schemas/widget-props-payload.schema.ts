@@ -12,7 +12,7 @@ const widgetPropsSchema = z.object({
   currentStreak: z.number(),
   topTodos: z.array(
     z.object({
-      id: z.number().int().positive().optional(),
+      id: z.int().positive().optional(),
       title: z.string(),
       completed: z.boolean(),
       color: z.string(),

@@ -18,15 +18,15 @@ export interface RecordedForecastCall {
 /** 기본 예보를 돌려주고 호출을 기록한다. 격자(`gridX:gridY`)별 결과나 실패를 미리 정할 수 있다. 제공 범위는 실제 기상청 규칙이다. */
 export class StubWeatherForecastProvider extends WeatherForecastProviderPort {
   readonly name = "fixture";
-  readonly timeZone: string;
+  readonly timezone: string;
   readonly calls: RecordedForecastCall[] = [];
   readonly results = new Map<string, WeatherForecastReadModel | Error>();
   failure: Error | null = null;
   forecast = createWeatherForecastFixture();
 
-  constructor(timeZone = "Asia/Seoul") {
+  constructor(timezone = "Asia/Seoul") {
     super();
-    this.timeZone = timeZone;
+    this.timezone = timezone;
   }
 
   resolveAvailability(params: {

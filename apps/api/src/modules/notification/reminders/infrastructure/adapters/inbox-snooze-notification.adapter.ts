@@ -3,8 +3,8 @@ import { z } from "zod";
 
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
+import type { NotificationId } from "../../../notifications/domain/notification-id.vo.js";
 import { NotificationInboxReaderPort } from "../../../notifications/notification-notifications.public.js";
-import type { NotificationId } from "../../../shared/domain/notification-id.vo.js";
 import type { SnoozeNotificationReaderPort } from "../../application/ports/snooze-notification.reader.port.js";
 import type { SnoozeNotificationReadModel } from "../../application/read-models/scheduler.read-model.js";
 

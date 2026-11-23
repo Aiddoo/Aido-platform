@@ -56,7 +56,7 @@ describe("DrizzleUserBriefReader (실제 PostgreSQL)", () => {
 
   it("id 묶음을 한 번에 읽어 프로필과 탈퇴 대기를 채우고 없는 id는 뺀다", async () => {
     // When
-    const briefs = await reader.findByUserIds(
+    const briefs = await reader.listByUserIds(
       [ACTIVE_USER_ID, DELETED_USER_ID, MISSING_USER_ID].map((userId) =>
         UserId.reconstitute(userId),
       ),

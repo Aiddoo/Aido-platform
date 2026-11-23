@@ -31,7 +31,6 @@ export interface FriendTodoReadModel {
   readonly startDate: string;
   readonly endDate: string | null;
   readonly scheduledTime: string | null;
-  /** 옛 서버가 시간을 지운 행은 칸이 낡았을 수 있어 순간이 없으면 null이다. */
   readonly scheduledLocalTime: string | null;
   readonly isAllDay: boolean;
   readonly visibility: TodoVisibility;

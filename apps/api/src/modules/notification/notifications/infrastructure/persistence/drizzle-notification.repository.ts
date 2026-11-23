@@ -12,7 +12,6 @@ import { notification, pushDispatch } from "#api/platform/database/schema/index"
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
-import type { NotificationId } from "../../../shared/domain/notification-id.vo.js";
 import type { NotificationType } from "../../../shared/domain/notification-type.constants.js";
 import { duplicateNotification } from "../../application/notifications.errors.js";
 import type {
@@ -20,6 +19,7 @@ import type {
   NotificationRepositoryPort,
 } from "../../application/ports/notification.repository.port.js";
 import type { InboxNotificationReadModel } from "../../application/read-models/inbox-notification.read-model.js";
+import type { NotificationId } from "../../domain/notification-id.vo.js";
 import type { Notification } from "../../domain/notification.aggregate.js";
 import { milestoneNotificationCondition } from "./milestone-notification.query-fragment.js";
 import { toNotification } from "./notification-row.mapper.js";

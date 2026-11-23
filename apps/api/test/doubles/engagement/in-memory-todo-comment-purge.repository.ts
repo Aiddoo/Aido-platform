@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
 
-import { TodoCommentId } from "#api/modules/engagement/shared/domain/todo-comment-id.vo";
 import {
   type TodoCommentPurgePlan,
   TodoCommentPurgeRepositoryPort,
 } from "#api/modules/engagement/todo-comments/application/ports/todo-comment-purge.repository.port";
+import { TodoCommentId } from "#api/modules/engagement/todo-comments/domain/todo-comment-id.vo";
 import { TodoComment } from "#api/modules/engagement/todo-comments/domain/todo-comment.aggregate";
 import { DELETED_COMMENT_AUTHOR } from "#api/modules/engagement/todo-comments/domain/todo-comments.constants";
 import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";

@@ -16,7 +16,7 @@
     "resolveJsonModule": true,
     "jsx": "react-jsx",
     "erasableSyntaxOnly": true,
-    "lib": ["ES2024", "esnext.temporal", "esnext.date"]
+    "lib": ["ES2025", "esnext.temporal", "esnext.date"]
   },
   "include": ["src/**/*", "test/**/*", "scripts/**/*.ts", "vitest.config.ts"],
   "exclude": ["node_modules", "dist"]

@@ -10,8 +10,8 @@ export function setGlobalLogger(logger: AppLogger): void {
 }
 
 export const logger: AppLogger = {
-  debug: (...args) => instance.debug(...args),
-  info: (...args) => instance.info(...args),
-  warn: (...args) => instance.warn(...args),
-  error: (...args) => instance.error(...args),
+  debug: (...parameters) => instance.debug(...parameters),
+  info: (...parameters) => instance.info(...parameters),
+  warn: (...parameters) => instance.warn(...parameters),
+  error: (...parameters) => instance.error(...parameters),
 };

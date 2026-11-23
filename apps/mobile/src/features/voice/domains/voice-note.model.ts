@@ -349,7 +349,7 @@ export function toCaptureSeed(note: VoiceNote): VoiceCaptureSeed {
 }
 
 // 재생 조각 목록도 같은 규칙으로 찾아 시작 위치만 받는다
-export function findRecordingIndexAt(
+export function getRecordingIndexAt(
   recordings: readonly Pick<VoiceNoteRecording, 'startMs'>[],
   positionMs: number,
 ): number {

@@ -1,5 +1,4 @@
 import { TODO_LIMITS } from "@aido/api/vocabulary";
-import { vi } from "vitest";
 
 import {
   createPlanningTodoFixture,
@@ -16,10 +15,6 @@ describe("할 일 리소스 한도 조회", () => {
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
     useCase = new GetTodoResourceLimitUseCase(fixture);
   });
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it("소유자의 미완료 개수만 활성 한도에 포함한다", async () => {
     // Given
     fixture.records.set(2, {

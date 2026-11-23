@@ -23,14 +23,14 @@ import {
 } from '../../domains/todo-repeat.model';
 import { type DatePicker, useDatePicker } from '../../hooks/use-date-picker';
 import {
-  getTodoRepeatFormIssue,
+  findTodoRepeatFormIssue,
   getTodoRepeatFormMonthDay,
   toTodoRepeat,
   todoRepeatFormSchema,
   type TodoRepeatFormValues,
 } from '../../schemas/todo-repeat-form.schema';
 import {
-  getTodoRepeatFormFirstOccurrenceKey,
+  findTodoRepeatFormFirstOccurrenceKey,
   isTodoRepeatFormPreset,
   withTodoRepeatFormBiweeklyToggled,
   withTodoRepeatFormCalendarDate,
@@ -246,7 +246,7 @@ TodoRepeatPicker.RepeatSummary = function RepeatSummary({ form }: { form: Repeat
   });
   const issue = useWatch({
     control: form.control,
-    compute: (values) => getTodoRepeatFormIssue(values),
+    compute: (values) => findTodoRepeatFormIssue(values),
   });
   const days = formatDaysOfWeek(weekdays, i18n.language);
   const summary = match({ weekdays, interval, isMonthly })
@@ -331,7 +331,7 @@ TodoRepeatPicker.RepeatFormCalendar = function RepeatFormCalendar({
   });
   const firstOccurrenceKey = useWatch({
     control: form.control,
-    compute: (values) => getTodoRepeatFormFirstOccurrenceKey(values),
+    compute: (values) => findTodoRepeatFormFirstOccurrenceKey(values),
   });
   const todayKey = useTodayKey();
   const firstWeekDateKey = picker.weeks.at(0)?.at(0)?.dateKey;

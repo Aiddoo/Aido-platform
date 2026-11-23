@@ -307,12 +307,14 @@ describe("SendWeatherMorningUseCase + weather v2 리포트 — 공급자 호출 
   let clock: FixedClock;
   let strategy: SendWeatherMorningUseCase;
 
-  // 날씨 리포트 캐시(weather Context·InMemoryCacheStore)는 Date 시계로 만료를 재서 가짜 Date 시계를 함께 옮긴다
+  // 날씨 칸 캐시(InMemoryCacheStore)의 만료도 UseCase와 같은 시계로 옮긴다
   beforeEach(() => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(NOW);
     clock = new FixedClock(Temporal.Instant.fromEpochMilliseconds(NOW.getTime()));
-    memory = new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 });
+    memory = new InMemoryCacheStore({
+      defaultTtlMs: 60_000,
+      maxItems: 100,
+      nowMs: () => clock.now().epochMilliseconds,
+    });
     provider = new StubWeatherReportProvider();
     provider.report = createWeatherReportFixture({ fetchedAt: instantFromDate(NOW) });
     reader = new StubWeatherReminderReader();
@@ -342,10 +344,6 @@ describe("SendWeatherMorningUseCase + weather v2 리포트 — 공급자 호출 
       logger: new SilentLogger(),
     });
   });
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   it("같은 칸의 사용자 30명에게 보내도 WeatherKit은 한 번만 부른다", async () => {
     // Given
     reader.usersWithLocation = Array.from({ length: 30 }, (_, index) => ({
@@ -368,8 +366,6 @@ describe("SendWeatherMorningUseCase + weather v2 리포트 — 공급자 호출 
       { id: "seoul", timezone: "Asia/Seoul", preference: null, location: SEOUL },
     ];
     await strategy.execute(timezoneContext());
-    const later = new Date(NOW.getTime() + 2 * HOUR_MS);
-    vi.setSystemTime(later);
     clock.advanceBy({ hours: 2 });
     provider.failure = new Error("weatherkit 503");
     reader.usersWithLocation = [

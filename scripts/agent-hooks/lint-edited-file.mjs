@@ -2,10 +2,9 @@
 // 위반이면 stderr에 내고 exit 2로 Claude에게 되돌린다. 대상이 아니거나 통과면 exit 0이다.
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
-import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 
-const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+const repositoryRoot = resolve(import.meta.dirname, '../..');
 const TARGET = /^(?:(?:apps|packages)\/api\/src\/.+\.tsx?|apps\/mobile\/(?:src|app)\/.+\.tsx?)$/;
 
 function readFilePath() {
@@ -21,8 +20,12 @@ function readFilePath() {
 // 3초 안에 끝낸다. 시간 초과·실행 오류는 통과로 본다.
 const TIMEOUT_MS = 3000;
 
-function run(command, args) {
-  const result = spawnSync(command, args, { cwd: repoRoot, encoding: 'utf8', timeout: TIMEOUT_MS });
+function run(command, commandArguments) {
+  const result = spawnSync(command, commandArguments, {
+    cwd: repositoryRoot,
+    encoding: 'utf8',
+    timeout: TIMEOUT_MS,
+  });
   return {
     ok: result.status === 0 || result.error != null,
     output: `${result.stdout ?? ''}${result.stderr ?? ''}`.trim(),
@@ -34,14 +37,14 @@ if (filePath == null) {
   process.exit(0);
 }
 
-const absolute = isAbsolute(filePath) ? filePath : resolve(repoRoot, filePath);
-const rel = relative(repoRoot, absolute).split(sep).join('/');
-if (!TARGET.test(rel) || !existsSync(absolute)) {
+const absolute = isAbsolute(filePath) ? filePath : resolve(repositoryRoot, filePath);
+const relativePath = relative(repositoryRoot, absolute).split(sep).join('/');
+if (!TARGET.test(relativePath) || !existsSync(absolute)) {
   process.exit(0);
 }
 
-const lint = run(join(repoRoot, 'node_modules/.bin/oxlint'), [rel]);
+const lint = run(join(repositoryRoot, 'node_modules/.bin/oxlint'), [relativePath]);
 if (!lint.ok) {
-  console.error(`${rel} 검사 실패. 고친 뒤 다시 저장한다.\n${lint.output}`);
+  console.error(`${relativePath} 검사 실패. 고친 뒤 다시 저장한다.\n${lint.output}`);
   process.exit(2);
 }

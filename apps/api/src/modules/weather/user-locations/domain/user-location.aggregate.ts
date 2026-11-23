@@ -1,9 +1,10 @@
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
-import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import { Timezone } from "#api/shared/domain/time/timezone.vo";
 
 import { Coordinate } from "../../shared/domain/coordinate.vo.js";
 import { GridCoordinate } from "../../shared/domain/grid-coordinate.vo.js";
+import { UserLocationId } from "./user-location-id.vo.js";
 import { forecastGridUnavailable } from "./user-locations.errors.js";
 
 export interface UserLocationPrimitives {
@@ -18,9 +19,10 @@ export interface UserLocationPrimitives {
 }
 
 interface UserLocationProps {
+  readonly userId: UserId;
   readonly coordinate: Coordinate;
   readonly grid: GridCoordinate | null;
-  readonly timezone: TimeZone | null;
+  readonly timezone: Timezone | null;
   readonly updatedAt: Temporal.Instant;
 }
 
@@ -29,14 +31,15 @@ interface CreateUserLocationParams {
   readonly coordinate: Coordinate;
   /** 한국 예보 범위 안의 좌표에만 있다. */
   readonly grid: GridCoordinate | null;
-  readonly timezone: TimeZone;
+  readonly timezone: Timezone;
   readonly now: Temporal.Instant;
 }
 
 /** 사용자당 하나인 날씨 기준 위치. 같은 사용자의 위치는 새 위치로 통째로 바뀐다. */
-export class UserLocation extends AggregateRoot<UserId, UserLocationProps> {
+export class UserLocation extends AggregateRoot<UserLocationId, UserLocationProps> {
   static create(params: CreateUserLocationParams): UserLocation {
-    return new UserLocation(params.userId, {
+    return new UserLocation(UserLocationId.reconstitute(params.userId.value), {
+      userId: params.userId,
       coordinate: params.coordinate,
       grid: params.grid,
       timezone: params.timezone,
@@ -46,16 +49,17 @@ export class UserLocation extends AggregateRoot<UserId, UserLocationProps> {
 
   static reconstitute(primitives: UserLocationPrimitives): UserLocation {
     const { gridX, gridY } = primitives;
-    return new UserLocation(UserId.reconstitute(primitives.userId), {
+    return new UserLocation(UserLocationId.reconstitute(primitives.userId), {
+      userId: UserId.reconstitute(primitives.userId),
       coordinate: Coordinate.reconstitute(primitives.latitude, primitives.longitude),
       grid: gridX == null || gridY == null ? null : GridCoordinate.reconstitute(gridX, gridY),
-      timezone: primitives.timezone == null ? null : TimeZone.reconstitute(primitives.timezone),
+      timezone: primitives.timezone == null ? null : Timezone.reconstitute(primitives.timezone),
       updatedAt: primitives.updatedAt,
     });
   }
 
   get userId(): UserId {
-    return this.id;
+    return this.props.userId;
   }
 
   get coordinate(): Coordinate {
@@ -66,7 +70,7 @@ export class UserLocation extends AggregateRoot<UserId, UserLocationProps> {
     return this.props.grid;
   }
 
-  get timezone(): TimeZone | null {
+  get timezone(): Timezone | null {
     return this.props.timezone;
   }
 
@@ -88,7 +92,7 @@ export class UserLocation extends AggregateRoot<UserId, UserLocationProps> {
 
   toPrimitives(): UserLocationPrimitives {
     return {
-      userId: this.id.value,
+      userId: this.props.userId.value,
       latitude: this.props.coordinate.latitude,
       longitude: this.props.coordinate.longitude,
       gridX: this.props.grid?.gridX ?? null,

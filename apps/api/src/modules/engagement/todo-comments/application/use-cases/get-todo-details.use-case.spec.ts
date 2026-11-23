@@ -115,7 +115,12 @@ describe("GetTodoDetailsUseCase — 할 일 상세와 조회 수", () => {
     });
 
     // Then
-    expect(details.permissions).toEqual({ canEdit: false, canComment: true, canNudge: false });
+    expect(details.permissions).toEqual({
+      canEdit: false,
+      canComment: true,
+      canNudge: false,
+      canThank: false,
+    });
   });
 
   it.each([
@@ -151,7 +156,53 @@ describe("GetTodoDetailsUseCase — 할 일 상세와 조회 수", () => {
       });
 
       // Then
-      expect(details.permissions).toEqual({ canEdit: false, canComment: true, canNudge });
+      expect(details.permissions).toEqual({
+        canEdit: false,
+        canComment: true,
+        canNudge,
+        canThank: false,
+      });
+    },
+  );
+
+  it.each([
+    { name: "끝낸 공개 할 일", todo: { completed: true }, canThank: true },
+    { name: "끝내지 않은 할 일", todo: { completed: false }, canThank: false },
+    {
+      name: "끝낸 비공개 할 일",
+      todo: { completed: true, visibility: "PRIVATE" as const },
+      canThank: false,
+    },
+  ])(
+    "주인이 보는 $name은 감사 보내기와 같은 규칙으로 canThank가 $canThank다",
+    async ({ todo, canThank }) => {
+      // Given
+      fixture.reader.details.set(TODO_ID, {
+        todo: createTodoReadModelFixture({
+          id: TODO_ID,
+          userId: TODO_COMMENT_FIXTURE_OWNER_ID,
+          ...todo,
+        }),
+        owner: { id: TODO_COMMENT_FIXTURE_OWNER_ID, name: "작성자", profileImage: null },
+        viewCount: 3,
+        commentCount: 2,
+        isOwner: true,
+      });
+
+      // When
+      const details = await new GetTodoDetailsUseCase(fixture).execute({
+        todoId: TODO_ID,
+        viewerId: TODO_COMMENT_FIXTURE_OWNER_ID,
+        timezone: "UTC",
+      });
+
+      // Then
+      expect(details.permissions).toEqual({
+        canEdit: true,
+        canComment: true,
+        canNudge: false,
+        canThank,
+      });
     },
   );
 });

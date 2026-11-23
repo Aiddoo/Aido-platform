@@ -129,10 +129,10 @@ describe("GetWeatherConditionsUseCase — 날짜별 부가정보와 부분 실�
   it.each([
     ["UTC", 1],
     ["America/Los_Angeles", 15],
-  ])("공급자 시간대 %s의 hour를 선택한다", async (timeZone, expectedTemperature) => {
+  ])("공급자 시간대 %s의 hour를 선택한다", async (timezone, expectedTemperature) => {
     // Given
     // 공급자 metadata는 서버 host TZ와 독립이다.
-    const provider = new StubWeatherForecastProvider(String(timeZone));
+    const provider = new StubWeatherForecastProvider(String(timezone));
     const logger = new SilentLogger();
     const readWeatherForecast = new ReadWeatherForecastUseCase({
       weatherProvider: provider,

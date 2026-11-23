@@ -38,7 +38,7 @@ class StubReceiptRepository implements ReceiptRepository {
   readonly expiredBefore: Temporal.Instant[] = [];
   expiredCount = 0;
 
-  async findPendingTicketIds({
+  async listPendingTicketIds({
     window,
     limit,
   }: {
@@ -190,7 +190,7 @@ describe("ReconcilePushReceiptsUseCase — receipt 반영", () => {
     await useCase.execute();
 
     // Then
-    const tokens = await pushTokenRepository.findActivePushTokensByUsers([
+    const tokens = await pushTokenRepository.listActivePushTokensByUsers([
       UserId.reconstitute("user-1"),
       UserId.reconstitute("user-2"),
     ]);

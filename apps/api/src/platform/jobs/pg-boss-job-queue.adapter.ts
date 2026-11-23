@@ -12,8 +12,6 @@ import { withJobScope } from "#api/platform/observability/sentry-scope";
 import {
   JobQueuePort,
   resolveBacklogWarningSize,
-  resolveDeadLetterJobPolicy,
-  resolveDeadLetterQueue,
   type EnqueueManyJob,
   type EnqueueOptions,
   type JobBatchFailures,
@@ -353,13 +351,9 @@ export class PgBossJobQueueAdapter extends JobQueuePort {
 
   async #ensure(queue: QueueDefinition<object>): Promise<void> {
     this.#registry.register(queue);
-    const deadLetterQueue = resolveDeadLetterQueue(queue.deadLetter);
-    const deadLetterPolicy = resolveDeadLetterJobPolicy(queue.deadLetter);
-    if (deadLetterQueue != null) {
-      await this.#queues.ensure(
-        deadLetterQueue,
-        deadLetterPolicy == null ? undefined : { retry: deadLetterPolicy },
-      );
+    const { deadLetter } = queue;
+    if (deadLetter != null) {
+      await this.#queues.ensure(deadLetter.queue, { retry: deadLetter.jobPolicy });
     }
     await this.#queues.ensure(queue.name, {
       retry: queue.retry,
@@ -383,7 +377,7 @@ function toPgBossJobOptions(
     expireInSeconds: queue.retry.expireInSeconds,
     retentionSeconds: queue.retry.retentionSeconds,
     deleteAfterSeconds: queue.retry.deleteAfterSeconds,
-    deadLetter: resolveDeadLetterQueue(queue.deadLetter),
+    deadLetter: queue.deadLetter?.queue,
     ...(idempotencyKey && { id: deterministicJobId(queue.name, idempotencyKey) }),
   };
 }

@@ -4,7 +4,7 @@ import type { TodoCommentLikeReaderPort } from "#api/modules/engagement/todo-com
 import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { TodoCommentId } from "../../../shared/domain/todo-comment-id.vo.js";
+import { TodoCommentId } from "../../domain/todo-comment-id.vo.js";
 import type { TodoCommentAccessReaderPort } from "../ports/todo-comment-access.reader.port.js";
 import type { TodoCommentBlockReaderPort } from "../ports/todo-comment-block-reader.port.js";
 import type {
@@ -48,9 +48,9 @@ interface ConversationAnchor {
 interface GetTodoConversationDependencies {
   readonly accessReader: Pick<TodoCommentAccessReaderPort, "findAccessibleTodoOwnerId">;
   readonly reader: Pick<TodoCommentReaderPort, "listComments">;
-  readonly conversationReader: Pick<TodoConversationReaderPort, "listConversation">;
+  readonly conversationReader: Pick<TodoConversationReaderPort, "findConversationWindow">;
   readonly likeReader: Pick<TodoCommentLikeReaderPort, "listLikedCommentIds">;
-  readonly blockReader: Pick<TodoCommentBlockReaderPort, "findBlockedCounterpartIds">;
+  readonly blockReader: Pick<TodoCommentBlockReaderPort, "listBlockedCounterpartIds">;
   readonly cursorCodec: Pick<
     TodoCommentCursorCodecPort,
     "decodeConversation" | "encodeConversation"
@@ -79,7 +79,7 @@ export class GetTodoConversationUseCase {
       throw todoNotFound(todoId);
     }
     const anchor = this.#toAnchor(query, todoId);
-    const window = await conversationReader.listConversation({
+    const window = await conversationReader.findConversationWindow({
       todoId,
       sort: query.sort,
       size: query.size,
@@ -110,7 +110,7 @@ export class GetTodoConversationUseCase {
     const visibleComments = [...window.items, ...precedingThreadComments];
     const [likedCommentIds, blockedAuthorIds] = await Promise.all([
       likeReader.listLikedCommentIds(listCommentIds(visibleComments), viewerId),
-      blockReader.findBlockedCounterpartIds(viewerId, listCommentAuthorIds(visibleComments)),
+      blockReader.listBlockedCounterpartIds(viewerId, listCommentAuthorIds(visibleComments)),
     ]);
     const first = window.items.at(0);
     const last = window.items.at(-1);
@@ -184,11 +184,11 @@ export class GetTodoConversationUseCase {
     if (anchor.mode !== "FOCUS" || anchor.commentId == null) {
       return null;
     }
-    const item = window.anchorIndex == null ? undefined : window.items[window.anchorIndex];
-    if (item == null || item.id !== anchor.commentId.value) {
+    const focusComment = window.anchorIndex == null ? undefined : window.items[window.anchorIndex];
+    if (focusComment == null || focusComment.id !== anchor.commentId.value) {
       throw commentNotFound(anchor.commentId);
     }
-    return item;
+    return focusComment;
   }
 
   #toEmptyPage(query: GetTodoConversationQuery): TodoConversationPageReadModel {

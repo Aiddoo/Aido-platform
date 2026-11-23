@@ -1,6 +1,6 @@
 import type { FriendTodo, Todo as TodoDto, TodoItemResponse } from '@aido/api/contracts/todo/v1';
 import type { ApiError } from '@src/core/errors/api-error';
-import { err, ok, type Result } from '@src/core/errors/result';
+import { fail, ok, type Result } from '@src/core/errors/result';
 import { createTodoCategoryListDto } from '@src/features/planning/category/__tests__/todo-category.fixtures';
 import '@src/shared/i18n/init';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/queries/todo-category-query-keys';
@@ -80,7 +80,7 @@ const WATCHED: Record<string, QueryKey> = {
   'list:other-day': TODO_QUERY_KEYS.listByDate({ date: OTHER_DAY }),
   'calendar:month': TODO_QUERY_KEYS.completionsByRange(MONTH),
   'calendar:next-month': TODO_QUERY_KEYS.completionsByRange(NEXT_MONTH),
-  'widget:day': TODO_QUERY_KEYS.widgetSummaryByDate({ date: DAY, userId: null }),
+  'widget:day': TODO_QUERY_KEYS.widgetSummaryByDate({ date: DAY, userId: OWNER_ID }),
   overview: TODO_QUERY_KEYS.overview(),
   categories: TODO_CATEGORY_QUERY_KEYS.list(),
   'friend:day': TODO_QUERY_KEYS.friendListByDate({ userId: FRIEND_ID, date: DAY }),
@@ -174,7 +174,7 @@ function createTodoServer() {
       return {
         todo: find(Number(details[1])),
         owner: { id: OWNER_ID, name: '나', profileImage: null },
-        permissions: { canEdit: true, canComment: true, canNudge: false },
+        permissions: { canEdit: true, canComment: true, canNudge: false, canThank: false },
         metrics: { viewCount: 0, commentCount: 0 },
       };
     }
@@ -293,7 +293,8 @@ function createTodoServer() {
 function WatchedQueries() {
   useQuery(useGetTodosByDateQueryOptions({ date: OTHER_DAY }));
   useQuery(useGetDailyCompletionsQueryOptions(NEXT_MONTH));
-  useQuery(useGetTodoSummaryQueryOptions({ date: DAY, userId: null }));
+  // 고정 날짜(DAY)는 기기 오늘이 아니라 묻는 날짜 판정을 끈다. 그 판정은 todo-cache.test가 본다
+  useQuery({ ...useGetTodoSummaryQueryOptions({ date: DAY, userId: OWNER_ID }), enabled: true });
   useQuery(useGetTodoOverviewQueryOptions());
   useQuery(useGetTodoCategoriesQueryOptions());
   useQuery(useGetFriendTodosQueryOptions({ friendUserId: FRIEND_ID, date: DAY }));
@@ -349,7 +350,7 @@ async function renderFeed() {
     (url: string, bodyOrOptions?: unknown): Promise<Result<unknown, ApiError>> => {
       // 거절한 쓰기는 서버 상태를 바꾸지 않는다
       const result = failing.next
-        ? err(createTodoApiError())
+        ? fail(createTodoApiError())
         : ok(server.write(method, url, method === 'delete' ? undefined : bodyOrOptions));
       failing.next = false;
       const pending = createPendingResponse<Result<unknown, ApiError>>(result);
@@ -416,7 +417,9 @@ async function renderFeed() {
   }
   async function settleWrites() {
     await act(async () => {
-      heldWrites.splice(0).forEach((settle) => settle());
+      for (const settle of heldWrites.splice(0)) {
+        settle();
+      }
       await deliverQueryNotifications();
     });
   }
@@ -460,7 +463,8 @@ describe('할 일 쓰기 뒤 다시 받는 조회', () => {
     {
       path: '할 일 체크',
       start: (w) => w.toggleTodo.mutateAsync({ todoId: 1, body: { completed: true }, date: DAY }),
-      expected: ['widget:day'],
+      // 서버가 완료로 감사 가능 여부(permissions.canThank)를 다시 정한다
+      expected: ['detail:1', 'widget:day'],
     },
     {
       path: '할 일 체크 풀기',
@@ -852,7 +856,8 @@ function FeedListProbe() {
 
 function BackgroundProbe() {
   // 위젯 동기화·시작 체크리스트가 피드 뒤에서 붙들고 있는 조회
-  useQuery(useGetTodoSummaryQueryOptions({ date: DAY, userId: null }));
+  // 고정 날짜(DAY)는 기기 오늘이 아니라 묻는 날짜 판정을 끈다. 그 판정은 todo-cache.test가 본다
+  useQuery({ ...useGetTodoSummaryQueryOptions({ date: DAY, userId: OWNER_ID }), enabled: true });
   useQuery(useGetDailyCompletionsQueryOptions(WEEK));
   useQuery(useGetTodoOverviewQueryOptions());
   return null;
@@ -881,7 +886,7 @@ async function renderCreateFeed() {
   const created = createPendingResponse<Result<unknown, ApiError>>(
     ok({ message: 'ok', todo: CREATED }),
   );
-  const failed = createPendingResponse<Result<unknown, ApiError>>(err(createTodoApiError()));
+  const failed = createPendingResponse<Result<unknown, ApiError>>(fail(createTodoApiError()));
   let createResponse = created;
   httpClient.post.mockImplementation(() => {
     server.hasCreated = createResponse === created;
@@ -939,7 +944,9 @@ async function renderCreateFeed() {
       await deliverQueryNotifications();
     });
     await act(async () => {
-      heldGets.splice(0).forEach((settle) => settle());
+      for (const settle of heldGets.splice(0)) {
+        settle();
+      }
       await deliverQueryNotifications();
     });
   }
@@ -961,7 +968,7 @@ describe('할 일을 만든 뒤 다시 받는 조회', () => {
 
     // Then
     expect(refetched).toEqual([
-      hashKey(TODO_QUERY_KEYS.widgetSummaryByDate({ date: DAY, userId: null })),
+      hashKey(TODO_QUERY_KEYS.widgetSummaryByDate({ date: DAY, userId: OWNER_ID })),
     ]);
     expect(httpClient.get).toHaveBeenCalledTimes(1);
     expect(renders).toEqual({ calendar: 1, list: 2 });

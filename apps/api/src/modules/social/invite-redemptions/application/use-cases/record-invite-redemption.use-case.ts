@@ -1,9 +1,9 @@
 import { REWARD_TYPE } from "@aido/api/vocabulary";
 
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import type { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import type { Timezone } from "#api/shared/domain/time/timezone.vo";
 
-import type { InviteId } from "../../../shared/domain/invite-id.vo.js";
+import type { InviteId } from "../../../invites/domain/invite-id.vo.js";
 import { InviteRedemptionId } from "../../domain/invite-redemption-id.vo.js";
 import { InviteRedemption } from "../../domain/invite-redemption.aggregate.js";
 import {
@@ -26,7 +26,7 @@ export interface RecordInviteRedemptionCommand {
   readonly inviteeId: UserId;
   readonly claims: readonly RewardClaim[];
   readonly rewardEligible: boolean;
-  readonly timeZone: TimeZone;
+  readonly timezone: Timezone;
   readonly now: Temporal.Instant;
 }
 
@@ -67,7 +67,7 @@ export class RecordInviteRedemptionUseCase {
       inviteId: command.inviteId,
       inviterId: command.inviterId,
       inviteeId,
-      timeZone: command.timeZone,
+      timezone: command.timezone,
       // 같은 기기·신원으로 이미 받은 수락은 부계정으로 초대한 사람 보상을 쌓지 못하게 함께 막는다
       inviterRewardEligible: isRewardClaimed,
       now,

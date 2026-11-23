@@ -1,4 +1,4 @@
-import { getCalleeName, getMemberNames, isFunction } from '../ast.mjs';
+import { getCalleeName, getImportedName, getKeyName, getMemberNames, isFunction } from '../ast.mjs';
 
 const MODULE_MOCK_METHODS = new Set(['mock', 'doMock', 'setMock']);
 
@@ -47,6 +47,27 @@ const noJestModuleMock = {
         context.report({
           node,
           message: `${moduleName}를 jest.mock하지 않습니다. 포트 stub과 createTestDi, renderScreen을 쓰고, 네이티브 모듈은 jest.setup이나 moduleNameMapper에 둡니다.`,
+        });
+      },
+    };
+  },
+};
+
+const VITEST_MOCK_METHODS = new Set(['fn', 'spyOn', 'useFakeTimers', 'setSystemTime']);
+
+// UseCase spec과 그 spec이 쓰는 fixture·double은 손으로 쓴 InMemory·Stub·Recording과 FixedClock으로 상태를 확인한다
+const noVitestMock = {
+  meta: { type: 'suggestion' },
+  create(context) {
+    return {
+      CallExpression(node) {
+        const names = getMemberNames(node.callee);
+        if (names?.[0] !== 'vi' || !VITEST_MOCK_METHODS.has(names[1])) {
+          return;
+        }
+        context.report({
+          node,
+          message: `UseCase spec과 test fixture·double에서 vi.${names[1]}을 쓰지 않습니다. test/doubles의 InMemory·Stub·Recording double과 FixedClock으로 바꾸고 호출 대신 상태를 확인합니다.`,
         });
       },
     };
@@ -241,6 +262,113 @@ const noStyleAssertion = {
   },
 };
 
+function isFireEventCall(node) {
+  const { callee } = node;
+  return (
+    (callee.type === 'Identifier' && callee.name === 'fireEvent') ||
+    getMemberNames(callee)?.[0] === 'fireEvent'
+  );
+}
+
+// RNTL 14와 공용 render 도구에서 Promise를 돌려주는 render. 결과의 rerender·unmount도 Promise다
+const PROMISE_RENDERS_BY_MODULE = new Map([
+  ['@testing-library/react-native', new Set(['render', 'renderHook'])],
+  [RENDER_SCREEN_MODULE, new Set(['renderScreen', 'renderScreenHook'])],
+]);
+const RENDER_RESULT_METHODS = new Set(['rerender', 'unmount']);
+
+function collectPromiseRenders(program) {
+  const names = new Set();
+  for (const statement of program.body) {
+    const promiseRenders = PROMISE_RENDERS_BY_MODULE.get(
+      statement.type === 'ImportDeclaration' ? statement.source.value : null,
+    );
+    if (promiseRenders == null) {
+      continue;
+    }
+    for (const specifier of statement.specifiers) {
+      if (specifier.type === 'ImportSpecifier' && promiseRenders.has(getImportedName(specifier))) {
+        names.add(specifier.local.name);
+      }
+    }
+  }
+  return names;
+}
+
+function getAwaitedFunctionName(init) {
+  return init?.type === 'AwaitExpression' &&
+    init.argument.type === 'CallExpression' &&
+    init.argument.callee.type === 'Identifier'
+    ? init.argument.callee.name
+    : null;
+}
+
+// RNTL 14의 fireEvent·render·rerender·unmount는 act를 기다리는 Promise를 돌려준다. 타입 정보 없는 lint라 문장으로 버린 호출만 본다
+const awaitFireEvent = {
+  meta: { type: 'problem' },
+  create(context) {
+    let promiseRenders = new Set();
+    const renderResults = new Set();
+    const renderResultMethods = new Set();
+
+    function getDiscardedPromiseName(call) {
+      if (isFireEventCall(call)) {
+        return 'fireEvent';
+      }
+      const { callee } = call;
+      if (callee.type === 'Identifier') {
+        return promiseRenders.has(callee.name) || renderResultMethods.has(callee.name)
+          ? callee.name
+          : null;
+      }
+      const names = getMemberNames(callee);
+      return names?.length === 2 &&
+        renderResults.has(names[0]) &&
+        RENDER_RESULT_METHODS.has(names[1])
+        ? names[1]
+        : null;
+    }
+
+    return {
+      Program(program) {
+        promiseRenders = collectPromiseRenders(program);
+      },
+      VariableDeclarator(node) {
+        const renderName = getAwaitedFunctionName(node.init);
+        if (renderName == null || !promiseRenders.has(renderName)) {
+          return;
+        }
+        if (node.id.type === 'Identifier') {
+          renderResults.add(node.id.name);
+          return;
+        }
+        if (node.id.type !== 'ObjectPattern') {
+          return;
+        }
+        for (const property of node.id.properties) {
+          const key = property.type === 'Property' ? getKeyName(property) : null;
+          if (RENDER_RESULT_METHODS.has(key) && property.value.type === 'Identifier') {
+            renderResultMethods.add(property.value.name);
+          }
+        }
+      },
+      ExpressionStatement(node) {
+        if (node.expression.type !== 'CallExpression') {
+          return;
+        }
+        const name = getDiscardedPromiseName(node.expression);
+        if (name == null) {
+          return;
+        }
+        context.report({
+          node,
+          message: `${name} 호출은 Promise를 돌려줍니다. await하고, 답을 기다리느라 끝나지 않는 핸들러만 .catch(() => undefined)와 이유 주석을 붙입니다.`,
+        });
+      },
+    };
+  },
+};
+
 const TEST_FUNCTIONS = new Set(['it', 'test']);
 const GWT_LABEL = /^(Given|When|Then)\b/u;
 const REQUIRED_LABELS = ['When', 'Then'];
@@ -313,10 +441,12 @@ const testGwtComments = {
 
 export default {
   'no-jest-module-mock': noJestModuleMock,
+  'no-vitest-mock': noVitestMock,
   'todo-comment-test-location': todoCommentTestLocation,
   'todo-comment-test-purity': todoCommentTestPurity,
   'test-spy-target': testSpyTarget,
   'no-real-sleep': noRealSleep,
   'no-style-assertion': noStyleAssertion,
   'test-gwt-comments': testGwtComments,
+  'await-fire-event': awaitFireEvent,
 };

@@ -18,7 +18,7 @@ interface PlanTodoSubtitleContext {
 }
 
 /** 검토 카드 제목 아래 한 줄. 보일 것이 없으면 null이다 */
-export function getPlanTodoSubtitle(
+export function findPlanTodoSubtitle(
   todo: Pick<PlanTodoFormValues, 'startDate' | 'endDate' | 'scheduledTime' | 'repeat'>,
   { todayKey, timeFormat, dateFormatContext }: PlanTodoSubtitleContext,
 ): string | null {

@@ -50,7 +50,7 @@ export function isViewingNotificationDestination(
     Object.entries(params).map(([key, value]) => [key, toParamText(value)] as const),
   );
   const pathParams = new Set<string>();
-  const targetPathname = pathname.replace(DYNAMIC_SEGMENT, (_segment, name: string) => {
+  const targetPathname = pathname.replaceAll(DYNAMIC_SEGMENT, (_segment, name: string) => {
     pathParams.add(name);
     return targetParams.get(name) ?? '';
   });
@@ -84,7 +84,7 @@ interface NotificationDestinationContext {
   /** 할 일 목적지를 상세 화면으로 열지 펼친 피드의 상세 pane으로 열지 정한다 */
   windowSizeClass: WindowSizeClass;
   /** 나. 할 일 주인이 내가 아니면 펼친 화면의 목록 pane을 그 친구 피드로 연다 */
-  viewerId?: string;
+  accountId?: string;
   /** 알림을 연 시각(epoch ms). Stack에 남은 날씨 화면을 다시 올려도 열 때마다 센다(`toWeatherHref`) */
   openedAt: number;
 }
@@ -92,7 +92,7 @@ interface NotificationDestinationContext {
 /** 알림을 누르면 열 화면. 목적지는 서버가 고르고 앱은 화면 크기와 보는 사람에 맞춰 경로만 정한다 */
 export function toNotificationDestination(
   target: NotificationTarget,
-  { windowSizeClass, viewerId, openedAt }: NotificationDestinationContext,
+  { windowSizeClass, accountId, openedAt }: NotificationDestinationContext,
 ): NotificationDestination {
   return (
     match(target)
@@ -124,7 +124,7 @@ export function toNotificationDestination(
         kind: 'route',
         href: toTodoDetailRoute(windowSizeClass, {
           todoId,
-          ...toTodoFeed({ ownerId, dateKey }, viewerId),
+          ...toTodoFeed({ ownerId, dateKey }, accountId),
         }),
       }))
       // 댓글 알림은 할 일 상세 한 화면을 그 댓글 위치(`?comment=`)로 연다. 펼친 화면은 피드 pane이다
@@ -133,7 +133,7 @@ export function toNotificationDestination(
         href: toTodoDetailRoute(windowSizeClass, {
           todoId,
           comment: commentId,
-          ...toTodoFeed({ ownerId, dateKey }, viewerId),
+          ...toTodoFeed({ ownerId, dateKey }, accountId),
         }),
       }))
       .with({ kind: 'NUDGE' }, ({ nudgeId }) => ({
@@ -171,9 +171,9 @@ export function toNotificationDestination(
 /** 펼친 화면 목록 pane의 피드. 남의 할 일이면 그 친구 피드, 내 할 일이거나 나를 모르면 내 피드다. */
 function toTodoFeed(
   { ownerId, dateKey }: { ownerId: string | null; dateKey: DateKey | null },
-  viewerId: string | undefined,
+  accountId: string | undefined,
 ) {
-  const isFriendTodo = ownerId != null && viewerId != null && ownerId !== viewerId;
+  const isFriendTodo = ownerId != null && accountId != null && ownerId !== accountId;
   // 경로 값은 없으면 빼야 URL에 실리지 않는다
   return { friendId: isFriendTodo ? ownerId : undefined, date: dateKey ?? undefined };
 }

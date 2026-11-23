@@ -1,5 +1,5 @@
 import { HOUR_MS, MINUTE_MS, SECOND_MS } from "#api/shared/domain/time/time-units";
-import type { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import type { Timezone } from "#api/shared/domain/time/timezone.vo";
 
 import type { NotificationType } from "../../shared/domain/notification-type.constants.js";
 import {
@@ -86,7 +86,7 @@ export interface PushExpiryInput {
   readonly type: NotificationType;
   readonly now: Temporal.Instant;
   // 받는 사람 시간대. 자정과 야간 시작을 이 시간대로 잰다
-  readonly timeZone: TimeZone;
+  readonly timezone: Timezone;
   // 광고성이거나, 야간 수신을 끈 사람에게 가는 야간 예외 아닌 알림이면 야간 전에 사라져야 한다
   readonly expiresBeforeQuietHours: boolean;
   // TODO_REMINDER가 쓸모를 잃는 순간(todoReminderPushEndsAt). 모르면(반복 멈춤 안내·벽시계 없는 옛 행) 종류 기본값을 쓴다
@@ -102,7 +102,7 @@ export type PushExpiry =
  * 종류 기본값에서 할 일 리마인더의 끝·받는 사람 자정·받는 사람 야간 시작 중 이른 것으로 줄인다.
  */
 export function resolvePushExpiry(input: PushExpiryInput): PushExpiry {
-  const { now, timeZone } = input;
+  const { now, timezone } = input;
   const expiryClass = EXPIRY_CLASS_BY_TYPE[input.type];
   const candidates = [now.add({ milliseconds: TTL_MS_BY_EXPIRY_CLASS[expiryClass] })];
 
@@ -112,7 +112,7 @@ export function resolvePushExpiry(input: PushExpiryInput): PushExpiry {
     );
   }
   if (expiryClass === "TODAY_ONLY") {
-    const midnight = nextLocalMidnight(now, timeZone);
+    const midnight = nextLocalMidnight(now, timezone);
     // 현지 자정 1분 전부터는 야간(21~08시)이고 ttl이 0에 가까워 꺼진 기기에 닿지 못하므로 야간 건너뜀으로 본다
     if (now.until(midnight).total("milliseconds") < TODAY_ONLY_MIN_TTL_MS) {
       return { status: "quiet-hours" };
@@ -120,12 +120,12 @@ export function resolvePushExpiry(input: PushExpiryInput): PushExpiry {
     candidates.push(midnight);
   }
   if (input.expiresBeforeQuietHours) {
-    if (isWithinQuietHours({ instant: now, timeZone, window: PUSH_QUIET_HOURS_WINDOW })) {
+    if (isWithinQuietHours({ instant: now, timezone, window: PUSH_QUIET_HOURS_WINDOW })) {
       return { status: "quiet-hours" };
     }
     const quietHoursStart = nextQuietHoursStart({
       instant: now,
-      timeZone,
+      timezone,
       window: PUSH_QUIET_HOURS_WINDOW,
     });
     if (now.until(quietHoursStart).total("milliseconds") < QUIET_HOURS_MIN_TTL_MS) {
@@ -146,12 +146,12 @@ function latest(left: Temporal.Instant, right: Temporal.Instant): Temporal.Insta
 }
 
 // 자정이 없는 날(자정 DST 전환)은 그날의 첫 순간이다
-function nextLocalMidnight(now: Temporal.Instant, timeZone: TimeZone): Temporal.Instant {
+function nextLocalMidnight(now: Temporal.Instant, timezone: Timezone): Temporal.Instant {
   return now
-    .toZonedDateTimeISO(timeZone.value)
+    .toZonedDateTimeISO(timezone.value)
     .toPlainDate()
     .add({ days: 1 })
-    .toZonedDateTime(timeZone.value)
+    .toZonedDateTime(timezone.value)
     .toInstant();
 }
 

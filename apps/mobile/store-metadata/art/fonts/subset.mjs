@@ -6,12 +6,11 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 
 import { SCENES } from '../storyboard.mjs';
 
-const HERE = dirname(fileURLToPath(import.meta.url));
+const HERE = import.meta.dirname;
 const CACHE = join(homedir(), '.cache/aido-store-art/fonts');
 const FONTTOOLS = 'fonttools[woff]==4.60.1';
 
@@ -37,7 +36,7 @@ export function subsetText(role) {
   const copies = Object.values(SCENES).flatMap((scene) =>
     ['ko', 'en'].map((locale) => scene[locale]?.[role] ?? ''),
   );
-  const chars = new Set([...BASE, ...copies.join('').replace(/[[\]\n]/gu, '')]);
+  const chars = new Set([...BASE, ...copies.join('').replaceAll(/[[\]\n]/gu, '')]);
   return [...chars].sort().join('');
 }
 
@@ -58,7 +57,7 @@ async function original({ url, sha256 }) {
   return path;
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (import.meta.main) {
   for (const font of FONTS) {
     const text = subsetText(font.role);
     const textFile = join(HERE, `${font.output.replace('.woff2', '')}.txt`);

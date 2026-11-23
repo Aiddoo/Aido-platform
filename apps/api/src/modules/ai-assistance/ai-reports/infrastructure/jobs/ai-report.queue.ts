@@ -38,8 +38,8 @@ export const AiReportRuntimeJobSchema = z.discriminatedUnion("name", [
     data: z.object({
       userId: z.string().min(1),
       timezone: z.string().min(1),
-      /** 생성 언어 — 없으면 ko (구버전 잡 하위 호환) */
-      locale: z.string().optional(),
+      // 지원 언어가 아니면 processor가 기본 언어로 읽는다
+      locale: z.string(),
       reportType: z.enum(AI_REPORT_TYPES),
     }),
   }),

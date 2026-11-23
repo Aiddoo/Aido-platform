@@ -5,7 +5,7 @@ import type { TodoCategoryRepositoryPort } from "../ports/todo-category.reposito
 import type { TodoCategoryWithCountReadModel } from "../read-models/todo-category-with-count.read-model.js";
 
 interface GetTodoCategoriesDependencies {
-  readonly repository: Pick<TodoCategoryRepositoryPort, "findManyByUserId">;
+  readonly repository: Pick<TodoCategoryRepositoryPort, "listByUserId">;
   readonly cache: Pick<TodoCategoryCachePort, "wrapList">;
 }
 
@@ -19,7 +19,7 @@ export class ListTodoCategoriesUseCase {
   execute(input: { readonly userId: string }): Promise<TodoCategoryWithCountReadModel[]> {
     const userId = UserId.reconstitute(input.userId);
     return this.#dependencies.cache.wrapList(userId, () =>
-      this.#dependencies.repository.findManyByUserId(userId),
+      this.#dependencies.repository.listByUserId(userId),
     );
   }
 }

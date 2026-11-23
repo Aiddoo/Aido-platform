@@ -20,7 +20,7 @@ import type { InputOTPRef } from 'heroui-native';
 import { type PropsWithChildren, useRef } from 'react';
 import { Controller, type FieldError, useForm, useFormState, useWatch } from 'react-hook-form';
 
-import { findInvalidCharacters } from '../domains/invite-code.model';
+import { getInvalidCharacters } from '../domains/invite-code.model';
 import { isInviteCodeFieldError } from '../domains/invite.error';
 import { useInviteParams } from '../hooks/use-invite-params';
 import { useCheckInvitePreviewMutationOptions } from '../queries/invite.mutations';
@@ -52,7 +52,7 @@ export function InviteCodeEntryForm({ children }: PropsWithChildren) {
   const { errors, submitCount, isSubmitting, isValid } = useFormState({ control: form.control });
   const inviteCodeInputRef = useRef<InputOTPRef>(null);
   const draft = useWatch({ control: form.control, name: 'inviteCode' });
-  const invalidCharacters = findInvalidCharacters(draft);
+  const invalidCharacters = getInvalidCharacters(draft);
 
   const formatInvalidCharacterMessage = ({
     kind,

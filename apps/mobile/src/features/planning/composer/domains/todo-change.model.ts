@@ -3,7 +3,7 @@ import {
   TodoRepeatPolicy,
 } from '@src/features/planning/todo/domains/todo-repeat.model';
 import {
-  getScheduledTime,
+  findScheduledTime,
   hasScheduleChanged,
   type TodoEditableFields,
   type TodoFieldChanges,
@@ -22,10 +22,10 @@ export function getTodoUpdateChanges(
   edited: TodoEditValues,
   saved: TodoEditValues,
 ): TodoUpdateChanges {
-  const scheduledTime = getScheduledTime(edited);
+  const scheduledTime = findScheduledTime(edited);
   const isScheduleChanged = hasScheduleChanged(
     { isAllDay: edited.isAllDay, scheduledTime },
-    { isAllDay: saved.isAllDay, scheduledTime: getScheduledTime(saved) },
+    { isAllDay: saved.isAllDay, scheduledTime: findScheduledTime(saved) },
   );
 
   return {

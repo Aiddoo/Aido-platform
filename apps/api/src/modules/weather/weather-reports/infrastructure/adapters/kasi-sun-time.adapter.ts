@@ -4,7 +4,7 @@ import { HttpClient, InjectHttpClient } from "@nestjs/http-client";
 import { requestVendorJson } from "#api/platform/http/request-vendor-json";
 import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
-import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import { Timezone } from "#api/shared/domain/time/timezone.vo";
 import { localDateOf } from "#api/shared/domain/time/zoned-time";
 
 import type {
@@ -39,7 +39,7 @@ export class KasiSunTimeAdapter implements SunTimeProviderPort {
     this.#policy = policies.get(KASI_POLICY);
   }
 
-  async getSunTime(lat: number, lon: number, at: Temporal.Instant): Promise<SunTime | null> {
+  async findSunTime(lat: number, lon: number, at: Temporal.Instant): Promise<SunTime | null> {
     try {
       const apiKey = this.#config.kmaApiKey;
       if (apiKey == null || apiKey === "") {
@@ -52,7 +52,7 @@ export class KasiSunTimeAdapter implements SunTimeProviderPort {
       }
 
       // 천문연구원은 한국 날짜(KST)로 일출·일몰을 준다
-      const locdate = localDateOf(at, TimeZone.SEOUL).toString().replaceAll("-", "");
+      const locdate = localDateOf(at, Timezone.SEOUL).toString().replaceAll("-", "");
 
       const outcome = await this.#policy.execute((signal) =>
         requestVendorJson(this.#http, {
@@ -96,20 +96,20 @@ export class KasiSunTimeAdapter implements SunTimeProviderPort {
     if (!parsed.success) {
       return this.#unavailable("invalid_structure");
     }
-    const data = parsed.data;
+    const sunTimeResponse = parsed.data;
 
-    const resultCode = data.response?.header?.resultCode;
+    const resultCode = sunTimeResponse.response?.header?.resultCode;
     if (resultCode !== "00") {
       return this.#unavailable("provider_result");
     }
 
-    const item = data.response?.body?.items?.item;
-    if (item == null) {
+    const sunTimeEntry = sunTimeResponse.response?.body?.items?.item;
+    if (sunTimeEntry == null) {
       return this.#unavailable("missing_item");
     }
 
-    const sunriseRaw = item.sunrise;
-    const sunsetRaw = item.sunset;
+    const sunriseRaw = sunTimeEntry.sunrise;
+    const sunsetRaw = sunTimeEntry.sunset;
 
     if (!sunriseRaw || !sunsetRaw) {
       return this.#unavailable("missing_time");

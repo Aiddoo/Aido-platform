@@ -1,7 +1,7 @@
+import { MAX_COMPLETION_RATE_PERCENT } from '@src/shared/domains/completion-rate.model';
 import { area, curveMonotoneX, line } from 'd3-shape';
 import { clamp } from 'es-toolkit';
 
-const MAX_COMPLETION_RATE = 100;
 const GUIDE_STEP_RATE = 10;
 /** 가장 낮은·높은 주와 기준선 사이 여유 */
 const GUIDE_PADDING_RATE = 5;
@@ -91,16 +91,16 @@ function getGuideRange(values: readonly number[]): { lower: number; upper: numbe
   const lower = clamp(
     Math.floor((Math.min(...values) - GUIDE_PADDING_RATE) / GUIDE_STEP_RATE) * GUIDE_STEP_RATE,
     0,
-    MAX_COMPLETION_RATE,
+    MAX_COMPLETION_RATE_PERCENT,
   );
   const upper = clamp(
     Math.ceil((Math.max(...values) + GUIDE_PADDING_RATE) / GUIDE_STEP_RATE) * GUIDE_STEP_RATE,
     0,
-    MAX_COMPLETION_RATE,
+    MAX_COMPLETION_RATE_PERCENT,
   );
-  const widenedUpper = Math.min(MAX_COMPLETION_RATE, Math.max(upper, lower + MIN_GUIDE_SPAN_RATE));
+  const widenedUpper = clamp(upper, lower + MIN_GUIDE_SPAN_RATE, MAX_COMPLETION_RATE_PERCENT);
   return {
-    lower: Math.max(0, Math.min(lower, widenedUpper - MIN_GUIDE_SPAN_RATE)),
+    lower: clamp(lower, 0, widenedUpper - MIN_GUIDE_SPAN_RATE),
     upper: widenedUpper,
   };
 }

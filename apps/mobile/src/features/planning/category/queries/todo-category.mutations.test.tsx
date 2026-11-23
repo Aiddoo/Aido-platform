@@ -1,7 +1,7 @@
 import { ErrorCode, HttpStatus } from '@aido/api/errors';
 import '@src/shared/i18n/init';
 import { ApiError } from '@src/core/errors/api-error';
-import { err, ok } from '@src/core/errors/result';
+import { fail, ok } from '@src/core/errors/result';
 import { createTodoDetails } from '@src/features/planning/todo/__tests__/todo.fixtures';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
 import { NetworkError } from '@src/shared/errors/infra-error';
@@ -296,7 +296,7 @@ describe('todo-category.mutations', () => {
         '이름을 바꾸지 못했어요',
         HttpStatus.CONFLICT,
       );
-      const pendingUpdate = createPendingResponse(err(rejection));
+      const pendingUpdate = createPendingResponse(fail(rejection));
       httpClient.patch.mockReturnValue(pendingUpdate.response);
       const result = update(1, { name: '새 이름' });
       await waitFor(() => expect(cached()?.categories[0]?.name).toBe('새 이름'));

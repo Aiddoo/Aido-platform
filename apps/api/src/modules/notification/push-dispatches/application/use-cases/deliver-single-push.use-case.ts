@@ -1,6 +1,6 @@
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
-import { NotificationId } from "../../../shared/domain/notification-id.vo.js";
+import { NotificationId } from "../../../notifications/domain/notification-id.vo.js";
 import { resolveRecipientLocale } from "../../../shared/domain/recipient-locale.domain-service.js";
 import { PushDispatchId } from "../../domain/push-dispatch-id.vo.js";
 import type { ClaimedPushDelivery } from "../ports/push-delivery-claim.repository.port.js";

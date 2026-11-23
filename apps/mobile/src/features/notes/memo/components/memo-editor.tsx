@@ -701,7 +701,7 @@ function useMemoAiParse({
   const push = useSingleTap(router.push);
   const navigation = useNavigation();
   const draftService = useDraftService();
-  const { timeZone } = useDateFormatContext();
+  const { timezone } = useDateFormatContext();
   const [memoId] = useMemoId();
   const categoriesQuery = useQuery(useGetTodoCategoriesQueryOptions());
   const entitlementsQuery = useQuery(useGetEntitlementsQueryOptions());
@@ -712,7 +712,7 @@ function useMemoAiParse({
   const aiConsent = useAiDataSharingConsentGate({ claimRenewalPrompt });
   const isStartingRef = useRef(false);
   const isMountedRef = useRef(false);
-  const defaultCategoryId = TodoCategoryPolicy.getInitialCategoryId(
+  const defaultCategoryId = TodoCategoryPolicy.findInitialCategoryId(
     categoriesQuery.data?.categories ?? [],
     null,
   );
@@ -743,7 +743,7 @@ function useMemoAiParse({
     const sourceUpdatedAt = toEpochMs(savedMemo.updatedAt);
     // 이미 나눈 결과가 기기에 남아 있으면 다시 부르지 않고(차감 없음) 그대로 보여 준다
     const draft = draftService.restore(
-      createMemoPlanDraftKey({ userId: accountId, memoId, timeZone }),
+      createMemoPlanDraftKey({ userId: accountId, memoId, timezone }),
       {
         sourceUpdatedAt,
       },
@@ -826,7 +826,7 @@ function useOpenMemoConvertSheet({
   const todayKey = useTodayKey();
   const openKeyboardSheet = useOpenKeyboardSheet();
   const categoriesQuery = useQuery(useGetTodoCategoriesQueryOptions());
-  const defaultCategoryId = TodoCategoryPolicy.getInitialCategoryId(
+  const defaultCategoryId = TodoCategoryPolicy.findInitialCategoryId(
     categoriesQuery.data?.categories ?? [],
     null,
   );

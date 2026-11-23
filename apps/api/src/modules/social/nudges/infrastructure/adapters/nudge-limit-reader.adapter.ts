@@ -14,14 +14,14 @@ import { NudgeLimitReaderPort } from "../../application/ports/nudge-limit.reader
 export class NudgeLimitReaderAdapter extends NudgeLimitReaderPort {
   readonly #entitlementReader: Pick<
     EntitlementReaderPort,
-    "getFeatureLimit" | "getFeatureLimitInTransaction" | "getFeatureQuotaInTransaction"
+    "findFeatureLimit" | "findFeatureLimitInTransaction" | "getFeatureQuotaInTransaction"
   >;
 
   constructor(
     @Inject(EntitlementReaderPort)
     entitlementReader: Pick<
       EntitlementReaderPort,
-      "getFeatureLimit" | "getFeatureLimitInTransaction" | "getFeatureQuotaInTransaction"
+      "findFeatureLimit" | "findFeatureLimitInTransaction" | "getFeatureQuotaInTransaction"
     >,
   ) {
     super();
@@ -29,11 +29,11 @@ export class NudgeLimitReaderAdapter extends NudgeLimitReaderPort {
   }
 
   readLimit(userId: UserId): Promise<number | null> {
-    return this.#entitlementReader.getFeatureLimit(userId, "NUDGE");
+    return this.#entitlementReader.findFeatureLimit(userId, "NUDGE");
   }
 
   readLimitInTransaction(userId: UserId): Promise<number | null> {
-    return this.#entitlementReader.getFeatureLimitInTransaction(userId, "NUDGE");
+    return this.#entitlementReader.findFeatureLimitInTransaction(userId, "NUDGE");
   }
 
   readFeatureQuotaInTransaction(

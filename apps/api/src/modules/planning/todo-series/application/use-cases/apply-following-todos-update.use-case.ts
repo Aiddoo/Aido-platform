@@ -93,7 +93,7 @@ interface ApplyFollowingTodosUpdateDependencies {
   readonly todoRepository: Pick<TodoRepositoryPort, "findByIdAndUserId" | "countCategoryUsage">;
   readonly occurrenceWriter: Pick<
     TodoOccurrenceWriterPort,
-    "findOccurrencesFrom" | "updateFollowingOccurrences" | "updateOccurrenceTimes"
+    "listOccurrencesFrom" | "updateFollowingOccurrences" | "updateOccurrenceTimes"
   >;
   readonly remapOccurrences: Pick<RemapFollowingOccurrencesUseCase, "execute">;
   readonly seriesRepository: Pick<
@@ -276,7 +276,7 @@ export class ApplyFollowingTodosUpdateUseCase {
     localTime: string | null,
   ): Promise<readonly RescheduledOccurrence[]> {
     const { occurrenceWriter } = this.#dependencies;
-    const rows = await occurrenceWriter.findOccurrencesFrom([target.id], pivot.toString());
+    const rows = await occurrenceWriter.listOccurrencesFrom([target.id], pivot.toString());
     const times = rows
       .filter((row) => !row.completed)
       .map((row) => ({

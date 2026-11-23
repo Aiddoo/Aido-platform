@@ -9,10 +9,9 @@
  */
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join, resolve } from 'node:path';
 
-const WORKSPACE_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const WORKSPACE_DIR = resolve(import.meta.dirname, '..');
 const OUTPUT_ROOT = resolve(WORKSPACE_DIR, '..', 'maestro-output');
 const ENV_FILE = join(WORKSPACE_DIR, '.env.maestro');
 const DEFAULT_ENV = {
@@ -40,7 +39,7 @@ if (process.env.MAESTRO_SECOND_EMAIL) {
   }
 }
 
-const outputDir = join(OUTPUT_ROOT, new Date().toISOString().replace(/[:.]/g, '-'));
+const outputDir = join(OUTPUT_ROOT, new Date().toISOString().replaceAll(/[:.]/g, '-'));
 const result = spawnSync(
   'maestro',
   [

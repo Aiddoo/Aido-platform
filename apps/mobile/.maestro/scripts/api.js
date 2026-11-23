@@ -6,14 +6,14 @@
 const E2E_PREFIX = 'E2E ';
 const POLL_INTERVAL_MS = 300;
 const POLL_TIMEOUT_MS = 15000;
-const BODYLESS_METHODS = ['GET', 'DELETE'];
+const BODYLESS_METHODS = new Set(['GET', 'DELETE']);
 
 // Maestro http는 POST·PUT·PATCH에 본문이 없으면 보내지 않는다
 function requestBody(method, body) {
   if (body !== undefined) {
     return JSON.stringify(body);
   }
-  return BODYLESS_METHODS.includes(method) ? undefined : '{}';
+  return BODYLESS_METHODS.has(method) ? undefined : '{}';
 }
 
 function call(method, path, token, body, allowedStatuses) {
@@ -86,15 +86,15 @@ function signIn(role) {
     subscriptionStatus: () => call('GET', '/v1/auth/me', token).subscriptionStatus,
 
     // 무료 한도(3개)가 기본 카테고리 2개 + 흐름이 만드는 1개라, 지난 실행이 남긴 E2E 카테고리를 먼저 치운다
-    removeE2eCategories: () =>
-      categories()
-        .filter((category) => category.name.startsWith(E2E_PREFIX))
-        .forEach((category) => {
-          todosIn(category.id).forEach((todo) =>
-            call('DELETE', '/v1/todos/' + todo.id, token, undefined, [404]),
-          );
-          call('DELETE', '/v1/todo-categories/' + category.id, token, undefined, [404]);
-        }),
+    removeE2eCategories: () => {
+      const e2eCategories = categories().filter((category) => category.name.startsWith(E2E_PREFIX));
+      for (const category of e2eCategories) {
+        for (const todo of todosIn(category.id)) {
+          call('DELETE', '/v1/todos/' + todo.id, token, undefined, [404]);
+        }
+        call('DELETE', '/v1/todo-categories/' + category.id, token, undefined, [404]);
+      }
+    },
     createCategory: (label) =>
       call('POST', '/v1/todo-categories', token, { name: E2E_PREFIX + label, color: '#FFB3B3' })
         .category,
@@ -128,10 +128,11 @@ function signIn(role) {
     deleteTodo: (todoId) => call('DELETE', '/v1/todos/' + todoId, token, undefined, [404]),
 
     waitForMemo: (text) => poll(() => memosContaining(text)[0] || null, '메모 "' + text + '"'),
-    deleteMemosContaining: (text) =>
-      memosContaining(text).forEach((memo) =>
-        call('DELETE', '/v1/memos/' + memo.id, token, undefined, [404]),
-      ),
+    deleteMemosContaining: (text) => {
+      for (const memo of memosContaining(text)) {
+        call('DELETE', '/v1/memos/' + memo.id, token, undefined, [404]);
+      }
+    },
 
     waitForNotification: (type) =>
       poll(

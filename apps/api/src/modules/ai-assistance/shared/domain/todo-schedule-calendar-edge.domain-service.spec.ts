@@ -12,8 +12,8 @@ const LOS_ANGELES = "America/Los_Angeles";
 const none = { pattern: "NONE" } as const;
 const draft = (overrides: ScheduleDraftInput = {}): ScheduleDraft =>
   createScheduleDraftFixture({ repeat: none, ...overrides });
-const resolveAt = (iso: string, timeZone: string, input: ScheduleDraft) =>
-  resolveTodoSchedule(input, { now: new Date(iso), timeZone });
+const resolveAt = (iso: string, timezone: string, input: ScheduleDraft) =>
+  resolveTodoSchedule(input, { now: new Date(iso), timezone });
 
 const tomorrow = draft({ date: { kind: "OFFSET_DAYS", amount: 1 } });
 

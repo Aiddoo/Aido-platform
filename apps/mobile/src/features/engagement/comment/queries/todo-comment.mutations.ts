@@ -25,7 +25,7 @@ import {
   fetchTodoCommentThreads,
   cancelTodoCommentQueries,
   findCachedTodoComment,
-  findTodoCommentPlacements,
+  getTodoCommentPlacements,
   invalidateTodoCommentCount,
   invalidateTodoComments,
   invalidateTodoCommentThreads,
@@ -210,7 +210,7 @@ export function useDeleteTodoCommentMutationOptions({ todoId }: { todoId: number
       unwrap(await todoCommentApi.deleteComment(todoId, comment.id)),
     onMutate: async ({ comment }) => {
       await cancelTodoCommentQueries(queryClient, { todoId });
-      const placements = findTodoCommentPlacements(queryClient, { todoId, comment });
+      const placements = getTodoCommentPlacements(queryClient, { todoId, comment });
       removeTodoCommentFromCaches(queryClient, { todoId, comment });
       return { placements };
     },

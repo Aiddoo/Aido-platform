@@ -68,7 +68,7 @@ async function registerToken(
 ): Promise<PushTokenReadModel> {
   const device = createRegisteringPushDeviceFixture(registration);
   await new DrizzlePushDeviceRepository(transactionHost).save(device);
-  const records = await new DrizzlePushTokenRepository(transactionHost).findPushTokensByUser({
+  const records = await new DrizzlePushTokenRepository(transactionHost).listPushTokensByUser({
     userId: device.userId,
   });
   const record = records.find((item) => item.deviceId === device.id.value);
@@ -205,7 +205,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
 
     // Then
     expect(invalid).toEqual([]);
-    expect(await f.tokens.findPushTokensByUser({ userId: UserId.reconstitute(f.user.id) })).toEqual(
+    expect(await f.tokens.listPushTokensByUser({ userId: UserId.reconstitute(f.user.id) })).toEqual(
       [
         expect.objectContaining({
           id: f.token.id,
@@ -231,7 +231,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     // Then
     expect(invalid).toEqual([{ userId: UserId.reconstitute(f.user.id), token: f.token.token }]);
     expect(
-      await f.tokens.findPushTokensByUser({
+      await f.tokens.listPushTokensByUser({
         userId: UserId.reconstitute(f.user.id),
         activeOnly: true,
       }),
@@ -262,7 +262,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     // Then
     expect(result.count).toBe(0);
     expect(
-      await f.tokens.findPushTokensByUser({
+      await f.tokens.listPushTokensByUser({
         userId: UserId.reconstitute(f.user.id),
         activeOnly: true,
       }),
@@ -280,7 +280,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     expect(invalid).toEqual([]);
     expect((await readAttempt(f.ticketId)).status).toBe("FAILED");
     expect(
-      await f.tokens.findPushTokensByUser({
+      await f.tokens.listPushTokensByUser({
         userId: UserId.reconstitute(f.user.id),
         activeOnly: true,
       }),
@@ -324,7 +324,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     const recent = await fixture("recent");
 
     // When
-    const pending = await old.receipts.findPendingTicketIds({
+    const pending = await old.receipts.listPendingTicketIds({
       channel: "EXPO",
       window: pushReceiptCheckWindow(AT_INSTANT, EXPO_PUSH_CHANNEL_CONFIG.timing.receipt),
       limit: 1,
@@ -345,7 +345,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     const window = pushReceiptCheckWindow(AT_INSTANT, EXPO_PUSH_CHANNEL_CONFIG.timing.receipt);
 
     // When
-    const pending = await expo.receipts.findPendingTicketIds({
+    const pending = await expo.receipts.listPendingTicketIds({
       channel: "EXPO",
       window,
       limit: 900,
@@ -372,7 +372,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     });
 
     // When
-    const pending = await waiting.receipts.findPendingTicketIds({
+    const pending = await waiting.receipts.listPendingTicketIds({
       channel: "EXPO",
       window: pushReceiptCheckWindow(AT_INSTANT, EXPO_PUSH_CHANNEL_CONFIG.timing.receipt),
       limit: 900,
@@ -430,7 +430,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
       results: [],
       checkedAt: AT_INSTANT,
     });
-    const pending = await stuck.receipts.findPendingTicketIds({
+    const pending = await stuck.receipts.listPendingTicketIds({
       channel: "EXPO",
       window: pushReceiptCheckWindow(AT_INSTANT, EXPO_PUSH_CHANNEL_CONFIG.timing.receipt),
       limit: 1,
@@ -570,7 +570,7 @@ describe("receipt 정합성 (실제 PostgreSQL)", () => {
     expect.soft(requests).toEqual([[f.ticketId], [f.ticketId]]);
     expect
       .soft(
-        await f.tokens.findPushTokensByUser({
+        await f.tokens.listPushTokensByUser({
           userId: UserId.reconstitute(f.user.id),
           activeOnly: true,
         }),

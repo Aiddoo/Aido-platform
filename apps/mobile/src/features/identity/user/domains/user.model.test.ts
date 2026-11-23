@@ -52,25 +52,6 @@ describe('isAdmin', () => {
   });
 });
 
-describe('hasPremiumAccess', () => {
-  it.each([
-    ['USER', false, false],
-    ['USER', true, true],
-    ['ADMIN', false, true],
-    ['ADMIN', true, true],
-  ] as const)('역할 %s, 서버 isPremium %s면 결제 사용자는 %s다', (role, isPremium, expected) => {
-    // Given
-    const user = createUser({ role, isPremium });
-
-    // When
-    const result = UserPolicy.hasPremiumAccess(user);
-
-    // Then
-    // 서버의 isPremium은 ADMIN을 반영하지 않는다
-    expect(result).toBe(expected);
-  });
-});
-
 describe('hasEntitlementChanged', () => {
   it('역할이 바뀌면 true를 반환한다', () => {
     // Given

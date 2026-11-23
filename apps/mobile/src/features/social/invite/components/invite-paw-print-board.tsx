@@ -444,7 +444,7 @@ function WaitingPawPrint() {
 function InviteProgressMessage() {
   const { t } = useTranslation('invite');
   const { data: myInvite } = useSuspenseQuery(useGetInviteQueryOptions());
-  const remaining = InvitePolicy.getRemainingToNextMilestone(myInvite);
+  const remaining = InvitePolicy.findRemainingToNextMilestone(myInvite);
 
   return match(InvitePolicy.getProgress(myInvite))
     .with('not-started', () => (

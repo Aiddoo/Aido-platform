@@ -85,7 +85,9 @@ export class VoiceRecordingIntakeSession {
   discard = (): void => {
     const { accountId, draftId, recordingRepository, discard } = this.#deps;
     this.#hasDiscarded = true;
-    this.#recordings.forEach(({ fileName }) => recordingRepository.remove(accountId, fileName));
+    for (const { fileName } of this.#recordings) {
+      recordingRepository.remove(accountId, fileName);
+    }
     discard(accountId, draftId);
   };
 

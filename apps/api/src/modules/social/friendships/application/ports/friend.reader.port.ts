@@ -33,7 +33,7 @@ export abstract class FriendReaderPort {
   abstract countReceivedRequests(userId: UserId): Promise<number>;
   abstract countSentRequests(userId: UserId): Promise<number>;
   // userIds 순서대로 viewer와 각 사람 사이 두 방향 관계를 준다
-  abstract findRelationsWith(
+  abstract listRelationsWith(
     viewerId: UserId,
     userIds: readonly UserId[],
   ): Promise<FriendRelationReadModel[]>;

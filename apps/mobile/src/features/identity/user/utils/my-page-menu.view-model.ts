@@ -3,18 +3,18 @@ const STANDALONE_PATHNAMES = ['/friends/invite'];
 
 // 경로가 겹치지 않지만 프로필 화면에서 들어가는 화면. 왼쪽에서 프로필 카드를 선택 상태로 둔다
 const PROFILE_PATHNAME = '/settings/profile';
-const PROFILE_CHILD_PATHNAMES = [
+const PROFILE_CHILD_PATHNAMES: ReadonlySet<string> = new Set([
   '/settings/edit-name',
   '/settings/change-password',
   '/settings/linked-accounts',
-];
+]);
 
 function isSameOrNestedPathname(currentPathname: string, targetPathname: string): boolean {
   return currentPathname === targetPathname || currentPathname.startsWith(`${targetPathname}/`);
 }
 
 export function isMyPageMenuItemSelected(currentPathname: string, targetPathname: string): boolean {
-  if (targetPathname === PROFILE_PATHNAME && PROFILE_CHILD_PATHNAMES.includes(currentPathname)) {
+  if (targetPathname === PROFILE_PATHNAME && PROFILE_CHILD_PATHNAMES.has(currentPathname)) {
     return true;
   }
 

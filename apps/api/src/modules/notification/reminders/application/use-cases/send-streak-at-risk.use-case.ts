@@ -1,9 +1,11 @@
+import { isAllCompleted } from "@aido/api/vocabulary";
+
 import { computeEffectiveStreak } from "#api/modules/identity/user-preferences/identity-user-preferences.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
-  NotificationHistoryReader,
+  NotificationHistoryReaderPort,
   PublishNotificationBatchUseCase,
 } from "../../../notifications/notification-notifications.public.js";
 import { createStreakAtRiskNotificationMessage } from "../../../shared/application/messages/scheduler-notification.messages.js";
@@ -23,9 +25,12 @@ import { ReminderLogEvent } from "../reminders.log-events.js";
  * 고정 시간(20:15) 전용 — 야간(21:00) 시작 전 마지막 넛지.
  */
 interface StreakAtRiskStrategyDependencies {
-  readonly reader: Pick<ReEngagementReaderPort, "findStreakAtRiskUsers">;
+  readonly reader: Pick<ReEngagementReaderPort, "listStreakAtRiskUsers">;
   readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
-  readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
+  readonly notificationHistoryReader: Pick<
+    NotificationHistoryReaderPort,
+    "listAlreadyNotifiedUserIds"
+  >;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 
@@ -40,7 +45,7 @@ export class SendStreakAtRiskUseCase implements TimezoneReminderStrategyPort {
     const { timezones, today, tomorrow } = timezoneContext;
 
     // 스트릭 3일+ 유저 중 오늘 미완료 할일이 있는 유저 조회
-    const users = await this.#dependencies.reader.findStreakAtRiskUsers({
+    const users = await this.#dependencies.reader.listStreakAtRiskUsers({
       timezones,
       today,
       tomorrow,
@@ -62,7 +67,7 @@ export class SendStreakAtRiskUseCase implements TimezoneReminderStrategyPort {
 
     // 중복 방지
     const alreadyNotified =
-      await this.#dependencies.notificationHistoryReader.findAlreadyNotifiedUserIds({
+      await this.#dependencies.notificationHistoryReader.listAlreadyNotifiedUserIds({
         userIds: atRiskUsers.map((u) => UserId.reconstitute(u.id)),
         type: "STREAK_AT_RISK",
         notificationDate: today,
@@ -114,7 +119,7 @@ function toAtRiskUser(user: UserWithTodosAndStreakReadModel, today: Temporal.Pla
   const total = user.todos.length;
   const completed = user.todos.filter((t) => t.completed).length;
 
-  if (completed === total) {
+  if (isAllCompleted(completed, total)) {
     return null;
   }
 

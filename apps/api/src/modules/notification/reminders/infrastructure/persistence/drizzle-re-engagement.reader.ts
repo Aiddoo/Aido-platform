@@ -66,7 +66,7 @@ export class DrizzleReEngagementReader implements ReEngagementReaderPort {
     this.#clock = clock;
   }
 
-  findWinbackUsers(params: InactiveWindowParams): Promise<WinbackUserReadModel[]> {
+  listWinbackUsers(params: InactiveWindowParams): Promise<WinbackUserReadModel[]> {
     const { timezones, inactiveSince, inactiveUntil } = params;
     const recipients = userRecipients();
     const preference = userDeliveryPreference();
@@ -88,7 +88,7 @@ export class DrizzleReEngagementReader implements ReEngagementReaderPort {
       );
   }
 
-  findOnboardingCandidates(params: {
+  listOnboardingCandidates(params: {
     timezones: readonly string[];
     createdSince: Temporal.Instant;
   }): Promise<OnboardingCandidateReadModel[]> {
@@ -117,7 +117,7 @@ export class DrizzleReEngagementReader implements ReEngagementReaderPort {
     return this.#db.select({ userId: counts.userId, count: counts.count }).from(counts);
   }
 
-  findActiveUsersInTimezones(timezones: readonly string[]): Promise<ActiveUserReadModel[]> {
+  listActiveUsersInTimezones(timezones: readonly string[]): Promise<ActiveUserReadModel[]> {
     const recipients = userRecipients();
     const preference = userDeliveryPreference();
     return this.#db
@@ -133,7 +133,7 @@ export class DrizzleReEngagementReader implements ReEngagementReaderPort {
       );
   }
 
-  async findNudgeSuggestFollows(params: {
+  async listNudgeSuggestFollows(params: {
     candidateIds: readonly UserId[];
     activeSince: Temporal.Instant;
     activeUntil: Temporal.Instant;
@@ -185,7 +185,7 @@ export class DrizzleReEngagementReader implements ReEngagementReaderPort {
     }));
   }
 
-  async findSocialDigestCandidates(
+  async listSocialDigestCandidates(
     params: SocialDigestCandidateParams,
   ): Promise<SocialDigestCandidateReadModel[]> {
     const { timezones, today, tomorrow, recipientUserIds } = params;
@@ -210,14 +210,14 @@ export class DrizzleReEngagementReader implements ReEngagementReaderPort {
     return rows.map(({ id, completions }) => ({ id, todos: toTodoCompletions(completions) }));
   }
 
-  findAcceptedFollows(candidateIds: readonly UserId[]): Promise<FollowPairReadModel[]> {
+  listAcceptedFollows(candidateIds: readonly UserId[]): Promise<FollowPairReadModel[]> {
     const pairs = acceptedFriendshipsOf(candidateIds.map((candidateId) => candidateId.value));
     return this.#db
       .select({ followerId: pairs.followerId, followingId: pairs.followingId })
       .from(pairs);
   }
 
-  async findFriendsWithTodayTodos(params: {
+  async listFriendsWithTodayTodos(params: {
     friendIds: readonly UserId[];
     today: Temporal.PlainDate;
     tomorrow: Temporal.PlainDate;
@@ -250,7 +250,7 @@ export class DrizzleReEngagementReader implements ReEngagementReaderPort {
     }));
   }
 
-  async findStreakAtRiskUsers(
+  async listStreakAtRiskUsers(
     params: TodayRangeParams,
   ): Promise<UserWithTodosAndStreakReadModel[]> {
     const { timezones, today, tomorrow } = params;

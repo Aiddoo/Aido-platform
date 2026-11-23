@@ -1,6 +1,6 @@
 import type { InviteConfigPort } from "#api/modules/social/invites/social-invites.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
-import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import { Timezone } from "#api/shared/domain/time/timezone.vo";
 
 import {
   hasOneActiveDayLeft,
@@ -49,7 +49,7 @@ function toReminder(
   }
   const sendAt = nextQualifyReminderAt({
     now,
-    timeZone: TimeZone.reconstitute(candidate.timezone),
+    timezone: Timezone.reconstitute(candidate.timezone),
   });
   // 보낼 시각에 이미 마감됐다면 "하루만 더"가 맞지 않는다
   if (Temporal.Instant.compare(sendAt, candidate.expiresAt) >= 0) {

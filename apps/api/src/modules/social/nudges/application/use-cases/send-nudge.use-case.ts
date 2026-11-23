@@ -95,7 +95,7 @@ export class SendNudgeUseCase {
       todoId: TodoId.reconstitute(command.todoId),
       message,
       requestedAt,
-      window: dailySendWindowAt({ now: requestedAt, timeZone: command.timezone }),
+      window: dailySendWindowAt({ now: requestedAt, timezone: command.timezone }),
     };
 
     const nudge = await unitOfWork.run(() => this.#send(request));

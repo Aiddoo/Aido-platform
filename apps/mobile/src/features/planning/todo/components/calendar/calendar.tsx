@@ -220,11 +220,11 @@ interface WeekRowProps extends CalendarPageProps {
 }
 
 function WeekRow({ weekKey, selectedDateKey, todayKey, completions, onSelect }: WeekRowProps) {
-  const { locale, timeZone } = useDateFormatContext();
+  const { locale, timezone } = useDateFormatContext();
   // 주·언어가 같으면 칸 글자와 요일을 다시 만들지 않는다. 날짜를 골라도 Intl을 부르지 않는다
   const days = useMemo(
-    () => getFeedWeekCells(weekKey, { locale, timeZone }),
-    [weekKey, locale, timeZone],
+    () => getFeedWeekCells(weekKey, { locale, timezone }),
+    [weekKey, locale, timezone],
   );
 
   return (
@@ -248,11 +248,11 @@ interface MonthGridProps extends CalendarPageProps {
 }
 
 function MonthGrid({ monthKey, selectedDateKey, todayKey, completions, onSelect }: MonthGridProps) {
-  const { locale, timeZone } = useDateFormatContext();
+  const { locale, timezone } = useDateFormatContext();
   // 다시 만들지 않는 이유는 WeekRow의 days와 같다
   const weeks = useMemo(
-    () => getFeedMonthWeeks(monthKey, { locale, timeZone }),
-    [monthKey, locale, timeZone],
+    () => getFeedMonthWeeks(monthKey, { locale, timezone }),
+    [monthKey, locale, timezone],
   );
 
   return (

@@ -121,14 +121,14 @@ export class InMemoryPushTokenRepository extends PushTokenRepositoryPort {
     return existing.isActive;
   }
 
-  async findPushTokensByUser(params: FindPushTokensParams): Promise<PushTokenReadModel[]> {
+  async listPushTokensByUser(params: FindPushTokensParams): Promise<PushTokenReadModel[]> {
     return [...this.#tokens.values()]
       .filter((row) => row.userId === params.userId.value && (!params.activeOnly || row.isActive))
       .toSorted(compareRecentFirst)
       .map(toRecord);
   }
 
-  async findActivePushTokensByUsers(users: readonly UserId[]): Promise<PushTokenReadModel[]> {
+  async listActivePushTokensByUsers(users: readonly UserId[]): Promise<PushTokenReadModel[]> {
     const userIds = users.map((user) => user.value);
     return [...this.#tokens.values()]
       .filter((row) => userIds.includes(row.userId) && row.isActive)

@@ -12,25 +12,25 @@ import type { PropsWithChildren } from 'react';
 import { LocalDateProvider, useLocalDate } from './local-date-provider';
 
 interface FakeDeviceCalendar {
-  timeZone: string;
+  timezone: string;
 }
 
-const PROCESS_TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
+const PROCESS_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 describe('앱 로컬 날짜 Provider', () => {
   setupFakeTimersPerTest();
 
   async function setup(
-    device: FakeDeviceCalendar = { timeZone: PROCESS_TIME_ZONE },
+    device: FakeDeviceCalendar = { timezone: PROCESS_TIMEZONE },
     { notifiesCalendarChange = true }: { notifiesCalendarChange?: boolean } = {},
   ) {
     const analytics = createAnalyticsStub();
     const errorReporter = createErrorReporterStub();
     const appLifecycle = createAppLifecycleGatewayStub();
     // Android처럼 시간대만 바뀌면 달력 변경 신호가 없어 처음 받은 달력 객체를 계속 돌려준다
-    const unchangedCalendar = { timeZone: device.timeZone };
+    const unchangedCalendar = { timeZone: device.timezone };
     const useDeviceCalendar = notifiesCalendarChange
-      ? () => ({ timeZone: device.timeZone })
+      ? () => ({ timeZone: device.timezone })
       : () => unchangedCalendar;
 
     const di = createTestDi({ ports: { analytics, appLifecycle, errorReporter } });
@@ -39,7 +39,7 @@ describe('앱 로컬 날짜 Provider', () => {
       <StaticDIProvider container={di}>
         <LocalDateProvider
           useDeviceCalendar={useDeviceCalendar}
-          readDeviceTimeZone={() => device.timeZone}
+          readDeviceTimezone={() => device.timezone}
         >
           {children}
         </LocalDateProvider>
@@ -104,17 +104,17 @@ describe('앱 로컬 날짜 Provider', () => {
   it('날짜가 같아도 기기 시간대가 바뀌면 현재 상태를 갱신한다', async () => {
     // Given
     jest.setSystemTime(new Date('2026-07-14T00:00:00.000Z'));
-    const device: FakeDeviceCalendar = { timeZone: 'Asia/Seoul' };
+    const device: FakeDeviceCalendar = { timezone: 'Asia/Seoul' };
     const { result, analytics, rerender } = await setup(device);
     const previousDate = result.current.currentLocalDate;
 
     // When
-    device.timeZone = 'Asia/Tokyo';
+    device.timezone = 'Asia/Tokyo';
     await rerender({});
 
     // Then
     expect(result.current.currentLocalDateKey).toBe('2026-07-14');
-    expect(result.current.currentTimeZone).toBe('Asia/Tokyo');
+    expect(result.current.currentTimezone).toBe('Asia/Tokyo');
     expect(result.current.currentLocalDate).not.toBe(previousDate);
     expect(analytics.trackEvent).not.toHaveBeenCalled();
   });
@@ -123,19 +123,19 @@ describe('앱 로컬 날짜 Provider', () => {
     // Given
     // 서울 11-18 09:00이자 뉴욕 11-17 19:00인 순간
     jest.setSystemTime(new Date('2026-11-18T00:00:00.000Z'));
-    const device: FakeDeviceCalendar = { timeZone: 'Asia/Seoul' };
+    const device: FakeDeviceCalendar = { timezone: 'Asia/Seoul' };
     const { result, appLifecycle } = await setup(device, { notifiesCalendarChange: false });
     expect(result.current.currentLocalDateKey).toBe('2026-11-18');
 
     // When
     await act(() => {
       appLifecycle.emit('background');
-      device.timeZone = 'America/New_York';
+      device.timezone = 'America/New_York';
       appLifecycle.emit('active');
     });
 
     // Then
-    expect(result.current.currentTimeZone).toBe('America/New_York');
+    expect(result.current.currentTimezone).toBe('America/New_York');
     expect(result.current.currentLocalDateKey).toBe('2026-11-17');
   });
 
@@ -143,9 +143,9 @@ describe('앱 로컬 날짜 Provider', () => {
     // Given
     // 서울 11-18 23:59:59.9. 이때 뉴욕은 11-18 09:59:59.9다
     jest.setSystemTime(new Date('2026-11-18T14:59:59.900Z'));
-    const device: FakeDeviceCalendar = { timeZone: 'Asia/Seoul' };
+    const device: FakeDeviceCalendar = { timezone: 'Asia/Seoul' };
     const { result } = await setup(device, { notifiesCalendarChange: false });
-    device.timeZone = 'America/New_York';
+    device.timezone = 'America/New_York';
 
     // When
     await act(() => {
@@ -153,7 +153,7 @@ describe('앱 로컬 날짜 Provider', () => {
     });
 
     // Then
-    expect(result.current.currentTimeZone).toBe('America/New_York');
+    expect(result.current.currentTimezone).toBe('America/New_York');
     expect(result.current.currentLocalDateKey).toBe('2026-11-18');
   });
 

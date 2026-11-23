@@ -18,10 +18,12 @@ const reportDto = aiReportResponseSchema.parse({
       completionRate: 75,
       prevCompletionRate: null,
       streakDays: 4,
+      perfectDays: 1,
     },
     categoryBreakdown: [{ name: '업무', color: '#FF6B6B', total: 10, completed: 8, rate: 80 }],
     dayPatterns: [{ day: 'MON', total: 6, completed: 5, rate: 83 }],
     timePatterns: [{ hour: 9, count: 5 }],
+    peakHour: 9,
     aiSummary: '꾸준했어요',
     aiTips: ['아침에 몰아 하세요'],
     hasActivity: true,
@@ -43,7 +45,21 @@ describe('toAiReport', () => {
       generatedAt: '2026-04-01T00:00:00.000Z',
       dailyCompletions: [{ date: '2026-03-01', total: 2, completed: 1 }],
       aiContentSource: 'TEMPLATE',
+      stats: { perfectDays: 1 },
+      peakHour: 9,
     });
+  });
+
+  it('날마다 기록이 없는 1.16.0 전 리포트는 완벽한 날·주로 끝낸 시간이 없는 리포트로 읽는다', () => {
+    // Given
+    const dto = { ...reportDto, stats: { ...reportDto.stats, perfectDays: null }, peakHour: null };
+
+    // When
+    const report = toAiReport(dto);
+
+    // Then
+    expect(report.stats.perfectDays).toBeNull();
+    expect(report.peakHour).toBeNull();
   });
 });
 

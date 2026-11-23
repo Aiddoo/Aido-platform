@@ -1,15 +1,10 @@
-import { createParentTodo } from '@src/features/planning/todo/__tests__/sub-todo.fixtures';
 import { toInstant } from '@src/shared/date/instant';
 
 import {
   createNudgeInteraction,
   createNudgeThanksPreview,
 } from '../__tests__/nudge-interaction.fixtures';
-import {
-  NudgeInteractionPolicy,
-  NudgeThanksPreviewPolicy,
-  TodoThanksPolicy,
-} from './nudge-interaction.model';
+import { NudgeInteractionPolicy, NudgeThanksPreviewPolicy } from './nudge-interaction.model';
 
 describe('getNudgeInteractionStatus', () => {
   it.each([
@@ -81,27 +76,6 @@ describe('hasThankableRecipients', () => {
 
       // Then
       expect(hasThankable).toBe(expected);
-    },
-  );
-});
-
-describe('canThankTodo', () => {
-  it.each([
-    [true, true, 'PUBLIC' as const, true],
-    [false, true, 'PUBLIC' as const, false],
-    [true, false, 'PUBLIC' as const, false],
-    [true, true, 'PRIVATE' as const, false],
-  ])(
-    '수정 권한 %s, 완료 %s, 공개 범위 %s에 맞게 감사를 허용한다',
-    (canEditTodo, completed, visibility, expected) => {
-      // Given
-      const todo = createParentTodo({ completed, visibility });
-
-      // When
-      const isThankable = TodoThanksPolicy.canThankTodo(todo, { canEditTodo });
-
-      // Then
-      expect(isThankable).toBe(expected);
     },
   );
 });

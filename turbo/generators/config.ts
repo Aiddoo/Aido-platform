@@ -154,7 +154,7 @@ function appendTableToContextSchema(schemaPath: string, rendered: string): strin
     const replacement = `import { ${merged.join(', ')} } from "${from}";`;
     next = `${next.slice(0, existing.index)}${replacement}${next.slice(existing.index + existing[0].length)}`;
   }
-  const table = rendered.replace(IMPORT_BLOCK, '').trim();
+  const table = rendered.replaceAll(IMPORT_BLOCK, '').trim();
   writeFileSync(schemaPath, `${next.trimEnd()}\n\n${table}\n`);
   return `${schemaPath}에 테이블을 더했다`;
 }

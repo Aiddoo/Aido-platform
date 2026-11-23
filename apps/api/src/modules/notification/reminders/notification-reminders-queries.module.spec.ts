@@ -4,7 +4,6 @@ import { z } from "zod";
 
 import { PreferenceEntitlementPort } from "#api/modules/identity/user-preferences/application/ports/preference-entitlement.port";
 import { ReminderScheduleEnqueuerPort } from "#api/modules/identity/user-preferences/application/ports/reminder-schedule-enqueuer.port";
-import { ReminderTimezoneCachePort as PreferenceReminderTimezoneCachePort } from "#api/modules/identity/user-preferences/application/ports/reminder-timezone-cache.port";
 import { TodoTimezoneRebaseEnqueuerPort } from "#api/modules/identity/user-preferences/application/ports/todo-timezone-rebase-enqueuer.port";
 import { UserPreferenceRepositoryPort } from "#api/modules/identity/user-preferences/application/ports/user-preference.repository.port";
 import { UserSettingsCachePort } from "#api/modules/identity/user-preferences/application/ports/user-settings-cache.port";
@@ -66,7 +65,6 @@ async function createFixture() {
       { provide: MutationLockPort, useValue: settings.mutationLock },
       { provide: UserSettingsCachePort, useValue: settings.cache },
       { provide: PreferenceEntitlementPort, useValue: settings.entitlement },
-      { provide: PreferenceReminderTimezoneCachePort, useExisting: ReminderTimezoneCachePort },
       { provide: ReminderScheduleEnqueuerPort, useValue: settings.reminderEnqueuer },
       { provide: TodoTimezoneRebaseEnqueuerPort, useValue: settings.todoTimezoneRebase },
       { provide: UnitOfWorkPort, useValue: settings.unitOfWork },

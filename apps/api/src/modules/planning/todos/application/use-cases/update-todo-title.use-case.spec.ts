@@ -1,5 +1,4 @@
 import { ErrorCode } from "@aido/api/errors";
-import { vi } from "vitest";
 
 import {
   createPlanningTodoFixture,
@@ -16,10 +15,6 @@ describe("할 일 제목 수정", () => {
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
     useCase = new UpdateTodoTitleUseCase(fixture);
   });
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it("제목을 저장하며 일정과 하위 항목을 보존하고 변경 이벤트를 발행한다", async () => {
     // Given
     const before = snapshotTodoRecord(fixture.records.get(1));

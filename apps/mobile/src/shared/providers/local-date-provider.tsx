@@ -30,7 +30,7 @@ interface LocalDateProviderProps extends PropsWithChildren {
   /** 기기 달력. 시간대·달력 설정이 바뀌었다고 OS가 알릴 때마다 새 객체를 돌려준다. 다시 읽을 신호로만 쓴다 */
   useDeviceCalendar?: () => SystemCalendar;
   /** 지금 기기 시간대. 요청 헤더·위젯과 같은 값을 다시 읽을 때마다 새로 읽는다 */
-  readDeviceTimeZone?: () => string;
+  readDeviceTimezone?: () => string;
 }
 
 /**
@@ -40,17 +40,17 @@ interface LocalDateProviderProps extends PropsWithChildren {
 export function LocalDateProvider({
   children,
   useDeviceCalendar = useSystemCalendar,
-  readDeviceTimeZone = getDeviceTimezone,
+  readDeviceTimezone = getDeviceTimezone,
 }: LocalDateProviderProps) {
   const analytics = useAnalytics();
   const errorReporter = useErrorReporter();
   const appLifecycle = useAppLifecycle();
   const deviceCalendar = useDeviceCalendar();
   const [localDateState, setLocalDateState] = useState(() =>
-    createLocalDateState(getNowInstant(), readDeviceTimeZone()),
+    createLocalDateState(getNowInstant(), readDeviceTimezone()),
   );
   const currentLocalDateStateRef = useRef(localDateState);
-  const { currentTimeZone } = localDateState;
+  const { currentTimezone } = localDateState;
 
   const addBreadcrumbSafely = useCallback(
     (breadcrumb: Parameters<typeof errorReporter.addBreadcrumb>[0]) => {
@@ -89,7 +89,7 @@ export function LocalDateProvider({
 
   const reconcileCurrentLocalDate = useCallback(
     (trigger: LocalDateChangeTrigger) => {
-      const nextLocalDateState = createLocalDateState(getNowInstant(), readDeviceTimeZone());
+      const nextLocalDateState = createLocalDateState(getNowInstant(), readDeviceTimezone());
       if (isSameLocalDateState(currentLocalDateStateRef.current, nextLocalDateState)) {
         return;
       }
@@ -108,15 +108,15 @@ export function LocalDateProvider({
           category: 'lifecycle',
           message: 'local time zone changed',
           data: {
-            previousTimeZone: previousState.currentTimeZone,
-            nextTimeZone: nextLocalDateState.currentTimeZone,
+            previousTimeZone: previousState.currentTimezone,
+            nextTimeZone: nextLocalDateState.currentTimezone,
             utcOffsetMinutes: nextLocalDateState.currentUtcOffsetMinutes,
             trigger,
           },
         });
       }
     },
-    [addBreadcrumbSafely, readDeviceTimeZone, recordLocalDateChange],
+    [addBreadcrumbSafely, readDeviceTimezone, recordLocalDateChange],
   );
 
   useEffect(() => {
@@ -141,7 +141,7 @@ export function LocalDateProvider({
           reconcileCurrentLocalDate('midnight_timer');
           scheduleLocalMidnightTimer();
         },
-        millisecondsUntilNextLocalMidnight(getNowInstant(), currentTimeZone),
+        millisecondsUntilNextLocalMidnight(getNowInstant(), currentTimezone),
       );
     };
 
@@ -163,7 +163,7 @@ export function LocalDateProvider({
       clearLocalMidnightTimer();
       unsubscribe();
     };
-  }, [appLifecycle, reconcileCurrentLocalDate, currentTimeZone]);
+  }, [appLifecycle, reconcileCurrentLocalDate, currentTimezone]);
 
   // 첫 렌더의 재평가는 같은 상태라 무시된다.
   useEffect(() => {

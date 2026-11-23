@@ -14,14 +14,14 @@ import { CheerLimitReaderPort } from "../../application/ports/cheer-limit.reader
 export class CheerLimitReaderAdapter extends CheerLimitReaderPort {
   readonly #entitlementReader: Pick<
     EntitlementReaderPort,
-    "getFeatureLimit" | "getFeatureLimitInTransaction" | "getFeatureQuotaInTransaction"
+    "findFeatureLimit" | "findFeatureLimitInTransaction" | "getFeatureQuotaInTransaction"
   >;
 
   constructor(
     @Inject(EntitlementReaderPort)
     entitlementReader: Pick<
       EntitlementReaderPort,
-      "getFeatureLimit" | "getFeatureLimitInTransaction" | "getFeatureQuotaInTransaction"
+      "findFeatureLimit" | "findFeatureLimitInTransaction" | "getFeatureQuotaInTransaction"
     >,
   ) {
     super();
@@ -29,11 +29,11 @@ export class CheerLimitReaderAdapter extends CheerLimitReaderPort {
   }
 
   readLimit(userId: UserId): Promise<number | null> {
-    return this.#entitlementReader.getFeatureLimit(userId, "CHEER");
+    return this.#entitlementReader.findFeatureLimit(userId, "CHEER");
   }
 
   readLimitInTransaction(userId: UserId): Promise<number | null> {
-    return this.#entitlementReader.getFeatureLimitInTransaction(userId, "CHEER");
+    return this.#entitlementReader.findFeatureLimitInTransaction(userId, "CHEER");
   }
 
   readFeatureQuotaInTransaction(

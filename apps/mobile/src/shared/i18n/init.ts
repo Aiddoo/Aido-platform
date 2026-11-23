@@ -25,5 +25,4 @@ i18n.use(initReactI18next).init({
     // React가 XSS를 방지하므로 이스케이프 불필요
     escapeValue: false,
   },
-  returnNull: false,
 });

@@ -34,7 +34,7 @@ interface Dependencies {
   storage: EnumerableSyncStorage;
   logger: Pick<AppLogger, 'warn'>;
   /** 옛 초안의 날짜를 읽을 시간대. 시스템 설정 변경이 반영되도록 읽을 때마다 부른다. 옛 초안 읽기와 함께 2026-12-11 이후 지운다(compatibility.md) */
-  getTimeZone: () => string;
+  getTimezone: () => string;
 }
 
 interface PendingSave {
@@ -52,13 +52,17 @@ function createVoiceNoteDraftKey(accountId: string, draftId: string) {
 export function createVoiceNoteDraftRepository({
   storage,
   logger,
-  getTimeZone,
+  getTimezone,
 }: Dependencies): VoiceNoteDraftRepository {
   const pendingSaves = new Map<string, PendingSave>();
   const listeners = new Set<() => void>();
   let snapshot: { accountId: string; notes: readonly VoiceNote[] } | null = null;
 
-  const notifyListeners = () => listeners.forEach((listener) => listener());
+  const notifyListeners = () => {
+    for (const listener of listeners) {
+      listener();
+    }
+  };
 
   const invalidateSnapshot = () => {
     snapshot = null;
@@ -86,7 +90,7 @@ export function createVoiceNoteDraftRepository({
     }
 
     try {
-      const parsed = createVoiceNoteDraftSchema(getTimeZone()).safeDecode(JSON.parse(raw));
+      const parsed = createVoiceNoteDraftSchema(getTimezone()).safeDecode(JSON.parse(raw));
       if (parsed.success) {
         return parsed.data;
       }
@@ -107,7 +111,7 @@ export function createVoiceNoteDraftRepository({
     try {
       storage.set(
         createVoiceNoteDraftKey(accountId, note.draftId),
-        JSON.stringify(createVoiceNoteDraftSchema(getTimeZone()).encode(note)),
+        JSON.stringify(createVoiceNoteDraftSchema(getTimezone()).encode(note)),
       );
       replaceInSnapshot(accountId, note);
       notifyListeners();
@@ -123,7 +127,9 @@ export function createVoiceNoteDraftRepository({
 
   /** 아직 저장소에 없는 초안의 대기 쓰기도 취소해야 지운 뒤 되살아나지 않는다 */
   const cancelPendingWhere = (matches: (key: string) => boolean) => {
-    [...pendingSaves.keys()].filter(matches).forEach(cancelPending);
+    for (const key of [...pendingSaves.keys()].filter(matches)) {
+      cancelPending(key);
+    }
   };
 
   const findKeys = (matches: (key: string) => boolean) =>
@@ -197,13 +203,17 @@ export function createVoiceNoteDraftRepository({
       const ownerPrefix = createOwnerPrefix(accountId);
       const isOtherOwner = (candidate: string) => !candidate.startsWith(ownerPrefix);
       cancelPendingWhere(isOtherOwner);
-      findKeys(isOtherOwner).forEach((key) => storage.remove(key));
+      for (const key of findKeys(isOtherOwner)) {
+        storage.remove(key);
+      }
       invalidateSnapshot();
     },
 
     removeAll: () => {
       cancelPendingWhere(() => true);
-      findKeys(() => true).forEach((key) => storage.remove(key));
+      for (const key of findKeys(() => true)) {
+        storage.remove(key);
+      }
       invalidateSnapshot();
     },
   };

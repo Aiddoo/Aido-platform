@@ -22,7 +22,7 @@ export function logEventFeature(message: string): ErrorReportFeature | undefined
     return undefined;
   }
   const [feature = ''] = message.split('.', 1);
-  const featureTag = feature.replace(/-/g, '_');
+  const featureTag = feature.replaceAll('-', '_');
   return ERROR_REPORT_FEATURES.find((known) => known === featureTag);
 }
 

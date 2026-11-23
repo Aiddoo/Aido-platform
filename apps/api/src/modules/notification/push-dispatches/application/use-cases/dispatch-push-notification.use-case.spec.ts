@@ -21,11 +21,11 @@ import type { PushTokenReadModel } from "../../../push-devices/application/read-
 import type { PushDevice } from "../../../push-devices/domain/push-device.aggregate.js";
 import { PushCategoryId } from "../../domain/push-category-id.vo.js";
 import { PushTicketId } from "../../domain/push-ticket-id.vo.js";
-import { NoActiveTokenReasonReader } from "../no-active-token-reason.reader.js";
 import type { BatchPushNotificationPayload } from "../ports/push-notification-payload.port.js";
 import { RetryablePushProviderTransportError } from "../push-dispatches.errors.js";
 import { DispatchPushNotificationUseCase } from "./dispatch-push-notification.use-case.js";
 import { PreparePushBatchUseCase } from "./prepare-push-batch.use-case.js";
+import { ResolveNoActiveTokenReasonsUseCase } from "./resolve-no-active-token-reasons.use-case.js";
 import { SendPushBatchUseCase } from "./send-push-batch.use-case.js";
 import { SendPushMessagesUseCase } from "./send-push-messages.use-case.js";
 
@@ -97,7 +97,7 @@ function createDispatchUseCase(
   const pushTokenCache = new RecordingPushTokenCache();
   const unreadCounts = new StubUnreadNotificationCountReader(options.unreadCounts);
   const clock = new FixedClock(NOW);
-  const noActiveTokenReasons = new NoActiveTokenReasonReader({
+  const noActiveTokenReasons = new ResolveNoActiveTokenReasonsUseCase({
     pushDeviceRepository: new InMemoryPushDeviceRepository(options.devices),
     clock,
   });
@@ -140,7 +140,7 @@ async function activeTokensOf(
   repository: InMemoryPushTokenRepository,
   userIds: string[],
 ): Promise<string[]> {
-  const records = await repository.findActivePushTokensByUsers(
+  const records = await repository.listActivePushTokensByUsers(
     userIds.map((userId) => UserId.reconstitute(userId)),
   );
   return records.map(({ token }) => token).toSorted();

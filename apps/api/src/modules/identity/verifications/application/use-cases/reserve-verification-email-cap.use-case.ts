@@ -80,7 +80,7 @@ export class ReserveVerificationEmailCapUseCase {
       cappedBucketsFor(command).map(async ({ bucket, ...cap }) => ({
         bucket,
         ...cap,
-        sentAts: sentAtsInEmailCapWindow(await verificationEmailCap.findSentAts(bucket), now),
+        sentAts: sentAtsInEmailCapWindow(await verificationEmailCap.listSentAts(bucket), now),
       })),
     );
     const judgement = judgeVerificationEmailCap(counts, now);

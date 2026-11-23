@@ -3,10 +3,11 @@ import { subscribeSessionExpired } from '@src/core/events/session-expired';
 import type { RefreshTokensRequest } from '@src/core/ports/token-refresher';
 import { getNowInstant } from '@src/shared/date/clock';
 import { fromEpochMs } from '@src/shared/date/instant';
-import { ApiError, err, NetworkError, ok, ServerError } from '@src/shared/errors';
+import { ApiError, fail, NetworkError, ok, ServerError } from '@src/shared/errors';
 import { KyHttpClient } from '@src/shared/infra/http/ky-client';
 import { createPublicClient } from '@src/shared/infra/http/public-client';
 import {
+  createAppLoggerStub,
   createErrorReporterStub,
   createMemoryKeyValueStorage,
   createMemoryTokenStore,
@@ -36,16 +37,13 @@ function setup() {
   const publicHttpClient = createHttpClientStub();
   publicHttpClient.post.mockResolvedValue(ok({ message: '로그아웃되었습니다.' }));
   const requestRefresh = mockMethod<RefreshTokensRequest>(async () => respondWithTokens());
-  const logs: unknown[] = [];
-  const record = (...args: unknown[]) => {
-    logs.push(args);
-  };
+  const logger = createAppLoggerStub();
   let now = NOW;
   const service = new SessionRevocationService({
     repository,
     requestRefresh,
     authApi: new AuthApi({ publicHttpClient, authHttpClient: createHttpClientStub() }),
-    logger: { info: record, warn: record },
+    logger,
     now: () => fromEpochMs(now),
   });
   return {
@@ -53,7 +51,7 @@ function setup() {
     repository,
     publicHttpClient,
     requestRefresh,
-    logs,
+    logger,
     service,
     advance: (ms: number) => {
       now += ms;
@@ -225,7 +223,7 @@ describe('SessionRevocationService', () => {
     const { service, publicHttpClient, repository } = setup();
     await service.record(REFRESH_A);
     publicHttpClient.post.mockResolvedValueOnce(
-      err(new ApiError(ErrorCode.SESSION_0702, '이미 폐기됨', 401)),
+      fail(new ApiError(ErrorCode.SESSION_0702, '이미 폐기됨', 401)),
     );
 
     // When
@@ -281,19 +279,19 @@ describe('SessionRevocationService', () => {
 
   it('어떤 실패에도 로그에 토큰 값을 남기지 않는다', async () => {
     // Given
-    const { service, publicHttpClient, logs } = setup();
+    const { service, publicHttpClient, logger } = setup();
     await service.record(REFRESH_A);
     publicHttpClient.post.mockRejectedValueOnce(new NetworkError());
 
     // When
     await service.flush();
     publicHttpClient.post.mockResolvedValueOnce(
-      err(new ApiError(ErrorCode.SESSION_0702, '이미 폐기됨', 401)),
+      fail(new ApiError(ErrorCode.SESSION_0702, '이미 폐기됨', 401)),
     );
     await service.flush();
 
     // Then
-    const logged = JSON.stringify(logs);
+    const logged = JSON.stringify([logger.info.mock.calls, logger.warn.mock.calls]);
     expect(logged).not.toContain(REFRESH_A);
     expect(logged).not.toContain(ROTATED.accessToken);
     expect(logged).not.toContain(ROTATED.refreshToken);
@@ -326,7 +324,7 @@ describe('SessionRevocationService', () => {
         ),
         authHttpClient: createHttpClientStub(),
       }),
-      logger: { info: jest.fn(), warn: jest.fn() },
+      logger: createAppLoggerStub(),
       now: getNowInstant,
     });
     await service.record(REFRESH_A);

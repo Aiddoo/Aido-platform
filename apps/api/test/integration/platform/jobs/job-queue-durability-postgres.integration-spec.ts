@@ -25,7 +25,7 @@ const RETRY: JobRetryPolicy = {
   deleteAfterSeconds: 7 * 24 * 60 * 60,
 };
 
-const documentSchema = z.object({ documentId: z.number().int() });
+const documentSchema = z.object({ documentId: z.int() });
 type DocumentPayload = z.infer<typeof documentSchema>;
 
 function documentQueue(

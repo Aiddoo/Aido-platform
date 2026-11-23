@@ -3,6 +3,15 @@ import rules from './syntax.mjs';
 
 const tester = createRuleTester();
 
+tester.run('no-switch-statement', rules['no-switch-statement'], {
+  valid: ["const label = match(kind).with('a', () => 1).exhaustive();", 'if (kind === 1) {}'],
+  invalid: [
+    { code: 'switch (kind) { case 1: break; }', errors: 1 },
+    { code: 'const toLabel = (kind) => { switch (kind) { case 1: return "a"; } };', errors: 1 },
+    { code: 'class Labels { of(kind) { switch (kind) { default: return ""; } } }', errors: 1 },
+  ],
+});
+
 tester.run('no-strict-nullish', rules['no-strict-nullish'], {
   valid: ['if (value == null) {}', 'if (value != undefined) {}', "if (value === '') {}"],
   invalid: [

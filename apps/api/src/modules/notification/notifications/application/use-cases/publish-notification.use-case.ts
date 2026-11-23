@@ -6,7 +6,7 @@ import type { SendNotificationUseCase } from "./send-notification.use-case.js";
 
 interface PublishNotificationDependencies {
   readonly sendNotification: Pick<SendNotificationUseCase, "execute">;
-  readonly todoTargetReader: Pick<NotificationTodoTargetReaderPort, "findTodoTargets">;
+  readonly todoTargetReader: Pick<NotificationTodoTargetReaderPort, "listTodoTargets">;
 }
 
 // 다른 Context가 알림 하나를 만드는 문이다

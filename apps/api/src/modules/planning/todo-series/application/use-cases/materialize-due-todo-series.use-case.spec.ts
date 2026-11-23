@@ -1,5 +1,3 @@
-import { vi } from "vitest";
-
 import { TodoTitle } from "#api/modules/planning/shared/domain/todo-title.vo";
 import { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-series-id.vo";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -81,12 +79,12 @@ describe("회차 채우기", () => {
     const lockForUpdate = fixture.todoSeriesRepository.lockForUpdate.bind(
       fixture.todoSeriesRepository,
     );
-    vi.spyOn(fixture.todoSeriesRepository, "lockForUpdate").mockImplementation(async (id) => {
+    fixture.todoSeriesRepository.lockForUpdate = async (id) => {
       if (id.value === "series-1") {
         throw new Error("저장 실패");
       }
       return lockForUpdate(id);
-    });
+    };
     // When
     const result = await useCase().execute();
     // Then

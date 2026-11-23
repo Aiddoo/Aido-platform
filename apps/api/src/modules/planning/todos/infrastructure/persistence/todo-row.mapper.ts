@@ -6,7 +6,7 @@ import { Todo } from "../../domain/todo.aggregate.js";
 type TodoCategoryRow = typeof todoCategory.$inferSelect;
 type TodoRow = typeof todo.$inferSelect;
 
-export type TodoItemRow = Pick<
+type TodoItemRow = Pick<
   typeof todoItem.$inferSelect,
   "id" | "title" | "completed" | "sortOrder" | "createdAt" | "updatedAt"
 >;

@@ -17,7 +17,7 @@ import {
   isRecurringTodoRejection,
 } from '@src/features/planning/todo/domains/todo.error';
 import {
-  getScheduledTime,
+  findScheduledTime,
   getTodoDateSpan,
   type OptimisticTodo,
   type TodoFieldChanges,
@@ -89,7 +89,7 @@ export function useCreateTodoMutationOptions() {
         endDate: values.endDate,
         category: { id: category.id, name: category.name, color: category.color },
         completed: false,
-        localTime: getScheduledTime(values),
+        localTime: findScheduledTime(values),
         scheduledAt: null,
         isAllDay: values.isAllDay,
         visibility: values.visibility,
@@ -118,7 +118,7 @@ export function useCreateTodoMutationOptions() {
         source: 'manual',
         creation_entry: 'manual',
         is_recurring: false,
-        has_scheduled_time: getScheduledTime(values) != null,
+        has_scheduled_time: findScheduledTime(values) != null,
         is_all_day: values.isAllDay,
         visibility: values.visibility,
       });
@@ -189,7 +189,7 @@ export function useCreateRecurringTodoMutationOptions() {
         source: 'manual',
         creation_entry: 'recurring',
         is_recurring: true,
-        has_scheduled_time: getScheduledTime(values) != null,
+        has_scheduled_time: findScheduledTime(values) != null,
         is_all_day: values.isAllDay,
         visibility: values.visibility,
         repeat_frequency: values.repeat.frequency,

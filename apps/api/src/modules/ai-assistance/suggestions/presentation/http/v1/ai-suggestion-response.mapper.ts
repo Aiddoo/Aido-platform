@@ -57,11 +57,11 @@ export function toSuggestionAnalysisResponse(
 }
 
 export function toSuggestionListResponse(
-  list: PendingSuggestionsReadModel,
+  pendingSuggestions: PendingSuggestionsReadModel,
 ): SuggestionListResponse {
   return {
-    suggestions: list.suggestions.map(toSuggestionResponse),
-    analysis: toSuggestionAnalysis(list.analysis),
+    suggestions: pendingSuggestions.suggestions.map(toSuggestionResponse),
+    analysis: toSuggestionAnalysis(pendingSuggestions.analysis),
   };
 }
 

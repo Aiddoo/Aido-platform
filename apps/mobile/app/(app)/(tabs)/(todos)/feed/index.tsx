@@ -329,7 +329,7 @@ FriendFeed.TodoList = function TodoList({ friend }: { friend: FriendUser }) {
       renderRowAction={(todo) => (
         <FriendTodoNudgeAction todo={todo} friend={friend} selectedDateKey={selectedDateKey} />
       )}
-      getMenuAction={getNudgeMenuAction}
+      findMenuAction={getNudgeMenuAction}
       emptyAction={<FriendRemindNudgeAction friend={friend} />}
     />
   );

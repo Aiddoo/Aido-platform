@@ -4,5 +4,5 @@ import type { UserCategoryReadModel } from "../read-models/user-category.read-mo
 
 /** 프롬프트 조립에 쓰는 사용자 카테고리. planning 내부에 기대지 않도록 포트로 둔다. */
 export abstract class UserCategoryReaderPort {
-  abstract findByUserId(userId: UserId): Promise<UserCategoryReadModel[]>;
+  abstract listByUserId(userId: UserId): Promise<UserCategoryReadModel[]>;
 }

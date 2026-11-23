@@ -53,10 +53,10 @@ export abstract class TodoSeriesRepositoryPort {
    */
   abstract updateTimezoneByUserId(userId: UserId, timezone: string): Promise<number>;
 
-  abstract findDueBatch(query: DueTodoSeriesQuery): Promise<readonly TodoSeriesRef[]>;
+  abstract listDueBatch(query: DueTodoSeriesQuery): Promise<readonly TodoSeriesRef[]>;
 
   /** 커서가 through 이하인 이 사용자의 규칙. */
-  abstract findIdsBehind(
+  abstract listIdsBehind(
     userId: UserId,
     through: Temporal.PlainDate,
   ): Promise<readonly TodoSeriesId[]>;

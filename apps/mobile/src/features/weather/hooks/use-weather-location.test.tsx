@@ -31,18 +31,11 @@ import { useWeatherLocation } from './use-weather-location';
 const SEOUL = { latitude: 37.5636, longitude: 126.9976 };
 const BUSAN = { latitude: 35.1796, longitude: 129.0756 };
 
-function createGrantedGatewayStub(overrides: Partial<jest.Mocked<LocationGateway>> = {}) {
-  const gateway = createLocationGatewayStub();
-  gateway.getPermission.mockResolvedValue({ isGranted: true, canAskAgain: true });
-  gateway.requestPermission.mockResolvedValue({ isGranted: true, canAskAgain: true });
-  gateway.recheckPermission.mockResolvedValue({ isGranted: true, canAskAgain: true });
-  gateway.getCoordinates.mockResolvedValue(SEOUL);
-  gateway.getPlace.mockResolvedValue({
-    countryCode: 'KR',
-    name: { city: '서울', district: '중구' },
-  });
-  return Object.assign(gateway, overrides);
-}
+const GRANTED_IN_SEOUL = {
+  permission: { isGranted: true, canAskAgain: true },
+  coordinates: SEOUL,
+  place: { countryCode: 'KR', name: { city: '서울', district: '중구' } },
+};
 
 function setup(gateway: jest.Mocked<LocationGateway>) {
   const httpClient = createHttpClientStub();
@@ -69,12 +62,8 @@ function useLocationAndRevision() {
 describe('useWeatherLocation', () => {
   it('권한을 요청할 수 있으면 요청 결과를 기록하고 위치를 등록해 준비 상태가 된다', async () => {
     // Given
-    const gateway = createGrantedGatewayStub({
-      getPermission: jest
-        .fn()
-        .mockResolvedValueOnce({ isGranted: false, canAskAgain: true })
-        .mockResolvedValue({ isGranted: true, canAskAgain: true }),
-    });
+    const gateway = createLocationGatewayStub(GRANTED_IN_SEOUL);
+    gateway.getPermission.mockResolvedValueOnce({ isGranted: false, canAskAgain: true });
     const { renderHook, httpClient, analytics, errorReporter } = setup(gateway);
     const { result } = await renderHook(() => useWeatherLocation());
     await waitFor(() => expect(result.current.status).toBe('needsPermission'));
@@ -106,9 +95,8 @@ describe('useWeatherLocation', () => {
 
   it('다시 물을 수 없게 거부했으면 설정 열기 상태가 되고 오류로 보고하지 않는다', async () => {
     // Given
-    const gateway = createGrantedGatewayStub({
-      getPermission: jest.fn().mockResolvedValue({ isGranted: false, canAskAgain: false }),
-    });
+    const gateway = createLocationGatewayStub(GRANTED_IN_SEOUL);
+    gateway.getPermission.mockResolvedValue({ isGranted: false, canAskAgain: false });
     const { renderHook, httpClient, errorReporter } = setup(gateway);
 
     // When
@@ -122,9 +110,8 @@ describe('useWeatherLocation', () => {
 
   it('위치 서비스가 꺼져 있으면 기록만 남기고 위치를 찾지 못한 상태가 된다', async () => {
     // Given
-    const gateway = createGrantedGatewayStub({
-      getCoordinates: jest.fn().mockRejectedValue(new LocationUnavailableError('off')),
-    });
+    const gateway = createLocationGatewayStub(GRANTED_IN_SEOUL);
+    gateway.getCoordinates.mockRejectedValue(new LocationUnavailableError('off'));
     const { renderHook, httpClient, logger, errorReporter } = setup(gateway);
 
     // When
@@ -142,9 +129,8 @@ describe('useWeatherLocation', () => {
 
   it('위치 읽기가 시간 초과로 실패하면 한 번 보고하고 좌표는 기록하지 않는다', async () => {
     // Given
-    const gateway = createGrantedGatewayStub({
-      getCoordinates: jest.fn().mockRejectedValue(new Error('Location timeout')),
-    });
+    const gateway = createLocationGatewayStub(GRANTED_IN_SEOUL);
+    gateway.getCoordinates.mockRejectedValue(new Error('Location timeout'));
     const { renderHook, errorReporter, logger } = setup(gateway);
 
     // When
@@ -162,12 +148,8 @@ describe('useWeatherLocation', () => {
 
   it('위치를 찾지 못한 상태에서 다시 시도하면 위치를 다시 읽어 준비 상태가 된다', async () => {
     // Given
-    const gateway = createGrantedGatewayStub({
-      getCoordinates: jest
-        .fn()
-        .mockRejectedValueOnce(new LocationUnavailableError('off'))
-        .mockResolvedValue(SEOUL),
-    });
+    const gateway = createLocationGatewayStub(GRANTED_IN_SEOUL);
+    gateway.getCoordinates.mockRejectedValueOnce(new LocationUnavailableError('off'));
     const { renderHook } = setup(gateway);
     const { result } = await renderHook(() => useWeatherLocation());
     await waitFor(() => expect(result.current.status).toBe('unavailable'));
@@ -186,7 +168,7 @@ describe('useWeatherLocation', () => {
   it('리포트는 위치를 읽기 전에 서버 저장 위치로 먼저 요청하고, 같은 격자면 다시 받지 않는다', async () => {
     // Given
     const coordinates = Promise.withResolvers<LocationCoordinates>();
-    const gateway = createGrantedGatewayStub();
+    const gateway = createLocationGatewayStub(GRANTED_IN_SEOUL);
     gateway.getCoordinates.mockReturnValue(coordinates.promise);
     const { renderHook, httpClient } = setup(gateway);
 
@@ -208,7 +190,7 @@ describe('useWeatherLocation', () => {
 
   it('0.01도 미만으로 움직이면 다시 등록하지 않고, 다른 격자로 옮기면 새 리비전으로 리포트를 다시 받는다', async () => {
     // Given
-    const gateway = createGrantedGatewayStub();
+    const gateway = createLocationGatewayStub(GRANTED_IN_SEOUL);
     const { renderHook, httpClient, queryClient } = setup(gateway);
     const { result } = await renderHook(() => ({
       ...useLocationAndRevision(),
@@ -236,7 +218,7 @@ describe('useGetWeatherLocationQueryOptions', () => {
   describe('리포트와 위치 등록의 경쟁', () => {
     it('리포트를 아직 받는 중에 등록이 끝나면 그 리포트를 기다려 비교하고, 같은 격자면 다시 받지 않는다', async () => {
       // Given
-      const gateway = createGrantedGatewayStub();
+      const gateway = createLocationGatewayStub(GRANTED_IN_SEOUL);
       const { renderHook, httpClient } = setup(gateway);
       const report = Promise.withResolvers<{
         ok: true;
@@ -262,7 +244,7 @@ describe('useGetWeatherLocationQueryOptions', () => {
   describe('리포트 요청의 위치 재등록', () => {
     it('서버가 위치를 잃었다고(WEATHER_1902) 하면 마지막 위치를 한 번 다시 등록하고 다시 받는다', async () => {
       // Given
-      const gateway = createGrantedGatewayStub();
+      const gateway = createLocationGatewayStub(GRANTED_IN_SEOUL);
       const { renderHook, httpClient } = setup(gateway);
       const { result } = await renderHook(() => useWeatherLocation());
       await waitFor(() => expect(result.current.status).toBe('ready'));
@@ -284,7 +266,7 @@ describe('useGetWeatherLocationQueryOptions', () => {
 
     it('다시 등록도 실패하면 처음의 WEATHER_1902를 그대로 돌려 위치 안내를 보여 준다', async () => {
       // Given
-      const gateway = createGrantedGatewayStub();
+      const gateway = createLocationGatewayStub(GRANTED_IN_SEOUL);
       const { renderHook, httpClient } = setup(gateway);
       const { result } = await renderHook(() => useWeatherLocation());
       await waitFor(() => expect(result.current.status).toBe('ready'));
@@ -325,9 +307,8 @@ describe('useGetWeatherLocationQueryOptions', () => {
 
     it('직전에 위치를 받았으면 권한을 다시 확인해 허용이면 위치를 새로 읽는다', async () => {
       // Given
-      const gateway = createGrantedGatewayStub({
-        getPermission: jest.fn().mockResolvedValue(NOT_ASKED),
-      });
+      const gateway = createLocationGatewayStub(GRANTED_IN_SEOUL);
+      gateway.getPermission.mockResolvedValue(NOT_ASKED);
       const { renderHook } = setupWithPreviousLocation(gateway);
 
       // When
@@ -343,10 +324,9 @@ describe('useGetWeatherLocationQueryOptions', () => {
 
     it('다시 확인해도 정해지지 않았으면 직전 위치를 마지막 위치로 보여 주고 권한 창은 띄우지 않는다', async () => {
       // Given
-      const gateway = createGrantedGatewayStub({
-        getPermission: jest.fn().mockResolvedValue(NOT_ASKED),
-        recheckPermission: jest.fn().mockResolvedValue(NOT_ASKED),
-      });
+      const gateway = createLocationGatewayStub(GRANTED_IN_SEOUL);
+      gateway.getPermission.mockResolvedValue(NOT_ASKED);
+      gateway.recheckPermission.mockResolvedValue(NOT_ASKED);
       const { renderHook, httpClient } = setupWithPreviousLocation(gateway);
 
       // When
@@ -368,9 +348,8 @@ describe('useGetWeatherLocationQueryOptions', () => {
 
     it('처음 쓰는 사용자는 다시 확인하지 않고 위치 안내를 보여 준다', async () => {
       // Given
-      const gateway = createGrantedGatewayStub({
-        getPermission: jest.fn().mockResolvedValue(NOT_ASKED),
-      });
+      const gateway = createLocationGatewayStub(GRANTED_IN_SEOUL);
+      gateway.getPermission.mockResolvedValue(NOT_ASKED);
       const { renderHook } = setup(gateway);
 
       // When
@@ -383,9 +362,8 @@ describe('useGetWeatherLocationQueryOptions', () => {
 
     it('다시 물을 수 없게 거부했으면 직전 위치가 있어도 설정 열기 상태가 된다', async () => {
       // Given
-      const gateway = createGrantedGatewayStub({
-        getPermission: jest.fn().mockResolvedValue({ isGranted: false, canAskAgain: false }),
-      });
+      const gateway = createLocationGatewayStub(GRANTED_IN_SEOUL);
+      gateway.getPermission.mockResolvedValue({ isGranted: false, canAskAgain: false });
       const { renderHook } = setupWithPreviousLocation(gateway);
 
       // When
@@ -398,10 +376,9 @@ describe('useGetWeatherLocationQueryOptions', () => {
 
     it('마지막 위치를 보여 주는 중에 권한을 허용하면 위치를 새로 읽어 현재 위치로 바뀐다', async () => {
       // Given
-      const gateway = createGrantedGatewayStub({
-        getPermission: jest.fn().mockResolvedValue(NOT_ASKED),
-        recheckPermission: jest.fn().mockResolvedValue(NOT_ASKED),
-      });
+      const gateway = createLocationGatewayStub(GRANTED_IN_SEOUL);
+      gateway.getPermission.mockResolvedValue(NOT_ASKED);
+      gateway.recheckPermission.mockResolvedValue(NOT_ASKED);
       const { renderHook } = setupWithPreviousLocation(gateway);
       const { result } = await renderHook(() => useWeatherLocation());
       await waitFor(() => expect(result.current).toMatchObject({ isLastKnown: true }));

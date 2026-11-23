@@ -339,7 +339,7 @@ function useOpenReadyEntry(
       if (PushNotificationPolicy.hasServerRecord(notification)) {
         recordOpened(notification.notificationId);
       }
-      const reminderAction = PushNotificationResponsePolicy.getTodoReminderAction(response);
+      const reminderAction = PushNotificationResponsePolicy.findTodoReminderAction(response);
       if (reminderAction != null) {
         // 할 일 화면에 내린 뒤 보내 결과 안내가 그 화면 위에 뜬다. 응답 슬롯은 기다리지 않고 비운다
         runTodoReminderAction(reminderAction).catch((error: unknown) =>

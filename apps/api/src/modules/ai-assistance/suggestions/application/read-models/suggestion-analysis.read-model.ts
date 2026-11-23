@@ -10,7 +10,7 @@ export interface SuggestionAnalysisReadModel {
 
 /** 저장된 시간대와 그 시간대 기준 분석 기간의 단건 할 일 수 */
 export interface RecentTodoCountReadModel {
-  readonly timeZone: string;
+  readonly timezone: string;
   readonly recentTodoCount: number;
 }
 

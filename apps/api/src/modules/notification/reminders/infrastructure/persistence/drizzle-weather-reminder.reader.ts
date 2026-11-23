@@ -45,25 +45,25 @@ export class DrizzleWeatherReminderReader implements WeatherReminderReaderPort {
     this.#transactionHost = transactionHost;
   }
 
-  findWeatherMorningUsersWithLocation(
+  listWeatherMorningUsersWithLocation(
     params: WeatherReminderParams,
   ): Promise<WeatherReminderUserReadModel[]> {
     return this.#usersWithLocation(params, "morning");
   }
 
-  findWeatherMorningFallbackUsers(
+  listWeatherMorningFallbackUsers(
     params: WeatherReminderParams,
   ): Promise<WeatherFallbackUserReadModel[]> {
     return this.#fallbackUsers(params, "morning");
   }
 
-  findWeatherEveningUsersWithLocation(
+  listWeatherEveningUsersWithLocation(
     params: WeatherReminderParams,
   ): Promise<WeatherReminderUserReadModel[]> {
     return this.#usersWithLocation(params, "evening");
   }
 
-  findWeatherEveningFallbackUsers(
+  listWeatherEveningFallbackUsers(
     params: WeatherReminderParams,
   ): Promise<WeatherFallbackUserReadModel[]> {
     return this.#fallbackUsers(params, "evening");

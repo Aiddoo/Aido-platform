@@ -8,7 +8,7 @@ const INVITE_CODE_REGEX = new RegExp(INVITE_CODE_PATTERN);
 
 // 계약의 normalizeInviteCode와 같은 규칙이어야 앱이 보낸 코드와 같은 코드로 읽는다(Domain은 계약 패키지를 모른다)
 function normalizeInviteCode(raw: string): string {
-  return raw.replace(/[\s-]/g, "").toUpperCase();
+  return raw.replaceAll(/[\s-]/g, "").toUpperCase();
 }
 
 export class InviteCode extends ValueObject<string> {

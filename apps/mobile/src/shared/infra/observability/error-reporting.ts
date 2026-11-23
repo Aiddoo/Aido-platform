@@ -2,8 +2,10 @@ import * as Sentry from '@sentry/react-native';
 import { ENV } from '@src/shared/config/env';
 import type { ComponentType } from 'react';
 
+import { IS_PHYSICAL_DEVICE } from '../device/device-info';
 import { shouldCaptureErrorReplay } from './replay-error-sampling';
 import { scrubBreadcrumb, scrubSentryEvent } from './scrub-sentry-event';
+import { toSentryEnvironment } from './sentry-environment';
 import { toTracePropagationTargets } from './trace-propagation-targets';
 
 // 무료 할당은 월 50개인데 30일 541개가 한도에 걸렸다. 잡지 못한 오류·강제 종료만 녹화하고(shouldCaptureErrorReplay) 그중 0.2를 보낸다
@@ -18,7 +20,7 @@ export function initErrorReporting(): void {
   Sentry.init({
     dsn: ENV.SENTRY_DSN,
     enabled: ENV.SENTRY_ENABLED,
-    environment: ENV.APP_ENV,
+    environment: toSentryEnvironment(ENV.APP_ENV, IS_PHYSICAL_DEVICE),
 
     // RN SDK 8은 dataCollection을 받지 않고 이 값으로 IP 추론·라우트 URL·딥링크 수집을 가른다. 사용자는 ErrorReporter.setUserId의 id만 싣는다
     sendDefaultPii: false,

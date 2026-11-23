@@ -151,7 +151,10 @@ export function normalizeVoiceNoteDigest(
     (point) => point.text,
   ).slice(0, ACTION_PLAN_LIMITS.DIGEST_MAX_KEY_POINTS);
   return {
-    title: cleanText(draft.title, ACTION_PLAN_LIMITS.DIGEST_TITLE_MAX_LENGTH).replace(/\s+/g, " "),
+    title: cleanText(draft.title, ACTION_PLAN_LIMITS.DIGEST_TITLE_MAX_LENGTH).replaceAll(
+      /\s+/g,
+      " ",
+    ),
     summary: cleanText(draft.summary, ACTION_PLAN_LIMITS.DIGEST_SUMMARY_MAX_LENGTH),
     keyPoints,
     plan: normalizeActionPlan(draft, context),

@@ -1,11 +1,12 @@
+import { StubTodoOwnerTimezone } from "#test/doubles/planning/stub-todo-owner-timezone";
+
 import { ResolveTodoTimezoneUseCase } from "./resolve-todo-timezone.use-case.js";
 
 function resolverWith(stored: string | null) {
-  const findTimezone = vi.fn(async () => stored);
-  return {
-    resolver: new ResolveTodoTimezoneUseCase({ ownerTimezone: { findTimezone } }),
-    findTimezone,
-  };
+  const ownerTimezone = new StubTodoOwnerTimezone(
+    new Map(stored == null ? [] : [["user", stored]]),
+  );
+  return { resolver: new ResolveTodoTimezoneUseCase({ ownerTimezone }), ownerTimezone };
 }
 
 describe("할 일 쓰기의 시간대", () => {
@@ -52,10 +53,10 @@ describe("할 일 쓰기의 시간대", () => {
 
   it("유효한 헤더가 있으면 저장값을 읽지 않는다", async () => {
     // Given
-    const { resolver, findTimezone } = resolverWith("Asia/Seoul");
+    const { resolver, ownerTimezone } = resolverWith("Asia/Seoul");
     // When
-    await resolver.execute("user", "Asia/Seoul");
+    await resolver.execute("user", "America/New_York");
     // Then
-    expect(findTimezone).not.toHaveBeenCalled();
+    expect(ownerTimezone.readCount).toBe(0);
   });
 });

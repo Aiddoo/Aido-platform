@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { findNodeHandle, type HostInstance, TextInput } from 'react-native';
+import { type HostInstance, TextInput } from 'react-native';
 import {
   KeyboardController,
   useFocusedInputHandler,
@@ -70,7 +70,8 @@ export function useFocusedFieldKeyboardScroll() {
   const scrollViewTag = useSharedValue(-1);
 
   useEffect(() => {
-    scrollViewTag.set(findNodeHandle(scrollRef.current) ?? -1);
+    // keyboard-controller는 포커스한 입력의 스크롤 부모를 네이티브 태그(parentScrollViewTarget)로만 알려 준다
+    scrollViewTag.set(scrollRef.current?.getScrollableNode() ?? -1);
   }, [scrollRef, scrollViewTag]);
 
   // 칸을 재는 사이 화면이 내려가면 측정 뒤 UI 스레드 스크롤을 건너뛴다

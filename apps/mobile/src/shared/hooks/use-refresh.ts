@@ -1,16 +1,16 @@
 import { useCallback, useState } from 'react';
 
-export function useRefresh(refetchFn: () => Promise<unknown>) {
+export function useRefresh(refetch: () => Promise<unknown>) {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      await refetchFn();
+      await refetch();
     } finally {
       setIsRefreshing(false);
     }
-  }, [refetchFn]);
+  }, [refetch]);
 
   return [isRefreshing, handleRefresh] as const;
 }

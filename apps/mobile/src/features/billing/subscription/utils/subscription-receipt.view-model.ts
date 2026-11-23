@@ -112,17 +112,17 @@ export type SubscriptionReceiptViewModel =
 interface SubscriptionReceiptContext {
   isStoreConfigured: boolean;
   now: Instant;
-  timeZone: string;
+  timezone: string;
 }
 
 function toEndingNotice(
   access: PremiumAccess,
-  { now, timeZone }: Pick<SubscriptionReceiptContext, 'now' | 'timeZone'>,
+  { now, timezone }: Pick<SubscriptionReceiptContext, 'now' | 'timezone'>,
 ): PremiumEndingNotice | null {
-  if (!PremiumAccessPolicy.isExpiringSoon(access, now, timeZone)) {
+  if (!PremiumAccessPolicy.isExpiringSoon(access, now, timezone)) {
     return null;
   }
-  return PremiumAccessPolicy.getDaysLeft(access, now, timeZone) === 0 ? 'today' : 'tomorrow';
+  return PremiumAccessPolicy.findDaysLeft(access, now, timezone) === 0 ? 'today' : 'tomorrow';
 }
 
 function toBankedReward(access: PremiumAccess, endsAt: Instant | null): BankedReward | null {
@@ -168,7 +168,7 @@ function toPaidDetails(access: PremiumAccess, now: Instant): PaidReceiptDetails 
 }
 
 function toBankedRewardFootnote(access: PremiumAccess): SubscriptionReceiptFootnote {
-  const startsAt = PremiumAccessPolicy.getBankedRewardStartsAt(access);
+  const startsAt = PremiumAccessPolicy.findBankedRewardStartsAt(access);
   return startsAt == null
     ? { type: 'rewardStartsAfterSubscription', days: access.bankedDays }
     : { type: 'rewardStartsOn', days: access.bankedDays, date: startsAt };
@@ -189,26 +189,26 @@ function toPaidFootnote(access: PremiumAccess): SubscriptionReceiptFootnote | nu
 /** 이어질 길이 없이 끝나는 안내가 먼저고, 자동 갱신 중인 연간 구독이면 결제 며칠 전에 알린다 */
 function toPaidEndingNotice(
   access: PremiumAccess,
-  { now, timeZone }: Pick<SubscriptionReceiptContext, 'now' | 'timeZone'>,
+  { now, timezone }: Pick<SubscriptionReceiptContext, 'now' | 'timezone'>,
 ): PremiumEndingNotice | AnnualRenewingNotice | null {
-  const endingNotice = toEndingNotice(access, { now, timeZone });
+  const endingNotice = toEndingNotice(access, { now, timezone });
   if (endingNotice != null) {
     return endingNotice;
   }
-  const renewalDaysLeft = PremiumAccessPolicy.getAnnualRenewalDaysLeft(access, now, timeZone);
+  const renewalDaysLeft = PremiumAccessPolicy.findAnnualRenewalDaysLeft(access, now, timezone);
   return renewalDaysLeft == null ? null : { type: 'annualRenewing', daysLeft: renewalDaysLeft };
 }
 
 function toPaidReceipt(
   access: PremiumAccess,
-  { now, timeZone }: SubscriptionReceiptContext,
+  { now, timezone }: SubscriptionReceiptContext,
 ): SubscriptionReceiptViewModel {
   return {
     variant: 'paid',
     details: toPaidDetails(access, now),
     footnote: toPaidFootnote(access),
     primaryAction: 'manage',
-    endingNotice: toPaidEndingNotice(access, { now, timeZone }),
+    endingNotice: toPaidEndingNotice(access, { now, timezone }),
   };
 }
 
@@ -253,10 +253,10 @@ function toTrialFootnote(access: PremiumAccess): SubscriptionReceiptFootnote | n
 
 function toTrialEndingNotice(
   access: PremiumAccess,
-  { now, timeZone }: Pick<SubscriptionReceiptContext, 'now' | 'timeZone'>,
+  { now, timezone }: Pick<SubscriptionReceiptContext, 'now' | 'timezone'>,
 ): TrialEndingNotice | null {
-  const daysLeft = PremiumAccessPolicy.getTrialDaysLeft(access, now, timeZone);
-  if (daysLeft == null || !PremiumAccessPolicy.isTrialEndingSoon(access, now, timeZone)) {
+  const daysLeft = PremiumAccessPolicy.findTrialDaysLeft(access, now, timezone);
+  if (daysLeft == null || !PremiumAccessPolicy.isTrialEndingSoon(access, now, timezone)) {
     return null;
   }
   return { daysLeft, willRenew: access.willRenew, planType: access.planType };
@@ -264,23 +264,23 @@ function toTrialEndingNotice(
 
 function toTrialReceipt(
   access: PremiumAccess,
-  { now, timeZone }: SubscriptionReceiptContext,
+  { now, timezone }: SubscriptionReceiptContext,
 ): SubscriptionReceiptViewModel {
   return {
     variant: 'trial',
     details: toTrialDetails(access, now),
     footnote: toTrialFootnote(access),
     primaryAction: 'manage',
-    endingNotice: toTrialEndingNotice(access, { now, timeZone }),
+    endingNotice: toTrialEndingNotice(access, { now, timezone }),
   };
 }
 
 function toRewardDetails(
   access: PremiumAccess,
-  { now, timeZone }: SubscriptionReceiptContext,
+  { now, timezone }: SubscriptionReceiptContext,
 ): RewardReceiptDetails | null {
   const { endsAt, periodEndsAt } = access;
-  const daysLeft = PremiumAccessPolicy.getDaysLeft(access, now, timeZone);
+  const daysLeft = PremiumAccessPolicy.findDaysLeft(access, now, timezone);
   if (endsAt == null || periodEndsAt == null || daysLeft == null) {
     return null;
   }
@@ -290,7 +290,7 @@ function toRewardDetails(
     chained: PremiumAccessPolicy.hasBankedDays(access)
       ? { bankedDays: access.bankedDays, overallEndsAt: endsAt }
       : null,
-    daysLeft: { days: daysLeft, endingNotice: toEndingNotice(access, { now, timeZone }) },
+    daysLeft: { days: daysLeft, endingNotice: toEndingNotice(access, { now, timezone }) },
   };
 }
 

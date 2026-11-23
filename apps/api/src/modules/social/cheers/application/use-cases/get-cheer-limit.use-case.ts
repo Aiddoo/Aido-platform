@@ -28,7 +28,7 @@ export class GetCheerLimitUseCase {
   async execute(query: GetCheerLimitQuery): Promise<CheerDailyLimitReadModel> {
     const { cheerRepository, limitReader, clock } = this.#dependencies;
     const userId = UserId.reconstitute(query.userId);
-    const window = dailySendWindowAt({ now: clock.now(), timeZone: query.timezone });
+    const window = dailySendWindowAt({ now: clock.now(), timezone: query.timezone });
     const [dailyLimit, used] = await Promise.all([
       limitReader.readLimit(userId),
       cheerRepository.countSentBetween(userId, window),

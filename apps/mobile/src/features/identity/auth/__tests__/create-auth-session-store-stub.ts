@@ -12,7 +12,11 @@ export function createAuthSessionStoreStub(initialStatus: AuthStatus = 'authenti
   let store = createAuthSessionStore(createAuthSessionState(initialStatus));
   const listeners = new Set<() => void>();
 
-  const notify = () => listeners.forEach((listener) => listener());
+  const notify = () => {
+    for (const listener of listeners) {
+      listener();
+    }
+  };
   const stub: AuthSessionStore & { setStatus(status: AuthStatus): void } = {
     getSnapshot: () => store.getSnapshot(),
     subscribe: (listener) => {

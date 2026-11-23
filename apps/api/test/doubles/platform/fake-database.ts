@@ -2,7 +2,6 @@ import type { SQL } from "drizzle-orm";
 import { DrizzleQueryError } from "drizzle-orm/errors";
 import { PgDialect } from "drizzle-orm/pg-core";
 import { Client, DatabaseError, Pool, type QueryResult } from "pg";
-import { vi } from "vitest";
 
 import { createDatabase } from "#api/platform/database/database.client";
 import { createTransactionHost } from "#test/setup/database-context";
@@ -31,11 +30,11 @@ export function createFakeDatabase(
   respond: (statement: ExecutedStatement) => Promise<QueryResult> = async () => queryResult(),
 ) {
   const statements: ExecutedStatement[] = [];
-  const query = vi.fn(async (config: { text: string }, params: readonly unknown[] = []) => {
+  const query = async (config: { text: string }, params: readonly unknown[] = []) => {
     const statement = { text: config.text, params };
     statements.push(statement);
     return respond(statement);
-  });
+  };
   // 연결하지 않는 pg 객체에 query만 바꿔 끼운다. 트랜잭션은 pool.connect()가 준 client로 같은 query를 부른다
   const client = Object.assign(new Client(), { query, release: () => undefined });
   const pool = Object.assign(new Pool(), { query, connect: async () => client });

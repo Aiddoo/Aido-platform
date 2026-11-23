@@ -2,7 +2,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { localDateIn, resolveTimezone } from "#api/shared/domain/time/time-zone-name";
+import { localDateIn, resolveTimezone } from "#api/shared/domain/time/timezone-name";
 
 import { GeoCell } from "../../../shared/domain/geo-cell.vo.js";
 import { isKoreanWeatherCovered } from "../../../shared/domain/korean-weather-coverage.domain-service.js";
@@ -58,7 +58,7 @@ export interface GetWeatherReportDependencies {
   readonly userLocationRepository: Pick<UserLocationRepositoryPort, "findByUserId">;
   readonly readWeatherReport: Pick<ReadWeatherReportUseCase, "execute">;
   readonly weatherReportProvider: Pick<WeatherReportProviderPort, "getAttribution">;
-  readonly weatherReportCache: Pick<WeatherReportCachePort, "getOrLoadAirQuality">;
+  readonly weatherReportCache: Pick<WeatherReportCachePort, "findOrLoadAirQuality">;
   readonly timezoneResolver: Pick<TimezoneResolverPort, "resolve">;
   readonly airQualityProvider: Pick<AirQualityProviderPort, "findAirQuality">;
   readonly scheduledTodoReader: Pick<ScheduledTodoReaderPort, "listPendingTimedTodos">;
@@ -163,7 +163,7 @@ export class GetWeatherReportUseCase {
   }
 
   #loadAirQuality(cell: GeoCell): Promise<AirQuality | null> {
-    return this.#dependencies.weatherReportCache.getOrLoadAirQuality(cell, () =>
+    return this.#dependencies.weatherReportCache.findOrLoadAirQuality(cell, () =>
       this.#dependencies.airQualityProvider.findAirQuality(cell),
     );
   }

@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import { err } from '@src/core/errors/result';
+import { fail } from '@src/core/errors/result';
 import { NetworkError } from '@src/shared/errors';
 import { i18n } from '@src/shared/i18n';
 import { OverlayProvider } from '@src/shared/ui';
@@ -14,7 +14,7 @@ describe('DeleteAccountForm', () => {
     // Given
     const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
     session.authHttp.delete.mockResolvedValue(
-      err(createAuthApiError({ code: 'USER_0602', status: 401 })),
+      fail(createAuthApiError({ code: 'USER_0602', status: 401 })),
     );
     await render(
       <OverlayProvider>

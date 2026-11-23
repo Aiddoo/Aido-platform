@@ -19,7 +19,7 @@ export class StubUserBlockReader extends UserBlockReaderPort {
     };
   }
 
-  async findBlockedCounterpartIds(
+  async listBlockedCounterpartIds(
     viewerId: UserId,
     candidateUserIds: readonly UserId[],
   ): Promise<ReadonlySet<string>> {

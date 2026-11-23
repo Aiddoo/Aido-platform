@@ -27,7 +27,9 @@ export function createCoachmarkRecords(syncStorage: SyncStorage) {
 export function createCoachmarkStorage(seen: readonly CoachmarkInput[] = []) {
   const syncStorage = createMemoryObservableSyncStorage();
   const records = createCoachmarkRecords(syncStorage);
-  seen.forEach((input) => records.markSeen(input));
+  for (const input of seen) {
+    records.markSeen(input);
+  }
 
   return { syncStorage, records };
 }

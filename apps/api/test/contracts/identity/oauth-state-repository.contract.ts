@@ -1,9 +1,7 @@
 import { ProviderAccountId } from "#api/modules/identity/linked-accounts/domain/provider-account-id.vo";
-import type {
-  OAuthStateRepositoryPort,
-  NewOAuthState,
-} from "#api/modules/identity/oauth-states/application/ports/oauth-state.repository.port";
-import type { OAuthState } from "#api/modules/identity/oauth-states/domain/oauth-state.aggregate";
+import type { OAuthStateRepositoryPort } from "#api/modules/identity/oauth-states/application/ports/oauth-state.repository.port";
+import { OAuthState } from "#api/modules/identity/oauth-states/domain/oauth-state.aggregate";
+import { OAUTH_STATE_EXPIRY_MINUTES } from "#api/modules/identity/oauth-states/domain/oauth-states.constants";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   AUTH_FIXTURE_NOW,
@@ -14,16 +12,35 @@ import {
 const EXPIRES_AT = AUTH_FIXTURE_NOW.add({ minutes: 10 });
 let stateSequence = 0;
 
+type NewOAuthStateParams = Omit<Parameters<typeof OAuthState.create>[0], "id" | "now">;
+
+// 만료 시각을 정하려고 만든 시각을 유효 시간만큼 앞당긴다
+async function insertState(
+  repository: OAuthStateRepositoryPort,
+  params: NewOAuthStateParams & { readonly expiresAt: Temporal.Instant },
+): Promise<void> {
+  const { expiresAt, ...creation } = params;
+  await repository.save(
+    OAuthState.create({
+      ...creation,
+      id: await repository.nextId(),
+      now: expiresAt.subtract({ minutes: OAUTH_STATE_EXPIRY_MINUTES }),
+    }),
+  );
+}
+
 async function createState(
   repository: OAuthStateRepositoryPort,
-  overrides: Partial<NewOAuthState> = {},
+  overrides: Partial<NewOAuthStateParams> = {},
 ): Promise<OAuthState> {
   stateSequence += 1;
   const state = `state-${stateSequence}`;
-  await repository.create({
+  await insertState(repository, {
     state,
     provider: "GOOGLE",
     redirectUri: "aido://auth/callback",
+    mode: null,
+    initiatingUserId: null,
     expiresAt: EXPIRES_AT,
     ...overrides,
   });
@@ -246,10 +263,12 @@ export function describeOAuthStateRepositoryContract(
         { state: "expires-at-cutoff", expiresAt: AUTH_FIXTURE_NOW },
       ];
       for (const { state, expiresAt } of states) {
-        await repository.create({
+        await insertState(repository, {
           state,
           provider: "GOOGLE",
           redirectUri: "aido://auth/callback",
+          mode: null,
+          initiatingUserId: null,
           expiresAt,
         });
       }
@@ -268,6 +287,30 @@ export function describeOAuthStateRepositoryContract(
       // Then
       expect(deletedCounts).toEqual([1, 1, 0]);
       expect(remaining).toEqual([false, false, true]);
+    });
+
+    it("넣은 state를 같은 객체로 다시 저장하면 또 넣지 않는다", async () => {
+      // Given
+      const repository = await createRepository();
+      stateSequence += 1;
+      const created = OAuthState.create({
+        id: await repository.nextId(),
+        state: `state-${stateSequence}`,
+        provider: "GOOGLE",
+        redirectUri: "aido://auth/callback",
+        mode: null,
+        initiatingUserId: null,
+        now: AUTH_FIXTURE_NOW,
+      });
+      await repository.save(created);
+
+      // When
+      const savedAgain = await repository.save(created);
+
+      // Then
+      const stored = await repository.findByState(created.state, AUTH_FIXTURE_NOW);
+      expect(savedAgain).toBe(false);
+      expect(stored?.toPrimitives()).toEqual(created.toPrimitives());
     });
   });
 }

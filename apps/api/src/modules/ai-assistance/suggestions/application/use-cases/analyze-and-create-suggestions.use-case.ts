@@ -24,13 +24,11 @@ import {
 } from "../../../ai-generations/application/ai-generations.log-events.js";
 import { generateWithPrompt } from "../../../ai-generations/application/messages/prompt-definition.messages.js";
 import type { AiGeneratorPort } from "../../../ai-generations/application/ports/ai-generator.port.js";
-import type {
-  ScheduledAiConsentReadModel,
-  ScheduledAiConsentReader,
-} from "../../../ai-generations/application/scheduled-ai-consent.reader.js";
+import type { ScheduledAiConsentReadModel } from "../../../ai-generations/application/read-models/scheduled-ai-consent.read-model.js";
+import type { CheckScheduledAiConsentUseCase } from "../../../ai-generations/application/use-cases/check-scheduled-ai-consent.use-case.js";
 import { resolveSuggestedCategoryId } from "../../domain/category-resolver.domain-service.js";
-import {
-  type SuggestionAnalysisResult,
+import type {
+  SuggestionAnalysisResult,
   SuggestionAnalysisRun,
 } from "../../domain/suggestion-analysis-run.entity.js";
 import { hasEnoughRecentTodos } from "../../domain/suggestion-analysis-state.domain-service.js";
@@ -49,9 +47,9 @@ import { suggestionPromptFor } from "../messages/suggestion-prompt.messages.js";
 import type { SuggestionAnalysisRunRepositoryPort } from "../ports/suggestion-analysis-run.repository.port.js";
 import type { SuggestionRepositoryPort } from "../ports/suggestion.repository.port.js";
 import type { SuggestionContextReadModel } from "../read-models/suggestion-context.read-model.js";
-import type { SuggestionContextReader } from "../suggestion-context.reader.js";
 import { SuggestionLockKeys } from "../suggestions.lock-keys.js";
 import { SuggestionLogEvent } from "../suggestions.log-events.js";
+import type { GetSuggestionContextUseCase } from "./get-suggestion-context.use-case.js";
 
 interface AnalyzeAndCreateSuggestionsDependencies {
   readonly repository: Pick<
@@ -60,11 +58,11 @@ interface AnalyzeAndCreateSuggestionsDependencies {
   >;
   readonly runs: Pick<SuggestionAnalysisRunRepositoryPort, "findByUserId" | "save">;
   readonly generator: Pick<AiGeneratorPort, "generate">;
-  readonly scheduledAiConsent: Pick<ScheduledAiConsentReader, "find">;
+  readonly scheduledAiConsent: Pick<CheckScheduledAiConsentUseCase, "execute">;
   readonly clock: ClockPort;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly mutationLock: Pick<MutationLockPort, "acquire">;
-  readonly contextBuilder: Pick<SuggestionContextReader, "build">;
+  readonly suggestionContext: Pick<GetSuggestionContextUseCase, "execute">;
   readonly logger: Pick<ApplicationLoggerPort, "log" | "warn">;
   readonly entitlementReader: Pick<EntitlementReaderPort, "canInTransaction">;
   readonly userMutationLock: Pick<UserMutationLockPort, "lockById">;
@@ -100,7 +98,7 @@ export class AnalyzeAndCreateSuggestionsUseCase {
   ): Promise<AnalyzeAndCreateSuggestionsResult | null> {
     const owner = UserId.reconstitute(command.userId);
     const run = await this.#start(owner, command, this.#dependencies.clock.now());
-    if (run.isFinishedOn(command.localDate)) {
+    if (run == null || run.isFinishedOn(command.localDate)) {
       return null;
     }
     const queueWait = run.queueWait;
@@ -119,18 +117,14 @@ export class AnalyzeAndCreateSuggestionsUseCase {
     owner: UserId,
     command: AnalyzeAndCreateSuggestionsCommand,
     now: Temporal.Instant,
-  ): Promise<SuggestionAnalysisRun> {
+  ): Promise<SuggestionAnalysisRun | null> {
     return this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([SuggestionLockKeys.analysisRun(owner)]);
-      // 1.16.0 배포 전에 쌓인 job은 실행 기록 없이 온다. 1.17.0에서 지운다(compatibility.md)
-      const run =
-        (await this.#dependencies.runs.findByUserId(owner)) ??
-        SuggestionAnalysisRun.create({
-          userId: owner,
-          localDate: command.localDate,
-          trigger: command.trigger,
-          now,
-        });
+      // 요청 UseCase가 enqueue와 같은 트랜잭션에서 실행 기록을 만든다. 없으면 탈퇴 등으로 지워진 것이다
+      const run = await this.#dependencies.runs.findByUserId(owner);
+      if (run == null) {
+        return null;
+      }
       if (run.start(command.localDate, now)) {
         await this.#dependencies.runs.save(run);
       }
@@ -145,11 +139,14 @@ export class AnalyzeAndCreateSuggestionsUseCase {
     if (!(await this.#dependencies.entitlementReader.canInTransaction(owner, "AI_SUGGESTION"))) {
       return this.#skip(command, "NOT_PREMIUM", null);
     }
-    const consent = await this.#dependencies.scheduledAiConsent.find(owner);
+    const consent = await this.#dependencies.scheduledAiConsent.execute(owner);
     if (!consent.allowed) {
       return this.#skip(command, "CONSENT_MISSING", null);
     }
-    const context = await this.#dependencies.contextBuilder.build(owner, command.timezone);
+    const context = await this.#dependencies.suggestionContext.execute({
+      userId: owner,
+      timezone: command.timezone,
+    });
     const recentTodoCount = context.todos.length;
     if (!hasEnoughRecentTodos(recentTodoCount)) {
       return this.#skip(command, "NO_RECENT_TODOS", recentTodoCount);

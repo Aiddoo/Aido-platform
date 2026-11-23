@@ -250,11 +250,11 @@ describe("GET /v1/entitlements 서버 계산 권한 스냅샷 (실제 PostgreSQL
     // KST 1월 31일 23:00에 AI를 4회 쓴 사용자
     const LAST_AI_USE = Temporal.Instant.from("2027-01-31T14:00:00.000Z");
 
-    async function entitlementsIn(accessToken: string, timeZone: string) {
+    async function entitlementsIn(accessToken: string, timezone: string) {
       const response = await request(context.app.getHttpServer())
         .get("/v1/entitlements")
         .set("Authorization", `Bearer ${accessToken}`)
-        .set("X-Timezone", timeZone)
+        .set("X-Timezone", timezone)
         .expect(200);
       return entitlementSnapshotSchema.parse(response.body.data);
     }

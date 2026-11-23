@@ -1,4 +1,4 @@
-import { err, ok, type Result } from '@src/core/errors/result';
+import { fail, ok, type Result } from '@src/core/errors/result';
 import type { AppLogger } from '@src/core/ports/app-logger';
 import type { PurchasesGateway } from '@src/core/ports/purchases-gateway';
 import { getErrorMessage } from '@src/shared/errors';
@@ -40,29 +40,29 @@ export class SubscriptionService {
 
   getOfferings = async (): Promise<Result<SubscriptionOffering, SubscriptionError>> => {
     if (!this.#session.isConfigured()) {
-      return err(SubscriptionErrors.storeUnavailable());
+      return fail(SubscriptionErrors.storeUnavailable());
     }
 
     try {
       const offering = await this.#purchases.getOffering();
       if (offering == null) {
-        return err(SubscriptionErrors.offeringsUnavailable());
+        return fail(SubscriptionErrors.offeringsUnavailable());
       }
       return ok(toSubscriptionOffering(offering));
     } catch (error) {
       this.#logger.warn(SUBSCRIPTION_LOG_EVENT.OFFERINGS_FETCH_FAILED, {
         error: getErrorMessage(error),
       });
-      return err(toSubscriptionError('offerings', error));
+      return fail(toSubscriptionError('offerings', error));
     }
   };
 
   purchase = async (identifier: string): Promise<Result<boolean, SubscriptionError>> => {
     if (!this.#session.isConfigured()) {
-      return err(SubscriptionErrors.storeUnavailable());
+      return fail(SubscriptionErrors.storeUnavailable());
     }
     if (!(await this.#hasSignedInUser())) {
-      return err(SubscriptionErrors.storeProblem());
+      return fail(SubscriptionErrors.storeProblem());
     }
 
     try {
@@ -72,15 +72,15 @@ export class SubscriptionService {
         .with({ type: 'purchased' }, ({ status }) =>
           ok(CustomerInfoPolicy.hasStoreEntitlement(toCustomerInfo(status))),
         )
-        .with({ type: 'package-not-found' }, () => err(SubscriptionErrors.offeringsUnavailable()))
+        .with({ type: 'package-not-found' }, () => fail(SubscriptionErrors.offeringsUnavailable()))
         .exhaustive();
     } catch (error) {
-      return err(toSubscriptionError('purchase', error));
+      return fail(toSubscriptionError('purchase', error));
     }
   };
 
   // 조회 실패도 "없음"과 구분하지 않고 경고만 남긴다. 호출부는 모두 null이면 구독 목록을 연다
-  findManagementSource = async (store: SubscriptionStore): Promise<ManagementSource> => {
+  getManagementSource = async (store: SubscriptionStore): Promise<ManagementSource> => {
     if (!this.#session.isConfigured()) {
       return NO_MANAGEMENT_SOURCE;
     }
@@ -101,17 +101,17 @@ export class SubscriptionService {
 
   restorePurchases = async (): Promise<Result<boolean, SubscriptionError>> => {
     if (!this.#session.isConfigured()) {
-      return err(SubscriptionErrors.storeUnavailable());
+      return fail(SubscriptionErrors.storeUnavailable());
     }
     if (!(await this.#hasSignedInUser())) {
-      return err(SubscriptionErrors.storeProblem());
+      return fail(SubscriptionErrors.storeProblem());
     }
 
     try {
       const customerInfo = toCustomerInfo(await this.#purchases.restore());
       return ok(CustomerInfoPolicy.hasStoreEntitlement(customerInfo));
     } catch (error) {
-      return err(toSubscriptionError('restore', error));
+      return fail(toSubscriptionError('restore', error));
     }
   };
 

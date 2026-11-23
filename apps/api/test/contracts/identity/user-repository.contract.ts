@@ -2,23 +2,41 @@ import { ACCOUNT_DELETION } from "@aido/api/vocabulary";
 
 import { IdentityPersistenceConflict } from "#api/modules/identity/shared/domain/identity.errors";
 import type { UserRepositoryPort } from "#api/modules/identity/users/application/ports/user.repository.port";
-import type { User } from "#api/modules/identity/users/domain/user.aggregate";
+import { User } from "#api/modules/identity/users/domain/user.aggregate";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AUTH_FIXTURE_NOW } from "#test/fixtures/identity/session.fixture";
 
 const GRACE_PERIOD = { hours: 24 * ACCOUNT_DELETION.GRACE_PERIOD_DAYS };
 let emailSequence = 0;
 
+async function newUser(
+  repository: UserRepositoryPort,
+  params: Pick<Parameters<typeof User.create>[0], "email" | "status" | "emailVerifiedAt">,
+): Promise<User> {
+  return User.create({
+    ...params,
+    id: UserId.generate(),
+    userTag: await repository.nextUserTag(),
+    now: AUTH_FIXTURE_NOW,
+  });
+}
+
 async function createUser(
   repository: UserRepositoryPort,
   overrides: { readonly emailVerifiedAt?: Temporal.Instant } = {},
 ): Promise<User> {
   emailSequence += 1;
-  return repository.create({
+  const user = await newUser(repository, {
     email: `contract-${emailSequence}@example.com`,
     status: "PENDING_VERIFY",
-    ...overrides,
+    emailVerifiedAt: overrides.emailVerifiedAt ?? null,
   });
+  await repository.save(user);
+  const stored = await repository.findById(user.id);
+  if (stored == null) {
+    throw new Error("만든 사용자를 찾지 못했다");
+  }
+  return stored;
 }
 
 export function describeUserRepositoryContract(
@@ -56,7 +74,13 @@ export function describeUserRepositoryContract(
       const created = await createUser(repository);
 
       // When
-      const duplicated = repository.create({ email: created.email, status: "ACTIVE" });
+      const duplicated = repository.save(
+        await newUser(repository, {
+          email: created.email,
+          status: "ACTIVE",
+          emailVerifiedAt: null,
+        }),
+      );
 
       // Then
       await expect(duplicated).rejects.toEqual(
@@ -222,6 +246,30 @@ export function describeUserRepositoryContract(
       // Then
       expect(await repository.findById(created.id)).toBeNull();
       await expect(repository.hardDelete(created.id)).rejects.toThrow();
+    });
+
+    it("넣은 사용자를 같은 객체로 다시 저장하면 또 넣지 않고 그 행을 바꾼다", async () => {
+      // Given
+      const repository = await createRepository();
+      emailSequence += 1;
+      const user = await newUser(repository, {
+        email: `contract-${emailSequence}@example.com`,
+        status: "PENDING_VERIFY",
+        emailVerifiedAt: null,
+      });
+      await repository.save(user);
+      user.markEmailVerified(AUTH_FIXTURE_NOW);
+
+      // When
+      await repository.save(user);
+
+      // Then
+      const stored = await repository.findByEmail(user.email);
+      expect(stored?.toPrimitives()).toEqual(user.toPrimitives());
+      expect(stored?.toPrimitives()).toMatchObject({
+        status: "ACTIVE",
+        emailVerifiedAt: AUTH_FIXTURE_NOW,
+      });
     });
   });
 }

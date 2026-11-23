@@ -21,7 +21,7 @@ export interface GenerateAuthUrlParams {
   persistState: (
     provider: AccountProvider,
     redirectUri: string,
-    opts: { mode?: OAuthMode; initiatingUserId?: UserId },
+    options: { mode?: OAuthMode; initiatingUserId?: UserId },
   ) => Promise<unknown>;
 }
 
@@ -52,5 +52,5 @@ export abstract class OAuthIdentityProviderPort {
 }
 
 export abstract class OAuthIdentityProviderRegistryPort {
-  abstract get(provider: AccountProvider): OAuthIdentityProviderPort | undefined;
+  abstract find(provider: AccountProvider): OAuthIdentityProviderPort | null;
 }

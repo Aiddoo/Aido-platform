@@ -164,7 +164,7 @@ export function HintPopoverContent({
       variant="ghost"
       hitSlop={CLOSE_HIT_SLOP}
       style={{ width: CLOSE_BUTTON_SIZE, height: CLOSE_BUTTON_SIZE }}
-      accessibilityLabel={t('actions.close')}
+      aria-label={t('actions.close')}
       testID="hint-popover-close"
     >
       <CloseIcon

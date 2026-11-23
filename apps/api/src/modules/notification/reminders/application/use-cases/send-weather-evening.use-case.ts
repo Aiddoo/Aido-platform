@@ -4,7 +4,7 @@ import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
-  NotificationHistoryReader,
+  NotificationHistoryReaderPort,
   PublishNotificationBatchUseCase,
 } from "../../../notifications/notification-notifications.public.js";
 import {
@@ -31,10 +31,13 @@ const NOTIFICATION_TYPE = "WEATHER_EVENING";
 interface WeatherEveningStrategyDependencies {
   readonly reader: Pick<
     WeatherReminderReaderPort,
-    "findWeatherEveningFallbackUsers" | "findWeatherEveningUsersWithLocation"
+    "listWeatherEveningFallbackUsers" | "listWeatherEveningUsersWithLocation"
   >;
   readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
-  readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
+  readonly notificationHistoryReader: Pick<
+    NotificationHistoryReaderPort,
+    "listAlreadyNotifiedUserIds"
+  >;
   readonly weatherReportReader: Pick<ReminderWeatherReportReaderPort, "readReports">;
   readonly clock: Pick<ClockPort, "now">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
@@ -83,7 +86,7 @@ export class SendWeatherEveningUseCase implements TimezoneReminderStrategyPort {
     timezoneContext: TimezoneContext,
     today: Temporal.PlainDate,
   ): Promise<{ sent: number; unavailable: number }> {
-    const rows = await this.#dependencies.reader.findWeatherEveningUsersWithLocation({
+    const rows = await this.#dependencies.reader.listWeatherEveningUsersWithLocation({
       timezones: timezoneContext.timezones,
       times: timezoneContext.reminderTimes,
       userId:
@@ -144,7 +147,7 @@ export class SendWeatherEveningUseCase implements TimezoneReminderStrategyPort {
     timezoneContext: TimezoneContext,
     today: Temporal.PlainDate,
   ): Promise<number> {
-    const users = await this.#dependencies.reader.findWeatherEveningFallbackUsers({
+    const users = await this.#dependencies.reader.listWeatherEveningFallbackUsers({
       timezones: timezoneContext.timezones,
       times: timezoneContext.reminderTimes,
       userId:

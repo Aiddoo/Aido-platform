@@ -1,18 +1,28 @@
 import type { z } from "zod";
 
 import { type AppConfig, type AppEnvironment, resolveAppEnvironment } from "./app.schema.js";
+import type { DatabaseConfig } from "./database.schema.js";
 import { defaultEmailProvider, type EmailConfig } from "./email.schema.js";
 import type { ExternalConfig } from "./external.schema.js";
-import { hasOAuthProvider, type OAuthConfig } from "./oauth.schema.js";
+import { APPLE_JWKS_URL, hasOAuthProvider, type OAuthConfig } from "./oauth.schema.js";
 import { defaultAdminNotifierProvider, type WebhookConfig } from "./webhook.schema.js";
 
 type ProductionReadinessInput = AppConfig &
+  DatabaseConfig &
   EmailConfig &
   ExternalConfig &
   OAuthConfig &
   WebhookConfig;
 
 const isBlank = (value: string | undefined): boolean => value == null || value.trim() === "";
+
+// disable·allow·prefer는 TLS 없이 붙거나 평문으로 물러설 수 있어 운영 DB 연결에 쓰지 않는다
+const ENCRYPTED_SSL_MODES: ReadonlySet<string> = new Set(["require", "verify-ca", "verify-full"]);
+
+function requiresEncryptedConnection(databaseUrl: string): boolean {
+  const sslMode = URL.parse(databaseUrl)?.searchParams.get("sslmode");
+  return sslMode != null && ENCRYPTED_SSL_MODES.has(sslMode);
+}
 
 /**
  * 운영(APP_ENV=production, 없으면 NODE_ENV=production)에서 위험한 설정 조합이면 시작을 거부한다.
@@ -55,6 +65,17 @@ export function validateProductionReadiness({
       "REVENUECAT_WEBHOOK_SECRET",
       "is required in production to verify RevenueCat webhook signatures",
     );
+  }
+
+  if (!requiresEncryptedConnection(env.DATABASE_URL)) {
+    refuse("DATABASE_URL", "must set sslmode to require, verify-ca or verify-full in production");
+  }
+  if (env.DATABASE_SSL_ALLOW_UNVERIFIED) {
+    refuse("DATABASE_SSL_ALLOW_UNVERIFIED", "must be false in production");
+  }
+
+  if (env.APPLE_JWKS_URL != null && env.APPLE_JWKS_URL !== APPLE_JWKS_URL) {
+    refuse("APPLE_JWKS_URL", "must be unset or Apple's official JWKS URL in production");
   }
 
   if (!hasOAuthProvider(env)) {

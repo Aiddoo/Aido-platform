@@ -3,6 +3,7 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 export class StubTodoOwnerTimezone extends TodoOwnerTimezonePort {
   readonly timezones: Map<string, string>;
+  readCount = 0;
 
   constructor(timezones: Map<string, string> = new Map()) {
     super();
@@ -10,6 +11,7 @@ export class StubTodoOwnerTimezone extends TodoOwnerTimezonePort {
   }
 
   async findTimezone(userId: UserId): Promise<string | null> {
+    this.readCount += 1;
     return this.timezones.get(userId.value) ?? null;
   }
 }

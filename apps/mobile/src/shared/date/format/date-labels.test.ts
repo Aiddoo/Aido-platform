@@ -18,8 +18,8 @@ import {
   getWeekdayLabels,
 } from './date-labels';
 
-const KO_SEOUL_CONTEXT = { locale: 'ko-KR', timeZone: 'Asia/Seoul' } as const;
-const EN_SEOUL_CONTEXT = { locale: 'en-US', timeZone: 'Asia/Seoul' } as const;
+const KO_SEOUL_CONTEXT = { locale: 'ko-KR', timezone: 'Asia/Seoul' } as const;
+const EN_SEOUL_CONTEXT = { locale: 'en-US', timezone: 'Asia/Seoul' } as const;
 
 /** 서버 formatIsoWeekLabel도 같은 표를 읽는다. 두 구현의 글자가 어긋나면 어느 한쪽 테스트가 깨진다 */
 const SHARED_ISO_WEEK_LABEL_CASES = z
@@ -116,8 +116,8 @@ describe('getDayOfWeekLabel', () => {
 });
 
 describe('로케일 인지 포맷 (i18n)', () => {
-  const KO_SEOUL = { locale: 'ko-KR', timeZone: 'Asia/Seoul' } as const;
-  const EN_SEOUL = { locale: 'en-US', timeZone: 'Asia/Seoul' } as const;
+  const KO_SEOUL = { locale: 'ko-KR', timezone: 'Asia/Seoul' } as const;
+  const EN_SEOUL = { locale: 'en-US', timezone: 'Asia/Seoul' } as const;
   const TODAY_DATE_KEY = createDateKey('2026-10-26');
 
   it('요일 라벨은 앱 언어를 따른다', async () => {
@@ -209,8 +209,8 @@ describe('로케일 인지 포맷 (i18n)', () => {
 });
 
 describe('formatIsoWeekLabel', () => {
-  const KO = { locale: 'ko-KR', timeZone: 'Asia/Seoul' } as const;
-  const EN = { locale: 'en-US', timeZone: 'Asia/Seoul' } as const;
+  const KO = { locale: 'ko-KR', timezone: 'Asia/Seoul' } as const;
+  const EN = { locale: 'en-US', timezone: 'Asia/Seoul' } as const;
   const TODAY_KEY = createDateKey('2026-11-12');
 
   it('주의 목요일이 속한 달 기준으로 앱 언어에 맞는 주차를 만든다', () => {
@@ -334,7 +334,7 @@ describe('formatDateKeyRange·formatDateKeyCompactRange', () => {
     '%s는 올해가 아닌 끝이 있으면 연도까지, 구분자는 언어의 카탈로그 값이다',
     (_name, locale, [start, end, today], expected, expectedCompact) => {
       // Given
-      const context = { locale, timeZone: 'Asia/Seoul' };
+      const context = { locale, timezone: 'Asia/Seoul' };
 
       // When
       const range = formatDateKeyRange(

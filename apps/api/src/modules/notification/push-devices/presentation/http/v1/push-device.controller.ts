@@ -51,7 +51,7 @@ import {
   UnregisterPushTokenQueryDto,
 } from "./push-device.dto.js";
 
-// 1.14.1 이하 앱이 deviceId 없이 등록할 때 쓰던 값이다
+// 1.14.1 이하 앱이 deviceId 없이 등록할 때 쓰던 값이다. 1.17.0 확인 뒤 지운다(compatibility.md)
 const LEGACY_DEFAULT_DEVICE_ID = "default";
 
 // v1 계약의 토큰은 Expo 토큰뿐이다(DTO 정규식). 다른 채널은 새 계약 필드로 받는다
@@ -65,7 +65,7 @@ function pushDeviceContext(client: RequestClient) {
   };
 }
 
-// 1.14.1 이하 앱은 deviceId 없이 등록할 수 있어 X-Device-Type으로만 플랫폼을 알 수 있다
+// 1.14.1 이하 앱은 deviceId 없이 등록할 수 있어 X-Device-Type으로만 플랫폼을 알 수 있다. 1.17.0 확인 뒤 지운다(compatibility.md)
 function legacyPlatformHint(client: RequestClient) {
   return match(client.platform)
     .with(PUSH_DEVICE_PLATFORM.IOS, PUSH_DEVICE_PLATFORM.ANDROID, (platform) => platform)

@@ -1,5 +1,4 @@
 import { ErrorCode } from "@aido/api/errors";
-import { vi } from "vitest";
 
 import {
   createPlanningTodoFixture,
@@ -19,9 +18,6 @@ describe("할 일 완료 상태 전이", () => {
   beforeEach(() => {
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
     useCase = new SetTodoCompletedUseCase(fixture);
-  });
-  afterEach(() => {
-    vi.restoreAllMocks();
   });
 
   it("완료 시각을 고정해서 저장하고 해제하면 null로 지운다", async () => {
@@ -53,14 +49,14 @@ describe("할 일 완료 상태 전이", () => {
       completed: true,
     };
     await useCase.execute(input);
-    const completionWrite = vi.spyOn(fixture.todoRepository, "save");
+    const before = snapshotTodoRecord(fixture.records.get(1));
     fixture.clock.advanceBy({ hours: 1 });
     // When
     const result = await useCase.execute(input);
     // Then
     expect(result.completedAt).toBe(PLANNING_TIME.toISOString());
     expect(fixture.completionEffects.events).toHaveLength(1);
-    expect(completionWrite).not.toHaveBeenCalled();
+    expect(fixture.records.get(1)).toEqual(before);
   });
   it("완료를 되돌리면 순간은 그대로 두고 지금 순간으로 알림 재예약 이벤트를 낸다", async () => {
     // Given
@@ -114,30 +110,22 @@ describe("할 일 완료 상태 전이", () => {
     expect(fixture.completionEffects.events).toEqual([]);
   });
 
-  it("완료 효과가 끝나기 전에 응답 조회를 진행하지 않는다", async () => {
+  it("응답은 완료 효과가 끝난 뒤의 할 일을 읽는다", async () => {
     // Given
-    const entered = Promise.withResolvers<void>();
-    const effects = Promise.withResolvers<void>();
     fixture.completionEffects.execute = async () => {
-      entered.resolve();
-      await effects.promise;
+      const record = fixture.records.get(1);
+      if (record != null) {
+        record.title = "효과 뒤 제목";
+      }
     };
-    const responseRead = vi.spyOn(fixture.todoReadRepository, "findByIdAndUserId");
     // When
-    const execution = useCase.execute({
+    const result = await useCase.execute({
       id: 1,
       userId: fixture.userId,
       timezone: "UTC",
       completed: true,
     });
-    try {
-      await Promise.race([entered.promise, execution]);
-      // Then
-      expect(responseRead).not.toHaveBeenCalled();
-    } finally {
-      effects.resolve();
-      await execution;
-    }
-    expect(responseRead).toHaveBeenCalledOnce();
+    // Then
+    expect(result.title).toBe("효과 뒤 제목");
   });
 });

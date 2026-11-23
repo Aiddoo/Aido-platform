@@ -1,8 +1,8 @@
 import type { InviteReaderPort } from "#api/modules/social/invites/application/ports/invite.reader.port";
 import type { InviteRepositoryPort } from "#api/modules/social/invites/application/ports/invite.repository.port";
+import { InviteId } from "#api/modules/social/invites/domain/invite-id.vo";
 import type { Invite, InvitePrimitives } from "#api/modules/social/invites/domain/invite.aggregate";
 import { InviteCode } from "#api/modules/social/shared/domain/invite-code.vo";
-import { InviteId } from "#api/modules/social/shared/domain/invite-id.vo";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
   createInviteFixture,

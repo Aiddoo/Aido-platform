@@ -4,7 +4,9 @@ import {
   computeDayPatterns,
   computeStreakDays,
   computeTimePatterns,
+  countPerfectDays,
   FALLBACK_CATEGORY_COLOR,
+  findPeakHour,
 } from "./report-aggregation.domain-service.js";
 
 // 사용자 현지 자정의 순간
@@ -185,5 +187,65 @@ describe("computeDailyCompletions", () => {
       ],
     );
     expect(result.reduce((sum, item) => sum + item.total, 0)).toBe(5);
+  });
+});
+
+describe("주로 끝낸 시간", () => {
+  it("같은 수의 시간대는 이른 시간이 먼저이고 주로 끝낸 시간도 그 시간이다", () => {
+    // Given
+    const completedAt = (iso: string) => ({ startDate: new Date(iso), completedAt: new Date(iso) });
+    const completedTodos = [
+      completedAt("2026-03-16T21:10:00.000Z"),
+      completedAt("2026-03-16T07:10:00.000Z"),
+      completedAt("2026-03-17T21:40:00.000Z"),
+      completedAt("2026-03-17T07:40:00.000Z"),
+      completedAt("2026-03-17T12:00:00.000Z"),
+    ];
+
+    // When
+    const patterns = computeTimePatterns(completedTodos, "UTC");
+
+    // Then
+    expect(patterns).toEqual([
+      { hour: 7, count: 2 },
+      { hour: 21, count: 2 },
+      { hour: 12, count: 1 },
+    ]);
+    expect(findPeakHour(patterns)).toBe(7);
+  });
+
+  it("저장 순서가 달라도 같은 시간을 고르고 끝낸 할 일이 없으면 null이다", () => {
+    // When
+    const stored = findPeakHour([
+      { hour: 21, count: 2 },
+      { hour: 7, count: 2 },
+    ]);
+    const empty = findPeakHour([]);
+
+    // Then
+    expect({ stored, empty }).toEqual({ stored: 7, empty: null });
+  });
+});
+
+describe("완벽한 날", () => {
+  it("할 일이 있고 모두 끝낸 날만 세고 날짜별 값이 없는 옛 리포트는 null이다", () => {
+    // Given
+    const day = (date: string, total: number, completed: number) => ({
+      date: Temporal.PlainDate.from(date),
+      total,
+      completed,
+    });
+
+    // When
+    const counted = countPerfectDays([
+      day("2026-03-16", 2, 2),
+      day("2026-03-17", 0, 0),
+      day("2026-03-18", 3, 2),
+      day("2026-03-19", 1, 1),
+    ]);
+    const legacy = countPerfectDays(null);
+
+    // Then
+    expect({ counted, legacy }).toEqual({ counted: 2, legacy: null });
   });
 });

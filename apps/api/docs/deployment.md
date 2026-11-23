@@ -43,8 +43,6 @@ API container는 내부 포트 8080, memory 512M/CPU 1, Node heap 384MiB이고 �
 - 새 `Session`·`LoginAttempt` 행의 `ipAddress`가 게이트웨이·loopback 주소가 아닌 실제 접속 IP다. `X-Forwarded-For`를 꾸며 보낸 로그인 시도도 실제 접속 IP로 남는다.
 - Sentry 트랜잭션 이름이 `GET /v1/todos/:id`처럼 경로 템플릿으로 남는다(실제 id가 든 URL이 아니다).
 
-HTTP 어댑터를 Express에서 `NodeAdapter`(`@nestjs/platform-node` 12.5.1)로 바꾼 커밋은 12.5.1 배포 2주 뒤인 2026-11-30 이후에 운영에 배포한다. 스키마 변화가 없어 되돌리기는 이전 SHA 재배포다.
-
 ## 수동 배포
 
 CI가 이미지를 만들지 않은 커밋(API 범위 밖 변경)을 배포하려면 `gh workflow run ci.yml --ref main`으로 CI를 다시 돌린다. 이미지가 발행되면 deploy workflow가 이어서 배포한다.

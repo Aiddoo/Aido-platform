@@ -35,7 +35,7 @@ export class DrizzleUserBlockReader implements UserBlockReaderPort {
     };
   }
 
-  async findBlockedCounterpartIds(
+  async listBlockedCounterpartIds(
     viewerId: UserId,
     candidateUserIds: readonly UserId[],
   ): Promise<ReadonlySet<string>> {

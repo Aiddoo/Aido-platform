@@ -2,7 +2,7 @@ import { uniq } from "es-toolkit";
 
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { localDateIn, resolveDeliveryTimezone } from "#api/shared/domain/time/time-zone-name";
+import { localDateIn, resolveDeliveryTimezone } from "#api/shared/domain/time/timezone-name";
 
 import type {
   NotificationDeliveryPreference,
@@ -22,7 +22,7 @@ export interface BatchPushDeliveryRecipient {
 interface LoadPushDeliveryRecipientsDependencies {
   readonly userSettings: Pick<
     UserNotificationSettingsPort,
-    "findConsentReadModelsByUserIds" | "findPreferenceReadModelsByUserIds"
+    "listConsentReadModelsByUserIds" | "listPreferenceReadModelsByUserIds"
   >;
   readonly clock: ClockPort;
 }
@@ -41,8 +41,8 @@ export class LoadPushDeliveryRecipientsUseCase {
     const uniqueUserIds = uniq(userIds);
     const recipientIds = uniqueUserIds.map((userId) => UserId.reconstitute(userId));
     const [preferences, consents] = await Promise.all([
-      this.#dependencies.userSettings.findPreferenceReadModelsByUserIds(recipientIds),
-      this.#dependencies.userSettings.findConsentReadModelsByUserIds(recipientIds),
+      this.#dependencies.userSettings.listPreferenceReadModelsByUserIds(recipientIds),
+      this.#dependencies.userSettings.listConsentReadModelsByUserIds(recipientIds),
     ]);
     const preferenceByUserId = new Map(
       preferences.map((preference) => [preference.userId.value, preference]),

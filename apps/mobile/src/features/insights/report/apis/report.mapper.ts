@@ -23,11 +23,13 @@ export function toAiReport(dto: AiReportDto): AiReport {
       'completionRate',
       'prevCompletionRate',
       'streakDays',
+      'perfectDays',
     ]),
     categoryBreakdown: dto.categoryBreakdown.map((item) =>
       pick(item, ['name', 'color', 'total', 'completed', 'rate']),
     ),
     timePatterns: dto.timePatterns.map((item) => pick(item, ['hour', 'count'])),
+    peakHour: dto.peakHour,
     dailyCompletions:
       dto.dailyCompletions?.map((day) => ({
         ...pick(day, ['total', 'completed']),

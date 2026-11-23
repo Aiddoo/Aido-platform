@@ -4,7 +4,6 @@ import { todoConversationConnectionSchema } from "@aido/api/contracts/todo-comme
 import { Test, type TestingModule } from "@nestjs/testing";
 import { eq } from "drizzle-orm";
 
-import { TodoCommentId } from "#api/modules/engagement/shared/domain/todo-comment-id.vo";
 import { DrizzleTodoCommentLikeReader } from "#api/modules/engagement/todo-comment-likes/infrastructure/persistence/drizzle-todo-comment-like.reader";
 import type { TodoCommentCursorCodecPort } from "#api/modules/engagement/todo-comments/application/ports/todo-comment-cursor-codec.port";
 import { TodoCommentIdempotencyRaceError } from "#api/modules/engagement/todo-comments/application/todo-comments.errors";
@@ -13,6 +12,7 @@ import { ListTodoCommentThreadsUseCase } from "#api/modules/engagement/todo-comm
 import { CommentPlacement } from "#api/modules/engagement/todo-comments/domain/comment-placement.vo";
 import { matchTodoCommentChainReplay } from "#api/modules/engagement/todo-comments/domain/todo-comment-chain.domain-service";
 import { TodoCommentContent } from "#api/modules/engagement/todo-comments/domain/todo-comment-content.vo";
+import { TodoCommentId } from "#api/modules/engagement/todo-comments/domain/todo-comment-id.vo";
 import { TodoCommentRequestId } from "#api/modules/engagement/todo-comments/domain/todo-comment-request-id.vo";
 import { TodoComment } from "#api/modules/engagement/todo-comments/domain/todo-comment.aggregate";
 import { DELETED_COMMENT_AUTHOR } from "#api/modules/engagement/todo-comments/domain/todo-comments.constants";
@@ -262,7 +262,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
 
     // When
     const { result: window, count } = await recordStatements(() =>
-      conversationReader.listConversation(input),
+      conversationReader.findConversationWindow(input),
     );
 
     // Then
@@ -331,7 +331,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
 
     // When
     const { result: window, count } = await recordStatements(() =>
-      threadReader.listThreads({
+      threadReader.findThreadWindow({
         todoId: TodoId.reconstitute(todoId),
         sort: "POPULAR",
         size: 1,
@@ -383,7 +383,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     await updateComment(ROOT_B, { replyCount: 2 });
 
     // When
-    const window = await threadReader.listThreads({
+    const window = await threadReader.findThreadWindow({
       todoId: TodoId.reconstitute(todoId),
       sort: "LATEST",
       size: 1,
@@ -485,7 +485,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     } as const;
 
     // When
-    const window = await conversationReader.listConversation(input);
+    const window = await conversationReader.findConversationWindow(input);
 
     // Then
     expect(window?.items.map((item) => item.id)).toEqual([CHILD_Z, GRANDCHILD]);
@@ -508,7 +508,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     } as const;
 
     // When
-    const window = await conversationReader.listConversation(input);
+    const window = await conversationReader.findConversationWindow(input);
 
     // Then
     expect(window?.items.map((item) => item.id)).toEqual([CHILD_A, CHILD_Z]);
@@ -523,7 +523,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     await updateComment(ROOT_A, { likeCount: 5 });
 
     // When
-    const window = await conversationReader.listConversation({
+    const window = await conversationReader.findConversationWindow({
       todoId: TodoId.reconstitute(todoId),
       sort: "POPULAR",
       size: 5,
@@ -545,7 +545,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     // Given
     await updateComment(ROOT_A, { likeCount: 3 });
     await updateComment(ROOT_B, { likeCount: 2 });
-    const firstPage = await conversationReader.listConversation({
+    const firstPage = await conversationReader.findConversationWindow({
       todoId: TodoId.reconstitute(todoId),
       sort: "POPULAR",
       size: 2,
@@ -559,7 +559,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     await updateComment(ROOT_A, { likeCount: 0 });
 
     // When
-    const secondPage = await conversationReader.listConversation({
+    const secondPage = await conversationReader.findConversationWindow({
       todoId: TodoId.reconstitute(todoId),
       sort: "POPULAR",
       size: 2,
@@ -573,7 +573,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     if (secondAnchor === undefined) {
       throw new Error("POPULAR second page must have an anchor");
     }
-    const thirdPage = await conversationReader.listConversation({
+    const thirdPage = await conversationReader.findConversationWindow({
       todoId: TodoId.reconstitute(todoId),
       sort: "POPULAR",
       size: 2,
@@ -609,7 +609,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
         likeCount: 1,
         createdAt: Temporal.Instant.from("2026-08-26T00:30:00.000Z"),
       });
-      const firstPage = await conversationReader.listConversation({
+      const firstPage = await conversationReader.findConversationWindow({
         todoId: TodoId.reconstitute(todoId),
         sort: "POPULAR",
         size: 5,
@@ -623,7 +623,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
       await updateComment(ROOT_B, { likeCount: nextLikeCount });
 
       // When
-      const nextPage = await conversationReader.listConversation({
+      const nextPage = await conversationReader.findConversationWindow({
         todoId: TodoId.reconstitute(todoId),
         sort: "POPULAR",
         size: 2,
@@ -669,7 +669,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
         createdAt: Temporal.Instant.from("2026-08-26T05:00:00.000Z"),
       },
     ]);
-    const firstPage = await conversationReader.listConversation({
+    const firstPage = await conversationReader.findConversationWindow({
       todoId: TodoId.reconstitute(todoId),
       sort: "LATEST",
       size: 2,
@@ -692,8 +692,11 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     } as const;
 
     // When
-    const nextPage = await conversationReader.listConversation({ ...anchorInput, mode: "AFTER" });
-    const previousPage = await conversationReader.listConversation({
+    const nextPage = await conversationReader.findConversationWindow({
+      ...anchorInput,
+      mode: "AFTER",
+    });
+    const previousPage = await conversationReader.findConversationWindow({
       ...anchorInput,
       mode: "BEFORE",
     });
@@ -724,7 +727,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     } as const;
 
     // When
-    const window = await conversationReader.listConversation(input);
+    const window = await conversationReader.findConversationWindow(input);
 
     // Then
     expect(window?.items.map((item) => item.id)).toEqual([CHILD_A, CHILD_Z, GRANDCHILD]);
@@ -746,7 +749,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     );
 
     // When
-    const window = await conversationReader.listConversation({
+    const window = await conversationReader.findConversationWindow({
       todoId: TodoId.reconstitute(todoId),
       sort: "LATEST",
       size: 10,
@@ -771,7 +774,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     } as const;
 
     // When
-    const window = await conversationReader.listConversation(input);
+    const window = await conversationReader.findConversationWindow(input);
 
     // Then
     expect(window?.items.map((item) => item.id)).toEqual([ROOT_A, CHILD_A, CHILD_Z, GRANDCHILD]);
@@ -793,7 +796,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
     } as const;
 
     // When
-    const window = await conversationReader.listConversation(input);
+    const window = await conversationReader.findConversationWindow(input);
 
     // Then
     expect(window).toBeNull();

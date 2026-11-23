@@ -21,7 +21,7 @@ function toPremiumSourceProperty(user: User): PremiumSourceProperty {
 /** `is_premium`은 처음부터 ADMIN을 포함해 대시보드 연속성을 위해 의미를 바꾸지 않는다(유료 전환은 premium_source로 센다) */
 export function toUserAnalyticsProperties(user: User): UserPropertyMap {
   return {
-    is_premium: UserPolicy.hasPremiumAccess(user),
+    is_premium: UserPolicy.isAdmin(user) || user.isPremium,
     subscription_status: user.subscriptionStatus,
     premium_source: toPremiumSourceProperty(user),
   };

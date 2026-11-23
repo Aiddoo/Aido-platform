@@ -1,5 +1,3 @@
-import { vi } from "vitest";
-
 import { TodoTitle } from "#api/modules/planning/shared/domain/todo-title.vo";
 import { TodoSeriesId } from "#api/modules/planning/todo-series/domain/todo-series-id.vo";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -214,16 +212,15 @@ describe("시간대 재계산", () => {
   it("같은 시각의 다른 이름이면 쓰기와 재예약을 하지 않는다", async () => {
     // Given
     const useCase = setUp([timedTodo(1, "2026-11-10")], "Asia/Tokyo");
-    const update = vi.spyOn(fixture.todoRepository, "updateRebasedInstants");
-    const invalidate = vi.spyOn(fixture.todoCache, "invalidateFriendTodos");
+    const before = readInstant(1);
     // When
     const result = await useCase.execute({ userId: "planning-user" });
     // Then
     expect(result).toMatchObject({ scannedCount: 1, rebasedCount: 0 });
-    expect(update).toHaveBeenCalledWith([]);
+    expect(readInstant(1)).toBe(before);
     expect(fixture.todoReminder.cancelled).toEqual([]);
     expect(fixture.todoReminder.scheduled).toEqual([]);
-    expect(invalidate).not.toHaveBeenCalled();
+    expect(fixture.todoCache.generations.get(fixture.userId)).toBeUndefined();
   });
 
   it("서울 → 뉴욕 → 서울 왕복은 처음과 같고 다시 돌려도 바뀌지 않는다", async () => {
@@ -299,16 +296,6 @@ describe("시간대 재계산", () => {
     expect(drafts?.[0]?.scheduledTime).toEqual(Temporal.Instant.from("2026-11-10T15:00:00.000Z"));
   });
 
-  it("벽시계 칸이 빈 행은 건너뛰어 세고 순간을 망가뜨리지 않는다", async () => {
-    // Given
-    const useCase = setUp([timedTodo(1, "2026-11-10", { scheduledLocalTime: null })], NEW_YORK);
-    // When
-    const result = await useCase.execute({ userId: "planning-user" });
-    // Then
-    expect(result).toMatchObject({ skippedCount: 1, rebasedCount: 0 });
-    expect(readInstant(1)).toBe("2026-11-10T01:00:00.000Z");
-  });
-
   it("묶음을 나눠도 모든 행을 처리한다", async () => {
     // Given
     const useCase = setUp(
@@ -316,12 +303,11 @@ describe("시간대 재계산", () => {
       NEW_YORK,
       2,
     );
-    const invalidate = vi.spyOn(fixture.todoCache, "invalidateFriendTodos");
     // When
     const result = await useCase.execute({ userId: "planning-user" });
     // Then
     expect(result).toMatchObject({ outcome: "COMPLETED", scannedCount: 5, rebasedCount: 5 });
-    expect(invalidate).toHaveBeenCalledWith(UserId.reconstitute(fixture.userId));
+    expect(fixture.todoCache.generations.get(fixture.userId)).toBe(1);
   });
 
   it("실행 중 시간대가 또 바뀌면 남은 묶음을 멈추고 다음 작업에 맡긴다", async () => {
@@ -332,12 +318,10 @@ describe("시간대 재계산", () => {
       1,
     );
     const update = fixture.todoRepository.updateRebasedInstants.bind(fixture.todoRepository);
-    vi.spyOn(fixture.todoRepository, "updateRebasedInstants").mockImplementationOnce(
-      async (rows) => {
-        await update(rows);
-        fixture.ownerTimezone.timezones.set(fixture.userId, "Europe/Paris");
-      },
-    );
+    fixture.todoRepository.updateRebasedInstants = async (rows) => {
+      await update(rows);
+      fixture.ownerTimezone.timezones.set(fixture.userId, "Europe/Paris");
+    };
     // When
     const result = await useCase.execute({ userId: "planning-user" });
     // Then

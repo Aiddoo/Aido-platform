@@ -15,11 +15,11 @@ export function useTrack() {
   const trackEvent = useCallback(
     <E extends keyof AppEventMap & string>(
       eventName: E,
-      ...args: AppEventMap[E] extends undefined
+      ...eventParams: AppEventMap[E] extends undefined
         ? []
         : [params: AppEventMap[E] & AnalyticsEventParams]
     ): void => {
-      track(analytics, eventName, ...args);
+      track(analytics, eventName, ...eventParams);
     },
     [analytics],
   );

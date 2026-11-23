@@ -7,9 +7,9 @@ import type { RedemptionStatus as RedemptionStatusValue } from "@aido/api/vocabu
 
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
-import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import { Timezone } from "#api/shared/domain/time/timezone.vo";
 
-import { InviteId } from "../../shared/domain/invite-id.vo.js";
+import { InviteId } from "../../invites/domain/invite-id.vo.js";
 import {
   hasEnoughActiveDays,
   localActivityDate,
@@ -52,7 +52,7 @@ interface InviteRedemptionProps {
   readonly inviteeId: UserId;
   status: RedemptionStatus;
   rejectionReason: RedemptionRejectionReason | null;
-  readonly timeZone: TimeZone;
+  readonly timezone: Timezone;
   readonly inviterRewardEligible: boolean;
   activeDays: Temporal.PlainDate[];
   readonly joinedAt: Temporal.Instant;
@@ -68,7 +68,7 @@ interface CreateInviteRedemptionParams {
   readonly inviteId: InviteId;
   readonly inviterId: UserId;
   readonly inviteeId: UserId;
-  readonly timeZone: TimeZone;
+  readonly timezone: Timezone;
   readonly inviterRewardEligible: boolean;
   readonly now: Temporal.Instant;
 }
@@ -85,7 +85,7 @@ export class InviteRedemption extends AggregateRoot<InviteRedemptionId, InviteRe
       inviteeId: params.inviteeId,
       status: RedemptionStatus.reconstitute(REDEMPTION_STATUS.JOINED),
       rejectionReason: null,
-      timeZone: params.timeZone,
+      timezone: params.timezone,
       inviterRewardEligible: params.inviterRewardEligible,
       activeDays: [],
       joinedAt: params.now,
@@ -104,7 +104,7 @@ export class InviteRedemption extends AggregateRoot<InviteRedemptionId, InviteRe
       inviteeId: UserId.reconstitute(primitives.inviteeId),
       status: RedemptionStatus.reconstitute(primitives.status),
       rejectionReason: primitives.rejectionReason,
-      timeZone: TimeZone.reconstitute(primitives.timezone),
+      timezone: Timezone.reconstitute(primitives.timezone),
       inviterRewardEligible: primitives.inviterRewardEligible,
       activeDays: sortedDays(primitives.activeDays),
       joinedAt: primitives.joinedAt,
@@ -136,8 +136,8 @@ export class InviteRedemption extends AggregateRoot<InviteRedemptionId, InviteRe
     return this.props.rejectionReason;
   }
 
-  get timeZone(): TimeZone {
-    return this.props.timeZone;
+  get timezone(): Timezone {
+    return this.props.timezone;
   }
 
   get activeDays(): readonly Temporal.PlainDate[] {
@@ -194,7 +194,7 @@ export class InviteRedemption extends AggregateRoot<InviteRedemptionId, InviteRe
     if (!this.props.status.is(REDEMPTION_STATUS.JOINED) || this.isExpiredAt(occurredAt)) {
       return false;
     }
-    const localDate = localActivityDate(occurredAt, this.props.timeZone);
+    const localDate = localActivityDate(occurredAt, this.props.timezone);
     if (this.hasActiveDay(localDate)) {
       return false;
     }
@@ -231,7 +231,7 @@ export class InviteRedemption extends AggregateRoot<InviteRedemptionId, InviteRe
       hasOneActiveDayLeft(this.props.activeDays.length) &&
       !this.isExpiredAt(now) &&
       Temporal.Instant.compare(this.props.expiresAt, qualifyReminderExpiresBefore(now)) <= 0 &&
-      !this.hasActiveDay(localActivityDate(now, this.props.timeZone))
+      !this.hasActiveDay(localActivityDate(now, this.props.timezone))
     );
   }
 
@@ -264,7 +264,7 @@ export class InviteRedemption extends AggregateRoot<InviteRedemptionId, InviteRe
       inviteeId: this.props.inviteeId.value,
       status: this.props.status.value,
       rejectionReason: this.props.rejectionReason,
-      timezone: this.props.timeZone.value,
+      timezone: this.props.timezone.value,
       inviterRewardEligible: this.props.inviterRewardEligible,
       activeDays: [...this.props.activeDays],
       joinedAt: this.props.joinedAt,

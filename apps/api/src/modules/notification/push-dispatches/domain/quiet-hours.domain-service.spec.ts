@@ -1,13 +1,13 @@
 import { NIGHT_TIME_CONFIG } from "@aido/api/vocabulary";
 
-import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import { Timezone } from "#api/shared/domain/time/timezone.vo";
 
 import { isWithinQuietHours, PUSH_QUIET_HOURS_WINDOW } from "./quiet-hours.domain-service.js";
 
-function quietAt(iso: string, timeZone: string): boolean {
+function quietAt(iso: string, timezone: string): boolean {
   return isWithinQuietHours({
     instant: Temporal.Instant.from(iso),
-    timeZone: TimeZone.reconstitute(timeZone),
+    timezone: Timezone.reconstitute(timezone),
     window: PUSH_QUIET_HOURS_WINDOW,
   });
 }
@@ -23,10 +23,10 @@ describe("isWithinQuietHours — 푸시 방해 금지 시간", () => {
     { label: "KST 07:59", iso: "2024-01-15T22:59:00Z" },
   ])("$label은 야간이다", ({ iso }) => {
     // Given
-    const timeZone = "Asia/Seoul";
+    const timezone = "Asia/Seoul";
 
     // When
-    const quiet = quietAt(iso, timeZone);
+    const quiet = quietAt(iso, timezone);
 
     // Then
     expect(quiet).toBe(true);
@@ -39,10 +39,10 @@ describe("isWithinQuietHours — 푸시 방해 금지 시간", () => {
     { label: "KST 20:59", iso: "2024-01-15T11:59:00Z" },
   ])("$label은 주간이다", ({ iso }) => {
     // Given
-    const timeZone = "Asia/Seoul";
+    const timezone = "Asia/Seoul";
 
     // When
-    const quiet = quietAt(iso, timeZone);
+    const quiet = quietAt(iso, timezone);
 
     // Then
     expect(quiet).toBe(false);
@@ -53,10 +53,10 @@ describe("isWithinQuietHours — 푸시 방해 금지 시간", () => {
     { iso: "2024-01-15T12:00:00Z", quiet: false },
   ])("UTC 시간대에서 $iso의 야간 여부는 $quiet다", ({ iso, quiet }) => {
     // Given
-    const timeZone = "UTC";
+    const timezone = "UTC";
 
     // When
-    const result = quietAt(iso, timeZone);
+    const result = quietAt(iso, timezone);
 
     // Then
     expect(result).toBe(quiet);
@@ -68,13 +68,13 @@ describe("isWithinQuietHours — 푸시 방해 금지 시간", () => {
       start: Temporal.PlainTime.from("13:00"),
       end: Temporal.PlainTime.from("14:00"),
     };
-    const timeZone = TimeZone.reconstitute("UTC");
+    const timezone = Timezone.reconstitute("UTC");
 
     // When
     const results = ["12:59", "13:00", "13:59", "14:00"].map((time) =>
       isWithinQuietHours({
         instant: Temporal.Instant.from(`2024-01-15T${time}:00Z`),
-        timeZone,
+        timezone,
         window,
       }),
     );

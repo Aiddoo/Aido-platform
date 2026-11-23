@@ -65,8 +65,8 @@ describe("EntitlementReaderAdapter — 세 주체 × 기능 종류 권한 매트
       // When
       const snapshot = await fixture.reader.getEntitlements(fixture.userId);
       const limits = {
-        aiParse: await fixture.reader.getFeatureLimit(fixture.userId, "AI_PARSE"),
-        friend: await fixture.reader.getFeatureLimitInTransaction(fixture.userId, "FRIEND"),
+        aiParse: await fixture.reader.findFeatureLimit(fixture.userId, "AI_PARSE"),
+        friend: await fixture.reader.findFeatureLimitInTransaction(fixture.userId, "FRIEND"),
       };
       const canReport = {
         cached: await fixture.reader.can(fixture.userId, "AI_REPORT"),
@@ -93,7 +93,7 @@ describe("EntitlementReaderAdapter — 세 주체 × 기능 종류 권한 매트
       // When
       const adminEntitlements = await admin.reader.getEntitlements(admin.userId);
       const premiumEntitlements = await premium.reader.getEntitlements(premium.userId);
-      const categoryLimit = await admin.reader.getFeatureLimitInTransaction(
+      const categoryLimit = await admin.reader.findFeatureLimitInTransaction(
         admin.userId,
         "TODO_CATEGORY",
       );
@@ -113,8 +113,8 @@ describe("EntitlementReaderAdapter — 세 주체 × 기능 종류 권한 매트
     free.accessStateReader.featureGrants.seed(free.userId.value, { FRIEND: 2 });
 
     // When
-    const premiumCategory = await premium.reader.getFeatureLimit(premium.userId, "TODO_CATEGORY");
-    const freeFriend = await free.reader.getFeatureLimit(free.userId, "FRIEND");
+    const premiumCategory = await premium.reader.findFeatureLimit(premium.userId, "TODO_CATEGORY");
+    const freeFriend = await free.reader.findFeatureLimit(free.userId, "FRIEND");
 
     // Then
     expect(premiumCategory).toBe(30);

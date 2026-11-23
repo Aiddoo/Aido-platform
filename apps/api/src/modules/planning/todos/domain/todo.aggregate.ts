@@ -327,11 +327,11 @@ export class Todo extends AggregateRoot<TodoId, TodoProps, TodoEvent> {
     readonly timezone: string;
     readonly now: Temporal.Instant;
   }): TodoItem {
-    const item = appendChecklistItem(this.props.items, params);
-    this.props.items = [...this.props.items, item];
+    const checklistItem = appendChecklistItem(this.props.items, params);
+    this.props.items = [...this.props.items, checklistItem];
     this.#itemsChanged = true;
     this.reopen(params.timezone, params.now);
-    return item;
+    return checklistItem;
   }
 
   updateItem(itemId: TodoItemId, change: TodoItemChange, now: Temporal.Instant): boolean {

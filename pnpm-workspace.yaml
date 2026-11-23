@@ -33,28 +33,12 @@ allowBuilds:
   workerd: false
 
 overrides:
-  # pnpm audit --fix 결과. 상위 패키지가 패치 버전을 받으면 해당 항목을 제거한다.
+  # @firebase/firestore 4.17이 고친 버전 밖인 ~1.9.0을 요구한다. firestore가 1.13.6 이상을 받으면 지운다.
   '@grpc/grpc-js@<1.13.6': ^1.13.6
-  '@hono/node-server@<1.19.15': ^1.19.15
-  fast-uri@<3.1.9: ^3.1.9
   # @nestjs/terminus의 선택 peer인 Prisma client가 autoInstallPeers로 설치되지 않게 막는다.
   '@nestjs/terminus@12.2.0>@prisma/client': '-'
-  decode-uri-component@<=0.4.2: ^0.5.0
-  hono@<4.13.7: ^4.13.7
-  http-cache-semantics@<=4.2.0: ^4.3.0
-  lodash@<=4.17.23: ^4.18.1
-  multer@<2.5.0: ^2.5.0
-  node-forge@<1.4.3: ^1.4.3
   # glob 13.0.7은 GHSA-3g3m-2fjr-6pw4 수정을 13.x에 백포트했다(Sentry 소스맵 업로드·Jest가 13을 쓴다).
   glob@>=13.0.0 <13.0.7: ^13.0.7
-  re2js@>=2.2.0 <2.8.7: ^2.8.7
-  # @expo/cli > @expo/router-server만 쓴다(GHSA-xqc2-xf4c-x3h3). 앱 번들에는 들어가지 않는다.
-  react-server-dom-webpack@>=19.3.0 <19.3.1: ^19.3.1
-  'undici@<6.29.1': ^6.29.1
-  'undici@>=7.0.0 <7.30.1': ^7.30.1
-  'undici@>=8.0.0 <8.12.2': ^8.12.2
-  uuid@<11.1.1: ^11.1.1
-  valibot@<=1.4.1: ^1.4.2
 
 packageExtensions:
   '@expo/image-utils@0.8.17':
@@ -65,40 +49,42 @@ packageExtensions:
       '@expo/config-plugins': ~58.0.9
 
 catalog:
-  '@ai-sdk/anthropic': '4.0.104'
-  '@ai-sdk/google': '4.0.120'
-  '@ai-sdk/openai': '4.0.117'
+  '@ai-sdk/anthropic': '4.0.107'
+  '@ai-sdk/google': '4.0.124'
+  '@ai-sdk/openai': '4.0.122'
   '@ls-lint/ls-lint': '2.3.2'
   '@photostructure/tz-lookup': '11.8.0'
   '@react-native-kakao/core': '3.2.0'
   '@react-native-kakao/share': '3.2.0'
-  '@sentry/nestjs': '11.12.0'
+  '@sentry/nestjs': '11.16.0'
   '@swc/cli': '0.8.2'
   '@swc/core': '1.16.22'
-  '@tanstack/query-async-storage-persister': '5.107.1'
-  '@tanstack/react-query': '5.107.1'
-  '@tanstack/react-query-persist-client': '5.107.1'
-  '@testcontainers/postgresql': '12.2.1'
-  '@turbo/gen': '2.11.11'
+  '@tanstack/query-async-storage-persister': '5.108.3'
+  '@tanstack/react-query': '5.108.3'
+  '@tanstack/react-query-persist-client': '5.108.3'
+  '@testcontainers/postgresql': '12.2.2'
+  '@turbo/gen': '2.11.13'
   '@types/d3-shape': '3.2.0'
   '@types/ms': '2.1.0'
   '@types/ngeohash': '0.6.8'
   '@types/node': '26.6.6'
   '@types/pg': '8.23.1'
-  '@vitest/coverage-v8': '5.1.0'
-  'ai': '7.0.172'
+  '@types/supertest': '7.2.1'
+  '@vitest/coverage-v8': '5.1.1'
+  'ai': '7.0.179'
   'argon2': '0.45.2'
-  'bowser': '2.15.0'
+  'bowser': '2.15.1'
   'cockatiel': '4.0.0'
   'countries-and-timezones': '3.11.0'
   'd3-shape': '3.2.1'
-  'dependency-cruiser': '18.7.2'
+  'dependency-cruiser': '18.9.0'
+  'es-hangul': '2.4.0'
   'es-toolkit': '1.53.2'
   'expo-server-sdk': '8.0.0'
   'google-auth-library': '11.3.4'
   'ioredis': '6.0.0'
-  'jose': '6.2.17'
-  'knip': '6.45.1'
+  'jose': '6.2.18'
+  'knip': '6.48.0'
   'lru-cache': '11.5.3'
   'ms': '2.1.3'
   'ngeohash': '0.6.4'
@@ -108,7 +94,7 @@ catalog:
   'pg-boss': '12.38.2'
   'pino': '10.4.0'
   'pino-pretty': '13.2.0'
-  'react-email': '6.11.14'
+  'react-email': '6.11.16'
   'react-native-reorderable-list': '0.18.3'
   'react-native-reserved-regions': '0.2.0'
   'reflect-metadata': '0.2.2'
@@ -116,53 +102,53 @@ catalog:
   'remark-validate-links': '13.1.0'
   'rxjs': '7.8.2'
   'supertest': '7.3.2'
-  'testcontainers': '12.2.1'
+  'testcontainers': '12.2.2'
   'ts-pattern': '5.9.2'
   'typescript': '6.0.3'
   'unplugin-swc': '2.0.0'
   'vite': '8.3.8'
-  'vitest': '5.1.0'
+  'vitest': '5.1.1'
   'zod': '4.6.7'
 
 catalogs:
   expo58:
     '@expo/material-symbols': '0.1.1'
     '@expo/metro-runtime': '~58.0.17'
-    '@expo/ui': '~58.0.28'
+    '@expo/ui': '~58.0.29'
+    '@lodev09/react-native-true-sheet': '4.1.2'
     '@react-native-community/datetimepicker': '9.2.1'
     '@react-native/jest-preset': '0.88.1'
-    '@sentry/react-native': '~8.28.0'
+    '@sentry/react-native': '~8.28.1'
     '@shopify/flash-list': '2.3.2'
     '@shopify/react-native-skia': '2.14.0'
     '@types/jest': '30.0.0'
     '@types/react': '19.3.0'
     'babel-preset-expo': '~58.0.25'
-    'expo': '58.0.25'
+    'expo': '58.0.26'
     'expo-apple-authentication': '~58.0.3'
     'expo-application': '~58.1.2'
     'expo-asset': '~58.0.21'
     'expo-audio': '~58.0.12'
-    'expo-auth-session': '~58.0.18'
+    'expo-auth-session': '~58.0.19'
     'expo-blur': '~58.0.6'
     'expo-build-properties': '~58.0.12'
     'expo-clipboard': '~58.0.4'
     'expo-constants': '~58.0.16'
     'expo-crypto': '~58.0.8'
-    'expo-dev-client': '~58.0.20'
+    'expo-dev-client': '~58.0.21'
     'expo-device': '~58.0.5'
-    'expo-file-system': '~58.0.13'
+    'expo-file-system': '~58.0.14'
     'expo-font': '~58.0.12'
     'expo-glass-effect': '~58.0.5'
     'expo-haptics': '~58.0.8'
     'expo-image': '~58.0.18'
     'expo-keep-awake': '~58.0.4'
-    'expo-linear-gradient': '~58.0.4'
     'expo-linking': '~58.0.17'
     'expo-localization': '~58.0.5'
     'expo-location': '~58.0.22'
     'expo-network': '~58.0.5'
     'expo-notifications': '~58.1.9'
-    'expo-router': '~58.0.31'
+    'expo-router': '~58.0.32'
     'expo-screen-orientation': '~58.0.4'
     'expo-secure-store': '~58.0.3'
     'expo-sharing': '~58.0.23'
@@ -170,11 +156,11 @@ catalogs:
     'expo-store-review': '~58.0.3'
     'expo-system-ui': '~58.0.7'
     'expo-updates': '~58.0.22'
-    'expo-web-browser': '~58.0.8'
-    'expo-widgets': '~58.0.28'
-    'heroui-native': '1.0.11'
+    'expo-web-browser': '~58.1.0'
+    'expo-widgets': '~58.0.29'
+    'heroui-native': '1.1.1'
     'jest': '30.5.2'
-    'jest-expo': '~58.0.14'
+    'jest-expo': '~58.0.15'
     'react': '19.3.0'
     'react-dom': '19.3.0'
     'react-native': '0.88.1'
@@ -187,46 +173,42 @@ catalogs:
     'react-native-svg': '15.16.0'
     'react-native-view-shot': '6.1.1'
     'react-native-worklets': '0.13.0'
-    'uniwind': '1.13.2'
+    'uniwind': '1.14.0'
   drizzle1:
     '@nestjs-cls/transactional-adapter-drizzle-orm': '2.0.2'
-    'drizzle-kit': '1.0.0-rc.5'
-    'drizzle-orm': '1.0.0-rc.5'
+    'drizzle-kit': '1.0.0-rc.6'
+    'drizzle-orm': '1.0.0-rc.6'
   nest12:
     '@nestjs-cls/transactional': '4.0.2'
-    '@nestjs/cli': '12.0.13'
-    '@nestjs/common': '12.5.1'
+    '@nestjs/cli': '12.0.15'
+    '@nestjs/common': '12.6.0'
     '@nestjs/config': '12.1.1'
-    '@nestjs/core': '12.5.1'
+    '@nestjs/core': '12.6.0'
     '@nestjs/drizzle': '0.0.2'
     '@nestjs/event-emitter': '12.0.3'
     '@nestjs/http-client': '0.0.3'
     '@nestjs/i18n': '0.0.3'
     '@nestjs/jwt': '12.0.5'
     '@nestjs/mail': '0.0.2'
-    '@nestjs/platform-node': '12.5.1'
-    '@nestjs/schematics': '12.0.13'
+    '@nestjs/platform-node': '12.6.0'
+    '@nestjs/schematics': '12.0.16'
     '@nestjs/swagger': '12.1.2'
     '@nestjs/terminus': '12.2.0'
-    '@nestjs/testing': '12.5.1'
+    '@nestjs/testing': '12.6.0'
     '@nestjs/throttler': '6.8.0'
     'nestjs-cls': '7.0.2'
-    'nestjs-pino': '5.3.1'
+    'nestjs-pino': '5.3.2'
 
 patchedDependencies:
-  '@sentry/react-native@8.28.0': patches/@sentry__react-native@8.28.0.patch
-  '@gorhom/bottom-sheet@5.2.14': patches/@gorhom__bottom-sheet@5.2.14.patch
+  '@sentry/react-native@8.28.1': patches/@sentry__react-native@8.28.1.patch
   react-native-screens@4.30.1: patches/react-native-screens@4.30.1.patch
-  expo-widgets@58.0.28: patches/expo-widgets@58.0.28.patch
+  expo-widgets@58.0.29: patches/expo-widgets@58.0.29.patch
 auditConfig:
   # 빌드 도구에만 있는 권고라 위험을 수용한다. 상위 패키지가 고친 버전을 받으면 지운다.
   # - GHSA-g3hv-75wg-m249(minimatch <11.0.1): @expo/fingerprint가 기본 optimizationLevel 1로 써서 해당 없다고
   #   Expo가 밝혔다(@expo/fingerprint build/Options.js). 9·10에 백포트가 없고 11은 glob 13과 맞지 않는다.
   # - GHSA-3g3m-2fjr-6pw4(glob <=14.0.1): 13.0.7 백포트를 위 override로 받는다. 권고 범위가 갱신되지 않아
   #   계속 잡히고, 남은 glob 10은 AbortSignal을 쓰지 않는 개발 도구다.
-  # - GHSA-fc5q-39xc-vjpf(picomatch <=4.0.7, 고친 버전 없음): 모바일 빌드 도구(metro file-map·jest-util)에만 있고
-  #   서버 운영 의존성에는 없다. 패턴이 설정 파일에서만 와 외부 입력이 닿지 않는다. 고친 버전이 나오면 지운다.
   ignoreGhsas:
     - GHSA-g3hv-75wg-m249
     - GHSA-3g3m-2fjr-6pw4
-    - GHSA-fc5q-39xc-vjpf

@@ -4,6 +4,8 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import type { ConfigType } from "@nestjs/config";
 import { createRemoteJWKSet, errors, jwtVerify, type RemoteJWKSet } from "jose";
 
+import { APPLE_JWKS_URL } from "#api/platform/config/schemas/oauth.schema";
+
 import {
   expiredSocialToken,
   invalidSocialToken,
@@ -16,7 +18,7 @@ import {
 } from "../../application/ports/oauth-identity-provider.port.js";
 import { ProviderAccountId } from "../../domain/provider-account-id.vo.js";
 import { identityLinkedAccountsConfig } from "../../identity-linked-accounts.config.js";
-import { APPLE_ISSUER, APPLE_JWKS_URL, appleIdTokenClaimsSchema } from "./apple.wire.js";
+import { APPLE_ISSUER, appleIdTokenClaimsSchema } from "./apple.wire.js";
 import { logOAuthTokenVerifyFailed } from "./oauth-provider-error.wire.js";
 
 /**

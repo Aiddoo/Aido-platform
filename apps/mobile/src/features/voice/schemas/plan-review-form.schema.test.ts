@@ -5,48 +5,48 @@ describe('restoreDraftDateKey 옛 초안의 달력 날짜 복원', () => {
     {
       label: '서울 자정',
       stored: '2026-11-09T15:00:00.000Z',
-      timeZone: 'Asia/Seoul',
+      timezone: 'Asia/Seoul',
       expected: '2026-11-10',
     },
     {
       label: 'LA 자정(표준시)',
       stored: '2026-11-10T08:00:00.000Z',
-      timeZone: 'America/Los_Angeles',
+      timezone: 'America/Los_Angeles',
       expected: '2026-11-10',
     },
     {
       label: 'LA 서머타임이 끝나는 날의 자정',
       stored: '2026-11-01T07:00:00.000Z',
-      timeZone: 'America/Los_Angeles',
+      timezone: 'America/Los_Angeles',
       expected: '2026-11-01',
     },
     {
       label: 'LA 서머타임이 시작하는 날의 자정',
       stored: '2026-03-08T08:00:00.000Z',
-      timeZone: 'America/Los_Angeles',
+      timezone: 'America/Los_Angeles',
       expected: '2026-03-08',
     },
     {
       label: '서울에서 날짜 선택기로 고른 정오',
       stored: '2026-11-10T03:00:00.000Z',
-      timeZone: 'Asia/Seoul',
+      timezone: 'Asia/Seoul',
       expected: '2026-11-10',
     },
     {
       label: 'LA에서 날짜 선택기로 고른 저녁',
       stored: '2026-11-11T03:00:00.000Z',
-      timeZone: 'America/Los_Angeles',
+      timezone: 'America/Los_Angeles',
       expected: '2026-11-10',
     },
     {
       label: '저장 뒤 시간대를 옮긴 초안은 지금 시간대의 날짜로 읽는다',
       stored: '2026-11-09T15:00:00.000Z',
-      timeZone: 'America/Los_Angeles',
+      timezone: 'America/Los_Angeles',
       expected: '2026-11-09',
     },
-  ])('$label', ({ stored, timeZone, expected }) => {
+  ])('$label', ({ stored, timezone, expected }) => {
     // When
-    const dateKey = restoreDraftDateKey(stored, timeZone);
+    const dateKey = restoreDraftDateKey(stored, timezone);
 
     // Then
     expect(dateKey).toBe(expected);
@@ -54,9 +54,9 @@ describe('restoreDraftDateKey 옛 초안의 달력 날짜 복원', () => {
 
   it.each(['Asia/Seoul', 'America/Los_Angeles'])(
     '새 초안의 달력 날짜는 %s에서도 그대로다',
-    (timeZone) => {
+    (timezone) => {
       // When
-      const dateKey = restoreDraftDateKey('2026-11-10', timeZone);
+      const dateKey = restoreDraftDateKey('2026-11-10', timezone);
 
       // Then
       expect(dateKey).toBe('2026-11-10');

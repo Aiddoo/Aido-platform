@@ -60,7 +60,7 @@ function createTodoResponseFixture(record: PlanningTodoRecord): TodoResponse {
     startDate: record.startDate.toString(),
     endDate: record.endDate?.toString() ?? null,
     scheduledTime: record.scheduledTime == null ? null : toIsoString(record.scheduledTime),
-    scheduledLocalTime: record.scheduledTime == null ? null : record.scheduledLocalTime,
+    scheduledLocalTime: record.scheduledLocalTime,
     isAllDay: record.isAllDay,
     visibility: record.visibility,
     recurrenceGroupId: record.seriesId,

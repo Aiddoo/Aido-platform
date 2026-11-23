@@ -33,7 +33,9 @@ function createPlayerStub(initial: Partial<VoiceNotePlayback> = {}) {
   };
   const emit = (next: Partial<VoiceNotePlayback>) => {
     playback = { ...playback, ...next };
-    listeners.forEach((listener) => listener());
+    for (const listener of listeners) {
+      listener();
+    }
   };
   return { player, emit, getListenerCount: () => listeners.size };
 }

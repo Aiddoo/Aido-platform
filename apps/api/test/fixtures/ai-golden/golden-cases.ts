@@ -71,10 +71,10 @@ export type ParseMemoGoldenCase = z.infer<typeof parseMemoGoldenCaseSchema>;
 export const GOLDEN_MEMO_CATEGORY_ID = 1;
 
 const planningContextSchema = z.object({
-  categories: z.array(z.object({ id: z.number().int(), name: z.string() })),
+  categories: z.array(z.object({ id: z.int(), name: z.string() })),
   upcomingTodos: z.array(
     z.object({
-      id: z.number().int(),
+      id: z.int(),
       title: z.string(),
       startDate: z.iso.date(),
       isRepeating: z.boolean(),
@@ -88,7 +88,7 @@ const planningContextSchema = z.object({
  */
 const plannedTodoExpectationSchema = z.object({
   title: z.string(),
-  categoryId: z.number().int().nullable(),
+  categoryId: z.int().nullable(),
   startDate: z.iso.date(),
   endDate: z.iso.date().nullable(),
   scheduledTime: z.string().nullable(),
@@ -96,16 +96,14 @@ const plannedTodoExpectationSchema = z.object({
     .object({
       pattern: z.enum(PLAN_REPEAT_PATTERNS),
       daysOfWeek: z.array(z.enum(DAYS_OF_WEEK)),
-      monthDay: z.number().int().nullable(),
+      monthDay: z.int().nullable(),
       until: z.iso.date().nullable(),
-      forDuration: z
-        .object({ unit: z.enum(["DAY", "WEEK", "MONTH"]), amount: z.number().int() })
-        .nullable(),
+      forDuration: z.object({ unit: z.enum(["DAY", "WEEK", "MONTH"]), amount: z.int() }).nullable(),
     })
     .nullable(),
   visibility: z.enum(TODO_VISIBILITIES).extract(["PRIVATE"]).nullable(),
   items: z.array(z.string()),
-  duplicateOfTodoId: z.number().int().nullable(),
+  duplicateOfTodoId: z.int().nullable(),
 });
 export type PlannedTodoExpectation = z.infer<typeof plannedTodoExpectationSchema>;
 
@@ -129,7 +127,7 @@ export const voiceNoteDigestGoldenCaseSchema = z.object({
   context: planningContextSchema,
   draft: voiceNoteDigestDraftSchema,
   expected: planExpectationSchema.extend({
-    keyPointSentenceIndexes: z.array(z.number().int()),
+    keyPointSentenceIndexes: z.array(z.int()),
   }),
 });
 export type VoiceNoteDigestGoldenCase = z.infer<typeof voiceNoteDigestGoldenCaseSchema>;
@@ -157,7 +155,7 @@ export const suggestionGoldenCaseSchema = z.object({
   draft: suggestionDraftSchema,
   expected: z.object({
     mode: z.enum(SUGGESTION_MODES),
-    maxPicks: z.number().int(),
+    maxPicks: z.int(),
     expectNone: z.boolean(),
     allowedCandidateIds: z.array(z.string()),
     forbiddenCandidateIds: z.array(z.string()),
@@ -181,7 +179,7 @@ export function toSuggestionContext(golden: SuggestionGoldenCase): SuggestionCon
   };
 }
 
-const rateItem = { total: z.number().int(), completed: z.number().int(), rate: z.number() };
+const rateItem = { total: z.int(), completed: z.int(), rate: z.number() };
 
 /** 리포트 golden 한 줄. input은 서버 집계(ReportPromptInput), draft는 이상적인 모델 출력이다. */
 export const reportGoldenCaseSchema = z.object({
@@ -193,14 +191,14 @@ export const reportGoldenCaseSchema = z.object({
     period: z.object({ start: z.iso.date(), end: z.iso.date() }),
     previousTips: z.array(z.string()).nullable(),
     reportData: z.object({
-      totalTodos: z.number().int(),
-      completedTodos: z.number().int(),
+      totalTodos: z.int(),
+      completedTodos: z.int(),
       completionRate: z.number(),
       prevCompletionRate: z.number().nullable(),
-      streakDays: z.number().int(),
+      streakDays: z.int(),
       categoryBreakdown: z.array(z.object({ name: z.string(), color: z.string(), ...rateItem })),
       dayPatterns: z.array(z.object({ day: z.enum(DAYS_OF_WEEK), ...rateItem })),
-      timePatterns: z.array(z.object({ hour: z.number().int(), count: z.number().int() })),
+      timePatterns: z.array(z.object({ hour: z.int(), count: z.int() })),
       hasActivity: z.boolean(),
     }),
   }),

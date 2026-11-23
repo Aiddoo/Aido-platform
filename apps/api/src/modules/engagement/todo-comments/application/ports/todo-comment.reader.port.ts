@@ -1,7 +1,7 @@
 import type { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { TodoCommentId } from "../../../shared/domain/todo-comment-id.vo.js";
+import type { TodoCommentId } from "../../domain/todo-comment-id.vo.js";
 import type { TodoCommentReadModel } from "../read-models/todo-comment.read-model.js";
 
 /** id로 고른 글과 작성자 이름. 쓰기 Aggregate와 응답용 조회 결과를 섞지 않는다 */

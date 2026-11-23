@@ -21,7 +21,7 @@ export class DrizzleNotificationTodoTargetReader implements NotificationTodoTarg
     this.#transactionHost = transactionHost;
   }
 
-  async findTodoTargets(
+  async listTodoTargets(
     todoIds: readonly TodoId[],
   ): Promise<ReadonlyMap<number, NotificationTodoTarget>> {
     if (todoIds.length === 0) {

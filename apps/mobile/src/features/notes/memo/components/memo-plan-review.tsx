@@ -29,7 +29,7 @@ import { createMemoPlanDraftKey } from '../utils/memo-plan-draft';
 /** 메모를 나눈 결과의 검토 폼. 기기에 남긴 초안으로 시작하고 저장하면 피드로 간다 */
 export function MemoPlanReview() {
   const { t } = useTranslation('memo');
-  const { timeZone } = useDateFormatContext();
+  const { timezone } = useDateFormatContext();
   const goBack = useGoBack({ fallbackHref: '/memo' });
   const dismiss = useSingleTap(router.dismiss);
   const navigate = useSingleTap(router.navigate);
@@ -46,10 +46,10 @@ export function MemoPlanReview() {
     ],
   });
   const { restoredDraft, saveDraft, clearDraft } = useDraftStorage(
-    createMemoPlanDraftKey({ userId: me.id, memoId, timeZone }),
+    createMemoPlanDraftKey({ userId: me.id, memoId, timezone }),
     { sourceUpdatedAt: toEpochMs(memo.updatedAt) },
   );
-  const fallbackCategoryId = TodoCategoryPolicy.getInitialCategoryId(
+  const fallbackCategoryId = TodoCategoryPolicy.findInitialCategoryId(
     categoriesResult.categories,
     null,
   );

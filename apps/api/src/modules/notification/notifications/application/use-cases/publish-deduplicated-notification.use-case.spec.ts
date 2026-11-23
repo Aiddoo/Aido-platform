@@ -1,6 +1,5 @@
-import { vi } from "vitest";
-
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { RecordingNotificationPublisher } from "#test/doubles/notification/recording-notification-publisher";
 
 import { PublishDeduplicatedNotificationUseCase } from "./publish-deduplicated-notification.use-case.js";
 
@@ -16,11 +15,11 @@ const nudge = {
 describe("PublishDeduplicatedNotificationUseCase", () => {
   it("할 일 주인·날짜를 더한 알림을 중복 방지 발송에 넘긴다", async () => {
     // Given
-    const sendNotificationWithDeduplication = { execute: vi.fn().mockResolvedValue(null) };
+    const sent = new RecordingNotificationPublisher();
     const useCase = new PublishDeduplicatedNotificationUseCase({
-      sendNotificationWithDeduplication,
+      sendNotificationWithDeduplication: sent.deduplicated,
       todoTargetReader: {
-        findTodoTargets: async () =>
+        listTodoTargets: async () =>
           new Map([[42, { ownerId: UserId.reconstitute("owner-1"), date: "2026-10-27" }]]),
       },
     });
@@ -29,9 +28,11 @@ describe("PublishDeduplicatedNotificationUseCase", () => {
     await useCase.execute(nudge);
 
     // Then
-    expect(sendNotificationWithDeduplication.execute).toHaveBeenCalledWith({
-      ...nudge,
-      metadata: { todoOwnerId: "owner-1", todoDate: "2026-10-27" },
-    });
+    expect(sent.published).toEqual([
+      {
+        mode: "deduplicated",
+        data: { ...nudge, metadata: { todoOwnerId: "owner-1", todoDate: "2026-10-27" } },
+      },
+    ]);
   });
 });

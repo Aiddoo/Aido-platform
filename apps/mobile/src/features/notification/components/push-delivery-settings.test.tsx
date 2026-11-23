@@ -99,7 +99,7 @@ describe('야간 알림 설명', () => {
     '%s %s는 야간 시각을 "%s"로 쓴다',
     (locale, timeFormat, expected) => {
       // Given
-      const context = { locale: APP_LOCALES[locale].intlLocale, timeZone: 'Asia/Seoul' };
+      const context = { locale: APP_LOCALES[locale].intlLocale, timezone: 'Asia/Seoul' };
       const t = i18n.getFixedT(locale, 'notification');
 
       // When

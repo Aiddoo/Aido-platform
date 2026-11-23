@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
+import { Timezone } from "#api/shared/domain/time/timezone.vo";
 import {
   activeDaysOf,
   createInviteRedemptionFixture,
@@ -12,7 +12,7 @@ import {
   INVITE_FIXTURE_INVITER_ID,
 } from "#test/fixtures/social/invite.fixture";
 
-import { InviteId } from "../../shared/domain/invite-id.vo.js";
+import { InviteId } from "../../invites/domain/invite-id.vo.js";
 import { InviteRedemptionId } from "./invite-redemption-id.vo.js";
 import { InviteRedemption } from "./invite-redemption.aggregate.js";
 
@@ -37,7 +37,7 @@ describe("InviteRedemption — 초대 수락", () => {
         inviteId: InviteId.reconstitute(INVITE_FIXTURE_ID),
         inviterId: UserId.reconstitute(INVITE_FIXTURE_INVITER_ID),
         inviteeId: UserId.reconstitute(INVITE_FIXTURE_INVITEE_ID),
-        timeZone: TimeZone.SEOUL,
+        timezone: Timezone.SEOUL,
         inviterRewardEligible: false,
         now: JOINED_AT,
       };

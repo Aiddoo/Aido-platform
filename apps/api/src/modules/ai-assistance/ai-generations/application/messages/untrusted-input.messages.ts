@@ -20,11 +20,11 @@ const UNTRUSTED_TAGS = [
 export type UntrustedTag = (typeof UNTRUSTED_TAGS)[number];
 
 export function removeInvisibleCharacters(value: string): string {
-  return value.replace(INVISIBLE_CHARACTERS, "");
+  return value.replaceAll(INVISIBLE_CHARACTERS, "");
 }
 
 function normalizeUntrustedText(input: string): string {
-  return removeInvisibleCharacters(input.normalize("NFKC").replace(/\r\n?/g, "\n"));
+  return removeInvisibleCharacters(input.normalize("NFKC").replaceAll(/\r\n?/g, "\n"));
 }
 
 /**
@@ -33,7 +33,7 @@ function normalizeUntrustedText(input: string): string {
  * 남기고, 프롬프트 경계 보호는 wrapUntrusted가 맡는다.
  */
 export function sanitizeLineForPrompt(input: string, maxLength: number): string {
-  return truncateGraphemes(normalizeUntrustedText(input).replace(/\n+/g, " ").trim(), maxLength);
+  return truncateGraphemes(normalizeUntrustedText(input).replaceAll(/\n+/g, " ").trim(), maxLength);
 }
 
 /** 여러 줄 입력(메모·전사 전체). 줄바꿈·리스트 구조를 남기고 요청 계약 길이까지만 둔다. */
@@ -53,9 +53,9 @@ export function encodeUntrustedJson(value: unknown): string {
       typeof field === "string" ? removeInvisibleCharacters(field) : field,
     2,
   )
-    .replace(/</g, "\\u003c")
-    .replace(/>/g, "\\u003e")
-    .replace(/&/g, "\\u0026");
+    .replaceAll("<", "\\u003c")
+    .replaceAll(">", "\\u003e")
+    .replaceAll("&", "\\u0026");
 }
 
 /** 데이터 블록 하나. 안의 값은 encodeUntrustedJson으로 넣어 태그 경계를 넘지 못한다. */

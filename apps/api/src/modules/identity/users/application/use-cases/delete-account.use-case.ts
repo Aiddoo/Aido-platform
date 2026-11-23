@@ -2,6 +2,7 @@ import { ACCOUNT_DELETION } from "@aido/api/vocabulary";
 
 import { REVOKE_REASON } from "#api/modules/identity/sessions/domain/sessions.constants";
 import { SECURITY_EVENT } from "#api/modules/identity/users/domain/users.constants";
+import type { SessionPushDeviceReleaserPort } from "#api/modules/notification/push-devices/notification-push-devices.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
@@ -11,7 +12,6 @@ import { toIsoString } from "#api/shared/domain/time/instant";
 import type { LinkedAccountsRepositoryPort } from "../../../linked-accounts/application/ports/linked-accounts.repository.port.js";
 import type { PasswordHasherPort } from "../../../linked-accounts/application/ports/password-hasher.port.js";
 import type { SessionCachePort } from "../../../sessions/application/ports/session-cache.port.js";
-import type { SessionPushDeviceReleaserPort } from "../../../sessions/application/ports/session-push-device-releaser.port.js";
 import type { SessionRepositoryPort } from "../../../sessions/application/ports/session.repository.port.js";
 import type { RequestMetadata } from "../../../shared/domain/request-metadata.constants.js";
 import { REQUEST_ORIGIN_DEFAULTS } from "../../../shared/domain/request-metadata.constants.js";

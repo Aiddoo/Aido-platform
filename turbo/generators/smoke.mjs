@@ -8,7 +8,8 @@ import { join } from 'node:path';
 
 const root = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim();
 const work = join(mkdtempSync(join(tmpdir(), 'aido-generator-')), 'repo');
-const run = (args, cwd = work) => execFileSync(args[0], args.slice(1), { cwd, stdio: 'inherit' });
+const run = ([command, ...commandArguments], cwd = work) =>
+  execFileSync(command, commandArguments, { cwd, stdio: 'inherit' });
 
 run(['git', 'worktree', 'add', '--detach', work, 'HEAD'], root);
 try {

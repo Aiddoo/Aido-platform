@@ -30,14 +30,14 @@ function setUp(options: {
   };
   const readRepository: TodoReadRepositoryPort = {
     findByIdAndUserId: unused,
-    findOwnerIds: unused,
-    findManyBySeriesId: unused,
-    findManyByUserId: unused,
-    findPublicTodosByUserId: unused,
+    listOwnerIds: unused,
+    listBySeriesId: unused,
+    listByUserId: unused,
+    listPublicTodosByUserId: unused,
     countCategoryUsage: unused,
     existsByUserId: unused,
     existsCompletedByUserId: unused,
-    findTodayTopTodos: unused,
+    listTodayTopTodos: unused,
     getTodayTodoStats: async (_userId, today) => {
       todayStatsReads.push(today);
       if (options.todayStats instanceof Error) {

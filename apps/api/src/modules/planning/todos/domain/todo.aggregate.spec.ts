@@ -901,13 +901,5 @@ describe("Todo — 할 일 애그리게잇", () => {
       expect(todo.id.value).toBe(42);
       expect(todo.userId.value).toBe(TODO_FIXTURE_USER_ID);
     });
-
-    it("순간이 없는 옛 행은 남은 벽시계를 지우고 읽는다", () => {
-      // When
-      const todo = createTodoFixture({ scheduledLocalTime: "09:00", scheduledTime: null });
-
-      // Then
-      expect(todo.toPrimitives().scheduledLocalTime).toBeNull();
-    });
   });
 });

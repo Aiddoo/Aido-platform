@@ -1,4 +1,6 @@
-FROM node:26.13.1-alpine3.24 AS base
+# syntax=docker/dockerfile:1@sha256:572cebbc2b15e6f84c077742952674889cb63cd5e9b80abdffcbe587b6f19183
+# BuildKit 프런트엔드와 베이스는 digest로 고정해 같은 커밋이 같은 이미지를 만든다. Dependabot docker가 베이스 태그와 digest를 함께 올린다
+FROM node:26.13.1-alpine3.24@sha256:6bd9ab43c0ec0190ca7b2d193906cb8b7edf6e7f4afa43ddeccd6452710bffb5 AS base
 WORKDIR /app
 ENV TZ=UTC
 ENV COREPACK_HOME=/usr/local/share/corepack
@@ -14,6 +16,8 @@ RUN pnpm dlx "turbo@$(node -p 'require("./package.json").devDependencies.turbo')
 FROM base AS deps
 COPY --from=pruner /app/out/api/json/ ./
 COPY --from=pruner /app/out/api/pnpm-lock.yaml ./pnpm-lock.yaml
+# 저장소를 캐시 마운트가 아닌 이 층에 둔다. prod-deps의 deploy가 같은 파일시스템에서 hardlink해야
+# 운영 node_modules에 같은 파일이 두 벌 들어가지 않는다(마운트로 옮기면 303MB → 337MB, 로컬 arm64 측정).
 RUN pnpm install --frozen-lockfile --ignore-scripts && pnpm rebuild argon2 @swc/core
 
 FROM deps AS contracts
@@ -24,6 +28,8 @@ RUN pnpm --filter @aido/api build
 # 서버 소스를 받기 전에 운영 의존성을 떼어 낸다. lockfile·계약이 그대로면 이 stage가 캐시에 맞아
 # 운영 이미지의 의존성 층 digest가 같고, 배포는 dist 층만 옮긴다.
 FROM contracts AS prod-deps
+# pnpm 12.2+ 기본 deploy는 lockfile의 autoInstallPeers 선택 peer(webpack·rollup·libsql 등)까지 깔아
+# 운영 node_modules가 303MB에서 507MB로 커진다(로컬 arm64 측정). --legacy는 그 peer를 넣지 않는다.
 RUN pnpm --filter @aido/server deploy --legacy --prod --prefer-offline /app/production
 
 FROM contracts AS builder
@@ -49,25 +55,27 @@ RUN --mount=type=cache,id=pnpm-migrate,target=/pnpm \
 FROM migrate-deps AS migrate
 COPY --from=pruner /app/out/migrate/full/tooling/database-migrate/ ./tooling/database-migrate/
 COPY apps/api/drizzle/ ./apps/api/drizzle/
-COPY apps/api/scripts/guard-database-url.cjs ./apps/api/scripts/
+COPY apps/api/scripts/guard-database-url.mjs ./apps/api/scripts/
 # 실행 시점은 corepack pnpm만 쓴다. 베이스 이미지 번들 npm의 취약 의존성이 운영 이미지에 남지 않게 걷어 낸다.
 RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx && \
     addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 migrate && \
     mkdir -p /app/certs && chmod 0755 /app/certs
-ADD --chmod=644 https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem /app/certs/rds-ca.pem
+# RDS CA 묶음이 바뀌면 checksum도 함께 고쳐야 빌드가 통과한다
+ADD --checksum=sha256:90a6f1a7978a1b1b096dca6c57511ca48d3b8cf052f8e704baf358f34ea2f21b --chmod=644 https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem /app/certs/rds-ca.pem
 ENV NODE_EXTRA_CA_CERTS=/app/certs/rds-ca.pem
 WORKDIR /app/tooling/database-migrate
 USER migrate
 RUN test -r "$NODE_EXTRA_CA_CERTS"
 CMD ["pnpm", "db:deploy"]
 
-FROM node:26.13.1-alpine3.24 AS production
+FROM node:26.13.1-alpine3.24@sha256:6bd9ab43c0ec0190ca7b2d193906cb8b7edf6e7f4afa43ddeccd6452710bffb5 AS production
 WORKDIR /app
 # 운영 서버는 node로만 실행한다. 베이스 이미지 번들 npm의 취약 의존성이 운영 이미지에 남지 않게 걷어 낸다.
 RUN apk upgrade --no-cache && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx && \
     addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nestjs && \
     mkdir -p /app/certs && chmod 0755 /app/certs
-ADD --chmod=644 --chown=nestjs:nodejs https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem /app/certs/rds-ca.pem
+# RDS CA 묶음이 바뀌면 checksum도 함께 고쳐야 빌드가 통과한다
+ADD --checksum=sha256:90a6f1a7978a1b1b096dca6c57511ca48d3b8cf052f8e704baf358f34ea2f21b --chmod=644 --chown=nestjs:nodejs https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem /app/certs/rds-ca.pem
 # --link는 앞 층과 독립된 층을 만들어 base 이미지가 바뀌어도 의존성 층을 다시 쓰게 한다. 이름 대신 숫자 id를 받는다.
 # 자주 바뀌는 dist를 맨 뒤에 둬 배포마다 이 층 하나만 새로 올라가게 한다
 COPY --link --chown=1001:1001 --from=prod-deps /app/production/ ./

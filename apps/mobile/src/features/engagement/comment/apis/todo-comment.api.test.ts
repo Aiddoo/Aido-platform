@@ -1,5 +1,5 @@
 import { ApiError } from '@src/core/errors/api-error';
-import { err } from '@src/core/errors/result';
+import { fail } from '@src/core/errors/result';
 import { createHttpClientStub } from '@src/testing/core';
 
 import { TodoCommentApi } from './todo-comment.api';
@@ -106,14 +106,14 @@ describe('TodoCommentApi', () => {
     const httpClient = createHttpClientStub();
     const service = new TodoCommentApi(httpClient);
     const apiError = new ApiError('TODO_0833', '삭제된 댓글', 409);
-    httpClient.put.mockResolvedValue(err(apiError));
+    httpClient.put.mockResolvedValue(fail(apiError));
 
     // When
     const result = await service.setCommentLike(42, COMMENT_ID, true);
 
     // Then
     expect(httpClient.put).toHaveBeenCalledWith(`v1/todos/42/comments/${COMMENT_ID}/likes`);
-    expect(result).toEqual(err(apiError));
+    expect(result).toEqual(fail(apiError));
   });
 
   it('답글 쓰기는 v1 POST에 답할 글 id를 parentId로 보낸다', async () => {

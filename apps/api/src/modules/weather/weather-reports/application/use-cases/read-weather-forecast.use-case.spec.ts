@@ -2,7 +2,7 @@ import { ErrorCode } from "@aido/api/errors";
 
 import { WeatherForecastCache } from "#api/modules/weather/weather-reports/infrastructure/cache/weather-forecast.cache";
 import { InMemoryCacheStore } from "#api/platform/cache/adapters/in-memory-cache.store";
-import { FakeTimerClock } from "#test/doubles/platform/fake-timer-clock";
+import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { StubWeatherForecastProvider } from "#test/doubles/weather/stub-weather-forecast-provider";
 import {
@@ -17,31 +17,30 @@ import { ReadWeatherForecastUseCase } from "./read-weather-forecast.use-case.js"
 const SEOUL = GridCoordinate.create(60, 127);
 
 function setup(now: Temporal.Instant) {
-  // 예보 제공 범위와 캐시 TTL이 같은 시계를 보도록 Date 가짜 시계를 함께 옮긴다
-  vi.useFakeTimers({ toFake: ["Date"] });
-  vi.setSystemTime(now.epochMilliseconds);
   suppressLogger();
+  // 예보 제공 범위와 캐시 TTL이 같은 시계를 본다
+  const clock = new FixedClock(now);
   const cache = new WeatherForecastCache(
-    new InMemoryCacheStore({ defaultTtlMs: 60_000, maxItems: 100 }),
+    new InMemoryCacheStore({
+      defaultTtlMs: 60_000,
+      maxItems: 100,
+      nowMs: () => clock.now().epochMilliseconds,
+    }),
   );
   const weatherProvider = new StubWeatherForecastProvider();
   const useCase = new ReadWeatherForecastUseCase({
     weatherProvider,
     weatherCache: cache,
     logger: new SilentLogger(),
-    clock: new FakeTimerClock(),
+    clock,
   });
-  return { cache, weatherProvider, useCase };
+  return { cache, weatherProvider, useCase, clock };
 }
 
 describe("ReadWeatherForecastUseCase — 캐시·latest 폴백", () => {
   /** 요청 날짜의 KST 09:00 */
   const target = Temporal.Instant.from("2026-07-23T00:00:00.000Z");
   const previous = Temporal.Instant.from("2026-07-22T00:00:00.000Z");
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
 
   it("현재 발표 cache가 있으면 공급자에 접근하지 않고 값을 반환한다", async () => {
     // Given
@@ -106,7 +105,7 @@ describe("ReadWeatherForecastUseCase — 캐시·latest 폴백", () => {
 
   it("실패한 격자는 1분 동안 공급자를 부르지 않고 latest로 넘어가고 1분 뒤 다시 부른다", async () => {
     // Given
-    const { cache, weatherProvider, useCase } = setup(target);
+    const { cache, weatherProvider, useCase, clock } = setup(target);
     const saved = createWeatherForecastFixture({ date: previous, temperatureMax: 18 });
     await cache.getOrLoadForecast(SEOUL, createForecastTimingFixture(previous), async () => saved);
     weatherProvider.failure = new Error("provider down");
@@ -115,7 +114,7 @@ describe("ReadWeatherForecastUseCase — 캐시·latest 폴백", () => {
     // When
     const duringCooldown = await useCase.execute({ grid: SEOUL, target });
     const callsDuringCooldown = weatherProvider.calls.length;
-    vi.setSystemTime(target.epochMilliseconds + 61_000);
+    clock.advanceBy({ seconds: 61 });
     weatherProvider.failure = null;
     const recovered = await useCase.execute({ grid: SEOUL, target });
 
@@ -142,10 +141,6 @@ describe("ReadWeatherForecastUseCase — 캐시·latest 폴백", () => {
 describe("ReadWeatherForecastUseCase — 공급자 제공 범위 (#1156)", () => {
   /** 운영에서 503이 난 시각: KST 2026-11-02 04:18 */
   const now = Temporal.Instant.from("2026-11-01T19:18:00.000Z");
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
 
   it("아침 발표 전 오늘 날짜 요청은 지금의 발표로 조회해 정상 예보를 준다", async () => {
     // Given

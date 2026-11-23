@@ -331,7 +331,7 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
     // Given
     await setQuota({ count: FREE_AI_LIMIT, resetAt: oldMonthAt });
     const entitlement = context.module.get(EntitlementReaderPort);
-    expect(await entitlement.getFeatureLimit(UserId.reconstitute(user.userId), "AI_PARSE")).toBe(
+    expect(await entitlement.findFeatureLimit(UserId.reconstitute(user.userId), "AI_PARSE")).toBe(
       FREE_AI_LIMIT,
     );
     await setQuota({ count: FREE_AI_LIMIT, resetAt: oldMonthAt, subscriptionStatus: "ACTIVE" });
@@ -347,7 +347,7 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
       used: FREE_AI_LIMIT + 1,
       limit: null,
     });
-    expect(await entitlement.getFeatureLimit(UserId.reconstitute(user.userId), "AI_PARSE")).toBe(
+    expect(await entitlement.findFeatureLimit(UserId.reconstitute(user.userId), "AI_PARSE")).toBe(
       FREE_AI_LIMIT,
     );
   });
@@ -357,7 +357,7 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
     await setQuota({ count: FREE_AI_LIMIT, resetAt: oldMonthAt, subscriptionStatus: "ACTIVE" });
     const entitlement = context.module.get(EntitlementReaderPort);
     expect(
-      await entitlement.getFeatureLimit(UserId.reconstitute(user.userId), "AI_PARSE"),
+      await entitlement.findFeatureLimit(UserId.reconstitute(user.userId), "AI_PARSE"),
     ).toBeNull();
     await setQuota({ count: FREE_AI_LIMIT, resetAt: oldMonthAt, subscriptionStatus: "FREE" });
 
@@ -374,7 +374,7 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
       limit: FREE_AI_LIMIT,
     });
     expect(
-      await entitlement.getFeatureLimit(UserId.reconstitute(user.userId), "AI_PARSE"),
+      await entitlement.findFeatureLimit(UserId.reconstitute(user.userId), "AI_PARSE"),
     ).toBeNull();
   });
 
@@ -419,7 +419,7 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
     // Given
     await setQuota({ count: FREE_AI_LIMIT, resetAt: oldMonthAt });
     const entitlement = context.module.get(EntitlementReaderPort);
-    expect(await entitlement.getFeatureLimit(UserId.reconstitute(user.userId), "AI_PARSE")).toBe(
+    expect(await entitlement.findFeatureLimit(UserId.reconstitute(user.userId), "AI_PARSE")).toBe(
       FREE_AI_LIMIT,
     );
     await setQuota({ count: FREE_AI_LIMIT, resetAt: oldMonthAt, role: "ADMIN" });

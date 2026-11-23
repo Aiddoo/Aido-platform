@@ -19,14 +19,16 @@ export function createRouteParamsFake(initial: Record<string, string> = {}) {
   );
   jest.mocked(router.setParams).mockImplementation((next) => {
     const nextParams = new Map(Object.entries(params));
-    Object.entries(next ?? {}).forEach(([key, value]) => {
+    for (const [key, value] of Object.entries(next ?? {})) {
       if (typeof value === 'string') {
         nextParams.set(key, value);
       } else {
         nextParams.delete(key);
       }
-    });
+    }
     params = Object.fromEntries(nextParams);
-    listeners.forEach((listener) => listener());
+    for (const listener of listeners) {
+      listener();
+    }
   });
 }

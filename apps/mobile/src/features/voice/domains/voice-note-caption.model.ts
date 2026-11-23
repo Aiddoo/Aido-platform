@@ -51,7 +51,7 @@ function splitIntoCaptionSentences(text: string): string[] {
 }
 
 function removeSpaces(text: string) {
-  return text.replace(/\s/g, '');
+  return text.replaceAll(/\s/g, '');
 }
 
 // 공백을 뺀 글자 수로 센 각 조각의 시작 위치
@@ -69,7 +69,7 @@ function findSegmentStartMs(segments: readonly SpeechSegment[], offset: number):
   return (segment ?? segments.at(-1))?.startMs ?? null;
 }
 
-function findSegmentsWithin(
+function getSegmentsWithin(
   segments: readonly SpeechSegment[],
   fromOffset: number,
   toOffset: number,
@@ -117,7 +117,7 @@ function toTimedSentences(
       endMs: Math.max(startMs, ranges[index + 1]?.startMs ?? toMs),
       isBookmarked: false,
       lowConfidenceWords: VoiceTranscriptPolicy.getLowConfidenceWords(
-        findSegmentsWithin(segments, range?.fromOffset ?? 0, range?.toOffset ?? 0),
+        getSegmentsWithin(segments, range?.fromOffset ?? 0, range?.toOffset ?? 0),
       ),
     };
   });

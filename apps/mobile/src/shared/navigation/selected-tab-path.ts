@@ -57,7 +57,7 @@ export function toSelectedTabPath(path: string): string {
 
 /** 위에 쌓인 route부터 내려가 탭 묶음을 찾는다. 탭 밖 route가 맨 위여도 그 아래 탭 묶음이 고른 탭이다 */
 function findSelectedTab(state: NavigatorState | undefined, groupPath = ''): SelectedTab | null {
-  for (const route of [...(state?.routes ?? [])].reverse()) {
+  for (const route of (state?.routes ?? []).toReversed()) {
     if (route.name === TABS_ROUTE_NAME) {
       const tab = route.state?.routes[route.state.index ?? 0];
       return tab == null

@@ -38,14 +38,14 @@ export class PushDeliveryQueueAdapter implements PushDeliveryJobEnqueuerPort, On
     lane: PushDeliveryLane,
   ): Promise<void> {
     // strict payload schema가 받는 필드만 싣는다
-    const data = publications.map(({ dispatchId, publishAttempt }) => ({
+    const deliveries = publications.map(({ dispatchId, publishAttempt }) => ({
       dispatchId,
       publishAttempt,
     }));
     await this.#jobQueue.enqueue(
       PUSH_DELIVERY_QUEUE,
-      { name: PushDeliveryJobName.DELIVER_DISPATCHES, data },
-      { idempotencyKey: pushDeliveryJobKey(data), priority: PUSH_DELIVERY_PRIORITY[lane] },
+      { name: PushDeliveryJobName.DELIVER_DISPATCHES, data: deliveries },
+      { idempotencyKey: pushDeliveryJobKey(deliveries), priority: PUSH_DELIVERY_PRIORITY[lane] },
     );
   }
 }

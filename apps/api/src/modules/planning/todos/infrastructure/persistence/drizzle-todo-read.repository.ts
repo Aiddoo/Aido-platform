@@ -26,8 +26,8 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { TodoSeriesId } from "../../../todo-series/domain/todo-series-id.vo.js";
 import type { TodoPlanReaderPort } from "../../application/ports/todo-plan.reader.port.js";
 import type {
-  FindFriendTodosParams,
-  FindTodosParams,
+  ListFriendTodosParams,
+  ListTodosParams,
   TodoReadRepositoryPort,
 } from "../../application/ports/todo-read.repository.port.js";
 import type {
@@ -101,7 +101,7 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
     this.#transactionHost = transactionHost;
   }
 
-  async findOwnerIds(ids: readonly TodoId[]): Promise<string[]> {
+  async listOwnerIds(ids: readonly TodoId[]): Promise<string[]> {
     if (ids.length === 0) {
       return [];
     }
@@ -117,7 +117,7 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
     return rows.map((row) => row.userId);
   }
 
-  async findManyByUserId(params: FindTodosParams): Promise<TodoReadModel[]> {
+  async listByUserId(params: ListTodosParams): Promise<TodoReadModel[]> {
     const ids = await this.#findPageIds(params, false);
     if (ids.length === 0) {
       return [];
@@ -129,7 +129,7 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
     return orderByIds(rows, ids).map(toTodoReadModel);
   }
 
-  async findPublicTodosByUserId(params: FindFriendTodosParams): Promise<FriendTodoReadModel[]> {
+  async listPublicTodosByUserId(params: ListFriendTodosParams): Promise<FriendTodoReadModel[]> {
     const ids = await this.#findPageIds({ ...params, userId: params.friendUserId }, true);
     if (ids.length === 0) {
       return [];
@@ -184,7 +184,7 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
     };
   }
 
-  findTodayTopTodos(userId: UserId, today: Temporal.PlainDate, limit: number) {
+  listTodayTopTodos(userId: UserId, today: Temporal.PlainDate, limit: number) {
     return this.#db
       .select({
         id: todo.id,
@@ -199,7 +199,7 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
       .limit(limit);
   }
 
-  async findManyBySeriesId(userId: UserId, seriesId: TodoSeriesId): Promise<TodoReadModel[]> {
+  async listBySeriesId(userId: UserId, seriesId: TodoSeriesId): Promise<TodoReadModel[]> {
     const rows = await this.#db.query.todo.findMany({
       where: { userId: userId.value, seriesId: seriesId.value },
       with: todoWith,
@@ -216,7 +216,7 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
     return row == null ? null : toTodoReadModel(row);
   }
 
-  async findManyByIds(userId: UserId, ids: readonly TodoId[]): Promise<TodoReadModel[]> {
+  async listByIds(userId: UserId, ids: readonly TodoId[]): Promise<TodoReadModel[]> {
     if (ids.length === 0) {
       return [];
     }
@@ -228,7 +228,7 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
     return rows.map(toTodoReadModel);
   }
 
-  async findUpcoming(
+  async listUpcoming(
     userId: UserId,
     input: { readonly fromDate: Temporal.PlainDate; readonly limit: number },
   ): Promise<UpcomingTodoReadModel[]> {
@@ -290,7 +290,7 @@ export class DrizzleTodoReadRepository implements TodoReadRepositoryPort, TodoPl
     return this.#transactionHost.tx;
   }
 
-  async #findPageIds(params: FindTodosParams, publicOnly: boolean): Promise<number[]> {
+  async #findPageIds(params: ListTodosParams, publicOnly: boolean): Promise<number[]> {
     const { userId, cursor, size, completed, categoryId, startDate, endDate } = params;
     let anchorCondition;
     if (cursor != null) {

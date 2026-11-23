@@ -57,13 +57,13 @@ interface StartResolution {
 
 /**
  * LLM이 읽은 일정 표현을 사용자 시간대 기준 날짜·시각·반복으로 결정적으로 바꾼다.
- * 같은 draft·now·timeZone이면 항상 같은 결과를 낸다.
+ * 같은 draft·now·timezone이면 항상 같은 결과를 낸다.
  */
 export function resolveTodoSchedule(
   draft: ScheduleDraft<RepeatRef | PlanRepeatRef>,
   clock: ScheduleClock,
 ): ResolvedSchedule {
-  const local = instantFromDate(clock.now).toZonedDateTimeISO(clock.timeZone);
+  const local = instantFromDate(clock.now).toZonedDateTimeISO(clock.timezone);
   const now: LocalNow = { today: local.toPlainDate(), nowMinutes: local.hour * 60 + local.minute };
   const { today } = now;
   const warnings: ScheduleWarning[] = [];

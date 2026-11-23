@@ -1,6 +1,7 @@
 import { WEEKLY_ACHIEVEMENT_BADGES, weeklyAchievementBadge } from '@aido/api/vocabulary';
 import { dateKeySchema } from '@src/shared/date/date-key';
 import { instantSchema } from '@src/shared/date/instant';
+import { completionRateSchema } from '@src/shared/domains/completion-rate.model';
 import { cursorPageSchema } from '@src/shared/domains/cursor-page.model';
 import { z } from 'zod';
 
@@ -11,7 +12,7 @@ export const weeklyAchievementSchema = z.object({
   dateRange: z.object({ startDate: dateKeySchema, endDate: dateKeySchema }),
   totalTodos: z.int().nonnegative(),
   completedTodos: z.int().nonnegative(),
-  completionRate: z.number().min(0).max(100),
+  completionRate: completionRateSchema,
   achievedAt: instantSchema,
 });
 export type WeeklyAchievement = z.infer<typeof weeklyAchievementSchema>;
@@ -21,7 +22,7 @@ const weeklyAchievementSummarySchema = z.object({
   perfectWeeks: z.int().nonnegative(),
   currentStreak: z.int().nonnegative(),
   bestStreak: z.int().nonnegative(),
-  averageRate: z.number().min(0).max(100),
+  averageRate: completionRateSchema,
 });
 
 export const weeklyAchievementPageSchema = cursorPageSchema(

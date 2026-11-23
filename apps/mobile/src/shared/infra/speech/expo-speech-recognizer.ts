@@ -29,7 +29,7 @@ const VOLUME_INTERVAL_MS = 50;
 const RECORDING_SAMPLE_RATE = 16_000;
 
 /** 합친 응답은 어느 쪽이 거절됐는지 알려주지 않아 따로 읽는다. Android의 음성 인식은 늘 허용으로 온다 */
-async function findMissingSpeechPermission(): Promise<MissingSpeechPermission> {
+async function readMissingSpeechPermission(): Promise<MissingSpeechPermission> {
   const [microphone, speechRecognizer] = await Promise.all([
     ExpoSpeechRecognitionModule.getMicrophonePermissionsAsync(),
     ExpoSpeechRecognitionModule.getSpeechRecognizerPermissionsAsync(),
@@ -51,7 +51,7 @@ async function toSpeechPermission(
   return {
     status,
     canAskAgain,
-    missing: isMicrophoneOnly ? 'microphone' : await findMissingSpeechPermission(),
+    missing: isMicrophoneOnly ? 'microphone' : await readMissingSpeechPermission(),
   };
 }
 

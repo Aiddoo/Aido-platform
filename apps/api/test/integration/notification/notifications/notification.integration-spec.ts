@@ -87,7 +87,7 @@ import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database
 import type { UserPreference } from "#test/types/database-rows";
 
 function buildNotificationTestApi(module: TestingModule) {
-  const todoTargetReader = { findTodoTargets: () => Promise.resolve(new Map()) };
+  const todoTargetReader = { listTodoTargets: () => Promise.resolve(new Map()) };
   const publisher = new PublishNotificationUseCase({
     sendNotification: module.get(SendNotificationUseCase),
     todoTargetReader,
@@ -195,7 +195,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
         { provide: PushDeliveryJobEnqueuerPort, useValue: { enqueueDeliveries: vi.fn() } },
         {
           provide: MarketingConsentReconfirmPort,
-          useValue: { findMarketingReconfirmTargets: vi.fn(), claimMarketingReconfirm: vi.fn() },
+          useValue: { listMarketingReconfirmTargets: vi.fn(), claimMarketingReconfirm: vi.fn() },
         },
         {
           provide: UnitOfWorkPort,
@@ -246,7 +246,7 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
           useFactory: (
             preferenceRepository: DrizzleUserPreferenceRepository,
             consentRepository: DrizzleUserConsentRepository,
-          ) => ({
+          ): UserNotificationSettingsPort => ({
             upsertPushTimezone: async (userId: UserId, timezone: string) => {
               const preference = await preferenceRepository.getByUserId(userId);
               preference.changeTimezone(timezone);
@@ -259,14 +259,14 @@ describe("Notification 통합 테스트 (실제 PostgreSQL)", () => {
             },
             findPreferenceReadModel: (userId: UserId) =>
               preferenceRepository.findReadModelByUserId(userId),
-            findPreferenceReadModelsByUserIds: async (userIds: readonly UserId[]) =>
-              (await preferenceRepository.findReadModelsByUserIds(userIds)).map((preference) => ({
+            listPreferenceReadModelsByUserIds: async (userIds: readonly UserId[]) =>
+              (await preferenceRepository.listReadModelsByUserIds(userIds)).map((preference) => ({
                 ...preference,
                 userId: UserId.reconstitute(preference.userId),
               })),
             findConsentReadModel: (userId: UserId) => consentRepository.findByUserId(userId),
-            findConsentReadModelsByUserIds: async (userIds: readonly UserId[]) =>
-              (await consentRepository.findByUserIds(userIds)).map((consent) => ({
+            listConsentReadModelsByUserIds: async (userIds: readonly UserId[]) =>
+              (await consentRepository.listByUserIds(userIds)).map((consent) => ({
                 ...consent,
                 userId: UserId.reconstitute(consent.userId),
               })),

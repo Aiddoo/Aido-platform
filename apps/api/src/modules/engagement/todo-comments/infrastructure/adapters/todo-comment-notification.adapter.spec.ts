@@ -9,7 +9,7 @@ import { type NotificationRecipientLocaleReaderPort } from "#api/modules/notific
 import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { TodoCommentId } from "../../../shared/domain/todo-comment-id.vo.js";
+import { TodoCommentId } from "../../domain/todo-comment-id.vo.js";
 import { TodoCommentNotificationAdapter } from "./todo-comment-notification.adapter.js";
 
 type PublishedNotification = Parameters<PublishNotificationUseCase["execute"]>[0];
@@ -23,7 +23,7 @@ function createRecordingPublisher(published: PublishedNotification[]): PublishNo
         return null;
       },
     },
-    todoTargetReader: { findTodoTargets: async () => new Map() },
+    todoTargetReader: { listTodoTargets: async () => new Map() },
   });
 }
 

@@ -1,7 +1,7 @@
 import type { Localized, SupportedLocale } from "@aido/api/vocabulary";
 
 import { instantFromDate } from "#api/shared/domain/time/instant";
-import { localDateIn, resolveTimezone } from "#api/shared/domain/time/time-zone-name";
+import { localDateIn, resolveTimezone } from "#api/shared/domain/time/timezone-name";
 
 import type {
   NotificationCopyValues,
@@ -45,7 +45,7 @@ export function formatNotificationCopyText(
 ): string {
   const text =
     typeof message === "string" ? message : selectPluralForm(message, values.count, locale);
-  return text.replace(PLACEHOLDER, (match: string, name: string | undefined) => {
+  return text.replaceAll(PLACEHOLDER, (match: string, name: string | undefined) => {
     if (name == null) {
       return match.charAt(0);
     }
@@ -56,16 +56,16 @@ export function formatNotificationCopyText(
 interface LocalizedInstantFormat {
   readonly instant: Date;
   readonly locale: SupportedLocale;
-  readonly timeZone: string;
+  readonly timezone: string;
 }
 
 const NOTIFICATION_TIME_FORMAT: Localized<(input: LocalizedInstantFormat) => string> = {
-  ko: ({ instant, locale, timeZone }) => {
+  ko: ({ instant, locale, timezone }) => {
     // Intl ko는 분이 있으면 "오후 3:30"이라 정시 표기("오후 3시")와 섞이므로 시·분을 직접 붙인다
     const parts = new Intl.DateTimeFormat(locale, {
       hour: "numeric",
       minute: "numeric",
-      timeZone,
+      timeZone: timezone,
     }).formatToParts(instant);
     const minute = Number(parts.find((part) => part.type === "minute")?.value ?? 0);
     const dayPeriod = parts.find((part) => part.type === "dayPeriod")?.value;
@@ -73,14 +73,14 @@ const NOTIFICATION_TIME_FORMAT: Localized<(input: LocalizedInstantFormat) => str
     const time = minute === 0 ? `${hour}시` : `${hour}시 ${minute}분`;
     return dayPeriod == null ? time : `${dayPeriod} ${time}`;
   },
-  en: ({ instant, locale, timeZone }) => {
+  en: ({ instant, locale, timezone }) => {
     const minute = Number(
-      new Intl.DateTimeFormat(locale, { minute: "numeric", timeZone }).format(instant),
+      new Intl.DateTimeFormat(locale, { minute: "numeric", timeZone: timezone }).format(instant),
     );
     return new Intl.DateTimeFormat(locale, {
       hour: "numeric",
       ...(minute !== 0 && { minute: "2-digit" }),
-      timeZone,
+      timeZone: timezone,
     }).format(instant);
   },
 };
@@ -93,7 +93,7 @@ export function formatWeatherNotificationTime(
   instant: Date,
   { locale, timezone }: { readonly locale: SupportedLocale; readonly timezone: string },
 ): string {
-  return NOTIFICATION_TIME_FORMAT[locale]({ instant, locale, timeZone: resolveTimezone(timezone) });
+  return NOTIFICATION_TIME_FORMAT[locale]({ instant, locale, timezone: resolveTimezone(timezone) });
 }
 
 const BILLING_DATE_FORMAT = {
@@ -114,14 +114,14 @@ export function formatBillingDate(
 
 const CONSENT_DATE_FORMAT: Localized<(input: LocalizedInstantFormat) => string> = {
   // 한국어 동의 안내의 출시 표기는 점으로 나눈 숫자 날짜다
-  ko: ({ instant, timeZone }) =>
-    localDateIn(instantFromDate(instant), timeZone).toString().replaceAll("-", "."),
-  en: ({ instant, locale, timeZone }) =>
+  ko: ({ instant, timezone }) =>
+    localDateIn(instantFromDate(instant), timezone).toString().replaceAll("-", "."),
+  en: ({ instant, locale, timezone }) =>
     new Intl.DateTimeFormat(locale, {
       month: "short",
       day: "numeric",
       year: "numeric",
-      timeZone,
+      timeZone: timezone,
     }).format(instant),
 };
 
@@ -130,5 +130,5 @@ export function formatConsentDate(
   instant: Date,
   { locale, timezone }: { readonly locale: SupportedLocale; readonly timezone: string },
 ): string {
-  return CONSENT_DATE_FORMAT[locale]({ instant, locale, timeZone: resolveTimezone(timezone) });
+  return CONSENT_DATE_FORMAT[locale]({ instant, locale, timezone: resolveTimezone(timezone) });
 }

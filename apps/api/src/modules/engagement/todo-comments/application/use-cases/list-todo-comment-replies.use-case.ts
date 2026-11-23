@@ -2,7 +2,7 @@ import type { TodoCommentLikeReaderPort } from "#api/modules/engagement/todo-com
 import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { TodoCommentId } from "../../../shared/domain/todo-comment-id.vo.js";
+import { TodoCommentId } from "../../domain/todo-comment-id.vo.js";
 import type { TodoCommentAccessReaderPort } from "../ports/todo-comment-access.reader.port.js";
 import type { TodoCommentBlockReaderPort } from "../ports/todo-comment-block-reader.port.js";
 import type { TodoCommentCursorCodecPort } from "../ports/todo-comment-cursor-codec.port.js";
@@ -30,9 +30,9 @@ export interface ListTodoCommentRepliesQuery {
 interface ListTodoCommentRepliesDependencies {
   readonly accessReader: Pick<TodoCommentAccessReaderPort, "findAccessibleTodoOwnerId">;
   readonly reader: Pick<TodoCommentReaderPort, "findComment">;
-  readonly replyReader: Pick<TodoCommentReplyReaderPort, "listReplies">;
+  readonly replyReader: Pick<TodoCommentReplyReaderPort, "findReplyWindow">;
   readonly likeReader: Pick<TodoCommentLikeReaderPort, "listLikedCommentIds">;
-  readonly blockReader: Pick<TodoCommentBlockReaderPort, "findBlockedCounterpartIds">;
+  readonly blockReader: Pick<TodoCommentBlockReaderPort, "listBlockedCounterpartIds">;
   readonly cursorCodec: Pick<TodoCommentCursorCodecPort, "decodeReplies" | "encodeReplies">;
 }
 
@@ -60,9 +60,9 @@ export class ListTodoCommentRepliesUseCase {
     const params = this.#toParams(query, { todoId, threadCommentId, size: query.size });
     // 기준 답글이 지워졌거나 다른 묶음이면 첫 페이지로 연다
     const window =
-      (await replyReader.listReplies(params)) ??
+      (await replyReader.findReplyWindow(params)) ??
       (params.mode === "AROUND"
-        ? await replyReader.listReplies({ ...params, mode: "INITIAL" })
+        ? await replyReader.findReplyWindow({ ...params, mode: "INITIAL" })
         : null);
     if (window == null) {
       throw invalidCommentRequest();
@@ -70,7 +70,7 @@ export class ListTodoCommentRepliesUseCase {
 
     const [likedCommentIds, blockedAuthorIds] = await Promise.all([
       likeReader.listLikedCommentIds(listCommentIds(window.items), viewerId),
-      blockReader.findBlockedCounterpartIds(viewerId, listCommentAuthorIds(window.items)),
+      blockReader.listBlockedCounterpartIds(viewerId, listCommentAuthorIds(window.items)),
     ]);
     const first = window.items.at(0);
     const last = window.items.at(-1);

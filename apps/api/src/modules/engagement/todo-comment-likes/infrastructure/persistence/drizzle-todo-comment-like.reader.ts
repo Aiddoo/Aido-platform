@@ -4,7 +4,7 @@ import { Injectable } from "@nestjs/common";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { TodoCommentId } from "../../../shared/domain/todo-comment-id.vo.js";
+import type { TodoCommentId } from "../../../todo-comments/domain/todo-comment-id.vo.js";
 import { TodoCommentLikeReaderPort } from "../../application/ports/todo-comment-like.reader.port.js";
 
 @Injectable()

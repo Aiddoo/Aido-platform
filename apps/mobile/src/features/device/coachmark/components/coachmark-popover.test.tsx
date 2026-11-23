@@ -202,9 +202,11 @@ describe('CoachmarkPopover', () => {
 
       // When
       await act(async () => {
-        addKeyboardListener.mock.calls
-          .filter(([event]) => event === 'keyboardDidShow')
-          .forEach(([_event, listener]) => listener(KEYBOARD_DID_SHOW));
+        for (const [event, listener] of addKeyboardListener.mock.calls) {
+          if (event === 'keyboardDidShow') {
+            listener(KEYBOARD_DID_SHOW);
+          }
+        }
       });
 
       // Then
@@ -298,7 +300,7 @@ describe('CoachmarkPopover', () => {
     );
 
     // When
-    rerender(renderHint(true));
+    await rerender(renderHint(true));
 
     // Then
     await waitFor(() =>

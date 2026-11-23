@@ -14,7 +14,7 @@ describe('hasUnread', () => {
   });
 });
 
-describe('getBadgeCount', () => {
+describe('findBadgeCount', () => {
   it.each([
     ['loading', 3, null],
     ['locked', 3, null],
@@ -26,7 +26,7 @@ describe('getBadgeCount', () => {
     '인증 상태가 %s이고 서버의 안 읽은 수가 %s면 배지를 %s로 맞춘다(null은 그대로 둔다)',
     (authStatus, unreadCount, expected) => {
       // When
-      const count = NotificationBadgePolicy.getBadgeCount(unreadCount, { authStatus });
+      const count = NotificationBadgePolicy.findBadgeCount(unreadCount, { authStatus });
 
       // Then
       expect(count).toBe(expected);

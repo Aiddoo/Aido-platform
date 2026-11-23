@@ -10,6 +10,7 @@ import type {
   UserActivityReaderPort,
 } from "#api/modules/identity/users/application/ports/user-activity.reader.port";
 import type { UserAppVersionReaderPort } from "#api/modules/identity/users/application/ports/user-app-version.reader.port";
+import { UserTagGeneratorPort } from "#api/modules/identity/users/application/ports/user-tag-generator.port";
 import {
   type UserProfileReadModel,
   UserRepositoryPort,
@@ -26,13 +27,11 @@ import {
 } from "#api/platform/database/schema/index";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { localDateIn } from "#api/shared/domain/time/time-zone-name";
+import { localDateIn } from "#api/shared/domain/time/timezone-name";
 
 import { userTagCollided, userTagGenerationFailed } from "../../application/users.errors.js";
 import type { User } from "../../domain/user.aggregate.js";
-import type { UserStatus } from "../../domain/users.constants.js";
-import { toUser } from "./user-row.mapper.js";
-import { generateUserTag } from "./user-tag.adapter.js";
+import { toUser, toUserRow } from "./user-row.mapper.js";
 
 type UserInsert = typeof user.$inferInsert;
 
@@ -56,11 +55,17 @@ export class DrizzleUserRepository
 
   readonly #transactionHost: TransactionHost<DrizzleTransactionalAdapter>;
   readonly #clock: ClockPort;
+  readonly #userTagGenerator: UserTagGeneratorPort;
 
-  constructor(transactionHost: TransactionHost<DrizzleTransactionalAdapter>, clock: ClockPort) {
+  constructor(
+    transactionHost: TransactionHost<DrizzleTransactionalAdapter>,
+    clock: ClockPort,
+    userTagGenerator: UserTagGeneratorPort,
+  ) {
     super();
     this.#transactionHost = transactionHost;
     this.#clock = clock;
+    this.#userTagGenerator = userTagGenerator;
   }
 
   async findByEmail(email: string): Promise<User | null> {
@@ -97,39 +102,11 @@ export class DrizzleUserRepository
     return row ?? null;
   }
 
-  async create(data: {
-    readonly email: string;
-    readonly status: UserStatus;
-    readonly emailVerifiedAt?: Temporal.Instant;
-  }): Promise<User> {
-    const userTag = await this.#generateUniqueUserTag();
-
-    try {
-      const [row] = await this.#db
-        .insert(user)
-        .values({
-          email: data.email,
-          status: data.status,
-          emailVerifiedAt: data.emailVerifiedAt,
-          userTag,
-          updatedAt: this.#clock.now(),
-        })
-        .returning();
-      return toUser(requireRecord(row));
-    } catch (error) {
-      const targets = uniqueConstraintTargets(error);
-      if (targets?.includes("email")) {
-        throw new IdentityPersistenceConflict("EMAIL_ALREADY_EXISTS");
-      }
-      // 확인 뒤 다른 가입이 같은 태그를 먼저 넣었다. 1.15.0 필터가 이 제약에 주던 500 응답을 유지한다
-      if (targets?.includes("userTag")) {
-        throw userTagCollided(error);
-      }
-      throw error;
-    }
+  nextUserTag(): Promise<string> {
+    return this.#generateUniqueUserTag();
   }
 
-  async findActiveAccounts(userIds: readonly UserId[]): Promise<readonly UserActivity[]> {
+  async listActiveAccounts(userIds: readonly UserId[]): Promise<readonly UserActivity[]> {
     if (userIds.length === 0) {
       return [];
     }
@@ -248,6 +225,10 @@ export class DrizzleUserRepository
   }
 
   async save(identityUser: User): Promise<void> {
+    if (!identityUser.isPersisted()) {
+      await this.#insert(identityUser);
+      return;
+    }
     const { status, emailVerifiedAt, deletedAt } = identityUser.toPrimitives();
     await this.#update(identityUser.id.value, {
       status,
@@ -299,7 +280,7 @@ export class DrizzleUserRepository
 
   async #generateUniqueUserTag(): Promise<string> {
     for (let i = 0; i < MAX_USER_TAG_RETRIES; i++) {
-      const tag = generateUserTag();
+      const tag = this.#userTagGenerator.generate();
       const exists = await this.#db.query.user.findFirst({
         columns: { id: true },
         where: { userTag: tag },
@@ -313,6 +294,23 @@ export class DrizzleUserRepository
     }
 
     throw userTagGenerationFailed(MAX_USER_TAG_RETRIES);
+  }
+
+  async #insert(identityUser: User): Promise<void> {
+    try {
+      await this.#db.insert(user).values(toUserRow(identityUser));
+    } catch (error) {
+      const targets = uniqueConstraintTargets(error);
+      if (targets?.includes("email")) {
+        throw new IdentityPersistenceConflict("EMAIL_ALREADY_EXISTS");
+      }
+      // 확인 뒤 다른 가입이 같은 태그를 먼저 넣었다. 1.15.0 필터가 이 제약에 주던 500 응답을 유지한다
+      if (targets?.includes("userTag")) {
+        throw userTagCollided(error);
+      }
+      throw error;
+    }
+    identityUser.markPersisted();
   }
 
   async #update(

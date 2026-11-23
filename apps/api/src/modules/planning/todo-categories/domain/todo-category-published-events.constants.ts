@@ -10,7 +10,7 @@ export type CategoryChangeEventName = (typeof CATEGORY_CHANGE_EVENT_NAMES)[numbe
 
 // 구독 Context가 defineEventSubscription의 payloadSchema로 쓴다. 발행 쪽 toPayload와 모양이 같아야 한다
 export const categoryChangedPayloadSchema = z.object({
-  categoryId: z.number().int(),
+  categoryId: z.int(),
   userId: z.string(),
   occurredAt: z.iso.datetime(),
 });

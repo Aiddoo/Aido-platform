@@ -2,12 +2,12 @@ import type { TodoRepeat } from '@src/features/planning/todo/domains/todo-repeat
 import '@src/shared/i18n/init';
 import { createDateKey } from '@src/testing/date-key';
 
-import { getPlanTodoSubtitle } from './plan-todo-subtitle.view-model';
+import { findPlanTodoSubtitle } from './plan-todo-subtitle.view-model';
 
 const CONTEXT = {
   todayKey: createDateKey('2026-11-07'),
   timeFormat: 'TWENTY_FOUR_HOUR',
-  dateFormatContext: { locale: 'ko-KR', timeZone: 'Asia/Seoul' },
+  dateFormatContext: { locale: 'ko-KR', timezone: 'Asia/Seoul' },
 } as const;
 
 const TODO = {
@@ -17,11 +17,11 @@ const TODO = {
   repeat: null,
 };
 
-describe('getPlanTodoSubtitle', () => {
+describe('findPlanTodoSubtitle', () => {
   it('오늘·내일 할 일은 할 일 칩과 같은 말로 보인다', () => {
     // When
-    const today = getPlanTodoSubtitle(TODO, CONTEXT);
-    const tomorrow = getPlanTodoSubtitle(
+    const today = findPlanTodoSubtitle(TODO, CONTEXT);
+    const tomorrow = findPlanTodoSubtitle(
       { ...TODO, startDate: createDateKey('2026-11-08') },
       CONTEXT,
     );
@@ -32,7 +32,7 @@ describe('getPlanTodoSubtitle', () => {
 
   it('다른 날의 할 일은 날짜를 보인다', () => {
     // When
-    const subtitle = getPlanTodoSubtitle(
+    const subtitle = findPlanTodoSubtitle(
       { ...TODO, startDate: createDateKey('2026-11-10') },
       CONTEXT,
     );
@@ -43,7 +43,7 @@ describe('getPlanTodoSubtitle', () => {
 
   it('날짜와 시간을 가운뎃점으로 잇는다', () => {
     // When
-    const subtitle = getPlanTodoSubtitle(
+    const subtitle = findPlanTodoSubtitle(
       { ...TODO, startDate: createDateKey('2026-11-10'), scheduledTime: '09:30:00' },
       CONTEXT,
     );
@@ -62,7 +62,7 @@ describe('getPlanTodoSubtitle', () => {
     };
 
     // When
-    const subtitle = getPlanTodoSubtitle(
+    const subtitle = findPlanTodoSubtitle(
       { ...TODO, startDate: createDateKey('2026-11-10'), repeat },
       CONTEXT,
     );
@@ -74,7 +74,7 @@ describe('getPlanTodoSubtitle', () => {
 
   it('기간 할 일은 시작과 끝을 보인다', () => {
     // When
-    const subtitle = getPlanTodoSubtitle(
+    const subtitle = findPlanTodoSubtitle(
       { ...TODO, startDate: createDateKey('2026-11-10'), endDate: createDateKey('2026-11-12') },
       CONTEXT,
     );

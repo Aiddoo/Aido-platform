@@ -17,8 +17,6 @@ export const ReminderLogEvent = {
     "notification.reminders.timezone-aware-reminder.evening-catch-up.dispatched",
   TIMEZONE_AWARE_REMINDER_CATCH_UP_FAILED:
     "notification.reminders.timezone-aware-reminder.catch-up.failed",
-  TIMEZONE_AWARE_REMINDER_LEGACY_DIGEST_SKIPPED:
-    "notification.reminders.timezone-aware-reminder.legacy-digest.skipped",
   TIMEZONE_AWARE_REMINDER_DIGEST_FAILED:
     "notification.reminders.timezone-aware-reminder.digest.failed",
   EVENING_REMINDER_SENT: "notification.reminders.evening-reminder.sent",

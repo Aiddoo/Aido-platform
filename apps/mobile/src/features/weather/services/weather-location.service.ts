@@ -1,5 +1,5 @@
 import type { ApiError } from '@src/core/errors/api-error';
-import { err, ok, type Result } from '@src/core/errors/result';
+import { fail, ok, type Result } from '@src/core/errors/result';
 import type { AppLogger } from '@src/core/ports/app-logger';
 import {
   type LocationCoordinates,
@@ -47,7 +47,7 @@ export class WeatherLocationService {
     this.#logger = logger;
   }
 
-  // 직전 위치도 없으면 unavailable로 서버 저장 위치를 쓰게 한다. 등록 거절(4xx)은 err, 네트워크·서버 장애는 throw다
+  // 직전 위치도 없으면 unavailable로 서버 저장 위치를 쓰게 한다. 등록 거절(4xx)은 fail, 네트워크·서버 장애는 throw다
   resolveLocation = async ({
     previous,
     signal,
@@ -94,7 +94,7 @@ export class WeatherLocationService {
       this.#registerLocation(coordinates, signal, onUnexpectedFailure),
     ]);
     if (!registration.ok) {
-      return err(registration.error);
+      return fail(registration.error);
     }
     const registered = registration.value;
     const reportLocation = await findReportLocation(revision);

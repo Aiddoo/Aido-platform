@@ -23,6 +23,18 @@ updates:
         patterns:
           - 'vitest'
           - '@vitest/*'
+      # 서로 정확한 버전을 peer로 요구하는 묶음이다. 따로 오르면 strictPeerDependencies에서 설치가 깨지거나
+      # @tanstack/query-core가 두 벌 생긴다(persist-client만 남은 #1782).
+      tanstack:
+        patterns:
+          - '@tanstack/*'
+      react-native-firebase:
+        patterns:
+          - '@react-native-firebase/*'
+      turbo:
+        patterns:
+          - 'turbo'
+          - '@turbo/*'
       # 프레임워크 cohort 외 메이저는 개별 검증한다.
       dev-dependencies:
         dependency-type: 'development'
@@ -43,7 +55,11 @@ updates:
       - dependency-name: 'drizzle-orm'
       - dependency-name: 'drizzle-kit'
       - dependency-name: '@nestjs-cls/transactional-adapter-drizzle-orm'
-      # 12.27 uses pg-boss schema 37; later minor versions break old-image rollback.
+      # minor마다 pg-boss DB 스키마 버전이 바뀔 수 있다. Blue-Green 겹침과 옛 이미지 롤백 때 이전 버전이
+      # 새 스키마에서 도는지 릴리스 노트로 확인한 뒤 catalog로 직접 올린다.
+      # 12.39.0은 스키마 46→47이고, migrate: false인 12.38.2는 시작할 때 버전이 정확히 같지 않으면
+      # "pg-boss database requires migrations"를 던진다. 이전 SHA 재배포가 job 큐를 시작하지 못하므로
+      # pg-boss 스키마 롤백 절차를 정한 뒤 올린다.
       - dependency-name: 'pg-boss'
       # ── Expo SDK 58 관리(bundledNativeModules 핀) — `npx expo install --fix`가 소유.
       #    수동/dependabot bump 시 expo-doctor·install --check 정합이 깨진다. SDK 업그레이드 때 일괄 갱신.
@@ -72,7 +88,9 @@ updates:
       - dependency-name: 'react-native-view-shot'
       - dependency-name: '@sentry/react-native'
       # ── 메이저 차단 (toolchain/계약 제약 — 사유 해소 시 항목 제거)
-      # typescript 7: Expo 58의 CLI 권장 TypeScript 6 cohort와 함께 검증
+      # typescript 7: @nestjs/cli 12.0.15는 typescript ~6.0.2, @nestjs/swagger 12.1.2는 ^5.5.0 || ^6.0.0,
+      # @nestjs/schematics 12.0.16은 ^6.0.0을 요구한다. 7은 고전 JS API가 없어(exports["."]가 lib/version.cjs뿐)
+      # nest build 타입 검사·slice-shape.spec.ts·모바일 feature-graph.cjs가 깨진다.
       - dependency-name: 'typescript'
         update-types: ['version-update:semver-major']
       # Firebase 27은 iOS dynamic frameworks + SPM, Kotlin 2.4를 요구해 Expo config 플러그인만으로 맞출 수 없다.
@@ -102,6 +120,25 @@ updates:
     ignore:
       # 프로덕션 런타임은 Node 26 LTS 라인을 유지한다.
       - dependency-name: 'node'
+        update-types: ['version-update:semver-major']
+    target-branch: 'main'
+    labels:
+      - 'dependencies'
+      - 'automated'
+    commit-message:
+      prefix: 'chore(deps)'
+
+  - package-ecosystem: 'docker-compose'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '09:00'
+      timezone: 'Asia/Seoul'
+    open-pull-requests-limit: 3
+    ignore:
+      # 운영 RDS가 PostgreSQL 16이라 로컬 DB도 같은 메이저에 둔다.
+      - dependency-name: 'postgres'
         update-types: ['version-update:semver-major']
     target-branch: 'main'
     labels:

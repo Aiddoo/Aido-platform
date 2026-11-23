@@ -4,7 +4,7 @@ import { IdentityUserPreferencesModule } from "#api/modules/identity/user-prefer
 
 import { NotificationPushDevicesModule } from "../push-devices/notification-push-devices.public.js";
 import { NotificationPushDispatchesModule } from "../push-dispatches/notification-push-dispatches.public.js";
-import { NotificationHistoryReader } from "./application/notification-history.reader.js";
+import { NotificationHistoryReaderPort } from "./application/ports/notification-history.reader.port.js";
 import { NotificationInboxReaderPort } from "./application/ports/notification-inbox.reader.port.js";
 import { NotificationRepositoryPort } from "./application/ports/notification.repository.port.js";
 import { DeleteActorNotificationsUseCase } from "./application/use-cases/delete-actor-notifications.use-case.js";
@@ -41,7 +41,7 @@ import { NotificationController } from "./presentation/http/v1/notification.cont
   exports: [
     PublishNotificationUseCase,
     PublishNotificationBatchUseCase,
-    NotificationHistoryReader,
+    NotificationHistoryReaderPort,
     NotificationInboxReaderPort,
     NotificationRepositoryPort,
     DeleteActorNotificationsUseCase,

@@ -60,16 +60,16 @@ export function toDraftVoicePlan(
 export function createPlanReviewDraftKey({
   userId,
   target,
-  timeZone,
+  timezone,
 }: {
   userId: string;
   target: readonly (string | number)[];
-  timeZone: string;
+  timezone: string;
 }) {
   return createDraftKey({
     ownerId: userId,
     scope: 'memo-plan',
     target,
-    schema: createPlanReviewDraftSchema(timeZone),
+    schema: createPlanReviewDraftSchema(timezone),
   });
 }

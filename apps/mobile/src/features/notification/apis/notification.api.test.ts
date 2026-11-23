@@ -1,4 +1,4 @@
-import { err, ok, unwrap } from '@src/core/errors/result';
+import { fail, ok, unwrap } from '@src/core/errors/result';
 import { NetworkError } from '@src/shared/errors';
 import { createHttpClientStub } from '@src/testing/core';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
@@ -125,7 +125,7 @@ describe('NotificationApi.markAsReadAndCheckOwnership', () => {
   ] as const)('읽음이 $code면 다른 계정 알림이다', async ({ code, status }) => {
     // Given
     const { httpClient, api } = setup();
-    httpClient.patch.mockResolvedValue(err(createNotificationApiError({ code, status })));
+    httpClient.patch.mockResolvedValue(fail(createNotificationApiError({ code, status })));
 
     // When
     const ownership = await api.markAsReadAndCheckOwnership(7);
@@ -137,7 +137,7 @@ describe('NotificationApi.markAsReadAndCheckOwnership', () => {
   it('다른 4xx와 네트워크 실패는 모르는 것이다', async () => {
     // Given
     const { httpClient, api } = setup();
-    httpClient.patch.mockResolvedValueOnce(err(createNotificationApiError({ status: 400 })));
+    httpClient.patch.mockResolvedValueOnce(fail(createNotificationApiError({ status: 400 })));
     httpClient.patch.mockRejectedValueOnce(new NetworkError());
 
     // When

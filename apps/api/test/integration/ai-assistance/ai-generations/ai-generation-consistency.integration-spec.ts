@@ -11,16 +11,17 @@ import type {
   AiTaskId,
   AiTaskOutputs,
 } from "#api/modules/ai-assistance/ai-generations/application/ports/ai-generator.port";
-import { ScheduledAiConsentReader } from "#api/modules/ai-assistance/ai-generations/application/scheduled-ai-consent.reader";
+import { CheckScheduledAiConsentUseCase } from "#api/modules/ai-assistance/ai-generations/application/use-cases/check-scheduled-ai-consent.use-case";
 import type { AiGeneration } from "#api/modules/ai-assistance/ai-generations/domain/ai-generation.aggregate";
 import { GenerateReportUseCase } from "#api/modules/ai-assistance/ai-reports/application/use-cases/generate-report.use-case";
 import { AiReportJobName } from "#api/modules/ai-assistance/ai-reports/infrastructure/jobs/ai-report.queue";
 import { ReportGenerationProcessor } from "#api/modules/ai-assistance/ai-reports/infrastructure/jobs/report-generation.processor";
 import { DrizzleAiReportRepository } from "#api/modules/ai-assistance/ai-reports/infrastructure/persistence/drizzle-ai-report.repository";
 import { DrizzleTodoStatsReader } from "#api/modules/ai-assistance/ai-reports/infrastructure/persistence/drizzle-todo-stats.reader";
-import { SuggestionContextReader } from "#api/modules/ai-assistance/suggestions/application/suggestion-context.reader";
 import { AnalyzeAndCreateSuggestionsUseCase } from "#api/modules/ai-assistance/suggestions/application/use-cases/analyze-and-create-suggestions.use-case";
+import { GetSuggestionContextUseCase } from "#api/modules/ai-assistance/suggestions/application/use-cases/get-suggestion-context.use-case";
 import { HandleSuggestionActionUseCase } from "#api/modules/ai-assistance/suggestions/application/use-cases/handle-suggestion-action.use-case";
+import { SuggestionAnalysisRun } from "#api/modules/ai-assistance/suggestions/domain/suggestion-analysis-run.entity";
 import { suggestionAnalysisPeriod } from "#api/modules/ai-assistance/suggestions/domain/suggestion-dispatch-window.domain-service";
 import { SuggestionId } from "#api/modules/ai-assistance/suggestions/domain/suggestion-id.vo";
 import {
@@ -35,6 +36,7 @@ import { DrizzleSuggestionRepository } from "#api/modules/ai-assistance/suggesti
 import { GetAiDataSharingConsentUseCase } from "#api/modules/identity/user-preferences/application/use-cases/get-ai-data-sharing-consent.use-case";
 import { AiDataSharingConsentReaderAdapter } from "#api/modules/identity/user-preferences/infrastructure/adapters/ai-data-sharing-consent-reader.adapter";
 import { DrizzleUserConsentRepository } from "#api/modules/identity/user-preferences/infrastructure/persistence/drizzle-user-consent.repository";
+import { RandomUserTagGeneratorAdapter } from "#api/modules/identity/users/infrastructure/adapters/user-tag-generator.adapter";
 import { DrizzleUserRepository } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user.repository";
 import { DrizzleClientAppVersionReader } from "#api/modules/notification/push-devices/infrastructure/persistence/drizzle-client-app-version.reader";
 import { DrizzleRepeatingTodoTitleReader } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-repeating-todo-title.reader";
@@ -126,7 +128,11 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     suggestions = new DrizzleSuggestionRepository(fixture.transactionHost);
     activity = new DrizzleSuggestionActivityReader(fixture.transactionHost);
     reports = new DrizzleAiReportRepository(fixture.transactionHost);
-    users = new DrizzleUserRepository(fixture.transactionHost, new DateClock());
+    users = new DrizzleUserRepository(
+      fixture.transactionHost,
+      new DateClock(),
+      new RandomUserTagGeneratorAdapter(),
+    );
     userId = createEntityId();
     await client
       .insert(userTable)
@@ -153,6 +159,14 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
         return row;
       }),
     );
+    await new DrizzleSuggestionAnalysisRunRepository(fixture.transactionHost).save(
+      SuggestionAnalysisRun.create({
+        userId: UserId.reconstitute(userId),
+        localDate: Temporal.PlainDate.from("2026-10-08"),
+        trigger: "SCHEDULED",
+        now: Temporal.Instant.from(CURRENT_TIME.toISOString()),
+      }),
+    );
   });
   afterEach(() => {
     vi.useRealTimers();
@@ -171,7 +185,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     const logger = new Logger("AiGenerationIntegration");
     const clock = new DateClock();
     const pushDeviceVersions = new DrizzleClientAppVersionReader(fixture.transactionHost);
-    const scheduledAiConsent = new ScheduledAiConsentReader({
+    const scheduledAiConsent = new CheckScheduledAiConsentUseCase({
       consentReader: new AiDataSharingConsentReaderAdapter(
         new GetAiDataSharingConsentUseCase({
           consentRepository: new DrizzleUserConsentRepository(fixture.transactionHost),
@@ -182,7 +196,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       },
       clock,
     });
-    const contextBuilder = new SuggestionContextReader({
+    const suggestionContext = new GetSuggestionContextUseCase({
       activityReader: activity,
       repeatingTitleReader: new DrizzleRepeatingTodoTitleReader(fixture.transactionHost),
       clock,
@@ -193,7 +207,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       generator: provider,
       scheduledAiConsent,
       clock,
-      contextBuilder,
+      suggestionContext,
       entitlementReader: entitlement,
       unitOfWork: fixture.uow,
       mutationLock: new PostgresMutationLockAdapter(fixture.transactionHost),
@@ -252,7 +266,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       provider.setRawResponse({ picks: [createSuggestionPick()] });
       await flow.suggestionProcessor.process({
         name: AiSuggestionJobName.ANALYZE,
-        data: { userId, timezone: "Asia/Seoul", weatherGrid: null },
+        data: { userId, timezone: "Asia/Seoul", localDate: "2026-10-08", trigger: "SCHEDULED" },
       });
     }
     return flow;
@@ -313,10 +327,9 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       );
 
       // When
-      const todos = await activity.findRecentTodos(
+      const todos = await activity.listRecentTodos(
         UserId.reconstitute(userId),
-        suggestionAnalysisPeriod({ at, timeZone: timezone }),
-        timezone,
+        suggestionAnalysisPeriod({ at, timezone: timezone }),
       );
 
       // Then

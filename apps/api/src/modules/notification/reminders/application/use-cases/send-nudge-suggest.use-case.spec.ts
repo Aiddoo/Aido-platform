@@ -7,7 +7,7 @@ import { StubReEngagementReader } from "#test/doubles/notification/stub-re-engag
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createTimezoneContextFixture } from "#test/fixtures/notification/timezone-context.fixture";
 
-import { NotificationHistoryReader } from "../../../notifications/application/notification-history.reader.js";
+import { CachedNotificationHistoryAdapter } from "../../../notifications/infrastructure/adapters/cached-notification-history.adapter.js";
 import { createNudgeSuggestionNotificationMessage } from "../../../shared/application/messages/scheduler-notification.messages.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
 import type { NudgeSuggestFollowReadModel } from "../read-models/scheduler.read-model.js";
@@ -68,7 +68,7 @@ describe("SendNudgeSuggestUseCase — 찔러보기 제안 전략", () => {
     // Then
     expect(result).toEqual({ sent: 1 });
     expect(reader.queries).toContainEqual({
-      method: "findNudgeSuggestFollows",
+      method: "listNudgeSuggestFollows",
       params: {
         candidateIds: ["user-1"],
         // 서울 현지 2024-01-09 자정부터 2024-01-14 자정까지
@@ -171,9 +171,9 @@ describe("SendNudgeSuggestUseCase — 찔러보기 제안 전략", () => {
             count: (await notifications.createManyNotificationsAndReturn(items)).length,
           }),
         },
-        notificationHistoryReader: new NotificationHistoryReader({
+        notificationHistoryReader: new CachedNotificationHistoryAdapter({
           notificationDeduplication: new InMemoryNotificationDeduplication(),
-          notificationHistoryReader: notifications,
+          databaseReader: notifications,
           logger: new SilentLogger(),
         }),
         logger: new SilentLogger(),

@@ -35,7 +35,7 @@ export class DrizzleWeeklyAchievementStatsReader implements WeeklyAchievementSta
     return this.#countTodoDaysByUser(params, true);
   }
 
-  async findFreeRecipientIds(userIds: readonly UserId[]): Promise<Set<string>> {
+  async listFreeRecipientIds(userIds: readonly UserId[]): Promise<Set<string>> {
     if (userIds.length === 0) {
       return new Set();
     }

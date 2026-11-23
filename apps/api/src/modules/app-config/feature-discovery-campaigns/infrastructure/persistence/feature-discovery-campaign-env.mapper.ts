@@ -15,7 +15,7 @@ export function toFeatureDiscoveryCampaign(
     return null;
   }
   return FeatureDiscoveryCampaign.reconstitute({
-    campaignId,
+    id: campaignId,
     minAppVersion,
     launchedAt: launchedAtInstant,
     autoOpen,

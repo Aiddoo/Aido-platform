@@ -22,7 +22,7 @@ export function QuickVoiceQuota() {
   const { data: snapshot } = useQuery(useGetEntitlementsQueryOptions());
   const formatRefillSentence = useFormatRefillSentence();
   const remaining =
-    snapshot == null ? null : EntitlementPolicy.getRemainingCount(snapshot, 'AI_PARSE');
+    snapshot == null ? null : EntitlementPolicy.findRemainingCount(snapshot, 'AI_PARSE');
   const refill = formatRefillSentence(snapshot, 'AI_PARSE');
   const { type: quotaType } = useQuotaStatus('AI_PARSE');
   // 팝오버 안은 LocalDateProvider 바깥이라 useDateFormatContext를 쓸 수 없다

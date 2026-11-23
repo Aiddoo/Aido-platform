@@ -97,7 +97,9 @@ export class PublishPushDeliveryOutboxUseCase {
       await this.#dependencies.enqueuer.enqueueDeliveries(publications, lane);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      const highestAttempt = Math.max(...publications.map((item) => item.publishAttempt));
+      const highestAttempt = Math.max(
+        ...publications.map((publication) => publication.publishAttempt),
+      );
       await this.#dependencies.unitOfWork.run(() =>
         this.#dependencies.outbox.defer({
           publications,

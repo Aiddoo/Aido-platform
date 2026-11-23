@@ -25,8 +25,8 @@
         "babel-plugin-react-compiler",
         "babel-jest",
       ],
-      // Maestro CLI는 npm 패키지가 아니라 따로 설치한다(.maestro/README.md)
-      "ignoreBinaries": ["adb", "eas", "maestro"],
+      // Android SDK adb와 EAS CLI는 npm 의존성이 아니라 따로 설치한다
+      "ignoreBinaries": ["adb", "eas"],
     },
   },
 }

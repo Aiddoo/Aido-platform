@@ -29,7 +29,7 @@
 | 첫 친구        | `NotifyFirstFriendMilestoneUseCase`                                    | 관계를 바꾼 트랜잭션 안에서 친구 수가 정확히 1이 된 사람에게 FIRST_FRIEND 알림 작업을 넣는다                                                  |
 | 친구 잠금      | `FriendshipLockKeys.pair`·`list`                                       | 요청·수락·끊기·차단·초대가 같은 쌍 잠금과 두 사람의 목록 잠금을 잡는다. 문자열은 배포 사이 같은 잠금이라 바꾸지 않는다                        |
 | 사용자 검색    | `SearchUsersUseCase`, `UserSearchTerm`(VO), `UserSearchCursor`(VO)     | 이름·Aido ID 검색. 검색어는 NFC·앞뒤 공백·연속 공백을 정리하고 비면 `FOLLOW_0911`. 커서는 (rank, id, 총수) base64url이고 틀리면 `FOLLOW_0912` |
-| 검색 대상      | `FriendSearchReaderAdapter`, `hasNoBlockWith`                          | identity 검색이 순위를 매기고 본인·어느 쪽이든 차단한 사람은 검색 SQL에서 뺀다. 관계 표시는 `FriendReaderPort.findRelationsWith` 한 번이다    |
+| 검색 대상      | `FriendSearchReaderAdapter`, `hasNoBlockWith`                          | identity 검색이 순위를 매기고 본인·어느 쪽이든 차단한 사람은 검색 SQL에서 뺀다. 관계 표시는 `FriendReaderPort.listRelationsWith` 한 번이다    |
 | 맞팔 관계 조각 | `acceptedFriendshipsOf`                                                | 다른 Context가 사람들의 맞팔(ACCEPTED) 관계를 한 SQL로 고르는 하위 질의. 준 사람이 어느 쪽이든 그 행이다(`social-friendships.public`)         |
 
 친구 요청 오류는 출시 앱이 받는 순서다: 자기 자신 `FOLLOW_0904` → 한도 `FOLLOW_0909` → 대상 없음 `FOLLOW_0905` → 내가 차단함 `BLOCK_2203` → 나를 차단함(없는 사용자와 같은 `FOLLOW_0905`) → 이미 친구 `FOLLOW_0902` → 이미 보냄 `FOLLOW_0901`.
@@ -135,7 +135,7 @@
 
 | 용어             | 코드                                             | 뜻                                                                                                                                           |
 | ---------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| 초대             | `Invite`(Aggregate), `InviteId`(`social/shared`) | 초대한 사람의 코드 하나. 한 사람에게 ACTIVE 초대는 하나다                                                                                    |
+| 초대             | `Invite`(Aggregate), `InviteId`(`invites`)       | 초대한 사람의 코드 하나. 한 사람에게 ACTIVE 초대는 하나다                                                                                    |
 | 초대 코드        | `InviteCode`(VO, `social/shared`), `INVITE_CODE` | `23456789BCDFGHJKMNPQRSTVWXZ` 중 6자. 공백·하이픈·소문자는 맞춰 읽고 그 밖은 `SYS_0002`                                                      |
 | 내 초대 열기     | `IssueMyInviteUseCase`, `InviteLockKeys.invite`  | 처음 열면 초대 잠금 아래에서 코드를 발급하고 그 뒤로는 같은 코드와 진행 요약을 준다                                                          |
 | 코드 발급        | `IssueInviteCodeUseCase`, `saveIfCodeUnused`     | 코드가 겹치면 새 코드로 5번까지 다시 만들고 넘으면 `SYS_0001`                                                                                |

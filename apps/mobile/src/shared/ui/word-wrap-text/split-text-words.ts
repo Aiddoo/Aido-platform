@@ -9,12 +9,12 @@ export function splitRunsIntoLines(runs: readonly TextRun[]): TextRun[][] {
   const lines: TextRun[][] = [[]];
 
   for (const run of runs) {
-    run.text.split('\n').forEach((text, index) => {
+    for (const [index, text] of run.text.split('\n').entries()) {
       if (index > 0) {
         lines.push([]);
       }
       lines.at(-1)?.push({ ...run, text });
-    });
+    }
   }
 
   return lines;

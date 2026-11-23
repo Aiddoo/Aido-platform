@@ -1,17 +1,11 @@
 import { z } from "zod";
 
-/**
- * Google OAuth 설정
- */
 const googleOAuthSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   GOOGLE_CALLBACK_URL: z.url().optional(),
 });
 
-/**
- * Apple OAuth 설정
- */
 const appleOAuthSchema = z.object({
   APPLE_CLIENT_ID: z.string().optional(),
   APPLE_JWKS_URL: z.url().optional(),
@@ -21,27 +15,19 @@ const appleOAuthSchema = z.object({
   APPLE_PRIVATE_KEY: z.string().optional(),
 });
 
-/**
- * Kakao OAuth 설정
- */
 const kakaoOAuthSchema = z.object({
   KAKAO_CLIENT_ID: z.string().optional(),
   KAKAO_CLIENT_SECRET: z.string().optional(),
   KAKAO_CALLBACK_URL: z.url().optional(),
 });
 
-/**
- * Naver OAuth 설정
- */
 const naverOAuthSchema = z.object({
   NAVER_CLIENT_ID: z.string().optional(),
   NAVER_CLIENT_SECRET: z.string().optional(),
   NAVER_CALLBACK_URL: z.url().optional(),
 });
 
-/**
- * 통합 OAuth 스키마 (dev에서는 선택적)
- */
+// 개발 환경은 공급자 키 없이도 시작한다
 export const oauthSchema = z.object({
   ...googleOAuthSchema.shape,
   ...appleOAuthSchema.shape,
@@ -65,3 +51,6 @@ export function hasOAuthProvider(config: OAuthConfig): boolean {
 
   return hasGoogle || hasKakao || hasNaver || hasApple;
 }
+
+// APPLE_JWKS_URL을 비우면 이 공식 주소를 쓰고, 운영은 다른 주소를 거부한다(production-readiness.ts)
+export const APPLE_JWKS_URL = "https://appleid.apple.com/auth/keys";

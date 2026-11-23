@@ -11,10 +11,11 @@ interface SeedUserInput extends UserSubscriptionProjection {
   readonly deleted?: boolean;
 }
 
-// User 행의 구독 projection을 userId별로 둔다. 없는 사용자는 DB처럼 부재 오류다
+// User 행의 구독 projection을 userId별로 둔다. 없는 사용자는 DB처럼 부재 오류다. failNextUpdate로 다음 갱신 한 번을 실패시킨다
 export class InMemoryUserSubscriptionProjection extends UserSubscriptionProjectionPort {
   readonly projections = new Map<string, UserSubscriptionProjection>();
   readonly #deletedUserIds = new Set<string>();
+  #nextUpdateFailure: Error | null = null;
 
   constructor(knownUserIds: readonly string[]) {
     super();
@@ -33,7 +34,16 @@ export class InMemoryUserSubscriptionProjection extends UserSubscriptionProjecti
     }
   }
 
+  failNextUpdate(error: Error): void {
+    this.#nextUpdateFailure = error;
+  }
+
   async update(userId: UserId, projection: UserSubscriptionProjection): Promise<void> {
+    const failure = this.#nextUpdateFailure;
+    if (failure != null) {
+      this.#nextUpdateFailure = null;
+      throw failure;
+    }
     const current = this.projections.get(userId.value);
     if (current == null) {
       throw new DatabaseRecordNotFoundError();

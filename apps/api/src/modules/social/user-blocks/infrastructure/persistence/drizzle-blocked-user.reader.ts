@@ -88,7 +88,7 @@ export class DrizzleBlockedUserReader implements BlockedUserReaderPort {
     rows: readonly (typeof userBlock.$inferSelect)[],
   ): Promise<BlockedUserReadModel[]> {
     const briefs = keyBy(
-      await this.#userBriefReader.findByUserIds(
+      await this.#userBriefReader.listByUserIds(
         rows.map((row) => UserId.reconstitute(row.blockedId)),
       ),
       (brief) => brief.userId.value,

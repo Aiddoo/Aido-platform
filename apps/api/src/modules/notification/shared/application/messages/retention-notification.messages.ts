@@ -1,4 +1,5 @@
 import { type SupportedLocale } from "@aido/api/vocabulary";
+import { match } from "ts-pattern";
 
 import { deterministicIndex } from "#api/shared/domain/services/deterministic-variant";
 
@@ -37,14 +38,16 @@ export function createRetentionNotificationMessage(
 }
 
 function retentionTemplateKey(selection: RetentionNotificationCopySelection): RetentionTemplateKey {
-  switch (selection.stage) {
-    case "D0":
-      return "D0:d0_no_todo";
-    case "D1":
-      return selection.copyKey === "d1_no_todo" ? "D1:d1_no_todo" : "D1:d1_has_todo_no_completion";
-    case "D3":
-      return "D3:d3_restart";
-    case "D7":
-      return selection.copyKey === "d7_has_progress" ? "D7:d7_has_progress" : "D7:d7_restart";
-  }
+  return match(selection)
+    .returnType<RetentionTemplateKey>()
+    .with({ stage: "D0" }, () => "D0:d0_no_todo")
+    .with({ stage: "D1", copyKey: "d1_no_todo" }, () => "D1:d1_no_todo")
+    .with(
+      { stage: "D1", copyKey: "d1_has_todo_no_completion" },
+      () => "D1:d1_has_todo_no_completion",
+    )
+    .with({ stage: "D3" }, () => "D3:d3_restart")
+    .with({ stage: "D7", copyKey: "d7_has_progress" }, () => "D7:d7_has_progress")
+    .with({ stage: "D7", copyKey: "d7_restart" }, () => "D7:d7_restart")
+    .exhaustive();
 }

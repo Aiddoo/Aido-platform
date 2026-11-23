@@ -18,10 +18,10 @@ describe('TodoCategoryPolicy.findCategory', () => {
   });
 });
 
-describe('TodoCategoryPolicy.getInitialCategoryId', () => {
+describe('TodoCategoryPolicy.findInitialCategoryId', () => {
   it('요청한 카테고리가 남아 있으면 그것을 고른다', () => {
     // When
-    const categoryId = TodoCategoryPolicy.getInitialCategoryId(CATEGORIES, WORKOUT.id);
+    const categoryId = TodoCategoryPolicy.findInitialCategoryId(CATEGORIES, WORKOUT.id);
 
     // Then
     expect(categoryId).toBe(WORKOUT.id);
@@ -29,8 +29,8 @@ describe('TodoCategoryPolicy.getInitialCategoryId', () => {
 
   it('요청한 카테고리가 지워졌거나 없으면 목록의 첫 카테고리를 고른다', () => {
     // When
-    const fromDeleted = TodoCategoryPolicy.getInitialCategoryId(CATEGORIES, 99);
-    const fromMissing = TodoCategoryPolicy.getInitialCategoryId(CATEGORIES, null);
+    const fromDeleted = TodoCategoryPolicy.findInitialCategoryId(CATEGORIES, 99);
+    const fromMissing = TodoCategoryPolicy.findInitialCategoryId(CATEGORIES, null);
 
     // Then
     expect(fromDeleted).toBe(PERSONAL.id);
@@ -39,7 +39,7 @@ describe('TodoCategoryPolicy.getInitialCategoryId', () => {
 
   it('카테고리가 하나도 없으면 고를 수 없다', () => {
     // When
-    const categoryId = TodoCategoryPolicy.getInitialCategoryId([], 7);
+    const categoryId = TodoCategoryPolicy.findInitialCategoryId([], 7);
 
     // Then
     expect(categoryId).toBeNull();

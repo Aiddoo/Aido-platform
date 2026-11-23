@@ -18,7 +18,6 @@ import {
   PushTokenRepositoryPort,
 } from "../push-devices/notification-push-devices.public.js";
 import { UserNotificationSettingsPort } from "../shared/application/ports/user-notification-settings.port.js";
-import { NoActiveTokenReasonReader } from "./application/no-active-token-reason.reader.js";
 import { MarketingPushOptOutTokenPort } from "./application/ports/marketing-push-opt-out-token.port.js";
 import { NotificationRecipientLocaleReaderPort } from "./application/ports/notification-recipient-locale.reader.port.js";
 import { NotificationRecipientPreferenceReaderPort } from "./application/ports/notification-recipient-preference.reader.port.js";
@@ -36,7 +35,6 @@ import { PushNotificationPayloadPort } from "./application/ports/push-notificati
 import { PushQuietHoursReaderPort } from "./application/ports/push-quiet-hours.reader.port.js";
 import { PushRateLimiterPort } from "./application/ports/push-rate-limiter.port.js";
 import { PushReceiptRepositoryPort } from "./application/ports/push-receipt.repository.port.js";
-import { PushQuietHoursReader } from "./application/push-quiet-hours.reader.js";
 import { DeliverPushBatchUseCase } from "./application/use-cases/deliver-push-batch.use-case.js";
 import { DeliverPushNotificationsUseCase } from "./application/use-cases/deliver-push-notifications.use-case.js";
 import { DeliverSinglePushUseCase } from "./application/use-cases/deliver-single-push.use-case.js";
@@ -56,6 +54,7 @@ import { ReconcilePushReceiptsUseCase } from "./application/use-cases/reconcile-
 import { RecoverFailedPushDeliveriesUseCase } from "./application/use-cases/recover-failed-push-deliveries.use-case.js";
 import { RelayPushDeliveryOutboxUseCase } from "./application/use-cases/relay-push-delivery-outbox.use-case.js";
 import { ReserveBatchPushRateLimitsUseCase } from "./application/use-cases/reserve-batch-push-rate-limits.use-case.js";
+import { ResolveNoActiveTokenReasonsUseCase } from "./application/use-cases/resolve-no-active-token-reasons.use-case.js";
 import { SendPushBatchUseCase } from "./application/use-cases/send-push-batch.use-case.js";
 import { SendPushMessagesUseCase } from "./application/use-cases/send-push-messages.use-case.js";
 import { CachedNotificationRecipientPreferenceAdapter } from "./infrastructure/adapters/cached-notification-recipient-preference.adapter.js";
@@ -64,6 +63,7 @@ import { HmacMarketingPushOptOutTokenAdapter } from "./infrastructure/adapters/h
 import { PostgresPushRateLimiterAdapter } from "./infrastructure/adapters/postgres-push-rate-limiter.adapter.js";
 import { PushChannelRegistryAdapter } from "./infrastructure/adapters/push-channel-registry.adapter.js";
 import { PushNotificationPayloadMapper } from "./infrastructure/adapters/push-notification-payload.mapper.js";
+import { PushQuietHoursReaderAdapter } from "./infrastructure/adapters/push-quiet-hours-reader.adapter.js";
 import { selectPushRateLimiter } from "./infrastructure/adapters/push-rate-limiter-factory.adapter.js";
 import { PushDeliveryQueueAdapter } from "./infrastructure/jobs/push-delivery-queue.adapter.js";
 import { DrizzlePushCampaignOutcomeReader } from "./infrastructure/persistence/drizzle-push-campaign-outcome.reader.js";
@@ -145,15 +145,15 @@ const NOTIFICATION_PUSH_DISPATCHES_EXTERNAL_PROVIDERS = [
 ] satisfies Provider[];
 
 export const NOTIFICATION_PUSH_DISPATCHES_USE_CASE_PROVIDERS = [
-  provideUseCase(PushQuietHoursReader, { userSettings: UserNotificationSettingsPort }),
-  { provide: PushQuietHoursReaderPort, useExisting: PushQuietHoursReader },
+  provideUseCase(PushQuietHoursReaderAdapter, { userSettings: UserNotificationSettingsPort }),
+  { provide: PushQuietHoursReaderPort, useExisting: PushQuietHoursReaderAdapter },
   {
     provide: PushNotificationPayloadPort,
     useFactory: (marketingOptOutTokens: MarketingPushOptOutTokenPort) =>
       new PushNotificationPayloadMapper({ marketingOptOutTokens }),
     inject: [MarketingPushOptOutTokenPort],
   },
-  provideUseCase(NoActiveTokenReasonReader, {
+  provideUseCase(ResolveNoActiveTokenReasonsUseCase, {
     pushDeviceRepository: PushDeviceRepositoryPort,
     clock: ClockPort,
   }),
@@ -192,14 +192,14 @@ export const NOTIFICATION_PUSH_DISPATCHES_USE_CASE_PROVIDERS = [
     unreadCounts: UnreadNotificationCountReaderPort,
     activePushTokenReader: ActivePushTokenReaderPort,
     pushTokenCache: PushTokenCachePort,
-    noActiveTokenReasons: NoActiveTokenReasonReader,
+    noActiveTokenReasons: ResolveNoActiveTokenReasonsUseCase,
     clock: ClockPort,
     logger: loggerFor(DispatchPushNotificationUseCase),
   }),
   provideUseCase(PreparePushBatchUseCase, {
     pushTokenRepository: PushTokenRepositoryPort,
     activePushTokenReader: ActivePushTokenReaderPort,
-    noActiveTokenReasons: NoActiveTokenReasonReader,
+    noActiveTokenReasons: ResolveNoActiveTokenReasonsUseCase,
     unreadCounts: UnreadNotificationCountReaderPort,
   }),
   provideUseCase(SendPushBatchUseCase, {

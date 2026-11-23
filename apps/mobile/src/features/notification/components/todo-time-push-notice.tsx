@@ -22,7 +22,7 @@ export function TodoTimePushNotice({ isTimed }: TodoTimePushNoticeProps) {
   if (
     !isTimed ||
     permission == null ||
-    PushPermissionPolicy.getAskMoment(permission, { surface: 'todo-time' }) !==
+    PushPermissionPolicy.findAskMoment(permission, { surface: 'todo-time' }) !==
       PUSH_ASK_MOMENT.DENIED_NOTICE
   ) {
     return null;

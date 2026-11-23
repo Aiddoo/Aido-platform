@@ -247,6 +247,10 @@ export const todoDetailsResponseSchema = z
         canEdit: z.boolean().meta({ description: "현재 사용자의 할 일 수정 가능 여부" }),
         canComment: z.boolean().meta({ description: "현재 사용자의 댓글 작성 가능 여부" }),
         canNudge: z.boolean().meta({ description: "현재 사용자의 콕 찌르기 가능 여부" }),
+        canThank: z.boolean().meta({
+          description:
+            "현재 사용자의 할 일이 콕 감사를 받는지(내 할 일·완료·공개). 기능 꺼짐(NUDGE_1111)은 보지 않는다",
+        }),
       })
       .meta({ description: "현재 사용자의 할 일 권한" }),
     metrics: z

@@ -31,7 +31,7 @@ export function getPollutantUpperBounds(pollutant: AirPollutant): PollutantUpper
 }
 
 /** 오염 물질 하나의 등급. 그 물질의 값이 없으면 null이다. */
-function getPollutantGrade(
+function findPollutantGrade(
   airQuality: AirQuality,
   pollutant: AirPollutant,
 ): AirQualityGrade | null {
@@ -64,7 +64,7 @@ export type CompassDirection = (typeof COMPASS_DIRECTIONS)[number];
 const DEGREES_PER_DIRECTION = FULL_TURN_DEGREES / COMPASS_DIRECTIONS.length;
 
 /** 바람이 불어오는 방향(북=0도)을 8방위로 나눈다. 무풍 등으로 방향이 없으면 null이다. */
-function getCompassDirection({ windDirection }: CurrentWeather): CompassDirection | null {
+function findCompassDirection({ windDirection }: CurrentWeather): CompassDirection | null {
   if (windDirection == null) {
     return null;
   }
@@ -132,9 +132,9 @@ function isMuggy({ humidity }: CurrentWeather): boolean {
 }
 
 export const WeatherIndicatorPolicy = {
-  getPollutantGrade,
+  findPollutantGrade,
   getUvLevel,
-  getCompassDirection,
+  findCompassDirection,
   getFeelsLikeComparison,
   getVisibilityLevel,
   getCloudCoverLevel,

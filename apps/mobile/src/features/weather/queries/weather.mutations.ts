@@ -32,7 +32,11 @@ export function useUpdateWeatherLocationMutationOptions() {
 
 /** 할 일마다의 토스트·무효화는 빼고 호출하는 쪽이 한 번만 한다. 오프라인에 멈추면 시트가 닫히지 않아 바로 실패한다 */
 export function useRescheduleTodoMutationOptions() {
-  const { mutationFn } = useUpdateTodoScheduleMutationOptions();
+  const { mutationFn: updateTodoSchedule } = useUpdateTodoScheduleMutationOptions();
 
-  return mutationOptions({ networkMode: 'always', mutationFn, meta: { errorFeedback: false } });
+  return mutationOptions({
+    networkMode: 'always',
+    mutationFn: updateTodoSchedule,
+    meta: { errorFeedback: false },
+  });
 }

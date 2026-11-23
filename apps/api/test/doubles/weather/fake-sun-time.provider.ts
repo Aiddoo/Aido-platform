@@ -11,7 +11,7 @@ import type {
 export class FakeSunTimeProvider implements SunTimeProviderPort {
   #calls: Array<{ lat: number; lon: number; at: Temporal.Instant }> = [];
 
-  async getSunTime(lat: number, lon: number, at: Temporal.Instant): Promise<SunTime | null> {
+  async findSunTime(lat: number, lon: number, at: Temporal.Instant): Promise<SunTime | null> {
     this.#calls.push({ lat, lon, at });
     return { sunrise: "06:15", sunset: "18:45" };
   }

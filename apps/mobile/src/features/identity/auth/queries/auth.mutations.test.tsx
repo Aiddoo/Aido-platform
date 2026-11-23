@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import { err, ok } from '@src/core/errors/result';
+import { fail, ok } from '@src/core/errors/result';
 import { NetworkError } from '@src/shared/errors';
 import { i18n } from '@src/shared/i18n';
 import { createAnalyticsStub, createHapticsGatewayStub } from '@src/testing/core';
@@ -64,7 +64,7 @@ describe('로그인 실패 추적', () => {
     // Given
     const analytics = createAnalyticsStub();
     const session = createAuthSession({ ports: { analytics } });
-    session.publicHttp.post.mockResolvedValue(err(createAuthApiError({ code: 'USER_0602' })));
+    session.publicHttp.post.mockResolvedValue(fail(createAuthApiError({ code: 'USER_0602' })));
     const { result } = await session.renderSession(
       () => useMutation(useEmailLoginMutationOptions()),
       'unauthenticated',
@@ -280,7 +280,7 @@ describe('비밀번호 재설정 코드 거절', () => {
       const haptics = createHapticsGatewayStub();
       const session = createAuthSession({ ports: { haptics } });
       session.publicHttp.post.mockResolvedValue(
-        err(createAuthApiError({ code, status: 400, message: i18n.t(`errors:${code}`) })),
+        fail(createAuthApiError({ code, status: 400, message: i18n.t(`errors:${code}`) })),
       );
       const { result } = await session.renderSession(
         () => useMutation(useResetPasswordMutationOptions()),
