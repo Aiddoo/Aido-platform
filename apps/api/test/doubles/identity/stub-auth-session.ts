@@ -1,13 +1,13 @@
 import type { UserRole } from "@aido/api/vocabulary";
 
 import type { SessionCachePort } from "#api/modules/identity/sessions/application/ports/session-cache.port";
-import type { SessionPushDeviceReleaserPort } from "#api/modules/identity/sessions/application/ports/session-push-device-releaser.port";
 import type {
   TokenIssuerPort,
   TokenPair,
   TokenPairClaims,
 } from "#api/modules/identity/sessions/application/ports/token-issuer.port";
 import type { SessionId } from "#api/modules/identity/sessions/domain/session-id.vo";
+import type { SessionPushDeviceReleaserPort } from "#api/modules/notification/push-devices/notification-push-devices.public";
 
 export class StubSessionCache implements Pick<
   SessionCachePort,

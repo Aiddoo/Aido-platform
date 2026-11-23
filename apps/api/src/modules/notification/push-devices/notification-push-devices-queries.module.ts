@@ -6,9 +6,9 @@ import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port"
 import { PushDeviceRepositoryPort } from "./application/ports/push-device.repository.port.js";
 import { PushTokenCachePort } from "./application/ports/push-token-cache.port.js";
 import { PushTokenRepositoryPort } from "./application/ports/push-token.repository.port.js";
-import { SessionPushDeviceReleasePort } from "./application/ports/session-push-device-release.port.js";
+import { SessionPushDeviceReleaserPort } from "./application/ports/session-push-device-releaser.port.js";
 import { ReleaseSessionPushDevicesUseCase } from "./application/use-cases/release-session-push-devices.use-case.js";
-import { SessionPushDeviceReleaseAdapter } from "./infrastructure/adapters/session-push-device-release.adapter.js";
+import { SessionPushDeviceReleaserAdapter } from "./infrastructure/adapters/session-push-device-releaser.adapter.js";
 import { PushTokenCacheAdapter } from "./infrastructure/cache/push-token-cache.adapter.js";
 import { DrizzlePushDeviceRepository } from "./infrastructure/persistence/drizzle-push-device.repository.js";
 import { DrizzlePushTokenRepository } from "./infrastructure/persistence/drizzle-push-token.repository.js";
@@ -27,8 +27,8 @@ import { DrizzlePushTokenRepository } from "./infrastructure/persistence/drizzle
       cache: PushTokenCachePort,
       logger: loggerFor(ReleaseSessionPushDevicesUseCase),
     }),
-    { provide: SessionPushDeviceReleasePort, useClass: SessionPushDeviceReleaseAdapter },
+    { provide: SessionPushDeviceReleaserPort, useClass: SessionPushDeviceReleaserAdapter },
   ],
-  exports: [SessionPushDeviceReleasePort],
+  exports: [SessionPushDeviceReleaserPort],
 })
 export class NotificationPushDevicesQueriesModule {}

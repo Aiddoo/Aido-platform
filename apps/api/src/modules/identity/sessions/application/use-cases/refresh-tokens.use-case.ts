@@ -2,6 +2,7 @@ import { REFRESH_TOKEN_REUSE_GRACE_MS, type UserRole } from "@aido/api/vocabular
 
 import { REVOKE_REASON } from "#api/modules/identity/sessions/domain/sessions.constants";
 import { SECURITY_EVENT } from "#api/modules/identity/users/domain/users.constants";
+import type { SessionPushDeviceReleaserPort } from "#api/modules/notification/push-devices/notification-push-devices.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
@@ -15,7 +16,6 @@ import type { UserRepositoryPort } from "../../../users/application/ports/user.r
 import { SessionId } from "../../domain/session-id.vo.js";
 import type { Session } from "../../domain/session.aggregate.js";
 import type { SessionCachePort } from "../ports/session-cache.port.js";
-import type { SessionPushDeviceReleaserPort } from "../ports/session-push-device-releaser.port.js";
 import type { SessionRepositoryPort } from "../ports/session.repository.port.js";
 import type { TokenIssuerPort } from "../ports/token-issuer.port.js";
 import type { RefreshedTokensReadModel } from "../read-models/login.read-model.js";

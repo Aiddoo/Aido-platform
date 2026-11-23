@@ -8,6 +8,7 @@ import {
   DeleteActorNotificationsUseCase,
   InvalidateRecipientUnreadCountsUseCase,
 } from "#api/modules/notification/notifications/notification-notifications.public";
+import { SessionPushDeviceReleaserPort } from "#api/modules/notification/push-devices/notification-push-devices.public";
 import { AdminEventNotifierPort } from "#api/modules/operations/admin-notices/operations-admin-notices.public";
 import { TodoActivationReaderPort } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { CheerUsageReaderPort } from "#api/modules/social/cheers/social-cheers.public";
@@ -23,9 +24,7 @@ import { PasswordHasherPort } from "../linked-accounts/application/ports/passwor
 import { OAuthStateRepositoryPort } from "../oauth-states/application/ports/oauth-state.repository.port.js";
 import { LoginAttemptRepositoryPort } from "../sessions/application/ports/login-attempt.repository.port.js";
 import { SessionCachePort } from "../sessions/application/ports/session-cache.port.js";
-import { SessionPushDeviceReleaserPort } from "../sessions/application/ports/session-push-device-releaser.port.js";
 import { SessionRepositoryPort } from "../sessions/application/ports/session.repository.port.js";
-import { SessionPushDeviceReleaserAdapter } from "../sessions/infrastructure/adapters/session-push-device-releaser.adapter.js";
 import { VerificationRepositoryPort } from "../verifications/application/ports/verification.repository.port.js";
 import { IssueVerificationCodeUseCase } from "../verifications/application/use-cases/issue-verification-code.use-case.js";
 import { SendVerificationCodeUseCase } from "../verifications/application/use-cases/send-verification-code.use-case.js";
@@ -187,7 +186,6 @@ const purgeExpiredIdentityRecordsProvider = provideUseCase(PurgeExpiredIdentityR
 
 export const IDENTITY_USERS_PROVIDERS = [
   // 폐기한 세션의 푸시 기기를 놓는 ACL이다. 세션을 폐기하는 slice마다 notification 기기 조회 Module에서 받는다
-  { provide: SessionPushDeviceReleaserPort, useClass: SessionPushDeviceReleaserAdapter },
   { provide: UserProfileCachePort, useClass: UserProfileCacheAdapter },
   { provide: UserActivityWriterPort, useClass: DrizzleUserRepository },
   { provide: UserProvisioningSeederPort, useClass: UserProvisioningSeederAdapter },

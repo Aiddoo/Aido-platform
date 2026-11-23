@@ -1,5 +1,6 @@
 import { REVOKE_REASON } from "#api/modules/identity/sessions/domain/sessions.constants";
 import { SECURITY_EVENT } from "#api/modules/identity/users/domain/users.constants";
+import type { SessionPushDeviceReleaserPort } from "#api/modules/notification/push-devices/notification-push-devices.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -8,7 +9,6 @@ import { REQUEST_ORIGIN_DEFAULTS } from "../../../shared/domain/request-metadata
 import type { RequestMetadata } from "../../../shared/domain/request-metadata.constants.js";
 import type { SecurityLogRepositoryPort } from "../../../users/application/ports/security-log.repository.port.js";
 import type { SessionCachePort } from "../ports/session-cache.port.js";
-import type { SessionPushDeviceReleaserPort } from "../ports/session-push-device-releaser.port.js";
 import type { SessionRepositoryPort } from "../ports/session.repository.port.js";
 import { SessionLogEvent } from "../sessions.log-events.js";
 

@@ -6,7 +6,7 @@ export { ClientAppVersionReaderPort } from "./application/ports/client-app-versi
 export { PushDeviceRepositoryPort } from "./application/ports/push-device.repository.port.js";
 export { PushTokenCachePort } from "./application/ports/push-token-cache.port.js";
 export { PushTokenRepositoryPort } from "./application/ports/push-token.repository.port.js";
-export { SessionPushDeviceReleasePort } from "./application/ports/session-push-device-release.port.js";
+export { SessionPushDeviceReleaserPort } from "./application/ports/session-push-device-releaser.port.js";
 export type { ActivePushTokenReadModel } from "./application/read-models/active-push-token.read-model.js";
 export {
   noActiveTokenSkipReason,
