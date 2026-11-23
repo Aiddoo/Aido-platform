@@ -9,7 +9,7 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
 
-import { InviteId } from "../../shared/domain/invite-id.vo.js";
+import { InviteId } from "../../invites/domain/invite-id.vo.js";
 import {
   hasEnoughActiveDays,
   localActivityDate,

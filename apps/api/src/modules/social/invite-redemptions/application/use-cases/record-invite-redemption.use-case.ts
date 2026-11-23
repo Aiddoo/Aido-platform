@@ -3,7 +3,7 @@ import { REWARD_TYPE } from "@aido/api/vocabulary";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { TimeZone } from "#api/shared/domain/time/time-zone.vo";
 
-import type { InviteId } from "../../../shared/domain/invite-id.vo.js";
+import type { InviteId } from "../../../invites/domain/invite-id.vo.js";
 import { InviteRedemptionId } from "../../domain/invite-redemption-id.vo.js";
 import { InviteRedemption } from "../../domain/invite-redemption.aggregate.js";
 import {

@@ -12,7 +12,7 @@ import {
   INVITE_FIXTURE_INVITER_ID,
 } from "#test/fixtures/social/invite.fixture";
 
-import { InviteId } from "../../shared/domain/invite-id.vo.js";
+import { InviteId } from "../../invites/domain/invite-id.vo.js";
 import { InviteRedemptionId } from "./invite-redemption-id.vo.js";
 import { InviteRedemption } from "./invite-redemption.aggregate.js";
 

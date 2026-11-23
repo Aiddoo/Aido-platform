@@ -26,8 +26,8 @@ import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
 
+import { InviteId } from "../../../invites/domain/invite-id.vo.js";
 import { InviteCode } from "../../../shared/domain/invite-code.vo.js";
-import { InviteId } from "../../../shared/domain/invite-id.vo.js";
 import {
   decideInviteRedemption,
   type InviteRedeemDecision,

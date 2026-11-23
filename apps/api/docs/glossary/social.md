@@ -135,7 +135,7 @@
 
 | 용어             | 코드                                             | 뜻                                                                                                                                           |
 | ---------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| 초대             | `Invite`(Aggregate), `InviteId`(`social/shared`) | 초대한 사람의 코드 하나. 한 사람에게 ACTIVE 초대는 하나다                                                                                    |
+| 초대             | `Invite`(Aggregate), `InviteId`(`invites`)       | 초대한 사람의 코드 하나. 한 사람에게 ACTIVE 초대는 하나다                                                                                    |
 | 초대 코드        | `InviteCode`(VO, `social/shared`), `INVITE_CODE` | `23456789BCDFGHJKMNPQRSTVWXZ` 중 6자. 공백·하이픈·소문자는 맞춰 읽고 그 밖은 `SYS_0002`                                                      |
 | 내 초대 열기     | `IssueMyInviteUseCase`, `InviteLockKeys.invite`  | 처음 열면 초대 잠금 아래에서 코드를 발급하고 그 뒤로는 같은 코드와 진행 요약을 준다                                                          |
 | 코드 발급        | `IssueInviteCodeUseCase`, `saveIfCodeUnused`     | 코드가 겹치면 새 코드로 5번까지 다시 만들고 넘으면 `SYS_0001`                                                                                |

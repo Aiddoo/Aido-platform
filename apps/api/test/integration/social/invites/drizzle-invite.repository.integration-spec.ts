@@ -2,9 +2,9 @@ import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { DrizzleUserBriefReader } from "#api/modules/identity/users/infrastructure/persistence/drizzle-user-brief.reader";
+import { InviteId } from "#api/modules/social/invites/domain/invite-id.vo";
 import { DrizzleInviteReader } from "#api/modules/social/invites/infrastructure/persistence/drizzle-invite.reader";
 import { DrizzleInviteRepository } from "#api/modules/social/invites/infrastructure/persistence/drizzle-invite.repository";
-import { InviteId } from "#api/modules/social/shared/domain/invite-id.vo";
 import { isUniqueConstraintViolation } from "#api/platform/database/database-error.util";
 import { user } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";

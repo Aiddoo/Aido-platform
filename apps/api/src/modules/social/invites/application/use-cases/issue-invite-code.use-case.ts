@@ -1,6 +1,6 @@
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { InviteId } from "../../../shared/domain/invite-id.vo.js";
+import { InviteId } from "../../domain/invite-id.vo.js";
 import { Invite } from "../../domain/invite.aggregate.js";
 import { INVITE_CODE_MAX_ATTEMPTS } from "../../domain/invites.constants.js";
 import { inviteCodeRetriesExhausted } from "../invites.errors.js";
