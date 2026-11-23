@@ -167,7 +167,7 @@ function getMountKey<Contexts extends StepperContexts>(
   const renderer = renderers[current.step];
   let start = state.cursor;
   let startStep: string = current.step;
-  for (const entry of state.entries.slice(0, state.cursor).reverse()) {
+  for (const entry of state.entries.slice(0, state.cursor).toReversed()) {
     if (renderers[entry.step] !== renderer) {
       break;
     }

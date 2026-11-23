@@ -17,12 +17,12 @@ import type {
 } from './weather-report.model';
 import { isNowcastExpired } from './weather-report.model';
 
-const OVERCAST_CONDITIONS: readonly WeatherCondition[] = [
+const OVERCAST_CONDITIONS: ReadonlySet<WeatherCondition> = new Set([
   'CLOUDY',
   'MOSTLY_CLOUDY',
   'FOGGY',
   'HAZY',
-];
+]);
 
 /** 하위 할 일 진행. 하위 할 일이 없으면 null이다. */
 type BriefingSubTodoProgress = { completed: number; total: number } | null;
@@ -152,7 +152,7 @@ function getAffectedTodos(
 
 function isOvercastNow(hourly: readonly HourlyForecastEntry[], now: Instant): boolean {
   const current = hourly[getHourIndexAt(hourly, now)];
-  return current != null && OVERCAST_CONDITIONS.includes(current.condition);
+  return current != null && OVERCAST_CONDITIONS.has(current.condition);
 }
 
 /** 서버 머리글이 할 일을 짚었는데 그 할 일이 오늘 목록에 없으면(지웠거나 지났으면) 알릴 날씨가 없는 카드다 */

@@ -83,8 +83,10 @@ export function hashCycle(index: number, cycle: number, salt: number): number {
 }
 
 export function createSeededRandom(seed: number): () => number {
+  // oxlint-disable-next-line unicorn/prefer-math-trunc -- 32비트 정수로 감싸 넘침을 접는다. Math.trunc는 감싸지 않는다
   let state = seed | 0;
   return function nextRandom() {
+    // oxlint-disable-next-line unicorn/prefer-math-trunc -- 32비트 정수로 감싸 넘침을 접는다. Math.trunc는 감싸지 않는다
     state = (state + MIXING_INCREMENT) | 0;
     return mixToUnit(state);
   };

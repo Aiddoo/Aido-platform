@@ -30,7 +30,24 @@
       "files": ["src/**/*.{ts,tsx}", "app/**/*.{ts,tsx}", "jest.setup.ts"],
       "rules": {
         "unicorn/no-array-for-each": "error",
-        "unicorn/prefer-string-replace-all": "error"
+        "unicorn/prefer-string-replace-all": "error",
+        "unicorn/no-array-reverse": "error",
+        "eslint/prefer-object-spread": "error",
+        "unicorn/prefer-set-has": "error",
+        "unicorn/prefer-at": "error",
+        "unicorn/prefer-node-protocol": "error",
+        "unicorn/prefer-includes": "error",
+        "unicorn/prefer-array-find": "error",
+        "unicorn/prefer-array-some": "error",
+        "unicorn/prefer-array-flat": "error",
+        "unicorn/prefer-array-flat-map": "error",
+        "unicorn/prefer-object-from-entries": "error",
+        "unicorn/prefer-date-now": "error",
+        "unicorn/prefer-regexp-test": "error",
+        "unicorn/prefer-optional-catch-binding": "error",
+        "unicorn/prefer-math-trunc": "error",
+        "unicorn/prefer-modern-math-apis": "error",
+        "eslint/prefer-object-has-own": "error"
       }
     },
     {
@@ -519,6 +536,14 @@
           {
             "property": "passthrough",
             "message": "Zod 4에서 .passthrough()는 옛 문법입니다. z.looseObject를 씁니다."
+          },
+          {
+            "property": "superRefine",
+            "message": "Zod 4에서 .superRefine()은 옛 문법입니다. .refine()이나 .check()를 씁니다."
+          },
+          {
+            "property": "strip",
+            "message": "Zod 4의 z.object는 모르는 키를 이미 버립니다. .strip()을 쓰지 않습니다."
           }
         ]
       }
@@ -575,6 +600,14 @@
           {
             "property": "passthrough",
             "message": "Zod 4에서 .passthrough()는 옛 문법입니다. z.looseObject를 씁니다."
+          },
+          {
+            "property": "superRefine",
+            "message": "Zod 4에서 .superRefine()은 옛 문법입니다. .refine()이나 .check()를 씁니다."
+          },
+          {
+            "property": "strip",
+            "message": "Zod 4의 z.object는 모르는 키를 이미 버립니다. .strip()을 쓰지 않습니다."
           },
           {
             "property": "hasCode",
@@ -640,6 +673,14 @@
           {
             "property": "passthrough",
             "message": "Zod 4에서 .passthrough()는 옛 문법입니다. z.looseObject를 씁니다."
+          },
+          {
+            "property": "superRefine",
+            "message": "Zod 4에서 .superRefine()은 옛 문법입니다. .refine()이나 .check()를 씁니다."
+          },
+          {
+            "property": "strip",
+            "message": "Zod 4의 z.object는 모르는 키를 이미 버립니다. .strip()을 쓰지 않습니다."
           }
         ]
       }
@@ -686,6 +727,14 @@
           {
             "property": "passthrough",
             "message": "Zod 4에서 .passthrough()는 옛 문법입니다. z.looseObject를 씁니다."
+          },
+          {
+            "property": "superRefine",
+            "message": "Zod 4에서 .superRefine()은 옛 문법입니다. .refine()이나 .check()를 씁니다."
+          },
+          {
+            "property": "strip",
+            "message": "Zod 4의 z.object는 모르는 키를 이미 버립니다. .strip()을 쓰지 않습니다."
           }
         ]
       }
@@ -737,6 +786,14 @@
           {
             "property": "passthrough",
             "message": "Zod 4에서 .passthrough()는 옛 문법입니다. z.looseObject를 씁니다."
+          },
+          {
+            "property": "superRefine",
+            "message": "Zod 4에서 .superRefine()은 옛 문법입니다. .refine()이나 .check()를 씁니다."
+          },
+          {
+            "property": "strip",
+            "message": "Zod 4의 z.object는 모르는 키를 이미 버립니다. .strip()을 쓰지 않습니다."
           },
           {
             "object": "z",
@@ -793,6 +850,14 @@
           {
             "property": "passthrough",
             "message": "Zod 4에서 .passthrough()는 옛 문법입니다. z.looseObject를 씁니다."
+          },
+          {
+            "property": "superRefine",
+            "message": "Zod 4에서 .superRefine()은 옛 문법입니다. .refine()이나 .check()를 씁니다."
+          },
+          {
+            "property": "strip",
+            "message": "Zod 4의 z.object는 모르는 키를 이미 버립니다. .strip()을 쓰지 않습니다."
           },
           {
             "property": "hasCode",

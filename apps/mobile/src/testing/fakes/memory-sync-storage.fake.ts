@@ -47,7 +47,6 @@ export function createMemorySyncStorage(): MemorySyncStorage {
         listeners.delete(listener);
       };
     }),
-    getListenerCount: () =>
-      sumBy(Array.from(listenersByKey.values()), (listeners) => listeners.size),
+    getListenerCount: () => sumBy([...listenersByKey.values()], (listeners) => listeners.size),
   };
 }

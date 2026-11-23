@@ -98,12 +98,9 @@ function getGuideRange(values: readonly number[]): { lower: number; upper: numbe
     0,
     MAX_COMPLETION_RATE_PERCENT,
   );
-  const widenedUpper = Math.min(
-    MAX_COMPLETION_RATE_PERCENT,
-    Math.max(upper, lower + MIN_GUIDE_SPAN_RATE),
-  );
+  const widenedUpper = clamp(upper, lower + MIN_GUIDE_SPAN_RATE, MAX_COMPLETION_RATE_PERCENT);
   return {
-    lower: Math.max(0, Math.min(lower, widenedUpper - MIN_GUIDE_SPAN_RATE)),
+    lower: clamp(lower, 0, widenedUpper - MIN_GUIDE_SPAN_RATE),
     upper: widenedUpper,
   };
 }
