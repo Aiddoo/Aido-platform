@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import { err, ok } from '@src/core/errors/result';
+import { fail, ok } from '@src/core/errors/result';
 import { createPendingResponse } from '@src/testing/core';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
@@ -66,7 +66,7 @@ describe('비밀번호 변경 폼', () => {
     // Given
     const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
     session.authHttp.patch.mockResolvedValue(
-      err(createAuthApiError({ code: 'USER_0602', status: 401 })),
+      fail(createAuthApiError({ code: 'USER_0602', status: 401 })),
     );
     await renderChangePasswordForm(session);
     await fillAllSteps();
@@ -111,7 +111,7 @@ describe('비밀번호 변경 폼', () => {
     // Given
     const session = createAuthSession({ tokens: ACCOUNT_A_TOKENS });
     session.authHttp.patch.mockResolvedValue(
-      err(createAuthApiError({ status: 400, message: '서버가 거절한 이유' })),
+      fail(createAuthApiError({ status: 400, message: '서버가 거절한 이유' })),
     );
     await render(
       <ChangePasswordForm stepTitles={{ currentPassword: '현재', newPassword: '새 비밀번호' }} />,

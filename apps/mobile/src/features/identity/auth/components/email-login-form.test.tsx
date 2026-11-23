@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import { err, ok } from '@src/core/errors/result';
+import { fail, ok } from '@src/core/errors/result';
 import { H3, Spacing } from '@src/shared/ui';
 import { createPendingResponse } from '@src/testing/core';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
@@ -60,7 +60,7 @@ describe('이메일 로그인 폼', () => {
     // Given
     const session = await renderEmailLoginForm();
     session.publicHttp.post.mockResolvedValue(
-      err(createAuthApiError({ status: 401, message: '이메일 또는 비밀번호가 틀렸어요' })),
+      fail(createAuthApiError({ status: 401, message: '이메일 또는 비밀번호가 틀렸어요' })),
     );
     await typeCredentials('user@aido.app', 'wrong-pass1');
 
@@ -77,7 +77,7 @@ describe('이메일 로그인 폼', () => {
     // Given
     const session = await renderEmailLoginForm();
     session.publicHttp.post.mockResolvedValue(
-      err(createAuthApiError({ code: 'EMAIL_0503', status: 403, message: '인증이 필요해요' })),
+      fail(createAuthApiError({ code: 'EMAIL_0503', status: 403, message: '인증이 필요해요' })),
     );
     await typeCredentials('user@aido.app', 'password-1');
 

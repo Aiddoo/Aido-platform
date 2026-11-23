@@ -5,8 +5,10 @@ import type { AppEventMap } from './event-map';
 export function track<E extends keyof AppEventMap & string>(
   analytics: Analytics,
   eventName: E,
-  ...args: AppEventMap[E] extends undefined ? [] : [params: AppEventMap[E] & AnalyticsEventParams]
+  ...eventParams: AppEventMap[E] extends undefined
+    ? []
+    : [params: AppEventMap[E] & AnalyticsEventParams]
 ): void {
-  const [params] = args;
+  const [params] = eventParams;
   analytics.trackEvent(eventName, params);
 }

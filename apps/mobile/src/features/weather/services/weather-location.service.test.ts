@@ -1,5 +1,5 @@
 import type { LocationGateway } from '@src/core/ports/location-gateway';
-import { ApiError, err, NetworkError, ok, type Result } from '@src/shared/errors';
+import { ApiError, fail, NetworkError, ok, type Result } from '@src/shared/errors';
 import {
   createAppLoggerStub,
   createHttpClientStub,
@@ -102,11 +102,11 @@ describe('WeatherLocationService.resolveLocation', () => {
     // When
     const resolving = resolveLocation();
     place.resolve(SEOUL_PLACE);
-    registration.resolve(err(rejected));
+    registration.resolve(fail(rejected));
     const result = await resolving;
 
     // Then
-    expect(result).toEqual(err(rejected));
+    expect(result).toEqual(fail(rejected));
     expect(logger.warn).toHaveBeenCalledWith('weather.location-register.failed', {
       serverErrorCode: 'SYS_0001',
     });

@@ -20,7 +20,7 @@ export { getErrorReportTags, reportUnexpectedError } from './report-unexpected-e
 /** @public */
 export type { CodedError } from '@src/core/errors/result';
 
-export { err, isCodedError, ok, type Result, unwrap } from '@src/core/errors/result';
+export { fail, isCodedError, ok, type Result, unwrap } from '@src/core/errors/result';
 
 export { isKeychainLockedError, KeychainLockedError } from './storage-error';
 

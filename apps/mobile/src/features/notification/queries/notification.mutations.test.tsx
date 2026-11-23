@@ -1,4 +1,4 @@
-import { err, ok } from '@src/core/errors/result';
+import { fail, ok } from '@src/core/errors/result';
 import {
   createHttpClientStub,
   createPendingResponse,
@@ -69,7 +69,7 @@ describe('useMarkAsReadMutationOptions', () => {
     const server = { unreadCount: 2 };
     const httpClient = createHttpClientStub();
     httpClient.get.mockImplementation(async () => ok({ unreadCount: server.unreadCount }));
-    const firstRead = createPendingResponse(err(createNotificationApiError()));
+    const firstRead = createPendingResponse(fail(createNotificationApiError()));
     const secondRead = createPendingResponse(ok(createMarkReadResponseDto()));
     httpClient.patch
       .mockReturnValueOnce(firstRead.response)

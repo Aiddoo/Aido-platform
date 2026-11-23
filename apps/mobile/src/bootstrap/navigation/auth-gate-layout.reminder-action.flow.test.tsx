@@ -1,5 +1,5 @@
 import { ErrorCode, HttpStatus } from '@aido/api/errors';
-import { err, ok, type Result } from '@src/core/errors/result';
+import { fail, ok, type Result } from '@src/core/errors/result';
 import type { PushNotificationResponse } from '@src/core/ports/push-notification-gateway';
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
 import { createPreferenceDto } from '@src/features/identity/preference/__tests__/preference.fixtures';
@@ -254,17 +254,17 @@ describe('리마인드 알림 버튼', () => {
     {
       name: '완료를 누른 할 일을 지웠으면',
       action: 'complete' as const,
-      setupOptions: { details: async () => err(createTodoUnavailableError()) },
+      setupOptions: { details: async () => fail(createTodoUnavailableError()) },
     },
     {
       name: '완료를 보내는 사이 할 일을 지웠으면',
       action: 'complete' as const,
-      setupOptions: { complete: async () => err(createTodoUnavailableError()) },
+      setupOptions: { complete: async () => fail(createTodoUnavailableError()) },
     },
     {
       name: '10분 뒤 다시를 누른 할 일을 지웠으면',
       action: 'snooze' as const,
-      setupOptions: { snooze: async () => err(createTodoUnavailableError()) },
+      setupOptions: { snooze: async () => fail(createTodoUnavailableError()) },
     },
   ])(
     '$name 할 일 화면의 안내에 맡기고 전역 오류를 더 띄우지 않는다',
@@ -331,7 +331,7 @@ describe('리마인드 알림 버튼', () => {
     // Given
     const { route, gateway, haptics, analytics } = await setup({
       snooze: async () =>
-        err(
+        fail(
           new ApiError(
             ErrorCode.NOTIFICATION_1007,
             '이미 완료한 할 일입니다.',

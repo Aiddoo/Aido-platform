@@ -17,7 +17,7 @@ import {
 } from './notification-destination.view-model';
 
 const COMMENT_ID = 'cmt92zn3n000b7voxx9quc2th';
-const VIEWER = 'cmviewer00000000000000001';
+const MY_ACCOUNT_ID = 'cmviewer00000000000000001';
 const FRIEND = 'cmfriend00000000000000001';
 const DATE = createDateKey('2026-08-14');
 const OPENED_AT = 1000;
@@ -160,7 +160,7 @@ const SERVER_NAVIGATION_CASES = NAVIGATION_CASES.flatMap(({ name, navigation }) 
   navigation == null ? [] : [{ name, navigation }],
 );
 const WIDE_WINDOW_SIZE_CLASSES: readonly WindowSizeClass[] = ['medium', 'expanded'];
-const VIEWER_IDS = [undefined, FRIEND_ID, 'cmviewer00000000000000001'];
+const ACCOUNT_IDS = [undefined, FRIEND_ID, 'cmviewer00000000000000001'];
 
 const APP_DIRECTORY = join(__dirname, '../../../../app');
 const ROUTE_GROUP = /^\(.+\)$/;
@@ -208,7 +208,7 @@ describe('toNotificationDestination', () => {
     // When
     const destination = toNotificationDestination(todoTarget({ ownerId: FRIEND, dateKey: DATE }), {
       windowSizeClass: 'compact',
-      viewerId: VIEWER,
+      accountId: MY_ACCOUNT_ID,
       openedAt: OPENED_AT,
     });
 
@@ -242,19 +242,19 @@ describe('toNotificationDestination', () => {
     [
       '친구 할 일 댓글은 그 친구의 그 날짜 피드',
       todoCommentTarget({ ownerId: FRIEND, dateKey: DATE }),
-      VIEWER,
+      MY_ACCOUNT_ID,
       { friendId: FRIEND, date: DATE, todoId: 42, comment: COMMENT_ID },
     ],
     [
       '친구 할 일은 그 친구의 그 날짜 피드',
       todoTarget({ ownerId: FRIEND, dateKey: DATE }),
-      VIEWER,
+      MY_ACCOUNT_ID,
       { friendId: FRIEND, date: DATE, todoId: 42 },
     ],
     [
       '내 할 일은 내 피드의 그 날짜',
-      todoTarget({ ownerId: VIEWER, dateKey: DATE }),
-      VIEWER,
+      todoTarget({ ownerId: MY_ACCOUNT_ID, dateKey: DATE }),
+      MY_ACCOUNT_ID,
       { date: DATE, todoId: 42 },
     ],
     [
@@ -263,12 +263,12 @@ describe('toNotificationDestination', () => {
       undefined,
       { date: DATE, todoId: 42 },
     ],
-    ['주인·날짜가 없으면 피드의 기본 날짜', todoTarget(), VIEWER, { todoId: 42 }],
-  ] as const)('펼친 화면 목록 pane: %s', (_case, target, viewerId, params) => {
+    ['주인·날짜가 없으면 피드의 기본 날짜', todoTarget(), MY_ACCOUNT_ID, { todoId: 42 }],
+  ] as const)('펼친 화면 목록 pane: %s', (_case, target, accountId, params) => {
     // When
     const destination = toNotificationDestination(target, {
       windowSizeClass: 'medium',
-      viewerId,
+      accountId,
       openedAt: OPENED_AT,
     });
 
@@ -327,9 +327,9 @@ describe('toNotificationDestination', () => {
 
     describe.each(
       WIDE_WINDOW_SIZE_CLASSES.flatMap((windowSizeClass) =>
-        VIEWER_IDS.map((viewerId) => ({ windowSizeClass, viewerId, openedAt: OPENED_AT })),
+        ACCOUNT_IDS.map((accountId) => ({ windowSizeClass, accountId, openedAt: OPENED_AT })),
       ),
-    )('$windowSizeClass, 나 $viewerId', (context) => {
+    )('$windowSizeClass, 나 $accountId', (context) => {
       it.each(
         SERVER_NAVIGATION_CASES.filter(
           ({ navigation }) => navigation.kind !== 'TODO' && navigation.kind !== 'TODO_COMMENT',

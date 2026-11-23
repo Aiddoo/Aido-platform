@@ -1,6 +1,6 @@
 import '@src/shared/i18n/init';
 import { ApiError } from '@src/core/errors/api-error';
-import { err, ok, type Result } from '@src/core/errors/result';
+import { fail, ok, type Result } from '@src/core/errors/result';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import { createHttpClientStub, createPendingResponse, createTestDi } from '@src/testing/core';
 import { renderScreenHook } from '@src/testing/render';
@@ -68,7 +68,7 @@ describe('useActOnSuggestionMutationOptions', () => {
   it('실패하면 목록을 다시 받되 끝나기를 기다리지 않아 오프라인에도 버튼이 풀린다', async () => {
     // Given
     const { result, finishRefetch } = await setup(
-      err(new ApiError('AI_1305', '이미 처리한 제안', 409)),
+      fail(new ApiError('AI_1305', '이미 처리한 제안', 409)),
     );
 
     // When

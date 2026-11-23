@@ -4,7 +4,7 @@
  */
 import { ErrorCode, HttpStatus } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
-import { err, ok } from '@src/core/errors/result';
+import { fail, ok } from '@src/core/errors/result';
 import { createStoreReviewRepository } from '@src/features/device/store-review/repositories/store-review.repository';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
@@ -170,7 +170,7 @@ describe('useToggleTodoMutationOptions', () => {
 
       // When
       await toggle(42, false, TODAY);
-      httpClient.patch.mockResolvedValueOnce(err(createTodoApiError()));
+      httpClient.patch.mockResolvedValueOnce(fail(createTodoApiError()));
       await toggle(42, true, TODAY);
       await settleReviewWait();
 
@@ -246,7 +246,7 @@ describe('useToggleTodoMutationOptions', () => {
       const { httpClient, givenList, givenCached, toggle, isInvalidated } = await renderToggle();
       givenList(TODAY, [createParentTodo({ id: 42, startDate: TODAY, completed: false })]);
       givenCached(TODO_QUERY_KEYS.completionsByRange({ startDate: TODAY, endDate: TODAY }));
-      httpClient.patch.mockResolvedValue(err(createTodoApiError()));
+      httpClient.patch.mockResolvedValue(fail(createTodoApiError()));
 
       // When
       await toggle(42, true, TODAY);
@@ -280,7 +280,7 @@ describe('useUpdateTodoScheduleMutationOptions', () => {
       // Given
       const httpClient = createHttpClientStub();
       httpClient.patch.mockResolvedValue(
-        err(
+        fail(
           new ApiError(ErrorCode.TODO_0842, '서버 문구', HttpStatus.FORBIDDEN, {
             limit: 7,
             activeCount: 7,

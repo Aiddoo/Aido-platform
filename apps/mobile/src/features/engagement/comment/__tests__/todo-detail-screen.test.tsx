@@ -2,7 +2,7 @@ import { nudgeThanksPreviewResponseSchema } from '@aido/api/contracts/nudge/v1';
 import { ErrorCode, HttpStatus } from '@aido/api/errors';
 import '@src/shared/i18n/init';
 import { ApiError } from '@src/core/errors/api-error';
-import { err, ok } from '@src/core/errors/result';
+import { fail, ok } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http-client';
 import { createPreferenceDto } from '@src/features/identity/preference/__tests__/preference.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
@@ -258,7 +258,7 @@ describe('TodoDetailRoute', () => {
     it('서버가 거절해 댓글을 못 보내도 입력값이 그대로 남는다', async () => {
       // Given
       const { httpClient } = await renderTodoDetail();
-      httpClient.post.mockResolvedValue(err(new ApiError('SYS_0002', '거절', 400)));
+      httpClient.post.mockResolvedValue(fail(new ApiError('SYS_0002', '거절', 400)));
 
       // When
       await fireEvent.changeText(screen.getByTestId('todo-comment-input-0'), '남아야 하는 글');
@@ -410,7 +410,7 @@ describe('TodoDetailRoute', () => {
       const httpClient = createHttpClientStub();
       httpClient.get.mockImplementation(async (path: string) => {
         if (path === `v1/todos/${TODO_ID}/details`) {
-          return err(new ApiError(ErrorCode.TODO_0801, '없음', HttpStatus.NOT_FOUND));
+          return fail(new ApiError(ErrorCode.TODO_0801, '없음', HttpStatus.NOT_FOUND));
         }
         return ok({ items: [], pagination: PAGINATION, anchor: null });
       });
@@ -439,7 +439,7 @@ describe('TodoDetailRoute', () => {
       const httpClient = createHttpClientStub();
       httpClient.get.mockImplementation(async (path: string) => {
         if (path === `v1/todos/${TODO_ID}/details`) {
-          return err(new ApiError(ErrorCode.TODO_0801, '없음', HttpStatus.NOT_FOUND));
+          return fail(new ApiError(ErrorCode.TODO_0801, '없음', HttpStatus.NOT_FOUND));
         }
         return ok({ items: [], pagination: PAGINATION, anchor: null });
       });
@@ -685,7 +685,7 @@ describe('TodoDetailRoute', () => {
       const respond = httpClient.get.getMockImplementation();
       httpClient.get.mockImplementation(async (path, config) => {
         if (path === `v1/todos/${TODO_ID}/details`) {
-          return err(new ApiError(ErrorCode.TODO_0801, '없음', HttpStatus.NOT_FOUND));
+          return fail(new ApiError(ErrorCode.TODO_0801, '없음', HttpStatus.NOT_FOUND));
         }
         if (respond == null) {
           throw new Error('응답을 정하지 않았습니다');
@@ -747,7 +747,7 @@ describe('TodoDetailRoute', () => {
       const { httpClient } = await renderTodoDetail({
         details: { todo: createTodoDto({ id: TODO_ID, ...PRIVATE_TODO }) },
       });
-      httpClient.patch.mockResolvedValue(err(new ApiError('SYS_0002', '거절', 400)));
+      httpClient.patch.mockResolvedValue(fail(new ApiError('SYS_0002', '거절', 400)));
 
       // When
       await fireEvent.press(await screen.findByTestId('todo-detail-checkbox'));
@@ -962,7 +962,7 @@ describe('TodoDetailRoute', () => {
       // When
       await act(async () => {
         removal.resolve(
-          err(new ApiError(ErrorCode.TODO_0833, '이미 삭제됨', HttpStatus.NOT_FOUND)),
+          fail(new ApiError(ErrorCode.TODO_0833, '이미 삭제됨', HttpStatus.NOT_FOUND)),
         );
         await confirmPress();
       });

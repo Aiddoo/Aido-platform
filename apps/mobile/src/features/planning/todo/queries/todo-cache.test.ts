@@ -292,10 +292,10 @@ describe('todo-cache', () => {
     it('낡음 표시를 기다리는 사이 이 쓰기가 끝나도 다른 쓰기가 남아 있으면 다시 받지 않는다', async () => {
       // Given
       const client = createSeededClient();
-      const queryFn = jest.fn(async () => toList([]));
+      const fetchList = jest.fn(async () => toList([]));
       const unsubscribe = new QueryObserver(client, {
         queryKey: TODO_QUERY_KEYS.listByDate({ date: DAY }),
-        queryFn,
+        queryFn: fetchList,
         staleTime: Infinity,
       }).subscribe(noop);
       const finishOtherWrite = startWrite(client);
@@ -328,7 +328,7 @@ describe('todo-cache', () => {
       // Then
       expect(client.isMutating({ mutationKey: TODO_MUTATION_KEYS.listWrites() })).toBe(1);
       expect(isInvalidated(client, TODO_QUERY_KEYS.listByDate({ date: DAY }))).toBe(true);
-      expect(queryFn).not.toHaveBeenCalled();
+      expect(fetchList).not.toHaveBeenCalled();
       await finishOtherWrite();
       unsubscribe();
     });

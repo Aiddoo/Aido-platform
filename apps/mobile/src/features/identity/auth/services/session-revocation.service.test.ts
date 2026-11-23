@@ -3,7 +3,7 @@ import { subscribeSessionExpired } from '@src/core/events/session-expired';
 import type { RefreshTokensRequest } from '@src/core/ports/token-refresher';
 import { getNowInstant } from '@src/shared/date/clock';
 import { fromEpochMs } from '@src/shared/date/instant';
-import { ApiError, err, NetworkError, ok, ServerError } from '@src/shared/errors';
+import { ApiError, fail, NetworkError, ok, ServerError } from '@src/shared/errors';
 import { KyHttpClient } from '@src/shared/infra/http/ky-client';
 import { createPublicClient } from '@src/shared/infra/http/public-client';
 import {
@@ -223,7 +223,7 @@ describe('SessionRevocationService', () => {
     const { service, publicHttpClient, repository } = setup();
     await service.record(REFRESH_A);
     publicHttpClient.post.mockResolvedValueOnce(
-      err(new ApiError(ErrorCode.SESSION_0702, '이미 폐기됨', 401)),
+      fail(new ApiError(ErrorCode.SESSION_0702, '이미 폐기됨', 401)),
     );
 
     // When
@@ -286,7 +286,7 @@ describe('SessionRevocationService', () => {
     // When
     await service.flush();
     publicHttpClient.post.mockResolvedValueOnce(
-      err(new ApiError(ErrorCode.SESSION_0702, '이미 폐기됨', 401)),
+      fail(new ApiError(ErrorCode.SESSION_0702, '이미 폐기됨', 401)),
     );
     await service.flush();
 

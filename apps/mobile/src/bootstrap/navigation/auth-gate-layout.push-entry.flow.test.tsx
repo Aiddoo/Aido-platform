@@ -3,7 +3,7 @@ import type {
   NotificationNavigationKind,
 } from '@aido/api/contracts/notification/v1';
 import { ErrorCode, HttpStatus } from '@aido/api/errors';
-import { err, ok, type Result } from '@src/core/errors/result';
+import { fail, ok, type Result } from '@src/core/errors/result';
 import type { PushNotificationResponse } from '@src/core/ports/push-notification-gateway';
 import type { AuthStatus } from '@src/core/session/auth-status';
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
@@ -457,7 +457,7 @@ describe('푸시 탭 진입', () => {
     const { route, gateway, focusLog } = await setup({
       status: 'loading',
       lastResponse: TODO_RESPONSE,
-      markRead: async () => err(new ApiError('NOTIFICATION_1004', '없어요', 404)),
+      markRead: async () => fail(new ApiError('NOTIFICATION_1004', '없어요', 404)),
     });
 
     // When
@@ -650,7 +650,7 @@ describe('푸시 탭 진입', () => {
     // Given
     const { route, gateway } = await setup({
       status: 'authenticated',
-      markRead: async () => err(new ApiError('NOTIFICATION_1004', '없어요', 404)),
+      markRead: async () => fail(new ApiError('NOTIFICATION_1004', '없어요', 404)),
     });
     await waitFor(() => expect(route.getPathname()).toBe('/feed'));
 
@@ -1027,7 +1027,7 @@ describe('푸시 탭 진입', () => {
       match(url)
         .with('v1/auth/me', () => ok(createCurrentUserDto()))
         .with('v1/todos/42/details', () =>
-          err(new ApiError(ErrorCode.TODO_0801, '없음', HttpStatus.NOT_FOUND)),
+          fail(new ApiError(ErrorCode.TODO_0801, '없음', HttpStatus.NOT_FOUND)),
         )
         .otherwise(() => ok({ unreadCount: 0, items: [], pagination: PAGINATION, anchor: null })),
     );

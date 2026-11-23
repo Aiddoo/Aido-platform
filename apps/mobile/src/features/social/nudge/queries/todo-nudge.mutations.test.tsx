@@ -1,6 +1,6 @@
 import '@src/shared/i18n/init';
 import { ErrorCode } from '@aido/api/errors';
-import { err, ok } from '@src/core/errors/result';
+import { fail, ok } from '@src/core/errors/result';
 import {
   createEntitlementSnapshot,
   createLimitApiError,
@@ -86,7 +86,7 @@ describe('useReplyToNudgeMutationOptions', () => {
     // Given
     const httpClient = createHttpClientStub();
     httpClient.put.mockResolvedValue(
-      err(createNudgeApiError({ code: ErrorCode.NUDGE_1105, status: 404 })),
+      fail(createNudgeApiError({ code: ErrorCode.NUDGE_1105, status: 404 })),
     );
     const queryClient = seedInteractions();
     const { result } = await renderScreenHook(() => useMutation(useReplyToNudgeMutationOptions()), {
@@ -112,7 +112,7 @@ describe('useSendTodoNudgeMutationOptions', () => {
     // Given
     const limitError = createLimitApiError(ErrorCode.NUDGE_1101);
     const httpClient = createHttpClientStub();
-    httpClient.post.mockResolvedValue(err(limitError));
+    httpClient.post.mockResolvedValue(fail(limitError));
     const haptics = createHapticsGatewayStub();
     const errorReporter = createErrorReporterStub();
     const queryClient = createTestQueryClient({

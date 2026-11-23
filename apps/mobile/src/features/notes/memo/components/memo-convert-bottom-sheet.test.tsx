@@ -1,7 +1,7 @@
 import { ErrorCode, HttpStatus } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 import '@src/shared/i18n/init';
-import { err, ok } from '@src/core/errors/result';
+import { fail, ok } from '@src/core/errors/result';
 import { createHapticsGatewayStub, createHttpClientStub, createTestDi } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
@@ -69,7 +69,7 @@ describe('MemoConvertBottomSheet', () => {
     // Given
     const { httpClient, onClose, onConverted } = await renderSheet();
     httpClient.post.mockResolvedValue(
-      err(new ApiError(ErrorCode.MEMO_2004, '거절', HttpStatus.BAD_REQUEST)),
+      fail(new ApiError(ErrorCode.MEMO_2004, '거절', HttpStatus.BAD_REQUEST)),
     );
 
     // When
@@ -87,7 +87,7 @@ describe('MemoConvertBottomSheet', () => {
     // 다른 기기에서 지웠거나 이미 할 일로 바꾼 메모
     const { httpClient, onClose, onConverted, onUnavailable } = await renderSheet();
     httpClient.post.mockResolvedValue(
-      err(new ApiError(ErrorCode.MEMO_2001, '메모 없음', HttpStatus.NOT_FOUND)),
+      fail(new ApiError(ErrorCode.MEMO_2001, '메모 없음', HttpStatus.NOT_FOUND)),
     );
 
     // When
@@ -192,7 +192,7 @@ describe('MemoConvertBottomSheet', () => {
       const { httpClient } = await renderSheet();
       httpClient.post
         .mockResolvedValueOnce(
-          err(new ApiError(ErrorCode.MEMO_2004, '거절', HttpStatus.BAD_REQUEST)),
+          fail(new ApiError(ErrorCode.MEMO_2004, '거절', HttpStatus.BAD_REQUEST)),
         )
         .mockResolvedValueOnce(ok({ message: 'converted', todos: [] }));
       const save = await screen.findByLabelText('저장하기');

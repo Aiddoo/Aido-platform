@@ -1,7 +1,7 @@
 import { ErrorCode, HttpStatus } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
 import '@src/shared/i18n/init';
-import { err, ok } from '@src/core/errors/result';
+import { fail, ok } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http-client';
 import {
   createEntitlementSnapshot,
@@ -35,7 +35,7 @@ interface FeedEntryOptions {
   getEntitlements?: () => ReturnType<HttpClient['get']>;
 }
 
-// 실제 클라이언트처럼 4xx는 Result.err로 돌려주고 5xx는 ServerError로 던진다
+// 실제 클라이언트처럼 4xx는 `fail`로 돌려주고 5xx는 ServerError로 던진다
 async function renderFeedEntry(
   { isPremiumCached, getEntitlements }: FeedEntryOptions,
   error: ApiError | ServerError,
@@ -48,7 +48,7 @@ async function renderFeedEntry(
     if (error instanceof ServerError) {
       throw error;
     }
-    return err(error);
+    return fail(error);
   });
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },

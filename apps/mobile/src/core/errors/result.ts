@@ -1,4 +1,4 @@
-/** 4xx 에러는 Result.err로 반환해 UI에서 처리하고, 5xx/네트워크/타임아웃은 throw해 ErrorBoundary가 처리한다 */
+/** 4xx 에러는 `fail`로 반환해 UI에서 처리하고, 5xx/네트워크/타임아웃은 throw해 ErrorBoundary가 처리한다 */
 
 export interface CodedError {
   readonly code: string;
@@ -13,7 +13,7 @@ export function ok<T>(value: T): Result<T, never> {
   return { ok: true, value };
 }
 
-export function err<E extends CodedError>(error: E): Result<never, E> {
+export function fail<E extends CodedError>(error: E): Result<never, E> {
   return { ok: false, error };
 }
 

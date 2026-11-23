@@ -1,6 +1,6 @@
 import type { FriendTodo, Todo as TodoDto, TodoItemResponse } from '@aido/api/contracts/todo/v1';
 import type { ApiError } from '@src/core/errors/api-error';
-import { err, ok, type Result } from '@src/core/errors/result';
+import { fail, ok, type Result } from '@src/core/errors/result';
 import { createTodoCategoryListDto } from '@src/features/planning/category/__tests__/todo-category.fixtures';
 import '@src/shared/i18n/init';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/queries/todo-category-query-keys';
@@ -350,7 +350,7 @@ async function renderFeed() {
     (url: string, bodyOrOptions?: unknown): Promise<Result<unknown, ApiError>> => {
       // 거절한 쓰기는 서버 상태를 바꾸지 않는다
       const result = failing.next
-        ? err(createTodoApiError())
+        ? fail(createTodoApiError())
         : ok(server.write(method, url, method === 'delete' ? undefined : bodyOrOptions));
       failing.next = false;
       const pending = createPendingResponse<Result<unknown, ApiError>>(result);
@@ -886,7 +886,7 @@ async function renderCreateFeed() {
   const created = createPendingResponse<Result<unknown, ApiError>>(
     ok({ message: 'ok', todo: CREATED }),
   );
-  const failed = createPendingResponse<Result<unknown, ApiError>>(err(createTodoApiError()));
+  const failed = createPendingResponse<Result<unknown, ApiError>>(fail(createTodoApiError()));
   let createResponse = created;
   httpClient.post.mockImplementation(() => {
     server.hasCreated = createResponse === created;

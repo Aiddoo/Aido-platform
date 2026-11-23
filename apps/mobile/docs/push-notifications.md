@@ -28,7 +28,7 @@ PushRegistrationService (features/notification/services) → PushDeviceApi (apis
 | `stores/push-onboarding-guard.store.ts`                                                              | 앱 화면 묶음이 그린 알림 화면 guard 값. 피드가 열 차례를 이 값으로 읽고 DI가 소유한다                                              |
 | `apis/notification.mapper.ts`                                                                        | `toNotificationTarget`: 서버 `navigation` → 앱 `NotificationTarget`. 알림함 항목도 같은 길이다                                     |
 | `domains/push-notification.model.ts`·`push-notification-response.model.ts`                           | 받은 푸시(`{ notificationId, type, target, … }`)와 누른 응답, 각자의 Policy                                                        |
-| `utils/notification-destination.view-model.ts`                                                       | `toNotificationDestination(target, { windowSizeClass, viewerId })`: target → 앱 경로·외부 링크                                     |
+| `utils/notification-destination.view-model.ts`                                                       | `toNotificationDestination(target, { windowSizeClass, accountId })`: target → 앱 경로·외부 링크                                    |
 | `hooks/use-notification-destination.ts`                                                              | `useResolveNotificationDestination`(창 크기·보는 사람으로 정함)·`useOpenNotificationDestination({ openRoute })`(연다)              |
 | `shared/navigation/open-entry-href.ts`                                                               | `openEntryHref(href)`: 켜진 앱에서 누른 푸시를 OS 링크처럼 보던 탭에 연다(Stack에 있으면 돌아가고 없으면 쌓는다)                   |
 

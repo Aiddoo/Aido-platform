@@ -34,10 +34,13 @@ type ContextArgs<Contexts extends StepperContexts, Name extends StepName<Context
     : [context: ContextInput<Contexts, Name>];
 
 interface StepperHistory<Contexts extends StepperContexts> {
-  push: <Name extends StepName<Contexts>>(step: Name, ...args: ContextArgs<Contexts, Name>) => void;
+  push: <Name extends StepName<Contexts>>(
+    step: Name,
+    ...contextInput: ContextArgs<Contexts, Name>
+  ) => void;
   replace: <Name extends StepName<Contexts>>(
     step: Name,
-    ...args: ContextArgs<Contexts, Name>
+    ...contextInput: ContextArgs<Contexts, Name>
   ) => void;
   back: () => void;
   go: (delta: number) => void;
@@ -120,7 +123,7 @@ function isContextUpdater(
 function createStepEntry<Contexts extends StepperContexts, Name extends StepName<Contexts>>(
   current: StepEntry<Contexts>,
   step: Name,
-  ...args: ContextArgs<Contexts, Name>
+  ...contextInput: ContextArgs<Contexts, Name>
 ): StepEntry<Contexts>;
 function createStepEntry(
   current: { context: object },
@@ -135,15 +138,15 @@ function createHistory<Contexts extends StepperContexts>(
   store: StepperStore<Contexts>,
 ): StepperHistory<Contexts> {
   return {
-    push: (step, ...args) =>
+    push: (step, ...contextInput) =>
       store.dispatch({
         type: 'push',
-        entry: createStepEntry(getCurrentEntry(store.getState()), step, ...args),
+        entry: createStepEntry(getCurrentEntry(store.getState()), step, ...contextInput),
       }),
-    replace: (step, ...args) =>
+    replace: (step, ...contextInput) =>
       store.dispatch({
         type: 'replace',
-        entry: createStepEntry(getCurrentEntry(store.getState()), step, ...args),
+        entry: createStepEntry(getCurrentEntry(store.getState()), step, ...contextInput),
       }),
     back: () => store.dispatch({ type: 'go', delta: -1 }),
     go: (delta) => store.dispatch({ type: 'go', delta }),

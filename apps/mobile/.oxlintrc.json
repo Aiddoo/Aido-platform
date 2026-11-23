@@ -29,6 +29,7 @@
       // 현대 문법은 Hermes V1에 있는 것만 건다. 스크립트·Maestro는 Node 도구라 따로 고친다
       "files": ["src/**/*.{ts,tsx}", "app/**/*.{ts,tsx}", "jest.setup.ts"],
       "rules": {
+        "aido/no-abbreviation": "error",
         "unicorn/no-array-for-each": "error",
         "unicorn/prefer-string-replace-all": "error",
         "unicorn/no-array-reverse": "error",

@@ -44,7 +44,7 @@ import { createTokenRefresher } from './token-refresher';
  *
  * 검증하려는 핵심 계약(에러 분류는 KyHttpClient 단일 소유):
  * (a) 401 → 갱신 → 재시도 성공 시 값 반환,
- * (b) 재시도도 401이면 로그아웃 없이 `Result.err(ApiError)`로 담김(화면 QueryErrorBoundary가 흡수),
+ * (b) 재시도도 401이면 로그아웃 없이 `fail(ApiError)`로 담김(화면 QueryErrorBoundary가 흡수),
  * (c) 서버가 리프레시 거부 시에만 `endSession` + `ApiError`,
  * (d) 5xx는 재시도 가능한 `ServerError`로 throw(React Query 6회/≈22초 자동 재시도),
  * (e) 갱신의 일시 실패(네트워크·5xx)는 인프라 에러 그대로 전파(로그아웃 없음).
@@ -1041,7 +1041,7 @@ describe('인증 클라이언트 통합 (401 → refresh → retry)', () => {
     expect(endSession).not.toHaveBeenCalled();
   });
 
-  it('갱신 후 재시도가 다시 401이면 세션을 유지한 채 Result.err(ApiError)로 담는다', async () => {
+  it('갱신 후 재시도가 다시 401이면 세션을 유지한 채 fail(ApiError)로 담는다', async () => {
     // Given
     // 회전 레이스: 갱신은 성공하지만 재시도도 401 (매 호출 새 Response — ky가 clone하므로)
     fetchMock.mockImplementation(async () => errorBody(401, 'AUTH_0102', 'access token expired'));
@@ -1075,7 +1075,7 @@ describe('인증 클라이언트 통합 (401 → refresh → retry)', () => {
     const result = await http.get('todos');
 
     // Then
-    // 진짜 세션 종료: endSession 호출 + Result.err(ApiError)
+    // 진짜 세션 종료: endSession 호출 + fail(ApiError)
     expect(endSession).toHaveBeenCalledWith({
       reason: 'refresh-rejected',
       serverErrorCode: 'SESSION_0704',
@@ -1127,7 +1127,7 @@ describe('인증 클라이언트 통합 (401 → refresh → retry)', () => {
     expect(errorReporter.captureMessage).not.toHaveBeenCalled();
   });
 
-  it('4xx는 서버 코드와 카탈로그 문구를 보존한 Result.err(ApiError)로 담는다', async () => {
+  it('4xx는 서버 코드와 카탈로그 문구를 보존한 fail(ApiError)로 담는다', async () => {
     // Given
     fetchMock.mockResolvedValue(errorBody(404, 'TODO_0801', 'todo not found'));
 

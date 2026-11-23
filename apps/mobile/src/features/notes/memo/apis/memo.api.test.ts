@@ -1,6 +1,6 @@
 import { ErrorCode, HttpStatus } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
-import { err } from '@src/core/errors/result';
+import { fail } from '@src/core/errors/result';
 import { createHttpClientStub } from '@src/testing/core';
 
 import { MemoApi } from './memo.api';
@@ -10,7 +10,7 @@ describe('MemoApi.parseMemo', () => {
     // Given
     const httpClient = createHttpClientStub();
     httpClient.post.mockResolvedValue(
-      err(new ApiError(ErrorCode.SYS_0001, '서버 오류', HttpStatus.INTERNAL_SERVER_ERROR)),
+      fail(new ApiError(ErrorCode.SYS_0001, '서버 오류', HttpStatus.INTERNAL_SERVER_ERROR)),
     );
     const memoApi = new MemoApi(httpClient);
 

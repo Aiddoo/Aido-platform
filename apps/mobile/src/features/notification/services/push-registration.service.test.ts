@@ -343,7 +343,7 @@ describe('PushRegistrationService.report', () => {
     expect(httpClient.put).toHaveBeenCalledTimes(2);
   });
 
-  it('서버 4xx는 Result.err로 돌려주고 다음 보고를 막지 않는다', async () => {
+  it('서버 4xx는 `fail`로 돌려주고 다음 보고를 막지 않는다', async () => {
     // Given
     const { service, httpClient } = setup();
     const apiError = createNotificationApiError();

@@ -1,7 +1,7 @@
 import '@src/shared/i18n/init';
 import { INVITE_REDEEM_WINDOW_DAYS } from '@aido/api/vocabulary';
 import { ApiError } from '@src/core/errors/api-error';
-import { err, ok } from '@src/core/errors/result';
+import { fail, ok } from '@src/core/errors/result';
 import type { AuthStatus } from '@src/core/session/auth-status';
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
@@ -101,12 +101,12 @@ async function setup({
     respondByPath({
       'v1/auth/me': ok(createCurrentUserDto()),
       [`v1/invites/${INVITE_CODE}`]:
-        preview === 'found' ? ok(createInvitePreviewDto()) : err(createInviteApiError()),
+        preview === 'found' ? ok(createInvitePreviewDto()) : fail(createInviteApiError()),
     }),
   );
   httpClient.post.mockImplementation(
     respondByPath({
-      [`v1/invites/${INVITE_CODE}/redeem`]: redeem instanceof ApiError ? err(redeem) : ok(redeem),
+      [`v1/invites/${INVITE_CODE}/redeem`]: redeem instanceof ApiError ? fail(redeem) : ok(redeem),
     }),
   );
   const analytics = createAnalyticsStub();

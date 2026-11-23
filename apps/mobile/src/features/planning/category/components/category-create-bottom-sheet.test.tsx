@@ -2,7 +2,7 @@ import '@src/shared/i18n/init';
 import { ErrorCode } from '@aido/api/errors';
 import { PLAN_CATALOG } from '@aido/api/vocabulary';
 import type { ApiError } from '@src/core/errors/api-error';
-import { err, ok, type Result } from '@src/core/errors/result';
+import { fail, ok, type Result } from '@src/core/errors/result';
 import {
   createEntitlementSnapshot,
   createEntitlementSnapshotDto,
@@ -60,7 +60,7 @@ function findLayoutHost(node: HostNode): HostNode | null {
   return null;
 }
 
-const LIMIT_REACHED = err(
+const LIMIT_REACHED = fail(
   createLimitApiError(
     ErrorCode.TODO_CATEGORY_0857,
     {

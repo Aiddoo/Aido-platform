@@ -1,5 +1,5 @@
 import type { ApiError } from '@src/core/errors/api-error';
-import { err, type Result } from '@src/core/errors/result';
+import { fail, type Result } from '@src/core/errors/result';
 import type { AppLogger } from '@src/core/ports/app-logger';
 import type { InstallationIdGateway } from '@src/core/ports/installation-id-gateway';
 import { BusinessError, getErrorMessage } from '@src/shared/errors';
@@ -43,7 +43,7 @@ export class InviteService {
   ): Promise<Result<InvitePreview, InviteServiceError>> => {
     const inviteCode = parseInviteCode(rawCode);
     if (inviteCode == null) {
-      return err(new BusinessError(INVITE_ERROR_CODE.INVALID_CODE));
+      return fail(new BusinessError(INVITE_ERROR_CODE.INVALID_CODE));
     }
 
     const result = await this.#inviteApi.getPreview(inviteCode, signal);
@@ -57,7 +57,7 @@ export class InviteService {
   redeem = async (rawCode: string): Promise<Result<RedemptionResult, InviteServiceError>> => {
     const inviteCode = parseInviteCode(rawCode);
     if (inviteCode == null) {
-      return err(new BusinessError(INVITE_ERROR_CODE.INVALID_CODE));
+      return fail(new BusinessError(INVITE_ERROR_CODE.INVALID_CODE));
     }
 
     const installationId = await this.#installationId.get().catch((error: unknown) => {

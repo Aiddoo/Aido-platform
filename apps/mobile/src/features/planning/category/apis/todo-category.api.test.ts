@@ -36,44 +36,50 @@ describe('TodoCategoryApi', () => {
       name: 'getCategories',
       call: (api: TodoCategoryApi) => api.getCategories(),
       method: 'get',
-      args: ['v1/todo-categories', { signal: undefined }],
+      requestArguments: ['v1/todo-categories', { signal: undefined }],
     },
     {
       name: 'createCategory',
       call: (api: TodoCategoryApi) => api.createCategory({ name: '운동', color: '#FF0000' }),
       method: 'post',
-      args: ['v1/todo-categories', { name: '운동', color: '#FF0000' }],
+      requestArguments: ['v1/todo-categories', { name: '운동', color: '#FF0000' }],
     },
     {
       name: 'updateCategory',
       call: (api: TodoCategoryApi) => api.updateCategory(1, { name: '수정' }),
       method: 'patch',
-      args: ['v1/todo-categories/1', { name: '수정' }],
+      requestArguments: ['v1/todo-categories/1', { name: '수정' }],
     },
     {
       name: 'getDeletionPreview',
       call: (api: TodoCategoryApi) => api.getDeletionPreview(3),
       method: 'get',
-      args: ['v1/todo-categories/3/deletion-preview', { signal: undefined }],
+      requestArguments: ['v1/todo-categories/3/deletion-preview', { signal: undefined }],
     },
     {
       name: 'reorderCategory',
       call: (api: TodoCategoryApi) =>
         api.reorderCategory(1, { position: 'after', targetCategoryId: 2 }),
       method: 'patch',
-      args: ['v1/todo-categories/1/reorder', { position: 'after', targetCategoryId: 2 }],
+      requestArguments: [
+        'v1/todo-categories/1/reorder',
+        { position: 'after', targetCategoryId: 2 },
+      ],
     },
-  ] as const)('$name은 계약 경로로 보내고 응답을 모델로 바꾼다', async ({ call, method, args }) => {
-    // Given
-    const { httpClient, api } = createSut();
+  ] as const)(
+    '$name은 계약 경로로 보내고 응답을 모델로 바꾼다',
+    async ({ call, method, requestArguments }) => {
+      // Given
+      const { httpClient, api } = createSut();
 
-    // When
-    const result = await call(api);
+      // When
+      const result = await call(api);
 
-    // Then
-    expect(httpClient[method]).toHaveBeenCalledWith(...args);
-    expect(result.ok).toBe(true);
-  });
+      // Then
+      expect(httpClient[method]).toHaveBeenCalledWith(...requestArguments);
+      expect(result.ok).toBe(true);
+    },
+  );
 
   it.each([
     {

@@ -1,6 +1,6 @@
 import '@src/shared/i18n/init';
 import {
-  err,
+  fail,
   getUserFacingMessage,
   isCodedError,
   KeychainLockedError,
@@ -78,13 +78,13 @@ describe('SignInService', () => {
       // Given
       const { service, publicHttp, tokenStore } = setup();
       const error = createAuthApiError({ code: 'USER_0602' });
-      publicHttp.post.mockResolvedValue(err(error));
+      publicHttp.post.mockResolvedValue(fail(error));
 
       // When
       const result = await service.emailLogin({ email: 'a@aido.app', password: 'wrong' });
 
       // Then
-      expect(result).toEqual(err(error));
+      expect(result).toEqual(fail(error));
       await expect(tokenStore.getRefreshToken()).resolves.toBeNull();
     });
 
@@ -322,7 +322,7 @@ describe('SignInService', () => {
       // Given
       const { service, authHttp, tokenStore } = setup();
       await tokenStore.save({ accessToken: 'access-a', refreshToken: 'refresh-a' });
-      authHttp.delete.mockResolvedValue(err(createAuthApiError({ code: 'USER_0602' })));
+      authHttp.delete.mockResolvedValue(fail(createAuthApiError({ code: 'USER_0602' })));
 
       // When
       await service.deleteAccount({ password: 'wrong' });

@@ -23,7 +23,7 @@ export function useResolveNotificationDestination() {
   return (target: NotificationTarget): NotificationDestination =>
     toNotificationDestination(target, {
       windowSizeClass,
-      viewerId: getCachedMe(queryClient)?.id,
+      accountId: getCachedMe(queryClient)?.id,
       openedAt: toEpochMs(getNowInstant()),
     });
 }

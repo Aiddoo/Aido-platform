@@ -2,7 +2,7 @@ import { ErrorCode, HttpStatus } from '@aido/api/errors';
 import { AI_DATA_SHARING_CONSENT } from '@aido/api/vocabulary';
 import '@src/shared/i18n/init';
 import { ApiError } from '@src/core/errors/api-error';
-import { err, ok } from '@src/core/errors/result';
+import { fail, ok } from '@src/core/errors/result';
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
 import { type EntitlementSnapshot } from '@src/features/billing/subscription/domains/entitlement.model';
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/queries/entitlement-query-keys';
@@ -315,7 +315,7 @@ describe('MemoEditor', () => {
     // Given
     const { httpClient, onLeave } = await renderEditor('stack');
     httpClient.post.mockResolvedValue(
-      err(new ApiError(ErrorCode.MEMO_2001, '메모 없음', HttpStatus.NOT_FOUND)),
+      fail(new ApiError(ErrorCode.MEMO_2001, '메모 없음', HttpStatus.NOT_FOUND)),
     );
     await waitFor(() =>
       expect(httpClient.get).toHaveBeenCalledWith('v1/todo-categories', expect.anything()),
@@ -371,7 +371,7 @@ describe('MemoEditor', () => {
       // Given
       const { httpClient } = await renderEditor('stack');
       httpClient.patch.mockResolvedValue(
-        err(new ApiError(ErrorCode.MEMO_2001, '거절', HttpStatus.BAD_REQUEST)),
+        fail(new ApiError(ErrorCode.MEMO_2001, '거절', HttpStatus.BAD_REQUEST)),
       );
       await editContent('고친 메모');
       await waitFor(() =>
@@ -445,7 +445,7 @@ describe('MemoEditor', () => {
     // Given
     const { httpClient, onLeave } = await renderEditor('stack');
     httpClient.patch.mockResolvedValue(
-      err(new ApiError(ErrorCode.MEMO_2001, '거절', HttpStatus.BAD_REQUEST)),
+      fail(new ApiError(ErrorCode.MEMO_2001, '거절', HttpStatus.BAD_REQUEST)),
     );
     await editContent('고친 메모');
 
@@ -527,7 +527,7 @@ describe('MemoEditor', () => {
       // Given
       const { httpClient, onLeave } = await renderEditor('pane');
       httpClient.patch.mockResolvedValue(
-        err(new ApiError(ErrorCode.MEMO_2001, '거절', HttpStatus.BAD_REQUEST)),
+        fail(new ApiError(ErrorCode.MEMO_2001, '거절', HttpStatus.BAD_REQUEST)),
       );
       await editContent('고친 메모');
 
@@ -725,7 +725,7 @@ describe('MemoEditor', () => {
       const { httpClient } = await renderForAiParse({ consent: createAgreedConsent() });
       httpClient.patch.mockResolvedValue(ok(AGREED_CONSENT_DTO));
       httpClient.post
-        .mockResolvedValueOnce(err(CONSENT_REQUIRED_ERROR))
+        .mockResolvedValueOnce(fail(CONSENT_REQUIRED_ERROR))
         .mockResolvedValueOnce(ok(createParseMemoResponseDto()));
       await startAiParse();
       await screen.findByTestId('ai-consent-sheet');
@@ -747,7 +747,7 @@ describe('MemoEditor', () => {
       // Given
       const { httpClient } = await renderForAiParse({ consent: createAgreedConsent() });
       httpClient.patch.mockResolvedValue(ok(AGREED_CONSENT_DTO));
-      httpClient.post.mockResolvedValue(err(CONSENT_REQUIRED_ERROR));
+      httpClient.post.mockResolvedValue(fail(CONSENT_REQUIRED_ERROR));
       await startAiParse();
       await screen.findByTestId('ai-consent-sheet');
 

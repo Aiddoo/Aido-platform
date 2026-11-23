@@ -1,4 +1,4 @@
-import { err, ok } from '@src/core/errors/result';
+import { fail, ok } from '@src/core/errors/result';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import { i18n } from '@src/shared/i18n';
 import {
@@ -69,7 +69,7 @@ describe('설정 토글 저장', () => {
     const catalogMessage = i18n.t('errors:PREFERENCE_1701');
     const httpClient = createHttpClientStub();
     httpClient.patch.mockResolvedValue(
-      err(
+      fail(
         createPreferenceApiError({ code: 'PREFERENCE_1701', message: catalogMessage, status: 403 }),
       ),
     );
@@ -123,7 +123,7 @@ describe('설정 토글을 연달아 저장', () => {
   it('앞 저장이 실패하면 그 토글만 되돌리고 뒤에 바꾼 토글은 지킨다', async () => {
     // Given
     const httpClient = createHttpClientStub();
-    const first = createPendingResponse(err(createPreferenceApiError()));
+    const first = createPendingResponse(fail(createPreferenceApiError()));
     const second = createPendingResponse(
       ok(createPreferenceDto({ pushEnabled: true, nightPushEnabled: true })),
     );

@@ -1,4 +1,4 @@
-import { err, ok } from '@src/core/errors/result';
+import { fail, ok } from '@src/core/errors/result';
 import { ApiError, NetworkError, ParseError, ServerError, TimeoutError } from '@src/shared/errors';
 
 import { SubscriptionFailurePolicy, toOfferingsAvailability } from './subscription-failure.model';
@@ -74,7 +74,7 @@ describe('toOfferingsAvailability', () => {
 
   it('스토어 설정 문제는 던지지 않고 안내할 상태로 돌려준다', () => {
     // When
-    const availability = toOfferingsAvailability(err(SubscriptionErrors.storeUnavailable('23')));
+    const availability = toOfferingsAvailability(fail(SubscriptionErrors.storeUnavailable('23')));
 
     // Then
     expect(availability).toEqual({
@@ -88,7 +88,7 @@ describe('toOfferingsAvailability', () => {
     const error = SubscriptionErrors.network('10');
 
     // When
-    const run = () => toOfferingsAvailability(err(error));
+    const run = () => toOfferingsAvailability(fail(error));
 
     // Then
     expect(run).toThrow(error);
@@ -99,7 +99,7 @@ describe('toOfferingsAvailability', () => {
     const error = SubscriptionErrors.offeringsUnavailable('16');
 
     // When
-    const run = () => toOfferingsAvailability(err(error));
+    const run = () => toOfferingsAvailability(fail(error));
 
     // Then
     expect(run).toThrow(error);

@@ -11,7 +11,7 @@ import {
   sentRequestsResponseSchema,
 } from '@aido/api/contracts/follow/v1';
 import type { ApiError } from '@src/core/errors/api-error';
-import { err, type Result } from '@src/core/errors/result';
+import { fail, type Result } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http-client';
 import { BusinessError } from '@src/shared/errors';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
@@ -51,10 +51,10 @@ export class FriendApi {
   ): Promise<Result<SendFriendRequestResult, FriendApiError>> => {
     const tag = userTag.trim();
     if (!tag) {
-      return err(new BusinessError(FRIEND_ERROR_CODE.EMPTY_TAG));
+      return fail(new BusinessError(FRIEND_ERROR_CODE.EMPTY_TAG));
     }
     if (!isValidUserTag(tag)) {
-      return err(new BusinessError(FRIEND_ERROR_CODE.INVALID_TAG));
+      return fail(new BusinessError(FRIEND_ERROR_CODE.INVALID_TAG));
     }
 
     return parseApiResponse(
@@ -129,7 +129,7 @@ export class FriendApi {
     const query = params.query.trim();
     // 2자 미만이면 네트워크 요청 없이 실패한다
     if (!isValidSearchQuery(query)) {
-      return err(new BusinessError(FRIEND_ERROR_CODE.SEARCH_QUERY_TOO_SHORT));
+      return fail(new BusinessError(FRIEND_ERROR_CODE.SEARCH_QUERY_TOO_SHORT));
     }
 
     return parseApiResponse(

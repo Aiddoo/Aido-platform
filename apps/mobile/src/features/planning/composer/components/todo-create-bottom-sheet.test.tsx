@@ -1,6 +1,6 @@
 import '@src/shared/i18n/init';
 import { AI_DATA_SHARING_DECISION } from '@aido/api/vocabulary';
-import { err, ok } from '@src/core/errors/result';
+import { fail, ok } from '@src/core/errors/result';
 import { createConsent } from '@src/features/identity/consent/__tests__/consent.fixtures';
 import { CONSENT_QUERY_KEYS } from '@src/features/identity/consent/queries/consent-query-keys';
 import { createTodoCategoryListDto } from '@src/features/planning/category/__tests__/todo-category.fixtures';
@@ -135,7 +135,7 @@ describe('TodoCreateBottomSheet', () => {
       // Given
       // 연결이 없어 저장이 거절된다
       const { httpClient } = await renderCreateSheet();
-      httpClient.post.mockResolvedValue(err(createTodoApiError()));
+      httpClient.post.mockResolvedValue(fail(createTodoApiError()));
       const input = await screen.findByPlaceholderText(PLACEHOLDER);
       await fireEvent.changeText(input, '우유 사기');
 
@@ -166,7 +166,7 @@ describe('TodoCreateBottomSheet', () => {
     it('저장이 실패하면 오류 토스트를 열린 시트 위에 남기고, 끌어 내려 닫기 시작하면 그때 루트로 옮긴다', async () => {
       // Given
       const { httpClient } = await renderCreateSheet({}, { isSheetRoute: true });
-      httpClient.post.mockResolvedValue(err(createTodoApiError({ message: '저장하지 못했어요' })));
+      httpClient.post.mockResolvedValue(fail(createTodoApiError({ message: '저장하지 못했어요' })));
       await fireEvent.changeText(await screen.findByPlaceholderText(PLACEHOLDER), '우유 사기');
       await fireEvent(screen.getByPlaceholderText(PLACEHOLDER), 'submitEditing');
       const sheetRoute = screen.getByTestId('sheet-route');
@@ -185,7 +185,7 @@ describe('TodoCreateBottomSheet', () => {
     it('저장 중에 다시 보내도 요청은 한 번이고, 보내는 날짜는 고른 날짜 key 그대로다', async () => {
       // Given
       const { httpClient } = await renderCreateSheet();
-      const pending = createPendingResponse(err(createTodoApiError()));
+      const pending = createPendingResponse(fail(createTodoApiError()));
       httpClient.post.mockReturnValue(pending.response);
       await fireEvent.changeText(await screen.findByPlaceholderText(PLACEHOLDER), '우유 사기');
 

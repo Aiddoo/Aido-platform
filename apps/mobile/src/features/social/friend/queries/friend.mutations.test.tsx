@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import { err, ok } from '@src/core/errors/result';
+import { fail, ok } from '@src/core/errors/result';
 import {
   createHapticsGatewayStub,
   createHttpClientStub,
@@ -71,7 +71,7 @@ describe('친구 끊기', () => {
       pageParams: [undefined],
     });
     const rejection = createFriendApiError({ code: 'FOLLOW_0904', message: '끊지 못했어요' });
-    const firstRemoval = createPendingResponse(err(rejection));
+    const firstRemoval = createPendingResponse(fail(rejection));
     const secondRemoval = createPendingResponse(ok({ message: '친구를 삭제했습니다.' }));
     const httpClient = createHttpClientStub();
     httpClient.delete

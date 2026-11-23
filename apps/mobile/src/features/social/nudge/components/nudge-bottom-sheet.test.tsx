@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import { err, ok } from '@src/core/errors/result';
+import { fail, ok } from '@src/core/errors/result';
 import { createAuthApiError } from '@src/features/identity/auth/__tests__/auth.fixtures';
 import { createHttpClientStub, createTestDi } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
@@ -58,7 +58,7 @@ describe('콕 메시지 시트', () => {
     // Given
     const { httpClient, onOpenChange } = await renderSheet();
     httpClient.post.mockResolvedValue(
-      err(createAuthApiError({ status: 500, message: '잠시 후 다시' })),
+      fail(createAuthApiError({ status: 500, message: '잠시 후 다시' })),
     );
     const input = await screen.findByPlaceholderText('(선택) 작은 할 일 하나부터 같이 시작해보자!');
     await fireEvent.changeText(input, '화이팅');

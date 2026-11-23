@@ -3,7 +3,7 @@ import type { RequestConfig } from '@src/core/ports/http-client';
 import { createSessionEpoch } from '@src/core/session/session-epoch';
 import {
   ApiError,
-  err,
+  fail,
   NetworkError,
   ok,
   type Result,
@@ -144,7 +144,7 @@ describe('LogOutDeviceService.logOut', () => {
   it('서버가 답한 로그아웃은 기록하지 않는다', async () => {
     // Given
     const stub = createStubServices({
-      logout: async () => err(new ApiError(ErrorCode.SESSION_0701, '세션 없음', 401)),
+      logout: async () => fail(new ApiError(ErrorCode.SESSION_0701, '세션 없음', 401)),
     });
 
     // When
@@ -320,7 +320,7 @@ describe('LogOutDeviceService.logOut', () => {
   });
 
   it.each([
-    ['서버가 거절', async () => err(new ApiError(ErrorCode.SESSION_0701, '세션 없음', 401))],
+    ['서버가 거절', async () => fail(new ApiError(ErrorCode.SESSION_0701, '세션 없음', 401))],
     [
       '연결 실패',
       async (): Promise<Result<void, ApiError>> => {

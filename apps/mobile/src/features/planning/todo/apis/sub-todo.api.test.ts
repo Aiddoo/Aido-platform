@@ -16,29 +16,29 @@ describe('SubTodoApi', () => {
       name: 'addSubTodo',
       call: (api: SubTodoApi) => api.addSubTodo(1, { title: '새 항목' }),
       method: 'post',
-      args: ['v1/todos/1/items', { title: '새 항목' }],
+      requestArguments: ['v1/todos/1/items', { title: '새 항목' }],
     },
     {
       name: 'updateSubTodo',
       call: (api: SubTodoApi) => api.updateSubTodo(1, 10, { title: '수정된 항목' }),
       method: 'patch',
-      args: ['v1/todos/1/items/10', { title: '수정된 항목' }],
+      requestArguments: ['v1/todos/1/items/10', { title: '수정된 항목' }],
     },
     {
       name: 'deleteSubTodo',
       call: (api: SubTodoApi) => api.deleteSubTodo(1, 10),
       method: 'delete',
-      args: ['v1/todos/1/items/10'],
+      requestArguments: ['v1/todos/1/items/10'],
     },
     {
       name: 'reorderSubTodos',
       call: (api: SubTodoApi) => api.reorderSubTodos(1, { itemIds: [3, 1, 2] }),
       method: 'patch',
-      args: ['v1/todos/1/items/reorder', { itemIds: [3, 1, 2] }],
+      requestArguments: ['v1/todos/1/items/reorder', { itemIds: [3, 1, 2] }],
     },
   ] as const)(
     '$name은 계약 경로로 보내고 응답을 할 일로 바꾼다',
-    async ({ call, method, args }) => {
+    async ({ call, method, requestArguments }) => {
       // Given
       const { httpClient, api } = createSut();
       const response = ok({ message: 'ok', todo: createTodoDto() });
@@ -50,7 +50,7 @@ describe('SubTodoApi', () => {
       const result = await call(api);
 
       // Then
-      expect(httpClient[method]).toHaveBeenCalledWith(...args);
+      expect(httpClient[method]).toHaveBeenCalledWith(...requestArguments);
       expect(result.ok).toBe(true);
     },
   );

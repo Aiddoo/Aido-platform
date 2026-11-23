@@ -1,6 +1,6 @@
 import { successEnvelopeSchema } from '@aido/api/common';
 import type { ApiError } from '@src/core/errors/api-error';
-import { err, ok, type Result } from '@src/core/errors/result';
+import { fail, ok, type Result } from '@src/core/errors/result';
 import type { HttpClient, RequestConfig } from '@src/core/ports/http-client';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { isNil, mapValues, omitBy } from 'es-toolkit';
@@ -66,7 +66,7 @@ export class KyHttpClient implements HttpClient {
       }
 
       if (error instanceof HTTPError) {
-        return err(toApiError(error));
+        return fail(toApiError(error));
       }
 
       throw error;
