@@ -550,6 +550,38 @@
         ],
         "aido/no-re-export": "error"
       }
+    },
+    {
+      // apps/mobile/.oxlintrc.json이 extends로 이 override를 받으면 globs는 apps/mobile 기준이라 앱 도구는 store-metadata·.maestro로 적는다
+      // plugins/(Expo config plugin)는 고치면 Expo fingerprint가 바뀌어 OTA가 막히므로 스토어 빌드 층에서만 바꾼다
+      "files": [
+        "scripts/**/*.{js,mjs,cjs,ts}",
+        "tooling/**/*.{js,mjs,cjs,mts,ts}",
+        "turbo/generators/**/*.{mjs,ts}",
+        "apps/api/scripts/**/*.{cjs,mjs,ts}",
+        "store-metadata/**/*.mjs",
+        ".maestro/**/scripts/*.{js,ts}"
+      ],
+      "rules": {
+        "unicorn/prefer-string-replace-all": "error",
+        "unicorn/prefer-spread": "error",
+        "unicorn/prefer-at": "error",
+        "unicorn/prefer-node-protocol": "error",
+        "eslint/no-var": "error",
+        "eslint/prefer-object-spread": "error",
+        "unicorn/prefer-import-meta-properties": "error",
+        "unicorn/no-array-for-each": "error",
+        "unicorn/prefer-set-has": "error",
+        "unicorn/prefer-includes": "error",
+        "unicorn/prefer-array-find": "error",
+        "unicorn/prefer-array-some": "error",
+        "unicorn/prefer-array-flat-map": "error",
+        "unicorn/prefer-object-from-entries": "error",
+        "unicorn/prefer-date-now": "error",
+        "unicorn/prefer-optional-catch-binding": "error",
+        "eslint/prefer-object-has-own": "error",
+        "aido/no-abbreviation": "error"
+      }
     }
   ]
 }
