@@ -1,7 +1,7 @@
 import type { Provider } from "@nestjs/common";
 
 import { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
-import { ReminderTimezoneCachePort as NotificationReminderTimezoneCachePort } from "#api/modules/notification/reminders/notification-reminders-queries.public";
+import { ReminderTimezoneCachePort } from "#api/modules/notification/reminders/notification-reminders-queries.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
@@ -9,7 +9,6 @@ import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port"
 
 import { PreferenceEntitlementPort } from "./application/ports/preference-entitlement.port.js";
 import { ReminderScheduleEnqueuerPort } from "./application/ports/reminder-schedule-enqueuer.port.js";
-import { ReminderTimezoneCachePort } from "./application/ports/reminder-timezone-cache.port.js";
 import { StreakMilestoneNotifierPort } from "./application/ports/streak-milestone-notifier.port.js";
 import { TodoCompletionStatsReaderPort } from "./application/ports/todo-completion-stats.reader.port.js";
 import { TodoTimezoneRebaseEnqueuerPort } from "./application/ports/todo-timezone-rebase-enqueuer.port.js";
@@ -34,10 +33,9 @@ import { UpdatePreferenceUseCase } from "./application/use-cases/update-preferen
 import { UpsertPushLocaleUseCase } from "./application/use-cases/upsert-push-locale.use-case.js";
 import { UpsertPushTimezoneUseCase } from "./application/use-cases/upsert-push-timezone.use-case.js";
 
-// access 권한 판단과 notification 활성 시간대 캐시를 이 slice의 포트로 잇는다
+// access 권한 판단을 이 slice의 포트로 잇는다
 const PREFERENCE_COLLABORATOR_PROVIDERS = [
   { provide: PreferenceEntitlementPort, useExisting: EntitlementReaderPort },
-  { provide: ReminderTimezoneCachePort, useExisting: NotificationReminderTimezoneCachePort },
 ] satisfies Provider[];
 
 export const refreshPushTimezoneProvider = provideUseCase(RefreshPushTimezoneUseCase, {

@@ -1,4 +1,5 @@
 import { assertEntitled } from "#api/modules/access/feature-grants/access-feature-grants.public";
+import type { ReminderTimezoneCachePort } from "#api/modules/notification/reminders/notification-reminders-queries.public";
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
@@ -9,7 +10,6 @@ import { normalizeIanaTimezone } from "#api/shared/domain/time/time-zone-name";
 import { ReminderTime } from "../../domain/reminder-time.vo.js";
 import type { PreferenceEntitlementPort } from "../ports/preference-entitlement.port.js";
 import { type ReminderScheduleEnqueuerPort } from "../ports/reminder-schedule-enqueuer.port.js";
-import type { ReminderTimezoneCachePort } from "../ports/reminder-timezone-cache.port.js";
 import type { TodoTimezoneRebaseEnqueuerPort } from "../ports/todo-timezone-rebase-enqueuer.port.js";
 import { type UserPreferenceRepositoryPort } from "../ports/user-preference.repository.port.js";
 import { type UserSettingsCachePort } from "../ports/user-settings-cache.port.js";
