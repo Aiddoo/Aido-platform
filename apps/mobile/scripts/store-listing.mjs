@@ -5,7 +5,7 @@
 //   node scripts/store-listing.mjs export --out <폴더>   # <폴더>/text/…txt, <폴더>/*.ko-en.md
 //
 // 폴더 구조는 fastlane deliver/supply의 필드 파일 이름을 따른다(listing/<store>/<locale>/<field>.txt).
-// en-GB처럼 일부 필드만 있는 로캘은 INHERITS의 부모 로캘에서 나머지를 물려받는다.
+// en-GB처럼 일부 필드만 있는 로캘은 INHERITS의 부모 로캘에서 나머지를 물려받는다(키워드·출시 노트만 바꾼다).
 import { mkdirSync, readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
@@ -27,7 +27,7 @@ export const STORES = {
     locales: ['ko', 'en-US', 'en-GB'],
     pairs: [['ko', 'en-US']],
     inherits: { 'en-GB': 'en-US' },
-    overridable: ['keywords'],
+    overridable: ['keywords', 'release_notes'],
     fields: {
       name: { label: '이름', max: 30, required: true },
       subtitle: { label: '부제', max: 30, required: true },
@@ -268,7 +268,9 @@ export function checkListings() {
       }
 
       // 출시 노트는 스토어마다 따로 쓰고(Play 500자·App Store 4000자) release.json의 그 스토어 항목을 같은 순서로 담는다.
-      const expected = release.patchNotes?.[config.patchNotesKey]?.[language] ?? [];
+      // en-GB처럼 같은 언어라도 표기가 다른 로캘은 로캘 키(patchNotes.appStore['en-GB'])를 먼저 본다.
+      const storeNotes = release.patchNotes?.[config.patchNotesKey];
+      const expected = storeNotes?.[locale] ?? storeNotes?.[language] ?? [];
       errors.push(
         ...releaseNotesProblems(values.release_notes ?? '', language, expected).map(
           (problem) => `${at('release_notes')}: ${problem}`,

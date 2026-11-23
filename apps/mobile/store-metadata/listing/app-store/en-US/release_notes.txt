@@ -1,8 +1,8 @@
 Improvements
-- Sheets that slide up from the bottom now use your device's native sheets, so swiping down and typing feel more natural.
-- AI reports (Premium) count “Perfect days” the same way as your streak, and pick “When you usually finish” the same way every time.
-- We updated the parts we use for payments, analytics, and error reporting so the app runs more reliably.
+- Sheets that slide up from the bottom now use native iOS sheets, so swiping down to close and typing feel more natural.
+- AI reports (Premium) now count “Perfect days” the same way as your streak. If several hours tie for the most to-dos finished, we show the earliest.
+- We updated the components behind payments, analytics, and crash reporting for better stability.
 
 Bug fixes
-- Fixed the app closing when you opened Find friends on iPad or Mac.
-- Fixed the home screen widget trying to load the previous day's summary after midnight.
+- Fixed the app closing when you opened friend search on iPad and Mac.
+- Fixed an error when the Home Screen widget loaded its summary right after midnight.

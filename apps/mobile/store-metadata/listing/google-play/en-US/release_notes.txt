@@ -1,7 +1,7 @@
 Improvements
-- Sheets now use native Android sheets, so swiping and typing feel more natural.
-- AI reports (Premium) count Perfect days like your streak.
-- Updated payment and analytics parts for stability.
+- Sheets now use native Android bottom sheets, so swiping to close and typing feel smoother.
+- AI reports (Premium) count Perfect days the same way as your streak.
+- Updated payment and analytics components for better stability.
 
 Bug fixes
-- Fixed the home screen widget loading yesterday's summary after midnight.
+- Fixed a home screen widget error right after midnight.
