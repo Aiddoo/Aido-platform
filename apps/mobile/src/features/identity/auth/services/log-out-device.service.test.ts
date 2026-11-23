@@ -199,7 +199,7 @@ describe('LogOutDeviceService.logOut', () => {
   it('기록을 로그에 토큰 없이 남긴다', async () => {
     // Given
     const stub = createStubServices();
-    const warnings: unknown[] = [];
+    const logger = createAppLoggerStub();
 
     // When
     await new LogOutDeviceService({
@@ -209,11 +209,11 @@ describe('LogOutDeviceService.logOut', () => {
           throw new Error('keychain write failed');
         },
       },
-      logger: { ...createAppLoggerStub(), warn: (...args: unknown[]) => warnings.push(args) },
+      logger,
     }).logOut({ isOnline: false });
 
     // Then
-    expect(JSON.stringify(warnings)).not.toContain('refresh-a');
+    expect(JSON.stringify(logger.warn.mock.calls)).not.toContain('refresh-a');
   });
 
   it('서버 응답을 기다리는 사이 세션이 끝났으면 토큰을 지우지 않고 다시 로그인했는지로 판정한다', async () => {

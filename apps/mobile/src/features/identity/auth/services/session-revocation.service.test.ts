@@ -7,6 +7,7 @@ import { ApiError, err, NetworkError, ok, ServerError } from '@src/shared/errors
 import { KyHttpClient } from '@src/shared/infra/http/ky-client';
 import { createPublicClient } from '@src/shared/infra/http/public-client';
 import {
+  createAppLoggerStub,
   createErrorReporterStub,
   createMemoryKeyValueStorage,
   createMemoryTokenStore,
@@ -36,16 +37,13 @@ function setup() {
   const publicHttpClient = createHttpClientStub();
   publicHttpClient.post.mockResolvedValue(ok({ message: '로그아웃되었습니다.' }));
   const requestRefresh = mockMethod<RefreshTokensRequest>(async () => respondWithTokens());
-  const logs: unknown[] = [];
-  const record = (...args: unknown[]) => {
-    logs.push(args);
-  };
+  const logger = createAppLoggerStub();
   let now = NOW;
   const service = new SessionRevocationService({
     repository,
     requestRefresh,
     authApi: new AuthApi({ publicHttpClient, authHttpClient: createHttpClientStub() }),
-    logger: { info: record, warn: record },
+    logger,
     now: () => fromEpochMs(now),
   });
   return {
@@ -53,7 +51,7 @@ function setup() {
     repository,
     publicHttpClient,
     requestRefresh,
-    logs,
+    logger,
     service,
     advance: (ms: number) => {
       now += ms;
@@ -281,7 +279,7 @@ describe('SessionRevocationService', () => {
 
   it('어떤 실패에도 로그에 토큰 값을 남기지 않는다', async () => {
     // Given
-    const { service, publicHttpClient, logs } = setup();
+    const { service, publicHttpClient, logger } = setup();
     await service.record(REFRESH_A);
     publicHttpClient.post.mockRejectedValueOnce(new NetworkError());
 
@@ -293,7 +291,7 @@ describe('SessionRevocationService', () => {
     await service.flush();
 
     // Then
-    const logged = JSON.stringify(logs);
+    const logged = JSON.stringify([logger.info.mock.calls, logger.warn.mock.calls]);
     expect(logged).not.toContain(REFRESH_A);
     expect(logged).not.toContain(ROTATED.accessToken);
     expect(logged).not.toContain(ROTATED.refreshToken);
@@ -326,7 +324,7 @@ describe('SessionRevocationService', () => {
         ),
         authHttpClient: createHttpClientStub(),
       }),
-      logger: { info: jest.fn(), warn: jest.fn() },
+      logger: createAppLoggerStub(),
       now: getNowInstant,
     });
     await service.record(REFRESH_A);

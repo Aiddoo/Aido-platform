@@ -22,9 +22,10 @@ setupFakeTimersPerTest();
 
 /** 역지오코딩과 위치 등록은 테스트가 풀 때까지 끝나지 않는다 */
 function setup() {
-  const gateway = createLocationGatewayStub();
-  gateway.getPermission.mockResolvedValue({ isGranted: true, canAskAgain: true });
-  gateway.getCoordinates.mockResolvedValue(SEOUL);
+  const gateway = createLocationGatewayStub({
+    permission: { isGranted: true, canAskAgain: true },
+    coordinates: SEOUL,
+  });
   const place = Promise.withResolvers<Place>();
   gateway.getPlace.mockReturnValue(place.promise);
   const httpClient = createHttpClientStub();

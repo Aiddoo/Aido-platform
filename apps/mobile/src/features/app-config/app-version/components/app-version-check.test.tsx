@@ -1,8 +1,8 @@
-import type { JsonFetcher } from '@src/core/ports/json-fetcher';
 import { ServerError } from '@src/shared/errors/infra-error';
 import {
   createAppStoreListingGatewayStub,
   createErrorReporterStub,
+  createJsonFetcherStub,
   createNativeApplicationMetadataGatewayStub,
   createTestDi,
 } from '@src/testing/core';
@@ -23,7 +23,7 @@ async function renderCheck({
   currentVersion = '1.14.0',
   openListing = async () => {},
 }: {
-  jsonFetcher: JsonFetcher;
+  jsonFetcher: ReturnType<typeof createJsonFetcherStub>;
   currentVersion?: string;
   openListing?: () => Promise<void>;
 }) {
@@ -57,7 +57,8 @@ describe('앱 버전 확인', () => {
 
   it('서버가 장애여도 앱을 막지 않고 확인하지 못했다고만 알린다', async () => {
     // Given
-    const jsonFetcher: JsonFetcher = { get: jest.fn().mockRejectedValue(new ServerError(500)) };
+    const jsonFetcher = createJsonFetcherStub();
+    jsonFetcher.get.mockRejectedValue(new ServerError(500));
     const { listing, errorReporter } = await renderCheck({ jsonFetcher });
 
     // When
@@ -72,7 +73,8 @@ describe('앱 버전 확인', () => {
 
   it('서버 점검이 꺼져 있으면 실패로 알리지 않고 안내할 새 버전이 없다고 알린다', async () => {
     // Given
-    const jsonFetcher: JsonFetcher = { get: jest.fn().mockResolvedValue({ enabled: false }) };
+    const jsonFetcher = createJsonFetcherStub();
+    jsonFetcher.get.mockResolvedValue({ enabled: false });
     const { listing, errorReporter } = await renderCheck({ jsonFetcher });
 
     // When
@@ -88,7 +90,8 @@ describe('앱 버전 확인', () => {
   it('연결이 없으면 요청 없이 바로 오프라인이라고 알리고 나중에 스토어를 열지 않는다', async () => {
     // Given
     onlineManager.setOnline(false);
-    const jsonFetcher: JsonFetcher = { get: jest.fn().mockResolvedValue(ENABLED_RESPONSE) };
+    const jsonFetcher = createJsonFetcherStub();
+    jsonFetcher.get.mockResolvedValue(ENABLED_RESPONSE);
     const { listing } = await renderCheck({ jsonFetcher });
 
     // When
@@ -105,7 +108,8 @@ describe('앱 버전 확인', () => {
 
   it('더 새 버전이 있으면 스토어를 연다', async () => {
     // Given
-    const jsonFetcher: JsonFetcher = { get: jest.fn().mockResolvedValue(ENABLED_RESPONSE) };
+    const jsonFetcher = createJsonFetcherStub();
+    jsonFetcher.get.mockResolvedValue(ENABLED_RESPONSE);
     const { listing } = await renderCheck({ jsonFetcher });
 
     // When
@@ -118,7 +122,8 @@ describe('앱 버전 확인', () => {
 
   it('스토어를 열지 못하면 알리고 보고한다', async () => {
     // Given
-    const jsonFetcher: JsonFetcher = { get: jest.fn().mockResolvedValue(ENABLED_RESPONSE) };
+    const jsonFetcher = createJsonFetcherStub();
+    jsonFetcher.get.mockResolvedValue(ENABLED_RESPONSE);
     const { errorReporter } = await renderCheck({
       jsonFetcher,
       openListing: () => Promise.reject(new Error('스토어 없음')),
@@ -134,7 +139,8 @@ describe('앱 버전 확인', () => {
 
   it('이미 최신이면 스토어를 열지 않고 최신이라고 알린다', async () => {
     // Given
-    const jsonFetcher: JsonFetcher = { get: jest.fn().mockResolvedValue(ENABLED_RESPONSE) };
+    const jsonFetcher = createJsonFetcherStub();
+    jsonFetcher.get.mockResolvedValue(ENABLED_RESPONSE);
     const { listing } = await renderCheck({ jsonFetcher, currentVersion: '1.15.0' });
 
     // When
