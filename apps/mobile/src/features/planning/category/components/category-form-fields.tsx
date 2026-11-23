@@ -1,6 +1,6 @@
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
-import { BottomSheetInput, VStack } from '@src/shared/ui';
+import { Input, VStack } from '@src/shared/ui';
 import { Controller, type Control } from 'react-hook-form';
 
 import type { TodoCategoryFormValues } from '../schemas/todo-category-form.schema';
@@ -21,7 +21,7 @@ export function CategoryFormFields({ control, onSubmit }: CategoryFormFieldsProp
         control={control}
         name="name"
         render={({ field: { value, onChange, ref }, fieldState: { error } }) => (
-          <BottomSheetInput
+          <Input
             ref={ref}
             autoFocus
             label={t('category.nameLabel')}

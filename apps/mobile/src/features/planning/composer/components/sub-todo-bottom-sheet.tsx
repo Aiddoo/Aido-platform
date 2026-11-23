@@ -2,7 +2,7 @@ import { DictationButton } from '@src/features/voice/components/dictation-button
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  BottomSheetInput,
+  Input,
   HintPopoverContent,
   HStack,
   InfoIcon,
@@ -64,7 +64,7 @@ export function SubTodoTitleInput({ form, onSubmitEditing }: SubTodoTitleInputPr
       control={form.control}
       name="title"
       render={({ field }) => (
-        <BottomSheetInput
+        <Input
           testID="sub-todo-input"
           autoFocus
           placeholder={t('subTodo.placeholder')}

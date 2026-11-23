@@ -17,7 +17,7 @@ import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpecte
 import { useTranslation } from '@src/shared/i18n';
 import {
   BottomSheet,
-  BottomSheetInput,
+  Input,
   HStack,
   KeyboardBottomSheet,
   QueryErrorActions,
@@ -211,7 +211,7 @@ function TodoEditForm({ todo, isOpen, onOpenChange, onClose }: TodoEditFormProps
           control={form.control}
           name="title"
           render={({ field: { onChange, value, ref } }) => (
-            <BottomSheetInput
+            <Input
               ref={ref}
               autoFocus
               placeholder={t('add.placeholder')}

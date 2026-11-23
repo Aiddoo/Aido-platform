@@ -9,7 +9,7 @@ import type { DateKey } from '@src/shared/date/date-key';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { BottomSheetInput, HStack, KeyboardBottomSheet, VStack } from '@src/shared/ui';
+import { Input, HStack, KeyboardBottomSheet, VStack } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
 import type { ComponentProps } from 'react';
@@ -119,7 +119,7 @@ MemoConvertBottomSheet.Form = function Form({
         control={form.control}
         name="title"
         render={({ field: { value, onChange, ref } }) => (
-          <BottomSheetInput
+          <Input
             ref={ref}
             autoFocus
             placeholder={t('add.placeholder')}
