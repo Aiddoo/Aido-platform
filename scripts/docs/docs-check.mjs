@@ -3,10 +3,9 @@
 // 사용: node scripts/docs/docs-check.mjs [--idents]
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
-import { dirname, posix, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { posix, resolve } from 'node:path';
 
-const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+const repositoryRoot = resolve(import.meta.dirname, '../..');
 
 // 외부 문서(heroui 스킬, 스토어 메타데이터)는 이 저장소가 쓰지 않는다.
 const EXCLUDED = [
@@ -16,7 +15,7 @@ const EXCLUDED = [
 ];
 // 출시 기록은 그때 상태로 얼려 둔다. 링크·길이·경로를 보지 않는다.
 const FROZEN = [/^docs\/releases\//, /^apps\/mobile\/docs\/releases\//];
-const REMARK_CLI = resolve(repoRoot, 'node_modules/remark-cli/cli.js');
+const REMARK_CLI = resolve(repositoryRoot, 'node_modules/remark-cli/cli.js');
 
 const PATH_PREFIXES = [
   'apps/',
@@ -42,11 +41,17 @@ const CODE_EXTENSIONS = ['', '.ts', '.tsx', '.js'];
 const URL_SCHEME = /^[a-z][a-z0-9+.-]*:/i;
 
 export function documentsOf(files) {
-  return files.filter((file) => file.endsWith('.md') && !EXCLUDED.some((r) => r.test(file)));
+  return files.filter(
+    (file) => file.endsWith('.md') && !EXCLUDED.some((pattern) => pattern.test(file)),
+  );
 }
 
 function isFrozen(doc) {
-  return FROZEN.some((r) => r.test(doc));
+  return FROZEN.some((pattern) => pattern.test(doc));
+}
+
+function unfrozenDocumentsOf(files) {
+  return documentsOf(files).filter((doc) => !isFrozen(doc));
 }
 
 export function countLines(text) {
@@ -291,23 +296,18 @@ export function checkDocs({ files, read, isIgnored = () => false, config }) {
     if (text == null) {
       continue;
     }
-    const frozen = isFrozen(doc);
-    const lines = stripFences(text);
-    lines.forEach((line, index) => {
-      if (frozen) {
-        return;
-      }
-      for (const code of extractCodeSpans(line)) {
-        if (!isPathCandidate(code) || pathExists(tree, doc, code)) {
-          continue;
+    if (!isFrozen(doc)) {
+      for (const [index, line] of stripFences(text).entries()) {
+        for (const code of extractCodeSpans(line)) {
+          if (!isPathCandidate(code) || pathExists(tree, doc, code)) {
+            continue;
+          }
+          if (isIgnored(pathCandidates(doc, code))) {
+            continue;
+          }
+          report(doc, index + 1, 'path', `없는 경로: \`${code}\``, code);
         }
-        if (isIgnored(pathCandidates(doc, code))) {
-          continue;
-        }
-        report(doc, index + 1, 'path', `없는 경로: \`${code}\``, code);
       }
-    });
-    if (!frozen) {
       const limit = lineLimitOf(doc, config);
       const count = countLines(text);
       if (count > limit) {
@@ -320,7 +320,7 @@ export function checkDocs({ files, read, isIgnored = () => false, config }) {
   checkSkillLinks(docs, tree, report);
   checkUiDocs(tree, report);
 
-  config.allow.forEach((entry, index) => {
+  for (const [index, entry] of config.allow.entries()) {
     if ((entry.reason ?? '').trim() === '') {
       failures.push({
         doc: entry.path,
@@ -338,7 +338,7 @@ export function checkDocs({ files, read, isIgnored = () => false, config }) {
         message: `더 걸리지 않는 허용 항목(${what})을 지운다`,
       });
     }
-  });
+  }
   return { docs: docs.length, failures };
 }
 
@@ -358,14 +358,8 @@ export function findMissingIdents({ files, read }) {
     }
   }
   const missing = new Map();
-  const docs = files.filter(
-    (file) =>
-      file.endsWith('.md') &&
-      !EXCLUDED.some((r) => r.test(file)) &&
-      !FROZEN.some((r) => r.test(file)),
-  );
-  for (const doc of docs) {
-    stripFences(read(doc) ?? '').forEach((line, index) => {
+  for (const doc of unfrozenDocumentsOf(files)) {
+    for (const [index, line] of stripFences(read(doc) ?? '').entries()) {
       for (const code of extractCodeSpans(line)) {
         const name = /^([A-Za-z_$][\w$]*)(\(\))?$/.exec(code)?.[1];
         if (name == null || !IDENT_SHAPE.test(name) || PLACEHOLDER_IDENT.test(name)) {
@@ -376,7 +370,7 @@ export function findMissingIdents({ files, read }) {
         }
         missing.set(name, [...(missing.get(name) ?? []), `${doc}:${index + 1}`]);
       }
-    });
+    }
   }
   return missing;
 }
@@ -386,13 +380,13 @@ function trackedFiles() {
     'git',
     ['ls-files', '--cached', '--others', '--exclude-standard', '-z'],
     {
-      cwd: repoRoot,
+      cwd: repositoryRoot,
       encoding: 'utf8',
       maxBuffer: 64 * 1024 * 1024,
     },
   );
   return [...new Set(output.split('\0').filter((file) => file !== ''))].filter((file) =>
-    existsSync(resolve(repoRoot, file)),
+    existsSync(resolve(repositoryRoot, file)),
   );
 }
 
@@ -400,7 +394,7 @@ function trackedFiles() {
 function gitIgnored(paths) {
   try {
     execFileSync('git', ['check-ignore', '--no-index', ...paths], {
-      cwd: repoRoot,
+      cwd: repositoryRoot,
       stdio: 'ignore',
     });
     return true;
@@ -409,9 +403,9 @@ function gitIgnored(paths) {
   }
 }
 
-function readRepoFile(path) {
+function readRepositoryFile(path) {
   try {
-    return readFileSync(resolve(repoRoot, path), 'utf8');
+    return readFileSync(resolve(repositoryRoot, path), 'utf8');
   } catch {
     return null;
   }
@@ -433,7 +427,7 @@ function validateLinks(docs) {
         'remark-validate-links',
         ...docs,
       ],
-      { cwd: repoRoot, stdio: ['ignore', 'inherit', 'inherit'] },
+      { cwd: repositoryRoot, stdio: ['ignore', 'inherit', 'inherit'] },
     );
     return true;
   } catch {
@@ -443,11 +437,11 @@ function validateLinks(docs) {
 
 function main() {
   const config = JSON.parse(
-    readFileSync(resolve(repoRoot, 'scripts/docs/docs-check.config.json'), 'utf8'),
+    readFileSync(resolve(repositoryRoot, 'scripts/docs/docs-check.config.json'), 'utf8'),
   );
   const files = trackedFiles();
   if (process.argv.includes('--idents')) {
-    const missing = findMissingIdents({ files, read: readRepoFile });
+    const missing = findMissingIdents({ files, read: readRepositoryFile });
     for (const [name, places] of [...missing].sort()) {
       process.stdout.write(
         `${name}\t${places.slice(0, 3).join(', ')}${places.length > 3 ? ` (+${places.length - 3})` : ''}\n`,
@@ -458,14 +452,14 @@ function main() {
   }
   const { docs, failures } = checkDocs({
     files,
-    read: readRepoFile,
+    read: readRepositoryFile,
     isIgnored: gitIgnored,
     config,
   });
   for (const failure of failures) {
     process.stderr.write(`${failure.doc}:${failure.line} ${failure.check} ${failure.message}\n`);
   }
-  const linksValid = validateLinks(documentsOf(files).filter((doc) => !isFrozen(doc)));
+  const linksValid = validateLinks(unfrozenDocumentsOf(files));
   process.stdout.write(
     `docs-check: 문서 ${docs}개, 실패 ${failures.length}개${linksValid ? '' : ', 링크 실패(위 remark 출력)'}\n`,
   );
@@ -474,6 +468,6 @@ function main() {
   }
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (import.meta.main) {
   main();
 }
