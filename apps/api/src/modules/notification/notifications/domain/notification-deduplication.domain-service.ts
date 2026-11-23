@@ -1,3 +1,5 @@
+import { match } from "ts-pattern";
+
 import type { NotificationType } from "../../shared/domain/notification-type.constants.js";
 
 /**
@@ -66,18 +68,18 @@ export function buildDeduplicationContextFields(
 ): DeduplicationContextFields {
   const fields: DeduplicationContextFields = {};
   for (const key of strategy.keys) {
-    switch (key) {
-      case "friendId":
+    match(key)
+      .with("friendId", () => {
         if (data.friendId != null) {
           fields.friendId = data.friendId;
         }
-        break;
-      case "todoId":
+      })
+      .with("todoId", () => {
         if (data.todoId != null) {
           fields.todoId = data.todoId;
         }
-        break;
-    }
+      })
+      .exhaustive();
   }
   return fields;
 }

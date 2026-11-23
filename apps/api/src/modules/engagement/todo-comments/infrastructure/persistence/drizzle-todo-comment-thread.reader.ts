@@ -3,6 +3,7 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, min, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
+import { match } from "ts-pattern";
 
 import { userDisplayProfiles } from "#api/modules/identity/users/identity-users-queries.public";
 import { todoOwners } from "#api/modules/planning/todos/planning-todos-queries.public";
@@ -119,23 +120,21 @@ function selectedThreadsOf(
       .orderBy(...reverseOrder)
       .limit(params.size + 1);
   const anchorRow = () => database.select(columnsOf(anchor)).from(anchor);
-  return database.$with("selected").as(() => {
-    switch (params.mode) {
-      case "INITIAL":
-        return database
+  return database.$with("selected").as(() =>
+    match(params.mode)
+      .with("INITIAL", () =>
+        database
           .select(columnsOf(candidateComment))
           .from(candidateComment)
           .where(visibleThread)
           .orderBy(...displayOrder)
-          .limit(params.size + 1);
-      case "AFTER":
-        return after().unionAll(anchorRow());
-      case "BEFORE":
-        return before().unionAll(anchorRow());
-      case "ANCHOR":
-        return before().unionAll(anchorRow()).unionAll(after());
-    }
-  });
+          .limit(params.size + 1),
+      )
+      .with("AFTER", () => after().unionAll(anchorRow()))
+      .with("BEFORE", () => before().unionAll(anchorRow()))
+      .with("ANCHOR", () => before().unionAll(anchorRow()).unionAll(after()))
+      .exhaustive(),
+  );
 }
 
 /** 할 일 주인의 답글을 먼저, 없으면 가장 먼저 쓴 답글을 대표로 고른다 */

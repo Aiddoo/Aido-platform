@@ -1,4 +1,5 @@
 import { isSemanticVersionAtLeast } from "@aido/api/vocabulary";
+import { match } from "ts-pattern";
 
 export const resolveProfileImage = (
   profileImage: string | null,
@@ -7,14 +8,9 @@ export const resolveProfileImage = (
   if (isSemanticVersionAtLeast(appVersion, "1.10.1")) {
     return profileImage;
   }
-  switch (profileImage) {
-    case "russian_blue":
-      return "scottish_fold";
-    case "cream_cat":
-      return "white_cat";
-    case "tuxedo_cat":
-      return "black_cat";
-    default:
-      return profileImage;
-  }
+  return match(profileImage)
+    .with("russian_blue", () => "scottish_fold")
+    .with("cream_cat", () => "white_cat")
+    .with("tuxedo_cat", () => "black_cat")
+    .otherwise(() => profileImage);
 };

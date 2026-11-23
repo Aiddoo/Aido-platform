@@ -10,6 +10,7 @@ import {
 } from "@nestjs/common";
 import { HttpAdapterHost } from "@nestjs/core";
 import { PinoLogger } from "nestjs-pino";
+import { match } from "ts-pattern";
 
 import { appConfig, type AppSettings } from "#api/platform/config/app.config";
 import {
@@ -238,11 +239,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         this.#exposeErrorDetails ? { reason: "Record to update/delete not found" } : undefined,
       );
     }
-    const kind = classifyDatabaseError(error);
-    switch (kind) {
-      case "unique-violation":
-        return this.#mapUniqueConstraintError(error);
-      case "foreign-key-violation":
+    return match(classifyDatabaseError(error))
+      .with("unique-violation", () => this.#mapUniqueConstraintError(error))
+      .with("foreign-key-violation", () => {
         this.#logger.warn({
           event: PlatformLogEvent.DATABASE_FOREIGN_KEY_VIOLATED,
           constraint: databaseConstraint(error) ?? "unknown",
@@ -250,26 +249,31 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         return invalidParameter(
           this.#exposeErrorDetails ? { reason: "Referenced record does not exist" } : undefined,
         );
-      case "connection":
-      case "pool-timeout":
-      case "query-timeout":
-      case "statement-timeout":
-      case "lock-timeout":
-        this.#logger.warn({
-          event: PlatformLogEvent.DATABASE_TRANSIENT_FAILURE,
-          kind,
-          sqlState: databaseSqlState(error) ?? "none",
-        });
-        return transientDatabaseFailure(this.#exposeErrorDetails ? { kind } : undefined);
-      default: {
+      })
+      .with(
+        "connection",
+        "pool-timeout",
+        "query-timeout",
+        "statement-timeout",
+        "lock-timeout",
+        (kind) => {
+          this.#logger.warn({
+            event: PlatformLogEvent.DATABASE_TRANSIENT_FAILURE,
+            kind,
+            sqlState: databaseSqlState(error) ?? "none",
+          });
+          return transientDatabaseFailure(this.#exposeErrorDetails ? { kind } : undefined);
+        },
+      )
+      .with("check-violation", "serialization-failure", "deadlock", "unknown", () => {
         const sqlState = databaseSqlState(error);
         this.#logger.warn({
           event: PlatformLogEvent.DATABASE_ERROR_UNHANDLED,
           sqlState: sqlState ?? "unknown",
         });
         return internalServerError(this.#exposeErrorDetails ? { sqlState } : undefined);
-      }
-    }
+      })
+      .exhaustive();
   }
 
   /** 저장소가 번역하지 않은 unique 충돌은 SYS_0004 + 경보다. 저장소가 자기 제약을 번역한다. */

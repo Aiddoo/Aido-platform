@@ -1,4 +1,5 @@
 import type { TodoCommentSort } from "@aido/api/vocabulary";
+import { match } from "ts-pattern";
 
 import type { TodoCommentLikeReaderPort } from "#api/modules/engagement/todo-comment-likes/engagement-todo-comment-likes.public";
 import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
@@ -116,11 +117,11 @@ export class ListTodoCommentThreadsUseCase {
 
   async #resolvePage(query: ListTodoCommentThreadsQuery, todoId: TodoId): Promise<ResolvedPage> {
     const base = { todoId, sort: query.sort, size: query.size };
-    switch (query.page.kind) {
-      case "FIRST":
-        return { params: { ...base, mode: "INITIAL" }, anchor: null };
-      case "CURSOR": {
-        const cursor = this.#dependencies.cursorCodec.decodeThreads(query.page.cursor, query.sort);
+    return match(query.page)
+      .returnType<ResolvedPage | Promise<ResolvedPage>>()
+      .with({ kind: "FIRST" }, () => ({ params: { ...base, mode: "INITIAL" }, anchor: null }))
+      .with({ kind: "CURSOR" }, (page) => {
+        const cursor = this.#dependencies.cursorCodec.decodeThreads(page.cursor, query.sort);
         if (!cursor.todoId.equals(todoId)) {
           throw invalidCommentRequest();
         }
@@ -128,17 +129,17 @@ export class ListTodoCommentThreadsUseCase {
           params: {
             ...base,
             // 방향이 없는 cursor는 1.14.0 이하 앱의 다음 페이지 cursor다
-            mode: query.page.direction ?? cursor.direction ?? "AFTER",
+            mode: page.direction ?? cursor.direction ?? "AFTER",
             anchorCommentId: cursor.rootId,
             anchorPosition: cursor.position,
           },
           anchor: null,
         };
-      }
-      case "ANCHOR": {
+      })
+      .with({ kind: "ANCHOR" }, async (page) => {
         const comment = await this.#dependencies.reader.findComment(
           todoId,
-          TodoCommentId.reconstitute(query.page.commentId),
+          TodoCommentId.reconstitute(page.commentId),
         );
         if (comment == null || comment.deletedAt != null) {
           return { params: { ...base, mode: "INITIAL" }, anchor: null };
@@ -155,7 +156,7 @@ export class ListTodoCommentThreadsUseCase {
             replyId: comment.threadCommentId == null ? null : comment.id,
           },
         };
-      }
-    }
+      })
+      .exhaustive();
   }
 }

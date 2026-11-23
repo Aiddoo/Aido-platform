@@ -1,4 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
+import { match } from "ts-pattern";
 
 import { ApplicationException } from "#api/shared/application/application.exception";
 
@@ -52,14 +53,10 @@ export function sessionRejection(
   validity: SessionValidity | "missing",
   sessionId?: string,
 ): ApplicationException | null {
-  switch (validity) {
-    case "valid":
-      return null;
-    case "missing":
-      return sessionNotFound(sessionId);
-    case "revoked":
-      return sessionRevoked(sessionId);
-    case "expired":
-      return sessionExpired(sessionId);
-  }
+  return match(validity)
+    .with("valid", () => null)
+    .with("missing", () => sessionNotFound(sessionId))
+    .with("revoked", () => sessionRevoked(sessionId))
+    .with("expired", () => sessionExpired(sessionId))
+    .exhaustive();
 }
