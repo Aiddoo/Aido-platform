@@ -204,14 +204,14 @@ catalogs:
       specifier: 1.16.22
       version: 1.16.22
     '@tanstack/query-async-storage-persister':
-      specifier: 5.107.1
-      version: 5.107.1
+      specifier: 5.108.3
+      version: 5.108.3
     '@tanstack/react-query':
-      specifier: 5.107.1
-      version: 5.107.1
+      specifier: 5.108.3
+      version: 5.108.3
     '@tanstack/react-query-persist-client':
-      specifier: 5.107.1
-      version: 5.107.1
+      specifier: 5.108.3
+      version: 5.108.3
     '@testcontainers/postgresql':
       specifier: 12.2.2
       version: 12.2.2
@@ -548,8 +548,8 @@ catalogs:
       specifier: 0.13.0
       version: 0.13.0
     uniwind:
-      specifier: 1.13.2
-      version: 1.13.2
+      specifier: 1.14.0
+      version: 1.14.0
   nest12:
     '@nestjs-cls/transactional':
       specifier: 4.0.2
@@ -913,8 +913,8 @@ importers:
         specifier: 5.2.14
         version: 5.2.14(patch_hash=8a6968adb084d57fcbf34b7e67970ca7f0a01efd213978feaf0f2972d4af0080)(50dd6323713420dc6cb45b2c91b9913e)
       '@hookform/resolvers':
-        specifier: 7.0.6
-        version: 7.0.6(@standard-schema/spec@1.1.0)(ajv-formats@3.0.1(ajv@8.20.0))(ajv@8.20.0)(arktype@2.2.7)(class-transformer@0.5.1)(class-validator@0.14.3)(effect@4.0.3)(react-hook-form@7.92.0(@types/react@19.3.0)(react@19.3.0))(superstruct@2.0.2)(typanion@3.14.0)(valibot@1.5.0(typescript@6.0.3))(zod@4.6.7)
+        specifier: 7.0.8
+        version: 7.0.8(@standard-schema/spec@1.1.0)(ajv-formats@3.0.1(ajv@8.20.0))(ajv@8.20.0)(arktype@2.2.7)(class-transformer@0.5.1)(class-validator@0.14.3)(effect@4.0.3)(react-hook-form@7.92.0(@types/react@19.3.0)(react@19.3.0))(superstruct@2.0.2)(typanion@3.14.0)(valibot@1.5.0(typescript@6.0.3))(zod@4.6.7)
       '@react-native-community/datetimepicker':
         specifier: catalog:expo58
         version: 9.2.1(expo@58.0.25)(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
@@ -941,13 +941,13 @@ importers:
         version: 2.14.0(3b0d24e1f879855e4286f09f19860dff)
       '@tanstack/query-async-storage-persister':
         specifier: 'catalog:'
-        version: 5.107.1
+        version: 5.108.3
       '@tanstack/react-query':
         specifier: 'catalog:'
-        version: 5.107.1(@types/react@19.3.0)(react@19.3.0)
+        version: 5.108.3(@types/react@19.3.0)(react@19.3.0)
       '@tanstack/react-query-persist-client':
         specifier: 'catalog:'
-        version: 5.107.1(@tanstack/react-query@5.107.1(@types/react@19.3.0)(react@19.3.0))(@types/react@19.3.0)(react@19.3.0)
+        version: 5.108.3(@tanstack/react-query@5.108.3(@types/react@19.3.0)(react@19.3.0))(@types/react@19.3.0)(react@19.3.0)
       clsx:
         specifier: 2.1.1
         version: 2.1.1
@@ -1070,10 +1070,10 @@ importers:
         version: 58.0.28(patch_hash=32e956b6794cf56e6ba7e00266bd5bd774945710d43e3c9a1e760bec00506d2d)(@babel/core@7.29.7(supports-color@8.1.1))(expo@58.0.25)(react-dom@19.3.0(react@19.3.0))(react-native-worklets@0.13.0(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1))(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       heroui-native:
         specifier: catalog:expo58
-        version: 1.0.11(aa16f047e19e06d07f9746bd084c33fc)
+        version: 1.0.11(ece6b25ba6c67680358cce425ad62303)
       i18next:
-        specifier: 27.1.1
-        version: 27.1.1(typescript@6.0.3)
+        specifier: 27.2.4
+        version: 27.2.4(typescript@6.0.3)
       intl-pluralrules:
         specifier: 2.0.1
         version: 2.0.1
@@ -1090,8 +1090,8 @@ importers:
         specifier: 7.92.0
         version: 7.92.0(@types/react@19.3.0)(react@19.3.0)
       react-i18next:
-        specifier: 18.0.1
-        version: 18.0.1(@types/react@19.3.0)(i18next@27.1.1(typescript@6.0.3))(react@19.3.0)(typescript@6.0.3)
+        specifier: 18.0.3
+        version: 18.0.3(@types/react@19.3.0)(i18next@27.2.4(typescript@6.0.3))(react@19.3.0)(typescript@6.0.3)
       react-native:
         specifier: catalog:expo58
         version: 0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)
@@ -1138,11 +1138,11 @@ importers:
         specifier: catalog:expo58
         version: 0.13.0(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)
       tailwind-merge:
-        specifier: 3.7.0
-        version: 3.7.0
+        specifier: 3.7.1
+        version: 3.7.1
       tailwind-variants:
         specifier: 3.3.1
-        version: 3.3.1(tailwind-merge@3.7.0)(tailwindcss@4.3.5)
+        version: 3.3.1(tailwind-merge@3.7.1)(tailwindcss@4.3.5)
       tailwindcss:
         specifier: 4.3.5
         version: 4.3.5
@@ -1151,7 +1151,7 @@ importers:
         version: 5.9.2
       uniwind:
         specifier: catalog:expo58
-        version: 1.13.2(@expo/metro-config@58.0.22(expo@58.0.25)(supports-color@8.1.1)(typescript@6.0.3))(metro-cache@0.87.1(supports-color@8.1.1))(metro-transform-worker@0.87.1(supports-color@8.1.1))(metro@0.87.1(supports-color@8.1.1))(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(tailwindcss@4.3.5)
+        version: 1.14.0(@expo/metro-config@58.0.22(expo@58.0.25)(supports-color@8.1.1)(typescript@6.0.3))(metro-cache@0.87.1(supports-color@8.1.1))(metro-transform-worker@0.87.1(supports-color@8.1.1))(metro@0.87.1(supports-color@8.1.1))(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(tailwindcss@4.3.5)
       zod:
         specifier: 'catalog:'
         version: 4.6.7
@@ -2644,15 +2644,15 @@ packages:
     engines: {node: '>=6'}
     hasBin: true
 
-  '@hookform/resolvers@7.0.6':
-    resolution: {integrity: sha512-LSTMwW4tmRWtM7pS5HkSqahi71USbhrmjc9pNHNa7UyYTbKIK/e0G1EAw6xsEnp9GahTjXhunxRJp0Bd8E6NZA==}
+  '@hookform/resolvers@7.0.8':
+    resolution: {integrity: sha512-44+R4PUy3MWIBJR4sOjW0bZaz+H81k26urkTYeXAvEa8h45ueHrvQpZR/96iyLOobL6/yO0BJTaRPwwyDlL1/A==}
     peerDependencies:
       '@standard-schema/spec': ^1.0.0
       '@vinejs/vine': ^2.0.0 || ^3.0.0 || ^4.0.0
       ajv: ^8.12.0
       ajv-errors: ^3.0.0
       ajv-formats: ^2.1.1 || ^3.0.0
-      arktype: ^2.0.0
+      arktype: ^2.0.0 || ^3.0.0
       ata-validator: ^1.23.0
       class-transformer: '>=0.4.0'
       class-validator: '>=0.12.0'
@@ -5767,27 +5767,27 @@ packages:
     resolution: {integrity: sha512-krXjAikiaFSPaK/FkAQT5UTx3VormQaiZ5hBFlJZ9UFQGB/rwg1MZIhHAG9smMQRTdyJxP6Qt5MwMtdyU5FWrA==}
     engines: {node: '>= 20'}
 
-  '@tanstack/query-async-storage-persister@5.107.1':
-    resolution: {integrity: sha512-yBUPWoe3mclko1NcjIXXeXyoO3oLwzgQaCppxK5KS73gTDA+bJtRJ1hIRHc5tKwMdD0ZDi9TzWqOCWnLsbrNDQ==}
+  '@tanstack/query-async-storage-persister@5.108.3':
+    resolution: {integrity: sha512-33wC1rLUPxbCSxSmSG+kwtvbSGMxuL9bGyi7Ps+0EVdG1CjJo5EP6WmADL4GvSrqmB6tpVVlCJ3eJgRcycnzqA==}
 
-  '@tanstack/query-core@5.107.1':
-    resolution: {integrity: sha512-PSyAik11oQBEVOiVy5hjZWHmoUqOXqK1WYy4v55mcxozEfKaQgpUMsgnXhWjuESzSht8JfzqMS1m6M/9CpNgvg==}
+  '@tanstack/query-core@5.108.3':
+    resolution: {integrity: sha512-Lh8fyLDlHOdZXfUB+G1M5bKxfQ1Y0/mfydFP+pMjFKweAU4OUiC4MyIBTcW7Ck+Iwt6K3/pzvADrJi2Dc1lwuQ==}
 
-  '@tanstack/query-persist-client-core@5.107.1':
-    resolution: {integrity: sha512-/qDxEcKh44xViKKFlf8MUoeITritIn58XcT3YkCOQ0Ovj4Wa2EgZtqvHSlw+tnQQGhtq9+gLVZSeUtSfkIL9Kg==}
+  '@tanstack/query-persist-client-core@5.108.3':
+    resolution: {integrity: sha512-HuO9hKZ9FnlWg35/UYIhDh8vFKvzMOlvUfaw489YhU63kExcJecjMYy1q711Cn9NAW9BMEgWAtcDTFdDxmy2Uw==}
 
-  '@tanstack/react-query-persist-client@5.107.1':
-    resolution: {integrity: sha512-kZMaDZ9PU4FXi/3Ci25OC2Dj7gEh5XWMmxw0aiXe8KqFmZ5gHOOWZn/vl8U8k0I+1uWARzjBZDzu2jRHjk1+SQ==}
+  '@tanstack/react-query-persist-client@5.108.3':
+    resolution: {integrity: sha512-QzbeaadKAbAa6LE9FFZV4YiTzwvokqdXW92uzN2fqI0TlpdigOtk9fa/4sXeTIlsUxhhxuBNn4Cx1oRstfi76w==}
     peerDependencies:
-      '@tanstack/react-query': ^5.107.1
+      '@tanstack/react-query': ^5.108.3
       '@types/react': ^18 || ^19
       react: ^18 || ^19
     peerDependenciesMeta:
       '@types/react':
         optional: true
 
-  '@tanstack/react-query@5.107.1':
-    resolution: {integrity: sha512-udCOOLp3ZAheUrIHLCe+ZZge6nr2ZUrGMSWcCuXsjY1Bf2JeeE09oxst97PILiCY6N8xo/7bIo3Hvz13zh06FA==}
+  '@tanstack/react-query@5.108.3':
+    resolution: {integrity: sha512-dd9eDuqr6hvoTycO+wwuIgdA10S9gRA5EYsJCByhiATp/Xy0D51XgJUCRYJONgKs3URKApbBfNl8mgAe5wI0+Q==}
     peerDependencies:
       '@types/react': ^18 || ^19
       react: ^18 || ^19
@@ -7598,10 +7598,6 @@ packages:
     resolution: {integrity: sha512-z34mGpLoY/82ZbkX1LqGMIaf3wjVMPL6gVC681QDqnmzJ26synI8qAE32P+a7UazmpJZ8UGrFIeAavgRfXzYrg==}
     engines: {node: '>=10.2.0'}
 
-  enhanced-resolve@5.26.0:
-    resolution: {integrity: sha512-9vhedylFonb2YGogzUKX6+Ja72gOJbN1QHAqdrvqLwhdl/QWbKopzoUC9EbQNVsAns/bx/4uyqalrQAoy1IByw==}
-    engines: {node: '>=10.13.0'}
-
   enhanced-resolve@5.27.0:
     resolution: {integrity: sha512-Do6BB2xzlcc/odFg+XEYyneAx4T/WfywO71yw9ePS2tVfRsf7JVR4mUeELadIeHzixkzbG5DpluiEFPi2WGfYQ==}
     engines: {node: '>=10.13.0'}
@@ -8624,8 +8620,8 @@ packages:
   hyphenate-style-name@1.1.0:
     resolution: {integrity: sha512-WDC/ui2VVRrz3jOVi+XtjqkDjiVjTtFaAGiW37k6b+ohyQ5wYDOGkvCZa8+H0nx3gyvv0+BST9xuOgIyGQ00gw==}
 
-  i18next@27.1.1:
-    resolution: {integrity: sha512-Qq3aJizS3RXQ30crhx9BKQLrHoa6GKpgrOJjVZ9vgj3EBxAddrmVfDNUrAMxSUimw5Jc+ld4SSZUAzf1q4nGyQ==}
+  i18next@27.2.4:
+    resolution: {integrity: sha512-Twhl6dx3IznvyQEv7rrYH2xBMAmOIjNuj/lPicevTa0d/fxg4Km315MlAI07SOWQcw2pypA4qf39RoMJgJ8WEQ==}
     engines: {node: '>=22'}
     peerDependencies:
       typescript: ^5 || ^6 || ^7
@@ -10627,8 +10623,8 @@ packages:
       '@types/react':
         optional: true
 
-  react-i18next@18.0.1:
-    resolution: {integrity: sha512-kPWXI0E/lrPj3+/umcKNzYZVnWmEedLiamMzDIHfbs+5ANf6yzvlZsjKou8f7kaGkfMMDLIZBejV+4aSN1CyBw==}
+  react-i18next@18.0.3:
+    resolution: {integrity: sha512-S84rtVuaKuiRtoCOspbGEaDlFjka+KvK/A5YCOr4LQ41XF3iJOrJ5rqQTD/jJHFVUf6X1i4ZMN5PGGgpz8NN6g==}
     engines: {node: '>=22'}
     peerDependencies:
       '@types/react': '*'
@@ -11507,8 +11503,8 @@ packages:
     resolution: {integrity: sha512-yEFYrVhod+hdNyx7g5Bnkkb0G6si8HJurOoOEgC8B/O0uXLHlaey/65KRv6cuWBNhBgHKAROVpc7QyYqE5gFng==}
     engines: {node: '>=20'}
 
-  tailwind-merge@3.7.0:
-    resolution: {integrity: sha512-XPPUyAc+cvspz3lHTcR/QgPfW2A0lv/xQNIjX3HGhLR+Nq2lHaLq5MtTesHn8GUr3W3DguT2KT5x3NVgRtYwmA==}
+  tailwind-merge@3.7.1:
+    resolution: {integrity: sha512-v7y4BV4FUlO8exj/4M5UXKeoowDiuugVUg3tkMNIyOUCOHy5xp8+5aWQeXCtZ2491sUV1YPsVeM9EveZ6/xuZQ==}
 
   tailwind-variants@3.3.1:
     resolution: {integrity: sha512-4pAvwUtM4HKBiRZftncAbpn6V9Hhwoa5Fl7O2u5zbp7Z5Cvu+/o/6+176WY3WCEES209543quG8zFIcXCsc5Jw==}
@@ -11911,8 +11907,8 @@ packages:
     resolution: {integrity: sha512-gptHNQghINnc/vTGIk0SOFGFNXw7JVrlRUtConJRlvaw6DuX0wO5Jeko9sWrMBhh+PsYAZ7oXAiOnf/UKogyiw==}
     engines: {node: '>= 10.0.0'}
 
-  uniwind@1.13.2:
-    resolution: {integrity: sha512-9huLBRBtZkVbKG8UZoJEo6ubX/R7oVj8zTORdq8c+lfOpjWlEjAS04FaqShuaecgEfO+oqSraxQ+mWgtsu6BqQ==}
+  uniwind@1.14.0:
+    resolution: {integrity: sha512-/BPPRlsV3Nvs9rQs2WCdzU28xmL9fzjWN+M3zsYviLcNYAtB00GSx59sN2TlTonWSU8I+H3xf2txrIT4OaGxCA==}
     hasBin: true
     peerDependencies:
       '@expo/metro-config': '*'
@@ -14161,7 +14157,7 @@ snapshots:
       protobufjs: 7.6.6
       yargs: 17.7.3
 
-  '@hookform/resolvers@7.0.6(@standard-schema/spec@1.1.0)(ajv-formats@3.0.1(ajv@8.20.0))(ajv@8.20.0)(arktype@2.2.7)(class-transformer@0.5.1)(class-validator@0.14.3)(effect@4.0.3)(react-hook-form@7.92.0(@types/react@19.3.0)(react@19.3.0))(superstruct@2.0.2)(typanion@3.14.0)(valibot@1.5.0(typescript@6.0.3))(zod@4.6.7)':
+  '@hookform/resolvers@7.0.8(@standard-schema/spec@1.1.0)(ajv-formats@3.0.1(ajv@8.20.0))(ajv@8.20.0)(arktype@2.2.7)(class-transformer@0.5.1)(class-validator@0.14.3)(effect@4.0.3)(react-hook-form@7.92.0(@types/react@19.3.0)(react@19.3.0))(superstruct@2.0.2)(typanion@3.14.0)(valibot@1.5.0(typescript@6.0.3))(zod@4.6.7)':
     dependencies:
       '@standard-schema/utils': 0.3.0
       react-hook-form: 7.92.0(@types/react@19.3.0)(react@19.3.0)
@@ -16630,7 +16626,7 @@ snapshots:
   '@tailwindcss/node@4.3.3':
     dependencies:
       '@jridgewell/remapping': 2.3.5
-      enhanced-resolve: 5.26.0
+      enhanced-resolve: 5.27.0
       jiti: 2.7.0
       lightningcss: 1.32.0
       magic-string: 0.30.21
@@ -16688,28 +16684,28 @@ snapshots:
       '@tailwindcss/oxide-win32-arm64-msvc': 4.3.3
       '@tailwindcss/oxide-win32-x64-msvc': 4.3.3
 
-  '@tanstack/query-async-storage-persister@5.107.1':
+  '@tanstack/query-async-storage-persister@5.108.3':
     dependencies:
-      '@tanstack/query-core': 5.107.1
-      '@tanstack/query-persist-client-core': 5.107.1
+      '@tanstack/query-core': 5.108.3
+      '@tanstack/query-persist-client-core': 5.108.3
 
-  '@tanstack/query-core@5.107.1': {}
+  '@tanstack/query-core@5.108.3': {}
 
-  '@tanstack/query-persist-client-core@5.107.1':
+  '@tanstack/query-persist-client-core@5.108.3':
     dependencies:
-      '@tanstack/query-core': 5.107.1
+      '@tanstack/query-core': 5.108.3
 
-  '@tanstack/react-query-persist-client@5.107.1(@tanstack/react-query@5.107.1(@types/react@19.3.0)(react@19.3.0))(@types/react@19.3.0)(react@19.3.0)':
+  '@tanstack/react-query-persist-client@5.108.3(@tanstack/react-query@5.108.3(@types/react@19.3.0)(react@19.3.0))(@types/react@19.3.0)(react@19.3.0)':
     dependencies:
-      '@tanstack/query-persist-client-core': 5.107.1
-      '@tanstack/react-query': 5.107.1(@types/react@19.3.0)(react@19.3.0)
+      '@tanstack/query-persist-client-core': 5.108.3
+      '@tanstack/react-query': 5.108.3(@types/react@19.3.0)(react@19.3.0)
       react: 19.3.0
     optionalDependencies:
       '@types/react': 19.3.0
 
-  '@tanstack/react-query@5.107.1(@types/react@19.3.0)(react@19.3.0)':
+  '@tanstack/react-query@5.108.3(@types/react@19.3.0)(react@19.3.0)':
     dependencies:
-      '@tanstack/query-core': 5.107.1
+      '@tanstack/query-core': 5.108.3
       react: 19.3.0
     optionalDependencies:
       '@types/react': 19.3.0
@@ -18534,11 +18530,6 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  enhanced-resolve@5.26.0:
-    dependencies:
-      graceful-fs: 4.2.11
-      tapable: 2.3.3
-
   enhanced-resolve@5.27.0:
     dependencies:
       graceful-fs: 4.2.11
@@ -19647,7 +19638,7 @@ snapshots:
     dependencies:
       hermes-estree: 0.36.1
 
-  heroui-native@1.0.11(aa16f047e19e06d07f9746bd084c33fc):
+  heroui-native@1.0.11(ece6b25ba6c67680358cce425ad62303):
     dependencies:
       react: 19.3.0
       react-native: 0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)
@@ -19656,8 +19647,8 @@ snapshots:
       react-native-safe-area-context: 5.11.1(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       react-native-svg: 15.16.0(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       react-native-worklets: 0.13.0(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)
-      tailwind-merge: 3.7.0
-      tailwind-variants: 3.3.1(tailwind-merge@3.7.0)(tailwindcss@4.3.5)
+      tailwind-merge: 3.7.1
+      tailwind-variants: 3.3.1(tailwind-merge@3.7.1)(tailwindcss@4.3.5)
     optionalDependencies:
       '@gorhom/bottom-sheet': 5.2.14(patch_hash=8a6968adb084d57fcbf34b7e67970ca7f0a01efd213978feaf0f2972d4af0080)(50dd6323713420dc6cb45b2c91b9913e)
       expo-blur: 58.0.6(expo@58.0.25)(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
@@ -19758,7 +19749,7 @@ snapshots:
   hyphenate-style-name@1.1.0:
     optional: true
 
-  i18next@27.1.1(typescript@6.0.3):
+  i18next@27.2.4(typescript@6.0.3):
     optionalDependencies:
       typescript: 6.0.3
 
@@ -22193,10 +22184,10 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.3.0
 
-  react-i18next@18.0.1(@types/react@19.3.0)(i18next@27.1.1(typescript@6.0.3))(react@19.3.0)(typescript@6.0.3):
+  react-i18next@18.0.3(@types/react@19.3.0)(i18next@27.2.4(typescript@6.0.3))(react@19.3.0)(typescript@6.0.3):
     dependencies:
       html-parse-stringify: 4.0.1
-      i18next: 27.1.1(typescript@6.0.3)
+      i18next: 27.2.4(typescript@6.0.3)
       react: 19.3.0
     optionalDependencies:
       '@types/react': 19.3.0
@@ -23240,11 +23231,11 @@ snapshots:
 
   tagged-tag@1.0.0: {}
 
-  tailwind-merge@3.7.0: {}
+  tailwind-merge@3.7.1: {}
 
-  tailwind-variants@3.3.1(tailwind-merge@3.7.0)(tailwindcss@4.3.5):
+  tailwind-variants@3.3.1(tailwind-merge@3.7.1)(tailwindcss@4.3.5):
     optionalDependencies:
-      tailwind-merge: 3.7.0
+      tailwind-merge: 3.7.1
       tailwindcss: 4.3.5
 
   tailwindcss@4.3.3: {}
@@ -23682,7 +23673,7 @@ snapshots:
 
   universalify@2.0.1: {}
 
-  uniwind@1.13.2(@expo/metro-config@58.0.22(expo@58.0.25)(supports-color@8.1.1)(typescript@6.0.3))(metro-cache@0.87.1(supports-color@8.1.1))(metro-transform-worker@0.87.1(supports-color@8.1.1))(metro@0.87.1(supports-color@8.1.1))(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(tailwindcss@4.3.5):
+  uniwind@1.14.0(@expo/metro-config@58.0.22(expo@58.0.25)(supports-color@8.1.1)(typescript@6.0.3))(metro-cache@0.87.1(supports-color@8.1.1))(metro-transform-worker@0.87.1(supports-color@8.1.1))(metro@0.87.1(supports-color@8.1.1))(react-native@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(tailwindcss@4.3.5):
     dependencies:
       '@tailwindcss/node': 4.3.3
       '@tailwindcss/oxide': 4.3.3
