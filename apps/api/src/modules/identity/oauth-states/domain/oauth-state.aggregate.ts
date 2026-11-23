@@ -1,9 +1,14 @@
+import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
 import type { AccountProvider } from "../../linked-accounts/domain/linked-accounts.constants.js";
 import { isExpiredAt } from "../../shared/domain/expiry.domain-service.js";
 import { OAuthStateId } from "./oauth-state-id.vo.js";
-import type { OAUTH_STATE_VALIDITIES } from "./oauth-states.constants.js";
+import {
+  OAUTH_STATE_EXPIRY_MINUTES,
+  type OAUTH_STATE_VALIDITIES,
+  type OAuthMode,
+} from "./oauth-states.constants.js";
 
 export interface OAuthStatePrimitives {
   readonly id: number;
@@ -53,10 +58,44 @@ export interface OAuthLoginExchange {
 
 /** 웹 OAuth 흐름의 CSRF state와, 콜백 뒤 앱에 넘길 일회용 교환 결과 */
 export class OAuthState extends AggregateRoot<OAuthStateId, OAuthStateProps> {
+  // 웹 OAuth 시작이 만든다. 콜백이 교환 결과를 채우기 전까지 토큰·교환 칸은 비어 있다
+  static create(params: {
+    readonly id: OAuthStateId;
+    readonly state: string;
+    readonly provider: AccountProvider;
+    readonly redirectUri: string;
+    readonly mode: OAuthMode | null;
+    readonly initiatingUserId: UserId | null;
+    readonly now: Temporal.Instant;
+  }): OAuthState {
+    return new OAuthState(params.id, {
+      state: params.state,
+      provider: params.provider,
+      redirectUri: params.redirectUri,
+      mode: params.mode,
+      initiatingUserId: params.initiatingUserId?.value ?? null,
+      exchangeCode: null,
+      accessToken: null,
+      refreshToken: null,
+      userId: null,
+      userName: null,
+      profileImage: null,
+      accountRestored: null,
+      isNewUser: null,
+      expiresAt: params.now.add({ minutes: OAUTH_STATE_EXPIRY_MINUTES }),
+      exchangedAt: null,
+    });
+  }
+
   static reconstitute(primitives: OAuthStatePrimitives): OAuthState {
     const { id, ...props } = primitives;
-    return new OAuthState(OAuthStateId.reconstitute(id), { ...props });
+    const oauthState = new OAuthState(OAuthStateId.reconstitute(id), { ...props });
+    oauthState.#isPersisted = true;
+    return oauthState;
   }
+
+  // 저장소가 새 state를 넣을지, 읽은 state의 교환만 쓸지 가르는 기준이다
+  #isPersisted = false;
 
   get state(): string {
     return this.props.state;
@@ -92,6 +131,15 @@ export class OAuthState extends AggregateRoot<OAuthStateId, OAuthStateProps> {
 
   get exchangedAt(): Temporal.Instant | null {
     return this.props.exchangedAt;
+  }
+
+  isPersisted(): boolean {
+    return this.#isPersisted;
+  }
+
+  // 저장소가 넣은 뒤 부른다. 같은 객체를 다시 save하면 또 넣지 않고 교환만 쓴다
+  markPersisted(): void {
+    this.#isPersisted = true;
   }
 
   // 옛 교환 행은 값이 없어(null) 호출자가 기본값을 정한다

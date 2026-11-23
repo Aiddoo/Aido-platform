@@ -7,11 +7,8 @@ import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { unsupportedOAuthProvider } from "../../../linked-accounts/application/linked-accounts.errors.js";
 import type { OAuthIdentityProviderRegistryPort } from "../../../linked-accounts/application/ports/oauth-identity-provider.port.js";
 import { invalidCredentials } from "../../../users/application/users.errors.js";
-import {
-  DEFAULT_OAUTH_REDIRECT_URI,
-  OAUTH_STATE_EXPIRY_MINUTES,
-  type OAuthMode,
-} from "../../domain/oauth-states.constants.js";
+import { OAuthState } from "../../domain/oauth-state.aggregate.js";
+import { DEFAULT_OAUTH_REDIRECT_URI, type OAuthMode } from "../../domain/oauth-states.constants.js";
 import { OAuthStateLogEvent } from "../oauth-states.log-events.js";
 import type { OAuthRuntimeConfigPort } from "../ports/oauth-runtime-config.port.js";
 import type { OAuthStateRepositoryPort } from "../ports/oauth-state.repository.port.js";
@@ -26,7 +23,7 @@ export interface StartOAuthAuthorizationCommand {
 
 interface StartOAuthAuthorizationDependencies {
   readonly registry: Pick<OAuthIdentityProviderRegistryPort, "find">;
-  readonly oauthStateRepository: Pick<OAuthStateRepositoryPort, "create">;
+  readonly oauthStateRepository: Pick<OAuthStateRepositoryPort, "nextId" | "save">;
   readonly configService: Pick<OAuthRuntimeConfigPort, "allowsDevRedirects">;
   readonly clock: ClockPort;
   readonly logger: ApplicationLoggerPort;
@@ -50,15 +47,19 @@ export class StartOAuthAuthorizationUseCase {
       mode: input.mode,
       initiatingUserId:
         input.initiatingUserId == null ? undefined : UserId.reconstitute(input.initiatingUserId),
-      persistState: (provider, redirectUri, options) =>
-        this.#dependencies.oauthStateRepository.create({
+      persistState: async (provider, redirectUri, options) => {
+        const { oauthStateRepository, clock } = this.#dependencies;
+        const oauthState = OAuthState.create({
+          id: await oauthStateRepository.nextId(),
           state: input.state,
           provider,
           redirectUri,
-          mode: options.mode,
-          initiatingUserId: options.initiatingUserId,
-          expiresAt: this.#dependencies.clock.now().add({ minutes: OAUTH_STATE_EXPIRY_MINUTES }),
-        }),
+          mode: options.mode ?? null,
+          initiatingUserId: options.initiatingUserId ?? null,
+          now: clock.now(),
+        });
+        await oauthStateRepository.save(oauthState);
+      },
     });
     if (url == null || url === "") {
       throw invalidCredentials();

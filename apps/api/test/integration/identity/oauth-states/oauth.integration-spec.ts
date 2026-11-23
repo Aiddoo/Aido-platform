@@ -15,6 +15,7 @@ import { KakaoOAuthIdentityAdapter } from "#api/modules/identity/linked-accounts
 import { NaverOAuthIdentityAdapter } from "#api/modules/identity/linked-accounts/infrastructure/adapters/naver-oauth-identity.adapter";
 import { ExchangeOAuthCodeUseCase } from "#api/modules/identity/oauth-states/application/use-cases/exchange-oauth-code.use-case";
 import { GetOAuthRedirectUriUseCase } from "#api/modules/identity/oauth-states/application/use-cases/get-oauth-redirect-uri.use-case";
+import { OAuthState } from "#api/modules/identity/oauth-states/domain/oauth-state.aggregate";
 import { DrizzleOAuthStateRepository } from "#api/modules/identity/oauth-states/infrastructure/persistence/drizzle-oauth-state.repository";
 import { LoginWithOAuthTokenUseCase } from "#api/modules/identity/sessions/application/use-cases/login-with-oauth-token.use-case";
 import { requireRecord } from "#api/platform/database/database-error.util";
@@ -678,12 +679,17 @@ describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
   async function createState(state: string, provider: AccountProvider, redirectUri: string) {
     // use case의 DateClock과 같은 시계로 만료를 정한다
     const now = Temporal.Instant.fromEpochMilliseconds(Date.now());
-    await oauthStateRepository.create({
-      state,
-      provider,
-      redirectUri,
-      expiresAt: now.add({ minutes: 10 }),
-    });
+    await oauthStateRepository.save(
+      OAuthState.create({
+        id: await oauthStateRepository.nextId(),
+        state,
+        provider,
+        redirectUri,
+        mode: null,
+        initiatingUserId: null,
+        now,
+      }),
+    );
     const created = await oauthStateRepository.findByState(state, now);
     if (created == null) {
       throw new Error(`OAuth state가 만들어지지 않았습니다: ${state}`);

@@ -6,7 +6,10 @@ import { InMemorySessionRepository } from "#test/doubles/identity/in-memory-sess
 import { InMemoryVerificationRepository } from "#test/doubles/identity/in-memory-verification.repository";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
-import { createVerificationFixture } from "#test/fixtures/identity/auth-credential.fixture";
+import {
+  createOAuthStateFixture,
+  createVerificationFixture,
+} from "#test/fixtures/identity/auth-credential.fixture";
 import { AUTH_FIXTURE_NOW, createSessionFixture } from "#test/fixtures/identity/session.fixture";
 
 import { PurgeExpiredIdentityRecordsUseCase } from "./purge-expired-identity-records.use-case.js";
@@ -71,12 +74,9 @@ describe("PurgeExpiredIdentityRecordsUseCase", () => {
       fixture.verificationRepository.seed(
         createVerificationFixture({ id, tokenHash: `digest-${id}`, expiresAt }),
       );
-      await fixture.oauthStateRepository.create({
-        state: `state-${id}`,
-        provider: "GOOGLE",
-        redirectUri: "aido://auth/callback",
-        expiresAt,
-      });
+      fixture.oauthStateRepository.seed(
+        createOAuthStateFixture({ id, state: `state-${id}`, expiresAt }),
+      );
     }
     const securityLog = { ipAddress: "127.0.0.1", userAgent: "Aido/1.16.0" };
     fixture.securityLogRepository.seed(

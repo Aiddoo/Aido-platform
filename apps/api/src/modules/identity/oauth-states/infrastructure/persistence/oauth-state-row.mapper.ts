@@ -24,3 +24,17 @@ export function toOAuthState(row: OAuthStateRow): OAuthState {
     exchangedAt: row.exchangedAt,
   });
 }
+
+// 새 state만 넣는다. 토큰·교환 칸은 콜백이 채우고, 토큰은 저장소가 암호화해 쓴다
+export function toOAuthStateRow(state: OAuthState): typeof oAuthStateTable.$inferInsert {
+  const {
+    id,
+    state: stateValue,
+    provider,
+    redirectUri,
+    mode,
+    initiatingUserId,
+    expiresAt,
+  } = state.toPrimitives();
+  return { id, state: stateValue, provider, redirectUri, mode, initiatingUserId, expiresAt };
+}

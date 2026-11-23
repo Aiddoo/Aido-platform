@@ -30,8 +30,7 @@ import { localDateIn } from "#api/shared/domain/time/time-zone-name";
 
 import { userTagCollided, userTagGenerationFailed } from "../../application/users.errors.js";
 import type { User } from "../../domain/user.aggregate.js";
-import type { UserStatus } from "../../domain/users.constants.js";
-import { toUser } from "./user-row.mapper.js";
+import { toUser, toUserRow } from "./user-row.mapper.js";
 import { generateUserTag } from "./user-tag.adapter.js";
 
 type UserInsert = typeof user.$inferInsert;
@@ -104,36 +103,8 @@ export class DrizzleUserRepository
     return row ?? null;
   }
 
-  async create(data: {
-    readonly email: string;
-    readonly status: UserStatus;
-    readonly emailVerifiedAt?: Temporal.Instant;
-  }): Promise<User> {
-    const userTag = await this.#generateUniqueUserTag();
-
-    try {
-      const [row] = await this.#db
-        .insert(user)
-        .values({
-          email: data.email,
-          status: data.status,
-          emailVerifiedAt: data.emailVerifiedAt,
-          userTag,
-          updatedAt: this.#clock.now(),
-        })
-        .returning();
-      return toUser(requireRecord(row));
-    } catch (error) {
-      const targets = uniqueConstraintTargets(error);
-      if (targets?.includes("email")) {
-        throw new IdentityPersistenceConflict("EMAIL_ALREADY_EXISTS");
-      }
-      // 확인 뒤 다른 가입이 같은 태그를 먼저 넣었다. 1.15.0 필터가 이 제약에 주던 500 응답을 유지한다
-      if (targets?.includes("userTag")) {
-        throw userTagCollided(error);
-      }
-      throw error;
-    }
+  nextUserTag(): Promise<string> {
+    return this.#generateUniqueUserTag();
   }
 
   async listActiveAccounts(userIds: readonly UserId[]): Promise<readonly UserActivity[]> {
@@ -255,6 +226,10 @@ export class DrizzleUserRepository
   }
 
   async save(identityUser: User): Promise<void> {
+    if (!identityUser.isPersisted()) {
+      await this.#insert(identityUser);
+      return;
+    }
     const { status, emailVerifiedAt, deletedAt } = identityUser.toPrimitives();
     await this.#update(identityUser.id.value, {
       status,
@@ -320,6 +295,23 @@ export class DrizzleUserRepository
     }
 
     throw userTagGenerationFailed(MAX_USER_TAG_RETRIES);
+  }
+
+  async #insert(identityUser: User): Promise<void> {
+    try {
+      await this.#db.insert(user).values(toUserRow(identityUser));
+    } catch (error) {
+      const targets = uniqueConstraintTargets(error);
+      if (targets?.includes("email")) {
+        throw new IdentityPersistenceConflict("EMAIL_ALREADY_EXISTS");
+      }
+      // 확인 뒤 다른 가입이 같은 태그를 먼저 넣었다. 1.15.0 필터가 이 제약에 주던 500 응답을 유지한다
+      if (targets?.includes("userTag")) {
+        throw userTagCollided(error);
+      }
+      throw error;
+    }
+    identityUser.markPersisted();
   }
 
   async #update(

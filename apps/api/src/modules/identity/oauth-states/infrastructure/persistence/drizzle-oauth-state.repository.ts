@@ -8,15 +8,15 @@ import {
   type OAuthLinkingData,
   type OAuthLoginExchangeData,
   OAuthStateRepositoryPort,
-  type NewOAuthState,
 } from "#api/modules/identity/oauth-states/application/ports/oauth-state.repository.port";
-import type { OAuthStateId } from "#api/modules/identity/oauth-states/domain/oauth-state-id.vo";
+import { OAuthStateId } from "#api/modules/identity/oauth-states/domain/oauth-state-id.vo";
 import type { OAuthState } from "#api/modules/identity/oauth-states/domain/oauth-state.aggregate";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { oAuthState } from "#api/platform/database/schema/index";
+import { nextSequenceValue } from "#api/platform/database/sequence";
 import { EncryptionService } from "#api/platform/encryption/encryption.service";
 
-import { toOAuthState } from "./oauth-state-row.mapper.js";
+import { toOAuthState, toOAuthStateRow } from "./oauth-state-row.mapper.js";
 
 type OAuthStateRow = typeof oAuthState.$inferSelect;
 
@@ -34,15 +34,8 @@ export class DrizzleOAuthStateRepository extends OAuthStateRepositoryPort {
     this.#encryptionService = encryptionService;
   }
 
-  async create(input: NewOAuthState): Promise<void> {
-    await this.#db.insert(oAuthState).values({
-      state: input.state,
-      provider: input.provider,
-      redirectUri: input.redirectUri,
-      mode: input.mode,
-      initiatingUserId: input.initiatingUserId?.value,
-      expiresAt: input.expiresAt,
-    });
+  async nextId(): Promise<OAuthStateId> {
+    return OAuthStateId.reconstitute(await nextSequenceValue(this.#db, oAuthState.id));
   }
 
   async findByState(state: string, now: Temporal.Instant): Promise<OAuthState | null> {
@@ -92,6 +85,11 @@ export class DrizzleOAuthStateRepository extends OAuthStateRepositoryPort {
 
   // 교환 시각·코드·만료를 조건에 두어 같은 코드의 동시 교환 중 하나만 성공한다
   async save(state: OAuthState): Promise<boolean> {
+    if (!state.isPersisted()) {
+      await this.#db.insert(oAuthState).values(toOAuthStateRow(state));
+      state.markPersisted();
+      return true;
+    }
     const { exchangedAt, exchangeCode } = state.toPrimitives();
     if (exchangedAt == null || exchangeCode == null) {
       return false;

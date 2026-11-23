@@ -8,10 +8,7 @@ import {
   type PurgeEligibleUsersQuery,
 } from "#api/modules/identity/users/application/ports/user.repository.port";
 import { User, type UserPrimitives } from "#api/modules/identity/users/domain/user.aggregate";
-import type { UserStatus } from "#api/modules/identity/users/domain/users.constants";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-
-const IN_MEMORY_USER_CREATED_AT = Temporal.Instant.from("2026-11-10T00:00:00Z");
 
 type UserProfile = NonNullable<UserProfileReadModel["profile"]>;
 
@@ -88,29 +85,9 @@ export class InMemoryUserRepository extends UserRepositoryPort {
     };
   }
 
-  async create(data: {
-    readonly email: string;
-    readonly status: UserStatus;
-    readonly emailVerifiedAt?: Temporal.Instant;
-  }): Promise<User> {
-    if (this.all.some((user) => user.email === data.email)) {
-      throw new IdentityPersistenceConflict("EMAIL_ALREADY_EXISTS");
-    }
+  async nextUserTag(): Promise<string> {
     this.#sequence += 1;
-    const created: UserPrimitives = {
-      id: `user-${this.#sequence}`,
-      email: data.email,
-      userTag: `MEM${String(this.#sequence).padStart(5, "0")}`,
-      role: "USER",
-      status: data.status,
-      emailVerifiedAt: data.emailVerifiedAt ?? null,
-      subscriptionStatus: "FREE",
-      subscriptionExpiresAt: null,
-      createdAt: IN_MEMORY_USER_CREATED_AT,
-      deletedAt: null,
-    };
-    this.#users.set(created.id, created);
-    return User.reconstitute(created);
+    return `MEM${String(this.#sequence).padStart(5, "0")}`;
   }
 
   async createProfile(
@@ -138,6 +115,14 @@ export class InMemoryUserRepository extends UserRepositoryPort {
   }
 
   async save(user: User): Promise<void> {
+    if (!user.isPersisted()) {
+      if (this.all.some((candidate) => candidate.email === user.email)) {
+        throw new IdentityPersistenceConflict("EMAIL_ALREADY_EXISTS");
+      }
+      this.#users.set(user.id.value, user.toPrimitives());
+      user.markPersisted();
+      return;
+    }
     const stored = this.#require(user.id.value);
     const { status, emailVerifiedAt, deletedAt } = user.toPrimitives();
     this.#users.set(stored.id, { ...stored, status, emailVerifiedAt, deletedAt });

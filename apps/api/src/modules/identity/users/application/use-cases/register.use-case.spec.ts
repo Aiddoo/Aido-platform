@@ -1,5 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
+import { User } from "#api/modules/identity/users/domain/user.aggregate";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
@@ -161,7 +162,16 @@ describe("Register — 이메일 계정 등록", () => {
     const useCase = new RegisterUseCase({
       ...fixture,
       unitOfWork: new InterleavedUnitOfWork(() =>
-        fixture.userRepository.create({ email: input.email, status: "PENDING_VERIFY" }),
+        fixture.userRepository.save(
+          User.create({
+            id: UserId.generate(),
+            email: input.email,
+            userTag: "RACE0001",
+            status: "PENDING_VERIFY",
+            emailVerifiedAt: null,
+            now: AUTH_CREDENTIAL_NOW,
+          }),
+        ),
       ),
     });
     // When

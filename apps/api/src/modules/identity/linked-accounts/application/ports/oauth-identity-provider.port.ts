@@ -21,7 +21,7 @@ export interface GenerateAuthUrlParams {
   persistState: (
     provider: AccountProvider,
     redirectUri: string,
-    opts: { mode?: OAuthMode; initiatingUserId?: UserId },
+    options: { mode?: OAuthMode; initiatingUserId?: UserId },
   ) => Promise<unknown>;
 }
 

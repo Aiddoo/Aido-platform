@@ -4,7 +4,7 @@ import { AppVersion } from "../../shared/domain/app-version.vo.js";
 import { FeatureDiscoveryCampaignId } from "./feature-discovery-campaign-id.vo.js";
 
 export interface FeatureDiscoveryCampaignPrimitives {
-  readonly campaignId: string;
+  readonly id: string;
   readonly minAppVersion: string;
   readonly launchedAt: Temporal.Instant;
   readonly autoOpen: boolean;
@@ -22,14 +22,11 @@ export class FeatureDiscoveryCampaign extends AggregateRoot<
   FeatureDiscoveryCampaignProps
 > {
   static reconstitute(primitives: FeatureDiscoveryCampaignPrimitives): FeatureDiscoveryCampaign {
-    return new FeatureDiscoveryCampaign(
-      FeatureDiscoveryCampaignId.reconstitute(primitives.campaignId),
-      {
-        minAppVersion: AppVersion.reconstitute(primitives.minAppVersion),
-        launchedAt: primitives.launchedAt,
-        autoOpen: primitives.autoOpen,
-      },
-    );
+    return new FeatureDiscoveryCampaign(FeatureDiscoveryCampaignId.reconstitute(primitives.id), {
+      minAppVersion: AppVersion.reconstitute(primitives.minAppVersion),
+      launchedAt: primitives.launchedAt,
+      autoOpen: primitives.autoOpen,
+    });
   }
 
   get minAppVersion(): AppVersion {
@@ -46,7 +43,7 @@ export class FeatureDiscoveryCampaign extends AggregateRoot<
 
   toPrimitives(): FeatureDiscoveryCampaignPrimitives {
     return {
-      campaignId: this.id.value,
+      id: this.id.value,
       minAppVersion: this.props.minAppVersion.value,
       launchedAt: this.props.launchedAt,
       autoOpen: this.props.autoOpen,

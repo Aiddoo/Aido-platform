@@ -35,12 +35,8 @@ export abstract class UserRepositoryPort {
   abstract findByEmail(email: string): Promise<User | null>;
   abstract findById(id: UserId): Promise<User | null>;
   abstract findByIdWithProfile(id: UserId): Promise<UserProfileReadModel | null>;
-  /** 이메일이 이미 있으면 IdentityPersistenceConflict(EMAIL_ALREADY_EXISTS)다 */
-  abstract create(data: {
-    readonly email: string;
-    readonly status: UserStatus;
-    readonly emailVerifiedAt?: Temporal.Instant;
-  }): Promise<User>;
+  /** 아직 아무도 쓰지 않은 사용자 태그 */
+  abstract nextUserTag(): Promise<string>;
   abstract createProfile(
     userId: UserId,
     data: { name?: string; profileImage?: string },
@@ -49,7 +45,10 @@ export abstract class UserRepositoryPort {
     userId: UserId,
     data: { name?: string | null; profileImage?: string | null },
   ): Promise<{ name: string | null; profileImage: string | null }>;
-  /** 계정 상태 칸(status·emailVerifiedAt·deletedAt)만 저장한다. 구독·사용량 칸은 다른 Context가 쓴다 */
+  /**
+   * 새 사용자는 넣는다(이메일이 이미 있으면 IdentityPersistenceConflict(EMAIL_ALREADY_EXISTS)).
+   * 읽은 사용자는 계정 상태 칸(status·emailVerifiedAt·deletedAt)만 쓴다. 구독·사용량 칸은 다른 Context가 쓴다
+   */
   abstract save(user: User): Promise<void>;
   /** 계정 변경을 직렬화하려고 사용자 행을 잠그고 읽는다(FOR NO KEY UPDATE) */
   abstract findByIdForUpdate(id: UserId): Promise<User | null>;

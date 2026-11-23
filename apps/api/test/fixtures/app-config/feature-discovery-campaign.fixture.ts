@@ -7,7 +7,7 @@ export function createFeatureDiscoveryCampaignFixture(
   overrides: Partial<FeatureDiscoveryCampaignPrimitives> = {},
 ): FeatureDiscoveryCampaign {
   return FeatureDiscoveryCampaign.reconstitute({
-    campaignId: "feature-discovery-2026-08",
+    id: "feature-discovery-2026-08",
     minAppVersion: "1.8.0",
     launchedAt: Temporal.Instant.from("2026-08-01T00:00:00Z"),
     autoOpen: true,
