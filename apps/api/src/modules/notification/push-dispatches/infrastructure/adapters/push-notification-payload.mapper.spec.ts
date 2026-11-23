@@ -1,7 +1,7 @@
 import { pushNotificationDataSchema } from "@aido/api/contracts/notification/v1";
 
+import { NotificationId } from "#api/modules/notification/notifications/domain/notification-id.vo";
 import { PushDispatchId } from "#api/modules/notification/push-dispatches/domain/push-dispatch-id.vo";
-import { NotificationId } from "#api/modules/notification/shared/domain/notification-id.vo";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { StubMarketingPushOptOutToken } from "#test/doubles/notification/stub-marketing-push-opt-out-token";
 

@@ -2,22 +2,22 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { resolveDeliveryTimezone } from "#api/shared/domain/time/time-zone-name";
 import { TimeZone } from "#api/shared/domain/time/time-zone.vo";
 
-import type { UserNotificationSettingsPort } from "../../shared/application/ports/user-notification-settings.port.js";
+import type { UserNotificationSettingsPort } from "../../../shared/application/ports/user-notification-settings.port.js";
+import type { PushQuietHoursReaderPort } from "../../application/ports/push-quiet-hours.reader.port.js";
 import {
   isWithinQuietHours,
   PUSH_QUIET_HOURS_WINDOW,
-} from "../domain/quiet-hours.domain-service.js";
-import type { PushQuietHoursReaderPort } from "./ports/push-quiet-hours.reader.port.js";
+} from "../../domain/quiet-hours.domain-service.js";
 
-interface PushQuietHoursReaderDependencies {
+interface PushQuietHoursReaderAdapterDependencies {
   readonly userSettings: Pick<UserNotificationSettingsPort, "findPreferenceReadModelsByUserIds">;
 }
 
 // 발송 경로와 같은 배송 시간대 해석과 야간 판정으로 사용자를 한 번에 고른다
-export class PushQuietHoursReader implements PushQuietHoursReaderPort {
-  readonly #dependencies: PushQuietHoursReaderDependencies;
+export class PushQuietHoursReaderAdapter implements PushQuietHoursReaderPort {
+  readonly #dependencies: PushQuietHoursReaderAdapterDependencies;
 
-  constructor(dependencies: PushQuietHoursReaderDependencies) {
+  constructor(dependencies: PushQuietHoursReaderAdapterDependencies) {
     this.#dependencies = dependencies;
   }
 

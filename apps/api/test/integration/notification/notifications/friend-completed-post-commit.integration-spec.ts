@@ -3,9 +3,9 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { vi, type Mocked, type MockedFunction } from "vitest";
 
-import { NotificationHistoryReader } from "#api/modules/notification/notifications/application/notification-history.reader";
 import { NotificationCachePort } from "#api/modules/notification/notifications/application/ports/notification-cache.port";
 import { NotificationDeduplicationPort } from "#api/modules/notification/notifications/application/ports/notification-deduplication.port";
+import { NotificationHistoryReaderPort } from "#api/modules/notification/notifications/application/ports/notification-history.reader.port";
 import { NotificationRepositoryPort } from "#api/modules/notification/notifications/application/ports/notification.repository.port";
 import type { InboxNotificationReadModel } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
 import { FinalizeBatchNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/finalize-batch-notification.use-case";
@@ -180,7 +180,7 @@ describe("친구 완료 알림의 commit 후 영속 발행 (컴포넌트)", () =
         ...pickProviders(NOTIFICATION_PUSH_DISPATCHES_USE_CASE_PROVIDERS, [
           PublishPushDeliveryAfterCommitUseCase,
         ]),
-        { provide: NotificationHistoryReader, useValue: notificationHistoryReader },
+        { provide: NotificationHistoryReaderPort, useValue: notificationHistoryReader },
         { provide: NotificationRepositoryPort, useValue: repository },
         { provide: PushDispatchRepositoryPort, useValue: staging },
         { provide: NotificationCachePort, useValue: cache },

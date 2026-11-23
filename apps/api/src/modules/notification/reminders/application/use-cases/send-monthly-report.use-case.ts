@@ -2,7 +2,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
-  NotificationHistoryReader,
+  NotificationHistoryReaderPort,
   PublishNotificationBatchUseCase,
 } from "../../../notifications/notification-notifications.public.js";
 import { createMonthlyReportNotificationMessage } from "../../../shared/application/messages/system-notification.messages.js";
@@ -17,7 +17,10 @@ interface MonthlyReportStrategyDependencies {
   readonly reader: Pick<ScheduledReminderReaderPort, "findMonthlyReportRecipients">;
   readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "getUserLocales">;
   readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
-  readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
+  readonly notificationHistoryReader: Pick<
+    NotificationHistoryReaderPort,
+    "findAlreadyNotifiedUserIds"
+  >;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 

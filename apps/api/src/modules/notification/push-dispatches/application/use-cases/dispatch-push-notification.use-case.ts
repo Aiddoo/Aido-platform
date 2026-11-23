@@ -22,10 +22,10 @@ import {
   supportsFeatureDiscoveryMarketing,
 } from "../../domain/feature-marketing-capability.domain-service.js";
 import { carriesUnreadBadge, pushBadgeFor } from "../../domain/push-badge.domain-service.js";
-import type { NoActiveTokenReasonReader } from "../no-active-token-reason.reader.js";
 import type { PushMessageContent, PushSendResult } from "../ports/push-channel.port.js";
 import { countOutcomes, tokensToRevoke } from "../push-delivery-results.mapper.js";
 import { PushDispatchLogEvent } from "../push-dispatches.log-events.js";
+import type { ResolveNoActiveTokenReasonsUseCase } from "./resolve-no-active-token-reasons.use-case.js";
 import type { SendPushMessagesUseCase } from "./send-push-messages.use-case.js";
 
 export interface DispatchPushNotificationCommand {
@@ -52,7 +52,7 @@ interface DispatchPushNotificationDependencies {
   readonly unreadCounts: Pick<UnreadNotificationCountReaderPort, "countUnreadByUsers">;
   readonly activePushTokenReader: Pick<ActivePushTokenReaderPort, "listByUserId">;
   readonly pushTokenCache: Pick<PushTokenCachePort, "invalidatePushTokens">;
-  readonly noActiveTokenReasons: Pick<NoActiveTokenReasonReader, "findReason">;
+  readonly noActiveTokenReasons: Pick<ResolveNoActiveTokenReasonsUseCase, "execute">;
   readonly clock: ClockPort;
   readonly logger: Pick<ApplicationLoggerPort, "debug" | "warn">;
 }
@@ -135,7 +135,7 @@ export class DispatchPushNotificationUseCase {
       if (records.length === 0) {
         return {
           status: "skipped",
-          reason: await this.#dependencies.noActiveTokenReasons.findReason(data.userId),
+          reason: await this.#noActiveTokenReason(data.userId),
         };
       }
 
@@ -158,7 +158,12 @@ export class DispatchPushNotificationUseCase {
       ? { status: "resolved", tokens }
       : {
           status: "skipped",
-          reason: await this.#dependencies.noActiveTokenReasons.findReason(data.userId),
+          reason: await this.#noActiveTokenReason(data.userId),
         };
+  }
+
+  async #noActiveTokenReason(userId: string): Promise<PushDispatchSkipReason> {
+    const reasons = await this.#dependencies.noActiveTokenReasons.execute([userId]);
+    return reasons.get(userId) ?? "NO_ACTIVE_TOKEN";
   }
 }

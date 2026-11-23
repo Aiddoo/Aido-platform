@@ -2,8 +2,8 @@ import type { PushDispatchSkipReason } from "@aido/api/vocabulary";
 
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
+import { NotificationId } from "../../../notifications/domain/notification-id.vo.js";
 import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
-import { NotificationId } from "../../../shared/domain/notification-id.vo.js";
 import { resolveRecipientLocale } from "../../../shared/domain/recipient-locale.domain-service.js";
 import type {
   PushDeliveryEligibilityDecision,

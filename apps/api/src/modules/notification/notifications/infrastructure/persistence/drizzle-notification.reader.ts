@@ -6,7 +6,6 @@ import type { DrizzleTransactionalAdapter } from "#api/platform/database/databas
 import { notification } from "#api/platform/database/schema/index";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import type { NotificationId } from "../../../shared/domain/notification-id.vo.js";
 import type { NotificationMilestone } from "../../../shared/domain/notification-milestone.constants.js";
 import type { NotificationType } from "../../../shared/domain/notification-type.constants.js";
 import type {
@@ -22,6 +21,7 @@ import type {
 } from "../../application/ports/notification-inbox.reader.port.js";
 import type { UnreadNotificationCountReaderPort } from "../../application/ports/unread-notification-count.reader.port.js";
 import type { InboxNotificationReadModel } from "../../application/read-models/inbox-notification.read-model.js";
+import type { NotificationId } from "../../domain/notification-id.vo.js";
 import { milestoneNotificationCondition } from "./milestone-notification.query-fragment.js";
 
 @Injectable()

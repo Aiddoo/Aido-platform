@@ -15,7 +15,6 @@ import {
   PushQuietHoursReaderPort,
 } from "../push-dispatches/notification-push-dispatches.public.js";
 import { UserNotificationSettingsPort } from "../shared/application/ports/user-notification-settings.port.js";
-import { NotificationHistoryReader } from "./application/notification-history.reader.js";
 import { MarketingConsentReconfirmPort } from "./application/ports/marketing-consent-reconfirm.port.js";
 import { NotificationCachePort } from "./application/ports/notification-cache.port.js";
 import { NotificationDeduplicationPort } from "./application/ports/notification-deduplication.port.js";
@@ -47,6 +46,7 @@ import { SendMilestoneNotificationUseCase } from "./application/use-cases/send-m
 import { SendNotificationWithDeduplicationUseCase } from "./application/use-cases/send-notification-with-deduplication.use-case.js";
 import { SendNotificationUseCase } from "./application/use-cases/send-notification.use-case.js";
 import { SendNudgeNotificationUseCase } from "./application/use-cases/send-nudge-notification.use-case.js";
+import { CachedNotificationHistoryAdapter } from "./infrastructure/adapters/cached-notification-history.adapter.js";
 import { MarketingConsentReconfirmAdapter } from "./infrastructure/adapters/marketing-consent-reconfirm.adapter.js";
 import { NotificationDeduplicationAdapter } from "./infrastructure/adapters/notification-deduplication.adapter.js";
 import { NotificationCacheAdapter } from "./infrastructure/cache/notification-cache.adapter.js";
@@ -60,7 +60,13 @@ const NOTIFICATION_NOTIFICATIONS_PERSISTENCE_PROVIDERS = [
   // 조회기 하나가 알림함 목록과 중복 발송 이력을 함께 맡는다
   DrizzleNotificationReader,
   { provide: NotificationInboxReaderPort, useExisting: DrizzleNotificationReader },
-  { provide: NotificationHistoryReaderPort, useExisting: DrizzleNotificationReader },
+  // 중복 발송 이력은 중복 방지 캐시를 먼저 보고 비었을 때만 조회기로 읽는다
+  provideUseCase(CachedNotificationHistoryAdapter, {
+    notificationDeduplication: NotificationDeduplicationPort,
+    databaseReader: DrizzleNotificationReader,
+    logger: loggerFor(CachedNotificationHistoryAdapter),
+  }),
+  { provide: NotificationHistoryReaderPort, useExisting: CachedNotificationHistoryAdapter },
   { provide: NotificationCachePort, useClass: NotificationCacheAdapter },
   { provide: NotificationDeduplicationPort, useClass: NotificationDeduplicationAdapter },
   { provide: NotificationTodoTargetReaderPort, useClass: DrizzleNotificationTodoTargetReader },
@@ -107,11 +113,6 @@ export const NOTIFICATION_NOTIFICATIONS_USE_CASE_PROVIDERS = [
     notificationCache: NotificationCachePort,
     clock: ClockPort,
     logger: loggerFor(PurgeNotificationHistoryUseCase),
-  }),
-  provideUseCase(NotificationHistoryReader, {
-    notificationDeduplication: NotificationDeduplicationPort,
-    notificationHistoryReader: NotificationHistoryReaderPort,
-    logger: loggerFor(NotificationHistoryReader),
   }),
   provideUseCase(SendNotificationUseCase, {
     notificationRepository: NotificationRepositoryPort,
@@ -195,7 +196,7 @@ export const NOTIFICATION_NOTIFICATIONS_USE_CASE_PROVIDERS = [
     logger: loggerFor(SendMilestoneNotificationUseCase),
   }),
   provideUseCase(SendFriendCompletionNotificationsUseCase, {
-    notificationHistoryReader: NotificationHistoryReader,
+    notificationHistoryReader: NotificationHistoryReaderPort,
     persistBatch: PersistBatchNotificationUseCase,
     finalizeBatch: FinalizeBatchNotificationUseCase,
     unitOfWork: UnitOfWorkPort,

@@ -5,7 +5,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
-  NotificationHistoryReader,
+  NotificationHistoryReaderPort,
   PublishNotificationBatchUseCase,
 } from "../../../notifications/notification-notifications.public.js";
 import { createEveningReminderNotificationMessage } from "../../../shared/application/messages/scheduler-notification.messages.js";
@@ -26,7 +26,10 @@ interface EveningReminderStrategyDependencies {
     "findFreeEveningReminderUsers" | "findPremiumEveningReminderUsers"
   >;
   readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
-  readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
+  readonly notificationHistoryReader: Pick<
+    NotificationHistoryReaderPort,
+    "findAlreadyNotifiedUserIds"
+  >;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }
 

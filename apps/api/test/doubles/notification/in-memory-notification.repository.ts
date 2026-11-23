@@ -18,9 +18,9 @@ import {
 } from "#api/modules/notification/notifications/application/ports/notification.repository.port";
 import type { UnreadNotificationCountReaderPort } from "#api/modules/notification/notifications/application/ports/unread-notification-count.reader.port";
 import type { InboxNotificationReadModel } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
+import type { NotificationId } from "#api/modules/notification/notifications/domain/notification-id.vo";
 import { Notification } from "#api/modules/notification/notifications/domain/notification.aggregate";
 import type { CreateNotificationData } from "#api/modules/notification/shared/domain/notification-draft.constants";
-import type { NotificationId } from "#api/modules/notification/shared/domain/notification-id.vo";
 import {
   MILESTONE_NOTIFICATION_TYPE,
   type NotificationMilestone,

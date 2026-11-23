@@ -1,9 +1,9 @@
 import type { TransactionHost } from "@nestjs-cls/transactional";
 
+import { NotificationId } from "#api/modules/notification/notifications/domain/notification-id.vo";
 import type { PushDeliveryMode } from "#api/modules/notification/push-dispatches/domain/push-delivery-status.constants";
 import { PushDispatch } from "#api/modules/notification/push-dispatches/domain/push-dispatch.aggregate";
 import { DrizzlePushDispatchRepository } from "#api/modules/notification/push-dispatches/infrastructure/persistence/drizzle-push-dispatch.repository";
-import { NotificationId } from "#api/modules/notification/shared/domain/notification-id.vo";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";

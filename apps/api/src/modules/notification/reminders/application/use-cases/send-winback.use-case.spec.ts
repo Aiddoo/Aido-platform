@@ -7,7 +7,7 @@ import { StubReEngagementReader } from "#test/doubles/notification/stub-re-engag
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createTimezoneContextFixture } from "#test/fixtures/notification/timezone-context.fixture";
 
-import { NotificationHistoryReader } from "../../../notifications/application/notification-history.reader.js";
+import { CachedNotificationHistoryAdapter } from "../../../notifications/infrastructure/adapters/cached-notification-history.adapter.js";
 import { createWinbackNotificationMessage } from "../../../shared/application/messages/system-notification.messages.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../shared/domain/notification-campaign.constants.js";
 import { SendWinbackUseCase } from "./send-winback.use-case.js";
@@ -231,9 +231,9 @@ describe("SendWinbackUseCase — 윈백 전략", () => {
             count: (await notifications.createManyNotificationsAndReturn(items)).length,
           }),
         },
-        notificationHistoryReader: new NotificationHistoryReader({
+        notificationHistoryReader: new CachedNotificationHistoryAdapter({
           notificationDeduplication: new InMemoryNotificationDeduplication(),
-          notificationHistoryReader: notifications,
+          databaseReader: notifications,
           logger: new SilentLogger(),
         }),
         logger: new SilentLogger(),

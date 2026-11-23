@@ -8,8 +8,8 @@ import type { PersistedBatchNotificationResultReadModel } from "../../../push-di
 import type { UserNotificationSettingsPort } from "../../../shared/application/ports/user-notification-settings.port.js";
 import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../../shared/domain/transactional-notification-campaign.constants.js";
-import type { NotificationHistoryReader } from "../notification-history.reader.js";
 import { DuplicateNotificationError } from "../notifications.errors.js";
+import type { NotificationHistoryReaderPort } from "../ports/notification-history.reader.port.js";
 import type { FindAlreadyNotifiedUserIdsQuery } from "../ports/notification-history.reader.port.js";
 import type { FinalizeBatchNotificationUseCase } from "./finalize-batch-notification.use-case.js";
 import type { PersistBatchNotificationUseCase } from "./persist-batch-notification.use-case.js";
@@ -27,7 +27,7 @@ const input = {
 };
 
 class RecordingHistoryReader implements Pick<
-  NotificationHistoryReader,
+  NotificationHistoryReaderPort,
   "findAlreadyNotifiedUserIds"
 > {
   readonly #events: string[];

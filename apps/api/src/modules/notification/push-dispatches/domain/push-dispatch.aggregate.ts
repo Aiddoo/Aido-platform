@@ -3,7 +3,7 @@ import { NOTIFICATION_PURPOSES } from "@aido/api/vocabulary";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
 
-import type { NotificationId } from "../../shared/domain/notification-id.vo.js";
+import type { NotificationId } from "../../notifications/domain/notification-id.vo.js";
 import {
   PUSH_DELIVERY_MODES,
   type PushDeliveryMode,

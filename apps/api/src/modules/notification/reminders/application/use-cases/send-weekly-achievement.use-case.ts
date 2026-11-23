@@ -2,7 +2,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
-  NotificationHistoryReader,
+  NotificationHistoryReaderPort,
   PublishNotificationBatchUseCase,
 } from "../../../notifications/notification-notifications.public.js";
 import { createWeeklyAchievementNotificationMessage } from "../../../shared/application/messages/scheduler-notification.messages.js";
@@ -22,7 +22,10 @@ interface WeeklyAchievementStrategyDependencies {
   >;
   readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "getUserLocales">;
   readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
-  readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
+  readonly notificationHistoryReader: Pick<
+    NotificationHistoryReaderPort,
+    "findAlreadyNotifiedUserIds"
+  >;
   readonly weeklyAchievementWriter: Pick<WeeklyAchievementWriterPort, "execute">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;
 }

@@ -12,9 +12,9 @@ import {
 } from "../../../push-devices/notification-push-devices.public.js";
 import { supportsFeatureDiscoveryMarketing } from "../../domain/feature-marketing-capability.domain-service.js";
 import { carriesUnreadBadge, pushBadgeFor } from "../../domain/push-badge.domain-service.js";
-import type { NoActiveTokenReasonReader } from "../no-active-token-reason.reader.js";
 import type { PushMessage } from "../ports/push-channel.port.js";
 import type { BatchPushNotificationPayload } from "../ports/push-notification-payload.port.js";
+import type { ResolveNoActiveTokenReasonsUseCase } from "./resolve-no-active-token-reasons.use-case.js";
 
 interface PreparedPushBatchBase {
   readonly attemptedDispatchIds: ReadonlySet<number>;
@@ -40,7 +40,7 @@ type CapabilityTokensByUser = Partial<
 interface PreparePushBatchDependencies {
   readonly pushTokenRepository: Pick<PushTokenRepositoryPort, "listActivePushTokensByUsers">;
   readonly activePushTokenReader: Pick<ActivePushTokenReaderPort, "listByUserIds">;
-  readonly noActiveTokenReasons: Pick<NoActiveTokenReasonReader, "findReasons">;
+  readonly noActiveTokenReasons: Pick<ResolveNoActiveTokenReasonsUseCase, "execute">;
   readonly unreadCounts: Pick<UnreadNotificationCountReaderPort, "countUnreadByUsers">;
 }
 
@@ -92,7 +92,7 @@ export class PreparePushBatchUseCase {
       }
     }
 
-    const noTokenReasons = await this.#dependencies.noActiveTokenReasons.findReasons([
+    const noTokenReasons = await this.#dependencies.noActiveTokenReasons.execute([
       ...new Set(noTokenUserIdByDispatch.values()),
     ]);
     for (const skipped of skippedDispatches) {

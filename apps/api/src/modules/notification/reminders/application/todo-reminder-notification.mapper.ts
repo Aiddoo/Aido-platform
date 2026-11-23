@@ -1,5 +1,6 @@
 import type { SupportedLocale } from "@aido/api/vocabulary";
 
+import { NotificationId } from "../../notifications/domain/notification-id.vo.js";
 import {
   createTodoReminderNotificationMessage,
   createTodoReminderSnoozedNotificationMessage,
@@ -7,7 +8,6 @@ import {
 } from "../../shared/application/messages/scheduler-notification.messages.js";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../shared/domain/notification-campaign.constants.js";
 import type { CreateNotificationData } from "../../shared/domain/notification-draft.constants.js";
-import { NotificationId } from "../../shared/domain/notification-id.vo.js";
 import {
   createReminderOccurrenceKey,
   createSnoozedReminderMetadata,

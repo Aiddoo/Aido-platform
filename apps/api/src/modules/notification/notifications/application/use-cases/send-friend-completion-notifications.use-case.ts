@@ -10,9 +10,9 @@ import { type UserNotificationSettingsPort } from "../../../shared/application/p
 import type { CreateNotificationData } from "../../../shared/domain/notification-draft.constants.js";
 import { resolveRecipientLocale } from "../../../shared/domain/recipient-locale.domain-service.js";
 import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../../shared/domain/transactional-notification-campaign.constants.js";
-import type { NotificationHistoryReader } from "../notification-history.reader.js";
 import { DuplicateNotificationError } from "../notifications.errors.js";
 import { NotificationLogEvent } from "../notifications.log-events.js";
+import type { NotificationHistoryReaderPort } from "../ports/notification-history.reader.port.js";
 import type { FinalizeBatchNotificationUseCase } from "./finalize-batch-notification.use-case.js";
 import type { PersistBatchNotificationUseCase } from "./persist-batch-notification.use-case.js";
 
@@ -24,7 +24,10 @@ export interface SendFriendCompletionNotificationsInput {
 }
 
 interface SendFriendCompletionNotificationsDependencies {
-  readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
+  readonly notificationHistoryReader: Pick<
+    NotificationHistoryReaderPort,
+    "findAlreadyNotifiedUserIds"
+  >;
   readonly persistBatch: Pick<PersistBatchNotificationUseCase, "execute">;
   readonly finalizeBatch: Pick<FinalizeBatchNotificationUseCase, "execute">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;

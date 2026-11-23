@@ -4,8 +4,8 @@ import type { NotificationInboxReaderPort } from "#api/modules/notification/noti
 import { type NotificationRepositoryPort } from "#api/modules/notification/notifications/application/ports/notification.repository.port";
 import type { UnreadNotificationCountReaderPort } from "#api/modules/notification/notifications/application/ports/unread-notification-count.reader.port";
 import type { InboxNotificationReadModel } from "#api/modules/notification/notifications/application/read-models/inbox-notification.read-model";
+import { NotificationId } from "#api/modules/notification/notifications/domain/notification-id.vo";
 import type { CreateNotificationData } from "#api/modules/notification/shared/domain/notification-draft.constants";
-import { NotificationId } from "#api/modules/notification/shared/domain/notification-id.vo";
 import { TodoId } from "#api/modules/planning/todos/planning-todos-queries.public";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {

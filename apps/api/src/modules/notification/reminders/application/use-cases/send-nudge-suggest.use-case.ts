@@ -4,7 +4,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
-  NotificationHistoryReader,
+  NotificationHistoryReaderPort,
   PublishNotificationBatchUseCase,
 } from "../../../notifications/notification-notifications.public.js";
 import { createNudgeSuggestionNotificationMessage } from "../../../shared/application/messages/scheduler-notification.messages.js";
@@ -34,7 +34,7 @@ interface NudgeSuggestStrategyDependencies {
   readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "getUserLocales">;
   readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
   readonly notificationHistoryReader: Pick<
-    NotificationHistoryReader,
+    NotificationHistoryReaderPort,
     "findAlreadyNotifiedUserIds" | "findNudgeSuggestedFriends"
   >;
   readonly logger: Pick<ApplicationLoggerPort, "log">;

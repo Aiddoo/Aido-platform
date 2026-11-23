@@ -1,6 +1,6 @@
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { NotificationId } from "../../shared/domain/notification-id.vo.js";
+import { NotificationId } from "../../notifications/domain/notification-id.vo.js";
 import { PushDispatchId } from "./push-dispatch-id.vo.js";
 import { PushDispatch } from "./push-dispatch.aggregate.js";
 

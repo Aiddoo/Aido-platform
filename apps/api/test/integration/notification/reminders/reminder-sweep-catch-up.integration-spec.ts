@@ -3,12 +3,12 @@ import { and, eq } from "drizzle-orm";
 import { omit } from "es-toolkit";
 import { vi } from "vitest";
 
-import { NotificationHistoryReader } from "#api/modules/notification/notifications/application/notification-history.reader";
 import { PersistBatchNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/persist-batch-notification.use-case";
 import { PublishNotificationBatchUseCase } from "#api/modules/notification/notifications/application/use-cases/publish-notification-batch.use-case";
 import { PublishNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/publish-notification.use-case";
 import { SendBatchNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-batch-notification.use-case";
 import { SendNotificationUseCase } from "#api/modules/notification/notifications/application/use-cases/send-notification.use-case";
+import { CachedNotificationHistoryAdapter } from "#api/modules/notification/notifications/infrastructure/adapters/cached-notification-history.adapter";
 import { DrizzleNotificationTodoTargetReader } from "#api/modules/notification/notifications/infrastructure/persistence/drizzle-notification-todo-target.reader";
 import { DrizzleNotificationReader } from "#api/modules/notification/notifications/infrastructure/persistence/drizzle-notification.reader";
 import { DrizzleNotificationRepository } from "#api/modules/notification/notifications/infrastructure/persistence/drizzle-notification.repository";
@@ -161,12 +161,12 @@ describe("리마인더 sweep 따라잡기 (실제 PostgreSQL)", () => {
       reader: reader.scheduledReminder,
       notificationPublisher: batchPublisher,
       // Redis가 비어 있는(cold) 상태로 두어 저장된 알림 행만으로 하루 한 번을 판단하게 한다
-      notificationHistoryReader: new NotificationHistoryReader({
+      notificationHistoryReader: new CachedNotificationHistoryAdapter({
         notificationDeduplication: {
           readKnownRecipients: async () => null,
           warmRecipients: async () => undefined,
         },
-        notificationHistoryReader: new DrizzleNotificationReader(transaction.transactionHost),
+        databaseReader: new DrizzleNotificationReader(transaction.transactionHost),
         logger: new SilentLogger(),
       }),
       logger: new SilentLogger(),

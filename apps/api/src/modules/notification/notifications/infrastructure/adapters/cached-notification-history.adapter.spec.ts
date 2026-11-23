@@ -4,8 +4,8 @@ import { InMemoryNotificationRepository } from "#test/doubles/notification/in-me
 import { SilentLogger } from "#test/doubles/platform/silent-logger";
 import { createInboxNotificationFixture } from "#test/fixtures/notification/notification.fixture";
 
-import { NotificationHistoryReader } from "./notification-history.reader.js";
-import type { FindAlreadyNotifiedUserIdsQuery } from "./ports/notification-history.reader.port.js";
+import type { FindAlreadyNotifiedUserIdsQuery } from "../../application/ports/notification-history.reader.port.js";
+import { CachedNotificationHistoryAdapter } from "./cached-notification-history.adapter.js";
 
 const NOTIFICATION_DATE = Temporal.PlainDate.from("2026-03-09");
 
@@ -27,15 +27,15 @@ function setup() {
       notificationDate: NOTIFICATION_DATE,
     }),
   ]);
-  const reader = new NotificationHistoryReader({
+  const reader = new CachedNotificationHistoryAdapter({
     notificationDeduplication,
-    notificationHistoryReader: notificationHistory,
+    databaseReader: notificationHistory,
     logger: new SilentLogger(),
   });
   return { reader, notificationDeduplication };
 }
 
-describe("NotificationHistoryReader — 이미 알림 받은 사용자 조회", () => {
+describe("CachedNotificationHistoryAdapter — 이미 알림 받은 사용자 조회", () => {
   it("warm(센티넬 존재)이면 Redis 결과만 믿고 DB를 보지 않는다", async () => {
     // Given
     const { reader, notificationDeduplication } = setup();

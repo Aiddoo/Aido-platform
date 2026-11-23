@@ -1,9 +1,9 @@
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { PushQuietHoursReader } from "./push-quiet-hours.reader.js";
+import { PushQuietHoursReaderAdapter } from "./push-quiet-hours-reader.adapter.js";
 
 function createReader(timezones: Readonly<Record<string, string>>) {
-  return new PushQuietHoursReader({
+  return new PushQuietHoursReaderAdapter({
     userSettings: {
       findPreferenceReadModelsByUserIds: async (users) =>
         users.flatMap(({ value: userId }) => {
@@ -37,7 +37,7 @@ function createReader(timezones: Readonly<Record<string, string>>) {
   });
 }
 
-describe("PushQuietHoursReader", () => {
+describe("PushQuietHoursReaderAdapter", () => {
   it("배송 시간대 기준 21시부터 8시 전까지를 야간으로 보고 설정이 없거나 UTC면 서울 시간으로 판단한다", async () => {
     // Given
     const reader = createReader({

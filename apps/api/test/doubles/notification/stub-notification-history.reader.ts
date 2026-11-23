@@ -1,4 +1,4 @@
-import type { NotificationHistoryReader } from "#api/modules/notification/notifications/application/notification-history.reader";
+import type { NotificationHistoryReaderPort } from "#api/modules/notification/notifications/application/ports/notification-history.reader.port";
 import type {
   FindAlreadyNotifiedUserIdsQuery,
   FindNudgeSuggestedFriendsQuery,
@@ -24,7 +24,7 @@ interface SentNudgeSuggestion {
 
 // 알림 타입별로 이미 받은 사용자를 두고 물어본 조회를 남긴다. 날짜를 주지 않으면 모든 날에 받은 것으로 본다
 export class StubNotificationHistoryReader implements Pick<
-  NotificationHistoryReader,
+  NotificationHistoryReaderPort,
   "findAlreadyNotifiedUserIds" | "findNudgeSuggestedFriends" | "findWinbackStagesSince"
 > {
   readonly queries: FindAlreadyNotifiedUserIdsQuery[] = [];

@@ -11,7 +11,7 @@ import { instantFromDate } from "#api/shared/domain/time/instant";
 import { resolveTimezone } from "#api/shared/domain/time/time-zone-name";
 
 import type {
-  NotificationHistoryReader,
+  NotificationHistoryReaderPort,
   PublishNotificationBatchUseCase,
 } from "../../../notifications/notification-notifications.public.js";
 import { formatWeatherNotificationTime } from "../../../shared/application/messages/notification-copy-format.messages.js";
@@ -50,7 +50,10 @@ interface WeatherMorningStrategyDependencies {
   >;
   readonly todoReader: Pick<WeatherBriefingTodoReaderPort, "listTodayTodos">;
   readonly notificationPublisher: Pick<PublishNotificationBatchUseCase, "execute">;
-  readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
+  readonly notificationHistoryReader: Pick<
+    NotificationHistoryReaderPort,
+    "findAlreadyNotifiedUserIds"
+  >;
   readonly weatherReportReader: Pick<ReminderWeatherReportReaderPort, "readReports">;
   readonly clock: Pick<ClockPort, "now">;
   readonly logger: Pick<ApplicationLoggerPort, "log">;

@@ -8,7 +8,7 @@ import {
   notificationTypesOfCategory,
   visibleNotificationTypes,
 } from "../../../shared/domain/notification-client-capability.domain-service.js";
-import { NotificationId } from "../../../shared/domain/notification-id.vo.js";
+import { NotificationId } from "../../domain/notification-id.vo.js";
 import { NotificationLogEvent } from "../notifications.log-events.js";
 import type { NotificationInboxReaderPort } from "../ports/notification-inbox.reader.port.js";
 import type { InboxNotificationReadModel } from "../read-models/inbox-notification.read-model.js";
