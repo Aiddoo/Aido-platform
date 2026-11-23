@@ -1,4 +1,5 @@
 import type { SupportedLocale } from "@aido/api/vocabulary";
+import { maxBy } from "es-toolkit";
 
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -190,10 +191,9 @@ function toNudgeSuggestNotification({
       return FRIEND_INACTIVE_DAYS.MIN <= days && days <= FRIEND_INACTIVE_DAYS.MAX
         ? [{ ...friend, days }]
         : [];
-    })
-    .sort((a, b) => b.days - a.days);
+    });
 
-  const target = eligibleFriends[0];
+  const target = maxBy(eligibleFriends, (friend) => friend.days);
 
   if (target == null || target.lastActiveAt == null) {
     return null;

@@ -1,4 +1,4 @@
-import { delay } from "es-toolkit";
+import { clamp, delay } from "es-toolkit";
 
 interface PushThroughputLimiterOptions {
   readonly messagesPerSecond: number;
@@ -26,7 +26,7 @@ export class PushThroughputLimiterAdapter {
   }
 
   acquire(messageCount: number): Promise<void> {
-    const count = Math.min(Math.max(messageCount, 0), this.#capacity);
+    const count = clamp(messageCount, 0, this.#capacity);
     const acquisition = this.#tail.then(() => this.#take(count));
     this.#tail = acquisition;
     return acquisition;

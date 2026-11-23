@@ -1,3 +1,5 @@
+import { sample } from "es-toolkit";
+
 const ADJECTIVES = [
   "작심삼일인",
   "미루는",
@@ -74,7 +76,5 @@ const NOUNS = [
  * 형용사 + 공백 + 명사 조합으로, 항상 20자 이내입니다.
  */
 export function generateRandomName(): string {
-  const adjective = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
-  const noun = NOUNS[Math.floor(Math.random() * NOUNS.length)];
-  return `${adjective} ${noun}`;
+  return `${sample(ADJECTIVES)} ${sample(NOUNS)}`;
 }

@@ -113,7 +113,7 @@ const MIN_APP_VERSIONS: ReadonlyMap<NotificationType, NotificationMinAppVersion>
 // 높은 버전부터 비교해 앱이 지원하는 가장 높은 단계를 알림 수 캐시 범위로 쓴다
 const GATE_VERSIONS: readonly NotificationMinAppVersion[] = [
   ...new Set(MIN_APP_VERSIONS.values()),
-].sort((left, right) => (isSemanticVersionAtLeast(left, right) ? -1 : 1));
+].toSorted((left, right) => (isSemanticVersionAtLeast(left, right) ? -1 : 1));
 
 /** 앱이 지원하는 알림 버전 단계. 캐시 키에 들어가므로 기존 "legacy"·"all" 값을 유지한다. */
 export type NotificationInboxScope = "legacy" | "all" | `since-${NotificationMinAppVersion}`;

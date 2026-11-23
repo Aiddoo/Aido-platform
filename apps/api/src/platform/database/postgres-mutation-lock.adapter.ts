@@ -62,6 +62,6 @@ export class PostgresMutationLockAdapter implements MutationLockPort {
     if (!this.#transactionHost.isTransactionActive()) {
       throw new Error("Mutation lock requires an active transaction");
     }
-    return uniq(keys).sort();
+    return uniq(keys).toSorted();
   }
 }

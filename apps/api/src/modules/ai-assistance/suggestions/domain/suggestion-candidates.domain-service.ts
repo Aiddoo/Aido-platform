@@ -67,27 +67,30 @@ export function buildSuggestionCandidates(
 ): SuggestionCandidate[] {
   const minOccurrences = mode === "PATTERN" ? AI_SUGGESTION_LIMITS.MIN_REPEAT_OCCURRENCES : 1;
   const repeatingKeys = new Set(repeatingTitles.map(toActivityKey));
-  return collectRecordedActivities(todos)
-    .filter(
-      (activity) => activity.occurrences >= minOccurrences && !repeatingKeys.has(activity.key),
-    )
-    .sort(
-      (left, right) =>
-        right.occurrences - left.occurrences ||
-        right.completedOccurrences - left.completedOccurrences ||
-        left.title.localeCompare(right.title),
-    )
-    .slice(0, MAX_SUGGESTION_CANDIDATES)
-    .map((activity, index) => ({
-      id: `a${index + 1}`,
-      title: activity.title,
-      occurrences: activity.occurrences,
-      completed: activity.completedOccurrences,
-      completionRate: completionRate(activity.completedOccurrences, activity.occurrences),
-      days: activity.days,
-      recordedTime: activity.recordedTime,
-      categoryName: activity.categoryName,
-    }));
+  return (
+    collectRecordedActivities(todos)
+      .filter(
+        (activity) => activity.occurrences >= minOccurrences && !repeatingKeys.has(activity.key),
+      )
+      // 제목 동률은 localeCompare 순서라 orderBy(코드 단위 비교) 대신 비교 함수를 쓴다
+      .toSorted(
+        (left, right) =>
+          right.occurrences - left.occurrences ||
+          right.completedOccurrences - left.completedOccurrences ||
+          left.title.localeCompare(right.title),
+      )
+      .slice(0, MAX_SUGGESTION_CANDIDATES)
+      .map((activity, index) => ({
+        id: `a${index + 1}`,
+        title: activity.title,
+        occurrences: activity.occurrences,
+        completed: activity.completedOccurrences,
+        completionRate: completionRate(activity.completedOccurrences, activity.occurrences),
+        days: activity.days,
+        recordedTime: activity.recordedTime,
+        categoryName: activity.categoryName,
+      }))
+  );
 }
 
 /** 근거 기반 신뢰도. 같은 활동을 여러 번 끝냈을수록 높다. */

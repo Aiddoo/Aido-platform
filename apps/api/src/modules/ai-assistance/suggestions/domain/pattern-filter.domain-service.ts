@@ -9,13 +9,13 @@ import type { DetectedPattern } from "./suggestions.constants.js";
  */
 export function dedupeByTitlePrefixAndDays(patterns: DetectedPattern[]): DetectedPattern[] {
   const seen = new Map<string, DetectedPattern>();
-  for (const p of patterns) {
-    const firstTwoWords = p.title.trim().split(/\s+/).slice(0, 2).join(" ");
-    const daysKey = [...p.daysOfWeek].sort().join(",");
+  for (const pattern of patterns) {
+    const firstTwoWords = pattern.title.trim().split(/\s+/).slice(0, 2).join(" ");
+    const daysKey = pattern.daysOfWeek.toSorted().join(",");
     const key = `${firstTwoWords}|${daysKey}`;
     const existing = seen.get(key);
-    if (existing == null || p.confidence > existing.confidence) {
-      seen.set(key, p);
+    if (existing == null || pattern.confidence > existing.confidence) {
+      seen.set(key, pattern);
     }
   }
   return [...seen.values()];

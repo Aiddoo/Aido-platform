@@ -134,9 +134,7 @@ export function computeTimePatterns(
     }
   }
 
-  return orderTimePatterns(
-    Array.from(hourCounts.entries()).map(([hour, count]) => ({ hour, count })),
-  );
+  return orderTimePatterns([...hourCounts].map(([hour, count]) => ({ hour, count })));
 }
 
 export function computeDailyCompletions(params: {
