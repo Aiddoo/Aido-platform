@@ -6,7 +6,7 @@ import {
   getMonthViewDayState,
   getPickerDayType,
   getRepeatWeekDays,
-  getWeekRangeBand,
+  findWeekRangeBand,
 } from './calendar-day.view-model';
 import type { CalendarDayCell } from './calendar-month.view-model';
 
@@ -102,8 +102,8 @@ describe('getMonthViewDayState', () => {
   });
 });
 
-describe('getWeekRangeBand', () => {
-  const day = (overrides: Partial<Parameters<typeof getWeekRangeBand>[0][number]> = {}) => ({
+describe('findWeekRangeBand', () => {
+  const day = (overrides: Partial<Parameters<typeof findWeekRangeBand>[0][number]> = {}) => ({
     isInRange: false,
     isRangeStart: false,
     isRangeEnd: false,
@@ -121,7 +121,7 @@ describe('getWeekRangeBand', () => {
     });
 
     // When
-    const band = getWeekRangeBand(days);
+    const band = findWeekRangeBand(days);
 
     // Then
     expect(band).toEqual({ startRatio: 1.5 / 7, endRatio: 3.5 / 7 });
@@ -132,7 +132,7 @@ describe('getWeekRangeBand', () => {
     const days = range(7).map(() => day({ isInRange: true }));
 
     // When
-    const band = getWeekRangeBand(days);
+    const band = findWeekRangeBand(days);
 
     // Then
     expect(band).toEqual({ startRatio: 0, endRatio: 1 });
@@ -143,7 +143,7 @@ describe('getWeekRangeBand', () => {
     const days = week({});
 
     // When
-    const band = getWeekRangeBand(days);
+    const band = findWeekRangeBand(days);
 
     // Then
     expect(band).toBeNull();

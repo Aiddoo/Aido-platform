@@ -20,7 +20,7 @@ export function AddTodoRequestEntry() {
     enabled: isRequested,
     throwOnError: false,
   });
-  const categoryId = TodoCategoryPolicy.getInitialCategoryId(
+  const categoryId = TodoCategoryPolicy.findInitialCategoryId(
     categories.data?.categories ?? [],
     null,
   );

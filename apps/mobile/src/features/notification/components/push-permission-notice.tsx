@@ -47,7 +47,7 @@ export function PushPermissionNotice({ className }: PushPermissionNoticeProps) {
   const now = useMinuteNow();
   const { trackEvent } = useTrack();
   const isVisible =
-    PushPermissionPolicy.getAskMoment(permission, {
+    PushPermissionPolicy.findAskMoment(permission, {
       surface: 'feed',
       hasUpcomingTimedTodo: TodoPolicy.hasUpcomingTimedTodo(todayTodos.todos, {
         dateKey: todayKey,

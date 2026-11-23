@@ -25,7 +25,7 @@ export function preparePlanRequest<TInput>({
 }
 
 // AI_1318(같은 키로 다른 내용)만 새 키(null)를 쓰고, 그 밖은 같은 키로 다시 보내 서버가 한 번만 차감한다
-export function getRequestToRetry<TInput>(
+export function findRequestToRetry<TInput>(
   request: PreparedPlanRequest<TInput> | null,
   error: unknown,
 ): PreparedPlanRequest<TInput> | null {
@@ -34,5 +34,5 @@ export function getRequestToRetry<TInput>(
 
 export const PlanRequestPolicy = {
   preparePlanRequest,
-  getRequestToRetry,
+  findRequestToRetry,
 } as const;

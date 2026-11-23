@@ -4,7 +4,7 @@ import {
 } from '@aido/api/contracts/invite/v1';
 
 import {
-  findInvalidCharacters,
+  getInvalidCharacters,
   normalizeInviteCode,
   normalizeInviteCodeInput,
   normalizePastedInviteCode,
@@ -69,10 +69,10 @@ describe('normalizePastedInviteCode', () => {
   });
 });
 
-describe('findInvalidCharacters', () => {
+describe('getInvalidCharacters', () => {
   it.each(['0', 'O', '1', 'I', 'L'])('헷갈리기 쉬운 %s는 confusable로 분류한다', (character) => {
     // When
-    const [invalid] = findInvalidCharacters(character);
+    const [invalid] = getInvalidCharacters(character);
 
     // Then
     expect(invalid?.kind).toBe('confusable');
@@ -82,7 +82,7 @@ describe('findInvalidCharacters', () => {
     '그 밖에 코드에 없는 %s는 unused로 분류한다',
     (character) => {
       // When
-      const [invalid] = findInvalidCharacters(character);
+      const [invalid] = getInvalidCharacters(character);
 
       // Then
       expect(invalid?.kind).toBe('unused');

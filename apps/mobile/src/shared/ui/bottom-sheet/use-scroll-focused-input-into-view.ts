@@ -17,10 +17,10 @@ import {
 
 import type { FocusedFieldNode } from '../input/focused-field';
 import {
-  getFocusedInputScrollOffset,
+  findFocusedInputScrollOffset,
   getLayoutAboveKeyboard,
   type VerticalRect,
-} from './get-focused-input-scroll-offset';
+} from './find-focused-input-scroll-offset';
 
 // 칸 전체를 알리지 않는 입력은 안쪽 TextInput만 잴 수 있으므로 위로는 라벨, 아래로는 입력 칸 테두리·안쪽 여백까지 함께 보이게 한다
 const FOCUSED_INPUT_MARGIN_ABOVE = 40;
@@ -163,7 +163,7 @@ export function useScrollFocusedInputIntoView({
         keyboardTop,
         viewportTopLimit,
       );
-      const offset = getFocusedInputScrollOffset({
+      const offset = findFocusedInputScrollOffset({
         ...layoutAboveKeyboard,
         bottomInset,
         marginAbove: field == null ? FOCUSED_INPUT_MARGIN_ABOVE : 0,

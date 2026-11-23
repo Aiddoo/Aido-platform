@@ -8,7 +8,7 @@ import { match } from 'ts-pattern';
 /** 창 크기가 바뀔 때마다가 아니라 결정이 바뀔 때만 요청한다. 접고 펴면 바깥 화면은 세로로 묶고 안쪽 화면은 푼다 */
 export function useOrientationLock() {
   const screenOrientation = useScreenOrientation();
-  const orientationLock = WindowLayoutPolicy.getOrientationLock(useAppWindow());
+  const orientationLock = WindowLayoutPolicy.findOrientationLock(useAppWindow());
 
   useEffect(() => {
     match(orientationLock)

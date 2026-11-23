@@ -115,7 +115,7 @@ PremiumNotice.GrantEnded = function GrantEnded({ className }: PremiumNoticeProps
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const dateFormatContext = useDateFormatContext();
   const todayKey = useTodayKey();
-  const grantEndedAt = PremiumAccessPolicy.getRecentGrantEndedAt(user.premiumAccess);
+  const grantEndedAt = PremiumAccessPolicy.findRecentGrantEndedAt(user.premiumAccess);
 
   if (grantEndedAt == null) {
     return null;

@@ -166,7 +166,7 @@ InviteWelcomeBottomSheet.Welcome = function Welcome({ redemption }: WelcomeProps
         textBreakStrategy="highQuality"
       >
         {/* 친구 요청 상태면 "친구를 맺었다"는 문구를 쓰지 않는다 */}
-        {match({ reason: InviteRedemptionPolicy.getMissingRewardReason(redemption), isRequested })
+        {match({ reason: InviteRedemptionPolicy.findMissingRewardReason(redemption), isRequested })
           .with({ reason: 'already-claimed', isRequested: true }, () =>
             t('welcome.requestedAlreadyClaimedDescription', { name }),
           )

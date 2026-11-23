@@ -30,7 +30,7 @@ export const redemptionResultSchema = z.discriminatedUnion('outcome', [
 export type RedemptionResult = z.infer<typeof redemptionResultSchema>;
 
 // 이미 친구였으면 친구 상태가 바뀌지 않아 null이다
-function getFriendship(result: RedemptionResult) {
+function findFriendship(result: RedemptionResult) {
   return result.outcome === REDEEM_OUTCOME.ALREADY_FRIENDS ? null : result.friendship;
 }
 
@@ -54,11 +54,11 @@ function isAlreadyFriends(result: RedemptionResult) {
 
 // 초대한 사람 친구 자리가 꽉 차 친구 요청만 보냈다
 function isFriendRequestOnly(result: RedemptionResult) {
-  return getFriendship(result) === INVITE_FRIENDSHIP.REQUESTED;
+  return findFriendship(result) === INVITE_FRIENDSHIP.REQUESTED;
 }
 
 // 같은 기기·신원으로 이미 받았거나 이미 쓰던 계정이라 보상이 없다
-function getMissingRewardReason(result: RedemptionResult) {
+function findMissingRewardReason(result: RedemptionResult) {
   return match({ outcome: result.outcome, hasReward: getGrantedPremiumDays(result) > 0 })
     .with({ hasReward: true }, () => null)
     .with({ outcome: REDEEM_OUTCOME.REDEEMED }, () => 'already-claimed' as const)
@@ -69,10 +69,10 @@ function getMissingRewardReason(result: RedemptionResult) {
 
 /** 서버가 돌려준 수락 결과 */
 export const InviteRedemptionPolicy = {
-  getFriendship,
+  findFriendship,
   getGrantedPremiumDays,
   isAlreadyAccepted,
   isAlreadyFriends,
   isFriendRequestOnly,
-  getMissingRewardReason,
+  findMissingRewardReason,
 } as const;

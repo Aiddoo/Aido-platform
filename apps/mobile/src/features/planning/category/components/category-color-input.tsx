@@ -2,7 +2,7 @@ import { useAppWindow } from '@src/shared/hooks/use-app-window';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, SheetChipRow } from '@src/shared/ui';
 import { WindowLayoutPolicy } from '@src/shared/ui';
-import { getChipRevealScrollX } from '@src/shared/ui';
+import { findChipRevealScrollX } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { RadioGroup } from 'heroui-native';
 import { type ComponentProps, type ComponentRef, useRef } from 'react';
@@ -46,7 +46,7 @@ export function CategoryColorInput({
     if (chip == null || rowWidthRef.current === 0) {
       return;
     }
-    const scrollX = getChipRevealScrollX({
+    const scrollX = findChipRevealScrollX({
       chip,
       scrollX: rowScrollXRef.current,
       rowWidth: rowWidthRef.current,

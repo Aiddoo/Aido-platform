@@ -64,7 +64,7 @@ export function hasFreeTrial(freeTrial: FreeTrial | null) {
 }
 
 /** 결제 전 예상일이다. 실제 체험 끝은 결제 뒤 서버(premiumPeriodEndsAt)가 알려 준다. 월 단위는 말일을 넘기면 그 달 마지막 날로 맞춘다 */
-function getFreeTrialEndDateKey(plan: SubscriptionPlan, todayKey: DateKey) {
+function findFreeTrialEndDateKey(plan: SubscriptionPlan, todayKey: DateKey) {
   if (plan.freeTrial == null) {
     return null;
   }
@@ -78,8 +78,8 @@ function getFreeTrialEndDateKey(plan: SubscriptionPlan, todayKey: DateKey) {
 }
 
 /** 서버가 체험 끝 N일 전에 한 번 알린다. 체험이 그보다 짧아 오늘이거나 지난 날이면 알림이 없다 */
-function getFreeTrialReminderDateKey(plan: SubscriptionPlan, todayKey: DateKey) {
-  const endDateKey = getFreeTrialEndDateKey(plan, todayKey);
+function findFreeTrialReminderDateKey(plan: SubscriptionPlan, todayKey: DateKey) {
+  const endDateKey = findFreeTrialEndDateKey(plan, todayKey);
   if (endDateKey == null) {
     return null;
   }
@@ -97,7 +97,7 @@ export const SubscriptionPolicy = {
   getMonthlyEquivalent,
   findSelectedPlan,
   findPlanByType,
-  getFreeTrialEndDateKey,
-  getFreeTrialReminderDateKey,
+  findFreeTrialEndDateKey,
+  findFreeTrialReminderDateKey,
   getAmountDueToday,
 } as const;

@@ -72,7 +72,7 @@ export function withTodoRepeatFormDayToggled(
 }
 
 /** 날짜 종료를 아직 안 골랐어도 첫 회차는 알 수 있으므로 끝이 없는 규칙으로 계산한다. 첫 할 일이 실제로 생기는 날이다 */
-export function getTodoRepeatFormFirstOccurrenceKey(values: TodoRepeatFormValues): DateKey | null {
+export function findTodoRepeatFormFirstOccurrenceKey(values: TodoRepeatFormValues): DateKey | null {
   const repeat = toTodoRepeat({ ...values, endType: 'NEVER' });
   return repeat == null
     ? null
@@ -94,7 +94,7 @@ export function withTodoRepeatFormCalendarDate(
 
   const startDateKey = values.startDate;
   const isFirstOccurrence =
-    dateKey === getTodoRepeatFormFirstOccurrenceKey(values) && dateKey !== startDateKey;
+    dateKey === findTodoRepeatFormFirstOccurrenceKey(values) && dateKey !== startDateKey;
   const hasPickedPeriod = values.endType === 'UNTIL' && values.untilDate != null;
 
   if (isFirstOccurrence || hasPickedPeriod) {

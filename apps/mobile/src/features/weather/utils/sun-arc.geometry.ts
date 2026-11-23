@@ -64,7 +64,7 @@ function pointOnCurve([p0, p1, p2, p3]: CubicCurve, t: number): DialPoint {
 }
 
 /** 밤은 반으로 나눠 양 끝 곡선에 둔다. 일출·일몰 중 하나라도 없으면(백야·극야) null이다 */
-export function getSunArcPosition(
+export function findSunArcPosition(
   day: Pick<DailyForecastEntry, 'sunrise' | 'sunset'>,
   now: Instant,
 ): DialPoint | null {

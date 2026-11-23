@@ -122,7 +122,7 @@ function toEndingNotice(
   if (!PremiumAccessPolicy.isExpiringSoon(access, now, timeZone)) {
     return null;
   }
-  return PremiumAccessPolicy.getDaysLeft(access, now, timeZone) === 0 ? 'today' : 'tomorrow';
+  return PremiumAccessPolicy.findDaysLeft(access, now, timeZone) === 0 ? 'today' : 'tomorrow';
 }
 
 function toBankedReward(access: PremiumAccess, endsAt: Instant | null): BankedReward | null {
@@ -168,7 +168,7 @@ function toPaidDetails(access: PremiumAccess, now: Instant): PaidReceiptDetails 
 }
 
 function toBankedRewardFootnote(access: PremiumAccess): SubscriptionReceiptFootnote {
-  const startsAt = PremiumAccessPolicy.getBankedRewardStartsAt(access);
+  const startsAt = PremiumAccessPolicy.findBankedRewardStartsAt(access);
   return startsAt == null
     ? { type: 'rewardStartsAfterSubscription', days: access.bankedDays }
     : { type: 'rewardStartsOn', days: access.bankedDays, date: startsAt };
@@ -195,7 +195,7 @@ function toPaidEndingNotice(
   if (endingNotice != null) {
     return endingNotice;
   }
-  const renewalDaysLeft = PremiumAccessPolicy.getAnnualRenewalDaysLeft(access, now, timeZone);
+  const renewalDaysLeft = PremiumAccessPolicy.findAnnualRenewalDaysLeft(access, now, timeZone);
   return renewalDaysLeft == null ? null : { type: 'annualRenewing', daysLeft: renewalDaysLeft };
 }
 
@@ -255,7 +255,7 @@ function toTrialEndingNotice(
   access: PremiumAccess,
   { now, timeZone }: Pick<SubscriptionReceiptContext, 'now' | 'timeZone'>,
 ): TrialEndingNotice | null {
-  const daysLeft = PremiumAccessPolicy.getTrialDaysLeft(access, now, timeZone);
+  const daysLeft = PremiumAccessPolicy.findTrialDaysLeft(access, now, timeZone);
   if (daysLeft == null || !PremiumAccessPolicy.isTrialEndingSoon(access, now, timeZone)) {
     return null;
   }
@@ -280,7 +280,7 @@ function toRewardDetails(
   { now, timeZone }: SubscriptionReceiptContext,
 ): RewardReceiptDetails | null {
   const { endsAt, periodEndsAt } = access;
-  const daysLeft = PremiumAccessPolicy.getDaysLeft(access, now, timeZone);
+  const daysLeft = PremiumAccessPolicy.findDaysLeft(access, now, timeZone);
   if (endsAt == null || periodEndsAt == null || daysLeft == null) {
     return null;
   }

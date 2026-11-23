@@ -15,7 +15,7 @@ interface ChipRevealInput {
 }
 
 /** 칩이 줄 양 끝 여백 안에 다 보이도록 미는 가장 작은 스크롤 위치. 이미 다 보이면 null이라 누른 칩이 줄 앞으로 끌려가지 않는다 */
-export function getChipRevealScrollX({ chip, scrollX, rowWidth }: ChipRevealInput): number | null {
+export function findChipRevealScrollX({ chip, scrollX, rowWidth }: ChipRevealInput): number | null {
   if (chip.x < scrollX) {
     return chip.x;
   }

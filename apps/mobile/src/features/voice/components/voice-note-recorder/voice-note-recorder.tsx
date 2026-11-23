@@ -549,7 +549,7 @@ function useVoiceNoteRecordLimit() {
   const { data: snapshot } = useQuery(useGetEntitlementsQueryOptions());
   const gate = useEntitlementGate('VOICE_NOTE', { surface: 'voice_note' });
   const maxSeconds =
-    snapshot == null ? null : EntitlementPolicy.getMaxSeconds(snapshot, 'VOICE_NOTE');
+    snapshot == null ? null : EntitlementPolicy.findMaxSeconds(snapshot, 'VOICE_NOTE');
 
   const finishOrPromptLimit = ({ hasText, finish }: { hasText: boolean; finish: () => void }) => {
     const minutes = Math.round(((maxSeconds ?? 0) * SECOND_MS) / MINUTE_MS);
@@ -563,7 +563,7 @@ function useVoiceNoteRecordLimit() {
     const premiumMaxSeconds =
       snapshot == null
         ? null
-        : EntitlementPolicy.getPlanMaxSeconds(snapshot, 'VOICE_NOTE', 'premium');
+        : EntitlementPolicy.findPlanMaxSeconds(snapshot, 'VOICE_NOTE', 'premium');
     const premiumMinutes = Math.round(((premiumMaxSeconds ?? 0) * SECOND_MS) / MINUTE_MS);
     gate.promptLimit({
       title: t('limit.title', { minutes }),

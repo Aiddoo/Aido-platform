@@ -60,7 +60,7 @@ export function getKeyboardSheetContentPadding({
 }
 
 /** 시트가 위쪽 한계에 닿아 바닥이 키보드에 가린 높이. 키보드가 없거나 시트가 키보드 위에 다 들어가면 null */
-export function getKeyboardHiddenHeight({
+export function findKeyboardHiddenHeight({
   contentHeight,
   keyboardHeight,
   maxSheetHeight,

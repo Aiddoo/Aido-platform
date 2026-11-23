@@ -68,7 +68,7 @@ function isMarketingOptOut(response: PushNotificationResponse) {
  * 리마인드 알림 버튼을 누른 응답이면 할 일. 할 일을 여는 리마인드 알림의 버튼만 받고,
  * 다시 알림은 누른 알림 id로 한 번만 예약하므로 서버 기록이 있는 알림만 받는다
  */
-function getTodoReminderAction(
+function findTodoReminderAction(
   response: PushNotificationResponse,
 ): TodoReminderActionRequest | null {
   const action = todoReminderActionSchema.safeParse(response.actionIdentifier);
@@ -168,7 +168,7 @@ export function rememberHandledResponse(
 export const PushNotificationResponsePolicy = {
   isMarketingOptOut,
   getResponseAction,
-  getTodoReminderAction,
+  findTodoReminderAction,
   shouldDismissNotification,
   getOpenAppState,
 } as const;

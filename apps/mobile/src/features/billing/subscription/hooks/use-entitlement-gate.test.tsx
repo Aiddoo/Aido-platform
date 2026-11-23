@@ -258,7 +258,7 @@ describe('useEntitlementGate', () => {
     const snapshot = queryClient.getQueryData<EntitlementSnapshot>(
       ENTITLEMENT_QUERY_KEYS.snapshot(),
     );
-    expect(snapshot && EntitlementPolicy.getRemainingCount(snapshot, 'AI_PARSE')).toBe(0);
+    expect(snapshot && EntitlementPolicy.findRemainingCount(snapshot, 'AI_PARSE')).toBe(0);
     expect(analytics.trackEvent).toHaveBeenCalledWith('limit_reached_shown', {
       feature: 'ai_parse',
       surface: 'add_todo_sheet',

@@ -1,6 +1,6 @@
 import {
   getBodyHeightAboveKeyboard,
-  getKeyboardHiddenHeight,
+  findKeyboardHiddenHeight,
   getKeyboardSheetContentPadding,
   getKeyboardSheetMaxHeight,
   getKeyboardSheetTopInset,
@@ -35,9 +35,9 @@ describe('getKeyboardSheetMaxHeight', () => {
   });
 });
 
-describe('getKeyboardHiddenHeight', () => {
+describe('findKeyboardHiddenHeight', () => {
   function getHiddenHeight(contentHeight: number, keyboardHeight: number) {
-    return getKeyboardHiddenHeight({
+    return findKeyboardHiddenHeight({
       contentHeight,
       keyboardHeight,
       maxSheetHeight: MAX_SHEET_HEIGHT,
@@ -150,7 +150,7 @@ describe('getKeyboardSheetTopInset', () => {
       const { windowHeight, safeAreaTop, topInset, contentHeight } = SHORT_WINDOWS[device];
 
       // When
-      const hiddenHeight = getKeyboardHiddenHeight({
+      const hiddenHeight = findKeyboardHiddenHeight({
         contentHeight,
         keyboardHeight,
         maxSheetHeight: getKeyboardSheetMaxHeight(windowHeight, topInset),
@@ -168,7 +168,7 @@ describe('getKeyboardSheetTopInset', () => {
     const { windowHeight, safeAreaTop, topInset } = SHORT_WINDOWS.iPhoneDuoFolded;
 
     // When
-    const hiddenHeight = getKeyboardHiddenHeight({
+    const hiddenHeight = findKeyboardHiddenHeight({
       contentHeight: 1000,
       keyboardHeight: 336,
       maxSheetHeight: getKeyboardSheetMaxHeight(windowHeight, topInset),

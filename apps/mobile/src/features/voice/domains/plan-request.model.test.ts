@@ -46,7 +46,7 @@ describe('preparePlanRequest', () => {
   });
 });
 
-describe('getRequestToRetry', () => {
+describe('findRequestToRetry', () => {
   const previous = { fingerprint: 'a', idempotencyKey: 'key-1', input: 'a' };
 
   it('내용이 다르다는 AI_1318 뒤에는 다음에 누를 때 새 키를 만든다', () => {
@@ -54,7 +54,7 @@ describe('getRequestToRetry', () => {
     const error = new ApiError('AI_1318', '오류', 422);
 
     // When
-    const next = PlanRequestPolicy.getRequestToRetry(previous, error);
+    const next = PlanRequestPolicy.findRequestToRetry(previous, error);
 
     // Then
     expect(next).toBeNull();
@@ -65,7 +65,7 @@ describe('getRequestToRetry', () => {
     const error = new ApiError('AI_1314', '처리 중', 409);
 
     // When
-    const next = PlanRequestPolicy.getRequestToRetry(previous, error);
+    const next = PlanRequestPolicy.findRequestToRetry(previous, error);
 
     // Then
     expect(next).toBe(previous);

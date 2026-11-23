@@ -45,7 +45,7 @@ import { isPlanKeyConflictError, isSourceMemoMissingError } from '../../domains/
 import { useApplyActionPlanMutationOptions } from '../../queries/voice.mutations';
 import { type PlanReviewFormValues } from '../../schemas/plan-review-form.schema';
 import { toPlanSelection, toPlannedActions } from '../../utils/plan-review-draft';
-import { getPlanTodoSubtitle } from '../../utils/plan-todo-subtitle.view-model';
+import { findPlanTodoSubtitle } from '../../utils/plan-todo-subtitle.view-model';
 import { PlanTodoEditBottomSheet } from './plan-todo-edit-bottom-sheet';
 
 const LOADING_ROW_COUNT = 3;
@@ -422,7 +422,7 @@ PlanReview.TodoRow = function PlanTodoRow({
     return null;
   }
 
-  const subtitle = getPlanTodoSubtitle(todo, {
+  const subtitle = findPlanTodoSubtitle(todo, {
     todayKey,
     timeFormat: preference.timeFormat,
     dateFormatContext,

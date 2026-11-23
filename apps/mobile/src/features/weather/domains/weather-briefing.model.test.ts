@@ -17,7 +17,7 @@ import {
 } from '../__tests__/weather-report.fixtures';
 import {
   getBriefingState,
-  getWeatherBriefing,
+  findWeatherBriefing,
   WeatherBriefingPolicy,
 } from './weather-briefing.model';
 
@@ -53,13 +53,13 @@ const rainyReport = createWeatherReport({
 const HOURLY_FORECAST = rainyReport.hourly;
 const DRY_HOURS = range(9).map(() => ({ precipitationChance: 10 }));
 
-describe('getWeatherBriefing', () => {
+describe('findWeatherBriefing', () => {
   it('서버가 머리글을 판단하지 못했으면(할 일 읽기 실패) 앱이 다시 판단하지 않고 브리핑하지 않는다', () => {
     // Given
     const undecided = createWeatherReport({ hourly: HOURLY, headline: null });
 
     // When
-    const briefing = getWeatherBriefing(undecided, [createBriefingTodo()], CLOCK);
+    const briefing = findWeatherBriefing(undecided, [createBriefingTodo()], CLOCK);
 
     // Then
     expect(briefing).toBeNull();
@@ -72,8 +72,8 @@ describe('getWeatherBriefing', () => {
     const unscheduledTodo = createBriefingTodo({ id: 2, scheduledAt: null });
 
     // When
-    const withTodo = getWeatherBriefing(calmReport, [createBriefingTodo()], CLOCK);
-    const withoutTodo = getWeatherBriefing(calmReport, [unscheduledTodo], CLOCK);
+    const withTodo = findWeatherBriefing(calmReport, [createBriefingTodo()], CLOCK);
+    const withoutTodo = findWeatherBriefing(calmReport, [unscheduledTodo], CLOCK);
 
     // Then
     expect(withTodo?.kind === 'dry' && withTodo.todos.map(({ todoId }) => todoId)).toEqual([1]);
@@ -82,7 +82,7 @@ describe('getWeatherBriefing', () => {
 
   it('서버가 비와 겹친다고 고른 할 일을 그 시간의 예보·서버가 고른 옮길 시각 후보와 함께 돌려준다', () => {
     // When
-    const briefing = getWeatherBriefing(rainyReport, [createBriefingTodo()], CLOCK);
+    const briefing = findWeatherBriefing(rainyReport, [createBriefingTodo()], CLOCK);
 
     // Then
     expect(briefing?.kind).toBe('rainy');
@@ -114,7 +114,7 @@ describe('getWeatherBriefing', () => {
     ];
 
     // When
-    const briefing = getWeatherBriefing(serverReport, todos, CLOCK);
+    const briefing = findWeatherBriefing(serverReport, todos, CLOCK);
 
     // Then
     expect(briefing?.kind === 'rainy' && briefing.todos.map(({ todoId }) => todoId)).toEqual([
@@ -127,7 +127,7 @@ describe('getWeatherBriefing', () => {
     const otherTodo = createBriefingTodo({ id: 5 });
 
     // When
-    const briefing = getWeatherBriefing(rainyReport, [otherTodo], CLOCK);
+    const briefing = findWeatherBriefing(rainyReport, [otherTodo], CLOCK);
 
     // Then
     expect(briefing?.kind === 'dry' && briefing.todos.map(({ todoId }) => todoId)).toEqual([5]);
@@ -138,7 +138,7 @@ describe('getWeatherBriefing', () => {
     const todos = [createBriefingTodo({ id: 1, completed: true })];
 
     // When
-    const briefing = getWeatherBriefing(rainyReport, todos, CLOCK);
+    const briefing = findWeatherBriefing(rainyReport, todos, CLOCK);
 
     // Then
     expect(briefing?.kind === 'rainy' && briefing.todos.map(({ completed }) => completed)).toEqual([
@@ -159,7 +159,7 @@ describe('getWeatherBriefing', () => {
     });
 
     // When
-    const briefing = getWeatherBriefing(report, [createBriefingTodo()], CLOCK);
+    const briefing = findWeatherBriefing(report, [createBriefingTodo()], CLOCK);
 
     // Then
     expect(briefing?.kind).toBe(kind);
@@ -183,8 +183,8 @@ describe('getWeatherBriefing', () => {
     };
 
     // When
-    const stormy = getWeatherBriefing(stormReport, [createBriefingTodo()], CLOCK);
-    const hot = getWeatherBriefing(hotReport, [createBriefingTodo()], CLOCK);
+    const stormy = findWeatherBriefing(stormReport, [createBriefingTodo()], CLOCK);
+    const hot = findWeatherBriefing(hotReport, [createBriefingTodo()], CLOCK);
 
     // Then
     expect(stormy).toMatchObject({ kind: 'stormy', range: serverWindow });
@@ -199,7 +199,7 @@ describe('getWeatherBriefing', () => {
     });
 
     // When
-    const briefing = getWeatherBriefing(wetNowReport, [], CLOCK);
+    const briefing = findWeatherBriefing(wetNowReport, [], CLOCK);
 
     // Then
     expect(briefing).toEqual({
@@ -218,7 +218,7 @@ describe('getWeatherBriefing', () => {
     });
 
     // When
-    const briefing = getWeatherBriefing(tomorrowRainReport, [], CLOCK);
+    const briefing = findWeatherBriefing(tomorrowRainReport, [], CLOCK);
 
     // Then
     expect(briefing).toMatchObject({
@@ -235,7 +235,7 @@ describe('getWeatherBriefing', () => {
     });
 
     // When
-    const briefing = getWeatherBriefing(clearReport, [], CLOCK);
+    const briefing = findWeatherBriefing(clearReport, [], CLOCK);
 
     // Then
     expect(briefing).toEqual({
@@ -253,8 +253,8 @@ describe('getWeatherBriefing', () => {
     const completedTodo = createBriefingTodo({ completed: true });
 
     // When
-    const withoutRows = getWeatherBriefing(tomorrowReport, [], CLOCK);
-    const withRows = getWeatherBriefing(tomorrowReport, [completedTodo], CLOCK);
+    const withoutRows = findWeatherBriefing(tomorrowReport, [], CLOCK);
+    const withRows = findWeatherBriefing(tomorrowReport, [completedTodo], CLOCK);
 
     // Then
     expect(withoutRows).toEqual({
@@ -388,7 +388,7 @@ describe('toBriefingTodo', () => {
   });
 });
 
-describe('getSuggestedStartAt', () => {
+describe('findSuggestedStartAt', () => {
   const RANGE = {
     startsAt: toInstant('2026-11-02T06:00:00.000Z'),
     endsAt: toInstant('2026-11-02T08:00:00.000Z'),
@@ -399,7 +399,7 @@ describe('getSuggestedStartAt', () => {
 
   it('추천 시간대가 이미 시작됐으면 다음 예보 시각을 제안한다', () => {
     // When
-    const startAt = WeatherBriefingPolicy.getSuggestedStartAt(RANGE, HOURLY, NOW);
+    const startAt = WeatherBriefingPolicy.findSuggestedStartAt(RANGE, HOURLY, NOW);
 
     // Then
     // 15~17시 추천을 15:26에 고르면 다음 정시는 16시다
@@ -411,7 +411,7 @@ describe('getSuggestedStartAt', () => {
     const lateNow = toInstant('2026-11-02T07:10:00.000Z');
 
     // When
-    const startAt = WeatherBriefingPolicy.getSuggestedStartAt(RANGE, HOURLY, lateNow);
+    const startAt = WeatherBriefingPolicy.findSuggestedStartAt(RANGE, HOURLY, lateNow);
 
     // Then
     expect(startAt).toBeNull();
@@ -429,7 +429,7 @@ describe('getSuggestedStartAt', () => {
     };
 
     // When
-    const startAt = WeatherBriefingPolicy.getSuggestedStartAt(offsetRange, offsetHourly, NOW);
+    const startAt = WeatherBriefingPolicy.findSuggestedStartAt(offsetRange, offsetHourly, NOW);
 
     // Then
     expect(startAt).toBe('2026-11-02T06:30:00.000Z');

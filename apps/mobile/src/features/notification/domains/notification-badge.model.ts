@@ -7,7 +7,7 @@ function hasUnread(unreadCount: UnreadCount) {
 }
 
 /** 앱 아이콘 배지에 쓸 수. null이면 배지를 건드리지 않는다 */
-function getBadgeCount(
+function findBadgeCount(
   unreadCount: UnreadCount | undefined,
   { authStatus }: { authStatus: AuthStatus },
 ): UnreadCount | null {
@@ -23,5 +23,5 @@ function getBadgeCount(
 
 export const NotificationBadgePolicy = {
   hasUnread,
-  getBadgeCount,
+  findBadgeCount,
 } as const;

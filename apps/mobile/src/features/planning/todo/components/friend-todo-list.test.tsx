@@ -50,7 +50,7 @@ describe('FriendTodoList', () => {
             <FriendTodoList
               friendId={FRIEND_ID}
               renderRowAction={() => null}
-              getMenuAction={() => null}
+              findMenuAction={() => null}
               emptyAction={null}
             />
           </Suspense>
@@ -88,7 +88,7 @@ describe('FriendTodoList', () => {
         <FriendTodoList
           friendId={FRIEND_ID}
           renderRowAction={() => null}
-          getMenuAction={() => null}
+          findMenuAction={() => null}
           emptyAction={null}
         />
       </Suspense>,

@@ -59,7 +59,7 @@ function usePushOnboardingDueState(): PushOnboardingGuardState {
     return isPermissionUnreadable ? 'closed' : 'pending';
   }
 
-  const askMoment = PushPermissionPolicy.getAskMoment(permission, {
+  const askMoment = PushPermissionPolicy.findAskMoment(permission, {
     surface: 'onboarding',
     signedUpAt: me.createdAt,
     prompt: { deferredAt },

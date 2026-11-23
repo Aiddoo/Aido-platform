@@ -150,7 +150,7 @@ export function WeatherDetailGrid() {
       toDisplayTemperature(current.temperature, unit),
   );
   const sunscreen = WeatherDetailPolicy.findSunscreenWindow(hourly, now, weather.location.timezone);
-  const direction = WeatherIndicatorPolicy.getCompassDirection(current);
+  const direction = WeatherIndicatorPolicy.findCompassDirection(current);
   const windSpeed = formatSpeed(current.windSpeed);
   const pressure = String(Math.round(current.pressure));
   const nextDayPrecipitation = WeatherDetailPolicy.calculateNextDayPrecipitation(hourly, now);

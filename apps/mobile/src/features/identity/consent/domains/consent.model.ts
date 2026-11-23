@@ -63,7 +63,7 @@ export interface ConsentResult {
 }
 
 /** 동의 시각이 있으면 동의, 철회 시각이 있으면 철회 결과다 */
-export function getConsentResult({
+export function findConsentResult({
   agreedAt,
   withdrawnAt,
 }: {

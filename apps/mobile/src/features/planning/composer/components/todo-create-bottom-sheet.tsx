@@ -78,7 +78,7 @@ TodoCreateBottomSheet.Form = function Form({ onMemoChanged }: TodoCreateBottomSh
   const [{ categoryId: requestedCategoryId, title, time, startVoice }] =
     useRouteParams(todoCreateParamsSchema);
   const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
-  const categoryId = TodoCategoryPolicy.getInitialCategoryId(
+  const categoryId = TodoCategoryPolicy.findInitialCategoryId(
     categoriesResult.categories,
     requestedCategoryId ?? null,
   );
@@ -193,7 +193,7 @@ function TodoCreateForm({
   // 저장하면 시트가 내려가는 동안에도 같은 제목이 남아 있다. 그동안 다시 보내지 않는다
   const isSubmitLocked = isSubmitting || isSubmitSuccessful;
   const isSubmitDisabled = !isValid || isSubmitLocked;
-  const voiceDismissAction = VoiceCapturePolicy.getDismissAction(voice.state);
+  const voiceDismissAction = VoiceCapturePolicy.findDismissAction(voice.state);
 
   useOnScreenBlur(voice.interrupt);
   // 시트가 다 열린 뒤 한 번만 시작한다. 동의·마이크를 거절하면 시트에 남아 마이크로 다시 시도한다

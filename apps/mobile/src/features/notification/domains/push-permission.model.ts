@@ -104,7 +104,7 @@ function isDenied(permission: PushPermission): boolean {
  * 알림을 묻는 곳은 셋이다. 가입 직후 알림 화면은 한 번, 할 일 시간을 정하면 그 자리에서 시스템 창,
  * 거절한 뒤에는 알림이 갈 할 일이 있을 때만 꺼짐 안내다. 허용했으면 묻지 않는다
  */
-function getAskMoment(permission: PushPermission, context: PushAskContext): PushAskMoment | null {
+function findAskMoment(permission: PushPermission, context: PushAskContext): PushAskMoment | null {
   if (isPushDeliverable(permission)) {
     return null;
   }
@@ -160,7 +160,7 @@ export const PushPermissionPolicy = {
   isUndecided,
   canRequestSystemDialog,
   canReceivePush,
-  getAskMoment,
+  findAskMoment,
   getDeviceStep,
   getNextStep,
 } as const;

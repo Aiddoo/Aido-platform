@@ -115,7 +115,7 @@ InviteCardActions.Redeem = function Redeem({ inviteCode }: { inviteCode: InviteC
           leaveInviteCard({
             pathname: '/feed',
             params:
-              InviteRedemptionPolicy.getFriendship(result) === INVITE_FRIENDSHIP.FRIENDS
+              InviteRedemptionPolicy.findFriendship(result) === INVITE_FRIENDSHIP.FRIENDS
                 ? { friendId }
                 : {},
           });

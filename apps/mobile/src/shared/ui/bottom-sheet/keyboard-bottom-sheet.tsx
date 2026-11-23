@@ -49,7 +49,7 @@ import {
 } from './bottom-sheet.constants';
 import {
   getBodyHeightAboveKeyboard,
-  getKeyboardHiddenHeight,
+  findKeyboardHiddenHeight,
   getKeyboardSheetContentPadding,
   getKeyboardSheetMaxHeight,
   getKeyboardSheetTopInset,
@@ -115,7 +115,7 @@ export function KeyboardBottomSheet({
   const keyboardHeight = useSharedValue(0);
   // 시트가 위쪽 한계에 닿으면 바닥이 키보드에 가린다(gorhom은 내용 영역을 줄이지 않는다). 다 올라간 위치로 정해 프레임마다 다시 붙지 않는다
   const keyboardHiddenHeight = useDerivedValue(() =>
-    getKeyboardHiddenHeight({
+    findKeyboardHiddenHeight({
       contentHeight: contentHeight.get(),
       keyboardHeight: keyboardHeight.get(),
       maxSheetHeight: maxDynamicContentSize,

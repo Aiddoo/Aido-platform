@@ -69,7 +69,7 @@ function classifyInvalidCharacter(character: string): InvalidCharacterKind {
 }
 
 // 입력 칸에 보이는 값(정규화·대문자) 기준으로 찾는다
-export function findInvalidCharacters(raw: string): InvalidInviteCodeCharacter[] {
+export function getInvalidCharacters(raw: string): InvalidInviteCodeCharacter[] {
   return normalizeInviteCodeInput(raw)
     .split('')
     .flatMap((character, index) =>

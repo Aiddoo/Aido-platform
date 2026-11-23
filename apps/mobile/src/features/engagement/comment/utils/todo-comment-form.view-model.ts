@@ -35,7 +35,7 @@ export function isComposerBlank({ items }: Pick<TodoCommentFormValues, 'items'>)
 }
 
 /** 보낼 글은 앞뒤 공백을 지운 값이다. 칸이 하나도 없으면 null */
-export function getTrimmedContents(
+export function findTrimmedContents(
   items: TodoCommentFormValues['items'],
 ): [string, ...string[]] | null {
   const [first, ...rest] = items.map((item) => item.content.trim());

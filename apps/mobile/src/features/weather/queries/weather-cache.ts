@@ -7,7 +7,7 @@ import { weatherReportQueryKeySchema } from '../schemas/weather-report-query-key
 import { WEATHER_QUERY_KEYS } from './weather-query-keys';
 
 /** 리포트 쿼리 키의 인자는 객체 하나이고 항상 마지막에 둔다 */
-function getReportKeyParams(queryKey: readonly unknown[]) {
+function findReportKeyParams(queryKey: readonly unknown[]) {
   const parsed = weatherReportQueryKeySchema.safeParse(last(queryKey));
   return parsed.success ? parsed.data : null;
 }
@@ -48,7 +48,7 @@ export function removeOutdatedWeatherReports(
   queryClient.removeQueries({
     queryKey: WEATHER_QUERY_KEYS.reports(),
     predicate: (query) => {
-      const params = getReportKeyParams(query.queryKey);
+      const params = findReportKeyParams(query.queryKey);
       return params != null && params.locationRevision < locationRevision;
     },
   });

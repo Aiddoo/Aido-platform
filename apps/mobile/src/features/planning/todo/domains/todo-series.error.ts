@@ -46,7 +46,7 @@ export function isTodoSeriesFailure(error: unknown): boolean {
 }
 
 // 한도 거절(TODO_0842)은 서버가 상세에 limit을 항상 싣는다. 다른 실패는 문구가 한도를 쓰지 않는다
-export function getTodoSeriesLimit(error: unknown): number | null {
+export function findTodoSeriesLimit(error: unknown): number | null {
   if (!isApiError(error)) {
     return null;
   }

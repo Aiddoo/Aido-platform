@@ -165,7 +165,7 @@ function toCalmBriefing(todos: ForecastTodo[]): BriefingResult {
  * 목록에 기대는 표시만 고른다. 브리핑에서 체크해 완료해도 카드가 바뀌지 않도록 완료한 할 일도 줄로 남긴다.
  * 서버가 판단하지 못한 리포트(오늘 할 일 읽기 실패)는 null이다.
  */
-export function getWeatherBriefing(
+export function findWeatherBriefing(
   report: BriefingSource,
   todos: readonly BriefingTodo[],
   { now }: { now: Instant },
@@ -225,7 +225,7 @@ export function getWeatherBriefing(
 }
 
 /** 추천 시간대 안에서 지금 이후 첫 시간별 예보의 시작 시각. 30분 단위 시간대도 예보 칸에 맞는다. 모두 지났으면 제안하지 않는다. */
-function getSuggestedStartAt(
+function findSuggestedStartAt(
   range: HourWindow,
   hourly: readonly HourlyForecastEntry[],
   now: Instant,
@@ -273,7 +273,7 @@ export const WeatherBriefingPolicy = {
   isTodoWithinRange,
   getUncompletedTodoIds,
   toBriefingTodo,
-  getSuggestedStartAt,
+  findSuggestedStartAt,
   getForecastTodos,
   getAffectedTodos,
 } as const;

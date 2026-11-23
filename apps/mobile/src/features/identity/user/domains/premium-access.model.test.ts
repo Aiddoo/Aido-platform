@@ -58,13 +58,13 @@ describe('hasBankedDays', () => {
   });
 });
 
-describe('getDaysLeft', () => {
+describe('findDaysLeft', () => {
   it('끝나는 시각이 없으면 null을 반환한다', () => {
     // Given
     const access = createPremiumAccess({ endsAt: null });
 
     // When
-    const result = PremiumAccessPolicy.getDaysLeft(
+    const result = PremiumAccessPolicy.findDaysLeft(
       access,
       toInstant('2026-10-25T00:00:00Z'),
       SEOUL,
@@ -79,7 +79,7 @@ describe('getDaysLeft', () => {
     const access = createPremiumAccess();
 
     // When
-    const result = PremiumAccessPolicy.getDaysLeft(
+    const result = PremiumAccessPolicy.findDaysLeft(
       access,
       toInstant('2026-10-25T03:00:00Z'),
       SEOUL,
@@ -104,7 +104,7 @@ describe('getDaysLeft', () => {
       });
 
       // When
-      const result = PremiumAccessPolicy.getDaysLeft(access, toInstant(now), timeZone);
+      const result = PremiumAccessPolicy.findDaysLeft(access, toInstant(now), timeZone);
 
       // Then
       expect(result).toBe(expected);
@@ -289,13 +289,13 @@ describe('hasEndedSince', () => {
   });
 });
 
-describe('getRecentGrantEndedAt', () => {
+describe('findRecentGrantEndedAt', () => {
   it('보상이 끝나 무료로 돌아왔으면 서버가 준 끝난 시각을 반환한다', () => {
     // Given
     const { premiumAccess } = toUser(PREMIUM_ME_EXAMPLES.endedReward);
 
     // When
-    const result = PremiumAccessPolicy.getRecentGrantEndedAt(premiumAccess);
+    const result = PremiumAccessPolicy.findRecentGrantEndedAt(premiumAccess);
 
     // Then
     expect(result).toEqual(toInstant('2028-03-04T04:00:00.000Z'));
@@ -310,7 +310,7 @@ describe('getRecentGrantEndedAt', () => {
     });
 
     // When
-    const result = PremiumAccessPolicy.getRecentGrantEndedAt(premiumAccess);
+    const result = PremiumAccessPolicy.findRecentGrantEndedAt(premiumAccess);
 
     // Then
     expect(result).toBeNull();
@@ -357,7 +357,7 @@ describe('isTrialEndingSoon', () => {
     const now = toInstant('2026-10-29T05:00:00Z');
 
     // When
-    const daysLeft = PremiumAccessPolicy.getTrialDaysLeft(trial, now, LOS_ANGELES);
+    const daysLeft = PremiumAccessPolicy.findTrialDaysLeft(trial, now, LOS_ANGELES);
 
     // Then
     expect(daysLeft).toBe(3);
@@ -365,7 +365,7 @@ describe('isTrialEndingSoon', () => {
 
   it('체험이 아니면 남은 날이 없다', () => {
     // When
-    const daysLeft = PremiumAccessPolicy.getTrialDaysLeft(
+    const daysLeft = PremiumAccessPolicy.findTrialDaysLeft(
       createPremiumAccess(),
       toInstant('2026-10-31T01:00:00Z'),
       SEOUL,
@@ -376,7 +376,7 @@ describe('isTrialEndingSoon', () => {
   });
 });
 
-describe('getBankedRewardStartsAt', () => {
+describe('findBankedRewardStartsAt', () => {
   const PERIOD_ENDS_AT = toInstant('2026-12-09T00:00:00.000Z');
 
   it('해지한 구독 뒤에 보상이 있으면 구독이 끝나는 순간부터 이어진다', () => {
@@ -389,7 +389,7 @@ describe('getBankedRewardStartsAt', () => {
     });
 
     // When
-    const startsAt = PremiumAccessPolicy.getBankedRewardStartsAt(access);
+    const startsAt = PremiumAccessPolicy.findBankedRewardStartsAt(access);
 
     // Then
     expect(startsAt).toBe(PERIOD_ENDS_AT);
@@ -407,7 +407,7 @@ describe('getBankedRewardStartsAt', () => {
     });
 
     // When
-    const startsAt = PremiumAccessPolicy.getBankedRewardStartsAt(access);
+    const startsAt = PremiumAccessPolicy.findBankedRewardStartsAt(access);
 
     // Then
     expect(startsAt).toBeNull();

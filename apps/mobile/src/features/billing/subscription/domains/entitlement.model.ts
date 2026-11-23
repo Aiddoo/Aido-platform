@@ -120,22 +120,22 @@ function getAccessDecision(
 }
 
 /** null은 무제한이거나 알 수 없다 */
-function getLimit(snapshot: EntitlementSnapshot, feature: EntitlementFeature) {
+function findLimit(snapshot: EntitlementSnapshot, feature: EntitlementFeature) {
   return findFeatureQuota(snapshot, feature)?.limit ?? null;
 }
 
 /** 서버가 센 사용량. 세지 않는 기능·무제한은 null이다 */
-function getUsedCount(snapshot: EntitlementSnapshot, feature: EntitlementFeature) {
+function findUsedCount(snapshot: EntitlementSnapshot, feature: EntitlementFeature) {
   return findFeatureQuota(snapshot, feature)?.used ?? null;
 }
 
 /** 세지 않는 기능·무제한은 null이다 */
-function getRemainingCount(snapshot: EntitlementSnapshot, feature: EntitlementFeature) {
+function findRemainingCount(snapshot: EntitlementSnapshot, feature: EntitlementFeature) {
   return findFeatureQuota(snapshot, feature)?.remaining ?? null;
 }
 
 /** 초 단위. 길이 제한이 없으면 null이다 */
-function getMaxSeconds(snapshot: EntitlementSnapshot, feature: EntitlementFeature) {
+function findMaxSeconds(snapshot: EntitlementSnapshot, feature: EntitlementFeature) {
   return findFeatureQuota(snapshot, feature)?.perUse?.maxSeconds ?? null;
 }
 
@@ -164,7 +164,7 @@ function getQuotaStatus(
 }
 
 /** 기기 시간대 달력으로 오늘·내일·날짜를 고르고, 이미 지난 초기화 시각(오래된 스냅샷)은 믿지 않는다 */
-function getResetNotice(
+function findResetNotice(
   snapshot: EntitlementSnapshot,
   feature: EntitlementFeature,
   { now, timeZone }: { now: Instant; timeZone: string },
@@ -202,12 +202,16 @@ function getRefetchIntervalMs(snapshot: EntitlementSnapshot, now: Instant): numb
 }
 
 /** 요금제의 집행 한도. null은 무제한이다 */
-function getPlanLimit(snapshot: EntitlementSnapshot, feature: EntitlementFeature, plan: Plan) {
+function findPlanLimit(snapshot: EntitlementSnapshot, feature: EntitlementFeature, plan: Plan) {
   return snapshot.plans[feature][plan].limit;
 }
 
 /** 요금제의 한 번 길이 상한(초). null은 길이 제한이 없다 */
-function getPlanMaxSeconds(snapshot: EntitlementSnapshot, feature: EntitlementFeature, plan: Plan) {
+function findPlanMaxSeconds(
+  snapshot: EntitlementSnapshot,
+  feature: EntitlementFeature,
+  plan: Plan,
+) {
   return snapshot.plans[feature][plan].perUse?.maxSeconds ?? null;
 }
 
@@ -217,11 +221,11 @@ function canUseOnPlan(snapshot: EntitlementSnapshot, feature: EntitlementFeature
 }
 
 /** 무료 사용자는 초대로 늘어난 자리까지 반영한 내 한도를, 프리미엄·관리자는 서버의 무료 요금제 한도를 쓴다 */
-function getFreeLimit(snapshot: EntitlementSnapshot, feature: PlanLimitFeatureKey): number | null {
-  const limit = getLimit(snapshot, feature);
+function findFreeLimit(snapshot: EntitlementSnapshot, feature: PlanLimitFeatureKey): number | null {
+  const limit = findLimit(snapshot, feature);
   return snapshot.tier === 'FREE' && limit != null
     ? limit
-    : getPlanLimit(snapshot, feature, 'free');
+    : findPlanLimit(snapshot, feature, 'free');
 }
 
 function withFeatureQuota(snapshot: EntitlementSnapshot, quota: FeatureQuota): EntitlementSnapshot {
@@ -251,17 +255,17 @@ export const EntitlementPolicy = {
   hasFullAccess,
   canUseFeature,
   getAccessDecision,
-  getLimit,
-  getUsedCount,
-  getRemainingCount,
-  getMaxSeconds,
+  findLimit,
+  findUsedCount,
+  findRemainingCount,
+  findMaxSeconds,
   getQuotaStatus,
-  getResetNotice,
+  findResetNotice,
   getRefetchIntervalMs,
   withFeatureQuota,
   shouldOfferPremium,
-  getFreeLimit,
-  getPlanLimit,
-  getPlanMaxSeconds,
+  findFreeLimit,
+  findPlanLimit,
+  findPlanMaxSeconds,
   canUseOnPlan,
 } as const;

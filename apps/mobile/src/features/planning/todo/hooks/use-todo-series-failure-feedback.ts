@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import {
   findTodoSeriesFailure,
-  getTodoSeriesLimit,
+  findTodoSeriesLimit,
   shouldRefreshTodos,
 } from '../domains/todo-series.error';
 import { invalidateTodos } from '../queries/todo-cache';
@@ -28,7 +28,7 @@ export function useTodoSeriesFailureFeedback() {
     if (shouldRefreshTodos(failure)) {
       invalidateTodos(queryClient);
     }
-    toast.error(t(`todo:toast.series.${failure}.title`, { limit: getTodoSeriesLimit(error) }), {
+    toast.error(t(`todo:toast.series.${failure}.title`, { limit: findTodoSeriesLimit(error) }), {
       description: t(`todo:toast.series.${failure}.description`),
     });
     return true;

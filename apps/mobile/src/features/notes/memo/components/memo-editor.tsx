@@ -712,7 +712,7 @@ function useMemoAiParse({
   const aiConsent = useAiDataSharingConsentGate({ claimRenewalPrompt });
   const isStartingRef = useRef(false);
   const isMountedRef = useRef(false);
-  const defaultCategoryId = TodoCategoryPolicy.getInitialCategoryId(
+  const defaultCategoryId = TodoCategoryPolicy.findInitialCategoryId(
     categoriesQuery.data?.categories ?? [],
     null,
   );
@@ -826,7 +826,7 @@ function useOpenMemoConvertSheet({
   const todayKey = useTodayKey();
   const openKeyboardSheet = useOpenKeyboardSheet();
   const categoriesQuery = useQuery(useGetTodoCategoriesQueryOptions());
-  const defaultCategoryId = TodoCategoryPolicy.getInitialCategoryId(
+  const defaultCategoryId = TodoCategoryPolicy.findInitialCategoryId(
     categoriesQuery.data?.categories ?? [],
     null,
   );

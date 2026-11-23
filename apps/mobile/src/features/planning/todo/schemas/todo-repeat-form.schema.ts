@@ -81,7 +81,7 @@ export function toTodoRepeat(values: TodoRepeatFormValues): TodoRepeat | null {
 
 export type TodoRepeatFormIssue = 'no-weekdays' | 'until-required' | 'no-occurrence';
 
-export function getTodoRepeatFormIssue(values: TodoRepeatFormValues): TodoRepeatFormIssue | null {
+export function findTodoRepeatFormIssue(values: TodoRepeatFormValues): TodoRepeatFormIssue | null {
   if (!values.isMonthly && values.weekdays.length === 0) {
     return 'no-weekdays';
   }
@@ -101,7 +101,7 @@ const ISSUE_PATH = {
 } as const satisfies Record<TodoRepeatFormIssue, keyof TodoRepeatFormValues>;
 
 export const todoRepeatFormSchema = todoRepeatFormShape.check(({ value, issues }) => {
-  const issue = getTodoRepeatFormIssue(value);
+  const issue = findTodoRepeatFormIssue(value);
   if (issue != null) {
     issues.push({ code: 'custom', input: value, message: issue, path: [ISSUE_PATH[issue]] });
   }

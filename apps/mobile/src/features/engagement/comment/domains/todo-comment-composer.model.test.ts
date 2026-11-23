@@ -33,13 +33,13 @@ describe('canChain', () => {
   });
 });
 
-describe('getReplyParentId', () => {
+describe('findReplyParentId', () => {
   it('답글은 누른 글에 답한다', () => {
     // Given
     const target = createTodoComment({ id: 'reply-target' });
 
     // When
-    const parentId = TodoCommentComposerPolicy.getReplyParentId({ type: 'reply', target });
+    const parentId = TodoCommentComposerPolicy.findReplyParentId({ type: 'reply', target });
 
     // Then
     expect(parentId).toBe('reply-target');
@@ -47,7 +47,7 @@ describe('getReplyParentId', () => {
 
   it('새 댓글은 답할 글이 없다', () => {
     // When
-    const parentId = TodoCommentComposerPolicy.getReplyParentId({ type: 'new' });
+    const parentId = TodoCommentComposerPolicy.findReplyParentId({ type: 'new' });
 
     // Then
     expect(parentId).toBeNull();
@@ -58,7 +58,7 @@ describe('getReplyParentId', () => {
     const target = createTodoComment();
 
     // When
-    const parentId = TodoCommentComposerPolicy.getReplyParentId({ type: 'edit', target });
+    const parentId = TodoCommentComposerPolicy.findReplyParentId({ type: 'edit', target });
 
     // Then
     expect(parentId).toBeNull();

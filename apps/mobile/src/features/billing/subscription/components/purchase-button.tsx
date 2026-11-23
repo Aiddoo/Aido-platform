@@ -48,7 +48,7 @@ export function PurchaseButton({ onPurchased }: PurchaseButtonProps) {
   const trialEndDateKey =
     selectedPlan == null
       ? null
-      : SubscriptionPolicy.getFreeTrialEndDateKey(selectedPlan, currentLocalDateKey);
+      : SubscriptionPolicy.findFreeTrialEndDateKey(selectedPlan, currentLocalDateKey);
 
   // isPending은 다음 렌더에야 바뀌어 같은 프레임의 두 번째 탭이 결제 창을 한 번 더 연다
   const handlePurchase = useSingleTap(() => {

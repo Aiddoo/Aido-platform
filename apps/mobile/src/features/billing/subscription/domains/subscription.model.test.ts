@@ -110,7 +110,7 @@ describe('getMonthlyEquivalent', () => {
   });
 });
 
-describe('getFreeTrialEndDateKey', () => {
+describe('findFreeTrialEndDateKey', () => {
   it.each([
     ['2주 체험은 14일 뒤에 끝난다', 'week', 2, '2026-11-09', '2026-11-23'],
     ['14일로 실린 2주 체험도 같은 날에 끝난다', 'day', 14, '2026-11-09', '2026-11-23'],
@@ -144,7 +144,7 @@ describe('getFreeTrialEndDateKey', () => {
     const plan = createPlan({ planType: 'annual', freeTrial: { periodUnit, periodNumberOfUnits } });
 
     // When
-    const endDateKey = SubscriptionPolicy.getFreeTrialEndDateKey(plan, createDateKey(todayKey));
+    const endDateKey = SubscriptionPolicy.findFreeTrialEndDateKey(plan, createDateKey(todayKey));
 
     // Then
     expect(endDateKey).toBe(expected);
@@ -152,7 +152,7 @@ describe('getFreeTrialEndDateKey', () => {
 
   it('체험 자격이 없으면 끝나는 날이 없다', () => {
     // When
-    const endDateKey = SubscriptionPolicy.getFreeTrialEndDateKey(
+    const endDateKey = SubscriptionPolicy.findFreeTrialEndDateKey(
       annual,
       createDateKey('2026-11-09'),
     );
@@ -162,7 +162,7 @@ describe('getFreeTrialEndDateKey', () => {
   });
 });
 
-describe('getFreeTrialReminderDateKey', () => {
+describe('findFreeTrialReminderDateKey', () => {
   it.each([
     ['2주 체험은 11월 23일에 끝나므로 11월 20일', 'week', 2, '2026-11-09', '2026-11-20'],
     ['14일로 실린 2주 체험도 11월 20일', 'day', 14, '2026-11-09', '2026-11-20'],
@@ -176,7 +176,7 @@ describe('getFreeTrialReminderDateKey', () => {
       const plan = createPlan({ freeTrial: { periodUnit, periodNumberOfUnits } });
 
       // When
-      const reminderDateKey = SubscriptionPolicy.getFreeTrialReminderDateKey(
+      const reminderDateKey = SubscriptionPolicy.findFreeTrialReminderDateKey(
         plan,
         createDateKey(todayKey),
       );
@@ -194,7 +194,7 @@ describe('getFreeTrialReminderDateKey', () => {
     const plan = createPlan({ freeTrial: { periodUnit: 'day', periodNumberOfUnits: days } });
 
     // When
-    const reminderDateKey = SubscriptionPolicy.getFreeTrialReminderDateKey(
+    const reminderDateKey = SubscriptionPolicy.findFreeTrialReminderDateKey(
       plan,
       createDateKey('2026-11-09'),
     );

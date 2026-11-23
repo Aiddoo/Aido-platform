@@ -20,8 +20,8 @@ export function useFormatRefillSentence() {
       if (snapshot == null) {
         return null;
       }
-      const limit = EntitlementPolicy.getLimit(snapshot, feature);
-      const notice = EntitlementPolicy.getResetNotice(snapshot, feature, {
+      const limit = EntitlementPolicy.findLimit(snapshot, feature);
+      const notice = EntitlementPolicy.findResetNotice(snapshot, feature, {
         now: getNowInstant(),
         timeZone: dateFormatContext.timeZone,
       });

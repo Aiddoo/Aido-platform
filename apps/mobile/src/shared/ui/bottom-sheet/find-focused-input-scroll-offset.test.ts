@@ -1,14 +1,14 @@
 import {
-  getFocusedInputScrollOffset,
+  findFocusedInputScrollOffset,
   getLayoutAboveKeyboard,
-} from './get-focused-input-scroll-offset';
+} from './find-focused-input-scroll-offset';
 
 // 키보드가 올라와 줄어든 시트 스크롤 영역: 창 y 100~400, 아래 80은 고정 footer라 실제로 보이는 곳은 100~320
 const VIEWPORT = { top: 100, height: 300 };
 const FOOTER_HEIGHT = 80;
 const MARGINS = { marginAbove: 40, marginBelow: 20 };
 
-describe('getFocusedInputScrollOffset', () => {
+describe('findFocusedInputScrollOffset', () => {
   it('footer에 가린 입력은 아래 여백까지 footer 위로 올라오게 스크롤한다', () => {
     // Given
     // 스크롤 0, 입력 창 y 360~420
@@ -21,7 +21,7 @@ describe('getFocusedInputScrollOffset', () => {
     };
 
     // When
-    const offset = getFocusedInputScrollOffset(input);
+    const offset = findFocusedInputScrollOffset(input);
 
     // Then
     // 입력 아래 + 여백(440)이 footer 위(320)에 닿도록 120만큼
@@ -39,7 +39,7 @@ describe('getFocusedInputScrollOffset', () => {
     };
 
     // When
-    const offset = getFocusedInputScrollOffset(input);
+    const offset = findFocusedInputScrollOffset(input);
 
     // Then
     expect(offset).toBeNull();
@@ -57,7 +57,7 @@ describe('getFocusedInputScrollOffset', () => {
     };
 
     // When
-    const offset = getFocusedInputScrollOffset(input);
+    const offset = findFocusedInputScrollOffset(input);
 
     // Then
     // 입력 위(110)가 140에 오도록 30만큼 되돌린다
@@ -76,7 +76,7 @@ describe('getFocusedInputScrollOffset', () => {
     };
 
     // When
-    const offset = getFocusedInputScrollOffset(input);
+    const offset = findFocusedInputScrollOffset(input);
 
     // Then
     // 입력 아래 + 여백(380)이 180에 오도록 200만큼
@@ -95,7 +95,7 @@ describe('getFocusedInputScrollOffset', () => {
     };
 
     // When
-    const offset = getFocusedInputScrollOffset(input);
+    const offset = findFocusedInputScrollOffset(input);
 
     // Then
     expect(offset).toBe(200);
@@ -113,7 +113,7 @@ describe('getFocusedInputScrollOffset', () => {
     };
 
     // When
-    const offset = getFocusedInputScrollOffset(input);
+    const offset = findFocusedInputScrollOffset(input);
 
     // Then
     expect(offset).toBe(200);
@@ -130,7 +130,7 @@ describe('getFocusedInputScrollOffset', () => {
     };
 
     // When
-    const offset = getFocusedInputScrollOffset(input);
+    const offset = findFocusedInputScrollOffset(input);
 
     // Then
     expect(offset).toBeNull();

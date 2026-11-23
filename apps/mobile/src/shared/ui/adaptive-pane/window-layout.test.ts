@@ -226,7 +226,7 @@ describe('WindowLayoutPolicy.getPaneColumns', () => {
   });
 });
 
-describe('WindowLayoutPolicy.getOrientationLock', () => {
+describe('WindowLayoutPolicy.findOrientationLock', () => {
   it.each([
     ['휴대폰 세로', DEVICE_WINDOW.phone, 'portrait'],
     ['접은 바깥 화면', DEVICE_WINDOW.foldedOuter, 'portrait'],
@@ -241,7 +241,7 @@ describe('WindowLayoutPolicy.getOrientationLock', () => {
     const window = createAppWindow(size);
 
     // When
-    const lock = WindowLayoutPolicy.getOrientationLock(window);
+    const lock = WindowLayoutPolicy.findOrientationLock(window);
 
     // Then
     expect(lock).toBe(expected);
@@ -252,7 +252,7 @@ describe('WindowLayoutPolicy.getOrientationLock', () => {
     const window = createAppWindow({ width: 915, height: 412 });
 
     // When
-    const lock = WindowLayoutPolicy.getOrientationLock(window);
+    const lock = WindowLayoutPolicy.findOrientationLock(window);
 
     // Then
     expect(lock).toBe('portrait');
@@ -263,7 +263,7 @@ describe('WindowLayoutPolicy.getOrientationLock', () => {
     const window = createAppWindow({ width: 701, height: 841 });
 
     // When
-    const lock = WindowLayoutPolicy.getOrientationLock(window);
+    const lock = WindowLayoutPolicy.findOrientationLock(window);
 
     // Then
     expect(lock).toBe('unlocked');
@@ -277,7 +277,7 @@ describe('WindowLayoutPolicy.getOrientationLock', () => {
     const window = createAppWindow({ width: 960, height: smallestWidth });
 
     // When
-    const lock = WindowLayoutPolicy.getOrientationLock(window);
+    const lock = WindowLayoutPolicy.findOrientationLock(window);
 
     // Then
     expect(lock).toBe(expected);
@@ -291,7 +291,7 @@ describe('WindowLayoutPolicy.getOrientationLock', () => {
     const window = createAppWindow({ os: 'ios', ...size });
 
     // When
-    const lock = WindowLayoutPolicy.getOrientationLock(window);
+    const lock = WindowLayoutPolicy.findOrientationLock(window);
 
     // Then
     expect(lock).toBeNull();

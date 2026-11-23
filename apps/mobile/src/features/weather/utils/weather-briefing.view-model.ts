@@ -239,7 +239,7 @@ export function toBriefingView(briefing: BriefingResult, deps: BriefingViewPorts
       };
     })
     .with({ kind: 'clear' }, ({ todos, range: hours }): BriefingView => {
-      const suggestedAt = WeatherBriefingPolicy.getSuggestedStartAt(hours, hourly, now);
+      const suggestedAt = WeatherBriefingPolicy.findSuggestedStartAt(hours, hourly, now);
       const isInRange = (todo: ForecastTodo) =>
         WeatherBriefingPolicy.isTodoWithinRange(todo, hours);
       const isEmpty = todos.length === 0;

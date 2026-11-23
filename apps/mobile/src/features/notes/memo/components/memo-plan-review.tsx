@@ -49,7 +49,7 @@ export function MemoPlanReview() {
     createMemoPlanDraftKey({ userId: me.id, memoId, timeZone }),
     { sourceUpdatedAt: toEpochMs(memo.updatedAt) },
   );
-  const fallbackCategoryId = TodoCategoryPolicy.getInitialCategoryId(
+  const fallbackCategoryId = TodoCategoryPolicy.findInitialCategoryId(
     categoriesResult.categories,
     null,
   );

@@ -12,7 +12,7 @@ export { Avatar } from './avatar/avatar';
 export { Barcode } from './barcode/barcode';
 export { BottomSheet } from './bottom-sheet/bottom-sheet';
 export { SHEET_RADIUS } from './bottom-sheet/bottom-sheet.constants';
-export { getChipRevealScrollX } from './bottom-sheet/get-chip-reveal-scroll-x';
+export { findChipRevealScrollX } from './bottom-sheet/find-chip-reveal-scroll-x';
 export {
   KeyboardBottomSheet,
   useKeyboardSheetBodyMaxHeight,

@@ -6,7 +6,7 @@ import type { DatePicker } from '../../hooks/use-date-picker';
 import {
   getPickerDayType,
   getRepeatWeekDays,
-  getWeekRangeBand,
+  findWeekRangeBand,
 } from '../../utils/calendar-day.view-model';
 import { WeekdayRow } from '../calendar/weekday-row';
 import { PickerDateCell } from '../picker-date-cell';
@@ -47,7 +47,7 @@ export function RepeatCalendar({
       <VStack style={{ height: PICKER_MONTH_HEIGHT }}>
         {weeks.map((week, weekIndex) => {
           const days = getRepeatWeekDays(week, { startDateKey, endDateKey, isOpenEnded });
-          const band = getWeekRangeBand(days);
+          const band = findWeekRangeBand(days);
 
           return (
             // 주 순서는 고정되어 index가 안정적인 key다.

@@ -217,7 +217,8 @@ export function useSendRequestByTagMutationOptions({
       if (isLimitedFeatureError(error)) {
         haptics.notify('error');
         const snapshot = getCachedEntitlements(queryClient);
-        const knownLimit = snapshot == null ? null : EntitlementPolicy.getLimit(snapshot, 'FRIEND');
+        const knownLimit =
+          snapshot == null ? null : EntitlementPolicy.findLimit(snapshot, 'FRIEND');
         gate.promptIfBlockedError(
           error,
           onFriendLimitInvite == null

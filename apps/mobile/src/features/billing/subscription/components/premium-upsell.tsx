@@ -154,8 +154,8 @@ function Usage({ feature }: { feature: PlanLimitFeatureKey }) {
   const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
   const { type } = useQuotaStatus(feature);
   const formatRefillSentence = useFormatRefillSentence();
-  const used = EntitlementPolicy.getUsedCount(entitlements, feature);
-  const limit = EntitlementPolicy.getLimit(entitlements, feature);
+  const used = EntitlementPolicy.findUsedCount(entitlements, feature);
+  const limit = EntitlementPolicy.findLimit(entitlements, feature);
 
   if (type !== 'used-up' || used == null || limit == null) {
     return null;

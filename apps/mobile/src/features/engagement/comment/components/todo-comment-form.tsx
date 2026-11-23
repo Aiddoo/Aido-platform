@@ -58,7 +58,7 @@ import {
 import { getCommentFormMaxHeight } from '../utils/todo-comment-form.geometry';
 import {
   getFocusedCommentFieldIndexAfterRemoval,
-  getTrimmedContents,
+  findTrimmedContents,
   isComposerBlank,
   findComposerTarget,
 } from '../utils/todo-comment-form.view-model';
@@ -220,7 +220,7 @@ function useTodoCommentSubmit({ userId }: { userId: string }) {
 
   return () =>
     handleSubmit(async ({ mode, items }) => {
-      const contents = getTrimmedContents(items);
+      const contents = findTrimmedContents(items);
       if (contents == null) {
         return;
       }
@@ -236,7 +236,7 @@ function useTodoCommentSubmit({ userId }: { userId: string }) {
             const submission = TodoCommentComposerPolicy.prepareSubmission({
               previousSubmission: preparedSubmissionRef.current,
               todoId,
-              parentId: TodoCommentComposerPolicy.getReplyParentId(writeMode),
+              parentId: TodoCommentComposerPolicy.findReplyParentId(writeMode),
               contents,
               createClientRequestId: () => idGenerator.create(),
             });

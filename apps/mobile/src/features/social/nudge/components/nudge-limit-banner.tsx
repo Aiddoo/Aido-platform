@@ -32,7 +32,7 @@ export function NudgeLimitBanner() {
 
   const quota = EntitlementPolicy.getQuotaStatus(entitlements, 'NUDGE', now);
   const isReached = quota.type === 'used-up';
-  const usedToday = EntitlementPolicy.getUsedCount(entitlements, 'NUDGE');
+  const usedToday = EntitlementPolicy.findUsedCount(entitlements, 'NUDGE');
   const refill = formatRefillSentence(entitlements, 'NUDGE');
 
   const defaultTitle = (

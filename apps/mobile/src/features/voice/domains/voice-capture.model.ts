@@ -331,7 +331,7 @@ export function shouldAutoFinish(
 type VoiceDismissAction = 'cancel-capture' | 'cancel-planning' | 'confirm-discard';
 
 // 시트의 바깥 탭과 Android 뒤로 가기. 듣기·정리는 X와 같고, 고를 카드가 있으면 계획을 잃기 전에 묻는다. null이면 시트가 닫힌다
-export function getDismissAction(state: VoiceCaptureState): VoiceDismissAction | null {
+export function findDismissAction(state: VoiceCaptureState): VoiceDismissAction | null {
   return match(state)
     .returnType<VoiceDismissAction | null>()
     .with({ status: 'review' }, ({ plan }) =>
@@ -374,7 +374,7 @@ export const VoiceCapturePolicy = {
   canRetryPlanning,
   shouldAutoFinish,
   shouldOfferVoiceNote,
-  getDismissAction,
+  findDismissAction,
   isChargedReview,
   getElapsedMs,
   reduceVoiceCapture,

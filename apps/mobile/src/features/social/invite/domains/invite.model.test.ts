@@ -25,13 +25,13 @@ describe('isOneTimeMilestone', () => {
   });
 });
 
-describe('getRemainingToNextMilestone', () => {
+describe('findRemainingToNextMilestone', () => {
   it('다음 단계가 없으면 null을 반환한다', () => {
     // Given
     const myInvite = createInvite({ nextMilestone: null });
 
     // When
-    const result = InvitePolicy.getRemainingToNextMilestone(myInvite);
+    const result = InvitePolicy.findRemainingToNextMilestone(myInvite);
 
     // Then
     expect(result).toBeNull();
@@ -45,7 +45,7 @@ describe('getRemainingToNextMilestone', () => {
     });
 
     // When
-    const result = InvitePolicy.getRemainingToNextMilestone(myInvite);
+    const result = InvitePolicy.findRemainingToNextMilestone(myInvite);
 
     // Then
     // 3 - 2 = 1
@@ -60,7 +60,7 @@ describe('getRemainingToNextMilestone', () => {
     });
 
     // When
-    const result = InvitePolicy.getRemainingToNextMilestone(myInvite);
+    const result = InvitePolicy.findRemainingToNextMilestone(myInvite);
 
     // Then
     // max(3 - 4, 0) = 0

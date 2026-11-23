@@ -2,7 +2,7 @@ import { createTodoComment } from '../__tests__/todo-comment.fixtures';
 import {
   findComposerTarget,
   getFocusedCommentFieldIndexAfterRemoval,
-  getTrimmedContents,
+  findTrimmedContents,
   isComposerBlank,
 } from './todo-comment-form.view-model';
 
@@ -64,13 +64,13 @@ describe('isComposerBlank', () => {
   });
 });
 
-describe('getTrimmedContents', () => {
+describe('findTrimmedContents', () => {
   it('보낼 글은 앞뒤 공백을 지운다', () => {
     // Given
     const items = [{ content: '  하나 ' }, { content: '둘\n' }];
 
     // When
-    const contents = getTrimmedContents(items);
+    const contents = findTrimmedContents(items);
 
     // Then
     expect(contents).toEqual(['하나', '둘']);
@@ -78,7 +78,7 @@ describe('getTrimmedContents', () => {
 
   it('칸이 하나도 없으면 null을 반환한다', () => {
     // When
-    const contents = getTrimmedContents([]);
+    const contents = findTrimmedContents([]);
 
     // Then
     expect(contents).toBeNull();

@@ -140,7 +140,7 @@ export class PushRegistrationService {
       isDeliverable && issuedToken == null
         ? await this.#findRegistration()
         : createEmptyPushRegistration();
-    const token = PushRegistrationPolicy.getReportToken(registration, { permission, issuedToken });
+    const token = PushRegistrationPolicy.findReportToken(registration, { permission, issuedToken });
     const deviceId = await this.#deviceIdService.get();
     const timeZone = this.#getTimeZone();
     const language = this.#getLanguage();

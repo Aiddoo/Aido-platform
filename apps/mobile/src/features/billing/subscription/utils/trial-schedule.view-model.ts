@@ -14,11 +14,11 @@ export function toTrialScheduleSteps(
   plan: SubscriptionPlan,
   todayKey: DateKey,
 ): TrialScheduleStep[] | null {
-  const endDateKey = SubscriptionPolicy.getFreeTrialEndDateKey(plan, todayKey);
+  const endDateKey = SubscriptionPolicy.findFreeTrialEndDateKey(plan, todayKey);
   if (endDateKey == null) {
     return null;
   }
-  const reminderDateKey = SubscriptionPolicy.getFreeTrialReminderDateKey(plan, todayKey);
+  const reminderDateKey = SubscriptionPolicy.findFreeTrialReminderDateKey(plan, todayKey);
 
   return [
     { kind: 'start', stamp: 'stamped' },

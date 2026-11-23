@@ -10,7 +10,7 @@ export function canChain(mode: TodoCommentComposerMode, itemCount: number) {
 }
 
 // 답글은 대상 글에 그대로 단다. 서버가 그 글이 속한 묶음 끝에 붙인다
-export function getReplyParentId(mode: TodoCommentComposerMode): string | null {
+export function findReplyParentId(mode: TodoCommentComposerMode): string | null {
   return match(mode)
     .with({ type: 'reply' }, ({ target }) => target.id)
     .otherwise(() => null);
@@ -60,6 +60,6 @@ export function isSameAsOriginal(target: TodoComment, trimmedContent: string) {
 export const TodoCommentComposerPolicy = {
   canChain,
   isSameAsOriginal,
-  getReplyParentId,
+  findReplyParentId,
   prepareSubmission,
 } as const;

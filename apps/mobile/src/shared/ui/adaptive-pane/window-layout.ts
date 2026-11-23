@@ -94,7 +94,7 @@ function getPaneColumns(window: AppWindow, area: PaneAreaSize): PaneColumns {
 }
 
 /** 짧은 변(Android smallest width)으로 재 가로로 든 휴대폰이 넓은 창이 되지 않게 하고, Android 16+이 600dp 이상에서 방향 고정을 무시하는 기준과 맞춘다. iOS는 Info.plist가 정해 null이다 */
-function getOrientationLock(window: AppWindow): OrientationLock | null {
+function findOrientationLock(window: AppWindow): OrientationLock | null {
   if (window.os === 'ios') {
     return null;
   }
@@ -112,6 +112,6 @@ export const WindowLayoutPolicy = {
   getSizeClass,
   getPaneSizeClass,
   getPaneColumns,
-  getOrientationLock,
+  findOrientationLock,
   isShortWindow,
 } as const;

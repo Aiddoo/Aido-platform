@@ -109,7 +109,7 @@ describe('PushNotificationResponsePolicy.getResponseAction', () => {
   });
 });
 
-describe('PushNotificationResponsePolicy.getTodoReminderAction', () => {
+describe('PushNotificationResponsePolicy.findTodoReminderAction', () => {
   const NOW_MS = 1_000_000_000;
   const NOW = fromEpochMs(NOW_MS);
   const REMINDER = createPushNotification({
@@ -129,7 +129,7 @@ describe('PushNotificationResponsePolicy.getTodoReminderAction', () => {
       const response = createPushNotificationResponse({ actionIdentifier, notification: REMINDER });
 
       // When
-      const request = PushNotificationResponsePolicy.getTodoReminderAction(response);
+      const request = PushNotificationResponsePolicy.findTodoReminderAction(response);
 
       // Then
       expect(request).toEqual(expected);
@@ -147,7 +147,7 @@ describe('PushNotificationResponsePolicy.getTodoReminderAction', () => {
     });
 
     // When
-    const request = PushNotificationResponsePolicy.getTodoReminderAction(response);
+    const request = PushNotificationResponsePolicy.findTodoReminderAction(response);
 
     // Then
     expect(request).toBeNull();
@@ -161,7 +161,7 @@ describe('PushNotificationResponsePolicy.getTodoReminderAction', () => {
     });
 
     // When
-    const request = PushNotificationResponsePolicy.getTodoReminderAction(response);
+    const request = PushNotificationResponsePolicy.findTodoReminderAction(response);
 
     // Then
     expect(request).toBeNull();

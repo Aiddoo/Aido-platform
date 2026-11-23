@@ -80,7 +80,7 @@ export class SubscriptionService {
   };
 
   // 조회 실패도 "없음"과 구분하지 않고 경고만 남긴다. 호출부는 모두 null이면 구독 목록을 연다
-  findManagementSource = async (store: SubscriptionStore): Promise<ManagementSource> => {
+  getManagementSource = async (store: SubscriptionStore): Promise<ManagementSource> => {
     if (!this.#session.isConfigured()) {
       return NO_MANAGEMENT_SOURCE;
     }

@@ -66,7 +66,7 @@ export function useRedeemInviteMutationOptions() {
     onSuccess: async (result, inviteCode) => {
       trackEvent('invite_redeemed', {
         outcome: result.outcome,
-        friendship: InviteRedemptionPolicy.getFriendship(result) ?? 'NONE',
+        friendship: InviteRedemptionPolicy.findFriendship(result) ?? 'NONE',
       });
       storeRedemptionResult(queryClient, result);
       await invalidateAfterRedeem(queryClient, { inviteCode }).catch((error) =>

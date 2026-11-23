@@ -92,7 +92,7 @@ interface WeekRangeDay {
 }
 
 /** 한 주의 기간 띠가 차지하는 구간(주 폭에 대한 0..1). 시작·끝 날은 칸 가운데까지만 칠한다. 띠가 없으면 null이다 */
-export function getWeekRangeBand(
+export function findWeekRangeBand(
   days: readonly WeekRangeDay[],
 ): { startRatio: number; endRatio: number } | null {
   const spans = days.flatMap(({ isInRange, isRangeStart, isRangeEnd }, index) => {

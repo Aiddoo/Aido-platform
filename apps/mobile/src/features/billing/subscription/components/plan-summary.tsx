@@ -239,8 +239,8 @@ function QuotaRow({ feature, label, hint }: QuotaRowProps) {
   if (snapshot == null || type === 'untracked') {
     return null;
   }
-  const used = EntitlementPolicy.getUsedCount(snapshot, feature);
-  const limit = EntitlementPolicy.getLimit(snapshot, feature);
+  const used = EntitlementPolicy.findUsedCount(snapshot, feature);
+  const limit = EntitlementPolicy.findLimit(snapshot, feature);
   if (used == null || limit == null) {
     return null;
   }

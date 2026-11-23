@@ -238,7 +238,7 @@ describe('getQuotaStatus', () => {
   });
 });
 
-describe('getMaxSeconds', () => {
+describe('findMaxSeconds', () => {
   it.each([
     ['FREE', PLAN_CATALOG.VOICE_NOTE.perUse.maxSeconds.free],
     ['PREMIUM', PLAN_CATALOG.VOICE_NOTE.perUse.maxSeconds.premium],
@@ -247,21 +247,21 @@ describe('getMaxSeconds', () => {
     const snapshot = createEntitlementSnapshot({ tier });
 
     // When
-    const maxSeconds = EntitlementPolicy.getMaxSeconds(snapshot, 'VOICE_NOTE');
+    const maxSeconds = EntitlementPolicy.findMaxSeconds(snapshot, 'VOICE_NOTE');
 
     // Then
     expect(maxSeconds).toBe(expected);
   });
 });
 
-describe('getResetNotice', () => {
+describe('findResetNotice', () => {
   it('하루 횟수는 다음 자정이 내일이라 내일 다시 쓸 수 있다', () => {
     // Given
     const snapshot = createEntitlementSnapshot();
     const now = toInstant('2026-11-05T14:00:00Z');
 
     // When
-    const notice = EntitlementPolicy.getResetNotice(snapshot, 'NUDGE', { now, timeZone: SEOUL });
+    const notice = EntitlementPolicy.findResetNotice(snapshot, 'NUDGE', { now, timeZone: SEOUL });
 
     // Then
     expect(notice).toEqual({ type: 'tomorrow' });
@@ -273,7 +273,10 @@ describe('getResetNotice', () => {
     const now = toInstant('2026-11-10T03:00:00Z');
 
     // When
-    const notice = EntitlementPolicy.getResetNotice(snapshot, 'AI_PARSE', { now, timeZone: SEOUL });
+    const notice = EntitlementPolicy.findResetNotice(snapshot, 'AI_PARSE', {
+      now,
+      timeZone: SEOUL,
+    });
 
     // Then
     expect(notice).toEqual({ type: 'date', date: toInstant('2026-11-30T15:00:00.000Z') });
@@ -285,7 +288,7 @@ describe('getResetNotice', () => {
     const now = toInstant('2026-11-30T09:00:00Z');
 
     // When
-    const notice = EntitlementPolicy.getResetNotice(snapshot, 'AI_PARSE', {
+    const notice = EntitlementPolicy.findResetNotice(snapshot, 'AI_PARSE', {
       now,
       timeZone: LOS_ANGELES,
     });
@@ -303,20 +306,20 @@ describe('getResetNotice', () => {
     const now = toInstant('2026-12-02T00:00:00Z');
 
     // When
-    const notice = EntitlementPolicy.getResetNotice(snapshot, feature, { now, timeZone: SEOUL });
+    const notice = EntitlementPolicy.findResetNotice(snapshot, feature, { now, timeZone: SEOUL });
 
     // Then
     expect(notice).toBeNull();
   });
 });
 
-describe('getLimit', () => {
+describe('findLimit', () => {
   it('횟수 기능은 서버가 준 한도를 반환한다', () => {
     // Given
     const snapshot = createEntitlementSnapshot();
 
     // When
-    const limit = EntitlementPolicy.getLimit(snapshot, 'FRIEND');
+    const limit = EntitlementPolicy.findLimit(snapshot, 'FRIEND');
 
     // Then
     expect(limit).toBe(PLAN_CATALOG.FRIEND.free);
@@ -327,7 +330,7 @@ describe('getLimit', () => {
     const snapshot = createEntitlementSnapshot({ tier: 'ADMIN' });
 
     // When
-    const limit = EntitlementPolicy.getLimit(snapshot, 'FRIEND');
+    const limit = EntitlementPolicy.findLimit(snapshot, 'FRIEND');
 
     // Then
     expect(limit).toBeNull();
@@ -338,14 +341,14 @@ describe('getLimit', () => {
     const snapshot = { ...createEntitlementSnapshot(), features: {} };
 
     // When
-    const limit = EntitlementPolicy.getLimit(snapshot, 'FRIEND');
+    const limit = EntitlementPolicy.findLimit(snapshot, 'FRIEND');
 
     // Then
     expect(limit).toBeNull();
   });
 });
 
-describe('getFreeLimit', () => {
+describe('findFreeLimit', () => {
   it('무료 사용자는 초대로 늘어난 자리를 반영한 서버 한도를 쓴다', () => {
     // Given
     const snapshot = EntitlementPolicy.withFeatureQuota(
@@ -354,7 +357,7 @@ describe('getFreeLimit', () => {
     );
 
     // When
-    const limit = EntitlementPolicy.getFreeLimit(snapshot, 'FRIEND');
+    const limit = EntitlementPolicy.findFreeLimit(snapshot, 'FRIEND');
 
     // Then
     expect(limit).toBe(7);
@@ -365,7 +368,7 @@ describe('getFreeLimit', () => {
     const snapshot = createEntitlementSnapshot({ tier });
 
     // When
-    const limit = EntitlementPolicy.getFreeLimit(snapshot, 'FRIEND');
+    const limit = EntitlementPolicy.findFreeLimit(snapshot, 'FRIEND');
 
     // Then
     expect(limit).toBe(PLAN_CATALOG.FRIEND.free);
@@ -382,7 +385,7 @@ describe('withFeatureQuota', () => {
     const next = EntitlementPolicy.withFeatureQuota(snapshot, quota);
 
     // Then
-    expect(EntitlementPolicy.getRemainingCount(next, 'AI_PARSE')).toBe(6);
+    expect(EntitlementPolicy.findRemainingCount(next, 'AI_PARSE')).toBe(6);
     expect(next.features.NUDGE).toBe(snapshot.features.NUDGE);
   });
 });

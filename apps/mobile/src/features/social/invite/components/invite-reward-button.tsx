@@ -43,7 +43,7 @@ export function InviteRewardButton({ className, ...props }: InviteRewardButtonPr
   const openMyInvite = useOpenMyInvite();
   const navigate = useMyPageMenuNavigate();
   const isSelected = useIsMyPageMenuItemSelected('/friends/invite');
-  const remaining = InvitePolicy.getRemainingToNextMilestone(invite);
+  const remaining = InvitePolicy.findRemainingToNextMilestone(invite);
   const [firstRow] = createPawPrintBoard(invite, {
     columns: PREVIEW_COLUMNS,
     celebratedCount: invite.qualifiedCount,

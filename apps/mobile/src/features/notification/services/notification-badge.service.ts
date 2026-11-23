@@ -28,7 +28,7 @@ export class NotificationBadgeService {
     authStatus: AuthStatus;
     unreadCount: number | undefined;
   }): Promise<void> => {
-    const count = NotificationBadgePolicy.getBadgeCount(unreadCount, { authStatus });
+    const count = NotificationBadgePolicy.findBadgeCount(unreadCount, { authStatus });
     if (count == null) {
       return;
     }

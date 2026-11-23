@@ -13,7 +13,7 @@ interface ReorderInstructionInput<TItem, TId> {
   getItemId: (item: TItem) => TId;
 }
 
-export function getReorderInstruction<TItem, TId>({
+export function findReorderInstruction<TItem, TId>({
   reorderedItems,
   from,
   to,

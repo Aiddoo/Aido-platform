@@ -1,7 +1,7 @@
 import { INVITE_CODE } from '@aido/api/vocabulary';
 import { z } from 'zod';
 
-import { findInvalidCharacters, inviteCodeSchema } from '../domains/invite-code.model';
+import { getInvalidCharacters, inviteCodeSchema } from '../domains/invite-code.model';
 
 /**
  * 입력 칸은 서버 모양(대문자·공백 없음)으로 맞춘 값을 둔다. 코드에 없는 글자는 적는 즉시 `custom`으로,
@@ -10,7 +10,7 @@ import { findInvalidCharacters, inviteCodeSchema } from '../domains/invite-code.
 export const inviteCodeFormSchema = z.object({
   inviteCode: z
     .string()
-    .refine((raw) => findInvalidCharacters(raw).length === 0, { error: 'invalid characters' })
+    .refine((raw) => getInvalidCharacters(raw).length === 0, { error: 'invalid characters' })
     .min(INVITE_CODE.LENGTH)
     .pipe(inviteCodeSchema),
 });

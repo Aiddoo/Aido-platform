@@ -86,7 +86,7 @@ export function useVoiceNoteDigest({ accountId, draftId }: { accountId: string; 
       if (abortController.signal.aborted) {
         return;
       }
-      saveRequest(PlanRequestPolicy.getRequestToRetry(request, error));
+      saveRequest(PlanRequestPolicy.findRequestToRetry(request, error));
       if (isAiDataSharingConsentRequiredError(error) && !hasAskedConsentRef.current) {
         hasAskedConsentRef.current = true;
         if (await aiConsent.requestAgreement()) {

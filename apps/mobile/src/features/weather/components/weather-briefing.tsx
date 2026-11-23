@@ -45,7 +45,7 @@ import { BRIEFING_ROW_TONES, type BriefingRowTone } from '../constants/weather-c
 import {
   type BriefingResult,
   getBriefingState,
-  getWeatherBriefing,
+  findWeatherBriefing,
   WeatherBriefingPolicy,
 } from '../domains/weather-briefing.model';
 import type { HourlyForecastEntry } from '../domains/weather-report.model';
@@ -95,7 +95,7 @@ export function WeatherBriefing() {
     return <WeatherBriefing.Empty />;
   }
 
-  const briefing = getWeatherBriefing(
+  const briefing = findWeatherBriefing(
     report,
     todoList.todos.map((todo) =>
       WeatherBriefingPolicy.toBriefingTodo(todo, { date: todayKey, timeZone: deviceTimeZone }),

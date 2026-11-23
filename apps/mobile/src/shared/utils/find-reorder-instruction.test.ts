@@ -1,15 +1,15 @@
-import { getReorderInstruction } from './get-reorder-instruction';
+import { findReorderInstruction } from './find-reorder-instruction';
 
 const createItems = (ids: string[]) => ids.map((id) => ({ id }));
 const getItemId = (item: { id: string }) => item.id;
 
-describe('getReorderInstruction', () => {
+describe('findReorderInstruction', () => {
   it('같은 위치면 null을 반환한다', () => {
     // Given
     const items = createItems(['a', 'b', 'c']);
 
     // When
-    const result = getReorderInstruction({
+    const result = findReorderInstruction({
       reorderedItems: items,
       from: 1,
       to: 1,
@@ -26,7 +26,7 @@ describe('getReorderInstruction', () => {
     const items = createItems(['c', 'a', 'b']);
 
     // When
-    const result = getReorderInstruction({
+    const result = findReorderInstruction({
       reorderedItems: items,
       from: 2,
       to: 0,
@@ -43,7 +43,7 @@ describe('getReorderInstruction', () => {
     const items = createItems(['b', 'c', 'a']);
 
     // When
-    const result = getReorderInstruction({
+    const result = findReorderInstruction({
       reorderedItems: items,
       from: 0,
       to: 2,
@@ -59,7 +59,7 @@ describe('getReorderInstruction', () => {
     const items = [{ id: 3 }, { id: 1 }, { id: 2 }];
 
     // When
-    const result = getReorderInstruction({
+    const result = findReorderInstruction({
       reorderedItems: items,
       from: 2,
       to: 0,
@@ -75,7 +75,7 @@ describe('getReorderInstruction', () => {
     const items = createItems(['a', 'b']);
 
     // When
-    const result = getReorderInstruction({
+    const result = findReorderInstruction({
       reorderedItems: items,
       from: 0,
       to: 5,
@@ -91,7 +91,7 @@ describe('getReorderInstruction', () => {
     const items = createItems(['a']);
 
     // When
-    const result = getReorderInstruction({
+    const result = findReorderInstruction({
       reorderedItems: items,
       from: 0,
       to: 0,

@@ -40,7 +40,7 @@ export interface FocusedInputScrollInput extends ScrollLayout {
 }
 
 /** 이미 보이거나 스크롤 내용 밖이면 null. 다 안 들어가면 입력 칸 전체가 footer 위에 오는 아래쪽을 우선하고, 입력 자체가 안 들어가면 커서가 있는 위쪽을 맞춘다 */
-export function getFocusedInputScrollOffset(layout: FocusedInputScrollInput): number | null {
+export function findFocusedInputScrollOffset(layout: FocusedInputScrollInput): number | null {
   const { viewport, content, input } = layout;
   if (input.top < content.top || input.top + input.height > content.top + content.height) {
     return null;
