@@ -192,7 +192,11 @@
       }
     },
     {
-      "files": ["apps/api/src/**/*.use-case.spec.ts"],
+      "files": [
+        "apps/api/src/**/*.use-case.spec.ts",
+        "apps/api/test/fixtures/**/*.ts",
+        "apps/api/test/doubles/**/*.ts"
+      ],
       "rules": {
         "aido/no-vitest-mock": "error"
       }

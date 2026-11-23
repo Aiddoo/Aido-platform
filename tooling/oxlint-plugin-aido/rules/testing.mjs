@@ -55,7 +55,7 @@ const noJestModuleMock = {
 
 const VITEST_MOCK_METHODS = new Set(['fn', 'spyOn', 'useFakeTimers', 'setSystemTime']);
 
-// UseCase spec은 손으로 쓴 test/doubles(InMemory·Stub·Recording)와 FixedClock으로 상태를 확인한다
+// UseCase spec과 그 spec이 쓰는 fixture·double은 손으로 쓴 InMemory·Stub·Recording과 FixedClock으로 상태를 확인한다
 const noVitestMock = {
   meta: { type: 'suggestion' },
   create(context) {
@@ -67,7 +67,7 @@ const noVitestMock = {
         }
         context.report({
           node,
-          message: `UseCase spec에서 vi.${names[1]}을 쓰지 않습니다. test/doubles의 InMemory·Stub·Recording double과 FixedClock으로 바꾸고 호출 대신 상태를 확인합니다.`,
+          message: `UseCase spec과 test fixture·double에서 vi.${names[1]}을 쓰지 않습니다. test/doubles의 InMemory·Stub·Recording double과 FixedClock으로 바꾸고 호출 대신 상태를 확인합니다.`,
         });
       },
     };
