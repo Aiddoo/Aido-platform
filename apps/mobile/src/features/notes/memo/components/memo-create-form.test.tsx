@@ -41,7 +41,7 @@ async function renderForm() {
 async function typeContent(content: string) {
   const input = await screen.findByPlaceholderText('아이디어를 자유롭게 적어보세요...');
   await act(async () => {
-    fireEvent.changeText(input, content);
+    await fireEvent.changeText(input, content);
   });
 }
 
@@ -55,8 +55,8 @@ describe('MemoCreateForm', () => {
 
     // When
     await act(async () => {
-      fireEvent.press(save);
-      fireEvent.press(save);
+      await fireEvent.press(save);
+      await fireEvent.press(save);
     });
 
     // Then
@@ -73,7 +73,7 @@ describe('MemoCreateForm', () => {
       httpClient.post.mockResolvedValue(ok({ message: 'created', memo: CREATED_MEMO_DTO }));
       await typeContent('새 메모');
       await act(async () => {
-        fireEvent.press(await screen.findByLabelText('저장'));
+        await fireEvent.press(await screen.findByLabelText('저장'));
       });
       // 연타 가드(600ms)가 지난 뒤다. 성공하면 요청 키를 지워 같은 글도 새 키로 간다
       await act(() => jest.advanceTimersByTimeAsync(1_000));
@@ -81,7 +81,7 @@ describe('MemoCreateForm', () => {
 
       // When
       await act(async () => {
-        fireEvent.press(screen.getByLabelText('저장'));
+        await fireEvent.press(screen.getByLabelText('저장'));
       });
       await act(() => jest.advanceTimersByTimeAsync(1_000));
 
@@ -99,7 +99,7 @@ describe('MemoCreateForm', () => {
         .mockResolvedValueOnce(ok({ message: 'created', memo: CREATED_MEMO_DTO }));
       await typeContent('새 메모');
       await act(async () => {
-        fireEvent.press(await screen.findByLabelText('저장'));
+        await fireEvent.press(await screen.findByLabelText('저장'));
       });
       await screen.findAllByText('응답이 늦어지고 있어요. 잠시 후 다시 시도해주세요');
       // 연타 가드(600ms)가 지난 뒤의 두 번째 저장이다
@@ -115,7 +115,7 @@ describe('MemoCreateForm', () => {
 
       // When
       await act(async () => {
-        fireEvent.press(await screen.findByLabelText('저장'));
+        await fireEvent.press(await screen.findByLabelText('저장'));
       });
 
       // Then
@@ -133,7 +133,7 @@ describe('MemoCreateForm', () => {
       // When
       await typeContent('새 메모 고침');
       await act(async () => {
-        fireEvent.press(await screen.findByLabelText('저장'));
+        await fireEvent.press(await screen.findByLabelText('저장'));
       });
 
       // Then

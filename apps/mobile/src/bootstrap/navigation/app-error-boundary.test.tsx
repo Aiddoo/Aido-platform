@@ -32,7 +32,7 @@ describe('앱 오류 화면의 로그아웃', () => {
 
     // When
     await act(async () => {
-      fireEvent.press(screen.getByText('로그아웃'));
+      await fireEvent.press(screen.getByText('로그아웃'));
       await jest.runOnlyPendingTimersAsync();
     });
 

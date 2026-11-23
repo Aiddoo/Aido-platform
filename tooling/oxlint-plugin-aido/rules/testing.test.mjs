@@ -133,3 +133,52 @@ tester.run('test-gwt-comments', rules['test-gwt-comments'], {
     { code: "it.each([1])('Then 빠짐', (value) => {\n  // When\n  run(value);\n});", errors: 1 },
   ],
 });
+
+tester.run('await-fire-event', rules['await-fire-event'], {
+  valid: [
+    'await fireEvent.press(button);',
+    "await fireEvent(input, 'submitEditing');",
+    'await Promise.all([fireEvent.press(button), fireEvent.press(button)]);',
+    'fireEvent.press(button).catch(() => undefined);',
+    'emitter.fireEvent();',
+    "import { render } from '@testing-library/react-native';\nawait render(<Screen />);",
+    "import { renderScreen } from '@src/testing/render';\nconst { unmount } = await renderScreen(<Screen />);\nawait unmount();",
+    "import { renderScreenHook } from '@src/testing/render';\nconst hook = await renderScreenHook(useValue);\nawait hook.rerender(undefined);",
+    "import { render } from '@testing-library/react-native';\nconst { unmount } = await render(<Screen />);\nawait act(() => unmount());",
+    "import { render } from './chart-renderer';\nrender(canvas);",
+    'render(<Screen />);',
+    "import { render } from '@testing-library/react-native';\nconst view = await render(<Screen />);\nview.update();",
+    "import { render } from '@testing-library/react-native';\nconst { unmount } = await renderChart();\nunmount();",
+    "import { render } from '@testing-library/react-native';\nconst renderer = await createRenderer();\nrenderer.unmount();",
+  ],
+  invalid: [
+    { code: 'fireEvent.press(button);', errors: 1 },
+    { code: "fireEvent.changeText(input, '메모');", errors: 1 },
+    { code: "fireEvent(input, 'focus');", errors: 1 },
+    { code: 'async () => {\n  fireEvent.scroll(list);\n};', errors: 1 },
+    {
+      code: "import { render } from '@testing-library/react-native';\nrender(<Screen />);",
+      errors: 1,
+    },
+    {
+      code: "import { renderHook as renderTestHook } from '@testing-library/react-native';\nrenderTestHook(useValue);",
+      errors: 1,
+    },
+    {
+      code: "import { renderScreen } from '@src/testing/render';\nrenderScreen(<Screen />);",
+      errors: 1,
+    },
+    {
+      code: "import { renderScreen } from '@src/testing/render';\nconst { rerender, unmount: close } = await renderScreen(<Screen />);\nrerender(<Screen />);\nclose();",
+      errors: 2,
+    },
+    {
+      code: "import { renderScreenHook } from '@src/testing/render';\nconst hook = await renderScreenHook(useValue);\nhook.unmount();",
+      errors: 1,
+    },
+    {
+      code: "import { render } from '@testing-library/react-native';\nconst view = await render(<Screen />);\nawait act(async () => {\n  view.rerender(<Screen />);\n});",
+      errors: 1,
+    },
+  ],
+});

@@ -298,7 +298,7 @@ describe('CoachmarkPopover', () => {
     );
 
     // When
-    rerender(renderHint(true));
+    await rerender(renderHint(true));
 
     // Then
     await waitFor(() =>

@@ -66,7 +66,7 @@ describe('복원한 캐시를 다시 조회할 때의 구조 공유', () => {
       });
       return data.map((item) => <Item key={item.id} item={item} />);
     }
-    render(
+    await render(
       <QueryClientProvider client={queryClient}>
         <Suspense fallback={null}>
           <List />

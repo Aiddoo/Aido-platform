@@ -41,7 +41,7 @@ async function renderSheet() {
 
 async function submit() {
   await act(async () => {
-    fireEvent(await screen.findByDisplayValue('장보기'), 'submitEditing');
+    await fireEvent(await screen.findByDisplayValue('장보기'), 'submitEditing');
   });
 }
 
@@ -160,8 +160,8 @@ describe('MemoConvertBottomSheet', () => {
 
       // When
       await act(async () => {
-        fireEvent.press(save);
-        fireEvent.press(save);
+        await fireEvent.press(save);
+        await fireEvent.press(save);
       });
       await act(() => jest.advanceTimersByTimeAsync(1_000));
 

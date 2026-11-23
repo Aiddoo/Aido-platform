@@ -84,8 +84,8 @@ describe('콕 메시지 시트', () => {
 
     // When
     await act(async () => {
-      fireEvent.press(send);
-      fireEvent.press(send);
+      await fireEvent.press(send);
+      await fireEvent.press(send);
     });
 
     // Then

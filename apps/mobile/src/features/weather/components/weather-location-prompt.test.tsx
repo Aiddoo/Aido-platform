@@ -10,7 +10,7 @@ describe('WeatherLocationPrompt', () => {
     await renderScreen(<WeatherLocationPrompt.Ask onContinue={onContinue} />);
 
     // When
-    fireEvent.press(screen.getByRole('button', { name: '계속' }));
+    await fireEvent.press(screen.getByRole('button', { name: '계속' }));
 
     // 시스템 창을 건너뛰는 버튼은 없다(App Store 5.1.1)
     // Then
@@ -25,7 +25,7 @@ describe('WeatherLocationPrompt', () => {
     await renderScreen(<WeatherLocationPrompt.Denied onOpenSettings={onOpenSettings} />);
 
     // When
-    fireEvent.press(screen.getByRole('button', { name: '설정 열기' }));
+    await fireEvent.press(screen.getByRole('button', { name: '설정 열기' }));
 
     // Then
     expect(screen.getByText('설정에서 위치를 켜주세요')).toBeOnTheScreen();

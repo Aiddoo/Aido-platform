@@ -36,7 +36,7 @@ describe('CategoryEditBottomSheet', () => {
   it('칸 오류는 고치는 사이 카테고리를 다시 받아도 남는다', async () => {
     // Given
     const { queryClient } = await renderEditSheet();
-    fireEvent.changeText(await screen.findByDisplayValue('운동'), '');
+    await fireEvent.changeText(await screen.findByDisplayValue('운동'), '');
     expect(await screen.findByText('카테고리명을 입력해주세요')).toBeTruthy();
 
     // When

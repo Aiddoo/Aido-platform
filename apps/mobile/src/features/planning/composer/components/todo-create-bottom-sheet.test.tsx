@@ -227,8 +227,8 @@ describe('TodoCreateBottomSheet', () => {
 
         // When
         await act(async () => {
-          fireEvent.press(submit);
-          fireEvent.press(submit);
+          await fireEvent.press(submit);
+          await fireEvent.press(submit);
         });
         await act(() => jest.advanceTimersByTimeAsync(1_000));
 

@@ -61,7 +61,7 @@ describe('앱 버전 확인', () => {
     const { listing, errorReporter } = await renderCheck({ jsonFetcher });
 
     // When
-    fireEvent.press(screen.getByText('버전 정보'));
+    await fireEvent.press(screen.getByText('버전 정보'));
 
     // Then
     expect(await screen.findAllByText(/버전 정보를 확인하지 못했어요/)).not.toHaveLength(0);
@@ -76,7 +76,7 @@ describe('앱 버전 확인', () => {
     const { listing, errorReporter } = await renderCheck({ jsonFetcher });
 
     // When
-    fireEvent.press(screen.getByText('버전 정보'));
+    await fireEvent.press(screen.getByText('버전 정보'));
 
     // Then
     expect(await screen.findAllByText('지금은 안내할 새 버전이 없어요.')).not.toHaveLength(0);
@@ -92,7 +92,7 @@ describe('앱 버전 확인', () => {
     const { listing } = await renderCheck({ jsonFetcher });
 
     // When
-    fireEvent.press(screen.getByText('버전 정보'));
+    await fireEvent.press(screen.getByText('버전 정보'));
     onlineManager.setOnline(true);
 
     // Then
@@ -109,7 +109,7 @@ describe('앱 버전 확인', () => {
     const { listing } = await renderCheck({ jsonFetcher });
 
     // When
-    fireEvent.press(screen.getByText('버전 정보'));
+    await fireEvent.press(screen.getByText('버전 정보'));
 
     // Then
     await screen.findByText('1.14.0');
@@ -125,7 +125,7 @@ describe('앱 버전 확인', () => {
     });
 
     // When
-    fireEvent.press(screen.getByText('버전 정보'));
+    await fireEvent.press(screen.getByText('버전 정보'));
 
     // Then
     expect(await screen.findAllByText(/앱 스토어를 열지 못했어요/)).not.toHaveLength(0);
@@ -138,7 +138,7 @@ describe('앱 버전 확인', () => {
     const { listing } = await renderCheck({ jsonFetcher, currentVersion: '1.15.0' });
 
     // When
-    fireEvent.press(screen.getByText('버전 정보'));
+    await fireEvent.press(screen.getByText('버전 정보'));
 
     // Then
     expect(await screen.findByText('현재 최신 버전을 사용하고 있어요.')).toBeTruthy();

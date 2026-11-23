@@ -156,8 +156,8 @@ async function renderEditor(
 async function editContent(content: string) {
   const input = await screen.findByDisplayValue('처음 메모');
   await act(async () => {
-    fireEvent(input, 'focus');
-    fireEvent.changeText(input, content);
+    await fireEvent(input, 'focus');
+    await fireEvent.changeText(input, content);
   });
 }
 
@@ -171,7 +171,7 @@ describe('MemoEditor', () => {
     // When
     await editContent('  고친 메모  ');
     await act(async () => {
-      fireEvent.press(await screen.findByLabelText('저장'));
+      await fireEvent.press(await screen.findByLabelText('저장'));
     });
 
     // Then
@@ -192,7 +192,7 @@ describe('MemoEditor', () => {
     // When
     await editContent('처음 메모  ');
     await act(async () => {
-      fireEvent.press(await screen.findByLabelText('저장'));
+      await fireEvent.press(await screen.findByLabelText('저장'));
     });
 
     // Then
@@ -208,7 +208,7 @@ describe('MemoEditor', () => {
     // When
     await waitFor(() => expect(screen.getByLabelText('뒤로 가기')).toBeTruthy());
     await act(async () => {
-      fireEvent.press(screen.getByLabelText('뒤로 가기'));
+      await fireEvent.press(screen.getByLabelText('뒤로 가기'));
     });
 
     // Then
@@ -283,7 +283,7 @@ describe('MemoEditor', () => {
 
       // When
       await act(async () => {
-        fireEvent.press(screen.getByLabelText('뒤로 가기'));
+        await fireEvent.press(screen.getByLabelText('뒤로 가기'));
       });
 
       // Then
@@ -301,7 +301,7 @@ describe('MemoEditor', () => {
 
     // When
     await act(async () => {
-      fireEvent.press(screen.getByLabelText('뒤로 가기'));
+      await fireEvent.press(screen.getByLabelText('뒤로 가기'));
     });
 
     // Then
@@ -322,13 +322,13 @@ describe('MemoEditor', () => {
     );
     await act(async () => {});
     await act(async () => {
-      fireEvent.press(await screen.findByText('할 일로 바꾸기'));
+      await fireEvent.press(await screen.findByText('할 일로 바꾸기'));
     });
     const sheet = await screen.findByTestId('memo-convert-sheet');
 
     // When
     await act(async () => {
-      fireEvent.press(within(sheet).getByLabelText('저장하기'));
+      await fireEvent.press(within(sheet).getByLabelText('저장하기'));
     });
 
     // Then
@@ -354,7 +354,7 @@ describe('MemoEditor', () => {
 
       // When
       await act(async () => {
-        fireEvent.press(await screen.findByText('할 일로 바꾸기'));
+        await fireEvent.press(await screen.findByText('할 일로 바꾸기'));
       });
 
       // Then
@@ -382,7 +382,7 @@ describe('MemoEditor', () => {
 
       // When
       await act(async () => {
-        fireEvent.press(await screen.findByText('할 일로 바꾸기'));
+        await fireEvent.press(await screen.findByText('할 일로 바꾸기'));
       });
 
       // Then
@@ -400,7 +400,7 @@ describe('MemoEditor', () => {
     // When
     await waitFor(() => expect(screen.getByLabelText('뒤로 가기')).toBeTruthy());
     await act(async () => {
-      fireEvent.press(screen.getByLabelText('뒤로 가기'));
+      await fireEvent.press(screen.getByLabelText('뒤로 가기'));
     });
 
     // Then
@@ -417,7 +417,7 @@ describe('MemoEditor', () => {
 
     // When
     await act(async () => {
-      fireEvent.press(screen.getByLabelText('뒤로 가기'));
+      await fireEvent.press(screen.getByLabelText('뒤로 가기'));
     });
 
     // Then
@@ -433,7 +433,7 @@ describe('MemoEditor', () => {
 
     // When
     await act(async () => {
-      fireEvent.press(screen.getByLabelText('뒤로 가기'));
+      await fireEvent.press(screen.getByLabelText('뒤로 가기'));
     });
 
     // Then
@@ -451,7 +451,7 @@ describe('MemoEditor', () => {
 
     // When
     await act(async () => {
-      fireEvent.press(screen.getByLabelText('뒤로 가기'));
+      await fireEvent.press(screen.getByLabelText('뒤로 가기'));
     });
 
     // Then
@@ -468,7 +468,7 @@ describe('MemoEditor', () => {
 
     // When
     await act(async () => {
-      fireEvent.press(screen.getByLabelText('뒤로 가기'));
+      await fireEvent.press(screen.getByLabelText('뒤로 가기'));
     });
 
     // Then
@@ -494,7 +494,7 @@ describe('MemoEditor', () => {
 
       // When
       await act(async () => {
-        fireEvent.press(await screen.findByLabelText('저장'));
+        await fireEvent.press(await screen.findByLabelText('저장'));
       });
 
       // Then
@@ -509,13 +509,13 @@ describe('MemoEditor', () => {
       httpClient.patch.mockResolvedValue(ok({ message: 'updated', memo: SAVED_MEMO_DTO }));
       await editContent('고친 메모');
       await act(async () => {
-        fireEvent.press(await screen.findByLabelText('저장'));
+        await fireEvent.press(await screen.findByLabelText('저장'));
       });
       await waitFor(() => expect(dismissKeyboard).toHaveBeenCalledTimes(1));
 
       // When
       await act(async () => {
-        fireEvent.press(screen.getByLabelText('뒤로 가기'));
+        await fireEvent.press(screen.getByLabelText('뒤로 가기'));
       });
 
       // Then
@@ -533,7 +533,7 @@ describe('MemoEditor', () => {
 
       // When
       await act(async () => {
-        fireEvent.press(await screen.findByLabelText('저장'));
+        await fireEvent.press(await screen.findByLabelText('저장'));
       });
 
       // Then
@@ -552,7 +552,7 @@ describe('MemoEditor', () => {
 
       // When
       await act(async () => {
-        fireEvent.press(await screen.findByLabelText('저장'));
+        await fireEvent.press(await screen.findByLabelText('저장'));
       });
 
       // Then
@@ -570,7 +570,7 @@ describe('MemoEditor', () => {
 
       // When
       await act(async () => {
-        fireEvent.press(screen.getByLabelText('뒤로 가기'));
+        await fireEvent.press(screen.getByLabelText('뒤로 가기'));
       });
 
       // Then

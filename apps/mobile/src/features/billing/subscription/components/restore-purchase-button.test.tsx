@@ -19,8 +19,8 @@ describe('RestorePurchaseButton', () => {
 
     // When
     await act(async () => {
-      fireEvent.press(button);
-      fireEvent.press(button);
+      await fireEvent.press(button);
+      await fireEvent.press(button);
     });
 
     // Then

@@ -25,8 +25,8 @@ describe('ReportReasonBottomSheet', () => {
 
     // When
     await act(async () => {
-      fireEvent.press(submit);
-      fireEvent.press(submit);
+      await fireEvent.press(submit);
+      await fireEvent.press(submit);
     });
 
     // Then

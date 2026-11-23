@@ -137,7 +137,7 @@ describe('useOfferMarketingPushAfterCompletion', () => {
 
     // When
     await act(async () => {
-      fireEvent.press(await screen.findByText('받을게요'));
+      await fireEvent.press(await screen.findByText('받을게요'));
       await jest.runOnlyPendingTimersAsync();
     });
     // 동의 뒤 닫히는 애니메이션이 시작되면 시트는 닫힘을 한 번 더 알린다

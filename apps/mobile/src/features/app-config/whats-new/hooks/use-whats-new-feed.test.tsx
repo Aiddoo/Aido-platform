@@ -54,9 +54,9 @@ async function renderFeed({
       withLocalDate: true,
     },
   );
-  const settleOnboarding = () => {
+  const settleOnboarding = async () => {
     onboarding.isSettled = true;
-    hook.rerender(undefined);
+    await hook.rerender(undefined);
   };
   return { ...hook, settleOnboarding };
 }
@@ -82,7 +82,7 @@ describe('useWhatsNewFeed — 첫 피드', () => {
     await waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));
 
     // When
-    rerender(undefined);
+    await rerender(undefined);
 
     // Then
     expect(router.push).toHaveBeenCalledTimes(1);
@@ -110,7 +110,7 @@ describe('useWhatsNewFeed — 첫 피드', () => {
     expect(router.push).not.toHaveBeenCalled();
 
     // When
-    settleOnboarding();
+    await settleOnboarding();
 
     // Then
     await waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));
