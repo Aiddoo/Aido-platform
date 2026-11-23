@@ -127,7 +127,7 @@ describe("TodoSchedule — 일정 값 객체", () => {
     expect(patched.scheduledTime).toEqual(schedule.scheduledTime);
   });
 
-  it("옛 서버가 시간을 지워 칸만 낡은 행은 벽시계도 없는 것으로 읽는다", () => {
+  it("1.14.2 서버가 시간을 지워 칸만 낡은 행은 벽시계도 없는 것으로 읽는다", () => {
     // Given
     const props = {
       startDate: START,
@@ -140,26 +140,6 @@ describe("TodoSchedule — 일정 값 객체", () => {
     const schedule = TodoSchedule.reconstitute(props);
     // Then
     expect(schedule.scheduledLocalTime).toBeNull();
-  });
-
-  it("옛 서버가 써서 칸이 빈 행은 순간을 지금 시간대로 읽어 날짜를 옮겨도 보던 시각이 된다", () => {
-    // Given
-    const legacy = TodoSchedule.reconstitute({
-      startDate: START,
-      endDate: null,
-      scheduledLocalTime: null,
-      scheduledTime: Temporal.Instant.from("2026-03-01T01:00:00.000Z"),
-      isAllDay: false,
-    });
-    // When
-    const patched = legacy.patch(
-      { startDate: Temporal.PlainDate.from("2026-03-02") },
-      "Asia/Seoul",
-    );
-    // Then
-    expect(legacy.localTimeIn("Asia/Seoul")).toBe("10:00");
-    expect(patched.scheduledLocalTime).toBe("10:00");
-    expect(patched.scheduledTime).toEqual(Temporal.Instant.from("2026-03-02T01:00:00.000Z"));
   });
 
   it("유효한 일정으로 생성하면 각 필드를 그대로 노출한다", () => {

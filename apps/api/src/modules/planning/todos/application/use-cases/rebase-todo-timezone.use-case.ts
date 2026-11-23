@@ -31,8 +31,6 @@ export interface RebaseTodoTimezoneResult {
   readonly outcome: RebaseTodoTimezoneOutcome;
   readonly scannedCount: number;
   readonly rebasedCount: number;
-  /** 벽시계 칸이 비어 건너뛴 행. 롤백 중 옛 서버가 쓴 행이고 재배포 SQL이 채운다. */
-  readonly skippedCount: number;
   readonly seriesCount: number;
 }
 
@@ -103,20 +101,18 @@ export class RebaseTodoTimezoneUseCase {
     let afterId: TodoId | null = null;
     let scannedCount = 0;
     let rebasedCount = 0;
-    let skippedCount = 0;
     for (;;) {
       const batch: RebasedBatch = await unitOfWork.run(() =>
         this.#rebaseBatch(userId, timezone, { afterId, limit: batchSize }),
       );
       if (batch.superseded) {
-        return { outcome: "SUPERSEDED", seriesCount, scannedCount, rebasedCount, skippedCount };
+        return { outcome: "SUPERSEDED", seriesCount, scannedCount, rebasedCount };
       }
       scannedCount += batch.scannedCount;
       rebasedCount += batch.rebasedCount;
-      skippedCount += batch.skippedCount;
       afterId = batch.lastId;
       if (batch.scannedCount < batchSize) {
-        return { outcome: "COMPLETED", seriesCount, scannedCount, rebasedCount, skippedCount };
+        return { outcome: "COMPLETED", seriesCount, scannedCount, rebasedCount };
       }
     }
   }
@@ -152,7 +148,6 @@ export class RebaseTodoTimezoneUseCase {
       superseded: false,
       scannedCount: candidates.length,
       rebasedCount: rebased.length,
-      skippedCount: candidates.filter((row) => row.scheduledLocalTime == null).length,
       lastId: candidates.at(-1)?.todoId ?? afterId,
     };
   }
@@ -170,7 +165,6 @@ interface RebasedBatch {
   readonly superseded: boolean;
   readonly scannedCount: number;
   readonly rebasedCount: number;
-  readonly skippedCount: number;
   readonly lastId: TodoId | null;
 }
 
@@ -178,11 +172,10 @@ const EMPTY_BATCH: RebasedBatch = {
   superseded: false,
   scannedCount: 0,
   rebasedCount: 0,
-  skippedCount: 0,
   lastId: null,
 };
 
-const EMPTY_RESULT = { scannedCount: 0, rebasedCount: 0, skippedCount: 0, seriesCount: 0 } as const;
+const EMPTY_RESULT = { scannedCount: 0, rebasedCount: 0, seriesCount: 0 } as const;
 
 /** 순간이 그대로면(이름만 다른 같은 시각) 쓰기와 재예약을 하지 않는다. */
 function rebaseInstant(candidate: RebaseCandidate, timezone: string) {

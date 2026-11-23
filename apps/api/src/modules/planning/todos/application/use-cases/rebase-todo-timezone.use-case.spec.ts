@@ -299,16 +299,6 @@ describe("시간대 재계산", () => {
     expect(drafts?.[0]?.scheduledTime).toEqual(Temporal.Instant.from("2026-11-10T15:00:00.000Z"));
   });
 
-  it("벽시계 칸이 빈 행은 건너뛰어 세고 순간을 망가뜨리지 않는다", async () => {
-    // Given
-    const useCase = setUp([timedTodo(1, "2026-11-10", { scheduledLocalTime: null })], NEW_YORK);
-    // When
-    const result = await useCase.execute({ userId: "planning-user" });
-    // Then
-    expect(result).toMatchObject({ skippedCount: 1, rebasedCount: 0 });
-    expect(readInstant(1)).toBe("2026-11-10T01:00:00.000Z");
-  });
-
   it("묶음을 나눠도 모든 행을 처리한다", async () => {
     // Given
     const useCase = setUp(

@@ -214,7 +214,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 - **종일 이벤트** (\`isAllDay=true\`): \`scheduledTime\`은 null
 - **시간 이벤트** (\`isAllDay=false\`): \`scheduledLocalTime\`(HH:mm)이 사용자가 고른 시각이고 어디서든 그 시각입니다
   - \`scheduledTime\`(UTC ISO 8601)은 날짜 + 벽시계 + 사용자 시간대로 만든 파생값이고 시간대가 바뀌면 다시 계산됩니다
-  - 표시는 \`scheduledLocalTime\`을 그대로 씁니다. 키가 없는 옛 서버 응답에서만 \`scheduledTime\`을 기기 시간대로 바꿉니다
+  - 표시는 \`scheduledLocalTime\`을 그대로 씁니다
 
 #### 에러 케이스
 

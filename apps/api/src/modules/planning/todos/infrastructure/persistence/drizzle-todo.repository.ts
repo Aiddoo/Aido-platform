@@ -237,6 +237,7 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
         and(
           eq(todo.userId, query.userId.value),
           isNotNull(todo.scheduledTime),
+          isNotNull(todo.scheduledLocalTime),
           query.afterId == null ? undefined : gt(todo.id, query.afterId.value),
         ),
       )
@@ -246,6 +247,7 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
     return rows.map((row) => ({
       ...row,
       todoId: TodoId.reconstitute(row.todoId),
+      scheduledLocalTime: requireRecord(row.scheduledLocalTime),
       scheduledTime: requireRecord(row.scheduledTime),
     }));
   }

@@ -5,11 +5,10 @@ import type { TodoId } from "../../domain/todo-id.vo.js";
 import type { TodoItemId } from "../../domain/todo-item-id.vo.js";
 import type { Todo } from "../../domain/todo.aggregate.js";
 
-// 시간대가 바뀌면 다시 계산할 할 일. 벽시계가 빈 행은 옛 서버가 쓴 것이라 재배포 SQL이 채운다
 export interface RebaseCandidate {
   readonly todoId: TodoId;
   readonly startDate: Temporal.PlainDate;
-  readonly scheduledLocalTime: string | null;
+  readonly scheduledLocalTime: string;
   readonly scheduledTime: Temporal.Instant;
   readonly completed: boolean;
 }
