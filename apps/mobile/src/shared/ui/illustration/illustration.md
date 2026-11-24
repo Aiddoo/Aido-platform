@@ -28,6 +28,7 @@
 | `OfflineIllustration`      | 연결 없이 연 화면                                              |
 | `ErrorIllustration`        | 조회 오류(`QueryErrorFallback`, `.Error`)                      |
 | `LocationIllustration`     | 날씨 위치 권한 안내, 위치 권한을 끈 상태                       |
+| `CalendarIllustration`     | 캘린더 가져오기 권한 안내, 권한을 끈 상태, 가져올 일정 없음    |
 
 | Props  | 타입                  | 기본       | 설명                |
 | ------ | --------------------- | ---------- | ------------------- |

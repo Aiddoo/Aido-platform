@@ -1,3 +1,4 @@
+import CalendarIllustrationSvg from '@assets/illustrations/il_calendar.svg';
 import CommentIllustrationSvg from '@assets/illustrations/il_comment.svg';
 import ErrorIllustrationSvg from '@assets/illustrations/il_error.svg';
 import FriendIllustrationSvg from '@assets/illustrations/il_friend.svg';
@@ -44,3 +45,4 @@ export const CommentIllustration = createIllustration(CommentIllustrationSvg);
 export const OfflineIllustration = createIllustration(OfflineIllustrationSvg);
 export const ErrorIllustration = createIllustration(ErrorIllustrationSvg);
 export const LocationIllustration = createIllustration(LocationIllustrationSvg);
+export const CalendarIllustration = createIllustration(CalendarIllustrationSvg);

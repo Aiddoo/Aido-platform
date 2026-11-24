@@ -56,6 +56,7 @@ export {
   BellDuoIcon,
   ReminderDuoIcon,
   WeatherDuoIcon,
+  CalendarImportDuoIcon,
   CategoryDuoIcon,
   ThemeDuoIcon,
   FontSizeDuoIcon,
@@ -88,6 +89,7 @@ export {
   BellOffIcon,
   BlockIcon,
   CalendarIcon,
+  CalendarImportIcon,
   ChatBubbleIcon,
   CheckIcon,
   CheckmarkIcon,
@@ -135,6 +137,7 @@ export {
 export { WeatherRainIcon } from './icon/icons';
 export { NATIVE_TAB_ICON_SOURCES } from './icon/native-tab-icons';
 export {
+  CalendarIllustration,
   CommentIllustration,
   ErrorIllustration,
   FriendIllustration,
