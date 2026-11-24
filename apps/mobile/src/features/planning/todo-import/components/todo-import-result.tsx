@@ -1,5 +1,6 @@
 import { TODO_IMPORT_LIMITS } from '@aido/api/vocabulary';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Button,
@@ -13,7 +14,7 @@ import {
   WordWrapText,
 } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { type Href, router } from 'expo-router';
 import { match } from 'ts-pattern';
 
 import { TodoImportPolicy } from '../domains/todo-import.model';
@@ -28,6 +29,14 @@ export function TodoImportResult() {
   const [importId] = useTodoImportId();
   const now = useMinuteNow();
   const { data: todoImport } = useSuspenseQuery(useGetTodoImportQueryOptions({ importId }));
+
+  const leaveToFeed = useSingleTap((href: Href) => {
+    // 가져오기 화면은 연 탭(대개 마이)에 쌓여 있어, 먼저 그 탭을 첫 화면으로 되돌려야 탭을 다시 눌렀을 때 결과가 남지 않는다
+    if (router.canDismiss()) {
+      router.dismissAll();
+    }
+    router.navigate(href);
+  });
 
   const { counts, status, firstDate } = todoImport;
   const canUndo = TodoImportPolicy.canUndo(todoImport, now);
@@ -81,7 +90,7 @@ export function TodoImportResult() {
         <Button
           size="large"
           onPress={() =>
-            router.navigate(
+            leaveToFeed(
               firstDate == null ? '/feed' : { pathname: '/feed', params: { date: firstDate } },
             )
           }
