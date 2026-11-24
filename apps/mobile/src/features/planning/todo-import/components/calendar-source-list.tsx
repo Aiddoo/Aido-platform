@@ -7,7 +7,6 @@ import {
   Checkbox,
   CloudDuoIcon,
   DeviceDuoIcon,
-  GiftDuoIcon,
   HStack,
   LinkDuoIcon,
   ListRow,
@@ -19,10 +18,10 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { groupBy, sortBy } from 'es-toolkit';
+import { groupBy, partition, sortBy } from 'es-toolkit';
 import { Accordion, ControlField, Skeleton } from 'heroui-native';
 import { type ComponentProps, useMemo } from 'react';
-import { match } from 'ts-pattern';
+import { match, P } from 'ts-pattern';
 
 import {
   type FilterImportCollection,
@@ -45,8 +44,7 @@ interface CalendarSourceListProps {
   orderBy?: OrderByImportCollection;
 }
 
-/** 계정이 이보다 많으면 계정마다 접어 한 화면에 결정 하나만 보이게 한다 */
-const ACCORDION_ACCOUNT_THRESHOLD = 3;
+const RECEIVED_ACCORDION_VALUE = 'received';
 
 export function CalendarSourceList({
   startDate,
@@ -56,6 +54,7 @@ export function CalendarSourceList({
   filters,
   orderBy,
 }: CalendarSourceListProps) {
+  const { t } = useTranslation('todoImport');
   const { data: collections } = useSuspenseQuery(
     useGetImportCollectionsQueryOptions({ startDate, endDate, filters, orderBy }),
   );
@@ -71,10 +70,13 @@ export function CalendarSourceList({
     [collections, value],
   );
   const formatAccountLabel = useFormatAccountLabel();
-  const accounts = useMemo(
-    () =>
-      sortBy(
-        Object.entries(groupBy(collections, (collection) => collection.accountName ?? '')).flatMap(
+  // 공휴일·생일·구독처럼 받아 보기만 하는 캘린더는 계정과 상관없이 맨 아래 한 묶음으로 접어 둔다
+  const { accounts, receivedCollections } = useMemo(() => {
+    const [received, own] = partition(collections, TodoImportCollectionPolicy.isSubscribedCalendar);
+    return {
+      receivedCollections: received,
+      accounts: sortBy(
+        Object.entries(groupBy(own, (collection) => collection.accountName ?? '')).flatMap(
           ([accountKey, group]) => {
             const [account] = group;
             return account == null ? [] : [{ accountKey, account, group }];
@@ -82,8 +84,8 @@ export function CalendarSourceList({
         ),
         [({ account }) => orderByAccountProvider(account)],
       ),
-    [collections],
-  );
+    };
+  }, [collections]);
 
   if (!collections.some(TodoImportCollectionPolicy.isSelectable)) {
     return <CalendarSourceList.Empty />;
@@ -122,40 +124,37 @@ export function CalendarSourceList({
     </CalendarSourceList.Group>
   );
 
-  if (accounts.length <= ACCORDION_ACCOUNT_THRESHOLD) {
-    return (
-      <VStack gap={12}>
-        {accounts.map(({ accountKey, account, group }) => (
-          <Box key={accountKey}>{renderGroup(group, account)}</Box>
-        ))}
-      </VStack>
-    );
-  }
+  const hasSelectedReceived = receivedCollections.some((collection) =>
+    selectedKeys.has(collection.collectionKey),
+  );
 
   return (
-    <Accordion
-      selectionMode="multiple"
-      defaultValue={accounts
-        .filter(({ group }) =>
-          group.some((collection) => selectedKeys.has(collection.collectionKey)),
-        )
-        .map(({ accountKey }) => accountKey)}
-      hideSeparator
-      className="gap-3"
-    >
+    <VStack gap={12}>
       {accounts.map(({ accountKey, account, group }) => (
-        <Accordion.Item key={accountKey} value={accountKey}>
-          <Accordion.Trigger className="px-1 py-2">
-            <CalendarSourceList.AccountLabel
-              accountName={formatAccountLabel(account)}
-              accountProvider={account.accountProvider}
-            />
-            <Accordion.Indicator />
-          </Accordion.Trigger>
-          <Accordion.Content className="px-0 pb-0">{renderGroup(group)}</Accordion.Content>
-        </Accordion.Item>
+        <Box key={accountKey}>{renderGroup(group, account)}</Box>
       ))}
-    </Accordion>
+
+      {receivedCollections.length > 0 && (
+        <Accordion
+          selectionMode="multiple"
+          defaultValue={hasSelectedReceived ? [RECEIVED_ACCORDION_VALUE] : []}
+          hideSeparator
+        >
+          <Accordion.Item value={RECEIVED_ACCORDION_VALUE}>
+            <Accordion.Trigger className="px-1 py-2">
+              <CalendarSourceList.AccountLabel
+                accountName={t('calendars.receivedTitle', { count: receivedCollections.length })}
+                accountProvider="subscribed"
+              />
+              <Accordion.Indicator />
+            </Accordion.Trigger>
+            <Accordion.Content className="px-0 pb-0">
+              {renderGroup(receivedCollections)}
+            </Accordion.Content>
+          </Accordion.Item>
+        </Accordion>
+      )}
+    </VStack>
   );
 }
 
@@ -195,7 +194,7 @@ const ACCOUNT_PROVIDER_ICONS = {
   other: CloudDuoIcon,
   device: DeviceDuoIcon,
   subscribed: LinkDuoIcon,
-  birthdays: GiftDuoIcon,
+  birthdays: LinkDuoIcon,
 } as const satisfies Record<ImportAccountProvider, StyledIcon>;
 
 CalendarSourceList.AccountLabel = function AccountLabel({
@@ -334,8 +333,7 @@ function useFormatAccountLabel() {
           : t('calendars.accounts.outlookWithEmail', { email }),
       )
       .with('device', () => t('calendars.accounts.device'))
-      .with('subscribed', () => t('calendars.accounts.subscribed'))
-      .with('birthdays', () => t('calendars.accounts.birthdays'))
+      .with(P.union('subscribed', 'birthdays'), () => t('calendars.otherAccount'))
       .with('other', () => account.accountName ?? t('calendars.otherAccount'))
       .exhaustive();
   };

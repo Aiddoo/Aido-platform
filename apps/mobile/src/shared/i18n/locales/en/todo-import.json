@@ -1,11 +1,11 @@
 {
   "untitledEvent": "Untitled event",
   "entry": {
-    "menu": "Import from Calendar",
+    "menu": "Import calendar events",
     "inProgress": "Importing"
   },
   "titles": {
-    "setup": "Import from Calendar",
+    "setup": "Import calendar events",
     "progress": "Importing",
     "result": "Import result"
   },
@@ -47,10 +47,10 @@
       "googleWithEmail": "Google Calendar · {{email}}",
       "outlook": "Outlook Calendar",
       "outlookWithEmail": "Outlook Calendar · {{email}}",
-      "device": "Saved on this device",
-      "subscribed": "Subscribed calendars (holidays, etc.)",
-      "birthdays": "Birthdays & other"
+      "device": "Saved on this device"
     },
+    "receivedTitle_one": "Holiday & birthday calendar ({{count}})",
+    "receivedTitle_other": "Holiday & birthday calendars ({{count}})",
     "itemCount_one": "{{count}} event",
     "itemCount_other": "{{count}} events",
     "emptyTitle": "No events to import in this range",
