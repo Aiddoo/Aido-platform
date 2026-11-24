@@ -12,6 +12,7 @@ import { expoInstallReferrerGateway } from '@src/shared/infra/application/expo-i
 import { expoInstallationIdGateway } from '@src/shared/infra/application/expo-installation-id-gateway';
 import { expoNativeApplicationMetadataGateway } from '@src/shared/infra/application/expo-native-application-metadata-gateway';
 import { expoVendorIdGateway } from '@src/shared/infra/application/expo-vendor-id-gateway';
+import { expoCalendarTodoImportSource } from '@src/shared/infra/calendar/expo-calendar-todo-import-source';
 import { expoClipboardGateway } from '@src/shared/infra/clipboard/expo-clipboard-gateway';
 import { DEVICE_MODEL_NAME } from '@src/shared/infra/device/device-info';
 import { createEnvironmentErrorReporter } from '@src/shared/infra/error-reporter/create-environment-error-reporter';
@@ -122,6 +123,7 @@ export function createDevicePorts(): DevicePorts {
     viewCapture: viewShotViewCaptureGateway,
     screenOrientation: expoScreenOrientationGateway,
     deviceLocation: expoLocationGateway,
+    todoImportSource: expoCalendarTodoImportSource,
     applicationMetadata: expoNativeApplicationMetadataGateway,
     appStoreListing: expoAppStoreListingGateway,
     appStoreReview: expoAppStoreReviewGateway,

@@ -30,6 +30,7 @@ import type { SocialShareGateway } from '@src/core/ports/social-share-gateway';
 import type { SpeechRecognizer } from '@src/core/ports/speech-recognizer';
 import type { EnumerableSyncStorage } from '@src/core/ports/sync-storage';
 import type { SystemShareGateway } from '@src/core/ports/system-share-gateway';
+import type { TodoImportSource } from '@src/core/ports/todo-import-source';
 import type { RefreshTokensRequest } from '@src/core/ports/token-refresher';
 import type { TokenStore } from '@src/core/ports/token-store';
 import type { VendorIdGateway } from '@src/core/ports/vendor-id-gateway';
@@ -157,6 +158,7 @@ export interface AppContainerPorts {
   viewCapture: ViewCaptureGateway;
   screenOrientation: ScreenOrientationGateway;
   deviceLocation: LocationGateway;
+  todoImportSource: TodoImportSource;
   applicationMetadata: NativeApplicationMetadataGateway;
   appStoreListing: AppStoreListingGateway;
   appStoreReview: AppStoreReviewGateway;
@@ -288,6 +290,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     accountSyncStorage: draftStorage,
 
     deviceLocation: ports.deviceLocation,
+    todoImportSource: ports.todoImportSource,
     applicationMetadata: ports.applicationMetadata,
     socialAuth: ports.socialAuth,
     appStoreListing: ports.appStoreListing,

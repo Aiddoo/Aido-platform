@@ -50,6 +50,7 @@ import { createSocialAuthGatewayStub } from './ports/social-auth-gateway.stub';
 import { createSocialShareGatewayStub } from './ports/social-share-gateway.stub';
 import { createSpeechRecognizerStub } from './ports/speech-recognizer.stub';
 import { createSystemShareGatewayStub } from './ports/system-share-gateway.stub';
+import { createTodoImportSourceStub } from './ports/todo-import-source.stub';
 import { createViewCaptureGatewayStub } from './ports/view-capture-gateway.stub';
 import { createWidgetBridgeStub } from './ports/widget-bridge.stub';
 import { createTestQueryClient } from './query-client';
@@ -116,6 +117,7 @@ export function createTestPorts({
   viewCapture = createViewCaptureGatewayStub(),
   screenOrientation = createScreenOrientationGatewayStub(),
   deviceLocation = createLocationGatewayStub(),
+  todoImportSource = createTodoImportSourceStub(),
   applicationMetadata = createNativeApplicationMetadataGatewayStub(),
   appStoreListing = createAppStoreListingGatewayStub(),
   appStoreReview = createAppStoreReviewGatewayStub(),
@@ -165,6 +167,7 @@ export function createTestPorts({
     viewCapture,
     screenOrientation,
     deviceLocation,
+    todoImportSource,
     applicationMetadata,
     appStoreListing,
     appStoreReview,

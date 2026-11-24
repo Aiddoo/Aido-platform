@@ -7,6 +7,7 @@ import type { PushNotificationGateway } from '@src/core/ports/push-notification-
 import type { ScreenOrientationGateway } from '@src/core/ports/screen-orientation-gateway';
 import type { SocialAuthGateway } from '@src/core/ports/social-auth-gateway';
 import type { SpeechRecognizer } from '@src/core/ports/speech-recognizer';
+import type { TodoImportSource } from '@src/core/ports/todo-import-source';
 import type { TokenStore } from '@src/core/ports/token-store';
 import type { ViewCaptureGateway } from '@src/core/ports/view-capture-gateway';
 import type { SessionEpoch } from '@src/core/session/session-epoch';
@@ -74,6 +75,7 @@ import type { QueryCacheStorage } from '../query/query-cache-persistence';
  */
 export interface DIContainer extends SharedDependencies {
   deviceLocation: LocationGateway;
+  todoImportSource: TodoImportSource;
   applicationMetadata: NativeApplicationMetadataGateway;
   socialAuth: SocialAuthGateway;
   appStoreListing: AppStoreListingGateway;
@@ -219,6 +221,9 @@ function useDI(): DIContainer {
 
 export function useDeviceLocation() {
   return useDI().deviceLocation;
+}
+export function useTodoImportSource() {
+  return useDI().todoImportSource;
 }
 export function useApplicationMetadata() {
   return useDI().applicationMetadata;

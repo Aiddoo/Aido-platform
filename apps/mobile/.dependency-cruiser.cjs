@@ -43,6 +43,7 @@ const SDK_MODULES = [
   'expo-keep-awake',
   'expo-file-system',
   'expo-location',
+  'expo-calendar',
   'react-native-mmkv',
   'expo-network',
   'expo-web-browser',
