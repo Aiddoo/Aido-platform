@@ -90,9 +90,9 @@ import { SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 
 `ListGroup` props와 같아요.
 
-| Prop    | Type     | Default | Description    |
-| ------- | -------- | ------- | -------------- |
-| `label` | `string` | -       | 카드 위쪽 제목 |
+| Prop    | Type     | Default | Description                                   |
+| ------- | -------- | ------- | --------------------------------------------- |
+| `label` | `string` | -       | 카드 위쪽 제목. 스크린 리더는 머리말로 읽는다 |
 
 ### SettingsListGroup.Item
 
