@@ -13,6 +13,7 @@ import { CalendarSourceList } from '@src/features/planning/todo-import/component
 import { CategoryMappingList } from '@src/features/planning/todo-import/components/category-mapping-list';
 import { ImportDateSheet } from '@src/features/planning/todo-import/components/import-date-sheet';
 import { ImportEndDateChips } from '@src/features/planning/todo-import/components/import-end-date-chips';
+import { LastTodoImportRow } from '@src/features/planning/todo-import/components/last-todo-import-row';
 import { MissingCalendarHelp } from '@src/features/planning/todo-import/components/missing-calendar-help';
 import { IMPORT_RANGE_PRESETS } from '@src/features/planning/todo-import/constants/todo-import.constants';
 import type { TodoImportStep } from '@src/features/planning/todo-import/constants/todo-import.events';
@@ -361,6 +362,8 @@ function CalendarsStep({ form, onNext }: { form: TodoImportForm; onNext: () => v
         </VStack>
       }
     >
+      <LastTodoImportRow className="mb-5" />
+
       <WordWrapText size="b3" shade={6}>
         {t('calendars.description')}
       </WordWrapText>

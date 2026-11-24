@@ -4,6 +4,10 @@
     "menu": "캘린더 일정 가져오기",
     "inProgress": "가져오는 중"
   },
+  "lastImport": {
+    "label": "지난 가져오기",
+    "description": "할 일 {{count}}개 · {{date}}까지 되돌릴 수 있어요"
+  },
   "titles": {
     "setup": "캘린더 일정 가져오기",
     "progress": "가져오는 중",

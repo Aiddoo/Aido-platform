@@ -5,10 +5,13 @@ import {
 } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { useTrack } from '@src/shared/analytics';
+import { writeStoredValue } from '@src/shared/storage/define-stored-value';
+import { useStoredValueStorage } from '@src/shared/storage/use-stored-value';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import type { TodoImportSelection } from '../domains/todo-import-session.model';
 import { isTodoImportStartHandledError } from '../domains/todo-import.error';
+import { lastTodoImportIdStoredValue } from '../schemas/todo-import-last-storage.schema';
 import { toTodoImportStartedParams } from '../utils/todo-import-analytics';
 import {
   invalidateActiveTodoImport,
@@ -27,6 +30,7 @@ interface StartTodoImportVariables {
 export function useStartTodoImportMutationOptions() {
   const uploadSession = useTodoImportUploadSession();
   const queryClient = useQueryClient();
+  const lastImportStorage = useStoredValueStorage(lastTodoImportIdStoredValue);
   const { trackEvent } = useTrack();
 
   return mutationOptions({
@@ -35,8 +39,9 @@ export function useStartTodoImportMutationOptions() {
     mutationKey: TODO_IMPORT_MUTATION_KEYS.start(),
     mutationFn: async (variables: StartTodoImportVariables) =>
       unwrap(await uploadSession.start(variables)),
-    onSuccess: ({ todoImport }, { selection }) => {
+    onSuccess: ({ todoImport }, { accountId, selection }) => {
       setTodoImportInCache(queryClient, todoImport);
+      writeStoredValue(lastImportStorage, lastTodoImportIdStoredValue, todoImport.id, accountId);
       trackEvent('todo_import_created', toTodoImportStartedParams(selection));
     },
     onSettled: () => invalidateActiveTodoImport(queryClient),

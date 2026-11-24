@@ -4,6 +4,11 @@
     "menu": "Import calendar events",
     "inProgress": "Importing"
   },
+  "lastImport": {
+    "label": "Last import",
+    "description_one": "{{count}} to-do · Undo until {{date}}",
+    "description_other": "{{count}} to-dos · Undo until {{date}}"
+  },
   "titles": {
     "setup": "Import calendar events",
     "progress": "Importing",
