@@ -4,7 +4,7 @@ import {
   TodoCategoryPolicy,
   type TodoCategoryWithCount,
 } from '@src/features/planning/category/domains/todo-category.model';
-import { keyBy, sumBy, uniqWith } from 'es-toolkit';
+import { sumBy, uniqWith } from 'es-toolkit';
 import { z } from 'zod';
 
 import type { ImportCollection } from './todo-import-collection.model';
@@ -16,17 +16,13 @@ export const importTargetSchema = z.discriminatedUnion('kind', [
 ]);
 export type ImportTarget = z.infer<typeof importTargetSchema>;
 
-/** 새 카테고리의 이름·색은 mapper가 채운다 */
-export type ImportTargetSuggestion =
-  | { kind: 'NEW_CATEGORY' }
-  | { kind: 'EXISTING_CATEGORY'; categoryId: number };
-
-interface SuggestTargetsContext {
-  categories: readonly TodoCategory[];
-  /** null은 제한이 없다 */
-  remainingCategorySlots: number | null;
-  /** 캘린더마다 새 카테고리로 만들 때 보낼 이름. 이메일 같은 캘린더 이름은 이미 바뀌어 있다 */
-  newCategoryNames: Readonly<Record<string, string>>;
+export interface TargetPlacement {
+  target: ImportTarget;
+  /** 이곳을 고른 캘린더의 일정을 모두 더한 수 */
+  importCount: number;
+  /** 카테고리에 남은 자리만큼 실제로 들어가는 수 */
+  placedCount: number;
+  skippedCount: number;
 }
 
 function toComparableName(name: string) {
@@ -34,54 +30,38 @@ function toComparableName(name: string) {
 }
 
 /**
- * 캘린더마다 처음 연결할 곳(순서대로 채운다).
- * 같은 이름의 카테고리 → 남은 카테고리 자리가 있으면 새 카테고리 → 꽉 찼으면 첫 카테고리.
- * 이름은 새 카테고리로 보낼 이름과 같은 값으로 견준다
+ * 처음 넣을 곳. 할 일을 새로 만들 때 처음 고르는 카테고리와 같고 새 카테고리는 만들지 않는다.
+ * 만드는 중인 카테고리는 아직 id가 없어 고르지 않는다. 카테고리가 하나도 없으면 null이다
  */
-export function suggestTargets(
-  collections: readonly ImportCollection[],
-  { categories, remainingCategorySlots, newCategoryNames }: SuggestTargetsContext,
-): Record<string, ImportTargetSuggestion> {
-  const categoriesByName = keyBy(
+export function findDefaultTarget(categories: readonly TodoCategory[]): ImportTarget | null {
+  const categoryId = TodoCategoryPolicy.findInitialCategoryId(
     categories.filter((category) => !TodoCategoryPolicy.isOptimisticCategory(category)),
-    (category) => toComparableName(category.name),
+    null,
   );
-  const fallbackCategoryId = TodoCategoryPolicy.findInitialCategoryId(categories, null);
-  let newCategoryCount = 0;
-
-  return Object.fromEntries(
-    collections.map((collection): [string, ImportTargetSuggestion] => {
-      const name = newCategoryNames[collection.collectionKey];
-      const sameNameCategory = name == null ? null : categoriesByName[toComparableName(name)];
-      if (sameNameCategory != null) {
-        return [
-          collection.collectionKey,
-          { kind: 'EXISTING_CATEGORY', categoryId: sameNameCategory.id },
-        ];
-      }
-      const hasSlot = remainingCategorySlots == null || newCategoryCount < remainingCategorySlots;
-      if (hasSlot || fallbackCategoryId == null) {
-        newCategoryCount += 1;
-        return [collection.collectionKey, { kind: 'NEW_CATEGORY' }];
-      }
-      return [
-        collection.collectionKey,
-        { kind: 'EXISTING_CATEGORY', categoryId: fallbackCategoryId },
-      ];
-    }),
-  );
+  return categoryId == null ? null : { kind: 'EXISTING_CATEGORY', categoryId };
 }
 
 /**
- * 카테고리 하나에 넣을 수 있는 할 일 수(`TODO_LIMITS.MAX_PER_CATEGORY`)를 넘을 수 있는 대상이 있다.
- * 넘쳐도 서버가 가까운 날짜부터 넣고 나머지를 건너뛰어 막지 않는다. 기존 카테고리의 수는 완료한 할 일까지
- * 센 값이라 실제로는 자리가 남을 수도 있다
+ * 카테고리 하나에 더 넣을 수 있는 할 일 수(`TODO_LIMITS.MAX_PER_CATEGORY`까지). 새 카테고리는 비어 있다.
+ * 기존 카테고리의 수는 완료한 할 일까지 센 값이라 실제로는 자리가 더 남을 수도 있다
  */
-export function hasTargetOverCapacity(
+function calculateRoomLeft(target: ImportTarget, categories: readonly TodoCategoryWithCount[]) {
+  if (target.kind === 'NEW_CATEGORY') {
+    return TODO_LIMITS.MAX_PER_CATEGORY;
+  }
+  const todoCount = TodoCategoryPolicy.findCategory(categories, target.categoryId)?.todoCount ?? 0;
+  return Math.max(0, TODO_LIMITS.MAX_PER_CATEGORY - todoCount);
+}
+
+/**
+ * 고른 곳마다 넣을 일정 수와 실제로 들어가는 수. 같은 곳을 고른 캘린더는 합쳐 센다.
+ * 넘쳐도 가져오기는 막지 않는다. 서버가 가까운 날짜부터 넣고 나머지를 건너뛴다
+ */
+export function placeImportTargets(
   collections: readonly ImportCollection[],
   targets: Readonly<Record<string, ImportTarget>>,
   categories: readonly TodoCategoryWithCount[],
-): boolean {
+): TargetPlacement[] {
   const assigned = collections.flatMap((collection) => {
     const target = targets[collection.collectionKey];
     return target == null ? [] : [{ collection, target }];
@@ -91,17 +71,32 @@ export function hasTargetOverCapacity(
     isSameTarget,
   );
 
-  return uniqueTargets.some((target) => {
+  return uniqueTargets.map((target) => {
     const importCount = sumBy(
       assigned.filter((entry) => isSameTarget(entry.target, target)),
       ({ collection }) => collection.itemCount,
     );
-    const currentCount =
-      target.kind === 'EXISTING_CATEGORY'
-        ? (TodoCategoryPolicy.findCategory(categories, target.categoryId)?.todoCount ?? 0)
-        : 0;
-    return TODO_LIMITS.MAX_PER_CATEGORY < currentCount + importCount;
+    const placedCount = Math.min(importCount, calculateRoomLeft(target, categories));
+    return { target, importCount, placedCount, skippedCount: importCount - placedCount };
   });
+}
+
+export interface ImportPlacementSummary {
+  totalCount: number;
+  placedCount: number;
+  /** 일정이 들어가는 아이두 카테고리 수 */
+  destinationCount: number;
+}
+
+/** 모두 몇 개를 몇 곳에 넣는지, 자리가 모자라 실제로 몇 개만 들어가는지 */
+export function summarizePlacements(
+  placements: readonly TargetPlacement[],
+): ImportPlacementSummary {
+  return {
+    totalCount: sumBy(placements, ({ importCount }) => importCount),
+    placedCount: sumBy(placements, ({ placedCount }) => placedCount),
+    destinationCount: placements.length,
+  };
 }
 
 /** 이름이 같은 새 카테고리는 서버가 하나로 만들어 한 번만 센다 */
@@ -122,7 +117,7 @@ function isSameTarget(target: ImportTarget, other: ImportTarget) {
   return false;
 }
 
-/** 이름이 같은 카테고리가 있으면 새로 만들지 않고 그 카테고리에 넣는다(`suggestTargets`와 같게 견준다) */
+/** 이름이 같은 카테고리(공백·대소문자 무시)가 있으면 새로 만들지 않고 그 카테고리에 넣는다 */
 function findSameNameCategory<TCategory extends TodoCategory>(
   target: ImportTarget,
   categories: readonly TCategory[],
@@ -140,8 +135,18 @@ function findSameNameCategory<TCategory extends TodoCategory>(
   );
 }
 
+/** 고른 카테고리가 목록에서 사라졌다(가져오기 전에 삭제했다). 새 카테고리는 아직 없어 사라질 수 없다 */
+function isMissingCategory(target: ImportTarget, categories: readonly TodoCategory[]) {
+  return (
+    target.kind === 'EXISTING_CATEGORY' &&
+    TodoCategoryPolicy.findCategory(categories, target.categoryId) == null
+  );
+}
+
 export const TodoImportTargetPolicy = {
+  calculateRoomLeft,
   countNewCategories,
   isSameTarget,
   findSameNameCategory,
+  isMissingCategory,
 } as const;
