@@ -13,7 +13,7 @@ import {
   removeStoredValue,
   writeStoredValue,
 } from '@src/shared/storage/define-stored-value';
-import { compact, noop, retry } from 'es-toolkit';
+import { compact, delay, noop, retry } from 'es-toolkit';
 
 import { toImportItem } from '../apis/todo-import-item.mapper';
 import type { TodoImportApi } from '../apis/todo-import.api';
@@ -376,25 +376,40 @@ export class TodoImportUploadSession {
     }
   };
 
-  /** 연결·서버 장애·속도 제한은 기다렸다 다시 보낸다. 4xx는 바로 던진다 */
-  #request = <T>(call: () => Promise<Result<T, ApiError>>, context: RunContext): Promise<T> =>
-    retry(async () => unwrap(await call()), {
-      retries: TODO_IMPORT_MAX_RETRIES,
-      signal: context.signal,
-      shouldRetry: (error) => isRetryableTodoImportError(error) && context.isCurrent(),
-      delay: (attempts, error) => {
-        const delayMs = getRetryDelayMs({
-          attempt: attempts,
-          retryAfterMs: findRetryAfterMs(error),
-          random: this.#ports.random,
-        });
-        this.#ports.logger.info(TODO_IMPORT_LOG_EVENT.UPLOAD_CHUNK_RETRYING, {
-          total: attempts + 1,
-          durationMs: delayMs,
-        });
-        return delayMs;
+  /**
+   * 연결·서버 장애·속도 제한은 기다렸다 다시 보낸다. 4xx는 바로 던진다.
+   * retry의 대기는 취소되지 않아, 기다림은 다음 시도 앞에서 실행의 signal로 끊기는 delay로 한다(놓으면 타이머가 남지 않는다)
+   */
+  #request = <T>(call: () => Promise<Result<T, ApiError>>, context: RunContext): Promise<T> => {
+    let waitMs = 0;
+    return retry(
+      async () => {
+        if (waitMs > 0) {
+          await delay(waitMs, { signal: context.signal });
+        }
+        return unwrap(await call());
       },
-    });
+      {
+        retries: TODO_IMPORT_MAX_RETRIES,
+        signal: context.signal,
+        shouldRetry: (error, attempt) => {
+          if (!isRetryableTodoImportError(error) || !context.isCurrent()) {
+            return false;
+          }
+          waitMs = getRetryDelayMs({
+            attempt,
+            retryAfterMs: findRetryAfterMs(error),
+            random: this.#ports.random,
+          });
+          this.#ports.logger.info(TODO_IMPORT_LOG_EVENT.UPLOAD_CHUNK_RETRYING, {
+            total: attempt + 1,
+            durationMs: waitMs,
+          });
+          return true;
+        },
+      },
+    );
+  };
 
   #handleFailure = (error: unknown, context: RunContext, importId: string | null) => {
     const { accountId, isCurrent } = context;
