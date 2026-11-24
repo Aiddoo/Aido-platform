@@ -185,5 +185,14 @@
   "REPORT_2252": "We couldn't find this user",
   "REPORT_2253": "This can't be reported",
   "REPORT_2254": "You've reached today's report limit. For urgent issues, contact us",
-  "REPORT_2255": "Report not found"
+  "REPORT_2255": "Report not found",
+  "TODO_IMPORT_2301": "A calendar import is already in progress",
+  "TODO_IMPORT_2302": "Your plan can't import this date range",
+  "TODO_IMPORT_2303": "These categories can't receive the imported to-dos",
+  "TODO_IMPORT_2304": "Calendar import not found",
+  "TODO_IMPORT_2305": "This request isn't allowed in the import's current state",
+  "TODO_IMPORT_2306": "The date range or an event is invalid",
+  "TODO_IMPORT_2307": "This Idempotency-Key was already used for a different import",
+  "TODO_IMPORT_2308": "The time to undo this import has passed",
+  "TODO_IMPORT_2309": "Too many events to import at once"
 }
