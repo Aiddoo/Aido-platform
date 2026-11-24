@@ -4,7 +4,7 @@
   "patchNotes": {
     "appStore": {
       "ko": [
-        "‘캘린더 가져오기’를 더했어요. 마이 > 설정에서 기기 캘린더(iCloud·Google·Outlook 등 기기와 동기화된 캘린더)의 일정을 고른 기간만큼 할 일로 한 번에 가져와요. 아이두는 캘린더를 읽기만 하고 바꾸거나 지우지 않아요.",
+        "‘캘린더 일정 가져오기’를 더했어요. 마이 > 설정에서 기기 캘린더(iCloud·Google·Outlook 등 기기와 동기화된 캘린더)의 일정을 고른 기간만큼 할 일로 한 번에 가져와요. 아이두는 캘린더를 읽기만 하고 바꾸거나 지우지 않아요.",
         "캘린더마다 새 카테고리(캘린더 이름과 색)를 만들거나 이미 있는 카테고리로 연결하고, ‘모두 한 카테고리에’로 한곳에 모을 수도 있어요. ‘시간도 가져오기’와 ‘친구에게 공개’도 고를 수 있고, 공개는 처음에 꺼져 있어요.",
         "가져오는 동안 앱을 나가도 서버에서 이어서 처리해요. 끝나면 가져온 수와 건너뛴 이유를 보여 주고, 7일 안에는 가져온 할 일 중 아직 끝내지 않은 것만 되돌릴 수 있어요. 같은 일정은 두 번 가져오지 않고, 공휴일·생일·구독 캘린더는 처음에 선택되어 있지 않아요.",
         "가져올 기간은 무료로 30일 뒤까지, 프리미엄은 365일 뒤까지 고를 수 있어요. 가져오기 자체는 무료예요. 구독 화면에도 같은 안내를 더했어요.",
@@ -12,7 +12,7 @@
         "Mac에서 날씨를 열 때마다 위치 권한을 다시 묻던 문제를 고쳤어요."
       ],
       "en": [
-        "Added Import from Calendar. In Me > Settings, choose the events on your device's calendars (iCloud, Google, Outlook, and others synced to your device) and bring them in as to-dos in one go. Aido only reads your calendar and never changes or deletes anything in it.",
+        "You can now import calendar events. In Me > Settings > Import calendar events, choose the events on your device's calendars (iCloud, Google, Outlook, and others synced to your device) and bring them in as to-dos in one go. Aido only reads your calendar and never changes or deletes anything in it.",
         "For each calendar, create a new category (using the calendar's name and color) or connect one you already have, or tap Put all in one category. You can also choose Include times and Share with friends. Sharing starts off.",
         "If you leave the app while importing, the server keeps going. When it finishes, you see how many to-dos came in and why any were skipped. Within 7 days you can undo the import, which removes only the imported to-dos you haven't completed. The same event is never imported twice, and holiday, birthday, and subscribed calendars start unchecked.",
         "Importing is free. Free covers events up to 30 days ahead, and Premium up to 365 days ahead. The subscription screens now mention this too.",
@@ -20,7 +20,7 @@
         "Fixed Weather asking for location again every time you opened it on Mac."
       ],
       "en-GB": [
-        "Added Import from Calendar. In Me > Settings, choose the events on your device's calendars (iCloud, Google, Outlook and others synced to your device) and bring them in as to-dos in one go. Aido only reads your calendar and never changes or deletes anything in it.",
+        "You can now import calendar events. In Me > Settings > Import calendar events, choose the events on your device's calendars (iCloud, Google, Outlook and others synced to your device) and bring them in as to-dos in one go. Aido only reads your calendar and never changes or deletes anything in it.",
         "For each calendar, create a new category (using the calendar's name and colour) or connect one you already have, or tap Put all in one category. You can also choose Include times and Share with friends. Sharing starts off.",
         "If you leave the app while importing, the server keeps going. When it finishes, you see how many to-dos came in and why any were skipped. Within 7 days you can undo the import, which removes only the imported to-dos you haven't completed. The same event is never imported twice, and holiday, birthday and subscribed calendars start unchecked.",
         "Importing is free. Free covers events up to 30 days ahead, and Premium up to 365 days ahead. The subscription screens now mention this too.",
@@ -30,13 +30,13 @@
     },
     "googlePlay": {
       "ko": [
-        "‘캘린더 가져오기’를 더했어요. 마이 > 설정에서 기기 캘린더의 일정을 고른 기간만큼 할 일로 가져와요. 캘린더는 읽기만 해요.",
+        "‘캘린더 일정 가져오기’를 더했어요. 마이 > 설정에서 기기 캘린더의 일정을 고른 기간만큼 할 일로 가져와요. 캘린더는 읽기만 해요.",
         "캘린더마다 카테고리를 연결하고 시간·공개 여부를 정해요. 가져온 뒤 7일 안에는 끝내지 않은 할 일만 되돌릴 수 있어요.",
         "무료는 30일, 프리미엄은 365일 뒤 일정까지 가져와요.",
         "TalkBack으로도 캘린더와 기간을 고르고 진행 상태를 들을 수 있어요."
       ],
       "en": [
-        "Added Import from Calendar. In Me > Settings, bring events from your device calendars in as to-dos for a range you choose. Aido only reads your calendar.",
+        "You can now import calendar events. In Me > Settings, bring events from your device calendars in as to-dos for a range you choose. Aido only reads your calendar.",
         "Connect each calendar to a category and choose times and sharing. Within 7 days you can undo, which removes only to-dos you haven't completed.",
         "Free covers 30 days ahead, Premium 365 days.",
         "TalkBack can read the calendar and range choices and the import progress."

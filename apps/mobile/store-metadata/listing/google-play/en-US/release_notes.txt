@@ -1,5 +1,5 @@
 New
-- Added Import from Calendar. In Me > Settings, bring events from your device calendars in as to-dos for a range you choose. Aido only reads your calendar.
+- You can now import calendar events. In Me > Settings, bring events from your device calendars in as to-dos for a range you choose. Aido only reads your calendar.
 - Connect each calendar to a category and choose times and sharing. Within 7 days you can undo, which removes only to-dos you haven't completed.
 - Free covers 30 days ahead, Premium 365 days.
 
