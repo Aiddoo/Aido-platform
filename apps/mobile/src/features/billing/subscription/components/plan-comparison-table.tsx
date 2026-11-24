@@ -63,6 +63,10 @@ const ROW_TEXT_KEYS = {
     label: 'planComparison.rows.appIcon.label',
     term: 'planComparison.rows.appIcon.term',
   },
+  CALENDAR_IMPORT: {
+    label: 'planComparison.rows.calendarImport.label',
+    term: 'planComparison.rows.calendarImport.term',
+  },
 } as const satisfies Record<ComparisonFeature, { label: string; term: string }>;
 
 /** 두 값 칸은 글꼴 배율을 따라 같은 폭으로 넓어져 모든 줄의 숫자가 같은 세로선에 선다 */
@@ -108,6 +112,8 @@ function ComparisonGroups({ Row }: { Row: ComponentType<{ feature: ComparisonFea
         <Row feature="NUDGE" />
         <Divider />
         <Row feature="TODO_CATEGORY" />
+        <Divider />
+        <Row feature="CALENDAR_IMPORT" />
       </Group>
 
       <Group Icon={ReminderDuoIcon} label={t('planComparison.groups.reminderAndLooks')}>

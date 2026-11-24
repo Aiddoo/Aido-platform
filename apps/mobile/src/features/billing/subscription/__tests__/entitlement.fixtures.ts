@@ -44,6 +44,10 @@ function createDefaultFeatureQuota(feature: PlanFeature, tier: AccessTier): Feat
       allowed: tier === 'ADMIN' || definition[tier === 'FREE' ? 'free' : 'premium'],
     };
   }
+  if (definition.kind === 'horizon') {
+    const limit = definition[tier === 'FREE' ? 'free' : 'premium'];
+    return { ...base, allowed: limit > 0, limit };
+  }
   if (tier === 'ADMIN') {
     return base;
   }
@@ -101,6 +105,14 @@ function createPlanFeatureLimitDto(feature: PlanFeature, plan: Plan): PlanFeatur
   const definition = PLAN_CATALOG[feature];
   if (definition.kind === 'flag') {
     return { allowed: definition[plan], limit: null, isFairUse: false, perUse: null };
+  }
+  if (definition.kind === 'horizon') {
+    return {
+      allowed: definition[plan] > 0,
+      limit: definition[plan],
+      isFairUse: false,
+      perUse: null,
+    };
   }
   const fairUseLimit =
     plan === 'premium' && 'fairUse' in definition ? definition.fairUse.premium : null;

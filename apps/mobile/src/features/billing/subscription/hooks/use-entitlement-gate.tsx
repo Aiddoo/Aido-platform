@@ -50,6 +50,7 @@ const GATE_TITLE_KEYS = {
   AI_SUGGESTION: 'gate.aiSuggestionTitle',
   CUSTOM_REMINDER_TIME: 'gate.reminderTimeTitle',
   APP_ICON: 'gate.appIconTitle',
+  CALENDAR_IMPORT: 'gate.calendarImportTitle',
 } as const satisfies Record<EntitlementFeature, string>;
 
 export function useEntitlementGate(

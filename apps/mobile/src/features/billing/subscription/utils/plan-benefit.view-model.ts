@@ -1,4 +1,4 @@
-import type { PlanLimitFeatureKey } from '@aido/api/vocabulary';
+import type { PlanHorizonFeatureKey, PlanLimitFeatureKey } from '@aido/api/vocabulary';
 import { match } from 'ts-pattern';
 
 import { type EntitlementFeature, type EntitlementSnapshot } from '../domains/entitlement.model';
@@ -19,6 +19,7 @@ export function getPremiumBenefitAmounts(snapshot: EntitlementSnapshot) {
       EntitlementPolicy.findPlanMaxSeconds(snapshot, 'VOICE_NOTE', 'premium'),
     ),
     category: EntitlementPolicy.findPlanLimit(snapshot, 'TODO_CATEGORY', 'premium'),
+    calendarImportDays: EntitlementPolicy.findPlanLimit(snapshot, 'CALENDAR_IMPORT', 'premium'),
   } as const;
 }
 
@@ -35,13 +36,14 @@ export function getPlanBenefitAmounts(snapshot: EntitlementSnapshot) {
       cheer: EntitlementPolicy.findFreeLimit(snapshot, 'CHEER'),
       friend: EntitlementPolicy.findFreeLimit(snapshot, 'FRIEND'),
       category: EntitlementPolicy.findFreeLimit(snapshot, 'TODO_CATEGORY'),
+      calendarImportDays: EntitlementPolicy.findFreeLimit(snapshot, 'CALENDAR_IMPORT'),
     },
     premium: getPremiumBenefitAmounts(snapshot),
   } as const;
 }
 
 interface PlanComparison {
-  unit: 'perMonth' | 'perDay' | 'people' | 'items';
+  unit: 'perMonth' | 'perDay' | 'people' | 'items' | 'days';
   /** null은 무제한이다 */
   free: number | null;
   /** null은 무제한이다 */
@@ -51,7 +53,7 @@ interface PlanComparison {
 /** 막힌 기능 하나의 "무료 → 프리미엄" 숫자. 프리미엄은 공정 사용 상한까지 서버가 집행하는 값이다 */
 export function getPlanComparison(
   snapshot: EntitlementSnapshot,
-  feature: PlanLimitFeatureKey,
+  feature: PlanLimitFeatureKey | PlanHorizonFeatureKey,
 ): PlanComparison {
   return {
     unit: match(feature)
@@ -60,6 +62,7 @@ export function getPlanComparison(
       .with('CHEER', 'NUDGE', () => 'perDay')
       .with('FRIEND', () => 'people')
       .with('TODO_CATEGORY', () => 'items')
+      .with('CALENDAR_IMPORT', () => 'days')
       .exhaustive(),
     free: EntitlementPolicy.findFreeLimit(snapshot, feature),
     premium: EntitlementPolicy.findPlanLimit(snapshot, feature, 'premium'),
@@ -94,10 +97,19 @@ export function toPlanFeatureComparison(
       free: toFlagPlanValue(EntitlementPolicy.canUseOnPlan(snapshot, flagFeature, 'free')),
       premium: toFlagPlanValue(EntitlementPolicy.canUseOnPlan(snapshot, flagFeature, 'premium')),
     }))
-    .with('AI_PARSE', 'VOICE_NOTE', 'CHEER', 'NUDGE', 'FRIEND', 'TODO_CATEGORY', (limitFeature) => {
-      const { unit, free, premium } = getPlanComparison(snapshot, limitFeature);
-      return { free: toPlanValue(unit, free), premium: toPlanValue(unit, premium) };
-    })
+    .with(
+      'AI_PARSE',
+      'VOICE_NOTE',
+      'CHEER',
+      'NUDGE',
+      'FRIEND',
+      'TODO_CATEGORY',
+      'CALENDAR_IMPORT',
+      (limitFeature) => {
+        const { unit, free, premium } = getPlanComparison(snapshot, limitFeature);
+        return { free: toPlanValue(unit, free), premium: toPlanValue(unit, premium) };
+      },
+    )
     .exhaustive();
 }
 

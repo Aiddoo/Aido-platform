@@ -1,4 +1,8 @@
-import type { PlanLimitFeatureKey } from '@aido/api/vocabulary';
+import type {
+  PlanFlagFeatureKey,
+  PlanHorizonFeatureKey,
+  PlanLimitFeatureKey,
+} from '@aido/api/vocabulary';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
@@ -112,9 +116,9 @@ const LOCKED_DESCRIPTION_KEYS = {
   AI_SUGGESTION: 'gate.aiSuggestionDescription',
   CUSTOM_REMINDER_TIME: 'gate.reminderTimeDescription',
   APP_ICON: 'gate.appIconDescription',
-} as const satisfies Record<Exclude<EntitlementFeature, PlanLimitFeatureKey>, string>;
+} as const satisfies Record<PlanFlagFeatureKey, string>;
 
-/** 잠긴 기능은 무엇을 여는지, 한도 기능은 사용량과 "무료 → 프리미엄" 숫자를 보여 준다 */
+/** 잠긴 기능은 무엇을 여는지, 한도 기능은 사용량과 "무료 → 프리미엄" 숫자, 기간 기능은 그 숫자만 보여 준다 */
 PremiumUpsell.Unlock = function Unlock({ feature }: { feature: EntitlementFeature }) {
   const { t } = useTranslation('subscription');
 
@@ -130,6 +134,7 @@ PremiumUpsell.Unlock = function Unlock({ feature }: { feature: EntitlementFeatur
         <Comparison feature={limitFeature} />
       </VStack>
     ))
+    .with('CALENDAR_IMPORT', (horizonFeature) => <Comparison feature={horizonFeature} />)
     .exhaustive();
 };
 
@@ -189,7 +194,7 @@ function Usage({ feature }: { feature: PlanLimitFeatureKey }) {
   );
 }
 
-function Comparison({ feature }: { feature: PlanLimitFeatureKey }) {
+function Comparison({ feature }: { feature: PlanLimitFeatureKey | PlanHorizonFeatureKey }) {
   const { t } = useTranslation('subscription');
   const fontScaledSize = useFontScaledSize();
   const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());

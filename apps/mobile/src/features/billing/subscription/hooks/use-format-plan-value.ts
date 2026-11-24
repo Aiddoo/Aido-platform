@@ -18,6 +18,7 @@ export function useFormatPlanValue() {
           .with('perDay', () => t('upsell.amount.perDay', { amount: formatted }))
           .with('people', () => t('upsell.amount.people', { amount: formatted }))
           .with('items', () => t('upsell.amount.items', { amount: formatted }))
+          .with('days', () => t('upsell.amount.days', { amount: formatted }))
           .exhaustive();
       })
       .with({ type: 'unlimited' }, () => formatPlanAmount(null))

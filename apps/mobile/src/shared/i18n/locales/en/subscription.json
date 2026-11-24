@@ -52,6 +52,10 @@
       "title": "Change the app icon",
       "description": "Free uses the default icon. With Premium, pick the one you like"
     },
+    "calendarImport": {
+      "title": "Import calendar events further ahead",
+      "description": "Free: next {{free}} days · Premium: up to {{premium}} days"
+    },
     "friends": {
       "title": "Unlimited friends",
       "description": "{{free}} on Free, unlimited with Premium"
@@ -226,6 +230,7 @@
     "reminderTimeDescription": "Get reminders at the times you choose. You'll still get reminders at your default time.",
     "appIconTitle": "Custom app icons are a Premium feature",
     "appIconDescription": "Give the app icon your own style.",
+    "calendarImportTitle": "Import events further ahead with Premium",
     "refillToday": "Resets to {{amount}} later today",
     "refillTomorrow": "Resets to {{amount}} tomorrow",
     "refillOn": "Resets to {{amount}} on {{date}}",
@@ -256,7 +261,8 @@
       "perMonth": "{{amount}}\u00a0a\u00a0month",
       "perDay": "{{amount}}\u00a0a\u00a0day",
       "people": "{{amount}}\u00a0friends",
-      "items": "{{amount}}\u00a0categories"
+      "items": "{{amount}}\u00a0categories",
+      "days": "{{amount}}\u00a0days"
     }
   },
   "benefitSlides": {
@@ -324,6 +330,10 @@
       "appIcon": {
         "label": "Cat app icons",
         "term": "Pick a cat icon for your home screen."
+      },
+      "calendarImport": {
+        "label": "Calendar import",
+        "term": "How many days ahead you can bring device calendar events in as to-dos."
       }
     }
   },

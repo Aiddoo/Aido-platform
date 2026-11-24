@@ -13,6 +13,7 @@ const PREMIUM_GATE_ANALYTICS_FEATURE = {
   CUSTOM_REMINDER_TIME: 'reminder_time',
   APP_ICON: 'app_icon',
   VOICE_NOTE: 'voice_note',
+  CALENDAR_IMPORT: 'calendar_import',
 } as const satisfies Record<EntitlementFeature, string>;
 
 export type PremiumGateAnalyticsFeature =

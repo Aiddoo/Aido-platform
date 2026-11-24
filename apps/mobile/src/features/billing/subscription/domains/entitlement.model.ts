@@ -4,6 +4,7 @@ import {
   PLAN_FEATURE_KEYS,
   PLAN_QUOTA_PERIODS,
   type Plan,
+  type PlanHorizonFeatureKey,
   type PlanLimitFeatureKey,
 } from '@aido/api/vocabulary';
 import { DAY_MS, MINUTE_MS } from '@src/shared/constants/time-units';
@@ -221,7 +222,10 @@ function canUseOnPlan(snapshot: EntitlementSnapshot, feature: EntitlementFeature
 }
 
 /** 무료 사용자는 초대로 늘어난 자리까지 반영한 내 한도를, 프리미엄·관리자는 서버의 무료 요금제 한도를 쓴다 */
-function findFreeLimit(snapshot: EntitlementSnapshot, feature: PlanLimitFeatureKey): number | null {
+function findFreeLimit(
+  snapshot: EntitlementSnapshot,
+  feature: PlanLimitFeatureKey | PlanHorizonFeatureKey,
+): number | null {
   const limit = findLimit(snapshot, feature);
   return snapshot.tier === 'FREE' && limit != null
     ? limit

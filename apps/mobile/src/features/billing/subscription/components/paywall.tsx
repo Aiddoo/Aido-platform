@@ -35,6 +35,7 @@ const BLOCKED_LABEL_KEYS = {
   AI_SUGGESTION: 'paywall.blockedLocked',
   CUSTOM_REMINDER_TIME: 'paywall.blockedLocked',
   APP_ICON: 'paywall.blockedLocked',
+  CALENDAR_IMPORT: 'paywall.blockedLimit',
 } as const satisfies Record<EntitlementFeature, string>;
 
 const RENEWAL_NOTICE_KEYS = {
@@ -246,6 +247,13 @@ function useFormatBenefit() {
       .with('APP_ICON', () => ({
         title: t('benefits.appIcon.title'),
         description: t('benefits.appIcon.description'),
+      }))
+      .with('CALENDAR_IMPORT', () => ({
+        title: t('benefits.calendarImport.title'),
+        description: t('benefits.calendarImport.description', {
+          free: formatAmount(free.calendarImportDays),
+          premium: formatAmount(premium.calendarImportDays),
+        }),
       }))
       .exhaustive();
 }

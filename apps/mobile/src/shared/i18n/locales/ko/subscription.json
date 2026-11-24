@@ -48,6 +48,10 @@
       "title": "앱 아이콘 바꾸기",
       "description": "무료는 기본 아이콘, 프리미엄은 마음에 드는 아이콘으로 바꿔요"
     },
+    "calendarImport": {
+      "title": "캘린더 일정 더 멀리 가져오기",
+      "description": "무료는 앞으로 {{free}}일, 프리미엄은 {{premium}}일까지"
+    },
     "friends": {
       "title": "친구 무제한",
       "description": "무료는 {{free}}명, 프리미엄은 무제한"
@@ -218,6 +222,7 @@
     "reminderTimeDescription": "원하는 시간에 리마인드를 받을 수 있어요. 기본 시간 알림은 계속 와요.",
     "appIconTitle": "앱 아이콘 변경은 프리미엄 기능이에요",
     "appIconDescription": "나만의 스타일로 앱 아이콘을 바꿀 수 있어요.",
+    "calendarImportTitle": "더 먼 일정은 프리미엄으로 가져올 수 있어요",
     "refillToday": "오늘 중 {{amount}}회로 초기화돼요",
     "refillTomorrow": "내일 {{amount}}회로 초기화돼요",
     "refillOn": "{{date}}에 {{amount}}회로 초기화돼요",
@@ -248,7 +253,8 @@
       "perMonth": "월\u00a0{{amount}}회",
       "perDay": "하루\u00a0{{amount}}회",
       "people": "{{amount}}명",
-      "items": "{{amount}}개"
+      "items": "{{amount}}개",
+      "days": "{{amount}}일"
     }
   },
   "benefitSlides": {
@@ -316,6 +322,10 @@
       "appIcon": {
         "label": "고양이 앱 아이콘",
         "term": "홈 화면 아이콘을 고양이 아이콘 중에서 골라요."
+      },
+      "calendarImport": {
+        "label": "캘린더 가져오기",
+        "term": "기기 캘린더에서 오늘부터 며칠 뒤 일정까지 할 일로 가져올 수 있어요."
       }
     }
   },

@@ -9,6 +9,7 @@ export const FEATURE_KEYS = [
   'voice_note',
   'ai_suggestion',
   'ai_report',
+  'calendar_import',
 ] as const;
 
 export type FeatureKey = (typeof FEATURE_KEYS)[number];

@@ -19,6 +19,7 @@ const LIMITED_FEATURE_BY_ERROR_CODE = {
   [ErrorCode.AI_1308]: 'AI_REPORT',
   [ErrorCode.AI_1309]: 'AI_SUGGESTION',
   [ErrorCode.PREFERENCE_1701]: 'CUSTOM_REMINDER_TIME',
+  [ErrorCode.TODO_IMPORT_2302]: 'CALENDAR_IMPORT',
 } as const satisfies Partial<Record<ErrorCodeType, EntitlementFeature>>;
 
 type LimitedErrorCode = keyof typeof LIMITED_FEATURE_BY_ERROR_CODE;

@@ -146,6 +146,7 @@ export function SubscriptionReceipt() {
           />
           <ReceiptBenefitRow shade={8} title={t('benefits.aiRepeat.title')} />
           <ReceiptBenefitRow shade={8} title={t('benefits.aiReport.title')} />
+          <ReceiptBenefitRow shade={8} title={t('benefits.calendarImport.title')} />
           <ReceiptBenefitRow shade={8} title={t('benefits.future')} />
         </VStack>
       </Box>
@@ -159,7 +160,7 @@ export function SubscriptionReceipt() {
 
 /** 받은 뒤 높이가 바뀌지 않게 실제 영수증과 같은 줄 수와 자리를 잡는다. 줄 수는 가장 흔한 결제 영수증(다음 결제일, 자동 갱신)과 혜택 목록 줄 수다 */
 const LOADING_DETAIL_ROW_COUNT = 2;
-const BENEFIT_ROW_COUNT = 10;
+const BENEFIT_ROW_COUNT = 11;
 
 SubscriptionReceipt.Loading = function Loading() {
   return (
