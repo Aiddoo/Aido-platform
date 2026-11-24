@@ -34,11 +34,9 @@ export type TodoImportTarget = z.infer<typeof todoImportTargetSchema>;
 export const todoImportCollectionSchema = z.object({
   collectionKey: todoImportHashedKeySchema.meta({ description: "캘린더 키 (sha256 hex)" }),
   targetKey: todoImportTargetKeySchema,
-  expectedItemCount: z
-    .int()
-    .nonnegative()
-    .max(TODO_IMPORT_LIMITS.MAX_ITEMS_PER_IMPORT)
-    .meta({ description: "기기가 센 이 캘린더의 일정 수. 카테고리 자리 미리 확인에 쓴다" }),
+  expectedItemCount: z.int().nonnegative().max(TODO_IMPORT_LIMITS.MAX_ITEMS_PER_IMPORT).meta({
+    description: "기기가 센 이 캘린더의 일정 수. 가져오기 한 번의 일정 수 한도를 미리 본다",
+  }),
 });
 
 export type TodoImportCollection = z.infer<typeof todoImportCollectionSchema>;
@@ -112,6 +110,8 @@ export const todoImportItemSchema = z
       .trim()
       .min(1)
       .max(TODO_LIMITS.TITLE_MAX_LENGTH)
+      // 캘린더 제목에 섞인 NUL은 PostgreSQL text에 들어가지 못해 업로드가 500이 된다
+      .refine((title) => !title.includes("\u0000"), { error: "제목에 NUL 문자를 쓸 수 없습니다" })
       .meta({ description: `할 일 제목 (최대 ${TODO_LIMITS.TITLE_MAX_LENGTH}자)` }),
     startDate: dateSchema.meta({ description: "시작 날짜 (사용자 시간대)" }),
     endDate: nullableDateSchema.meta({ description: "여러 날 종일 일정의 마지막 날. 아니면 null" }),

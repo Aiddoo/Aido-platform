@@ -1,6 +1,6 @@
 import { PLAN_CATALOG } from "../vocabulary/plan-catalog.constants.js";
 import { TODO_IMPORT_LIMITS } from "../vocabulary/todo-import.constants.js";
-import { TODO_LIMITS, TODO_SERIES_LIMITS } from "../vocabulary/todo.constants.js";
+import { TODO_SERIES_LIMITS } from "../vocabulary/todo.constants.js";
 import { IDEMPOTENCY_KEY_MAX_LENGTH } from "../vocabulary/voice.constants.js";
 import { HttpStatus } from "./http-status.js";
 import type { ErrorDefinition } from "./types.js";
@@ -1555,7 +1555,8 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
   [ErrorCode.TODO_IMPORT_2303]: {
     code: "TODO_IMPORT_2303",
     message: "가져올 카테고리를 쓸 수 없습니다.",
-    description: `새 카테고리 이름이 이미 있거나, 카테고리가 없거나, 카테고리당 진행 중인 할 일 한도(${TODO_LIMITS.MAX_PER_CATEGORY}개)를 넘습니다. details.targets에 대상마다 이유가 있습니다.`,
+    description:
+      "새 카테고리 이름이 이미 있거나 카테고리가 없습니다. details.targets에 대상마다 이유가 있습니다. 카테고리 자리가 모자라면 막지 않고 가까운 날짜부터 남는 만큼만 만듭니다.",
     httpStatus: HttpStatus.CONFLICT,
   },
   [ErrorCode.TODO_IMPORT_2304]: {
