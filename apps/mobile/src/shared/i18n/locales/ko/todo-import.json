@@ -125,7 +125,14 @@
     "offline": "인터넷이 다시 연결되면 이어서 가져와요",
     "paused": "잠시 멈췄어요. 앱을 다시 열면 이어서 가져와요",
     "notOnThisDevice": "다른 기기에서 가져오는 중이에요. 그 기기에서 마무리하거나 여기서 멈출 수 있어요",
-    "cancel": "가져오기 멈추기"
+    "cancel": "가져오기 멈추기",
+    "cancelConfirmTitle": "가져오기를 멈출까요?",
+    "cancelConfirmDescription": "아직 할 일로 만들지 않은 일정은 가져오지 않아요"
+  },
+  "failure": {
+    "tooManyItems": "한 번에 {{limit}}개까지 가져올 수 있어요. 기간이나 캘린더를 줄여 다시 가져와 주세요",
+    "invalid": "기간이나 일정을 읽지 못했어요. 기간을 바꿔 다시 가져와 주세요",
+    "rejected": "아이두가 일정을 받지 못했어요. 잠시 뒤 다시 가져와 주세요"
   },
   "result": {
     "completedTitle": "할 일 {{count}}개를 가져왔어요",

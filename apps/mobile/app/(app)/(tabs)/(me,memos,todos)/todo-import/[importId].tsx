@@ -1,4 +1,5 @@
 import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
+import { TodoImportFailureAlert } from '@src/features/planning/todo-import/components/todo-import-failure-alert';
 import { TodoImportProgress } from '@src/features/planning/todo-import/components/todo-import-progress';
 import { TodoImportResult } from '@src/features/planning/todo-import/components/todo-import-result';
 import type { TodoImport } from '@src/features/planning/todo-import/domains/todo-import.model';
@@ -88,6 +89,7 @@ function TodoImportStatus() {
     .with(P.union('CANCELED', 'ABANDONED'), () => (
       <>
         <Stack.Screen options={{ title: t('titles.result') }} />
+        <TodoImportFailureAlert className="mb-4" />
         <Result
           icon={<ErrorIllustration />}
           title={t('result.canceledTitle')}

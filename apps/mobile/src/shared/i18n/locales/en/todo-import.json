@@ -130,7 +130,14 @@
     "offline": "The import continues when you're back online",
     "paused": "Paused for now. It continues when you reopen the app",
     "notOnThisDevice": "Another device is importing this. Finish it there or stop it here",
-    "cancel": "Stop import"
+    "cancel": "Stop import",
+    "cancelConfirmTitle": "Stop this import?",
+    "cancelConfirmDescription": "Events that aren't to-dos yet won't be imported"
+  },
+  "failure": {
+    "tooManyItems": "You can import up to {{limit}} events at once. Choose a shorter range or fewer calendars and try again",
+    "invalid": "We couldn't read the range or events. Change the range and try again",
+    "rejected": "Aido couldn't receive the events. Try again in a moment"
   },
   "result": {
     "completedTitle_one": "Imported {{count}} to-do",

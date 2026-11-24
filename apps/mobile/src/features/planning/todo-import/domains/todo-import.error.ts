@@ -8,7 +8,7 @@ import {
 import type { TodoImportTargetRejectionReason } from '@aido/api/vocabulary';
 import { isApiError } from '@src/core/errors/api-error';
 import { isTransientError } from '@src/shared/errors';
-import { isMatching, P } from 'ts-pattern';
+import { isMatching, match, P } from 'ts-pattern';
 
 /** 자리 부족이면 지금 수·가져올 수·한도가 함께 온다 */
 export interface TodoImportTargetRejection {
@@ -85,4 +85,15 @@ export function isTodoImportStartHandledError(error: unknown) {
     },
     isApiError(error) ? error : null,
   );
+}
+
+export type TodoImportUploadFailure = 'TOO_MANY_ITEMS' | 'INVALID' | 'REJECTED';
+
+/** 업로드 중 서버가 받지 않은 이유. 세션이 남긴 오류 코드로 고른다 */
+export function getTodoImportUploadFailure(code: string): TodoImportUploadFailure {
+  return match(code)
+    .returnType<TodoImportUploadFailure>()
+    .with(ErrorCode.TODO_IMPORT_2309, () => 'TOO_MANY_ITEMS')
+    .with(ErrorCode.TODO_IMPORT_2306, () => 'INVALID')
+    .otherwise(() => 'REJECTED');
 }
