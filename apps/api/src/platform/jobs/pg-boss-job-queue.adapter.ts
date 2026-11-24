@@ -48,6 +48,7 @@ interface JobTransactionSource {
 
 interface JobTiming {
   readonly idempotencyKey?: string;
+  readonly executionKey?: string;
   readonly startAfter?: Temporal.Instant;
 }
 
@@ -358,6 +359,7 @@ export class PgBossJobQueueAdapter extends JobQueuePort {
     await this.#queues.ensure(queue.name, {
       retry: queue.retry,
       backlogWarningSize: resolveBacklogWarningSize(queue),
+      ...(queue.singleActivePerKey === true && { singleActivePerKey: true }),
     });
   }
 }
@@ -369,7 +371,9 @@ function toPgBossJobOptions(
 ): Omit<JobInsert, "data"> {
   const { idempotencyKey } = timing;
   return {
-    singletonKey: idempotencyKey,
+    // singleton 정책 큐는 singletonKey가 "동시에 하나만 실행"의 단위라 실행 key를 싣는다.
+    // 중복 등록은 결정적 id가 ON CONFLICT로 막아 두 정책 모두 그대로다
+    singletonKey: queue.singleActivePerKey === true ? timing.executionKey : idempotencyKey,
     startAfter: timing.startAfter == null ? undefined : instantToDate(timing.startAfter),
     retryLimit: queue.retry.retryLimit,
     retryDelay: queue.retry.retryDelaySeconds,

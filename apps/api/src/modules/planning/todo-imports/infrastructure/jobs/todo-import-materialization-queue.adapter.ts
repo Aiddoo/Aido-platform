@@ -22,6 +22,7 @@ export class TodoImportMaterializationQueueAdapter extends TodoImportMaterializa
     const payload = { importId: importId.value, round };
     await this.#jobQueue.enqueue(TODO_IMPORT_MATERIALIZATION_QUEUE, payload, {
       idempotencyKey: todoImportMaterializationJobKey(payload),
+      executionKey: importId.value,
     });
   }
 }

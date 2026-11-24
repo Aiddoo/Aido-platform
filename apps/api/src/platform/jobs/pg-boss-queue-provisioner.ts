@@ -13,6 +13,8 @@ interface QueueProvisioningClient {
 export interface PgBossQueueSettings {
   readonly retry: JobRetryPolicy;
   readonly backlogWarningSize?: number;
+  // 같은 singletonKey의 활성 작업을 하나로 둔다. pg-boss는 큐를 만들 때만 정책을 정한다
+  readonly singleActivePerKey?: boolean;
 }
 
 // 프로세스마다 큐를 한 번만 만들고 정책을 한 번만 맞춰 enqueue마다 pg-boss 왕복이 생기지 않게 한다
@@ -32,7 +34,7 @@ export class PgBossQueueProvisioner {
     } else {
       const creation = this.#boss.createQueue(
         queue,
-        settings ? toPgBossQueueOptions(settings) : undefined,
+        settings ? toPgBossQueueCreationOptions(settings) : undefined,
       );
       this.#creations.set(queue, creation);
       try {
@@ -70,10 +72,29 @@ export class PgBossQueueProvisioner {
   }
 }
 
+function toPgBossQueueCreationOptions(settings: PgBossQueueSettings): PgBossQueueOptions {
+  return {
+    ...toPgBossQueueOptions(settings),
+    ...(settings.singleActivePerKey === true && { policy: "singleton" }),
+  };
+}
+
+// updateQueue는 정책을 받지 않아 재시도·보관·경고 기준만 맞춘다
+type QueueRetentionOptions = Pick<
+  PgBossQueueOptions,
+  | "retryLimit"
+  | "retryDelay"
+  | "retryBackoff"
+  | "expireInSeconds"
+  | "retentionSeconds"
+  | "deleteAfterSeconds"
+  | "warningQueueSize"
+>;
+
 function toPgBossQueueOptions({
   retry,
   backlogWarningSize,
-}: PgBossQueueSettings): PgBossQueueOptions {
+}: PgBossQueueSettings): QueueRetentionOptions {
   return {
     retryLimit: retry.retryLimit,
     retryDelay: retry.retryDelaySeconds,

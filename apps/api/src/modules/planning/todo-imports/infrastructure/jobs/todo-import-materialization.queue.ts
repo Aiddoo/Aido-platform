@@ -30,4 +30,6 @@ export const TODO_IMPORT_MATERIALIZATION_QUEUE = defineQueue({
     deleteAfterSeconds: DAY_SECONDS,
   },
   worker: { localConcurrency: 1, pollingIntervalSeconds: JOB_POLLING_SECONDS.INTERACTIVE },
+  // 배포 중 두 프로세스·재시도·다음 round가 겹쳐도 가져오기 하나에는 작업 하나만 돈다(실행 key = 가져오기 id)
+  singleActivePerKey: true,
 });

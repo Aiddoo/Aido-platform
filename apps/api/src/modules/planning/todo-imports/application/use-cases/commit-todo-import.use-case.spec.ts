@@ -100,7 +100,10 @@ describe("CommitTodoImportUseCase", () => {
       {
         queue: TODO_IMPORT_MATERIALIZATION_QUEUE.name,
         payload: { importId: todoImport.id.value, round: 0 },
-        options: { idempotencyKey: `todo-import:${todoImport.id.value}:0` },
+        options: {
+          idempotencyKey: `todo-import:${todoImport.id.value}:0`,
+          executionKey: todoImport.id.value,
+        },
       },
     ]);
   });

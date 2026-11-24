@@ -25,6 +25,7 @@ export class TodoImportUndoQueueAdapter extends TodoImportUndoQueuePort {
     };
     await this.#jobQueue.enqueue(TODO_IMPORT_UNDO_QUEUE, payload, {
       idempotencyKey: todoImportUndoJobKey(payload),
+      executionKey: payload.importId,
     });
   }
 }
