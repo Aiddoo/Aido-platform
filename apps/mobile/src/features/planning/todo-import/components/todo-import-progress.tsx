@@ -127,7 +127,9 @@ TodoImportProgress.Stage = function Stage({ status, label }: StageProps) {
   return (
     <ListRow
       verticalPadding="small"
+      accessible
       accessibilityLabel={`${label}, ${t(STAGE_STATUS_LABEL_KEYS[status])}`}
+      accessibilityLiveRegion="polite"
       left={match(status)
         .with('done', () => (
           <HStack

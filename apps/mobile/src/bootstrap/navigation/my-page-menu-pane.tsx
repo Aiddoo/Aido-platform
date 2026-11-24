@@ -123,11 +123,7 @@ export function MyPageMenuPane() {
               pathname="/settings/category-settings"
             />
             <SettingsListGroup.Separator />
-            <QueryErrorBoundary fallback={TodoImportMenuItem.Error}>
-              <Suspense fallback={<TodoImportMenuItem.Loading />}>
-                <TodoImportMenuItem />
-              </Suspense>
-            </QueryErrorBoundary>
+            <TodoImportMenuItem />
             <SettingsListGroup.Separator />
             <MyPageMenuItem
               Icon={ThemeDuoIcon}

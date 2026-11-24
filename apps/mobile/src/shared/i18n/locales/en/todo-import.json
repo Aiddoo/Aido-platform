@@ -105,7 +105,8 @@
     "rejected": {
       "capacity": "This category can only take {{count}} of {{expected}}. Choose a shorter range or another category",
       "nameTaken": "A category with this name already exists. Rename it or choose that category",
-      "notFound": "This category was deleted. Choose another one"
+      "notFound": "This category was deleted. Choose another one",
+      "summary": "Some categories can't be used. Choose another category for the marked calendars"
     }
   },
   "options": {

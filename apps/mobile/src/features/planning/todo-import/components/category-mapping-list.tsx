@@ -21,9 +21,10 @@ import {
   useOpenKeyboardSheet,
   useOpenSheet,
   VStack,
+  WordWrapText,
 } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
-import { pick, range } from 'es-toolkit';
+import { compact, pick, range } from 'es-toolkit';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { match } from 'ts-pattern';
 
@@ -194,10 +195,10 @@ CategoryMappingList.Item = function Item({
   return (
     <PressableFeedback
       accessibilityRole="button"
-      accessibilityLabel={t('categories.rowLabel', {
-        calendar: collection.title,
-        target: targetLabel,
-      })}
+      accessibilityLabel={compact([
+        t('categories.rowLabel', { calendar: collection.title, target: targetLabel }),
+        errorMessage,
+      ]).join(', ')}
       accessibilityHint={t('categories.rowHint')}
       onPress={onPress}
     >
@@ -227,9 +228,9 @@ CategoryMappingList.Item = function Item({
           }
         />
         {errorMessage != null && (
-          <Text size="b4" tone="danger" lineBreakStrategyIOS="hangul-word">
+          <WordWrapText size="b4" tone="danger">
             {errorMessage}
-          </Text>
+          </WordWrapText>
         )}
       </VStack>
     </PressableFeedback>

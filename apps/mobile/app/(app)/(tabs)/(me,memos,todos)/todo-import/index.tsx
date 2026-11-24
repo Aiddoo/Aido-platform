@@ -68,6 +68,7 @@ import {
   useOpenSheet,
   usePaneSizeClass,
   VStack,
+  WordWrapText,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
@@ -337,13 +338,13 @@ function CalendarsStep({ form, onNext }: { form: TodoImportForm; onNext: () => v
         </VStack>
       }
     >
-      <Text size="b3" shade={6} lineBreakStrategyIOS="hangul-word">
+      <WordWrapText size="b3" shade={6}>
         {t('calendars.description')}
-      </Text>
+      </WordWrapText>
 
       <Spacing size={20} />
 
-      <Text size="b2" weight="semibold" shade={9}>
+      <Text size="b2" weight="semibold" shade={9} accessibilityRole="header">
         {t('range.title')}
       </Text>
       <Spacing size={8} />
@@ -388,7 +389,7 @@ function CalendarsStep({ form, onNext }: { form: TodoImportForm; onNext: () => v
 
       <Spacing size={24} />
 
-      <Text size="b2" weight="semibold" shade={9}>
+      <Text size="b2" weight="semibold" shade={9} accessibilityRole="header">
         {t('calendars.listTitle')}
       </Text>
       <Spacing size={8} />
@@ -420,6 +421,7 @@ function CategoriesStep({ form, onNext }: { form: TodoImportForm; onNext: () => 
   const [collections] = useWatch({ control: form.control, name: ['collections'] });
   const [targets, setTargets] = useCollectionTargets(form);
   const errorMessages = useTargetErrorMessages(form, collections);
+  const hasRejectedTargets = Object.keys(errorMessages).length > 0;
   const { data: categoriesResult } = useQuery(useGetTodoCategoriesQueryOptions());
   const { data: snapshot } = useQuery(useGetEntitlementsQueryOptions());
 
@@ -451,9 +453,15 @@ function CategoriesStep({ form, onNext }: { form: TodoImportForm; onNext: () => 
         </KeyboardAdaptiveButton>
       }
     >
-      <Text size="b3" shade={6} lineBreakStrategyIOS="hangul-word">
+      <WordWrapText size="b3" shade={6}>
         {t('categories.description')}
-      </Text>
+      </WordWrapText>
+      {hasRejectedTargets && (
+        <>
+          <Spacing size={12} />
+          <InlineAlert status="danger" title={t('categories.rejected.summary')} />
+        </>
+      )}
 
       <Spacing size={20} />
 
@@ -540,15 +548,9 @@ function OptionsStep({
       title={t('options.title')}
       footer={
         <VStack gap={8}>
-          <Text
-            size="b4"
-            shade={6}
-            align="center"
-            className="px-4"
-            lineBreakStrategyIOS="hangul-word"
-          >
+          <WordWrapText size="b4" shade={6} align="center" className="px-4">
             {t('options.disclosure')}
-          </Text>
+          </WordWrapText>
           <KeyboardAdaptiveButton
             isLoading={startImport.isPending}
             isDisabled={accountId == null}
@@ -606,8 +608,13 @@ function useSelectedCollectionKeys(form: TodoImportForm) {
 
 function useCollectionTargets(form: TodoImportForm) {
   const [targets] = useWatch({ control: form.control, name: ['targets'] });
+  // 서버가 거절한 다른 캘린더의 표시는 그 캘린더를 바꿀 때까지 남긴다
   const setTargets = (next: Record<string, ImportTarget>) => {
-    form.clearErrors('targets');
+    for (const [collectionKey, target] of Object.entries(next)) {
+      if (targets[collectionKey] !== target) {
+        form.clearErrors(`targets.${collectionKey}`);
+      }
+    }
     form.setValue('targets', next, { shouldDirty: true });
   };
 

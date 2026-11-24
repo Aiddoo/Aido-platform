@@ -18,7 +18,7 @@ import {
   Result,
   SafeAreaScrollView,
   Spacing,
-  Text,
+  WordWrapText,
 } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { router, Stack } from 'expo-router';
@@ -64,9 +64,9 @@ function TodoImportStatus() {
         <Stack.Screen options={{ title: t('titles.progress') }} />
         <TodoImportProgress />
         <Spacing size={16} />
-        <Text size="b4" shade={6} align="center">
+        <WordWrapText size="b4" shade={6} align="center">
           {t('progress.leaveNotice')}
-        </Text>
+        </WordWrapText>
       </>
     ))
     .with(P.union('COMPLETED', 'UNDOING', 'UNDONE'), () => (

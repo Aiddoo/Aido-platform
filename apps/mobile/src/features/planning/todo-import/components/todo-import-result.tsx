@@ -13,6 +13,7 @@ import {
   TextSkeleton,
   useConfirmDialog,
   VStack,
+  WordWrapText,
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -81,9 +82,9 @@ export function TodoImportResult() {
           </>
         )}
         <DashedDivider className="mx-5 my-4" />
-        <Text size="b4" shade={6} className="px-5 pb-5" lineBreakStrategyIOS="hangul-word">
+        <WordWrapText size="b4" shade={6} className="px-5 pb-5">
           {canUndo ? t('result.undoNotice') : t('result.duplicateNotice')}
-        </Text>
+        </WordWrapText>
       </ScallopedContainer>
 
       <VStack gap={8}>
@@ -139,9 +140,9 @@ function Count({ label, count, isShownWhenZero = false }: CountProps) {
 
   return (
     <HStack align="center" justify="between" gap={12} className="py-1">
-      <Text size="b3" shade={8} className="flex-1" lineBreakStrategyIOS="hangul-word">
+      <WordWrapText size="b3" shade={8} className="flex-1">
         {label}
-      </Text>
+      </WordWrapText>
       <Text size="b3" weight="semibold" shade={9} className="tabular-nums">
         {count}
       </Text>

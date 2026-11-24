@@ -46,7 +46,13 @@ export function SettingsListGroup({
 
 function SettingsListGroupLabel({ label }: { label: string }) {
   return (
-    <Text size="b2" weight="semibold" shade={9} className="px-4 pt-4 pb-1">
+    <Text
+      size="b2"
+      weight="semibold"
+      shade={9}
+      accessibilityRole="header"
+      className="px-4 pt-4 pb-1"
+    >
       {label}
     </Text>
   );
