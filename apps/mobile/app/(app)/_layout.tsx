@@ -97,6 +97,12 @@ function AppLayout() {
           }}
         />
         <Stack.Screen name="memo" options={{ animation: 'slide_from_bottom' }} />
+        {/* 설정·새 소식·진행 알림에서 여러 번 열어도 가져오기 흐름이 겹겹이 쌓이지 않게 있던 화면으로 돌아간다 */}
+        <Stack.Screen
+          name="todo-import"
+          dangerouslySingular
+          options={{ animation: 'slide_from_bottom' }}
+        />
         {/* 녹음을 실수로 잃지 않게 스와이프로 닫지 않는다. 시스템 모달은 쓰지 않는다(토스트·한도 안내가 그 뒤로 가려진다) */}
         <Stack.Screen
           name="voice-notes"
