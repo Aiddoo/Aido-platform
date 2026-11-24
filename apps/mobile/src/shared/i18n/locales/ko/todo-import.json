@@ -12,6 +12,7 @@
   "permission": {
     "title": "캘린더 일정을 할 일로 가져올게요",
     "facts": {
+      "sources": "휴대폰에 추가한 iCloud·Google·Outlook 캘린더에서 가져와요",
       "read": "고른 캘린더에서 일정의 제목·날짜·시간만 가져와요",
       "noAccountInfo": "이메일 같은 캘린더 계정 정보는 아이두로 보내지 않아요",
       "oneTime": "지금 있는 일정을 한 번만 옮겨 와요. 캘린더 일정은 바꾸거나 지우지 않아요",
@@ -53,7 +54,21 @@
     "itemCount": "{{count}}개",
     "emptyTitle": "이 기간에 가져올 일정이 없어요",
     "emptyDescription": "기간을 늘리거나, 캘린더 앱에 일정이 있는지 확인해 주세요",
-    "tooMany": "한 번에 {{limit}}개까지 가져올 수 있어요. 기간이나 캘린더를 줄여 주세요"
+    "tooMany": "한 번에 {{limit}}개까지 가져올 수 있어요. 기간이나 캘린더를 줄여 주세요",
+    "missingHelp": {
+      "open": "캘린더가 목록에 없나요?",
+      "title": "캘린더가 목록에 없나요?",
+      "description": "아이두는 휴대폰 캘린더 앱에 보이는 캘린더만 가져올 수 있어요. 다른 앱에만 있는 캘린더는 휴대폰에 계정을 추가해 주세요.",
+      "ios": {
+        "openSettings": "iPhone 설정 > 캘린더 > 계정으로 가요",
+        "addAccount": "계정 추가에서 Google·Outlook 계정을 추가하고 캘린더를 켜요"
+      },
+      "android": {
+        "addAccount": "휴대폰 설정 > 계정에서 Google·Outlook 계정을 추가해요",
+        "turnOnSync": "캘린더 앱에서 그 계정의 캘린더를 켜고 동기화해요"
+      },
+      "comeBack": "아이두로 돌아오면 목록에 바로 보여요"
+    }
   },
   "categories": {
     "title": "어느 카테고리에 넣을까요?",

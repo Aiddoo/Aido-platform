@@ -124,7 +124,7 @@ TodoImportProgress.Stage = function Stage({ status, label }: StageProps) {
             />
           </HStack>
         ))
-        .with('active', () => <Spinner size="sm" color="accent" />)
+        .with('active', () => <Spinner size="sm" />)
         .with('pending', () => (
           <Box
             className="rounded-full border-2 border-gray-3"

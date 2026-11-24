@@ -12,6 +12,7 @@
   "permission": {
     "title": "Bring your calendar events in as to-dos",
     "facts": {
+      "sources": "Works with the iCloud, Google, and Outlook calendars on your phone",
       "read": "Aido only takes the title, date, and time of events in the calendars you choose",
       "noAccountInfo": "Your calendar account details, like your email, are never sent to Aido",
       "oneTime": "It copies your events once. Your calendar stays exactly as it is",
@@ -55,7 +56,21 @@
     "itemCount_other": "{{count}} events",
     "emptyTitle": "No events to import in this range",
     "emptyDescription": "Try a longer range, or check that your calendar app has events",
-    "tooMany": "You can import up to {{limit}} events at once. Choose a shorter range or fewer calendars"
+    "tooMany": "You can import up to {{limit}} events at once. Choose a shorter range or fewer calendars",
+    "missingHelp": {
+      "open": "Missing a calendar?",
+      "title": "Missing a calendar?",
+      "description": "Aido can import only the calendars shown in your phone's calendar app. If a calendar lives only in another app, add that account to your phone.",
+      "ios": {
+        "openSettings": "Open iPhone Settings > Calendar > Accounts",
+        "addAccount": "Tap Add Account, add your Google or Outlook account, and turn on Calendars"
+      },
+      "android": {
+        "addAccount": "Open phone Settings > Accounts and add your Google or Outlook account",
+        "turnOnSync": "In your calendar app, turn on and sync that account's calendars"
+      },
+      "comeBack": "Come back to Aido and it shows up in the list"
+    }
   },
   "categories": {
     "title": "Which category should they go in?",

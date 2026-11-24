@@ -83,6 +83,7 @@ CalendarPermissionPrompt.Ask = function Ask({ isRequesting, onContinue }: AskPro
       }
     >
       <VStack gap={4} className="self-stretch">
+        <Fact>{t('permission.facts.sources')}</Fact>
         <Fact>{t('permission.facts.read')}</Fact>
         <Fact>{t('permission.facts.noAccountInfo')}</Fact>
         <Fact>{t('permission.facts.oneTime')}</Fact>
@@ -126,6 +127,7 @@ CalendarPermissionPrompt.Loading = function Loading() {
   return (
     <Prompt action={<Skeleton className="h-14 w-full rounded-2xl" />}>
       <VStack gap={4} className="self-stretch">
+        <FactSkeleton />
         <FactSkeleton />
         <FactSkeleton />
         <FactSkeleton />

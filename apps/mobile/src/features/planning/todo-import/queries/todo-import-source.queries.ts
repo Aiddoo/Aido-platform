@@ -68,8 +68,10 @@ export function useGetImportCollectionsQueryOptions({
     select: (collections: ImportCollection[]) =>
       sortCollections(filters == null ? collections : collections.filter(filters), orderBy),
     networkMode: 'always',
-    // 일정이 수천 개일 수 있어 같은 기간을 오가거나 앱으로 돌아와도 다시 읽지 않는다. 기간을 바꾸면 새로 읽는다
+    // 일정이 수천 개일 수 있어 같은 기간을 오가도 다시 읽지 않는다. 설정 앱에서 계정을 더하고 돌아오면
+    // 목록을 보인 채 뒤에서 다시 읽는다
     staleTime: Number.POSITIVE_INFINITY,
+    refetchOnWindowFocus: 'always',
   });
 }
 

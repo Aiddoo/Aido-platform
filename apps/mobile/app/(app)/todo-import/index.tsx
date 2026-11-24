@@ -13,6 +13,7 @@ import { CalendarSourceList } from '@src/features/planning/todo-import/component
 import { CategoryMappingList } from '@src/features/planning/todo-import/components/category-mapping-list';
 import { ImportDateSheet } from '@src/features/planning/todo-import/components/import-date-sheet';
 import { ImportEndDateChips } from '@src/features/planning/todo-import/components/import-end-date-chips';
+import { MissingCalendarHelp } from '@src/features/planning/todo-import/components/missing-calendar-help';
 import { IMPORT_RANGE_PRESETS } from '@src/features/planning/todo-import/constants/todo-import.constants';
 import type { TodoImportStep } from '@src/features/planning/todo-import/constants/todo-import.events';
 import { TodoImportCollectionPolicy } from '@src/features/planning/todo-import/domains/todo-import-collection.model';
@@ -280,6 +281,10 @@ function CalendarsStep({ form, onNext }: { form: TodoImportForm; onNext: () => v
           />
         </Suspense>
       </QueryErrorBoundary>
+      <Spacing size={8} />
+      <Box className="self-center">
+        <MissingCalendarHelp />
+      </Box>
 
       {isOverLimit && (
         <>
