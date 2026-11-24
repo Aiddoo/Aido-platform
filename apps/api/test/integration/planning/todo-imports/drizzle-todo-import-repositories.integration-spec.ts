@@ -1,5 +1,6 @@
 import { omit } from "es-toolkit";
 
+import { TodoImportId } from "#api/modules/planning/todo-imports/domain/todo-import-id.vo";
 import { DrizzleTodoImportItemRepository } from "#api/modules/planning/todo-imports/infrastructure/persistence/drizzle-todo-import-item.repository";
 import { DrizzleTodoImportLinkRepository } from "#api/modules/planning/todo-imports/infrastructure/persistence/drizzle-todo-import-link.repository";
 import { DrizzleTodoImportRepository } from "#api/modules/planning/todo-imports/infrastructure/persistence/drizzle-todo-import.repository";
@@ -10,6 +11,8 @@ import { describeTodoImportRepositoryContract } from "#test/contracts/planning/t
 import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import {
   createTodoImportFixture,
+  createTodoImportItemFixture,
+  TODO_IMPORT_FIXTURE_NOW,
   TODO_IMPORT_FIXTURE_OTHER_USER_ID,
   TODO_IMPORT_FIXTURE_USER_ID,
 } from "#test/fixtures/planning/todo-import.fixture";
@@ -63,6 +66,44 @@ describe("가져오기 Drizzle 저장소 (실제 PostgreSQL)", () => {
     }
     return row.id;
   }
+
+  it("끝난 지 오래된 가져오기의 임시 일정만 limit개씩 지운다", async () => {
+    // Given
+    const imports = new DrizzleTodoImportRepository(transactionHost());
+    const items = new DrizzleTodoImportItemRepository(transactionHost());
+    const cutoff = TODO_IMPORT_FIXTURE_NOW;
+    const ended = createTodoImportFixture({
+      id: TodoImportId.generate().value,
+      idempotencyKey: "ended",
+      status: "COMPLETED",
+      updatedAt: cutoff.subtract({ hours: 1 }),
+    });
+    const running = createTodoImportFixture({
+      id: TodoImportId.generate().value,
+      status: "RUNNING",
+      updatedAt: cutoff.subtract({ hours: 1 }),
+    });
+    await imports.save(ended);
+    await imports.save(running);
+    const seeds = Array.from({ length: 5 }, (_, index) => `item-${index}`);
+    await items.insertMany(
+      ended.id,
+      seeds.map((seed) => createTodoImportItemFixture(seed)),
+    );
+    await items.insertMany(
+      running.id,
+      seeds.map((seed) => createTodoImportItemFixture(seed)),
+    );
+
+    // When
+    const first = await items.deleteOfImportsEndedBefore(cutoff, 3);
+    const second = await items.deleteOfImportsEndedBefore(cutoff, 3);
+    const third = await items.deleteOfImportsEndedBefore(cutoff, 3);
+
+    // Then
+    expect([first, second, third]).toEqual([3, 2, 0]);
+    expect(await items.listPending(running.id, 10)).toHaveLength(5);
+  });
 
   describeTodoImportRepositoryContract(
     async () => new DrizzleTodoImportRepository(transactionHost()),

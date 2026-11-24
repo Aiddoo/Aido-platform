@@ -14,6 +14,7 @@ import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
+import { OperationalAlertPort } from "#api/shared/application/ports/operational-alert.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
 import { TodoImportItemRepositoryPort } from "./application/ports/todo-import-item.repository.port.js";
@@ -28,10 +29,14 @@ import { FailTodoImportUseCase } from "./application/use-cases/fail-todo-import.
 import { FindActiveTodoImportUseCase } from "./application/use-cases/find-active-todo-import.use-case.js";
 import { GetTodoImportUseCase } from "./application/use-cases/get-todo-import.use-case.js";
 import { MaterializeTodoImportUseCase } from "./application/use-cases/materialize-todo-import.use-case.js";
+import { PurgeTodoImportsUseCase } from "./application/use-cases/purge-todo-imports.use-case.js";
 import { ReceiveTodoImportItemsUseCase } from "./application/use-cases/receive-todo-import-items.use-case.js";
+import { ReconcileTodoImportsUseCase } from "./application/use-cases/reconcile-todo-imports.use-case.js";
 import { RequestTodoImportUndoUseCase } from "./application/use-cases/request-todo-import-undo.use-case.js";
 import { StartTodoImportUseCase } from "./application/use-cases/start-todo-import.use-case.js";
 import { UndoTodoImportUseCase } from "./application/use-cases/undo-todo-import.use-case.js";
+import { TodoImportCleanupProcessor } from "./infrastructure/jobs/todo-import-cleanup.processor.js";
+import { TodoImportCleanupScheduler } from "./infrastructure/jobs/todo-import-cleanup.scheduler.js";
 import { TodoImportMaterializationQueueAdapter } from "./infrastructure/jobs/todo-import-materialization-queue.adapter.js";
 import { TodoImportMaterializationProcessor } from "./infrastructure/jobs/todo-import-materialization.processor.js";
 import { TodoImportUndoQueueAdapter } from "./infrastructure/jobs/todo-import-undo-queue.adapter.js";
@@ -129,6 +134,25 @@ export const PLANNING_TODO_IMPORTS_PROVIDERS = [
     clock: ClockPort,
     logger: loggerFor(FailTodoImportUseCase),
   }),
+  provideUseCase(ReconcileTodoImportsUseCase, {
+    ...MUTATION,
+    todoImportRepository: TodoImportRepositoryPort,
+    itemRepository: TodoImportItemRepositoryPort,
+    materializationQueue: TodoImportMaterializationQueuePort,
+    undoQueue: TodoImportUndoQueuePort,
+    alert: OperationalAlertPort,
+    clock: ClockPort,
+    logger: loggerFor(ReconcileTodoImportsUseCase),
+  }),
+  provideUseCase(PurgeTodoImportsUseCase, {
+    unitOfWork: UnitOfWorkPort,
+    todoImportRepository: TodoImportRepositoryPort,
+    itemRepository: TodoImportItemRepositoryPort,
+    clock: ClockPort,
+    logger: loggerFor(PurgeTodoImportsUseCase),
+  }),
   TodoImportMaterializationProcessor,
   TodoImportUndoProcessor,
+  TodoImportCleanupProcessor,
+  TodoImportCleanupScheduler,
 ] satisfies Provider[];

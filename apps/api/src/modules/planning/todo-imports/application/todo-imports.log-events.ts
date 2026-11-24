@@ -8,4 +8,7 @@ export const TodoImportLogEvent = {
   UNDO_REQUESTED: "planning.todo-import.undo.requested",
   UNDONE: "planning.todo-import.undone",
   ATTEMPT_FAILED: "planning.todo-import.attempt.failed",
+  RECOVERED: "planning.todo-import.recovered",
+  ABANDONED: "planning.todo-import.abandoned",
+  PURGED: "planning.todo-import.purged",
 } as const;
