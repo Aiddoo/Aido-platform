@@ -1,7 +1,8 @@
-Improvements
-- Sheets now use native Android bottom sheets, so swiping to close and typing feel smoother.
-- AI reports (Premium) count Perfect days the same way as your streak.
-- Updated payment and analytics components for better stability.
+New
+- Move your calendar events to Aido, the easy way. We heard switching is hard when your plans live in your calendar, so we built this.
+- Pick calendars and a date range, and your events arrive as to-dos. Keep calendars separate or put everything in one category, and undo within 7 days.
+- Find it in Me > Settings. Aido only reads your calendar.
+- Free covers 30 days ahead, Premium 365 days.
 
-Bug fixes
-- Fixed a home screen widget error right after midnight.
+Improvements
+- TalkBack can read the calendar and range choices and the import progress.

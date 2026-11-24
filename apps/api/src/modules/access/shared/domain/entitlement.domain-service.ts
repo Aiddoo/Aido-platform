@@ -7,6 +7,7 @@ import {
   type Plan,
   type PlanFeature,
   type PlanFlagFeatureKey,
+  type PlanHorizonFeatureKey,
   type PlanLimitFeatureKey,
   type PlanQuotaFeatureKey,
   type PlanQuotaPeriod,
@@ -38,7 +39,7 @@ export interface AccessSubject {
 /** 요금제가 연 기능 하나 */
 export interface FeatureEntitlement {
   readonly allowed: boolean;
-  /** quota·resource의 표시 한도(받은 자리 포함). null은 무제한이고 flag는 항상 null이다. */
+  /** quota·resource는 표시 한도(받은 자리 포함), horizon은 일 수. null은 무제한이고 flag는 항상 null이다. */
   readonly limit: number | null;
 }
 
@@ -113,7 +114,12 @@ function isQuotaFeature(feature: PlanFeature): feature is PlanQuotaFeatureKey {
 }
 
 function isLimitFeature(feature: PlanFeature): feature is PlanLimitFeatureKey {
-  return PLAN_CATALOG[feature].kind !== "flag";
+  const kind = PLAN_CATALOG[feature].kind;
+  return kind === "quota" || kind === "resource";
+}
+
+function isHorizonFeature(feature: PlanFeature): feature is PlanHorizonFeatureKey {
+  return PLAN_CATALOG[feature].kind === "horizon";
 }
 
 function isGrantableFeature(feature: PlanFeature): feature is GrantableFeature {
@@ -138,13 +144,25 @@ export function resolveFeatureLimit(params: {
   return planLimit == null ? null : planLimit + grantedQuantity(params.grants, params.feature);
 }
 
-/** 요금제의 기능 하나. quota·resource는 한도가 0보다 크거나 무제한이면 쓸 수 있다. */
+/** 받은 자리를 더하지 않는다. 보상은 개수(resource)에만 준다. */
+export function resolveHorizonDays(params: {
+  readonly plan: Plan;
+  readonly feature: PlanHorizonFeatureKey;
+}): number {
+  return PLAN_CATALOG[params.feature][params.plan];
+}
+
+/** 요금제의 기능 하나. quota·resource·horizon은 한도가 0보다 크거나 무제한이면 쓸 수 있다. */
 export function resolveFeatureEntitlement(params: {
   readonly plan: Plan;
   readonly feature: PlanFeature;
   readonly grants: FeatureGrants;
 }): FeatureEntitlement {
   const { plan, feature, grants } = params;
+  if (isHorizonFeature(feature)) {
+    const limit = resolveHorizonDays({ plan, feature });
+    return { allowed: limit > 0, limit };
+  }
   if (!isLimitFeature(feature)) {
     return { allowed: PLAN_CATALOG[feature][plan], limit: null };
   }

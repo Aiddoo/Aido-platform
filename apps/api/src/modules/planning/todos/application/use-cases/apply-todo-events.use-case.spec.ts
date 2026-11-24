@@ -134,6 +134,31 @@ describe("ApplyTodoEventsUseCase — 트랜잭션 안 리마인더·이벤트", 
     });
   });
 
+  it("이어지는 시각 있는 생성은 한 번에 예약하고 다른 이벤트 앞에서 끊어 순서를 지킨다", async () => {
+    // Given
+    const { useCase, reminders, published } = createUseCase();
+
+    // When
+    await useCase.execute([
+      new TodoCreatedEvent(1, "user-1", TEN_AM),
+      new TodoCreatedEvent(2, "user-1", null),
+      new TodoCreatedEvent(3, "user-1", TEN_AM),
+      new TodoDeletedEvent(1, "user-1"),
+      new TodoCreatedEvent(4, "user-1", TEN_AM),
+    ]);
+
+    // Then
+    expect(reminders.scheduleBatches).toEqual([[1, 3], [4]]);
+    expect(reminders.cancelled).toEqual([1]);
+    expect(published.map((fact) => fact.eventName)).toEqual([
+      "planning.todo.created",
+      "planning.todo.created",
+      "planning.todo.created",
+      "planning.todo.deleted",
+      "planning.todo.created",
+    ]);
+  });
+
   it("알릴 사실이 없으면 publish를 부르지 않는다", async () => {
     // Given
     const { useCase, published } = createUseCase();

@@ -7,6 +7,7 @@ import {
   eq,
   getTableColumns,
   gte,
+  inArray,
   isNotNull,
   isNull,
   lte,
@@ -124,6 +125,28 @@ export class DrizzleTodoCategoryRepository implements TodoCategoryRepositoryPort
     return rows.map((row) => toTodoCategoryWithCountReadModel(row));
   }
 
+  async listOwnedIds(
+    userId: UserId,
+    categoryIds: readonly TodoCategoryId[],
+  ): Promise<ReadonlySet<number>> {
+    if (categoryIds.length === 0) {
+      return new Set();
+    }
+    const rows = await this.#db
+      .select({ id: todoCategory.id })
+      .from(todoCategory)
+      .where(
+        and(
+          eq(todoCategory.userId, userId.value),
+          inArray(
+            todoCategory.id,
+            categoryIds.map((categoryId) => categoryId.value),
+          ),
+        ),
+      );
+    return new Set(rows.map((row) => row.id));
+  }
+
   countByUserId(userId: UserId): Promise<number> {
     return this.#db.$count(todoCategory, eq(todoCategory.userId, userId.value));
   }
@@ -142,6 +165,14 @@ export class DrizzleTodoCategoryRepository implements TodoCategoryRepositoryPort
       },
     });
     return row != null;
+  }
+
+  async listNamesByUserId(userId: UserId): Promise<ReadonlySet<string>> {
+    const rows = await this.#db
+      .select({ name: todoCategory.name })
+      .from(todoCategory)
+      .where(eq(todoCategory.userId, userId.value));
+    return new Set(rows.map((row) => row.name));
   }
 
   async getMaxSortOrder(userId: UserId): Promise<number> {

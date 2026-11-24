@@ -1,3 +1,4 @@
+import { cn } from '@src/shared/utils/cn';
 import type { ComponentProps } from 'react';
 
 import { Box } from '../box/box';
@@ -49,7 +50,10 @@ export function WordWrapText({ children, className, ...textProps }: WordWrapText
         const words = splitRunsIntoWords(lineRuns);
 
         return (
-          <Box key={lineIndex} className="flex-row flex-wrap">
+          <Box
+            key={lineIndex}
+            className={cn('flex-row flex-wrap', textProps.align === 'center' && 'justify-center')}
+          >
             {words.length === 0 ? (
               // 빈 줄(문단 사이)은 단어가 없어 높이가 0이 되므로 공백 한 칸으로 줄 높이를 지킨다
               <Text {...textProps} className="max-w-full" importantForAccessibility="no">

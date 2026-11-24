@@ -25,6 +25,14 @@ describe('splitRunsIntoWords', () => {
     ]);
   });
 
+  it('줄바꿈 없는 공백으로 이은 글은 한 단어로 둔다', () => {
+    // When
+    const words = splitRunsIntoWords([{ text: '(12월\u00A023일까지) 가져와요' }]);
+
+    // Then
+    expect(words.map((word) => word[0]?.text)).toEqual(['(12월\u00A023일까지)', '가져와요']);
+  });
+
   it('빈 글은 단어가 없다', () => {
     // When
     const words = splitRunsIntoWords([{ text: '   ' }]);

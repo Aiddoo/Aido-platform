@@ -1,4 +1,4 @@
-import type { PlanFeature, PlanLimitFeatureKey } from "@aido/api/vocabulary";
+import type { PlanFeature, PlanHorizonFeatureKey, PlanLimitFeatureKey } from "@aido/api/vocabulary";
 import { Injectable } from "@nestjs/common";
 
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -8,6 +8,7 @@ import {
   resolveFeatureEntitlement,
   resolveFeatureEntitlements,
   resolveFeatureQuota,
+  resolveHorizonDays,
   type FeatureEntitlement,
 } from "../../../shared/domain/entitlement.domain-service.js";
 import {
@@ -54,10 +55,23 @@ export class EntitlementReaderAdapter implements EntitlementReaderPort {
     return (await this.#featureEntitlement(userId, feature, "latest")).limit;
   }
 
+  async getHorizonDays(userId: UserId, feature: PlanHorizonFeatureKey): Promise<number> {
+    const { plan } = await this.#resolve(userId, "cached");
+    return resolveHorizonDays({ plan, feature });
+  }
+
+  async getHorizonDaysInTransaction(
+    userId: UserId,
+    feature: PlanHorizonFeatureKey,
+  ): Promise<number> {
+    const { plan } = await this.#resolve(userId, "latest");
+    return resolveHorizonDays({ plan, feature });
+  }
+
   async getFeatureQuotaInTransaction(
     userId: UserId,
-    feature: UnmeteredLimitFeatureKey,
-    usage: ReportedFeatureUsage,
+    feature: UnmeteredLimitFeatureKey | PlanHorizonFeatureKey,
+    usage: ReportedFeatureUsage | null,
   ): Promise<FeatureQuotaReadModel> {
     const { plan, grants } = await this.#resolve(userId, "latest");
     return toFeatureQuotaReadModel(
@@ -65,10 +79,13 @@ export class EntitlementReaderAdapter implements EntitlementReaderPort {
         plan,
         feature,
         grants,
-        usage: {
-          used: usage.used,
-          resetsAt: usage.resetsAt == null ? null : instantFromDate(usage.resetsAt),
-        },
+        usage:
+          usage == null
+            ? null
+            : {
+                used: usage.used,
+                resetsAt: usage.resetsAt == null ? null : instantFromDate(usage.resetsAt),
+              },
       }),
     );
   }

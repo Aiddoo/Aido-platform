@@ -31,6 +31,7 @@ describe('getPlanBenefitAmounts', () => {
       voiceNote: PLAN_CATALOG.VOICE_NOTE.fairUse.premium,
       voiceNoteMinutes: 30,
       category: PLAN_CATALOG.TODO_CATEGORY.premium,
+      calendarImportDays: PLAN_CATALOG.CALENDAR_IMPORT.premium,
     });
   });
 
@@ -52,6 +53,7 @@ describe('getPlanBenefitAmounts', () => {
         cheer: PLAN_CATALOG.CHEER.free,
         friend: PLAN_CATALOG.FRIEND.free,
         category: PLAN_CATALOG.TODO_CATEGORY.free,
+        calendarImportDays: PLAN_CATALOG.CALENDAR_IMPORT.free,
       });
     },
   );
@@ -113,6 +115,21 @@ describe('getPlanComparison', () => {
 
     // Then
     expect(comparison).toEqual({ unit: 'people', free: 7, premium: null });
+  });
+
+  it('프리미엄 사용자에게도 캘린더 가져오기는 서버 요금제의 무료·프리미엄 일 수를 견준다', () => {
+    // Given
+    const snapshot = createEntitlementSnapshot({ tier: 'PREMIUM' });
+
+    // When
+    const comparison = getPlanComparison(snapshot, 'CALENDAR_IMPORT');
+
+    // Then
+    expect(comparison).toEqual({
+      unit: 'days',
+      free: PLAN_CATALOG.CALENDAR_IMPORT.free,
+      premium: PLAN_CATALOG.CALENDAR_IMPORT.premium,
+    });
   });
 });
 

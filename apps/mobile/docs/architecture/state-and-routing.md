@@ -120,7 +120,7 @@ app/(app)/(tabs)/
   (memos)/memo/index.tsx    /memo
   (me)/_layout.tsx          마이 탭 Stack(MyPageStack + 넓은 화면 메뉴 칸), anchor mypage/index
   (me)/mypage/index.tsx     /mypage
-  (me,memos,todos)/…        알림함·친구·배지·리포트·설정·새 기능 목록. 세 탭 Stack에 모두 있다
+  (me,memos,todos)/…        알림함·친구·배지·리포트·설정·캘린더 가져오기·새 기능 목록. 세 탭 Stack에 모두 있다
 ```
 
 - 그룹 이름은 URL에 들어가지 않는다. 그래서 `/friends/invite`·`/settings/…` 같은 공개 경로와 `screen_view` 이름이 1.15.1과 같다. 탭 그룹 이름은 탭의 영어 이름(To-dos·Memos·Me)이다.

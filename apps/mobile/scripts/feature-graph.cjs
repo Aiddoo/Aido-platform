@@ -35,6 +35,7 @@ const FEATURE_LAYERS = {
   'device/coachmark': 2,
   'device/store-review': 2,
   voice: 3,
+  'planning/todo-import': 3,
   'engagement/comment': 3,
   'social/friend': 3,
   'social/nudge': 3,

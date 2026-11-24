@@ -16,6 +16,7 @@ import {
   TodoCategoryLimitReaderPort,
 } from "../ports/todo-category-limit.reader.port.js";
 import { CreateTodoCategoryUseCase } from "./create-todo-category.use-case.js";
+import { WriteTodoCategoryUseCase } from "./write-todo-category.use-case.js";
 
 const USER_ID = TODO_FIXTURE_USER_ID;
 
@@ -63,12 +64,14 @@ function setUp(
   const cache = overrides.cache ?? new FakeTodoCategoryCache();
   const mutationLock = overrides.mutationLock ?? new RecordingMutationLock();
   const useCase = new CreateTodoCategoryUseCase({
-    repository,
+    writeCategory: new WriteTodoCategoryUseCase({
+      repository,
+      limitReader,
+      clock: new FixedClock(TODO_FIXTURE_NOW),
+    }),
     cache,
-    limitReader,
     mutationLock,
     unitOfWork: overrides.unitOfWork ?? new ImmediateUnitOfWork(),
-    clock: new FixedClock(TODO_FIXTURE_NOW),
     logger: new SilentLogger(),
   });
   return { repository, limitReader, cache, mutationLock, useCase };
@@ -175,9 +178,9 @@ describe("카테고리 생성", () => {
         events.push("count");
         return super.countByUserId(userId);
       }
-      override async existsByUserIdAndName(userId: UserId, name: string): Promise<boolean> {
+      override async listNamesByUserId(userId: UserId): Promise<ReadonlySet<string>> {
         events.push("name-read");
-        return super.existsByUserIdAndName(userId, name);
+        return super.listNamesByUserId(userId);
       }
       override async getMaxSortOrder(userId: UserId): Promise<number> {
         events.push("max-order-read");

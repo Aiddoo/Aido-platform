@@ -1,0 +1,254 @@
+{
+  "untitledEvent": "Untitled event",
+  "entry": {
+    "menu": "Import calendar events",
+    "inProgress": "Importing"
+  },
+  "lastImport": {
+    "label": "Last import",
+    "description_one": "{{count}} to-do · Undo until {{date}}",
+    "description_other": "{{count}} to-dos · Undo until {{date}}"
+  },
+  "titles": {
+    "setup": "Import calendar events",
+    "progress": "Importing",
+    "result": "Import result"
+  },
+  "permission": {
+    "title": "Bring your calendar events into Aido",
+    "facts": {
+      "sources": "Works with the iCloud, Google, and Outlook calendars on this device",
+      "read": "Aido saves only the title, date, and time of the events you choose, as to-dos",
+      "noAccountInfo": "Your calendar account details, like your email, are never sent to Aido",
+      "oneTime": "It copies your events once. Your calendar stays exactly as it is",
+      "optional": "Everything else works even if you don't allow access"
+    },
+    "deniedTitle": "Calendar access is off",
+    "deniedDescription": "Turn on calendar access in Settings to import events",
+    "deniedDescriptionMac": "On your Mac, turn on Aido in System Settings > Privacy & Security > Calendars",
+    "openSettings": "Open Settings",
+    "continue": "Continue"
+  },
+  "range": {
+    "title": "Date range",
+    "start": "Start date",
+    "end": "End date",
+    "presets": {
+      "week": "1 week",
+      "month": "1 month",
+      "quarter": "3 months",
+      "half": "6 months",
+      "year": "1 year"
+    },
+    "lockedPreset": "{{label}}, Premium only",
+    "freeUntil_one": "The free plan imports events for the next {{count}} day (through {{date}}).",
+    "freeUntil_other": "The free plan imports events for the next {{count}} days (through {{date}}).",
+    "freeUntilPremium": "Go Premium for events further ahead",
+    "freeUntilHint": "Opens Premium info"
+  },
+  "calendars": {
+    "title": "Choose calendars to import",
+    "description": "Holiday, birthday, and subscribed calendars are unchecked. Pick them if you need them",
+    "listTitle": "Calendars",
+    "otherAccount": "Other",
+    "accounts": {
+      "icloud": "iCloud",
+      "google": "Google Calendar",
+      "googleWithEmail": "Google Calendar · {{email}}",
+      "outlook": "Outlook Calendar",
+      "outlookWithEmail": "Outlook Calendar · {{email}}",
+      "device": "Saved on this device",
+      "received": "Holiday, birthday & subscribed calendars"
+    },
+    "receivedTitle_one": "Holiday, birthday & subscribed calendar ({{count}})",
+    "receivedTitle_other": "Holiday, birthday & subscribed calendars ({{count}})",
+    "itemCount_one": "{{count}} event",
+    "itemCount_other": "{{count}} events",
+    "noEventsInRange": "No events",
+    "emptyTitle": "No events to import in this range",
+    "emptyDescription": "Try a longer range, or check that your calendar app has events",
+    "tooMany": "You can import up to {{limit}} events at once. Choose a shorter range or fewer calendars",
+    "collectionLimit": "You can choose up to {{limit}} calendars at once",
+    "selectedCount_one": "{{count}} event will be imported",
+    "selectedCount_other": "{{count}} events will be imported",
+    "missingHelp": {
+      "open": "Missing a calendar?",
+      "title": "Missing a calendar?",
+      "description": "Aido can import only the calendars shown in this device's calendar app. If a calendar lives only in another app, add that account to this device",
+      "iphone": {
+        "openSettings": "Open iPhone Settings > Calendar > Accounts",
+        "openAppsSettings": "Open iPhone Settings > Apps > Calendar > Calendar Accounts"
+      },
+      "ipad": {
+        "openSettings": "Open iPad Settings > Calendar > Accounts",
+        "openAppsSettings": "Open iPad Settings > Apps > Calendar > Calendar Accounts"
+      },
+      "ios": {
+        "addAccount": "Tap Add Account, add your Google or Outlook account, and turn on Calendars"
+      },
+      "mac": {
+        "openSettings": "On your Mac, open System Settings > Internet Accounts",
+        "addAccount": "Add your Google or Outlook account and turn on Calendars"
+      },
+      "android": {
+        "addAccount": "Open Settings > Accounts and add your Google or Outlook account",
+        "turnOnSync": "In your calendar app, turn on and sync that account's calendars"
+      },
+      "comeBack": "Come back to Aido and it shows up in the list"
+    }
+  },
+  "sources": {
+    "icloud": "iCloud",
+    "google": "Google",
+    "outlook": "Outlook",
+    "device": "On this device",
+    "subscribed": "Subscribed",
+    "birthdays": "Birthdays",
+    "other": "Other"
+  },
+  "categories": {
+    "title": "Where should they go?",
+    "description": "Imported events go into an Aido category. You can move them anytime later",
+    "sourceLabel": "Events to import",
+    "sourceHintLabel": "About events to import",
+    "sourceHint": "These are calendars from accounts connected to the calendar app on this device. If an account is missing, go back and tap '{{missingHelp}}'",
+    "destinationLabel": "Put them in",
+    "destinationHintLabel": "About where they go",
+    "destinationHint": "You can move imported to-dos to another Aido category later. Change names and colors in Me › Manage categories",
+    "coachmark": "Imported events go here. Tap to change it",
+    "change": "Change",
+    "roomLeft_one": "Room for {{count}} more",
+    "roomLeft_other": "Room for {{count}} more",
+    "fillsUp": "All of them fit. It'll be full after this",
+    "overflow_one": "'{{name}}' has room for only {{count}} more. The nearest dates go in first and the other {{skipped}} are skipped",
+    "overflow_other": "'{{name}}' has room for only {{count}} more. The nearest dates go in first and the other {{skipped}} are skipped",
+    "fullWarning": "'{{name}}' is full. Choose another place",
+    "newTarget": "New · {{name}}",
+    "newCategoryName": "Calendar events",
+    "unassigned": "Not chosen",
+    "splitLink": "Put each calendar somewhere else",
+    "eventCount_one": "{{count}} event",
+    "eventCount_other": "{{count}} events",
+    "eventCountPartial_one": "{{count}} of {{total}} events",
+    "eventCountPartial_other": "{{count}} of {{total}} events",
+    "summary": "Putting {{events}} into '{{name}}'",
+    "summarySeparate_one": "Putting {{events}} into {{count}} Aido category",
+    "summarySeparate_other": "Putting {{events}} into {{count}} Aido categories",
+    "separate": {
+      "title": "Where each calendar goes",
+      "joinAll": "Put all in one place",
+      "note": "All start in '{{name}}'. Tap only the rows you want to change"
+    },
+    "rowLabel": "Put events from '{{calendar}}' ({{source}}) into the Aido category '{{target}}'",
+    "rowHint": "Changes where it goes",
+    "loadFailed": "Couldn't load your Aido categories",
+    "sheet": {
+      "title": "Where should they go?",
+      "calendar_one": "{{count}} event from '{{name}}'",
+      "calendar_other": "{{count}} events from '{{name}}'",
+      "allCalendars_one": "{{count}} event from {{calendarCount}} chosen calendars",
+      "allCalendars_other": "{{count}} events from {{calendarCount}} chosen calendars",
+      "existingTitle": "My Aido categories",
+      "pendingNew": "Will be created",
+      "searchPlaceholder": "Find a category by name",
+      "noMatch": "No matching category",
+      "newTitle": "Create a new category",
+      "newDescription": "It starts as '{{name}}'. You can change it",
+      "sameName": "'{{name}}' already exists",
+      "lockedFree": "The free plan allows up to {{limit}} categories",
+      "locked": "You can't create more categories"
+    },
+    "rejected": {
+      "capacity": "This category can only take {{count}} of {{expected}}. Choose a shorter range or another category",
+      "nameTaken": "A category with this name already exists. Rename it or choose that category",
+      "notFound": "This category was deleted. Choose another one",
+      "summary": "Some categories can't be used. Choose again where it's marked"
+    }
+  },
+  "options": {
+    "title": "One last check",
+    "includeTime": "Include times",
+    "includeTimeDescription": "When off, only dates come in, so you won't get time reminders",
+    "shareWithFriends": "Share with friends",
+    "shareWithFriendsDescription": "When off, only you can see them",
+    "disclosure": "When you tap Import, the title, date, and time of the events you chose are saved to Aido as to-dos",
+    "import": "Import"
+  },
+  "progress": {
+    "reading": "Reading your calendar",
+    "uploading": "Moving events to Aido",
+    "creating": "Creating to-dos",
+    "queued": "Starting soon",
+    "stageStatus": {
+      "pending": "waiting",
+      "active": "in progress",
+      "done": "done"
+    },
+    "leaveNotice": "You can leave the app. The import keeps going",
+    "offline": "The import continues when you're back online",
+    "paused": "Paused for now. Try again, or reopen the app to continue",
+    "pausedPermission": "Paused because calendar access is off. Turn it back on in Settings to continue",
+    "retry": "Try again",
+    "notOnThisDevice": "Another device is importing this. Finish it there or stop it here",
+    "cancel": "Stop import",
+    "cancelConfirmTitle": "Stop this import?",
+    "cancelConfirmDescription": "Events that aren't to-dos yet won't be imported"
+  },
+  "failure": {
+    "tooManyItems": "You can import up to {{limit}} events at once. Choose a shorter range or fewer calendars and try again",
+    "invalid": "We couldn't read the range or events. Change the range and try again",
+    "rejected": "Aido couldn't receive the events. Try again in a moment",
+    "planLimit": "Stopped because your plan can’t import this range. Choose a shorter range and set it up again",
+    "categoryLimit": "Stopped because you can’t create more categories. Set it up again using existing categories",
+    "categoryNameTaken": "Stopped because a category with the same name now exists. Choose that category or rename it and set it up again",
+    "categoryNotFound": "Stopped because the category was deleted. Choose another category and set it up again",
+    "setUpAgain": "Set up again",
+    "viewPlan": "View plans"
+  },
+  "result": {
+    "completedTitle_one": "Imported {{count}} to-do",
+    "completedTitle_other": "Imported {{count}} to-dos",
+    "undoingTitle": "Undoing the import",
+    "undoneTitle_one": "Removed {{count}} imported to-do",
+    "undoneTitle_other": "Removed {{count}} imported to-dos",
+    "counts": {
+      "created": "To-dos created",
+      "skippedDuplicate": "Already imported",
+      "skippedCapacity": "Category full, not added",
+      "skippedCategoryMissing": "Category deleted, not added",
+      "skippedInvalid": "Couldn't read the date or title",
+      "undone": "To-dos removed",
+      "keptCompleted": "Kept because completed"
+    },
+    "undoNotice_one": "You can undo this within {{count}} day. Completed to-dos stay",
+    "undoNotice_other": "You can undo this within {{count}} days. Completed to-dos stay",
+    "duplicateNotice": "Importing the same events again won't add them twice",
+    "viewTodos": "See to-dos",
+    "undo": "Undo",
+    "undoConfirmTitle": "Undo this import?",
+    "undoConfirmDescription": "Only to-dos you haven't completed are removed",
+    "failedTitle": "The import stopped partway",
+    "failedDescription_zero": "No to-dos were created yet. Please import again",
+    "failedDescription_one": "The {{count}} to-do already created stays. Import again to add only the rest",
+    "failedDescription_other": "The {{count}} to-dos already created stay. Import again to add only the rest",
+    "undoFailedTitle": "Undo stopped partway",
+    "undoFailedDescription": "Undo again to remove the rest. Completed to-dos stay",
+    "undoAgain": "Undo again",
+    "canceledTitle": "Import stopped",
+    "canceledDescription": "No to-dos were created",
+    "startAgain": "Import again",
+    "alreadyImportedTitle": "These events are already in Aido",
+    "notFoundTitle": "We couldn’t find this import",
+    "notFoundDescription": "It may belong to another account, or it may have been removed after a while",
+    "startNew": "Start a new import"
+  },
+  "toasts": {
+    "startFailed": "Couldn't start the import. Please try again",
+    "cancelFailed": "Couldn't stop the import. Please try again",
+    "undoFailed": "Couldn't undo the import. Please try again",
+    "permissionRequestFailed": "Couldn't ask for calendar access. Please try again",
+    "rangeAdjusted": "It's past midnight, so the range now starts today",
+    "undoWhileImporting": "You can undo once the import in progress finishes",
+    "cancelTooLate": "Aido already started creating your to-dos, so this import can't be stopped"
+  }
+}

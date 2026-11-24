@@ -24,7 +24,7 @@ import { SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 
 ### 하나 고르기
 
-테마·글꼴 크기·언어·앱 아이콘처럼 하나를 고르는 화면은 heroui `RadioGroup`(`className="gap-0"`)을 카드 안에 두고 `.Radio`를 나란히 써요. 값은 `RadioGroup`의 `value`/`onValueChange`로 주고받아요.
+테마·글꼴 크기·언어·앱 아이콘처럼 하나를 고르는 화면은 heroui `RadioGroup`(`className="gap-0"`)을 카드 안에 두고 `.Radio`를 나란히 써요. 값은 `RadioGroup`의 `value`/`onValueChange`로 주고받아요. 스크린 리더 라벨은 `label`과 `description`을 이어 기본으로 넣고, `accessibilityLabel`을 넘기면 그 값을 써요.
 
 ```tsx
 <SettingsListGroup label={t('theme.label')}>
@@ -90,9 +90,9 @@ import { SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 
 `ListGroup` props와 같아요.
 
-| Prop    | Type     | Default | Description    |
-| ------- | -------- | ------- | -------------- |
-| `label` | `string` | -       | 카드 위쪽 제목 |
+| Prop    | Type     | Default | Description                                   |
+| ------- | -------- | ------- | --------------------------------------------- |
+| `label` | `string` | -       | 카드 위쪽 제목. 스크린 리더는 머리말로 읽는다 |
 
 ### SettingsListGroup.Item
 
@@ -117,7 +117,7 @@ import { SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 
 ### SettingsListGroup.Toggle
 
-`ControlField` props를 그대로 받아요(`isSelected`, `onSelectedChange`, `isDisabled` 등). `children`만 이 컴포넌트가 채워요.
+`ControlField` props를 그대로 받아요(`isSelected`, `onSelectedChange`, `isDisabled` 등). `children`만 이 컴포넌트가 채워요. 스크린 리더가 켬·끔을 읽도록 `accessibilityRole="switch"`와 `isSelected`·`isDisabled`로 만든 `accessibilityState`를 기본으로 넣어요. 호출부가 같은 prop을 주면 그 값을 써요.
 
 | Prop          | Type        | Default | Description                                                                                  |
 | ------------- | ----------- | ------- | -------------------------------------------------------------------------------------------- |

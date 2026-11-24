@@ -1,6 +1,6 @@
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { cn } from '@src/shared/utils/cn';
-import { range } from 'es-toolkit';
+import { compact, range } from 'es-toolkit';
 import {
   ControlField,
   ListGroup,
@@ -46,7 +46,13 @@ export function SettingsListGroup({
 
 function SettingsListGroupLabel({ label }: { label: string }) {
   return (
-    <Text size="b2" weight="semibold" shade={9} className="px-4 pt-4 pb-1">
+    <Text
+      size="b2"
+      weight="semibold"
+      shade={9}
+      accessibilityRole="header"
+      className="px-4 pt-4 pb-1"
+    >
       {label}
     </Text>
   );
@@ -166,7 +172,13 @@ function SettingsListGroupToggle({
   ...props
 }: SettingsListGroupToggleProps) {
   return (
-    <ControlField className={cn('min-h-12 px-4 py-3', className)} {...props}>
+    <ControlField
+      className={cn('min-h-12 px-4 py-3', className)}
+      // heroui ControlField 뿌리는 역할이 없어 스크린 리더가 켬·끔을 읽도록 스위치로 알린다
+      accessibilityRole="switch"
+      accessibilityState={{ checked: props.isSelected, disabled: props.isDisabled }}
+      {...props}
+    >
       {icon}
       <Box className="flex-1 gap-0.5">
         <Text size="b2" shade={8} lineBreakStrategyIOS="hangul-word">
@@ -240,10 +252,13 @@ function SettingsListGroupRadio({
   icon,
   badge,
   className,
+  accessibilityLabel,
   ...props
 }: SettingsListGroupRadioProps) {
   return (
     <RadioGroup.Item
+      // 라디오 루트가 글자를 묶어 읽지 않는 기기에서도 줄 이름이 읽히게 한다
+      accessibilityLabel={accessibilityLabel ?? compact([label, description]).join(', ')}
       className={cn(
         'min-h-12 px-4 py-3 active:bg-gray-3 disabled:opacity-40 dark:active:bg-gray-2',
         className,

@@ -1,4 +1,5 @@
 import { PLAN_CATALOG } from "../vocabulary/plan-catalog.constants.js";
+import { TODO_IMPORT_LIMITS } from "../vocabulary/todo-import.constants.js";
 import { TODO_SERIES_LIMITS } from "../vocabulary/todo.constants.js";
 import { IDEMPOTENCY_KEY_MAX_LENGTH } from "../vocabulary/voice.constants.js";
 import { HttpStatus } from "./http-status.js";
@@ -35,6 +36,7 @@ import type { ErrorDefinition } from "./types.js";
  * - INVITE  (2100-2199): 친구 초대
  * - BLOCK   (2200-2249): 사용자 차단
  * - REPORT  (2250-2299): 사용자 신고
+ * - TODO_IMPORT (2300-2349): 캘린더 가져오기
  */
 export const ErrorCode = {
   // 시스템/공통 (SYS_0001-0099)
@@ -308,6 +310,26 @@ export const ErrorCode = {
   REPORT_2254: "REPORT_2254",
   /** 처리할 신고를 찾을 수 없습니다 (운영자 API) */
   REPORT_2255: "REPORT_2255",
+
+  // 캘린더 가져오기 (TODO_IMPORT_2300-2349)
+  /** 이미 진행 중인 가져오기가 있습니다 */
+  TODO_IMPORT_2301: "TODO_IMPORT_2301",
+  /** 가져올 기간이 요금제 한도를 넘습니다 */
+  TODO_IMPORT_2302: "TODO_IMPORT_2302",
+  /** 대상 카테고리를 쓸 수 없습니다 */
+  TODO_IMPORT_2303: "TODO_IMPORT_2303",
+  /** 가져오기를 찾을 수 없습니다 */
+  TODO_IMPORT_2304: "TODO_IMPORT_2304",
+  /** 지금 상태에서는 할 수 없는 요청입니다 */
+  TODO_IMPORT_2305: "TODO_IMPORT_2305",
+  /** 기간이나 일정이 올바르지 않습니다 */
+  TODO_IMPORT_2306: "TODO_IMPORT_2306",
+  /** 같은 Idempotency-Key로 다른 가져오기를 보냈습니다 */
+  TODO_IMPORT_2307: "TODO_IMPORT_2307",
+  /** 되돌릴 수 있는 기간이 지났습니다 */
+  TODO_IMPORT_2308: "TODO_IMPORT_2308",
+  /** 가져올 수 있는 일정 수를 넘었습니다 */
+  TODO_IMPORT_2309: "TODO_IMPORT_2309",
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -1513,5 +1535,67 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     message: "신고를 찾을 수 없습니다.",
     description: "운영자가 처리하려는 신고 ID가 없습니다.",
     httpStatus: HttpStatus.NOT_FOUND,
+  },
+
+  // 캘린더 가져오기 (TODO_IMPORT_2300-2349)
+  [ErrorCode.TODO_IMPORT_2301]: {
+    code: "TODO_IMPORT_2301",
+    message: "이미 진행 중인 캘린더 가져오기가 있습니다.",
+    description:
+      "사용자마다 처리 중인 가져오기는 하나입니다. details.importId로 진행 화면을 열거나, 업로드 중이면 취소한 뒤 다시 시작합니다.",
+    httpStatus: HttpStatus.CONFLICT,
+  },
+  [ErrorCode.TODO_IMPORT_2302]: {
+    code: "TODO_IMPORT_2302",
+    message: "이 기간은 지금 요금제로 가져올 수 없습니다.",
+    description:
+      "가져올 기간의 마지막 날이 오늘부터 요금제 한도 안이어야 합니다. details.featureQuota.limit이 지금 가져올 수 있는 날 수입니다.",
+    httpStatus: HttpStatus.FORBIDDEN,
+  },
+  [ErrorCode.TODO_IMPORT_2303]: {
+    code: "TODO_IMPORT_2303",
+    message: "가져올 카테고리를 쓸 수 없습니다.",
+    description:
+      "새 카테고리 이름이 이미 있거나 카테고리가 없습니다. details.targets에 대상마다 이유가 있습니다. 카테고리 자리가 모자라면 막지 않고 가까운 날짜부터 남는 만큼만 만듭니다.",
+    httpStatus: HttpStatus.CONFLICT,
+  },
+  [ErrorCode.TODO_IMPORT_2304]: {
+    code: "TODO_IMPORT_2304",
+    message: "캘린더 가져오기를 찾을 수 없습니다.",
+    description: "가져오기 id가 없거나 다른 사용자의 것입니다.",
+    httpStatus: HttpStatus.NOT_FOUND,
+  },
+  [ErrorCode.TODO_IMPORT_2305]: {
+    code: "TODO_IMPORT_2305",
+    message: "지금 상태에서는 할 수 없는 요청입니다.",
+    description:
+      "가져오기 상태(details.status)가 이 요청을 받을 수 없습니다. 최신 상태를 다시 읽습니다.",
+    httpStatus: HttpStatus.CONFLICT,
+  },
+  [ErrorCode.TODO_IMPORT_2306]: {
+    code: "TODO_IMPORT_2306",
+    message: "가져올 기간이나 일정이 올바르지 않습니다.",
+    description:
+      "기간이 오늘 이전에 시작하거나, 일정이 기간 밖이거나, 시작할 때 알리지 않은 캘린더의 일정입니다(details.reason).",
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.TODO_IMPORT_2307]: {
+    code: "TODO_IMPORT_2307",
+    message: "같은 Idempotency-Key로 다른 가져오기를 보냈습니다.",
+    description:
+      "Idempotency-Key는 가져오기 시작 한 번을 가리킵니다. 고른 캘린더·기간·카테고리가 달라졌으면 새 키로 보냅니다.",
+    httpStatus: HttpStatus.UNPROCESSABLE_ENTITY,
+  },
+  [ErrorCode.TODO_IMPORT_2308]: {
+    code: "TODO_IMPORT_2308",
+    message: "되돌릴 수 있는 기간이 지났습니다.",
+    description: `가져오기를 마친 뒤 ${TODO_IMPORT_LIMITS.UNDO_WINDOW_DAYS}일 안에만 되돌릴 수 있습니다(details.undoableUntil).`,
+    httpStatus: HttpStatus.CONFLICT,
+  },
+  [ErrorCode.TODO_IMPORT_2309]: {
+    code: "TODO_IMPORT_2309",
+    message: "가져올 수 있는 일정 수를 넘었습니다.",
+    description: `가져오기 한 번에 일정은 최대 ${TODO_IMPORT_LIMITS.MAX_ITEMS_PER_IMPORT}개입니다. 기간이나 캘린더를 줄여 다시 시작합니다.`,
+    httpStatus: HttpStatus.UNPROCESSABLE_ENTITY,
   },
 };

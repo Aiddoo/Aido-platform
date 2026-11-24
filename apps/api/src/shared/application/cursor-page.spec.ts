@@ -1,4 +1,4 @@
-import { times } from "es-toolkit/compat";
+import { range } from "es-toolkit";
 
 import { clampPageSize, toCursorPage, toMappedCursorPage } from "./cursor-page.js";
 
@@ -7,7 +7,7 @@ interface Row {
 }
 
 function createRows(count: number): Row[] {
-  return times(count, (index) => ({ id: 100 - index }));
+  return range(count).map((index) => ({ id: 100 - index }));
 }
 
 describe("toCursorPage — 커서 페이지 만들기", () => {

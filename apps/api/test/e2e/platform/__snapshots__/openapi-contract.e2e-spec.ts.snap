@@ -82,6 +82,23 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
       ],
       "type": "object",
     },
+    "ActiveTodoImportResponseDto": {
+      "properties": {
+        "todoImport": {
+          "allOf": [
+            {
+              "$ref": "#/components/schemas/TodoImportDto",
+            },
+          ],
+          "description": "처리 중인 가져오기. 없으면 null",
+          "nullable": true,
+        },
+      },
+      "required": [
+        "todoImport",
+      ],
+      "type": "object",
+    },
     "AiReportListResponseDto": {
       "properties": {
         "reports": {
@@ -7727,6 +7744,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                     "CUSTOM_REMINDER_TIME",
                     "APP_ICON",
                     "VOICE_NOTE",
+                    "CALENDAR_IMPORT",
                   ],
                   "type": "string",
                 },
@@ -7735,7 +7753,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                   "type": "boolean",
                 },
                 "limit": {
-                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다.",
+                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다. 기간 기능(horizon)은 오늘부터 며칠 뒤까지 쓸 수 있는지(일)이고 used·remaining·period는 null입니다.",
                   "maximum": 9007199254740991,
                   "minimum": 0,
                   "nullable": true,
@@ -7845,6 +7863,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                     "CUSTOM_REMINDER_TIME",
                     "APP_ICON",
                     "VOICE_NOTE",
+                    "CALENDAR_IMPORT",
                   ],
                   "type": "string",
                 },
@@ -7853,7 +7872,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                   "type": "boolean",
                 },
                 "limit": {
-                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다.",
+                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다. 기간 기능(horizon)은 오늘부터 며칠 뒤까지 쓸 수 있는지(일)이고 used·remaining·period는 null입니다.",
                   "maximum": 9007199254740991,
                   "minimum": 0,
                   "nullable": true,
@@ -7963,6 +7982,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                     "CUSTOM_REMINDER_TIME",
                     "APP_ICON",
                     "VOICE_NOTE",
+                    "CALENDAR_IMPORT",
                   ],
                   "type": "string",
                 },
@@ -7971,7 +7991,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                   "type": "boolean",
                 },
                 "limit": {
-                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다.",
+                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다. 기간 기능(horizon)은 오늘부터 며칠 뒤까지 쓸 수 있는지(일)이고 used·remaining·period는 null입니다.",
                   "maximum": 9007199254740991,
                   "minimum": 0,
                   "nullable": true,
@@ -8081,6 +8101,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                     "CUSTOM_REMINDER_TIME",
                     "APP_ICON",
                     "VOICE_NOTE",
+                    "CALENDAR_IMPORT",
                   ],
                   "type": "string",
                 },
@@ -8089,7 +8110,126 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                   "type": "boolean",
                 },
                 "limit": {
-                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다.",
+                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다. 기간 기능(horizon)은 오늘부터 며칠 뒤까지 쓸 수 있는지(일)이고 used·remaining·period는 null입니다.",
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "nullable": true,
+                  "type": "integer",
+                },
+                "perUse": {
+                  "description": "한 번 쓸 때의 길이 상한입니다. 길이 제한이 없는 기능은 null입니다.",
+                  "nullable": true,
+                  "properties": {
+                    "maxCharacters": {
+                      "description": "한 번에 보낼 수 있는 최대 글자 수. 서버가 이 상한으로 다시 막는다",
+                      "exclusiveMinimum": true,
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer",
+                    },
+                    "maxSeconds": {
+                      "description": "말로 메모하기 한 번의 최대 길이(초). 앱 타이머가 이 시간에 멈춘다",
+                      "exclusiveMinimum": true,
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer",
+                    },
+                  },
+                  "required": [
+                    "maxSeconds",
+                    "maxCharacters",
+                  ],
+                  "type": "object",
+                },
+                "period": {
+                  "description": "used가 다시 0이 되는 주기입니다. month는 KST 매월 1일 00:00, day는 요청 X-Timezone 자정입니다. 횟수 기능이 아니면 null입니다.",
+                  "enum": [
+                    "day",
+                    "month",
+                    null,
+                  ],
+                  "nullable": true,
+                  "type": "string",
+                },
+                "remaining": {
+                  "description": "limit - used (0 이상). limit이나 used가 null이면 null입니다.",
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "nullable": true,
+                  "type": "integer",
+                },
+                "resetsAt": {
+                  "description": "used가 0으로 돌아가는 다음 시각 (ISO 8601 UTC). period가 null이면 null입니다.",
+                  "format": "date-time",
+                  "nullable": true,
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                  "type": "string",
+                },
+                "used": {
+                  "description": "횟수 기능은 지금 초기화 창(period)에서 쓴 횟수, 개수 기능(resource)은 지금 가진 개수입니다(친구 맺기·카테고리 만들기 한도 검사와 같은 값). 무제한 resource와 flag는 null입니다.",
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "nullable": true,
+                  "type": "integer",
+                },
+              },
+              "required": [
+                "feature",
+                "allowed",
+                "limit",
+                "used",
+                "remaining",
+                "period",
+                "resetsAt",
+                "isFairUse",
+                "perUse",
+              ],
+              "type": "object",
+            },
+            "CALENDAR_IMPORT": {
+              "description": "서버가 계산한 기능 하나의 한도와 사용량. 앱은 이 값을 그대로 보여 주고 직접 계산하지 않는다",
+              "example": {
+                "allowed": true,
+                "feature": "VOICE_NOTE",
+                "isFairUse": false,
+                "limit": 3,
+                "perUse": {
+                  "maxCharacters": 4000,
+                  "maxSeconds": 180,
+                },
+                "period": "month",
+                "remaining": 2,
+                "resetsAt": "2026-11-30T15:00:00.000Z",
+                "used": 1,
+              },
+              "properties": {
+                "allowed": {
+                  "description": "이 기능을 쓸 수 있는지입니다. 횟수·개수 기능은 한도가 0보다 크거나 무제한이면 true입니다(남은 횟수가 0이어도 true).",
+                  "type": "boolean",
+                },
+                "feature": {
+                  "description": "PLAN_CATALOG 기능 키",
+                  "enum": [
+                    "AI_PARSE",
+                    "CHEER",
+                    "NUDGE",
+                    "FRIEND",
+                    "TODO_CATEGORY",
+                    "AI_REPORT",
+                    "AI_SUGGESTION",
+                    "CUSTOM_REMINDER_TIME",
+                    "APP_ICON",
+                    "VOICE_NOTE",
+                    "CALENDAR_IMPORT",
+                  ],
+                  "type": "string",
+                },
+                "isFairUse": {
+                  "description": "프리미엄의 공정 사용 한도인지입니다. true면 앱은 '넉넉하게(월 N회까지)'로 보여 줍니다.",
+                  "type": "boolean",
+                },
+                "limit": {
+                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다. 기간 기능(horizon)은 오늘부터 며칠 뒤까지 쓸 수 있는지(일)이고 used·remaining·period는 null입니다.",
                   "maximum": 9007199254740991,
                   "minimum": 0,
                   "nullable": true,
@@ -8199,6 +8339,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                     "CUSTOM_REMINDER_TIME",
                     "APP_ICON",
                     "VOICE_NOTE",
+                    "CALENDAR_IMPORT",
                   ],
                   "type": "string",
                 },
@@ -8207,7 +8348,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                   "type": "boolean",
                 },
                 "limit": {
-                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다.",
+                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다. 기간 기능(horizon)은 오늘부터 며칠 뒤까지 쓸 수 있는지(일)이고 used·remaining·period는 null입니다.",
                   "maximum": 9007199254740991,
                   "minimum": 0,
                   "nullable": true,
@@ -8317,6 +8458,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                     "CUSTOM_REMINDER_TIME",
                     "APP_ICON",
                     "VOICE_NOTE",
+                    "CALENDAR_IMPORT",
                   ],
                   "type": "string",
                 },
@@ -8325,7 +8467,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                   "type": "boolean",
                 },
                 "limit": {
-                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다.",
+                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다. 기간 기능(horizon)은 오늘부터 며칠 뒤까지 쓸 수 있는지(일)이고 used·remaining·period는 null입니다.",
                   "maximum": 9007199254740991,
                   "minimum": 0,
                   "nullable": true,
@@ -8435,6 +8577,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                     "CUSTOM_REMINDER_TIME",
                     "APP_ICON",
                     "VOICE_NOTE",
+                    "CALENDAR_IMPORT",
                   ],
                   "type": "string",
                 },
@@ -8443,7 +8586,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                   "type": "boolean",
                 },
                 "limit": {
-                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다.",
+                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다. 기간 기능(horizon)은 오늘부터 며칠 뒤까지 쓸 수 있는지(일)이고 used·remaining·period는 null입니다.",
                   "maximum": 9007199254740991,
                   "minimum": 0,
                   "nullable": true,
@@ -8553,6 +8696,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                     "CUSTOM_REMINDER_TIME",
                     "APP_ICON",
                     "VOICE_NOTE",
+                    "CALENDAR_IMPORT",
                   ],
                   "type": "string",
                 },
@@ -8561,7 +8705,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                   "type": "boolean",
                 },
                 "limit": {
-                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다.",
+                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다. 기간 기능(horizon)은 오늘부터 며칠 뒤까지 쓸 수 있는지(일)이고 used·remaining·period는 null입니다.",
                   "maximum": 9007199254740991,
                   "minimum": 0,
                   "nullable": true,
@@ -8671,6 +8815,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                     "CUSTOM_REMINDER_TIME",
                     "APP_ICON",
                     "VOICE_NOTE",
+                    "CALENDAR_IMPORT",
                   ],
                   "type": "string",
                 },
@@ -8679,7 +8824,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                   "type": "boolean",
                 },
                 "limit": {
-                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다.",
+                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다. 기간 기능(horizon)은 오늘부터 며칠 뒤까지 쓸 수 있는지(일)이고 used·remaining·period는 null입니다.",
                   "maximum": 9007199254740991,
                   "minimum": 0,
                   "nullable": true,
@@ -8789,6 +8934,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                     "CUSTOM_REMINDER_TIME",
                     "APP_ICON",
                     "VOICE_NOTE",
+                    "CALENDAR_IMPORT",
                   ],
                   "type": "string",
                 },
@@ -8797,7 +8943,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                   "type": "boolean",
                 },
                 "limit": {
-                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다.",
+                  "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다. 기간 기능(horizon)은 오늘부터 며칠 뒤까지 쓸 수 있는지(일)이고 used·remaining·period는 null입니다.",
                   "maximum": 9007199254740991,
                   "minimum": 0,
                   "nullable": true,
@@ -8885,6 +9031,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
             "CUSTOM_REMINDER_TIME",
             "APP_ICON",
             "VOICE_NOTE",
+            "CALENDAR_IMPORT",
           ],
           "type": "object",
         },
@@ -8908,6 +9055,9 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
             "APP_ICON": {
               "$ref": "#/components/schemas/PlanComparisonDto",
             },
+            "CALENDAR_IMPORT": {
+              "$ref": "#/components/schemas/PlanComparisonDto",
+            },
             "CHEER": {
               "$ref": "#/components/schemas/PlanComparisonDto",
             },
@@ -8938,6 +9088,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
             "CUSTOM_REMINDER_TIME",
             "APP_ICON",
             "VOICE_NOTE",
+            "CALENDAR_IMPORT",
           ],
           "type": "object",
         },
@@ -12832,6 +12983,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 "CUSTOM_REMINDER_TIME",
                 "APP_ICON",
                 "VOICE_NOTE",
+                "CALENDAR_IMPORT",
               ],
               "type": "string",
             },
@@ -12840,7 +12992,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               "type": "boolean",
             },
             "limit": {
-              "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다.",
+              "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다. 기간 기능(horizon)은 오늘부터 며칠 뒤까지 쓸 수 있는지(일)이고 used·remaining·period는 null입니다.",
               "maximum": 9007199254740991,
               "minimum": 0,
               "nullable": true,
@@ -13413,6 +13565,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 "CUSTOM_REMINDER_TIME",
                 "APP_ICON",
                 "VOICE_NOTE",
+                "CALENDAR_IMPORT",
               ],
               "type": "string",
             },
@@ -13421,7 +13574,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               "type": "boolean",
             },
             "limit": {
-              "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다.",
+              "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다. 기간 기능(horizon)은 오늘부터 며칠 뒤까지 쓸 수 있는지(일)이고 used·remaining·period는 null입니다.",
               "maximum": 9007199254740991,
               "minimum": 0,
               "nullable": true,
@@ -13566,7 +13719,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
           "description": "요금제 하나의 기능 값(서버가 집행하는 카탈로그)",
           "properties": {
             "allowed": {
-              "description": "이 요금제에서 쓸 수 있는지. flag 기능은 켜짐, 횟수·개수는 한도가 0보다 큰지",
+              "description": "이 요금제에서 쓸 수 있는지. flag 기능은 켜짐, 횟수·개수·기간은 한도가 0보다 큰지",
               "type": "boolean",
             },
             "isFairUse": {
@@ -13574,7 +13727,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               "type": "boolean",
             },
             "limit": {
-              "description": "이 요금제의 집행 한도. featureQuota.limit과 같은 뜻이고 받은 자리는 더하지 않는다",
+              "description": "이 요금제의 집행 한도. featureQuota.limit과 같은 뜻이고(기간 기능은 며칠 뒤까지인지) 받은 자리는 더하지 않는다",
               "maximum": 9007199254740991,
               "minimum": 0,
               "nullable": true,
@@ -13618,7 +13771,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
           "description": "요금제 하나의 기능 값(서버가 집행하는 카탈로그)",
           "properties": {
             "allowed": {
-              "description": "이 요금제에서 쓸 수 있는지. flag 기능은 켜짐, 횟수·개수는 한도가 0보다 큰지",
+              "description": "이 요금제에서 쓸 수 있는지. flag 기능은 켜짐, 횟수·개수·기간은 한도가 0보다 큰지",
               "type": "boolean",
             },
             "isFairUse": {
@@ -13626,7 +13779,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               "type": "boolean",
             },
             "limit": {
-              "description": "이 요금제의 집행 한도. featureQuota.limit과 같은 뜻이고 받은 자리는 더하지 않는다",
+              "description": "이 요금제의 집행 한도. featureQuota.limit과 같은 뜻이고(기간 기능은 며칠 뒤까지인지) 받은 자리는 더하지 않는다",
               "maximum": 9007199254740991,
               "minimum": 0,
               "nullable": true,
@@ -13998,6 +14151,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 "CUSTOM_REMINDER_TIME",
                 "APP_ICON",
                 "VOICE_NOTE",
+                "CALENDAR_IMPORT",
               ],
               "type": "string",
             },
@@ -14006,7 +14160,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               "type": "boolean",
             },
             "limit": {
-              "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다.",
+              "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다. 기간 기능(horizon)은 오늘부터 며칠 뒤까지 쓸 수 있는지(일)이고 used·remaining·period는 null입니다.",
               "maximum": 9007199254740991,
               "minimum": 0,
               "nullable": true,
@@ -14526,6 +14680,91 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
         "plan",
         "featureQuota",
         "charged",
+      ],
+      "type": "object",
+    },
+    "ReceiveTodoImportItemsDto": {
+      "properties": {
+        "items": {
+          "description": "한 번에 보낼 일정 (최대 100개). 이미 받은 key는 무시한다",
+          "items": {
+            "properties": {
+              "collectionKey": {
+                "description": "속한 캘린더 키",
+                "format": "sha256_hex",
+                "pattern": "^[0-9a-fA-F]{64}$",
+                "type": "string",
+              },
+              "endDate": {
+                "description": "여러 날 종일 일정의 마지막 날. 아니면 null",
+                "format": "date",
+                "nullable": true,
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                "type": "string",
+              },
+              "localTime": {
+                "description": "시작 시각 (HH:mm). DATE_ONLY이거나 종일이면 null",
+                "nullable": true,
+                "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)$",
+                "type": "string",
+              },
+              "sourceKey": {
+                "description": "일정 회차 키 (sha256 hex)",
+                "format": "sha256_hex",
+                "pattern": "^[0-9a-fA-F]{64}$",
+                "type": "string",
+              },
+              "startDate": {
+                "description": "시작 날짜 (사용자 시간대)",
+                "format": "date",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                "type": "string",
+              },
+              "title": {
+                "description": "할 일 제목 (최대 200자)",
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string",
+              },
+            },
+            "required": [
+              "sourceKey",
+              "collectionKey",
+              "title",
+              "startDate",
+              "endDate",
+              "localTime",
+            ],
+            "type": "object",
+          },
+          "maxItems": 100,
+          "minItems": 1,
+          "type": "array",
+        },
+      },
+      "required": [
+        "items",
+      ],
+      "type": "object",
+    },
+    "ReceiveTodoImportItemsResponseDto": {
+      "properties": {
+        "acceptedCount": {
+          "description": "이번 요청에서 새로 받은 수",
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer",
+        },
+        "receivedItemCount": {
+          "description": "지금까지 받은 수",
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer",
+        },
+      },
+      "required": [
+        "acceptedCount",
+        "receivedItemCount",
       ],
       "type": "object",
     },
@@ -17958,6 +18197,161 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
       ],
       "type": "object",
     },
+    "StartTodoImportDto": {
+      "properties": {
+        "collections": {
+          "items": {
+            "properties": {
+              "collectionKey": {
+                "description": "캘린더 키 (sha256 hex)",
+                "format": "sha256_hex",
+                "pattern": "^[0-9a-fA-F]{64}$",
+                "type": "string",
+              },
+              "expectedItemCount": {
+                "description": "기기가 센 이 캘린더의 일정 수. 가져오기 한 번의 일정 수 한도를 미리 본다",
+                "maximum": 3000,
+                "minimum": 0,
+                "type": "integer",
+              },
+              "targetKey": {
+                "description": "요청 안에서 대상 카테고리를 가리키는 값 (앱이 정한다)",
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string",
+              },
+            },
+            "required": [
+              "collectionKey",
+              "targetKey",
+              "expectedItemCount",
+            ],
+            "type": "object",
+          },
+          "maxItems": 20,
+          "minItems": 1,
+          "type": "array",
+        },
+        "endDate": {
+          "description": "가져올 기간의 마지막 날 (포함)",
+          "format": "date",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+          "type": "string",
+        },
+        "source": {
+          "description": "일정 출처",
+          "enum": [
+            "DEVICE_CALENDAR",
+          ],
+          "type": "string",
+        },
+        "startDate": {
+          "description": "가져올 기간의 첫날 (사용자 시간대 YYYY-MM-DD)",
+          "format": "date",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+          "type": "string",
+        },
+        "targets": {
+          "items": {
+            "description": "가져온 할 일을 넣을 카테고리 (새로 만들기 또는 기존)",
+            "oneOf": [
+              {
+                "properties": {
+                  "color": {
+                    "description": "카테고리 색상 (HEX 7자, 예: #FF5733)",
+                    "pattern": "^#[0-9A-Fa-f]{6}$",
+                    "type": "string",
+                  },
+                  "kind": {
+                    "enum": [
+                      "NEW_CATEGORY",
+                    ],
+                    "type": "string",
+                  },
+                  "name": {
+                    "description": "카테고리 이름 (1-50자, 예: 중요한 일)",
+                    "maxLength": 50,
+                    "minLength": 1,
+                    "type": "string",
+                  },
+                  "targetKey": {
+                    "description": "요청 안에서 대상 카테고리를 가리키는 값 (앱이 정한다)",
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "targetKey",
+                  "kind",
+                  "name",
+                  "color",
+                ],
+                "type": "object",
+              },
+              {
+                "properties": {
+                  "categoryId": {
+                    "description": "내 카테고리 id",
+                    "exclusiveMinimum": true,
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer",
+                  },
+                  "kind": {
+                    "enum": [
+                      "EXISTING_CATEGORY",
+                    ],
+                    "type": "string",
+                  },
+                  "targetKey": {
+                    "description": "요청 안에서 대상 카테고리를 가리키는 값 (앱이 정한다)",
+                    "maxLength": 64,
+                    "minLength": 1,
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "targetKey",
+                  "kind",
+                  "categoryId",
+                ],
+                "type": "object",
+              },
+            ],
+          },
+          "maxItems": 20,
+          "minItems": 1,
+          "type": "array",
+        },
+        "timeMode": {
+          "description": "TIME은 시각·알림까지, DATE_ONLY는 날짜만 가져온다",
+          "enum": [
+            "TIME",
+            "DATE_ONLY",
+          ],
+          "type": "string",
+        },
+        "visibility": {
+          "default": "PRIVATE",
+          "description": "가져온 할 일의 공개 범위 (기본 PRIVATE)",
+          "enum": [
+            "PUBLIC",
+            "PRIVATE",
+          ],
+          "type": "string",
+        },
+      },
+      "required": [
+        "source",
+        "startDate",
+        "endDate",
+        "timeMode",
+        "targets",
+        "collections",
+      ],
+      "type": "object",
+    },
     "SuggestionActionDto": {
       "properties": {
         "action": {
@@ -21330,6 +21724,247 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
         "owner",
         "permissions",
         "metrics",
+      ],
+      "type": "object",
+    },
+    "TodoImportDto": {
+      "description": "캘린더 가져오기 한 건",
+      "properties": {
+        "collections": {
+          "description": "캘린더마다 넣은 카테고리",
+          "items": {
+            "properties": {
+              "categoryId": {
+                "description": "넣은 카테고리 id. 새 카테고리는 확정 전까지 null",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991,
+                "nullable": true,
+                "type": "integer",
+              },
+              "collectionKey": {
+                "description": "기기가 만든 sha256 hex 키 (64자)",
+                "format": "sha256_hex",
+                "pattern": "^[0-9a-fA-F]{64}$",
+                "type": "string",
+              },
+            },
+            "required": [
+              "collectionKey",
+              "categoryId",
+            ],
+            "type": "object",
+          },
+          "type": "array",
+        },
+        "completedAt": {
+          "format": "date-time",
+          "nullable": true,
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+          "type": "string",
+        },
+        "counts": {
+          "description": "결과 수",
+          "properties": {
+            "created": {
+              "description": "만든 할 일 수",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "keptCompleted": {
+              "description": "되돌릴 때 완료돼 있어 남긴 수",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "skippedCapacity": {
+              "description": "카테고리 자리가 없어 건너뛴 수",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "skippedCategoryMissing": {
+              "description": "카테고리가 사라져 건너뛴 수",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "skippedDuplicate": {
+              "description": "이미 가져온 일정이라 건너뛴 수",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "skippedInvalid": {
+              "description": "날짜·제목이 올바르지 않아 건너뛴 수",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+            "undone": {
+              "description": "되돌리기로 지운 수",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
+          },
+          "required": [
+            "created",
+            "skippedDuplicate",
+            "skippedCapacity",
+            "skippedCategoryMissing",
+            "skippedInvalid",
+            "undone",
+            "keptCompleted",
+          ],
+          "type": "object",
+        },
+        "createdAt": {
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+          "type": "string",
+        },
+        "endDate": {
+          "format": "date",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+          "type": "string",
+        },
+        "expectedItemCount": {
+          "description": "시작할 때 기기가 센 일정 수",
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer",
+        },
+        "failureReason": {
+          "default": null,
+          "description": "FAILED가 된 이유. FAILED가 아니면 null, 앱이 모르는 새 이유도 null로 읽는다",
+          "enum": [
+            "MATERIALIZATION_FAILED",
+            "STALLED",
+            "UNDO_FAILED",
+            null,
+          ],
+          "nullable": true,
+          "type": "string",
+        },
+        "firstDate": {
+          "description": "만든 할 일 중 가장 이른 날짜",
+          "format": "date",
+          "nullable": true,
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+          "type": "string",
+        },
+        "id": {
+          "description": "가져오기 id",
+          "pattern": "^c[0-9a-z]{8,63}$",
+          "type": "string",
+        },
+        "processedItemCount": {
+          "description": "할 일 만들기를 마친 일정 수",
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer",
+        },
+        "receivedItemCount": {
+          "description": "서버가 받은 일정 수 (같은 key는 한 번)",
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer",
+        },
+        "source": {
+          "anyOf": [
+            {
+              "enum": [
+                "DEVICE_CALENDAR",
+              ],
+              "type": "string",
+            },
+            {
+              "enum": [
+                "UNKNOWN",
+              ],
+              "type": "string",
+            },
+          ],
+          "default": "UNKNOWN",
+          "description": "일정 출처. 앱이 모르는 새 출처는 UNKNOWN으로 읽는다",
+        },
+        "startDate": {
+          "format": "date",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+          "type": "string",
+        },
+        "status": {
+          "description": "UPLOADING 업로드 중 → QUEUED 순서 대기 → RUNNING 만드는 중 → COMPLETED/FAILED. CANCELED·ABANDONED는 확정 전에 멈춤, UNDOING → UNDONE은 되돌리기",
+          "enum": [
+            "UPLOADING",
+            "QUEUED",
+            "RUNNING",
+            "COMPLETED",
+            "FAILED",
+            "CANCELED",
+            "ABANDONED",
+            "UNDOING",
+            "UNDONE",
+          ],
+          "type": "string",
+        },
+        "timeMode": {
+          "enum": [
+            "TIME",
+            "DATE_ONLY",
+          ],
+          "type": "string",
+        },
+        "timezone": {
+          "description": "날짜·시각을 해석한 IANA 시간대. 시작할 때 정해지고 이어 보내기·할 일 만들기가 모두 이 값을 쓴다",
+          "type": "string",
+        },
+        "undoableUntil": {
+          "description": "되돌릴 수 있는 마지막 시각. 되돌릴 수 없으면 null",
+          "format": "date-time",
+          "nullable": true,
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+          "type": "string",
+        },
+        "visibility": {
+          "enum": [
+            "PUBLIC",
+            "PRIVATE",
+          ],
+          "type": "string",
+        },
+      },
+      "required": [
+        "id",
+        "source",
+        "status",
+        "startDate",
+        "endDate",
+        "failureReason",
+        "timezone",
+        "timeMode",
+        "visibility",
+        "expectedItemCount",
+        "receivedItemCount",
+        "processedItemCount",
+        "counts",
+        "collections",
+        "firstDate",
+        "undoableUntil",
+        "createdAt",
+        "completedAt",
+      ],
+      "type": "object",
+    },
+    "TodoImportResponseDto": {
+      "properties": {
+        "todoImport": {
+          "$ref": "#/components/schemas/TodoImportDto",
+        },
+      },
+      "required": [
+        "todoImport",
       ],
       "type": "object",
     },
@@ -24879,6 +25514,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 "CUSTOM_REMINDER_TIME",
                 "APP_ICON",
                 "VOICE_NOTE",
+                "CALENDAR_IMPORT",
               ],
               "type": "string",
             },
@@ -24887,7 +25523,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               "type": "boolean",
             },
             "limit": {
-              "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다.",
+              "description": "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다. 기간 기능(horizon)은 오늘부터 며칠 뒤까지 쓸 수 있는지(일)이고 used·remaining·period는 null입니다.",
               "maximum": 9007199254740991,
               "minimum": 0,
               "nullable": true,
@@ -42002,9 +42638,10 @@ ADMIN 주체도 프리미엄 열의 값을 받습니다.
 | \`CUSTOM_REMINDER_TIME\` | flag | - | 사용 |
 | \`APP_ICON\` | flag | - | 사용 |
 | \`VOICE_NOTE\` | quota | 월 3회 | 넉넉하게(월 100회까지) |
+| \`CALENDAR_IMPORT\` | horizon | 30일 | 365일 |
 
 ## 📊 featureQuota
-- \`limit\`: 서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고 \`isFairUse=true\`입니다(앱은 "넉넉하게(월 N회까지)"로 보여 줍니다). \`null\`은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다.
+- \`limit\`: 서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고 \`isFairUse=true\`입니다(앱은 "넉넉하게(월 N회까지)"로 보여 줍니다). \`null\`은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다. 기간 기능(horizon, CALENDAR_IMPORT)은 오늘부터 며칠 뒤까지 쓸 수 있는지(일)이고 \`used\`·\`remaining\`·\`period\`·\`resetsAt\`은 null입니다.
 - \`used\`·\`remaining\`: 횟수 기능은 이번 창에서 쓴 횟수와 남은 횟수입니다. 개수 기능(FRIEND·TODO_CATEGORY)은 지금 가진 개수와 남은 자리이고, 친구 맺기·카테고리 만들기가 막는 값과 같습니다(친구는 초대 보상 자리 포함). 무제한 개수 기능과 flag는 null입니다. \`remaining=0\`이면 앱은 입력을 받기 전에 막습니다.
 - \`resetsAt\`: 횟수 기능만 있습니다(resource·flag는 null). 월간(AI_PARSE·VOICE_NOTE)은 KST 매월 1일 00:00, 일간(CHEER·NUDGE)은 \`X-Timezone\` 자정에 0으로 돌아갑니다.
 - \`perUse\`: 한 번 쓸 때의 길이 상한(말로 메모하기, VOICE_NOTE)입니다.
@@ -56721,6 +57358,2028 @@ TODO_CATEGORY_0855: 카테고리에 할 일이 있습니다. 다른 카테고리
       "summary": "카테고리 순서 변경",
       "tags": [
         "Todo Categories",
+      ],
+    },
+  },
+  "/v1/todo-imports": {
+    "post": {
+      "description": "가져올 기간·대상 카테고리·캘린더를 정하고 업로드를 엽니다. 날짜·시각은 \`X-Timezone\`(없으면 저장된 시간대, 그것도 없으면 Asia/Seoul) 하나로 해석하고 응답 \`todoImport.timezone\`으로 돌려줍니다. 이어 보내기와 할 일 만들기는 모두 이 시간대를 씁니다.
+
+## 🚫 기간
+오늘부터 요금제 일 수까지입니다(\`GET /v1/entitlements\`의 \`CALENDAR_IMPORT.limit\`). 넘으면 TODO_IMPORT_2302(\`featureQuota\`)입니다.
+
+## 🔁 재시도
+같은 \`Idempotency-Key\`로 같은 본문을 다시 보내면 처음 가져오기를 돌려주고, 본문이 다르면 TODO_IMPORT_2307입니다. 키가 없으면 AI_1316입니다.
+
+## ⏱ 요청 한도
+분당 10회, 하루 30회.",
+      "operationId": "startTodoImport",
+      "parameters": [
+        {
+          "description": "사용자 행동 한 번마다 새로 만드는 키(128자 이하 인쇄 가능한 ASCII). 재시도할 때 같은 키를 다시 보냅니다.",
+          "in": "header",
+          "name": "Idempotency-Key",
+          "required": true,
+          "schema": {
+            "type": "string",
+          },
+        },
+      ],
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/StartTodoImportDto",
+            },
+          },
+        },
+        "required": true,
+      },
+      "responses": {
+        "201": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/TodoImportResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "리소스가 성공적으로 생성되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "AI_1316": {
+                  "summary": "Idempotency-Key 헤더가 필요합니다.",
+                  "value": {
+                    "error": {
+                      "code": "AI_1316",
+                      "details": null,
+                      "message": "Idempotency-Key 헤더가 필요합니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "SYS_0002": {
+                  "summary": "잘못된 파라미터입니다.",
+                  "value": {
+                    "error": {
+                      "code": "SYS_0002",
+                      "details": null,
+                      "message": "잘못된 파라미터입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "TODO_IMPORT_2306": {
+                  "summary": "가져올 기간이나 일정이 올바르지 않습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_IMPORT_2306",
+                      "details": null,
+                      "message": "가져올 기간이나 일정이 올바르지 않습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "enum": [
+                          "AI_1316",
+                          "SYS_0002",
+                          "TODO_IMPORT_2306",
+                        ],
+                        "example": "AI_1316",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "Idempotency-Key 헤더가 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "AI_1316: Idempotency-Key 헤더가 필요합니다.
+
+SYS_0002: 잘못된 파라미터입니다.
+
+TODO_IMPORT_2306: 가져올 기간이나 일정이 올바르지 않습니다.",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
+        },
+        "403": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "TODO_CATEGORY_0857": {
+                  "summary": "카테고리 개수가 최대 한도에 도달했습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_CATEGORY_0857",
+                      "details": null,
+                      "message": "카테고리 개수가 최대 한도에 도달했습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "TODO_IMPORT_2302": {
+                  "summary": "이 기간은 지금 요금제로 가져올 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_IMPORT_2302",
+                      "details": null,
+                      "message": "이 기간은 지금 요금제로 가져올 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "enum": [
+                          "TODO_CATEGORY_0857",
+                          "TODO_IMPORT_2302",
+                        ],
+                        "example": "TODO_CATEGORY_0857",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "카테고리 개수가 최대 한도에 도달했습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "TODO_CATEGORY_0857: 카테고리 개수가 최대 한도에 도달했습니다.
+
+TODO_IMPORT_2302: 이 기간은 지금 요금제로 가져올 수 없습니다.",
+        },
+        "409": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "TODO_IMPORT_2301": {
+                  "summary": "이미 진행 중인 캘린더 가져오기가 있습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_IMPORT_2301",
+                      "details": null,
+                      "message": "이미 진행 중인 캘린더 가져오기가 있습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "TODO_IMPORT_2303": {
+                  "summary": "가져올 카테고리를 쓸 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_IMPORT_2303",
+                      "details": null,
+                      "message": "가져올 카테고리를 쓸 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "enum": [
+                          "TODO_IMPORT_2301",
+                          "TODO_IMPORT_2303",
+                        ],
+                        "example": "TODO_IMPORT_2301",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "이미 진행 중인 캘린더 가져오기가 있습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "TODO_IMPORT_2301: 이미 진행 중인 캘린더 가져오기가 있습니다.
+
+TODO_IMPORT_2303: 가져올 카테고리를 쓸 수 없습니다.",
+        },
+        "422": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "TODO_IMPORT_2307",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "같은 Idempotency-Key로 다른 가져오기를 보냈습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "같은 Idempotency-Key로 다른 가져오기를 보냈습니다.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "캘린더 가져오기 시작",
+      "tags": [
+        "Todo Imports",
+      ],
+    },
+  },
+  "/v1/todo-imports/active": {
+    "get": {
+      "description": "업로드·대기·만들기·되돌리기 중인 가져오기입니다. 없으면 \`todoImport\`가 null입니다.",
+      "operationId": "getActiveTodoImport",
+      "parameters": [],
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/ActiveTodoImportResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "잘못된 요청입니다",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "진행 중 가져오기",
+      "tags": [
+        "Todo Imports",
+      ],
+    },
+  },
+  "/v1/todo-imports/{importId}": {
+    "delete": {
+      "description": "확정 전(업로드 중)에만 취소하고 올린 일정을 지웁니다.",
+      "operationId": "cancelTodoImport",
+      "parameters": [
+        {
+          "description": "가져오기 id",
+          "in": "path",
+          "name": "importId",
+          "required": true,
+          "schema": {
+            "description": "가져오기 id",
+            "pattern": "^c[0-9a-z]{8,63}$",
+            "type": "string",
+          },
+        },
+      ],
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/TodoImportResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "잘못된 파라미터입니다.",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
+        },
+        "404": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "TODO_IMPORT_2304",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "캘린더 가져오기를 찾을 수 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "캘린더 가져오기를 찾을 수 없습니다.",
+        },
+        "409": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "TODO_IMPORT_2305",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "지금 상태에서는 할 수 없는 요청입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "지금 상태에서는 할 수 없는 요청입니다.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "가져오기 취소",
+      "tags": [
+        "Todo Imports",
+      ],
+    },
+    "get": {
+      "description": "상태·센 수와 서버가 정한 되돌리기 마감(\`undoableUntil\`)을 돌려줍니다.",
+      "operationId": "getTodoImport",
+      "parameters": [
+        {
+          "description": "가져오기 id",
+          "in": "path",
+          "name": "importId",
+          "required": true,
+          "schema": {
+            "description": "가져오기 id",
+            "pattern": "^c[0-9a-z]{8,63}$",
+            "type": "string",
+          },
+        },
+      ],
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/TodoImportResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "잘못된 파라미터입니다.",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
+        },
+        "404": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "TODO_IMPORT_2304",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "캘린더 가져오기를 찾을 수 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "캘린더 가져오기를 찾을 수 없습니다.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "가져오기 진행·결과",
+      "tags": [
+        "Todo Imports",
+      ],
+    },
+  },
+  "/v1/todo-imports/{importId}/commit": {
+    "post": {
+      "description": "업로드를 끝내고 서버 작업이 할 일을 만들기 시작합니다. 새 카테고리를 이때 만듭니다. 이미 확정했으면 지금 상태를 돌려줍니다.",
+      "operationId": "commitTodoImport",
+      "parameters": [
+        {
+          "description": "가져오기 id",
+          "in": "path",
+          "name": "importId",
+          "required": true,
+          "schema": {
+            "description": "가져오기 id",
+            "pattern": "^c[0-9a-z]{8,63}$",
+            "type": "string",
+          },
+        },
+      ],
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/TodoImportResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "잘못된 파라미터입니다.",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
+        },
+        "403": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "TODO_CATEGORY_0857": {
+                  "summary": "카테고리 개수가 최대 한도에 도달했습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_CATEGORY_0857",
+                      "details": null,
+                      "message": "카테고리 개수가 최대 한도에 도달했습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "TODO_IMPORT_2302": {
+                  "summary": "이 기간은 지금 요금제로 가져올 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_IMPORT_2302",
+                      "details": null,
+                      "message": "이 기간은 지금 요금제로 가져올 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "enum": [
+                          "TODO_CATEGORY_0857",
+                          "TODO_IMPORT_2302",
+                        ],
+                        "example": "TODO_CATEGORY_0857",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "카테고리 개수가 최대 한도에 도달했습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "TODO_CATEGORY_0857: 카테고리 개수가 최대 한도에 도달했습니다.
+
+TODO_IMPORT_2302: 이 기간은 지금 요금제로 가져올 수 없습니다.",
+        },
+        "404": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "TODO_IMPORT_2304",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "캘린더 가져오기를 찾을 수 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "캘린더 가져오기를 찾을 수 없습니다.",
+        },
+        "409": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "TODO_IMPORT_2303": {
+                  "summary": "가져올 카테고리를 쓸 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_IMPORT_2303",
+                      "details": null,
+                      "message": "가져올 카테고리를 쓸 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "TODO_IMPORT_2305": {
+                  "summary": "지금 상태에서는 할 수 없는 요청입니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_IMPORT_2305",
+                      "details": null,
+                      "message": "지금 상태에서는 할 수 없는 요청입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "enum": [
+                          "TODO_IMPORT_2303",
+                          "TODO_IMPORT_2305",
+                        ],
+                        "example": "TODO_IMPORT_2303",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "가져올 카테고리를 쓸 수 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "TODO_IMPORT_2303: 가져올 카테고리를 쓸 수 없습니다.
+
+TODO_IMPORT_2305: 지금 상태에서는 할 수 없는 요청입니다.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "가져오기 확정",
+      "tags": [
+        "Todo Imports",
+      ],
+    },
+  },
+  "/v1/todo-imports/{importId}/items": {
+    "post": {
+      "description": "일정을 100개까지 한 묶음으로 올립니다. 이미 받은 \`sourceKey\`는 무시하므로 끊긴 업로드를 처음부터 다시 보내도 됩니다. 가져오기 하나에 3000개를 넘으면 TODO_IMPORT_2309입니다. 분당 120회.",
+      "operationId": "receiveTodoImportItems",
+      "parameters": [
+        {
+          "description": "가져오기 id",
+          "in": "path",
+          "name": "importId",
+          "required": true,
+          "schema": {
+            "description": "가져오기 id",
+            "pattern": "^c[0-9a-z]{8,63}$",
+            "type": "string",
+          },
+        },
+      ],
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ReceiveTodoImportItemsDto",
+            },
+          },
+        },
+        "required": true,
+      },
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/ReceiveTodoImportItemsResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "SYS_0002": {
+                  "summary": "잘못된 파라미터입니다.",
+                  "value": {
+                    "error": {
+                      "code": "SYS_0002",
+                      "details": null,
+                      "message": "잘못된 파라미터입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "TODO_IMPORT_2306": {
+                  "summary": "가져올 기간이나 일정이 올바르지 않습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_IMPORT_2306",
+                      "details": null,
+                      "message": "가져올 기간이나 일정이 올바르지 않습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "enum": [
+                          "SYS_0002",
+                          "TODO_IMPORT_2306",
+                        ],
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "SYS_0002: 잘못된 파라미터입니다.
+
+TODO_IMPORT_2306: 가져올 기간이나 일정이 올바르지 않습니다.",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
+        },
+        "404": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "TODO_IMPORT_2304",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "캘린더 가져오기를 찾을 수 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "캘린더 가져오기를 찾을 수 없습니다.",
+        },
+        "409": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "TODO_IMPORT_2305",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "지금 상태에서는 할 수 없는 요청입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "지금 상태에서는 할 수 없는 요청입니다.",
+        },
+        "422": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "TODO_IMPORT_2309",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "가져올 수 있는 일정 수를 넘었습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "가져올 수 있는 일정 수를 넘었습니다.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "가져올 일정 올리기",
+      "tags": [
+        "Todo Imports",
+      ],
+    },
+  },
+  "/v1/todo-imports/{importId}/undo": {
+    "post": {
+      "description": "끝난 뒤 7일 안에 가져온 할 일 중 완료하지 않은 것을 서버 작업이 지웁니다. 만들다 멈춘(FAILED) 가져오기도 만든 할 일이 남았으면 됩니다. 받을 수 있으면 \`todoImport.undoableUntil\`에 값이 있습니다. 완료한 할 일과 새로 만든 카테고리는 남깁니다. 다른 가져오기가 진행 중이면 TODO_IMPORT_2301(\`importId\`)입니다. 분당 10회, 하루 20회.",
+      "operationId": "undoTodoImport",
+      "parameters": [
+        {
+          "description": "가져오기 id",
+          "in": "path",
+          "name": "importId",
+          "required": true,
+          "schema": {
+            "description": "가져오기 id",
+            "pattern": "^c[0-9a-z]{8,63}$",
+            "type": "string",
+          },
+        },
+      ],
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/TodoImportResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "잘못된 파라미터입니다.",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
+        },
+        "404": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "TODO_IMPORT_2304",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "캘린더 가져오기를 찾을 수 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "캘린더 가져오기를 찾을 수 없습니다.",
+        },
+        "409": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "TODO_IMPORT_2301": {
+                  "summary": "이미 진행 중인 캘린더 가져오기가 있습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_IMPORT_2301",
+                      "details": null,
+                      "message": "이미 진행 중인 캘린더 가져오기가 있습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "TODO_IMPORT_2305": {
+                  "summary": "지금 상태에서는 할 수 없는 요청입니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_IMPORT_2305",
+                      "details": null,
+                      "message": "지금 상태에서는 할 수 없는 요청입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "TODO_IMPORT_2308": {
+                  "summary": "되돌릴 수 있는 기간이 지났습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_IMPORT_2308",
+                      "details": null,
+                      "message": "되돌릴 수 있는 기간이 지났습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "enum": [
+                          "TODO_IMPORT_2301",
+                          "TODO_IMPORT_2305",
+                          "TODO_IMPORT_2308",
+                        ],
+                        "example": "TODO_IMPORT_2301",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "이미 진행 중인 캘린더 가져오기가 있습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "TODO_IMPORT_2301: 이미 진행 중인 캘린더 가져오기가 있습니다.
+
+TODO_IMPORT_2305: 지금 상태에서는 할 수 없는 요청입니다.
+
+TODO_IMPORT_2308: 되돌릴 수 있는 기간이 지났습니다.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "가져오기 되돌리기",
+      "tags": [
+        "Todo Imports",
       ],
     },
   },

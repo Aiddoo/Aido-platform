@@ -2,7 +2,7 @@
 
 할 일·카테고리·반복 할 일 기능을 설계·리뷰할 때 읽는다. 쓰는 법은 [용어집](../glossary.md)이다.
 
-사용자가 날짜마다 할 일과 그 묶음·반복을 소유한다. slice마다 Aggregate가 하나다: `todos`(`Todo`), `todo-categories`(`TodoCategory`), `todo-series`(`TodoSeries`). `planning/shared/domain`에는 두 slice 이상이 쓰는 VO·도메인 서비스(제목·달력·정렬 간격)만 둔다. `todo-series`는 회차 행을 `todos`의 `TodoOccurrenceWriterPort`로만 쓰고, 두 slice가 함께 쓰는 할 일 포트 바인딩은 `PlanningTodoPortsModule`이다. todos는 반복을 `planning-todo-series.public.ts`로 쓰고 todo-series는 할 일 포트 파일을 바로 import한다(할 일 public은 반복 Module을 import하는 기능 Module을 열어 되돌아 쓰면 파일 순환이 된다). 다른 Context는 `planning-todos-queries.public.ts`(import 없는 조회 Module)와 `planning-todos.public.ts`(기능 Module)를 쓴다. 규칙 상세는 [카테고리 삭제](../todo-categories.md)·[반복](../todo-series.md)·[휴면·복귀](../todo-series-dormancy.md)·[떠 있는 시각](../todo-floating-time.md)이다.
+사용자가 날짜마다 할 일과 그 묶음·반복을 소유한다. slice마다 Aggregate가 하나다: `todos`(`Todo`), `todo-categories`(`TodoCategory`), `todo-series`(`TodoSeries`), `todo-imports`(`TodoImport`). `planning/shared/domain`에는 두 slice 이상이 쓰는 VO·도메인 서비스(제목·달력·정렬 간격)만 둔다. `todo-series`는 회차 행을 `todos`의 `TodoOccurrenceWriterPort`로만 쓰고, 두 slice가 함께 쓰는 할 일 포트 바인딩은 `PlanningTodoPortsModule`이다. todos는 반복을 `planning-todo-series.public.ts`로 쓰고 todo-series는 할 일 포트 파일을 바로 import한다(할 일 public은 반복 Module을 import하는 기능 Module을 열어 되돌아 쓰면 파일 순환이 된다). 다른 Context는 `planning-todos-queries.public.ts`(import 없는 조회 Module)와 `planning-todos.public.ts`(기능 Module)를 쓴다. 규칙 상세는 [카테고리 삭제](../todo-categories.md)·[반복](../todo-series.md)·[휴면·복귀](../todo-series-dormancy.md)·[떠 있는 시각](../todo-floating-time.md)이다.
 
 | 용어      | 코드                                                                   | 뜻                                                                                                                        |
 | --------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
@@ -100,6 +100,30 @@
 | 있음 | `updateDetails({ name, color }, now)`     | 새 이름·색 | 같은 값이면 `false`, 이름 겹침 `TODO_CATEGORY_0853`                                                                            |
 | 있음 | 순서 바꾸기(`ReorderTodoCategoryUseCase`) | 새 순서    | 기준이 자기 자신이면 그대로                                                                                                    |
 | 있음 | 지우기(`DeleteTodoCategoryUseCase`)       | 없음       | 마지막 하나 `TODO_CATEGORY_0854` → 할 일이 있는데 옮길 곳 없음 `TODO_CATEGORY_0855` → 같은 곳·함께 지우기에 옮길 곳 `SYS_0002` |
+
+## todo-imports
+
+| 용어          | 코드                                                          | 뜻                                                                                                                                     |
+| ------------- | ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| 가져오기      | `TodoImport`(Aggregate, slice `todo-imports`), `TodoImportId` | 기기 캘린더 일정을 할 일로 한 번 옮기는 작업 하나. 시간대 하나·대상·캘린더·센 수·round를 가진다([캘린더 가져오기](../todo-imports.md)) |
+| 대상          | `TodoImportTarget`(VO)                                        | 일정을 넣을 카테고리. 새 카테고리는 확정 때 만들어 id를 받는다                                                                         |
+| 캘린더        | `TodoImportCollection`(VO), `collectionKey`                   | 기기가 해시한 캘린더 키와 그 대상·기기가 센 일정 수                                                                                    |
+| 받은 일정     | `TodoImportItem`(VO, 작업 원장), `sourceKey`                  | 할 일로 만들 때까지 임시로 둔 일정. PENDING → CREATED·SKIPPED_*(`TODO_IMPORT_ITEM_STATUSES`)                                           |
+| 링크          | `TodoImportLink`                                              | 만든 할 일과 `sourceKey`. 사용자마다 같은 키는 하나라 다시 가져오면 건너뛰고, 할 일을 지우면 함께 지워진다                             |
+| round         | `round`, `continueInNextRound`, `recordRecovery`              | 작업 차례 번호. 같은 round 작업만 처리해 재시도·재조정·다음 round가 겹쳐도 한 줄로 이어진다                                            |
+| 되돌리기 마감 | `judgeUndoWindow`, `undoableUntil`                            | 끝난 순간(완료, 없으면 실패) + 7일(`TODO_IMPORT_LIMITS.UNDO_WINDOW_DAYS`). 남은 할 일이 없으면 null이고 서버가 계산해 응답에 싣는다    |
+
+| 상태                   | 행동                        | 다음               | 다시·금지                                                                                                                |
+| ---------------------- | --------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| 없음                   | `TodoImport.create`(시작)   | UPLOADING          | 진행 중이 있으면 `TODO_IMPORT_2301`                                                                                      |
+| UPLOADING              | `recordReceived`            | UPLOADING          | 다른 상태면 `TODO_IMPORT_2305`                                                                                           |
+| UPLOADING              | `commit`                    | QUEUED             | 이미 확정했으면 `false`, CANCELED·ABANDONED면 `2305`                                                                     |
+| UPLOADING              | `cancel`·`abandon`          | CANCELED·ABANDONED | 같은 상태면 `false`, 그 밖은 `2305`                                                                                      |
+| QUEUED                 | `start`                     | RUNNING            | 이미 RUNNING이면 `false`                                                                                                 |
+| RUNNING                | `recordBatch`·`complete`    | COMPLETED          | 이미 COMPLETED면 `false`                                                                                                 |
+| QUEUED·RUNNING·UNDOING | `fail`                      | FAILED             | 이미 FAILED면 `false`                                                                                                    |
+| COMPLETED·FAILED       | `requestUndo`               | UNDOING            | UNDOING·UNDONE이면 `false`, 남은 할 일이 없으면 `2305`, 마감이 지났으면 `TODO_IMPORT_2308`, 다른 진행 중이 있으면 `2301` |
+| UNDOING                | `recordUndone`·`finishUndo` | UNDONE             | 이미 UNDONE이면 `false`                                                                                                  |
 
 ## 이벤트
 

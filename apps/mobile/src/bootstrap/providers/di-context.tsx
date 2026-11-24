@@ -1,12 +1,12 @@
 import type { AppStoreListingGateway } from '@src/core/ports/app-store-listing-gateway';
 import type { IdGenerator } from '@src/core/ports/id-generator';
-import type { LocationGateway } from '@src/core/ports/location-gateway';
 import type { NativeApplicationMetadataGateway } from '@src/core/ports/native-application-metadata-gateway';
 import type { NetworkStatusGateway } from '@src/core/ports/network-status-gateway';
 import type { PushNotificationGateway } from '@src/core/ports/push-notification-gateway';
 import type { ScreenOrientationGateway } from '@src/core/ports/screen-orientation-gateway';
 import type { SocialAuthGateway } from '@src/core/ports/social-auth-gateway';
 import type { SpeechRecognizer } from '@src/core/ports/speech-recognizer';
+import type { TodoImportSource } from '@src/core/ports/todo-import-source';
 import type { TokenStore } from '@src/core/ports/token-store';
 import type { ViewCaptureGateway } from '@src/core/ports/view-capture-gateway';
 import type { SessionEpoch } from '@src/core/session/session-epoch';
@@ -46,6 +46,8 @@ import type { PushRegistrationService } from '@src/features/notification/service
 import type { PushNotificationEntryStore } from '@src/features/notification/stores/push-notification-entry.store';
 import type { PushOnboardingGuardStore } from '@src/features/notification/stores/push-onboarding-guard.store';
 import type { TodoCategoryApi } from '@src/features/planning/category/apis/todo-category.api';
+import type { TodoImportApi } from '@src/features/planning/todo-import/apis/todo-import.api';
+import type { TodoImportUploadSession } from '@src/features/planning/todo-import/services/todo-import-upload.session';
 import type { SubTodoApi } from '@src/features/planning/todo/apis/sub-todo.api';
 import type { TodoApi } from '@src/features/planning/todo/apis/todo.api';
 import type { FriendApi } from '@src/features/social/friend/apis/friend.api';
@@ -73,7 +75,7 @@ import type { QueryCacheStorage } from '../query/query-cache-persistence';
  * 순서는 `createAppContainer`의 반환·아래 훅과 같다: 포트, 기능 층 표(1 → 4), 기능마다 빈 줄
  */
 export interface DIContainer extends SharedDependencies {
-  deviceLocation: LocationGateway;
+  todoImportSource: TodoImportSource;
   applicationMetadata: NativeApplicationMetadataGateway;
   socialAuth: SocialAuthGateway;
   appStoreListing: AppStoreListingGateway;
@@ -156,6 +158,10 @@ export interface DIContainer extends SharedDependencies {
   widgetSyncService: WidgetSyncService;
   widgetNavigationRepository: WidgetNavigationRepository;
 
+  todoImportApi: TodoImportApi;
+  /** 화면을 떠나도 업로드를 이어 가도록 컨테이너에 하나다 */
+  todoImportUploadSession: TodoImportUploadSession;
+
   memoApi: MemoApi;
 
   weatherApi: WeatherApi;
@@ -217,8 +223,8 @@ function useDI(): DIContainer {
   return context;
 }
 
-export function useDeviceLocation() {
-  return useDI().deviceLocation;
+export function useTodoImportSource() {
+  return useDI().todoImportSource;
 }
 export function useApplicationMetadata() {
   return useDI().applicationMetadata;
@@ -387,6 +393,13 @@ export function useWidgetSyncService() {
 }
 export function useWidgetNavigationRepository() {
   return useDI().widgetNavigationRepository;
+}
+
+export function useTodoImportApi() {
+  return useDI().todoImportApi;
+}
+export function useTodoImportUploadSession() {
+  return useDI().todoImportUploadSession;
 }
 
 export function useMemoApi() {

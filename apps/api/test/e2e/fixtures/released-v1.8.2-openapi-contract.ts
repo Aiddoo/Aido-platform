@@ -111,8 +111,11 @@ export const RELEASED_V1_8_2_OPENAPI_CONTRACT = {
 	/** 1.16.1: 서버가 늘 보내는 할 일 상세 permissions.canThank, AI 리포트 stats.perfectDays(nullable)·peakHour(nullable)를 응답 계약에서 필수로 둔다. 서버 응답은 그대로이고 출시 앱의 Zod는 strip 모드라 새 키를 버린다. 앱 1.16.1이 이 값을 쓰기 시작해 선택으로 두면 옛 서버 분기가 생긴다. test:contract가 모양을 확인한다. */
 	preServerOwnedRequiredSchemasFingerprint:
 		"003ce5125acb528bdd9570a5f83fee8e10766f3a3b1168ac3d2bc6161bb30120",
-	schemasFingerprint:
+	/** 1.17.0: 기능 키 enum(featureQuota.feature)에 기간 기능 CALENDAR_IMPORT만 추가. 파싱 응답(ParseTodoResponseDto·ParseMemoResponseDto)의 featureQuota는 AI_PARSE만 싣고 칸·필수 여부·상태 코드는 같다. 출시 앱의 Zod는 strip 모드라 모르는 키를 버린다. */
+	preCalendarImportFeatureSchemasFingerprint:
 		"aa92b66ded6f0c224902f7cc9c85918d12d213d6cfd36612e07b5606d8814c3d",
+	schemasFingerprint:
+		"d8ab5e2c9698b36c7199c4b2cf7785925ebb94e096e8fc78f2f29a919f40a090",
 	/** 1.13.0: GET /todos/summary에 선택 date 쿼리(오늘·내일)만 추가. 생략 시 기존 응답과 같아 구버전 앱은 영향이 없다. */
 	preTodoSummaryDatePathsFingerprint:
 		"dbd292400174ee0cd55f6679b006be195dae5e39fbc1f7dde0e275e13d5bc184",

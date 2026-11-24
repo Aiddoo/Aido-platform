@@ -72,4 +72,14 @@ describe("PLAN_CATALOG — 플랜 카탈로그", () => {
     expect(clientOnly).toEqual(["APP_ICON"]);
     expect(PREMIUM_FEATURES.AI_REPORT).toEqual({ kind: "flag", free: false, premium: true });
   });
+
+  it("캘린더 가져오기는 기간 기능이고 출시 앱의 /me 키에는 없다", () => {
+    // When
+    const { CALENDAR_IMPORT } = PLAN_CATALOG;
+    const releasedKeys: readonly string[] = PREMIUM_FEATURE_KEYS;
+
+    // Then
+    expect(CALENDAR_IMPORT).toEqual({ kind: "horizon", free: 30, premium: 365 });
+    expect(releasedKeys).not.toContain("CALENDAR_IMPORT");
+  });
 });

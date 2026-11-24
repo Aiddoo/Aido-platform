@@ -5,6 +5,14 @@ import {
   quotaErrorDetailsSchema,
 } from "../contracts/entitlement/v1/quota-error.details.js";
 import {
+  todoImportInvalidErrorDetailsSchema,
+  todoImportReferenceErrorDetailsSchema,
+  todoImportStatusErrorDetailsSchema,
+  todoImportTargetsRejectedErrorDetailsSchema,
+  todoImportTooManyItemsErrorDetailsSchema,
+  todoImportUndoExpiredErrorDetailsSchema,
+} from "../contracts/todo-import/v1/todo-import.error-details.js";
+import {
   todoSeriesEndedErrorDetailsSchema,
   todoSeriesLimitErrorDetailsSchema,
   todoSeriesNoDatesErrorDetailsSchema,
@@ -70,6 +78,14 @@ const PUBLIC_ERROR_DETAILS: Partial<Record<ErrorCodeType, z.ZodType>> = {
   [ErrorCode.AI_1312]: voiceNoteTooLongErrorDetailsSchema,
   [ErrorCode.AI_1315]: actionPlanRejectedErrorDetailsSchema,
   [ErrorCode.AI_1318]: notChargedErrorDetailsSchema,
+  [ErrorCode.TODO_IMPORT_2301]: todoImportReferenceErrorDetailsSchema,
+  [ErrorCode.TODO_IMPORT_2302]: quotaErrorDetailsSchema,
+  [ErrorCode.TODO_IMPORT_2303]: todoImportTargetsRejectedErrorDetailsSchema,
+  [ErrorCode.TODO_IMPORT_2304]: todoImportReferenceErrorDetailsSchema,
+  [ErrorCode.TODO_IMPORT_2305]: todoImportStatusErrorDetailsSchema,
+  [ErrorCode.TODO_IMPORT_2306]: todoImportInvalidErrorDetailsSchema,
+  [ErrorCode.TODO_IMPORT_2308]: todoImportUndoExpiredErrorDetailsSchema,
+  [ErrorCode.TODO_IMPORT_2309]: todoImportTooManyItemsErrorDetailsSchema,
 };
 
 /** 운영 응답에 details를 싣는 코드인지. 앱이 details를 읽는 코드는 모두 여기 등록돼야 한다 */

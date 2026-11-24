@@ -35,6 +35,7 @@ export const ERROR_REPORT_FEATURES = [
   'support_mail',
   'todo',
   'todo_comment',
+  'todo_import',
   'todo_nudge',
   'token_refresher',
   'user',

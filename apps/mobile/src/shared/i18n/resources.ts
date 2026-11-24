@@ -16,6 +16,7 @@ import enNotification from './locales/en/notification.json';
 import enSettings from './locales/en/settings.json';
 import enSubscription from './locales/en/subscription.json';
 import enTodoComment from './locales/en/todo-comment.json';
+import enTodoImport from './locales/en/todo-import.json';
 import enTodo from './locales/en/todo.json';
 import enUser from './locales/en/user.json';
 import enValidation from './locales/en/validation.json';
@@ -41,6 +42,7 @@ import koNotification from './locales/ko/notification.json';
 import koSettings from './locales/ko/settings.json';
 import koSubscription from './locales/ko/subscription.json';
 import koTodoComment from './locales/ko/todo-comment.json';
+import koTodoImport from './locales/ko/todo-import.json';
 import koTodo from './locales/ko/todo.json';
 import koUser from './locales/ko/user.json';
 import koValidation from './locales/ko/validation.json';
@@ -60,6 +62,7 @@ export const resources = {
     settings: koSettings,
     todo: koTodo,
     todoComment: koTodoComment,
+    todoImport: koTodoImport,
     auth: koAuth,
     memo: koMemo,
     voicePlan: koVoicePlan,
@@ -87,6 +90,7 @@ export const resources = {
     settings: enSettings,
     todo: enTodo,
     todoComment: enTodoComment,
+    todoImport: enTodoImport,
     auth: enAuth,
     memo: enMemo,
     voicePlan: enVoicePlan,

@@ -142,15 +142,21 @@ interface DatePickerCalendarProps {
   onPreviousMonth: () => void;
   onNextMonth: () => void;
   onSelect: (dateKey: DateKey) => void;
+  /** 그날을 포함해 고를 수 있다. 없으면 막지 않는다 */
+  minimumDateKey?: DateKey;
+  maximumDateKey?: DateKey;
 }
 
-function DatePickerCalendar({
+/** 캘린더 가져오기 기간 시트도 같은 달력을 쓴다 */
+export function DatePickerCalendar({
   displayMonthKey,
   weeks,
   selectedDateKey,
   onPreviousMonth,
   onNextMonth,
   onSelect,
+  minimumDateKey,
+  maximumDateKey,
 }: DatePickerCalendarProps) {
   const todayKey = useTodayKey();
 
@@ -174,6 +180,9 @@ function DatePickerCalendar({
               }
               const isSelected = dateKey === selectedDateKey;
               const isToday = dateKey === todayKey;
+              const isInRange =
+                (minimumDateKey == null || minimumDateKey <= dateKey) &&
+                (maximumDateKey == null || dateKey <= maximumDateKey);
 
               return (
                 <PickerDateCell
@@ -184,6 +193,7 @@ function DatePickerCalendar({
                   dayType={getPickerDayType({ dayOfWeek, isSelected, isToday })}
                   isSelected={isSelected}
                   isTodayHighlighted={!isSelected && isToday}
+                  isDisabled={!isInRange}
                   onPress={onSelect}
                 />
               );

@@ -1,3 +1,4 @@
+import { delay } from "es-toolkit";
 import { PgBoss } from "pg-boss";
 import { vi } from "vitest";
 import { z } from "zod";
@@ -241,6 +242,48 @@ describe("PgBossJobQueueAdapter 통합 테스트 (실제 PostgreSQL)", () => {
       expect(states).toEqual(["completed", "failed", "completed"]);
     }, WORKER_WAIT);
     expect(batchSizes).toEqual([3]);
+  });
+
+  it("singleActivePerKey 큐는 같은 실행 key의 작업을 동시에 하나만, 다른 key는 함께 실행한다", async () => {
+    // Given
+    const queue = defineQueue({
+      ...documentQueue("integration-queue-single-active", { localConcurrency: 4 }),
+      singleActivePerKey: true,
+    });
+    const running = new Map<string, number>();
+    const peakByKey = new Map<string, number>();
+    const finished: number[] = [];
+    for (const [documentId, key] of [
+      [30, "a"],
+      [31, "a"],
+      [32, "a"],
+      [40, "b"],
+    ] as const) {
+      await jobQueue.enqueue(
+        queue,
+        { documentId, locale: key },
+        { idempotencyKey: `document:${documentId}`, executionKey: key },
+      );
+    }
+
+    // When
+    await jobQueue.work(queue, async (jobs) => {
+      for (const { data } of jobs) {
+        const key = data.locale;
+        const now = (running.get(key) ?? 0) + 1;
+        running.set(key, now);
+        peakByKey.set(key, Math.max(peakByKey.get(key) ?? 0, now));
+        await delay(300);
+        running.set(key, now - 1);
+        finished.push(data.documentId);
+      }
+    });
+
+    // Then
+    await vi.waitFor(() => {
+      expect(finished.toSorted()).toEqual([30, 31, 32, 40]);
+    }, WORKER_WAIT);
+    expect(peakByKey.get("a")).toBe(1);
   });
 
   it("스케줄은 정의의 missed 정책과 key로 등록한다", async () => {

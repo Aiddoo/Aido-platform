@@ -73,6 +73,12 @@ export interface QueueDefinition<TPayload extends object> {
   readonly schedules?: readonly QueueSchedule<TPayload>[];
   // 없으면 worker 폴링 종류의 JOB_BACKLOG_WARNING_SIZE
   readonly backlogWarningSize?: number;
+  /**
+   * true면 같은 실행 key(enqueue의 executionKey)의 작업은 프로세스가 여럿이어도 한 번에 하나만 실행한다.
+   * 대기는 여럿 둘 수 있고 중복 등록은 여전히 idempotencyKey가 막는다. 큐를 처음 만들 때만 정해져
+   * 이미 만든 큐에 켜려면 새 큐 이름(v2)이 필요하다
+   */
+  readonly singleActivePerKey?: boolean;
 }
 
 export function defineQueue<TPayload extends object>(
@@ -99,6 +105,8 @@ export function resolveBacklogWarningSize(
 
 export interface EnqueueOptions {
   readonly idempotencyKey?: string;
+  // singleActivePerKey 큐에서 동시에 하나만 실행할 묶음의 key(가져오기 id 등)
+  readonly executionKey?: string;
   readonly startAfter?: Temporal.Instant;
   readonly priority?: number;
   readonly group?: string;
@@ -107,6 +115,7 @@ export interface EnqueueOptions {
 export interface EnqueueManyJob<TPayload extends object> {
   readonly payload: TPayload;
   readonly idempotencyKey?: string;
+  readonly executionKey?: string;
   readonly startAfter?: Temporal.Instant;
   readonly priority?: number;
 }

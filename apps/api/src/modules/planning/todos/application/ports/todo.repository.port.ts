@@ -51,6 +51,9 @@ export abstract class TodoRepositoryPort {
   // 새 할 일 행만 쓴다. 생성 때 체크리스트는 createInlineItems가 한 문장으로 넣는다
   abstract insert(todo: Todo): Promise<void>;
 
+  // 가져오기처럼 여러 새 할 일을 한 문장으로 넣는다
+  abstract insertMany(todos: readonly Todo[]): Promise<void>;
+
   abstract createInlineItems(todoId: TodoId, items: readonly { title: string }[]): Promise<void>;
 
   // 있는 행의 Aggregate 칸과 하위 항목만 쓴다. 댓글·조회 수는 engagement가 TodoEngagementCounterPort로 고친다.
@@ -80,6 +83,12 @@ export abstract class TodoRepositoryPort {
 
   // 카테고리 한도에 세는 수: 반복 아닌 미완료 + 진행 중 규칙 1개당 1
   abstract countCategoryUsage(userId: UserId, categoryId: TodoCategoryId): Promise<number>;
+
+  // countCategoryUsage와 같은 기준을 카테고리마다 센다. 넘긴 카테고리는 모두 키로 있고 없으면 0이다
+  abstract countCategoryUsages(
+    userId: UserId,
+    categoryIds: readonly TodoCategoryId[],
+  ): Promise<ReadonlyMap<number, number>>;
 
   // 재계산 대상을 id 순으로 잠그고 최신 값을 읽는다. 활성 UoW 안에서 호출한다
   abstract lockRebaseCandidates(query: RebaseCandidateQuery): Promise<readonly RebaseCandidate[]>;

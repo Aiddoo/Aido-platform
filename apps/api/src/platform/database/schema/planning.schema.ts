@@ -1,3 +1,4 @@
+import { TODO_IMPORT_ACTIVE_STATUSES, type TodoImportFailureReason } from "@aido/api/vocabulary";
 import { sql } from "drizzle-orm";
 import {
   pgTable,
@@ -16,8 +17,18 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
+// drizzle-kit은 #api 별칭을 못 따라가므로 상대 경로로 둔다
+import type { TodoImportCollectionPrimitives } from "../../../modules/planning/todo-imports/domain/todo-import-collection.vo.js";
+import type { TodoImportTargetPrimitives } from "../../../modules/planning/todo-imports/domain/todo-import-target.vo.js";
 import { instant, plainDate } from "../columns/temporal-columns.js";
-import { todoRepeatFrequency, todoVisibility } from "./enums.schema.js";
+import {
+  todoImportItemStatus,
+  todoImportSource,
+  todoImportStatus,
+  todoImportTimeMode,
+  todoRepeatFrequency,
+  todoVisibility,
+} from "./enums.schema.js";
 import { user } from "./identity.schema.js";
 
 export const todo = pgTable(
@@ -257,5 +268,130 @@ export const todoView = pgTable(
       table.viewerId.asc().nullsLast(),
       table.createdAt.asc().nullsLast(),
     ),
+  ],
+);
+
+const ACTIVE_TODO_IMPORT_STATUS_LIST = sql.raw(
+  TODO_IMPORT_ACTIVE_STATUSES.map((status) => `'${status}'`).join(", "),
+);
+
+export const todoImport = pgTable(
+  "TodoImport",
+  {
+    id: text().primaryKey(),
+    userId: text().notNull(),
+    source: todoImportSource().notNull(),
+    status: todoImportStatus().notNull(),
+    idempotencyKey: text().notNull(),
+    requestHash: varchar({ length: 64 }).notNull(),
+    timezone: varchar({ length: 50 }).notNull(),
+    startDate: plainDate().notNull(),
+    endDate: plainDate().notNull(),
+    timeMode: todoImportTimeMode().notNull(),
+    visibility: todoVisibility().notNull(),
+    // 앱이 시작 요청에 담은 대상·캘린더. 가져오기마다 최대 20개라 행 하나에 둔다
+    targets: jsonb().$type<readonly TodoImportTargetPrimitives[]>().notNull(),
+    collections: jsonb().$type<readonly TodoImportCollectionPrimitives[]>().notNull(),
+    expectedItemCount: integer().notNull(),
+    receivedItemCount: integer().default(0).notNull(),
+    processedItemCount: integer().default(0).notNull(),
+    createdCount: integer().default(0).notNull(),
+    skippedDuplicateCount: integer().default(0).notNull(),
+    skippedCapacityCount: integer().default(0).notNull(),
+    skippedCategoryMissingCount: integer().default(0).notNull(),
+    skippedInvalidCount: integer().default(0).notNull(),
+    undoneCount: integer().default(0).notNull(),
+    keptCompletedCount: integer().default(0).notNull(),
+    firstDate: plainDate(),
+    // 잡 round. 같은 값의 작업만 처리해 재시도·재조정이 겹쳐도 한 줄로 이어진다
+    round: integer().default(0).notNull(),
+    recoveryCount: integer().default(0).notNull(),
+    failureReason: varchar({ length: 50 }).$type<TodoImportFailureReason>(),
+    createdAt: instant().notNull(),
+    // 묶음마다 ClockPort 값으로 쓴다. 재조정자가 진행이 멈췄는지 이 값으로 본다
+    updatedAt: instant().notNull(),
+    committedAt: instant(),
+    completedAt: instant(),
+    undoRequestedAt: instant(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [user.id],
+      name: "TodoImport_userId_fkey",
+    })
+      .onUpdate("cascade")
+      .onDelete("cascade"),
+    unique("TodoImport_userId_idempotencyKey_key").on(table.userId, table.idempotencyKey),
+    // 사용자마다 진행 중인 가져오기는 하나다(TODO_IMPORT_2301)
+    uniqueIndex("TodoImport_userId_active_key")
+      .on(table.userId)
+      .where(sql`${table.status} IN (${ACTIVE_TODO_IMPORT_STATUS_LIST})`),
+    index("TodoImport_status_updatedAt_idx").on(table.status, table.updatedAt),
+  ],
+);
+
+export const todoImportItem = pgTable(
+  "TodoImportItem",
+  {
+    importId: text().notNull(),
+    sourceKey: varchar({ length: 64 }).notNull(),
+    collectionKey: varchar({ length: 64 }).notNull(),
+    title: varchar({ length: 200 }).notNull(),
+    startDate: plainDate().notNull(),
+    endDate: plainDate(),
+    localTime: varchar({ length: 5 }),
+    status: todoImportItemStatus().default("PENDING").notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.importId, table.sourceKey], name: "TodoImportItem_pkey" }),
+    foreignKey({
+      columns: [table.importId],
+      foreignColumns: [todoImport.id],
+      name: "TodoImportItem_importId_fkey",
+    })
+      .onUpdate("cascade")
+      .onDelete("cascade"),
+    // 가까운 날짜부터 처리한다. 300 한도에 닿으면 먼 일정이 빠진다
+    index("TodoImportItem_importId_pending_idx")
+      .on(table.importId, table.startDate, table.localTime, table.sourceKey)
+      .where(sql`${table.status} = 'PENDING'`),
+  ],
+);
+
+export const todoImportLink = pgTable(
+  "TodoImportLink",
+  {
+    // 할 일을 지우면 링크도 지워져 같은 일정을 다시 가져올 수 있다
+    todoId: integer().primaryKey(),
+    userId: text().notNull(),
+    sourceKey: varchar({ length: 64 }).notNull(),
+    importId: text(),
+    createdAt: instant().notNull(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.todoId],
+      foreignColumns: [todo.id],
+      name: "TodoImportLink_todoId_fkey",
+    })
+      .onUpdate("cascade")
+      .onDelete("cascade"),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [user.id],
+      name: "TodoImportLink_userId_fkey",
+    })
+      .onUpdate("cascade")
+      .onDelete("cascade"),
+    foreignKey({
+      columns: [table.importId],
+      foreignColumns: [todoImport.id],
+      name: "TodoImportLink_importId_fkey",
+    })
+      .onUpdate("cascade")
+      .onDelete("set null"),
+    unique("TodoImportLink_userId_sourceKey_key").on(table.userId, table.sourceKey),
+    index("TodoImportLink_importId_todoId_idx").on(table.importId, table.todoId),
   ],
 );

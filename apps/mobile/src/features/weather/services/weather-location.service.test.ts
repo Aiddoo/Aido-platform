@@ -1,14 +1,17 @@
 import type { LocationGateway } from '@src/core/ports/location-gateway';
 import { ApiError, fail, NetworkError, ok, type Result } from '@src/shared/errors';
+import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
 import {
   createAppLoggerStub,
   createHttpClientStub,
   createLocationGatewayStub,
+  createMemorySyncStorage,
 } from '@src/testing/core';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 
 import { WeatherApi } from '../apis/weather.api';
 import type { LocationReading } from '../domains/weather-location.model';
+import { weatherLocationPermissionGrantedStoredValue } from '../schemas/weather-location-permission-storage.schema';
 import { WeatherLocationService } from './weather-location.service';
 
 type Place = Awaited<ReturnType<LocationGateway['getPlace']>>;
@@ -17,6 +20,7 @@ const SEOUL = { latitude: 37.5636, longitude: 126.9976 };
 const SEOUL_REGISTERED = { ...SEOUL, timezone: 'Asia/Seoul' };
 const SEOUL_PLACE: Place = { countryCode: 'KR', name: { city: '서울', district: '중구' } };
 const UNKNOWN_PLACE: Place = { countryCode: null, name: null };
+const NOT_ASKED = { isGranted: false, canAskAgain: true };
 
 setupFakeTimersPerTest();
 
@@ -33,9 +37,11 @@ function setup() {
   httpClient.put.mockReturnValue(registration.promise);
   const logger = createAppLoggerStub();
   const onUnexpectedFailure = jest.fn();
+  const storage = createMemorySyncStorage();
   const service = new WeatherLocationService({
     gateway,
     weatherApi: new WeatherApi(httpClient, logger),
+    storage,
     logger,
   });
   const resolveLocation = (previous?: LocationReading) =>
@@ -45,7 +51,21 @@ function setup() {
       findReportLocation: async () => null,
       onUnexpectedFailure,
     });
-  return { gateway, httpClient, place, registration, logger, onUnexpectedFailure, resolveLocation };
+  const hasRememberedGrant = () =>
+    readStoredValue(storage, weatherLocationPermissionGrantedStoredValue);
+  const rememberGrant = () =>
+    writeStoredValue(storage, weatherLocationPermissionGrantedStoredValue, true);
+  return {
+    gateway,
+    httpClient,
+    place,
+    registration,
+    logger,
+    onUnexpectedFailure,
+    resolveLocation,
+    hasRememberedGrant,
+    rememberGrant,
+  };
 }
 
 describe('WeatherLocationService.resolveLocation', () => {
@@ -148,5 +168,68 @@ describe('WeatherLocationService.resolveLocation', () => {
     // Then
     expect(result).toEqual(ok({ ...previous, place: SEOUL_PLACE.name, isLastKnown: false }));
     expect(httpClient.put).not.toHaveBeenCalled();
+  });
+
+  describe('권한 확인', () => {
+    it('앱을 켠 직후 허용 전으로 읽혀도 기기가 허용을 기억하면 다시 확인해 위치를 읽는다', async () => {
+      // Given
+      const { gateway, place, registration, resolveLocation, hasRememberedGrant, rememberGrant } =
+        setup();
+      gateway.getPermission.mockResolvedValue(NOT_ASKED);
+      rememberGrant();
+
+      // When
+      const resolving = resolveLocation();
+      place.resolve(SEOUL_PLACE);
+      registration.resolve(ok(SEOUL_REGISTERED));
+      const result = await resolving;
+
+      // Then
+      expect(gateway.recheckPermission).toHaveBeenCalledTimes(1);
+      expect(result).toMatchObject(ok({ status: 'located', isLastKnown: false }));
+      expect(hasRememberedGrant()).toBe(true);
+    });
+
+    it('처음 쓰는 사용자는 다시 확인하지 않고 위치 안내를 보여 준다', async () => {
+      // Given
+      const { gateway, resolveLocation } = setup();
+      gateway.getPermission.mockResolvedValue(NOT_ASKED);
+
+      // When
+      const result = await resolveLocation();
+
+      // Then
+      expect(result).toEqual(ok({ status: 'needsPermission' }));
+      expect(gateway.recheckPermission).not.toHaveBeenCalled();
+    });
+
+    it('다시 확인한 결과가 다시 물을 수 없는 거부면 설정 열기 상태가 되고 기억한 허용을 지운다', async () => {
+      // Given
+      const { gateway, resolveLocation, hasRememberedGrant, rememberGrant } = setup();
+      gateway.getPermission.mockResolvedValue(NOT_ASKED);
+      gateway.recheckPermission.mockResolvedValue({ isGranted: false, canAskAgain: false });
+      rememberGrant();
+
+      // When
+      const result = await resolveLocation();
+
+      // Then
+      expect(result).toEqual(ok({ status: 'denied' }));
+      expect(hasRememberedGrant()).toBe(false);
+    });
+
+    it('허용으로 읽히면 기기에 허용을 기억한다', async () => {
+      // Given
+      const { place, registration, resolveLocation, hasRememberedGrant } = setup();
+
+      // When
+      const resolving = resolveLocation();
+      place.resolve(SEOUL_PLACE);
+      registration.resolve(ok(SEOUL_REGISTERED));
+      await resolving;
+
+      // Then
+      expect(hasRememberedGrant()).toBe(true);
+    });
   });
 });

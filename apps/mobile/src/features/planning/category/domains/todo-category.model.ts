@@ -56,6 +56,12 @@ export function isOptimisticCategory(category: TodoCategory) {
   return category.id < 0;
 }
 
+/** 이름 찾기. 이름 어디에든 들어 있으면 남기고 앞뒤 공백·대소문자는 가리지 않는다. 빈 검색어는 모두 남긴다 */
+export function filterByName(category: TodoCategory, query: string) {
+  const keyword = query.trim().toLocaleLowerCase();
+  return keyword === '' || category.name.toLocaleLowerCase().includes(keyword);
+}
+
 export function canReorder(categories: readonly TodoCategory[]) {
   return categories.length >= MIN_REORDERABLE_COUNT;
 }
@@ -83,6 +89,7 @@ export const TodoCategoryPolicy = {
   findInitialCategoryId,
   hasChanges,
   isOptimisticCategory,
+  filterByName,
   canReorder,
   isMoveTarget,
   findMoveTarget,

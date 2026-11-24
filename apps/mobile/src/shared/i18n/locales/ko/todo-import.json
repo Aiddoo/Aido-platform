@@ -1,0 +1,238 @@
+{
+  "untitledEvent": "제목 없는 일정",
+  "entry": {
+    "menu": "캘린더 일정 가져오기",
+    "inProgress": "가져오는 중"
+  },
+  "lastImport": {
+    "label": "지난 가져오기",
+    "description": "할 일 {{count}}개 · {{date}}까지 되돌릴 수 있어요"
+  },
+  "titles": {
+    "setup": "캘린더 일정 가져오기",
+    "progress": "가져오는 중",
+    "result": "가져오기 결과"
+  },
+  "permission": {
+    "title": "캘린더 일정을 할 일로 가져올게요",
+    "facts": {
+      "sources": "이 기기에 추가한 iCloud·Google·Outlook 캘린더에서 가져와요",
+      "read": "고른 캘린더 일정의 제목·날짜·시간만 아이두에 저장해 할 일로 만들어요",
+      "noAccountInfo": "이메일 같은 캘린더 계정 정보는 아이두로 보내지 않아요",
+      "oneTime": "지금 있는 일정을 한 번만 옮겨 와요. 캘린더 일정은 바꾸거나 삭제하지 않아요",
+      "optional": "허용하지 않아도 다른 기능은 그대로 쓸 수 있어요"
+    },
+    "deniedTitle": "캘린더 접근이 꺼져 있어요",
+    "deniedDescription": "설정에서 캘린더 접근을 켜면 일정을 가져올 수 있어요",
+    "deniedDescriptionMac": "Mac의 시스템 설정 > 개인정보 보호 및 보안 > 캘린더에서 아이두를 켜 주세요",
+    "openSettings": "설정 열기",
+    "continue": "계속"
+  },
+  "range": {
+    "title": "가져올 기간",
+    "start": "시작일",
+    "end": "종료일",
+    "presets": {
+      "week": "1주",
+      "month": "1개월",
+      "quarter": "3개월",
+      "half": "6개월",
+      "year": "1년"
+    },
+    "lockedPreset": "{{label}}, 프리미엄 전용",
+    "freeUntil": "무료 플랜은 오늘부터 {{count}}일 동안의 일정을 가져올 수 있어요 ({{date}}까지).",
+    "freeUntilPremium": "더 먼 일정은 프리미엄에서 가져와요",
+    "freeUntilHint": "프리미엄 안내를 열어요"
+  },
+  "calendars": {
+    "title": "가져올 캘린더를 골라 주세요",
+    "description": "공휴일·생일·구독 캘린더는 미리 빼 두었어요. 필요하면 골라 주세요",
+    "listTitle": "캘린더",
+    "otherAccount": "기타",
+    "accounts": {
+      "icloud": "iCloud",
+      "google": "Google 캘린더",
+      "googleWithEmail": "Google 캘린더 · {{email}}",
+      "outlook": "Outlook 캘린더",
+      "outlookWithEmail": "Outlook 캘린더 · {{email}}",
+      "device": "이 기기에만 저장된 캘린더",
+      "received": "공휴일·생일·구독 캘린더"
+    },
+    "receivedTitle": "공휴일·생일·구독 캘린더 {{count}}개",
+    "itemCount": "{{count}}개",
+    "noEventsInRange": "일정 없음",
+    "emptyTitle": "이 기간에 가져올 일정이 없어요",
+    "emptyDescription": "기간을 늘리거나, 캘린더 앱에 일정이 있는지 확인해 주세요",
+    "tooMany": "한 번에 {{limit}}개까지 가져올 수 있어요. 기간이나 캘린더를 줄여 주세요",
+    "collectionLimit": "캘린더는 한 번에 {{limit}}개까지 고를 수 있어요",
+    "selectedCount": "일정 {{count}}개를 가져와요",
+    "missingHelp": {
+      "open": "캘린더가 목록에 없나요?",
+      "title": "캘린더가 목록에 없나요?",
+      "description": "아이두는 이 기기의 캘린더 앱에 보이는 캘린더만 가져올 수 있어요. 다른 앱에만 있는 캘린더는 이 기기에 계정을 추가해 주세요",
+      "iphone": {
+        "openSettings": "iPhone 설정 > 캘린더 > 계정으로 가요",
+        "openAppsSettings": "iPhone 설정 > 앱 > 캘린더 > 캘린더 계정으로 가요"
+      },
+      "ipad": {
+        "openSettings": "iPad 설정 > 캘린더 > 계정으로 가요",
+        "openAppsSettings": "iPad 설정 > 앱 > 캘린더 > 캘린더 계정으로 가요"
+      },
+      "ios": {
+        "addAccount": "계정 추가에서 Google·Outlook 계정을 추가하고 캘린더를 켜요"
+      },
+      "mac": {
+        "openSettings": "Mac의 시스템 설정 > 인터넷 계정으로 가요",
+        "addAccount": "Google·Outlook 계정을 추가하고 캘린더를 켜요"
+      },
+      "android": {
+        "addAccount": "설정 > 계정에서 Google·Outlook 계정을 추가해요",
+        "turnOnSync": "캘린더 앱에서 그 계정의 캘린더를 켜고 동기화해요"
+      },
+      "comeBack": "아이두로 돌아오면 목록에 바로 보여요"
+    }
+  },
+  "sources": {
+    "icloud": "iCloud",
+    "google": "Google",
+    "outlook": "Outlook",
+    "device": "이 기기",
+    "subscribed": "구독",
+    "birthdays": "생일",
+    "other": "기타"
+  },
+  "categories": {
+    "title": "어디에 넣을까요?",
+    "description": "가져온 일정을 아이두 카테고리에 넣어요. 나중에 언제든 옮길 수 있어요",
+    "sourceLabel": "가져올 일정",
+    "sourceHintLabel": "가져올 일정 안내",
+    "sourceHint": "이 기기의 캘린더 앱에 연결된 계정의 캘린더예요. 계정이 안 보이면 앞 단계의 '{{missingHelp}}'를 눌러 보세요",
+    "destinationLabel": "넣을 곳",
+    "destinationHintLabel": "넣을 곳 안내",
+    "destinationHint": "가져온 할 일은 나중에 다른 아이두 카테고리로 옮길 수 있어요. 이름·색은 마이 › 카테고리 관리에서 바꿔요",
+    "coachmark": "가져온 일정은 여기에 들어가요. 눌러서 바꿀 수 있어요",
+    "change": "바꾸기",
+    "roomLeft": "{{count}}개 더 넣을 수 있어요",
+    "fillsUp": "모두 들어가요. 넣고 나면 가득 차요",
+    "overflow": "'{{name}}'에는 {{count}}개만 더 들어가요. 가까운 날짜부터 넣고 나머지 {{skipped}}개는 건너뛰어요",
+    "fullWarning": "'{{name}}' 카테고리가 가득 찼어요. 다른 곳을 골라 주세요",
+    "newTarget": "새 · {{name}}",
+    "newCategoryName": "캘린더 일정",
+    "unassigned": "고르지 않음",
+    "splitLink": "캘린더마다 다른 곳에 넣을래요",
+    "eventCount": "일정 {{count}}개",
+    "eventCountPartial": "일정 {{total}}개 중 {{count}}개",
+    "summary": "{{events}}를 '{{name}}'에 넣어요",
+    "summarySeparate": "아이두 카테고리 {{count}}곳에 {{events}}를 넣어요",
+    "separate": {
+      "title": "캘린더마다 넣을 곳",
+      "joinAll": "모두 같은 곳에 넣기",
+      "note": "처음엔 모두 '{{name}}'에 넣어요. 바꾸고 싶은 줄만 눌러요"
+    },
+    "rowLabel": "{{source}} '{{calendar}}'의 일정을 아이두 카테고리 '{{target}}'에 넣기",
+    "rowHint": "넣을 곳을 바꿔요",
+    "loadFailed": "아이두 카테고리를 읽지 못했어요",
+    "sheet": {
+      "title": "어디에 넣을까요?",
+      "calendar": "'{{name}}'의 일정 {{count}}개",
+      "allCalendars": "고른 캘린더 {{calendarCount}}개의 일정 {{count}}개",
+      "existingTitle": "내 아이두 카테고리",
+      "pendingNew": "새로 만들어요",
+      "searchPlaceholder": "카테고리 이름 찾기",
+      "noMatch": "찾는 카테고리가 없어요",
+      "newTitle": "새 카테고리 만들기",
+      "newDescription": "이름은 '{{name}}'로 시작해요. 바꿀 수 있어요",
+      "sameName": "'{{name}}' 카테고리가 이미 있어요",
+      "lockedFree": "무료로는 카테고리를 {{limit}}개까지 만들 수 있어요",
+      "locked": "카테고리를 더 만들 수 없어요"
+    },
+    "rejected": {
+      "capacity": "이 카테고리에는 {{expected}}개 중 {{count}}개만 넣을 수 있어요. 기간을 줄이거나 다른 카테고리를 골라 주세요",
+      "nameTaken": "이미 같은 이름의 카테고리가 있어요. 이름을 바꾸거나 그 카테고리를 골라 주세요",
+      "notFound": "카테고리가 삭제됐어요. 다른 카테고리를 골라 주세요",
+      "summary": "넣을 수 없는 카테고리가 있어요. 표시한 곳을 다시 골라 주세요"
+    }
+  },
+  "options": {
+    "title": "마지막으로 확인해 주세요",
+    "includeTime": "시간도 가져오기",
+    "includeTimeDescription": "끄면 날짜만 가져와서 시간 알림이 오지 않아요",
+    "shareWithFriends": "친구에게 공개",
+    "shareWithFriendsDescription": "끄면 나만 볼 수 있어요",
+    "disclosure": "‘가져오기’를 누르면 고른 일정의 제목·날짜·시간을 아이두에 저장해 할 일로 만들어요",
+    "import": "가져오기"
+  },
+  "progress": {
+    "reading": "캘린더에서 일정을 읽는 중",
+    "uploading": "아이두로 옮기는 중",
+    "creating": "할 일 만드는 중",
+    "queued": "곧 시작해요",
+    "stageStatus": {
+      "pending": "대기",
+      "active": "진행 중",
+      "done": "완료"
+    },
+    "leaveNotice": "앱을 나가도 계속 가져와요",
+    "offline": "인터넷이 다시 연결되면 이어서 가져와요",
+    "paused": "잠시 멈췄어요. 다시 시도하거나 앱을 다시 열면 이어서 가져와요",
+    "pausedPermission": "캘린더 접근이 꺼져서 멈췄어요. 설정에서 다시 켜면 이어서 가져와요",
+    "retry": "다시 시도",
+    "notOnThisDevice": "다른 기기에서 가져오는 중이에요. 그 기기에서 마무리하거나 여기서 멈출 수 있어요",
+    "cancel": "가져오기 멈추기",
+    "cancelConfirmTitle": "가져오기를 멈출까요?",
+    "cancelConfirmDescription": "아직 할 일로 만들지 않은 일정은 가져오지 않아요"
+  },
+  "failure": {
+    "tooManyItems": "한 번에 {{limit}}개까지 가져올 수 있어요. 기간이나 캘린더를 줄여 다시 가져와 주세요",
+    "invalid": "기간이나 일정을 읽지 못했어요. 기간을 바꿔 다시 가져와 주세요",
+    "rejected": "아이두가 일정을 받지 못했어요. 잠시 뒤 다시 가져와 주세요",
+    "planLimit": "지금 요금제로는 이 기간을 가져올 수 없어서 멈췄어요. 기간을 줄여 다시 설정해 주세요",
+    "categoryLimit": "새 카테고리를 더 만들 수 없어서 멈췄어요. 기존 카테고리에 넣도록 다시 설정해 주세요",
+    "categoryNameTaken": "같은 이름의 카테고리가 생겨서 멈췄어요. 그 카테고리를 고르거나 이름을 바꿔 다시 설정해 주세요",
+    "categoryNotFound": "넣으려던 카테고리가 삭제돼서 멈췄어요. 다른 카테고리를 골라 다시 설정해 주세요",
+    "setUpAgain": "다시 설정하기",
+    "viewPlan": "요금제 보기"
+  },
+  "result": {
+    "completedTitle": "할 일 {{count}}개를 가져왔어요",
+    "alreadyImportedTitle": "이미 모두 가져온 일정이에요",
+    "undoingTitle": "되돌리는 중이에요",
+    "undoneTitle": "할 일 {{count}}개를 되돌렸어요",
+    "counts": {
+      "created": "만든 할 일",
+      "skippedDuplicate": "이미 가져온 일정",
+      "skippedCapacity": "카테고리가 가득 차서 못 넣은 일정",
+      "skippedCategoryMissing": "카테고리가 삭제돼서 못 넣은 일정",
+      "skippedInvalid": "날짜나 제목을 읽지 못한 일정",
+      "undone": "되돌린 할 일",
+      "keptCompleted": "완료해서 남겨 둔 할 일"
+    },
+    "undoNotice": "{{count}}일 안에는 한 번에 되돌릴 수 있어요. 완료한 할 일은 남겨 둬요",
+    "duplicateNotice": "같은 일정을 다시 가져와도 두 번 들어오지 않아요",
+    "viewTodos": "할 일 보러 가기",
+    "undo": "되돌리기",
+    "undoConfirmTitle": "가져온 할 일을 되돌릴까요?",
+    "undoConfirmDescription": "아직 완료하지 않은 할 일만 삭제해요",
+    "failedTitle": "가져오다 멈췄어요",
+    "failedDescription_zero": "아직 만든 할 일은 없어요. 다시 가져와 주세요",
+    "failedDescription": "만든 할 일 {{count}}개는 그대로 있어요. 다시 가져오면 남은 일정만 이어서 만들어요",
+    "undoFailedTitle": "되돌리다 멈췄어요",
+    "undoFailedDescription": "다시 되돌리면 남은 할 일을 마저 삭제해요. 완료한 할 일은 남겨 둬요",
+    "undoAgain": "다시 되돌리기",
+    "canceledTitle": "가져오기를 멈췄어요",
+    "canceledDescription": "만든 할 일은 없어요",
+    "startAgain": "다시 가져오기",
+    "notFoundTitle": "가져오기 기록을 찾을 수 없어요",
+    "notFoundDescription": "다른 계정의 기록이거나 오래돼서 삭제됐을 수 있어요",
+    "startNew": "새로 가져오기"
+  },
+  "toasts": {
+    "startFailed": "가져오기를 시작하지 못했어요. 다시 시도해 주세요",
+    "cancelFailed": "가져오기를 멈추지 못했어요. 다시 시도해 주세요",
+    "undoFailed": "되돌리지 못했어요. 다시 시도해 주세요",
+    "permissionRequestFailed": "캘린더 권한을 묻지 못했어요. 다시 시도해 주세요",
+    "rangeAdjusted": "자정이 지나서 기간을 오늘부터 다시 맞췄어요",
+    "undoWhileImporting": "진행 중인 가져오기가 끝난 뒤 되돌릴 수 있어요",
+    "cancelTooLate": "이미 할 일을 만들기 시작해서 멈출 수 없어요"
+  }
+}

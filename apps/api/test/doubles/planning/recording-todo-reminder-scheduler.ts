@@ -15,14 +15,18 @@ interface RecordedReminder {
 export class RecordingTodoReminderScheduler extends TodoReminderSchedulerPort {
   readonly scheduled: RecordedReminder[] = [];
   readonly cancelled: number[] = [];
+  // 예약 큐에 보낸 묶음마다 할 일 id. 일괄 예약이 문장 수를 줄이는지 본다
+  readonly scheduleBatches: number[][] = [];
   async scheduleReminder(
     todoId: TodoId,
     scheduledTime: Temporal.Instant,
     userId: UserId,
   ): Promise<void> {
+    this.scheduleBatches.push([todoId.value]);
     this.scheduled.push({ todoId: todoId.value, scheduledTime, userId: userId.value });
   }
   async scheduleReminders(reminders: readonly TodoReminderSchedule[]): Promise<void> {
+    this.scheduleBatches.push(reminders.map(({ todoId }) => todoId.value));
     this.scheduled.push(
       ...reminders.map(({ todoId, scheduledTime, userId }) => ({
         todoId: todoId.value,

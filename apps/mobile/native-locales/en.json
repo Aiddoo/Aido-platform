@@ -5,6 +5,8 @@
     "NSPhotoLibraryUsageDescription": "Aido uses your photo library when working with images you share or save.",
     "NSPhotoLibraryAddUsageDescription": "Aido saves images you share to your photo library.",
     "NSLocationWhenInUseUsageDescription": "Aido uses your location to show the weather where you are and send weather notifications.",
+    "NSCalendarsFullAccessUsageDescription": "Aido reads the titles, dates, and times of events in the calendars you choose to turn them into to-dos. It never changes your calendar.",
+    "NSCalendarsUsageDescription": "Aido reads the titles, dates, and times of events in the calendars you choose to turn them into to-dos. It never changes your calendar.",
     "Localizable.strings": {
       "오늘 할 일": "Today's to-dos",
       "오늘의 할 일과 체크 여부를 홈 화면에서 바로 확인해요": "Check today's to-dos and what's done right on your Home Screen",

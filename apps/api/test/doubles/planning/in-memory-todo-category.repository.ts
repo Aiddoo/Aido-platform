@@ -86,6 +86,17 @@ export class InMemoryTodoCategoryRepository extends TodoCategoryRepositoryPort {
       .map((category) => this.#withCount(category));
   }
 
+  async listOwnedIds(
+    userId: UserId,
+    categoryIds: readonly TodoCategoryId[],
+  ): Promise<ReadonlySet<number>> {
+    return new Set(
+      categoryIds
+        .map((categoryId) => categoryId.value)
+        .filter((id) => this.#categories.get(id)?.userId.equals(userId) === true),
+    );
+  }
+
   async countByUserId(userId: UserId): Promise<number> {
     return [...this.#categories.values()].filter((category) => category.userId.equals(userId))
       .length;
@@ -101,6 +112,14 @@ export class InMemoryTodoCategoryRepository extends TodoCategoryRepositoryPort {
         category.userId.equals(userId) &&
         category.name.value === name &&
         category.id.value !== excludeId?.value,
+    );
+  }
+
+  async listNamesByUserId(userId: UserId): Promise<ReadonlySet<string>> {
+    return new Set(
+      [...this.#categories.values()]
+        .filter((category) => category.userId.equals(userId))
+        .map((category) => category.name.value),
     );
   }
 

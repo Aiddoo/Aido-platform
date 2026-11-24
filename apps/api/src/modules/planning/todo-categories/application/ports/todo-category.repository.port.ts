@@ -23,6 +23,10 @@ export abstract class TodoCategoryRepositoryPort {
   abstract findByIdAndUserId(id: TodoCategoryId, userId: UserId): Promise<TodoCategory | null>;
   abstract findByIdWithCount(id: TodoCategoryId): Promise<TodoCategoryWithCountReadModel | null>;
   abstract listByUserId(userId: UserId): Promise<TodoCategoryWithCountReadModel[]>;
+  abstract listOwnedIds(
+    userId: UserId,
+    categoryIds: readonly TodoCategoryId[],
+  ): Promise<ReadonlySet<number>>;
 
   abstract countByUserId(userId: UserId): Promise<number>;
   abstract existsByUserIdAndName(
@@ -30,6 +34,7 @@ export abstract class TodoCategoryRepositoryPort {
     name: string,
     excludeId?: TodoCategoryId,
   ): Promise<boolean>;
+  abstract listNamesByUserId(userId: UserId): Promise<ReadonlySet<string>>;
   abstract getMaxSortOrder(userId: UserId): Promise<number>;
   // 사이 카테고리를 한 칸씩 미는 묶음 문장이다
   abstract shiftSortOrders(userId: UserId, shift: ReorderPlan["shift"]): Promise<number>;

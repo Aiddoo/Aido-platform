@@ -35,6 +35,9 @@ function describeCount(feature: PlanFeature, plan: Plan): string {
   if (definition.kind === "flag") {
     return definition[plan] ? "사용" : "-";
   }
+  if (definition.kind === "horizon") {
+    return `${definition[plan]}일`;
+  }
   const value = definition[plan];
   if (definition.kind === "resource") {
     return value == null ? "무제한" : `${value}개`;
@@ -84,7 +87,7 @@ ADMIN 주체도 프리미엄 열의 값을 받습니다.
 ${PLAN_CATALOG_TABLE}
 
 ## 📊 featureQuota
-- \`limit\`: 서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고 \`isFairUse=true\`입니다(앱은 "넉넉하게(월 N회까지)"로 보여 줍니다). \`null\`은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다.
+- \`limit\`: 서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고 \`isFairUse=true\`입니다(앱은 "넉넉하게(월 N회까지)"로 보여 줍니다). \`null\`은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다. 기간 기능(horizon, CALENDAR_IMPORT)은 오늘부터 며칠 뒤까지 쓸 수 있는지(일)이고 \`used\`·\`remaining\`·\`period\`·\`resetsAt\`은 null입니다.
 - \`used\`·\`remaining\`: 횟수 기능은 이번 창에서 쓴 횟수와 남은 횟수입니다. 개수 기능(FRIEND·TODO_CATEGORY)은 지금 가진 개수와 남은 자리이고, 친구 맺기·카테고리 만들기가 막는 값과 같습니다(친구는 초대 보상 자리 포함). 무제한 개수 기능과 flag는 null입니다. \`remaining=0\`이면 앱은 입력을 받기 전에 막습니다.
 - \`resetsAt\`: 횟수 기능만 있습니다(resource·flag는 null). 월간(AI_PARSE·VOICE_NOTE)은 KST 매월 1일 00:00, 일간(CHEER·NUDGE)은 \`X-Timezone\` 자정에 0으로 돌아갑니다.
 - \`perUse\`: 한 번 쓸 때의 길이 상한(말로 메모하기, VOICE_NOTE)입니다.

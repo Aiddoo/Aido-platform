@@ -132,6 +132,7 @@ catalogs:
     'expo-auth-session': '~58.0.19'
     'expo-blur': '~58.0.6'
     'expo-build-properties': '~58.0.12'
+    'expo-calendar': '~58.0.8'
     'expo-clipboard': '~58.0.4'
     'expo-constants': '~58.0.16'
     'expo-crypto': '~58.0.8'

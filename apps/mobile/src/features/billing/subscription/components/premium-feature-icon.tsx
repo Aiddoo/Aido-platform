@@ -5,6 +5,7 @@ import {
   BellFilledIcon,
   Box,
   CalendarIcon,
+  CalendarImportIcon,
   DocsIcon,
   HeartFilledIcon,
   ListFilledIcon,
@@ -28,6 +29,7 @@ const FEATURE_ICONS = {
   AI_SUGGESTION: CalendarIcon,
   CUSTOM_REMINDER_TIME: BellFilledIcon,
   APP_ICON: AppSquareIcon,
+  CALENDAR_IMPORT: CalendarImportIcon,
 } as const satisfies Record<EntitlementFeature, StyledIcon>;
 
 const ICON_SIZES = { medium: 20, large: 28 } as const;

@@ -1,0 +1,1447 @@
+{
+  "type": "diff",
+  "version": "10",
+  "dialect": "postgres",
+  "id": "8a5aa122-0794-4dba-803f-ecf6a365a470",
+  "prevIds": [
+    "165fe1ce-e181-4567-87fc-2bf8607263d3"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_enum",
+      "statementTarget": [
+        "enum",
+        "public",
+        "TodoImportItemStatus"
+      ],
+      "writes": [
+        "s|enum|public.TodoImportItemStatus",
+        "n|enum|public.TodoImportItemStatus",
+        "e|enum|public.TodoImportItemStatus",
+        "n|type|public.TodoImportItemStatus"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_enum",
+      "statementTarget": [
+        "enum",
+        "public",
+        "TodoImportSource"
+      ],
+      "writes": [
+        "s|enum|public.TodoImportSource",
+        "n|enum|public.TodoImportSource",
+        "e|enum|public.TodoImportSource",
+        "n|type|public.TodoImportSource"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_enum",
+      "statementTarget": [
+        "enum",
+        "public",
+        "TodoImportStatus"
+      ],
+      "writes": [
+        "s|enum|public.TodoImportStatus",
+        "n|enum|public.TodoImportStatus",
+        "e|enum|public.TodoImportStatus",
+        "n|type|public.TodoImportStatus"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_enum",
+      "statementTarget": [
+        "enum",
+        "public",
+        "TodoImportTimeMode"
+      ],
+      "writes": [
+        "s|enum|public.TodoImportTimeMode",
+        "n|enum|public.TodoImportTimeMode",
+        "e|enum|public.TodoImportTimeMode",
+        "n|type|public.TodoImportTimeMode"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "TodoImport"
+      ],
+      "writes": [
+        "s|tbl|public.TodoImport",
+        "n|tbl|public.TodoImport",
+        "e|tbl|public.TodoImport",
+        "n|rel|public.TodoImport",
+        "n|type|public.TodoImport",
+        "n|rel|public.TodoImport_pkey",
+        "n|rel|public.TodoImport_userId_idempotencyKey_key"
+      ],
+      "reads": [
+        "n|sch|public",
+        "n|enum|public.TodoImportSource",
+        "n|enum|public.TodoImportStatus",
+        "n|enum|public.TodoImportTimeMode",
+        "n|enum|public.TodoVisibility"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "TodoImportItem"
+      ],
+      "writes": [
+        "s|tbl|public.TodoImportItem",
+        "n|tbl|public.TodoImportItem",
+        "e|tbl|public.TodoImportItem",
+        "n|rel|public.TodoImportItem",
+        "n|type|public.TodoImportItem",
+        "n|rel|public.TodoImportItem_pkey"
+      ],
+      "reads": [
+        "n|sch|public",
+        "n|enum|public.TodoImportItemStatus"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "TodoImportLink"
+      ],
+      "writes": [
+        "s|tbl|public.TodoImportLink",
+        "n|tbl|public.TodoImportLink",
+        "e|tbl|public.TodoImportLink",
+        "n|rel|public.TodoImportLink",
+        "n|type|public.TodoImportLink",
+        "n|rel|public.TodoImportLink_pkey",
+        "n|rel|public.TodoImportLink_userId_sourceKey_key"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "TodoImport",
+        "TodoImport_userId_active_key"
+      ],
+      "writes": [
+        "s|idx|public.TodoImport_userId_active_key",
+        "n|idx|public.TodoImport_userId_active_key",
+        "e|idx|public.TodoImport_userId_active_key",
+        "n|rel|public.TodoImport_userId_active_key"
+      ],
+      "reads": [
+        "n|tbl|public.TodoImport",
+        "n|sch|public",
+        "n|col|public.TodoImport.userId"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "TodoImport",
+        "TodoImport_status_updatedAt_idx"
+      ],
+      "writes": [
+        "s|idx|public.TodoImport_status_updatedAt_idx",
+        "n|idx|public.TodoImport_status_updatedAt_idx",
+        "e|idx|public.TodoImport_status_updatedAt_idx",
+        "n|rel|public.TodoImport_status_updatedAt_idx"
+      ],
+      "reads": [
+        "n|tbl|public.TodoImport",
+        "n|sch|public",
+        "n|col|public.TodoImport.status",
+        "n|col|public.TodoImport.updatedAt"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "TodoImportItem",
+        "TodoImportItem_importId_pending_idx"
+      ],
+      "writes": [
+        "s|idx|public.TodoImportItem_importId_pending_idx",
+        "n|idx|public.TodoImportItem_importId_pending_idx",
+        "e|idx|public.TodoImportItem_importId_pending_idx",
+        "n|rel|public.TodoImportItem_importId_pending_idx"
+      ],
+      "reads": [
+        "n|tbl|public.TodoImportItem",
+        "n|sch|public",
+        "n|col|public.TodoImportItem.importId",
+        "n|col|public.TodoImportItem.startDate",
+        "n|col|public.TodoImportItem.localTime",
+        "n|col|public.TodoImportItem.sourceKey"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "TodoImportLink",
+        "TodoImportLink_importId_todoId_idx"
+      ],
+      "writes": [
+        "s|idx|public.TodoImportLink_importId_todoId_idx",
+        "n|idx|public.TodoImportLink_importId_todoId_idx",
+        "e|idx|public.TodoImportLink_importId_todoId_idx",
+        "n|rel|public.TodoImportLink_importId_todoId_idx"
+      ],
+      "reads": [
+        "n|tbl|public.TodoImportLink",
+        "n|sch|public",
+        "n|col|public.TodoImportLink.importId",
+        "n|col|public.TodoImportLink.todoId"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "TodoImport"
+      ],
+      "writes": [
+        "s|fk|public.TodoImport.TodoImport_userId_fkey",
+        "n|fk|public.TodoImport.TodoImport_userId_fkey",
+        "e|fk|public.TodoImport.TodoImport_userId_fkey",
+        "n|con|public.TodoImport.TodoImport_userId_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.TodoImport",
+        "n|sch|public",
+        "n|tbl|public.User",
+        "n|sch|public",
+        "n|col|public.TodoImport.userId",
+        "n|col|public.User.id",
+        "e|uniqueness|public.User.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "TodoImportItem"
+      ],
+      "writes": [
+        "s|fk|public.TodoImportItem.TodoImportItem_importId_fkey",
+        "n|fk|public.TodoImportItem.TodoImportItem_importId_fkey",
+        "e|fk|public.TodoImportItem.TodoImportItem_importId_fkey",
+        "n|con|public.TodoImportItem.TodoImportItem_importId_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.TodoImportItem",
+        "n|sch|public",
+        "n|tbl|public.TodoImport",
+        "n|sch|public",
+        "n|col|public.TodoImportItem.importId",
+        "n|col|public.TodoImport.id",
+        "e|uniqueness|public.TodoImport.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "TodoImportLink"
+      ],
+      "writes": [
+        "s|fk|public.TodoImportLink.TodoImportLink_todoId_fkey",
+        "n|fk|public.TodoImportLink.TodoImportLink_todoId_fkey",
+        "e|fk|public.TodoImportLink.TodoImportLink_todoId_fkey",
+        "n|con|public.TodoImportLink.TodoImportLink_todoId_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.TodoImportLink",
+        "n|sch|public",
+        "n|tbl|public.Todo",
+        "n|sch|public",
+        "n|col|public.TodoImportLink.todoId",
+        "n|col|public.Todo.id",
+        "e|uniqueness|public.Todo.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "TodoImportLink"
+      ],
+      "writes": [
+        "s|fk|public.TodoImportLink.TodoImportLink_userId_fkey",
+        "n|fk|public.TodoImportLink.TodoImportLink_userId_fkey",
+        "e|fk|public.TodoImportLink.TodoImportLink_userId_fkey",
+        "n|con|public.TodoImportLink.TodoImportLink_userId_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.TodoImportLink",
+        "n|sch|public",
+        "n|tbl|public.User",
+        "n|sch|public",
+        "n|col|public.TodoImportLink.userId",
+        "n|col|public.User.id",
+        "e|uniqueness|public.User.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "TodoImportLink"
+      ],
+      "writes": [
+        "s|fk|public.TodoImportLink.TodoImportLink_importId_fkey",
+        "n|fk|public.TodoImportLink.TodoImportLink_importId_fkey",
+        "e|fk|public.TodoImportLink.TodoImportLink_importId_fkey",
+        "n|con|public.TodoImportLink.TodoImportLink_importId_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.TodoImportLink",
+        "n|sch|public",
+        "n|tbl|public.TodoImport",
+        "n|sch|public",
+        "n|col|public.TodoImportLink.importId",
+        "n|col|public.TodoImport.id",
+        "e|uniqueness|public.TodoImport.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "TodoImport",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "TodoImportItem",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "TodoImportLink",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "TodoImportItemStatus",
+        "values": [
+          "PENDING",
+          "CREATED",
+          "SKIPPED_DUPLICATE",
+          "SKIPPED_CAPACITY",
+          "SKIPPED_CATEGORY_MISSING",
+          "SKIPPED_INVALID"
+        ],
+        "entityType": "enums"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "TodoImportSource",
+        "values": [
+          "DEVICE_CALENDAR"
+        ],
+        "entityType": "enums"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "TodoImportStatus",
+        "values": [
+          "UPLOADING",
+          "QUEUED",
+          "RUNNING",
+          "COMPLETED",
+          "FAILED",
+          "CANCELED",
+          "ABANDONED",
+          "UNDOING",
+          "UNDONE"
+        ],
+        "entityType": "enums"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "TodoImportTimeMode",
+        "values": [
+          "TIME",
+          "DATE_ONLY"
+        ],
+        "entityType": "enums"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "userId",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "source",
+        "type": "TodoImportSource",
+        "typeSchema": "public",
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "status",
+        "type": "TodoImportStatus",
+        "typeSchema": "public",
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "idempotencyKey",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "requestHash",
+        "type": "varchar(64)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "timezone",
+        "type": "varchar(50)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "startDate",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "endDate",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "timeMode",
+        "type": "TodoImportTimeMode",
+        "typeSchema": "public",
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "visibility",
+        "type": "TodoVisibility",
+        "typeSchema": "public",
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "targets",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "collections",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "expectedItemCount",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "receivedItemCount",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "processedItemCount",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "createdCount",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "skippedDuplicateCount",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "skippedCapacityCount",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "skippedCategoryMissingCount",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "skippedInvalidCount",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "undoneCount",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "keptCompletedCount",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "firstDate",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "round",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "recoveryCount",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "failureReason",
+        "type": "varchar(50)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "createdAt",
+        "type": "timestamp(3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "updatedAt",
+        "type": "timestamp(3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "committedAt",
+        "type": "timestamp(3)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "completedAt",
+        "type": "timestamp(3)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "undoRequestedAt",
+        "type": "timestamp(3)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImportItem",
+        "name": "importId",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImportItem",
+        "name": "sourceKey",
+        "type": "varchar(64)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImportItem",
+        "name": "collectionKey",
+        "type": "varchar(64)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImportItem",
+        "name": "title",
+        "type": "varchar(200)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImportItem",
+        "name": "startDate",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImportItem",
+        "name": "endDate",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImportItem",
+        "name": "localTime",
+        "type": "varchar(5)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImportItem",
+        "name": "status",
+        "type": "TodoImportItemStatus",
+        "typeSchema": "public",
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'PENDING'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImportLink",
+        "name": "todoId",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImportLink",
+        "name": "userId",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImportLink",
+        "name": "sourceKey",
+        "type": "varchar(64)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImportLink",
+        "name": "importId",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImportLink",
+        "name": "createdAt",
+        "type": "timestamp(3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "TodoImport_userId_active_key",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "userId",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "\"status\" IN ('UPLOADING', 'QUEUED', 'RUNNING', 'UNDOING')",
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "TodoImport_status_updatedAt_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "status",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "updatedAt",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImportItem",
+        "name": "TodoImportItem_importId_pending_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "importId",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "startDate",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "localTime",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "sourceKey",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": "\"status\" = 'PENDING'",
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImportLink",
+        "name": "TodoImportLink_importId_todoId_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "importId",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "todoId",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "TodoImport_userId_fkey",
+        "nameExplicit": true,
+        "columns": [
+          "userId"
+        ],
+        "schemaTo": "public",
+        "tableTo": "User",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "CASCADE",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImportItem",
+        "name": "TodoImportItem_importId_fkey",
+        "nameExplicit": true,
+        "columns": [
+          "importId"
+        ],
+        "schemaTo": "public",
+        "tableTo": "TodoImport",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "CASCADE",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImportLink",
+        "name": "TodoImportLink_todoId_fkey",
+        "nameExplicit": true,
+        "columns": [
+          "todoId"
+        ],
+        "schemaTo": "public",
+        "tableTo": "Todo",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "CASCADE",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImportLink",
+        "name": "TodoImportLink_userId_fkey",
+        "nameExplicit": true,
+        "columns": [
+          "userId"
+        ],
+        "schemaTo": "public",
+        "tableTo": "User",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "CASCADE",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImportLink",
+        "name": "TodoImportLink_importId_fkey",
+        "nameExplicit": true,
+        "columns": [
+          "importId"
+        ],
+        "schemaTo": "public",
+        "tableTo": "TodoImport",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "CASCADE",
+        "onDelete": "SET NULL",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImportItem",
+        "name": "TodoImportItem_pkey",
+        "columns": [
+          "importId",
+          "sourceKey"
+        ],
+        "nameExplicit": true,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "TodoImport_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImportLink",
+        "name": "TodoImportLink_pkey",
+        "columns": [
+          "todoId"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImport",
+        "name": "TodoImport_userId_idempotencyKey_key",
+        "nameExplicit": true,
+        "columns": [
+          "userId",
+          "idempotencyKey"
+        ],
+        "nullsNotDistinct": false,
+        "entityType": "uniques"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "TodoImportLink",
+        "name": "TodoImportLink_userId_sourceKey_key",
+        "nameExplicit": true,
+        "columns": [
+          "userId",
+          "sourceKey"
+        ],
+        "nullsNotDistinct": false,
+        "entityType": "uniques"
+      }
+    }
+  ]
+}

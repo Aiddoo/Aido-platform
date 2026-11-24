@@ -27,20 +27,20 @@ src/
 
 최상위는 서버 모듈과 같은 이름의 영역이다. 화면과 데이터가 같으면 한 기능이다.
 
-| 영역                             | 기능                                                                          |
-| -------------------------------- | ----------------------------------------------------------------------------- |
-| `identity`                       | `auth`, `user`, `preference`, `consent`                                       |
-| `planning`                       | `todo`, `category`, `composer`(여러 기능을 조립해 4층)                        |
-| `notes`                          | `memo`(기준 기능)                                                             |
-| `social`                         | `friend`, `invite`, `nudge`, `moderation`                                     |
-| `engagement`                     | `comment`                                                                     |
-| `insights`                       | `achievement`, `report`                                                       |
-| `assistant`                      | `suggestion`                                                                  |
-| `billing`                        | `subscription`(결제·권한·한도의 단일 입구, 다른 기능의 한도 캐시 반영도 여기) |
-| `support`                        | `inquiry`                                                                     |
-| `app-config`                     | `app-version`, `whats-new`                                                    |
-| `device`                         | `widget`, `app-icon`, `store-review`, `activation`, `coachmark`               |
-| `voice`·`notification`·`weather` | 영역이 곧 기능이라 한 단계다. 안쪽 파일은 엔티티 접두사로 나눈다              |
+| 영역                             | 기능                                                                                        |
+| -------------------------------- | ------------------------------------------------------------------------------------------- |
+| `identity`                       | `auth`, `user`, `preference`, `consent`                                                     |
+| `planning`                       | `todo`, `category`, `todo-import`(캘린더 가져오기, 3층), `composer`(여러 기능을 조립해 4층) |
+| `notes`                          | `memo`(기준 기능)                                                                           |
+| `social`                         | `friend`, `invite`, `nudge`, `moderation`                                                   |
+| `engagement`                     | `comment`                                                                                   |
+| `insights`                       | `achievement`, `report`                                                                     |
+| `assistant`                      | `suggestion`                                                                                |
+| `billing`                        | `subscription`(결제·권한·한도의 단일 입구, 다른 기능의 한도 캐시 반영도 여기)               |
+| `support`                        | `inquiry`                                                                                   |
+| `app-config`                     | `app-version`, `whats-new`                                                                  |
+| `device`                         | `widget`, `app-icon`, `store-review`, `activation`, `coachmark`                             |
+| `voice`·`notification`·`weather` | 영역이 곧 기능이라 한 단계다. 안쪽 파일은 엔티티 접두사로 나눈다                            |
 
 새 기능을 둘 곳은 이 순서로 정한다.
 
@@ -110,14 +110,14 @@ features/{area}/{feature}/
 
 아래 층은 위 층을 모른다. 고칠 때 영향이 위로만 번진다.
 
-| 층  | 포함                                                                                                                                                                                            |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 5   | `app/`, `bootstrap`                                                                                                                                                                             |
-| 4   | `planning/composer`, `notes/memo`, `weather`, `notification`, `social/invite`, `device/activation`                                                                                              |
-| 3   | `voice`, `engagement/comment`, `social/friend`, `social/nudge`, `social/moderation`, `assistant/suggestion`, `insights/achievement`, `insights/report`, `app-config/whats-new`, `device/widget` |
-| 2   | `planning/todo`, `planning/category`, `device/coachmark`, `device/store-review`                                                                                                                 |
-| 1   | `identity/*`, `billing/subscription`, `support/inquiry`, `app-config/app-version`, `device/app-icon`                                                                                            |
-| 0   | `shared` → `core`. `core`는 아무것도 import하지 않고 `shared`는 feature·`bootstrap`을 import하지 않는다                                                                                         |
+| 층  | 포함                                                                                                                                                                                                                    |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 5   | `app/`, `bootstrap`                                                                                                                                                                                                     |
+| 4   | `planning/composer`, `notes/memo`, `weather`, `notification`, `social/invite`, `device/activation`                                                                                                                      |
+| 3   | `voice`, `planning/todo-import`, `engagement/comment`, `social/friend`, `social/nudge`, `social/moderation`, `assistant/suggestion`, `insights/achievement`, `insights/report`, `app-config/whats-new`, `device/widget` |
+| 2   | `planning/todo`, `planning/category`, `device/coachmark`, `device/store-review`                                                                                                                                         |
+| 1   | `identity/*`, `billing/subscription`, `support/inquiry`, `app-config/app-version`, `device/app-icon`                                                                                                                    |
+| 0   | `shared` → `core`. `core`는 아무것도 import하지 않고 `shared`는 feature·`bootstrap`을 import하지 않는다                                                                                                                 |
 
 | 가져오는 쪽에서 본 대상 | 가져와도 되는 것                                                        |
 | ----------------------- | ----------------------------------------------------------------------- |

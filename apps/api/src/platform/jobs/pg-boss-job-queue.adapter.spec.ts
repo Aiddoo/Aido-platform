@@ -431,6 +431,42 @@ describe("PgBossJobQueueAdapter — PostgreSQL 영속 큐", () => {
     });
   });
 
+  it("key당 하나만 실행하는 큐는 singleton 정책으로 만들고 실행 key를 singletonKey에, 멱등 key를 결정적 id에 싣는다", async () => {
+    // Given
+    const queue = defineQueue({
+      name: "single-active-queue",
+      payloadSchema: z.object({ importId: z.string(), round: z.int() }),
+      retry: DEAD_LETTER_JOB_POLICY,
+      worker: { localConcurrency: 1, pollingIntervalSeconds: 2 },
+      singleActivePerKey: true,
+    });
+
+    // When
+    await jobQueue.enqueue(
+      queue,
+      { importId: "import-1", round: 1 },
+      { idempotencyKey: "import:import-1:1", executionKey: "import-1" },
+    );
+
+    // Then
+    expect(boss.createQueueCalls).toEqual([
+      {
+        name: "single-active-queue",
+        options: expect.objectContaining({ policy: "singleton", retryLimit: 2 }),
+      },
+    ]);
+    expect(boss.updateQueueCalls).toEqual([
+      {
+        name: "single-active-queue",
+        options: expect.not.objectContaining({ policy: "singleton" }),
+      },
+    ]);
+    expect(boss.sendCalls[0]?.options).toMatchObject({
+      id: deterministicJobId("single-active-queue", "import:import-1:1"),
+      singletonKey: "import-1",
+    });
+  });
+
   it("findPayload는 결정적 id로 읽고 schema에 맞는 payload만 돌려준다", async () => {
     // Given
     boss.storedJobs.push(

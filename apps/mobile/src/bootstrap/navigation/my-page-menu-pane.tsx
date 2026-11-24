@@ -10,6 +10,7 @@ import { MyPagePaneLayout } from '@src/features/identity/user/components/my-page
 import { ProfileRow } from '@src/features/identity/user/components/profile-row';
 import { MyPageMenuNavigationProvider } from '@src/features/identity/user/hooks/use-my-page-menu-navigation';
 import { PushStatusValue } from '@src/features/notification/components/push-status-value';
+import { TodoImportMenuItem } from '@src/features/planning/todo-import/components/todo-import-menu-item';
 import { FriendCountValue } from '@src/features/social/friend/components/friend-count-value';
 import { InviteRewardButton } from '@src/features/social/invite/components/invite-reward-button';
 import { useIsInviteAvailable } from '@src/features/social/invite/hooks/use-is-invite-available';
@@ -121,6 +122,8 @@ export function MyPageMenuPane() {
               label={t('mypage.items.categories')}
               pathname="/settings/category-settings"
             />
+            <SettingsListGroup.Separator />
+            <TodoImportMenuItem />
             <SettingsListGroup.Separator />
             <MyPageMenuItem
               Icon={ThemeDuoIcon}

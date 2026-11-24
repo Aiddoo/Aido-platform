@@ -4,6 +4,7 @@ import {
   friendTodoListResponseSchema,
   type GetTodosQuery,
   todoOverviewResponseSchema,
+  todoResourceLimitResponseSchema,
   todoSummaryResponseSchema,
 } from '@aido/api/contracts/todo/v1';
 import type { ApiError } from '@src/core/errors/api-error';
@@ -14,6 +15,7 @@ import { noop } from 'es-toolkit';
 
 import type { DailyCompletionsResult } from '../domains/daily-completion.model';
 import type { TodoEditScope, TodoUpdateScope } from '../domains/todo-repeat.model';
+import type { TodoResourceLimit } from '../domains/todo-resource-limit.model';
 import type { TodoSeries } from '../domains/todo-series.model';
 import type {
   Todo,
@@ -52,6 +54,7 @@ import {
   toTodoDetails,
   toTodoListResult,
   toTodoOverview,
+  toTodoResourceLimit,
   toTodoSummary,
   toUpdateTodoRequest,
 } from './todo.mapper';
@@ -97,6 +100,21 @@ export class TodoApi {
       '[TodoApi] Invalid getTodoOverview response',
     );
   };
+
+  /** categoryId가 null이면 아직 없는 카테고리라 한도만 받는다 */
+  getResourceLimit = async (
+    { categoryId }: { categoryId: number | null },
+    signal?: AbortSignal,
+  ): Promise<Result<TodoResourceLimit, ApiError>> =>
+    parseApiResponse(
+      await this.#httpClient.get('v1/todos/resource-limit', {
+        signal,
+        params: { categoryId: categoryId ?? undefined },
+      }),
+      todoResourceLimitResponseSchema,
+      toTodoResourceLimit,
+      '[TodoApi] Invalid getResourceLimit response',
+    );
 
   getFriendTodos = async (
     friendUserId: string,

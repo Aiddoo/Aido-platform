@@ -6,4 +6,8 @@ import type { TodoCategoryWithCountReadModel } from "../read-models/todo-categor
 export abstract class TodoCategoryReaderPort {
   abstract listForUser(userId: UserId): Promise<TodoCategoryWithCountReadModel[]>;
   abstract validateOwnership(categoryId: TodoCategoryId, userId: UserId): Promise<void>;
+  abstract listOwnedCategoryIds(
+    userId: UserId,
+    categoryIds: readonly TodoCategoryId[],
+  ): Promise<ReadonlySet<number>>;
 }

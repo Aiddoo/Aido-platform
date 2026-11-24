@@ -125,6 +125,18 @@ export function useGetTodoOverviewQueryOptions() {
   });
 }
 
+/** 넣을 곳 여러 곳을 한 번에 읽는 곳(useSuspenseQueries)의 한도 조회 옵션. categoryId null은 아직 없는 새 카테고리다 */
+export function useGetTodoResourceLimitQueryOptionsFactory() {
+  const todoApi = useTodoApi();
+  return ({ categoryId }: { categoryId: number | null }) =>
+    queryOptions({
+      queryKey: TODO_QUERY_KEYS.resourceLimit({ categoryId }),
+      queryFn: async ({ signal }) => unwrap(await todoApi.getResourceLimit({ categoryId }, signal)),
+      // 할 일 하나를 쓸 때마다 무효화하지 않는 대신 넣을 곳을 볼 때마다 서버 수로 다시 맞춘다
+      staleTime: 0,
+    });
+}
+
 interface TodoSummaryQueryInput {
   date: DateKey;
   userId: string | null;

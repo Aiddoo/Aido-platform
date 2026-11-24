@@ -30,19 +30,19 @@
   "benefits": {
     "aiParsing": {
       "title": "More AI to-dos",
-      "description": "{{free}}\u00a0a\u00a0month on Free, up to {{premium}}\u00a0a\u00a0month with Premium"
+      "description": "{{free}} a month on Free, up to {{premium}} a month with Premium"
     },
     "voiceNote": {
-      "title": "Voice notes: {{premium}}\u00a0a\u00a0month, {{premiumMinutes}}\u00a0min each",
-      "description": "{{free}}\u00a0a\u00a0month, {{freeMinutes}}\u00a0min each on Free. {{premium}}\u00a0a\u00a0month, {{premiumMinutes}}\u00a0min each with Premium"
+      "title": "Voice notes: {{premium}} a month, {{premiumMinutes}} min each",
+      "description": "{{free}} a month, {{freeMinutes}} min each on Free. {{premium}} a month, {{premiumMinutes}} min each with Premium"
     },
     "nudge": {
       "title": "Unlimited nudges",
-      "description": "{{free}}\u00a0a\u00a0day on Free, unlimited with Premium"
+      "description": "{{free}} a day on Free, unlimited with Premium"
     },
     "cheer": {
       "title": "Unlimited cheers",
-      "description": "{{free}}\u00a0a\u00a0day on Free, unlimited with Premium"
+      "description": "{{free}} a day on Free, unlimited with Premium"
     },
     "reminder": {
       "title": "Choose your reminder times",
@@ -52,12 +52,16 @@
       "title": "Change the app icon",
       "description": "Free uses the default icon. With Premium, pick the one you like"
     },
+    "calendarImport": {
+      "title": "Import calendar events further ahead",
+      "description": "Free: next {{free}} days · Premium: up to {{premium}} days"
+    },
     "friends": {
       "title": "Unlimited friends",
       "description": "{{free}} on Free, unlimited with Premium"
     },
     "categories": {
-      "title": "Up to {{premium}}\u00a0categories",
+      "title": "Up to {{premium}} categories",
       "description": "{{free}} on Free, up to {{premium}} with Premium"
     },
     "aiRepeat": {
@@ -90,10 +94,10 @@
     "trialDisclosure": "Billed {{price}} from {{date}} · Cancel anytime",
     "renewalDisclosure": "Billed {{price}} · Cancel anytime",
     "renewalNotice": {
-      "appStore": "Subscriptions renew automatically at the same price unless canceled at least 24 hours before the period ends. You can cancel anytime in your App\u00a0Store subscription settings.",
-      "googlePlay": "Subscriptions renew automatically at the same price at the end of each period unless canceled. You can cancel anytime in your Google\u00a0Play subscription settings."
+      "appStore": "Subscriptions renew automatically at the same price unless canceled at least 24 hours before the period ends. You can cancel anytime in your App Store subscription settings.",
+      "googlePlay": "Subscriptions renew automatically at the same price at the end of each period unless canceled. You can cancel anytime in your Google Play subscription settings."
     },
-    "terms": "By purchasing, you agree to the <terms>Terms\u00a0of\u00a0Service</terms> and <privacy>Privacy\u00a0Policy</privacy>.",
+    "terms": "By purchasing, you agree to the <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>.",
     "amountDueToday": "Due today",
     "benefitChip": "Benefit {{index}}",
     "benefitQuota": "Free {{free}} → Premium {{premium}}",
@@ -226,6 +230,7 @@
     "reminderTimeDescription": "Get reminders at the times you choose. You'll still get reminders at your default time.",
     "appIconTitle": "Custom app icons are a Premium feature",
     "appIconDescription": "Give the app icon your own style.",
+    "calendarImportTitle": "Import events further ahead with Premium",
     "refillToday": "Resets to {{amount}} later today",
     "refillTomorrow": "Resets to {{amount}} tomorrow",
     "refillOn": "Resets to {{amount}} on {{date}}",
@@ -253,10 +258,11 @@
     "premium": "Premium",
     "unlimited": "Unlimited",
     "amount": {
-      "perMonth": "{{amount}}\u00a0a\u00a0month",
-      "perDay": "{{amount}}\u00a0a\u00a0day",
-      "people": "{{amount}}\u00a0friends",
-      "items": "{{amount}}\u00a0categories"
+      "perMonth": "{{amount}} a month",
+      "perDay": "{{amount}} a day",
+      "people": "{{amount}} friends",
+      "items": "{{amount}} categories",
+      "days": "{{amount}} days"
     }
   },
   "benefitSlides": {
@@ -324,6 +330,10 @@
       "appIcon": {
         "label": "Cat app icons",
         "term": "Pick a cat icon for your home screen."
+      },
+      "calendarImport": {
+        "label": "Import calendar events",
+        "term": "How many days ahead you can bring device calendar events in as to-dos."
       }
     }
   },

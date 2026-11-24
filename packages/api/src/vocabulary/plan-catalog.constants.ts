@@ -66,7 +66,18 @@ interface PlanFlagFeature {
   readonly clientOnly?: true;
 }
 
-type PlanFeatureDefinition = PlanQuotaFeature | PlanResourceFeature | PlanFlagFeature;
+/** 오늘부터 며칠 뒤까지 쓸 수 있는지. 세는 기능이 아니라 used가 없다. */
+interface PlanHorizonFeature {
+  readonly kind: "horizon";
+  readonly free: number;
+  readonly premium: number;
+}
+
+type PlanFeatureDefinition =
+  | PlanQuotaFeature
+  | PlanResourceFeature
+  | PlanFlagFeature
+  | PlanHorizonFeature;
 
 /** 출시 앱의 /me.entitlements가 아는 기능 키. 순서는 앱 표시·응답 정렬 순서다. */
 export const PREMIUM_FEATURE_KEYS = [
@@ -84,7 +95,11 @@ export const PREMIUM_FEATURE_KEYS = [
 export type PremiumFeature = (typeof PREMIUM_FEATURE_KEYS)[number];
 
 /** 1.15.0부터 더한 기능까지 포함한 전체 키. 순서는 GET /v1/entitlements 응답 순서다. */
-export const PLAN_FEATURE_KEYS = [...PREMIUM_FEATURE_KEYS, "VOICE_NOTE"] as const;
+export const PLAN_FEATURE_KEYS = [
+  ...PREMIUM_FEATURE_KEYS,
+  "VOICE_NOTE",
+  "CALENDAR_IMPORT",
+] as const;
 
 export type PlanFeature = (typeof PLAN_FEATURE_KEYS)[number];
 
@@ -126,6 +141,7 @@ export const PLAN_CATALOG = {
       maxCharacters: { free: 4000, premium: 40_000 },
     },
   },
+  CALENDAR_IMPORT: { kind: "horizon", free: 30, premium: 365 },
 } as const satisfies Record<PlanFeature, PlanFeatureDefinition>;
 
 type PlanFeaturesOfKind<TKind extends PlanFeatureDefinition["kind"]> = {
@@ -138,6 +154,7 @@ export type PlanQuotaFeatureKey = PlanFeaturesOfKind<"quota">;
 export type PlanResourceFeatureKey = PlanFeaturesOfKind<"resource">;
 export type PlanLimitFeatureKey = PlanQuotaFeatureKey | PlanResourceFeatureKey;
 export type PlanFlagFeatureKey = PlanFeaturesOfKind<"flag">;
+export type PlanHorizonFeatureKey = PlanFeaturesOfKind<"horizon">;
 
 /** 계량기가 있는 quota 기능 */
 export type MeteredFeatureKey = {

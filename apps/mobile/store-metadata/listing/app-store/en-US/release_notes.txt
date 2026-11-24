@@ -1,8 +1,13 @@
+New
+- Move your calendar events to Aido, the easy way. We heard it's hard to switch when your plans already live in your calendar. So we made a way to turn calendar events into to-dos in one go.
+- Pick calendars and a date range, and your events arrive as to-dos. Keep calendars separate or put everything in one category, and undo within 7 days.
+- Find it in Me > Settings > Import calendar events. It works with the calendars on your device (iCloud, Google, Outlook, and others synced to your device). Aido only reads your calendar and never changes or deletes anything in it.
+- For each calendar, create a new category (using the calendar's name and color) or use one you already have. You can also choose Include times and Share with friends. Sharing starts off.
+- If you leave the app while importing, the server keeps going. When it finishes, you see how many to-dos came in and why any were skipped. Undo removes only the imported to-dos you haven't completed. The same event is never imported twice, and holiday, birthday, and subscribed calendars start unchecked.
+- Importing is free. Free covers events up to 30 days ahead, and Premium up to 365 days ahead. The subscription screens now mention this too.
+
 Improvements
-- Sheets that slide up from the bottom now use native iOS sheets, so swiping down to close and typing feel more natural.
-- AI reports (Premium) now count “Perfect days” the same way as your streak. If several hours tie for the most to-dos finished, we show the earliest.
-- We updated the components behind payments, analytics, and crash reporting for better stability.
+- VoiceOver can read the calendar and range choices and the import progress.
 
 Bug fixes
-- Fixed the app closing when you opened friend search on iPad and Mac.
-- Fixed an error when the Home Screen widget loaded its summary right after midnight.
+- Fixed Weather asking for location again every time you opened it on Mac.

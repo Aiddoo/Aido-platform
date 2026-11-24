@@ -26,7 +26,7 @@
 | env                                 | 뜻                                                                                 |
 | ----------------------------------- | ---------------------------------------------------------------------------------- |
 | `FEATURE_DISCOVERY_ENABLED`         | 끄면 자동 열기, 새 기능 표시, 피드 카드가 모두 없다. 목록과 소개는 그대로 열린다   |
-| `FEATURE_DISCOVERY_CAMPAIGN_ID`     | 띄울 출시의 `campaignId`(예 `feature-discovery-1.16.0`)                            |
+| `FEATURE_DISCOVERY_CAMPAIGN_ID`     | 띄울 출시의 `campaignId`(예 `feature-discovery-1.17.0`)                            |
 | `FEATURE_DISCOVERY_MIN_APP_VERSION` | 그 소개를 번들한 첫 앱 버전. 낮은 앱은 열지 않는다                                 |
 | `FEATURE_DISCOVERY_AUTO_OPEN`       | 끄면 자동으로 열지 않고 목록에서만 연다                                            |
 | `FEATURE_DISCOVERY_LAUNCHED_AT`     | 켜면 필수. 1.15.0 이하 앱만 읽고(그 전 가입자에게만 자동), 1.15.1 앱은 읽지 않는다 |
@@ -43,7 +43,7 @@
 2. `constants/releases.constants.ts`에 `RELEASE_x_y_z`를 더하고 `RELEASES` 맨 앞에 넣는다. `version`과 `releasedOn`은 [패치 노트](https://aido.kr/ko/patch-notes)에서 그 기능이 나온 버전·날짜를 그대로 쓴다. `id`는 route·지표·stepper 키라 한 번 정하면 바꾸지 않고 버전을 읽어 내지도 않는다(지운 친구 초대 줄은 id `1.14.0`, 버전 `1.13.0`이었다). `cta`는 그 기능을 바로 쓸 화면이다. 자동으로 열 출시에만 `campaignId`(운영 `FEATURE_DISCOVERY_CAMPAIGN_ID` 값)를 둔다. 캠페인 id는 이 한 곳에만 있다. `releases.constants.test.ts`가 버전 순서, 최근 두 출시의 소개, 캠페인 출시의 소개를 확인한다.
 3. `components/release-x-y-z-steps.tsx`를 만들고 `app/(app)/whats-new/index.tsx`의 `match`에 잇는다. `TOUR_RELEASE_IDS`를 바꾸면 `exhaustive()`가 컴파일 에러로 알려 준다.
 4. `app/(app)/(tabs)/(me,memos,todos)/whats-new/releases.tsx`의 맨 위에 `<ReleaseRow />` 한 줄을 더한다.
-5. 장면은 화면 캡처 대신 실제 기능 부품으로 그린 예시다. `WhatsNewStep.Stage`에 기능 컴포넌트를 예시 값으로 올리고, 예시 글은 `whatsNew` 카탈로그(`v{x_y_z}.demo`)에 둔다. 마이크·네트워크·저장은 쓰지 않는다. 스스로 조회하거나 지표를 남기는 컴포넌트는 그대로 올리지 않고 값을 받는 표시 부품을 올린다(1.16.0: `SuggestionsList.Item`, `SuggestionStatus.Message`, 리포트 차트·머리말·코치 카드). 대본은 `useDemoScript`로 장면마다 한 번 돌고, 움직임 줄이기면 마지막 장면부터 보인다. 음량을 받는 음성 부품(`VoiceVisual`·`RecognizerWaveform`)에는 `useDemoVoiceLevel`의 UI 스레드 예시 음량을 넣고, 말이 끝나면 `isActive`를 꺼 프레임 콜백을 멈춘다. 계속 도는 움직임은 지금 보이는 단계에만 두고 한 장면에 눈에 띄는 움직임은 하나다.
+5. 장면은 화면 캡처 대신 실제 기능 부품으로 그린 예시다. `WhatsNewStep.Stage`에 기능 컴포넌트를 예시 값으로 올리고, 예시 글은 `whatsNew` 카탈로그(`v{x_y_z}.demo`)에 둔다. 마이크·네트워크·저장은 쓰지 않는다. 스스로 조회하거나 지표를 남기는 컴포넌트는 그대로 올리지 않고 값을 받는 표시 부품을 올린다(1.16.0: `SuggestionsList.Item`, `SuggestionStatus.Message`, 리포트 차트·머리말·코치 카드. 1.17.0: `CalendarSourceList.Item`, `CategoryMappingList.Item`, `TodoImportProgress.Stage`·`Meter`). 대본은 `useDemoScript`로 장면마다 한 번 돌고, 움직임 줄이기면 마지막 장면부터 보인다. 예시 장면은 읽기 도구에서 숨기고 제목·설명이 읽힌다. 계속 도는 움직임은 지금 보이는 단계에만 두고 한 장면에 눈에 띄는 움직임은 하나다.
 6. `locales/{ko,en}/whats-new.json`에 문구를 넣는다. 제목 1줄(약 14자), 설명 1~2줄(약 40자)이다.
 7. `constants/whats-new.events.ts`와 측정 문서를 확인한다. CTA 뒤 실제 사용은 `trackAttributedFeatureSuccess`로 잇는다.
 8. 운영 설정 `FEATURE_DISCOVERY_CAMPAIGN_ID`, `MIN_APP_VERSION`, `LAUNCHED_AT`, `AUTO_OPEN`을 바꾼다. 서버를 먼저 배포한다. `LAUNCHED_AT`은 켜면 필수라 계속 채우지만 1.15.0 이하 앱만 읽는다. 1.15.1부터 앱 모델(`WhatsNewCampaignConfig`)에 옮기지 않는다. 시작 체크리스트는 캠페인과 상관없이 가입 7일 동안 보인다.

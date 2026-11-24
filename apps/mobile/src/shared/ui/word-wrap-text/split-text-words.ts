@@ -20,13 +20,17 @@ export function splitRunsIntoLines(runs: readonly TextRun[]): TextRun[][] {
   return lines;
 }
 
+// 줄바꿈 없는 공백(U+00A0)은 빈칸이 아니라 단어 안 글자로 본다. 날짜("12월 23일")가 두 줄로 갈라지지 않는다
+const WORD_SEPARATOR = /([^\S\u00A0]+)/;
+const WORD_SEPARATOR_ONLY = /^[^\S\u00A0]+$/;
+
 export function splitRunsIntoWords(runs: readonly TextRun[]): TextRun[][] {
   const pieces = runs.flatMap((run) =>
-    run.text.split(/(\s+)/).map((piece): TextRun => ({ ...run, text: piece })),
+    run.text.split(WORD_SEPARATOR).map((piece): TextRun => ({ ...run, text: piece })),
   );
   const groups = pieces.reduce<TextRun[][]>(
     (words, piece) => {
-      if (/^\s+$/.test(piece.text)) {
+      if (WORD_SEPARATOR_ONLY.test(piece.text)) {
         return [...words, []];
       }
       if (piece.text === '') {

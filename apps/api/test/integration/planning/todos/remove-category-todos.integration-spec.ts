@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { omit } from "es-toolkit";
 import { PgBoss } from "pg-boss";
 
@@ -7,6 +7,7 @@ import { TODO_REMINDER_QUEUE } from "#api/modules/notification/reminders/notific
 import { TodoTitle } from "#api/modules/planning/shared/domain/todo-title.vo";
 import { TodoCategoryId } from "#api/modules/planning/todo-categories/domain/todo-category-id.vo";
 import { RemoveCategoryTodosUseCase } from "#api/modules/planning/todos/application/use-cases/remove-category-todos.use-case";
+import { RemoveTodosUseCase } from "#api/modules/planning/todos/application/use-cases/remove-todos.use-case";
 import { TodoId } from "#api/modules/planning/todos/domain/todo-id.vo";
 import { ReminderSchedulerAdapter } from "#api/modules/planning/todos/infrastructure/adapters/todo-reminder-scheduler.adapter";
 import { DrizzleTodoBulkRemoverAdapter } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-bulk-remover.adapter";
@@ -24,6 +25,7 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
 import { FakeTodoCache } from "#test/doubles/planning/fake-todo-cache";
+import { RecordingDomainEventPublisher } from "#test/doubles/planning/recording-domain-event-publisher";
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { RecordingAfterCommitRegistry } from "#test/doubles/platform/recording-after-commit-registry";
 import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
@@ -49,8 +51,10 @@ describe("카테고리의 할 일을 한꺼번에 지운다 (실제 PostgreSQL·
   let reminders: ReminderSchedulerAdapter;
   let uow: UnitOfWorkPort;
   let useCase: RemoveCategoryTodosUseCase;
+  let removeTodos: RemoveTodosUseCase;
   let todoRepository: DrizzleTodoRepository;
   let ownerId: string;
+  let friendId: string;
   let removedCategoryId: number;
   let keptCategoryId: number;
   let removed: SeededCategoryTodos;
@@ -85,6 +89,14 @@ describe("카테고리의 할 일을 한꺼번에 지운다 (실제 PostgreSQL·
       todoCache: new FakeTodoCache(),
       afterCommit: new RecordingAfterCommitRegistry(),
     });
+    removeTodos = new RemoveTodosUseCase({
+      bulkRemover: new DrizzleTodoBulkRemoverAdapter(transaction.transactionHost),
+      reminderScheduler: reminders,
+      eventPublisher: new RecordingDomainEventPublisher(),
+      todoCache: new FakeTodoCache(),
+      afterCommit: new RecordingAfterCommitRegistry(),
+      clock: new FixedClock(NOW),
+    });
     todoRepository = new DrizzleTodoRepository(transaction.transactionHost, new FixedClock(NOW));
   });
 
@@ -105,6 +117,7 @@ describe("카테고리의 할 일을 한꺼번에 지운다 (실제 PostgreSQL·
     });
     await client.insert(userTable).values([owner, friend]);
     ownerId = owner.id;
+    friendId = friend.id;
     const categories = await client
       .insert(todoCategory)
       .values([
@@ -248,5 +261,42 @@ describe("카테고리의 할 일을 한꺼번에 지운다 (실제 PostgreSQL·
     await expect(update).rejects.toBeInstanceOf(DatabaseRecordNotFoundError);
     await removal;
     expect(await client.$count(todo, eq(todo.id, targetId))).toBe(0);
+  });
+
+  it("할 일 묶음 지우기는 그 사용자의 완료하지 않은 할 일만 지우고 그 리마인더를 취소한다", async () => {
+    // Given
+    const todoIds = kept.todoIds.map((id) => TodoId.reconstitute(id));
+    const removedRows = await countTodoRows(client, removed.todoIds);
+    const completedIds = new Set(
+      (
+        await client
+          .select({ id: todo.id })
+          .from(todo)
+          .where(and(inArray(todo.id, kept.todoIds), eq(todo.completed, true)))
+      ).map((row) => row.id),
+    );
+
+    // When
+    const foreign = await uow.run(() =>
+      removeTodos.execute({ userId: UserId.reconstitute(friendId), todoIds }),
+    );
+    const own = await uow.run(() =>
+      removeTodos.execute({ userId: UserId.reconstitute(ownerId), todoIds }),
+    );
+
+    // Then
+    expect(completedIds.size).toBeGreaterThan(0);
+    expect([foreign, own]).toEqual([
+      { todoCount: 0 },
+      { todoCount: kept.todoIds.length - completedIds.size },
+    ]);
+    expect((await countTodoRows(client, kept.todoIds)).todos).toBe(completedIds.size);
+    expect(await countTodoRows(client, removed.todoIds)).toEqual(removedRows);
+    expect((await queuedReminderTodoIds()).toSorted()).toEqual(
+      [...removed.scheduledTodos, ...kept.scheduledTodos]
+        .map((scheduled) => scheduled.todoId)
+        .filter((todoId) => removed.todoIds.includes(todoId) || completedIds.has(todoId))
+        .toSorted(),
+    );
   });
 });

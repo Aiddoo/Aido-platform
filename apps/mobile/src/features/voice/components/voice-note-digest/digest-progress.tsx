@@ -70,7 +70,7 @@ DigestProgress.Step = function Step({ label, status, detail }: DigestStepProps) 
             height={fontScaledSize(14)}
           />
         )}
-        {status === 'doing' && <Spinner size="sm" color="accent" />}
+        {status === 'doing' && <Spinner size="sm" />}
       </Box>
       <Text
         size="b3"

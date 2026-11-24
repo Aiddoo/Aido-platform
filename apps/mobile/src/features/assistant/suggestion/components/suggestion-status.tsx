@@ -109,7 +109,7 @@ SuggestionStatus.Analyzing = function Analyzing() {
       description={t('suggestions.status.analyzingDescription')}
     >
       <SuggestionStatus.ActionRow>
-        <Spinner size="sm" color="accent" />
+        <Spinner size="sm" />
       </SuggestionStatus.ActionRow>
     </SuggestionStatus.Message>
   );

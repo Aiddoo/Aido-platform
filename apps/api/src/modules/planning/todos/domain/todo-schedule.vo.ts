@@ -1,4 +1,5 @@
 import { ValueObject } from "#api/shared/domain/model/value-object";
+import type { Timezone } from "#api/shared/domain/time/timezone.vo";
 
 import { resolveScheduledInstant } from "../../shared/domain/todo-calendar.domain-service.js";
 import { scheduleEndsBeforeStart } from "./todos.errors.js";
@@ -26,7 +27,7 @@ export interface TodoScheduleInput {
   readonly endDate: Temporal.PlainDate | null;
   readonly scheduledLocalTime: string | null;
   readonly isAllDay: boolean;
-  readonly timezone: string;
+  readonly timezone: string | Timezone;
 }
 
 export type TodoSchedulePatch = Partial<

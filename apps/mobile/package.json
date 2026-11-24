@@ -1,6 +1,6 @@
 {
   "name": "@aido/mobile",
-  "version": "1.16.1",
+  "version": "1.17.0",
   "private": true,
   "main": "index.ts",
   "scripts": {
@@ -69,6 +69,7 @@
     "expo-auth-session": "catalog:expo58",
     "expo-blur": "catalog:expo58",
     "expo-build-properties": "catalog:expo58",
+    "expo-calendar": "catalog:expo58",
     "expo-clipboard": "catalog:expo58",
     "expo-constants": "catalog:expo58",
     "expo-crypto": "catalog:expo58",

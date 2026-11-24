@@ -182,6 +182,27 @@ describe('TodoCategoryPolicy.findMoveTarget', () => {
   });
 });
 
+describe('TodoCategoryPolicy.filterByName', () => {
+  const categories = ['할 일', 'Work', '업무 일지'].map((name, index) =>
+    createTodoCategoryWithCount({ id: index + 1, name }),
+  );
+
+  it.each([
+    ['비어 있으면 모두 남긴다', '  ', ['할 일', 'Work', '업무 일지']],
+    ['대소문자를 가리지 않는다', 'work', ['Work']],
+    ['이름 가운데 들어 있어도 찾는다', '일', ['할 일', '업무 일지']],
+    ['없으면 비어 있다', '공부', []],
+  ])('%s', (_case, query, expected) => {
+    // When
+    const filtered = categories.filter((category) =>
+      TodoCategoryPolicy.filterByName(category, query),
+    );
+
+    // Then
+    expect(filtered.map(({ name }) => name)).toEqual(expected);
+  });
+});
+
 describe('findFirstInSortOrder', () => {
   it('목록 순서와 관계없이 정렬 순서가 가장 작은 것을 찾고, 비었으면 null이다', () => {
     // When

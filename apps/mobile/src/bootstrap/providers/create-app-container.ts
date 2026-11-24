@@ -30,6 +30,7 @@ import type { SocialShareGateway } from '@src/core/ports/social-share-gateway';
 import type { SpeechRecognizer } from '@src/core/ports/speech-recognizer';
 import type { EnumerableSyncStorage } from '@src/core/ports/sync-storage';
 import type { SystemShareGateway } from '@src/core/ports/system-share-gateway';
+import type { TodoImportSource } from '@src/core/ports/todo-import-source';
 import type { RefreshTokensRequest } from '@src/core/ports/token-refresher';
 import type { TokenStore } from '@src/core/ports/token-store';
 import type { VendorIdGateway } from '@src/core/ports/vendor-id-gateway';
@@ -83,6 +84,8 @@ import { PushRegistrationService } from '@src/features/notification/services/pus
 import { createPushNotificationEntryStore } from '@src/features/notification/stores/push-notification-entry.store';
 import { createPushOnboardingGuardStore } from '@src/features/notification/stores/push-onboarding-guard.store';
 import { TodoCategoryApi } from '@src/features/planning/category/apis/todo-category.api';
+import { TodoImportApi } from '@src/features/planning/todo-import/apis/todo-import.api';
+import { TodoImportUploadSession } from '@src/features/planning/todo-import/services/todo-import-upload.session';
 import { SubTodoApi } from '@src/features/planning/todo/apis/sub-todo.api';
 import { TodoApi } from '@src/features/planning/todo/apis/todo.api';
 import { FriendApi } from '@src/features/social/friend/apis/friend.api';
@@ -108,6 +111,7 @@ import {
   createFeatureAttributionStore,
 } from '@src/shared/analytics/feature-attribution';
 import { getNowInstant } from '@src/shared/date/clock';
+import { toDateKey } from '@src/shared/date/zoned';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
 import { DraftService } from '@src/shared/draft/draft.service';
 import { removeStoredValue } from '@src/shared/storage/define-stored-value';
@@ -157,6 +161,7 @@ export interface AppContainerPorts {
   viewCapture: ViewCaptureGateway;
   screenOrientation: ScreenOrientationGateway;
   deviceLocation: LocationGateway;
+  todoImportSource: TodoImportSource;
   applicationMetadata: NativeApplicationMetadataGateway;
   appStoreListing: AppStoreListingGateway;
   appStoreReview: AppStoreReviewGateway;
@@ -270,6 +275,8 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
 
   const weatherApi = new WeatherApi(authHttpClient, logger);
 
+  const todoImportApi = new TodoImportApi(authHttpClient);
+
   // 순서는 `DIContainer`·di-context 훅과 같다: shared, 포트, 기능 층 표(1 → 4)
   return {
     logger,
@@ -287,7 +294,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     syncStorage,
     accountSyncStorage: draftStorage,
 
-    deviceLocation: ports.deviceLocation,
+    todoImportSource: ports.todoImportSource,
     applicationMetadata: ports.applicationMetadata,
     socialAuth: ports.socialAuth,
     appStoreListing: ports.appStoreListing,
@@ -436,12 +443,25 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     widgetSyncService: new WidgetSyncService(ports.widgetBridge, ports.widgetStorage),
     widgetNavigationRepository: createWidgetNavigationRepository(ports.widgetStorage),
 
+    todoImportApi,
+    todoImportUploadSession: new TodoImportUploadSession({
+      todoImportApi,
+      source: ports.todoImportSource,
+      storage: draftStorage,
+      signOutEpoch,
+      idGenerator: ports.idGenerator,
+      logger,
+      getTodayKey: () => toDateKey(getNowInstant(), ports.getTimezone()),
+      random: Math.random,
+    }),
+
     memoApi: new MemoApi(authHttpClient),
 
     weatherApi,
     weatherLocationService: new WeatherLocationService({
       gateway: ports.deviceLocation,
       weatherApi,
+      storage: syncStorage,
       logger,
     }),
 

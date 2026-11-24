@@ -12,6 +12,7 @@ import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.po
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
 import { TodoCategoryCachePort } from "./application/ports/todo-category-cache.port.js";
+import { TodoCategoryCreatorPort } from "./application/ports/todo-category-creator.port.js";
 import { TodoCategoryLimitReaderPort } from "./application/ports/todo-category-limit.reader.port.js";
 import { TodoCategoryRepositoryPort } from "./application/ports/todo-category.repository.port.js";
 import { CreateTodoCategoryUseCase } from "./application/use-cases/create-todo-category.use-case.js";
@@ -22,6 +23,8 @@ import { GetTodoCategoryUseCase } from "./application/use-cases/get-todo-categor
 import { ListTodoCategoriesUseCase } from "./application/use-cases/list-todo-categories.use-case.js";
 import { ReorderTodoCategoryUseCase } from "./application/use-cases/reorder-todo-category.use-case.js";
 import { UpdateTodoCategoryUseCase } from "./application/use-cases/update-todo-category.use-case.js";
+import { WriteTodoCategoryUseCase } from "./application/use-cases/write-todo-category.use-case.js";
+import { TodoCategoryCreatorAdapter } from "./infrastructure/adapters/todo-category-creator.adapter.js";
 import { TodoCategoryLimitReaderAdapter } from "./infrastructure/adapters/todo-category-limit-reader.adapter.js";
 import { DrizzleTodoCategoryRepository } from "./infrastructure/persistence/drizzle-todo-category.repository.js";
 
@@ -40,11 +43,20 @@ export const PLANNING_TODO_CATEGORIES_PROVIDERS = [
     repository: TodoCategoryRepositoryPort,
     limitReader: TodoCategoryLimitReaderPort,
   }),
-  provideUseCase(CreateTodoCategoryUseCase, {
+  provideUseCase(WriteTodoCategoryUseCase, {
     clock: ClockPort,
     repository: TodoCategoryRepositoryPort,
-    cache: TodoCategoryCachePort,
     limitReader: TodoCategoryLimitReaderPort,
+  }),
+  provideUseCase(TodoCategoryCreatorAdapter, {
+    writeCategory: WriteTodoCategoryUseCase,
+    cache: TodoCategoryCachePort,
+    afterCommit: AfterCommitTaskRegistryPort,
+  }),
+  { provide: TodoCategoryCreatorPort, useExisting: TodoCategoryCreatorAdapter },
+  provideUseCase(CreateTodoCategoryUseCase, {
+    writeCategory: WriteTodoCategoryUseCase,
+    cache: TodoCategoryCachePort,
     mutationLock: MutationLockPort,
     unitOfWork: UnitOfWorkPort,
     logger: loggerFor(CreateTodoCategoryUseCase),

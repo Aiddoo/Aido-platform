@@ -30,6 +30,7 @@
 | 권한·한도·플랜·만료·유료 기능   | [유료 기능과 권한](entitlements.md)                                                                |
 | 구독·결제 웹훅                  | [결제](billing.md)                                                                                 |
 | 카테고리 삭제·안의 할 일 처리   | [할 일 카테고리](todo-categories.md)                                                               |
+| 캘린더 가져오기·작업·되돌리기   | [캘린더 가져오기](todo-imports.md)                                                                 |
 | 반복 할 일·휴면                 | [반복 할 일](todo-series.md), [휴면·복귀](todo-series-dormancy.md)                                 |
 | 할 일 떠 있는 시각              | [서버 구현](todo-floating-time.md), [공통 규칙](../../../docs/conventions/dates.md#5-떠-있는-시각) |
 | 푸시 정책·일정·알림 종류·문구   | [푸시 알림](push-notifications.md)                                                                 |

@@ -52,6 +52,27 @@ export function resolveMessage(code: string | null, serverMessage: string | null
   return catalogMessage ?? (serverMessage || t('errors:fallback'));
 }
 
+const RETRY_AFTER_HEADER = 'Retry-After';
+const SECOND_MS = 1000;
+const DELTA_SECONDS_PATTERN = /^\d+$/u;
+
+/** `Retry-After`는 초(정수)나 HTTP 날짜다. 날짜는 응답의 `Date`를 기준으로 재 기기 시계 오차를 피한다. 읽지 못하면 null */
+export function parseRetryAfterMs(response: Response): number | null {
+  const value = response.headers.get(RETRY_AFTER_HEADER)?.trim();
+  if (value == null || value === '') {
+    return null;
+  }
+  if (DELTA_SECONDS_PATTERN.test(value)) {
+    return Number(value) * SECOND_MS;
+  }
+  const retryAtMs = Date.parse(value);
+  const respondedAtMs = Date.parse(response.headers.get('Date') ?? '');
+  if (Number.isNaN(retryAtMs) || Number.isNaN(respondedAtMs)) {
+    return null;
+  }
+  return Math.max(retryAtMs - respondedAtMs, 0);
+}
+
 export function toApiError(error: HTTPError): ApiError {
   // ky v2는 에러 본문을 `error.data`로 미리 파싱하며 응답 스트림을 소비한다(`response.json()` 재호출 불가)
   const envelope = readErrorEnvelope(error.data);
@@ -61,7 +82,10 @@ export function toApiError(error: HTTPError): ApiError {
     resolveMessage(envelope?.code ?? null, envelope?.message ?? null),
     error.response.status,
     envelope?.details ?? null,
-    { requestId: error.request.headers.get(REQUEST_ID_HEADER) ?? undefined },
+    {
+      requestId: error.request.headers.get(REQUEST_ID_HEADER) ?? undefined,
+      retryAfterMs: parseRetryAfterMs(error.response),
+    },
   );
 }
 
