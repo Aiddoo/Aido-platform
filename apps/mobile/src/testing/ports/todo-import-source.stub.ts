@@ -72,7 +72,7 @@ interface TodoImportSourceStubOptions {
   events?: readonly ImportEventRecord[];
 }
 
-/** 아직 권한을 묻지 않은 기기에 개인·공휴일 캘린더가 있다. `readEvents`는 고른 캘린더의 일정만 준다 */
+/** 아직 권한을 묻지 않은 기기에 개인·공휴일 캘린더가 있다. `previewEvents`·`readEvents`는 고른 캘린더의 일정만 준다 */
 export function createTodoImportSourceStub({
   permission = { status: 'undetermined', canAskAgain: true },
   collections = DEFAULT_COLLECTIONS,
@@ -85,6 +85,11 @@ export function createTodoImportSourceStub({
     })),
     listCollections: mockMethod<TodoImportSource['listCollections']>(async () =>
       collections.map((collection) => ({ ...collection })),
+    ),
+    previewEvents: mockMethod<TodoImportSource['previewEvents']>(async ({ collectionKeys }) =>
+      events
+        .filter((event) => collectionKeys.includes(event.collectionKey))
+        .map(({ collectionKey, time, isCanceled }) => ({ collectionKey, time, isCanceled })),
     ),
     readEvents: mockMethod<TodoImportSource['readEvents']>(async ({ collectionKeys }) =>
       events

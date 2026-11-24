@@ -1,5 +1,6 @@
 import type {
   ImportAccountKind,
+  ImportEventPreview,
   ImportEventRecord,
   ImportRecordTime,
 } from '@src/core/ports/todo-import-source';
@@ -148,6 +149,27 @@ function isCanceledStatus(status: string | null): boolean {
   return status === 'canceled' || status === 'cancelled';
 }
 
+/** 날짜를 읽을 수 없는 일정(깨진 날짜·범위 밖 값)은 null이라 그 일정만 빠진다 */
+export function toImportEventPreview({
+  event,
+  collectionKey,
+  allDayTimezone,
+}: {
+  event: CalendarEventFields;
+  collectionKey: string;
+  allDayTimezone: string;
+}): ImportEventPreview | null {
+  try {
+    return {
+      collectionKey,
+      time: toRecordTime(event, allDayTimezone),
+      isCanceled: isCanceledStatus(event.status),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function toImportEventRecord({
   event,
   collectionKey,
@@ -158,19 +180,20 @@ export async function toImportEventRecord({
   collectionKey: string;
   allDayTimezone: string;
   hashText: HashText;
-}): Promise<ImportEventRecord> {
-  const time = toRecordTime(event, allDayTimezone);
+}): Promise<ImportEventRecord | null> {
+  const preview = toImportEventPreview({ event, collectionKey, allDayTimezone });
+  if (preview == null) {
+    return null;
+  }
   // 일정·캘린더 id는 기기마다 달라 내용(제목·시작·끝·종일)으로 키를 만든다. 다른 기기·다른 캘린더에서
   // 같은 일정을 다시 가져와도 한 번만 들어오고, 반복 일정의 회차는 시작이 달라 따로 들어온다
   const occurrenceKey = await hashText(
-    `${toTitleFingerprint(event.title)}\n${toTimeFingerprint(time)}`,
+    `${toTitleFingerprint(event.title)}\n${toTimeFingerprint(preview.time)}`,
   );
 
   return {
-    collectionKey,
+    ...preview,
     occurrenceKey,
     title: event.title === '' ? null : event.title,
-    time,
-    isCanceled: isCanceledStatus(event.status),
   };
 }

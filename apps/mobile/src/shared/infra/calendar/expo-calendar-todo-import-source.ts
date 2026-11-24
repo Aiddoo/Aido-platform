@@ -1,7 +1,13 @@
+import type { AppLogger } from '@src/core/ports/app-logger';
 import type { OsPermission } from '@src/core/ports/os-permission';
-import type { ImportCollectionRecord, TodoImportSource } from '@src/core/ports/todo-import-source';
+import type {
+  ImportCollectionRecord,
+  ReadEventsInput,
+  TodoImportSource,
+} from '@src/core/ports/todo-import-source';
 import { toInstant } from '@src/shared/date/instant';
 import { instantToDate } from '@src/shared/date/native-date';
+import { compact } from 'es-toolkit';
 import * as Calendar from 'expo-calendar';
 import { CryptoDigestAlgorithm, CryptoEncoding, digestStringAsync } from 'expo-crypto';
 import { PermissionsAndroid } from 'react-native';
@@ -12,8 +18,10 @@ import {
   type CalendarEventFields,
   getAndroidAccountKind,
   getIosAccountKind,
+  toImportEventPreview,
   toImportEventRecord,
 } from './calendar-import-record';
+import { CALENDAR_LOG_EVENT } from './calendar-log-events';
 
 const ANDROID_ALL_DAY_TIMEZONE = 'UTC';
 
@@ -78,7 +86,7 @@ function toCalendarEventFields(event: Calendar.ExpoCalendarEvent): CalendarEvent
   };
 }
 
-function createExpoCalendarTodoImportSource(): TodoImportSource {
+export function createExpoCalendarTodoImportSource(logger: AppLogger): TodoImportSource {
   let calendarIdsByCollectionKey = new Map<string, string>();
 
   async function listCollections() {
@@ -112,6 +120,37 @@ function createExpoCalendarTodoImportSource(): TodoImportSource {
     });
   }
 
+  async function listEventFields({ collectionKeys, startsAt, endsAt }: ReadEventsInput) {
+    const calendars = await resolveCalendars(collectionKeys);
+    // 빈 목록을 넘기면 Android는 모든 캘린더의 일정을 돌려준다
+    if (calendars.length === 0) {
+      return { entries: [], allDayTimezone: getAllDayTimezone() };
+    }
+    const collectionKeysByCalendarId = new Map(
+      calendars.map(({ collectionKey, calendarId }) => [calendarId, collectionKey]),
+    );
+    const events = await Calendar.listEvents(
+      calendars.map(({ calendarId }) => calendarId),
+      instantToDate(toInstant(startsAt)),
+      instantToDate(toInstant(endsAt)),
+    );
+    const entries = events.flatMap((event) => {
+      const collectionKey = collectionKeysByCalendarId.get(event.calendarId);
+      return collectionKey == null ? [] : [{ event: toCalendarEventFields(event), collectionKey }];
+    });
+    return { entries, allDayTimezone: getAllDayTimezone() };
+  }
+
+  // 일정 하나를 읽지 못해도 나머지는 가져온다. 로그에는 개수만 남긴다
+  function dropUnreadable<T>(records: readonly (T | null)[]): T[] {
+    const readable = compact(records);
+    const skippedCount = records.length - readable.length;
+    if (skippedCount > 0) {
+      logger.warn(CALENDAR_LOG_EVENT.UNREADABLE_EVENTS_SKIPPED, { total: skippedCount });
+    }
+    return readable;
+  }
+
   return {
     getPermission: async () => {
       if (process.env.EXPO_OS === 'android') {
@@ -126,41 +165,25 @@ function createExpoCalendarTodoImportSource(): TodoImportSource {
       return toOsPermission(await Calendar.requestCalendarPermissions());
     },
     listCollections,
-    readEvents: async ({ collectionKeys, startsAt, endsAt }) => {
-      const calendars = await resolveCalendars(collectionKeys);
-      // 빈 목록을 넘기면 Android는 모든 캘린더의 일정을 돌려준다
-      if (calendars.length === 0) {
-        return [];
-      }
-      const collectionKeysByCalendarId = new Map(
-        calendars.map(({ collectionKey, calendarId }) => [calendarId, collectionKey]),
+    previewEvents: async (input) => {
+      const { entries, allDayTimezone } = await listEventFields(input);
+      return dropUnreadable(
+        entries.map((entry) => toImportEventPreview({ ...entry, allDayTimezone })),
       );
-      const events = await Calendar.listEvents(
-        calendars.map(({ calendarId }) => calendarId),
-        instantToDate(toInstant(startsAt)),
-        instantToDate(toInstant(endsAt)),
-      );
-      const allDayTimezone =
-        process.env.EXPO_OS === 'android' ? ANDROID_ALL_DAY_TIMEZONE : getDeviceTimezone();
-
-      return Promise.all(
-        events.flatMap((event) => {
-          const collectionKey = collectionKeysByCalendarId.get(event.calendarId);
-          if (collectionKey == null) {
-            return [];
-          }
-          return [
-            toImportEventRecord({
-              event: toCalendarEventFields(event),
-              collectionKey,
-              allDayTimezone,
-              hashText: hashSha256,
-            }),
-          ];
-        }),
+    },
+    readEvents: async (input) => {
+      const { entries, allDayTimezone } = await listEventFields(input);
+      return dropUnreadable(
+        await Promise.all(
+          entries.map((entry) =>
+            toImportEventRecord({ ...entry, allDayTimezone, hashText: hashSha256 }),
+          ),
+        ),
       );
     },
   };
 }
 
-export const expoCalendarTodoImportSource = createExpoCalendarTodoImportSource();
+function getAllDayTimezone() {
+  return process.env.EXPO_OS === 'android' ? ANDROID_ALL_DAY_TIMEZONE : getDeviceTimezone();
+}

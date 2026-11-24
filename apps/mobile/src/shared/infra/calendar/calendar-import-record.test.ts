@@ -4,6 +4,7 @@ import {
   type CalendarEventFields,
   getAndroidAccountKind,
   getIosAccountKind,
+  toImportEventPreview,
   toImportEventRecord,
 } from './calendar-import-record';
 
@@ -26,13 +27,18 @@ function createEvent(overrides: Partial<CalendarEventFields> = {}): CalendarEven
   };
 }
 
-function readRecord(event: CalendarEventFields, allDayTimezone = 'Asia/Seoul') {
-  return toImportEventRecord({
+/** 날짜를 읽는 일정만 쓰는 테스트라 읽지 못하면 그 자리에서 실패한다 */
+async function readRecord(event: CalendarEventFields, allDayTimezone = 'Asia/Seoul') {
+  const record = await toImportEventRecord({
     event,
     collectionKey: 'collection-key',
     allDayTimezone,
     hashText: hashSha256,
   });
+  if (record == null) {
+    throw new Error('날짜를 읽지 못했습니다');
+  }
+  return record;
 }
 
 describe('toImportEventRecord', () => {
@@ -206,6 +212,48 @@ describe('toImportEventRecord', () => {
 
     // Then
     expect(record.title).toBeNull();
+  });
+
+  it.each([
+    ['시작이 날짜가 아니면', { startDate: 'not-a-date' }],
+    ['끝이 잘못된 Date면', { endDate: new Date(Number.NaN) }],
+  ])('%s 그 일정만 빠지고(null) 던지지 않는다', async (_case, change) => {
+    // Given
+    const hashText = jest.fn(hashSha256);
+
+    // When
+    const record = await toImportEventRecord({
+      event: createEvent(change),
+      collectionKey: 'collection-key',
+      allDayTimezone: 'Asia/Seoul',
+      hashText,
+    });
+
+    // Then
+    expect(record).toBeNull();
+    expect(hashText).not.toHaveBeenCalled();
+  });
+});
+
+describe('toImportEventPreview', () => {
+  it('일정 수를 세는 값은 해시를 만들지 않고 제목도 담지 않는다', () => {
+    // When
+    const preview = toImportEventPreview({
+      event: createEvent(),
+      collectionKey: 'collection-key',
+      allDayTimezone: 'Asia/Seoul',
+    });
+
+    // Then
+    expect(preview).toEqual({
+      collectionKey: 'collection-key',
+      time: {
+        kind: 'timed',
+        startsAt: '2026-11-24T01:00:00.000Z',
+        endsAt: '2026-11-24T02:00:00.000Z',
+      },
+      isCanceled: false,
+    });
   });
 });
 

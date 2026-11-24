@@ -23,23 +23,31 @@ export interface ImportCollectionRecord {
   accountKind: ImportAccountKind;
 }
 
-export interface ImportEventRecord {
+// 고른 기간의 일정 수를 셀 때 쓴다. 제목을 읽지 않고 회차 키(해시)도 만들지 않는다
+export interface ImportEventPreview {
   collectionKey: string;
+  time: ImportRecordTime;
+  isCanceled: boolean;
+}
+
+export interface ImportEventRecord extends ImportEventPreview {
   // 제목·시작·끝·종일의 sha256 hex다. 기기·캘린더가 달라도 같은 일정이면 같다
   occurrenceKey: string;
   title: string | null;
-  time: ImportRecordTime;
-  isCanceled: boolean;
+}
+
+export interface ReadEventsInput {
+  collectionKeys: readonly string[];
+  startsAt: string;
+  endsAt: string;
 }
 
 export interface TodoImportSource {
   getPermission(): Promise<OsPermission>;
   requestPermission(): Promise<OsPermission>;
   listCollections(): Promise<ImportCollectionRecord[]>;
-  // core는 shared의 Instant를 모르므로 ISO 8601 순간 문자열로 받는다. 반복 일정은 회차마다 하나다
-  readEvents(input: {
-    collectionKeys: readonly string[];
-    startsAt: string;
-    endsAt: string;
-  }): Promise<ImportEventRecord[]>;
+  // core는 shared의 Instant를 모르므로 ISO 8601 순간 문자열로 받는다. 반복 일정은 회차마다 하나이고
+  // 날짜를 읽을 수 없는 일정은 빼고 준다
+  previewEvents(input: ReadEventsInput): Promise<ImportEventPreview[]>;
+  readEvents(input: ReadEventsInput): Promise<ImportEventRecord[]>;
 }
