@@ -55,6 +55,7 @@
     "receivedTitle_other": "Holiday & birthday calendars ({{count}})",
     "itemCount_one": "{{count}} event",
     "itemCount_other": "{{count}} events",
+    "noEventsInRange": "No events",
     "emptyTitle": "No events to import in this range",
     "emptyDescription": "Try a longer range, or check that your calendar app has events",
     "tooMany": "You can import up to {{limit}} events at once. Choose a shorter range or fewer calendars",

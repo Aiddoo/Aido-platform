@@ -52,6 +52,7 @@
     },
     "receivedTitle": "공휴일·생일 캘린더 {{count}}개",
     "itemCount": "{{count}}개",
+    "noEventsInRange": "일정 없음",
     "emptyTitle": "이 기간에 가져올 일정이 없어요",
     "emptyDescription": "기간을 늘리거나, 캘린더 앱에 일정이 있는지 확인해 주세요",
     "tooMany": "한 번에 {{limit}}개까지 가져올 수 있어요. 기간이나 캘린더를 줄여 주세요",

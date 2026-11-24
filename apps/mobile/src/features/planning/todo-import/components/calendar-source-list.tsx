@@ -175,7 +175,10 @@ CalendarSourceList.Item = function Item({
 }: ItemProps) {
   const { t } = useTranslation('todoImport');
   const isDisabled = !TodoImportCollectionPolicy.isSelectable(collection);
-  const countLabel = t('calendars.itemCount', { count: collection.itemCount });
+  // 고른 기간에 일정이 없어 고를 수 없는 이유를 개수 대신 말로 보인다
+  const countLabel = isDisabled
+    ? t('calendars.noEventsInRange')
+    : t('calendars.itemCount', { count: collection.itemCount });
 
   return (
     <ControlField
