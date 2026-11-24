@@ -59,6 +59,8 @@
     "emptyTitle": "No events to import in this range",
     "emptyDescription": "Try a longer range, or check that your calendar app has events",
     "tooMany": "You can import up to {{limit}} events at once. Choose a shorter range or fewer calendars",
+    "selectedCount_one": "{{count}} event will be imported",
+    "selectedCount_other": "{{count}} events will be imported",
     "missingHelp": {
       "open": "Missing a calendar?",
       "title": "Missing a calendar?",

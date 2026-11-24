@@ -1,3 +1,5 @@
+import { TODO_IMPORT_LIMITS } from '@aido/api/vocabulary';
+
 import { createImportCollection } from '../__tests__/todo-import.fixtures';
 import { TodoImportCollectionPolicy } from './todo-import-collection.model';
 
@@ -27,5 +29,41 @@ describe('TodoImportCollectionPolicy.getSelectedCollections', () => {
 
     // Then
     expect(selected.map((collection) => collection.collectionKey)).toEqual(['holidays']);
+  });
+});
+
+describe('TodoImportCollectionPolicy.isOverImportLimit', () => {
+  it('고른 일정 수가 한 번에 가져올 수 있는 수와 같으면 시작할 수 있다', () => {
+    // Given
+    const collections = [
+      createImportCollection({
+        collectionKey: 'a',
+        itemCount: TODO_IMPORT_LIMITS.MAX_ITEMS_PER_IMPORT - 1,
+      }),
+      createImportCollection({ collectionKey: 'b', itemCount: 1 }),
+    ];
+
+    // When
+    const isOver = TodoImportCollectionPolicy.isOverImportLimit(collections);
+
+    // Then
+    expect(isOver).toBe(false);
+  });
+
+  it('한 개라도 넘으면 시작하지 못한다', () => {
+    // Given
+    const collections = [
+      createImportCollection({
+        collectionKey: 'a',
+        itemCount: TODO_IMPORT_LIMITS.MAX_ITEMS_PER_IMPORT,
+      }),
+      createImportCollection({ collectionKey: 'b', itemCount: 1 }),
+    ];
+
+    // When
+    const isOver = TodoImportCollectionPolicy.isOverImportLimit(collections);
+
+    // Then
+    expect(isOver).toBe(true);
   });
 });

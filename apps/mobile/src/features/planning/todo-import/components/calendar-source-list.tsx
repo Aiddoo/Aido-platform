@@ -134,7 +134,7 @@ export function CalendarSourceList({
           hideSeparator
         >
           <Accordion.Item value={RECEIVED_ACCORDION_VALUE}>
-            <Accordion.Trigger className="px-1 py-2">
+            <Accordion.Trigger className="min-h-12 px-1 py-2">
               <Text size="b2" weight="semibold" shade={9} numberOfLines={1} className="flex-1">
                 {t('calendars.receivedTitle', { count: receivedCollections.length })}
               </Text>
@@ -188,7 +188,7 @@ CalendarSourceList.Item = function Item({
       accessibilityRole="checkbox"
       accessibilityState={{ checked: isSelected, disabled: isDisabled }}
       accessibilityLabel={`${collection.title}, ${countLabel}`}
-      className="px-4"
+      className="min-h-12 px-4"
     >
       <ListRow
         verticalPadding="medium"
@@ -255,6 +255,7 @@ function ItemSkeleton() {
     <ListRow
       verticalPadding="medium"
       horizontalPadding="medium"
+      className="min-h-12"
       left={<Skeleton className="size-2.5 rounded-full" />}
       contents={<TextSkeleton size="b2" className="w-28" />}
       right={<Skeleton className="size-5 rounded-md" />}

@@ -1,3 +1,5 @@
+import { TODO_IMPORT_LIMITS } from '@aido/api/vocabulary';
+import { sumBy } from 'es-toolkit';
 import { match, P } from 'ts-pattern';
 import { z } from 'zod';
 
@@ -77,9 +79,20 @@ function getSelectedCollections(
   );
 }
 
+function calculateItemCount(collections: readonly ImportCollection[]) {
+  return sumBy(collections, (collection) => collection.itemCount);
+}
+
+/** 서버가 한 번에 받는 일정 수(`MAX_ITEMS_PER_IMPORT`)를 넘으면 시작하지 못한다 */
+function isOverImportLimit(collections: readonly ImportCollection[]) {
+  return TODO_IMPORT_LIMITS.MAX_ITEMS_PER_IMPORT < calculateItemCount(collections);
+}
+
 export const TodoImportCollectionPolicy = {
   isSubscribedCalendar,
   isSelectable,
   isDefaultSelected,
   getSelectedCollections,
+  calculateItemCount,
+  isOverImportLimit,
 } as const;

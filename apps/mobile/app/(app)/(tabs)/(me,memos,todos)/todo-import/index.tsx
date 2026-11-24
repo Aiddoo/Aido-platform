@@ -56,16 +56,17 @@ import {
   Spacing,
   STACK_BACK_ICON,
   Steps,
+  StyledSafeAreaView,
   Text,
   useAppToast,
   useOpenSheet,
   usePaneSizeClass,
   VStack,
 } from '@src/shared/ui';
+import { cn } from '@src/shared/utils/cn';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { sumBy } from 'es-toolkit';
 import { type NavigationAction, router, Stack, useNavigation, usePreventRemove } from 'expo-router';
-import { Suspense, useState } from 'react';
+import { Suspense, useDeferredValue, useState } from 'react';
 import { type UseFormReturn, useForm, useFormState, useWatch } from 'react-hook-form';
 import { isMatching, match } from 'ts-pattern';
 
@@ -224,18 +225,23 @@ function CalendarsStep({ form, onNext }: { form: TodoImportForm; onNext: () => v
   const dateFormatContext = useDateFormatContext();
   const [range, setRange] = useImportRange(form);
   const [collectionKeys, setCollectionKeys] = useSelectedCollectionKeys(form);
-  const { data: collections } = useQuery(useGetImportCollectionsQueryOptions(range));
+  // 기간을 바꿔 다시 읽는 동안 앞 목록을 흐리게 두고 스켈레톤으로 바꾸지 않는다
+  const listStartDate = useDeferredValue(range.startDate);
+  const listEndDate = useDeferredValue(range.endDate);
+  const { data: collections } = useQuery(
+    useGetImportCollectionsQueryOptions({ startDate: listStartDate, endDate: listEndDate }),
+  );
   const { data: snapshot } = useQuery(useGetEntitlementsQueryOptions());
 
   const horizonDays =
     snapshot == null ? null : EntitlementPolicy.findLimit(snapshot, 'CALENDAR_IMPORT');
   const lastAllowedDate = findLastAllowedDate(todayKey, horizonDays);
+  const isListStale = listStartDate !== range.startDate || listEndDate !== range.endDate;
   const selected = TodoImportCollectionPolicy.getSelectedCollections(
     collections ?? [],
     collectionKeys,
   );
-  const selectedItemCount = sumBy(selected, (collection) => collection.itemCount);
-  const isOverLimit = TODO_IMPORT_LIMITS.MAX_ITEMS_PER_IMPORT < selectedItemCount;
+  const isOverLimit = TodoImportCollectionPolicy.isOverImportLimit(selected);
   const formatDate = (dateKey: DateKey) =>
     formatYearAwareDateKeyLabel(dateKey, todayKey, dateFormatContext);
 
@@ -267,12 +273,29 @@ function CalendarsStep({ form, onNext }: { form: TodoImportForm; onNext: () => v
     <FormStepLayout
       title={t('calendars.title')}
       footer={
-        <KeyboardAdaptiveButton
-          isDisabled={selected.length === 0 || isOverLimit}
-          onPress={handleNext}
-        >
-          {t('common:actions.continue')}
-        </KeyboardAdaptiveButton>
+        <VStack gap={8}>
+          {/* 버튼이 왜 꺼졌는지 목록 끝까지 내리지 않아도 버튼 바로 위에서 보인다 */}
+          <StyledSafeAreaView edges={['left', 'right']} className="px-4">
+            {isOverLimit ? (
+              <InlineAlert
+                status="danger"
+                title={t('calendars.tooMany', { limit: TODO_IMPORT_LIMITS.MAX_ITEMS_PER_IMPORT })}
+              />
+            ) : (
+              <Text size="b4" shade={6} align="center" className="tabular-nums">
+                {t('calendars.selectedCount', {
+                  count: TodoImportCollectionPolicy.calculateItemCount(selected),
+                })}
+              </Text>
+            )}
+          </StyledSafeAreaView>
+          <KeyboardAdaptiveButton
+            isDisabled={selected.length === 0 || isOverLimit || isListStale}
+            onPress={handleNext}
+          >
+            {t('common:actions.continue')}
+          </KeyboardAdaptiveButton>
+        </VStack>
       }
     >
       <Text size="b3" shade={6} lineBreakStrategyIOS="hangul-word">
@@ -330,33 +353,25 @@ function CalendarsStep({ form, onNext }: { form: TodoImportForm; onNext: () => v
         {t('calendars.listTitle')}
       </Text>
       <Spacing size={8} />
-      <QueryErrorBoundary
-        fallback={CalendarSourceList.Error}
-        resetKeys={[range.startDate, range.endDate]}
-      >
-        <Suspense fallback={<CalendarSourceList.Loading />}>
-          <CalendarSourceList
-            startDate={range.startDate}
-            endDate={range.endDate}
-            value={collectionKeys}
-            onValueChange={setCollectionKeys}
-          />
-        </Suspense>
-      </QueryErrorBoundary>
+      <Box className={cn(isListStale && 'opacity-50')}>
+        <QueryErrorBoundary
+          fallback={CalendarSourceList.Error}
+          resetKeys={[listStartDate, listEndDate]}
+        >
+          <Suspense fallback={<CalendarSourceList.Loading />}>
+            <CalendarSourceList
+              startDate={listStartDate}
+              endDate={listEndDate}
+              value={collectionKeys}
+              onValueChange={setCollectionKeys}
+            />
+          </Suspense>
+        </QueryErrorBoundary>
+      </Box>
       <Spacing size={8} />
       <Box className="self-center">
         <MissingCalendarHelp />
       </Box>
-
-      {isOverLimit && (
-        <>
-          <Spacing size={12} />
-          <InlineAlert
-            status="danger"
-            title={t('calendars.tooMany', { limit: TODO_IMPORT_LIMITS.MAX_ITEMS_PER_IMPORT })}
-          />
-        </>
-      )}
     </FormStepLayout>
   );
 }
