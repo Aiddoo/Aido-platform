@@ -97,7 +97,7 @@ export function CalendarChoiceDemo() {
  * 바뀌며 한 줄로 모인다. 직접 눌러 다시 나눌 수도 있다
  */
 export function CategoryMappingDemo() {
-  const { t } = useTranslation(['whatsNew', 'todoImport']);
+  const { t } = useTranslation('whatsNew');
   const collections = useDemoCollections().filter(TodoImportCollectionPolicy.isDefaultSelected);
   const [pressedMode, setPressedMode] = useState<TodoImportCategoryMode | null>(null);
 
@@ -107,11 +107,13 @@ export function CategoryMappingDemo() {
     startDelayMs: DEMO_SCRIPT_MS.categoryChange,
   });
   const mode = pressedMode ?? (switchedCount > 0 ? 'single' : 'separate');
+  // 예시 캘린더는 모두 한 계정이라 모은 줄도 출처가 하나다
+  const source = t('v1_17_0.demo.account');
 
   const categories: TodoCategoryWithCount[] = [
     {
       ...DEMO_EXISTING_CATEGORY,
-      name: t('whatsNew:v1_17_0.demo.categories.daily'),
+      name: t('v1_17_0.demo.categories.daily'),
       sortOrder: 0,
       todoCount: 0,
     },
@@ -140,7 +142,8 @@ export function CategoryMappingDemo() {
                   <Box key={collection.collectionKey}>
                     {index > 0 && <SettingsListGroup.Separator />}
                     <CategoryMappingList.Item
-                      label={collection.title}
+                      subject={{ kind: 'calendar', title: collection.title }}
+                      source={source}
                       color={collection.color}
                       target={toNewCategoryTarget(collection)}
                       categories={categories}
@@ -151,7 +154,8 @@ export function CategoryMappingDemo() {
               )
               .with('single', () => (
                 <CategoryMappingList.Item
-                  label={t('todoImport:categories.allCalendars', { count: collections.length })}
+                  subject={{ kind: 'allCalendars', count: collections.length }}
+                  source={source}
                   color={null}
                   target={singleTarget}
                   categories={categories}
