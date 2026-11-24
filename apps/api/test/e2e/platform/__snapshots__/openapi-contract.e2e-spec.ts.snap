@@ -21836,7 +21836,8 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
           "type": "integer",
         },
         "failureReason": {
-          "description": "FAILED가 된 이유. FAILED가 아니면 null",
+          "default": null,
+          "description": "FAILED가 된 이유. FAILED가 아니면 null, 앱이 모르는 새 이유도 null로 읽는다",
           "enum": [
             "MATERIALIZATION_FAILED",
             "STALLED",
@@ -21871,11 +21872,22 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
           "type": "integer",
         },
         "source": {
-          "description": "일정 출처",
-          "enum": [
-            "DEVICE_CALENDAR",
+          "anyOf": [
+            {
+              "enum": [
+                "DEVICE_CALENDAR",
+              ],
+              "type": "string",
+            },
+            {
+              "enum": [
+                "UNKNOWN",
+              ],
+              "type": "string",
+            },
           ],
-          "type": "string",
+          "default": "UNKNOWN",
+          "description": "일정 출처. 앱이 모르는 새 출처는 UNKNOWN으로 읽는다",
         },
         "startDate": {
           "format": "date",
