@@ -80,18 +80,19 @@ describe('Release1160Steps', () => {
     jest.mocked(router.dismissTo).mockClear();
   });
 
-  it('처음 열면 노출을 남기고 이 계정의 캠페인을 본 것으로 기록한다', async () => {
+  it('캠페인이 없는 지난 출시라 열어도 캠페인 노출을 남기지 않고 단계만 센다', async () => {
     // When
-    const { analytics, di } = await renderSteps();
+    const { analytics } = await renderSteps();
 
     // Then
-    expect(analytics.trackEvent).toHaveBeenCalledWith('feature_hub_impression', {
-      campaign_id: RELEASE_1_16_0.campaignId,
+    const eventNames = jest.mocked(analytics.trackEvent).mock.calls.map(([eventName]) => eventName);
+    expect(eventNames).not.toContain('feature_hub_impression');
+    expect(analytics.trackEvent).toHaveBeenCalledWith('whats_new_step_viewed', {
+      release_id: RELEASE_1_16_0.id,
+      step: 'intro',
+      index: 0,
       source: 'auto',
     });
-    expect(
-      di.whatsNewRepository.hasSeen({ userId: ACCOUNT_ID, campaignId: RELEASE_1_16_0.campaignId }),
-    ).toBe(true);
   });
 
   it('예시의 지금 분석 받기·반복으로 만들기를 눌러도 서버를 부르지 않고 제안 지표를 남기지 않는다', async () => {
@@ -110,29 +111,21 @@ describe('Release1160Steps', () => {
   });
 
   it.each([
-    ['AI 제안', 'whats-new-open-suggestions', '/suggestions', 'ai_suggestion'],
-    ['AI 리포트', 'whats-new-open-reports', '/reports', 'ai_report'],
-  ] as const)(
-    '마무리의 %s 카드는 흐름을 닫고 그 화면을 열며 첫 사용을 이 캠페인에 이어 둔다',
-    async (_label, testID, href, feature) => {
-      // Given
-      const { analytics, di } = await renderSteps();
-      await goToFinish();
+    ['AI 제안', 'whats-new-open-suggestions', '/suggestions'],
+    ['AI 리포트', 'whats-new-open-reports', '/reports'],
+  ] as const)('마무리의 %s 카드는 흐름을 닫고 그 화면을 연다', async (_label, testID, href) => {
+    // Given
+    const { analytics } = await renderSteps();
+    await goToFinish();
 
-      // When
-      await fireEvent.press(screen.getByTestId(testID));
+    // When
+    await fireEvent.press(screen.getByTestId(testID));
 
-      // Then
-      expect(router.dismissTo).toHaveBeenCalledWith(href, undefined);
-      expect(analytics.trackEvent).toHaveBeenCalledWith('feature_card_cta', {
-        campaign_id: RELEASE_1_16_0.campaignId,
-        feature,
-        source: 'auto',
-      });
-      expect(di.featureAttribution.consume({ accountId: ACCOUNT_ID, feature })).toEqual({
-        campaignId: RELEASE_1_16_0.campaignId,
-        feature,
-      });
-    },
-  );
+    // Then
+    expect(router.dismissTo).toHaveBeenCalledWith(href, undefined);
+    expect(analytics.trackEvent).toHaveBeenCalledWith('whats_new_cta_pressed', {
+      release_id: RELEASE_1_16_0.id,
+      step: 'finish',
+    });
+  });
 });

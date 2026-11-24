@@ -6,6 +6,58 @@
     "openLabel": "Open What's new",
     "dismissLabel": "Dismiss What's new card"
   },
+  "v1_17_0": {
+    "release": {
+      "title": "Bring calendar events in as to-dos",
+      "description": "Move the events you pick from your phone's calendar into Aido in one go, and choose a category for each calendar"
+    },
+    "intro": {
+      "title": "Move your events into Aido",
+      "description": "Here's how importing works",
+      "card": "Bring iCloud, Google, and Outlook events in as to-dos"
+    },
+    "calendars": {
+      "title": "Pick only the calendars you want",
+      "description": "Holiday and birthday calendars start turned off"
+    },
+    "categories": {
+      "title": "Choose a category for each calendar",
+      "description": "Or tap {{allInOne}} to keep them together"
+    },
+    "importing": {
+      "title": "It keeps going if you leave",
+      "description": "Tap {{importLabel}} and Aido finishes the rest"
+    },
+    "plans": {
+      "title": "Importing is free",
+      "description": "Premium brings in events further ahead",
+      "period": "How far ahead you can import",
+      "free": "Free"
+    },
+    "finish": {
+      "title": "Ready to bring your events in?",
+      "description": "You can find this again in Me > What's new",
+      "card": "You can also open it from Me > Settings",
+      "later": "Maybe later",
+      "bubble": "Let me move your events over"
+    },
+    "demo": {
+      "account": "iCloud",
+      "calendars": {
+        "personal": "Personal",
+        "school": "School",
+        "holidays": "Holidays"
+      },
+      "categories": {
+        "daily": "Daily"
+      },
+      "todos": {
+        "lecture": "Morning lecture",
+        "groupMeeting": "Group project meeting",
+        "clubDinner": "Club dinner"
+      }
+    }
+  },
   "v1_16_0": {
     "release": {
       "title": "AI suggestions and AI reports are all new",
