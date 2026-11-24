@@ -24,6 +24,11 @@ const DETAILS_READERS: Record<string, readonly ErrorCodeType[]> = {
   ],
   'features/identity/auth/domains/auth.error.ts': [ErrorCode.VERIFY_0753],
   'features/planning/todo/domains/todo-series.error.ts': [ErrorCode.TODO_0842, ErrorCode.TODO_0845],
+  'features/planning/todo-import/domains/todo-import.error.ts': [
+    ErrorCode.TODO_IMPORT_2301,
+    ErrorCode.TODO_IMPORT_2303,
+    ErrorCode.TODO_IMPORT_2306,
+  ],
   'features/social/friend/domains/friend.error.ts': [ErrorCode.FOLLOW_0909],
 };
 
