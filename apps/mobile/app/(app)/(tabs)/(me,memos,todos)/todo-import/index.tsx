@@ -55,7 +55,6 @@ import {
   FormStepLayout,
   InlineAlert,
   KeyboardAdaptiveButton,
-  ListRow,
   QueryErrorBoundary,
   ReadableContent,
   SettingsListGroup,
@@ -186,12 +185,12 @@ function TodoImportSetup() {
       )}
       {!isCompact && isPastFirstStep && <Stack.Screen options={{ gestureEnabled: false }} />}
 
-      <Box className="px-4 pt-3">
+      <StyledSafeAreaView edges={['left', 'right']} className="px-4 pt-3">
         <Steps.Dots
           index={TODO_IMPORT_STEPS.indexOf(stepper.step) - firstStepOrder}
           count={TODO_IMPORT_STEPS.length - firstStepOrder}
         />
-      </Box>
+      </StyledSafeAreaView>
 
       <stepper.Render
         permission={() => <PermissionStep onGranted={() => stepper.history.replace('calendars')} />}
@@ -285,20 +284,42 @@ function CalendarsStep({ form, onNext }: { form: TodoImportForm; onNext: () => v
   const formatDate = (dateKey: DateKey) =>
     formatYearAwareDateKeyLabel(dateKey, todayKey, dateFormatContext);
 
-  const openDateSheet = (value: DateKey, minimum: DateKey) =>
+  const openDateSheet = ({
+    title,
+    value,
+    minimum,
+  }: {
+    title: string;
+    value: DateKey;
+    minimum: DateKey;
+  }) =>
     openSheet<DateKey>((close) => (
-      <ImportDateSheet value={value} onChange={close} minimum={minimum} maximum={lastAllowedDate} />
+      <ImportDateSheet
+        title={title}
+        value={value}
+        onChange={close}
+        minimum={minimum}
+        maximum={lastAllowedDate}
+      />
     ));
 
   const handleStartPress = async () => {
-    const startDate = await openDateSheet(range.startDate, todayKey);
+    const startDate = await openDateSheet({
+      title: t('range.start'),
+      value: range.startDate,
+      minimum: todayKey,
+    });
     if (startDate != null) {
       setRange({ startDate, endDate: range.endDate < startDate ? startDate : range.endDate });
     }
   };
 
   const handleEndPress = async () => {
-    const endDate = await openDateSheet(range.endDate, range.startDate);
+    const endDate = await openDateSheet({
+      title: t('range.end'),
+      value: range.endDate,
+      minimum: range.startDate,
+    });
     if (endDate != null) {
       setRange({ ...range, endDate });
     }
@@ -349,30 +370,18 @@ function CalendarsStep({ form, onNext }: { form: TodoImportForm; onNext: () => v
       </Text>
       <Spacing size={8} />
       <SettingsListGroup>
-        <ListRow
-          horizontalPadding="medium"
-          verticalPadding="large"
-          onPress={handleStartPress}
+        <SettingsListGroup.Item
+          label={t('range.start')}
+          value={<SettingsListGroup.Value>{formatDate(range.startDate)}</SettingsListGroup.Value>}
           accessibilityLabel={`${t('range.start')}, ${formatDate(range.startDate)}`}
-          contents={
-            <Text size="b2" shade={8}>
-              {t('range.start')}
-            </Text>
-          }
-          right={<SettingsListGroup.Value>{formatDate(range.startDate)}</SettingsListGroup.Value>}
+          onPress={handleStartPress}
         />
         <SettingsListGroup.Separator />
-        <ListRow
-          horizontalPadding="medium"
-          verticalPadding="large"
-          onPress={handleEndPress}
+        <SettingsListGroup.Item
+          label={t('range.end')}
+          value={<SettingsListGroup.Value>{formatDate(range.endDate)}</SettingsListGroup.Value>}
           accessibilityLabel={`${t('range.end')}, ${formatDate(range.endDate)}`}
-          contents={
-            <Text size="b2" shade={8}>
-              {t('range.end')}
-            </Text>
-          }
-          right={<SettingsListGroup.Value>{formatDate(range.endDate)}</SettingsListGroup.Value>}
+          onPress={handleEndPress}
         />
       </SettingsListGroup>
       <Spacing size={12} />
@@ -466,7 +475,7 @@ function CategoriesStep({ form, onNext }: { form: TodoImportForm; onNext: () => 
       <Spacing size={20} />
 
       <QueryErrorBoundary fallback={CategoryMappingList.Error}>
-        <Suspense fallback={<CategoryMappingList.Loading />}>
+        <Suspense fallback={<CategoryMappingList.Loading rowCount={collections.length} />}>
           <CategoryMappingList
             collections={collections}
             value={targets}
@@ -548,9 +557,11 @@ function OptionsStep({
       title={t('options.title')}
       footer={
         <VStack gap={8}>
-          <WordWrapText size="b4" shade={6} align="center" className="px-4">
-            {t('options.disclosure')}
-          </WordWrapText>
+          <StyledSafeAreaView edges={['left', 'right']} className="px-4">
+            <WordWrapText size="b4" shade={6} align="center">
+              {t('options.disclosure')}
+            </WordWrapText>
+          </StyledSafeAreaView>
           <KeyboardAdaptiveButton
             isLoading={startImport.isPending}
             isDisabled={accountId == null}

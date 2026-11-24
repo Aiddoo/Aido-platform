@@ -202,7 +202,7 @@ CalendarSourceList.Item = function Item({
           />
         }
         contents={
-          <Text size="b2" shade={8} numberOfLines={1}>
+          <Text size="b2" shade={8} numberOfLines={2}>
             {collection.title}
           </Text>
         }

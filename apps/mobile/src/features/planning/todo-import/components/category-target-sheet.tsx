@@ -12,12 +12,14 @@ import {
   Box,
   Button,
   DashedDivider,
-  HStack,
+  H4,
   KeyboardBottomSheet,
   ListRow,
   LockIcon,
   PlusIcon,
   QueryErrorBoundary,
+  QueryErrorFallback,
+  type QueryErrorFallbackProps,
   Text,
   TextButton,
   VStack,
@@ -36,6 +38,8 @@ export type CategoryTargetChoice =
   | { kind: 'NEW_CATEGORY_EDIT' };
 
 interface CategoryTargetSheetProps {
+  /** 고르는 캘린더 이름, 모두 고를 때는 "모두 한 카테고리에" */
+  title: string;
   newCategory: { name: string; color: string };
   canCreateCategory: boolean;
   defaultCategoryId: number;
@@ -45,6 +49,7 @@ interface CategoryTargetSheetProps {
 const ICON_SIZE = 18;
 
 export function CategoryTargetSheet({
+  title,
   newCategory,
   canCreateCategory,
   defaultCategoryId,
@@ -56,7 +61,11 @@ export function CategoryTargetSheet({
 
   return (
     <VStack gap={20}>
-      <HStack align="center" gap={8}>
+      <H4 accessibilityRole="header" numberOfLines={2}>
+        {title}
+      </H4>
+
+      <VStack gap={8}>
         <PressableFeedback
           accessibilityRole="button"
           accessibilityLabel={
@@ -71,12 +80,12 @@ export function CategoryTargetSheet({
                 : { kind: 'NEW_CATEGORY_LOCKED' },
             )
           }
-          className="flex-1 rounded-xl"
+          className="rounded-xl"
         >
           <PressableFeedback.Highlight className="rounded-xl" />
           <ListRow
             horizontalPadding="medium"
-            className="rounded-xl bg-gray-1 dark:bg-gray-2"
+            className="min-h-12 rounded-xl bg-gray-1 dark:bg-gray-2"
             left={
               <Box className="size-2 rounded-full" style={{ backgroundColor: newCategory.color }} />
             }
@@ -103,11 +112,15 @@ export function CategoryTargetSheet({
           />
         </PressableFeedback>
         {canCreateCategory && (
-          <TextButton size="small" onPress={() => onChoose({ kind: 'NEW_CATEGORY_EDIT' })}>
+          <TextButton
+            size="small"
+            className="self-start"
+            onPress={() => onChoose({ kind: 'NEW_CATEGORY_EDIT' })}
+          >
             {t('categories.editNewCategory')}
           </TextButton>
         )}
-      </HStack>
+      </VStack>
 
       <DashedDivider />
 
@@ -126,14 +139,10 @@ export function CategoryTargetSheet({
 }
 
 /** 기존 카테고리를 읽지 못해도 새 카테고리는 고를 수 있어 시트를 닫지 않는다 */
-CategoryTargetSheet.Error = function ErrorFallback() {
+CategoryTargetSheet.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation('todoImport');
 
-  return (
-    <Text size="b4" shade={6} align="center">
-      {t('categories.loadFailed')}
-    </Text>
-  );
+  return <QueryErrorFallback.Inline message={t('categories.loadFailed')} reset={reset} />;
 };
 
 interface NewCategoryProps {

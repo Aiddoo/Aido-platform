@@ -35,8 +35,9 @@
       "year": "1 year"
     },
     "lockedPreset": "{{label}}, Premium only",
-    "freeUntil_one": "The free plan imports events for the next {{count}} day (through {{date}}). Go Premium for events further ahead",
-    "freeUntil_other": "The free plan imports events for the next {{count}} days (through {{date}}). Go Premium for events further ahead",
+    "freeUntil_one": "The free plan imports events for the next {{count}} day (through {{date}}).",
+    "freeUntil_other": "The free plan imports events for the next {{count}} days (through {{date}}).",
+    "freeUntilPremium": "Go Premium for events further ahead",
     "freeUntilHint": "Opens Premium info"
   },
   "calendars": {

@@ -2,24 +2,23 @@ import { EntitlementPolicy } from '@src/features/billing/subscription/domains/en
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import type { DateKey } from '@src/shared/date/date-key';
-import { formatYearAwareDateKeyLabel } from '@src/shared/date/format/date-format';
-import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import { ActionButton, HStack, LockIcon, SheetChipRow, VStack, WordWrapText } from '@src/shared/ui';
+import { ActionButton, HStack, LockIcon, VStack } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { PressableFeedback } from 'heroui-native';
-import type { ComponentProps } from 'react';
 
 import { IMPORT_RANGE_PRESETS, type ImportRangePreset } from '../constants/todo-import.constants';
-import { canImportUntil, findLastAllowedDate, getRangeEndDate } from '../domains/todo-import.model';
+import { canImportUntil, getRangeEndDate } from '../domains/todo-import.model';
 import { findRangePreset, IMPORT_RANGE_PRESET_LABEL_KEYS } from '../utils/todo-import.view-model';
+import { ImportFreePlanNotice } from './import-free-plan-notice';
 
-interface ImportEndDateChipsProps extends Omit<ComponentProps<typeof HStack>, 'children'> {
+interface ImportEndDateChipsProps {
   /** 칩은 이 날부터 센 기간의 마지막 날을 고른다 */
   startDate: DateKey;
   value: DateKey;
   onValueChange: (endDate: DateKey) => void;
+  /** 칩 묶음(라디오 그룹)을 읽는 이름 */
+  accessibilityLabel?: string;
 }
 
 /** 요금제 기간(서버 `CALENDAR_IMPORT.limit`)을 넘는 칩은 잠그고 누르면 프리미엄 안내를 연다 */
@@ -27,16 +26,13 @@ export function ImportEndDateChips({
   startDate,
   value,
   onValueChange,
-  ...props
+  accessibilityLabel,
 }: ImportEndDateChipsProps) {
-  const { t } = useTranslation('todoImport');
   const todayKey = useTodayKey();
-  const dateFormatContext = useDateFormatContext();
   const gate = useEntitlementGate('CALENDAR_IMPORT', { surface: 'todo_import' });
   const { data: snapshot } = useSuspenseQuery(useGetEntitlementsQueryOptions());
 
   const horizonDays = EntitlementPolicy.findLimit(snapshot, 'CALENDAR_IMPORT');
-  const lastAllowedDate = findLastAllowedDate(todayKey, horizonDays);
   const selectedPreset = findRangePreset({ startDate, endDate: value });
   const isLocked = (preset: ImportRangePreset) =>
     !canImportUntil(
@@ -61,33 +57,19 @@ export function ImportEndDateChips({
 
   return (
     <VStack gap={8}>
-      <SheetChipRow>
-        <HStack gap={8} accessibilityRole="radiogroup" {...props}>
-          <ImportEndDateChips.Chip {...toChipProps('week')} />
-          <ImportEndDateChips.Chip {...toChipProps('month')} />
-          <ImportEndDateChips.Chip {...toChipProps('quarter')} />
-          <ImportEndDateChips.Chip {...toChipProps('half')} />
-          <ImportEndDateChips.Chip {...toChipProps('year')} />
-        </HStack>
-      </SheetChipRow>
-
-      {EntitlementPolicy.shouldOfferPremium(snapshot) &&
-        horizonDays != null &&
-        lastAllowedDate != null && (
-          <PressableFeedback
-            accessibilityRole="button"
-            accessibilityHint={t('range.freeUntilHint')}
-            onPress={() => gate.promptLimit()}
-            className="self-start"
-          >
-            <WordWrapText size="b4" shade={6}>
-              {t('range.freeUntil', {
-                count: horizonDays,
-                date: formatYearAwareDateKeyLabel(lastAllowedDate, todayKey, dateFormatContext),
-              })}
-            </WordWrapText>
-          </PressableFeedback>
-        )}
+      {/* 화면 안이라 시트용 가로 스크롤 줄 대신 큰 글꼴에서 다음 줄로 넘긴다 */}
+      <HStack
+        accessibilityRole="radiogroup"
+        accessibilityLabel={accessibilityLabel}
+        className="flex-wrap gap-2"
+      >
+        <ImportEndDateChips.Chip {...toChipProps('week')} />
+        <ImportEndDateChips.Chip {...toChipProps('month')} />
+        <ImportEndDateChips.Chip {...toChipProps('quarter')} />
+        <ImportEndDateChips.Chip {...toChipProps('half')} />
+        <ImportEndDateChips.Chip {...toChipProps('year')} />
+      </HStack>
+      <ImportFreePlanNotice onPremiumPress={() => gate.promptLimit()} />
     </VStack>
   );
 }
@@ -119,7 +101,7 @@ ImportEndDateChips.Chip = function Chip({ preset, isSelected, isLocked, onPress 
 
 ImportEndDateChips.Loading = function Loading() {
   return (
-    <HStack gap={8}>
+    <HStack className="flex-wrap gap-2">
       <ActionButton.Loading className="w-16" />
       <ActionButton.Loading className="w-20" />
       <ActionButton.Loading className="w-20" />

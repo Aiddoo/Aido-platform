@@ -130,29 +130,30 @@ TodoImportProgress.Stage = function Stage({ status, label }: StageProps) {
       accessible
       accessibilityLabel={`${label}, ${t(STAGE_STATUS_LABEL_KEYS[status])}`}
       accessibilityLiveRegion="polite"
-      left={match(status)
-        .with('done', () => (
-          <HStack
-            align="center"
-            justify="center"
-            className="rounded-full bg-main"
-            style={{ width: indicatorSize, height: indicatorSize }}
-          >
-            <CheckmarkIcon
-              width={fontScaledSize(STAGE_ICON_SIZE)}
-              height={fontScaledSize(STAGE_ICON_SIZE)}
-              colorClassName="text-white dark:text-gray-9"
-            />
-          </HStack>
-        ))
-        .with('active', () => <Spinner size="sm" />)
-        .with('pending', () => (
-          <Box
-            className="rounded-full border-2 border-gray-3"
-            style={{ width: indicatorSize, height: indicatorSize }}
-          />
-        ))
-        .exhaustive()}
+      left={
+        // 스피너와 아이콘이 바뀌어도 글자가 옆으로 움직이지 않게 같은 칸에 둔다
+        <HStack
+          align="center"
+          justify="center"
+          style={{ width: indicatorSize, height: indicatorSize }}
+        >
+          {match(status)
+            .with('done', () => (
+              <HStack align="center" justify="center" className="size-full rounded-full bg-main">
+                <CheckmarkIcon
+                  width={fontScaledSize(STAGE_ICON_SIZE)}
+                  height={fontScaledSize(STAGE_ICON_SIZE)}
+                  colorClassName="text-white dark:text-gray-9"
+                />
+              </HStack>
+            ))
+            .with('active', () => <Spinner size="sm" />)
+            .with('pending', () => (
+              <Box className="size-full rounded-full border-2 border-gray-3" />
+            ))
+            .exhaustive()}
+        </HStack>
+      }
       contents={
         <Text
           size="b2"

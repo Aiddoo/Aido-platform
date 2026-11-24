@@ -41,7 +41,7 @@ interface CategoryMappingListProps {
   errorMessages?: Readonly<Record<string, string>>;
 }
 
-const LOADING_ROW_COUNT = 3;
+const DEFAULT_LOADING_ROW_COUNT = 3;
 
 export function CategoryMappingList({
   collections,
@@ -68,7 +68,11 @@ export function CategoryMappingList({
   });
   const newCategoryCount = TodoImportTargetPolicy.countNewCategories(Object.values(targets));
 
-  const chooseTarget = async (chosenKeys: readonly string[], base: ImportCollection) => {
+  const chooseTarget = async (
+    chosenKeys: readonly string[],
+    base: ImportCollection,
+    title: string,
+  ) => {
     const current = targets[base.collectionKey];
     const newCategory =
       current?.kind === 'NEW_CATEGORY'
@@ -84,6 +88,7 @@ export function CategoryMappingList({
 
     const choice = await openSheet<CategoryTargetChoice>((close) => (
       <CategoryTargetSheet
+        title={title}
         newCategory={pick(newCategory, ['name', 'color'])}
         canCreateCategory={canCreateCategory}
         defaultCategoryId={
@@ -142,7 +147,7 @@ export function CategoryMappingList({
               target={targets[collection.collectionKey] ?? null}
               categories={categories}
               errorMessage={errorMessages?.[collection.collectionKey] ?? null}
-              onPress={() => chooseTarget([collection.collectionKey], collection)}
+              onPress={() => chooseTarget([collection.collectionKey], collection, collection.title)}
             />
           </Box>
         ))}
@@ -156,6 +161,7 @@ export function CategoryMappingList({
             chooseTarget(
               collections.map((collection) => collection.collectionKey),
               firstCollection,
+              t('categories.allInOne'),
             )
           }
         >
@@ -212,12 +218,13 @@ CategoryMappingList.Item = function Item({
             />
           }
           contents={
-            <Text size="b2" shade={8} numberOfLines={1}>
+            <Text size="b2" shade={8} numberOfLines={2}>
               {collection.title}
             </Text>
           }
           right={
-            <HStack align="center" className="max-w-40">
+            // 좁아지면 카테고리 칩이 먼저 줄어 캘린더 이름이 단어 중간에서 꺾이지 않는다
+            <HStack align="center" className="max-w-1/2 shrink">
               <LabelChip
                 size="md"
                 color={errorMessage == null ? 'accent' : 'danger'}
@@ -237,18 +244,26 @@ CategoryMappingList.Item = function Item({
   );
 };
 
-CategoryMappingList.Loading = function Loading() {
+/** 캘린더 단계에서 고른 수만큼 같은 높이의 행을 그린다 */
+CategoryMappingList.Loading = function Loading({
+  rowCount = DEFAULT_LOADING_ROW_COUNT,
+}: {
+  rowCount?: number;
+}) {
   return (
     <SettingsListGroup>
-      {range(LOADING_ROW_COUNT).map((index) => (
-        <ListRow
-          key={index}
-          horizontalPadding="medium"
-          verticalPadding="medium"
-          left={<Skeleton className="size-2.5 rounded-full" />}
-          contents={<TextSkeleton size="b2" className="w-24" />}
-          right={<Skeleton className="h-7 w-20 rounded-full" />}
-        />
+      {range(rowCount).map((index) => (
+        <Box key={index}>
+          {index > 0 && <SettingsListGroup.Separator />}
+          <Box className="px-4 py-3">
+            <ListRow
+              verticalPadding="small"
+              left={<Skeleton className="size-2.5 rounded-full" />}
+              contents={<TextSkeleton size="b2" className="w-24" />}
+              right={<Skeleton className="h-7 w-20 rounded-full" />}
+            />
+          </Box>
+        </Box>
       ))}
     </SettingsListGroup>
   );

@@ -35,7 +35,8 @@
       "year": "1년"
     },
     "lockedPreset": "{{label}}, 프리미엄 전용",
-    "freeUntil": "무료 플랜은 오늘부터 {{count}}일 동안의 일정을 가져올 수 있어요 ({{date}}까지). 더 먼 일정은 프리미엄에서 가져와요",
+    "freeUntil": "무료 플랜은 오늘부터 {{count}}일 동안의 일정을 가져올 수 있어요 ({{date}}까지).",
+    "freeUntilPremium": "더 먼 일정은 프리미엄에서 가져와요",
     "freeUntilHint": "프리미엄 안내를 열어요"
   },
   "calendars": {

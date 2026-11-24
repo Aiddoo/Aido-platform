@@ -11,6 +11,7 @@ import { useTrack } from '@src/shared/analytics';
 import { useRouteParamsOrRedirect } from '@src/shared/hooks/use-route-params-or-redirect';
 import { useTranslation } from '@src/shared/i18n';
 import {
+  Box,
   Button,
   ErrorIllustration,
   QueryErrorBoundary,
@@ -22,6 +23,7 @@ import {
 } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { router, Stack } from 'expo-router';
+import { Spinner } from 'heroui-native';
 import { Suspense, useEffect, useRef } from 'react';
 import { match, P } from 'ts-pattern';
 
@@ -42,7 +44,8 @@ function TodoImportScreen() {
     <SafeAreaScrollView className="flex-1 bg-white" contentInsetAdjustmentBehavior="automatic">
       <ReadableContent className="px-4 pt-6 pb-8">
         <QueryErrorBoundary fallback={TodoImportProgress.Error} resetKeys={[importId]}>
-          <Suspense fallback={<TodoImportProgress.Loading />}>
+          {/* 받기 전에는 진행·결과 중 무엇일지 몰라 어느 모양도 미리 그리지 않는다 */}
+          <Suspense fallback={<TodoImportScreen.Loading />}>
             <TodoImportStatus />
           </Suspense>
         </QueryErrorBoundary>
@@ -50,6 +53,14 @@ function TodoImportScreen() {
     </SafeAreaScrollView>
   );
 }
+
+TodoImportScreen.Loading = function Loading() {
+  return (
+    <Box className="items-center py-10">
+      <Spinner />
+    </Box>
+  );
+};
 
 function TodoImportStatus() {
   const { t } = useTranslation('todoImport');

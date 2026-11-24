@@ -1,23 +1,19 @@
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  Box,
   Button,
   DashedDivider,
   H3,
   HStack,
   Mascot,
   ScallopedContainer,
-  Spacing,
   Text,
-  TextSkeleton,
   useConfirmDialog,
   VStack,
   WordWrapText,
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { Skeleton } from 'heroui-native';
 import { match } from 'ts-pattern';
 
 import { TodoImportPolicy } from '../domains/todo-import.model';
@@ -107,24 +103,6 @@ export function TodoImportResult() {
     </VStack>
   );
 }
-
-TodoImportResult.Loading = function Loading() {
-  return (
-    <VStack gap={20}>
-      <VStack align="center" gap={12}>
-        <Skeleton className="rounded-full" style={{ width: MASCOT_SIZE, height: MASCOT_SIZE }} />
-        <TextSkeleton size="t1" className="w-48" />
-      </VStack>
-      <ScallopedContainer>
-        <Box className="p-5">
-          <TextSkeleton size="b3" className="w-40" />
-          <Spacing size={8} />
-          <TextSkeleton size="b3" className="w-36" />
-        </Box>
-      </ScallopedContainer>
-    </VStack>
-  );
-};
 
 interface CountProps {
   label: string;
