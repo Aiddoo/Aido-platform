@@ -22,7 +22,7 @@ How to test Import calendar events
 Why full calendar access is needed
 - On iOS 17 and later, reading events requires full calendar access. Write-only access cannot read events, so Aido requests full access (NSCalendarsFullAccessUsageDescription).
 - Aido only reads calendars. It never creates, edits, or deletes events. Reminders access is not requested.
-- Permission is requested only after the user taps "Continue" on the explanation screen, never at launch. If the user denies it, every other feature keeps working, Aido does not ask again, and the screen shows only an "Open Settings" button when the system will not ask again.
+- Permission is requested only after the user taps "Continue" on the explanation screen, never at launch. If the user denies it, every other feature keeps working, Aido does not show the system prompt again, and the screen shows an "Open Settings" button so the user can turn access on later.
 - The app does not require granting access for any other feature, and no payment depends on it.
 
 Data
