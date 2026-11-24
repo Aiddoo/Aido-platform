@@ -5,6 +5,7 @@ import {
   getCalendarPermissionView,
   groupCollectionsByAccount,
   keepBlockedCalendarPermission,
+  toUnbreakableLabel,
 } from './todo-import.view-model';
 
 const GRANTED: OsPermission = { status: 'granted', canAskAgain: true };
@@ -112,5 +113,16 @@ describe('groupCollectionsByAccount', () => {
 
     // Then
     expect(accounts.map(({ accountKey }) => accountKey)).toEqual(['B Google', 'A Contacts']);
+  });
+});
+
+describe('toUnbreakableLabel', () => {
+  it('빈칸은 줄바꿈 없는 공백으로, 글자 사이는 줄바꿈을 막는 문자로 잇는다', () => {
+    // When
+    const label = toUnbreakableLabel('Dec 23');
+
+    // Then
+    expect(label.replaceAll('\u2060', '')).toBe('Dec\u00A023');
+    expect(label).not.toContain(' ');
   });
 });

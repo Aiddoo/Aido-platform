@@ -10,7 +10,7 @@
     "result": "Import result"
   },
   "permission": {
-    "title": "Bring your calendar events in as to-dos",
+    "title": "Bring your calendar events into Aido",
     "facts": {
       "sources": "Works with the iCloud, Google, and Outlook calendars on this device",
       "read": "Aido saves only the title, date, and time of the events you choose, as to-dos",
