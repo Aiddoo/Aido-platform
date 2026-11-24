@@ -1,4 +1,4 @@
-import { TODO_IMPORT_ACTIVE_STATUSES } from "@aido/api/vocabulary";
+import { TODO_IMPORT_ACTIVE_STATUSES, type TodoImportFailureReason } from "@aido/api/vocabulary";
 import { sql } from "drizzle-orm";
 import {
   pgTable,
@@ -20,7 +20,6 @@ import {
 // drizzle-kit은 #api 별칭을 못 따라가므로 상대 경로로 둔다
 import type { TodoImportCollectionPrimitives } from "../../../modules/planning/todo-imports/domain/todo-import-collection.vo.js";
 import type { TodoImportTargetPrimitives } from "../../../modules/planning/todo-imports/domain/todo-import-target.vo.js";
-import type { TodoImportFailureReason } from "../../../modules/planning/todo-imports/domain/todo-imports.constants.js";
 import { instant, plainDate } from "../columns/temporal-columns.js";
 import {
   todoImportItemStatus,

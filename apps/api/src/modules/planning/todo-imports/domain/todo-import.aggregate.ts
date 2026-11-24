@@ -1,4 +1,5 @@
 import type {
+  TodoImportFailureReason,
   TodoImportSourceKind,
   TodoImportStatus,
   TodoImportTimeMode,
@@ -19,10 +20,7 @@ import { earlierDate, isWithinImportRange } from "./todo-import-range.domain-ser
 import { TodoImportRequest } from "./todo-import-request.vo.js";
 import { TodoImportTarget, type TodoImportTargetPrimitives } from "./todo-import-target.vo.js";
 import { judgeUndoWindow, type TodoImportUndoWindow } from "./todo-import-undo.domain-service.js";
-import {
-  TODO_IMPORT_WORKING_STATUSES,
-  type TodoImportFailureReason,
-} from "./todo-imports.constants.js";
+import { TODO_IMPORT_WORKING_STATUSES } from "./todo-imports.constants.js";
 import { todoImportStatusConflict, todoImportUndoExpired } from "./todo-imports.errors.js";
 
 export interface TodoImportCounts {

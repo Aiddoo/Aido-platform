@@ -19,10 +19,6 @@ export type TodoImportItemStatus = (typeof TODO_IMPORT_ITEM_STATUSES)[number];
 
 export type TodoImportItemOutcome = Exclude<TodoImportItemStatus, "PENDING">;
 
-const TODO_IMPORT_FAILURE_REASONS = ["MATERIALIZATION_FAILED", "UNDO_FAILED", "STALLED"] as const;
-
-export type TodoImportFailureReason = (typeof TODO_IMPORT_FAILURE_REASONS)[number];
-
 /** 잡이 할 일을 만들거나 지우는 중인 상태. 재조정자가 진행이 멈췄는지 본다 */
 export const TODO_IMPORT_WORKING_STATUSES = [
   "QUEUED",

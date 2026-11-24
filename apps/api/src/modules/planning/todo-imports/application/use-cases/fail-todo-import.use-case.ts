@@ -1,13 +1,12 @@
+import type { TodoImportFailureReason } from "@aido/api/vocabulary";
+
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
 import { TodoImportId } from "../../domain/todo-import-id.vo.js";
-import {
-  TODO_IMPORT_WORKING_STATUSES,
-  type TodoImportFailureReason,
-} from "../../domain/todo-imports.constants.js";
+import { TODO_IMPORT_WORKING_STATUSES } from "../../domain/todo-imports.constants.js";
 import type { TodoImportRepositoryPort } from "../ports/todo-import.repository.port.js";
 import { TodoImportLockKeys } from "../todo-imports.lock-keys.js";
 import { TodoImportLogEvent } from "../todo-imports.log-events.js";
