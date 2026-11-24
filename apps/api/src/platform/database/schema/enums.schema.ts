@@ -18,6 +18,9 @@ import {
   SUBSCRIPTION_ENVIRONMENTS,
   SUBSCRIPTION_STATUS,
   TIME_FORMATS,
+  TODO_IMPORT_SOURCES,
+  TODO_IMPORT_STATUSES,
+  TODO_IMPORT_TIME_MODES,
   TODO_REPEAT_FREQUENCIES,
   TODO_VISIBILITIES,
   USER_REPORT_REASONS,
@@ -45,6 +48,7 @@ import {
   RETENTION_VARIANTS,
 } from "../../../modules/notification/retention-assignments/domain/retention-assignments.constants.js";
 import { NOTIFICATION_TYPES } from "../../../modules/notification/shared/domain/notification-type.constants.js";
+import { TODO_IMPORT_ITEM_STATUSES } from "../../../modules/planning/todo-imports/domain/todo-imports.constants.js";
 import {
   REWARD_CLAIM_KINDS,
   REWARD_GRANT_STATUSES,
@@ -87,6 +91,10 @@ export const suggestionStatus = pgEnum("SuggestionStatus", AI_SUGGESTION_STATUSE
 export const timeFormat = pgEnum("TimeFormat", TIME_FORMATS);
 export const todoVisibility = pgEnum("TodoVisibility", TODO_VISIBILITIES);
 export const todoRepeatFrequency = pgEnum("TodoRepeatFrequency", TODO_REPEAT_FREQUENCIES);
+export const todoImportSource = pgEnum("TodoImportSource", TODO_IMPORT_SOURCES);
+export const todoImportStatus = pgEnum("TodoImportStatus", TODO_IMPORT_STATUSES);
+export const todoImportTimeMode = pgEnum("TodoImportTimeMode", TODO_IMPORT_TIME_MODES);
+export const todoImportItemStatus = pgEnum("TodoImportItemStatus", TODO_IMPORT_ITEM_STATUSES);
 export const userRole = pgEnum("UserRole", USER_ROLE);
 export const userStatus = pgEnum("UserStatus", USER_STATUS);
 export const verificationType = pgEnum("VerificationType", VERIFICATION_TYPE);
