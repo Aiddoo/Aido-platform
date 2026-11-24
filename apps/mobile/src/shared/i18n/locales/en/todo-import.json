@@ -66,6 +66,7 @@
     "emptyTitle": "No events to import in this range",
     "emptyDescription": "Try a longer range, or check that your calendar app has events",
     "tooMany": "You can import up to {{limit}} events at once. Choose a shorter range or fewer calendars",
+    "collectionLimit": "You can choose up to {{limit}} calendars at once",
     "selectedCount_one": "{{count}} event will be imported",
     "selectedCount_other": "{{count}} events will be imported",
     "missingHelp": {
@@ -108,6 +109,11 @@
     "useExisting": "Use this category",
     "unassigned": "Not chosen",
     "fallbackName": "Calendar",
+    "accountNames": {
+      "icloud": "iCloud Calendar",
+      "google": "Google Calendar",
+      "outlook": "Outlook Calendar"
+    },
     "loadFailed": "Couldn't load your categories",
     "rowLabel": "{{calendar}}, goes in {{target}}",
     "rowHint": "Changes the category",
@@ -116,6 +122,10 @@
       "nameTaken": "A category with this name already exists. Rename it or choose that category",
       "notFound": "This category was deleted. Choose another one",
       "summary": "Some categories can't be used. Choose another category for the marked calendars"
+    },
+    "capacityWarning": {
+      "title": "A category may run out of room",
+      "description": "Each category holds up to {{limit}} to-dos. If it fills up, the nearest dates go in first and the rest are skipped"
     }
   },
   "options": {
@@ -139,7 +149,9 @@
     },
     "leaveNotice": "You can leave the app. The import keeps going",
     "offline": "The import continues when you're back online",
-    "paused": "Paused for now. It continues when you reopen the app",
+    "paused": "Paused for now. Try again, or reopen the app to continue",
+    "pausedPermission": "Paused because calendar access is off. Turn it back on in Settings to continue",
+    "retry": "Try again",
     "notOnThisDevice": "Another device is importing this. Finish it there or stop it here",
     "cancel": "Stop import",
     "cancelConfirmTitle": "Stop this import?",
@@ -148,7 +160,13 @@
   "failure": {
     "tooManyItems": "You can import up to {{limit}} events at once. Choose a shorter range or fewer calendars and try again",
     "invalid": "We couldn't read the range or events. Change the range and try again",
-    "rejected": "Aido couldn't receive the events. Try again in a moment"
+    "rejected": "Aido couldn't receive the events. Try again in a moment",
+    "planLimit": "Stopped because your plan can’t import this range. Choose a shorter range and set it up again",
+    "categoryLimit": "Stopped because you can’t create more categories. Set it up again using existing categories",
+    "categoryNameTaken": "Stopped because a category with the same name now exists. Choose that category or rename it and set it up again",
+    "categoryNotFound": "Stopped because the category was deleted. Choose another category and set it up again",
+    "setUpAgain": "Set up again",
+    "viewPlan": "View plans"
   },
   "result": {
     "completedTitle_one": "Imported {{count}} to-do",
@@ -171,18 +189,27 @@
     "undo": "Undo",
     "undoConfirmTitle": "Undo this import?",
     "undoConfirmDescription": "Only to-dos you haven't completed are removed",
-    "failedTitle": "Couldn't finish the import",
-    "failedDescription": "To-dos already created stay. Import again to continue",
+    "failedTitle": "The import stopped partway",
+    "failedDescription_zero": "No to-dos were created yet. Please import again",
+    "failedDescription_one": "The {{count}} to-do already created stays. Import again to add only the rest",
+    "failedDescription_other": "The {{count}} to-dos already created stay. Import again to add only the rest",
+    "undoFailedTitle": "Undo stopped partway",
+    "undoFailedDescription": "Undo again to remove the rest. Completed to-dos stay",
+    "undoAgain": "Undo again",
     "canceledTitle": "Import stopped",
     "canceledDescription": "No to-dos were created",
     "startAgain": "Import again",
-    "alreadyImportedTitle": "These events are already in Aido"
+    "alreadyImportedTitle": "These events are already in Aido",
+    "notFoundTitle": "We couldn’t find this import",
+    "notFoundDescription": "It may belong to another account, or it may have been removed after a while",
+    "startNew": "Start a new import"
   },
   "toasts": {
     "startFailed": "Couldn't start the import. Please try again",
     "cancelFailed": "Couldn't stop the import. Please try again",
     "undoFailed": "Couldn't undo the import. Please try again",
     "permissionRequestFailed": "Couldn't ask for calendar access. Please try again",
-    "rangeAdjusted": "It's past midnight, so the range now starts today"
+    "rangeAdjusted": "It's past midnight, so the range now starts today",
+    "undoWhileImporting": "You can undo once the import in progress finishes"
   }
 }

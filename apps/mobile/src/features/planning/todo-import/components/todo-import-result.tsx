@@ -8,18 +8,17 @@ import {
   Mascot,
   ScallopedContainer,
   Text,
-  useConfirmDialog,
   VStack,
   WordWrapText,
 } from '@src/shared/ui';
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { match } from 'ts-pattern';
 
 import { TodoImportPolicy } from '../domains/todo-import.model';
 import { useTodoImportId } from '../hooks/use-todo-import-id';
-import { useUndoTodoImportMutationOptions } from '../queries/todo-import.mutations';
 import { useGetTodoImportQueryOptions } from '../queries/todo-import.queries';
+import { TodoImportUndoButton } from './todo-import-undo-button';
 
 const MASCOT_SIZE = 120;
 
@@ -27,9 +26,7 @@ export function TodoImportResult() {
   const { t } = useTranslation(['todoImport', 'common']);
   const [importId] = useTodoImportId();
   const now = useMinuteNow();
-  const confirmDialog = useConfirmDialog();
   const { data: todoImport } = useSuspenseQuery(useGetTodoImportQueryOptions({ importId }));
-  const undo = useMutation(useUndoTodoImportMutationOptions({ importId }));
 
   const { counts, status, firstDate } = todoImport;
   const canUndo = TodoImportPolicy.canUndo(todoImport, now);
@@ -41,16 +38,6 @@ export function TodoImportResult() {
         ? t('result.alreadyImportedTitle')
         : t('result.completedTitle', { count: counts.created }),
     );
-
-  const handleUndoPress = () =>
-    confirmDialog.openAsync({
-      title: t('result.undoConfirmTitle'),
-      description: t('result.undoConfirmDescription'),
-      confirmLabel: t('result.undo'),
-      confirmColor: 'danger',
-      cancelLabel: t('common:actions.cancel'),
-      onConfirm: () => undo.mutateAsync(),
-    });
 
   return (
     <VStack gap={20}>
@@ -98,11 +85,9 @@ export function TodoImportResult() {
         >
           {t('result.viewTodos')}
         </Button>
-        {canUndo && (
-          <Button size="large" variant="weak" isLoading={undo.isPending} onPress={handleUndoPress}>
-            {t('result.undo')}
-          </Button>
-        )}
+        <TodoImportUndoButton size="large" variant="weak">
+          {t('result.undo')}
+        </TodoImportUndoButton>
       </VStack>
     </VStack>
   );

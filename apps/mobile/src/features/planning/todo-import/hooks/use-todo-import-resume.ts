@@ -4,11 +4,14 @@ import { useTrack } from '@src/shared/analytics';
 import { useOnAppForeground } from '@src/shared/hooks/use-on-app-foreground';
 import { useTranslation } from '@src/shared/i18n';
 import { readStoredValue } from '@src/shared/storage/define-stored-value';
-import { useStoredValueStorage } from '@src/shared/storage/use-stored-value';
-import { onlineManager } from '@tanstack/react-query';
+import { useStoredValue, useStoredValueStorage } from '@src/shared/storage/use-stored-value';
+import { onlineManager, useQuery } from '@tanstack/react-query';
 import { useEffect, useEffectEvent } from 'react';
 
 import type { TodoImportResumeTrigger } from '../constants/todo-import.events';
+import { TodoImportPolicy } from '../domains/todo-import.model';
+import { useGetTodoImportQueryOptions } from '../queries/todo-import.queries';
+import { lastTodoImportIdStoredValue } from '../schemas/todo-import-last-storage.schema';
 import { todoImportSessionStoredValue } from '../schemas/todo-import-session-storage.schema';
 
 /**
@@ -49,4 +52,25 @@ export function useTodoImportResume(): void {
   }, [accountId]);
 
   useOnAppForeground(() => resumeIfPending('foreground'));
+
+  useRefreshWhenImportFinishes(accountId);
+}
+
+/**
+ * 진행 화면을 떠난 사이 가져오기가 끝나도 할 일·카테고리·한도를 한 번 다시 받는다. 이 기기가 시작해 캐시에
+ * 처리 중으로 남은 가져오기만 앱이 앞에 있는 동안 진행 화면과 같은 간격으로 묻고, 끝나면 멈춘다.
+ * 다시 받기는 조회 queryFn의 `settleTodoImportFinished`가 한다
+ */
+function useRefreshWhenImportFinishes(accountId: string | null) {
+  const [lastImportId] = useStoredValue(lastTodoImportIdStoredValue, accountId);
+  const options = useGetTodoImportQueryOptions({ importId: lastImportId ?? '' });
+
+  // 결과를 읽지 않아 받을 때마다 앱 묶음을 다시 그리지 않는다. 진행 화면이 열려 있으면 같은 조회를 함께 쓴다
+  useQuery({
+    ...options,
+    enabled: (query) =>
+      lastImportId != null &&
+      query.state.data != null &&
+      !TodoImportPolicy.isTerminal(query.state.data),
+  });
 }

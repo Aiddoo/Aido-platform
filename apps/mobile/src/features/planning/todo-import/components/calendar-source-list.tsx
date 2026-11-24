@@ -46,15 +46,13 @@ export function CalendarSourceList({
   );
 
   // 캘린더가 수십 개여도 고른 키·계정 묶음은 목록이나 선택이 바뀔 때만 다시 만든다
-  const selectedKeys = useMemo(
-    () =>
-      new Set(
-        TodoImportCollectionPolicy.getSelectedCollections(collections, value).map(
-          (collection) => collection.collectionKey,
-        ),
-      ),
-    [collections, value],
-  );
+  const { selectedKeys, isAtLimit } = useMemo(() => {
+    const selected = TodoImportCollectionPolicy.getSelectedCollections(collections, value);
+    return {
+      selectedKeys: new Set(selected.map((collection) => collection.collectionKey)),
+      isAtLimit: TodoImportCollectionPolicy.isAtCollectionLimit(selected),
+    };
+  }, [collections, value]);
   const formatAccountLabel = useFormatAccountLabel();
   const { accounts, receivedCollections } = useMemo(
     () => groupCollectionsByAccount(collections),
@@ -88,6 +86,8 @@ export function CalendarSourceList({
           <CalendarSourceList.Item
             collection={collection}
             isSelected={selectedKeys.has(collection.collectionKey)}
+            // 한 번에 고를 수 있는 캘린더 수에 닿으면 고르지 않은 캘린더를 막는다. 이유는 스크린이 버튼 위에 보인다
+            isDisabled={isAtLimit && !selectedKeys.has(collection.collectionKey)}
             onSelectedChange={(isSelected) =>
               handleSelectedChange(collection.collectionKey, isSelected)
             }
@@ -139,7 +139,7 @@ CalendarSourceList.Group = function Group({ accountName, ...props }: GroupProps)
   return <SettingsListGroup label={accountName} {...props} />;
 };
 
-interface ItemProps extends Omit<ComponentProps<typeof ControlField>, 'children' | 'isDisabled'> {
+interface ItemProps extends Omit<ComponentProps<typeof ControlField>, 'children'> {
   collection: ImportCollection;
 }
 
@@ -147,15 +147,17 @@ interface ItemProps extends Omit<ComponentProps<typeof ControlField>, 'children'
 CalendarSourceList.Item = function Item({
   collection,
   isSelected,
+  isDisabled: isDisabledByParent = false,
   className,
   ...props
 }: ItemProps) {
   const { t } = useTranslation('todoImport');
-  const isDisabled = !TodoImportCollectionPolicy.isSelectable(collection);
+  const hasEvents = TodoImportCollectionPolicy.isSelectable(collection);
+  const isDisabled = !hasEvents || isDisabledByParent;
   // 고른 기간에 일정이 없어 고를 수 없는 이유를 개수 대신 말로 보인다
-  const countLabel = isDisabled
-    ? t('calendars.noEventsInRange')
-    : t('calendars.itemCount', { count: collection.itemCount });
+  const countLabel = hasEvents
+    ? t('calendars.itemCount', { count: collection.itemCount })
+    : t('calendars.noEventsInRange');
 
   return (
     <ControlField

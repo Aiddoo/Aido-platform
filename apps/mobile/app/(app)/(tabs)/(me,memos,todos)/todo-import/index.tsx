@@ -1,4 +1,4 @@
-import { TODO_IMPORT_LIMITS } from '@aido/api/vocabulary';
+import { TODO_IMPORT_LIMITS, TODO_LIMITS } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
@@ -18,7 +18,10 @@ import { MissingCalendarHelp } from '@src/features/planning/todo-import/componen
 import { IMPORT_RANGE_PRESETS } from '@src/features/planning/todo-import/constants/todo-import.constants';
 import type { TodoImportStep } from '@src/features/planning/todo-import/constants/todo-import.events';
 import { TodoImportCollectionPolicy } from '@src/features/planning/todo-import/domains/todo-import-collection.model';
-import type { ImportTarget } from '@src/features/planning/todo-import/domains/todo-import-target.model';
+import {
+  hasTargetOverCapacity,
+  type ImportTarget,
+} from '@src/features/planning/todo-import/domains/todo-import-target.model';
 import {
   calculateRemainingCapacity,
   findActiveTodoImportId,
@@ -29,6 +32,7 @@ import {
   findLastAllowedDate,
   getRangeEndDate,
 } from '@src/features/planning/todo-import/domains/todo-import.model';
+import { useNewCategoryNames } from '@src/features/planning/todo-import/hooks/use-new-category-names';
 import {
   useGetCalendarPermissionQueryOptions,
   useGetImportCollectionsQueryOptions,
@@ -346,11 +350,19 @@ function CalendarsStep({ form, onNext }: { form: TodoImportForm; onNext: () => v
                 title={t('calendars.tooMany', { limit: TODO_IMPORT_LIMITS.MAX_ITEMS_PER_IMPORT })}
               />
             ) : (
-              <Text size="b4" shade={6} align="center" className="tabular-nums">
-                {t('calendars.selectedCount', {
-                  count: TodoImportCollectionPolicy.calculateItemCount(selected),
-                })}
-              </Text>
+              <VStack gap={2}>
+                <Text size="b4" shade={6} align="center" className="tabular-nums">
+                  {t('calendars.selectedCount', {
+                    count: TodoImportCollectionPolicy.calculateItemCount(selected),
+                  })}
+                </Text>
+                {/* 더 고를 수 없어 막힌 캘린더 줄의 이유 */}
+                {TodoImportCollectionPolicy.isAtCollectionLimit(selected) && (
+                  <Text size="b4" shade={6} align="center">
+                    {t('calendars.collectionLimit', { limit: TODO_IMPORT_LIMITS.MAX_COLLECTIONS })}
+                  </Text>
+                )}
+              </VStack>
             )}
           </StyledSafeAreaView>
           <KeyboardAdaptiveButton
@@ -438,20 +450,29 @@ function CategoriesStep({ form, onNext }: { form: TodoImportForm; onNext: () => 
   const hasRejectedTargets = Object.keys(errorMessages).length > 0;
   const { data: categoriesResult } = useQuery(useGetTodoCategoriesQueryOptions());
   const { data: snapshot } = useQuery(useGetEntitlementsQueryOptions());
+  const newCategoryNames = useNewCategoryNames();
+
+  // 목록이 보이는 연결과 같은 규칙으로 고른다. 받기 전에는 null이다
+  const resolvedTargets =
+    categoriesResult == null || snapshot == null
+      ? null
+      : resolveImportTargets(collections, targets, {
+          categories: categoriesResult.categories,
+          remainingCategorySlots: EntitlementPolicy.findRemainingCount(snapshot, 'TODO_CATEGORY'),
+          palette: CATEGORY_COLORS,
+          names: newCategoryNames,
+        });
+  const mayRunOutOfRoom =
+    resolvedTargets != null &&
+    categoriesResult != null &&
+    hasTargetOverCapacity(collections, resolvedTargets, categoriesResult.categories);
 
   const handleNext = () => {
-    if (categoriesResult == null || snapshot == null) {
+    if (resolvedTargets == null) {
       return;
     }
     // 기본 연결을 고른 값으로 고정해 옵션 단계와 시작 요청이 화면에 보인 연결 그대로 보낸다
-    setTargets(
-      resolveImportTargets(collections, targets, {
-        categories: categoriesResult.categories,
-        remainingCategorySlots: EntitlementPolicy.findRemainingCount(snapshot, 'TODO_CATEGORY'),
-        palette: CATEGORY_COLORS,
-        fallbackName: t('categories.fallbackName'),
-      }),
-    );
+    setTargets(resolvedTargets);
     onNext();
   };
 
@@ -459,12 +480,23 @@ function CategoriesStep({ form, onNext }: { form: TodoImportForm; onNext: () => 
     <FormStepLayout
       title={t('categories.title')}
       footer={
-        <KeyboardAdaptiveButton
-          isDisabled={categoriesResult == null || snapshot == null}
-          onPress={handleNext}
-        >
-          {t('common:actions.continue')}
-        </KeyboardAdaptiveButton>
+        <VStack gap={8}>
+          {/* 넘쳐도 가져오기는 막지 않는다. 서버가 가까운 날짜부터 넣고 나머지를 건너뛴다 */}
+          {mayRunOutOfRoom && (
+            <StyledSafeAreaView edges={['left', 'right']} className="px-4">
+              <InlineAlert
+                status="warning"
+                title={t('categories.capacityWarning.title')}
+                description={t('categories.capacityWarning.description', {
+                  limit: TODO_LIMITS.MAX_PER_CATEGORY,
+                })}
+              />
+            </StyledSafeAreaView>
+          )}
+          <KeyboardAdaptiveButton isDisabled={resolvedTargets == null} onPress={handleNext}>
+            {t('common:actions.continue')}
+          </KeyboardAdaptiveButton>
+        </VStack>
       }
     >
       <WordWrapText size="b3" shade={6}>

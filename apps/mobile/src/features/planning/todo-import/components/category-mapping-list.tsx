@@ -31,6 +31,7 @@ import { match } from 'ts-pattern';
 import { resolveImportTargets, toNewCategoryTarget } from '../apis/todo-import-target.mapper';
 import type { ImportCollection } from '../domains/todo-import-collection.model';
 import { type ImportTarget, TodoImportTargetPolicy } from '../domains/todo-import-target.model';
+import { useNewCategoryNames } from '../hooks/use-new-category-names';
 import { type CategoryTargetChoice, CategoryTargetSheet } from './category-target-sheet';
 
 interface CategoryMappingListProps {
@@ -59,12 +60,12 @@ export function CategoryMappingList({
 
   const { categories } = categoriesResult;
   const remainingCategorySlots = EntitlementPolicy.findRemainingCount(snapshot, 'TODO_CATEGORY');
-  const fallbackName = t('categories.fallbackName');
+  const names = useNewCategoryNames();
   const targets = resolveImportTargets(collections, value, {
     categories,
     remainingCategorySlots,
     palette: CATEGORY_COLORS,
-    fallbackName,
+    names,
   });
   const newCategoryCount = TodoImportTargetPolicy.countNewCategories(Object.values(targets));
 
@@ -77,7 +78,7 @@ export function CategoryMappingList({
     const newCategory =
       current?.kind === 'NEW_CATEGORY'
         ? current
-        : toNewCategoryTarget(base, { palette: CATEGORY_COLORS, fallbackName });
+        : toNewCategoryTarget(base, { palette: CATEGORY_COLORS, names });
     const nextIfNew = {
       ...targets,
       ...Object.fromEntries(chosenKeys.map((key) => [key, newCategory])),

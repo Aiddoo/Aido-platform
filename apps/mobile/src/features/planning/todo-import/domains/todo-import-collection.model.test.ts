@@ -30,6 +30,55 @@ describe('TodoImportCollectionPolicy.getSelectedCollections', () => {
     // Then
     expect(selected.map((collection) => collection.collectionKey)).toEqual(['holidays']);
   });
+
+  it('기본 선택은 20개를 넘지 않고 일정이 많은 캘린더부터 고른다', () => {
+    // Given
+    const limit = TODO_IMPORT_LIMITS.MAX_COLLECTIONS;
+    const collections = Array.from({ length: limit + 2 }, (_, index) =>
+      createImportCollection({ collectionKey: `calendar-${index}`, itemCount: index + 1 }),
+    );
+
+    // When
+    const selected = TodoImportCollectionPolicy.getSelectedCollections(collections, null);
+
+    // Then
+    expect(selected).toHaveLength(limit);
+    expect(selected.map((collection) => collection.collectionKey)).not.toContain('calendar-0');
+    expect(selected.map((collection) => collection.collectionKey)).not.toContain('calendar-1');
+    expect(TodoImportCollectionPolicy.isAtCollectionLimit(selected)).toBe(true);
+  });
+
+  it('고른 캘린더가 20개를 넘어도 요청에는 20개까지만 넣는다', () => {
+    // Given
+    const limit = TODO_IMPORT_LIMITS.MAX_COLLECTIONS;
+    const collections = Array.from({ length: limit + 1 }, (_, index) =>
+      createImportCollection({ collectionKey: `calendar-${index}` }),
+    );
+
+    // When
+    const selected = TodoImportCollectionPolicy.getSelectedCollections(
+      collections,
+      collections.map((collection) => collection.collectionKey),
+    );
+
+    // Then
+    expect(selected).toHaveLength(limit);
+  });
+});
+
+describe('TodoImportCollectionPolicy.hasEmailTitle', () => {
+  it.each([
+    ['계정 이메일 그대로인 이름', 'someone@gmail.com', true],
+    ['이메일이 들어간 이름', '업무 (me@company.co.kr)', true],
+    ['보통 이름', '가족 일정', false],
+    ['골뱅이만 있는 이름', '@회의실', false],
+  ])('%s → %s', (_case, title, expected) => {
+    // When
+    const hasEmail = TodoImportCollectionPolicy.hasEmailTitle(createImportCollection({ title }));
+
+    // Then
+    expect(hasEmail).toBe(expected);
+  });
 });
 
 describe('TodoImportCollectionPolicy.isOverImportLimit', () => {

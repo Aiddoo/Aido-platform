@@ -31,7 +31,7 @@ function splitGraphemes(text: string): string[] {
 }
 
 /** 서버 한도는 UTF-16 길이라 글자를 앞에서부터 한도 안까지만 담는다 */
-function truncateGraphemes(text: string, maxLength: number): string {
+export function truncateGraphemes(text: string, maxLength: number): string {
   if (text.length <= maxLength) {
     return text;
   }

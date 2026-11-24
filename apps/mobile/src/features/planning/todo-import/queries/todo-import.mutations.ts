@@ -4,13 +4,18 @@ import {
   useTodoImportUploadSession,
 } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
+import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
 import { useTrack } from '@src/shared/analytics';
+import { t } from '@src/shared/i18n';
 import { writeStoredValue } from '@src/shared/storage/define-stored-value';
 import { useStoredValueStorage } from '@src/shared/storage/use-stored-value';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import type { TodoImportSelection } from '../domains/todo-import-session.model';
-import { isTodoImportStartHandledError } from '../domains/todo-import.error';
+import {
+  findActiveTodoImportId,
+  isTodoImportStartHandledError,
+} from '../domains/todo-import.error';
 import { lastTodoImportIdStoredValue } from '../schemas/todo-import-last-storage.schema';
 import { toTodoImportStartedParams } from '../utils/todo-import-analytics';
 import {
@@ -55,16 +60,17 @@ export function useStartTodoImportMutationOptions() {
   });
 }
 
-/** 이 기기에 이어 보낼 상태가 없을 때(다른 기기에서 시작) 쓴다 */
+/** 업로드 중인 가져오기를 멈춘다. 이 기기에서 올리던 것이면 이어 올릴 상태도 함께 지운다 */
 export function useCancelTodoImportMutationOptions({ importId }: { importId: string }) {
-  const todoImportApi = useTodoImportApi();
+  const uploadSession = useTodoImportUploadSession();
+  const accountId = useMyAccountId();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
 
   return mutationOptions({
     networkMode: 'always',
     mutationKey: TODO_IMPORT_MUTATION_KEYS.cancel({ importId }),
-    mutationFn: async () => unwrap(await todoImportApi.cancelImport(importId)),
+    mutationFn: async () => unwrap(await uploadSession.cancel({ accountId, importId })),
     onSuccess: (todoImport) => {
       setTodoImportInCache(queryClient, todoImport);
       trackEvent('todo_import_cancel_completed');
@@ -92,7 +98,15 @@ export function useUndoTodoImportMutationOptions({ importId }: { importId: strin
     },
     onSettled: () => invalidateActiveTodoImport(queryClient),
     meta: {
-      errorFeedback: { feature: 'todo_import', fallbackKey: 'todoImport:toasts.undoFailed' },
+      errorFeedback: {
+        feature: 'todo_import',
+        fallbackKey: 'todoImport:toasts.undoFailed',
+        // 다른 가져오기가 진행 중이라 서버가 거절했으면(2301) 언제 되돌릴 수 있는지 함께 알린다
+        describe: (error) =>
+          findActiveTodoImportId(error) == null
+            ? undefined
+            : t('todoImport:toasts.undoWhileImporting'),
+      },
     },
   });
 }

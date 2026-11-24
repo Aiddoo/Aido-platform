@@ -2,6 +2,8 @@ import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account
 import { TodoImportFailureAlert } from '@src/features/planning/todo-import/components/todo-import-failure-alert';
 import { TodoImportProgress } from '@src/features/planning/todo-import/components/todo-import-progress';
 import { TodoImportResult } from '@src/features/planning/todo-import/components/todo-import-result';
+import { TodoImportUndoButton } from '@src/features/planning/todo-import/components/todo-import-undo-button';
+import { isTodoImportNotFoundError } from '@src/features/planning/todo-import/domains/todo-import.error';
 import type { TodoImport } from '@src/features/planning/todo-import/domains/todo-import.model';
 import { useTodoImportId } from '@src/features/planning/todo-import/hooks/use-todo-import-id';
 import { useGetTodoImportQueryOptions } from '@src/features/planning/todo-import/queries/todo-import.queries';
@@ -15,10 +17,12 @@ import {
   Button,
   ErrorIllustration,
   QueryErrorBoundary,
+  type QueryErrorFallbackProps,
   ReadableContent,
   Result,
   SafeAreaScrollView,
   Spacing,
+  VStack,
   WordWrapText,
 } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -43,7 +47,7 @@ function TodoImportScreen() {
   return (
     <SafeAreaScrollView className="flex-1 bg-white" contentInsetAdjustmentBehavior="automatic">
       <ReadableContent className="px-4 pt-6 pb-8">
-        <QueryErrorBoundary fallback={TodoImportProgress.Error} resetKeys={[importId]}>
+        <QueryErrorBoundary fallback={TodoImportScreen.Error} resetKeys={[importId]}>
           {/* 받기 전에는 진행·결과 중 무엇일지 몰라 어느 모양도 미리 그리지 않는다 */}
           <Suspense fallback={<TodoImportScreen.Loading />}>
             <TodoImportStatus />
@@ -59,6 +63,28 @@ TodoImportScreen.Loading = function Loading() {
     <Box className="items-center py-10">
       <Spinner />
     </Box>
+  );
+};
+
+/** 다른 계정의 가져오기, 30일이 지나 지워진 기록, 잘못된 링크는 다시 시도해도 같아 새로 가져오게 한다 */
+TodoImportScreen.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
+  const { t } = useTranslation('todoImport');
+
+  if (!isTodoImportNotFoundError(error)) {
+    return <TodoImportProgress.Error error={error} reset={reset} />;
+  }
+
+  return (
+    <Result
+      icon={<ErrorIllustration />}
+      title={t('result.notFoundTitle')}
+      description={t('result.notFoundDescription')}
+      button={
+        <Button size="large" onPress={() => router.replace('/todo-import')}>
+          {t('result.startNew')}
+        </Button>
+      }
+    />
   );
 };
 
@@ -89,12 +115,34 @@ function TodoImportStatus() {
     .with('FAILED', () => (
       <>
         <Stack.Screen options={{ title: t('titles.result') }} />
-        <Result
-          icon={<ErrorIllustration />}
-          title={t('result.failedTitle')}
-          description={t('result.failedDescription')}
-          button={<StartAgainButton />}
-        />
+        {match(todoImport.failureReason)
+          .with('UNDO_FAILED', () => (
+            <Result
+              icon={<ErrorIllustration />}
+              title={t('result.undoFailedTitle')}
+              description={t('result.undoFailedDescription')}
+              button={
+                <TodoImportUndoButton size="large">{t('result.undoAgain')}</TodoImportUndoButton>
+              }
+            />
+          ))
+          // 이유를 모르면(null) 만들다 멈춘 것과 같이 안내한다
+          .with(P.union('MATERIALIZATION_FAILED', 'STALLED', null), () => (
+            <Result
+              icon={<ErrorIllustration />}
+              title={t('result.failedTitle')}
+              description={t('result.failedDescription', { count: todoImport.counts.created })}
+              button={
+                <VStack gap={8}>
+                  <StartAgainButton />
+                  <TodoImportUndoButton size="large" variant="weak">
+                    {t('result.undo')}
+                  </TodoImportUndoButton>
+                </VStack>
+              }
+            />
+          ))
+          .exhaustive()}
       </>
     ))
     .with(P.union('CANCELED', 'ABANDONED'), () => (

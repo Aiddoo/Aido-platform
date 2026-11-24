@@ -4,14 +4,31 @@ import { dateKeySchema } from '@src/shared/date/date-key';
 
 import { createImportCollection } from '../__tests__/todo-import.fixtures';
 import type { TodoImportFormValues } from '../schemas/todo-import-form.schema';
-import { findNearestPaletteColor, resolveImportTargets } from './todo-import-target.mapper';
+import {
+  findNearestPaletteColor,
+  resolveImportTargets,
+  toNewCategoryName,
+} from './todo-import-target.mapper';
 import { toTodoImportSelection } from './todo-import.mapper';
+
+const NAMES = {
+  fallbackName: '캘린더',
+  accountNames: {
+    icloud: 'iCloud 캘린더',
+    google: 'Google 캘린더',
+    outlook: 'Outlook 캘린더',
+    device: null,
+    subscribed: null,
+    birthdays: null,
+    other: null,
+  },
+} as const;
 
 const CONTEXT = {
   categories: [createTodoCategoryWithCount({ id: 3, name: '기본' })],
   remainingCategorySlots: 2,
   palette: CATEGORY_COLORS,
-  fallbackName: '캘린더',
+  names: NAMES,
 };
 
 function createFormValues(overrides: Partial<TodoImportFormValues> = {}): TodoImportFormValues {
@@ -63,6 +80,57 @@ describe('resolveImportTargets', () => {
       school: { kind: 'NEW_CATEGORY', name: '가'.repeat(50), color: '#339AF0' },
       work: { kind: 'EXISTING_CATEGORY', categoryId: 3 },
     });
+  });
+
+  it('이메일 모양 캘린더 이름은 새 카테고리 이름으로 보내지 않는다', () => {
+    // Given
+    const google = createImportCollection({
+      collectionKey: 'google',
+      title: 'someone@gmail.com',
+      accountProvider: 'google',
+    });
+    const local = createImportCollection({
+      collectionKey: 'local',
+      title: 'me@example.com',
+      accountProvider: 'device',
+    });
+
+    // When
+    const targets = resolveImportTargets([google, local], {}, CONTEXT);
+
+    // Then
+    expect(targets).toMatchObject({
+      google: { kind: 'NEW_CATEGORY', name: 'Google 캘린더' },
+      local: { kind: 'NEW_CATEGORY', name: '캘린더' },
+    });
+    expect(JSON.stringify(targets)).not.toContain('@');
+  });
+
+  it('이메일 대신 쓴 이름과 같은 카테고리가 있으면 그 카테고리에 넣는다', () => {
+    // Given
+    const google = createImportCollection({
+      collectionKey: 'google',
+      title: 'someone@gmail.com',
+      accountProvider: 'google',
+    });
+    const existing = createTodoCategoryWithCount({ id: 9, name: 'Google 캘린더' });
+
+    // When
+    const targets = resolveImportTargets([google], {}, { ...CONTEXT, categories: [existing] });
+
+    // Then
+    expect(targets).toEqual({ google: { kind: 'EXISTING_CATEGORY', categoryId: 9 } });
+  });
+
+  it('50자를 넘는 이름은 이모지를 반으로 자르지 않고 UTF-16 50자 안까지만 남긴다', () => {
+    // Given
+    const collection = createImportCollection({ title: `${'가'.repeat(49)}👩‍👩‍👧끝` });
+
+    // When
+    const name = toNewCategoryName(collection, NAMES);
+
+    // Then
+    expect(name).toBe('가'.repeat(49));
   });
 });
 

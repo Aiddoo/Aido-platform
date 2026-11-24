@@ -1,8 +1,10 @@
+import { TODO_LIMITS } from '@aido/api/vocabulary';
 import {
   type TodoCategory,
   TodoCategoryPolicy,
+  type TodoCategoryWithCount,
 } from '@src/features/planning/category/domains/todo-category.model';
-import { keyBy } from 'es-toolkit';
+import { keyBy, sumBy, uniqWith } from 'es-toolkit';
 import { z } from 'zod';
 
 import type { ImportCollection } from './todo-import-collection.model';
@@ -23,6 +25,8 @@ interface SuggestTargetsContext {
   categories: readonly TodoCategory[];
   /** null은 제한이 없다 */
   remainingCategorySlots: number | null;
+  /** 캘린더마다 새 카테고리로 만들 때 보낼 이름. 이메일 같은 캘린더 이름은 이미 바뀌어 있다 */
+  newCategoryNames: Readonly<Record<string, string>>;
 }
 
 function toComparableName(name: string) {
@@ -31,11 +35,12 @@ function toComparableName(name: string) {
 
 /**
  * 캘린더마다 처음 연결할 곳(순서대로 채운다).
- * 같은 이름의 카테고리 → 남은 카테고리 자리가 있으면 새 카테고리 → 꽉 찼으면 첫 카테고리
+ * 같은 이름의 카테고리 → 남은 카테고리 자리가 있으면 새 카테고리 → 꽉 찼으면 첫 카테고리.
+ * 이름은 새 카테고리로 보낼 이름과 같은 값으로 견준다
  */
 export function suggestTargets(
   collections: readonly ImportCollection[],
-  { categories, remainingCategorySlots }: SuggestTargetsContext,
+  { categories, remainingCategorySlots, newCategoryNames }: SuggestTargetsContext,
 ): Record<string, ImportTargetSuggestion> {
   const categoriesByName = keyBy(
     categories.filter((category) => !TodoCategoryPolicy.isOptimisticCategory(category)),
@@ -46,7 +51,8 @@ export function suggestTargets(
 
   return Object.fromEntries(
     collections.map((collection): [string, ImportTargetSuggestion] => {
-      const sameNameCategory = categoriesByName[toComparableName(collection.title)];
+      const name = newCategoryNames[collection.collectionKey];
+      const sameNameCategory = name == null ? null : categoriesByName[toComparableName(name)];
       if (sameNameCategory != null) {
         return [
           collection.collectionKey,
@@ -64,6 +70,38 @@ export function suggestTargets(
       ];
     }),
   );
+}
+
+/**
+ * 카테고리 하나에 넣을 수 있는 할 일 수(`TODO_LIMITS.MAX_PER_CATEGORY`)를 넘을 수 있는 대상이 있다.
+ * 넘쳐도 서버가 가까운 날짜부터 넣고 나머지를 건너뛰어 막지 않는다. 기존 카테고리의 수는 완료한 할 일까지
+ * 센 값이라 실제로는 자리가 남을 수도 있다
+ */
+export function hasTargetOverCapacity(
+  collections: readonly ImportCollection[],
+  targets: Readonly<Record<string, ImportTarget>>,
+  categories: readonly TodoCategoryWithCount[],
+): boolean {
+  const assigned = collections.flatMap((collection) => {
+    const target = targets[collection.collectionKey];
+    return target == null ? [] : [{ collection, target }];
+  });
+  const uniqueTargets = uniqWith(
+    assigned.map(({ target }) => target),
+    isSameTarget,
+  );
+
+  return uniqueTargets.some((target) => {
+    const importCount = sumBy(
+      assigned.filter((entry) => isSameTarget(entry.target, target)),
+      ({ collection }) => collection.itemCount,
+    );
+    const currentCount =
+      target.kind === 'EXISTING_CATEGORY'
+        ? (TodoCategoryPolicy.findCategory(categories, target.categoryId)?.todoCount ?? 0)
+        : 0;
+    return TODO_LIMITS.MAX_PER_CATEGORY < currentCount + importCount;
+  });
 }
 
 /** 이름이 같은 새 카테고리는 서버가 하나로 만들어 한 번만 센다 */

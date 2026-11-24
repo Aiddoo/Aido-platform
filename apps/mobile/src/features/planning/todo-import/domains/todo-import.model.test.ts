@@ -56,25 +56,17 @@ describe('TodoImportPolicy', () => {
     },
   );
 
+  // 되돌릴 수 있는지는 서버가 정해 기한(undoableUntil)으로만 알려 준다. 앱은 상태·수를 다시 보지 않는다
   it.each([
-    ['완료이고 기한 전이면 되돌린다', 'COMPLETED', '2026-12-01T00:00:00.000Z', 3, true],
-    ['기한이 지금이면 지났다', 'COMPLETED', '2026-11-24T03:00:00.000Z', 3, false],
-    ['기한이 없으면 되돌릴 수 없다', 'COMPLETED', null, 3, false],
-    ['이미 되돌리는 중이면 다시 하지 않는다', 'UNDOING', '2026-12-01T00:00:00.000Z', 3, false],
-    [
-      '모두 이미 가져와 만든 할 일이 없으면 되돌릴 것이 없다',
-      'COMPLETED',
-      '2026-12-01T00:00:00.000Z',
-      0,
-      false,
-    ],
-  ] as const)('%s', (_case, status, undoableUntil, created, expected) => {
+    ['완료이고 기한 전이면 되돌린다', 'COMPLETED', '2026-12-01T00:00:00.000Z', true],
+    ['만들다 멈춰도 기한 전이면 만든 할 일을 되돌린다', 'FAILED', '2026-12-01T00:00:00.000Z', true],
+    ['기한이 지금이면 지났다', 'COMPLETED', '2026-11-24T03:00:00.000Z', false],
+    ['기한이 없으면(모두 이미 가져온 일정·되돌리는 중) 되돌릴 수 없다', 'COMPLETED', null, false],
+  ] as const)('%s', (_case, status, undoableUntil, expected) => {
     // Given
-    const base = createTodoImport();
     const todoImport = createTodoImport({
       status,
       undoableUntil: undoableUntil == null ? null : toInstant(undoableUntil),
-      counts: { ...base.counts, created },
     });
 
     // When

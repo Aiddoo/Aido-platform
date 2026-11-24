@@ -62,6 +62,7 @@
     "emptyTitle": "이 기간에 가져올 일정이 없어요",
     "emptyDescription": "기간을 늘리거나, 캘린더 앱에 일정이 있는지 확인해 주세요",
     "tooMany": "한 번에 {{limit}}개까지 가져올 수 있어요. 기간이나 캘린더를 줄여 주세요",
+    "collectionLimit": "캘린더는 한 번에 {{limit}}개까지 고를 수 있어요",
     "selectedCount": "일정 {{count}}개를 가져와요",
     "missingHelp": {
       "open": "캘린더가 목록에 없나요?",
@@ -102,6 +103,11 @@
     "useExisting": "이 카테고리에 넣기",
     "unassigned": "고르지 않음",
     "fallbackName": "캘린더",
+    "accountNames": {
+      "icloud": "iCloud 캘린더",
+      "google": "Google 캘린더",
+      "outlook": "Outlook 캘린더"
+    },
     "loadFailed": "기존 카테고리를 읽지 못했어요",
     "rowLabel": "{{calendar}}, {{target}}에 넣기",
     "rowHint": "넣을 카테고리를 바꿔요",
@@ -110,6 +116,10 @@
       "nameTaken": "이미 같은 이름의 카테고리가 있어요. 이름을 바꾸거나 그 카테고리를 골라 주세요",
       "notFound": "카테고리가 지워졌어요. 다른 카테고리를 골라 주세요",
       "summary": "넣을 수 없는 카테고리가 있어요. 표시한 캘린더의 카테고리를 다시 골라 주세요"
+    },
+    "capacityWarning": {
+      "title": "카테고리 자리가 모자랄 수 있어요",
+      "description": "할 일은 카테고리마다 {{limit}}개까지예요. 넘치면 가까운 날짜부터 넣고 나머지는 건너뛰어요"
     }
   },
   "options": {
@@ -133,7 +143,9 @@
     },
     "leaveNotice": "앱을 나가도 계속 가져와요",
     "offline": "인터넷이 다시 연결되면 이어서 가져와요",
-    "paused": "잠시 멈췄어요. 앱을 다시 열면 이어서 가져와요",
+    "paused": "잠시 멈췄어요. 다시 시도하거나 앱을 다시 열면 이어서 가져와요",
+    "pausedPermission": "캘린더 접근이 꺼져서 멈췄어요. 설정에서 다시 켜면 이어서 가져와요",
+    "retry": "다시 시도",
     "notOnThisDevice": "다른 기기에서 가져오는 중이에요. 그 기기에서 마무리하거나 여기서 멈출 수 있어요",
     "cancel": "가져오기 멈추기",
     "cancelConfirmTitle": "가져오기를 멈출까요?",
@@ -142,7 +154,13 @@
   "failure": {
     "tooManyItems": "한 번에 {{limit}}개까지 가져올 수 있어요. 기간이나 캘린더를 줄여 다시 가져와 주세요",
     "invalid": "기간이나 일정을 읽지 못했어요. 기간을 바꿔 다시 가져와 주세요",
-    "rejected": "아이두가 일정을 받지 못했어요. 잠시 뒤 다시 가져와 주세요"
+    "rejected": "아이두가 일정을 받지 못했어요. 잠시 뒤 다시 가져와 주세요",
+    "planLimit": "지금 요금제로는 이 기간을 가져올 수 없어서 멈췄어요. 기간을 줄여 다시 설정해 주세요",
+    "categoryLimit": "새 카테고리를 더 만들 수 없어서 멈췄어요. 기존 카테고리에 넣도록 다시 설정해 주세요",
+    "categoryNameTaken": "같은 이름의 카테고리가 생겨서 멈췄어요. 그 카테고리를 고르거나 이름을 바꿔 다시 설정해 주세요",
+    "categoryNotFound": "넣으려던 카테고리가 지워져서 멈췄어요. 다른 카테고리를 골라 다시 설정해 주세요",
+    "setUpAgain": "다시 설정하기",
+    "viewPlan": "요금제 보기"
   },
   "result": {
     "completedTitle": "할 일 {{count}}개를 가져왔어요",
@@ -164,17 +182,25 @@
     "undo": "되돌리기",
     "undoConfirmTitle": "가져온 할 일을 되돌릴까요?",
     "undoConfirmDescription": "아직 완료하지 않은 할 일만 지워요",
-    "failedTitle": "가져오지 못했어요",
-    "failedDescription": "이미 만든 할 일은 그대로 있어요. 다시 가져오면 이어서 만들어요",
+    "failedTitle": "가져오다 멈췄어요",
+    "failedDescription_zero": "아직 만든 할 일은 없어요. 다시 가져와 주세요",
+    "failedDescription": "만든 할 일 {{count}}개는 그대로 있어요. 다시 가져오면 남은 일정만 이어서 만들어요",
+    "undoFailedTitle": "되돌리다 멈췄어요",
+    "undoFailedDescription": "다시 되돌리면 남은 할 일을 마저 지워요. 완료한 할 일은 남겨 둬요",
+    "undoAgain": "다시 되돌리기",
     "canceledTitle": "가져오기를 멈췄어요",
     "canceledDescription": "만든 할 일은 없어요",
-    "startAgain": "다시 가져오기"
+    "startAgain": "다시 가져오기",
+    "notFoundTitle": "가져오기 기록을 찾을 수 없어요",
+    "notFoundDescription": "다른 계정의 기록이거나 오래돼서 지워졌을 수 있어요",
+    "startNew": "새로 가져오기"
   },
   "toasts": {
     "startFailed": "가져오기를 시작하지 못했어요. 다시 시도해 주세요",
     "cancelFailed": "가져오기를 멈추지 못했어요. 다시 시도해 주세요",
     "undoFailed": "되돌리지 못했어요. 다시 시도해 주세요",
     "permissionRequestFailed": "캘린더 권한을 묻지 못했어요. 다시 시도해 주세요",
-    "rangeAdjusted": "자정이 지나서 기간을 오늘부터 다시 맞췄어요"
+    "rangeAdjusted": "자정이 지나서 기간을 오늘부터 다시 맞췄어요",
+    "undoWhileImporting": "진행 중인 가져오기가 끝난 뒤 되돌릴 수 있어요"
   }
 }

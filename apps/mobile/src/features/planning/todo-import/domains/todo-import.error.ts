@@ -93,13 +93,37 @@ export function isTodoImportStartHandledError(error: unknown) {
   );
 }
 
-export type TodoImportUploadFailure = 'TOO_MANY_ITEMS' | 'INVALID' | 'REJECTED';
+export type TodoImportUploadFailure =
+  | 'TOO_MANY_ITEMS'
+  | 'INVALID'
+  | 'PLAN_LIMIT'
+  | 'CATEGORY_LIMIT'
+  | 'CATEGORY_NAME_TAKEN'
+  | 'CATEGORY_NOT_FOUND'
+  | 'REJECTED';
 
-/** 업로드 중 서버가 받지 않은 이유. 세션이 남긴 오류 코드로 고른다 */
-export function getTodoImportUploadFailure(code: string): TodoImportUploadFailure {
-  return match(code)
+/**
+ * 올리거나 확정하다 서버가 받지 않은 이유. 세션이 남긴 거절로 고른다.
+ * 카테고리 자리 부족(CAPACITY)은 서버가 더는 거절하지 않고 건너뛰지만, 오면 일반 거절로 본다
+ */
+export function getTodoImportUploadFailure(error: unknown): TodoImportUploadFailure {
+  if (!isApiError(error)) {
+    return 'REJECTED';
+  }
+  const [rejectedTarget] = findRejectedTargets(error);
+  return match(error.code)
     .returnType<TodoImportUploadFailure>()
     .with(ErrorCode.TODO_IMPORT_2309, () => 'TOO_MANY_ITEMS')
     .with(ErrorCode.TODO_IMPORT_2306, () => 'INVALID')
+    .with(ErrorCode.TODO_IMPORT_2302, () => 'PLAN_LIMIT')
+    .with(ErrorCode.TODO_CATEGORY_0857, () => 'CATEGORY_LIMIT')
+    .with(ErrorCode.TODO_IMPORT_2303, () =>
+      match(rejectedTarget?.reason)
+        .returnType<TodoImportUploadFailure>()
+        .with('CATEGORY_NAME_TAKEN', () => 'CATEGORY_NAME_TAKEN')
+        .with('CATEGORY_NOT_FOUND', () => 'CATEGORY_NOT_FOUND')
+        .with(P.union('CAPACITY', undefined), () => 'REJECTED')
+        .exhaustive(),
+    )
     .otherwise(() => 'REJECTED');
 }

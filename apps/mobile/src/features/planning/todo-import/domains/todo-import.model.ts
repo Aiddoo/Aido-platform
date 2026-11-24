@@ -79,14 +79,12 @@ function isTerminal(todoImport: TodoImport) {
     .exhaustive();
 }
 
-/** 모두 이미 가져온 일정이라 만든 할 일이 없으면 되돌릴 것도 없다 */
+/**
+ * 되돌릴 수 있는지는 서버가 정한다. 완료·실패이고 남은 할 일이 있으며 7일 안일 때만 기한이 온다.
+ * 앱은 지금이 그 기한 전인지만 본다
+ */
 function canUndo(todoImport: TodoImport, now: Instant) {
-  return (
-    todoImport.status === 'COMPLETED' &&
-    todoImport.counts.created > 0 &&
-    todoImport.undoableUntil != null &&
-    !hasInstantPassed(todoImport.undoableUntil, now)
-  );
+  return todoImport.undoableUntil != null && !hasInstantPassed(todoImport.undoableUntil, now);
 }
 
 /** 확정 뒤에는 서버 잡이 끝까지 만든다 */

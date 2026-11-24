@@ -2,10 +2,13 @@ import { useTodoImportUploadSession } from '@src/bootstrap/providers/di-context'
 import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
+import { useOpenAppSettings } from '@src/shared/hooks/use-open-app-settings';
 import { useTranslation } from '@src/shared/i18n';
+import { IS_IOS_APP_ON_MAC } from '@src/shared/infra/device/device-info';
 import { useStoredValue } from '@src/shared/storage/use-stored-value';
 import {
   Box,
+  Button,
   CheckmarkIcon,
   HStack,
   InlineAlert,
@@ -30,7 +33,10 @@ import { useTodoImportId } from '../hooks/use-todo-import-id';
 import { useCancelTodoImportMutationOptions } from '../queries/todo-import.mutations';
 import { useGetTodoImportQueryOptions } from '../queries/todo-import.queries';
 import { todoImportSessionStoredValue } from '../schemas/todo-import-session-storage.schema';
-import type { TodoImportUploadSnapshot } from '../services/todo-import-upload.session';
+import type {
+  TodoImportPauseReason,
+  TodoImportUploadSnapshot,
+} from '../services/todo-import-upload.session';
 import { TodoImportFailureAlert } from './todo-import-failure-alert';
 
 type StageStatus = 'pending' | 'active' | 'done';
@@ -41,7 +47,8 @@ interface ProgressView {
   create: StageStatus;
   ratio: number;
   isQueued: boolean;
-  isPaused: boolean;
+  /** 이 기기의 업로드가 멈춘 이유. 멈추지 않았으면 null */
+  pauseReason: TodoImportPauseReason | null;
   /** 업로드 중인데 이 기기가 보내고 있지도, 이어 보낼 상태를 갖고 있지도 않다(다른 기기에서 시작했다) */
   isSentElsewhere: boolean;
 }
@@ -69,11 +76,24 @@ export function TodoImportProgress() {
   const [storedSession] = useStoredValue(todoImportSessionStoredValue, accountId);
   const isOnline = useIsOnline();
   const cancelImport = useMutation(useCancelTodoImportMutationOptions({ importId }));
+  const openSettings = useOpenAppSettings();
 
   // 꺼진 채 다시 연 앱은 기기 상태가 아직 비어 있어도, 저장해 둔 업로드가 같으면 이 기기의 가져오기다
   const view = toProgressView(todoImport, snapshot, {
     hasStoredSession: storedSession?.importId === todoImport.id,
   });
+  // 업로드 중에만 이 기기의 멈춤·다른 기기 안내를 보인다. 오프라인이면 이 기기의 업로드도 아직 이어지지
+  // 않아 다른 기기로 오해하지 않게, 멈춘 이유 대신 오프라인 안내만 보인다
+  const isUploadingOnline = isOnline && TodoImportPolicy.canCancel(todoImport);
+  const pauseReason = isUploadingOnline ? view.pauseReason : null;
+  const isSentElsewhere = isUploadingOnline && view.isSentElsewhere;
+  const canStop = isSentElsewhere || pauseReason != null;
+
+  const handleRetryPress = () => {
+    if (accountId != null) {
+      uploadSession.resume({ accountId, untitledTitle: t('untitledEvent') });
+    }
+  };
 
   const handleCancelPress = () =>
     confirmDialog.openAsync({
@@ -100,15 +120,43 @@ export function TodoImportProgress() {
 
       <TodoImportFailureAlert />
       {!isOnline && <InlineAlert status="warning" title={t('progress.offline')} />}
-      {isOnline && view.isPaused && <InlineAlert status="warning" title={t('progress.paused')} />}
-      {/* 오프라인이면 이 기기의 업로드도 아직 이어지지 않아 다른 기기로 오해하지 않게 숨긴다 */}
-      {isOnline && view.isSentElsewhere && TodoImportPolicy.canCancel(todoImport) && (
-        <VStack gap={8} align="center">
-          <InlineAlert status="default" title={t('progress.notOnThisDevice')} />
-          <TextButton size="medium" isDisabled={cancelImport.isPending} onPress={handleCancelPress}>
-            {t('progress.cancel')}
-          </TextButton>
-        </VStack>
+      {pauseReason === 'interrupted' && (
+        <InlineAlert
+          status="warning"
+          title={t('progress.paused')}
+          action={
+            <Button size="small" variant="weak" display="inline" onPress={handleRetryPress}>
+              {t('progress.retry')}
+            </Button>
+          }
+        />
+      )}
+      {/* 권한이 꺼진 채 다시 시도하면 같은 자리에서 멈추므로 설정으로 보낸다. 켜고 돌아오면 앱이 이어 간다 */}
+      {pauseReason === 'permission' && (
+        <InlineAlert
+          status="warning"
+          title={t('progress.pausedPermission')}
+          // Mac(Designed for iPad)은 앱 설정 화면이 열리지 않아 글로 가는 길만 보인다
+          description={IS_IOS_APP_ON_MAC ? t('permission.deniedDescriptionMac') : undefined}
+          action={
+            IS_IOS_APP_ON_MAC ? undefined : (
+              <Button size="small" variant="weak" display="inline" onPress={openSettings}>
+                {t('permission.openSettings')}
+              </Button>
+            )
+          }
+        />
+      )}
+      {isSentElsewhere && <InlineAlert status="default" title={t('progress.notOnThisDevice')} />}
+      {canStop && (
+        <TextButton
+          size="medium"
+          className="self-center"
+          isDisabled={cancelImport.isPending}
+          onPress={handleCancelPress}
+        >
+          {t('progress.cancel')}
+        </TextButton>
       )}
     </VStack>
   );
@@ -209,7 +257,7 @@ function toProgressView(
   const localSnapshot: TodoImportUploadSnapshot = isThisImport ? snapshot : { stage: 'idle' };
   const base = {
     isQueued: false,
-    isPaused: localSnapshot.stage === 'paused',
+    pauseReason: localSnapshot.stage === 'paused' ? localSnapshot.reason : null,
     isSentElsewhere: localSnapshot.stage === 'idle' && !hasStoredSession,
   };
 
@@ -231,9 +279,17 @@ function toProgressView(
           create: 'active',
           ratio: 1,
         }))
-        .with({ stage: P.union('idle', 'starting', 'reading', 'paused', 'failed') }, () => ({
+        .with({ stage: P.union('idle', 'starting', 'reading') }, () => ({
           ...base,
           read: 'active',
+          upload: 'pending',
+          create: 'pending',
+          ratio: 0,
+        }))
+        // 멈췄거나 서버가 받지 않았다. 도는 단계가 없어 읽는 중처럼 보이지 않게 한다
+        .with({ stage: P.union('paused', 'failed') }, () => ({
+          ...base,
+          read: 'pending',
           upload: 'pending',
           create: 'pending',
           ratio: 0,

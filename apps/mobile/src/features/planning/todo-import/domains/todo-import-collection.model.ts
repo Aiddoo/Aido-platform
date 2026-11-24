@@ -1,5 +1,5 @@
 import { TODO_IMPORT_LIMITS } from '@aido/api/vocabulary';
-import { sumBy } from 'es-toolkit';
+import { orderBy, sumBy, take } from 'es-toolkit';
 import { match, P } from 'ts-pattern';
 import { z } from 'zod';
 
@@ -61,18 +61,45 @@ function isDefaultSelected(collection: ImportCollection) {
   return isSelectable(collection) && !isSubscribedCalendar(collection);
 }
 
-/** null은 기본 선택이다. 고른 뒤 기간을 줄여 일정이 사라진 캘린더는 뺀다 */
+/**
+ * null은 기본 선택이다. 고른 뒤 기간을 줄여 일정이 사라진 캘린더는 뺀다.
+ * 서버는 한 번에 캘린더 `MAX_COLLECTIONS`개까지 받아, 기본 선택은 일정이 많은 캘린더부터 그만큼만 고르고
+ * 고른 값도 그 수를 넘기지 않는다. 결과는 받은 목록 순서다
+ */
 function getSelectedCollections(
   collections: readonly ImportCollection[],
   selectedKeys: readonly string[] | null,
 ): ImportCollection[] {
-  if (selectedKeys == null) {
-    return collections.filter(isDefaultSelected);
-  }
-  const selected = new Set(selectedKeys);
-  return collections.filter(
-    (collection) => isSelectable(collection) && selected.has(collection.collectionKey),
+  const candidates =
+    selectedKeys == null
+      ? orderBy(
+          collections.filter(isDefaultSelected),
+          [(collection) => collection.itemCount],
+          ['desc'],
+        )
+      : collections.filter(
+          (collection) =>
+            isSelectable(collection) && selectedKeys.includes(collection.collectionKey),
+        );
+  const selected = new Set(
+    take(candidates, TODO_IMPORT_LIMITS.MAX_COLLECTIONS).map(
+      (collection) => collection.collectionKey,
+    ),
   );
+  return collections.filter((collection) => selected.has(collection.collectionKey));
+}
+
+// 이름 안 어디에든 이메일이 있으면 이메일 모양으로 본다("me@gmail.com", "업무 (me@company.com)")
+const EMAIL_PATTERN = /[^\s@]+@[^\s@]+\.[^\s@]+/u;
+
+/** Google·Outlook·iCloud는 기본 캘린더 이름이 계정 이메일이다. 이 이름은 아이두로 보내지 않는다 */
+function hasEmailTitle(collection: ImportCollection) {
+  return EMAIL_PATTERN.test(collection.title);
+}
+
+/** 더 고를 수 없으면 고르지 않은 캘린더를 막는다 */
+function isAtCollectionLimit(selected: readonly ImportCollection[]) {
+  return TODO_IMPORT_LIMITS.MAX_COLLECTIONS <= selected.length;
 }
 
 function calculateItemCount(collections: readonly ImportCollection[]) {
@@ -91,4 +118,6 @@ export const TodoImportCollectionPolicy = {
   getSelectedCollections,
   calculateItemCount,
   isOverImportLimit,
+  isAtCollectionLimit,
+  hasEmailTitle,
 } as const;
