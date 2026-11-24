@@ -36,6 +36,12 @@ export class TodoCategoryCreatorAdapter implements TodoCategoryCreatorPort {
     this.#dependencies = dependencies;
   }
 
+  assertDraftsValid(drafts: readonly TodoCategoryCreationDraft[]): void {
+    for (const draft of drafts) {
+      toCategoryDraft(draft);
+    }
+  }
+
   async createMany(
     userId: UserId,
     drafts: readonly TodoCategoryCreationDraft[],
