@@ -18,7 +18,6 @@ export function setCachedCalendarPermission(queryClient: QueryClient, permission
   queryClient.setQueryData(TODO_IMPORT_QUERY_KEYS.calendarPermission(), permission);
 }
 
-/** 다른 기기에서 시작한 가져오기처럼 진행 중인 가져오기가 바뀌었을 수 있을 때 다시 묻는다 */
 export function invalidateActiveTodoImport(queryClient: QueryClient) {
   return queryClient.invalidateQueries({ queryKey: TODO_IMPORT_QUERY_KEYS.active() });
 }

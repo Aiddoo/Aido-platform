@@ -2,7 +2,7 @@ import { TODO_IMPORT_TIME_MODES, TODO_VISIBILITIES } from '@aido/api/vocabulary'
 import { type DateKey, dateKeySchema } from '@src/shared/date/date-key';
 import { z } from 'zod';
 
-/** 확정 전 서버로 보낸 고른 값. 일정 제목은 담지 않는다(새 카테고리 이름은 캘린더 이름이다) */
+/** 일정 제목은 담지 않는다(새 카테고리 이름은 캘린더 이름이다) */
 export const todoImportSelectionSchema = z.object({
   startDate: dateKeySchema,
   endDate: dateKeySchema,
@@ -43,7 +43,7 @@ export const todoImportSessionSchema = z.object({
   /** 서버가 시작을 받기 전이면 null */
   importId: z.string().nullable(),
   selection: todoImportSelectionSchema,
-  /** 마지막으로 읽은 일정의 지문. 아직 읽지 않았으면 null */
+  /** 아직 읽지 않았으면 null */
   fingerprint: z.string().nullable(),
   nextChunkIndex: z.int().nonnegative(),
   chunkCount: z.int().nonnegative().nullable(),
@@ -72,7 +72,7 @@ export function createTodoImportSession({
   };
 }
 
-/** 기기 오늘이 서버 오늘보다 늦어 거절되면 오늘부터 같은 마지막 날까지로 맞춘다. 오늘이 그대로면 맞출 수 없다(null) */
+/** 기기 오늘이 서버 오늘보다 늦어 거절된 경우다. 기기 오늘이 그대로면 맞출 수 없다(null) */
 export function adjustSelectionToToday(
   selection: TodoImportSelection,
   todayKey: DateKey,

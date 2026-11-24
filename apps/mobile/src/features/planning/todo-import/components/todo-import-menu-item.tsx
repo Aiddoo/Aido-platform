@@ -5,7 +5,6 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 
 import { useGetActiveTodoImportQueryOptions } from '../queries/todo-import.queries';
 
-/** 설정의 "캘린더 가져오기". 처리 중인 가져오기가 있으면 "가져오는 중"과 그 진행 화면으로, 없으면 새로 시작한다 */
 export function TodoImportMenuItem() {
   const { t } = useTranslation('todoImport');
   const { data: activeImport } = useSuspenseQuery(useGetActiveTodoImportQueryOptions());

@@ -15,5 +15,5 @@ export const IMPORT_RANGE_PRESET_NAMES = [
   'year',
 ] as const satisfies readonly ImportRangePreset[];
 
-/** 연결·서버 장애·속도 제한에 묶음 하나를 다시 보내는 최대 횟수. 넘으면 멈췄다가 온라인·앱 복귀 때 이어 간다 */
+/** 넘으면 멈췄다가 온라인·앱 복귀 때 이어 간다 */
 export const TODO_IMPORT_MAX_RETRIES = 8;

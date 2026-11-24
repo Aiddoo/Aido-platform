@@ -33,10 +33,7 @@ interface ImportEndDateChipsProps extends Omit<
 
 const LOCK_ICON_SIZE = 14;
 
-/**
- * 시작 날부터 1주·1개월·3개월·6개월·1년의 마지막 날을 고르는 칩. 요금제 기간(서버 `CALENDAR_IMPORT.limit`)을
- * 넘는 칩은 잠그고 누르면 프리미엄 안내를 연다. 무료에는 가져올 수 있는 마지막 날을 함께 알린다
- */
+/** 요금제 기간(서버 `CALENDAR_IMPORT.limit`)을 넘는 칩은 잠그고 누르면 프리미엄 안내를 연다 */
 export function ImportEndDateChips({
   startDate,
   value,
@@ -108,7 +105,6 @@ export function ImportEndDateChips({
 
 interface ChipProps {
   preset: ImportRangePreset;
-  /** 요금제 기간보다 길다. 고르면 안내를 연다 */
   isLocked: boolean;
 }
 

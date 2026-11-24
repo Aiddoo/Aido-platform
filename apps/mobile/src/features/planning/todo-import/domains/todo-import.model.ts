@@ -13,7 +13,7 @@ import { z } from 'zod';
 
 const countSchema = z.int().nonnegative();
 
-/** 서버가 처리하는 가져오기 한 건. 상태·수·되돌리기 기한은 서버가 정하고 앱은 읽기만 한다 */
+/** 상태·수·되돌리기 기한은 서버가 정하고 앱은 읽기만 한다 */
 export const todoImportSchema = z.object({
   id: z.string(),
   source: z.enum([...TODO_IMPORT_SOURCES, TODO_IMPORT_SOURCE_UNKNOWN]),
@@ -51,17 +51,15 @@ export function getRangeEndDate(startDate: DateKey, days: number): DateKey {
   return addDaysToDateKey(startDate, days - 1);
 }
 
-/** 서버 요금제 기간(`CALENDAR_IMPORT.limit`)으로 가져올 수 있는 마지막 날. null은 기간 제한이 없다 */
+/** horizonDays는 서버 `CALENDAR_IMPORT.limit`이고 null은 기간 제한이 없다 */
 export function findLastAllowedDate(todayKey: DateKey, horizonDays: number | null): DateKey | null {
   return horizonDays == null ? null : getRangeEndDate(todayKey, horizonDays);
 }
 
-/** 오늘 이전은 할 일로 가져오지 않는다 */
 export function canImportFrom(startDate: DateKey, todayKey: DateKey) {
   return todayKey <= startDate;
 }
 
-/** 오늘부터 요금제 기간 안의 날까지 가져온다 */
 export function canImportUntil(endDate: DateKey, todayKey: DateKey, horizonDays: number | null) {
   const lastAllowedDate = findLastAllowedDate(todayKey, horizonDays);
   return todayKey <= endDate && (lastAllowedDate == null || endDate <= lastAllowedDate);
@@ -82,7 +80,7 @@ function isTerminal(todoImport: TodoImport) {
     .exhaustive();
 }
 
-/** 사용자마다 하나뿐인 처리 중 가져오기(서버 `TODO_IMPORT_ACTIVE_STATUSES`) */
+/** 서버 `TODO_IMPORT_ACTIVE_STATUSES`와 같다 */
 function isActive(todoImport: TodoImport) {
   return !isTerminal(todoImport);
 }
@@ -95,7 +93,7 @@ function canUndo(todoImport: TodoImport, now: Instant) {
   );
 }
 
-/** 확정 전(업로드 중)에만 멈출 수 있다. 확정 뒤에는 서버 잡이 끝까지 만든다 */
+/** 확정 뒤에는 서버 잡이 끝까지 만든다 */
 function canCancel(todoImport: TodoImport) {
   return todoImport.status === 'UPLOADING';
 }
@@ -116,7 +114,7 @@ function hasSkipped(todoImport: TodoImport) {
   return sum([skippedDuplicate, skippedCapacity, skippedCategoryMissing, skippedInvalid]) > 0;
 }
 
-/** 서버가 만든 할 일까지 처리한 비율(0~1). 받은 수가 없으면 0이다 */
+/** 받은 수가 없으면 0이다 */
 function calculateProcessedRatio(todoImport: TodoImport) {
   const total = Math.max(todoImport.receivedItemCount, todoImport.expectedItemCount);
   return total === 0 ? 0 : clamp(todoImport.processedItemCount / total, 0, 1);

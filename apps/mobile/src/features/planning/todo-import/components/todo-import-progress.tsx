@@ -34,7 +34,6 @@ interface ProgressView {
   read: StageStatus;
   upload: StageStatus;
   create: StageStatus;
-  /** 막대가 보이는 단계의 진행(0~1) */
   ratio: number;
   uploadedChunkCount: number;
   chunkCount: number;
@@ -55,7 +54,7 @@ const STAGE_STATUS_LABEL_KEYS = {
   done: 'progress.stageStatus.done',
 } as const satisfies Record<StageStatus, string>;
 
-/** 읽는 중 → 보내는 중(n/N) → 만드는 중. 앱을 나가도 서버가 마저 만들고, 연결이 끊기면 멈췄다 이어 간다 */
+/** 앱을 나가도 서버가 마저 만들고, 연결이 끊기면 멈췄다 이어 간다 */
 export function TodoImportProgress() {
   const { t } = useTranslation('todoImport');
   const [importId] = useTodoImportId();
@@ -188,7 +187,6 @@ TodoImportProgress.Error = function ErrorFallback({ reset }: QueryErrorFallbackP
   return <QueryErrorFallback reset={reset} />;
 };
 
-/** 이 기기가 보내는 단계와 서버 잡 상태를 단계 셋으로 합친다 */
 function toProgressView(todoImport: TodoImport, snapshot: TodoImportUploadSnapshot): ProgressView {
   // 시작 직후(아직 가져오기 id를 모르는 순간)도 이 기기가 보내는 중이다
   const isThisImport =

@@ -161,7 +161,7 @@ export interface DIContainer extends SharedDependencies {
   widgetNavigationRepository: WidgetNavigationRepository;
 
   todoImportApi: TodoImportApi;
-  /** 캘린더 일정을 올리고 확정한다. 화면을 떠나도 이어 가도록 컨테이너에 하나다 */
+  /** 화면을 떠나도 업로드를 이어 가도록 컨테이너에 하나다 */
   todoImportUploadSession: TodoImportUploadSession;
 
   memoApi: MemoApi;

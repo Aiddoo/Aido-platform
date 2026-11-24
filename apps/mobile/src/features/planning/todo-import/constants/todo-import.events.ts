@@ -1,4 +1,3 @@
-/** 가져오기 설정 단계. 화면 단계 이름과 같다 */
 export type TodoImportStep = 'permission' | 'calendars' | 'categories' | 'options';
 
 /** 일정 수는 구간으로만 보낸다 */
@@ -6,7 +5,6 @@ export type TodoImportCountBucket = '0' | '1_10' | '11_50' | '51_200' | '201_100
 
 export type TodoImportResumeTrigger = 'mount' | 'foreground' | 'online';
 
-/** 서버 잡 실패, 서버가 받지 않은 업로드, 확정 전 멈춤(사용자·정리) */
 export type TodoImportFailureReason =
   | 'server_failed'
   | 'upload_rejected'

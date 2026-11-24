@@ -7,25 +7,24 @@ import { z } from 'zod';
 
 import type { ImportCollection } from './todo-import-collection.model';
 
-/** 캘린더 하나의 일정을 넣을 곳. 새 카테고리는 확정할 때 서버가 만든다 */
+/** 새 카테고리는 확정할 때 서버가 만든다 */
 export const importTargetSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('NEW_CATEGORY'), name: z.string(), color: z.string() }),
   z.object({ kind: z.literal('EXISTING_CATEGORY'), categoryId: z.int() }),
 ]);
 export type ImportTarget = z.infer<typeof importTargetSchema>;
 
-/** 기본 연결이 고른 종류. 새 카테고리의 이름·색은 mapper가 캘린더 이름·가까운 색으로 채운다 */
+/** 새 카테고리의 이름·색은 mapper가 채운다 */
 export type ImportTargetSuggestion =
   | { kind: 'NEW_CATEGORY' }
   | { kind: 'EXISTING_CATEGORY'; categoryId: number };
 
 interface SuggestTargetsContext {
   categories: readonly TodoCategory[];
-  /** 서버 `TODO_CATEGORY.remaining`. null은 제한이 없다 */
+  /** null은 제한이 없다 */
   remainingCategorySlots: number | null;
 }
 
-/** 앞뒤 공백과 대소문자를 무시하고 같은 이름이면 같은 카테고리로 본다 */
 function toComparableName(name: string) {
   return name.trim().toLocaleLowerCase();
 }

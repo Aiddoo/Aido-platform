@@ -39,7 +39,7 @@ import {
 import type { TodoImport } from '../domains/todo-import.model';
 import { todoImportSessionStoredValue } from '../schemas/todo-import-session-storage.schema';
 
-/** 이 기기가 보내는 중인 단계. 서버 잡의 진행은 가져오기 조회가 따로 보인다 */
+/** 서버 잡의 진행은 가져오기 조회가 따로 보인다 */
 export type TodoImportUploadSnapshot =
   | { stage: 'idle' }
   | { stage: 'starting' }
@@ -57,7 +57,6 @@ export interface StartedTodoImport {
 
 interface TodoImportUploadInput {
   accountId: string;
-  /** 제목이 빈 일정에 붙일 문구(앱 언어) */
   untitledTitle: string;
 }
 
@@ -67,7 +66,6 @@ interface TodoImportUploadSessionPorts {
     'startImport' | 'getImport' | 'uploadItems' | 'commitImport' | 'cancelImport'
   >;
   source: Pick<TodoImportSource, 'readEvents'>;
-  /** 로그아웃 때 비우는 계정 저장소 */
   storage: SyncStorage;
   signOutEpoch: Pick<SignOutEpoch, 'current'>;
   idGenerator: IdGenerator;
@@ -77,7 +75,6 @@ interface TodoImportUploadSessionPorts {
   random: () => number;
 }
 
-/** 한 번의 실행이 아직 유효한지와 그 실행만의 취소 신호 */
 interface RunContext extends TodoImportUploadInput {
   signal: AbortSignal;
   isCurrent: () => boolean;
@@ -157,7 +154,7 @@ export class TodoImportUploadSession {
     }
   };
 
-  /** 남은 업로드를 이어 간다. 돌고 있으면 그 실행을 기다린다 */
+  /** 돌고 있으면 새로 돌리지 않고 그 실행을 기다린다 */
   resume = (input: TodoImportUploadInput): Promise<void> =>
     this.#isRunning ? this.#pending : this.#schedule(input, this.#generation);
 

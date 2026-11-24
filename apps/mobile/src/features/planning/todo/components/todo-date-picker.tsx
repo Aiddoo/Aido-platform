@@ -142,13 +142,12 @@ interface DatePickerCalendarProps {
   onPreviousMonth: () => void;
   onNextMonth: () => void;
   onSelect: (dateKey: DateKey) => void;
-  /** 이 날보다 앞은 고를 수 없다(포함). 없으면 막지 않는다 */
+  /** 그날을 포함해 고를 수 있다. 없으면 막지 않는다 */
   minimumDateKey?: DateKey;
-  /** 이 날보다 뒤는 고를 수 없다(포함). 없으면 막지 않는다 */
   maximumDateKey?: DateKey;
 }
 
-/** 할 일 날짜 피커의 달력. 다른 기능의 날짜 시트도 같은 달력을 쓴다(캘린더 가져오기 기간) */
+/** 캘린더 가져오기 기간 시트도 같은 달력을 쓴다 */
 export function DatePickerCalendar({
   displayMonthKey,
   weeks,

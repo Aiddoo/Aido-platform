@@ -18,7 +18,7 @@ interface ImportItemContext {
   untitledTitle: string;
 }
 
-/** 기기 캘린더의 일정 회차 하나를 할 일 초안으로 바꾼다. 취소된 회차와 날짜를 읽을 수 없는 값은 null이다 */
+/** 취소된 회차와 날짜를 읽을 수 없는 값은 null이다 */
 export function toImportItem(
   record: ImportEventRecord,
   { timezone, timeMode, untitledTitle }: ImportItemContext,

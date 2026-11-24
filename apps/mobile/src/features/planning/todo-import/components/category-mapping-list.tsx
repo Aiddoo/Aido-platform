@@ -33,18 +33,15 @@ import { type ImportTarget, TodoImportTargetPolicy } from '../domains/todo-impor
 import { type CategoryTargetChoice, CategoryTargetSheet } from './category-target-sheet';
 
 interface CategoryMappingListProps {
-  /** 캘린더 단계에서 고른 캘린더 */
   collections: readonly ImportCollection[];
-  /** 캘린더 키마다 사용자가 고른 연결. 없는 캘린더는 기본 연결 규칙을 보인다 */
+  /** 없는 캘린더는 기본 연결 규칙을 보인다 */
   value: Readonly<Record<string, ImportTarget>>;
   onValueChange: (targets: Record<string, ImportTarget>) => void;
-  /** 서버가 거절한 연결의 안내(캘린더 키마다) */
   errorMessages?: Readonly<Record<string, string>>;
 }
 
 const LOADING_ROW_COUNT = 3;
 
-/** 캘린더마다 넣을 카테고리. 줄을 누르면 새 카테고리·기존 카테고리를 고르는 시트가 열린다 */
 export function CategoryMappingList({
   collections,
   value,
@@ -176,7 +173,6 @@ interface ItemProps {
   onPress: () => void;
 }
 
-/** 캘린더 → 넣을 곳 칩. 서버가 거절했으면 그 줄 아래에 이유를 보인다 */
 CategoryMappingList.Item = function Item({
   collection,
   target,

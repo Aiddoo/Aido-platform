@@ -39,7 +39,6 @@ export function toReceiveTodoImportItemsRequest(
   return receiveTodoImportItemsRequestSchema.parse({ items });
 }
 
-/** 대상 하나를 요청 안에서 가리키는 키. 기존 카테고리는 id, 새 카테고리는 순서다 */
 function toTargetKey(target: ImportTarget, index: number) {
   return match(target)
     .with({ kind: 'EXISTING_CATEGORY' }, ({ categoryId }) => `category-${categoryId}`)
@@ -47,10 +46,7 @@ function toTargetKey(target: ImportTarget, index: number) {
     .exhaustive();
 }
 
-/**
- * 폼 값(고른 캘린더와 캘린더마다 넣을 곳)을 시작 요청의 고른 값으로 바꾼다.
- * 같은 기존 카테고리나 같은 이름의 새 카테고리를 고른 캘린더는 대상 하나를 함께 가리킨다("모두 한 카테고리에")
- */
+/** 같은 기존 카테고리나 같은 이름의 새 카테고리를 고른 캘린더는 대상 하나를 함께 가리킨다 */
 export function toTodoImportSelection(
   values: TodoImportFormValues,
   targets: Readonly<Record<string, ImportTarget>>,

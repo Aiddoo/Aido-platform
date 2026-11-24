@@ -27,9 +27,8 @@ import { useGetCalendarPermissionQueryOptions } from '../queries/todo-import-sou
 import { useRequestCalendarPermissionMutationOptions } from '../queries/todo-import.mutations';
 
 interface CalendarPermissionPromptProps {
-  /** 허용을 받았다. 다음 단계로 가는 일은 화면이 정한다 */
+  /** 다음 단계로 가는 일은 화면이 정한다 */
   onGranted: () => void;
-  /** 허용하지 않아도 쓸 수 있는 길 */
   onAddTodoDirectly: () => void;
 }
 
@@ -215,7 +214,6 @@ function FactSkeleton() {
   );
 }
 
-/** 이미 허용했거나 아직 물을 수 있으면 안내, 이번에 거절했으면 조르지 않는 안내, 다시 물을 수 없으면 설정 안내다 */
 function toPermissionView(permission: OsPermission, answered: OsPermission | null): PermissionView {
   if (permission.status === 'granted') {
     return 'ask';

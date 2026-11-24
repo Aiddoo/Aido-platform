@@ -25,7 +25,6 @@ export function useGetTodoImportQueryOptions({ importId }: { importId: string })
   });
 }
 
-/** 설정 메뉴가 "가져오는 중"과 이어 볼 가져오기를 고른다 */
 export function useGetActiveTodoImportQueryOptions() {
   const todoImportApi = useTodoImportApi();
 

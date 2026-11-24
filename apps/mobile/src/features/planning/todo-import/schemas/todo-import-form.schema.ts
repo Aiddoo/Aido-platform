@@ -7,17 +7,14 @@ import { importTargetSchema } from '../domains/todo-import-target.model';
 
 const { timeMode, visibility } = startTodoImportRequestSchema.shape;
 
-/**
- * 단계를 오가도 값이 남는 설정 폼. 캘린더는 기본 선택(null)으로 시작하고,
- * 캘린더 단계를 넘길 때 고른 캘린더(개수 포함)를 `collections`에 고정한다
- */
+/** 캘린더 단계를 넘길 때 고른 캘린더(개수 포함)를 `collections`에 고정한다 */
 export const todoImportFormSchema = z.object({
   startDate: dateKeyFieldSchema,
   endDate: dateKeyFieldSchema,
-  /** 고른 캘린더 키. null은 아직 고르지 않아 기본 선택을 쓴다 */
+  /** null은 아직 고르지 않아 기본 선택을 쓴다 */
   collectionKeys: z.array(z.string()).nullable(),
   collections: z.array(importCollectionSchema),
-  /** 캘린더 키마다 사용자가 고른 연결. 없는 캘린더는 기본 연결 규칙을 따른다 */
+  /** 없는 캘린더는 기본 연결 규칙을 따른다 */
   targets: z.record(z.string(), importTargetSchema),
   timeMode,
   visibility: visibility.unwrap(),

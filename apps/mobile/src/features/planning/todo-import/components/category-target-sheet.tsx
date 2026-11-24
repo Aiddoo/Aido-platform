@@ -29,25 +29,21 @@ import { useForm } from 'react-hook-form';
 
 import type { ImportTarget } from '../domains/todo-import-target.model';
 
-/** 시트에서 고른 것. 잠긴 새 카테고리·이름 바꾸기는 시트를 닫은 뒤 부른 쪽이 안내·입력 시트를 연다 */
+/** 잠긴 새 카테고리·이름 바꾸기는 시트를 닫은 뒤 부른 쪽이 안내·입력 시트를 연다 */
 export type CategoryTargetChoice =
   | ImportTarget
   | { kind: 'NEW_CATEGORY_LOCKED' }
   | { kind: 'NEW_CATEGORY_EDIT' };
 
 interface CategoryTargetSheetProps {
-  /** 이 캘린더로 만들 새 카테고리(캘린더 이름·가까운 색) */
   newCategory: { name: string; color: string };
-  /** 남은 카테고리 자리가 없으면 새 카테고리를 잠근다 */
   canCreateCategory: boolean;
-  /** 기존 카테고리 목록에서 처음 고른 칸 */
   defaultCategoryId: number;
   onChoose: (choice: CategoryTargetChoice) => void;
 }
 
 const ICON_SIZE = 18;
 
-/** 캘린더 하나(또는 전부)를 넣을 곳. 맨 위는 새 카테고리, 아래는 할 일 카테고리 바꾸기와 같은 고르기 폼이다 */
 export function CategoryTargetSheet({
   newCategory,
   canCreateCategory,
@@ -147,7 +143,7 @@ interface NewCategoryProps {
   onConfirm: (values: TodoCategoryFormValues) => void;
 }
 
-/** 새 카테고리의 이름·색. 카테고리 만들기와 같은 입력이고, 만드는 것은 가져오기를 확정할 때 서버가 한다 */
+/** 만드는 것은 가져오기를 확정할 때 서버가 한다 */
 CategoryTargetSheet.NewCategory = function NewCategory({
   isOpen,
   onOpenChange,

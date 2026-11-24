@@ -6,7 +6,7 @@ import { toDateKey, toHHmm } from '@src/shared/date/zoned';
 import { chunk, countBy, orderBy, uniqBy } from 'es-toolkit';
 import { z } from 'zod';
 
-/** 일정 회차 하나를 할 일 초안으로 바꾼 값. 기기 밖으로는 제목·날짜·시각과 해시 키만 나간다 */
+/** 기기 밖으로는 제목·날짜·시각과 해시 키만 나간다 */
 export const importItemSchema = z.object({
   sourceKey: z.string(),
   collectionKey: z.string(),
@@ -17,11 +17,10 @@ export const importItemSchema = z.object({
 });
 export type ImportItem = z.infer<typeof importItemSchema>;
 
-// 줄바꿈·탭·제어 문자와 줄·문단 구분 문자는 할 일 한 줄 제목에서 빈칸이 된다
 const LINE_BREAKING_CHARACTERS = /[\p{Cc}\p{Zl}\p{Zp}]+/gu;
 const REPEATED_SPACES = /\s{2,}/gu;
 
-/** 이모지·결합 문자를 반으로 자르지 않게 글자(grapheme) 단위로 나눈다. Hermes에 Segmenter가 없으면 코드 포인트로 나눈다 */
+/** Hermes에 Segmenter가 없으면 코드 포인트로 나눈다 */
 function splitGraphemes(text: string): string[] {
   if (typeof Intl.Segmenter === 'function') {
     return Array.from(new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(text)).map(
@@ -46,7 +45,7 @@ function truncateGraphemes(text: string, maxLength: number): string {
   return truncated;
 }
 
-/** 일정 제목을 할 일 제목으로 정리한다. 비면 부른 쪽이 준 "제목 없는 일정" 문구를 쓴다 */
+/** 비면 부른 쪽이 준 문구(앱 언어)를 쓴다 */
 export function normalizeImportTitle(title: string | null, untitledTitle: string): string {
   const singleLine = (title ?? '')
     .replaceAll(LINE_BREAKING_CHARACTERS, ' ')
@@ -62,7 +61,7 @@ export function getAllDayEndDate(startDate: DateKey, endDateExclusive: DateKey):
   return lastDate > startDate ? lastDate : null;
 }
 
-/** 시각 일정은 가져오기 시간대의 시작 날짜·시각 하나다. 날짜만 가져오면 시각을 버려 알림이 없다 */
+/** 날짜만 가져오면 시각을 버려 알림이 없다 */
 export function getTimedDates(
   startsAt: Instant,
   { timezone, timeMode }: { timezone: string; timeMode: TodoImportTimeMode },
@@ -73,7 +72,7 @@ export function getTimedDates(
   };
 }
 
-/** 고른 기간 안에서 시작한 일정만 보낸다. 기간 전에 시작한 여러 날 일정은 서버가 기간 밖으로 거절한다 */
+/** 기간 전에 시작한 여러 날 일정은 서버가 기간 밖으로 거절한다 */
 export function filterByRange(
   items: readonly ImportItem[],
   { startDate, endDate }: { startDate: DateKey; endDate: DateKey },
@@ -100,7 +99,7 @@ const FNV_OFFSET_BASIS = 0x811c9dc5;
 const FNV_PRIME = 0x01000193;
 const HEX_RADIX = 16;
 
-/** 묶음으로 나눈 순서의 일정 키 지문. 다시 읽은 캘린더가 같으면 같은 값이라 끊긴 묶음부터 이어 보낸다 */
+/** 다시 읽은 캘린더가 같으면 같은 값이라 끊긴 묶음부터 이어 보낸다 */
 export function fingerprintItems(chunks: readonly (readonly ImportItem[])[]): string {
   let hash = FNV_OFFSET_BASIS;
   let count = 0;

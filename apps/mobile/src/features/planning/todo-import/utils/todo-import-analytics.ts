@@ -5,7 +5,6 @@ import { match, P } from 'ts-pattern';
 import type { TodoImportCountBucket } from '../constants/todo-import.events';
 import type { TodoImportSelection } from '../domains/todo-import-session.model';
 
-/** 일정·할 일 수는 정확한 값 대신 구간으로만 남긴다 */
 export function toTodoImportCountBucket(count: number): TodoImportCountBucket {
   return match(count)
     .with(0, () => '0' as const)
@@ -16,7 +15,7 @@ export function toTodoImportCountBucket(count: number): TodoImportCountBucket {
     .otherwise(() => '1001_plus' as const);
 }
 
-/** 시작 지표. 제목·캘린더 이름·id는 싣지 않는다 */
+/** 제목·캘린더 이름·id는 싣지 않는다 */
 export function toTodoImportStartedParams(selection: TodoImportSelection) {
   return {
     range_days: diffDateKeysInDays(selection.startDate, selection.endDate) + 1,

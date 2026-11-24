@@ -19,7 +19,7 @@ export function toRangePreset(value: string): ImportRangePreset | null {
   return IMPORT_RANGE_PRESET_NAMES.find((preset) => preset === value) ?? null;
 }
 
-/** 시작 날부터 센 빠른 선택 기간과 끝 날이 같으면 그 칩을 고른 것으로 보인다. 직접 고른 끝 날은 null이다 */
+/** 직접 고른 끝 날은 null이다 */
 export function findRangePreset({
   startDate,
   endDate,

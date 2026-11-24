@@ -11,7 +11,7 @@ const IMPORT_ACCOUNT_KINDS = [
   'other',
 ] as const;
 
-/** 기기 캘린더 하나와 고른 기간 안의 가져올 일정 수. 키는 기기가 원래 id를 해시한 값이다 */
+/** 키는 기기가 원래 id를 해시한 값이다 */
 export const importCollectionSchema = z.object({
   collectionKey: z.string(),
   title: z.string(),
@@ -23,7 +23,7 @@ export const importCollectionSchema = z.object({
 export type ImportCollection = z.infer<typeof importCollectionSchema>;
 
 export type FilterImportCollection = (collection: ImportCollection) => boolean;
-/** 계정 이름·캘린더 이름 순(기기 설정 앱과 같은 묶음 순서)이나 일정이 많은 순 */
+/** account는 기기 설정 앱과 같은 계정·이름 순이다 */
 export type OrderByImportCollection = 'account' | 'itemCount';
 
 // 공휴일·생일·구독 캘린더는 내가 할 일이 아닌 일정이 수백 개씩 들어와 처음에는 고르지 않는다
@@ -34,7 +34,6 @@ function isSubscribedCalendar(collection: ImportCollection) {
     .exhaustive();
 }
 
-/** 고른 기간에 가져올 일정이 없는 캘린더는 골라도 만들 할 일이 없다 */
 function isSelectable(collection: ImportCollection) {
   return collection.itemCount > 0;
 }
@@ -43,10 +42,7 @@ function isDefaultSelected(collection: ImportCollection) {
   return isSelectable(collection) && !isSubscribedCalendar(collection);
 }
 
-/**
- * 고른 캘린더 키. 아직 고르지 않았으면(null) 기본 선택이고, 고른 뒤 일정이 사라진 캘린더(기간을 줄임)는 뺀다.
- * 순서는 캘린더 목록 순서다
- */
+/** null은 기본 선택이다. 고른 뒤 기간을 줄여 일정이 사라진 캘린더는 뺀다 */
 function getSelectedCollections(
   collections: readonly ImportCollection[],
   selectedKeys: readonly string[] | null,

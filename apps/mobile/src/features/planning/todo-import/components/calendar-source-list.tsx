@@ -28,7 +28,7 @@ import { useGetImportCollectionsQueryOptions } from '../queries/todo-import-sour
 interface CalendarSourceListProps {
   startDate: DateKey;
   endDate: DateKey;
-  /** 고른 캘린더 키. null은 아직 고르지 않아 기본 선택(공휴일·생일·구독 제외)을 보인다 */
+  /** null은 아직 고르지 않아 기본 선택(공휴일·생일·구독 제외)을 보인다 */
   value: readonly string[] | null;
   onValueChange: (collectionKeys: string[]) => void;
   filters?: FilterImportCollection;
@@ -38,7 +38,6 @@ interface CalendarSourceListProps {
 /** 계정이 이보다 많으면 계정마다 접어 한 화면에 결정 하나만 보이게 한다 */
 const ACCORDION_ACCOUNT_THRESHOLD = 3;
 
-/** 고른 기간의 캘린더를 계정별로 묶어 보인다. 기간이 바뀔 때만 기기 캘린더를 다시 읽는다 */
 export function CalendarSourceList({
   startDate,
   endDate,
@@ -138,7 +137,6 @@ interface GroupProps extends Omit<ComponentProps<typeof SettingsListGroup>, 'lab
   accountName: string;
 }
 
-/** 계정 하나(iCloud·Google·Outlook)의 캘린더 묶음 */
 CalendarSourceList.Group = function Group({ accountName, ...props }: GroupProps) {
   return <SettingsListGroup label={accountName} {...props} />;
 };
@@ -149,7 +147,7 @@ interface ItemProps extends Omit<ComponentProps<typeof ListRow>, 'left' | 'conte
   onSelectedChange: (isSelected: boolean) => void;
 }
 
-/** 캘린더 하나: 색 점, 이름(한 줄), 일정 수, 체크. 일정이 없으면 고를 수 없다. 데모가 같은 줄을 값만 바꿔 쓴다 */
+/** 데모가 같은 줄을 값만 바꿔 쓴다 */
 CalendarSourceList.Item = function Item({
   collection,
   isSelected,

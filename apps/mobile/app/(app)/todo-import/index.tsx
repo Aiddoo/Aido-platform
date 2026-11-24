@@ -516,7 +516,6 @@ function useImportOptions(form: TodoImportForm) {
   return [{ timeMode, visibility }, setImportOptions] as const;
 }
 
-/** 서버가 거절한 연결의 안내를 캘린더 키마다 읽는다 */
 function useTargetErrorMessages(
   form: TodoImportForm,
   collections: TodoImportFormValues['collections'],
@@ -531,7 +530,6 @@ function useTargetErrorMessages(
   );
 }
 
-/** 거절된 대상(요청 안의 키)을 그 대상을 고른 캘린더 줄의 칸 오류로 보인다 */
 function showRejectedTargets(
   form: TodoImportForm,
   rejections: readonly TodoImportTargetRejection[],

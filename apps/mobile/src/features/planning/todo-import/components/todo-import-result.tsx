@@ -26,7 +26,6 @@ import { useGetTodoImportQueryOptions } from '../queries/todo-import.queries';
 
 const MASCOT_SIZE = 120;
 
-/** 만든 수와 건너뛴 이유를 영수증으로 보이고, 7일 안이면 한 번에 되돌릴 수 있다고 알린다 */
 export function TodoImportResult() {
   const { t } = useTranslation(['todoImport', 'common']);
   const [importId] = useTodoImportId();

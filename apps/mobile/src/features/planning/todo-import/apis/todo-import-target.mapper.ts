@@ -26,7 +26,7 @@ function toRgb(color: string): [number, number, number] | null {
   ];
 }
 
-/** 캘린더 색(아무 색)과 가장 가까운 카테고리 팔레트 색. 읽을 수 없는 색이면 팔레트 첫 색이다 */
+/** 읽을 수 없는 색이면 팔레트 첫 색이다 */
 export function findNearestPaletteColor(color: string | null, palette: readonly string[]): string {
   const fallback = palette[0] ?? '';
   const source = color == null ? null : toRgb(color);
@@ -47,7 +47,6 @@ function toCategoryName(title: string, fallbackName: string) {
   return name === '' ? fallbackName : name;
 }
 
-/** 새 카테고리는 캘린더 이름(카테고리 이름 한도까지, 비면 대신 쓸 이름)과 가장 가까운 팔레트 색으로 만든다 */
 export function toNewCategoryTarget(
   collection: ImportCollection,
   { palette, fallbackName }: { palette: readonly string[]; fallbackName: string },
@@ -83,13 +82,12 @@ function toImportTargets(
 
 interface ResolveImportTargetsContext {
   categories: readonly TodoCategory[];
-  /** 서버 `TODO_CATEGORY.remaining`. null은 제한이 없다 */
+  /** null은 제한이 없다 */
   remainingCategorySlots: number | null;
   palette: readonly string[];
   fallbackName: string;
 }
 
-/** 고른 캘린더마다 넣을 곳. 사용자가 고른 연결이 먼저이고, 고르지 않은 캘린더는 기본 연결 규칙을 따른다 */
 export function resolveImportTargets(
   collections: readonly ImportCollection[],
   chosen: Readonly<Record<string, ImportTarget>>,

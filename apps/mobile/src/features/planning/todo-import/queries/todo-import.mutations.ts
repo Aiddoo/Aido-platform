@@ -20,7 +20,6 @@ import { TODO_IMPORT_MUTATION_KEYS } from './todo-import-mutation-keys';
 interface StartTodoImportVariables {
   accountId: string;
   selection: TodoImportSelection;
-  /** 제목이 빈 일정에 붙일 문구(앱 언어) */
   untitledTitle: string;
 }
 
@@ -51,7 +50,7 @@ export function useStartTodoImportMutationOptions() {
   });
 }
 
-/** 확정 전(업로드 중)에만 멈춘다. 이 기기에 이어 보낼 상태가 없을 때(다른 기기에서 시작) 쓴다 */
+/** 이 기기에 이어 보낼 상태가 없을 때(다른 기기에서 시작) 쓴다 */
 export function useCancelTodoImportMutationOptions({ importId }: { importId: string }) {
   const todoImportApi = useTodoImportApi();
   const queryClient = useQueryClient();
