@@ -1,6 +1,6 @@
 # 1.16.1: 의존성·레거시 정리와 네이티브 시트
 
-**상태: 준비 중.** 서버를 먼저 배포하고, 앱은 시뮬레이터 QA(iPhone → iPad → 접은 Duo) 뒤 스토어에 제출한다. 코드는 `stack/1.16.1/01-tooling-deps`~`18-docs` 스택에 있고 CI·머지·서버 운영 배포·스토어 제출·실기기 확인은 아직이다. 목표와 완료 조건은 [Epic #1784](https://github.com/Aiddoo/Aido-platform/issues/1784)에 있다. 측정하지 않은 값은 적지 않는다.
+**상태: 출시.** 2026-11-23 `stack/1.16.1/01-tooling-deps`~`18-docs`를 맨 위 PR #1821로 `main`에 머지했고(merge commit `fd62578`), 같은 날 서버를 운영에 배포했다(`deploy.yml` 성공). 같은 날 운영 1.16.0 앱(iOS·Android)에 1.16.1 JS를 OTA로 냈다. 앱은 iOS 1.16.1(165)·Android 1.16.1(versionCode 132)로 두 스토어에 출시했다. 2026-11-24 운영 `AppRelease`(`GET /v1/app-config/app-version`)를 iOS·Android 모두 1.16.1로 올렸고, 전체 사용자에게 언어별(ko·en) 업데이트 알림을 보냈다(`POST /v1/admin/notifications/targeted`, 링크는 언어별 패치노트). 랜딩 [패치 노트](https://aido.kr/ko/patch-notes)는 Aido-Landing #80으로 올렸다. 목표와 완료 조건은 [Epic #1784](https://github.com/Aiddoo/Aido-platform/issues/1784)에 있다. 측정하지 않은 값은 적지 않는다.
 
 | 내용        | 문서                                                                                                                       |
 | ----------- | -------------------------------------------------------------------------------------------------------------------------- |
