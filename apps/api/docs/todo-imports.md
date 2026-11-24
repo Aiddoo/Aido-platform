@@ -9,12 +9,12 @@ POST /v1/todo-imports            시작: 시간대를 한 번 정하고 기간·
 POST /v1/todo-imports/:id/items  100개씩 올린다. 같은 sourceKey는 무시(ON CONFLICT)하고 3,000개를 넘으면 2309
 POST /v1/todo-imports/:id/commit 시작 검사를 다시 하고 새 카테고리를 만든 뒤 QUEUED + round 0 작업(같은 트랜잭션)
 planning.todo-import-materialization.v1  가까운 날짜부터 100개씩 할 일을 만들고 COMPLETED
-POST /v1/todo-imports/:id/undo   완료 뒤 7일 안이면 UNDOING + 되돌리기 작업 → UNDONE
+POST /v1/todo-imports/:id/undo   끝난 뒤 7일 안이고 남은 할 일이 있으면 UNDOING + 되돌리기 작업 → UNDONE
 ```
 
 - 앱은 읽고 보내기만 하고 무거운 생성은 서버 작업이 나눠 한다. 앱을 닫아도 작업은 이어진다.
 - 남의 가져오기는 없는 것과 같이 404(2304)다. 모든 조회·변경은 `findByIdAndUserId`다.
-- 같은 사용자의 진행 중 가져오기(UPLOADING·QUEUED·RUNNING·UNDOING)는 하나다. 부분 유니크 색인 `TodoImport_userId_active_key`가 막고 시작은 2301로 그 id를 알린다.
+- 같은 사용자의 진행 중 가져오기(UPLOADING·QUEUED·RUNNING·UNDOING)는 하나다. 부분 유니크 색인 `TodoImport_userId_active_key`가 막고 시작·되돌리기는 2301로 그 id를 알린다.
 - 같은 `Idempotency-Key`의 시작은 본문 해시가 같으면 처음 가져오기를, 다르면 2307을 준다.
 - 일정 제목은 할 일 제목으로만 쓰고 로그·경보에는 id·수만 남긴다.
 
@@ -29,6 +29,7 @@ POST /v1/todo-imports/:id/undo   완료 뒤 7일 안이면 UNDOING + 되돌리�
 | 확정            | 업로드가 자정을 넘겨도 막지 않고 요금제 일 수만 다시 본다(구독이 끝났으면 2302)                                                                                                     |
 | 할 일 만들기    | `stageMany({ timezone: import.timezone })`. 벽시계(`startDate + localTime`)가 진실이고 순간은 같은 `TodoSchedule` 경로로 유도한다. 잡은 사용자의 지금 시간대를 다시 읽지 않는다     |
 | 날짜만 가져오기 | `DATE_ONLY`면 시각을 버려 리마인더가 예약되지 않는다                                                                                                                                |
+| 서머타임        | 가을 전환일에 두 번 오는 벽시계(LA 01:30)는 앞쪽 순간으로 본다. 할 일과 같은 [날짜 규칙](../../../docs/conventions/dates.md)이다                                                    |
 
 기간 일 수와 2302의 `featureQuota`는 access가 정한다(`EntitlementReaderPort.getHorizonDaysInTransaction`·`getFeatureQuotaInTransaction(…, "CALENDAR_IMPORT", null)`). slice는 요금제 숫자를 읽지 않는다.
 
@@ -37,8 +38,9 @@ POST /v1/todo-imports/:id/undo   완료 뒤 7일 안이면 UNDOING + 되돌리�
 `AssertTodoImportTargetsUseCase`가 시작과 확정에서 같은 규칙으로 본다.
 
 - 새 카테고리를 더하면 카테고리 수 한도를 넘으면 카테고리 만들기와 같은 `TODO_CATEGORY_0857`(`featureQuota`)이다.
-- 이름 중복(`CATEGORY_NAME_TAKEN`)·없거나 남의 카테고리(`CATEGORY_NOT_FOUND`)·자리 부족(`CAPACITY`, 지금 수 + 기기가 센 수 > 300)을 대상마다 모아 2303 하나로 알린다.
-- 확정 뒤 사용자가 할 일을 더 만들어 자리가 모자라면 남는 만큼만 만들고 나머지는 `SKIPPED_CAPACITY`로 센다. 가까운 날짜부터 만들어 먼 일정이 빠진다.
+- 새 카테고리 이름·색은 `TodoCategoryCreatorPort.assertDraftsValid`로 카테고리 만들기와 같은 규칙을 먼저 본다(`SYS_0002`).
+- 이름 중복(`CATEGORY_NAME_TAKEN`)·없거나 남의 카테고리(`CATEGORY_NOT_FOUND`)를 대상마다 모아 2303 하나로 알린다.
+- 카테고리 자리(300)는 시작·확정에서 막지 않는다. 기기가 센 수에는 중복으로 건너뛸 일정도 들어 있어서다. 할 일 만들기가 가까운 날짜부터 남는 만큼만 만들고 나머지는 `SKIPPED_CAPACITY`로 센다. `CAPACITY` 값은 계약에만 남는다.
 
 ## 할 일 만들기 작업
 
@@ -56,6 +58,7 @@ POST /v1/todo-imports/:id/undo   완료 뒤 7일 안이면 UNDOING + 되돌리�
 
 ## 되돌리기 작업
 
+- 받는 때: COMPLETED이거나, FAILED라도 만든 수 > 지운 수일 때 끝난 뒤 7일 안. 완료 시각이 있으면 그때부터, 없으면 실패한 때(`updatedAt`)부터 센다. 응답 `undoableUntil`은 이 판단(`judgeUndoWindow`)이 받을 때만 값이 있다.
 - 링크된 할 일 id를 200개씩 오름차순으로 읽어 `RemoveTodosUseCase`로 지운다. 완료한 할 일은 남겨 연속 기록·성취를 지킨다.
 - 지운 할 일의 링크는 FK로 사라지므로 다시 실행해도 지운 수를 두 번 세지 않는다. 끝에 남은 링크 수를 `keptCompleted`로 둔다.
 - 되돌리기로 빈 새 카테고리는 지우지 않는다.
@@ -100,7 +103,7 @@ POST /v1/todo-imports/:id/undo   완료 뒤 7일 안이면 UNDOING + 되돌리�
 
 | 층   | 파일                                                                                                                                                           |
 | ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 단위 | `domain/*.spec.ts`(전이·기간·자리·되돌리기 창), `application/use-cases/*.spec.ts`(InMemory + `FixedClock`)                                                     |
+| 단위 | `domain/*.spec.ts`(전이·기간·되돌리기 창), `application/use-cases/*.spec.ts`(InMemory + `FixedClock`)                                                          |
 | 계약 | `test/contracts/planning/todo-import*-repository.contract.ts`(InMemory·Drizzle)                                                                                |
 | 통합 | `test/integration/planning/todo-imports/`(저장소, 핫 쿼리 EXPLAIN), `test/integration/platform/jobs/job-queue-postgres.integration-spec.ts`(key당 하나만 실행) |
 | E2E  | `test/e2e/planning/todo-imports.e2e-spec.ts`(흐름·오류·되돌리기·문장 수), `todo-imports-worker.e2e-spec.ts`(실제 pg-boss round·재전달·리마인더)                |

@@ -18209,7 +18209,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 "type": "string",
               },
               "expectedItemCount": {
-                "description": "기기가 센 이 캘린더의 일정 수. 카테고리 자리 미리 확인에 쓴다",
+                "description": "기기가 센 이 캘린더의 일정 수. 가져오기 한 번의 일정 수 한도를 미리 본다",
                 "maximum": 3000,
                 "minimum": 0,
                 "type": "integer",
@@ -21835,6 +21835,17 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
           "minimum": 0,
           "type": "integer",
         },
+        "failureReason": {
+          "description": "FAILED가 된 이유. FAILED가 아니면 null",
+          "enum": [
+            "MATERIALIZATION_FAILED",
+            "STALLED",
+            "UNDO_FAILED",
+            null,
+          ],
+          "nullable": true,
+          "type": "string",
+        },
         "firstDate": {
           "description": "만든 할 일 중 가장 이른 날짜",
           "format": "date",
@@ -21918,6 +21929,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
         "status",
         "startDate",
         "endDate",
+        "failureReason",
         "timezone",
         "timeMode",
         "visibility",
@@ -59058,7 +59070,7 @@ TODO_IMPORT_2306: 가져올 기간이나 일정이 올바르지 않습니다.",
   },
   "/v1/todo-imports/{importId}/undo": {
     "post": {
-      "description": "완료 뒤 7일 안에 가져온 할 일 중 완료하지 않은 것을 서버 작업이 지웁니다. 완료한 할 일과 새로 만든 카테고리는 남깁니다. 분당 10회, 하루 20회.",
+      "description": "끝난 뒤 7일 안에 가져온 할 일 중 완료하지 않은 것을 서버 작업이 지웁니다. 만들다 멈춘(FAILED) 가져오기도 만든 할 일이 남았으면 됩니다. 받을 수 있으면 \`todoImport.undoableUntil\`에 값이 있습니다. 완료한 할 일과 새로 만든 카테고리는 남깁니다. 다른 가져오기가 진행 중이면 TODO_IMPORT_2301(\`importId\`)입니다. 분당 10회, 하루 20회.",
       "operationId": "undoTodoImport",
       "parameters": [
         {
@@ -59247,6 +59259,18 @@ TODO_IMPORT_2306: 가져올 기간이나 일정이 올바르지 않습니다.",
           "content": {
             "application/json": {
               "examples": {
+                "TODO_IMPORT_2301": {
+                  "summary": "이미 진행 중인 캘린더 가져오기가 있습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_IMPORT_2301",
+                      "details": null,
+                      "message": "이미 진행 중인 캘린더 가져오기가 있습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
                 "TODO_IMPORT_2305": {
                   "summary": "지금 상태에서는 할 수 없는 요청입니다.",
                   "value": {
@@ -59278,10 +59302,11 @@ TODO_IMPORT_2306: 가져올 기간이나 일정이 올바르지 않습니다.",
                     "properties": {
                       "code": {
                         "enum": [
+                          "TODO_IMPORT_2301",
                           "TODO_IMPORT_2305",
                           "TODO_IMPORT_2308",
                         ],
-                        "example": "TODO_IMPORT_2305",
+                        "example": "TODO_IMPORT_2301",
                         "type": "string",
                       },
                       "details": {
@@ -59290,7 +59315,7 @@ TODO_IMPORT_2306: 가져올 기간이나 일정이 올바르지 않습니다.",
                         "type": "object",
                       },
                       "message": {
-                        "example": "지금 상태에서는 할 수 없는 요청입니다.",
+                        "example": "이미 진행 중인 캘린더 가져오기가 있습니다.",
                         "type": "string",
                       },
                     },
@@ -59318,7 +59343,9 @@ TODO_IMPORT_2306: 가져올 기간이나 일정이 올바르지 않습니다.",
               },
             },
           },
-          "description": "TODO_IMPORT_2305: 지금 상태에서는 할 수 없는 요청입니다.
+          "description": "TODO_IMPORT_2301: 이미 진행 중인 캘린더 가져오기가 있습니다.
+
+TODO_IMPORT_2305: 지금 상태에서는 할 수 없는 요청입니다.
 
 TODO_IMPORT_2308: 되돌릴 수 있는 기간이 지났습니다.",
         },

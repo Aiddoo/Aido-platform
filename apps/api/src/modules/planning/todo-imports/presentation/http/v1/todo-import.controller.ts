@@ -245,12 +245,13 @@ export class TodoImportController {
   @ApiDoc({
     summary: "가져오기 되돌리기",
     operationId: "undoTodoImport",
-    description: `완료 뒤 ${TODO_IMPORT_LIMITS.UNDO_WINDOW_DAYS}일 안에 가져온 할 일 중 완료하지 않은 것을 서버 작업이 지웁니다. 완료한 할 일과 새로 만든 카테고리는 남깁니다. 분당 ${TodoImportRateLimits.requestUndo.limitPerMinute}회, 하루 ${TodoImportRateLimits.requestUndo.limitPerDay}회.`,
+    description: `끝난 뒤 ${TODO_IMPORT_LIMITS.UNDO_WINDOW_DAYS}일 안에 가져온 할 일 중 완료하지 않은 것을 서버 작업이 지웁니다. 만들다 멈춘(FAILED) 가져오기도 만든 할 일이 남았으면 됩니다. 받을 수 있으면 \`todoImport.undoableUntil\`에 값이 있습니다. 완료한 할 일과 새로 만든 카테고리는 남깁니다. 다른 가져오기가 진행 중이면 TODO_IMPORT_2301(\`importId\`)입니다. 분당 ${TodoImportRateLimits.requestUndo.limitPerMinute}회, 하루 ${TodoImportRateLimits.requestUndo.limitPerDay}회.`,
   })
   @ApiSuccessResponse({ type: TodoImportResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiNotFoundError(ErrorCode.TODO_IMPORT_2304)
   @ApiErrorCodesResponse(HttpStatus.CONFLICT, [
+    ErrorCode.TODO_IMPORT_2301,
     ErrorCode.TODO_IMPORT_2305,
     ErrorCode.TODO_IMPORT_2308,
   ])

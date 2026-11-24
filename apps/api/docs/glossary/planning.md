@@ -111,19 +111,19 @@
 | 받은 일정     | `TodoImportItem`(VO, 작업 원장), `sourceKey`                  | 할 일로 만들 때까지 임시로 둔 일정. PENDING → CREATED·SKIPPED_*(`TODO_IMPORT_ITEM_STATUSES`)                                           |
 | 링크          | `TodoImportLink`                                              | 만든 할 일과 `sourceKey`. 사용자마다 같은 키는 하나라 다시 가져오면 건너뛰고, 할 일을 지우면 함께 지워진다                             |
 | round         | `round`, `continueInNextRound`, `recordRecovery`              | 작업 차례 번호. 같은 round 작업만 처리해 재시도·재조정·다음 round가 겹쳐도 한 줄로 이어진다                                            |
-| 되돌리기 마감 | `judgeUndoWindow`, `undoableUntil`                            | 완료 순간 + 7일(`TODO_IMPORT_LIMITS.UNDO_WINDOW_DAYS`). 서버가 계산해 응답에 싣는다                                                    |
+| 되돌리기 마감 | `judgeUndoWindow`, `undoableUntil`                            | 끝난 순간(완료, 없으면 실패) + 7일(`TODO_IMPORT_LIMITS.UNDO_WINDOW_DAYS`). 남은 할 일이 없으면 null이고 서버가 계산해 응답에 싣는다    |
 
-| 상태                   | 행동                        | 다음               | 다시·금지                                                      |
-| ---------------------- | --------------------------- | ------------------ | -------------------------------------------------------------- |
-| 없음                   | `TodoImport.create`(시작)   | UPLOADING          | 진행 중이 있으면 `TODO_IMPORT_2301`                            |
-| UPLOADING              | `recordReceived`            | UPLOADING          | 다른 상태면 `TODO_IMPORT_2305`                                 |
-| UPLOADING              | `commit`                    | QUEUED             | 이미 확정했으면 `false`, CANCELED·ABANDONED면 `2305`           |
-| UPLOADING              | `cancel`·`abandon`          | CANCELED·ABANDONED | 같은 상태면 `false`, 그 밖은 `2305`                            |
-| QUEUED                 | `start`                     | RUNNING            | 이미 RUNNING이면 `false`                                       |
-| RUNNING                | `recordBatch`·`complete`    | COMPLETED          | 이미 COMPLETED면 `false`                                       |
-| QUEUED·RUNNING·UNDOING | `fail`                      | FAILED             | 이미 FAILED면 `false`                                          |
-| COMPLETED              | `requestUndo`               | UNDOING            | UNDOING·UNDONE이면 `false`, 마감이 지났으면 `TODO_IMPORT_2308` |
-| UNDOING                | `recordUndone`·`finishUndo` | UNDONE             | 이미 UNDONE이면 `false`                                        |
+| 상태                   | 행동                        | 다음               | 다시·금지                                                                                                                |
+| ---------------------- | --------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| 없음                   | `TodoImport.create`(시작)   | UPLOADING          | 진행 중이 있으면 `TODO_IMPORT_2301`                                                                                      |
+| UPLOADING              | `recordReceived`            | UPLOADING          | 다른 상태면 `TODO_IMPORT_2305`                                                                                           |
+| UPLOADING              | `commit`                    | QUEUED             | 이미 확정했으면 `false`, CANCELED·ABANDONED면 `2305`                                                                     |
+| UPLOADING              | `cancel`·`abandon`          | CANCELED·ABANDONED | 같은 상태면 `false`, 그 밖은 `2305`                                                                                      |
+| QUEUED                 | `start`                     | RUNNING            | 이미 RUNNING이면 `false`                                                                                                 |
+| RUNNING                | `recordBatch`·`complete`    | COMPLETED          | 이미 COMPLETED면 `false`                                                                                                 |
+| QUEUED·RUNNING·UNDOING | `fail`                      | FAILED             | 이미 FAILED면 `false`                                                                                                    |
+| COMPLETED·FAILED       | `requestUndo`               | UNDOING            | UNDOING·UNDONE이면 `false`, 남은 할 일이 없으면 `2305`, 마감이 지났으면 `TODO_IMPORT_2308`, 다른 진행 중이 있으면 `2301` |
+| UNDOING                | `recordUndone`·`finishUndo` | UNDONE             | 이미 UNDONE이면 `false`                                                                                                  |
 
 ## 이벤트
 
