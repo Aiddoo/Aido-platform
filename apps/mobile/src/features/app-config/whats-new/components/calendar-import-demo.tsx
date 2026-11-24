@@ -136,7 +136,8 @@ export function CategoryMappingDemo() {
                 {/* 연결이 바뀌면 줄을 새로 그려 바뀐 칩이 스며들듯 나타난다 */}
                 <Animated.View key={target.kind} entering={ROW_ENTERING}>
                   <CategoryMappingList.Item
-                    collection={collection}
+                    label={collection.title}
+                    color={collection.color}
                     target={target}
                     categories={categories}
                     errorMessage={null}
