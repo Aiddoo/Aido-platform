@@ -9,7 +9,7 @@
   "v1_17_0": {
     "release": {
       "title": "Move your calendar events to Aido, the easy way",
-      "description": "Pick calendars and a date range, and your events arrive as to-dos. Keep calendars separate or put everything in one category"
+      "description": "Pick calendars and a date range, and your events arrive as to-dos. Put them in one Aido category or split them by calendar"
     },
     "intro": {
       "title": "Move your calendar events to Aido, the easy way",
@@ -21,8 +21,8 @@
       "description": "Holiday, birthday, and subscribed calendars start turned off"
     },
     "categories": {
-      "title": "Keep calendars separate or put them together",
-      "description": "You can change categories anytime after importing"
+      "title": "One place is all you need",
+      "description": "Want to split them up? You can choose for each calendar too"
     },
     "importing": {
       "title": "It keeps going if you leave",
@@ -49,7 +49,8 @@
         "holidays": "Holidays"
       },
       "categories": {
-        "daily": "Daily"
+        "daily": "Daily",
+        "study": "Study"
       },
       "todos": {
         "lecture": "Morning lecture",

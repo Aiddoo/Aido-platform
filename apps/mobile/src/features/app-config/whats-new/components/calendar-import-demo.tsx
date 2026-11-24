@@ -3,18 +3,18 @@ import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscripti
 import { toPlanFeatureComparison } from '@src/features/billing/subscription/utils/plan-benefit.view-model';
 import type { TodoCategoryWithCount } from '@src/features/planning/category/domains/todo-category.model';
 import { CalendarSourceList } from '@src/features/planning/todo-import/components/calendar-source-list';
-import { CategoryMappingList } from '@src/features/planning/todo-import/components/category-mapping-list';
-import { CategoryModeInput } from '@src/features/planning/todo-import/components/category-mode-input';
+import { ImportDestinationButton } from '@src/features/planning/todo-import/components/import-destination-button';
+import { ImportSourceList } from '@src/features/planning/todo-import/components/import-source-list';
 import { TodoImportProgress } from '@src/features/planning/todo-import/components/todo-import-progress';
 import {
   type ImportCollection,
   TodoImportCollectionPolicy,
 } from '@src/features/planning/todo-import/domains/todo-import-collection.model';
-import type { ImportTarget } from '@src/features/planning/todo-import/domains/todo-import-target.model';
-import type { TodoImportCategoryMode } from '@src/features/planning/todo-import/schemas/todo-import-form.schema';
+import { TodoImportTargetPolicy } from '@src/features/planning/todo-import/domains/todo-import-target.model';
 import { ANIMATION } from '@src/shared/constants/animation';
 import { useTranslation } from '@src/shared/i18n';
 import {
+  ArrowRightIcon,
   Box,
   HStack,
   LabelChip,
@@ -30,11 +30,10 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
 import { type ReactNode, useState } from 'react';
 import Animated, { FadeIn, LinearTransition, ReduceMotion } from 'react-native-reanimated';
-import { match } from 'ts-pattern';
 
 import {
   DEMO_CALENDARS,
-  DEMO_EXISTING_CATEGORY,
+  DEMO_CATEGORIES,
   DEMO_IMPORTED_TODOS,
   DEMO_SCRIPT_MS,
 } from '../constants/release-1-17-0.constants';
@@ -93,78 +92,53 @@ export function CalendarChoiceDemo() {
 }
 
 /**
- * 실제 카테고리 단계와 같은 부품이다. 캘린더마다 새 카테고리로 나뉜 줄이 잠시 뒤 "한 카테고리에 모두 넣기"로
- * 바뀌며 한 줄로 모인다. 직접 눌러 다시 나눌 수도 있다
+ * 실제 카테고리 단계와 같은 부품이다. 가져올 일정이 아이두 카테고리 한 곳으로 들어가고, 잠시 뒤 넣을 곳이 다른
+ * 카테고리로 바뀐다. 넣을 곳을 눌러 직접 바꿔 볼 수도 있다
  */
 export function CategoryMappingDemo() {
   const { t } = useTranslation('whatsNew');
   const collections = useDemoCollections().filter(TodoImportCollectionPolicy.isDefaultSelected);
-  const [pressedMode, setPressedMode] = useState<TodoImportCategoryMode | null>(null);
+  const [pressedIndex, setPressedIndex] = useState<number | null>(null);
 
   const switchedCount = useDemoScript({
     frameCount: 1,
     frameMs: 0,
     startDelayMs: DEMO_SCRIPT_MS.categoryChange,
   });
-  const mode = pressedMode ?? (switchedCount > 0 ? 'single' : 'separate');
-  // 예시 캘린더는 모두 한 계정이라 모은 줄도 출처가 하나다
-  const source = t('v1_17_0.demo.account');
-
-  const categories: TodoCategoryWithCount[] = [
-    {
-      ...DEMO_EXISTING_CATEGORY,
-      name: t('v1_17_0.demo.categories.daily'),
-      sortOrder: 0,
-      todoCount: 0,
-    },
-  ];
-  const singleTarget: ImportTarget = {
-    kind: 'EXISTING_CATEGORY',
-    categoryId: DEMO_EXISTING_CATEGORY.id,
-  };
-  // 예시 캘린더 색은 이미 카테고리 팔레트라 이름·색을 그대로 새 카테고리로 쓴다
-  const toNewCategoryTarget = (collection: ImportCollection): ImportTarget => ({
-    kind: 'NEW_CATEGORY',
-    name: collection.title,
-    color: collection.color ?? DEMO_EXISTING_CATEGORY.color,
-  });
+  const categories: TodoCategoryWithCount[] = DEMO_CATEGORIES.map(
+    ({ id, key, color, todoCount }, sortOrder) => ({
+      id,
+      name: t(`v1_17_0.demo.categories.${key}`),
+      color,
+      sortOrder,
+      todoCount,
+    }),
+  );
+  const destinationIndex = (pressedIndex ?? switchedCount) % categories.length;
+  const destination = categories[destinationIndex];
 
   return (
     <WhatsNewStep.Stage accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-      <VStack gap={12}>
-        <CategoryModeInput value={mode} onValueChange={setPressedMode} />
-        {/* 방식이 바뀌면 줄 묶음을 새로 그려 모인 줄이 스며들듯 나타난다 */}
-        <Animated.View key={mode} entering={ROW_ENTERING}>
-          <SettingsListGroup>
-            {match(mode)
-              .with('separate', () =>
-                collections.map((collection, index) => (
-                  <Box key={collection.collectionKey}>
-                    {index > 0 && <SettingsListGroup.Separator />}
-                    <CategoryMappingList.Item
-                      subject={{ kind: 'calendar', title: collection.title }}
-                      source={source}
-                      color={collection.color}
-                      target={toNewCategoryTarget(collection)}
-                      categories={categories}
-                      errorMessage={null}
-                    />
-                  </Box>
-                )),
-              )
-              .with('single', () => (
-                <CategoryMappingList.Item
-                  subject={{ kind: 'allCalendars', count: collections.length }}
-                  source={source}
-                  color={null}
-                  target={singleTarget}
-                  categories={categories}
-                  errorMessage={null}
-                />
-              ))
-              .exhaustive()}
-          </SettingsListGroup>
-        </Animated.View>
+      <VStack gap={8}>
+        <ImportSourceList collections={collections} />
+        <Box className="rotate-90 self-center">
+          <ArrowRightIcon width={20} height={20} colorClassName="text-gray-5" />
+        </Box>
+        {destination != null && (
+          // 넣을 곳이 바뀌면 카드를 새로 그려 바뀐 이름이 스며들듯 나타난다
+          <Animated.View key={destination.id} entering={ROW_ENTERING}>
+            <ImportDestinationButton
+              appearance={{ name: destination.name, color: destination.color, isNew: false }}
+              roomLeft={TodoImportTargetPolicy.calculateRoomLeft(
+                { kind: 'EXISTING_CATEGORY', categoryId: destination.id },
+                categories,
+              )}
+              skippedCount={0}
+              errorMessage={null}
+              onPress={() => setPressedIndex(destinationIndex + 1)}
+            />
+          </Animated.View>
+        )}
       </VStack>
     </WhatsNewStep.Stage>
   );

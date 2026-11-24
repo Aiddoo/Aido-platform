@@ -20,7 +20,11 @@ export const DEMO_CALENDARS = [
   id: string;
 })[];
 
-export const DEMO_EXISTING_CATEGORY = { id: 1, color: CATEGORY_COLORS[0] } as const;
+/** 이름은 카탈로그 `v1_17_0.demo.categories`에 있다. 첫 카테고리가 처음 넣을 곳이고 잠시 뒤 둘째로 바뀐다 */
+export const DEMO_CATEGORIES = [
+  { id: 1, key: 'daily', color: CATEGORY_COLORS[0], todoCount: 48 },
+  { id: 2, key: 'study', color: CATEGORY_COLORS[9], todoCount: 12 },
+] as const;
 
 /** 제목은 카탈로그 `v1_17_0.demo.todos`에 있다 */
 export const DEMO_IMPORTED_TODOS = [
