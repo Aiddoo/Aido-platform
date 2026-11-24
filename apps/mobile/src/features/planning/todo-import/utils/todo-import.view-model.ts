@@ -15,10 +15,6 @@ export const IMPORT_RANGE_PRESET_LABEL_KEYS = {
   year: 'range.presets.year',
 } as const satisfies Record<ImportRangePreset, string>;
 
-export function toRangePreset(value: string): ImportRangePreset | null {
-  return IMPORT_RANGE_PRESET_NAMES.find((preset) => preset === value) ?? null;
-}
-
 /** 직접 고른 끝 날은 null이다 */
 export function findRangePreset({
   startDate,

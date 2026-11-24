@@ -4,34 +4,31 @@ import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscripti
 import type { DateKey } from '@src/shared/date/date-key';
 import { formatYearAwareDateKeyLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import { HStack, LockIcon, SheetChipRow, Text, TextSkeleton, VStack } from '@src/shared/ui';
-import { cn } from '@src/shared/utils/cn';
+import {
+  ActionButton,
+  HStack,
+  LockIcon,
+  SheetChipRow,
+  Text,
+  TextSkeleton,
+  VStack,
+} from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { PressableFeedback, RadioGroup, Skeleton } from 'heroui-native';
+import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
 import { IMPORT_RANGE_PRESETS, type ImportRangePreset } from '../constants/todo-import.constants';
 import { canImportUntil, findLastAllowedDate, getRangeEndDate } from '../domains/todo-import.model';
-import {
-  findRangePreset,
-  IMPORT_RANGE_PRESET_LABEL_KEYS,
-  toRangePreset,
-} from '../utils/todo-import.view-model';
+import { findRangePreset, IMPORT_RANGE_PRESET_LABEL_KEYS } from '../utils/todo-import.view-model';
 
-interface ImportEndDateChipsProps extends Omit<
-  ComponentProps<typeof RadioGroup>,
-  'children' | 'value' | 'onValueChange'
-> {
+interface ImportEndDateChipsProps extends Omit<ComponentProps<typeof HStack>, 'children'> {
   /** 칩은 이 날부터 센 기간의 마지막 날을 고른다 */
   startDate: DateKey;
   value: DateKey;
   onValueChange: (endDate: DateKey) => void;
 }
-
-const LOCK_ICON_SIZE = 14;
 
 /** 요금제 기간(서버 `CALENDAR_IMPORT.limit`)을 넘는 칩은 잠그고 누르면 프리미엄 안내를 연다 */
 export function ImportEndDateChips({
@@ -56,33 +53,30 @@ export function ImportEndDateChips({
       horizonDays,
     );
 
-  const handleValueChange = (nextValue: string) => {
-    const preset = toRangePreset(nextValue);
-    if (preset == null) {
-      return;
-    }
+  const handlePress = (preset: ImportRangePreset) => {
     if (isLocked(preset)) {
       gate.promptLimit();
       return;
     }
     onValueChange(getRangeEndDate(startDate, IMPORT_RANGE_PRESETS[preset]));
   };
+  const toChipProps = (preset: ImportRangePreset) => ({
+    preset,
+    isSelected: selectedPreset === preset,
+    isLocked: isLocked(preset),
+    onPress: () => handlePress(preset),
+  });
 
   return (
     <VStack gap={8}>
       <SheetChipRow>
-        <RadioGroup
-          value={selectedPreset ?? ''}
-          onValueChange={handleValueChange}
-          className="flex-row items-center gap-2"
-          {...props}
-        >
-          <ImportEndDateChips.Chip preset="week" isLocked={isLocked('week')} />
-          <ImportEndDateChips.Chip preset="month" isLocked={isLocked('month')} />
-          <ImportEndDateChips.Chip preset="quarter" isLocked={isLocked('quarter')} />
-          <ImportEndDateChips.Chip preset="half" isLocked={isLocked('half')} />
-          <ImportEndDateChips.Chip preset="year" isLocked={isLocked('year')} />
-        </RadioGroup>
+        <HStack gap={8} accessibilityRole="radiogroup" {...props}>
+          <ImportEndDateChips.Chip {...toChipProps('week')} />
+          <ImportEndDateChips.Chip {...toChipProps('month')} />
+          <ImportEndDateChips.Chip {...toChipProps('quarter')} />
+          <ImportEndDateChips.Chip {...toChipProps('half')} />
+          <ImportEndDateChips.Chip {...toChipProps('year')} />
+        </HStack>
       </SheetChipRow>
 
       {EntitlementPolicy.shouldOfferPremium(snapshot) && lastAllowedDate != null && (
@@ -105,47 +99,26 @@ export function ImportEndDateChips({
 
 interface ChipProps {
   preset: ImportRangePreset;
+  isSelected: boolean;
   isLocked: boolean;
+  onPress: () => void;
 }
 
-ImportEndDateChips.Chip = function Chip({ preset, isLocked }: ChipProps) {
+/** 할 일 일정 칩과 같은 ActionButton이다. 고르는 칩이라 라디오로 읽힌다 */
+ImportEndDateChips.Chip = function Chip({ preset, isSelected, isLocked, onPress }: ChipProps) {
   const { t } = useTranslation('todoImport');
-  const fontScaledSize = useFontScaledSize();
   const label = t(IMPORT_RANGE_PRESET_LABEL_KEYS[preset]);
 
   return (
-    <RadioGroup.Item
-      value={preset}
+    <ActionButton
+      icon={isLocked && <ActionButton.Icon Icon={LockIcon} colorClassName="text-gray-6" />}
+      label={label}
+      isActive={isSelected}
+      onPress={onPress}
+      accessibilityRole="radio"
+      accessibilityState={{ checked: isSelected }}
       accessibilityLabel={isLocked ? t('range.lockedPreset', { label }) : label}
-    >
-      {({ isSelected }) => (
-        <HStack
-          align="center"
-          gap={4}
-          className={cn(
-            'h-9 rounded-full border px-3.5',
-            isSelected ? 'border-main bg-main/10' : 'border-gray-3 bg-white dark:bg-gray-1',
-          )}
-        >
-          {isLocked && (
-            <LockIcon
-              width={fontScaledSize(LOCK_ICON_SIZE)}
-              height={fontScaledSize(LOCK_ICON_SIZE)}
-              colorClassName="text-gray-6"
-            />
-          )}
-          <Text
-            size="b3"
-            weight={isSelected ? 'semibold' : 'normal'}
-            tone={isSelected ? 'brand' : 'neutral'}
-            shade={isSelected ? undefined : 8}
-            numberOfLines={1}
-          >
-            {label}
-          </Text>
-        </HStack>
-      )}
-    </RadioGroup.Item>
+    />
   );
 };
 
@@ -153,9 +126,9 @@ ImportEndDateChips.Loading = function Loading() {
   return (
     <VStack gap={8}>
       <HStack gap={8}>
-        <Skeleton className="h-9 w-16 rounded-full" />
-        <Skeleton className="h-9 w-20 rounded-full" />
-        <Skeleton className="h-9 w-20 rounded-full" />
+        <ActionButton.Loading className="w-16" />
+        <ActionButton.Loading className="w-20" />
+        <ActionButton.Loading className="w-20" />
       </HStack>
       <TextSkeleton size="b4" className="w-48" />
     </VStack>
