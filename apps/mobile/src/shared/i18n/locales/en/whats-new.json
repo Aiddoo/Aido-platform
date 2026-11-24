@@ -8,21 +8,21 @@
   },
   "v1_17_0": {
     "release": {
-      "title": "Bring calendar events in as to-dos",
-      "description": "Move the events you pick from your calendar app into Aido in one go, and choose a category for each calendar"
+      "title": "Move your calendar events to Aido, the easy way",
+      "description": "Pick calendars and a date range, and your events arrive as to-dos. Keep calendars separate or put everything in one category"
     },
     "intro": {
-      "title": "Move your events into Aido",
-      "description": "Here's how importing works",
+      "title": "Move your calendar events to Aido, the easy way",
+      "description": "We heard switching is hard when your plans live in your calendar, so we built this",
       "card": "Bring iCloud, Google, and Outlook events in as to-dos"
     },
     "calendars": {
       "title": "Pick only the calendars you want",
-      "description": "Holiday and birthday calendars start turned off"
+      "description": "Holiday, birthday, and subscribed calendars start turned off"
     },
     "categories": {
-      "title": "Choose a category for each calendar",
-      "description": "Or tap {{allInOne}} to keep them together"
+      "title": "Keep calendars separate or put them together",
+      "description": "You can change categories anytime after importing"
     },
     "importing": {
       "title": "It keeps going if you leave",

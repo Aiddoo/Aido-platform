@@ -4,12 +4,14 @@ import { toPlanFeatureComparison } from '@src/features/billing/subscription/util
 import type { TodoCategoryWithCount } from '@src/features/planning/category/domains/todo-category.model';
 import { CalendarSourceList } from '@src/features/planning/todo-import/components/calendar-source-list';
 import { CategoryMappingList } from '@src/features/planning/todo-import/components/category-mapping-list';
+import { CategoryModeInput } from '@src/features/planning/todo-import/components/category-mode-input';
 import { TodoImportProgress } from '@src/features/planning/todo-import/components/todo-import-progress';
 import {
   type ImportCollection,
   TodoImportCollectionPolicy,
 } from '@src/features/planning/todo-import/domains/todo-import-collection.model';
 import type { ImportTarget } from '@src/features/planning/todo-import/domains/todo-import-target.model';
+import type { TodoImportCategoryMode } from '@src/features/planning/todo-import/schemas/todo-import-form.schema';
 import { ANIMATION } from '@src/shared/constants/animation';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -21,7 +23,6 @@ import {
   type QueryErrorFallbackProps,
   SettingsListGroup,
   Text,
-  TextButton,
   TextSkeleton,
   VStack,
 } from '@src/shared/ui';
@@ -29,12 +30,12 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
 import { type ReactNode, useState } from 'react';
 import Animated, { FadeIn, LinearTransition, ReduceMotion } from 'react-native-reanimated';
+import { match } from 'ts-pattern';
 
 import {
   DEMO_CALENDARS,
   DEMO_EXISTING_CATEGORY,
   DEMO_IMPORTED_TODOS,
-  DEMO_NEW_CATEGORY_CALENDAR_ID,
   DEMO_SCRIPT_MS,
 } from '../constants/release-1-17-0.constants';
 import { useDemoScript } from '../hooks/use-demo-script';
@@ -91,16 +92,21 @@ export function CalendarChoiceDemo() {
   );
 }
 
+/**
+ * 실제 카테고리 단계와 같은 부품이다. 캘린더마다 새 카테고리로 나뉜 줄이 잠시 뒤 "한 카테고리에 모두 넣기"로
+ * 바뀌며 한 줄로 모인다. 직접 눌러 다시 나눌 수도 있다
+ */
 export function CategoryMappingDemo() {
   const { t } = useTranslation(['whatsNew', 'todoImport']);
   const collections = useDemoCollections().filter(TodoImportCollectionPolicy.isDefaultSelected);
-  const [pressedIsNew, setPressedIsNew] = useState<Partial<Record<string, boolean>>>({});
+  const [pressedMode, setPressedMode] = useState<TodoImportCategoryMode | null>(null);
 
-  const changedCount = useDemoScript({
+  const switchedCount = useDemoScript({
     frameCount: 1,
     frameMs: 0,
     startDelayMs: DEMO_SCRIPT_MS.categoryChange,
   });
+  const mode = pressedMode ?? (switchedCount > 0 ? 'single' : 'separate');
 
   const categories: TodoCategoryWithCount[] = [
     {
@@ -110,61 +116,51 @@ export function CategoryMappingDemo() {
       todoCount: 0,
     },
   ];
-  const findTarget = (collection: ImportCollection): ImportTarget => {
-    const isScriptedNew =
-      changedCount > 0 && collection.collectionKey === DEMO_NEW_CATEGORY_CALENDAR_ID;
-    const isNew = pressedIsNew[collection.collectionKey] ?? isScriptedNew;
-    // 예시 캘린더 색은 이미 카테고리 팔레트라 이름·색을 그대로 새 카테고리로 쓴다
-    return isNew
-      ? {
-          kind: 'NEW_CATEGORY',
-          name: collection.title,
-          color: collection.color ?? DEMO_EXISTING_CATEGORY.color,
-        }
-      : { kind: 'EXISTING_CATEGORY', categoryId: DEMO_EXISTING_CATEGORY.id };
+  const singleTarget: ImportTarget = {
+    kind: 'EXISTING_CATEGORY',
+    categoryId: DEMO_EXISTING_CATEGORY.id,
   };
+  // 예시 캘린더 색은 이미 카테고리 팔레트라 이름·색을 그대로 새 카테고리로 쓴다
+  const toNewCategoryTarget = (collection: ImportCollection): ImportTarget => ({
+    kind: 'NEW_CATEGORY',
+    name: collection.title,
+    color: collection.color ?? DEMO_EXISTING_CATEGORY.color,
+  });
 
   return (
     <WhatsNewStep.Stage accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-      <VStack gap={8}>
-        <SettingsListGroup>
-          {collections.map((collection, index) => {
-            const target = findTarget(collection);
-            return (
-              <Box key={collection.collectionKey}>
-                {index > 0 && <SettingsListGroup.Separator />}
-                {/* 연결이 바뀌면 줄을 새로 그려 바뀐 칩이 스며들듯 나타난다 */}
-                <Animated.View key={target.kind} entering={ROW_ENTERING}>
-                  <CategoryMappingList.Item
-                    label={collection.title}
-                    color={collection.color}
-                    target={target}
-                    categories={categories}
-                    errorMessage={null}
-                    onPress={() =>
-                      setPressedIsNew((current) => ({
-                        ...current,
-                        [collection.collectionKey]: target.kind === 'EXISTING_CATEGORY',
-                      }))
-                    }
-                  />
-                </Animated.View>
-              </Box>
-            );
-          })}
-        </SettingsListGroup>
-
-        <TextButton
-          size="medium"
-          className="self-start"
-          onPress={() =>
-            setPressedIsNew(
-              Object.fromEntries(collections.map(({ collectionKey }) => [collectionKey, false])),
-            )
-          }
-        >
-          {t('todoImport:categories.allInOne')}
-        </TextButton>
+      <VStack gap={12}>
+        <CategoryModeInput value={mode} onValueChange={setPressedMode} />
+        {/* 방식이 바뀌면 줄 묶음을 새로 그려 모인 줄이 스며들듯 나타난다 */}
+        <Animated.View key={mode} entering={ROW_ENTERING}>
+          <SettingsListGroup>
+            {match(mode)
+              .with('separate', () =>
+                collections.map((collection, index) => (
+                  <Box key={collection.collectionKey}>
+                    {index > 0 && <SettingsListGroup.Separator />}
+                    <CategoryMappingList.Item
+                      label={collection.title}
+                      color={collection.color}
+                      target={toNewCategoryTarget(collection)}
+                      categories={categories}
+                      errorMessage={null}
+                    />
+                  </Box>
+                )),
+              )
+              .with('single', () => (
+                <CategoryMappingList.Item
+                  label={t('todoImport:categories.allCalendars', { count: collections.length })}
+                  color={null}
+                  target={singleTarget}
+                  categories={categories}
+                  errorMessage={null}
+                />
+              ))
+              .exhaustive()}
+          </SettingsListGroup>
+        </Animated.View>
       </VStack>
     </WhatsNewStep.Stage>
   );

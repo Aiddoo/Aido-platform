@@ -22,9 +22,6 @@ export const DEMO_CALENDARS = [
 
 export const DEMO_EXISTING_CATEGORY = { id: 1, color: CATEGORY_COLORS[0] } as const;
 
-export const DEMO_NEW_CATEGORY_CALENDAR_ID =
-  'school' satisfies (typeof DEMO_CALENDARS)[number]['id'];
-
 /** 제목은 카탈로그 `v1_17_0.demo.todos`에 있다 */
 export const DEMO_IMPORTED_TODOS = [
   { id: 'lecture', localTime: '09:30' },

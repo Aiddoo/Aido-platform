@@ -117,9 +117,7 @@ export function Release1170Steps() {
               <WhatsNewStep
                 media={<CategoryMappingDemo />}
                 title={t('whatsNew:v1_17_0.categories.title')}
-                description={t('whatsNew:v1_17_0.categories.description', {
-                  allInOne: t('todoImport:categories.allInOne'),
-                })}
+                description={t('whatsNew:v1_17_0.categories.description')}
               />
             )}
             importing={() => (
