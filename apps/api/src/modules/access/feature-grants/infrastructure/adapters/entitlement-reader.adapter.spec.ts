@@ -124,6 +124,29 @@ describe("EntitlementReaderAdapter", () => {
     ]);
   });
 
+  it("가져오기 기간 한도 오류의 featureQuota는 세지 않는 기간 기능이라 used·period가 null이다", async () => {
+    // Given
+    const fixture = createEntitlementFixture({ subscriptionStatus: "FREE" });
+    // When
+    const featureQuota = await fixture.reader.getFeatureQuotaInTransaction(
+      fixture.userId,
+      "CALENDAR_IMPORT",
+      null,
+    );
+    // Then
+    expect(featureQuota).toEqual({
+      feature: "CALENDAR_IMPORT",
+      allowed: true,
+      limit: PLAN_CATALOG.CALENDAR_IMPORT.free,
+      used: null,
+      remaining: null,
+      period: null,
+      resetsAt: null,
+      isFairUse: false,
+      perUse: null,
+    });
+  });
+
   it("존재하지 않는 사용자는 읽기와 쓰기 모두 무료 기본 한도를 적용한다", async () => {
     // Given
     const fixture = createEntitlementFixture({ exists: false });

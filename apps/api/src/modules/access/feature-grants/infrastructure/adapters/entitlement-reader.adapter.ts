@@ -70,8 +70,8 @@ export class EntitlementReaderAdapter implements EntitlementReaderPort {
 
   async getFeatureQuotaInTransaction(
     userId: UserId,
-    feature: UnmeteredLimitFeatureKey,
-    usage: ReportedFeatureUsage,
+    feature: UnmeteredLimitFeatureKey | PlanHorizonFeatureKey,
+    usage: ReportedFeatureUsage | null,
   ): Promise<FeatureQuotaReadModel> {
     const { plan, grants } = await this.#resolve(userId, "latest");
     return toFeatureQuotaReadModel(
@@ -79,10 +79,13 @@ export class EntitlementReaderAdapter implements EntitlementReaderPort {
         plan,
         feature,
         grants,
-        usage: {
-          used: usage.used,
-          resetsAt: usage.resetsAt == null ? null : instantFromDate(usage.resetsAt),
-        },
+        usage:
+          usage == null
+            ? null
+            : {
+                used: usage.used,
+                resetsAt: usage.resetsAt == null ? null : instantFromDate(usage.resetsAt),
+              },
       }),
     );
   }

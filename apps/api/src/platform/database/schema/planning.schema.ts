@@ -17,6 +17,10 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
+// drizzle-kit은 #api 별칭을 못 따라가므로 상대 경로로 둔다
+import type { TodoImportCollectionPrimitives } from "../../../modules/planning/todo-imports/domain/todo-import-collection.vo.js";
+import type { TodoImportTargetPrimitives } from "../../../modules/planning/todo-imports/domain/todo-import-target.vo.js";
+import type { TodoImportFailureReason } from "../../../modules/planning/todo-imports/domain/todo-imports.constants.js";
 import { instant, plainDate } from "../columns/temporal-columns.js";
 import {
   todoImportItemStatus,
@@ -268,21 +272,6 @@ export const todoView = pgTable(
   ],
 );
 
-// 앱이 시작 요청에 담은 대상·캘린더. 가져오기마다 최대 20개라 행 하나에 둔다
-interface TodoImportTargetColumn {
-  readonly kind: "NEW_CATEGORY" | "EXISTING_CATEGORY";
-  readonly targetKey: string;
-  readonly name: string | null;
-  readonly color: string | null;
-  readonly categoryId: number | null;
-}
-
-interface TodoImportCollectionColumn {
-  readonly collectionKey: string;
-  readonly targetKey: string;
-  readonly expectedItemCount: number;
-}
-
 const ACTIVE_TODO_IMPORT_STATUS_LIST = sql.raw(
   TODO_IMPORT_ACTIVE_STATUSES.map((status) => `'${status}'`).join(", "),
 );
@@ -301,8 +290,9 @@ export const todoImport = pgTable(
     endDate: plainDate().notNull(),
     timeMode: todoImportTimeMode().notNull(),
     visibility: todoVisibility().notNull(),
-    targets: jsonb().$type<TodoImportTargetColumn[]>().notNull(),
-    collections: jsonb().$type<TodoImportCollectionColumn[]>().notNull(),
+    // 앱이 시작 요청에 담은 대상·캘린더. 가져오기마다 최대 20개라 행 하나에 둔다
+    targets: jsonb().$type<readonly TodoImportTargetPrimitives[]>().notNull(),
+    collections: jsonb().$type<readonly TodoImportCollectionPrimitives[]>().notNull(),
     expectedItemCount: integer().notNull(),
     receivedItemCount: integer().default(0).notNull(),
     processedItemCount: integer().default(0).notNull(),
@@ -317,7 +307,7 @@ export const todoImport = pgTable(
     // 잡 round. 같은 값의 작업만 처리해 재시도·재조정이 겹쳐도 한 줄로 이어진다
     round: integer().default(0).notNull(),
     recoveryCount: integer().default(0).notNull(),
-    failureReason: varchar({ length: 50 }),
+    failureReason: varchar({ length: 50 }).$type<TodoImportFailureReason>(),
     createdAt: instant().notNull(),
     // 묶음마다 ClockPort 값으로 쓴다. 재조정자가 진행이 멈췄는지 이 값으로 본다
     updatedAt: instant().notNull(),
