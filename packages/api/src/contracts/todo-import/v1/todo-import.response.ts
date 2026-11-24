@@ -3,6 +3,7 @@ import { z } from "zod";
 import { dateSchema, datetimeSchema, nullableDateSchema } from "../../../common/datetime.js";
 import { entityIdSchema } from "../../../common/entity-id.js";
 import {
+  TODO_IMPORT_FAILURE_REASONS,
   TODO_IMPORT_SOURCES,
   TODO_IMPORT_STATUSES,
   TODO_IMPORT_TIME_MODES,
@@ -36,6 +37,10 @@ export const todoImportSchema = z
     }),
     startDate: dateSchema,
     endDate: dateSchema,
+    failureReason: z
+      .enum(TODO_IMPORT_FAILURE_REASONS)
+      .nullable()
+      .meta({ description: "FAILED가 된 이유. FAILED가 아니면 null" }),
     timezone: z.string().meta({
       description:
         "날짜·시각을 해석한 IANA 시간대. 시작할 때 정해지고 이어 보내기·할 일 만들기가 모두 이 값을 쓴다",

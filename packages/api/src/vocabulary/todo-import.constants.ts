@@ -30,6 +30,14 @@ export const TODO_IMPORT_ACTIVE_STATUSES = [
   "UNDOING",
 ] as const satisfies readonly TodoImportStatus[];
 
+/** FAILED가 된 이유. 만들다 멈춤, 진행이 오래 멈춰 닫음, 되돌리다 멈춤 */
+export const TODO_IMPORT_FAILURE_REASONS = [
+  "MATERIALIZATION_FAILED",
+  "STALLED",
+  "UNDO_FAILED",
+] as const;
+export type TodoImportFailureReason = (typeof TODO_IMPORT_FAILURE_REASONS)[number];
+
 export const TODO_IMPORT_TARGET_REJECTION_REASONS = [
   "CAPACITY",
   "CATEGORY_NAME_TAKEN",
