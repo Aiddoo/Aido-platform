@@ -43,7 +43,6 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import { dismissToTab } from '@src/shared/navigation/open-entry-href';
 import {
   Box,
   FormStepLayout,
@@ -148,12 +147,7 @@ function PermissionStep({ onGranted }: { onGranted: () => void }) {
     <FormStepLayout title={t('permission.title')}>
       <QueryErrorBoundary fallback={CalendarPermissionPrompt.Error}>
         <Suspense fallback={<CalendarPermissionPrompt.Loading />}>
-          <CalendarPermissionPrompt
-            onGranted={onGranted}
-            onAddTodoDirectly={() =>
-              dismissToTab({ pathname: '/feed', params: { action: 'add-todo' } })
-            }
-          />
+          <CalendarPermissionPrompt onGranted={onGranted} />
         </Suspense>
       </QueryErrorBoundary>
     </FormStepLayout>

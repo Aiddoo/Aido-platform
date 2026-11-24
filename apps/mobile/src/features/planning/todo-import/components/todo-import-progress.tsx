@@ -35,8 +35,6 @@ interface ProgressView {
   upload: StageStatus;
   create: StageStatus;
   ratio: number;
-  uploadedChunkCount: number;
-  chunkCount: number;
   isQueued: boolean;
   isPaused: boolean;
   /** 업로드 중인데 이 기기가 보내고 있지 않다(다른 기기에서 시작했거나 이 기기 상태가 지워졌다) */
@@ -70,17 +68,7 @@ export function TodoImportProgress() {
     <VStack gap={20}>
       <VStack gap={4}>
         <TodoImportProgress.Stage status={view.read} label={t('progress.reading')} />
-        <TodoImportProgress.Stage
-          status={view.upload}
-          label={
-            view.chunkCount > 0
-              ? t('progress.uploadingCount', {
-                  current: view.uploadedChunkCount,
-                  total: view.chunkCount,
-                })
-              : t('progress.uploading')
-          }
-        />
+        <TodoImportProgress.Stage status={view.upload} label={t('progress.uploading')} />
         <TodoImportProgress.Stage
           status={view.create}
           label={view.isQueued ? t('progress.queued') : t('progress.creating')}
@@ -194,8 +182,6 @@ function toProgressView(todoImport: TodoImport, snapshot: TodoImportUploadSnapsh
     ('importId' in snapshot && snapshot.importId === todoImport.id);
   const localSnapshot: TodoImportUploadSnapshot = isThisImport ? snapshot : { stage: 'idle' };
   const base = {
-    uploadedChunkCount: 0,
-    chunkCount: 0,
     isQueued: false,
     isPaused: localSnapshot.stage === 'paused',
     isSentElsewhere: localSnapshot.stage === 'idle',
@@ -211,8 +197,6 @@ function toProgressView(todoImport: TodoImport, snapshot: TodoImportUploadSnapsh
           upload: 'active',
           create: 'pending',
           ratio: chunkCount === 0 ? 0 : uploadedChunkCount / chunkCount,
-          uploadedChunkCount,
-          chunkCount,
         }))
         .with({ stage: 'committing' }, () => ({
           ...base,

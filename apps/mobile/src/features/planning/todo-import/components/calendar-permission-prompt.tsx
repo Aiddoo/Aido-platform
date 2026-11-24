@@ -13,9 +13,9 @@ import {
   type QueryErrorFallbackProps,
   Spacing,
   Text,
-  TextButton,
   TextSkeleton,
   VStack,
+  WordWrapText,
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
@@ -29,7 +29,6 @@ import { useRequestCalendarPermissionMutationOptions } from '../queries/todo-imp
 interface CalendarPermissionPromptProps {
   /** 다음 단계로 가는 일은 화면이 정한다 */
   onGranted: () => void;
-  onAddTodoDirectly: () => void;
 }
 
 type PermissionView = 'ask' | 'denied' | 'blocked';
@@ -41,10 +40,7 @@ const FACT_BADGE_SIZE = 20;
  * 시스템 캘린더 창 바로 앞의 안내(App Store 5.1.1, Play 눈에 띄는 공개). 열 때는 상태만 읽고 "계속"을 눌러야 묻는다.
  * 방금 거절했으면 다시 조르지 않고, 다시 들어왔을 때 다시 물을 수 없는 상태면 설정 열기를 보인다
  */
-export function CalendarPermissionPrompt({
-  onGranted,
-  onAddTodoDirectly,
-}: CalendarPermissionPromptProps) {
+export function CalendarPermissionPrompt({ onGranted }: CalendarPermissionPromptProps) {
   const { data: permission } = useSuspenseQuery(useGetCalendarPermissionQueryOptions());
   const request = useMutation(useRequestCalendarPermissionMutationOptions());
   const openSettings = useOpenAppSettings();
@@ -64,13 +60,8 @@ export function CalendarPermissionPrompt({
     .with('ask', () => (
       <CalendarPermissionPrompt.Ask isRequesting={request.isPending} onContinue={handleContinue} />
     ))
-    .with('denied', () => <CalendarPermissionPrompt.Denied onAddTodoDirectly={onAddTodoDirectly} />)
-    .with('blocked', () => (
-      <CalendarPermissionPrompt.Denied
-        onOpenSettings={openSettings}
-        onAddTodoDirectly={onAddTodoDirectly}
-      />
-    ))
+    .with('denied', () => <CalendarPermissionPrompt.Denied />)
+    .with('blocked', () => <CalendarPermissionPrompt.Denied onOpenSettings={openSettings} />)
     .exhaustive();
 }
 
@@ -93,7 +84,7 @@ CalendarPermissionPrompt.Ask = function Ask({ isRequesting, onContinue }: AskPro
     >
       <VStack gap={4} className="self-stretch">
         <Fact>{t('permission.facts.read')}</Fact>
-        <Fact>{t('permission.facts.hashed')}</Fact>
+        <Fact>{t('permission.facts.noAccountInfo')}</Fact>
         <Fact>{t('permission.facts.oneTime')}</Fact>
         <Fact>{t('permission.facts.optional')}</Fact>
       </VStack>
@@ -102,33 +93,20 @@ CalendarPermissionPrompt.Ask = function Ask({ isRequesting, onContinue }: AskPro
 };
 
 interface DeniedProps {
-  /** 다시 물을 수 없을 때만 준다(Android 영구 거절, iOS 거절·쓰기 전용) */
+  /** 다시 물을 수 없을 때만 준다(Android 영구 거절, iOS 거절·쓰기 전용). 방금 거절했으면 조르지 않고 글만 보인다 */
   onOpenSettings?: () => void;
-  onAddTodoDirectly: () => void;
 }
 
-CalendarPermissionPrompt.Denied = function Denied({
-  onOpenSettings,
-  onAddTodoDirectly,
-}: DeniedProps) {
+CalendarPermissionPrompt.Denied = function Denied({ onOpenSettings }: DeniedProps) {
   const { t } = useTranslation('todoImport');
 
   return (
     <Prompt
       action={
-        onOpenSettings == null ? (
-          <Button size="large" onPress={onAddTodoDirectly}>
-            {t('permission.addTodoDirectly')}
+        onOpenSettings == null ? null : (
+          <Button size="large" onPress={onOpenSettings}>
+            {t('permission.openSettings')}
           </Button>
-        ) : (
-          <VStack gap={8} align="center">
-            <Button size="large" className="self-stretch" onPress={onOpenSettings}>
-              {t('permission.openSettings')}
-            </Button>
-            <TextButton size="medium" onPress={onAddTodoDirectly}>
-              {t('permission.addTodoDirectly')}
-            </TextButton>
-          </VStack>
         )
       }
     >
@@ -136,9 +114,9 @@ CalendarPermissionPrompt.Denied = function Denied({
         <Text size="b2" weight="semibold" shade={9} align="center">
           {t('permission.deniedTitle')}
         </Text>
-        <Text size="b3" shade={6} align="center" lineBreakStrategyIOS="hangul-word">
+        <WordWrapText size="b3" shade={6} align="center">
           {t('permission.deniedDescription')}
-        </Text>
+        </WordWrapText>
       </VStack>
     </Prompt>
   );
@@ -167,8 +145,12 @@ function Prompt({ children, action }: { children: ReactNode; action: ReactNode }
       <CalendarIllustration />
       <Spacing size={24} />
       {children}
-      <Spacing size={32} />
-      <Box className="self-stretch">{action}</Box>
+      {action != null && (
+        <>
+          <Spacing size={32} />
+          <Box className="self-stretch">{action}</Box>
+        </>
+      )}
     </VStack>
   );
 }
@@ -196,9 +178,9 @@ function Fact({ children }: { children: string }) {
         </HStack>
       }
       contents={
-        <Text size="b3" shade={8} lineBreakStrategyIOS="hangul-word">
+        <WordWrapText size="b3" shade={8}>
           {children}
-        </Text>
+        </WordWrapText>
       }
     />
   );
