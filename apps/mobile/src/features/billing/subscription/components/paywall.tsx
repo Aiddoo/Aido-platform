@@ -35,7 +35,8 @@ const BLOCKED_LABEL_KEYS = {
   AI_SUGGESTION: 'paywall.blockedLocked',
   CUSTOM_REMINDER_TIME: 'paywall.blockedLocked',
   APP_ICON: 'paywall.blockedLocked',
-  CALENDAR_IMPORT: 'paywall.blockedLimit',
+  // 기간 기능은 다 써서 막히지 않고 더 먼 기간이 프리미엄 전용이다
+  CALENDAR_IMPORT: 'paywall.blockedLocked',
 } as const satisfies Record<EntitlementFeature, string>;
 
 const RENEWAL_NOTICE_KEYS = {
