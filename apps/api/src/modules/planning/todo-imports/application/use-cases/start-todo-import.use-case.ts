@@ -39,7 +39,7 @@ import { TodoImportLockKeys } from "../todo-imports.lock-keys.js";
 import { TodoImportLogEvent } from "../todo-imports.log-events.js";
 import type { AssertTodoImportTargetsUseCase } from "./assert-todo-import-targets.use-case.js";
 
-export type StartTodoImportTarget =
+type StartTodoImportTarget =
   | Omit<Extract<TodoImportTargetPrimitives, { kind: "NEW_CATEGORY" }>, "categoryId">
   | Extract<TodoImportTargetPrimitives, { kind: "EXISTING_CATEGORY" }>;
 

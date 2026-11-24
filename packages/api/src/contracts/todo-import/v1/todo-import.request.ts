@@ -29,8 +29,6 @@ export const todoImportTargetSchema = z
   .discriminatedUnion("kind", [newCategoryTargetSchema, existingCategoryTargetSchema])
   .meta({ description: "가져온 할 일을 넣을 카테고리 (새로 만들기 또는 기존)" });
 
-export type TodoImportTarget = z.infer<typeof todoImportTargetSchema>;
-
 export const todoImportCollectionSchema = z.object({
   collectionKey: todoImportHashedKeySchema.meta({ description: "캘린더 키 (sha256 hex)" }),
   targetKey: todoImportTargetKeySchema,
@@ -38,8 +36,6 @@ export const todoImportCollectionSchema = z.object({
     description: "기기가 센 이 캘린더의 일정 수. 가져오기 한 번의 일정 수 한도를 미리 본다",
   }),
 });
-
-export type TodoImportCollection = z.infer<typeof todoImportCollectionSchema>;
 
 export const startTodoImportRequestSchema = z
   .object({
@@ -99,8 +95,6 @@ export const startTodoImportRequestSchema = z
     },
   );
 
-export type StartTodoImportRequest = z.infer<typeof startTodoImportRequestSchema>;
-
 export const todoImportItemSchema = z
   .object({
     sourceKey: todoImportHashedKeySchema.meta({ description: "일정 회차 키 (sha256 hex)" }),
@@ -124,8 +118,6 @@ export const todoImportItemSchema = z
     path: ["endDate"],
   });
 
-export type TodoImportItem = z.infer<typeof todoImportItemSchema>;
-
 export const receiveTodoImportItemsRequestSchema = z.object({
   items: z
     .array(todoImportItemSchema)
@@ -138,8 +130,6 @@ export const receiveTodoImportItemsRequestSchema = z.object({
       description: `한 번에 보낼 일정 (최대 ${TODO_IMPORT_LIMITS.MAX_ITEMS_PER_CHUNK}개). 이미 받은 key는 무시한다`,
     }),
 });
-
-export type ReceiveTodoImportItemsRequest = z.infer<typeof receiveTodoImportItemsRequestSchema>;
 
 export const todoImportIdParamSchema = z.object({
   importId: entityIdSchema.meta({ description: "가져오기 id" }),

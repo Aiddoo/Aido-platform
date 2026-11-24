@@ -26,8 +26,6 @@ export const todoImportCountsSchema = z
   })
   .meta({ description: "결과 수" });
 
-export type TodoImportCounts = z.infer<typeof todoImportCountsSchema>;
-
 export const todoImportSchema = z
   .object({
     id: entityIdSchema.meta({ description: "가져오기 id" }),

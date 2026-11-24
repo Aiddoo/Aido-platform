@@ -19,11 +19,7 @@ export type TodoImportItemStatus = (typeof TODO_IMPORT_ITEM_STATUSES)[number];
 
 export type TodoImportItemOutcome = Exclude<TodoImportItemStatus, "PENDING">;
 
-export const TODO_IMPORT_FAILURE_REASONS = [
-  "MATERIALIZATION_FAILED",
-  "UNDO_FAILED",
-  "STALLED",
-] as const;
+const TODO_IMPORT_FAILURE_REASONS = ["MATERIALIZATION_FAILED", "UNDO_FAILED", "STALLED"] as const;
 
 export type TodoImportFailureReason = (typeof TODO_IMPORT_FAILURE_REASONS)[number];
 
