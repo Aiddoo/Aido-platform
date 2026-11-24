@@ -1,7 +1,9 @@
 New
-- You can now import calendar events. In Me > Settings > Import calendar events, choose the events on your device's calendars (iCloud, Google, Outlook, and others synced to your device) and bring them in as to-dos in one go. Aido only reads your calendar and never changes or deletes anything in it.
-- For each calendar, create a new category (using the calendar's name and color) or connect one you already have, or tap Put all in one category. You can also choose Include times and Share with friends. Sharing starts off.
-- If you leave the app while importing, the server keeps going. When it finishes, you see how many to-dos came in and why any were skipped. Within 7 days you can undo the import, which removes only the imported to-dos you haven't completed. The same event is never imported twice, and holiday, birthday, and subscribed calendars start unchecked.
+- Move your calendar events to Aido, the easy way. We heard it's hard to switch when your plans already live in your calendar. So we made a way to turn calendar events into to-dos in one go.
+- Pick calendars and a date range, and your events arrive as to-dos. Keep calendars separate or put everything in one category, and undo within 7 days.
+- Find it in Me > Settings > Import calendar events. It works with the calendars on your device (iCloud, Google, Outlook, and others synced to your device). Aido only reads your calendar and never changes or deletes anything in it.
+- For each calendar, create a new category (using the calendar's name and color) or use one you already have. You can also choose Include times and Share with friends. Sharing starts off.
+- If you leave the app while importing, the server keeps going. When it finishes, you see how many to-dos came in and why any were skipped. Undo removes only the imported to-dos you haven't completed. The same event is never imported twice, and holiday, birthday, and subscribed calendars start unchecked.
 - Importing is free. Free covers events up to 30 days ahead, and Premium up to 365 days ahead. The subscription screens now mention this too.
 
 Improvements
