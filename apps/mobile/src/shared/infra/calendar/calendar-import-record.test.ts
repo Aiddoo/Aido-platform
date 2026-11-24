@@ -130,6 +130,40 @@ describe('toImportEventRecord', () => {
     expect(JSON.stringify(firstRecord)).not.toContain('someone@gmail.com');
   });
 
+  it('다른 기기·다른 캘린더의 같은 일정은 일정 id가 달라도 같은 키다', async () => {
+    // Given
+    const onPhone = createEvent({ id: 'phone-event', calendarId: 'phone-calendar' });
+    const onTablet = createEvent({
+      id: 'tablet-event',
+      calendarId: 'tablet-calendar',
+      title: '  팀   회의 ',
+    });
+
+    // When
+    const [phoneRecord, tabletRecord] = await Promise.all([
+      readRecord(onPhone),
+      readRecord(onTablet),
+    ]);
+
+    // Then
+    expect(phoneRecord.occurrenceKey).toBe(tabletRecord.occurrenceKey);
+  });
+
+  it.each([
+    ['제목이 바뀌면', { title: '팀 회의 (변경)' }],
+    ['끝 시각이 바뀌면', { endDate: '2026-11-24T03:00:00.000Z' }],
+    ['종일 일정이 되면', { allDay: true }],
+  ])('%s 다른 키다', async (_case, change) => {
+    // When
+    const [before, after] = await Promise.all([
+      readRecord(createEvent()),
+      readRecord(createEvent(change)),
+    ]);
+
+    // Then
+    expect(before.occurrenceKey).not.toBe(after.occurrenceKey);
+  });
+
   it('종일 일정의 회차 키는 기기 시간대가 바뀌어도 같은 날짜면 같다', async () => {
     // Given
     const seoulEvent = createEvent({

@@ -131,9 +131,16 @@ function toRecordTime(event: CalendarEventFields, allDayTimezone: string): Impor
   return { kind: 'timed', startsAt, endsAt };
 }
 
-// 종일 일정은 날짜로 회차를 가려 기기 시간대가 바뀌어도 같은 키가 된다
-function getOccurrenceStart(time: ImportRecordTime): string {
-  return time.kind === 'allDay' ? time.startDate : time.startsAt;
+// 종일 일정은 날짜, 시각 일정은 UTC 순간으로 적어 기기 시간대가 바뀌어도 같은 글이 된다
+function toTimeFingerprint(time: ImportRecordTime): string {
+  return time.kind === 'allDay'
+    ? `allDay:${time.startDate}:${time.endDateExclusive}`
+    : `timed:${time.startsAt}:${time.endsAt}`;
+}
+
+// 앞뒤·겹친 빈칸과 유니코드 조합 차이로 같은 제목이 다른 키가 되지 않게 맞춘다
+function toTitleFingerprint(title: string | null): string {
+  return (title ?? '').normalize('NFC').trim().replaceAll(/\s+/gu, ' ');
 }
 
 // iOS 네이티브는 "cancelled", Android는 "canceled"로 준다(expo-calendar 58.0.8)
@@ -153,9 +160,10 @@ export async function toImportEventRecord({
   hashText: HashText;
 }): Promise<ImportEventRecord> {
   const time = toRecordTime(event, allDayTimezone);
-  // 반복 일정은 회차마다 같은 일정 id를 주므로 회차 시작으로 가른다
+  // 일정·캘린더 id는 기기마다 달라 내용(제목·시작·끝·종일)으로 키를 만든다. 다른 기기·다른 캘린더에서
+  // 같은 일정을 다시 가져와도 한 번만 들어오고, 반복 일정의 회차는 시작이 달라 따로 들어온다
   const occurrenceKey = await hashText(
-    `${event.calendarId}:${event.id}:${getOccurrenceStart(time)}`,
+    `${toTitleFingerprint(event.title)}\n${toTimeFingerprint(time)}`,
   );
 
   return {

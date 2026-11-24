@@ -25,6 +25,7 @@ export interface ImportCollectionRecord {
 
 export interface ImportEventRecord {
   collectionKey: string;
+  // 제목·시작·끝·종일의 sha256 hex다. 기기·캘린더가 달라도 같은 일정이면 같다
   occurrenceKey: string;
   title: string | null;
   time: ImportRecordTime;
