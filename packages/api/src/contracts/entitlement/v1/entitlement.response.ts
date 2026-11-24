@@ -39,7 +39,7 @@ export const featureQuotaSchema = z
     }),
     limit: z.int().nonnegative().nullable().meta({
       description:
-        "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다.",
+        "서버가 실제로 막는 한도입니다. 프리미엄의 넉넉한 한도도 숫자로 오고(isFairUse=true), null은 flag나 상한 없는 기능처럼 정말 무제한일 때만입니다. 기간 기능(horizon)은 오늘부터 며칠 뒤까지 쓸 수 있는지(일)이고 used·remaining·period는 null입니다.",
     }),
     used: z.int().nonnegative().nullable().meta({
       description:
@@ -97,16 +97,18 @@ const featureQuotasShape = {
   CUSTOM_REMINDER_TIME: featureQuotaSchema,
   APP_ICON: featureQuotaSchema,
   VOICE_NOTE: featureQuotaSchema,
+  CALENDAR_IMPORT: featureQuotaSchema,
 } satisfies Record<PlanFeature, typeof featureQuotaSchema>;
 
 const planFeatureLimitSchema = z
   .object({
     allowed: z.boolean().meta({
-      description: "이 요금제에서 쓸 수 있는지. flag 기능은 켜짐, 횟수·개수는 한도가 0보다 큰지",
+      description:
+        "이 요금제에서 쓸 수 있는지. flag 기능은 켜짐, 횟수·개수·기간은 한도가 0보다 큰지",
     }),
     limit: z.int().nonnegative().nullable().meta({
       description:
-        "이 요금제의 집행 한도. featureQuota.limit과 같은 뜻이고 받은 자리는 더하지 않는다",
+        "이 요금제의 집행 한도. featureQuota.limit과 같은 뜻이고(기간 기능은 며칠 뒤까지인지) 받은 자리는 더하지 않는다",
     }),
     isFairUse: z.boolean().meta({
       description: "무제한으로 보이는 요금제의 공정 사용 한도인지. true면 '넉넉하게(월 N회까지)'다",
@@ -136,6 +138,7 @@ const planComparisonsShape = {
   CUSTOM_REMINDER_TIME: planComparisonSchema,
   APP_ICON: planComparisonSchema,
   VOICE_NOTE: planComparisonSchema,
+  CALENDAR_IMPORT: planComparisonSchema,
 } satisfies Record<PlanFeature, typeof planComparisonSchema>;
 
 export const entitlementSnapshotSchema = z
