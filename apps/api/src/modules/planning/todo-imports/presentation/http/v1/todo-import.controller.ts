@@ -1,5 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
-import { PLAN_CATALOG, TODO_IMPORT_LIMITS } from "@aido/api/vocabulary";
+import { TODO_IMPORT_LIMITS } from "@aido/api/vocabulary";
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
@@ -79,6 +79,7 @@ export class TodoImportController {
   }
 
   @Post()
+  @HttpCode(HttpStatus.CREATED)
   @RateLimit(TodoImportRateLimits.start)
   @ApiIdempotencyKeyHeader()
   @ApiDoc({
@@ -87,13 +88,16 @@ export class TodoImportController {
     description: `가져올 기간·대상 카테고리·캘린더를 정하고 업로드를 엽니다. 날짜·시각은 \`X-Timezone\`(없으면 저장된 시간대, 그것도 없으면 Asia/Seoul) 하나로 해석하고 응답 \`todoImport.timezone\`으로 돌려줍니다. 이어 보내기와 할 일 만들기는 모두 이 시간대를 씁니다.
 
 ## 🚫 기간
-오늘부터 무료 ${PLAN_CATALOG.CALENDAR_IMPORT.free}일, 프리미엄 ${PLAN_CATALOG.CALENDAR_IMPORT.premium}일까지입니다. 넘으면 TODO_IMPORT_2302(\`featureQuota\`)입니다.
+오늘부터 요금제 일 수까지입니다(\`GET /v1/entitlements\`의 \`CALENDAR_IMPORT.limit\`). 넘으면 TODO_IMPORT_2302(\`featureQuota\`)입니다.
 
 ## 🔁 재시도
-같은 \`Idempotency-Key\`로 같은 본문을 다시 보내면 처음 가져오기를 돌려주고, 본문이 다르면 TODO_IMPORT_2307입니다.`,
+같은 \`Idempotency-Key\`로 같은 본문을 다시 보내면 처음 가져오기를 돌려주고, 본문이 다르면 TODO_IMPORT_2307입니다. 키가 없으면 AI_1316입니다.
+
+## ⏱ 요청 한도
+분당 ${TodoImportRateLimits.start.limitPerMinute}회, 하루 ${TodoImportRateLimits.start.limitPerDay}회.`,
   })
   @ApiCreatedSuccessResponse({ type: TodoImportResponseDto })
-  @ApiBadRequestError(ErrorCode.TODO_IMPORT_2306)
+  @ApiErrorCodesResponse(HttpStatus.BAD_REQUEST, [ErrorCode.TODO_IMPORT_2306, ErrorCode.AI_1316])
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiErrorCodesResponse(HttpStatus.FORBIDDEN, [
     ErrorCode.TODO_IMPORT_2302,
@@ -117,6 +121,7 @@ export class TodoImportController {
   }
 
   @Get("active")
+  @HttpCode(HttpStatus.OK)
   @RateLimit(TodoImportRateLimits.findActive)
   @ApiDoc({
     summary: "진행 중 가져오기",
@@ -137,7 +142,7 @@ export class TodoImportController {
   @ApiDoc({
     summary: "가져올 일정 올리기",
     operationId: "receiveTodoImportItems",
-    description: `일정을 ${TODO_IMPORT_LIMITS.MAX_ITEMS_PER_CHUNK}개까지 한 묶음으로 올립니다. 이미 받은 \`sourceKey\`는 무시하므로 끊긴 업로드를 처음부터 다시 보내도 됩니다. 가져오기 하나에 ${TODO_IMPORT_LIMITS.MAX_ITEMS_PER_IMPORT}개를 넘으면 TODO_IMPORT_2309입니다.`,
+    description: `일정을 ${TODO_IMPORT_LIMITS.MAX_ITEMS_PER_CHUNK}개까지 한 묶음으로 올립니다. 이미 받은 \`sourceKey\`는 무시하므로 끊긴 업로드를 처음부터 다시 보내도 됩니다. 가져오기 하나에 ${TODO_IMPORT_LIMITS.MAX_ITEMS_PER_IMPORT}개를 넘으면 TODO_IMPORT_2309입니다. 분당 ${TodoImportRateLimits.receiveItems.limitPerMinute}회.`,
   })
   @ApiSuccessResponse({ type: ReceiveTodoImportItemsResponseDto })
   @ApiBadRequestError(ErrorCode.TODO_IMPORT_2306)
@@ -190,6 +195,7 @@ export class TodoImportController {
   }
 
   @Get(":importId")
+  @HttpCode(HttpStatus.OK)
   @RateLimit(TodoImportRateLimits.get)
   @ApiDoc({
     summary: "가져오기 진행·결과",
@@ -239,7 +245,7 @@ export class TodoImportController {
   @ApiDoc({
     summary: "가져오기 되돌리기",
     operationId: "undoTodoImport",
-    description: `완료 뒤 ${TODO_IMPORT_LIMITS.UNDO_WINDOW_DAYS}일 안에 가져온 할 일 중 완료하지 않은 것을 서버 작업이 지웁니다. 완료한 할 일과 새로 만든 카테고리는 남깁니다.`,
+    description: `완료 뒤 ${TODO_IMPORT_LIMITS.UNDO_WINDOW_DAYS}일 안에 가져온 할 일 중 완료하지 않은 것을 서버 작업이 지웁니다. 완료한 할 일과 새로 만든 카테고리는 남깁니다. 분당 ${TodoImportRateLimits.requestUndo.limitPerMinute}회, 하루 ${TodoImportRateLimits.requestUndo.limitPerDay}회.`,
   })
   @ApiSuccessResponse({ type: TodoImportResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)

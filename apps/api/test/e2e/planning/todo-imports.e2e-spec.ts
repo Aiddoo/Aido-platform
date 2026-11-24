@@ -9,6 +9,7 @@ import { IDEMPOTENCY_KEY_HEADER, PLAN_CATALOG, TODO_IMPORT_LIMITS } from "@aido/
 import request from "supertest";
 
 import { TODO_IMPORT_MATERIALIZATION_QUEUE } from "#api/modules/planning/todo-imports/infrastructure/jobs/todo-import-materialization.queue";
+import { TODO_IMPORT_UNDO_QUEUE } from "#api/modules/planning/todo-imports/infrastructure/jobs/todo-import-undo.queue";
 import { JobQueuePort } from "#api/shared/application/ports/job-queue.port";
 import { localDateIn } from "#api/shared/domain/time/timezone-name";
 import type { InMemoryJobQueue } from "#test/doubles/platform/in-memory-job-queue";
@@ -18,6 +19,8 @@ import {
   type E2eTestContext,
 } from "#test/e2e/helpers/e2e-app-factory";
 import { nowInstant } from "#test/fixtures/platform/clock.fixture";
+import { createTestClient } from "#test/setup/database-context";
+import { TestDatabase } from "#test/setup/test-database";
 
 const TIMEZONE = "Asia/Seoul";
 const PASSWORD = "Test1234!";
@@ -31,6 +34,10 @@ function today(): Temporal.PlainDate {
   return localDateIn(nowInstant(), TIMEZONE);
 }
 
+function tomorrow(): string {
+  return today().add({ days: 1 }).toString();
+}
+
 interface StartOptions {
   readonly idempotencyKey?: string;
   readonly days?: number;
@@ -41,9 +48,18 @@ interface StartOptions {
 
 describe("캘린더 가져오기 E2E", () => {
   let testContext: E2eTestContext;
+  // 앱이 Drizzle로 보낸 SQL(트랜잭션 안 pg-boss enqueue 포함). 묶음당 문장 수를 잰다
+  const statements: string[] = [];
 
   beforeAll(async () => {
-    testContext = await createE2eApp();
+    const testDatabase = new TestDatabase({
+      createClient: (connectionUri) =>
+        createTestClient(connectionUri, {}, (statement) => {
+          statements.push(statement);
+        }),
+    });
+    await testDatabase.start();
+    testContext = await createE2eApp({ testDatabase });
   }, 60_000);
 
   afterAll(async () => {
@@ -235,6 +251,121 @@ describe("캘린더 가져오기 E2E", () => {
       code: "TODO_IMPORT_2305",
       details: { status: "QUEUED" },
     });
+  });
+
+  async function importedTodosOf(accessToken: string, count: number, idempotencyKey = "import-1") {
+    const { categoryId } = await userCategory(accessToken);
+    const started = await start(accessToken, categoryId, {
+      expectedItemCount: count,
+      idempotencyKey,
+    }).expect(201);
+    const importId: string = started.body.data.todoImport.id;
+    const seeds = Array.from({ length: count }, (_, index) => `event-${index}`);
+    await upload(accessToken, importId, itemsOf(seeds, 1)).expect(200);
+    await commit(accessToken, importId).expect(200);
+    return importId;
+  }
+
+  async function userCategory(accessToken: string) {
+    return { categoryId: await testContext.helpers.getDefaultCategoryId(accessToken) };
+  }
+
+  function getImport(accessToken: string, importId: string) {
+    return http()
+      .get(`/v1/todo-imports/${importId}`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .expect(200);
+  }
+
+  it("확정 뒤 작업이 할 일을 만들면 COMPLETED와 서버가 정한 되돌리기 마감을 준다", async () => {
+    // Given
+    const { accessToken } = await userWithCategory("import-complete@test.com");
+    const importId = await importedTodosOf(accessToken, 3);
+
+    // When
+    await jobQueue().drain(TODO_IMPORT_MATERIALIZATION_QUEUE);
+    const found = todoImportResponseSchema.parse(
+      (await getImport(accessToken, importId)).body.data,
+    );
+    const todos = await http()
+      .get("/v1/todos")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .set("X-Timezone", TIMEZONE)
+      .query({ startDate: tomorrow(), endDate: tomorrow() })
+      .expect(200);
+
+    // Then
+    expect(found.todoImport).toMatchObject({
+      status: "COMPLETED",
+      processedItemCount: 3,
+      counts: { created: 3, skippedDuplicate: 0 },
+      firstDate: tomorrow(),
+    });
+    expect(found.todoImport.undoableUntil).not.toBeNull();
+    expect(JSON.stringify(todos.body.data)).toContain("일정 event-0");
+  });
+
+  it("같은 일정을 다시 가져오면 이미 있음으로 건너뛴다", async () => {
+    // Given
+    const { accessToken } = await userWithCategory("import-again@test.com");
+    await importedTodosOf(accessToken, 2);
+    await jobQueue().drain(TODO_IMPORT_MATERIALIZATION_QUEUE);
+
+    // When
+    const second = await importedTodosOf(accessToken, 2, "import-2");
+    await jobQueue().drain(TODO_IMPORT_MATERIALIZATION_QUEUE);
+
+    // Then
+    const found = (await getImport(accessToken, second)).body.data.todoImport;
+    expect(found.counts).toMatchObject({ created: 0, skippedDuplicate: 2 });
+  });
+
+  it("되돌리면 완료하지 않은 할 일만 지우고 완료한 수를 남긴다", async () => {
+    // Given
+    const { accessToken } = await userWithCategory("import-undo@test.com");
+    const importId = await importedTodosOf(accessToken, 3);
+    await jobQueue().drain(TODO_IMPORT_MATERIALIZATION_QUEUE);
+    const listed = await http()
+      .get("/v1/todos")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .set("X-Timezone", TIMEZONE)
+      .query({ startDate: tomorrow(), endDate: tomorrow() })
+      .expect(200);
+    const [completedTodo] = listed.body.data.items;
+    await http()
+      .patch(`/v1/todos/${completedTodo.id}/complete`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .set("X-Timezone", TIMEZONE)
+      .send({ completed: true })
+      .expect(200);
+
+    // When
+    const requested = await http()
+      .post(`/v1/todo-imports/${importId}/undo`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .expect(200);
+    await jobQueue().drain(TODO_IMPORT_UNDO_QUEUE);
+    const found = (await getImport(accessToken, importId)).body.data.todoImport;
+
+    // Then
+    expect(requested.body.data.todoImport.status).toBe("UNDOING");
+    expect(found).toMatchObject({ status: "UNDONE", undoableUntil: null });
+    expect(found.counts.undone + found.counts.keptCompleted).toBe(3);
+  });
+
+  it("할 일 100개 묶음 하나를 만드는 데 드는 SQL 문장 수를 잰다", async () => {
+    // Given
+    const { accessToken } = await userWithCategory("import-statements@test.com");
+    await importedTodosOf(accessToken, 100);
+    statements.length = 0;
+
+    // When
+    await jobQueue().drain(TODO_IMPORT_MATERIALIZATION_QUEUE);
+
+    // Then
+    // 가져오기 읽기 1 + 묶음 트랜잭션 하나(begin·statement_timeout·잠금 2·읽기 5·할 일 쓰기 4·링크·항목·저장·commit).
+    // 메모리 큐라 알림·이벤트 enqueue는 빠졌고 pg-boss에서는 같은 트랜잭션의 insert가 더해진다
+    expect(statements.length).toBeLessThanOrEqual(20);
   });
 
   it("업로드 중 취소하면 진행 중 가져오기가 없어진다", async () => {
