@@ -16,6 +16,7 @@ const TODO_IMPORT: z.input<typeof todoImportDtoSchema> = {
   id: IMPORT_ID,
   source: 'DEVICE_CALENDAR',
   status: 'UPLOADING',
+  failureReason: null,
   startDate: '2026-11-24',
   endDate: '2026-12-23',
   timezone: 'Asia/Seoul',

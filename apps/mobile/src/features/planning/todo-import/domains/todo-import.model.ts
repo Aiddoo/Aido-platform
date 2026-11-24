@@ -1,4 +1,5 @@
 import {
+  TODO_IMPORT_SOURCE_UNKNOWN,
   TODO_IMPORT_SOURCES,
   TODO_IMPORT_STATUSES,
   TODO_IMPORT_TIME_MODES,
@@ -15,7 +16,7 @@ const countSchema = z.int().nonnegative();
 /** 서버가 처리하는 가져오기 한 건. 상태·수·되돌리기 기한은 서버가 정하고 앱은 읽기만 한다 */
 export const todoImportSchema = z.object({
   id: z.string(),
-  source: z.enum(TODO_IMPORT_SOURCES),
+  source: z.enum([...TODO_IMPORT_SOURCES, TODO_IMPORT_SOURCE_UNKNOWN]),
   status: z.enum(TODO_IMPORT_STATUSES),
   startDate: dateKeySchema,
   endDate: dateKeySchema,
