@@ -149,6 +149,7 @@ JS만 바뀐 핫픽스는 OTA로 낸다. runtime이 fingerprint라 운영 빌드
 - 머지된 `main`의 독립 clone(위 1단계)에서 `eas.json`의 `node` 버전으로 `eas fingerprint:generate --environment production`이 운영 빌드와 같은지 먼저 본다. 운영 runtime은 `eas update:list --branch production`에서 그 스토어 버전으로 낸 OTA의 runtime이다(로컬 빌드는 `eas build:list`에 없다). `main`에 네이티브 변경이 함께 들어가 다르면 마지막 JS 커밋(stack의 네이티브 층 바로 아래)에서 같은 절차로 낸다. 작업 중인 checkout은 git 제외 파일 때문에 값이 달라 OTA가 아무에게도 가지 않는다.
 - `pnpm update:production --message "메시지"`로 보낸다. `--environment production`이 빠지면 `extra`(API·Sentry·RevenueCat·카카오 키)가 비어 결제가 깨진다.
 - 보낸 뒤 출력의 runtime이 운영과 같은지, `loaded from the "production" environment` 줄에 API·Sentry·RevenueCat·카카오 키 이름이 있는지 확인한다. 소스맵은 `eas env:exec production 'node_modules/.bin/sentry-expo-upload-sourcemaps dist'`로 올린다. OTA는 다음 콜드 스타트에 적용된다.
+- 네이티브 모듈·config plugin을 더한 버전은 fingerprint가 바뀌어 OTA로 낼 수 없고 스토어 빌드로 낸다. 1.17.0은 `expo-calendar`(캘린더 읽기 권한)를 더한다.
 
 ## 스토어 제출
 
@@ -157,7 +158,7 @@ JS만 바뀐 핫픽스는 OTA로 낸다. runtime이 fingerprint라 운영 빌드
 - 스토어 문구·스크린샷 순서·체크리스트의 준비본은 `store-metadata/{버전}/release.json`이고 변경해도 외부 스토어에 자동 게시되지 않는다. 한·영 등록 정보는 `store-metadata/listing/`에 있고 `pnpm store:check`로 검사한다(`store:export`, `store:art`, `store:screens`).
 - 출시 노트는 스토어마다 따로 쓴다. App Store는 4,000자라 기능 이름과 이유를 풀어 쓰고(접근성은 VoiceOver), Google Play는 500자(공백·줄바꿈 포함)라 짧게 쓴다(접근성은 TalkBack). 절은 `새로운 기능`·`개선`·`버그 수정`(en `New`·`Improvements`·`Bug fixes`) 순서로 필요한 것만 두고 그 아래 `- ` 목록으로 쓴다. `release.json`의 `patchNotes.appStore`·`patchNotes.googlePlay`가 각 목록을 같은 순서로 담고 `store:check`가 확인한다. 영어(영국)처럼 같은 언어라도 표기(따옴표·쉼표)가 다른 로캘은 `listing/app-store/en-GB/release_notes.txt`와 `patchNotes.appStore["en-GB"]`를 따로 둔다. 개발 용어 대신 사용자가 얻는 것을 해요체로 쓰고, 프리미엄 기능은 `(프리미엄)`으로 밝힌다. Play 출시 노트는 홍보·행동 유도에 쓰지 않고, 이모지는 넣지 않는다(App Store Connect가 일부 문자를 거절한다).
 - API URL이 프로덕션 서버인지, 버전 번호(`app.config.ts`), 앱 아이콘·스플래시를 제출 전에 확인한다.
-- **Android 데이터 보안**: 앱은 대략적 위치만 받는다(`app.config.ts`의 `blockedPermissions`가 `ACCESS_FINE_LOCATION`을 뺀다). 제출 전에 데이터 보안 신고(위치·음성 녹음·사용자 콘텐츠)를 코드의 실제 전송 경로와 대조한다. 정확한 위치가 필요한 기능은 Play 권한 신고부터 검토한다.
+- **Android 데이터 보안**: 앱은 대략적 위치만 받고 캘린더는 읽기만 한다(`app.config.ts`의 `blockedPermissions`가 `ACCESS_FINE_LOCATION`·`WRITE_CALENDAR`를 뺀다). 제출 전에 데이터 보안 신고(위치·음성 녹음·사용자 콘텐츠)를 코드의 실제 전송 경로와 대조한다. 정확한 위치가 필요한 기능은 Play 권한 신고부터 검토한다.
 
 ## Play Console: Android 15 edge-to-edge deprecated API 경고
 

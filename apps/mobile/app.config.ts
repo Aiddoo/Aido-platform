@@ -278,7 +278,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             ]
           : []),
       ],
-      permissions: ['RECORD_AUDIO', 'VIBRATE', 'RECEIVE_BOOT_COMPLETED', 'POST_NOTIFICATIONS'],
+      permissions: [
+        'RECORD_AUDIO',
+        'VIBRATE',
+        'RECEIVE_BOOT_COMPLETED',
+        'POST_NOTIFICATIONS',
+        'READ_CALENDAR',
+      ],
       // 광고 SDK가 없어 광고 ID를 쓰지 않는다. Firebase Analytics(play-services-measurement-api)가
       // 병합하는 광고 ID 권한을 빼서 Play Console 광고 ID 신고를 "아니요"로 유지한다.
       blockedPermissions: [
@@ -297,6 +303,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         // expo-location이 더한다. 날씨는 약 5km 격자라 대략적 위치(COARSE)로 충분하다. Play는 정확한 위치에
         // 데이터 보안 신고와 별도 권한 신고(2027-01-27 의무)를 요구하므로 대략적 위치만 받는다.
         'android.permission.ACCESS_FINE_LOCATION',
+        // expo-calendar가 더한다. 캘린더 가져오기는 일정을 읽기만 한다.
+        'android.permission.WRITE_CALENDAR',
         // 기본 템플릿이 넣는다. 개발 메뉴(expo-dev-menu debug)만 쓰므로 개발 빌드에는 남긴다.
         ...(isDevelopment ? [] : ['android.permission.SYSTEM_ALERT_WINDOW']),
       ],
@@ -422,6 +430,16 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           locationAlwaysPermission: false,
           isIosBackgroundLocationEnabled: false,
           isAndroidBackgroundLocationEnabled: false,
+        },
+      ],
+
+      [
+        'expo-calendar',
+        {
+          // 언어별 문구는 native-locales/{ko,en}.json이 덮어쓴다. 기본값은 ko.json을 그대로 쓴다.
+          calendarPermission: koNativeLocale.ios.NSCalendarsFullAccessUsageDescription,
+          // 일정을 읽기만 해 미리 알림 권한을 넣지 않는다.
+          remindersPermission: false,
         },
       ],
 

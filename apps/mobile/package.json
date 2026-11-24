@@ -69,6 +69,7 @@
     "expo-auth-session": "catalog:expo58",
     "expo-blur": "catalog:expo58",
     "expo-build-properties": "catalog:expo58",
+    "expo-calendar": "catalog:expo58",
     "expo-clipboard": "catalog:expo58",
     "expo-constants": "catalog:expo58",
     "expo-crypto": "catalog:expo58",

@@ -5,6 +5,8 @@
     "NSPhotoLibraryUsageDescription": "공유하거나 저장할 이미지를 다룰 때 사진 보관함을 써요.",
     "NSPhotoLibraryAddUsageDescription": "공유한 이미지를 사진 보관함에 저장할 때 써요.",
     "NSLocationWhenInUseUsageDescription": "현재 위치의 날씨를 보여주고 날씨 알림을 보낼 때 위치를 써요.",
+    "NSCalendarsFullAccessUsageDescription": "고른 캘린더의 일정 제목·날짜·시간을 읽어 할 일로 만들어요. 캘린더는 바꾸지 않아요.",
+    "NSCalendarsUsageDescription": "고른 캘린더의 일정 제목·날짜·시간을 읽어 할 일로 만들어요. 캘린더는 바꾸지 않아요.",
     "Localizable.strings": {
       "오늘 할 일": "오늘 할 일",
       "오늘의 할 일과 체크 여부를 홈 화면에서 바로 확인해요": "오늘의 할 일과 체크 여부를 홈 화면에서 바로 확인해요",
