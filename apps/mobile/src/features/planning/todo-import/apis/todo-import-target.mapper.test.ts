@@ -2,12 +2,9 @@ import { CATEGORY_COLORS } from '@src/features/planning/category/constants/todo-
 import { dateKeySchema } from '@src/shared/date/date-key';
 
 import { createImportCollection } from '../__tests__/todo-import.fixtures';
-import type { ImportCollection } from '../domains/todo-import-collection.model';
-import type { ImportTarget } from '../domains/todo-import-target.model';
 import type { TodoImportFormValues } from '../schemas/todo-import-form.schema';
 import {
   findNearestPaletteColor,
-  resolveImportTargets,
   toNewCategoryName,
   toNewCategoryTarget,
 } from './todo-import-target.mapper';
@@ -27,7 +24,6 @@ const NAMES = {
 } as const;
 
 const DEFAULT_TARGET = { kind: 'EXISTING_CATEGORY', categoryId: 3 } as const;
-const WORK_TARGET = { kind: 'EXISTING_CATEGORY', categoryId: 7 } as const;
 const SCHOOL_TARGET = { kind: 'NEW_CATEGORY', name: '학교', color: '#339AF0' } as const;
 
 function createFormValues(overrides: Partial<TodoImportFormValues> = {}): TodoImportFormValues {
@@ -106,73 +102,6 @@ describe('toNewCategoryTarget', () => {
 
     // Then
     expect(name).toBe('가'.repeat(49));
-  });
-});
-
-describe('resolveImportTargets', () => {
-  const school = createImportCollection({ collectionKey: 'school' });
-  const work = createImportCollection({ collectionKey: 'work' });
-
-  it.each<{
-    scenario: string;
-    collections: ImportCollection[];
-    choice: Parameters<typeof resolveImportTargets>[1];
-    expected: Record<string, ImportTarget>;
-  }>([
-    {
-      scenario: '처음에는 모두 새 할 일의 기본 카테고리에 넣는다',
-      collections: [school, work],
-      choice: { categoryMode: 'single', singleTarget: null, targets: {} },
-      expected: { school: DEFAULT_TARGET, work: DEFAULT_TARGET },
-    },
-    {
-      scenario: '한 곳에 넣으면 캘린더마다 골라 둔 곳이 있어도 모두 그곳이다',
-      collections: [school, work],
-      choice: {
-        categoryMode: 'single',
-        singleTarget: WORK_TARGET,
-        targets: { school: SCHOOL_TARGET },
-      },
-      expected: { school: WORK_TARGET, work: WORK_TARGET },
-    },
-    {
-      scenario: '캘린더마다 넣어도 고르지 않은 캘린더는 모두 넣을 곳이다',
-      collections: [school, work],
-      choice: {
-        categoryMode: 'separate',
-        singleTarget: WORK_TARGET,
-        targets: { school: SCHOOL_TARGET },
-      },
-      expected: { school: SCHOOL_TARGET, work: WORK_TARGET },
-    },
-    {
-      scenario: '캘린더가 하나면 나눠 넣기를 골랐어도 모두 넣을 곳이다',
-      collections: [school],
-      choice: {
-        categoryMode: 'separate',
-        singleTarget: WORK_TARGET,
-        targets: { school: SCHOOL_TARGET },
-      },
-      expected: { school: WORK_TARGET },
-    },
-  ])('$scenario', ({ collections, choice, expected }) => {
-    // When
-    const targets = resolveImportTargets(collections, choice, DEFAULT_TARGET);
-
-    // Then
-    expect(targets).toEqual(expected);
-  });
-
-  it('넣을 곳이 하나도 없으면 캘린더를 뺀다', () => {
-    // When
-    const targets = resolveImportTargets(
-      [school],
-      { categoryMode: 'single', singleTarget: null, targets: {} },
-      null,
-    );
-
-    // Then
-    expect(targets).toEqual({});
   });
 });
 

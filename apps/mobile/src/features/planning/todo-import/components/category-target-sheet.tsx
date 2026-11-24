@@ -1,11 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
-import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import { CategoryFormFields } from '@src/features/planning/category/components/category-form-fields';
 import { CATEGORY_COLORS } from '@src/features/planning/category/constants/todo-category.constants';
 import {
-  type TodoCategoryWithCount,
+  type TodoCategory,
   TodoCategoryPolicy,
 } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
@@ -14,7 +13,6 @@ import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
   BottomSheet,
-  Box,
   Button,
   H4,
   HStack,
@@ -41,10 +39,14 @@ import {
   type ImportCollection,
   TodoImportCollectionPolicy,
 } from '../domains/todo-import-collection.model';
-import { type ImportTarget, TodoImportTargetPolicy } from '../domains/todo-import-target.model';
+import {
+  countNewCategories,
+  type ImportTarget,
+  TodoImportTargetPolicy,
+} from '../domains/todo-import-target.model';
 import { useNewCategoryNames } from '../hooks/use-new-category-names';
-import { filterCategoriesByName } from '../utils/todo-import.view-model';
 import { CalendarSourceBadge } from './calendar-source-badge';
+import { ColorDot } from './color-dot';
 
 /** 무엇을 넣는지. 캘린더 하나, 또는 고른 캘린더 모두다 */
 type CategoryTargetSubject =
@@ -62,6 +64,8 @@ interface CategoryTargetSheetProps {
   /** 다른 캘린더가 가리키는 곳. 새 카테고리를 더 만들 수 있는지 셀 때 함께 센다 */
   otherTargets: readonly ImportTarget[];
   onChoose: (target: ImportTarget) => void;
+  /** 새 카테고리를 더 만들 수 없는데 눌렀다. 이 시트를 먼저 내리고 부른 쪽이 안내를 띄운다 */
+  onLocked: () => void;
 }
 
 type SheetView = 'pick' | 'create';
@@ -83,13 +87,13 @@ export function CategoryTargetSheet({
   current,
   otherTargets,
   onChoose,
+  onLocked,
 }: CategoryTargetSheetProps) {
   const { t } = useTranslation(['todoImport', 'common']);
   const [{ data: categoriesResult }, { data: snapshot }] = useSuspenseQueries({
     queries: [useGetTodoCategoriesQueryOptions(), useGetEntitlementsQueryOptions()],
   });
   const names = useNewCategoryNames();
-  const gate = useEntitlementGate('TODO_CATEGORY', { surface: 'todo_import' });
   const [view, setView] = useState<SheetView>('pick');
 
   const categories = categoriesResult.categories.filter(
@@ -106,8 +110,7 @@ export function CategoryTargetSheet({
   // 이 대상의 새 카테고리를 더해도 남은 자리 안이어야 한다. 이름이 같은 새 카테고리는 하나로 센다
   const canCreateCategory =
     remainingCategorySlots == null ||
-    TodoImportTargetPolicy.countNewCategories([...otherTargets, newCategory]) <=
-      remainingCategorySlots;
+    countNewCategories([...otherTargets, newCategory]) <= remainingCategorySlots;
   const freeCategoryLimit = EntitlementPolicy.hasFullAccess(snapshot)
     ? null
     : EntitlementPolicy.findLimit(snapshot, 'TODO_CATEGORY');
@@ -167,8 +170,7 @@ export function CategoryTargetSheet({
               freeCategoryLimit={freeCategoryLimit}
               onChooseExisting={(categoryId) => choose({ kind: 'EXISTING_CATEGORY', categoryId })}
               onCreate={() => setView('create')}
-              // 안내 시트는 이 시트 위에 겹쳐 뜬다. 프리미엄을 보러 가면 이 시트도 닫는다
-              onLocked={() => gate.promptLimit({ onSubscribe: close })}
+              onLocked={onLocked}
             />
           </VStack>
         ))
@@ -199,7 +201,7 @@ CategoryTargetSheet.Title = function Title({ subject }: { subject: CategoryTarge
         .with({ kind: 'calendar' }, ({ collection }) => (
           <HStack align="center" gap={6}>
             <CalendarSourceBadge provider={collection.accountProvider} />
-            <Text size="b3" shade={6} numberOfLines={2} className="shrink">
+            <Text size="b3" shade={6} numberOfLines={2} className="shrink tabular-nums">
               {t('categories.sheet.calendar', {
                 name: collection.title,
                 count: collection.itemCount,
@@ -221,26 +223,33 @@ CategoryTargetSheet.Title = function Title({ subject }: { subject: CategoryTarge
 };
 
 interface ChoicesProps {
-  categories: readonly TodoCategoryWithCount[];
+  categories: readonly TodoCategory[];
   current: ImportTarget;
   onChoose: (target: ImportTarget) => void;
 }
 
 /**
  * 내 아이두 카테고리 라디오 목록. 고른 줄은 지금 넣을 곳 그대로이고, 새로 만들 카테고리면 맨 위에 둔다.
- * 남은 자리가 없는 카테고리는 고를 수 없다
+ * 남은 자리는 고른 뒤 넣을 곳 카드가 서버 값으로 알린다. 줄마다 묻지 않는다
  */
 CategoryTargetSheet.Choices = function Choices({ categories, current, onChoose }: ChoicesProps) {
   const { t } = useTranslation('todoImport');
   const [query, setQuery] = useState('');
 
-  const visibleCategories = filterCategoriesByName(categories, query);
+  const visibleCategories = categories.filter((category) =>
+    TodoCategoryPolicy.filterByName(category, query),
+  );
   const currentValue = match(current)
     .with({ kind: 'NEW_CATEGORY' }, () => NEW_CATEGORY_VALUE)
     .with({ kind: 'EXISTING_CATEGORY' }, ({ categoryId }) => String(categoryId))
     .exhaustive();
 
+  // 고른 줄을 다시 눌러도 고른 것으로 보고 시트를 닫는다
   const handleValueChange = (value: string) => {
+    if (value === currentValue) {
+      onChoose(current);
+      return;
+    }
     const category = categories.find(({ id }) => String(id) === value);
     if (category != null) {
       onChoose({ kind: 'EXISTING_CATEGORY', categoryId: category.id });
@@ -274,30 +283,16 @@ CategoryTargetSheet.Choices = function Choices({ categories, current, onChoose }
               icon={<ColorDot color={current.color} />}
             />
           )}
-          {visibleCategories.map((category, index) => {
-            const roomLeft = TodoImportTargetPolicy.calculateRoomLeft(
-              { kind: 'EXISTING_CATEGORY', categoryId: category.id },
-              categories,
-            );
-            return (
-              <Fragment key={category.id}>
-                {(index > 0 || current.kind === 'NEW_CATEGORY') && <SettingsListGroup.Separator />}
-                <SettingsListGroup.Radio
-                  value={String(category.id)}
-                  label={category.name}
-                  icon={<ColorDot color={category.color} />}
-                  isDisabled={roomLeft === 0 && String(category.id) !== currentValue}
-                  badge={
-                    <Text size="b4" shade={6} numberOfLines={1} className="tabular-nums">
-                      {roomLeft === 0
-                        ? t('categories.full')
-                        : t('categories.sheet.roomLeft', { count: roomLeft })}
-                    </Text>
-                  }
-                />
-              </Fragment>
-            );
-          })}
+          {visibleCategories.map((category, index) => (
+            <Fragment key={category.id}>
+              {(index > 0 || current.kind === 'NEW_CATEGORY') && <SettingsListGroup.Separator />}
+              <SettingsListGroup.Radio
+                value={String(category.id)}
+                label={category.name}
+                icon={<ColorDot color={category.color} />}
+              />
+            </Fragment>
+          ))}
         </RadioGroup>
         {visibleCategories.length === 0 && (
           <SettingsListGroup.Custom>
@@ -394,7 +389,3 @@ CategoryTargetSheet.Error = function ErrorFallback({ isOpen, onOpenChange, reset
     </BottomSheet>
   );
 };
-
-function ColorDot({ color }: { color: string }) {
-  return <Box className="size-2.5 rounded-full" style={{ backgroundColor: color }} />;
-}

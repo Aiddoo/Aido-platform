@@ -3,10 +3,8 @@ import type { OsPermission } from '@src/core/ports/os-permission';
 import { createImportCollection } from '../__tests__/todo-import.fixtures';
 import {
   getCalendarPermissionView,
-  filterCategoriesByName,
   groupCollectionsByAccount,
   groupCollectionsBySource,
-  keepBlockedCalendarPermission,
   toUnbreakableLabel,
 } from './todo-import.view-model';
 
@@ -34,32 +32,6 @@ describe('getCalendarPermissionView', () => {
 
     // Then
     expect(view).toBe(expected);
-  });
-});
-
-describe('keepBlockedCalendarPermission', () => {
-  it('다시 묻지 않음 답을 받은 뒤 Android가 묻기 전으로 읽어도 다시 묻지 않음을 남긴다', () => {
-    // When
-    const permission = keepBlockedCalendarPermission(BLOCKED, UNDETERMINED);
-
-    // Then
-    expect(permission).toEqual(BLOCKED);
-  });
-
-  it('설정에서 허용하고 돌아오면 허용으로 바꾼다', () => {
-    // When
-    const permission = keepBlockedCalendarPermission(BLOCKED, GRANTED);
-
-    // Then
-    expect(permission).toEqual(GRANTED);
-  });
-
-  it('다시 물을 수 있던 답은 새로 읽은 값을 따른다', () => {
-    // When
-    const permission = keepBlockedCalendarPermission(DENIED, UNDETERMINED);
-
-    // Then
-    expect(permission).toEqual(UNDETERMINED);
   });
 });
 
@@ -200,23 +172,6 @@ describe('groupCollectionsBySource', () => {
     expect(groups).toEqual([
       expect.objectContaining({ sourceKey: 'subscribed', collections: [holidays, team] }),
     ]);
-  });
-});
-
-describe('filterCategoriesByName', () => {
-  const categories = [{ name: '할 일' }, { name: 'Work' }, { name: '업무 일지' }];
-
-  it.each([
-    ['비어 있으면 모두 남긴다', '  ', ['할 일', 'Work', '업무 일지']],
-    ['대소문자를 가리지 않는다', 'work', ['Work']],
-    ['이름 가운데 들어 있어도 찾는다', '일', ['할 일', '업무 일지']],
-    ['없으면 비어 있다', '공부', []],
-  ])('%s', (_case, query, expected) => {
-    // When
-    const filtered = filterCategoriesByName(categories, query);
-
-    // Then
-    expect(filtered.map(({ name }) => name)).toEqual(expected);
   });
 });
 

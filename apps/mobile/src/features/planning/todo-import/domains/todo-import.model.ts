@@ -8,7 +8,7 @@ import {
 } from '@aido/api/vocabulary';
 import { addDaysToDateKey, type DateKey, dateKeySchema } from '@src/shared/date/date-key';
 import { hasInstantPassed, type Instant, instantSchema } from '@src/shared/date/instant';
-import { clamp } from 'es-toolkit';
+import { clamp, uniq } from 'es-toolkit';
 import { match, P } from 'ts-pattern';
 import { z } from 'zod';
 
@@ -48,6 +48,14 @@ export const todoImportSchema = z.object({
   completedAt: instantSchema.nullable(),
 });
 export type TodoImport = z.infer<typeof todoImportSchema>;
+
+/** 다시 가져와도 아무것도 만들지 않은 가져오기가 앞의 되돌릴 수 있는 가져오기를 가리지 않을 만큼 남긴다 */
+const MAX_REMEMBERED_IMPORT_COUNT = 3;
+
+/** 최근에 시작한 가져오기 id(새것이 앞). 같은 가져오기는 앞으로 옮기고 오래된 것부터 뺀다 */
+export function rememberTodoImportId(ids: readonly string[], importId: string): string[] {
+  return uniq([importId, ...ids]).slice(0, MAX_REMEMBERED_IMPORT_COUNT);
+}
 
 /** 첫날을 포함해 `days`일째 되는 날 */
 export function getRangeEndDate(startDate: DateKey, days: number): DateKey {

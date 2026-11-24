@@ -6,6 +6,18 @@ import type { QueryClient } from '@tanstack/react-query';
 import { type TodoImport, TodoImportPolicy } from '../domains/todo-import.model';
 import { TODO_IMPORT_QUERY_KEYS } from './todo-import-query-keys';
 
+/**
+ * Android는 묻기 전에는 영구 거절을 알려 주지 않아 읽으면 늘 다시 물을 수 있다고 나온다.
+ * 이번 실행에서 받은 "다시 묻지 않음" 답은 허용되기 전까지 남겨 다시 들어와도 설정 열기를 보인다
+ */
+export function keepBlockedCalendarPermission(
+  previous: OsPermission | undefined,
+  read: OsPermission,
+): OsPermission {
+  const isBlocked = previous?.status === 'denied' && !previous.canAskAgain;
+  return isBlocked && read.status !== 'granted' ? previous : read;
+}
+
 export function getCachedTodoImport(queryClient: QueryClient, importId: string) {
   return queryClient.getQueryData(TODO_IMPORT_QUERY_KEYS.detail({ importId })) ?? null;
 }

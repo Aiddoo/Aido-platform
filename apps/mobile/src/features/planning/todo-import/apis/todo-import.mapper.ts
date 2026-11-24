@@ -12,10 +12,13 @@ import { match } from 'ts-pattern';
 
 import type { ImportItem } from '../domains/todo-import-item.model';
 import type { TodoImportSelection } from '../domains/todo-import-session.model';
-import { type ImportTarget, TodoImportTargetPolicy } from '../domains/todo-import-target.model';
+import {
+  type ImportTarget,
+  resolveImportTargets,
+  TodoImportTargetPolicy,
+} from '../domains/todo-import-target.model';
 import type { TodoImport } from '../domains/todo-import.model';
 import type { TodoImportFormValues } from '../schemas/todo-import-form.schema';
-import { resolveImportTargets } from './todo-import-target.mapper';
 
 export function toTodoImport(dto: TodoImportDto): TodoImport {
   return {

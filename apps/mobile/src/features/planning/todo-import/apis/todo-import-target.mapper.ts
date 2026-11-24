@@ -8,7 +8,6 @@ import {
 } from '../domains/todo-import-collection.model';
 import { truncateGraphemes } from '../domains/todo-import-item.model';
 import type { ImportTarget } from '../domains/todo-import-target.model';
-import type { TodoImportCategoryMode } from '../schemas/todo-import-form.schema';
 
 const HEX_COLOR_PATTERN = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/iu;
 const HEX_RADIX = 16;
@@ -72,40 +71,4 @@ export function toNewCategoryTarget(
     name: collection == null ? names.fallbackName : toNewCategoryName(collection, names),
     color: findNearestPaletteColor(collection?.color ?? null, palette),
   };
-}
-
-/** 캘린더가 하나뿐이면 나눌 것이 없어 한 곳에 넣는 것과 같다 */
-export function resolveCategoryMode(
-  collections: readonly ImportCollection[],
-  categoryMode: TodoImportCategoryMode,
-): TodoImportCategoryMode {
-  return collections.length < 2 ? 'single' : categoryMode;
-}
-
-interface ImportTargetChoice {
-  categoryMode: TodoImportCategoryMode;
-  /** 모두 넣을 곳. null은 아직 고르지 않아 `fallbackTarget`이다 */
-  singleTarget: ImportTarget | null;
-  /** 캘린더마다 고른 곳. 고르지 않은 캘린더는 모두 넣을 곳이다 */
-  targets: Readonly<Record<string, ImportTarget>>;
-}
-
-/**
- * 캘린더마다 넣을 곳. 한 곳에 넣으면 모두 그곳이고, 캘린더마다 넣어도 고르지 않은 캘린더는 그곳이다.
- * 캘린더마다 고른 값은 한 곳에 넣는 동안에도 남아 다시 나누면 돌아온다. 넣을 곳이 없으면 그 캘린더를 뺀다
- */
-export function resolveImportTargets(
-  collections: readonly ImportCollection[],
-  { categoryMode, singleTarget, targets }: ImportTargetChoice,
-  fallbackTarget: ImportTarget | null,
-): Record<string, ImportTarget> {
-  const destination = singleTarget ?? fallbackTarget;
-  const isSeparate = resolveCategoryMode(collections, categoryMode) === 'separate';
-
-  return Object.fromEntries(
-    collections.flatMap((collection) => {
-      const target = (isSeparate ? targets[collection.collectionKey] : null) ?? destination;
-      return target == null ? [] : [[collection.collectionKey, target]];
-    }),
-  );
 }

@@ -1,13 +1,15 @@
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, HStack, SettingsListGroup, VStack, WordWrapText } from '@src/shared/ui';
+import { HStack, SettingsListGroup, VStack, WordWrapText } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { compact, range } from 'es-toolkit';
 import { type ComponentProps, Fragment } from 'react';
 
 import type { ImportCollection } from '../domains/todo-import-collection.model';
-import type { ImportTarget } from '../domains/todo-import-target.model';
+import { findTargetPlacement, type ImportTarget } from '../domains/todo-import-target.model';
 import { useFormatImportTargetName } from '../hooks/use-format-import-target-name';
+import { useFormatPlacementStatus } from '../hooks/use-format-placement-status';
+import { useImportPlacements } from '../hooks/use-import-placements';
 import {
   CALENDAR_SOURCE_LABEL_KEYS,
   findTargetAppearance,
@@ -16,6 +18,7 @@ import {
 } from '../utils/todo-import.view-model';
 import { AidoMark } from './aido-mark';
 import { CalendarSourceBadge } from './calendar-source-badge';
+import { ColorDot } from './color-dot';
 
 interface CategoryMappingListProps {
   collections: readonly ImportCollection[];
@@ -30,6 +33,7 @@ const GROUP_THRESHOLD_COUNT = 8;
 
 /**
  * 캘린더마다 넣을 곳. 줄마다 "다른 서비스의 캘린더 → 아이두 카테고리"로 읽히고, 누르면 그 줄의 넣을 곳을 바꾼다.
+ * 고른 카테고리의 서버 한도만 읽어, 자리가 모자라 일정을 건너뛰는 줄에 경고를 단다.
  * 캘린더가 많으면 출처 계정마다 묶어 배지 대신 묶음 이름으로 알린다
  */
 export function CategoryMappingList({
@@ -40,16 +44,24 @@ export function CategoryMappingList({
 }: CategoryMappingListProps) {
   const { t } = useTranslation('todoImport');
   const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
+  const placements = useImportPlacements(collections, targets);
+  const formatPlacementStatus = useFormatPlacementStatus();
 
   const renderItem = (collection: ImportCollection, isBadgeShown: boolean) => {
     const target = targets[collection.collectionKey];
+    const appearance =
+      target == null ? null : findTargetAppearance(target, categoriesResult.categories);
+    const placement = target == null ? null : findTargetPlacement(placements, target);
+    const status =
+      appearance == null || placement == null
+        ? null
+        : formatPlacementStatus(placement, appearance.name);
     return (
       <CategoryMappingList.Item
         collection={collection}
         isBadgeShown={isBadgeShown}
-        appearance={
-          target == null ? null : findTargetAppearance(target, categoriesResult.categories)
-        }
+        appearance={appearance}
+        warningMessage={status?.isWarning === true ? status.message : null}
         errorMessage={errorMessages[collection.collectionKey] ?? null}
         onPress={() => onItemPress(collection)}
       />
@@ -99,6 +111,8 @@ interface ItemProps extends Omit<
   isBadgeShown: boolean;
   /** 넣을 아이두 카테고리. 고른 카테고리가 삭제됐으면 null이다 */
   appearance: ImportTargetAppearance | null;
+  /** 자리가 모자라 이 줄의 일정 일부를 건너뛸 때의 안내 */
+  warningMessage: string | null;
   errorMessage: string | null;
 }
 
@@ -107,6 +121,7 @@ CategoryMappingList.Item = function Item({
   collection,
   isBadgeShown,
   appearance,
+  warningMessage,
   errorMessage,
   ...props
 }: ItemProps) {
@@ -136,17 +151,25 @@ CategoryMappingList.Item = function Item({
             calendar: collection.title,
             target: targetName,
           }),
+          warningMessage,
           errorMessage,
         ]).join(', ')}
         accessibilityHint={t('categories.rowHint')}
         {...props}
       />
-      {errorMessage != null && (
-        <Box className="px-4 pb-3">
-          <WordWrapText size="b4" tone="danger">
-            {errorMessage}
-          </WordWrapText>
-        </Box>
+      {(warningMessage != null || errorMessage != null) && (
+        <VStack gap={2} className="px-4 pb-3">
+          {warningMessage != null && (
+            <WordWrapText size="b4" tone="warning" className="tabular-nums">
+              {warningMessage}
+            </WordWrapText>
+          )}
+          {errorMessage != null && (
+            <WordWrapText size="b4" tone="danger">
+              {errorMessage}
+            </WordWrapText>
+          )}
+        </VStack>
       )}
     </VStack>
   );
@@ -167,7 +190,3 @@ CategoryMappingList.Loading = function Loading({ rowCount }: { rowCount: number 
 };
 
 CategoryMappingList.Error = SettingsListGroup.Error;
-
-function ColorDot({ color }: { color: string }) {
-  return <Box className="size-2.5 rounded-full" style={{ backgroundColor: color }} />;
-}

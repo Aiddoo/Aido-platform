@@ -19,6 +19,7 @@ import {
   type DailyCompletionsResult,
   type DailyCompletionSummary,
 } from '../domains/daily-completion.model';
+import type { TodoResourceLimit } from '../domains/todo-resource-limit.model';
 import {
   findScheduledTime,
   type Todo,
@@ -85,6 +86,14 @@ export function toTodoOverview(dto: TodoOverviewResponse): TodoOverview {
     hasCompletedTodo: dto.hasCompletedTodo,
     hasActiveRepeat: dto.hasActiveRepeat,
   };
+}
+
+/** 카테고리를 주지 않으면(아직 없는 새 카테고리) 서버가 세지 않아 빈 카테고리다 */
+export function toTodoResourceLimit(dto: {
+  maxPerCategory: number;
+  activeCount?: number;
+}): TodoResourceLimit {
+  return { maxPerCategory: dto.maxPerCategory, activeCount: dto.activeCount ?? 0 };
 }
 
 export function toTodoSummary(dto: TodoSummaryResponse): TodoSummary {

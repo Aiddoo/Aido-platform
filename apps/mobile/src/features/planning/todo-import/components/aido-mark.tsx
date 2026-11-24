@@ -4,7 +4,7 @@ import { Image } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import type { ComponentProps } from 'react';
 
-type AidoMarkProps = Omit<ComponentProps<typeof Image>, 'source' | 'style'>;
+interface AidoMarkProps extends Omit<ComponentProps<typeof Image>, 'source' | 'style'> {}
 
 const MARK_SIZE = 16;
 

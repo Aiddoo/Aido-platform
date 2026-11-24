@@ -18,10 +18,8 @@ import {
   isTodoImportStartHandledError,
   isTodoImportStatusConflictError,
 } from '../domains/todo-import.error';
-import {
-  lastTodoImportIdsStoredValue,
-  rememberTodoImportId,
-} from '../schemas/todo-import-last-storage.schema';
+import { rememberTodoImportId } from '../domains/todo-import.model';
+import { lastTodoImportIdsStoredValue } from '../schemas/todo-import-last-storage.schema';
 import { toTodoImportStartedParams } from '../utils/todo-import-analytics';
 import {
   invalidateActiveTodoImport,

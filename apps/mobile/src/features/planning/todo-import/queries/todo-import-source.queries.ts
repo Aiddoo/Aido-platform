@@ -10,7 +10,7 @@ import { toImportCollection } from '../apis/todo-import-collection.mapper';
 import { toImportItemPreview } from '../apis/todo-import-item.mapper';
 import type { ImportCollection } from '../domains/todo-import-collection.model';
 import { countByCollection, filterByRange } from '../domains/todo-import-item.model';
-import { keepBlockedCalendarPermission } from '../utils/todo-import.view-model';
+import { keepBlockedCalendarPermission } from './todo-import-cache';
 import { TODO_IMPORT_QUERY_KEYS } from './todo-import-query-keys';
 
 export function useGetCalendarPermissionQueryOptions() {

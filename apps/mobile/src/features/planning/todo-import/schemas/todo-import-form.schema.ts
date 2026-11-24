@@ -3,13 +3,12 @@ import { dateKeyFieldSchema } from '@src/shared/date/date-key';
 import { z } from 'zod';
 
 import { importCollectionSchema } from '../domains/todo-import-collection.model';
-import { importTargetSchema } from '../domains/todo-import-target.model';
+import {
+  importTargetSchema,
+  todoImportCategoryModeSchema,
+} from '../domains/todo-import-target.model';
 
 const { timeMode, visibility } = startTodoImportRequestSchema.shape;
-
-/** single: 고른 캘린더를 모두 한 곳에 넣는다(기본), separate: 캘린더마다 넣을 곳을 고른다 */
-const todoImportCategoryModeSchema = z.enum(['single', 'separate']);
-export type TodoImportCategoryMode = z.infer<typeof todoImportCategoryModeSchema>;
 
 /** 캘린더 단계를 넘길 때 고른 캘린더(개수 포함)를 `collections`에 고정한다 */
 export const todoImportFormSchema = z.object({

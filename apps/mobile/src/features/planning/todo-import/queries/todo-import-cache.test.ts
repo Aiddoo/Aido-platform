@@ -1,8 +1,14 @@
+import type { OsPermission } from '@src/core/ports/os-permission';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
 import { createTestQueryClient } from '@src/testing/core';
 
 import { createTodoImport } from '../__tests__/todo-import.fixtures';
-import { settleTodoImportFinished } from './todo-import-cache';
+import { keepBlockedCalendarPermission, settleTodoImportFinished } from './todo-import-cache';
+
+const GRANTED: OsPermission = { status: 'granted', canAskAgain: true };
+const UNDETERMINED: OsPermission = { status: 'undetermined', canAskAgain: true };
+const DENIED: OsPermission = { status: 'denied', canAskAgain: true };
+const BLOCKED: OsPermission = { status: 'denied', canAskAgain: false };
 
 describe('settleTodoImportFinished', () => {
   it.each([
@@ -24,5 +30,31 @@ describe('settleTodoImportFinished', () => {
 
     // Then
     expect(queryClient.getQueryState(TODO_QUERY_KEYS.lists())?.isInvalidated).toBe(shouldRefresh);
+  });
+});
+
+describe('keepBlockedCalendarPermission', () => {
+  it('다시 묻지 않음 답을 받은 뒤 Android가 묻기 전으로 읽어도 다시 묻지 않음을 남긴다', () => {
+    // When
+    const permission = keepBlockedCalendarPermission(BLOCKED, UNDETERMINED);
+
+    // Then
+    expect(permission).toEqual(BLOCKED);
+  });
+
+  it('설정에서 허용하고 돌아오면 허용으로 바꾼다', () => {
+    // When
+    const permission = keepBlockedCalendarPermission(BLOCKED, GRANTED);
+
+    // Then
+    expect(permission).toEqual(GRANTED);
+  });
+
+  it('다시 물을 수 있던 답은 새로 읽은 값을 따른다', () => {
+    // When
+    const permission = keepBlockedCalendarPermission(DENIED, UNDETERMINED);
+
+    // Then
+    expect(permission).toEqual(UNDETERMINED);
   });
 });

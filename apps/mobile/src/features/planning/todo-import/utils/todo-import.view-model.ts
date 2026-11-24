@@ -14,7 +14,7 @@ import {
   orderByAccountProvider,
   TodoImportCollectionPolicy,
 } from '../domains/todo-import-collection.model';
-import type { ImportTarget } from '../domains/todo-import-target.model';
+import type { ImportTarget, TargetPlacement } from '../domains/todo-import-target.model';
 import { getRangeEndDate } from '../domains/todo-import.model';
 
 export const IMPORT_RANGE_PRESET_LABEL_KEYS = {
@@ -67,18 +67,6 @@ export function getCalendarPermissionView(
     return 'blocked';
   }
   return answered == null ? 'ask' : 'denied';
-}
-
-/**
- * Android는 묻기 전에는 영구 거절을 알려 주지 않아 읽으면 늘 다시 물을 수 있다고 나온다.
- * 이번 실행에서 받은 "다시 묻지 않음" 답은 허용되기 전까지 남겨 다시 들어와도 설정 열기를 보인다
- */
-export function keepBlockedCalendarPermission(
-  previous: OsPermission | undefined,
-  read: OsPermission,
-): OsPermission {
-  const isBlocked = previous?.status === 'denied' && !previous.canAskAgain;
-  return isBlocked && read.status !== 'granted' ? previous : read;
 }
 
 export interface ImportAccountGroup {
@@ -177,18 +165,6 @@ export function groupCollectionsBySource(
   }));
 }
 
-/** 시트 검색칸. 이름 어디에든 들어 있으면 남기고 공백·대소문자는 가리지 않는다 */
-export function filterCategoriesByName<TCategory extends Pick<TodoCategory, 'name'>>(
-  categories: readonly TCategory[],
-  query: string,
-): TCategory[] {
-  const keyword = query.trim().toLocaleLowerCase();
-  if (keyword === '') {
-    return [...categories];
-  }
-  return categories.filter((category) => category.name.toLocaleLowerCase().includes(keyword));
-}
-
 export interface ImportTargetAppearance {
   name: string;
   color: string;
@@ -206,6 +182,19 @@ export function findTargetAppearance(
   }
   const category = categories.find(({ id }) => id === target.categoryId);
   return category == null ? null : { name: category.name, color: category.color, isNew: false };
+}
+
+/** 넣을 곳 아래 한 줄의 종류. 넘치거나(overflow) 가득 찬(full) 곳은 경고다 */
+export type PlacementStatus = 'fits' | 'fillsUp' | 'overflow' | 'full';
+
+export function getPlacementStatus(placement: TargetPlacement): PlacementStatus {
+  if (placement.roomLeft === 0) {
+    return 'full';
+  }
+  if (0 < placement.skippedCount) {
+    return 'overflow';
+  }
+  return placement.remainingCount === 0 ? 'fillsUp' : 'fits';
 }
 
 const NO_BREAK_SPACE = '\u00A0';

@@ -1,6 +1,7 @@
 import { queryOptions } from '@tanstack/react-query';
 
 import type { DailyCompletionsResult } from '../domains/daily-completion.model';
+import type { TodoResourceLimit } from '../domains/todo-resource-limit.model';
 import type { TodoDetails, TodoListResult, TodoOverview, TodoSummary } from '../domains/todo.model';
 
 export const TODO_QUERY_KEYS = {
@@ -25,6 +26,12 @@ export const TODO_QUERY_KEYS = {
   overview: () =>
     queryOptions<TodoOverview>({ queryKey: [...TODO_QUERY_KEYS.completions(), 'overview'] })
       .queryKey,
+
+  // 카테고리마다 남은 자리(캘린더 가져오기의 넣을 곳). completions() 하위라 넓은 할 일 무효화(가져오기 완료 등)를 상속한다
+  resourceLimit: ({ categoryId }: { categoryId: number | null }) =>
+    queryOptions<TodoResourceLimit>({
+      queryKey: [...TODO_QUERY_KEYS.completions(), 'resource-limit', { categoryId }],
+    }).queryKey,
 
   // 날짜 목록(lists)과 따로 둬 할 일 쓰기의 날짜별 무효화·낙관적 갱신이 이 범위를 건드리지 않는다
   upcomingList: ({ startDate, endDate }: { startDate: string; endDate: string }) =>

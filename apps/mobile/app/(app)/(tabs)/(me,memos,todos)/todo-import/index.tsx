@@ -7,11 +7,7 @@ import { CoachmarkPopover } from '@src/features/device/coachmark/components/coac
 import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
 import { CATEGORY_COLORS } from '@src/features/planning/category/constants/todo-category.constants';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
-import {
-  resolveCategoryMode,
-  resolveImportTargets,
-  toNewCategoryTarget,
-} from '@src/features/planning/todo-import/apis/todo-import-target.mapper';
+import { toNewCategoryTarget } from '@src/features/planning/todo-import/apis/todo-import-target.mapper';
 import { toTodoImportSelection } from '@src/features/planning/todo-import/apis/todo-import.mapper';
 import { CalendarPermissionPrompt } from '@src/features/planning/todo-import/components/calendar-permission-prompt';
 import { CalendarSourceList } from '@src/features/planning/todo-import/components/calendar-source-list';
@@ -20,6 +16,7 @@ import { ImportDateSheet } from '@src/features/planning/todo-import/components/i
 import { ImportDestinationButton } from '@src/features/planning/todo-import/components/import-destination-button';
 import { ImportEndDateChips } from '@src/features/planning/todo-import/components/import-end-date-chips';
 import { ImportHintButton } from '@src/features/planning/todo-import/components/import-hint-button';
+import { ImportPlacementSummary } from '@src/features/planning/todo-import/components/import-placement-summary';
 import { ImportSourceList } from '@src/features/planning/todo-import/components/import-source-list';
 import { LastTodoImportRow } from '@src/features/planning/todo-import/components/last-todo-import-row';
 import { MissingCalendarHelp } from '@src/features/planning/todo-import/components/missing-calendar-help';
@@ -30,10 +27,11 @@ import {
   TodoImportCollectionPolicy,
 } from '@src/features/planning/todo-import/domains/todo-import-collection.model';
 import {
-  findDefaultTarget,
+  getDefaultTarget,
   type ImportTarget,
-  placeImportTargets,
-  summarizePlacements,
+  resolveCategoryMode,
+  resolveImportTargets,
+  type TodoImportCategoryMode,
   TodoImportTargetPolicy,
 } from '@src/features/planning/todo-import/domains/todo-import-target.model';
 import {
@@ -46,6 +44,7 @@ import {
   findLastAllowedDate,
   getRangeEndDate,
 } from '@src/features/planning/todo-import/domains/todo-import.model';
+import { useFormatImportTargetName } from '@src/features/planning/todo-import/hooks/use-format-import-target-name';
 import { useNewCategoryNames } from '@src/features/planning/todo-import/hooks/use-new-category-names';
 import { useOpenCategoryTargetSheet } from '@src/features/planning/todo-import/hooks/use-open-category-target-sheet';
 import {
@@ -57,7 +56,6 @@ import {
   useStartTodoImportMutationOptions,
 } from '@src/features/planning/todo-import/queries/todo-import.mutations';
 import {
-  type TodoImportCategoryMode,
   todoImportFormSchema,
   type TodoImportFormValues,
 } from '@src/features/planning/todo-import/schemas/todo-import-form.schema';
@@ -70,6 +68,7 @@ import { ANIMATION } from '@src/shared/constants/animation';
 import type { DateKey } from '@src/shared/date/date-key';
 import { formatYearAwareDateKeyLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useOpenAppSettings } from '@src/shared/hooks/use-open-app-settings';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useStepper } from '@src/shared/hooks/use-stepper';
@@ -86,6 +85,7 @@ import {
   KeyboardAdaptiveButton,
   QueryErrorBoundary,
   QueryErrorFallback,
+  type QueryErrorFallbackProps,
   ReadableContent,
   SettingsListGroup,
   Spacing,
@@ -101,13 +101,13 @@ import {
   WordWrapText,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, usePrefetchQuery, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { type NavigationAction, router, Stack, useNavigation, usePreventRemove } from 'expo-router';
 import { type ReactNode, Suspense, useDeferredValue, useState } from 'react';
 import { type UseFormReturn, useForm, useFormState, useWatch } from 'react-hook-form';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
-import { isMatching, match, P } from 'ts-pattern';
+import { isMatching, match } from 'ts-pattern';
 
 type TodoImportStepContexts = Record<TodoImportStep, Record<string, never>>;
 
@@ -121,6 +121,7 @@ const TODO_IMPORT_STEPS = [
 type TodoImportForm = UseFormReturn<TodoImportFormValues>;
 
 const MODE_ENTERING = FadeIn.duration(ANIMATION.durationMs.slow).reduceMotion(ReduceMotion.System);
+const DOWN_ARROW_SIZE = 20;
 
 interface StepProps {
   form: TodoImportForm;
@@ -250,11 +251,17 @@ function TodoImportSetup() {
           />
         )}
         categories={() => (
-          <CategoriesStep
-            form={form}
-            progress={progress}
-            onNext={() => stepper.history.push('options')}
-          />
+          <QueryErrorBoundary
+            fallback={(props) => <CategoriesStep.Error {...props} progress={progress} />}
+          >
+            <Suspense fallback={<CategoriesStep.Loading progress={progress} />}>
+              <CategoriesStep
+                form={form}
+                progress={progress}
+                onNext={() => stepper.history.push('options')}
+              />
+            </Suspense>
+          </QueryErrorBoundary>
         )}
         options={() => (
           <OptionsStep
@@ -296,7 +303,7 @@ function PermissionStep({ progress, onGranted }: { progress: ReactNode; onGrante
       footer={match(view)
         .with('ask', () => (
           <KeyboardAdaptiveButton isLoading={request.isPending} onPress={handleContinue}>
-            {t('common:actions.continue')}
+            {t('permission.continue')}
           </KeyboardAdaptiveButton>
         ))
         // 거절한 뒤에는 다시 조르지 않고 설정 열기만 둔다. Mac(Designed for iPad)은 앱 설정 화면이 열리지 않아
@@ -497,22 +504,23 @@ function CalendarsStep({ form, progress, onNext }: StepProps & { onNext: () => v
 
 function CategoriesStep({ form, progress, onNext }: StepProps & { onNext: () => void }) {
   const { t } = useTranslation(['todoImport', 'common']);
+  const fontScaledSize = useFontScaledSize();
   const [collections] = useWatch({ control: form.control, name: ['collections'] });
   const [{ categoryMode, singleTarget, targets }, setTargetChoice] = useTargetChoice(form);
   const errorMessages = useTargetErrorMessages(form, collections);
-  const categoriesQuery = useQuery(useGetTodoCategoriesQueryOptions());
+  const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   // 넣을 곳 시트가 기다리지 않고 바로 올라오도록 요금제(새 카테고리 자리)를 미리 받아 둔다
-  useQuery(useGetEntitlementsQueryOptions());
+  usePrefetchQuery(useGetEntitlementsQueryOptions());
   const names = useNewCategoryNames();
+  const formatTargetName = useFormatImportTargetName();
   const openTargetSheet = useOpenCategoryTargetSheet();
+  const [isModeSwitched, setIsModeSwitched] = useState(false);
 
-  const categories = categoriesQuery.data?.categories ?? null;
-  // 새 할 일의 기본 카테고리에 넣고, 카테고리가 하나도 없을 때만 새로 만든다
-  const defaultTarget =
-    categories == null
-      ? null
-      : (findDefaultTarget(categories) ??
-        toNewCategoryTarget(null, { palette: CATEGORY_COLORS, names }));
+  const { categories } = categoriesResult;
+  const defaultTarget = getDefaultTarget(
+    categories,
+    toNewCategoryTarget(null, { palette: CATEGORY_COLORS, names }),
+  );
   const destination = singleTarget ?? defaultTarget;
   const mode = resolveCategoryMode(collections, categoryMode);
   const assignedTargets = resolveImportTargets(
@@ -520,27 +528,24 @@ function CategoriesStep({ form, progress, onNext }: StepProps & { onNext: () => 
     { categoryMode, singleTarget, targets },
     defaultTarget,
   );
-  const placements =
-    categories == null ? [] : placeImportTargets(collections, assignedTargets, categories);
-  const summary = summarizePlacements(placements);
-  const destinationAppearance =
-    destination == null || categories == null
-      ? null
-      : findTargetAppearance(destination, categories);
-  const destinationPlacement = placements[0] ?? null;
-  const isOverflowing = destinationPlacement != null && 0 < destinationPlacement.skippedCount;
   // 고른 카테고리를 그사이 삭제했으면 다시 고를 때까지 넘기지 않는다
-  const hasMissingTarget =
-    categories != null &&
-    Object.values(assignedTargets).some((target) =>
-      TodoImportTargetPolicy.isMissingCategory(target, categories),
-    );
+  const hasMissingTarget = Object.values(assignedTargets).some((target) =>
+    TodoImportTargetPolicy.isMissingCategory(target, categories),
+  );
   const hasRejectedTargets = Object.keys(errorMessages).length > 0;
   const canSplit = 1 < collections.length;
   const [firstCollection] = collections;
+  // 처음 그릴 때(앞 단계에서 돌아올 때 포함)는 그대로 두고, 넣는 방법을 바꿀 때만 스며들듯 바뀐다
+  const modeEntering = isModeSwitched ? MODE_ENTERING : undefined;
+  const downArrowSize = fontScaledSize(DOWN_ARROW_SIZE);
+
+  const switchMode = (nextMode: TodoImportCategoryMode) => {
+    setIsModeSwitched(true);
+    setTargetChoice({ categoryMode: nextMode });
+  };
 
   const openDestinationSheet = () => {
-    if (destination == null || firstCollection == null) {
+    if (firstCollection == null) {
       return;
     }
     openTargetSheet({
@@ -573,41 +578,10 @@ function CategoriesStep({ form, progress, onNext }: StepProps & { onNext: () => 
   };
 
   const handleNext = () => {
-    if (destination == null) {
-      return;
-    }
     // 처음 넣을 곳을 고른 값으로 고정해 옵션 단계와 시작 요청이 화면에 보인 곳 그대로 보낸다
     form.setValue('singleTarget', destination, { shouldDirty: true });
     onNext();
   };
-
-  const summaryText = match({ mode, destinationAppearance, summary })
-    .with({ summary: { totalCount: 0 } }, () => null)
-    .with({ mode: 'single', destinationAppearance: null }, () => null)
-    .with(
-      { mode: 'single', destinationAppearance: P.nonNullable },
-      ({ destinationAppearance: { name } }) =>
-        summary.placedCount < summary.totalCount
-          ? t('categories.summaryPartial', {
-              name,
-              total: summary.totalCount,
-              count: summary.placedCount,
-            })
-          : t('categories.summary', { name, count: summary.totalCount }),
-    )
-    .with({ mode: 'separate' }, () =>
-      summary.placedCount < summary.totalCount
-        ? t('categories.summarySeparatePartial', {
-            destinationCount: summary.destinationCount,
-            total: summary.totalCount,
-            count: summary.placedCount,
-          })
-        : t('categories.summarySeparate', {
-            destinationCount: summary.destinationCount,
-            count: summary.totalCount,
-          }),
-    )
-    .exhaustive();
 
   return (
     <FormStepLayout
@@ -615,17 +589,19 @@ function CategoriesStep({ form, progress, onNext }: StepProps & { onNext: () => 
       progress={progress}
       footer={
         <VStack className="gap-2 pt-3">
-          {summaryText != null && (
-            <StyledSafeAreaView edges={['left', 'right']} className="px-4">
-              <WordWrapText size="b4" shade={6} align="center" className="tabular-nums">
-                {summaryText}
-              </WordWrapText>
-            </StyledSafeAreaView>
-          )}
-          <KeyboardAdaptiveButton
-            isDisabled={destination == null || hasMissingTarget}
-            onPress={handleNext}
-          >
+          <StyledSafeAreaView edges={['left', 'right']} className="px-4">
+            <QueryErrorBoundary fallback={ImportPlacementSummary.Error}>
+              <Suspense fallback={<ImportPlacementSummary.Loading />}>
+                <ImportPlacementSummary
+                  collections={collections}
+                  targets={assignedTargets}
+                  destination={destination}
+                  mode={mode}
+                />
+              </Suspense>
+            </QueryErrorBoundary>
+          </StyledSafeAreaView>
+          <KeyboardAdaptiveButton isDisabled={hasMissingTarget} onPress={handleNext}>
             {t('common:actions.continue')}
           </KeyboardAdaptiveButton>
         </VStack>
@@ -641,10 +617,10 @@ function CategoriesStep({ form, progress, onNext }: StepProps & { onNext: () => 
         </>
       )}
 
-      {/* 나눠 넣기로 바꾸면 묶음을 새로 그려 스며들듯 바뀐다. 고른 값은 폼에 남아 다시 바꾸면 돌아온다 */}
+      {/* 고른 값은 폼에 남아 넣는 방법을 다시 바꾸면 돌아온다 */}
       {match(mode)
         .with('single', () => (
-          <Animated.View key="single" entering={MODE_ENTERING}>
+          <Animated.View key="single" entering={modeEntering}>
             <Spacing size={24} />
 
             <HStack align="center" gap={6}>
@@ -667,7 +643,11 @@ function CategoriesStep({ form, progress, onNext }: StepProps & { onNext: () => 
               accessibilityElementsHidden
               importantForAccessibility="no-hide-descendants"
             >
-              <ArrowRightIcon width={20} height={20} colorClassName="text-gray-5" />
+              <ArrowRightIcon
+                width={downArrowSize}
+                height={downArrowSize}
+                colorClassName="text-gray-5"
+              />
             </Box>
             <Spacing size={8} />
 
@@ -681,11 +661,11 @@ function CategoriesStep({ form, progress, onNext }: StepProps & { onNext: () => 
               />
             </HStack>
             <Spacing size={8} />
-            {match(categoriesQuery)
-              .with({ data: P.nonNullable }, () => (
-                // 처음 한 번 넣을 곳을 짚는다. 누름은 아래 카드로 넘겨 첫 탭이 안내만 닫지 않는다
+            <QueryErrorBoundary fallback={ImportDestinationButton.Error}>
+              <Suspense fallback={<ImportDestinationButton.Loading />}>
+                {/* 처음 한 번 넣을 곳을 짚는다. 누름은 아래 카드로 넘겨 첫 탭이 안내만 닫지 않는다 */}
                 <CoachmarkPopover
-                  kind="todo-import-category-mode"
+                  kind="todo-import-destination"
                   description={t('categories.coachmark')}
                   Icon={CategoryDuoIcon}
                   placement="bottom"
@@ -694,54 +674,22 @@ function CategoriesStep({ form, progress, onNext }: StepProps & { onNext: () => 
                   isPassThrough
                 >
                   <ImportDestinationButton
-                    appearance={destinationAppearance}
-                    skippedCount={destinationPlacement?.skippedCount ?? 0}
-                    roomLeft={
-                      destination == null || categories == null
-                        ? 0
-                        : TodoImportTargetPolicy.calculateRoomLeft(destination, categories)
-                    }
+                    target={destination}
+                    collections={collections}
                     errorMessage={Object.values(errorMessages)[0] ?? null}
                     onPress={openDestinationSheet}
                   />
                 </CoachmarkPopover>
-              ))
-              .with({ isError: true }, () => (
-                <QueryErrorFallback.Inline
-                  message={t('categories.loadFailed')}
-                  reset={() => categoriesQuery.refetch()}
-                  className="rounded-2xl bg-gray-1 px-4 py-3"
-                />
-              ))
-              .otherwise(() => (
-                <ImportDestinationButton.Loading />
-              ))}
+              </Suspense>
+            </QueryErrorBoundary>
 
-            {isOverflowing && (
-              <>
-                <Spacing size={4} />
-                <HStack gap={16} className="flex-wrap">
-                  <TextButton variant="underline" onPress={openDestinationSheet}>
-                    {t('categories.chooseOther')}
-                  </TextButton>
-                  {canSplit && (
-                    <TextButton
-                      variant="underline"
-                      onPress={() => setTargetChoice({ categoryMode: 'separate' })}
-                    >
-                      {t('categories.splitByCalendar')}
-                    </TextButton>
-                  )}
-                </HStack>
-              </>
-            )}
-            {!isOverflowing && canSplit && (
+            {canSplit && (
               <>
                 <Spacing size={12} />
                 <TextButton
                   variant="arrow"
                   className="self-start"
-                  onPress={() => setTargetChoice({ categoryMode: 'separate' })}
+                  onPress={() => switchMode('separate')}
                 >
                   {t('categories.splitLink')}
                 </TextButton>
@@ -750,14 +698,14 @@ function CategoriesStep({ form, progress, onNext }: StepProps & { onNext: () => 
           </Animated.View>
         ))
         .with('separate', () => (
-          <Animated.View key="separate" entering={MODE_ENTERING}>
+          <Animated.View key="separate" entering={modeEntering}>
             <Spacing size={24} />
 
             <HStack align="center" justify="between" gap={12} className="flex-wrap">
               <Text size="b2" weight="semibold" shade={9} accessibilityRole="header">
                 {t('categories.separate.title')}
               </Text>
-              <TextButton onPress={() => setTargetChoice({ categoryMode: 'single' })}>
+              <TextButton onPress={() => switchMode('single')}>
                 {t('categories.separate.joinAll')}
               </TextButton>
             </HStack>
@@ -774,7 +722,9 @@ function CategoriesStep({ form, progress, onNext }: StepProps & { onNext: () => 
             </QueryErrorBoundary>
             <Spacing size={8} />
             <WordWrapText size="b4" shade={6}>
-              {t('categories.separate.note')}
+              {t('categories.separate.note', {
+                name: formatTargetName(findTargetAppearance(destination, categories)),
+              })}
             </WordWrapText>
           </Animated.View>
         ))
@@ -782,6 +732,51 @@ function CategoriesStep({ form, progress, onNext }: StepProps & { onNext: () => 
     </FormStepLayout>
   );
 }
+
+/** 받은 뒤와 같은 제목·설명·넣을 곳 카드 자리 */
+CategoriesStep.Loading = function Loading({ progress }: Pick<StepProps, 'progress'>) {
+  const { t } = useTranslation(['todoImport', 'common']);
+
+  return (
+    <FormStepLayout
+      title={t('categories.title')}
+      progress={progress}
+      footer={
+        <KeyboardAdaptiveButton isDisabled>{t('common:actions.continue')}</KeyboardAdaptiveButton>
+      }
+    >
+      <WordWrapText size="b3" shade={6}>
+        {t('categories.description')}
+      </WordWrapText>
+      <Spacing size={24} />
+      <ImportDestinationButton.Loading />
+    </FormStepLayout>
+  );
+};
+
+/** 아이두 카테고리를 읽지 못하면 넣을 곳을 고를 수 없어 이 단계 안에서 다시 시도한다 */
+CategoriesStep.Error = function ErrorFallback({
+  progress,
+  reset,
+}: Pick<StepProps, 'progress'> & QueryErrorFallbackProps) {
+  const { t } = useTranslation(['todoImport', 'common']);
+
+  return (
+    <FormStepLayout
+      title={t('categories.title')}
+      progress={progress}
+      footer={
+        <KeyboardAdaptiveButton isDisabled>{t('common:actions.continue')}</KeyboardAdaptiveButton>
+      }
+    >
+      <QueryErrorFallback.Inline
+        message={t('categories.loadFailed')}
+        reset={reset}
+        className="rounded-2xl bg-gray-1 px-4 py-3"
+      />
+    </FormStepLayout>
+  );
+};
 
 function OptionsStep({
   form,
