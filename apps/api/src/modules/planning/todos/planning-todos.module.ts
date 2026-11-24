@@ -8,7 +8,6 @@ import { SocialFriendshipsModule } from "#api/modules/social/friendships/social-
 import { PlanningTodoSeriesModule } from "../todo-series/planning-todo-series.module.js";
 import { StagedTodoBatchCreatorPort } from "./application/ports/staged-todo-batch-creator.port.js";
 import { StagedTodoCreatorPort } from "./application/ports/staged-todo-creator.port.js";
-import { TodoCategoryUsageReaderPort } from "./application/ports/todo-category-usage.reader.port.js";
 import { TodoEngagementCounterPort } from "./application/ports/todo-engagement-counter.port.js";
 import { TodoViewCacheInvalidatorPort } from "./application/ports/todo-view-cache-invalidator.port.js";
 import { RemoveCategoryTodosUseCase } from "./application/use-cases/remove-category-todos.use-case.js";
@@ -36,7 +35,6 @@ import { TodoController } from "./presentation/http/v1/todo.controller.js";
     PlanningTodoPortsModule,
     StagedTodoCreatorPort,
     StagedTodoBatchCreatorPort,
-    TodoCategoryUsageReaderPort,
     TodoEngagementCounterPort,
     TodoViewCacheInvalidatorPort,
     RemoveCategoryTodosUseCase,

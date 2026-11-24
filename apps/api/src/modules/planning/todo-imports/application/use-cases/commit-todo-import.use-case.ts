@@ -93,9 +93,9 @@ export class CommitTodoImportUseCase {
     if (todoImport.status !== "UPLOADING") {
       throw todoImportStatusConflict(todoImport.status);
     }
-    const { userId, targets, collections } = todoImport;
+    const { userId, targets } = todoImport;
     await this.#assertRangeStillWithinPlan(todoImport);
-    await this.#dependencies.assertTargets.execute({ userId, targets, collections });
+    await this.#dependencies.assertTargets.execute({ userId, targets });
     const newTargets = targets.flatMap((target) =>
       target.value.kind === "NEW_CATEGORY" && target.categoryId == null ? [target.value] : [],
     );

@@ -5,7 +5,6 @@ import {
   TodoCategoryId,
   TodoCategoryReaderPort,
 } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
-import { TodoCategoryUsageReaderPort } from "#api/modules/planning/todos/planning-todos.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 interface FakeCategory {
@@ -15,7 +14,7 @@ interface FakeCategory {
 }
 
 /**
- * 가져오기가 쓰는 카테고리 문 셋(목록·사용량·일괄 만들기)을 한 사용자의 메모리 목록으로 흉내 낸다.
+ * 가져오기가 쓰는 카테고리 문 둘(목록·일괄 만들기)을 한 사용자의 메모리 목록으로 흉내 낸다.
  * 한도·이름 규칙은 가져오기 쪽 검사로 보므로 만들기는 그대로 더한다.
  */
 export class FakeTodoImportCategories {
@@ -40,19 +39,6 @@ export class FakeTodoImportCategories {
           updatedAt: "2026-11-01T00:00:00.000Z",
           todoCount: category.usage,
         })),
-    };
-  }
-
-  get usageReader(): Pick<TodoCategoryUsageReaderPort, "countUsages"> {
-    return {
-      countUsages: async (_userId: UserId, categoryIds: readonly TodoCategoryId[]) =>
-        new Map(
-          this.categories
-            .filter((category) =>
-              categoryIds.some((categoryId) => categoryId.value === category.id),
-            )
-            .map((category) => [category.id, category.usage]),
-        ),
     };
   }
 

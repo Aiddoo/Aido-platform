@@ -28,7 +28,6 @@ import { StagedTodoCreatorPort } from "./application/ports/staged-todo-creator.p
 import { StreakPort } from "./application/ports/streak.port.js";
 import { TodoBulkRemoverPort } from "./application/ports/todo-bulk-remover.port.js";
 import { TodoCachePort } from "./application/ports/todo-cache.port.js";
-import { TodoCategoryUsageReaderPort } from "./application/ports/todo-category-usage.reader.port.js";
 import { TodoEngagementCounterPort } from "./application/ports/todo-engagement-counter.port.js";
 import { TodoNotificationPort } from "./application/ports/todo-notification.port.js";
 import { TodoOccurrenceWriterPort } from "./application/ports/todo-occurrence-writer.port.js";
@@ -76,7 +75,6 @@ import { FriendAdapter } from "./infrastructure/adapters/friend.adapter.js";
 import { StagedTodoBatchCreatorAdapter } from "./infrastructure/adapters/staged-todo-batch-creator.adapter.js";
 import { StagedTodoCreatorAdapter } from "./infrastructure/adapters/staged-todo-creator.adapter.js";
 import { StreakAdapter } from "./infrastructure/adapters/streak.adapter.js";
-import { TodoCategoryUsageReaderAdapter } from "./infrastructure/adapters/todo-category-usage-reader.adapter.js";
 import { TodoNotificationAdapter } from "./infrastructure/adapters/todo-notification.adapter.js";
 import { TodoViewCacheInvalidatorAdapter } from "./infrastructure/adapters/todo-view-cache-invalidator.adapter.js";
 import { TodoTimezoneRebaseProcessor } from "./infrastructure/jobs/todo-timezone-rebase.processor.js";
@@ -147,7 +145,6 @@ export const PLANNING_TODOS_PROVIDERS = [
     clock: ClockPort,
   }),
   { provide: StagedTodoBatchCreatorPort, useClass: StagedTodoBatchCreatorAdapter },
-  { provide: TodoCategoryUsageReaderPort, useClass: TodoCategoryUsageReaderAdapter },
   provideUseCase(InvalidateTodoViewCacheUseCase, {
     todoReadRepository: TodoReadRepositoryPort,
     cache: TodoCachePort,

@@ -5,10 +5,7 @@ import {
   TodoCategoryCreatorPort,
   TodoCategoryReaderPort,
 } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
-import {
-  ResolveTodoTimezoneUseCase,
-  TodoCategoryUsageReaderPort,
-} from "#api/modules/planning/todos/planning-todos.public";
+import { ResolveTodoTimezoneUseCase } from "#api/modules/planning/todos/planning-todos.public";
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
 import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
@@ -46,7 +43,6 @@ export const PLANNING_TODO_IMPORTS_PROVIDERS = [
   { provide: TodoImportUndoQueuePort, useClass: TodoImportUndoQueueAdapter },
   provideUseCase(AssertTodoImportTargetsUseCase, {
     categoryReader: TodoCategoryReaderPort,
-    categoryUsageReader: TodoCategoryUsageReaderPort,
     entitlementReader: EntitlementReaderPort,
   }),
   provideUseCase(StartTodoImportUseCase, {

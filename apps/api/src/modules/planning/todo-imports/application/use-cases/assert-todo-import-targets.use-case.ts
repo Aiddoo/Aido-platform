@@ -1,15 +1,7 @@
-import { TODO_LIMITS } from "@aido/api/vocabulary";
-
 import type { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
-import {
-  TodoCategoryId,
-  type TodoCategoryReaderPort,
-} from "#api/modules/planning/todo-categories/planning-todo-categories.public";
-import type { TodoCategoryUsageReaderPort } from "#api/modules/planning/todos/planning-todos.public";
+import type { TodoCategoryReaderPort } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-import { planTargetCapacity } from "../../domain/todo-import-capacity.domain-service.js";
-import type { TodoImportCollection } from "../../domain/todo-import-collection.vo.js";
 import type { TodoImportTarget } from "../../domain/todo-import-target.vo.js";
 import {
   todoImportCategoryLimitReached,
@@ -20,7 +12,6 @@ import {
 export interface AssertTodoImportTargetsCommand {
   readonly userId: UserId;
   readonly targets: readonly TodoImportTarget[];
-  readonly collections: readonly TodoImportCollection[];
 }
 
 interface OwnedCategory {
@@ -30,7 +21,6 @@ interface OwnedCategory {
 
 interface AssertTodoImportTargetsDependencies {
   readonly categoryReader: Pick<TodoCategoryReaderPort, "listForUser">;
-  readonly categoryUsageReader: Pick<TodoCategoryUsageReaderPort, "countUsages">;
   readonly entitlementReader: Pick<
     EntitlementReaderPort,
     "findFeatureLimitInTransaction" | "getFeatureQuotaInTransaction"
@@ -39,7 +29,8 @@ interface AssertTodoImportTargetsDependencies {
 
 /**
  * 시작과 확정이 같은 규칙으로 대상 카테고리를 확인한다. 새 카테고리 수가 한도를 넘으면 카테고리 만들기와 같은
- * 0857이고, 그 밖의 거절(이름 중복·없는 카테고리·자리 부족)은 대상마다 모아 2303 하나로 알린다.
+ * 0857이고, 이름 중복·없는 카테고리는 대상마다 모아 2303 하나로 알린다. 카테고리 자리는 막지 않고 할 일을
+ * 만드는 작업이 가까운 날짜부터 남는 만큼만 만든다
  */
 export class AssertTodoImportTargetsUseCase {
   readonly #dependencies: AssertTodoImportTargetsDependencies;
@@ -53,13 +44,7 @@ export class AssertTodoImportTargetsUseCase {
     const categories = await this.#dependencies.categoryReader.listForUser(userId);
     const newCategoryCount = targets.filter(isUncreatedCategory).length;
     await this.#assertCategoryCountWithinLimit(userId, categories.length, newCategoryCount);
-    const placementRejections = findPlacementRejections(targets, categories);
-    const rejectedKeys = new Set(placementRejections.map((rejection) => rejection.targetKey));
-    const capacityRejections = await this.#findCapacityRejections(
-      command,
-      targets.filter((target) => !rejectedKeys.has(target.targetKey)),
-    );
-    const rejections = [...placementRejections, ...capacityRejections];
+    const rejections = findPlacementRejections(targets, categories);
     if (rejections.length > 0) {
       throw todoImportTargetsRejected(rejections);
     }
@@ -84,25 +69,6 @@ export class AssertTodoImportTargetsUseCase {
         resetsAt: null,
       }),
     );
-  }
-
-  async #findCapacityRejections(
-    command: AssertTodoImportTargetsCommand,
-    targets: readonly TodoImportTarget[],
-  ): Promise<TodoImportTargetRejection[]> {
-    const categoryIds = targets.flatMap((target) =>
-      target.categoryId == null ? [] : [TodoCategoryId.reconstitute(target.categoryId)],
-    );
-    const usageByCategory =
-      categoryIds.length === 0
-        ? new Map<number, number>()
-        : await this.#dependencies.categoryUsageReader.countUsages(command.userId, categoryIds);
-    return planTargetCapacity({
-      targets,
-      collections: command.collections,
-      usageByCategory,
-      limitPerCategory: TODO_LIMITS.MAX_PER_CATEGORY,
-    }).map((shortage) => ({ ...shortage, reason: "CAPACITY" }));
   }
 }
 

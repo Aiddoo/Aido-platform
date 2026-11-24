@@ -14,10 +14,7 @@ export type TodoImportFeatureQuota = Readonly<Record<string, unknown>>;
 
 export interface TodoImportTargetRejection {
   readonly targetKey: string;
-  readonly reason: TodoImportTargetRejectionReason;
-  readonly current?: number;
-  readonly expected?: number;
-  readonly limit?: number;
+  readonly reason: Exclude<TodoImportTargetRejectionReason, "CAPACITY">;
 }
 
 export function todoImportNotFound(importId: TodoImportId): ApplicationException {

@@ -6,12 +6,10 @@ import { FakeTodoImportCategories } from "#test/doubles/planning/fake-todo-impor
 import { FixedClock } from "#test/doubles/platform/fixed-clock";
 import { createEntitlementFixture } from "#test/fixtures/access/entitlement.fixture";
 import {
-  hashedKey,
   TODO_IMPORT_FIXTURE_NOW,
   TODO_IMPORT_FIXTURE_USER_ID,
 } from "#test/fixtures/planning/todo-import.fixture";
 
-import { TodoImportCollection } from "../../domain/todo-import-collection.vo.js";
 import {
   TodoImportTarget,
   type TodoImportTargetPrimitives,
@@ -29,51 +27,34 @@ function setUp(categories: readonly { id: number; name: string; usage?: number }
   );
   return new AssertTodoImportTargetsUseCase({
     categoryReader: fake.reader,
-    categoryUsageReader: fake.usageReader,
     entitlementReader: entitlements.reader,
   });
 }
 
-function commandOf(
-  entries: readonly { readonly target: TodoImportTargetPrimitives; readonly expected: number }[],
-) {
-  return {
-    userId: USER_ID,
-    targets: entries.map(({ target }) => TodoImportTarget.create(target)),
-    collections: entries.map(({ target, expected }) =>
-      TodoImportCollection.create({
-        collectionKey: hashedKey(target.targetKey),
-        targetKey: target.targetKey,
-        expectedItemCount: expected,
-      }),
-    ),
-  };
+function commandOf(targets: readonly TodoImportTargetPrimitives[]) {
+  return { userId: USER_ID, targets: targets.map((target) => TodoImportTarget.create(target)) };
 }
 
 describe("AssertTodoImportTargetsUseCase", () => {
-  it("이름 중복·없는 카테고리·자리 부족을 대상마다 모아 2303 하나로 알린다", async () => {
+  it("이름 중복·없는 카테고리를 대상마다 모아 2303 하나로 알린다", async () => {
     // Given
     const useCase = setUp([
-      { id: 1, name: "업무", usage: 290 },
-      { id: 2, name: "개인", usage: 0 },
+      { id: 1, name: "업무" },
+      { id: 2, name: "개인" },
     ]);
 
     // When
     const result = useCase.execute(
       commandOf([
         {
-          target: {
-            kind: "NEW_CATEGORY",
-            targetKey: "dup",
-            name: "개인",
-            color: "#FF0000",
-            categoryId: null,
-          },
-          expected: 1,
+          kind: "NEW_CATEGORY",
+          targetKey: "dup",
+          name: "개인",
+          color: "#FF0000",
+          categoryId: null,
         },
-        { target: { kind: "EXISTING_CATEGORY", targetKey: "gone", categoryId: 999 }, expected: 1 },
-        { target: { kind: "EXISTING_CATEGORY", targetKey: "full", categoryId: 1 }, expected: 11 },
-        { target: { kind: "EXISTING_CATEGORY", targetKey: "ok", categoryId: 2 }, expected: 300 },
+        { kind: "EXISTING_CATEGORY", targetKey: "gone", categoryId: 999 },
+        { kind: "EXISTING_CATEGORY", targetKey: "ok", categoryId: 2 },
       ]),
     );
 
@@ -84,16 +65,22 @@ describe("AssertTodoImportTargetsUseCase", () => {
         targets: [
           { targetKey: "dup", reason: "CATEGORY_NAME_TAKEN" },
           { targetKey: "gone", reason: "CATEGORY_NOT_FOUND" },
-          {
-            targetKey: "full",
-            reason: "CAPACITY",
-            current: 290,
-            expected: 11,
-            limit: TODO_LIMITS.MAX_PER_CATEGORY,
-          },
         ],
       },
     });
+  });
+
+  it("카테고리 자리가 다 찼어도 막지 않는다. 남는 만큼만 만드는 일은 할 일 만들기 작업이 한다", async () => {
+    // Given
+    const useCase = setUp([{ id: 1, name: "업무", usage: TODO_LIMITS.MAX_PER_CATEGORY }]);
+
+    // When
+    const result = useCase.execute(
+      commandOf([{ kind: "EXISTING_CATEGORY", targetKey: "full", categoryId: 1 }]),
+    );
+
+    // Then
+    await expect(result).resolves.toBeUndefined();
   });
 
   it("새 카테고리를 만들면 무료 카테고리 수 한도를 넘을 때 카테고리 만들기와 같은 0857이다", async () => {
@@ -103,14 +90,11 @@ describe("AssertTodoImportTargetsUseCase", () => {
       { id: 2, name: "개인" },
     ]);
     const newTarget = (index: number) => ({
-      target: {
-        kind: "NEW_CATEGORY" as const,
-        targetKey: `new-${index}`,
-        name: `캘린더 ${index}`,
-        color: "#FF0000",
-        categoryId: null,
-      },
-      expected: 1,
+      kind: "NEW_CATEGORY" as const,
+      targetKey: `new-${index}`,
+      name: `캘린더 ${index}`,
+      color: "#FF0000",
+      categoryId: null,
     });
 
     // When

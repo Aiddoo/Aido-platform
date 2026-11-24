@@ -11,7 +11,6 @@ export {
   StagedTodoCreatorPort,
 } from "./application/ports/staged-todo-creator.port.js";
 export { TodoCachePort } from "./application/ports/todo-cache.port.js";
-export { TodoCategoryUsageReaderPort } from "./application/ports/todo-category-usage.reader.port.js";
 export {
   type TodoCommentCount,
   TodoEngagementCounterPort,

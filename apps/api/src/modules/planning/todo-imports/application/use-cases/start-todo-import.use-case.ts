@@ -158,7 +158,7 @@ export class StartTodoImportUseCase {
     const collections = command.collections.map((collection) =>
       TodoImportCollection.create(collection),
     );
-    await this.#dependencies.assertTargets.execute({ userId, targets, collections });
+    await this.#dependencies.assertTargets.execute({ userId, targets });
     const todoImport = TodoImport.create({
       id: TodoImportId.generate(),
       source: command.source,
