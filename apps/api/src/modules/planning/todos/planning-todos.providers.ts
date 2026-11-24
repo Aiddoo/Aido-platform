@@ -17,6 +17,7 @@ import {
 import { loggerFor, provideUseCase } from "#api/platform/di/provide-use-case";
 import { AfterCommitTaskRegistryPort } from "#api/shared/application/ports/after-commit-task.registry.port";
 import { ClockPort } from "#api/shared/application/ports/clock.port";
+import { DomainEventPublisherPort } from "#api/shared/application/ports/domain-event-publisher.port";
 import { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
@@ -57,6 +58,7 @@ import { PublishTodoCreatedUseCase } from "./application/use-cases/publish-todo-
 import { PublishTodoUpdateUseCase } from "./application/use-cases/publish-todo-update.use-case.js";
 import { RebaseTodoTimezoneUseCase } from "./application/use-cases/rebase-todo-timezone.use-case.js";
 import { RemoveCategoryTodosUseCase } from "./application/use-cases/remove-category-todos.use-case.js";
+import { RemoveTodosUseCase } from "./application/use-cases/remove-todos.use-case.js";
 import { ReorderTodoItemsUseCase } from "./application/use-cases/reorder-todo-items.use-case.js";
 import { ReorderTodoUseCase } from "./application/use-cases/reorder-todo.use-case.js";
 import { ResolveTodoTimezoneUseCase } from "./application/use-cases/resolve-todo-timezone.use-case.js";
@@ -97,6 +99,14 @@ export const PLANNING_TODOS_PROVIDERS = [
     reminderScheduler: TodoReminderSchedulerPort,
     todoCache: TodoCachePort,
     afterCommit: AfterCommitTaskRegistryPort,
+  }),
+  provideUseCase(RemoveTodosUseCase, {
+    bulkRemover: TodoBulkRemoverPort,
+    reminderScheduler: TodoReminderSchedulerPort,
+    eventPublisher: DomainEventPublisherPort,
+    todoCache: TodoCachePort,
+    afterCommit: AfterCommitTaskRegistryPort,
+    clock: ClockPort,
   }),
   provideUseCase(WriteSingleTodoUseCase, {
     clock: ClockPort,

@@ -6,7 +6,11 @@ import { RecordingAfterCommitRegistry } from "#test/doubles/platform/recording-a
 import { TODO_FIXTURE_NOW, TODO_FIXTURE_USER_ID } from "#test/fixtures/planning/todo.fixture";
 
 import { TodoId } from "../../domain/todo-id.vo.js";
-import { type RemovedCategoryTodos, TodoBulkRemoverPort } from "../ports/todo-bulk-remover.port.js";
+import {
+  type RemovedCategoryTodos,
+  type RemovedTodo,
+  TodoBulkRemoverPort,
+} from "../ports/todo-bulk-remover.port.js";
 import { RemoveCategoryTodosUseCase } from "./remove-category-todos.use-case.js";
 
 class StubTodoBulkRemover extends TodoBulkRemoverPort {
@@ -19,6 +23,10 @@ class StubTodoBulkRemover extends TodoBulkRemoverPort {
 
   async removeByCategory(): Promise<RemovedCategoryTodos> {
     return this.#removed;
+  }
+
+  async removeIncompleteByIds(): Promise<readonly RemovedTodo[]> {
+    return [];
   }
 }
 

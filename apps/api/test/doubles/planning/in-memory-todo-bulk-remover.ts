@@ -38,4 +38,19 @@ export class InMemoryTodoBulkRemover extends TodoBulkRemoverPort {
     }
     return { todos, seriesCount };
   }
+
+  async removeIncompleteByIds(
+    userId: UserId,
+    todoIds: readonly TodoId[],
+  ): Promise<readonly RemovedTodo[]> {
+    const removed: RemovedTodo[] = [];
+    for (const todoId of todoIds) {
+      const record = this.#stores.todoRecords.get(todoId.value);
+      if (record?.userId === userId.value && !record.completed) {
+        this.#stores.todoRecords.delete(todoId.value);
+        removed.push({ id: todoId, scheduledTime: record.scheduledTime });
+      }
+    }
+    return removed;
+  }
 }

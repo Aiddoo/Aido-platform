@@ -23,4 +23,10 @@ export abstract class TodoBulkRemoverPort {
     userId: UserId,
     categoryId: TodoCategoryId,
   ): Promise<RemovedCategoryTodos>;
+
+  // 그 사용자의 완료하지 않은 할 일만 지운다. 완료한 것·남의 id·이미 없는 id는 건너뛴다
+  abstract removeIncompleteByIds(
+    userId: UserId,
+    todoIds: readonly TodoId[],
+  ): Promise<readonly RemovedTodo[]>;
 }

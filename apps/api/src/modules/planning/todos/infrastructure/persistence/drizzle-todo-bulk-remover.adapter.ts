@@ -1,6 +1,6 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 
 import type { TodoCategoryId } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
@@ -9,6 +9,7 @@ import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type {
   RemovedCategoryTodos,
+  RemovedTodo,
   TodoBulkRemoverPort,
 } from "../../application/ports/todo-bulk-remover.port.js";
 import { TodoId } from "../../domain/todo-id.vo.js";
@@ -42,5 +43,31 @@ export class DrizzleTodoBulkRemoverAdapter implements TodoBulkRemoverPort {
       })),
       seriesCount: series.length,
     };
+  }
+
+  async removeIncompleteByIds(
+    userId: UserId,
+    todoIds: readonly TodoId[],
+  ): Promise<readonly RemovedTodo[]> {
+    if (todoIds.length === 0) {
+      return [];
+    }
+    const rows = await this.#transactionHost.tx
+      .delete(todo)
+      .where(
+        and(
+          eq(todo.userId, userId.value),
+          eq(todo.completed, false),
+          inArray(
+            todo.id,
+            todoIds.map((todoId) => todoId.value),
+          ),
+        ),
+      )
+      .returning({ id: todo.id, scheduledTime: todo.scheduledTime });
+    return rows.map((row) => ({
+      id: TodoId.reconstitute(row.id),
+      scheduledTime: row.scheduledTime,
+    }));
   }
 }

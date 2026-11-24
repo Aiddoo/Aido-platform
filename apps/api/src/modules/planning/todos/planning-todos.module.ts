@@ -12,6 +12,7 @@ import { TodoCategoryUsageReaderPort } from "./application/ports/todo-category-u
 import { TodoEngagementCounterPort } from "./application/ports/todo-engagement-counter.port.js";
 import { TodoViewCacheInvalidatorPort } from "./application/ports/todo-view-cache-invalidator.port.js";
 import { RemoveCategoryTodosUseCase } from "./application/use-cases/remove-category-todos.use-case.js";
+import { RemoveTodosUseCase } from "./application/use-cases/remove-todos.use-case.js";
 import { PlanningTodoPortsModule } from "./planning-todo-ports.module.js";
 import { PLANNING_TODOS_PROVIDERS } from "./planning-todos.providers.js";
 import { TodoFieldController } from "./presentation/http/v1/todo-field.controller.js";
@@ -39,6 +40,7 @@ import { TodoController } from "./presentation/http/v1/todo.controller.js";
     TodoEngagementCounterPort,
     TodoViewCacheInvalidatorPort,
     RemoveCategoryTodosUseCase,
+    RemoveTodosUseCase,
   ],
 })
 export class PlanningTodosModule {}
