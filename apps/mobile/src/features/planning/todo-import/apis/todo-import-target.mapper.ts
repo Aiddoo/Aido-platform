@@ -14,6 +14,7 @@ import {
   type ImportTargetSuggestion,
   suggestTargets,
 } from '../domains/todo-import-target.model';
+import type { TodoImportCategoryMode } from '../schemas/todo-import-form.schema';
 
 const HEX_COLOR_PATTERN = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/iu;
 const HEX_RADIX = 16;
@@ -128,4 +129,33 @@ export function resolveImportTargets(
       collections.map((collection) => collection.collectionKey),
     ),
   };
+}
+
+/** 캘린더가 하나뿐이면 모을 것이 없어 캘린더마다 고르는 것과 같다 */
+export function resolveCategoryMode(
+  collections: readonly ImportCollection[],
+  categoryMode: TodoImportCategoryMode,
+): TodoImportCategoryMode {
+  return collections.length < 2 ? 'separate' : categoryMode;
+}
+
+/**
+ * 한 카테고리에 모으면 모든 캘린더가 같은 곳을 가리킨다. 아직 고르지 않았으면 첫 캘린더의 곳이다.
+ * 캘린더마다 고른 값은 그대로 둬 다시 나누면 돌아온다
+ */
+export function applyCategoryMode(
+  collections: readonly ImportCollection[],
+  targets: Readonly<Record<string, ImportTarget>>,
+  {
+    categoryMode,
+    singleTarget,
+  }: { categoryMode: TodoImportCategoryMode; singleTarget: ImportTarget | null },
+): Record<string, ImportTarget> {
+  const [firstCollection] = collections;
+  const target =
+    singleTarget ?? (firstCollection == null ? null : targets[firstCollection.collectionKey]);
+  if (resolveCategoryMode(collections, categoryMode) === 'separate' || target == null) {
+    return { ...targets };
+  }
+  return Object.fromEntries(collections.map((collection) => [collection.collectionKey, target]));
 }

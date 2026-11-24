@@ -5,6 +5,7 @@ import { dateKeySchema } from '@src/shared/date/date-key';
 import { createImportCollection } from '../__tests__/todo-import.fixtures';
 import type { TodoImportFormValues } from '../schemas/todo-import-form.schema';
 import {
+  applyCategoryMode,
   findNearestPaletteColor,
   resolveImportTargets,
   toNewCategoryName,
@@ -38,6 +39,8 @@ function createFormValues(overrides: Partial<TodoImportFormValues> = {}): TodoIm
     collectionKeys: null,
     collections: [],
     targets: {},
+    categoryMode: 'separate',
+    singleTarget: null,
     timeMode: 'TIME',
     visibility: 'PRIVATE',
     ...overrides,
@@ -142,10 +145,15 @@ describe('toTodoImportSelection', () => {
     const shared = { kind: 'NEW_CATEGORY', name: '가져온 일정', color: '#339AF0' } as const;
 
     // When
-    const selection = toTodoImportSelection(createFormValues({ collections: [school, work] }), {
-      [school.collectionKey]: shared,
-      [work.collectionKey]: { ...shared, name: ' 가져온 일정' },
-    });
+    const selection = toTodoImportSelection(
+      createFormValues({
+        collections: [school, work],
+        targets: {
+          [school.collectionKey]: shared,
+          [work.collectionKey]: { ...shared, name: ' 가져온 일정' },
+        },
+      }),
+    );
 
     // Then
     expect(selection.targets).toEqual([{ ...shared, targetKey: 'new-0' }]);
@@ -153,5 +161,71 @@ describe('toTodoImportSelection', () => {
       { collectionKey: school.collectionKey, targetKey: 'new-0', expectedItemCount: 3 },
       { collectionKey: work.collectionKey, targetKey: 'new-0', expectedItemCount: 5 },
     ]);
+  });
+
+  it('한 카테고리에 모두 넣으면 모든 캘린더가 같은 대상을 가리킨다', () => {
+    // Given
+    const school = createImportCollection({ collectionKey: 'a'.repeat(64), itemCount: 3 });
+    const work = createImportCollection({ collectionKey: 'b'.repeat(64), itemCount: 5 });
+
+    // When
+    const selection = toTodoImportSelection(
+      createFormValues({
+        collections: [school, work],
+        targets: {
+          [school.collectionKey]: { kind: 'NEW_CATEGORY', name: '학교', color: '#339AF0' },
+          [work.collectionKey]: { kind: 'EXISTING_CATEGORY', categoryId: 7 },
+        },
+        categoryMode: 'single',
+        singleTarget: { kind: 'EXISTING_CATEGORY', categoryId: 3 },
+      }),
+    );
+
+    // Then
+    expect(selection.targets).toEqual([
+      { kind: 'EXISTING_CATEGORY', categoryId: 3, targetKey: 'category-3' },
+    ]);
+    expect(selection.collections).toEqual([
+      { collectionKey: school.collectionKey, targetKey: 'category-3', expectedItemCount: 3 },
+      { collectionKey: work.collectionKey, targetKey: 'category-3', expectedItemCount: 5 },
+    ]);
+  });
+});
+
+describe('applyCategoryMode', () => {
+  const school = createImportCollection({ collectionKey: 'a'.repeat(64) });
+  const work = createImportCollection({ collectionKey: 'b'.repeat(64) });
+  const schoolTarget = { kind: 'NEW_CATEGORY', name: '학교', color: '#339AF0' } as const;
+  const workTarget = { kind: 'EXISTING_CATEGORY', categoryId: 7 } as const;
+  const targets = { [school.collectionKey]: schoolTarget, [work.collectionKey]: workTarget };
+
+  it.each([
+    [
+      '캘린더마다 넣으면 고른 곳 그대로다',
+      [school, work],
+      'separate',
+      null,
+      [schoolTarget, workTarget],
+    ],
+    [
+      '모을 곳을 고르기 전이면 첫 캘린더의 곳에 모은다',
+      [school, work],
+      'single',
+      null,
+      [schoolTarget, schoolTarget],
+    ],
+    [
+      '캘린더가 하나면 모으기를 골랐어도 그 캘린더의 곳이다',
+      [work],
+      'single',
+      schoolTarget,
+      [workTarget],
+    ],
+  ] as const)('%s', (_case, collections, categoryMode, singleTarget, expected) => {
+    // When
+    const applied = applyCategoryMode(collections, targets, { categoryMode, singleTarget });
+
+    // Then
+    expect(collections.map(({ collectionKey }) => applied[collectionKey])).toEqual(expected);
   });
 });

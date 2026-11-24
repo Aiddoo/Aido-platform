@@ -15,6 +15,7 @@ import type { TodoImportSelection } from '../domains/todo-import-session.model';
 import { type ImportTarget, TodoImportTargetPolicy } from '../domains/todo-import-target.model';
 import type { TodoImport } from '../domains/todo-import.model';
 import type { TodoImportFormValues } from '../schemas/todo-import-form.schema';
+import { applyCategoryMode } from './todo-import-target.mapper';
 
 export function toTodoImport(dto: TodoImportDto): TodoImport {
   return {
@@ -47,10 +48,8 @@ function toTargetKey(target: ImportTarget, index: number) {
 }
 
 /** 같은 기존 카테고리나 같은 이름의 새 카테고리를 고른 캘린더는 대상 하나를 함께 가리킨다 */
-export function toTodoImportSelection(
-  values: TodoImportFormValues,
-  targets: Readonly<Record<string, ImportTarget>>,
-): TodoImportSelection {
+export function toTodoImportSelection(values: TodoImportFormValues): TodoImportSelection {
+  const targets = applyCategoryMode(values.collections, values.targets, values);
   const chosen = values.collections.flatMap((collection) => {
     const target = targets[collection.collectionKey];
     return target == null ? [] : [{ collection, target }];

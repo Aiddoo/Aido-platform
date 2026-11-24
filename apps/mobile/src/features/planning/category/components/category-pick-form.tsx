@@ -16,6 +16,8 @@ interface CategoryPickFormProps {
   defaultValue: number;
   onSubmit: (categoryId: number) => Promise<unknown> | void;
   submitLabel: string;
+  /** 목록 위 제목. 없으면 "카테고리 선택" */
+  title?: string;
   isLoading?: boolean;
   /** 보일 카테고리. 지우는 카테고리의 할 일을 옮길 곳을 고를 때 옮길 수 있는 곳만 남긴다 */
   filters?: FilterTodoCategory;
@@ -25,6 +27,7 @@ export function CategoryPickForm({
   defaultValue,
   onSubmit,
   submitLabel,
+  title,
   isLoading = false,
   filters,
 }: CategoryPickFormProps) {
@@ -38,7 +41,7 @@ export function CategoryPickForm({
   return (
     <VStack gap={20}>
       <Text size="b3" weight="semibold">
-        {t('category.select')}
+        {title ?? t('category.select')}
       </Text>
 
       {/* 하나만 고르는 목록이라 스크린 리더에 라디오와 선택 상태로 알린다. 눌림 면은 그대로 둔다 */}

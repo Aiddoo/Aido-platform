@@ -122,4 +122,26 @@ function isSameTarget(target: ImportTarget, other: ImportTarget) {
   return false;
 }
 
-export const TodoImportTargetPolicy = { countNewCategories, isSameTarget } as const;
+/** 이름이 같은 카테고리가 있으면 새로 만들지 않고 그 카테고리에 넣는다(`suggestTargets`와 같게 견준다) */
+function findSameNameCategory<TCategory extends TodoCategory>(
+  target: ImportTarget,
+  categories: readonly TCategory[],
+): TCategory | null {
+  if (target.kind !== 'NEW_CATEGORY') {
+    return null;
+  }
+  const name = toComparableName(target.name);
+  return (
+    categories.find(
+      (category) =>
+        !TodoCategoryPolicy.isOptimisticCategory(category) &&
+        toComparableName(category.name) === name,
+    ) ?? null
+  );
+}
+
+export const TodoImportTargetPolicy = {
+  countNewCategories,
+  isSameTarget,
+  findSameNameCategory,
+} as const;

@@ -136,3 +136,27 @@ describe('TodoImportTargetPolicy.countNewCategories', () => {
     expect(count).toBe(2);
   });
 });
+
+describe('TodoImportTargetPolicy.findSameNameCategory', () => {
+  const pending = createTodoCategoryWithCount({ id: -1, name: '학교' });
+
+  it.each([
+    [
+      '새 카테고리 이름이 같으면(공백·대소문자 무시) 그 카테고리다',
+      { kind: 'NEW_CATEGORY', name: '업무', color: '#339AF0' },
+      WORK.id,
+    ],
+    [
+      '만드는 중인 카테고리는 견주지 않는다',
+      { kind: 'NEW_CATEGORY', name: '학교', color: '#339AF0' },
+      null,
+    ],
+    ['이미 있는 카테고리를 고른 대상은 없다', { kind: 'EXISTING_CATEGORY', categoryId: 7 }, null],
+  ] as const)('%s', (_case, target, expectedCategoryId) => {
+    // When
+    const category = TodoImportTargetPolicy.findSameNameCategory(target, [DEFAULT, WORK, pending]);
+
+    // Then
+    expect(category?.id ?? null).toBe(expectedCategoryId);
+  });
+});

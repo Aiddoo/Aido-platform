@@ -53,6 +53,7 @@ import { FormStepLayout, KeyboardAdaptiveButton } from '@src/shared/ui';
 | ---------- | ----------- | ------ | ---------------------------------------------------- |
 | `title`    | `string`    | -      | 단계 제목. 값이 바뀌면 제목만 다시 페이드인한다      |
 | `footer`   | `ReactNode` | -      | 키보드에 붙는 주 동작 버튼(`KeyboardAdaptiveButton`) |
+| `progress` | `ReactNode` | -      | 제목 위 진행 표시(`Steps.Dots`). 스크롤 안에 둔다    |
 | `children` | `ReactNode` | -      | 제목 아래 입력 영역                                  |
 
 `FormScrollView`는 `title` 없이 `footer`와 `ScrollView` props를 받는다.
