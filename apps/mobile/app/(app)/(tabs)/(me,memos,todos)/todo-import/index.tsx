@@ -54,20 +54,29 @@ import {
   ReadableContent,
   SettingsListGroup,
   Spacing,
+  STACK_BACK_ICON,
   Steps,
   Text,
   useAppToast,
   useOpenSheet,
+  usePaneSizeClass,
   VStack,
 } from '@src/shared/ui';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { sumBy } from 'es-toolkit';
-import { router, Stack } from 'expo-router';
-import { Suspense } from 'react';
+import { type NavigationAction, router, Stack, useNavigation, usePreventRemove } from 'expo-router';
+import { Suspense, useState } from 'react';
 import { type UseFormReturn, useForm, useFormState, useWatch } from 'react-hook-form';
-import { match } from 'ts-pattern';
+import { isMatching, match } from 'ts-pattern';
 
 type TodoImportStepContexts = Record<TodoImportStep, Record<string, never>>;
+
+const TODO_IMPORT_STEPS = [
+  'permission',
+  'calendars',
+  'categories',
+  'options',
+] as const satisfies readonly TodoImportStep[];
 
 type TodoImportForm = UseFormReturn<TodoImportFormValues>;
 
@@ -90,15 +99,22 @@ export default function TodoImportSetupScreen() {
 }
 
 function TodoImportSetup() {
+  const { t } = useTranslation('common');
   const { trackEvent } = useTrack();
   const todayKey = useTodayKey();
+  const navigation = useNavigation();
+  const isCompact = usePaneSizeClass() === 'compact';
   const { data: permission } = useSuspenseQuery(useGetCalendarPermissionQueryOptions());
   // 이미 허용한 기기는 안내를 건너뛴다. 단계는 URL로 복원하지 않는다
+  const [initialStep] = useState<TodoImportStep>(() =>
+    permission.status === 'granted' ? 'calendars' : 'permission',
+  );
   const stepper = useStepper<TodoImportStepContexts>({
     id: 'todo-import',
-    initial: { step: permission.status === 'granted' ? 'calendars' : 'permission' },
+    initial: { step: initialStep },
     onStepChange: ({ step }) => trackEvent('todo_import_step_viewed', { step }),
   });
+  const [isLeaving, setIsLeaving] = useState(false);
   const form = useForm({
     resolver: zodResolver(todoImportFormSchema),
     defaultValues: {
@@ -113,7 +129,32 @@ function TodoImportSetup() {
     mode: 'onChange',
   });
 
-  const stepCount = stepper.historySteps[0]?.step === 'permission' ? 4 : 3;
+  const isPastFirstStep = stepper.index > 0;
+  const firstStepOrder = TODO_IMPORT_STEPS.indexOf(initialStep);
+  // 휴대폰의 헤더 뒤로 가기·iOS 밀어서 뒤로 가기는 화면을 닫지 않고 앞 단계로 돌아가 고른 값을 지킨다.
+  // 넓은 화면은 메뉴가 상세를 걷어 내며 바꾸므로 막지 않고, 밀어서 닫기만 끈다
+  const disablePrevention = usePreventRemove(
+    isCompact && isPastFirstStep && !isLeaving,
+    ({ data, repeat }) => {
+      if (isSingleStepBack(data.action)) {
+        stepper.history.back();
+        return;
+      }
+      setIsLeaving(true);
+      repeat();
+    },
+  );
+  const handleStepBack = useSingleTap(() => stepper.history.back());
+
+  // 시작을 기다리는 사이 떠났으면 보던 화면 위로 끌고 가지 않는다. 진행 중인 가져오기는 메뉴 행이 알린다
+  const leaveToImport = (importId: string) => {
+    if (!navigation.isFocused()) {
+      return;
+    }
+    setIsLeaving(true);
+    disablePrevention();
+    router.replace({ pathname: '/todo-import/[importId]', params: { importId } });
+  };
   const goBackToCategories = () => {
     const index = stepper.historySteps.findIndex((entry) => entry.step === 'categories');
     if (0 <= index && index < stepper.index) {
@@ -123,19 +164,40 @@ function TodoImportSetup() {
 
   return (
     <VStack flex={1}>
+      {/* 숨긴 항목도 iOS 기본 뒤로 가기를 가려, 첫 단계에서는 툴바를 그리지 않는다 */}
+      {isPastFirstStep && (
+        <Stack.Toolbar placement="left">
+          <Stack.Toolbar.Button
+            icon={STACK_BACK_ICON}
+            accessibilityLabel={t('actions.back')}
+            onPress={handleStepBack}
+          />
+        </Stack.Toolbar>
+      )}
+      {!isCompact && isPastFirstStep && <Stack.Screen options={{ gestureEnabled: false }} />}
+
       <Box className="px-4 pt-3">
-        <Steps.Dots index={stepper.index} count={stepCount} />
+        <Steps.Dots
+          index={TODO_IMPORT_STEPS.indexOf(stepper.step) - firstStepOrder}
+          count={TODO_IMPORT_STEPS.length - firstStepOrder}
+        />
       </Box>
 
       <stepper.Render
-        permission={() => <PermissionStep onGranted={() => stepper.history.push('calendars')} />}
+        permission={() => <PermissionStep onGranted={() => stepper.history.replace('calendars')} />}
         calendars={() => (
           <CalendarsStep form={form} onNext={() => stepper.history.push('categories')} />
         )}
         categories={() => (
           <CategoriesStep form={form} onNext={() => stepper.history.push('options')} />
         )}
-        options={() => <OptionsStep form={form} onTargetsRejected={goBackToCategories} />}
+        options={() => (
+          <OptionsStep
+            form={form}
+            onStarted={leaveToImport}
+            onTargetsRejected={goBackToCategories}
+          />
+        )}
       />
     </VStack>
   );
@@ -357,9 +419,11 @@ function CategoriesStep({ form, onNext }: { form: TodoImportForm; onNext: () => 
 
 function OptionsStep({
   form,
+  onStarted,
   onTargetsRejected,
 }: {
   form: TodoImportForm;
+  onStarted: (importId: string) => void;
   onTargetsRejected: () => void;
 }) {
   const { t } = useTranslation('todoImport');
@@ -382,13 +446,13 @@ function OptionsStep({
     if (isRangeAdjusted) {
       toast.toast(t('toasts.rangeAdjusted'));
     }
-    router.replace({ pathname: '/todo-import/[importId]', params: { importId: todoImport.id } });
+    onStarted(todoImport.id);
   });
 
   const handleStartError = (error: unknown) => {
     const activeImportId = findActiveTodoImportId(error);
     if (activeImportId != null) {
-      router.replace({ pathname: '/todo-import/[importId]', params: { importId: activeImportId } });
+      onStarted(activeImportId);
       return;
     }
     if (calendarImportGate.promptIfBlockedError(error)) {
@@ -544,4 +608,12 @@ function showRejectedTargets(
       }
     }
   }
+}
+
+/** 헤더 뒤로 가기와 iOS 밀어서 뒤로 가기는 한 칸 pop이다. 탭 다시 누르기·메뉴 이동은 그대로 보낸다 */
+function isSingleStepBack(action: NavigationAction) {
+  return (
+    isMatching({ type: 'GO_BACK' }, action) ||
+    isMatching({ type: 'POP', payload: { count: 1 } }, action)
+  );
 }
