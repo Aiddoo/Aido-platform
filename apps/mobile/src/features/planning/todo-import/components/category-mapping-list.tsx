@@ -149,7 +149,7 @@ CategoryMappingList.Item = function Item({
           t('categories.rowLabel', {
             source: t(CALENDAR_SOURCE_LABEL_KEYS[collection.accountProvider]),
             calendar: collection.title,
-            target: targetName,
+            target: appearance?.name ?? targetName,
           }),
           warningMessage,
           errorMessage,

@@ -24,7 +24,7 @@ import { SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 
 ### 하나 고르기
 
-테마·글꼴 크기·언어·앱 아이콘처럼 하나를 고르는 화면은 heroui `RadioGroup`(`className="gap-0"`)을 카드 안에 두고 `.Radio`를 나란히 써요. 값은 `RadioGroup`의 `value`/`onValueChange`로 주고받아요.
+테마·글꼴 크기·언어·앱 아이콘처럼 하나를 고르는 화면은 heroui `RadioGroup`(`className="gap-0"`)을 카드 안에 두고 `.Radio`를 나란히 써요. 값은 `RadioGroup`의 `value`/`onValueChange`로 주고받아요. 스크린 리더 라벨은 `label`과 `description`을 이어 기본으로 넣고, `accessibilityLabel`을 넘기면 그 값을 써요.
 
 ```tsx
 <SettingsListGroup label={t('theme.label')}>

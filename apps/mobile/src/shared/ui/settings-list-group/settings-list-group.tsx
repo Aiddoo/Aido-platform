@@ -1,6 +1,6 @@
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { cn } from '@src/shared/utils/cn';
-import { range } from 'es-toolkit';
+import { compact, range } from 'es-toolkit';
 import {
   ControlField,
   ListGroup,
@@ -252,10 +252,13 @@ function SettingsListGroupRadio({
   icon,
   badge,
   className,
+  accessibilityLabel,
   ...props
 }: SettingsListGroupRadioProps) {
   return (
     <RadioGroup.Item
+      // 라디오 루트가 글자를 묶어 읽지 않는 기기에서도 줄 이름이 읽히게 한다
+      accessibilityLabel={accessibilityLabel ?? compact([label, description]).join(', ')}
       className={cn(
         'min-h-12 px-4 py-3 active:bg-gray-3 disabled:opacity-40 dark:active:bg-gray-2',
         className,

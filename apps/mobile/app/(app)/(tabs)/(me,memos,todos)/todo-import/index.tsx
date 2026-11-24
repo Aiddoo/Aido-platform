@@ -723,7 +723,8 @@ function CategoriesStep({ form, progress, onNext }: StepProps & { onNext: () => 
             <Spacing size={8} />
             <WordWrapText size="b4" shade={6}>
               {t('categories.separate.note', {
-                name: formatTargetName(findTargetAppearance(destination, categories)),
+                // 문장 안에서는 "새 · " 표시 없이 이름만 쓴다
+                name: findTargetAppearance(destination, categories)?.name ?? formatTargetName(null),
               })}
             </WordWrapText>
           </Animated.View>
