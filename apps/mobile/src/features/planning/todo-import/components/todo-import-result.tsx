@@ -1,6 +1,5 @@
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
-import { dismissToTab } from '@src/shared/navigation/open-entry-href';
 import {
   Box,
   Button,
@@ -16,6 +15,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { match } from 'ts-pattern';
 
@@ -90,7 +90,7 @@ export function TodoImportResult() {
         <Button
           size="large"
           onPress={() =>
-            dismissToTab(
+            router.navigate(
               firstDate == null ? '/feed' : { pathname: '/feed', params: { date: firstDate } },
             )
           }
