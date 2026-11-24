@@ -30,6 +30,7 @@ export abstract class TodoCategoryRepositoryPort {
     name: string,
     excludeId?: TodoCategoryId,
   ): Promise<boolean>;
+  abstract listNamesByUserId(userId: UserId): Promise<ReadonlySet<string>>;
   abstract getMaxSortOrder(userId: UserId): Promise<number>;
   // 사이 카테고리를 한 칸씩 미는 묶음 문장이다
   abstract shiftSortOrders(userId: UserId, shift: ReorderPlan["shift"]): Promise<number>;

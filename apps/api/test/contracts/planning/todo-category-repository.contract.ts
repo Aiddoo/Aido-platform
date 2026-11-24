@@ -145,7 +145,7 @@ export function describeTodoCategoryRepositoryContract(
       expect(single?.todoCount).toBe(2);
     });
 
-    it("개수·최대 순서는 그 사용자 것만 보고 없으면 최대 순서는 -1이다", async () => {
+    it("개수·최대 순서·이름 목록은 그 사용자 것만 보고 없으면 최대 순서는 -1이다", async () => {
       // Given
       const { categoryRepository } = await createContext();
       const empty = await categoryRepository.getMaxSortOrder(
@@ -165,9 +165,17 @@ export function describeTodoCategoryRepositoryContract(
       const max = await categoryRepository.getMaxSortOrder(
         UserId.reconstitute(TODO_FIXTURE_USER_ID),
       );
+      const names = await categoryRepository.listNamesByUserId(
+        UserId.reconstitute(TODO_FIXTURE_USER_ID),
+      );
 
       // Then
-      expect({ empty, count, max }).toEqual({ empty: -1, count: 1, max: 4 });
+      expect({ empty, count, max, names: [...names] }).toEqual({
+        empty: -1,
+        count: 1,
+        max: 4,
+        names: ["가"],
+      });
     });
 
     it("순서 밀기는 그 사용자 구간 안 카테고리만 옮기고 옮긴 수를 돌려준다", async () => {

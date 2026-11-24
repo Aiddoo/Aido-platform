@@ -1,6 +1,10 @@
 export { TodoCategoryReaderPort } from "./application/ports/todo-category.reader.port.js";
 export { TodoCategoryCachePort } from "./application/ports/todo-category-cache.port.js";
 export { TodoCategoryCountReaderPort } from "./application/ports/todo-category-count.reader.port.js";
+export {
+  type TodoCategoryCreationDraft,
+  TodoCategoryCreatorPort,
+} from "./application/ports/todo-category-creator.port.js";
 export { TodoCategoryProvisionerPort } from "./application/ports/todo-category-provisioner.port.js";
 export {
   CATEGORY_CHANGE_EVENT_NAMES,

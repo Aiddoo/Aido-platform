@@ -144,6 +144,14 @@ export class DrizzleTodoCategoryRepository implements TodoCategoryRepositoryPort
     return row != null;
   }
 
+  async listNamesByUserId(userId: UserId): Promise<ReadonlySet<string>> {
+    const rows = await this.#db
+      .select({ name: todoCategory.name })
+      .from(todoCategory)
+      .where(eq(todoCategory.userId, userId.value));
+    return new Set(rows.map((row) => row.name));
+  }
+
   async getMaxSortOrder(userId: UserId): Promise<number> {
     const [result] = await this.#db
       .select({ maximum: max(todoCategory.sortOrder) })

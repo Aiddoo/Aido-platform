@@ -104,6 +104,14 @@ export class InMemoryTodoCategoryRepository extends TodoCategoryRepositoryPort {
     );
   }
 
+  async listNamesByUserId(userId: UserId): Promise<ReadonlySet<string>> {
+    return new Set(
+      [...this.#categories.values()]
+        .filter((category) => category.userId.equals(userId))
+        .map((category) => category.name.value),
+    );
+  }
+
   async getMaxSortOrder(userId: UserId): Promise<number> {
     return Math.max(
       -1,

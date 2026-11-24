@@ -19,6 +19,7 @@ import type { TodoCategoryCachePort } from "#api/modules/planning/todo-categorie
 import { TodoCategoryLockKeys } from "#api/modules/planning/todo-categories/application/todo-categories.lock-keys";
 import { CreateTodoCategoryUseCase } from "#api/modules/planning/todo-categories/application/use-cases/create-todo-category.use-case";
 import { ReorderTodoCategoryUseCase } from "#api/modules/planning/todo-categories/application/use-cases/reorder-todo-category.use-case";
+import { WriteTodoCategoryUseCase } from "#api/modules/planning/todo-categories/application/use-cases/write-todo-category.use-case";
 import { TodoCategoryLimitReaderAdapter } from "#api/modules/planning/todo-categories/infrastructure/adapters/todo-category-limit-reader.adapter";
 import { DrizzleTodoCategoryRepository } from "#api/modules/planning/todo-categories/infrastructure/persistence/drizzle-todo-category.repository";
 import { DrizzleTodoBriefReader } from "#api/modules/planning/todos/infrastructure/persistence/drizzle-todo-brief.reader";
@@ -1104,12 +1105,14 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       CONCURRENCY,
     );
     const useCase = new CreateTodoCategoryUseCase({
-      repository: categoryRepository,
+      writeCategory: new WriteTodoCategoryUseCase({
+        repository: categoryRepository,
+        limitReader: categoryLimitReader,
+        clock: new DateClock(),
+      }),
       cache: createTodoCategoryCache(),
-      limitReader: categoryLimitReader,
       mutationLock: coordinatedLock,
       unitOfWork: categoryUow,
-      clock: new DateClock(),
       logger: new SilentLogger(),
     });
 
