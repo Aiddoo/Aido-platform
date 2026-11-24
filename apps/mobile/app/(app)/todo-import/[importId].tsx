@@ -1,5 +1,7 @@
+import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
 import { TodoImportProgress } from '@src/features/planning/todo-import/components/todo-import-progress';
 import { TodoImportResult } from '@src/features/planning/todo-import/components/todo-import-result';
+import type { TodoImport } from '@src/features/planning/todo-import/domains/todo-import.model';
 import { useTodoImportId } from '@src/features/planning/todo-import/hooks/use-todo-import-id';
 import { useGetTodoImportQueryOptions } from '@src/features/planning/todo-import/queries/todo-import.queries';
 import { todoImportParamsSchema } from '@src/features/planning/todo-import/schemas/todo-import-params.schema';
@@ -108,11 +110,9 @@ function StartAgainButton() {
 }
 
 /** 이 화면에서 처리 중이던 가져오기가 끝나는 순간만 센다. 결과를 다시 열 때는 세지 않는다 */
-function useTrackImportOutcome(
-  status: Parameters<typeof toImportOutcome>[0],
-  counts: { created: number; skippedDuplicate: number; skippedCapacity: number },
-) {
-  const { trackEvent } = useTrack();
+function useTrackImportOutcome(status: TodoImport['status'], counts: TodoImport['counts']) {
+  const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
+  const accountId = useMyAccountId();
   const previousStatusRef = useRef(status);
 
   useEffect(() => {
@@ -122,33 +122,25 @@ function useTrackImportOutcome(
       return;
     }
     match(toImportOutcome(status))
-      .with('completed', () =>
+      .with('completed', () => {
         trackEvent('todo_import_completed', {
           created_bucket: toTodoImportCountBucket(counts.created),
           skipped_duplicate: counts.skippedDuplicate,
           skipped_capacity: counts.skippedCapacity,
-        }),
-      )
+        });
+        if (accountId != null) {
+          trackAttributedFeatureSuccess({ accountId, feature: 'calendar_import' });
+        }
+      })
       .with('server_failed', 'abandoned', 'canceled', (reason) =>
         trackEvent('todo_import_failed', { reason }),
       )
       .with(null, () => undefined)
       .exhaustive();
-  }, [status, counts, trackEvent]);
+  }, [status, counts, trackEvent, trackAttributedFeatureSuccess, accountId]);
 }
 
-function toImportOutcome(
-  status:
-    | 'UPLOADING'
-    | 'QUEUED'
-    | 'RUNNING'
-    | 'COMPLETED'
-    | 'FAILED'
-    | 'CANCELED'
-    | 'ABANDONED'
-    | 'UNDOING'
-    | 'UNDONE',
-) {
+function toImportOutcome(status: TodoImport['status']) {
   return match(status)
     .with('COMPLETED', () => 'completed' as const)
     .with('FAILED', () => 'server_failed' as const)
