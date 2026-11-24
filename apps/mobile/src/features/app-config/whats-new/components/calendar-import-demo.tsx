@@ -1,7 +1,7 @@
+import { TODO_LIMITS } from '@aido/api/vocabulary';
 import { useFormatPlanValue } from '@src/features/billing/subscription/hooks/use-format-plan-value';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import { toPlanFeatureComparison } from '@src/features/billing/subscription/utils/plan-benefit.view-model';
-import type { TodoCategoryWithCount } from '@src/features/planning/category/domains/todo-category.model';
 import { CalendarSourceList } from '@src/features/planning/todo-import/components/calendar-source-list';
 import { ImportDestinationButton } from '@src/features/planning/todo-import/components/import-destination-button';
 import { ImportSourceList } from '@src/features/planning/todo-import/components/import-source-list';
@@ -10,7 +10,10 @@ import {
   type ImportCollection,
   TodoImportCollectionPolicy,
 } from '@src/features/planning/todo-import/domains/todo-import-collection.model';
-import { TodoImportTargetPolicy } from '@src/features/planning/todo-import/domains/todo-import-target.model';
+import {
+  findTargetPlacement,
+  placeImportTargets,
+} from '@src/features/planning/todo-import/domains/todo-import-target.model';
 import { ANIMATION } from '@src/shared/constants/animation';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -92,10 +95,10 @@ export function CalendarChoiceDemo() {
 }
 
 /**
- * 실제 카테고리 단계와 같은 부품이다. 가져올 일정이 아이두 카테고리 한 곳으로 들어가고, 잠시 뒤 넣을 곳이 다른
+ * 실제 카테고리 단계와 같은 넣을 곳 카드다. 가져올 일정이 아이두 카테고리 한 곳으로 들어가고, 잠시 뒤 넣을 곳이 다른
  * 카테고리로 바뀐다. 넣을 곳을 눌러 직접 바꿔 볼 수도 있다
  */
-export function CategoryMappingDemo() {
+export function ImportDestinationDemo() {
   const { t } = useTranslation('whatsNew');
   const collections = useDemoCollections().filter(TodoImportCollectionPolicy.isDefaultSelected);
   const [pressedIndex, setPressedIndex] = useState<number | null>(null);
@@ -105,17 +108,30 @@ export function CategoryMappingDemo() {
     frameMs: 0,
     startDelayMs: DEMO_SCRIPT_MS.categoryChange,
   });
-  const categories: TodoCategoryWithCount[] = DEMO_CATEGORIES.map(
-    ({ id, key, color, todoCount }, sortOrder) => ({
+  const destinationIndex = (pressedIndex ?? switchedCount) % DEMO_CATEGORIES.length;
+  const destination = DEMO_CATEGORIES[destinationIndex];
+  const target =
+    destination == null
+      ? null
+      : ({ kind: 'EXISTING_CATEGORY', categoryId: destination.id } as const);
+  // 남은 자리는 실제 화면처럼 서버 한도 모양의 값으로 센다
+  const limits = new Map(
+    DEMO_CATEGORIES.map(({ id, activeCount }) => [
       id,
-      name: t(`v1_17_0.demo.categories.${key}`),
-      color,
-      sortOrder,
-      todoCount,
-    }),
+      { maxPerCategory: TODO_LIMITS.MAX_PER_CATEGORY, activeCount },
+    ]),
   );
-  const destinationIndex = (pressedIndex ?? switchedCount) % categories.length;
-  const destination = categories[destinationIndex];
+  const placement =
+    target == null
+      ? null
+      : findTargetPlacement(
+          placeImportTargets(
+            collections,
+            Object.fromEntries(collections.map(({ collectionKey }) => [collectionKey, target])),
+            limits,
+          ),
+          target,
+        );
 
   return (
     <WhatsNewStep.Stage accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
@@ -127,13 +143,13 @@ export function CategoryMappingDemo() {
         {destination != null && (
           // 넣을 곳이 바뀌면 카드를 새로 그려 바뀐 이름이 스며들듯 나타난다
           <Animated.View key={destination.id} entering={ROW_ENTERING}>
-            <ImportDestinationButton
-              appearance={{ name: destination.name, color: destination.color, isNew: false }}
-              roomLeft={TodoImportTargetPolicy.calculateRoomLeft(
-                { kind: 'EXISTING_CATEGORY', categoryId: destination.id },
-                categories,
-              )}
-              skippedCount={0}
+            <ImportDestinationButton.Card
+              appearance={{
+                name: t(`v1_17_0.demo.categories.${destination.key}`),
+                color: destination.color,
+                isNew: false,
+              }}
+              placement={placement}
               errorMessage={null}
               onPress={() => setPressedIndex(destinationIndex + 1)}
             />

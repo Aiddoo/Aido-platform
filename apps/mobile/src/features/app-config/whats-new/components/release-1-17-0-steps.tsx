@@ -30,7 +30,7 @@ import { useWhatsNewParams } from '../hooks/use-whats-new-params';
 import {
   CalendarChoiceDemo,
   CalendarImportPlans,
-  CategoryMappingDemo,
+  ImportDestinationDemo,
   ImportProgressDemo,
 } from './calendar-import-demo';
 import { WhatsNewStep } from './whats-new-step';
@@ -115,7 +115,7 @@ export function Release1170Steps() {
             )}
             mapCategories={() => (
               <WhatsNewStep
-                media={<CategoryMappingDemo />}
+                media={<ImportDestinationDemo />}
                 title={t('whatsNew:v1_17_0.categories.title')}
                 description={t('whatsNew:v1_17_0.categories.description')}
               />
