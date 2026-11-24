@@ -36,6 +36,10 @@ export const todoImportSchema = z
     }),
     startDate: dateSchema,
     endDate: dateSchema,
+    timezone: z.string().meta({
+      description:
+        "날짜·시각을 해석한 IANA 시간대. 시작할 때 정해지고 이어 보내기·할 일 만들기가 모두 이 값을 쓴다",
+    }),
     timeMode: z.enum(TODO_IMPORT_TIME_MODES),
     visibility: todoVisibilitySchema,
     expectedItemCount: countSchema.meta({ description: "시작할 때 기기가 센 일정 수" }),
