@@ -15,6 +15,7 @@ import type {
   OrderByImportCollection,
 } from '../domains/todo-import-collection.model';
 import { countByCollection, filterByRange } from '../domains/todo-import-item.model';
+import { keepBlockedCalendarPermission } from '../utils/todo-import.view-model';
 import { TODO_IMPORT_QUERY_KEYS } from './todo-import-query-keys';
 
 export function useGetCalendarPermissionQueryOptions() {
@@ -22,11 +23,17 @@ export function useGetCalendarPermissionQueryOptions() {
 
   return queryOptions({
     queryKey: TODO_IMPORT_QUERY_KEYS.calendarPermission(),
-    queryFn: () => todoImportSource.getPermission(),
+    queryFn: async ({ client, queryKey }) =>
+      keepBlockedCalendarPermission(
+        client.getQueryData(queryKey),
+        await todoImportSource.getPermission(),
+      ),
     // 기기 안에서만 읽어 연결 상태와 무관하다
     networkMode: 'always',
     // 설정 앱에서 허용하고 돌아올 수 있어 화면을 열거나 앱으로 돌아올 때마다 다시 본다
     staleTime: 0,
+    // 받은 "다시 묻지 않음" 답을 이번 실행 동안 남긴다
+    gcTime: Number.POSITIVE_INFINITY,
   });
 }
 

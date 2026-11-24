@@ -43,7 +43,7 @@ export function findAccountEmail(collection: Pick<ImportCollection, 'accountName
 /** ask: 안내 뒤 묻는다, denied: 방금 거절해 글만 보인다, blocked: 다시 물을 수 없어 설정 열기를 보인다 */
 export type CalendarPermissionView = 'ask' | 'denied' | 'blocked';
 
-/** 방금 거절했으면 다시 조르지 않고, 다시 들어왔을 때 다시 물을 수 없는 상태면 설정 열기를 보인다 */
+/** 방금 거절했으면 다시 조르지 않는다. 시스템이 다시 묻지 않는 상태면 설정 열기를 보인다 */
 export function getCalendarPermissionView(
   permission: OsPermission,
   answered: OsPermission | null,
@@ -51,8 +51,21 @@ export function getCalendarPermissionView(
   if (permission.status === 'granted') {
     return 'ask';
   }
-  if (answered != null && answered.status !== 'granted') {
-    return 'denied';
+  const latest = answered ?? permission;
+  if (latest.status === 'denied' && !latest.canAskAgain) {
+    return 'blocked';
   }
-  return permission.status === 'denied' && !permission.canAskAgain ? 'blocked' : 'ask';
+  return answered == null ? 'ask' : 'denied';
+}
+
+/**
+ * Android는 묻기 전에는 영구 거절을 알려 주지 않아 읽으면 늘 다시 물을 수 있다고 나온다.
+ * 이번 실행에서 받은 "다시 묻지 않음" 답은 허용되기 전까지 남겨 다시 들어와도 설정 열기를 보인다
+ */
+export function keepBlockedCalendarPermission(
+  previous: OsPermission | undefined,
+  read: OsPermission,
+): OsPermission {
+  const isBlocked = previous?.status === 'denied' && !previous.canAskAgain;
+  return isBlocked && read.status !== 'granted' ? previous : read;
 }
