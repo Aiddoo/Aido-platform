@@ -64,10 +64,12 @@
       "title": "캘린더가 목록에 없나요?",
       "description": "아이두는 이 기기의 캘린더 앱에 보이는 캘린더만 가져올 수 있어요. 다른 앱에만 있는 캘린더는 이 기기에 계정을 추가해 주세요",
       "iphone": {
-        "openSettings": "iPhone 설정 > 캘린더 > 계정으로 가요"
+        "openSettings": "iPhone 설정 > 캘린더 > 계정으로 가요",
+        "openAppsSettings": "iPhone 설정 > 앱 > 캘린더 > 캘린더 계정으로 가요"
       },
       "ipad": {
-        "openSettings": "iPad 설정 > 캘린더 > 계정으로 가요"
+        "openSettings": "iPad 설정 > 캘린더 > 계정으로 가요",
+        "openAppsSettings": "iPad 설정 > 앱 > 캘린더 > 캘린더 계정으로 가요"
       },
       "ios": {
         "addAccount": "계정 추가에서 Google·Outlook 계정을 추가하고 캘린더를 켜요"

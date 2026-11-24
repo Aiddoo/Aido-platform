@@ -1,5 +1,9 @@
 import { useTranslation } from '@src/shared/i18n';
-import { IS_IOS_APP_ON_MAC, IS_IPAD } from '@src/shared/infra/device/device-info';
+import {
+  IOS_MAJOR_VERSION,
+  IS_IOS_APP_ON_MAC,
+  IS_IPAD,
+} from '@src/shared/infra/device/device-info';
 import {
   Button,
   H4,
@@ -12,6 +16,9 @@ import {
 } from '@src/shared/ui';
 import type { ComponentProps } from 'react';
 import { match } from 'ts-pattern';
+
+// iOS 18부터 앱마다의 설정이 설정 > 앱 아래로 옮겨져 캘린더 계정 메뉴 이름도 바뀌었다
+const HAS_APPS_SETTINGS_MENU = IOS_MAJOR_VERSION != null && 18 <= IOS_MAJOR_VERSION;
 
 /** 폰 캘린더에 계정을 더하는 곳은 OS 설정이라 앱이 바로 열 수 없어 순서를 글로 안내한다 */
 export function MissingCalendarHelp(
@@ -51,14 +58,28 @@ MissingCalendarHelp.Guide = function Guide() {
       {match(findHelpDevice())
         .with('iphone', () => (
           <VStack gap={10}>
-            <Step order={1} text={t('calendars.missingHelp.iphone.openSettings')} />
+            <Step
+              order={1}
+              text={
+                HAS_APPS_SETTINGS_MENU
+                  ? t('calendars.missingHelp.iphone.openAppsSettings')
+                  : t('calendars.missingHelp.iphone.openSettings')
+              }
+            />
             <Step order={2} text={t('calendars.missingHelp.ios.addAccount')} />
             <Step order={3} text={t('calendars.missingHelp.comeBack')} />
           </VStack>
         ))
         .with('ipad', () => (
           <VStack gap={10}>
-            <Step order={1} text={t('calendars.missingHelp.ipad.openSettings')} />
+            <Step
+              order={1}
+              text={
+                HAS_APPS_SETTINGS_MENU
+                  ? t('calendars.missingHelp.ipad.openAppsSettings')
+                  : t('calendars.missingHelp.ipad.openSettings')
+              }
+            />
             <Step order={2} text={t('calendars.missingHelp.ios.addAccount')} />
             <Step order={3} text={t('calendars.missingHelp.comeBack')} />
           </VStack>

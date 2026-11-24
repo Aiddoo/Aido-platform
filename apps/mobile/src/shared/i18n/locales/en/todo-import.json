@@ -68,10 +68,12 @@
       "title": "Missing a calendar?",
       "description": "Aido can import only the calendars shown in this device's calendar app. If a calendar lives only in another app, add that account to this device",
       "iphone": {
-        "openSettings": "Open iPhone Settings > Calendar > Accounts"
+        "openSettings": "Open iPhone Settings > Calendar > Accounts",
+        "openAppsSettings": "Open iPhone Settings > Apps > Calendar > Calendar Accounts"
       },
       "ipad": {
-        "openSettings": "Open iPad Settings > Calendar > Accounts"
+        "openSettings": "Open iPad Settings > Calendar > Accounts",
+        "openAppsSettings": "Open iPad Settings > Apps > Calendar > Calendar Accounts"
       },
       "ios": {
         "addAccount": "Tap Add Account, add your Google or Outlook account, and turn on Calendars"
