@@ -182,6 +182,31 @@ describe('KyHttpClient', () => {
     expect(result.ok ? null : result.error.details).toEqual(details);
   });
 
+  it.each([
+    ['초', { 'Retry-After': '30' }, 30_000],
+    [
+      'HTTP 날짜(응답 Date 기준)',
+      { 'Retry-After': 'Tue, 24 Nov 2026 03:00:10 GMT', Date: 'Tue, 24 Nov 2026 03:00:00 GMT' },
+      10_000,
+    ],
+    ['헤더 없음', {}, null],
+    ['읽을 수 없는 값', { 'Retry-After': 'soon' }, null],
+  ])('429의 Retry-After(%s)를 retryAfterMs로 넘긴다', async (_case, headers, expected) => {
+    // Given
+    const client = createClient(async () =>
+      Response.json(
+        { success: false, error: { code: ErrorCode.SYS_0001, message: '잠시 후' }, timestamp: 0 },
+        { status: 429, headers },
+      ),
+    );
+
+    // When
+    const result = await client.post('v1/todo-imports');
+
+    // Then
+    expect(result.ok ? null : result.error.retryAfterMs).toBe(expected);
+  });
+
   it.each<[string, () => Promise<Response>, Partial<ServerError>]>([
     [
       'DB 과부하(SYS_0005)는 코드·카탈로그 문구',

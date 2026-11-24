@@ -6,6 +6,8 @@ import type { CodedError } from './result';
 interface ApiErrorOptions extends AppErrorOptions {
   /** 이 요청의 `X-Request-Id`. 문의 초안과 경계 breadcrumb가 서버 로그를 찾는 데 쓴다 */
   requestId?: string;
+  /** 서버가 `Retry-After`로 알려 준 다시 보낼 때까지의 시간(429). 없으면 null */
+  retryAfterMs?: number | null;
 }
 
 /** 서버가 코드로 거절한 4xx. `KyHttpClient`가 실패 봉투를 읽어 만든다 */
@@ -17,19 +19,21 @@ export class ApiError extends AppError implements CodedError {
   /** 운영에는 `PUBLIC_ERROR_DETAILS`에 등록한 코드만 실린다. `*.error.ts`가 공유 스키마로 읽는다 */
   readonly details: Record<string, unknown> | null;
   readonly requestId: string | null;
+  readonly retryAfterMs: number | null;
 
   constructor(
     code: ErrorCodeType,
     message: string,
     status: number,
     details: Record<string, unknown> | null = null,
-    { requestId, ...options }: ApiErrorOptions = {},
+    { requestId, retryAfterMs, ...options }: ApiErrorOptions = {},
   ) {
     super(message, options);
     this.code = code;
     this.status = status;
     this.details = details;
     this.requestId = requestId ?? null;
+    this.retryAfterMs = retryAfterMs ?? null;
   }
 
   hasCode = <C extends ErrorCodeType>(code: C): this is ApiError & { code: C } =>
