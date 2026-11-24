@@ -1,4 +1,9 @@
-import type { MeteredFeatureKey, PlanFeature, PlanLimitFeatureKey } from "@aido/api/vocabulary";
+import type {
+  MeteredFeatureKey,
+  PlanFeature,
+  PlanHorizonFeatureKey,
+  PlanLimitFeatureKey,
+} from "@aido/api/vocabulary";
 
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
@@ -26,6 +31,12 @@ export abstract class EntitlementReaderPort {
     userId: UserId,
     feature: PlanLimitFeatureKey,
   ): Promise<number | null>;
+  /** 오늘부터 며칠 뒤까지 쓸 수 있는지(일). 날짜 계산은 부르는 쪽이 자기 시간대로 한다. */
+  abstract getHorizonDays(userId: UserId, feature: PlanHorizonFeatureKey): Promise<number>;
+  abstract getHorizonDaysInTransaction(
+    userId: UserId,
+    feature: PlanHorizonFeatureKey,
+  ): Promise<number>;
   /**
    * 한도 오류 details에 싣는 서버 계산 featureQuota. 활성 UoW에서 캐시 없이 최신 권한으로 계산한다.
    * usage는 소유 Context가 센 값이다(일간 quota는 X-Timezone 하루 사용량, resource는 현재 개수).

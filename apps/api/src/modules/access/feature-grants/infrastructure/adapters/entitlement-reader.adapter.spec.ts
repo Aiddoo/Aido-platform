@@ -102,6 +102,28 @@ describe("EntitlementReaderAdapter", () => {
     expect(limit).toBe(PLAN_CATALOG.TODO_CATEGORY.free);
   });
 
+  it("가져오기 기간은 읽기 캐시의 프리미엄 일 수가 남아 있어도 쓰기에서 최신 무료 일 수를 쓴다", async () => {
+    // Given
+    const fixture = createEntitlementFixture({ subscriptionStatus: "ACTIVE" });
+    const cachedBefore = await fixture.reader.getHorizonDays(fixture.userId, "CALENDAR_IMPORT");
+    fixture.users.set(
+      fixture.userId.value,
+      createAccessUserFixture({ role: "USER", subscriptionStatus: "FREE" }),
+    );
+    // When
+    const cachedAfter = await fixture.reader.getHorizonDays(fixture.userId, "CALENDAR_IMPORT");
+    const latest = await fixture.reader.getHorizonDaysInTransaction(
+      fixture.userId,
+      "CALENDAR_IMPORT",
+    );
+    // Then
+    expect([cachedBefore, cachedAfter, latest]).toEqual([
+      PLAN_CATALOG.CALENDAR_IMPORT.premium,
+      PLAN_CATALOG.CALENDAR_IMPORT.premium,
+      PLAN_CATALOG.CALENDAR_IMPORT.free,
+    ]);
+  });
+
   it("존재하지 않는 사용자는 읽기와 쓰기 모두 무료 기본 한도를 적용한다", async () => {
     // Given
     const fixture = createEntitlementFixture({ exists: false });

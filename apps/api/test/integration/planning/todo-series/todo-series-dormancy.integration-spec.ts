@@ -64,6 +64,14 @@ class StubTierEntitlementReader extends StubCurrentUserAccess implements Entitle
     throw new Error("휴면 판정은 findFeatureLimitInTransaction을 부르지 않는다");
   }
 
+  async getHorizonDays(): Promise<number> {
+    throw new Error("휴면 판정은 getHorizonDays를 부르지 않는다");
+  }
+
+  async getHorizonDaysInTransaction(): Promise<number> {
+    throw new Error("휴면 판정은 getHorizonDaysInTransaction을 부르지 않는다");
+  }
+
   async getFeatureQuotaInTransaction(): ReturnType<
     EntitlementReaderPort["getFeatureQuotaInTransaction"]
   > {

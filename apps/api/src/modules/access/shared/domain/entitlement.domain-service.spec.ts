@@ -254,6 +254,36 @@ describe("요금제별 기능", () => {
     expect(report).toMatchObject({ allowed: false, limit: null, used: null, period: null });
   });
 
+  it("기간 기능은 요금제의 일 수를 한도로 싣고 세지 않아 used·period·resetsAt이 null이다", () => {
+    // When
+    const free = resolveFeatureQuota({
+      plan: "free",
+      feature: "CALENDAR_IMPORT",
+      grants: NO_FEATURE_GRANTS,
+      usage: null,
+    });
+    const plans = resolvePlanComparisons();
+
+    // Then
+    expect(free).toEqual({
+      feature: "CALENDAR_IMPORT",
+      allowed: true,
+      limit: PLAN_CATALOG.CALENDAR_IMPORT.free,
+      used: null,
+      remaining: null,
+      period: null,
+      resetsAt: null,
+      isFairUse: false,
+      perUse: null,
+    });
+    expect(plans.CALENDAR_IMPORT.premium).toEqual({
+      allowed: true,
+      limit: PLAN_CATALOG.CALENDAR_IMPORT.premium,
+      isFairUse: false,
+      perUse: null,
+    });
+  });
+
   it("한도 오류에서 센 resource 개수는 used·remaining에 싣고 다시 채워지지 않아 resetsAt은 null이다", () => {
     // Given
     const limit = PLAN_CATALOG.FRIEND.free + 1;

@@ -1,4 +1,4 @@
-import type { PlanFeature, PlanLimitFeatureKey } from "@aido/api/vocabulary";
+import type { PlanFeature, PlanHorizonFeatureKey, PlanLimitFeatureKey } from "@aido/api/vocabulary";
 import { Injectable } from "@nestjs/common";
 
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
@@ -8,6 +8,7 @@ import {
   resolveFeatureEntitlement,
   resolveFeatureEntitlements,
   resolveFeatureQuota,
+  resolveHorizonDays,
   type FeatureEntitlement,
 } from "../../../shared/domain/entitlement.domain-service.js";
 import {
@@ -52,6 +53,19 @@ export class EntitlementReaderAdapter implements EntitlementReaderPort {
     feature: PlanLimitFeatureKey,
   ): Promise<number | null> {
     return (await this.#featureEntitlement(userId, feature, "latest")).limit;
+  }
+
+  async getHorizonDays(userId: UserId, feature: PlanHorizonFeatureKey): Promise<number> {
+    const { plan } = await this.#resolve(userId, "cached");
+    return resolveHorizonDays({ plan, feature });
+  }
+
+  async getHorizonDaysInTransaction(
+    userId: UserId,
+    feature: PlanHorizonFeatureKey,
+  ): Promise<number> {
+    const { plan } = await this.#resolve(userId, "latest");
+    return resolveHorizonDays({ plan, feature });
   }
 
   async getFeatureQuotaInTransaction(
