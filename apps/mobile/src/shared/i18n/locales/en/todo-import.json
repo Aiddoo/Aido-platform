@@ -13,7 +13,7 @@
     "title": "Bring your calendar events in as to-dos",
     "facts": {
       "sources": "Works with the iCloud, Google, and Outlook calendars on this device",
-      "read": "Aido only takes the title, date, and time of events in the calendars you choose",
+      "read": "Aido saves only the title, date, and time of the events you choose, as to-dos",
       "noAccountInfo": "Your calendar account details, like your email, are never sent to Aido",
       "oneTime": "It copies your events once. Your calendar stays exactly as it is",
       "optional": "Everything else works even if you don't allow access"
@@ -61,7 +61,7 @@
     "missingHelp": {
       "open": "Missing a calendar?",
       "title": "Missing a calendar?",
-      "description": "Aido can import only the calendars shown in this device's calendar app. If a calendar lives only in another app, add that account to this device.",
+      "description": "Aido can import only the calendars shown in this device's calendar app. If a calendar lives only in another app, add that account to this device",
       "iphone": {
         "openSettings": "Open iPhone Settings > Calendar > Accounts"
       },
@@ -110,7 +110,7 @@
     "includeTimeDescription": "When off, only dates come in, so you won't get time reminders",
     "shareWithFriends": "Share with friends",
     "shareWithFriendsDescription": "When off, only you can see them",
-    "disclosure": "When you tap Import, the title, date, and time of the events you chose are saved to Aido as to-dos.",
+    "disclosure": "When you tap Import, the title, date, and time of the events you chose are saved to Aido as to-dos",
     "import": "Import"
   },
   "progress": {
