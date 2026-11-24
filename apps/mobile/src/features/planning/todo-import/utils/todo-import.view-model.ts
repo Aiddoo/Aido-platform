@@ -1,3 +1,4 @@
+import type { OsPermission } from '@src/core/ports/os-permission';
 import type { DateKey } from '@src/shared/date/date-key';
 
 import {
@@ -37,4 +38,21 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+$/;
 export function findAccountEmail(collection: Pick<ImportCollection, 'accountName'>): string | null {
   const name = collection.accountName?.trim() ?? '';
   return EMAIL_PATTERN.test(name) ? name : null;
+}
+
+/** ask: 안내 뒤 묻는다, denied: 방금 거절해 글만 보인다, blocked: 다시 물을 수 없어 설정 열기를 보인다 */
+export type CalendarPermissionView = 'ask' | 'denied' | 'blocked';
+
+/** 방금 거절했으면 다시 조르지 않고, 다시 들어왔을 때 다시 물을 수 없는 상태면 설정 열기를 보인다 */
+export function getCalendarPermissionView(
+  permission: OsPermission,
+  answered: OsPermission | null,
+): CalendarPermissionView {
+  if (permission.status === 'granted') {
+    return 'ask';
+  }
+  if (answered != null && answered.status !== 'granted') {
+    return 'denied';
+  }
+  return permission.status === 'denied' && !permission.canAskAgain ? 'blocked' : 'ask';
 }

@@ -31,19 +31,25 @@ import {
   useGetCalendarPermissionQueryOptions,
   useGetImportCollectionsQueryOptions,
 } from '@src/features/planning/todo-import/queries/todo-import-source.queries';
-import { useStartTodoImportMutationOptions } from '@src/features/planning/todo-import/queries/todo-import.mutations';
+import {
+  useRequestCalendarPermissionMutationOptions,
+  useStartTodoImportMutationOptions,
+} from '@src/features/planning/todo-import/queries/todo-import.mutations';
 import {
   todoImportFormSchema,
   type TodoImportFormValues,
 } from '@src/features/planning/todo-import/schemas/todo-import-form.schema';
+import { getCalendarPermissionView } from '@src/features/planning/todo-import/utils/todo-import.view-model';
 import { useTrack } from '@src/shared/analytics';
 import type { DateKey } from '@src/shared/date/date-key';
 import { formatYearAwareDateKeyLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useOpenAppSettings } from '@src/shared/hooks/use-open-app-settings';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
+import { IS_IOS_APP_ON_MAC } from '@src/shared/infra/device/device-info';
 import {
   Box,
   FormStepLayout,
@@ -65,6 +71,7 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { noop } from 'es-toolkit';
 import { type NavigationAction, router, Stack, useNavigation, usePreventRemove } from 'expo-router';
 import { Suspense, useDeferredValue, useState } from 'react';
 import { type UseFormReturn, useForm, useFormState, useWatch } from 'react-hook-form';
@@ -90,7 +97,8 @@ export default function TodoImportSetupScreen() {
 
       <ReadableContent flex={1}>
         <QueryErrorBoundary fallback={CalendarPermissionPrompt.Error}>
-          <Suspense fallback={<CalendarPermissionPrompt.Loading />}>
+          {/* 첫 단계를 고르는 권한은 기기 안에서 바로 읽혀, 권한 안내 모양의 자리를 모든 사용자에게 번쩍이지 않는다 */}
+          <Suspense fallback={null}>
             <TodoImportSetup />
           </Suspense>
         </QueryErrorBoundary>
@@ -205,15 +213,46 @@ function TodoImportSetup() {
 }
 
 function PermissionStep({ onGranted }: { onGranted: () => void }) {
-  const { t } = useTranslation('todoImport');
+  const { t } = useTranslation(['todoImport', 'common']);
+  const { data: permission } = useSuspenseQuery(useGetCalendarPermissionQueryOptions());
+  const request = useMutation(useRequestCalendarPermissionMutationOptions());
+  const openSettings = useOpenAppSettings();
+
+  const view = getCalendarPermissionView(permission, request.data ?? null);
+
+  // 열 때는 상태만 읽고 "계속"을 눌러야 시스템 창을 띄운다
+  const handleContinue = () => {
+    request
+      .mutateAsync()
+      .then((answered) => {
+        if (answered.status === 'granted') {
+          onGranted();
+        }
+      })
+      .catch(noop);
+  };
 
   return (
-    <FormStepLayout title={t('permission.title')}>
-      <QueryErrorBoundary fallback={CalendarPermissionPrompt.Error}>
-        <Suspense fallback={<CalendarPermissionPrompt.Loading />}>
-          <CalendarPermissionPrompt onGranted={onGranted} />
-        </Suspense>
-      </QueryErrorBoundary>
+    <FormStepLayout
+      title={t('permission.title')}
+      footer={match(view)
+        .with('ask', () => (
+          <KeyboardAdaptiveButton isLoading={request.isPending} onPress={handleContinue}>
+            {t('common:actions.continue')}
+          </KeyboardAdaptiveButton>
+        ))
+        .with('denied', () => null)
+        // Mac(Designed for iPad)은 앱 설정 화면이 열리지 않아 글로 가는 길만 보인다
+        .with('blocked', () =>
+          IS_IOS_APP_ON_MAC ? null : (
+            <KeyboardAdaptiveButton onPress={openSettings}>
+              {t('permission.openSettings')}
+            </KeyboardAdaptiveButton>
+          ),
+        )
+        .exhaustive()}
+    >
+      <CalendarPermissionPrompt view={view} />
     </FormStepLayout>
   );
 }

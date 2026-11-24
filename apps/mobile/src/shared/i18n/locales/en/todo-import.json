@@ -20,6 +20,7 @@
     },
     "deniedTitle": "Calendar access is off",
     "deniedDescription": "Turn on calendar access in Settings to import events",
+    "deniedDescriptionMac": "On your Mac, turn on Aido in System Settings > Privacy & Security > Calendars",
     "openSettings": "Open Settings"
   },
   "range": {

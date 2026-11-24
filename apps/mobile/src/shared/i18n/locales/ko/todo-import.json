@@ -20,6 +20,7 @@
     },
     "deniedTitle": "캘린더 접근이 꺼져 있어요",
     "deniedDescription": "설정에서 캘린더 접근을 켜면 일정을 가져올 수 있어요",
+    "deniedDescriptionMac": "Mac의 시스템 설정 > 개인정보 보호 및 보안 > 캘린더에서 아이두를 켜 주세요",
     "openSettings": "설정 열기"
   },
   "range": {
