@@ -14,6 +14,11 @@ export {
   quotaErrorDetailsSchema,
 } from "../contracts/entitlement/v1/quota-error.details.js";
 export {
+  todoImportInvalidErrorDetailsSchema,
+  todoImportReferenceErrorDetailsSchema,
+  todoImportTargetsRejectedErrorDetailsSchema,
+} from "../contracts/todo-import/v1/todo-import.error-details.js";
+export {
   todoSeriesLimitErrorDetailsSchema,
   todoSeriesRuleErrorDetailsSchema,
 } from "../contracts/todo/v1/todo-series.error-details.js";
