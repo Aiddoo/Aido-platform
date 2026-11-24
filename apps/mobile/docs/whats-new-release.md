@@ -26,7 +26,7 @@
 | env                                 | 뜻                                                                                 |
 | ----------------------------------- | ---------------------------------------------------------------------------------- |
 | `FEATURE_DISCOVERY_ENABLED`         | 끄면 자동 열기, 새 기능 표시, 피드 카드가 모두 없다. 목록과 소개는 그대로 열린다   |
-| `FEATURE_DISCOVERY_CAMPAIGN_ID`     | 띄울 출시의 `campaignId`(예 `feature-discovery-1.16.0`)                            |
+| `FEATURE_DISCOVERY_CAMPAIGN_ID`     | 띄울 출시의 `campaignId`(예 `feature-discovery-1.17.0`)                            |
 | `FEATURE_DISCOVERY_MIN_APP_VERSION` | 그 소개를 번들한 첫 앱 버전. 낮은 앱은 열지 않는다                                 |
 | `FEATURE_DISCOVERY_AUTO_OPEN`       | 끄면 자동으로 열지 않고 목록에서만 연다                                            |
 | `FEATURE_DISCOVERY_LAUNCHED_AT`     | 켜면 필수. 1.15.0 이하 앱만 읽고(그 전 가입자에게만 자동), 1.15.1 앱은 읽지 않는다 |
