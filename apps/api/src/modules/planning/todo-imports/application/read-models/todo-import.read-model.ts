@@ -1,4 +1,5 @@
 import type {
+  TodoImportFailureReason,
   TodoImportSourceKind,
   TodoImportStatus,
   TodoImportTimeMode,
@@ -26,6 +27,7 @@ export interface TodoImportReadModel {
     readonly categoryId: number | null;
   }[];
   readonly firstDate: Temporal.PlainDate | null;
+  readonly failureReason: TodoImportFailureReason | null;
   // 서버가 정한 되돌리기 마감. 되돌릴 수 없으면 null이라 앱이 다시 계산하지 않는다
   readonly undoableUntil: Temporal.Instant | null;
   readonly createdAt: Temporal.Instant;
@@ -63,6 +65,7 @@ export function toTodoImportReadModel(
       categoryId: todoImport.findCategoryIdOf(collection.collectionKey),
     })),
     firstDate: primitives.firstDate,
+    failureReason: primitives.failureReason,
     undoableUntil: findUndoableUntil(todoImport, now),
     createdAt: primitives.createdAt,
     completedAt: primitives.completedAt,

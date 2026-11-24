@@ -35,6 +35,7 @@ function toTodoImportBody(readModel: TodoImportReadModel): TodoImportResponse {
     },
     collections: readModel.collections.map((collection) => ({ ...collection })),
     firstDate: readModel.firstDate?.toString() ?? null,
+    failureReason: readModel.failureReason,
     undoableUntil: readModel.undoableUntil == null ? null : toIsoString(readModel.undoableUntil),
     createdAt: toIsoString(readModel.createdAt),
     completedAt: readModel.completedAt == null ? null : toIsoString(readModel.completedAt),
