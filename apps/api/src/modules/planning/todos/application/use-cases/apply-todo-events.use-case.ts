@@ -19,14 +19,17 @@ import { TodoRescheduledEvent } from "../../domain/todo-rescheduled.event.js";
 import { TodoToggledEvent } from "../../domain/todo-toggled.event.js";
 import { TodoUpdatedEvent } from "../../domain/todo-updated.event.js";
 import { TodoVisibilityChangedEvent } from "../../domain/todo-visibility-changed.event.js";
-import type { TodoReminderSchedulerPort } from "../ports/todo-reminder-scheduler.port.js";
+import type {
+  TodoReminderSchedule,
+  TodoReminderSchedulerPort,
+} from "../ports/todo-reminder-scheduler.port.js";
 
 type PublishedTodoEvent = TodoChangedEvent | TodoSeriesChangedEvent;
 
 export interface ApplyTodoEventsDependencies {
   readonly reminderScheduler: Pick<
     TodoReminderSchedulerPort,
-    "scheduleReminder" | "cancelReminders"
+    "scheduleReminder" | "scheduleReminders" | "cancelReminders"
   >;
   readonly eventPublisher: Pick<DomainEventPublisherPort, "publish">;
   readonly clock: ClockPort;
@@ -47,28 +50,35 @@ export class ApplyTodoEventsUseCase {
   async execute(events: readonly DomainEvent[]): Promise<void> {
     const occurredAt = this.#dependencies.clock.now();
     const published: PublishedTodoEvent[] = [];
+    // 새 할 일은 취소할 예약이 없어 이어지는 생성 예약을 한 번에 넣는다. 다른 이벤트 앞에서 비워 순서를 지킨다
+    let createdReminders: TodoReminderSchedule[] = [];
     for (const event of events) {
-      await this.#applyReminder(event);
+      if (event instanceof TodoCreatedEvent) {
+        createdReminders.push(...toCreatedReminders(event));
+      } else {
+        await this.#scheduleCreated(createdReminders);
+        createdReminders = [];
+        await this.#applyReminder(event);
+      }
       const fact = toPublishedEvent(event, occurredAt);
       if (fact != null) {
         published.push(fact);
       }
     }
+    await this.#scheduleCreated(createdReminders);
     if (published.length > 0) {
       await this.#dependencies.eventPublisher.publish(published);
     }
   }
 
+  async #scheduleCreated(reminders: readonly TodoReminderSchedule[]): Promise<void> {
+    if (reminders.length > 0) {
+      await this.#dependencies.reminderScheduler.scheduleReminders(reminders);
+    }
+  }
+
   async #applyReminder(event: DomainEvent): Promise<void> {
     const { reminderScheduler } = this.#dependencies;
-    if (event instanceof TodoCreatedEvent && event.scheduledTime != null) {
-      await reminderScheduler.scheduleReminder(
-        TodoId.reconstitute(event.todoId),
-        event.scheduledTime,
-        UserId.reconstitute(event.userId),
-      );
-      return;
-    }
     if (event instanceof TodoRescheduledEvent) {
       if (event.scheduledTime == null) {
         await reminderScheduler.cancelReminders([TodoId.reconstitute(event.todoId)]);
@@ -89,6 +99,19 @@ export class ApplyTodoEventsUseCase {
       await reminderScheduler.cancelReminders([TodoId.reconstitute(event.todoId)]);
     }
   }
+}
+
+function toCreatedReminders(event: TodoCreatedEvent): TodoReminderSchedule[] {
+  if (event.scheduledTime == null) {
+    return [];
+  }
+  return [
+    {
+      todoId: TodoId.reconstitute(event.todoId),
+      scheduledTime: event.scheduledTime,
+      userId: UserId.reconstitute(event.userId),
+    },
+  ];
 }
 
 function todoFact(
