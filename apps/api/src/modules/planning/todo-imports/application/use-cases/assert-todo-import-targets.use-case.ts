@@ -1,5 +1,8 @@
 import type { EntitlementReaderPort } from "#api/modules/access/feature-grants/access-feature-grants.public";
-import type { TodoCategoryReaderPort } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
+import type {
+  TodoCategoryCreatorPort,
+  TodoCategoryReaderPort,
+} from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { TodoImportTarget } from "../../domain/todo-import-target.vo.js";
@@ -21,6 +24,7 @@ interface OwnedCategory {
 
 interface AssertTodoImportTargetsDependencies {
   readonly categoryReader: Pick<TodoCategoryReaderPort, "listForUser">;
+  readonly categoryCreator: Pick<TodoCategoryCreatorPort, "assertDraftsValid">;
   readonly entitlementReader: Pick<
     EntitlementReaderPort,
     "findFeatureLimitInTransaction" | "getFeatureQuotaInTransaction"
@@ -28,8 +32,8 @@ interface AssertTodoImportTargetsDependencies {
 }
 
 /**
- * 시작과 확정이 같은 규칙으로 대상 카테고리를 확인한다. 새 카테고리 수가 한도를 넘으면 카테고리 만들기와 같은
- * 0857이고, 이름 중복·없는 카테고리는 대상마다 모아 2303 하나로 알린다. 카테고리 자리는 막지 않고 할 일을
+ * 시작과 확정이 같은 규칙으로 대상 카테고리를 확인한다. 새 카테고리 이름·색은 카테고리 만들기와 같은 규칙으로
+ * 먼저 거르고(업로드를 다 받은 뒤 확정에서 실패하지 않게), 새 카테고리 수가 한도를 넘으면 같은 0857이고, 이름 중복·없는 카테고리는 대상마다 모아 2303 하나로 알린다. 카테고리 자리는 막지 않고 할 일을
  * 만드는 작업이 가까운 날짜부터 남는 만큼만 만든다
  */
 export class AssertTodoImportTargetsUseCase {
@@ -41,6 +45,11 @@ export class AssertTodoImportTargetsUseCase {
 
   async execute(command: AssertTodoImportTargetsCommand): Promise<void> {
     const { userId, targets } = command;
+    this.#dependencies.categoryCreator.assertDraftsValid(
+      targets.flatMap((target) =>
+        target.value.kind === "NEW_CATEGORY" && target.categoryId == null ? [target.value] : [],
+      ),
+    );
     const categories = await this.#dependencies.categoryReader.listForUser(userId);
     const newCategoryCount = targets.filter(isUncreatedCategory).length;
     await this.#assertCategoryCountWithinLimit(userId, categories.length, newCategoryCount);

@@ -59,6 +59,7 @@ function setUp(
     entitlementReader: entitlements.reader,
     assertTargets: new AssertTodoImportTargetsUseCase({
       categoryReader: categories.reader,
+      categoryCreator: categories.creator,
       entitlementReader: entitlements.reader,
     }),
     clock,
@@ -203,6 +204,27 @@ describe("StartTodoImportUseCase", () => {
       errorCode: ErrorCode.TODO_IMPORT_2301,
       details: { importId: running.id.value },
     });
+  });
+
+  it("새 카테고리 이름이 카테고리 만들기 규칙을 넘으면 업로드 전에 같은 오류(SYS_0002)로 막는다", async () => {
+    // Given
+    const { useCase, todoImportRepository } = setUp();
+    // 계약(Zod)은 코드 포인트로 세어 이모지 26개를 받지만 카테고리 이름은 UTF-16 단위로 50을 넘는다
+    const name = "📅".repeat(26);
+
+    // When
+    const result = useCase.execute(
+      startCommand({
+        targets: [{ kind: "NEW_CATEGORY", targetKey: "work", name, color: "#FF0000" }],
+      }),
+    );
+
+    // Then
+    await expect(result).rejects.toMatchObject({
+      errorCode: ErrorCode.SYS_0002,
+      details: { maxLength: 50 },
+    });
+    expect(todoImportRepository.saveCount).toBe(0);
   });
 
   it.each([

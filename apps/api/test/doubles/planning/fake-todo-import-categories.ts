@@ -1,4 +1,6 @@
 import type { TodoCategoryWithCountReadModel } from "#api/modules/planning/todo-categories/application/read-models/todo-category-with-count.read-model";
+import { CategoryColor } from "#api/modules/planning/todo-categories/domain/category-color.vo";
+import { CategoryName } from "#api/modules/planning/todo-categories/domain/category-name.vo";
 import {
   type TodoCategoryCreationDraft,
   TodoCategoryCreatorPort,
@@ -15,7 +17,7 @@ interface FakeCategory {
 
 /**
  * 가져오기가 쓰는 카테고리 문 둘(목록·일괄 만들기)을 한 사용자의 메모리 목록으로 흉내 낸다.
- * 한도·이름 규칙은 가져오기 쪽 검사로 보므로 만들기는 그대로 더한다.
+ * 이름·색 확인은 카테고리 만들기와 같은 VO를 쓰고, 한도는 가져오기 쪽 검사로 보므로 만들기는 그대로 더한다.
  */
 export class FakeTodoImportCategories {
   readonly categories: FakeCategory[];
@@ -42,8 +44,14 @@ export class FakeTodoImportCategories {
     };
   }
 
-  get creator(): Pick<TodoCategoryCreatorPort, "createMany"> {
+  get creator(): Pick<TodoCategoryCreatorPort, "assertDraftsValid" | "createMany"> {
     return {
+      assertDraftsValid: (drafts: readonly TodoCategoryCreationDraft[]) => {
+        for (const draft of drafts) {
+          CategoryName.create(draft.name);
+          CategoryColor.create(draft.color);
+        }
+      },
       createMany: async (_userId: UserId, drafts: readonly TodoCategoryCreationDraft[]) =>
         drafts.map((draft) => {
           this.#sequence += 1;

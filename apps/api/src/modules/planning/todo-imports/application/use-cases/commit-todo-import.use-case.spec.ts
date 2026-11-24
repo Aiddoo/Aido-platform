@@ -45,6 +45,7 @@ function setUp(todoImport: TodoImport, options: { readonly subscriptionStatus?: 
     entitlementReader: entitlements.reader,
     assertTargets: new AssertTodoImportTargetsUseCase({
       categoryReader: categories.reader,
+      categoryCreator: categories.creator,
       entitlementReader: entitlements.reader,
     }),
     categoryCreator: categories.creator,

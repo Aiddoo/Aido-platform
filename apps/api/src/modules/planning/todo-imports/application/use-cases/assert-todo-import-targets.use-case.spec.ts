@@ -27,6 +27,7 @@ function setUp(categories: readonly { id: number; name: string; usage?: number }
   );
   return new AssertTodoImportTargetsUseCase({
     categoryReader: fake.reader,
+    categoryCreator: fake.creator,
     entitlementReader: entitlements.reader,
   });
 }

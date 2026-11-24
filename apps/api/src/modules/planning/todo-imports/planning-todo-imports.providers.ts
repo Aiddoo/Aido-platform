@@ -43,6 +43,7 @@ export const PLANNING_TODO_IMPORTS_PROVIDERS = [
   { provide: TodoImportUndoQueuePort, useClass: TodoImportUndoQueueAdapter },
   provideUseCase(AssertTodoImportTargetsUseCase, {
     categoryReader: TodoCategoryReaderPort,
+    categoryCreator: TodoCategoryCreatorPort,
     entitlementReader: EntitlementReaderPort,
   }),
   provideUseCase(StartTodoImportUseCase, {
