@@ -18,6 +18,9 @@ export const SWAGGER_TAGS = {
   /** 할 일 카테고리 - 카테고리 CRUD, 순서 변경 */
   TODO_CATEGORIES: "Todo Categories",
 
+  /** 캘린더 가져오기 - 기기 캘린더 일정을 할 일로 한 번 옮기기 */
+  TODO_IMPORTS: "Todo Imports",
+
   /** 팔로우/친구 - 친구 요청, 수락, 친구 목록 관리 */
   FOLLOWS: "Follows",
 
@@ -124,6 +127,9 @@ export const SWAGGER_TAG_DESCRIPTIONS: Record<SwaggerTag, string> = {
 
   [SWAGGER_TAGS.TODO_CATEGORIES]:
     "카테고리 CRUD, 순서/색상 관리. 회원가입 시 기본 카테고리 2개 자동 생성",
+
+  [SWAGGER_TAGS.TODO_IMPORTS]:
+    "기기 캘린더 일정을 할 일로 한 번 가져오기. 시작 → 일정 나눠 올리기 → 확정 → 서버 작업이 만들기, 완료 뒤 7일 동안 되돌리기",
 
   [SWAGGER_TAGS.FOLLOWS]: "친구 요청/수락/거절, 친구 목록 조회. 맞팔 시 친구 관계 성립",
 
