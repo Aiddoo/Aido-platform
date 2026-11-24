@@ -51,6 +51,7 @@ export const createImportCollection = defineFixture(importCollectionSchema, {
   color: '#FF6B43',
   accountName: 'iCloud',
   accountKind: 'cloud',
+  accountProvider: 'icloud',
   itemCount: 2,
 });
 

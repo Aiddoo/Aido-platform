@@ -1,29 +1,39 @@
 import type { DateKey } from '@src/shared/date/date-key';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
   CalendarIllustration,
   Checkbox,
+  CloudDuoIcon,
+  DeviceDuoIcon,
+  GiftDuoIcon,
   HStack,
+  LinkDuoIcon,
   ListRow,
   SettingsListGroup,
+  type StyledIcon,
   Text,
   TextSkeleton,
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { groupBy } from 'es-toolkit';
+import { groupBy, sortBy } from 'es-toolkit';
 import { Accordion, ControlField, Skeleton } from 'heroui-native';
 import { type ComponentProps, useMemo } from 'react';
+import { match } from 'ts-pattern';
 
 import {
   type FilterImportCollection,
+  type ImportAccountProvider,
   type ImportCollection,
+  orderByAccountProvider,
   type OrderByImportCollection,
   TodoImportCollectionPolicy,
 } from '../domains/todo-import-collection.model';
 import { useGetImportCollectionsQueryOptions } from '../queries/todo-import-source.queries';
+import { findAccountEmail } from '../utils/todo-import.view-model';
 
 interface CalendarSourceListProps {
   startDate: DateKey;
@@ -46,7 +56,6 @@ export function CalendarSourceList({
   filters,
   orderBy,
 }: CalendarSourceListProps) {
-  const { t } = useTranslation('todoImport');
   const { data: collections } = useSuspenseQuery(
     useGetImportCollectionsQueryOptions({ startDate, endDate, filters, orderBy }),
   );
@@ -61,13 +70,19 @@ export function CalendarSourceList({
       ),
     [collections, value],
   );
-  const otherAccountName = t('calendars.otherAccount');
+  const formatAccountLabel = useFormatAccountLabel();
   const accounts = useMemo(
     () =>
-      Object.entries(
-        groupBy(collections, (collection) => collection.accountName ?? otherAccountName),
+      sortBy(
+        Object.entries(groupBy(collections, (collection) => collection.accountName ?? '')).flatMap(
+          ([accountKey, group]) => {
+            const [account] = group;
+            return account == null ? [] : [{ accountKey, account, group }];
+          },
+        ),
+        [({ account }) => orderByAccountProvider(account)],
       ),
-    [collections, otherAccountName],
+    [collections],
   );
 
   if (!collections.some(TodoImportCollectionPolicy.isSelectable)) {
@@ -86,8 +101,12 @@ export function CalendarSourceList({
     );
   };
 
-  const renderGroup = (accountName: string, group: readonly ImportCollection[]) => (
-    <CalendarSourceList.Group key={accountName} accountName={accountName}>
+  // 접는 목록은 머리말이 계정 이름이라 묶음에 다시 적지 않는다
+  const renderGroup = (group: readonly ImportCollection[], account?: ImportCollection) => (
+    <CalendarSourceList.Group
+      accountName={account == null ? undefined : formatAccountLabel(account)}
+      accountProvider={account?.accountProvider}
+    >
       {group.map((collection, index) => (
         <Box key={collection.collectionKey}>
           {index > 0 && <SettingsListGroup.Separator />}
@@ -104,29 +123,36 @@ export function CalendarSourceList({
   );
 
   if (accounts.length <= ACCORDION_ACCOUNT_THRESHOLD) {
-    return <VStack gap={12}>{accounts.map(([name, group]) => renderGroup(name, group))}</VStack>;
+    return (
+      <VStack gap={12}>
+        {accounts.map(({ accountKey, account, group }) => (
+          <Box key={accountKey}>{renderGroup(group, account)}</Box>
+        ))}
+      </VStack>
+    );
   }
 
   return (
     <Accordion
       selectionMode="multiple"
       defaultValue={accounts
-        .filter(([, group]) =>
+        .filter(({ group }) =>
           group.some((collection) => selectedKeys.has(collection.collectionKey)),
         )
-        .map(([name]) => name)}
+        .map(({ accountKey }) => accountKey)}
       hideSeparator
       className="gap-3"
     >
-      {accounts.map(([name, group]) => (
-        <Accordion.Item key={name} value={name}>
+      {accounts.map(({ accountKey, account, group }) => (
+        <Accordion.Item key={accountKey} value={accountKey}>
           <Accordion.Trigger className="px-1 py-2">
-            <Text size="b2" weight="semibold" shade={9} numberOfLines={1} className="flex-1">
-              {name}
-            </Text>
+            <CalendarSourceList.AccountLabel
+              accountName={formatAccountLabel(account)}
+              accountProvider={account.accountProvider}
+            />
             <Accordion.Indicator />
           </Accordion.Trigger>
-          <Accordion.Content className="px-0 pb-0">{renderGroup(name, group)}</Accordion.Content>
+          <Accordion.Content className="px-0 pb-0">{renderGroup(group)}</Accordion.Content>
         </Accordion.Item>
       ))}
     </Accordion>
@@ -134,11 +160,63 @@ export function CalendarSourceList({
 }
 
 interface GroupProps extends Omit<ComponentProps<typeof SettingsListGroup>, 'label'> {
-  accountName: string;
+  accountName?: string;
+  accountProvider?: ImportAccountProvider;
 }
 
-CalendarSourceList.Group = function Group({ accountName, ...props }: GroupProps) {
-  return <SettingsListGroup label={accountName} {...props} />;
+CalendarSourceList.Group = function Group({
+  accountName,
+  accountProvider,
+  children,
+  ...props
+}: GroupProps) {
+  return (
+    <SettingsListGroup {...props}>
+      {accountName != null && (
+        <Box className="px-4 pt-4 pb-1">
+          <CalendarSourceList.AccountLabel
+            accountName={accountName}
+            accountProvider={accountProvider}
+          />
+        </Box>
+      )}
+      {children}
+    </SettingsListGroup>
+  );
+};
+
+const ACCOUNT_ICON_SIZE = 18;
+
+/** 회사 로고는 상표 규정상 쓰지 않고, 묶음 종류를 우리 아이콘으로 보인다 */
+const ACCOUNT_PROVIDER_ICONS = {
+  icloud: CloudDuoIcon,
+  google: CloudDuoIcon,
+  outlook: CloudDuoIcon,
+  other: CloudDuoIcon,
+  device: DeviceDuoIcon,
+  subscribed: LinkDuoIcon,
+  birthdays: GiftDuoIcon,
+} as const satisfies Record<ImportAccountProvider, StyledIcon>;
+
+CalendarSourceList.AccountLabel = function AccountLabel({
+  accountName,
+  accountProvider,
+}: {
+  accountName: string;
+  accountProvider?: ImportAccountProvider;
+}) {
+  const fontScaledSize = useFontScaledSize();
+  const iconSize = fontScaledSize(ACCOUNT_ICON_SIZE);
+  const Icon = accountProvider == null ? null : ACCOUNT_PROVIDER_ICONS[accountProvider];
+
+  return (
+    <HStack align="center" gap={6} className="flex-1">
+      {Icon != null && <Icon width={iconSize} height={iconSize} colorClassName="text-gray-7" />}
+      <Text size="b2" weight="semibold" shade={9} numberOfLines={1} className="flex-1">
+        {accountName}
+      </Text>
+    </HStack>
+  );
 };
 
 interface ItemProps extends Omit<ComponentProps<typeof ListRow>, 'left' | 'contents' | 'right'> {
@@ -236,4 +314,29 @@ function ItemSkeleton() {
       right={<Skeleton className="size-5 rounded-md" />}
     />
   );
+}
+
+function useFormatAccountLabel() {
+  const { t } = useTranslation('todoImport');
+
+  return (account: ImportCollection) => {
+    const email = findAccountEmail(account);
+    return match(account.accountProvider)
+      .with('icloud', () => t('calendars.accounts.icloud'))
+      .with('google', () =>
+        email == null
+          ? t('calendars.accounts.google')
+          : t('calendars.accounts.googleWithEmail', { email }),
+      )
+      .with('outlook', () =>
+        email == null
+          ? t('calendars.accounts.outlook')
+          : t('calendars.accounts.outlookWithEmail', { email }),
+      )
+      .with('device', () => t('calendars.accounts.device'))
+      .with('subscribed', () => t('calendars.accounts.subscribed'))
+      .with('birthdays', () => t('calendars.accounts.birthdays'))
+      .with('other', () => account.accountName ?? t('calendars.otherAccount'))
+      .exhaustive();
+  };
 }

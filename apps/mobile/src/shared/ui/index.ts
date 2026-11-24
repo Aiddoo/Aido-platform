@@ -75,6 +75,8 @@ export {
   KeyDuoIcon,
   LinkDuoIcon,
   DeviceDuoIcon,
+  CloudDuoIcon,
+  GiftDuoIcon,
   SunDuoIcon,
   MoonDuoIcon,
   KoreanDuoIcon,
