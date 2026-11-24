@@ -1,6 +1,11 @@
 import type { OsPermission } from '@src/core/ports/os-permission';
 
-import { getCalendarPermissionView, keepBlockedCalendarPermission } from './todo-import.view-model';
+import { createImportCollection } from '../__tests__/todo-import.fixtures';
+import {
+  getCalendarPermissionView,
+  groupCollectionsByAccount,
+  keepBlockedCalendarPermission,
+} from './todo-import.view-model';
 
 const GRANTED: OsPermission = { status: 'granted', canAskAgain: true };
 const UNDETERMINED: OsPermission = { status: 'undetermined', canAskAgain: true };
@@ -52,5 +57,60 @@ describe('keepBlockedCalendarPermission', () => {
 
     // Then
     expect(permission).toEqual(UNDETERMINED);
+  });
+});
+
+describe('groupCollectionsByAccount', () => {
+  it('내 계정 캘린더를 계정마다 묶고 받아 보기만 하는 캘린더는 따로 모은다', () => {
+    // Given
+    const personal = createImportCollection({
+      collectionKey: 'personal',
+      accountName: 'iCloud',
+      accountKind: 'cloud',
+      accountProvider: 'icloud',
+    });
+    const work = createImportCollection({
+      collectionKey: 'work',
+      accountName: 'iCloud',
+      accountKind: 'cloud',
+      accountProvider: 'icloud',
+    });
+    const holidays = createImportCollection({
+      collectionKey: 'holidays',
+      accountName: 'iCloud',
+      accountKind: 'holidays',
+      accountProvider: 'subscribed',
+    });
+
+    // When
+    const { accounts, receivedCollections } = groupCollectionsByAccount([personal, holidays, work]);
+
+    // Then
+    expect(accounts).toEqual([
+      { accountKey: 'iCloud', account: personal, collections: [personal, work] },
+    ]);
+    expect(receivedCollections).toEqual([holidays]);
+  });
+
+  it('구독·생일 계정은 내 계정 묶음 뒤에 둔다', () => {
+    // Given
+    const birthdays = createImportCollection({
+      collectionKey: 'birthday-calendar',
+      accountName: 'A Contacts',
+      accountKind: 'other',
+      accountProvider: 'birthdays',
+    });
+    const google = createImportCollection({
+      collectionKey: 'google',
+      accountName: 'B Google',
+      accountKind: 'cloud',
+      accountProvider: 'google',
+    });
+
+    // When
+    const { accounts } = groupCollectionsByAccount([birthdays, google]);
+
+    // Then
+    expect(accounts.map(({ accountKey }) => accountKey)).toEqual(['B Google', 'A Contacts']);
   });
 });

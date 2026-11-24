@@ -4,12 +4,7 @@ import { toInstant } from '@src/shared/date/instant';
 
 import { createTodoImport } from '../__tests__/todo-import.fixtures';
 import { IMPORT_RANGE_PRESETS } from '../constants/todo-import.constants';
-import {
-  canImportFrom,
-  canImportUntil,
-  getRangeEndDate,
-  TodoImportPolicy,
-} from './todo-import.model';
+import { canImportUntil, getRangeEndDate, TodoImportPolicy } from './todo-import.model';
 
 const TODAY = dateKeySchema.parse('2026-11-24');
 const FREE_HORIZON_DAYS = 30;
@@ -25,19 +20,6 @@ describe('getRangeEndDate', () => {
 
     // Then
     expect(endDate).toBe(expected);
-  });
-});
-
-describe('canImportFrom', () => {
-  it.each([
-    ['어제는 가져오지 않는다', '2026-11-23', false],
-    ['오늘부터 가져온다', '2026-11-24', true],
-  ])('%s', (_case, startDate, expected) => {
-    // When
-    const canImport = canImportFrom(dateKeySchema.parse(startDate), TODAY);
-
-    // Then
-    expect(canImport).toBe(expected);
   });
 });
 
@@ -70,7 +52,6 @@ describe('TodoImportPolicy', () => {
       const pollIntervalMs = TodoImportPolicy.getPollIntervalMs(todoImport);
 
       // Then
-      expect(TodoImportPolicy.isActive(todoImport)).toBe(!isTerminal);
       expect(pollIntervalMs === false).toBe(isTerminal);
     },
   );
@@ -104,21 +85,6 @@ describe('TodoImportPolicy', () => {
     // Then
     expect(canCancelUploading).toBe(true);
     expect(canCancelQueued).toBe(false);
-  });
-
-  it('건너뛴 일정이 하나라도 있으면 이유를 보인다', () => {
-    // Given
-    const base = createTodoImport();
-    const skipped = createTodoImport({
-      counts: { ...base.counts, created: 3, skippedCapacity: 1 },
-    });
-
-    // When
-    const hasSkipped = TodoImportPolicy.hasSkipped(skipped);
-
-    // Then
-    expect(TodoImportPolicy.hasSkipped(base)).toBe(false);
-    expect(hasSkipped).toBe(true);
   });
 
   it('처리 비율은 받은 수와 예상 수 중 큰 값 기준이고 0~1이다', () => {

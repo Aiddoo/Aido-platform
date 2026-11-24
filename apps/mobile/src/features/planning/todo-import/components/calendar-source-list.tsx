@@ -13,20 +13,16 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { groupBy, partition, sortBy } from 'es-toolkit';
 import { Accordion, ControlField, Skeleton } from 'heroui-native';
 import { type ComponentProps, useMemo } from 'react';
 import { match, P } from 'ts-pattern';
 
 import {
-  type FilterImportCollection,
   type ImportCollection,
-  orderByAccountProvider,
-  type OrderByImportCollection,
   TodoImportCollectionPolicy,
 } from '../domains/todo-import-collection.model';
 import { useGetImportCollectionsQueryOptions } from '../queries/todo-import-source.queries';
-import { findAccountEmail } from '../utils/todo-import.view-model';
+import { findAccountEmail, groupCollectionsByAccount } from '../utils/todo-import.view-model';
 
 interface CalendarSourceListProps {
   startDate: DateKey;
@@ -34,8 +30,6 @@ interface CalendarSourceListProps {
   /** null은 아직 고르지 않아 기본 선택(공휴일·생일·구독 제외)을 보인다 */
   value: readonly string[] | null;
   onValueChange: (collectionKeys: string[]) => void;
-  filters?: FilterImportCollection;
-  orderBy?: OrderByImportCollection;
 }
 
 const RECEIVED_ACCORDION_VALUE = 'received';
@@ -45,12 +39,10 @@ export function CalendarSourceList({
   endDate,
   value,
   onValueChange,
-  filters,
-  orderBy,
 }: CalendarSourceListProps) {
   const { t } = useTranslation('todoImport');
   const { data: collections } = useSuspenseQuery(
-    useGetImportCollectionsQueryOptions({ startDate, endDate, filters, orderBy }),
+    useGetImportCollectionsQueryOptions({ startDate, endDate }),
   );
 
   // 캘린더가 수십 개여도 고른 키·계정 묶음은 목록이나 선택이 바뀔 때만 다시 만든다
@@ -64,22 +56,10 @@ export function CalendarSourceList({
     [collections, value],
   );
   const formatAccountLabel = useFormatAccountLabel();
-  // 공휴일·생일·구독처럼 받아 보기만 하는 캘린더는 계정과 상관없이 맨 아래 한 묶음으로 접어 둔다
-  const { accounts, receivedCollections } = useMemo(() => {
-    const [received, own] = partition(collections, TodoImportCollectionPolicy.isSubscribedCalendar);
-    return {
-      receivedCollections: received,
-      accounts: sortBy(
-        Object.entries(groupBy(own, (collection) => collection.accountName ?? '')).flatMap(
-          ([accountKey, group]) => {
-            const [account] = group;
-            return account == null ? [] : [{ accountKey, account, group }];
-          },
-        ),
-        [({ account }) => orderByAccountProvider(account)],
-      ),
-    };
-  }, [collections]);
+  const { accounts, receivedCollections } = useMemo(
+    () => groupCollectionsByAccount(collections),
+    [collections],
+  );
 
   if (!collections.some(TodoImportCollectionPolicy.isSelectable)) {
     return <CalendarSourceList.Empty />;
@@ -123,7 +103,7 @@ export function CalendarSourceList({
 
   return (
     <VStack gap={12}>
-      {accounts.map(({ accountKey, account, group }) => (
+      {accounts.map(({ accountKey, account, collections: group }) => (
         <Box key={accountKey}>{renderGroup(group, account)}</Box>
       ))}
 
@@ -159,17 +139,14 @@ CalendarSourceList.Group = function Group({ accountName, ...props }: GroupProps)
   return <SettingsListGroup label={accountName} {...props} />;
 };
 
-interface ItemProps extends Omit<ComponentProps<typeof ListRow>, 'left' | 'contents' | 'right'> {
+interface ItemProps extends Omit<ComponentProps<typeof ControlField>, 'children' | 'isDisabled'> {
   collection: ImportCollection;
-  isSelected: boolean;
-  onSelectedChange: (isSelected: boolean) => void;
 }
 
-/** 데모가 같은 줄을 값만 바꿔 쓴다 */
+/** 데모가 같은 줄을 값만 바꿔 쓴다. 일정이 없는 캘린더는 스스로 막는다 */
 CalendarSourceList.Item = function Item({
   collection,
   isSelected,
-  onSelectedChange,
   className,
   ...props
 }: ItemProps) {
@@ -184,17 +161,16 @@ CalendarSourceList.Item = function Item({
     <ControlField
       isSelected={isSelected}
       isDisabled={isDisabled}
-      onSelectedChange={onSelectedChange}
       accessibilityRole="checkbox"
-      accessibilityState={{ checked: isSelected, disabled: isDisabled }}
+      accessibilityState={{ checked: isSelected === true, disabled: isDisabled }}
       accessibilityLabel={`${collection.title}, ${countLabel}`}
-      className="min-h-12 px-4"
+      className={cn('min-h-12 px-4', className)}
+      {...props}
     >
       <ListRow
         verticalPadding="medium"
         isDisabled={isDisabled}
-        className={cn('flex-1', className)}
-        {...props}
+        className="flex-1"
         left={
           <Box
             className="size-2.5 rounded-full bg-gray-4"

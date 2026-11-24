@@ -19,6 +19,11 @@ export interface TodoImportTargetRejection {
   limit?: number;
 }
 
+/** 자리 부족으로 거절된 카테고리에 더 넣을 수 있는 수. 서버가 수를 주지 않으면 0이다 */
+export function calculateRemainingCapacity(rejection: TodoImportTargetRejection) {
+  return Math.max((rejection.limit ?? 0) - (rejection.current ?? 0), 0);
+}
+
 /** 다른 기기·앞선 시도로 이미 처리 중인 가져오기 */
 export function findActiveTodoImportId(error: unknown): string | null {
   if (!isApiError(error) || !error.hasCode(ErrorCode.TODO_IMPORT_2301)) {

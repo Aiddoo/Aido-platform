@@ -1,12 +1,17 @@
 import type { OsPermission } from '@src/core/ports/os-permission';
 import type { DateKey } from '@src/shared/date/date-key';
+import { groupBy, partition, sortBy } from 'es-toolkit';
 
 import {
   IMPORT_RANGE_PRESET_NAMES,
   IMPORT_RANGE_PRESETS,
   type ImportRangePreset,
 } from '../constants/todo-import.constants';
-import type { ImportCollection } from '../domains/todo-import-collection.model';
+import {
+  type ImportCollection,
+  orderByAccountProvider,
+  TodoImportCollectionPolicy,
+} from '../domains/todo-import-collection.model';
 import { getRangeEndDate } from '../domains/todo-import.model';
 
 export const IMPORT_RANGE_PRESET_LABEL_KEYS = {
@@ -68,4 +73,36 @@ export function keepBlockedCalendarPermission(
 ): OsPermission {
   const isBlocked = previous?.status === 'denied' && !previous.canAskAgain;
   return isBlocked && read.status !== 'granted' ? previous : read;
+}
+
+export interface ImportAccountGroup {
+  accountKey: string;
+  /** 계정 이름·종류를 읽는 첫 캘린더 */
+  account: ImportCollection;
+  collections: ImportCollection[];
+}
+
+/**
+ * 캘린더를 계정마다 묶는다. 공휴일·생일·구독처럼 받아 보기만 하는 캘린더는 계정과 상관없이
+ * 맨 아래 한 묶음으로 따로 둔다. 내 계정이 먼저이고 묶음 안은 받은 순서다
+ */
+export function groupCollectionsByAccount(collections: readonly ImportCollection[]): {
+  accounts: ImportAccountGroup[];
+  receivedCollections: ImportCollection[];
+} {
+  const [receivedCollections, ownCollections] = partition(
+    collections,
+    TodoImportCollectionPolicy.isSubscribedCalendar,
+  );
+  const accounts = Object.entries(
+    groupBy(ownCollections, (collection) => collection.accountName ?? ''),
+  ).flatMap(([accountKey, group]) => {
+    const [account] = group;
+    return account == null ? [] : [{ accountKey, account, collections: group }];
+  });
+
+  return {
+    accounts: sortBy(accounts, [({ account }) => orderByAccountProvider(account)]),
+    receivedCollections,
+  };
 }

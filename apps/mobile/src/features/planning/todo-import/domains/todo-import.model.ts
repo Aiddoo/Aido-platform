@@ -7,7 +7,7 @@ import {
 } from '@aido/api/vocabulary';
 import { addDaysToDateKey, type DateKey, dateKeySchema } from '@src/shared/date/date-key';
 import { hasInstantPassed, type Instant, instantSchema } from '@src/shared/date/instant';
-import { clamp, sum } from 'es-toolkit';
+import { clamp } from 'es-toolkit';
 import { match, P } from 'ts-pattern';
 import { z } from 'zod';
 
@@ -56,10 +56,6 @@ export function findLastAllowedDate(todayKey: DateKey, horizonDays: number | nul
   return horizonDays == null ? null : getRangeEndDate(todayKey, horizonDays);
 }
 
-export function canImportFrom(startDate: DateKey, todayKey: DateKey) {
-  return todayKey <= startDate;
-}
-
 export function canImportUntil(endDate: DateKey, todayKey: DateKey, horizonDays: number | null) {
   const lastAllowedDate = findLastAllowedDate(todayKey, horizonDays);
   return todayKey <= endDate && (lastAllowedDate == null || endDate <= lastAllowedDate);
@@ -78,11 +74,6 @@ function isTerminal(todoImport: TodoImport) {
     .with(P.union('COMPLETED', 'FAILED', 'CANCELED', 'ABANDONED', 'UNDONE'), () => true)
     .with(P.union('UPLOADING', 'QUEUED', 'RUNNING', 'UNDOING'), () => false)
     .exhaustive();
-}
-
-/** 서버 `TODO_IMPORT_ACTIVE_STATUSES`와 같다 */
-function isActive(todoImport: TodoImport) {
-  return !isTerminal(todoImport);
 }
 
 function canUndo(todoImport: TodoImport, now: Instant) {
@@ -108,12 +99,6 @@ function getPollIntervalMs(todoImport: TodoImport): number | false {
     .exhaustive();
 }
 
-function hasSkipped(todoImport: TodoImport) {
-  const { skippedDuplicate, skippedCapacity, skippedCategoryMissing, skippedInvalid } =
-    todoImport.counts;
-  return sum([skippedDuplicate, skippedCapacity, skippedCategoryMissing, skippedInvalid]) > 0;
-}
-
 /** 받은 수가 없으면 0이다 */
 function calculateProcessedRatio(todoImport: TodoImport) {
   const total = Math.max(todoImport.receivedItemCount, todoImport.expectedItemCount);
@@ -122,10 +107,8 @@ function calculateProcessedRatio(todoImport: TodoImport) {
 
 export const TodoImportPolicy = {
   isTerminal,
-  isActive,
   canUndo,
   canCancel,
   getPollIntervalMs,
-  hasSkipped,
   calculateProcessedRatio,
 } as const;

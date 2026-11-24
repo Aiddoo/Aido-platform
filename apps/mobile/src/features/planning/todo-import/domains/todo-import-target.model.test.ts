@@ -1,18 +1,18 @@
 import { createTodoCategoryWithCount } from '@src/features/planning/category/__tests__/todo-category.fixtures';
 
 import { createImportCollection } from '../__tests__/todo-import.fixtures';
-import { TodoImportTargetPolicy } from './todo-import-target.model';
+import { suggestTargets, TodoImportTargetPolicy } from './todo-import-target.model';
 
 const WORK = createTodoCategoryWithCount({ id: 7, name: ' 업무 ', sortOrder: 1 });
 const DEFAULT = createTodoCategoryWithCount({ id: 3, name: '기본', sortOrder: 0 });
 
-describe('TodoImportTargetPolicy.suggestTargets', () => {
+describe('suggestTargets', () => {
   it('이름이 같은 카테고리(공백·대소문자 무시)가 있으면 그 카테고리에 넣는다', () => {
     // Given
     const collections = [createImportCollection({ collectionKey: 'work', title: '업무' })];
 
     // When
-    const targets = TodoImportTargetPolicy.suggestTargets(collections, {
+    const targets = suggestTargets(collections, {
       categories: [DEFAULT, WORK],
       remainingCategorySlots: 0,
     });
@@ -30,7 +30,7 @@ describe('TodoImportTargetPolicy.suggestTargets', () => {
     ];
 
     // When
-    const targets = TodoImportTargetPolicy.suggestTargets(collections, {
+    const targets = suggestTargets(collections, {
       categories: [DEFAULT, WORK],
       remainingCategorySlots: 1,
     });
@@ -51,7 +51,7 @@ describe('TodoImportTargetPolicy.suggestTargets', () => {
     ];
 
     // When
-    const targets = TodoImportTargetPolicy.suggestTargets(collections, {
+    const targets = suggestTargets(collections, {
       categories: [DEFAULT],
       remainingCategorySlots: null,
     });

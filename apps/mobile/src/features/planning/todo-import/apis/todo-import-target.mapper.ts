@@ -7,7 +7,7 @@ import type { ImportCollection } from '../domains/todo-import-collection.model';
 import {
   type ImportTarget,
   type ImportTargetSuggestion,
-  TodoImportTargetPolicy,
+  suggestTargets,
 } from '../domains/todo-import-target.model';
 
 const HEX_COLOR_PATTERN = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/iu;
@@ -93,7 +93,7 @@ export function resolveImportTargets(
   chosen: Readonly<Record<string, ImportTarget>>,
   { categories, remainingCategorySlots, palette, fallbackName }: ResolveImportTargetsContext,
 ): Record<string, ImportTarget> {
-  const suggestions = TodoImportTargetPolicy.suggestTargets(collections, {
+  const suggestions = suggestTargets(collections, {
     categories,
     remainingCategorySlots,
   });

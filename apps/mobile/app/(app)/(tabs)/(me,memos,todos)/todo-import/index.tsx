@@ -19,6 +19,7 @@ import type { TodoImportStep } from '@src/features/planning/todo-import/constant
 import { TodoImportCollectionPolicy } from '@src/features/planning/todo-import/domains/todo-import-collection.model';
 import type { ImportTarget } from '@src/features/planning/todo-import/domains/todo-import-target.model';
 import {
+  calculateRemainingCapacity,
   findActiveTodoImportId,
   findRejectedTargets,
   type TodoImportTargetRejection,
@@ -541,7 +542,7 @@ function OptionsStep({
       .with('CAPACITY', () =>
         t('categories.rejected.capacity', {
           expected: rejection.expected ?? 0,
-          count: Math.max((rejection.limit ?? 0) - (rejection.current ?? 0), 0),
+          count: calculateRemainingCapacity(rejection),
         }),
       )
       .with('CATEGORY_NAME_TAKEN', () => t('categories.rejected.nameTaken'))

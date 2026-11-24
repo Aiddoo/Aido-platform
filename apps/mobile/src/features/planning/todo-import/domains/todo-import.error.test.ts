@@ -1,6 +1,6 @@
 import { ErrorCode } from '@aido/api/errors';
 
-import { getTodoImportUploadFailure } from './todo-import.error';
+import { calculateRemainingCapacity, getTodoImportUploadFailure } from './todo-import.error';
 
 describe('getTodoImportUploadFailure', () => {
   it('한 번에 가져올 수 있는 일정 수를 넘어 멈췄으면 그 이유를 고른다', () => {
@@ -25,5 +25,22 @@ describe('getTodoImportUploadFailure', () => {
 
     // Then
     expect(failure).toBe('REJECTED');
+  });
+});
+
+describe('calculateRemainingCapacity', () => {
+  it.each([
+    ['한도에서 지금 수를 뺀다', { limit: 100, current: 97 }, 3],
+    ['이미 넘쳤으면 0이다', { limit: 100, current: 120 }, 0],
+    ['수가 오지 않으면 0이다', {}, 0],
+  ])('%s', (_case, counts, expected) => {
+    // Given
+    const rejection = { targetKey: 'work', reason: 'CAPACITY' as const, ...counts };
+
+    // When
+    const remaining = calculateRemainingCapacity(rejection);
+
+    // Then
+    expect(remaining).toBe(expected);
   });
 });

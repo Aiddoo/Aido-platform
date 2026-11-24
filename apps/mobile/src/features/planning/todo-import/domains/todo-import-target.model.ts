@@ -33,7 +33,7 @@ function toComparableName(name: string) {
  * 캘린더마다 처음 연결할 곳(순서대로 채운다).
  * 같은 이름의 카테고리 → 남은 카테고리 자리가 있으면 새 카테고리 → 꽉 찼으면 첫 카테고리
  */
-function suggestTargets(
+export function suggestTargets(
   collections: readonly ImportCollection[],
   { categories, remainingCategorySlots }: SuggestTargetsContext,
 ): Record<string, ImportTargetSuggestion> {
@@ -84,4 +84,4 @@ function isSameTarget(target: ImportTarget, other: ImportTarget) {
   return false;
 }
 
-export const TodoImportTargetPolicy = { suggestTargets, countNewCategories, isSameTarget } as const;
+export const TodoImportTargetPolicy = { countNewCategories, isSameTarget } as const;

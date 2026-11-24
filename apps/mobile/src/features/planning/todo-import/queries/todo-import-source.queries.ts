@@ -4,16 +4,11 @@ import { addDaysToDateKey } from '@src/shared/date/date-key';
 import { getStartOfDateKey } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { queryOptions } from '@tanstack/react-query';
-import { compact, orderBy as orderCollections } from 'es-toolkit';
-import { match } from 'ts-pattern';
+import { compact, orderBy } from 'es-toolkit';
 
 import { toImportCollection } from '../apis/todo-import-collection.mapper';
 import { toImportItem } from '../apis/todo-import-item.mapper';
-import type {
-  FilterImportCollection,
-  ImportCollection,
-  OrderByImportCollection,
-} from '../domains/todo-import-collection.model';
+import type { ImportCollection } from '../domains/todo-import-collection.model';
 import { countByCollection, filterByRange } from '../domains/todo-import-item.model';
 import { keepBlockedCalendarPermission } from '../utils/todo-import.view-model';
 import { TODO_IMPORT_QUERY_KEYS } from './todo-import-query-keys';
@@ -44,13 +39,9 @@ export function useGetCalendarPermissionQueryOptions() {
 export function useGetImportCollectionsQueryOptions({
   startDate,
   endDate,
-  filters,
-  orderBy = 'account',
 }: {
   startDate: DateKey;
   endDate: DateKey;
-  filters?: FilterImportCollection;
-  orderBy?: OrderByImportCollection;
 }) {
   const todoImportSource = useTodoImportSource();
   const { timezone } = useDateFormatContext();
@@ -72,34 +63,17 @@ export function useGetImportCollectionsQueryOptions({
       const itemCountByCollection = countByCollection(filterByRange(items, { startDate, endDate }));
       return collections.map((record) => toImportCollection(record, itemCountByCollection));
     },
+    // 기기 설정 앱과 같은 계정·이름 순이다
     select: (collections: ImportCollection[]) =>
-      sortCollections(filters == null ? collections : collections.filter(filters), orderBy),
+      orderBy(
+        collections,
+        [(collection) => collection.accountName ?? '', (collection) => collection.title],
+        ['asc', 'asc'],
+      ),
     networkMode: 'always',
     // 일정이 수천 개일 수 있어 같은 기간을 오가도 다시 읽지 않는다. 설정 앱에서 계정을 더하고 돌아오면
     // 목록을 보인 채 뒤에서 다시 읽는다
     staleTime: Number.POSITIVE_INFINITY,
     refetchOnWindowFocus: 'always',
   });
-}
-
-function sortCollections(
-  collections: readonly ImportCollection[],
-  orderBy: OrderByImportCollection,
-) {
-  return match(orderBy)
-    .with('account', () =>
-      orderCollections(
-        collections,
-        [(collection) => collection.accountName ?? '', (collection) => collection.title],
-        ['asc', 'asc'],
-      ),
-    )
-    .with('itemCount', () =>
-      orderCollections(
-        collections,
-        [(collection) => collection.itemCount, (collection) => collection.title],
-        ['desc', 'asc'],
-      ),
-    )
-    .exhaustive();
 }

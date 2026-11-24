@@ -37,10 +37,6 @@ export const importCollectionSchema = z.object({
 });
 export type ImportCollection = z.infer<typeof importCollectionSchema>;
 
-export type FilterImportCollection = (collection: ImportCollection) => boolean;
-/** account는 기기 설정 앱과 같은 계정·이름 순이다 */
-export type OrderByImportCollection = 'account' | 'itemCount';
-
 // 내 계정 캘린더를 먼저 고르고, 받아 보기만 하는 구독·생일 캘린더는 뒤에서 고른다
 export function orderByAccountProvider(collection: ImportCollection): number {
   return match(collection.accountProvider)
