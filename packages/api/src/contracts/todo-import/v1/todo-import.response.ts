@@ -4,6 +4,7 @@ import { dateSchema, datetimeSchema, nullableDateSchema } from "../../../common/
 import { entityIdSchema } from "../../../common/entity-id.js";
 import {
   TODO_IMPORT_FAILURE_REASONS,
+  TODO_IMPORT_SOURCE_UNKNOWN,
   TODO_IMPORT_SOURCES,
   TODO_IMPORT_STATUSES,
   TODO_IMPORT_TIME_MODES,
@@ -30,17 +31,19 @@ export type TodoImportCounts = z.infer<typeof todoImportCountsSchema>;
 export const todoImportSchema = z
   .object({
     id: entityIdSchema.meta({ description: "가져오기 id" }),
-    source: z.enum(TODO_IMPORT_SOURCES).meta({ description: "일정 출처" }),
+    source: z
+      .union([z.enum(TODO_IMPORT_SOURCES), z.literal(TODO_IMPORT_SOURCE_UNKNOWN)])
+      .catch(TODO_IMPORT_SOURCE_UNKNOWN)
+      .meta({ description: "일정 출처. 앱이 모르는 새 출처는 UNKNOWN으로 읽는다" }),
     status: z.enum(TODO_IMPORT_STATUSES).meta({
       description:
         "UPLOADING 업로드 중 → QUEUED 순서 대기 → RUNNING 만드는 중 → COMPLETED/FAILED. CANCELED·ABANDONED는 확정 전에 멈춤, UNDOING → UNDONE은 되돌리기",
     }),
     startDate: dateSchema,
     endDate: dateSchema,
-    failureReason: z
-      .enum(TODO_IMPORT_FAILURE_REASONS)
-      .nullable()
-      .meta({ description: "FAILED가 된 이유. FAILED가 아니면 null" }),
+    failureReason: z.enum(TODO_IMPORT_FAILURE_REASONS).nullable().catch(null).meta({
+      description: "FAILED가 된 이유. FAILED가 아니면 null, 앱이 모르는 새 이유도 null로 읽는다",
+    }),
     timezone: z.string().meta({
       description:
         "날짜·시각을 해석한 IANA 시간대. 시작할 때 정해지고 이어 보내기·할 일 만들기가 모두 이 값을 쓴다",

@@ -1,5 +1,7 @@
 /** 출처는 추가만 한다. 앱은 모르는 값을 `.catch`로 받는다 */
 export const TODO_IMPORT_SOURCES = ["DEVICE_CALENDAR"] as const;
+/** 응답에서 읽는 출처. 이 버전 앱이 모르는 새 출처는 UNKNOWN으로 읽는다 */
+export const TODO_IMPORT_SOURCE_UNKNOWN = "UNKNOWN";
 export type TodoImportSourceKind = (typeof TODO_IMPORT_SOURCES)[number];
 
 /** DATE_ONLY는 시각을 버려 리마인드 알림이 예약되지 않는다 */
