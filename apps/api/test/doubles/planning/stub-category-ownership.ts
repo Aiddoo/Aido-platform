@@ -14,5 +14,15 @@ export function createStubCategoryOwnership(
         throw todoCategoryNotFound(categoryId);
       }
     },
+    async listOwnedCategoryIds(
+      userId: UserId,
+      categoryIds: readonly TodoCategoryId[],
+    ): Promise<ReadonlySet<number>> {
+      return new Set(
+        categoryIds
+          .map((categoryId) => categoryId.value)
+          .filter((id) => categories.has(id) && owners.get(id) === userId.value),
+      );
+    },
   };
 }

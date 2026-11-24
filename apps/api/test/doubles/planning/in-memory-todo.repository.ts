@@ -92,6 +92,12 @@ export class InMemoryTodoRepository extends TodoRepositoryPort {
     });
   }
 
+  async insertMany(todos: readonly Todo[]): Promise<void> {
+    for (const todo of todos) {
+      await this.insert(todo);
+    }
+  }
+
   async createInlineItems(todoId: TodoId, items: readonly { title: string }[]): Promise<void> {
     for (const [sortOrder, item] of items.entries()) {
       this.#record(todoId.value).items.push({
@@ -163,20 +169,33 @@ export class InMemoryTodoRepository extends TodoRepositoryPort {
   }
 
   async countCategoryUsage(userId: UserId, categoryId: TodoCategoryId): Promise<number> {
+    const usages = await this.countCategoryUsages(userId, [categoryId]);
+    return usages.get(categoryId.value) ?? 0;
+  }
+
+  async countCategoryUsages(
+    userId: UserId,
+    categoryIds: readonly TodoCategoryId[],
+  ): Promise<ReadonlyMap<number, number>> {
+    const usages = new Map(categoryIds.map((categoryId) => [categoryId.value, 0]));
     const activeSeries = [...this.seriesStore.values()].filter(
-      (series) =>
-        series.userId.equals(userId) && series.categoryId === categoryId.value && series.isActive(),
-    ).length;
-    return (
-      activeSeries +
-      [...this.records.values()].filter(
-        (record) =>
-          record.userId === userId.value &&
-          record.categoryId === categoryId.value &&
-          !record.completed &&
-          record.seriesId === null,
-      ).length
+      (series) => series.userId.equals(userId) && series.isActive(),
     );
+    for (const series of activeSeries) {
+      const usage = usages.get(series.categoryId);
+      if (usage != null) {
+        usages.set(series.categoryId, usage + 1);
+      }
+    }
+    for (const record of this.records.values()) {
+      const usage = usages.get(record.categoryId);
+      const counts =
+        record.userId === userId.value && !record.completed && record.seriesId === null;
+      if (usage != null && counts) {
+        usages.set(record.categoryId, usage + 1);
+      }
+    }
+    return usages;
   }
 
   async lockRebaseCandidates(query: RebaseCandidateQuery): Promise<readonly RebaseCandidate[]> {

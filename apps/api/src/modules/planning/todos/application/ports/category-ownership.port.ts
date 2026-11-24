@@ -1,11 +1,12 @@
 import type { TodoCategoryId } from "#api/modules/planning/todo-categories/planning-todo-categories.public";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
-/**
- * 카테고리 소유권 확인 포트 (todo-category 컨텍스트 경계)
- *
- * 소유권 위반 시 예외를 던집니다(구현체가 기존 검증 로직에 위임).
- */
 export abstract class CategoryOwnershipPort {
+  // 주인이 아니거나 없으면 TODO_CATEGORY_0851로 거부한다
   abstract validateOwnership(categoryId: TodoCategoryId, userId: UserId): Promise<void>;
+
+  abstract listOwnedCategoryIds(
+    userId: UserId,
+    categoryIds: readonly TodoCategoryId[],
+  ): Promise<ReadonlySet<number>>;
 }

@@ -8,16 +8,26 @@ import type { CategoryOwnershipPort } from "../../application/ports/category-own
 
 @Injectable()
 export class CategoryOwnershipAdapter implements CategoryOwnershipPort {
-  readonly #categoryReader: Pick<TodoCategoryReaderPort, "validateOwnership">;
+  readonly #categoryReader: Pick<
+    TodoCategoryReaderPort,
+    "validateOwnership" | "listOwnedCategoryIds"
+  >;
 
   constructor(
     @Inject(TodoCategoryReaderPort)
-    categoryReader: Pick<TodoCategoryReaderPort, "validateOwnership">,
+    categoryReader: Pick<TodoCategoryReaderPort, "validateOwnership" | "listOwnedCategoryIds">,
   ) {
     this.#categoryReader = categoryReader;
   }
 
   async validateOwnership(categoryId: TodoCategoryId, userId: UserId): Promise<void> {
     await this.#categoryReader.validateOwnership(categoryId, userId);
+  }
+
+  listOwnedCategoryIds(
+    userId: UserId,
+    categoryIds: readonly TodoCategoryId[],
+  ): Promise<ReadonlySet<number>> {
+    return this.#categoryReader.listOwnedCategoryIds(userId, categoryIds);
   }
 }

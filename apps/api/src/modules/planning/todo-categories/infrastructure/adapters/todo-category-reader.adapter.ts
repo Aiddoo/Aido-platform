@@ -10,7 +10,7 @@ import type { TodoCategoryId } from "../../domain/todo-category-id.vo.js";
 interface TodoCategoryReaderDependencies {
   readonly repository: Pick<
     TodoCategoryRepositoryPort,
-    "listByUserId" | "findByIdAndUserId" | "countByUserId"
+    "listByUserId" | "findByIdAndUserId" | "countByUserId" | "listOwnedIds"
   >;
 }
 
@@ -29,6 +29,13 @@ export class TodoCategoryReaderAdapter
 
   countCategories(userId: UserId): Promise<number> {
     return this.#dependencies.repository.countByUserId(userId);
+  }
+
+  listOwnedCategoryIds(
+    userId: UserId,
+    categoryIds: readonly TodoCategoryId[],
+  ): Promise<ReadonlySet<number>> {
+    return this.#dependencies.repository.listOwnedIds(userId, categoryIds);
   }
 
   async validateOwnership(categoryId: TodoCategoryId, userId: UserId): Promise<void> {

@@ -1,6 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import type { TodoCategoryRepositoryPort } from "#api/modules/planning/todo-categories/application/ports/todo-category.repository.port";
+import { TodoCategoryId } from "#api/modules/planning/todo-categories/domain/todo-category-id.vo";
 import type {
   TodoCategory,
   TodoCategoryPrimitives,
@@ -143,6 +144,30 @@ export function describeTodoCategoryRepositoryContract(
         [later.id.value, 2],
       ]);
       expect(single?.todoCount).toBe(2);
+    });
+
+    it("소유 id 목록은 넘긴 id 가운데 그 사용자 카테고리만 준다", async () => {
+      // Given
+      const { categoryRepository } = await createContext();
+      const owned = await insertCategory(categoryRepository, { name: "가" });
+      const foreign = await insertCategory(categoryRepository, {
+        userId: TODO_FIXTURE_OTHER_USER_ID,
+        name: "나",
+      });
+
+      // When
+      const ownedIds = await categoryRepository.listOwnedIds(
+        UserId.reconstitute(TODO_FIXTURE_USER_ID),
+        [owned.id, foreign.id, TodoCategoryId.reconstitute(owned.id.value + 1000)],
+      );
+      const none = await categoryRepository.listOwnedIds(
+        UserId.reconstitute(TODO_FIXTURE_USER_ID),
+        [],
+      );
+
+      // Then
+      expect([...ownedIds]).toEqual([owned.id.value]);
+      expect(none.size).toBe(0);
     });
 
     it("개수·최대 순서·이름 목록은 그 사용자 것만 보고 없으면 최대 순서는 -1이다", async () => {

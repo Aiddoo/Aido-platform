@@ -3,8 +3,12 @@ import { localDateOf, toZonedInstant } from "#api/shared/domain/time/zoned-time"
 
 // 할 일 날짜 계산은 모두 Temporal로 한다. 반복 규칙은 날짜를 YYYY-MM-DD 키로 들고 있어 여기서 오간다
 
-// 옛 날짜 함수(resolveTimezone)처럼 알 수 없는 시간대는 요청을 멈추지 않고 UTC로 계산한다
-function toTodoTimezone(raw: string): Timezone {
+// 옛 날짜 함수(resolveTimezone)처럼 알 수 없는 시간대는 요청을 멈추지 않고 UTC로 계산한다.
+// 묶음 생성은 한 번 풀어 둔 Timezone을 넘겨 초안마다 다시 검증하지 않는다
+export function toTodoTimezone(raw: string | Timezone): Timezone {
+  if (raw instanceof Timezone) {
+    return raw;
+  }
   try {
     return Timezone.create(raw);
   } catch {
@@ -39,7 +43,7 @@ export function localTimeIn(at: Temporal.Instant, timezone: string): string {
 export function resolveScheduledInstant(
   dateKey: string,
   localTime: string | null,
-  timezone: string,
+  timezone: string | Timezone,
 ): Temporal.Instant | null {
   if (localTime == null) {
     return null;

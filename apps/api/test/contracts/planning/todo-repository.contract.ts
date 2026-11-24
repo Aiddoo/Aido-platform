@@ -1,3 +1,5 @@
+import { zip } from "es-toolkit";
+
 import { TodoTitle } from "#api/modules/planning/shared/domain/todo-title.vo";
 import { TodoCategoryId } from "#api/modules/planning/todo-categories/domain/todo-category-id.vo";
 import type { TodoSeriesRepositoryPort } from "#api/modules/planning/todo-series/application/ports/todo-series.repository.port";
@@ -427,6 +429,66 @@ export function describeTodoRepositoryContract(
 
       // Then
       expect(usage).toBe(2);
+    });
+
+    it("카테고리별 사용량은 단건 사용량과 같은 기준이고 넘긴 카테고리는 할 일이 없어도 0으로 준다", async () => {
+      // Given
+      const context = await createContext();
+      await insertTodo(context);
+      await insertTodo(context);
+      await insertTodo(context, { completed: true, completedAt: TODO_FIXTURE_NOW });
+      await insertTodo(context, { userId: TODO_FIXTURE_OTHER_USER_ID });
+      await context.seriesRepository.insert(
+        createTodoSeriesFixture({ id: SERIES_ID, categoryId: context.categoryId }),
+      );
+      const categoryId = TodoCategoryId.reconstitute(context.categoryId);
+      const emptyCategoryId = TodoCategoryId.reconstitute(context.categoryId + 1000);
+
+      // When
+      const usages = await context.todoRepository.countCategoryUsages(OWNER_ID, [
+        categoryId,
+        emptyCategoryId,
+      ]);
+      const single = await context.todoRepository.countCategoryUsage(OWNER_ID, categoryId);
+
+      // Then
+      expect([...usages]).toEqual([
+        [categoryId.value, 3],
+        [emptyCategoryId.value, 0],
+      ]);
+      expect(single).toBe(3);
+    });
+
+    it("여러 새 할 일을 한 번에 넣으면 각자 같은 값으로 다시 읽힌다", async () => {
+      // Given
+      const { todoRepository, occurrenceWriter, categoryId } = await createContext();
+      const overrides: Partial<TodoPrimitives>[] = [
+        { title: "첫째", sortOrder: 1024 },
+        {
+          title: "둘째",
+          sortOrder: 2048,
+          startDate: Temporal.PlainDate.from("2026-11-12"),
+          scheduledLocalTime: "09:00",
+          scheduledTime: Temporal.Instant.from("2026-11-12T00:00:00Z"),
+          isAllDay: false,
+          visibility: "PRIVATE",
+        },
+      ];
+      const ids = await occurrenceWriter.nextIds(overrides.length);
+      const todos = zip(ids, overrides).map(([id, override]) =>
+        createTodoFixture({ ...override, id: id.value, categoryId }),
+      );
+
+      // When
+      await todoRepository.insertMany(todos);
+      await todoRepository.insertMany([]);
+
+      // Then
+      for (const todo of todos) {
+        expect((await todoRepository.findByIdAndUserId(todo.id, OWNER_ID))?.toPrimitives()).toEqual(
+          todo.toPrimitives(),
+        );
+      }
     });
 
     it("하위 항목은 넣은 순서로 읽고 save가 더하기·고치기·지우기·순서 바꾸기를 반영한다", async () => {

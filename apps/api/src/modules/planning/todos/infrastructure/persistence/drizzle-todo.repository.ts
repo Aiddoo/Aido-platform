@@ -3,6 +3,7 @@ import { Injectable } from "@nestjs/common";
 import {
   and,
   asc,
+  count,
   desc,
   eq,
   gt,
@@ -15,6 +16,7 @@ import {
   sql,
   type AnyColumn,
 } from "drizzle-orm";
+import { groupBy, sumBy } from "es-toolkit";
 
 import { requireRecord } from "#api/platform/database/database-error.util";
 import type { DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
@@ -95,6 +97,13 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
 
   async insert(entity: Todo): Promise<void> {
     await this.#db.insert(todo).values(toTodoRow(entity));
+  }
+
+  async insertMany(entities: readonly Todo[]): Promise<void> {
+    if (entities.length === 0) {
+      return;
+    }
+    await this.#db.insert(todo).values(entities.map((entity) => toTodoRow(entity)));
   }
 
   async createInlineItems(todoId: TodoId, items: readonly { title: string }[]): Promise<void> {
@@ -203,24 +212,45 @@ export class DrizzleTodoRepository implements TodoRepositoryPort {
   }
 
   async countCategoryUsage(userId: UserId, categoryId: TodoCategoryId): Promise<number> {
-    const todos = await this.#db.$count(
-      todo,
-      and(
-        eq(todo.userId, userId.value),
-        eq(todo.categoryId, categoryId.value),
-        eq(todo.completed, false),
-        isNull(todo.seriesId),
-      ),
+    const usages = await this.countCategoryUsages(userId, [categoryId]);
+    return usages.get(categoryId.value) ?? 0;
+  }
+
+  async countCategoryUsages(
+    userId: UserId,
+    categoryIds: readonly TodoCategoryId[],
+  ): Promise<ReadonlyMap<number, number>> {
+    const ids = categoryIds.map((categoryId) => categoryId.value);
+    if (ids.length === 0) {
+      return new Map();
+    }
+    const todoCounts = await this.#db
+      .select({ categoryId: todo.categoryId, usage: count() })
+      .from(todo)
+      .where(
+        and(
+          eq(todo.userId, userId.value),
+          inArray(todo.categoryId, ids),
+          eq(todo.completed, false),
+          isNull(todo.seriesId),
+        ),
+      )
+      .groupBy(todo.categoryId);
+    const seriesCounts = await this.#db
+      .select({ categoryId: todoSeries.categoryId, usage: count() })
+      .from(todoSeries)
+      .where(
+        and(
+          eq(todoSeries.userId, userId.value),
+          inArray(todoSeries.categoryId, ids),
+          isNotNull(todoSeries.nextOccurrenceDate),
+        ),
+      )
+      .groupBy(todoSeries.categoryId);
+    const countsByCategory = groupBy([...todoCounts, ...seriesCounts], (row) => row.categoryId);
+    return new Map(
+      ids.map((id) => [id, sumBy(countsByCategory[id] ?? [], (row) => row.usage)] as const),
     );
-    const series = await this.#db.$count(
-      todoSeries,
-      and(
-        eq(todoSeries.userId, userId.value),
-        eq(todoSeries.categoryId, categoryId.value),
-        isNotNull(todoSeries.nextOccurrenceDate),
-      ),
-    );
-    return todos + series;
   }
 
   async lockRebaseCandidates(query: RebaseCandidateQuery): Promise<readonly RebaseCandidate[]> {

@@ -1,9 +1,17 @@
 export {
+  type StagedTodoBatch,
+  StagedTodoBatchCreatorPort,
+  type StageTodoBatchInput,
+  type TodoBatchDraft,
+  type TodoBatchOutcome,
+} from "./application/ports/staged-todo-batch-creator.port.js";
+export {
   type CreateTodoData,
   type StagedTodoCreation,
   StagedTodoCreatorPort,
 } from "./application/ports/staged-todo-creator.port.js";
 export { TodoCachePort } from "./application/ports/todo-cache.port.js";
+export { TodoCategoryUsageReaderPort } from "./application/ports/todo-category-usage.reader.port.js";
 export {
   type TodoCommentCount,
   TodoEngagementCounterPort,

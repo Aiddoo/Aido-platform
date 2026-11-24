@@ -22,12 +22,15 @@ import { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port"
 
 import { CategoryOwnershipPort } from "./application/ports/category-ownership.port.js";
 import { FriendPort } from "./application/ports/friend.port.js";
+import { StagedTodoBatchCreatorPort } from "./application/ports/staged-todo-batch-creator.port.js";
 import { StagedTodoCreatorPort } from "./application/ports/staged-todo-creator.port.js";
 import { StreakPort } from "./application/ports/streak.port.js";
 import { TodoBulkRemoverPort } from "./application/ports/todo-bulk-remover.port.js";
 import { TodoCachePort } from "./application/ports/todo-cache.port.js";
+import { TodoCategoryUsageReaderPort } from "./application/ports/todo-category-usage.reader.port.js";
 import { TodoEngagementCounterPort } from "./application/ports/todo-engagement-counter.port.js";
 import { TodoNotificationPort } from "./application/ports/todo-notification.port.js";
+import { TodoOccurrenceWriterPort } from "./application/ports/todo-occurrence-writer.port.js";
 import { TodoOwnerTimezonePort } from "./application/ports/todo-owner-timezone.port.js";
 import { TodoReadRepositoryPort } from "./application/ports/todo-read.repository.port.js";
 import { TodoReminderSchedulerPort } from "./application/ports/todo-reminder-scheduler.port.js";
@@ -49,6 +52,7 @@ import { GetTodoUseCase } from "./application/use-cases/get-todo.use-case.js";
 import { InvalidateTodoViewCacheUseCase } from "./application/use-cases/invalidate-todo-view-cache.use-case.js";
 import { ListFriendTodosUseCase } from "./application/use-cases/list-friend-todos.use-case.js";
 import { ListTodosUseCase } from "./application/use-cases/list-todos.use-case.js";
+import { PublishTodoBatchCreatedUseCase } from "./application/use-cases/publish-todo-batch-created.use-case.js";
 import { PublishTodoCreatedUseCase } from "./application/use-cases/publish-todo-created.use-case.js";
 import { PublishTodoUpdateUseCase } from "./application/use-cases/publish-todo-update.use-case.js";
 import { RebaseTodoTimezoneUseCase } from "./application/use-cases/rebase-todo-timezone.use-case.js";
@@ -57,6 +61,7 @@ import { ReorderTodoItemsUseCase } from "./application/use-cases/reorder-todo-it
 import { ReorderTodoUseCase } from "./application/use-cases/reorder-todo.use-case.js";
 import { ResolveTodoTimezoneUseCase } from "./application/use-cases/resolve-todo-timezone.use-case.js";
 import { SetTodoCompletedUseCase } from "./application/use-cases/set-todo-completed.use-case.js";
+import { StageTodoBatchCreationUseCase } from "./application/use-cases/stage-todo-batch-creation.use-case.js";
 import { StageTodoCreationUseCase } from "./application/use-cases/stage-todo-creation.use-case.js";
 import { UpdateTodoItemUseCase } from "./application/use-cases/update-todo-item.use-case.js";
 import { UpdateTodoScheduleUseCase } from "./application/use-cases/update-todo-schedule.use-case.js";
@@ -66,8 +71,10 @@ import { UpdateTodoUseCase } from "./application/use-cases/update-todo.use-case.
 import { WriteSingleTodoUseCase } from "./application/use-cases/write-single-todo.use-case.js";
 import { WriteTodoSeriesUseCase } from "./application/use-cases/write-todo-series.use-case.js";
 import { FriendAdapter } from "./infrastructure/adapters/friend.adapter.js";
+import { StagedTodoBatchCreatorAdapter } from "./infrastructure/adapters/staged-todo-batch-creator.adapter.js";
 import { StagedTodoCreatorAdapter } from "./infrastructure/adapters/staged-todo-creator.adapter.js";
 import { StreakAdapter } from "./infrastructure/adapters/streak.adapter.js";
+import { TodoCategoryUsageReaderAdapter } from "./infrastructure/adapters/todo-category-usage-reader.adapter.js";
 import { TodoNotificationAdapter } from "./infrastructure/adapters/todo-notification.adapter.js";
 import { TodoViewCacheInvalidatorAdapter } from "./infrastructure/adapters/todo-view-cache-invalidator.adapter.js";
 import { TodoTimezoneRebaseProcessor } from "./infrastructure/jobs/todo-timezone-rebase.processor.js";
@@ -117,6 +124,20 @@ export const PLANNING_TODOS_PROVIDERS = [
     timezoneResolver: ResolveTodoTimezoneUseCase,
   }),
   { provide: StagedTodoCreatorPort, useClass: StagedTodoCreatorAdapter },
+  provideUseCase(PublishTodoBatchCreatedUseCase, {
+    todoCache: TodoCachePort,
+    logger: loggerFor(PublishTodoBatchCreatedUseCase),
+  }),
+  provideUseCase(StageTodoBatchCreationUseCase, {
+    todoRepository: TodoRepositoryPort,
+    occurrenceWriter: TodoOccurrenceWriterPort,
+    categoryOwnership: CategoryOwnershipPort,
+    applyTodoEvents: ApplyTodoEventsUseCase,
+    publishBatchCreated: PublishTodoBatchCreatedUseCase,
+    clock: ClockPort,
+  }),
+  { provide: StagedTodoBatchCreatorPort, useClass: StagedTodoBatchCreatorAdapter },
+  { provide: TodoCategoryUsageReaderPort, useClass: TodoCategoryUsageReaderAdapter },
   provideUseCase(InvalidateTodoViewCacheUseCase, {
     todoReadRepository: TodoReadRepositoryPort,
     cache: TodoCachePort,

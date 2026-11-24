@@ -1,5 +1,6 @@
 export const TodoLogEvent = {
   CREATED: "planning.todo.created",
+  BATCH_CREATED: "planning.todo.batch.created",
   DELETED: "planning.todo.deleted",
   CATEGORY_CHANGED: "planning.todo.category.changed",
   UPDATED: "planning.todo.updated",
