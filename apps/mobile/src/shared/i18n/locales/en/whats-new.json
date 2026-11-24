@@ -9,7 +9,7 @@
   "v1_17_0": {
     "release": {
       "title": "Bring calendar events in as to-dos",
-      "description": "Move the events you pick from your phone's calendar into Aido in one go, and choose a category for each calendar"
+      "description": "Move the events you pick from your calendar app into Aido in one go, and choose a category for each calendar"
     },
     "intro": {
       "title": "Move your events into Aido",
@@ -129,7 +129,7 @@
   "list": {
     "title": "What's new",
     "newBadge": "New",
-    "updatedOn": "v{{version}}\u00a0· Updated {{date}}",
+    "updatedOn": "v{{version}} · Updated {{date}}",
     "updatedOnLabel": "Version {{version}}, updated {{date}}",
     "version": "v{{version}}",
     "versionLabel": "Version {{version}}",

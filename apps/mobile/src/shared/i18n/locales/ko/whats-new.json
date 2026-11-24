@@ -9,7 +9,7 @@
   "v1_17_0": {
     "release": {
       "title": "캘린더 일정을 할 일로 가져와요",
-      "description": "휴대폰 캘린더에서 고른 일정을 아이두 할 일로 한 번에 옮겨요. 캘린더마다 카테고리도 정할 수 있어요"
+      "description": "캘린더 앱에서 고른 일정을 아이두 할 일로 한 번에 옮겨요. 캘린더마다 카테고리도 정할 수 있어요"
     },
     "intro": {
       "title": "캘린더 일정을 옮겨 와요",
@@ -129,7 +129,7 @@
   "list": {
     "title": "새로운 기능",
     "newBadge": "새 기능",
-    "updatedOn": "v{{version}}\u00a0· {{date}} 업데이트",
+    "updatedOn": "v{{version}} · {{date}} 업데이트",
     "updatedOnLabel": "버전 {{version}}, {{date}} 업데이트",
     "version": "v{{version}}",
     "versionLabel": "버전 {{version}}",

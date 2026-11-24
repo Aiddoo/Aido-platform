@@ -67,7 +67,7 @@ export function CalendarChoiceDemo() {
 
   return (
     <WhatsNewStep.Stage accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-      <CalendarSourceList.Group accountName={t('v1_17_0.demo.account')} accountProvider="icloud">
+      <CalendarSourceList.Group accountName={t('v1_17_0.demo.account')}>
         {collections.map((collection, index) => (
           <Box key={collection.collectionKey}>
             {index > 0 && <SettingsListGroup.Separator />}
