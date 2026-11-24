@@ -30,8 +30,10 @@ import {
 } from '../apis/todo-import-target.mapper';
 import type { ImportCollection } from '../domains/todo-import-collection.model';
 import { type ImportTarget, TodoImportTargetPolicy } from '../domains/todo-import-target.model';
+import { useFormatCalendarSource } from '../hooks/use-format-calendar-source';
 import { useNewCategoryNames } from '../hooks/use-new-category-names';
 import type { TodoImportCategoryMode } from '../schemas/todo-import-form.schema';
+import { joinCalendarSources } from '../utils/todo-import.view-model';
 import { type CategoryTargetChoice, CategoryTargetSheet } from './category-target-sheet';
 
 interface CategoryMappingListProps {
@@ -47,6 +49,8 @@ interface CategoryMappingListProps {
 }
 
 const DEFAULT_LOADING_ROW_COUNT = 3;
+/** 모은 행이 이름으로 보이는 출처 수. 나머지는 "외 N곳"으로 줄인다 */
+const MAX_VISIBLE_SOURCE_COUNT = 2;
 
 /**
  * 캘린더마다 넣을 카테고리, 또는 모두 모을 카테고리 하나를 설정 행으로 보인다. 행을 누르면 고르는 시트를 열고,
@@ -75,6 +79,7 @@ export function CategoryMappingList({
     ? null
     : EntitlementPolicy.findLimit(snapshot, 'TODO_CATEGORY');
   const names = useNewCategoryNames();
+  const formatCalendarSource = useFormatCalendarSource();
   const targets = resolveImportTargets(collections, value, {
     categories,
     remainingCategorySlots,
@@ -158,6 +163,10 @@ export function CategoryMappingList({
     collections
       .map((collection) => errorMessages?.[collection.collectionKey])
       .find((message) => message != null) ?? null;
+  const allSources = joinCalendarSources(collections.map(formatCalendarSource), {
+    maxCount: MAX_VISIBLE_SOURCE_COUNT,
+    formatMore: (count) => t('categories.moreSources', { count }),
+  });
   // 고른 곳이 남은 자리보다 많을 때만 눈에 띄게 알린다. 그 밖에는 차분한 안내다
   const isOverSlots = remainingCategorySlots != null && newCategoryCount > remainingCategorySlots;
 
@@ -166,34 +175,39 @@ export function CategoryMappingList({
       {match(mode)
         .with('separate', () => (
           <SettingsListGroup>
-            {collections.map((collection, index) => (
-              <Box key={collection.collectionKey}>
-                {index > 0 && <SettingsListGroup.Separator />}
-                <CategoryMappingList.Item
-                  label={collection.title}
-                  color={collection.color}
-                  target={targets[collection.collectionKey] ?? null}
-                  categories={categories}
-                  errorMessage={errorMessages?.[collection.collectionKey] ?? null}
-                  onPress={() =>
-                    chooseTarget(
-                      [collection],
-                      {
-                        label: t('categories.sheet.calendar', { name: collection.title }),
-                        color: collection.color,
-                      },
-                      applyToCollection(collection.collectionKey),
-                    )
-                  }
-                />
-              </Box>
-            ))}
+            {collections.map((collection, index) => {
+              const source = formatCalendarSource(collection);
+              return (
+                <Box key={collection.collectionKey}>
+                  {index > 0 && <SettingsListGroup.Separator />}
+                  <CategoryMappingList.Item
+                    subject={{ kind: 'calendar', title: collection.title }}
+                    source={source}
+                    color={collection.color}
+                    target={targets[collection.collectionKey] ?? null}
+                    categories={categories}
+                    errorMessage={errorMessages?.[collection.collectionKey] ?? null}
+                    onPress={() =>
+                      chooseTarget(
+                        [collection],
+                        {
+                          label: t('categories.sheet.calendar', { name: collection.title, source }),
+                          color: collection.color,
+                        },
+                        applyToCollection(collection.collectionKey),
+                      )
+                    }
+                  />
+                </Box>
+              );
+            })}
           </SettingsListGroup>
         ))
         .with('single', () => (
           <SettingsListGroup>
             <CategoryMappingList.Item
-              label={t('categories.allCalendars', { count: collections.length })}
+              subject={{ kind: 'allCalendars', count: collections.length }}
+              source={allSources}
               color={null}
               target={singleRowTarget}
               categories={categories}
@@ -202,7 +216,7 @@ export function CategoryMappingList({
                 chooseTarget(
                   collections,
                   {
-                    label: t('categories.allCalendars', { count: collections.length }),
+                    label: `${t('categories.allCalendars', { count: collections.length })} · ${allSources}`,
                     color: null,
                   },
                   onSingleTargetChange,
@@ -226,10 +240,16 @@ export function CategoryMappingList({
   );
 }
 
+/** 행이 무엇을 넣는지. 캘린더 하나, 또는 고른 캘린더 모두다 */
+type MappingSubject = { kind: 'calendar'; title: string } | { kind: 'allCalendars'; count: number };
+
 interface ItemProps extends Omit<
   ComponentProps<typeof SettingsListGroup.Item>,
-  'description' | 'icon' | 'value' | 'right' | 'accessibilityLabel'
+  'label' | 'description' | 'icon' | 'value' | 'right' | 'accessibilityLabel'
 > {
+  subject: MappingSubject;
+  /** 캘린더가 어디서 왔는지. 캘린더 단계의 묶음 이름과 같고, 모은 행은 여러 출처를 잇는다 */
+  source: string;
   /** 캘린더 색. 모은 행은 null이다 */
   color: string | null;
   target: ImportTarget | null;
@@ -237,9 +257,13 @@ interface ItemProps extends Omit<
   errorMessage: string | null;
 }
 
-/** 설정 행처럼 왼쪽은 무엇을, 오른쪽은 넣을 카테고리를 글로 보인다. 새로 만들 카테고리는 둘째 줄이 알린다 */
+/**
+ * 설정 행처럼 왼쪽은 가져올 캘린더와 그 출처를, 오른쪽은 넣을 아이두 카테고리를 보인다.
+ * 새로 만들 카테고리는 출처 뒤에 덧붙여 알린다
+ */
 CategoryMappingList.Item = function Item({
-  label,
+  subject,
+  source,
   color,
   target,
   categories,
@@ -259,8 +283,18 @@ CategoryMappingList.Item = function Item({
       };
     })
     .exhaustive();
-  const description =
-    target?.kind === 'NEW_CATEGORY' ? t('categories.newCategoryDescription') : undefined;
+  const isNewCategory = target?.kind === 'NEW_CATEGORY';
+  const { label, rowLabel } = match(subject)
+    .with({ kind: 'calendar' }, ({ title }) => ({
+      label: title,
+      rowLabel: t('categories.rowLabel', { source, calendar: title, target: targetName }),
+    }))
+    .with({ kind: 'allCalendars' }, ({ count }) => ({
+      label: t('categories.allCalendars', { count }),
+      rowLabel: t('categories.allCalendarsRowLabel', { source, count, target: targetName }),
+    }))
+    .exhaustive();
+  const description = compact([source, isNewCategory && t('categories.toNewCategory')]).join(' · ');
 
   return (
     <VStack>
@@ -277,8 +311,8 @@ CategoryMappingList.Item = function Item({
           </HStack>
         }
         accessibilityLabel={compact([
-          t('categories.rowLabel', { calendar: label, target: targetName }),
-          description,
+          rowLabel,
+          isNewCategory && t('categories.newCategoryDescription'),
           errorMessage,
         ]).join(', ')}
         accessibilityHint={t('categories.rowHint')}

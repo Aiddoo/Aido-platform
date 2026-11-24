@@ -4,6 +4,7 @@ import { createImportCollection } from '../__tests__/todo-import.fixtures';
 import {
   getCalendarPermissionView,
   groupCollectionsByAccount,
+  joinCalendarSources,
   keepBlockedCalendarPermission,
   toUnbreakableLabel,
 } from './todo-import.view-model';
@@ -113,6 +114,27 @@ describe('groupCollectionsByAccount', () => {
 
     // Then
     expect(accounts.map(({ accountKey }) => accountKey)).toEqual(['B Google', 'A Contacts']);
+  });
+});
+
+describe('joinCalendarSources', () => {
+  it.each<[string, string[], string]>([
+    ['한 곳이면 그 이름만 보인다', ['iCloud', 'iCloud'], 'iCloud'],
+    ['두 곳은 모두 잇는다', ['iCloud', 'Google 캘린더', 'iCloud'], 'iCloud · Google 캘린더'],
+    [
+      '두 곳을 넘으면 나머지를 수로 줄인다',
+      ['iCloud', 'Google 캘린더', '이 기기에만 저장된 캘린더', 'Outlook 캘린더'],
+      'iCloud · Google 캘린더 외 2곳',
+    ],
+  ])('%s', (_case, sources, expected) => {
+    // When
+    const label = joinCalendarSources(sources, {
+      maxCount: 2,
+      formatMore: (hiddenCount) => `외 ${hiddenCount}곳`,
+    });
+
+    // Then
+    expect(label).toBe(expected);
   });
 });
 

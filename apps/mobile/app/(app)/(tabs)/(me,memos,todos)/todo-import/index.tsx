@@ -484,6 +484,8 @@ function CategoriesStep({ form, progress, onNext }: StepProps & { onNext: () => 
   const newCategoryNames = useNewCategoryNames();
 
   const mode = resolveCategoryMode(collections, categoryMode);
+  // 캘린더가 둘 이상이고 나눠 넣을 때만 캘린더마다 다른 카테고리가 이어진다
+  const isPerCalendar = mode === 'separate' && 1 < collections.length;
   // 목록이 보이는 연결과 같은 규칙으로 고른다. 받기 전에는 null이다
   const resolvedTargets =
     categoriesResult == null || snapshot == null
@@ -570,13 +572,15 @@ function CategoriesStep({ form, progress, onNext }: StepProps & { onNext: () => 
 
       <Spacing size={24} />
 
-      <Text size="b2" weight="semibold" shade={9} accessibilityRole="header">
-        {match(mode)
-          .with('separate', () =>
-            1 < collections.length ? t('categories.separateLabel') : t('categories.singleLabel'),
-          )
-          .with('single', () => t('categories.singleLabel'))
-          .exhaustive()}
+      {/* 스크린 리더가 화살표를 기호로 읽지 않게 같은 뜻의 문장을 읽힌다 */}
+      <Text
+        size="b2"
+        weight="semibold"
+        shade={9}
+        accessibilityRole="header"
+        accessibilityLabel={isPerCalendar ? t('categories.separateLabelAccessibility') : undefined}
+      >
+        {isPerCalendar ? t('categories.separateLabel') : t('categories.singleLabel')}
       </Text>
       <Spacing size={8} />
       <QueryErrorBoundary fallback={CategoryMappingList.Error}>

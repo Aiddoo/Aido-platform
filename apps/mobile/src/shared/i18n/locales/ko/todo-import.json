@@ -54,7 +54,8 @@
       "googleWithEmail": "Google 캘린더 · {{email}}",
       "outlook": "Outlook 캘린더",
       "outlookWithEmail": "Outlook 캘린더 · {{email}}",
-      "device": "이 기기에만 저장된 캘린더"
+      "device": "이 기기에만 저장된 캘린더",
+      "received": "공휴일·생일·구독 캘린더"
     },
     "receivedTitle": "공휴일·생일·구독 캘린더 {{count}}개",
     "itemCount": "{{count}}개",
@@ -92,26 +93,29 @@
   },
   "categories": {
     "title": "어느 카테고리에 넣을까요?",
-    "description": "가져온 일정을 어떤 카테고리에 넣을지 골라요",
+    "description": "캘린더에서 가져온 일정을 아이두 카테고리에 넣어요",
     "mode": {
       "label": "넣는 방법",
       "separate": "캘린더마다 따로 넣기",
-      "separateDescription": "캘린더별로 넣을 카테고리를 골라요",
-      "singleDescription": "가져온 일정을 카테고리 하나에 모아요",
+      "separateDescription": "캘린더마다 넣을 아이두 카테고리를 골라요",
+      "singleDescription": "모든 일정을 아이두 카테고리 하나에 모아요",
       "hintLabel": "카테고리 안내",
       "hint": "가져온 뒤에도 할 일의 카테고리는 언제든 바꿀 수 있어요. 카테고리 이름·색은 마이 > 카테고리 관리에서 바꿔요",
       "coachmark": "캘린더마다 나눌지, 한 카테고리에 모을지 여기서 골라요"
     },
     "allInOne": "한 카테고리에 모두 넣기",
-    "separateLabel": "캘린더별 카테고리",
-    "singleLabel": "넣을 카테고리",
+    "separateLabel": "캘린더 → 아이두 카테고리",
+    "separateLabelAccessibility": "캘린더별로 넣을 아이두 카테고리",
+    "singleLabel": "넣을 아이두 카테고리",
     "allCalendars": "고른 캘린더 {{count}}개 모두",
+    "moreSources": "외 {{count}}곳",
+    "toNewCategory": "새 카테고리로",
     "newCategoryDescription": "새 카테고리를 만들어 넣어요",
     "remainingSlots": "새 카테고리는 {{count}}개 더 만들 수 있어요",
     "noSlots": "카테고리가 가득 차서 이미 있는 카테고리에 넣어요",
     "sheet": {
       "title": "어디에 넣을까요?",
-      "calendar": "{{name}} 캘린더",
+      "calendar": "{{name}} 캘린더 · {{source}}",
       "newTitle": "새 카테고리 만들기",
       "sameName": "{{name}} 카테고리가 이미 있어서 거기에 넣어요",
       "lockedFree": "카테고리가 가득 찼어요(무료 {{limit}}개). 프리미엄에서 더 만들 수 있어요",
@@ -128,7 +132,8 @@
       "outlook": "Outlook 캘린더"
     },
     "loadFailed": "기존 카테고리를 읽지 못했어요",
-    "rowLabel": "{{calendar}}, {{target}}에 넣기",
+    "rowLabel": "{{source}}의 {{calendar}} 캘린더를 {{target}} 카테고리에 넣기",
+    "allCalendarsRowLabel": "{{source}}에서 고른 캘린더 {{count}}개를 모두 {{target}} 카테고리에 넣기",
     "rowHint": "넣을 카테고리를 바꿔요",
     "rejected": {
       "capacity": "이 카테고리에는 {{expected}}개 중 {{count}}개만 넣을 수 있어요. 기간을 줄이거나 다른 카테고리를 골라 주세요",

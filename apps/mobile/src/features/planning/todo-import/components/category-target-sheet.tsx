@@ -39,7 +39,7 @@ export type CategoryTargetChoice =
   | { kind: 'NEW_CATEGORY_EDIT' };
 
 interface CategoryTargetSheetProps {
-  /** 무엇을 넣는지. 캘린더 하나면 "대한민국의 휴일 캘린더", 모으면 "고른 캘린더 3개 모두" */
+  /** 무엇을 넣는지와 그 출처. 캘린더 하나면 "개인 캘린더 · iCloud", 모으면 "고른 캘린더 3개 모두 · iCloud" */
   subject: string;
   /** 캘린더 색. 여러 캘린더를 모으면 null이다 */
   subjectColor: string | null;
@@ -75,7 +75,8 @@ export function CategoryTargetSheet({
         <H4 accessibilityRole="header">{t('categories.sheet.title')}</H4>
         <HStack align="center" gap={6}>
           {subjectColor != null && <ColorDot color={subjectColor} />}
-          <Text size="b3" shade={6} numberOfLines={2} className="shrink">
+          {/* 출처에 계정 이메일이 붙어 길어져도 큰 글자에서 자르지 않는다 */}
+          <Text size="b3" shade={6} lineBreakStrategyIOS="hangul-word" className="shrink">
             {subject}
           </Text>
         </HStack>

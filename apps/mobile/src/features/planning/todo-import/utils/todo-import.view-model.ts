@@ -1,6 +1,6 @@
 import type { OsPermission } from '@src/core/ports/os-permission';
 import type { DateKey } from '@src/shared/date/date-key';
-import { groupBy, partition, sortBy } from 'es-toolkit';
+import { groupBy, partition, sortBy, take, uniq } from 'es-toolkit';
 
 import {
   IMPORT_RANGE_PRESET_NAMES,
@@ -108,6 +108,19 @@ export function groupCollectionsByAccount(collections: readonly ImportCollection
     accounts: sortBy(accounts, [({ account }) => orderByAccountProvider(account)]),
     receivedCollections,
   };
+}
+
+const SOURCE_SEPARATOR = ' · ';
+
+/** 여러 캘린더의 출처를 겹치지 않게 앞에서 `maxCount`곳까지 잇고, 나머지는 "외 N곳"처럼 수로 줄인다 */
+export function joinCalendarSources(
+  sources: readonly string[],
+  { maxCount, formatMore }: { maxCount: number; formatMore: (hiddenCount: number) => string },
+): string {
+  const distinct = uniq(sources);
+  const visible = take(distinct, maxCount).join(SOURCE_SEPARATOR);
+  const hiddenCount = distinct.length - maxCount;
+  return hiddenCount > 0 ? `${visible} ${formatMore(hiddenCount)}` : visible;
 }
 
 const NO_BREAK_SPACE = '\u00A0';

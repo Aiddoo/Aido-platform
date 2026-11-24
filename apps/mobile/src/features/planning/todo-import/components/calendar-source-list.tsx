@@ -15,14 +15,14 @@ import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Accordion, ControlField, Skeleton } from 'heroui-native';
 import type { ComponentProps } from 'react';
-import { match, P } from 'ts-pattern';
 
 import {
   type ImportCollection,
   TodoImportCollectionPolicy,
 } from '../domains/todo-import-collection.model';
+import { useFormatCalendarSource } from '../hooks/use-format-calendar-source';
 import { useGetImportCollectionsQueryOptions } from '../queries/todo-import-source.queries';
-import { findAccountEmail, groupCollectionsByAccount } from '../utils/todo-import.view-model';
+import { groupCollectionsByAccount } from '../utils/todo-import.view-model';
 
 interface CalendarSourceListProps {
   startDate: DateKey;
@@ -48,7 +48,7 @@ export function CalendarSourceList({
   const selected = TodoImportCollectionPolicy.getSelectedCollections(collections, value);
   const selectedKeys = new Set(selected.map((collection) => collection.collectionKey));
   const isAtLimit = TodoImportCollectionPolicy.isAtCollectionLimit(selected);
-  const formatAccountLabel = useFormatAccountLabel();
+  const formatCalendarSource = useFormatCalendarSource();
   const { accounts, receivedCollections } = groupCollectionsByAccount(collections);
 
   if (!collections.some(TodoImportCollectionPolicy.isSelectable)) {
@@ -70,7 +70,7 @@ export function CalendarSourceList({
   // 접는 목록은 머리말이 계정 이름이라 묶음에 다시 적지 않는다
   const renderGroup = (group: readonly ImportCollection[], account?: ImportCollection) => (
     <CalendarSourceList.Group
-      accountName={account == null ? undefined : formatAccountLabel(account)}
+      accountName={account == null ? undefined : formatCalendarSource(account)}
     >
       {group.map((collection, index) => (
         <Box key={collection.collectionKey}>
@@ -231,28 +231,4 @@ function ItemSkeleton() {
       right={<Skeleton className="size-5 rounded-md" />}
     />
   );
-}
-
-function useFormatAccountLabel() {
-  const { t } = useTranslation('todoImport');
-
-  return (account: ImportCollection) => {
-    const email = findAccountEmail(account);
-    return match(account.accountProvider)
-      .with('icloud', () => t('calendars.accounts.icloud'))
-      .with('google', () =>
-        email == null
-          ? t('calendars.accounts.google')
-          : t('calendars.accounts.googleWithEmail', { email }),
-      )
-      .with('outlook', () =>
-        email == null
-          ? t('calendars.accounts.outlook')
-          : t('calendars.accounts.outlookWithEmail', { email }),
-      )
-      .with('device', () => t('calendars.accounts.device'))
-      .with(P.union('subscribed', 'birthdays'), () => t('calendars.otherAccount'))
-      .with('other', () => account.accountName ?? t('calendars.otherAccount'))
-      .exhaustive();
-  };
 }
