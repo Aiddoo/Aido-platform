@@ -8,7 +8,7 @@ import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account
 import { useTrack } from '@src/shared/analytics';
 import { t } from '@src/shared/i18n';
 import { useMutationErrorFeedback } from '@src/shared/query/use-mutation-error-feedback';
-import { writeStoredValue } from '@src/shared/storage/define-stored-value';
+import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
 import { useStoredValueStorage } from '@src/shared/storage/use-stored-value';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
@@ -18,7 +18,10 @@ import {
   isTodoImportStartHandledError,
   isTodoImportStatusConflictError,
 } from '../domains/todo-import.error';
-import { lastTodoImportIdStoredValue } from '../schemas/todo-import-last-storage.schema';
+import {
+  lastTodoImportIdsStoredValue,
+  rememberTodoImportId,
+} from '../schemas/todo-import-last-storage.schema';
 import { toTodoImportStartedParams } from '../utils/todo-import-analytics';
 import {
   invalidateActiveTodoImport,
@@ -38,7 +41,7 @@ interface StartTodoImportVariables {
 export function useStartTodoImportMutationOptions() {
   const uploadSession = useTodoImportUploadSession();
   const queryClient = useQueryClient();
-  const lastImportStorage = useStoredValueStorage(lastTodoImportIdStoredValue);
+  const lastImportStorage = useStoredValueStorage(lastTodoImportIdsStoredValue);
   const { trackEvent } = useTrack();
 
   return mutationOptions({
@@ -49,7 +52,15 @@ export function useStartTodoImportMutationOptions() {
       unwrap(await uploadSession.start(variables)),
     onSuccess: ({ todoImport }, { accountId, selection }) => {
       setTodoImportInCache(queryClient, todoImport);
-      writeStoredValue(lastImportStorage, lastTodoImportIdStoredValue, todoImport.id, accountId);
+      writeStoredValue(
+        lastImportStorage,
+        lastTodoImportIdsStoredValue,
+        rememberTodoImportId(
+          readStoredValue(lastImportStorage, lastTodoImportIdsStoredValue, accountId),
+          todoImport.id,
+        ),
+        accountId,
+      );
       trackEvent('todo_import_created', toTodoImportStartedParams(selection));
     },
     onSettled: () => invalidateActiveTodoImport(queryClient),

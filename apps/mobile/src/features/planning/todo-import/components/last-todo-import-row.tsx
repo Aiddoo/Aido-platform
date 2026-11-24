@@ -13,7 +13,7 @@ import { type ComponentProps, Suspense, useEffect, useEffectEvent } from 'react'
 
 import { TodoImportPolicy } from '../domains/todo-import.model';
 import { useGetTodoImportQueryOptions } from '../queries/todo-import.queries';
-import { lastTodoImportIdStoredValue } from '../schemas/todo-import-last-storage.schema';
+import { lastTodoImportIdsStoredValue } from '../schemas/todo-import-last-storage.schema';
 import { toUnbreakableLabel } from '../utils/todo-import.view-model';
 
 type LastTodoImportRowProps = Omit<ComponentProps<typeof SettingsListGroup>, 'children'>;
@@ -21,7 +21,9 @@ type LastTodoImportRowProps = Omit<ComponentProps<typeof SettingsListGroup>, 'ch
 /** 결과 화면을 떠난 뒤 되돌리러 돌아오는 길. 되돌릴 수 있는 동안만 보이고 아니면 자리도 차지하지 않는다 */
 export function LastTodoImportRow(props: LastTodoImportRowProps) {
   const accountId = useMyAccountId();
-  const [lastImportId, setLastImportId] = useStoredValue(lastTodoImportIdStoredValue, accountId);
+  const [lastImportIds, setLastImportIds] = useStoredValue(lastTodoImportIdsStoredValue, accountId);
+  // 새것부터 본다. 되돌릴 수 없게 끝났으면(아무것도 만들지 않은 다시 가져오기 등) 빼고 그 앞의 가져오기를 보인다
+  const lastImportId = lastImportIds[0] ?? null;
 
   if (lastImportId == null) {
     return null;
@@ -32,8 +34,9 @@ export function LastTodoImportRow(props: LastTodoImportRowProps) {
       {/* 기한이 지난 가져오기는 줄이 그려지지 않아, 스켈레톤을 보였다 걷으면 아래 글이 들썩인다 */}
       <Suspense fallback={null}>
         <LastTodoImportRow.Undoable
+          key={lastImportId}
           importId={lastImportId}
-          onExpired={() => setLastImportId(null)}
+          onExpired={() => setLastImportIds(lastImportIds.filter((id) => id !== lastImportId))}
           {...props}
         />
       </Suspense>

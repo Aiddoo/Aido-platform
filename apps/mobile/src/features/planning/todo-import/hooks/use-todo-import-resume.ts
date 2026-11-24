@@ -11,7 +11,7 @@ import { useEffect, useEffectEvent } from 'react';
 import type { TodoImportResumeTrigger } from '../constants/todo-import.events';
 import { TodoImportPolicy } from '../domains/todo-import.model';
 import { useGetTodoImportQueryOptions } from '../queries/todo-import.queries';
-import { lastTodoImportIdStoredValue } from '../schemas/todo-import-last-storage.schema';
+import { lastTodoImportIdsStoredValue } from '../schemas/todo-import-last-storage.schema';
 import { todoImportSessionStoredValue } from '../schemas/todo-import-session-storage.schema';
 
 /**
@@ -62,7 +62,8 @@ export function useTodoImportResume(): void {
  * 다시 받기는 조회 queryFn의 `settleTodoImportFinished`가 한다
  */
 function useRefreshWhenImportFinishes(accountId: string | null) {
-  const [lastImportId] = useStoredValue(lastTodoImportIdStoredValue, accountId);
+  const [lastImportIds] = useStoredValue(lastTodoImportIdsStoredValue, accountId);
+  const lastImportId = lastImportIds[0] ?? null;
   const options = useGetTodoImportQueryOptions({ importId: lastImportId ?? '' });
 
   // 결과를 읽지 않아 받을 때마다 앱 묶음을 다시 그리지 않는다. 진행 화면이 열려 있으면 같은 조회를 함께 쓴다
