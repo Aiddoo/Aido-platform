@@ -53,7 +53,11 @@ function getAccountKind(calendar: Calendar.ExpoCalendar) {
       ownerAccount: calendar.ownerAccount ?? null,
     });
   }
-  return getIosAccountKind(calendar.type ?? null);
+  return getIosAccountKind({
+    calendarType: calendar.type ?? null,
+    title: calendar.title,
+    allowsModifications: calendar.allowsModifications,
+  });
 }
 
 // Android는 캘린더 앱에서 숨긴 캘린더의 일정을 돌려주지 않는다(Instances VISIBLE = 1)

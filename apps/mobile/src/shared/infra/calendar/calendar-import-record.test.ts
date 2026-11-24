@@ -187,11 +187,32 @@ describe('getIosAccountKind', () => {
     { calendarType: null, expected: 'other' },
   ])('캘린더 종류 $calendarType는 $expected이다', ({ calendarType, expected }) => {
     // When
-    const accountKind = getIosAccountKind(calendarType);
+    const accountKind = getIosAccountKind({
+      calendarType,
+      title: '개인',
+      allowsModifications: true,
+    });
 
     // Then
     expect(accountKind).toBe(expected);
   });
+
+  it.each([
+    { title: '대한민국의 휴일', allowsModifications: false, expected: 'holidays' },
+    { title: 'Holidays in United States', allowsModifications: false, expected: 'holidays' },
+    { title: '日本の祝日', allowsModifications: false, expected: 'holidays' },
+    { title: '팀 공유 일정', allowsModifications: false, expected: 'cloud' },
+    { title: '휴일 근무표', allowsModifications: true, expected: 'cloud' },
+  ])(
+    'Google 계정의 CalDAV 캘린더 "$title"(수정 가능 $allowsModifications)는 $expected이다',
+    ({ title, allowsModifications, expected }) => {
+      // When
+      const accountKind = getIosAccountKind({ calendarType: 'caldav', title, allowsModifications });
+
+      // Then
+      expect(accountKind).toBe(expected);
+    },
+  );
 });
 
 describe('getAndroidAccountKind', () => {

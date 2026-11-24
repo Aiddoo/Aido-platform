@@ -29,8 +29,22 @@ const GOOGLE_SUBSCRIBED_OWNER_SUFFIXES = [
 // CalendarContract.ACCOUNT_TYPE_LOCAL
 const ANDROID_LOCAL_ACCOUNT_TYPE = 'LOCAL';
 
-export function getIosAccountKind(calendarType: string | null): ImportAccountKind {
-  // iCloud·Google 계정은 CalDAV로 붙는다. 공휴일 캘린더는 구독 캘린더라 구독과 가르지 못한다
+// iOS는 Google 계정의 공휴일 캘린더를 일반 CalDAV로 준다. 남이 공유한 읽기 전용 캘린더와 가르려고 이름까지 본다
+const HOLIDAY_TITLE_PATTERN = /holiday|휴일|祝日|节假日|節假日|feiertag|férié|festivo|feriado/i;
+
+export function getIosAccountKind({
+  calendarType,
+  title,
+  allowsModifications,
+}: {
+  calendarType: string | null;
+  title: string;
+  allowsModifications: boolean;
+}): ImportAccountKind {
+  if (calendarType === 'caldav' && !allowsModifications && HOLIDAY_TITLE_PATTERN.test(title)) {
+    return 'holidays';
+  }
+  // iCloud·Google 계정은 CalDAV로 붙는다
   const accountKinds: Partial<Record<string, ImportAccountKind>> = {
     local: 'local',
     caldav: 'cloud',
