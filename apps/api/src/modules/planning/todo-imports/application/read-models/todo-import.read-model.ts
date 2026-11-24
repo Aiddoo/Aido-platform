@@ -6,7 +6,6 @@ import type {
   TodoVisibility,
 } from "@aido/api/vocabulary";
 
-import { judgeUndoWindow } from "../../domain/todo-import-undo.domain-service.js";
 import type { TodoImport, TodoImportCounts } from "../../domain/todo-import.aggregate.js";
 
 export interface TodoImportReadModel {
@@ -73,10 +72,6 @@ export function toTodoImportReadModel(
 }
 
 function findUndoableUntil(todoImport: TodoImport, now: Temporal.Instant): Temporal.Instant | null {
-  const { completedAt } = todoImport;
-  if (todoImport.status !== "COMPLETED" || completedAt == null) {
-    return null;
-  }
-  const window = judgeUndoWindow({ completedAt, now });
+  const window = todoImport.judgeUndo(now);
   return window.kind === "open" ? window.undoableUntil : null;
 }

@@ -95,8 +95,8 @@ describe("TodoImport", () => {
   it("되돌리기는 완료 뒤 7일 안에만 되고, 지나면 마감 시각과 함께 2308이다", () => {
     // Given
     const completedAt = TODO_IMPORT_FIXTURE_NOW;
-    const open = createTodoImportFixture({ status: "COMPLETED", completedAt });
-    const expired = createTodoImportFixture({ status: "COMPLETED", completedAt });
+    const open = createTodoImportFixture({ status: "COMPLETED", completedAt, createdCount: 3 });
+    const expired = createTodoImportFixture({ status: "COMPLETED", completedAt, createdCount: 3 });
 
     // When
     const requested = open.requestUndo(completedAt.add({ hours: 167 }));
@@ -111,6 +111,74 @@ describe("TodoImport", () => {
         details: { undoableUntil: "2026-12-01T03:00:00.000Z" },
       }),
     );
+  });
+
+  it("만들다 실패해도 만든 할 일이 남았으면 실패한 때부터 7일 안에 되돌리고 실패 이유를 지운다", () => {
+    // Given
+    const failedAt = TODO_IMPORT_FIXTURE_NOW;
+    const todoImport = createTodoImportFixture({
+      status: "FAILED",
+      failureReason: "STALLED",
+      createdCount: 40,
+      updatedAt: failedAt,
+    });
+
+    // When
+    const requested = todoImport.requestUndo(failedAt.add({ hours: 167 }));
+
+    // Then
+    expect(requested).toBe(true);
+    expect(todoImport.toPrimitives()).toMatchObject({ status: "UNDOING", failureReason: null });
+  });
+
+  it("되돌리다 실패한 가져오기는 다시 되돌릴 수 있고 마감은 처음 완료한 때부터 센다", () => {
+    // Given
+    const completedAt = TODO_IMPORT_FIXTURE_NOW;
+    const failed = {
+      status: "FAILED",
+      failureReason: "UNDO_FAILED",
+      createdCount: 10,
+      undoneCount: 4,
+      completedAt,
+      updatedAt: completedAt.add({ hours: 160 }),
+    } as const;
+    const retry = createTodoImportFixture(failed);
+    const late = createTodoImportFixture(failed);
+
+    // When
+    const requested = retry.requestUndo(completedAt.add({ hours: 167 }));
+    const expired = () => late.requestUndo(completedAt.add({ hours: 168 }));
+
+    // Then
+    expect(requested).toBe(true);
+    expect(retry.status).toBe("UNDOING");
+    expect(expired).toThrow(
+      expect.objectContaining({
+        errorCode: ErrorCode.TODO_IMPORT_2308,
+        details: { undoableUntil: "2026-12-01T03:00:00.000Z" },
+      }),
+    );
+  });
+
+  it.each([
+    {
+      label: "모두 중복이라 만든 할 일이 없는 완료",
+      fields: { status: "COMPLETED", createdCount: 0, undoneCount: 0 },
+    },
+    {
+      label: "만든 할 일을 모두 지운 실패",
+      fields: { status: "FAILED", createdCount: 5, undoneCount: 5 },
+    },
+  ] as const)("$label는 되돌릴 것이 없어 2305이고 마감도 없다", ({ fields }) => {
+    // Given
+    const todoImport = createTodoImportFixture({ ...fields, completedAt: TODO_IMPORT_FIXTURE_NOW });
+
+    // When
+    const request = () => todoImport.requestUndo(LATER);
+
+    // Then
+    expect(request).toThrow(expect.objectContaining({ errorCode: ErrorCode.TODO_IMPORT_2305 }));
+    expect(todoImport.judgeUndo(LATER)).toEqual({ kind: "unavailable" });
   });
 
   it("되돌리기를 마치면 지운 수는 이어서 더하고 남긴 완료 수는 마지막 값으로 둔다", () => {

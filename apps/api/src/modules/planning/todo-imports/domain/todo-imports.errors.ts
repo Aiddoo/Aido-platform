@@ -9,8 +9,8 @@ export function todoImportStatusConflict(status: TodoImportStatus): DomainExcept
   return new DomainException(ErrorCode.TODO_IMPORT_2305, { status });
 }
 
-export function todoImportUndoExpired(undoableUntil: Temporal.Instant | null): DomainException {
+export function todoImportUndoExpired(undoableUntil: Temporal.Instant): DomainException {
   return new DomainException(ErrorCode.TODO_IMPORT_2308, {
-    undoableUntil: undoableUntil == null ? null : toIsoString(undoableUntil),
+    undoableUntil: toIsoString(undoableUntil),
   });
 }

@@ -5,6 +5,7 @@ import type {
   TodoVisibility,
 } from "@aido/api/vocabulary";
 import { sumBy } from "es-toolkit";
+import { match } from "ts-pattern";
 
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
@@ -17,7 +18,7 @@ import { TodoImportId } from "./todo-import-id.vo.js";
 import { earlierDate, isWithinImportRange } from "./todo-import-range.domain-service.js";
 import { TodoImportRequest } from "./todo-import-request.vo.js";
 import { TodoImportTarget, type TodoImportTargetPrimitives } from "./todo-import-target.vo.js";
-import { judgeUndoWindow } from "./todo-import-undo.domain-service.js";
+import { judgeUndoWindow, type TodoImportUndoWindow } from "./todo-import-undo.domain-service.js";
 import {
   TODO_IMPORT_WORKING_STATUSES,
   type TodoImportFailureReason,
@@ -167,10 +168,6 @@ export class TodoImport extends AggregateRoot<TodoImportId, TodoImportProps> {
     return this.props.recoveryCount;
   }
 
-  get completedAt(): Temporal.Instant | null {
-    return this.props.completedAt;
-  }
-
   isCommitted(): boolean {
     return this.props.committedAt != null;
   }
@@ -313,17 +310,25 @@ export class TodoImport extends AggregateRoot<TodoImportId, TodoImportProps> {
     return this.#stopUpload("ABANDONED", now);
   }
 
+  judgeUndo(now: Temporal.Instant): TodoImportUndoWindow {
+    return judgeUndoWindow({ ...this.props, now });
+  }
+
   requestUndo(now: Temporal.Instant): boolean {
     if (this.props.status === "UNDOING" || this.props.status === "UNDONE") {
       return false;
     }
-    this.#assertStatus("COMPLETED");
-    const { completedAt } = this.props;
-    const window = completedAt == null ? null : judgeUndoWindow({ completedAt, now });
-    if (window?.kind !== "open") {
-      throw todoImportUndoExpired(window?.undoableUntil ?? null);
-    }
+    match(this.judgeUndo(now))
+      .with({ kind: "open" }, () => undefined)
+      .with({ kind: "expired" }, ({ undoableUntil }) => {
+        throw todoImportUndoExpired(undoableUntil);
+      })
+      .with({ kind: "unavailable" }, () => {
+        throw todoImportStatusConflict(this.props.status);
+      })
+      .exhaustive();
     this.props.status = "UNDOING";
+    this.props.failureReason = null;
     this.props.undoRequestedAt = now;
     this.props.updatedAt = now;
     return true;
