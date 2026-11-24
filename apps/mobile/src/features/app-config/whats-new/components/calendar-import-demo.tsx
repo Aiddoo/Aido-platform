@@ -11,7 +11,6 @@ import {
 } from '@src/features/planning/todo-import/domains/todo-import-collection.model';
 import type { ImportTarget } from '@src/features/planning/todo-import/domains/todo-import-target.model';
 import { ANIMATION } from '@src/shared/constants/animation';
-import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -175,7 +174,6 @@ export function CategoryMappingDemo() {
 /** 만드는 막대가 차는 동안 가져온 할 일이 하나씩 들어온다. 가져온 할 일은 처음에 나만 본다 */
 export function ImportProgressDemo() {
   const { t } = useTranslation(['whatsNew', 'todoImport']);
-  const todayKey = useTodayKey();
   const [completedIds, setCompletedIds] = useState<readonly DemoImportedTodoId[]>([]);
 
   const createdCount = useDemoScript({
@@ -203,16 +201,10 @@ export function ImportProgressDemo() {
       {createdTodos.map(({ id, localTime }) => (
         <Animated.View key={id} entering={ROW_ENTERING} layout={ROW_LAYOUT}>
           <DemoTodoRow
-            surface="list"
             todo={{
               title: t(`whatsNew:v1_17_0.demo.todos.${id}`),
-              startDate: todayKey,
-              endDate: null,
-              scheduledTime: localTime,
-              repeat: null,
               visibility: 'PRIVATE',
-              items: [],
-              recurrenceGroupId: null,
+              localTime,
             }}
             isSelected={completedIds.includes(id)}
             onSelectedChange={(isSelected) =>

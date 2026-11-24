@@ -2,7 +2,7 @@ import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion
 import { range } from 'es-toolkit';
 import { useEffect, useState } from 'react';
 
-import { DEMO_SCRIPT } from '../constants/release-1-15-0.constants';
+import { DEMO_SCRIPT_START_DELAY_MS } from '../constants/whats-new.constants';
 
 interface DemoScriptInput {
   frameCount: number;
@@ -14,7 +14,7 @@ interface DemoScriptInput {
 export function useDemoScript({
   frameCount,
   frameMs,
-  startDelayMs = DEMO_SCRIPT.startDelayMs,
+  startDelayMs = DEMO_SCRIPT_START_DELAY_MS,
 }: DemoScriptInput): number {
   const isReducedMotion = useIsReduceMotionEnabled();
   const [frame, setFrame] = useState(0);

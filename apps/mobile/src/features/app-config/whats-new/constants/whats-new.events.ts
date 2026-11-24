@@ -2,7 +2,6 @@ import type { CampaignId, FeatureKey } from '@src/shared/analytics/feature-key';
 
 import type { ReleaseId } from '../domains/whats-new.model';
 import type { WhatsNewSource } from '../schemas/whats-new-params.schema';
-import type { RELEASE_1_15_0_STEPS } from './release-1-15-0.constants';
 import type { RELEASE_1_16_0_STEPS } from './release-1-16-0.constants';
 import type { RELEASE_1_17_0_STEPS } from './release-1-17-0.constants';
 
@@ -10,7 +9,6 @@ import type { RELEASE_1_17_0_STEPS } from './release-1-17-0.constants';
 export type WhatsNewStep =
   | (typeof RELEASE_1_17_0_STEPS)[number]
   | (typeof RELEASE_1_16_0_STEPS)[number]
-  | (typeof RELEASE_1_15_0_STEPS)[number]
   | 'list';
 
 declare module '@src/shared/analytics/event-map' {
