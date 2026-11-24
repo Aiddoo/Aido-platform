@@ -17,17 +17,18 @@ import { TodoImportUndoQueueAdapter } from "../../infrastructure/jobs/todo-impor
 import { TODO_IMPORT_UNDO_QUEUE } from "../../infrastructure/jobs/todo-import-undo.queue.js";
 import { RequestTodoImportUndoUseCase } from "./request-todo-import-undo.use-case.js";
 
-function setUp(todoImport: TodoImport, now: Temporal.Instant) {
+function setUp(todoImports: readonly TodoImport[], now: Temporal.Instant) {
   const jobQueue = new InMemoryJobQueue();
+  const todoImportRepository = new InMemoryTodoImportRepository(todoImports);
   const useCase = new RequestTodoImportUndoUseCase({
     unitOfWork: new ImmediateUnitOfWork(),
     mutationLock: new RecordingMutationLock(),
-    todoImportRepository: new InMemoryTodoImportRepository([todoImport]),
+    todoImportRepository,
     undoQueue: new TodoImportUndoQueueAdapter(jobQueue),
     clock: new FixedClock(now),
     logger: new SilentLogger(),
   });
-  return { useCase, jobQueue };
+  return { useCase, jobQueue, todoImportRepository };
 }
 
 describe("RequestTodoImportUndoUseCase", () => {
@@ -36,9 +37,10 @@ describe("RequestTodoImportUndoUseCase", () => {
     const todoImport = createTodoImportFixture({
       status: "COMPLETED",
       completedAt: TODO_IMPORT_FIXTURE_NOW,
+      createdCount: 5,
       round: 3,
     });
-    const { useCase, jobQueue } = setUp(todoImport, TODO_IMPORT_FIXTURE_NOW.add({ hours: 24 }));
+    const { useCase, jobQueue } = setUp([todoImport], TODO_IMPORT_FIXTURE_NOW.add({ hours: 24 }));
     const command = { userId: TODO_IMPORT_FIXTURE_USER_ID, importId: todoImport.id.value };
 
     // When
@@ -57,8 +59,12 @@ describe("RequestTodoImportUndoUseCase", () => {
     const todoImport = createTodoImportFixture({
       status: "COMPLETED",
       completedAt: TODO_IMPORT_FIXTURE_NOW,
+      createdCount: 5,
     });
-    const { useCase, jobQueue } = setUp(todoImport, TODO_IMPORT_FIXTURE_NOW.add({ hours: 24 * 8 }));
+    const { useCase, jobQueue } = setUp(
+      [todoImport],
+      TODO_IMPORT_FIXTURE_NOW.add({ hours: 24 * 8 }),
+    );
 
     // When
     const result = useCase.execute({
@@ -71,6 +77,38 @@ describe("RequestTodoImportUndoUseCase", () => {
       errorCode: ErrorCode.TODO_IMPORT_2308,
       details: { undoableUntil: "2026-12-01T03:00:00.000Z" },
     });
+    expect(jobQueue.jobs).toEqual([]);
+  });
+
+  it("다른 가져오기가 진행 중이면 2301과 그 id를 준다", async () => {
+    // Given
+    const completed = createTodoImportFixture({
+      status: "COMPLETED",
+      completedAt: TODO_IMPORT_FIXTURE_NOW,
+      createdCount: 5,
+    });
+    const uploading = createTodoImportFixture({
+      id: "c00000000000000000000000b",
+      idempotencyKey: "start-key-2",
+      status: "UPLOADING",
+    });
+    const { useCase, jobQueue, todoImportRepository } = setUp(
+      [completed, uploading],
+      TODO_IMPORT_FIXTURE_NOW.add({ hours: 1 }),
+    );
+
+    // When
+    const result = useCase.execute({
+      userId: TODO_IMPORT_FIXTURE_USER_ID,
+      importId: completed.id.value,
+    });
+
+    // Then
+    await expect(result).rejects.toMatchObject({
+      errorCode: ErrorCode.TODO_IMPORT_2301,
+      details: { importId: uploading.id.value },
+    });
+    expect((await todoImportRepository.findById(completed.id))?.status).toBe("COMPLETED");
     expect(jobQueue.jobs).toEqual([]);
   });
 });
