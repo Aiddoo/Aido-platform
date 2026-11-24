@@ -36,7 +36,11 @@ export function TodoImportResult() {
   const title = match(status)
     .with('UNDOING', () => t('result.undoingTitle'))
     .with('UNDONE', () => t('result.undoneTitle', { count: counts.undone }))
-    .otherwise(() => t('result.completedTitle', { count: counts.created }));
+    .otherwise(() =>
+      counts.created === 0
+        ? t('result.alreadyImportedTitle')
+        : t('result.completedTitle', { count: counts.created }),
+    );
 
   const handleUndoPress = () =>
     confirmDialog.openAsync({

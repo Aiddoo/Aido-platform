@@ -139,6 +139,7 @@
   },
   "result": {
     "completedTitle": "할 일 {{count}}개를 가져왔어요",
+    "alreadyImportedTitle": "이미 모두 가져온 일정이에요",
     "undoingTitle": "되돌리는 중이에요",
     "undoneTitle": "할 일 {{count}}개를 되돌렸어요",
     "counts": {

@@ -76,9 +76,11 @@ function isTerminal(todoImport: TodoImport) {
     .exhaustive();
 }
 
+/** 모두 이미 가져온 일정이라 만든 할 일이 없으면 되돌릴 것도 없다 */
 function canUndo(todoImport: TodoImport, now: Instant) {
   return (
     todoImport.status === 'COMPLETED' &&
+    todoImport.counts.created > 0 &&
     todoImport.undoableUntil != null &&
     !hasInstantPassed(todoImport.undoableUntil, now)
   );

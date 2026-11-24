@@ -167,7 +167,8 @@
     "failedDescription": "To-dos already created stay. Import again to continue",
     "canceledTitle": "Import stopped",
     "canceledDescription": "No to-dos were created",
-    "startAgain": "Import again"
+    "startAgain": "Import again",
+    "alreadyImportedTitle": "These events are already in Aido"
   },
   "toasts": {
     "startFailed": "Couldn't start the import. Please try again",
