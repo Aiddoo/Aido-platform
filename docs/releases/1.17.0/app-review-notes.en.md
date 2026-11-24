@@ -5,12 +5,12 @@
 ## App Store Connect: App Review Information > Notes
 
 ```text
-Aido 1.17.0 adds Import from Calendar. Everything else is unchanged from the previous version.
+Aido 1.17.0 adds Import calendar events. Everything else is unchanged from the previous version.
 
-How to test Import from Calendar
+How to test Import calendar events
 1. Before opening Aido, add a few events to the Calendar app on the test device (for example, an event tomorrow at 10:00 and an all-day event next week). Use a calendar on the device (iCloud or "On My iPhone").
 2. In Aido, sign in with the demo account.
-3. Me tab > Settings > Import from Calendar.
+3. Me tab > Settings > Import calendar events.
 4. The first screen explains what Aido reads and sends. Tap "Continue". The system calendar permission prompt appears only after this tap.
 5. Choose Allow Full Access. Select a calendar and a range (for example "1 month"). Holiday, birthday and subscribed calendars start unchecked.
 6. Connect each calendar to a new or an existing category, or tap "Put all in one category".
