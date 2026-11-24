@@ -98,6 +98,7 @@ await jobQueue.registerSchedules(DOCUMENT_QUEUE); // schedules를 key별로 upse
 | `monthly-report-scheduler`                     | `ai-report-generation.v1`                     | 매시 5분, 현지 새 달이 된 사용자  | `once`                                |
 | `premium-grant-sweep-scheduler`                | `premium-grant-sweep.v1`                      | 10분                              | `skip`                                |
 | `quota-abandoned-refund-scheduler`             | `quota-abandoned-refund.v1`                   | 10분                              | `skip`                                |
+| `todo-import-reconcile-scheduler`              | `planning.todo-import-reconcile.v1`           | 10분                              | `skip`(상태 기준 재조정)              |
 | `daily-signup-summary-scheduler`               | `admin-notification.v1`                       | 00:10 KST                         | `once`                                |
 | `daily-account-purge-scheduler`                | `account-purge.v1`                            | 03:00 KST                         | `skip`                                |
 | `daily-todo-series-materialization-scheduler`  | `todo-series-materialization.v1`              | 03:10 KST                         | `once` + 실행일 키                    |
@@ -106,7 +107,7 @@ await jobQueue.registerSchedules(DOCUMENT_QUEUE); // schedules를 key별로 upse
 | `daily-expired-record-purge-scheduler`         | `identity.expired-record-purge.v1`            | 03:40 KST                         | `skip`                                |
 | `daily-notification-history-purge-scheduler`   | `notification.history-purge.v1`               | 03:50 KST                         | `skip`                                |
 | `daily-stale-push-token-prune-scheduler`       | `notification.stale-push-token-prune.v1`      | 04:10 KST                         | `skip`                                |
-| `daily-todo-import-cleanup-scheduler`          | `planning.todo-import-cleanup.v1`             | 04:20 KST                         | `skip`(상태 기준 재조정·정리)         |
+| `daily-todo-import-cleanup-scheduler`          | `planning.todo-import-cleanup.v1`             | 04:20 KST                         | `skip`(상태 기준 정리)                |
 | `daily-outbound-usage-retention`               | `outbound-usage-retention.v1`                 | 04:30 KST                         | `skip`                                |
 
 - 사용자 현지 시각에 맞춰야 하는 작업(제안·리포트)은 고정 KST가 아니라 매시 실행에서 "지금 현지 경계에 있는 사용자"를 고른다.

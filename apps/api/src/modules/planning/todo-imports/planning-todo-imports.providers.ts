@@ -39,6 +39,8 @@ import { TodoImportCleanupProcessor } from "./infrastructure/jobs/todo-import-cl
 import { TodoImportCleanupScheduler } from "./infrastructure/jobs/todo-import-cleanup.scheduler.js";
 import { TodoImportMaterializationQueueAdapter } from "./infrastructure/jobs/todo-import-materialization-queue.adapter.js";
 import { TodoImportMaterializationProcessor } from "./infrastructure/jobs/todo-import-materialization.processor.js";
+import { TodoImportReconcileProcessor } from "./infrastructure/jobs/todo-import-reconcile.processor.js";
+import { TodoImportReconcileScheduler } from "./infrastructure/jobs/todo-import-reconcile.scheduler.js";
 import { TodoImportUndoQueueAdapter } from "./infrastructure/jobs/todo-import-undo-queue.adapter.js";
 import { TodoImportUndoProcessor } from "./infrastructure/jobs/todo-import-undo.processor.js";
 import { DrizzleTodoImportItemRepository } from "./infrastructure/persistence/drizzle-todo-import-item.repository.js";
@@ -153,6 +155,8 @@ export const PLANNING_TODO_IMPORTS_PROVIDERS = [
   }),
   TodoImportMaterializationProcessor,
   TodoImportUndoProcessor,
+  TodoImportReconcileProcessor,
+  TodoImportReconcileScheduler,
   TodoImportCleanupProcessor,
   TodoImportCleanupScheduler,
 ] satisfies Provider[];

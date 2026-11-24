@@ -66,22 +66,23 @@ POST /v1/todo-imports/:id/undo   완료 뒤 7일 안이면 UNDOING + 되돌리�
 | ----------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | `planning.todo-import-materialization.v1` | `{ importId, round }`, job key `todo-import:{importId}:{round}`, INTERACTIVE, `localConcurrency` 1 |
 | `planning.todo-import-undo.v1`            | `{ importId, round, afterTodoId }`, job key `todo-import-undo:{importId}:{round}`, 같은 설정       |
+| `planning.todo-import-reconcile.v1`       | 10분마다(UTC), `missed: skip`, BACKGROUND, `expireInSeconds` 300                                   |
 | `planning.todo-import-cleanup.v1`         | 매일 04:20 KST, `missed: skip`, BACKGROUND                                                         |
 
-- 세 큐 모두 보관·삭제 1일, `expireInSeconds` 600이다. round 하나는 60초 예산이라 heartbeat가 필요 없다.
+- 네 큐 모두 보관·삭제 1일이고 재조정 말고는 `expireInSeconds` 600이다. round 하나는 60초 예산이라 heartbeat가 필요 없다.
 - 생성·되돌리기 큐는 `singleActivePerKey`(실행 key = 가져오기 id)라 배포 중 두 프로세스·재시도·다음 round가 겹쳐도 가져오기 하나에는 작업 하나만 돈다. 중복 등록은 round마다 정해진 job id가 막는다.
 - 잡 하나가 가져오기 하나라 `pgboss.job` 행이 할 일 수만큼 늘지 않는다. 작업은 앱 풀 연결을 많아야 둘(생성 1 + 되돌리기 1) 쓴다.
 
-| 상황                                  | 처리                                                                                                                                              |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 확정 두 번·같은 round 두 번           | 확정은 상태로 멱등, 같은 job id는 무시된다                                                                                                        |
-| 묶음 커밋 뒤 작업 완료 표시 전에 죽음 | 재시도가 남은 PENDING부터 이어 간다. 만든 할 일·항목 표시·링크가 같은 트랜잭션이다                                                                |
-| 일정 하나가 잘못됨                    | 그 항목만 `SKIPPED_INVALID`로 두고 계속한다                                                                                                       |
-| 작업을 잃음                           | 정리 크론이 10분 넘게 진행이 없는 QUEUED·RUNNING·UNDOING을 round를 올려 다시 넣는다(최대 3번), 그 뒤 FAILED와 경보 `planning.todo-import.stalled` |
-| 업로드가 멈춤                         | 24시간 넘게 그대로인 UPLOADING은 ABANDONED로 닫고 받아 둔 일정을 지운다                                                                           |
-| 처리 중 계정 삭제                     | FK cascade로 가져오기가 사라지면 작업은 할 일 없이 끝난다                                                                                         |
+| 상황                                  | 처리                                                                                                                                                 |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 확정 두 번·같은 round 두 번           | 확정은 상태로 멱등, 같은 job id는 무시된다                                                                                                           |
+| 묶음 커밋 뒤 작업 완료 표시 전에 죽음 | 재시도가 남은 PENDING부터 이어 간다. 만든 할 일·항목 표시·링크가 같은 트랜잭션이다                                                                   |
+| 일정 하나가 잘못됨                    | 그 항목만 `SKIPPED_INVALID`로 두고 계속한다                                                                                                          |
+| 작업을 잃음                           | 10분 주기 재조정이 진행 없이 10분 지난 QUEUED·RUNNING·UNDOING을 round를 올려 다시 넣고(최대 3번), 그 뒤 FAILED와 경보 `planning.todo-import.stalled` |
+| 업로드가 멈춤                         | 24시간 넘게 그대로인 UPLOADING은 ABANDONED로 닫고 받아 둔 일정을 지운다                                                                              |
+| 처리 중 계정 삭제                     | FK cascade로 가져오기가 사라지면 작업은 할 일 없이 끝난다                                                                                            |
 
-정리는 끝난 가져오기의 임시 일정을 7일, 기록을 30일 뒤 500개씩 지운다(`(status, updatedAt)` 색인).
+매일 정리는 끝난 가져오기의 임시 일정을 7일, 기록을 30일 뒤 500개씩 지운다(`(status, updatedAt)` 색인).
 
 ## 큐를 바꿀 때
 
