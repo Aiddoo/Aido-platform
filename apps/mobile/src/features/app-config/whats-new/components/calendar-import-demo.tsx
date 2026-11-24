@@ -51,7 +51,6 @@ const ROW_LAYOUT = LinearTransition.duration(ANIMATION.durationMs.slow).reduceMo
   ReduceMotion.System,
 );
 
-/** 기본 선택(공휴일·생일·구독 제외)인 캘린더가 하나씩 체크된다. 눌러서 직접 바꿔 볼 수도 있다 */
 export function CalendarChoiceDemo() {
   const { t } = useTranslation('whatsNew');
   const collections = useDemoCollections();
@@ -92,7 +91,6 @@ export function CalendarChoiceDemo() {
   );
 }
 
-/** 처음에는 모두 원래 카테고리로 가고, 학교 캘린더가 캘린더 이름 그대로의 새 카테고리로 바뀐다 */
 export function CategoryMappingDemo() {
   const { t } = useTranslation(['whatsNew', 'todoImport']);
   const collections = useDemoCollections().filter(TodoImportCollectionPolicy.isDefaultSelected);
@@ -171,7 +169,7 @@ export function CategoryMappingDemo() {
   );
 }
 
-/** 만드는 막대가 차는 동안 가져온 할 일이 하나씩 들어온다. 가져온 할 일은 처음에 나만 본다 */
+/** 가져온 할 일은 기본이 비공개라 자물쇠가 붙는다 */
 export function ImportProgressDemo() {
   const { t } = useTranslation(['whatsNew', 'todoImport']);
   const [completedIds, setCompletedIds] = useState<readonly DemoImportedTodoId[]>([]);
@@ -219,7 +217,7 @@ export function ImportProgressDemo() {
   );
 }
 
-/** 무료·프리미엄이 오늘부터 며칠 앞의 일정까지 가져오는지. 일 수는 서버 요금제 값이다 */
+/** 일 수는 서버 요금제 값이다 */
 export function CalendarImportPlans() {
   const { t } = useTranslation(['whatsNew', 'subscription']);
   const { data: snapshot } = useSuspenseQuery(useGetEntitlementsQueryOptions());
@@ -310,7 +308,6 @@ function PlanSkeleton() {
   );
 }
 
-/** 휴대폰 캘린더 예시를 가져오기 화면이 받는 모양으로 만든다 */
 function useDemoCollections(): ImportCollection[] {
   const { t } = useTranslation('whatsNew');
   const accountName = t('v1_17_0.demo.account');
