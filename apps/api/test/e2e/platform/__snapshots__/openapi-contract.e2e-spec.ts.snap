@@ -57342,10 +57342,13 @@ TODO_CATEGORY_0855: 카테고리에 할 일이 있습니다. 다른 카테고리
       "description": "가져올 기간·대상 카테고리·캘린더를 정하고 업로드를 엽니다. 날짜·시각은 \`X-Timezone\`(없으면 저장된 시간대, 그것도 없으면 Asia/Seoul) 하나로 해석하고 응답 \`todoImport.timezone\`으로 돌려줍니다. 이어 보내기와 할 일 만들기는 모두 이 시간대를 씁니다.
 
 ## 🚫 기간
-오늘부터 무료 30일, 프리미엄 365일까지입니다. 넘으면 TODO_IMPORT_2302(\`featureQuota\`)입니다.
+오늘부터 요금제 일 수까지입니다(\`GET /v1/entitlements\`의 \`CALENDAR_IMPORT.limit\`). 넘으면 TODO_IMPORT_2302(\`featureQuota\`)입니다.
 
 ## 🔁 재시도
-같은 \`Idempotency-Key\`로 같은 본문을 다시 보내면 처음 가져오기를 돌려주고, 본문이 다르면 TODO_IMPORT_2307입니다.",
+같은 \`Idempotency-Key\`로 같은 본문을 다시 보내면 처음 가져오기를 돌려주고, 본문이 다르면 TODO_IMPORT_2307입니다. 키가 없으면 AI_1316입니다.
+
+## ⏱ 요청 한도
+분당 10회, 하루 30회.",
       "operationId": "startTodoImport",
       "parameters": [
         {
@@ -57401,6 +57404,18 @@ TODO_CATEGORY_0855: 카테고리에 할 일이 있습니다. 다른 카테고리
           "content": {
             "application/json": {
               "examples": {
+                "AI_1316": {
+                  "summary": "Idempotency-Key 헤더가 필요합니다.",
+                  "value": {
+                    "error": {
+                      "code": "AI_1316",
+                      "details": null,
+                      "message": "Idempotency-Key 헤더가 필요합니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
                 "SYS_0002": {
                   "summary": "잘못된 파라미터입니다.",
                   "value": {
@@ -57432,10 +57447,11 @@ TODO_CATEGORY_0855: 카테고리에 할 일이 있습니다. 다른 카테고리
                     "properties": {
                       "code": {
                         "enum": [
+                          "AI_1316",
                           "SYS_0002",
                           "TODO_IMPORT_2306",
                         ],
-                        "example": "SYS_0002",
+                        "example": "AI_1316",
                         "type": "string",
                       },
                       "details": {
@@ -57444,7 +57460,7 @@ TODO_CATEGORY_0855: 카테고리에 할 일이 있습니다. 다른 카테고리
                         "type": "object",
                       },
                       "message": {
-                        "example": "잘못된 파라미터입니다.",
+                        "example": "Idempotency-Key 헤더가 필요합니다.",
                         "type": "string",
                       },
                     },
@@ -57472,7 +57488,9 @@ TODO_CATEGORY_0855: 카테고리에 할 일이 있습니다. 다른 카테고리
               },
             },
           },
-          "description": "SYS_0002: 잘못된 파라미터입니다.
+          "description": "AI_1316: Idempotency-Key 헤더가 필요합니다.
+
+SYS_0002: 잘못된 파라미터입니다.
 
 TODO_IMPORT_2306: 가져올 기간이나 일정이 올바르지 않습니다.",
         },
@@ -58695,7 +58713,7 @@ TODO_IMPORT_2305: 지금 상태에서는 할 수 없는 요청입니다.",
   },
   "/v1/todo-imports/{importId}/items": {
     "post": {
-      "description": "일정을 100개까지 한 묶음으로 올립니다. 이미 받은 \`sourceKey\`는 무시하므로 끊긴 업로드를 처음부터 다시 보내도 됩니다. 가져오기 하나에 3000개를 넘으면 TODO_IMPORT_2309입니다.",
+      "description": "일정을 100개까지 한 묶음으로 올립니다. 이미 받은 \`sourceKey\`는 무시하므로 끊긴 업로드를 처음부터 다시 보내도 됩니다. 가져오기 하나에 3000개를 넘으면 TODO_IMPORT_2309입니다. 분당 120회.",
       "operationId": "receiveTodoImportItems",
       "parameters": [
         {
@@ -59040,7 +59058,7 @@ TODO_IMPORT_2306: 가져올 기간이나 일정이 올바르지 않습니다.",
   },
   "/v1/todo-imports/{importId}/undo": {
     "post": {
-      "description": "완료 뒤 7일 안에 가져온 할 일 중 완료하지 않은 것을 서버 작업이 지웁니다. 완료한 할 일과 새로 만든 카테고리는 남깁니다.",
+      "description": "완료 뒤 7일 안에 가져온 할 일 중 완료하지 않은 것을 서버 작업이 지웁니다. 완료한 할 일과 새로 만든 카테고리는 남깁니다. 분당 10회, 하루 20회.",
       "operationId": "undoTodoImport",
       "parameters": [
         {
