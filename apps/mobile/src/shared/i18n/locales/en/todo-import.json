@@ -1,0 +1,9 @@
+{
+  "untitledEvent": "Untitled event",
+  "toasts": {
+    "startFailed": "Couldn't start the import. Please try again",
+    "cancelFailed": "Couldn't stop the import. Please try again",
+    "undoFailed": "Couldn't undo the import. Please try again",
+    "permissionRequestFailed": "Couldn't ask for calendar access. Please try again"
+  }
+}

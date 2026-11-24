@@ -1,0 +1,9 @@
+{
+  "untitledEvent": "제목 없는 일정",
+  "toasts": {
+    "startFailed": "가져오기를 시작하지 못했어요. 다시 시도해 주세요",
+    "cancelFailed": "가져오기를 멈추지 못했어요. 다시 시도해 주세요",
+    "undoFailed": "되돌리지 못했어요. 다시 시도해 주세요",
+    "permissionRequestFailed": "캘린더 권한을 묻지 못했어요. 다시 시도해 주세요"
+  }
+}

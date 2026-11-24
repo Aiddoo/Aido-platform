@@ -47,6 +47,8 @@ import type { PushRegistrationService } from '@src/features/notification/service
 import type { PushNotificationEntryStore } from '@src/features/notification/stores/push-notification-entry.store';
 import type { PushOnboardingGuardStore } from '@src/features/notification/stores/push-onboarding-guard.store';
 import type { TodoCategoryApi } from '@src/features/planning/category/apis/todo-category.api';
+import type { TodoImportApi } from '@src/features/planning/todo-import/apis/todo-import.api';
+import type { TodoImportUploadSession } from '@src/features/planning/todo-import/services/todo-import-upload.session';
 import type { SubTodoApi } from '@src/features/planning/todo/apis/sub-todo.api';
 import type { TodoApi } from '@src/features/planning/todo/apis/todo.api';
 import type { FriendApi } from '@src/features/social/friend/apis/friend.api';
@@ -157,6 +159,10 @@ export interface DIContainer extends SharedDependencies {
 
   widgetSyncService: WidgetSyncService;
   widgetNavigationRepository: WidgetNavigationRepository;
+
+  todoImportApi: TodoImportApi;
+  /** 캘린더 일정을 올리고 확정한다. 화면을 떠나도 이어 가도록 컨테이너에 하나다 */
+  todoImportUploadSession: TodoImportUploadSession;
 
   memoApi: MemoApi;
 
@@ -392,6 +398,13 @@ export function useWidgetSyncService() {
 }
 export function useWidgetNavigationRepository() {
   return useDI().widgetNavigationRepository;
+}
+
+export function useTodoImportApi() {
+  return useDI().todoImportApi;
+}
+export function useTodoImportUploadSession() {
+  return useDI().todoImportUploadSession;
 }
 
 export function useMemoApi() {

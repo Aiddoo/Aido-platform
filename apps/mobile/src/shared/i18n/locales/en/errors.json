@@ -198,5 +198,14 @@
   "FRIEND_EMPTY_TAG": "Please enter a hashtag",
   "FRIEND_SEARCH_QUERY_TOO_SHORT": "Please enter at least 2 characters",
   "TODO_NUDGE_MESSAGE_TOO_LONG": "Your message can be up to 200 characters",
-  "INVITE_INVALID_CODE": "Invite codes are 6 characters (letters and numbers)"
+  "INVITE_INVALID_CODE": "Invite codes are 6 characters (letters and numbers)",
+  "TODO_IMPORT_2301": "A calendar import is already in progress",
+  "TODO_IMPORT_2302": "Your current plan can't import this date range",
+  "TODO_IMPORT_2303": "Couldn't import into the chosen category",
+  "TODO_IMPORT_2304": "Import not found",
+  "TODO_IMPORT_2305": "You can't do that right now. Please check again in a moment",
+  "TODO_IMPORT_2306": "The date range isn't valid",
+  "TODO_IMPORT_2307": "Your choices changed. Please start again",
+  "TODO_IMPORT_2308": "The time to undo has passed",
+  "TODO_IMPORT_2309": "Too many events. Choose a shorter range or fewer calendars"
 }
