@@ -95,6 +95,8 @@ export const startTodoImportRequestSchema = z
     },
   );
 
+export type StartTodoImportRequest = z.infer<typeof startTodoImportRequestSchema>;
+
 export const todoImportItemSchema = z
   .object({
     sourceKey: todoImportHashedKeySchema.meta({ description: "일정 회차 키 (sha256 hex)" }),
@@ -130,6 +132,8 @@ export const receiveTodoImportItemsRequestSchema = z.object({
       description: `한 번에 보낼 일정 (최대 ${TODO_IMPORT_LIMITS.MAX_ITEMS_PER_CHUNK}개). 이미 받은 key는 무시한다`,
     }),
 });
+
+export type ReceiveTodoImportItemsRequest = z.infer<typeof receiveTodoImportItemsRequestSchema>;
 
 export const todoImportIdParamSchema = z.object({
   importId: entityIdSchema.meta({ description: "가져오기 id" }),
