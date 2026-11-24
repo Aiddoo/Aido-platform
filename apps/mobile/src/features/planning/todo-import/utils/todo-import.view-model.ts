@@ -1,6 +1,7 @@
 import type { OsPermission } from '@src/core/ports/os-permission';
+import type { TodoCategory } from '@src/features/planning/category/domains/todo-category.model';
 import type { DateKey } from '@src/shared/date/date-key';
-import { groupBy, partition, sortBy, take, uniq } from 'es-toolkit';
+import { countBy, groupBy, partition, sortBy } from 'es-toolkit';
 
 import {
   IMPORT_RANGE_PRESET_NAMES,
@@ -8,10 +9,12 @@ import {
   type ImportRangePreset,
 } from '../constants/todo-import.constants';
 import {
+  type ImportAccountProvider,
   type ImportCollection,
   orderByAccountProvider,
   TodoImportCollectionPolicy,
 } from '../domains/todo-import-collection.model';
+import type { ImportTarget } from '../domains/todo-import-target.model';
 import { getRangeEndDate } from '../domains/todo-import.model';
 
 export const IMPORT_RANGE_PRESET_LABEL_KEYS = {
@@ -110,17 +113,99 @@ export function groupCollectionsByAccount(collections: readonly ImportCollection
   };
 }
 
-const SOURCE_SEPARATOR = ' · ';
+/**
+ * 다른 서비스는 이름 글자로만 알린다. Apple·Google·Microsoft 로고·색은 서면 허락 없이 쓸 수 없어 그리지 않는다.
+ * 계정 이메일 같은 캘린더 이름 대신 새 카테고리 이름으로도 쓴다
+ */
+export const CALENDAR_SOURCE_LABEL_KEYS = {
+  icloud: 'sources.icloud',
+  google: 'sources.google',
+  outlook: 'sources.outlook',
+  device: 'sources.device',
+  subscribed: 'sources.subscribed',
+  birthdays: 'sources.birthdays',
+  other: 'sources.other',
+} as const satisfies Record<ImportAccountProvider, string>;
 
-/** 여러 캘린더의 출처를 겹치지 않게 앞에서 `maxCount`곳까지 잇고, 나머지는 "외 N곳"처럼 수로 줄인다 */
-export function joinCalendarSources(
-  sources: readonly string[],
-  { maxCount, formatMore }: { maxCount: number; formatMore: (hiddenCount: number) => string },
-): string {
-  const distinct = uniq(sources);
-  const visible = take(distinct, maxCount).join(SOURCE_SEPARATOR);
-  const hiddenCount = distinct.length - maxCount;
-  return hiddenCount > 0 ? `${visible} ${formatMore(hiddenCount)}` : visible;
+export interface ImportSourceGroup {
+  sourceKey: string;
+  provider: ImportAccountProvider;
+  /** 같은 서비스의 계정이 둘 이상일 때 가려 보일 계정 이메일·이름. 하나뿐이면 null이다 */
+  accountLabel: string | null;
+  collections: ImportCollection[];
+  /** 캘린더 이름을 " · "로 이은 한 줄 */
+  calendarNames: string;
+  itemCount: number;
+}
+
+const CALENDAR_NAME_SEPARATOR = ' · ';
+
+/** iOS 계정 이름은 기기 설정의 계정 설명("Gmail", "회사")이고 Android는 이메일이다 */
+function findAccountLabel(collection: Pick<ImportCollection, 'accountName'>): string | null {
+  const name = collection.accountName?.trim() ?? '';
+  return name === '' ? null : name;
+}
+
+/** 공휴일·생일·구독 캘린더는 계정과 상관없이 종류 하나로 묶는다 */
+function toSourceKey(collection: ImportCollection) {
+  return TodoImportCollectionPolicy.isSubscribedCalendar(collection)
+    ? collection.accountProvider
+    : `${collection.accountProvider}:${collection.accountName ?? ''}`;
+}
+
+/**
+ * 가져올 캘린더를 출처 계정마다 한 줄로 묶는다. 순서는 받은 순서다.
+ * 같은 서비스 계정이 둘 이상이면(Google 계정 두 개) 계정 이메일·이름을 붙여 가린다
+ */
+export function groupCollectionsBySource(
+  collections: readonly ImportCollection[],
+): ImportSourceGroup[] {
+  const groups = Object.entries(groupBy(collections, toSourceKey)).flatMap(([sourceKey, group]) => {
+    const [account] = group;
+    return account == null ? [] : [{ sourceKey, account, collections: group }];
+  });
+  const groupCountByProvider = countBy(groups, ({ account }) => account.accountProvider);
+
+  return groups.map(({ sourceKey, account, collections: group }) => ({
+    sourceKey,
+    provider: account.accountProvider,
+    accountLabel:
+      (groupCountByProvider[account.accountProvider] ?? 0) < 2 ? null : findAccountLabel(account),
+    collections: group,
+    calendarNames: group.map(({ title }) => title).join(CALENDAR_NAME_SEPARATOR),
+    itemCount: TodoImportCollectionPolicy.calculateItemCount(group),
+  }));
+}
+
+/** 시트 검색칸. 이름 어디에든 들어 있으면 남기고 공백·대소문자는 가리지 않는다 */
+export function filterCategoriesByName<TCategory extends Pick<TodoCategory, 'name'>>(
+  categories: readonly TCategory[],
+  query: string,
+): TCategory[] {
+  const keyword = query.trim().toLocaleLowerCase();
+  if (keyword === '') {
+    return [...categories];
+  }
+  return categories.filter((category) => category.name.toLocaleLowerCase().includes(keyword));
+}
+
+export interface ImportTargetAppearance {
+  name: string;
+  color: string;
+  /** 가져오기를 확정할 때 새로 만든다 */
+  isNew: boolean;
+}
+
+/** 넣을 곳의 이름·색. 고른 카테고리가 목록에서 사라졌으면(삭제) null이다 */
+export function findTargetAppearance(
+  target: ImportTarget,
+  categories: readonly TodoCategory[],
+): ImportTargetAppearance | null {
+  if (target.kind === 'NEW_CATEGORY') {
+    return { name: target.name, color: target.color, isNew: true };
+  }
+  const category = categories.find(({ id }) => id === target.categoryId);
+  return category == null ? null : { name: category.name, color: category.color, isNew: false };
 }
 
 const NO_BREAK_SPACE = '\u00A0';

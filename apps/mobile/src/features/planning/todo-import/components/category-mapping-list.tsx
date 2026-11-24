@@ -1,318 +1,141 @@
-import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
-import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
-import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
-import { CATEGORY_COLORS } from '@src/features/planning/category/constants/todo-category.constants';
-import {
-  type TodoCategoryWithCount,
-  TodoCategoryPolicy,
-} from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import { useTranslation } from '@src/shared/i18n';
-import {
-  Box,
-  HStack,
-  SettingsListGroup,
-  useOpenKeyboardSheet,
-  useOpenSheet,
-  VStack,
-  WordWrapText,
-} from '@src/shared/ui';
-import { useSuspenseQueries } from '@tanstack/react-query';
-import { compact, pick, range } from 'es-toolkit';
-import type { ComponentProps } from 'react';
-import { match } from 'ts-pattern';
+import { Box, HStack, SettingsListGroup, VStack, WordWrapText } from '@src/shared/ui';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { compact, range } from 'es-toolkit';
+import { type ComponentProps, Fragment } from 'react';
 
-import {
-  applyCategoryMode,
-  resolveCategoryMode,
-  resolveImportTargets,
-  toNewCategoryTarget,
-} from '../apis/todo-import-target.mapper';
 import type { ImportCollection } from '../domains/todo-import-collection.model';
-import { type ImportTarget, TodoImportTargetPolicy } from '../domains/todo-import-target.model';
-import { useFormatCalendarSource } from '../hooks/use-format-calendar-source';
-import { useNewCategoryNames } from '../hooks/use-new-category-names';
-import type { TodoImportCategoryMode } from '../schemas/todo-import-form.schema';
-import { joinCalendarSources } from '../utils/todo-import.view-model';
-import { type CategoryTargetChoice, CategoryTargetSheet } from './category-target-sheet';
+import type { ImportTarget } from '../domains/todo-import-target.model';
+import { useFormatImportTargetName } from '../hooks/use-format-import-target-name';
+import {
+  CALENDAR_SOURCE_LABEL_KEYS,
+  findTargetAppearance,
+  groupCollectionsBySource,
+  type ImportTargetAppearance,
+} from '../utils/todo-import.view-model';
+import { AidoMark } from './aido-mark';
+import { CalendarSourceBadge } from './calendar-source-badge';
 
 interface CategoryMappingListProps {
   collections: readonly ImportCollection[];
-  categoryMode: TodoImportCategoryMode;
-  /** 캘린더마다 고른 곳. 없는 캘린더는 기본 연결 규칙을 보인다 */
-  value: Readonly<Record<string, ImportTarget>>;
-  onValueChange: (targets: Record<string, ImportTarget>) => void;
-  /** 한 카테고리에 모을 곳. null이면 첫 캘린더의 곳을 보인다 */
-  singleTarget: ImportTarget | null;
-  onSingleTargetChange: (target: ImportTarget) => void;
-  errorMessages?: Readonly<Record<string, string>>;
+  /** 캘린더마다 넣을 곳. 고르지 않은 캘린더도 모두 넣을 곳으로 채워져 있다 */
+  targets: Readonly<Record<string, ImportTarget>>;
+  errorMessages: Readonly<Record<string, string>>;
+  onItemPress: (collection: ImportCollection) => void;
 }
 
-const DEFAULT_LOADING_ROW_COUNT = 3;
-/** 모은 행이 이름으로 보이는 출처 수. 나머지는 "외 N곳"으로 줄인다 */
-const MAX_VISIBLE_SOURCE_COUNT = 2;
+/** 캘린더가 이보다 많으면 출처 계정마다 나눠 묶는다 */
+const GROUP_THRESHOLD_COUNT = 8;
 
 /**
- * 캘린더마다 넣을 카테고리, 또는 모두 모을 카테고리 하나를 설정 행으로 보인다. 행을 누르면 고르는 시트를 열고,
- * 아래에 새 카테고리를 몇 개 더 만들 수 있는지 알린다
+ * 캘린더마다 넣을 곳. 줄마다 "다른 서비스의 캘린더 → 아이두 카테고리"로 읽히고, 누르면 그 줄의 넣을 곳을 바꾼다.
+ * 캘린더가 많으면 출처 계정마다 묶어 배지 대신 묶음 이름으로 알린다
  */
 export function CategoryMappingList({
   collections,
-  categoryMode,
-  value,
-  onValueChange,
-  singleTarget,
-  onSingleTargetChange,
+  targets,
   errorMessages,
+  onItemPress,
 }: CategoryMappingListProps) {
   const { t } = useTranslation('todoImport');
-  const openSheet = useOpenSheet();
-  const openKeyboardSheet = useOpenKeyboardSheet();
-  const gate = useEntitlementGate('TODO_CATEGORY', { surface: 'todo_import' });
-  const [{ data: categoriesResult }, { data: snapshot }] = useSuspenseQueries({
-    queries: [useGetTodoCategoriesQueryOptions(), useGetEntitlementsQueryOptions()],
-  });
+  const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
 
-  const { categories } = categoriesResult;
-  const remainingCategorySlots = EntitlementPolicy.findRemainingCount(snapshot, 'TODO_CATEGORY');
-  const freeCategoryLimit = EntitlementPolicy.hasFullAccess(snapshot)
-    ? null
-    : EntitlementPolicy.findLimit(snapshot, 'TODO_CATEGORY');
-  const names = useNewCategoryNames();
-  const formatCalendarSource = useFormatCalendarSource();
-  const targets = resolveImportTargets(collections, value, {
-    categories,
-    remainingCategorySlots,
-    palette: CATEGORY_COLORS,
-    names,
-  });
-  const mode = resolveCategoryMode(collections, categoryMode);
-  const appliedTargets = applyCategoryMode(collections, targets, { categoryMode, singleTarget });
-  const newCategoryCount = TodoImportTargetPolicy.countNewCategories(Object.values(appliedTargets));
-
-  const chooseTarget = async (
-    chosen: readonly ImportCollection[],
-    subject: { label: string; color: string | null },
-    apply: (target: ImportTarget) => void,
-  ) => {
-    const [base] = chosen;
-    if (base == null) {
-      return;
-    }
-    const current = appliedTargets[base.collectionKey];
-    const newCategory =
-      current?.kind === 'NEW_CATEGORY'
-        ? current
-        : toNewCategoryTarget(base, { palette: CATEGORY_COLORS, names });
-    const nextIfNew = {
-      ...appliedTargets,
-      ...Object.fromEntries(chosen.map((collection) => [collection.collectionKey, newCategory])),
-    };
-    const canCreateCategory =
-      remainingCategorySlots == null ||
-      TodoImportTargetPolicy.countNewCategories(Object.values(nextIfNew)) <= remainingCategorySlots;
-
-    const choice = await openSheet<CategoryTargetChoice>((close) => (
-      <CategoryTargetSheet
-        subject={subject.label}
-        subjectColor={subject.color}
-        newCategory={pick(newCategory, ['name', 'color'])}
-        sameNameCategoryId={
-          TodoImportTargetPolicy.findSameNameCategory(newCategory, categories)?.id ?? null
+  const renderItem = (collection: ImportCollection, isBadgeShown: boolean) => {
+    const target = targets[collection.collectionKey];
+    return (
+      <CategoryMappingList.Item
+        collection={collection}
+        isBadgeShown={isBadgeShown}
+        appearance={
+          target == null ? null : findTargetAppearance(target, categoriesResult.categories)
         }
-        canCreateCategory={canCreateCategory}
-        freeCategoryLimit={freeCategoryLimit}
-        defaultCategoryId={
-          current?.kind === 'EXISTING_CATEGORY'
-            ? current.categoryId
-            : (TodoCategoryPolicy.findInitialCategoryId(categories, null) ?? 0)
-        }
-        onChoose={close}
+        errorMessage={errorMessages[collection.collectionKey] ?? null}
+        onPress={() => onItemPress(collection)}
       />
-    ));
-    if (choice == null) {
-      return;
-    }
-
-    match(choice)
-      .with({ kind: 'NEW_CATEGORY' }, { kind: 'EXISTING_CATEGORY' }, apply)
-      .with({ kind: 'NEW_CATEGORY_LOCKED' }, () => gate.promptLimit())
-      .with({ kind: 'NEW_CATEGORY_EDIT' }, () =>
-        openKeyboardSheet(({ isOpen, onOpenChange }) => (
-          <CategoryTargetSheet.NewCategory
-            isOpen={isOpen}
-            onOpenChange={onOpenChange}
-            defaultValues={pick(newCategory, ['name', 'color'])}
-            onConfirm={(edited) => {
-              apply({ kind: 'NEW_CATEGORY', ...edited });
-              onOpenChange(false);
-            }}
-          />
-        )),
-      )
-      .exhaustive();
+    );
   };
 
-  const applyToCollection = (collectionKey: string) => (target: ImportTarget) =>
-    onValueChange({ ...targets, [collectionKey]: target });
-
-  const [firstCollection] = collections;
-  const singleRowTarget =
-    firstCollection == null ? null : (appliedTargets[firstCollection.collectionKey] ?? null);
-  const firstErrorMessage =
-    collections
-      .map((collection) => errorMessages?.[collection.collectionKey])
-      .find((message) => message != null) ?? null;
-  const allSources = joinCalendarSources(collections.map(formatCalendarSource), {
-    maxCount: MAX_VISIBLE_SOURCE_COUNT,
-    formatMore: (count) => t('categories.moreSources', { count }),
-  });
-  // 고른 곳이 남은 자리보다 많을 때만 눈에 띄게 알린다. 그 밖에는 차분한 안내다
-  const isOverSlots = remainingCategorySlots != null && newCategoryCount > remainingCategorySlots;
+  if (collections.length <= GROUP_THRESHOLD_COUNT) {
+    return (
+      <SettingsListGroup>
+        {collections.map((collection, index) => (
+          <Fragment key={collection.collectionKey}>
+            {index > 0 && <SettingsListGroup.Separator />}
+            {renderItem(collection, true)}
+          </Fragment>
+        ))}
+      </SettingsListGroup>
+    );
+  }
 
   return (
-    <VStack gap={8}>
-      {match(mode)
-        .with('separate', () => (
-          <SettingsListGroup>
-            {collections.map((collection, index) => {
-              const source = formatCalendarSource(collection);
-              return (
-                <Box key={collection.collectionKey}>
-                  {index > 0 && <SettingsListGroup.Separator />}
-                  <CategoryMappingList.Item
-                    subject={{ kind: 'calendar', title: collection.title }}
-                    source={source}
-                    color={collection.color}
-                    target={targets[collection.collectionKey] ?? null}
-                    categories={categories}
-                    errorMessage={errorMessages?.[collection.collectionKey] ?? null}
-                    onPress={() =>
-                      chooseTarget(
-                        [collection],
-                        {
-                          label: t('categories.sheet.calendar', { name: collection.title, source }),
-                          color: collection.color,
-                        },
-                        applyToCollection(collection.collectionKey),
-                      )
-                    }
-                  />
-                </Box>
-              );
-            })}
-          </SettingsListGroup>
-        ))
-        .with('single', () => (
-          <SettingsListGroup>
-            <CategoryMappingList.Item
-              subject={{ kind: 'allCalendars', count: collections.length }}
-              source={allSources}
-              color={null}
-              target={singleRowTarget}
-              categories={categories}
-              errorMessage={firstErrorMessage}
-              onPress={() =>
-                chooseTarget(
-                  collections,
-                  {
-                    label: `${t('categories.allCalendars', { count: collections.length })} · ${allSources}`,
-                    color: null,
-                  },
-                  onSingleTargetChange,
-                )
-              }
-            />
-          </SettingsListGroup>
-        ))
-        .exhaustive()}
-
-      {remainingCategorySlots != null && (
-        <Box className="px-4">
-          <WordWrapText size="b4" shade={6} tone={isOverSlots ? 'warning' : 'neutral'}>
-            {remainingCategorySlots === 0
-              ? t('categories.noSlots')
-              : t('categories.remainingSlots', { count: remainingCategorySlots })}
-          </WordWrapText>
-        </Box>
-      )}
+    <VStack gap={12}>
+      {groupCollectionsBySource(collections).map((group) => (
+        <SettingsListGroup
+          key={group.sourceKey}
+          label={compact([t(CALENDAR_SOURCE_LABEL_KEYS[group.provider]), group.accountLabel]).join(
+            ' · ',
+          )}
+        >
+          {group.collections.map((collection, index) => (
+            <Fragment key={collection.collectionKey}>
+              {index > 0 && <SettingsListGroup.Separator />}
+              {renderItem(collection, false)}
+            </Fragment>
+          ))}
+        </SettingsListGroup>
+      ))}
     </VStack>
   );
 }
-
-/** 행이 무엇을 넣는지. 캘린더 하나, 또는 고른 캘린더 모두다 */
-type MappingSubject = { kind: 'calendar'; title: string } | { kind: 'allCalendars'; count: number };
 
 interface ItemProps extends Omit<
   ComponentProps<typeof SettingsListGroup.Item>,
   'label' | 'description' | 'icon' | 'value' | 'right' | 'accessibilityLabel'
 > {
-  subject: MappingSubject;
-  /** 캘린더가 어디서 왔는지. 캘린더 단계의 묶음 이름과 같고, 모은 행은 여러 출처를 잇는다 */
-  source: string;
-  /** 캘린더 색. 모은 행은 null이다 */
-  color: string | null;
-  target: ImportTarget | null;
-  categories: readonly TodoCategoryWithCount[];
+  collection: ImportCollection;
+  /** 묶음 이름이 출처를 알리면 줄마다 배지를 두지 않는다 */
+  isBadgeShown: boolean;
+  /** 넣을 아이두 카테고리. 고른 카테고리가 삭제됐으면 null이다 */
+  appearance: ImportTargetAppearance | null;
   errorMessage: string | null;
 }
 
-/**
- * 설정 행처럼 왼쪽은 가져올 캘린더와 그 출처를, 오른쪽은 넣을 아이두 카테고리를 보인다.
- * 새로 만들 카테고리는 출처 뒤에 덧붙여 알린다
- */
+/** 왼쪽은 다른 서비스의 캘린더, 오른쪽은 넣을 아이두 카테고리다. 이름이 길면 줄임표로 줄고 사라지지 않는다 */
 CategoryMappingList.Item = function Item({
-  subject,
-  source,
-  color,
-  target,
-  categories,
+  collection,
+  isBadgeShown,
+  appearance,
   errorMessage,
   ...props
 }: ItemProps) {
   const { t } = useTranslation('todoImport');
-  const { name: targetName, color: targetColor } = match(target)
-    .returnType<{ name: string; color: string | null }>()
-    .with(null, () => ({ name: t('categories.unassigned'), color: null }))
-    .with({ kind: 'NEW_CATEGORY' }, ({ name, color: newColor }) => ({ name, color: newColor }))
-    .with({ kind: 'EXISTING_CATEGORY' }, ({ categoryId }) => {
-      const category = TodoCategoryPolicy.findCategory(categories, categoryId);
-      return {
-        name: category?.name ?? t('categories.unassigned'),
-        color: category?.color ?? null,
-      };
-    })
-    .exhaustive();
-  const isNewCategory = target?.kind === 'NEW_CATEGORY';
-  const { label, rowLabel } = match(subject)
-    .with({ kind: 'calendar' }, ({ title }) => ({
-      label: title,
-      rowLabel: t('categories.rowLabel', { source, calendar: title, target: targetName }),
-    }))
-    .with({ kind: 'allCalendars' }, ({ count }) => ({
-      label: t('categories.allCalendars', { count }),
-      rowLabel: t('categories.allCalendarsRowLabel', { source, count, target: targetName }),
-    }))
-    .exhaustive();
-  const description = compact([source, isNewCategory && t('categories.toNewCategory')]).join(' · ');
+  const formatTargetName = useFormatImportTargetName();
+  const targetName = formatTargetName(appearance);
 
   return (
     <VStack>
       <SettingsListGroup.Item
-        label={label}
-        description={description}
-        icon={color == null ? undefined : <ColorDot color={color} />}
+        label={collection.title}
+        icon={
+          isBadgeShown ? <CalendarSourceBadge provider={collection.accountProvider} /> : undefined
+        }
         value={
           <HStack align="center" gap={6} className="shrink">
-            {targetColor != null && <ColorDot color={targetColor} />}
+            <AidoMark />
+            {appearance != null && <ColorDot color={appearance.color} />}
             <SettingsListGroup.Value numberOfLines={1} className="shrink">
               {targetName}
             </SettingsListGroup.Value>
           </HStack>
         }
         accessibilityLabel={compact([
-          rowLabel,
-          isNewCategory && t('categories.newCategoryDescription'),
+          t('categories.rowLabel', {
+            source: t(CALENDAR_SOURCE_LABEL_KEYS[collection.accountProvider]),
+            calendar: collection.title,
+            target: targetName,
+          }),
           errorMessage,
         ]).join(', ')}
         accessibilityHint={t('categories.rowHint')}
@@ -330,18 +153,14 @@ CategoryMappingList.Item = function Item({
 };
 
 /** 고른 캘린더 수만큼 같은 높이의 행을 그린다 */
-CategoryMappingList.Loading = function Loading({
-  rowCount = DEFAULT_LOADING_ROW_COUNT,
-}: {
-  rowCount?: number;
-}) {
+CategoryMappingList.Loading = function Loading({ rowCount }: { rowCount: number }) {
   return (
     <SettingsListGroup>
-      {range(rowCount).map((index) => (
-        <Box key={index}>
+      {range(Math.min(rowCount, GROUP_THRESHOLD_COUNT)).map((index) => (
+        <Fragment key={index}>
           {index > 0 && <SettingsListGroup.Separator />}
           <SettingsListGroup.Item.Loading hasValue />
-        </Box>
+        </Fragment>
       ))}
     </SettingsListGroup>
   );

@@ -1,23 +1,27 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
+import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
+import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import { CategoryFormFields } from '@src/features/planning/category/components/category-form-fields';
-import { CategoryPickForm } from '@src/features/planning/category/components/category-pick-form';
-import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
+import { CATEGORY_COLORS } from '@src/features/planning/category/constants/todo-category.constants';
 import {
-  todoCategoryFormSchema,
-  type TodoCategoryFormValues,
-} from '@src/features/planning/category/schemas/todo-category-form.schema';
+  type TodoCategoryWithCount,
+  TodoCategoryPolicy,
+} from '@src/features/planning/category/domains/todo-category.model';
+import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
+import { todoCategoryFormSchema } from '@src/features/planning/category/schemas/todo-category-form.schema';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
+  BottomSheet,
   Box,
   Button,
-  DashedDivider,
   H4,
   HStack,
+  Input,
   KeyboardBottomSheet,
   LockIcon,
   PlusIcon,
-  QueryErrorBoundary,
   QueryErrorFallback,
   type QueryErrorFallbackProps,
   SettingsListGroup,
@@ -25,142 +29,336 @@ import {
   TextButton,
   VStack,
 } from '@src/shared/ui';
-import { noop } from 'es-toolkit';
-import { Suspense } from 'react';
+import { useSuspenseQueries } from '@tanstack/react-query';
+import { noop, pick } from 'es-toolkit';
+import { RadioGroup } from 'heroui-native';
+import { Fragment, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { match, P } from 'ts-pattern';
 
-import type { ImportTarget } from '../domains/todo-import-target.model';
+import { toNewCategoryTarget } from '../apis/todo-import-target.mapper';
+import {
+  type ImportCollection,
+  TodoImportCollectionPolicy,
+} from '../domains/todo-import-collection.model';
+import { type ImportTarget, TodoImportTargetPolicy } from '../domains/todo-import-target.model';
+import { useNewCategoryNames } from '../hooks/use-new-category-names';
+import { filterCategoriesByName } from '../utils/todo-import.view-model';
+import { CalendarSourceBadge } from './calendar-source-badge';
 
-/** 잠긴 새 카테고리·이름 바꾸기는 시트를 닫은 뒤 부른 쪽이 안내·입력 시트를 연다 */
-export type CategoryTargetChoice =
-  | ImportTarget
-  | { kind: 'NEW_CATEGORY_LOCKED' }
-  | { kind: 'NEW_CATEGORY_EDIT' };
+/** 무엇을 넣는지. 캘린더 하나, 또는 고른 캘린더 모두다 */
+type CategoryTargetSubject =
+  | { kind: 'calendar'; collection: ImportCollection }
+  | { kind: 'allCalendars'; collections: readonly ImportCollection[] };
 
 interface CategoryTargetSheetProps {
-  /** 무엇을 넣는지와 그 출처. 캘린더 하나면 "개인 캘린더 · iCloud", 모으면 "고른 캘린더 3개 모두 · iCloud" */
-  subject: string;
-  /** 캘린더 색. 여러 캘린더를 모으면 null이다 */
-  subjectColor: string | null;
-  /** 새로 만들 때의 이름·색. 이름은 캘린더 이름 규칙(계정 이메일 대신 종류 이름, 50자)을 따른다 */
-  newCategory: { name: string; color: string };
-  /** 이름이 같은 카테고리. 있으면 새로 만들지 않고 그 카테고리에 넣는다 */
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
+  /** 닫힘 애니메이션을 시작한다. 다 내려간 뒤 `onOpenChange(false)`가 온다 */
+  close: () => void;
+  subject: CategoryTargetSubject;
+  /** 지금 넣을 곳. 새로 만들 카테고리면 맨 위에 골라진 채 보인다 */
+  current: ImportTarget;
+  /** 다른 캘린더가 가리키는 곳. 새 카테고리를 더 만들 수 있는지 셀 때 함께 센다 */
+  otherTargets: readonly ImportTarget[];
+  onChoose: (target: ImportTarget) => void;
+}
+
+type SheetView = 'pick' | 'create';
+
+/** 카테고리가 이보다 많으면 맨 위에 이름 찾기 칸을 둔다 */
+const SEARCH_THRESHOLD_COUNT = 8;
+const NEW_CATEGORY_VALUE = 'new';
+const ICON_SIZE = 18;
+
+/**
+ * 넣을 아이두 카테고리를 고르는 시트. 줄을 누르면 바로 골라지고 닫힌다. 새 카테고리는 같은 시트 안에서 이름·색을
+ * 정해 시트를 겹쳐 띄우지 않는다. 카테고리·요금제는 여는 단계가 이미 받아 둔 캐시를 읽는다
+ */
+export function CategoryTargetSheet({
+  isOpen,
+  onOpenChange,
+  close,
+  subject,
+  current,
+  otherTargets,
+  onChoose,
+}: CategoryTargetSheetProps) {
+  const { t } = useTranslation(['todoImport', 'common']);
+  const [{ data: categoriesResult }, { data: snapshot }] = useSuspenseQueries({
+    queries: [useGetTodoCategoriesQueryOptions(), useGetEntitlementsQueryOptions()],
+  });
+  const names = useNewCategoryNames();
+  const gate = useEntitlementGate('TODO_CATEGORY', { surface: 'todo_import' });
+  const [view, setView] = useState<SheetView>('pick');
+
+  const categories = categoriesResult.categories.filter(
+    (category) => !TodoCategoryPolicy.isOptimisticCategory(category),
+  );
+  const newCategory =
+    current.kind === 'NEW_CATEGORY'
+      ? current
+      : toNewCategoryTarget(subject.kind === 'calendar' ? subject.collection : null, {
+          palette: CATEGORY_COLORS,
+          names,
+        });
+  const remainingCategorySlots = EntitlementPolicy.findRemainingCount(snapshot, 'TODO_CATEGORY');
+  // 이 대상의 새 카테고리를 더해도 남은 자리 안이어야 한다. 이름이 같은 새 카테고리는 하나로 센다
+  const canCreateCategory =
+    remainingCategorySlots == null ||
+    TodoImportTargetPolicy.countNewCategories([...otherTargets, newCategory]) <=
+      remainingCategorySlots;
+  const freeCategoryLimit = EntitlementPolicy.hasFullAccess(snapshot)
+    ? null
+    : EntitlementPolicy.findLimit(snapshot, 'TODO_CATEGORY');
+  const form = useForm({
+    resolver: zodResolver(todoCategoryFormSchema),
+    defaultValues: pick(newCategory, ['name', 'color']),
+    mode: 'onChange',
+  });
+
+  const choose = (target: ImportTarget) => {
+    onChoose(target);
+    close();
+  };
+  // 이름을 바꿔 이미 있는 카테고리와 같아지면 새로 만들지 않고 그 카테고리에 넣는다
+  const confirmNewCategory = () => {
+    form
+      .handleSubmit((values) => {
+        const created = { kind: 'NEW_CATEGORY', ...values } as const;
+        const sameNameCategory = TodoImportTargetPolicy.findSameNameCategory(created, categories);
+        choose(
+          sameNameCategory == null
+            ? created
+            : { kind: 'EXISTING_CATEGORY', categoryId: sameNameCategory.id },
+        );
+      })()
+      .catch(noop);
+  };
+
+  return (
+    <KeyboardBottomSheet
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+      footer={match(view)
+        .with('pick', () => undefined)
+        .with('create', () => (
+          <Button size="large" onPress={confirmNewCategory}>
+            {t('common:actions.confirm')}
+          </Button>
+        ))
+        .exhaustive()}
+    >
+      {match(view)
+        .with('pick', () => (
+          <VStack gap={20}>
+            <CategoryTargetSheet.Title subject={subject} />
+            <CategoryTargetSheet.Choices
+              categories={categories}
+              current={current}
+              onChoose={choose}
+            />
+            <CategoryTargetSheet.NewCategoryOption
+              newCategoryName={newCategory.name}
+              sameNameCategoryId={
+                TodoImportTargetPolicy.findSameNameCategory(newCategory, categories)?.id ?? null
+              }
+              canCreateCategory={canCreateCategory}
+              freeCategoryLimit={freeCategoryLimit}
+              onChooseExisting={(categoryId) => choose({ kind: 'EXISTING_CATEGORY', categoryId })}
+              onCreate={() => setView('create')}
+              // 안내 시트는 이 시트 위에 겹쳐 뜬다. 프리미엄을 보러 가면 이 시트도 닫는다
+              onLocked={() => gate.promptLimit({ onSubscribe: close })}
+            />
+          </VStack>
+        ))
+        .with('create', () => (
+          <VStack gap={20}>
+            <HStack align="center" justify="between" gap={12}>
+              <H4 accessibilityRole="header" className="shrink">
+                {t('categories.sheet.newTitle')}
+              </H4>
+              <TextButton onPress={() => setView('pick')}>{t('common:actions.back')}</TextButton>
+            </HStack>
+            <CategoryFormFields control={form.control} onSubmit={confirmNewCategory} />
+          </VStack>
+        ))
+        .exhaustive()}
+    </KeyboardBottomSheet>
+  );
+}
+
+/** 질문과 무엇을 넣는지. 캘린더 하나면 출처 배지를 함께 둔다 */
+CategoryTargetSheet.Title = function Title({ subject }: { subject: CategoryTargetSubject }) {
+  const { t } = useTranslation('todoImport');
+
+  return (
+    <VStack gap={6}>
+      <H4 accessibilityRole="header">{t('categories.sheet.title')}</H4>
+      {match(subject)
+        .with({ kind: 'calendar' }, ({ collection }) => (
+          <HStack align="center" gap={6}>
+            <CalendarSourceBadge provider={collection.accountProvider} />
+            <Text size="b3" shade={6} numberOfLines={2} className="shrink">
+              {t('categories.sheet.calendar', {
+                name: collection.title,
+                count: collection.itemCount,
+              })}
+            </Text>
+          </HStack>
+        ))
+        .with({ kind: 'allCalendars' }, ({ collections }) => (
+          <Text size="b3" shade={6} lineBreakStrategyIOS="hangul-word">
+            {t('categories.sheet.allCalendars', {
+              calendarCount: collections.length,
+              count: TodoImportCollectionPolicy.calculateItemCount(collections),
+            })}
+          </Text>
+        ))
+        .exhaustive()}
+    </VStack>
+  );
+};
+
+interface ChoicesProps {
+  categories: readonly TodoCategoryWithCount[];
+  current: ImportTarget;
+  onChoose: (target: ImportTarget) => void;
+}
+
+/**
+ * 내 아이두 카테고리 라디오 목록. 고른 줄은 지금 넣을 곳 그대로이고, 새로 만들 카테고리면 맨 위에 둔다.
+ * 남은 자리가 없는 카테고리는 고를 수 없다
+ */
+CategoryTargetSheet.Choices = function Choices({ categories, current, onChoose }: ChoicesProps) {
+  const { t } = useTranslation('todoImport');
+  const [query, setQuery] = useState('');
+
+  const visibleCategories = filterCategoriesByName(categories, query);
+  const currentValue = match(current)
+    .with({ kind: 'NEW_CATEGORY' }, () => NEW_CATEGORY_VALUE)
+    .with({ kind: 'EXISTING_CATEGORY' }, ({ categoryId }) => String(categoryId))
+    .exhaustive();
+
+  const handleValueChange = (value: string) => {
+    const category = categories.find(({ id }) => String(id) === value);
+    if (category != null) {
+      onChoose({ kind: 'EXISTING_CATEGORY', categoryId: category.id });
+    }
+  };
+
+  return (
+    <VStack gap={8}>
+      {SEARCH_THRESHOLD_COUNT < categories.length && (
+        <Input
+          value={query}
+          onChange={setQuery}
+          placeholder={t('categories.sheet.searchPlaceholder')}
+          size="medium"
+          renderErrorMessage={false}
+          autoCapitalize="none"
+          returnKeyType="search"
+          clearButtonMode="while-editing"
+        />
+      )}
+      <Text size="b3" weight="semibold" shade={8} accessibilityRole="header">
+        {t('categories.sheet.existingTitle')}
+      </Text>
+      <SettingsListGroup>
+        <RadioGroup value={currentValue} onValueChange={handleValueChange} className="gap-0">
+          {current.kind === 'NEW_CATEGORY' && (
+            <SettingsListGroup.Radio
+              value={NEW_CATEGORY_VALUE}
+              label={current.name}
+              description={t('categories.sheet.pendingNew')}
+              icon={<ColorDot color={current.color} />}
+            />
+          )}
+          {visibleCategories.map((category, index) => {
+            const roomLeft = TodoImportTargetPolicy.calculateRoomLeft(
+              { kind: 'EXISTING_CATEGORY', categoryId: category.id },
+              categories,
+            );
+            return (
+              <Fragment key={category.id}>
+                {(index > 0 || current.kind === 'NEW_CATEGORY') && <SettingsListGroup.Separator />}
+                <SettingsListGroup.Radio
+                  value={String(category.id)}
+                  label={category.name}
+                  icon={<ColorDot color={category.color} />}
+                  isDisabled={roomLeft === 0 && String(category.id) !== currentValue}
+                  badge={
+                    <Text size="b4" shade={6} numberOfLines={1} className="tabular-nums">
+                      {roomLeft === 0
+                        ? t('categories.full')
+                        : t('categories.sheet.roomLeft', { count: roomLeft })}
+                    </Text>
+                  }
+                />
+              </Fragment>
+            );
+          })}
+        </RadioGroup>
+        {visibleCategories.length === 0 && (
+          <SettingsListGroup.Custom>
+            <Text size="b3" shade={6}>
+              {t('categories.sheet.noMatch')}
+            </Text>
+          </SettingsListGroup.Custom>
+        )}
+      </SettingsListGroup>
+    </VStack>
+  );
+};
+
+interface NewCategoryOptionProps {
+  newCategoryName: string;
+  /** 이름이 같은 카테고리. 있으면 새로 만들지 않고 그 카테고리를 고른다 */
   sameNameCategoryId: number | null;
   canCreateCategory: boolean;
   /** 무료 요금제의 카테고리 한도. 프리미엄이면 null이다 */
   freeCategoryLimit: number | null;
-  defaultCategoryId: number;
-  onChoose: (choice: CategoryTargetChoice) => void;
+  onChooseExisting: (categoryId: number) => void;
+  onCreate: () => void;
+  onLocked: () => void;
 }
-
-const ICON_SIZE = 18;
-
-/** 질문과 대상을 위에 두고, 새로 만들 카테고리를 이름·색까지 보인 뒤 이미 있는 카테고리를 고르게 한다 */
-export function CategoryTargetSheet({
-  subject,
-  subjectColor,
-  newCategory,
-  sameNameCategoryId,
-  canCreateCategory,
-  freeCategoryLimit,
-  defaultCategoryId,
-  onChoose,
-}: CategoryTargetSheetProps) {
-  const { t } = useTranslation('todoImport');
-
-  return (
-    <VStack gap={20}>
-      <VStack gap={6}>
-        <H4 accessibilityRole="header">{t('categories.sheet.title')}</H4>
-        <HStack align="center" gap={6}>
-          {subjectColor != null && <ColorDot color={subjectColor} />}
-          {/* 출처에 계정 이메일이 붙어 길어져도 큰 글자에서 자르지 않는다 */}
-          <Text size="b3" shade={6} lineBreakStrategyIOS="hangul-word" className="shrink">
-            {subject}
-          </Text>
-        </HStack>
-      </VStack>
-
-      <VStack gap={8}>
-        <CategoryTargetSheet.NewCategoryOption
-          newCategory={newCategory}
-          sameNameCategoryId={sameNameCategoryId}
-          canCreateCategory={canCreateCategory}
-          freeCategoryLimit={freeCategoryLimit}
-          onChoose={onChoose}
-        />
-        {canCreateCategory && (
-          <TextButton
-            size="small"
-            className="self-start"
-            onPress={() => onChoose({ kind: 'NEW_CATEGORY_EDIT' })}
-          >
-            {t('categories.editNewCategory')}
-          </TextButton>
-        )}
-      </VStack>
-
-      <DashedDivider />
-
-      <QueryErrorBoundary fallback={CategoryTargetSheet.Error}>
-        <Suspense fallback={<CategoryPickForm.Loading />}>
-          <CategoryPickForm
-            title={t('categories.sheet.existingTitle')}
-            defaultValue={defaultCategoryId}
-            filters={(category) => !TodoCategoryPolicy.isOptimisticCategory(category)}
-            submitLabel={t('categories.useExisting')}
-            onSubmit={(categoryId) => onChoose({ kind: 'EXISTING_CATEGORY', categoryId })}
-          />
-        </Suspense>
-      </QueryErrorBoundary>
-    </VStack>
-  );
-}
-
-type NewCategoryOptionProps = Pick<
-  CategoryTargetSheetProps,
-  'newCategory' | 'sameNameCategoryId' | 'canCreateCategory' | 'freeCategoryLimit' | 'onChoose'
->;
 
 /**
- * "새 카테고리 만들기" 행. 둘째 줄이 만들어질 이름·색을 그대로 보인다. 같은 이름이 있으면 그 카테고리에 넣는다고,
- * 자리가 없으면 왜 못 만드는지 알리고 누르면 한도 안내를 연다
+ * "새 카테고리 만들기" 줄. 누르면 늘 무언가 보인다: 이름·색 입력, 같은 이름의 카테고리 고르기, 또는 왜 더 만들 수
+ * 없는지 알리는 안내
  */
 CategoryTargetSheet.NewCategoryOption = function NewCategoryOption({
-  newCategory,
+  newCategoryName,
   sameNameCategoryId,
   canCreateCategory,
   freeCategoryLimit,
-  onChoose,
+  onChooseExisting,
+  onCreate,
+  onLocked,
 }: NewCategoryOptionProps) {
   const { t } = useTranslation('todoImport');
   const fontScaledSize = useFontScaledSize();
   const iconSize = fontScaledSize(ICON_SIZE);
 
   const option = match({ sameNameCategoryId, canCreateCategory })
-    .returnType<{
-      description: string;
-      choice: CategoryTargetChoice;
-      accessory: 'create' | 'existing' | 'locked';
-    }>()
+    .returnType<{ description: string; isLocked: boolean; onPress: () => void }>()
     .with({ sameNameCategoryId: P.nonNullable }, ({ sameNameCategoryId: categoryId }) => ({
-      description: t('categories.sheet.sameName', { name: newCategory.name }),
-      choice: { kind: 'EXISTING_CATEGORY', categoryId },
-      accessory: 'existing',
+      description: t('categories.sheet.sameName', { name: newCategoryName }),
+      isLocked: false,
+      onPress: () => onChooseExisting(categoryId),
     }))
     .with({ canCreateCategory: true }, () => ({
-      description: newCategory.name,
-      choice: { kind: 'NEW_CATEGORY', ...newCategory },
-      accessory: 'create',
+      description: t('categories.sheet.newDescription', { name: newCategoryName }),
+      isLocked: false,
+      onPress: onCreate,
     }))
     .otherwise(() => ({
       description:
         freeCategoryLimit == null
           ? t('categories.sheet.locked')
           : t('categories.sheet.lockedFree', { limit: freeCategoryLimit }),
-      choice: { kind: 'NEW_CATEGORY_LOCKED' },
-      accessory: 'locked',
+      isLocked: true,
+      onPress: onLocked,
     }));
 
   return (
@@ -168,67 +366,32 @@ CategoryTargetSheet.NewCategoryOption = function NewCategoryOption({
       <SettingsListGroup.Item
         label={t('categories.sheet.newTitle')}
         description={option.description}
-        icon={<ColorDot color={newCategory.color} />}
-        // 이미 있는 카테고리로 가면 다른 행처럼 화살표를 둔다
-        right={match(option.accessory)
-          .with('create', () => (
-            <PlusIcon width={iconSize} height={iconSize} colorClassName="text-main" />
-          ))
-          .with('locked', () => (
+        icon={
+          option.isLocked ? (
             <LockIcon width={iconSize} height={iconSize} colorClassName="text-gray-6" />
-          ))
-          .with('existing', () => undefined)
-          .exhaustive()}
-        onPress={() => onChoose(option.choice)}
+          ) : (
+            <PlusIcon width={iconSize} height={iconSize} colorClassName="text-main" />
+          )
+        }
+        onPress={option.onPress}
       />
     </SettingsListGroup>
   );
 };
 
-/** 기존 카테고리를 읽지 못해도 새 카테고리는 고를 수 있어 시트를 닫지 않는다 */
-CategoryTargetSheet.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
-  const { t } = useTranslation('todoImport');
-
-  return <QueryErrorFallback.Inline message={t('categories.loadFailed')} reset={reset} />;
-};
-
-interface NewCategoryProps {
+interface ErrorProps extends QueryErrorFallbackProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  defaultValues: TodoCategoryFormValues;
-  onConfirm: (values: TodoCategoryFormValues) => void;
 }
 
-/** 만드는 것은 가져오기를 확정할 때 서버가 한다 */
-CategoryTargetSheet.NewCategory = function NewCategory({
-  isOpen,
-  onOpenChange,
-  defaultValues,
-  onConfirm,
-}: NewCategoryProps) {
-  const { t } = useTranslation('common');
-  const form = useForm({
-    resolver: zodResolver(todoCategoryFormSchema),
-    defaultValues,
-    mode: 'onChange',
-  });
-  // 이름 규칙에 맞지 않으면 칸 오류로 보이고 시트를 닫지 않는다
-  const confirm = () => {
-    form.handleSubmit(onConfirm)().catch(noop);
-  };
+/** 카테고리를 읽지 못해도 누른 자리에 시트가 떠 다시 시도할 수 있다 */
+CategoryTargetSheet.Error = function ErrorFallback({ isOpen, onOpenChange, reset }: ErrorProps) {
+  const { t } = useTranslation('todoImport');
 
   return (
-    <KeyboardBottomSheet
-      isOpen={isOpen}
-      onOpenChange={onOpenChange}
-      footer={
-        <Button size="large" onPress={confirm}>
-          {t('actions.confirm')}
-        </Button>
-      }
-    >
-      <CategoryFormFields control={form.control} onSubmit={confirm} />
-    </KeyboardBottomSheet>
+    <BottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
+      <QueryErrorFallback.Inline message={t('categories.loadFailed')} reset={reset} />
+    </BottomSheet>
   );
 };
 

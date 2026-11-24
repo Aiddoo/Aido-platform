@@ -3,8 +3,9 @@ import type { OsPermission } from '@src/core/ports/os-permission';
 import { createImportCollection } from '../__tests__/todo-import.fixtures';
 import {
   getCalendarPermissionView,
+  filterCategoriesByName,
   groupCollectionsByAccount,
-  joinCalendarSources,
+  groupCollectionsBySource,
   keepBlockedCalendarPermission,
   toUnbreakableLabel,
 } from './todo-import.view-model';
@@ -117,24 +118,105 @@ describe('groupCollectionsByAccount', () => {
   });
 });
 
-describe('joinCalendarSources', () => {
-  it.each<[string, string[], string]>([
-    ['한 곳이면 그 이름만 보인다', ['iCloud', 'iCloud'], 'iCloud'],
-    ['두 곳은 모두 잇는다', ['iCloud', 'Google 캘린더', 'iCloud'], 'iCloud · Google 캘린더'],
-    [
-      '두 곳을 넘으면 나머지를 수로 줄인다',
-      ['iCloud', 'Google 캘린더', '이 기기에만 저장된 캘린더', 'Outlook 캘린더'],
-      'iCloud · Google 캘린더 외 2곳',
-    ],
-  ])('%s', (_case, sources, expected) => {
-    // When
-    const label = joinCalendarSources(sources, {
-      maxCount: 2,
-      formatMore: (hiddenCount) => `외 ${hiddenCount}곳`,
+describe('groupCollectionsBySource', () => {
+  it('출처 계정마다 캘린더를 한 줄로 묶고 일정 수를 더한다', () => {
+    // Given
+    const personal = createImportCollection({ collectionKey: 'personal', itemCount: 12 });
+    const work = createImportCollection({ collectionKey: 'work', title: '업무', itemCount: 7 });
+    const family = createImportCollection({
+      collectionKey: 'family',
+      accountName: 'me@gmail.com',
+      accountKind: 'cloud',
+      accountProvider: 'google',
+      title: '가족',
+      itemCount: 1,
     });
 
+    // When
+    const groups = groupCollectionsBySource([personal, family, work]);
+
     // Then
-    expect(label).toBe(expected);
+    expect(groups).toEqual([
+      {
+        sourceKey: 'icloud:iCloud',
+        provider: 'icloud',
+        accountLabel: null,
+        collections: [personal, work],
+        calendarNames: '개인 · 업무',
+        itemCount: 19,
+      },
+      {
+        sourceKey: 'google:me@gmail.com',
+        provider: 'google',
+        accountLabel: null,
+        collections: [family],
+        calendarNames: '가족',
+        itemCount: 1,
+      },
+    ]);
+  });
+
+  it('같은 서비스 계정이 둘이면 계정 이메일·이름으로 가린다', () => {
+    // Given
+    const personal = createImportCollection({
+      collectionKey: 'personal',
+      title: 'Personal',
+      accountName: 'me@gmail.com',
+      accountProvider: 'google',
+    });
+    const work = createImportCollection({
+      collectionKey: 'work',
+      title: 'Personal',
+      accountName: '회사',
+      accountProvider: 'google',
+    });
+
+    // When
+    const groups = groupCollectionsBySource([personal, work]);
+
+    // Then
+    expect(groups.map(({ accountLabel }) => accountLabel)).toEqual(['me@gmail.com', '회사']);
+  });
+
+  it('공휴일·구독 캘린더는 계정이 달라도 종류 하나로 묶는다', () => {
+    // Given
+    const holidays = createImportCollection({
+      collectionKey: 'holidays',
+      accountName: 'iCloud',
+      accountKind: 'holidays',
+      accountProvider: 'subscribed',
+    });
+    const team = createImportCollection({
+      collectionKey: 'team',
+      accountName: 'Subscribed Calendars',
+      accountKind: 'subscribed',
+      accountProvider: 'subscribed',
+    });
+
+    // When
+    const groups = groupCollectionsBySource([holidays, team]);
+
+    // Then
+    expect(groups).toEqual([
+      expect.objectContaining({ sourceKey: 'subscribed', collections: [holidays, team] }),
+    ]);
+  });
+});
+
+describe('filterCategoriesByName', () => {
+  const categories = [{ name: '할 일' }, { name: 'Work' }, { name: '업무 일지' }];
+
+  it.each([
+    ['비어 있으면 모두 남긴다', '  ', ['할 일', 'Work', '업무 일지']],
+    ['대소문자를 가리지 않는다', 'work', ['Work']],
+    ['이름 가운데 들어 있어도 찾는다', '일', ['할 일', '업무 일지']],
+    ['없으면 비어 있다', '공부', []],
+  ])('%s', (_case, query, expected) => {
+    // When
+    const filtered = filterCategoriesByName(categories, query);
+
+    // Then
+    expect(filtered.map(({ name }) => name)).toEqual(expected);
   });
 });
 

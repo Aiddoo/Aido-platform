@@ -91,59 +91,68 @@
       "comeBack": "아이두로 돌아오면 목록에 바로 보여요"
     }
   },
+  "sources": {
+    "icloud": "iCloud",
+    "google": "Google",
+    "outlook": "Outlook",
+    "device": "이 기기",
+    "subscribed": "구독",
+    "birthdays": "생일",
+    "other": "기타"
+  },
   "categories": {
-    "title": "어느 카테고리에 넣을까요?",
-    "description": "캘린더에서 가져온 일정을 아이두 카테고리에 넣어요",
-    "mode": {
-      "label": "넣는 방법",
-      "separate": "캘린더마다 따로 넣기",
-      "separateDescription": "캘린더마다 넣을 아이두 카테고리를 골라요",
-      "singleDescription": "모든 일정을 아이두 카테고리 하나에 모아요",
-      "hintLabel": "카테고리 안내",
-      "hint": "가져온 뒤에도 할 일의 카테고리는 언제든 바꿀 수 있어요. 카테고리 이름·색은 마이 > 카테고리 관리에서 바꿔요",
-      "coachmark": "캘린더마다 나눌지, 한 카테고리에 모을지 여기서 골라요"
+    "title": "어디에 넣을까요?",
+    "description": "가져온 일정을 아이두 카테고리에 넣어요. 나중에 언제든 옮길 수 있어요",
+    "sourceLabel": "가져올 일정",
+    "sourceHintLabel": "가져올 일정 안내",
+    "sourceHint": "휴대폰 캘린더 앱에 연결된 계정의 캘린더예요. 계정이 안 보이면 '{{missingHelp}}'를 눌러 보세요",
+    "destinationLabel": "넣을 곳",
+    "destinationHintLabel": "넣을 곳 안내",
+    "destinationHint": "가져온 할 일은 나중에 다른 아이두 카테고리로 옮길 수 있어요. 이름·색은 마이 › 카테고리 관리에서 바꿔요",
+    "coachmark": "가져온 일정은 여기에 들어가요. 눌러서 바꿀 수 있어요",
+    "change": "바꾸기",
+    "roomLeft": "{{count}}개 더 넣을 수 있어요",
+    "full": "가득 찼어요",
+    "overflow": "'{{name}}'에는 {{count}}개만 더 들어가요. 가까운 날짜부터 넣고 나머지 {{skipped}}개는 건너뛰어요",
+    "newTarget": "새 · {{name}}",
+    "newCategoryName": "캘린더 일정",
+    "unassigned": "고르지 않음",
+    "chooseOther": "다른 곳 고르기",
+    "splitByCalendar": "캘린더마다 나눠 넣기",
+    "splitLink": "캘린더마다 다른 곳에 넣을래요",
+    "summary": "일정 {{count}}개를 '{{name}}'에 넣어요",
+    "summaryPartial": "일정 {{total}}개 중 {{count}}개를 '{{name}}'에 넣어요",
+    "summarySeparate": "아이두 카테고리 {{destinationCount}}곳에 일정 {{count}}개를 넣어요",
+    "summarySeparatePartial": "아이두 카테고리 {{destinationCount}}곳에 일정 {{total}}개 중 {{count}}개를 넣어요",
+    "separate": {
+      "title": "캘린더마다 넣을 곳",
+      "joinAll": "모두 같은 곳에 넣기",
+      "note": "처음엔 모두 위에서 고른 곳이에요. 바꾸고 싶은 줄만 눌러요"
     },
-    "allInOne": "한 카테고리에 모두 넣기",
-    "separateLabel": "캘린더 → 아이두 카테고리",
-    "separateLabelAccessibility": "캘린더별로 넣을 아이두 카테고리",
-    "singleLabel": "넣을 아이두 카테고리",
-    "allCalendars": "고른 캘린더 {{count}}개 모두",
-    "moreSources": "외 {{count}}곳",
-    "toNewCategory": "새 카테고리로",
-    "newCategoryDescription": "새 카테고리를 만들어 넣어요",
-    "remainingSlots": "새 카테고리는 {{count}}개 더 만들 수 있어요",
-    "noSlots": "카테고리가 가득 차서 이미 있는 카테고리에 넣어요",
+    "destinationAccessibility": "넣을 곳, {{name}}, {{status}}, 바꾸기",
+    "rowLabel": "{{source}}의 {{calendar}} 캘린더를 {{target}} 아이두 카테고리에 넣기",
+    "rowHint": "넣을 곳을 바꿔요",
+    "loadFailed": "아이두 카테고리를 읽지 못했어요",
     "sheet": {
       "title": "어디에 넣을까요?",
-      "calendar": "{{name}} 캘린더 · {{source}}",
+      "calendar": "{{name}} 캘린더의 일정 {{count}}개",
+      "allCalendars": "고른 캘린더 {{calendarCount}}개의 일정 {{count}}개",
+      "existingTitle": "내 아이두 카테고리",
+      "roomLeft": "{{count}}개 더",
+      "pendingNew": "새로 만들어요",
+      "searchPlaceholder": "카테고리 이름 찾기",
+      "noMatch": "찾는 카테고리가 없어요",
       "newTitle": "새 카테고리 만들기",
-      "sameName": "{{name}} 카테고리가 이미 있어서 거기에 넣어요",
-      "lockedFree": "카테고리가 가득 찼어요(무료 {{limit}}개). 프리미엄에서 더 만들 수 있어요",
-      "locked": "카테고리가 가득 차서 더 만들 수 없어요",
-      "existingTitle": "이미 있는 카테고리"
+      "newDescription": "이름은 '{{name}}'로 시작해요. 바꿀 수 있어요",
+      "sameName": "'{{name}}' 카테고리가 이미 있어요",
+      "lockedFree": "무료로는 카테고리를 {{limit}}개까지 만들 수 있어요",
+      "locked": "카테고리를 더 만들 수 없어요"
     },
-    "editNewCategory": "이름·색 바꾸기",
-    "useExisting": "이 카테고리에 넣기",
-    "unassigned": "고르지 않음",
-    "fallbackName": "캘린더",
-    "accountNames": {
-      "icloud": "iCloud 캘린더",
-      "google": "Google 캘린더",
-      "outlook": "Outlook 캘린더"
-    },
-    "loadFailed": "기존 카테고리를 읽지 못했어요",
-    "rowLabel": "{{source}}의 {{calendar}} 캘린더를 {{target}} 카테고리에 넣기",
-    "allCalendarsRowLabel": "{{source}}에서 고른 캘린더 {{count}}개를 모두 {{target}} 카테고리에 넣기",
-    "rowHint": "넣을 카테고리를 바꿔요",
     "rejected": {
       "capacity": "이 카테고리에는 {{expected}}개 중 {{count}}개만 넣을 수 있어요. 기간을 줄이거나 다른 카테고리를 골라 주세요",
       "nameTaken": "이미 같은 이름의 카테고리가 있어요. 이름을 바꾸거나 그 카테고리를 골라 주세요",
       "notFound": "카테고리가 삭제됐어요. 다른 카테고리를 골라 주세요",
-      "summary": "넣을 수 없는 카테고리가 있어요. 표시한 캘린더의 카테고리를 다시 골라 주세요"
-    },
-    "capacityWarning": {
-      "title": "카테고리 자리가 모자랄 수 있어요",
-      "description": "할 일은 카테고리마다 {{limit}}개까지예요. 넘치면 가까운 날짜부터 넣고 나머지는 건너뛰어요"
+      "summary": "넣을 수 없는 카테고리가 있어요. 표시한 곳을 다시 골라 주세요"
     }
   },
   "options": {
