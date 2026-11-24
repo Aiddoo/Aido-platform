@@ -72,15 +72,33 @@ export function getTimedDates(
   };
 }
 
-/** 기간 전에 시작한 여러 날 일정은 서버가 기간 밖으로 거절한다 */
-export function filterByRange(
-  items: readonly ImportItem[],
+/** 회차 키와 제목 없이 일정 수만 셀 때 쓰는 날짜 */
+export type ImportItemPreview = Pick<
+  ImportItem,
+  'collectionKey' | 'startDate' | 'endDate' | 'localTime'
+>;
+
+/**
+ * 기간 안에 걸친 일정만 남긴다. 기간 전에 시작해 기간 안까지 이어지는 여러 날 일정은 서버가 기간 밖으로
+ * 거절하므로 첫날을 기간 첫날로 당긴다. 당긴 첫날이 마지막 날이면 하루 일정(끝 날짜 없음)이 된다
+ */
+export function filterByRange<T extends ImportItemPreview>(
+  items: readonly T[],
   { startDate, endDate }: { startDate: DateKey; endDate: DateKey },
-): ImportItem[] {
-  return items.filter((item) => startDate <= item.startDate && item.startDate <= endDate);
+): T[] {
+  return items.flatMap((item) => {
+    const lastDate = item.endDate ?? item.startDate;
+    if (endDate < item.startDate || lastDate < startDate) {
+      return [];
+    }
+    if (startDate <= item.startDate) {
+      return [item];
+    }
+    return [{ ...item, startDate, endDate: startDate < lastDate ? lastDate : null }];
+  });
 }
 
-export function countByCollection(items: readonly ImportItem[]): Record<string, number> {
+export function countByCollection(items: readonly ImportItemPreview[]): Record<string, number> {
   return countBy(items, (item) => item.collectionKey);
 }
 

@@ -101,7 +101,7 @@ describe('getTimedDates', () => {
 });
 
 describe('filterByRange', () => {
-  it('기간 전에 시작한 일정과 기간 뒤 일정은 뺀다', () => {
+  it('기간 전에 끝난 하루 일정과 기간 뒤 일정은 뺀다', () => {
     // Given
     const before = createImportItem({
       sourceKey: 'b',
@@ -125,6 +125,55 @@ describe('filterByRange', () => {
 
     // Then
     expect(items.map((item) => item.sourceKey)).toEqual(['f', 'l']);
+  });
+
+  it.each([
+    {
+      scenario: '기간 전에 시작해 기간 안까지 이어지는 여러 날 일정은 첫날을 기간 첫날로 당긴다',
+      startDate: '2026-11-20',
+      endDate: '2026-11-26',
+      expected: { startDate: '2026-11-24', endDate: '2026-11-26' },
+    },
+    {
+      scenario: '기간 첫날에 끝나는 여러 날 일정은 기간 첫날 하루 일정이 된다',
+      startDate: '2026-11-20',
+      endDate: '2026-11-24',
+      expected: { startDate: '2026-11-24', endDate: null },
+    },
+  ])('$scenario', ({ startDate, endDate, expected }) => {
+    // Given
+    const ongoing = createImportItem({
+      startDate: dateKeySchema.parse(startDate),
+      endDate: dateKeySchema.parse(endDate),
+      localTime: null,
+    });
+
+    // When
+    const items = filterByRange([ongoing], {
+      startDate: dateKeySchema.parse('2026-11-24'),
+      endDate: dateKeySchema.parse('2026-12-23'),
+    });
+
+    // Then
+    expect(items).toEqual([{ ...ongoing, ...expected }]);
+  });
+
+  it('기간 전에 끝난 여러 날 일정은 뺀다', () => {
+    // Given
+    const ended = createImportItem({
+      startDate: dateKeySchema.parse('2026-11-20'),
+      endDate: dateKeySchema.parse('2026-11-23'),
+      localTime: null,
+    });
+
+    // When
+    const items = filterByRange([ended], {
+      startDate: dateKeySchema.parse('2026-11-24'),
+      endDate: dateKeySchema.parse('2026-12-23'),
+    });
+
+    // Then
+    expect(items).toEqual([]);
   });
 });
 

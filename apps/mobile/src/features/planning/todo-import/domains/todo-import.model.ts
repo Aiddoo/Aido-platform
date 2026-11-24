@@ -1,4 +1,5 @@
 import {
+  TODO_IMPORT_FAILURE_REASONS,
   TODO_IMPORT_SOURCE_UNKNOWN,
   TODO_IMPORT_SOURCES,
   TODO_IMPORT_STATUSES,
@@ -18,6 +19,8 @@ export const todoImportSchema = z.object({
   id: z.string(),
   source: z.enum([...TODO_IMPORT_SOURCES, TODO_IMPORT_SOURCE_UNKNOWN]),
   status: z.enum(TODO_IMPORT_STATUSES),
+  /** FAILED가 된 이유. FAILED가 아니면 null */
+  failureReason: z.enum(TODO_IMPORT_FAILURE_REASONS).nullable(),
   startDate: dateKeySchema,
   endDate: dateKeySchema,
   /** 날짜·시각을 해석하는 시간대. 이어 보낼 때도 기기 시간대가 아니라 이 값을 쓴다 */

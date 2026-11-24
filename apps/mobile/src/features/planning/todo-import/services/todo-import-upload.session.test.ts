@@ -223,6 +223,88 @@ describe('TodoImportUploadSession', () => {
       expect(result.ok ? null : result.error.code).toBe(ErrorCode.TODO_IMPORT_2301);
       expect(readSession()).toBeNull();
     });
+
+    it('이 기기에서 올리던 가져오기가 있으면 새 시작이 그 상태를 지우지 않는다', async () => {
+      // Given
+      const events = createEvents(2);
+      const { httpClient, storage, session, readSession, postsTo } = setup({ events });
+      storeStartedSession(storage, { events, nextChunkIndex: 1 });
+      httpClient.post.mockResolvedValueOnce(
+        fail(
+          createTodoImportApiError({
+            code: ErrorCode.TODO_IMPORT_2301,
+            details: { importId: IMPORT_ID },
+          }),
+        ),
+      );
+
+      // When
+      const result = await session.start({ ...INPUT, selection: createTodoImportSelection() });
+      const afterStart = readSession();
+      await session.resume(INPUT);
+
+      // Then
+      expect(result.ok ? null : result.error.code).toBe(ErrorCode.TODO_IMPORT_2301);
+      expect(afterStart).toMatchObject({
+        idempotencyKey: 'stored-key',
+        importId: IMPORT_ID,
+        nextChunkIndex: 1,
+      });
+      expect(postsTo(COMMIT_PATH)).toHaveLength(1);
+    });
+
+    it('남아 있던 업로드가 서버에서 이미 끝나 새 시작을 받으면 새 상태로 처음부터 올린다', async () => {
+      // Given
+      const events = createEvents(2);
+      const { storage, session, postsTo } = setup({ events });
+      storeStartedSession(storage, { events, nextChunkIndex: 1 });
+
+      // When
+      const result = await session.start({ ...INPUT, selection: createTodoImportSelection() });
+      await session.resume(INPUT);
+
+      // Then
+      expect(result.ok).toBe(true);
+      expect(postsTo(ITEMS_PATH)).toHaveLength(1);
+      expect(postsTo(COMMIT_PATH)).toHaveLength(1);
+    });
+  });
+
+  describe('cancel', () => {
+    it('cancel은 서버 취소 뒤 기기 상태를 지운다', async () => {
+      // Given
+      const events = createEvents(2);
+      const { httpClient, storage, session, readSession } = setup({ events });
+      storeStartedSession(storage, { events, nextChunkIndex: 0 });
+      httpClient.delete.mockResolvedValueOnce(
+        ok({ todoImport: createTodoImportDto({ status: 'CANCELED' }) }),
+      );
+
+      // When
+      const result = await session.cancel({ accountId: ACCOUNT_ID, importId: IMPORT_ID });
+
+      // Then
+      expect(result.ok && result.value.status).toBe('CANCELED');
+      expect(readSession()).toBeNull();
+      expect(session.getSnapshot()).toEqual({ stage: 'idle' });
+    });
+
+    it('서버가 멈춤을 받지 않으면 기기 상태를 남겨 이어 올릴 수 있다', async () => {
+      // Given
+      const events = createEvents(2);
+      const { httpClient, storage, session, readSession } = setup({ events });
+      storeStartedSession(storage, { events, nextChunkIndex: 0 });
+      httpClient.delete.mockResolvedValueOnce(
+        fail(createTodoImportApiError({ code: ErrorCode.SYS_0001, status: 429 })),
+      );
+
+      // When
+      const result = await session.cancel({ accountId: ACCOUNT_ID, importId: IMPORT_ID });
+
+      // Then
+      expect(result.ok).toBe(false);
+      expect(readSession()?.importId).toBe(IMPORT_ID);
+    });
   });
 
   describe('resume', () => {
@@ -299,7 +381,11 @@ describe('TodoImportUploadSession', () => {
 
       // Then
       expect(postsTo(ITEMS_PATH)).toHaveLength(TODO_IMPORT_MAX_RETRIES + 1);
-      expect(session.getSnapshot()).toEqual({ stage: 'paused', importId: IMPORT_ID });
+      expect(session.getSnapshot()).toEqual({
+        stage: 'paused',
+        importId: IMPORT_ID,
+        reason: 'interrupted',
+      });
       expect(readSession()?.nextChunkIndex).toBe(0);
     });
 
@@ -326,6 +412,62 @@ describe('TodoImportUploadSession', () => {
       // Then
       expect(storage.keys()).toEqual([]);
       expect(postsTo(COMMIT_PATH)).toHaveLength(0);
+    });
+
+    it('캘린더 권한이 없으면 권한 이유로 멈춘다', async () => {
+      // Given
+      const events = createEvents(2);
+      const { storage, source, session, readSession, postsTo } = setup({ events });
+      storeStartedSession(storage, { events, nextChunkIndex: 0 });
+      source.getPermission.mockResolvedValue({ status: 'denied', canAskAgain: false });
+
+      // When
+      await session.resume(INPUT);
+
+      // Then
+      expect(session.getSnapshot()).toEqual({
+        stage: 'paused',
+        importId: IMPORT_ID,
+        reason: 'permission',
+      });
+      expect(source.readEvents).not.toHaveBeenCalled();
+      expect(postsTo(ITEMS_PATH)).toHaveLength(0);
+      expect(readSession()?.importId).toBe(IMPORT_ID);
+    });
+
+    it('시작 응답 전에 꺼진 가져오기를 다음 날 이어 가면 기간을 오늘부터로 한 번 맞춰 새 키로 보낸다', async () => {
+      // Given
+      const events = createEvents(2);
+      const { httpClient, storage, session, postsTo } = setup({ events, todayKey: '2026-11-25' });
+      writeStoredValue(
+        storage,
+        todoImportSessionStoredValue,
+        createTodoImportSession({
+          idempotencyKey: 'stored-key',
+          selection: createTodoImportSelection(),
+          hasAdjustedRange: false,
+        }),
+        ACCOUNT_ID,
+      );
+      httpClient.post.mockResolvedValueOnce(
+        fail(
+          createTodoImportApiError({
+            code: ErrorCode.TODO_IMPORT_2306,
+            details: { reason: 'START_BEFORE_TODAY' },
+          }),
+        ),
+      );
+
+      // When
+      await session.resume(INPUT);
+
+      // Then
+      const starts = postsTo(START_PATH);
+      expect(starts).toHaveLength(2);
+      expect(starts[0]?.[2]?.headers?.[IDEMPOTENCY_KEY_HEADER]).toBe('stored-key');
+      expect(starts[1]?.[1]).toMatchObject({ startDate: '2026-11-25' });
+      expect(starts[1]?.[2]?.headers?.[IDEMPOTENCY_KEY_HEADER]).not.toBe('stored-key');
+      expect(postsTo(COMMIT_PATH)).toHaveLength(1);
     });
 
     it('서버에 없는 가져오기(404)는 기기 상태를 지운다', async () => {

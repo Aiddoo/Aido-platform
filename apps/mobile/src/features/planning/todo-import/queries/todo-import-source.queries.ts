@@ -7,7 +7,7 @@ import { queryOptions } from '@tanstack/react-query';
 import { compact, orderBy } from 'es-toolkit';
 
 import { toImportCollection } from '../apis/todo-import-collection.mapper';
-import { toImportItem } from '../apis/todo-import-item.mapper';
+import { toImportItemPreview } from '../apis/todo-import-item.mapper';
 import type { ImportCollection } from '../domains/todo-import-collection.model';
 import { countByCollection, filterByRange } from '../domains/todo-import-item.model';
 import { keepBlockedCalendarPermission } from '../utils/todo-import.view-model';
@@ -50,14 +50,15 @@ export function useGetImportCollectionsQueryOptions({
     queryKey: TODO_IMPORT_QUERY_KEYS.calendarCollections({ startDate, endDate }),
     queryFn: async () => {
       const collections = await todoImportSource.listCollections();
-      const records = await todoImportSource.readEvents({
+      // 수만 세므로 제목·회차 키(해시)는 읽지 않는다. 해시는 고른 캘린더를 올릴 때만 만든다
+      const previews = await todoImportSource.previewEvents({
         collectionKeys: collections.map((collection) => collection.collectionKey),
         startsAt: getStartOfDateKey(startDate, timezone),
         endsAt: getStartOfDateKey(addDaysToDateKey(endDate, 1), timezone),
       });
       const items = compact(
-        records.map((record) =>
-          toImportItem(record, { timezone, timeMode: 'DATE_ONLY', untitledTitle: '' }),
+        previews.map((preview) =>
+          toImportItemPreview(preview, { timezone, timeMode: 'DATE_ONLY' }),
         ),
       );
       const itemCountByCollection = countByCollection(filterByRange(items, { startDate, endDate }));

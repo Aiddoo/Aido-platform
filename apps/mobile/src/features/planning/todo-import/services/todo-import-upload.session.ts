@@ -30,7 +30,7 @@ import {
 } from '../domains/todo-import-session.model';
 import {
   findRetryAfterMs,
-  findTodoImportRejectionCode,
+  findTodoImportRejection,
   isRetryableTodoImportError,
   isStartBeforeTodayError,
   isTodoImportNotFoundError,
@@ -39,6 +39,9 @@ import {
 import type { TodoImport } from '../domains/todo-import.model';
 import { todoImportSessionStoredValue } from '../schemas/todo-import-session-storage.schema';
 
+/** interrupted: 연결·서버 장애로 멈춰 다시 시도하면 이어 간다. permission: 캘린더 권한이 꺼져 켜야 이어 간다 */
+export type TodoImportPauseReason = 'interrupted' | 'permission';
+
 /** 서버 잡의 진행은 가져오기 조회가 따로 보인다 */
 export type TodoImportUploadSnapshot =
   | { stage: 'idle' }
@@ -46,8 +49,8 @@ export type TodoImportUploadSnapshot =
   | { stage: 'reading'; importId: string }
   | { stage: 'uploading'; importId: string; uploadedChunkCount: number; chunkCount: number }
   | { stage: 'committing'; importId: string }
-  | { stage: 'paused'; importId: string | null }
-  | { stage: 'failed'; importId: string | null; code: string };
+  | { stage: 'paused'; importId: string | null; reason: TodoImportPauseReason }
+  | { stage: 'failed'; importId: string | null; rejection: ApiError };
 
 export interface StartedTodoImport {
   todoImport: TodoImport;
@@ -65,7 +68,7 @@ interface TodoImportUploadSessionPorts {
     TodoImportApi,
     'startImport' | 'getImport' | 'uploadItems' | 'commitImport' | 'cancelImport'
   >;
-  source: Pick<TodoImportSource, 'readEvents'>;
+  source: Pick<TodoImportSource, 'getPermission' | 'readEvents'>;
   storage: SyncStorage;
   signOutEpoch: Pick<SignOutEpoch, 'current'>;
   idGenerator: IdGenerator;
@@ -73,6 +76,15 @@ interface TodoImportUploadSessionPorts {
   /** 기기 시간대의 오늘. 자정 경계 거절 뒤 기간을 다시 맞출 때만 읽는다 */
   getTodayKey: () => DateKey;
   random: () => number;
+}
+
+interface StartContext {
+  accountId: string;
+  /** 이 기기에 이어 올릴 가져오기가 남아 있다. 서버가 새 시작을 받기 전에는 그 상태를 덮거나 지우지 않는다 */
+  hasPendingUpload: boolean;
+  isCurrent: () => boolean;
+  /** 남아 있던 실행을 멈추고 이 시작이 이어 간다 */
+  takeOver: () => void;
 }
 
 interface RunContext extends TodoImportUploadInput {
@@ -110,7 +122,9 @@ export class TodoImportUploadSession {
 
   /**
    * 키를 먼저 저장하고 시작을 보낸다. 서버가 받으면 업로드를 이어서 돌리고 바로 돌려준다.
-   * 4xx는 결과로 돌려주고 연결·서버 오류는 던진다(누른 화면이 알린다)
+   * 4xx는 결과로 돌려주고 연결·서버 오류는 던진다(누른 화면이 알린다).
+   * 이 기기에서 올리던 가져오기가 남아 있으면 그 실행과 저장 상태를 건드리지 않고 물어본다. 서버가 그
+   * 가져오기를 알려 주면(2301) 누른 화면이 그리로 가고, 서버가 새 시작을 받았을 때만 새 상태로 바꾼다
    */
   start = async ({
     accountId,
@@ -119,25 +133,42 @@ export class TodoImportUploadSession {
   }: TodoImportUploadInput & { selection: TodoImportSelection }): Promise<
     Result<StartedTodoImport, ApiError>
   > => {
-    this.#stopRun();
-    const generation = this.#generation;
+    const hasPendingUpload =
+      readStoredValue(this.#ports.storage, todoImportSessionStoredValue, accountId) != null;
+    if (!hasPendingUpload) {
+      this.#stopRun();
+    }
+    let generation = this.#generation;
     const epoch = this.#ports.signOutEpoch.current();
-    const isCurrent = () =>
-      generation === this.#generation && epoch === this.#ports.signOutEpoch.current();
-    this.#emit({ stage: 'starting' });
+    const context: StartContext = {
+      accountId,
+      hasPendingUpload,
+      isCurrent: () =>
+        generation === this.#generation && epoch === this.#ports.signOutEpoch.current(),
+      takeOver: () => {
+        this.#stopRun();
+        generation = this.#generation;
+        this.#emit({ stage: 'starting' });
+      },
+    };
+    const { isCurrent } = context;
+    if (!hasPendingUpload) {
+      this.#emit({ stage: 'starting' });
+    }
 
     try {
       const result = await this.#postStart(
-        accountId,
         createTodoImportSession({
           idempotencyKey: this.#ports.idGenerator.create(),
           selection,
           hasAdjustedRange: false,
         }),
-        isCurrent,
+        context,
       );
       if (!result.ok) {
-        this.#emitIfCurrent(isCurrent, IDLE_SNAPSHOT);
+        if (!hasPendingUpload) {
+          this.#emitIfCurrent(isCurrent, IDLE_SNAPSHOT);
+        }
         return result;
       }
       if (isCurrent()) {
@@ -146,12 +177,40 @@ export class TodoImportUploadSession {
       return result;
     } catch (error) {
       // 누른 화면이 연결 오류를 알리고 사용자가 다시 누른다. 남겨 두면 나중에 모르는 가져오기가 시작된다
-      if (isCurrent()) {
-        this.#clear(accountId, isCurrent);
+      if (!hasPendingUpload) {
+        if (isCurrent()) {
+          this.#clear(accountId, isCurrent);
+        }
+        this.#emitIfCurrent(isCurrent, IDLE_SNAPSHOT);
       }
-      this.#emitIfCurrent(isCurrent, IDLE_SNAPSHOT);
       throw error;
     }
+  };
+
+  /** 서버에 멈춤을 보내고 받으면 이 기기의 업로드 상태를 지운다. 서버에 없거나 이미 끝났어도 지운다 */
+  cancel = async ({
+    accountId,
+    importId,
+  }: {
+    accountId: string | null;
+    importId: string;
+  }): Promise<Result<TodoImport, ApiError>> => {
+    const epoch = this.#ports.signOutEpoch.current();
+    const result = await this.#ports.todoImportApi.cancelImport(importId);
+    const isSettledOnServer =
+      result.ok ||
+      isTodoImportNotFoundError(result.error) ||
+      isTodoImportStatusConflictError(result.error);
+    if (accountId == null || !isSettledOnServer) {
+      return result;
+    }
+    const stored = readStoredValue(this.#ports.storage, todoImportSessionStoredValue, accountId);
+    if (stored?.importId === importId) {
+      this.#stopRun();
+      this.#clear(accountId, () => epoch === this.#ports.signOutEpoch.current());
+      this.#emit(IDLE_SNAPSHOT);
+    }
+    return result;
   };
 
   /** 돌고 있으면 새로 돌리지 않고 그 실행을 기다린다 */
@@ -172,11 +231,13 @@ export class TodoImportUploadSession {
   };
 
   #postStart = async (
-    accountId: string,
     session: TodoImportSession,
-    isCurrent: () => boolean,
+    context: StartContext,
   ): Promise<Result<StartedTodoImport, ApiError>> => {
-    this.#save(accountId, session, isCurrent);
+    const { accountId, hasPendingUpload, isCurrent } = context;
+    if (!hasPendingUpload) {
+      this.#save(accountId, session, isCurrent);
+    }
     const result = await this.#ports.todoImportApi.startImport(
       session.selection,
       session.idempotencyKey,
@@ -185,22 +246,18 @@ export class TodoImportUploadSession {
       return result.ok ? ok({ todoImport: result.value, isRangeAdjusted: false }) : result;
     }
     if (!result.ok) {
-      const adjusted = session.hasAdjustedRange
-        ? null
-        : this.#adjustToTodayIfNeeded(result.error, session.selection);
+      const adjusted = this.#adjustToTodayIfNeeded(result.error, session);
       if (adjusted != null) {
-        return this.#postStart(
-          accountId,
-          createTodoImportSession({
-            idempotencyKey: this.#ports.idGenerator.create(),
-            selection: adjusted,
-            hasAdjustedRange: true,
-          }),
-          isCurrent,
-        );
+        return this.#postStart(adjusted, context);
       }
-      this.#clear(accountId, isCurrent);
+      if (!hasPendingUpload) {
+        this.#clear(accountId, isCurrent);
+      }
       return result;
+    }
+    // 서버가 새 시작을 받았으면 남아 있던 업로드는 서버에서 이미 끝났다. 앞 실행을 멈추고 새 상태로 바꾼다
+    if (hasPendingUpload) {
+      context.takeOver();
     }
     this.#save(
       accountId,
@@ -210,13 +267,23 @@ export class TodoImportUploadSession {
     return ok({ todoImport: result.value, isRangeAdjusted: session.hasAdjustedRange });
   };
 
+  /** 기기 자정과 서버 자정이 어긋난 거절이면 오늘부터로 맞춘 새 키의 상태다. 한 번만 맞춘다 */
   #adjustToTodayIfNeeded = (
-    error: ApiError,
-    selection: TodoImportSelection,
-  ): TodoImportSelection | null =>
-    isStartBeforeTodayError(error)
-      ? adjustSelectionToToday(selection, this.#ports.getTodayKey())
-      : null;
+    error: unknown,
+    session: TodoImportSession,
+  ): TodoImportSession | null => {
+    if (session.hasAdjustedRange || !isStartBeforeTodayError(error)) {
+      return null;
+    }
+    const selection = adjustSelectionToToday(session.selection, this.#ports.getTodayKey());
+    return selection == null
+      ? null
+      : createTodoImportSession({
+          idempotencyKey: this.#ports.idGenerator.create(),
+          selection,
+          hasAdjustedRange: true,
+        });
+  };
 
   #schedule = (input: TodoImportUploadInput, generation: number): Promise<void> => {
     const run = this.#pending.then(() =>
@@ -268,16 +335,11 @@ export class TodoImportUploadSession {
     if (session.importId == null) {
       // 앱이 시작 응답 전에 꺼졌다. 같은 키라 서버가 처음 만든 가져오기를 돌려준다
       this.#emitIfCurrent(isCurrent, { stage: 'starting' });
-      const { selection, idempotencyKey } = session;
-      const started = await this.#request(
-        () => todoImportApi.startImport(selection, idempotencyKey, signal),
-        context,
-      );
-      if (!isCurrent()) {
+      const started = await this.#restart(session, context);
+      if (started == null) {
         return;
       }
-      session = TodoImportSessionPolicy.withImportId(session, started.id);
-      this.#save(accountId, session, isCurrent);
+      session = started;
     }
     const importId = session.importId;
     if (importId == null) {
@@ -345,6 +407,37 @@ export class TodoImportUploadSession {
     this.#emitIfCurrent(isCurrent, IDLE_SNAPSHOT);
   };
 
+  /**
+   * 시작 응답을 받지 못한 가져오기를 같은 키로 다시 보낸다. 다음 날 이어 가 서버가 기간 첫날을 어제로
+   * 거절하면 누른 시작과 같이 오늘부터로 한 번 맞춰 새 키로 보낸다. 멈췄으면 null이다
+   */
+  #restart = async (
+    session: TodoImportSession,
+    context: RunContext,
+  ): Promise<TodoImportSession | null> => {
+    const { accountId, signal, isCurrent } = context;
+    try {
+      const started = await this.#request(
+        () =>
+          this.#ports.todoImportApi.startImport(session.selection, session.idempotencyKey, signal),
+        context,
+      );
+      if (!isCurrent()) {
+        return null;
+      }
+      const startedSession = TodoImportSessionPolicy.withImportId(session, started.id);
+      this.#save(accountId, startedSession, isCurrent);
+      return startedSession;
+    } catch (error) {
+      const adjusted = this.#adjustToTodayIfNeeded(error, session);
+      if (adjusted == null || !isCurrent()) {
+        throw error;
+      }
+      this.#save(accountId, adjusted, isCurrent);
+      return this.#restart(adjusted, context);
+    }
+  };
+
   /** 서버가 정한 시간대로 기간의 첫 순간부터 마지막 날 다음 자정 전까지 한 번 읽는다 */
   #readChunks = async (
     todoImport: TodoImport,
@@ -353,6 +446,19 @@ export class TodoImportUploadSession {
   ) => {
     const { timezone, timeMode, startDate, endDate } = todoImport;
     try {
+      // 설정에서 캘린더 접근을 끄면 읽기가 계속 실패한다. 다시 시도해도 같으니 권한 이유로 멈춘다
+      const permission = await this.#ports.source.getPermission();
+      if (permission.status !== 'granted') {
+        this.#ports.logger.warn(TODO_IMPORT_LOG_EVENT.SOURCE_PERMISSION_MISSING, {
+          status: permission.status,
+        });
+        this.#emitIfCurrent(context.isCurrent, {
+          stage: 'paused',
+          importId: todoImport.id,
+          reason: 'permission',
+        });
+        return null;
+      }
       const records = await this.#ports.source.readEvents({
         collectionKeys,
         startsAt: getStartOfDateKey(startDate, timezone),
@@ -368,7 +474,11 @@ export class TodoImportUploadSession {
       this.#ports.logger.warn(TODO_IMPORT_LOG_EVENT.SOURCE_READ_FAILED, {
         error: getErrorMessage(error),
       });
-      this.#emitIfCurrent(context.isCurrent, { stage: 'paused', importId: todoImport.id });
+      this.#emitIfCurrent(context.isCurrent, {
+        stage: 'paused',
+        importId: todoImport.id,
+        reason: 'interrupted',
+      });
       return null;
     }
   };
@@ -422,22 +532,23 @@ export class TodoImportUploadSession {
       this.#ports.logger.warn(TODO_IMPORT_LOG_EVENT.UPLOAD_PAUSED, {
         errorName: toError(error).name,
       });
-      this.#emit({ stage: 'paused', importId });
+      this.#emit({ stage: 'paused', importId, reason: 'interrupted' });
       return;
     }
-    const code = findTodoImportRejectionCode(error);
-    if (code == null) {
+    const rejection = findTodoImportRejection(error);
+    if (rejection == null) {
       this.#ports.logger.error(TODO_IMPORT_LOG_EVENT.RESUME_FAILED, toError(error));
-      this.#emit({ stage: 'paused', importId });
+      this.#emit({ stage: 'paused', importId, reason: 'interrupted' });
       return;
     }
-    // 서버가 받지 않는 일정(3,000개 초과 등)이다. 업로드 중인 가져오기를 멈추고 기기 상태를 지운다
-    this.#ports.logger.warn(TODO_IMPORT_LOG_EVENT.UPLOAD_REJECTED, { code });
+    // 서버가 받지 않는 일정(3,000개 초과 등)이나 확정 때 바뀐 한도·카테고리다. 업로드 중인 가져오기를
+    // 멈추고 기기 상태를 지운다. 이유는 이 기기 화면이 보인다
+    this.#ports.logger.warn(TODO_IMPORT_LOG_EVENT.UPLOAD_REJECTED, { code: rejection.code });
     if (importId != null) {
       this.#ports.todoImportApi.cancelImport(importId).catch(noop);
     }
     this.#clear(accountId, isCurrent);
-    this.#emit({ stage: 'failed', importId, code });
+    this.#emit({ stage: 'failed', importId, rejection });
   };
 
   #save = (accountId: string, session: TodoImportSession, isCurrent: () => boolean) => {

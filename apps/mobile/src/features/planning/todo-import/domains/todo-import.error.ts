@@ -6,7 +6,7 @@ import {
   todoImportTargetsRejectedErrorDetailsSchema,
 } from '@aido/api/errors';
 import type { TodoImportTargetRejectionReason } from '@aido/api/vocabulary';
-import { isApiError } from '@src/core/errors/api-error';
+import { type ApiError, isApiError } from '@src/core/errors/api-error';
 import { isTransientError } from '@src/shared/errors';
 import { isMatching, match, P } from 'ts-pattern';
 
@@ -73,8 +73,9 @@ export function findRetryAfterMs(error: unknown): number | null {
   return isApiError(error) ? error.retryAfterMs : null;
 }
 
-export function findTodoImportRejectionCode(error: unknown): string | null {
-  return isApiError(error) && !isRetryableTodoImportError(error) ? error.code : null;
+/** 기다려도 풀리지 않는 거절(4xx). 업로드를 멈추고 이유를 이 기기 화면에 보인다 */
+export function findTodoImportRejection(error: unknown): ApiError | null {
+  return isApiError(error) && !isRetryableTodoImportError(error) ? error : null;
 }
 
 /** 시작 화면이 칸·이동·한도 안내로 보여 전역 토스트를 띄우지 않는다 */
