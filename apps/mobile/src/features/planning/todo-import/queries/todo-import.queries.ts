@@ -20,8 +20,8 @@ export function useGetTodoImportQueryOptions({ importId }: { importId: string })
       settleTodoImportFinished(client, { previous, next: todoImport })?.catch(noop);
       return todoImport;
     },
-    refetchInterval: ({ state: { data: todoImport } }) =>
-      todoImport == null ? false : TodoImportPolicy.getPollIntervalMs(todoImport),
+    refetchInterval: (query) =>
+      query.state.data == null ? false : TodoImportPolicy.getPollIntervalMs(query.state.data),
   });
 }
 

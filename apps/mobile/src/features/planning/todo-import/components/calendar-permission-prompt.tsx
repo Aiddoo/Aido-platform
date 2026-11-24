@@ -1,0 +1,227 @@
+import type { OsPermission } from '@src/core/ports/os-permission';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useOpenAppSettings } from '@src/shared/hooks/use-open-app-settings';
+import { useTranslation } from '@src/shared/i18n';
+import {
+  Box,
+  Button,
+  CalendarIllustration,
+  CheckmarkIcon,
+  HStack,
+  ListRow,
+  QueryErrorFallback,
+  type QueryErrorFallbackProps,
+  Spacing,
+  Text,
+  TextButton,
+  TextSkeleton,
+  VStack,
+} from '@src/shared/ui';
+import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { noop } from 'es-toolkit';
+import { Skeleton } from 'heroui-native';
+import type { ReactNode } from 'react';
+import { match } from 'ts-pattern';
+
+import { useGetCalendarPermissionQueryOptions } from '../queries/todo-import-source.queries';
+import { useRequestCalendarPermissionMutationOptions } from '../queries/todo-import.mutations';
+
+interface CalendarPermissionPromptProps {
+  /** 허용을 받았다. 다음 단계로 가는 일은 화면이 정한다 */
+  onGranted: () => void;
+  /** 허용하지 않아도 쓸 수 있는 길 */
+  onAddTodoDirectly: () => void;
+}
+
+type PermissionView = 'ask' | 'denied' | 'blocked';
+
+const FACT_ICON_SIZE = 12;
+const FACT_BADGE_SIZE = 20;
+
+/**
+ * 시스템 캘린더 창 바로 앞의 안내(App Store 5.1.1, Play 눈에 띄는 공개). 열 때는 상태만 읽고 "계속"을 눌러야 묻는다.
+ * 방금 거절했으면 다시 조르지 않고, 다시 들어왔을 때 다시 물을 수 없는 상태면 설정 열기를 보인다
+ */
+export function CalendarPermissionPrompt({
+  onGranted,
+  onAddTodoDirectly,
+}: CalendarPermissionPromptProps) {
+  const { data: permission } = useSuspenseQuery(useGetCalendarPermissionQueryOptions());
+  const request = useMutation(useRequestCalendarPermissionMutationOptions());
+  const openSettings = useOpenAppSettings();
+
+  const handleContinue = () => {
+    request
+      .mutateAsync()
+      .then((answered) => {
+        if (answered.status === 'granted') {
+          onGranted();
+        }
+      })
+      .catch(noop);
+  };
+
+  return match(toPermissionView(permission, request.data ?? null))
+    .with('ask', () => (
+      <CalendarPermissionPrompt.Ask isRequesting={request.isPending} onContinue={handleContinue} />
+    ))
+    .with('denied', () => <CalendarPermissionPrompt.Denied onAddTodoDirectly={onAddTodoDirectly} />)
+    .with('blocked', () => (
+      <CalendarPermissionPrompt.Denied
+        onOpenSettings={openSettings}
+        onAddTodoDirectly={onAddTodoDirectly}
+      />
+    ))
+    .exhaustive();
+}
+
+interface AskProps {
+  isRequesting: boolean;
+  onContinue: () => void;
+}
+
+/** 버튼은 "계속" 하나다. 닫기·건너뛰기를 두지 않고 나가는 길은 헤더 뒤로 가기다 */
+CalendarPermissionPrompt.Ask = function Ask({ isRequesting, onContinue }: AskProps) {
+  const { t } = useTranslation(['todoImport', 'common']);
+
+  return (
+    <Prompt
+      action={
+        <Button size="large" isLoading={isRequesting} onPress={onContinue}>
+          {t('common:actions.continue')}
+        </Button>
+      }
+    >
+      <VStack gap={4} className="self-stretch">
+        <Fact>{t('permission.facts.read')}</Fact>
+        <Fact>{t('permission.facts.hashed')}</Fact>
+        <Fact>{t('permission.facts.oneTime')}</Fact>
+        <Fact>{t('permission.facts.optional')}</Fact>
+      </VStack>
+    </Prompt>
+  );
+};
+
+interface DeniedProps {
+  /** 다시 물을 수 없을 때만 준다(Android 영구 거절, iOS 거절·쓰기 전용) */
+  onOpenSettings?: () => void;
+  onAddTodoDirectly: () => void;
+}
+
+CalendarPermissionPrompt.Denied = function Denied({
+  onOpenSettings,
+  onAddTodoDirectly,
+}: DeniedProps) {
+  const { t } = useTranslation('todoImport');
+
+  return (
+    <Prompt
+      action={
+        onOpenSettings == null ? (
+          <Button size="large" onPress={onAddTodoDirectly}>
+            {t('permission.addTodoDirectly')}
+          </Button>
+        ) : (
+          <VStack gap={8} align="center">
+            <Button size="large" className="self-stretch" onPress={onOpenSettings}>
+              {t('permission.openSettings')}
+            </Button>
+            <TextButton size="medium" onPress={onAddTodoDirectly}>
+              {t('permission.addTodoDirectly')}
+            </TextButton>
+          </VStack>
+        )
+      }
+    >
+      <VStack gap={4} align="center">
+        <Text size="b2" weight="semibold" shade={9} align="center">
+          {t('permission.deniedTitle')}
+        </Text>
+        <Text size="b3" shade={6} align="center" lineBreakStrategyIOS="hangul-word">
+          {t('permission.deniedDescription')}
+        </Text>
+      </VStack>
+    </Prompt>
+  );
+};
+
+CalendarPermissionPrompt.Loading = function Loading() {
+  return (
+    <Prompt action={<Skeleton className="h-14 w-full rounded-2xl" />}>
+      <VStack gap={4} className="self-stretch">
+        <FactSkeleton />
+        <FactSkeleton />
+        <FactSkeleton />
+        <FactSkeleton />
+      </VStack>
+    </Prompt>
+  );
+};
+
+CalendarPermissionPrompt.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
+  return <QueryErrorFallback reset={reset} />;
+};
+
+function Prompt({ children, action }: { children: ReactNode; action: ReactNode }) {
+  return (
+    <VStack align="center">
+      <CalendarIllustration />
+      <Spacing size={24} />
+      {children}
+      <Spacing size={32} />
+      <Box className="self-stretch">{action}</Box>
+    </VStack>
+  );
+}
+
+function Fact({ children }: { children: string }) {
+  const fontScaledSize = useFontScaledSize();
+  const badgeSize = fontScaledSize(FACT_BADGE_SIZE);
+
+  return (
+    <ListRow
+      verticalPadding="small"
+      leftAlignment="top"
+      left={
+        <HStack
+          align="center"
+          justify="center"
+          className="rounded-full bg-main"
+          style={{ width: badgeSize, height: badgeSize }}
+        >
+          <CheckmarkIcon
+            width={fontScaledSize(FACT_ICON_SIZE)}
+            height={fontScaledSize(FACT_ICON_SIZE)}
+            colorClassName="text-white dark:text-gray-9"
+          />
+        </HStack>
+      }
+      contents={
+        <Text size="b3" shade={8} lineBreakStrategyIOS="hangul-word">
+          {children}
+        </Text>
+      }
+    />
+  );
+}
+
+function FactSkeleton() {
+  return (
+    <ListRow
+      verticalPadding="small"
+      left={<Skeleton className="size-5 rounded-full" />}
+      contents={<TextSkeleton size="b3" className="w-56" />}
+    />
+  );
+}
+
+/** 이미 허용했거나 아직 물을 수 있으면 안내, 이번에 거절했으면 조르지 않는 안내, 다시 물을 수 없으면 설정 안내다 */
+function toPermissionView(permission: OsPermission, answered: OsPermission | null): PermissionView {
+  if (permission.status === 'granted') {
+    return 'ask';
+  }
+  if (answered != null && answered.status !== 'granted') {
+    return 'denied';
+  }
+  return permission.status === 'denied' && !permission.canAskAgain ? 'blocked' : 'ask';
+}

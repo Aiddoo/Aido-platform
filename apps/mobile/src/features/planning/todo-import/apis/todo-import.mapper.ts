@@ -7,10 +7,14 @@ import {
 } from '@aido/api/contracts/todo-import/v1';
 import { dateKeySchema } from '@src/shared/date/date-key';
 import { toInstant, toNullableInstant } from '@src/shared/date/instant';
+import { uniqWith } from 'es-toolkit';
+import { match } from 'ts-pattern';
 
 import type { ImportItem } from '../domains/todo-import-item.model';
 import type { TodoImportSelection } from '../domains/todo-import-session.model';
+import { type ImportTarget, TodoImportTargetPolicy } from '../domains/todo-import-target.model';
 import type { TodoImport } from '../domains/todo-import.model';
+import type { TodoImportFormValues } from '../schemas/todo-import-form.schema';
 
 export function toTodoImport(dto: TodoImportDto): TodoImport {
   return {
@@ -33,4 +37,46 @@ export function toReceiveTodoImportItemsRequest(
   items: readonly ImportItem[],
 ): ReceiveTodoImportItemsRequest {
   return receiveTodoImportItemsRequestSchema.parse({ items });
+}
+
+/** 대상 하나를 요청 안에서 가리키는 키. 기존 카테고리는 id, 새 카테고리는 순서다 */
+function toTargetKey(target: ImportTarget, index: number) {
+  return match(target)
+    .with({ kind: 'EXISTING_CATEGORY' }, ({ categoryId }) => `category-${categoryId}`)
+    .with({ kind: 'NEW_CATEGORY' }, () => `new-${index}`)
+    .exhaustive();
+}
+
+/**
+ * 폼 값(고른 캘린더와 캘린더마다 넣을 곳)을 시작 요청의 고른 값으로 바꾼다.
+ * 같은 기존 카테고리나 같은 이름의 새 카테고리를 고른 캘린더는 대상 하나를 함께 가리킨다("모두 한 카테고리에")
+ */
+export function toTodoImportSelection(
+  values: TodoImportFormValues,
+  targets: Readonly<Record<string, ImportTarget>>,
+): TodoImportSelection {
+  const chosen = values.collections.flatMap((collection) => {
+    const target = targets[collection.collectionKey];
+    return target == null ? [] : [{ collection, target }];
+  });
+  const uniqueTargets = uniqWith(
+    chosen.map(({ target }) => target),
+    TodoImportTargetPolicy.isSameTarget,
+  ).map((target, index) => ({ target, targetKey: toTargetKey(target, index) }));
+  const findTargetKey = (target: ImportTarget) =>
+    uniqueTargets.find((unique) => TodoImportTargetPolicy.isSameTarget(unique.target, target))
+      ?.targetKey ?? '';
+
+  return {
+    startDate: values.startDate,
+    endDate: values.endDate,
+    timeMode: values.timeMode,
+    visibility: values.visibility,
+    targets: uniqueTargets.map(({ target, targetKey }) => ({ ...target, targetKey })),
+    collections: chosen.map(({ collection, target }) => ({
+      collectionKey: collection.collectionKey,
+      targetKey: findTargetKey(target),
+      expectedItemCount: collection.itemCount,
+    })),
+  };
 }

@@ -15,6 +15,7 @@ import {
   setCachedCalendarPermission,
   setTodoImportInCache,
 } from './todo-import-cache';
+import { TODO_IMPORT_MUTATION_KEYS } from './todo-import-mutation-keys';
 
 interface StartTodoImportVariables {
   accountId: string;
@@ -32,6 +33,7 @@ export function useStartTodoImportMutationOptions() {
   return mutationOptions({
     // 오프라인에서 쥐고 있다가 나중에 보내면 사용자가 모르는 사이 가져오기가 시작된다
     networkMode: 'always',
+    mutationKey: TODO_IMPORT_MUTATION_KEYS.start(),
     mutationFn: async (variables: StartTodoImportVariables) =>
       unwrap(await uploadSession.start(variables)),
     onSuccess: ({ todoImport }, { selection }) => {
@@ -50,15 +52,15 @@ export function useStartTodoImportMutationOptions() {
 }
 
 /** 확정 전(업로드 중)에만 멈춘다. 이 기기에 이어 보낼 상태가 없을 때(다른 기기에서 시작) 쓴다 */
-export function useCancelTodoImportMutationOptions() {
+export function useCancelTodoImportMutationOptions({ importId }: { importId: string }) {
   const todoImportApi = useTodoImportApi();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
 
   return mutationOptions({
     networkMode: 'always',
-    mutationFn: async ({ importId }: { importId: string }) =>
-      unwrap(await todoImportApi.cancelImport(importId)),
+    mutationKey: TODO_IMPORT_MUTATION_KEYS.cancel({ importId }),
+    mutationFn: async () => unwrap(await todoImportApi.cancelImport(importId)),
     onSuccess: (todoImport) => {
       setTodoImportInCache(queryClient, todoImport);
       trackEvent('todo_import_cancel_completed');
@@ -71,15 +73,15 @@ export function useCancelTodoImportMutationOptions() {
 }
 
 /** 되돌리기는 서버 잡이 지운다. 응답(UNDOING)을 쓰면 조회가 다시 돌아 끝날 때 할 일을 한 번 다시 받는다 */
-export function useUndoTodoImportMutationOptions() {
+export function useUndoTodoImportMutationOptions({ importId }: { importId: string }) {
   const todoImportApi = useTodoImportApi();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
 
   return mutationOptions({
     networkMode: 'always',
-    mutationFn: async ({ importId }: { importId: string }) =>
-      unwrap(await todoImportApi.undoImport(importId)),
+    mutationKey: TODO_IMPORT_MUTATION_KEYS.undo({ importId }),
+    mutationFn: async () => unwrap(await todoImportApi.undoImport(importId)),
     onSuccess: (todoImport) => {
       setTodoImportInCache(queryClient, todoImport);
       trackEvent('todo_import_undo_requested');

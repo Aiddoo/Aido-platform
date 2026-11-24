@@ -1,9 +1,133 @@
 {
   "untitledEvent": "Untitled event",
+  "entry": {
+    "menu": "Import from Calendar",
+    "inProgress": "Importing"
+  },
+  "titles": {
+    "setup": "Import from Calendar",
+    "progress": "Importing",
+    "result": "Import result"
+  },
+  "permission": {
+    "title": "Bring your calendar events in as to-dos",
+    "facts": {
+      "read": "Aido reads only the titles, dates, and times of events in the calendars you choose",
+      "hashed": "Calendar and event IDs are scrambled on your device before they're sent",
+      "oneTime": "It's a one-time import. Aido never writes to or deletes from your calendar",
+      "optional": "Everything else works even if you don't allow access"
+    },
+    "deniedTitle": "Calendar access is off",
+    "deniedDescription": "Allow calendar access to import events. You can still add to-dos yourself",
+    "openSettings": "Open Settings",
+    "addTodoDirectly": "Add a to-do myself"
+  },
+  "range": {
+    "title": "Date range",
+    "start": "Start",
+    "end": "End",
+    "presets": {
+      "week": "1 week",
+      "month": "1 month",
+      "quarter": "3 months",
+      "half": "6 months",
+      "year": "1 year"
+    },
+    "lockedPreset": "{{label}}, Premium",
+    "freeUntil": "Free plan imports up to {{date}}",
+    "freeUntilHint": "Opens Premium info"
+  },
+  "calendars": {
+    "title": "Choose calendars to import",
+    "description": "Holiday, birthday, and subscribed calendars are left out to start",
+    "listTitle": "Calendars",
+    "otherAccount": "Other",
+    "itemCount_one": "{{count}} event",
+    "itemCount_other": "{{count}} events",
+    "emptyTitle": "No events to import in this range",
+    "emptyDescription": "Try a longer range or check your calendar app",
+    "tooMany": "You can import up to {{limit}} events at once. Choose a shorter range or fewer calendars"
+  },
+  "categories": {
+    "title": "Which category should they go in?",
+    "description": "Pick a new or existing category for each calendar",
+    "remainingSlots_one": "You can create {{count}} more category",
+    "remainingSlots_other": "You can create {{count}} more categories",
+    "allInOne": "Put all in one category",
+    "newCategory": "New category '{{name}}'",
+    "newCategoryLocked": "New category '{{name}}', no room left",
+    "newCategoryChip": "New · {{name}}",
+    "editNewCategory": "Edit name & color",
+    "useExisting": "Use this category",
+    "unassigned": "Not chosen",
+    "fallbackName": "Calendar",
+    "loadFailed": "Couldn't load your categories",
+    "rowLabel": "{{calendar}}, goes in {{target}}",
+    "rowHint": "Changes the category",
+    "rejected": {
+      "capacity": "Only {{count}} of {{expected}} will fit. Choose a shorter range or a new category",
+      "nameTaken": "A category with this name already exists. Rename it or choose that category",
+      "notFound": "Category not found. Choose another category"
+    }
+  },
+  "options": {
+    "title": "One last check",
+    "includeTime": "Include times",
+    "includeTimeDescription": "When off, only dates are imported and no reminders are sent",
+    "shareWithFriends": "Share with friends",
+    "shareWithFriendsDescription": "When off, only you can see them",
+    "disclosure": "The titles, dates and times of the events you chose will be sent to Aido's server.",
+    "import": "Import"
+  },
+  "progress": {
+    "reading": "Reading your calendar",
+    "uploading": "Sending",
+    "uploadingCount": "Sending {{current}}/{{total}}",
+    "creating": "Creating to-dos",
+    "queued": "Waiting in line",
+    "stageStatus": {
+      "pending": "waiting",
+      "active": "in progress",
+      "done": "done"
+    },
+    "leaveNotice": "You can leave the app. The import keeps going",
+    "offline": "Sending resumes when you're back online",
+    "paused": "Paused for now. Sending resumes when you reopen the app",
+    "notOnThisDevice": "Another device is sending this import. Finish it there or stop it here",
+    "cancel": "Stop import"
+  },
+  "result": {
+    "completedTitle_one": "Imported {{count}} to-do",
+    "completedTitle_other": "Imported {{count}} to-dos",
+    "undoingTitle": "Undoing the import",
+    "undoneTitle_one": "Removed {{count}} imported to-do",
+    "undoneTitle_other": "Removed {{count}} imported to-dos",
+    "counts": {
+      "created": "To-dos created",
+      "skippedDuplicate": "Skipped, already imported",
+      "skippedCapacity": "Skipped, category full",
+      "skippedCategoryMissing": "Skipped, category missing",
+      "skippedInvalid": "Skipped, invalid date or title",
+      "undone": "To-dos removed",
+      "keptCompleted": "Kept because completed"
+    },
+    "undoNotice": "You can undo this within 7 days. Completed to-dos stay",
+    "duplicateNotice": "Importing the same events again won't add them twice",
+    "viewTodos": "See to-dos",
+    "undo": "Undo",
+    "undoConfirmTitle": "Undo this import?",
+    "undoConfirmDescription": "Only to-dos you haven't completed are removed",
+    "failedTitle": "Couldn't finish the import",
+    "failedDescription": "To-dos already created stay. Import again to continue",
+    "canceledTitle": "Import stopped",
+    "canceledDescription": "No to-dos were created",
+    "startAgain": "Import again"
+  },
   "toasts": {
     "startFailed": "Couldn't start the import. Please try again",
     "cancelFailed": "Couldn't stop the import. Please try again",
     "undoFailed": "Couldn't undo the import. Please try again",
-    "permissionRequestFailed": "Couldn't ask for calendar access. Please try again"
+    "permissionRequestFailed": "Couldn't ask for calendar access. Please try again",
+    "rangeAdjusted": "The date changed, so the range was adjusted"
   }
 }

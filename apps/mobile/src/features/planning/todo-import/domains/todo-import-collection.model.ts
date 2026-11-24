@@ -22,6 +22,10 @@ export const importCollectionSchema = z.object({
 });
 export type ImportCollection = z.infer<typeof importCollectionSchema>;
 
+export type FilterImportCollection = (collection: ImportCollection) => boolean;
+/** 계정 이름·캘린더 이름 순(기기 설정 앱과 같은 묶음 순서)이나 일정이 많은 순 */
+export type OrderByImportCollection = 'account' | 'itemCount';
+
 // 공휴일·생일·구독 캘린더는 내가 할 일이 아닌 일정이 수백 개씩 들어와 처음에는 고르지 않는다
 function isSubscribedCalendar(collection: ImportCollection) {
   return match(collection.accountKind)

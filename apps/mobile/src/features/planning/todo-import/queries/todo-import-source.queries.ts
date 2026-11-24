@@ -4,10 +4,16 @@ import { addDaysToDateKey } from '@src/shared/date/date-key';
 import { getStartOfDateKey } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { queryOptions } from '@tanstack/react-query';
-import { compact, orderBy } from 'es-toolkit';
+import { compact, orderBy as orderCollections } from 'es-toolkit';
+import { match } from 'ts-pattern';
 
 import { toImportCollection } from '../apis/todo-import-collection.mapper';
 import { toImportItem } from '../apis/todo-import-item.mapper';
+import type {
+  FilterImportCollection,
+  ImportCollection,
+  OrderByImportCollection,
+} from '../domains/todo-import-collection.model';
 import { countByCollection, filterByRange } from '../domains/todo-import-item.model';
 import { TODO_IMPORT_QUERY_KEYS } from './todo-import-query-keys';
 
@@ -31,9 +37,13 @@ export function useGetCalendarPermissionQueryOptions() {
 export function useGetImportCollectionsQueryOptions({
   startDate,
   endDate,
+  filters,
+  orderBy = 'account',
 }: {
   startDate: DateKey;
   endDate: DateKey;
+  filters?: FilterImportCollection;
+  orderBy?: OrderByImportCollection;
 }) {
   const todoImportSource = useTodoImportSource();
   const { timezone } = useDateFormatContext();
@@ -53,14 +63,34 @@ export function useGetImportCollectionsQueryOptions({
         ),
       );
       const itemCountByCollection = countByCollection(filterByRange(items, { startDate, endDate }));
-      return orderBy(
-        collections.map((record) => toImportCollection(record, itemCountByCollection)),
-        [(collection) => collection.accountName ?? '', (collection) => collection.title],
-        ['asc', 'asc'],
-      );
+      return collections.map((record) => toImportCollection(record, itemCountByCollection));
     },
+    select: (collections: ImportCollection[]) =>
+      sortCollections(filters == null ? collections : collections.filter(filters), orderBy),
     networkMode: 'always',
     // 일정이 수천 개일 수 있어 같은 기간을 오가거나 앱으로 돌아와도 다시 읽지 않는다. 기간을 바꾸면 새로 읽는다
     staleTime: Number.POSITIVE_INFINITY,
   });
+}
+
+function sortCollections(
+  collections: readonly ImportCollection[],
+  orderBy: OrderByImportCollection,
+) {
+  return match(orderBy)
+    .with('account', () =>
+      orderCollections(
+        collections,
+        [(collection) => collection.accountName ?? '', (collection) => collection.title],
+        ['asc', 'asc'],
+      ),
+    )
+    .with('itemCount', () =>
+      orderCollections(
+        collections,
+        [(collection) => collection.itemCount, (collection) => collection.title],
+        ['desc', 'asc'],
+      ),
+    )
+    .exhaustive();
 }
