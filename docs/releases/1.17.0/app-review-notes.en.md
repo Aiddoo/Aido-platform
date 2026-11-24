@@ -43,4 +43,4 @@ Where to find other items
 
 - Confirm the menu names and button text against the signed build.
 - Check the character count of the block above and add the demo account in the Sign-In fields.
-- Do not submit before the privacy policy update on aido.kr takes effect (2026-12-01).
+- The privacy policy update on aido.kr takes effect on 2026-11-25, the release day.

@@ -55,13 +55,14 @@
 
 ## 배포 순서
 
-1. 서버 stack(01~05)을 함께 머지하고 서버를 배포한다(Blue-Green, [서버 배포와 롤백](../../../apps/api/docs/deployment.md)).
-2. `/health`, pg-boss 큐 처리, 로그 error를 확인한다.
-3. 시뮬레이터 QA를 iPhone → iPad → 접은 Duo 순서로 한다. 캘린더에 일정을 미리 넣어 둔다. 결과는 [qa-matrix](qa-matrix.md)에 확인한 값만 적는다.
-4. 스토어에 제출한다. `expo-calendar`가 네이티브 모듈이라 fingerprint가 바뀌어 OTA로 낼 수 없고 스토어 빌드가 필요하다. 문구는 `store:check`로 확인한다.
-5. 스토어에서 받을 수 있게 된 뒤 플랫폼마다 `AppRelease`를 1.17.0으로 올리고 운영 env를 맞춘다: `FEATURE_DISCOVERY_CAMPAIGN_ID=feature-discovery-1.17.0`, `FEATURE_DISCOVERY_MIN_APP_VERSION=1.17.0`([새 기능 소개 출시](../../../apps/mobile/docs/whats-new-release.md)). 서버를 먼저 배포한다.
+1. 서버를 배포하기 바로 앞에 운영 env의 새 기능 소개 키 세 개만 바꾼다: `FEATURE_DISCOVERY_CAMPAIGN_ID=feature-discovery-1.17.0`, `FEATURE_DISCOVERY_MIN_APP_VERSION=1.17.0`, `FEATURE_DISCOVERY_LAUNCHED_AT=2026-11-24T15:00:00.000Z`(출시일 한국 0시). 새 슬롯이 이 값을 읽어 출시 때 다시 띄우지 않는다. 1.16 앱은 최소 버전에 걸려 자동으로 열지 않는다. 바꾸는 방법은 [서버 배포와 롤백](../../../apps/api/docs/deployment.md)의 운영 env 규칙(키 이름·해시로만 비교)을 따른다.
+2. 서버 stack(01~05)을 함께 머지하고 서버를 배포한다(Blue-Green, [서버 배포와 롤백](../../../apps/api/docs/deployment.md)).
+3. `/health`, pg-boss 큐 처리, 로그 error를 확인한다.
+4. 시뮬레이터 QA를 iPhone → iPad → 접은 Duo 순서로 한다. 캘린더에 일정을 미리 넣어 둔다. 결과는 [qa-matrix](qa-matrix.md)에 확인한 값만 적는다.
+5. 스토어에 제출한다. `expo-calendar`가 네이티브 모듈이라 fingerprint가 바뀌어 OTA로 낼 수 없고 스토어 빌드가 필요하다. 문구는 `store:check`로 확인한다.
+6. 스토어에서 받을 수 있게 된 뒤 플랫폼마다 `AppRelease`를 1.17.0으로 올린다([새 기능 소개 출시](../../../apps/mobile/docs/whats-new-release.md)).
 
 ## 확인하지 못한 것
 
 - 서버 stack 머지·운영 배포, 시뮬레이터·실기기 QA, 서명된 빌드의 Info.plist·AndroidManifest 권한 값, 콘솔 신고(App Privacy·Data safety) 입력: 모두 미확인.
-- 개인정보 처리방침은 aido.kr에 머지되어 있고 시행일은 2026-12-01이다. 시행 전에 앱이 나가지 않도록 제출 날짜를 맞춘다.
+- 앱은 2026-11-25에 낸다. 개인정보 처리방침·이용약관의 캘린더 일정 가져오기 조항은 11-24에 게시하고 시행일을 11-25로 당겼다(사용자 결정). 이용약관 제3조의 7일 전 공지와 어긋나는 점은 사용자가 알고 정했다.
