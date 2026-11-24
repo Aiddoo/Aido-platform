@@ -1,4 +1,4 @@
-import { useDeviceLocation, useLogger } from '@src/bootstrap/providers/di-context';
+import { useLogger, useWeatherLocationService } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage } from '@src/shared/errors';
 import { useOpenAppSettings } from '@src/shared/hooks/use-open-app-settings';
@@ -31,7 +31,7 @@ export type WeatherLocation =
 
 /** 설정에서 권한을 켜고 돌아오면 위치 query가 포커스에서 다시 확인해 재시작 없이 ready로 바뀐다 */
 export function useWeatherLocation(): WeatherLocation {
-  const gateway = useDeviceLocation();
+  const weatherLocationService = useWeatherLocationService();
   const openSettings = useOpenAppSettings();
   const logger = useLogger();
   const queryClient = useQueryClient();
@@ -46,7 +46,7 @@ export function useWeatherLocation(): WeatherLocation {
     .otherwise(() => ({ status: 'checking' }));
 
   const request = async () => {
-    const permission = await gateway.requestPermission().catch((error) => {
+    const permission = await weatherLocationService.requestPermission().catch((error) => {
       logger.warn(WEATHER_LOG_EVENT.LOCATION_PERMISSION_REQUEST_FAILED, {
         error: getErrorMessage(error),
       });

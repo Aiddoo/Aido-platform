@@ -13,6 +13,7 @@ import { pawPrintCelebrationStoredValue } from '@src/features/social/invite/sche
 import { pendingRedemptionStoredValue } from '@src/features/social/invite/schemas/pending-redemption-storage.schema';
 import { offlineModelDeclinedStoredValue } from '@src/features/voice/schemas/offline-model-declined-storage.schema';
 import { recognitionLanguageStoredValue } from '@src/features/voice/schemas/recognition-language-storage.schema';
+import { weatherLocationPermissionGrantedStoredValue } from '@src/features/weather/schemas/weather-location-permission-storage.schema';
 import { toInstant } from '@src/shared/date/instant';
 import { fontScaleStoredValue } from '@src/shared/preferences/schemas/font-scale-storage.schema';
 import { languageModeStoredValue } from '@src/shared/preferences/schemas/language-mode-storage.schema';
@@ -201,6 +202,15 @@ const RELEASED_VALUES = [
       key: 'aido_device_timezone_v1',
       raw: '{"userId":"user-1","deviceTimezone":{"timeZone":"Asia/Seoul","offsetMinutes":540}}',
       value: { userId: 'user-1', deviceTimezone: { timeZone: 'Asia/Seoul', offsetMinutes: 540 } },
+      area: 'device',
+    }),
+  },
+  {
+    name: 'weatherLocationPermissionGrantedStoredValue',
+    ...releasedValue(weatherLocationPermissionGrantedStoredValue, [], {
+      key: 'aido_weather_location_permission_granted_v1',
+      raw: 'true',
+      value: true,
       area: 'device',
     }),
   },

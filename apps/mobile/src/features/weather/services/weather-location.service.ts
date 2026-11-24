@@ -4,13 +4,17 @@ import type { AppLogger } from '@src/core/ports/app-logger';
 import {
   type LocationCoordinates,
   type LocationGateway,
+  type LocationPermission,
   LocationUnavailableError,
 } from '@src/core/ports/location-gateway';
+import type { SyncStorage } from '@src/core/ports/sync-storage';
+import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
 
 import type { WeatherApi } from '../apis/weather.api';
 import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
 import { WeatherLocationPolicy } from '../domains/weather-location.model';
 import type { Coordinates, LocationReading } from '../domains/weather-location.model';
+import { weatherLocationPermissionGrantedStoredValue } from '../schemas/weather-location-permission-storage.schema';
 
 /** 위치 읽기 실패는 위치 없이 이어 가고 등록 실패는 다시 던진다. 보고는 부른 훅이 한다 */
 export interface UnexpectedLocationFailure {
@@ -30,22 +34,32 @@ interface ResolveLocationInput {
 interface WeatherLocationServicePorts {
   gateway: Pick<
     LocationGateway,
-    'getPermission' | 'recheckPermission' | 'getCoordinates' | 'getPlace'
+    'getPermission' | 'requestPermission' | 'recheckPermission' | 'getCoordinates' | 'getPlace'
   >;
   weatherApi: Pick<WeatherApi, 'updateLocation'>;
+  storage: SyncStorage;
   logger: AppLogger;
 }
 
 export class WeatherLocationService {
   readonly #gateway: WeatherLocationServicePorts['gateway'];
   readonly #weatherApi: Pick<WeatherApi, 'updateLocation'>;
+  readonly #storage: SyncStorage;
   readonly #logger: AppLogger;
 
-  constructor({ gateway, weatherApi, logger }: WeatherLocationServicePorts) {
+  constructor({ gateway, weatherApi, storage, logger }: WeatherLocationServicePorts) {
     this.#gateway = gateway;
     this.#weatherApi = weatherApi;
+    this.#storage = storage;
     this.#logger = logger;
   }
+
+  /** 안내에서 '계속'을 누른 뒤에만 부른다. 처음 묻는 권한 창은 설명 없이 띄우지 않는다 */
+  requestPermission = async (): Promise<LocationPermission> => {
+    const permission = await this.#gateway.requestPermission();
+    this.#rememberGranted(permission.isGranted);
+    return permission;
+  };
 
   // 직전 위치도 없으면 unavailable로 서버 저장 위치를 쓰게 한다. 등록 거절(4xx)은 fail, 네트워크·서버 장애는 throw다
   resolveLocation = async ({
@@ -108,15 +122,32 @@ export class WeatherLocationService {
     });
   };
 
-  /** 허용한 적 있는 사용자(직전 위치가 있음)의 권한이 정해지지 않은 상태로 읽히면 한 번 더 확인한다. */
+  /**
+   * 허용한 적 있는 사용자(직전 위치가 있거나 기기가 허용을 기억함)의 권한이 정해지지 않은 상태로 읽히면
+   * 한 번 더 확인한다. 직전 위치는 쿼리 캐시가 비면 사라지므로 기기에 남긴 허용 여부도 본다.
+   */
   #readPermission = async (
     previousLocated: Extract<LocationReading, { status: 'located' }> | null,
-  ) => {
+  ): Promise<LocationPermission> => {
     const permission = await this.#gateway.getPermission();
-    if (permission.isGranted || !permission.canAskAgain || previousLocated == null) {
+    const isSettled = permission.isGranted || !permission.canAskAgain;
+    if (isSettled) {
+      this.#rememberGranted(permission.isGranted);
       return permission;
     }
-    return this.#gateway.recheckPermission();
+    const hasBeenGranted =
+      previousLocated != null ||
+      readStoredValue(this.#storage, weatherLocationPermissionGrantedStoredValue);
+    if (!hasBeenGranted) {
+      return permission;
+    }
+    const rechecked = await this.#gateway.recheckPermission();
+    this.#rememberGranted(rechecked.isGranted);
+    return rechecked;
+  };
+
+  #rememberGranted = (isGranted: boolean) => {
+    writeStoredValue(this.#storage, weatherLocationPermissionGrantedStoredValue, isGranted);
   };
 
   #readCoordinates = async (

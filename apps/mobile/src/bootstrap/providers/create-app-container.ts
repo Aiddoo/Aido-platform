@@ -294,7 +294,6 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     syncStorage,
     accountSyncStorage: draftStorage,
 
-    deviceLocation: ports.deviceLocation,
     todoImportSource: ports.todoImportSource,
     applicationMetadata: ports.applicationMetadata,
     socialAuth: ports.socialAuth,
@@ -462,6 +461,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     weatherLocationService: new WeatherLocationService({
       gateway: ports.deviceLocation,
       weatherApi,
+      storage: syncStorage,
       logger,
     }),
 

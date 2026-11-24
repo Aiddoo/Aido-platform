@@ -1,6 +1,5 @@
 import type { AppStoreListingGateway } from '@src/core/ports/app-store-listing-gateway';
 import type { IdGenerator } from '@src/core/ports/id-generator';
-import type { LocationGateway } from '@src/core/ports/location-gateway';
 import type { NativeApplicationMetadataGateway } from '@src/core/ports/native-application-metadata-gateway';
 import type { NetworkStatusGateway } from '@src/core/ports/network-status-gateway';
 import type { PushNotificationGateway } from '@src/core/ports/push-notification-gateway';
@@ -76,7 +75,6 @@ import type { QueryCacheStorage } from '../query/query-cache-persistence';
  * 순서는 `createAppContainer`의 반환·아래 훅과 같다: 포트, 기능 층 표(1 → 4), 기능마다 빈 줄
  */
 export interface DIContainer extends SharedDependencies {
-  deviceLocation: LocationGateway;
   todoImportSource: TodoImportSource;
   applicationMetadata: NativeApplicationMetadataGateway;
   socialAuth: SocialAuthGateway;
@@ -225,9 +223,6 @@ function useDI(): DIContainer {
   return context;
 }
 
-export function useDeviceLocation() {
-  return useDI().deviceLocation;
-}
 export function useTodoImportSource() {
   return useDI().todoImportSource;
 }
