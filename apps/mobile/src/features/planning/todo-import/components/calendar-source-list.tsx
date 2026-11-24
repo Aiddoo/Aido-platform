@@ -1,17 +1,12 @@
 import type { DateKey } from '@src/shared/date/date-key';
-import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
   CalendarIllustration,
   Checkbox,
-  CloudDuoIcon,
-  DeviceDuoIcon,
   HStack,
-  LinkDuoIcon,
   ListRow,
   SettingsListGroup,
-  type StyledIcon,
   Text,
   TextSkeleton,
   VStack,
@@ -25,7 +20,6 @@ import { match, P } from 'ts-pattern';
 
 import {
   type FilterImportCollection,
-  type ImportAccountProvider,
   type ImportCollection,
   orderByAccountProvider,
   type OrderByImportCollection,
@@ -107,7 +101,6 @@ export function CalendarSourceList({
   const renderGroup = (group: readonly ImportCollection[], account?: ImportCollection) => (
     <CalendarSourceList.Group
       accountName={account == null ? undefined : formatAccountLabel(account)}
-      accountProvider={account?.accountProvider}
     >
       {group.map((collection, index) => (
         <Box key={collection.collectionKey}>
@@ -142,10 +135,9 @@ export function CalendarSourceList({
         >
           <Accordion.Item value={RECEIVED_ACCORDION_VALUE}>
             <Accordion.Trigger className="px-1 py-2">
-              <CalendarSourceList.AccountLabel
-                accountName={t('calendars.receivedTitle', { count: receivedCollections.length })}
-                accountProvider="subscribed"
-              />
+              <Text size="b2" weight="semibold" shade={9} numberOfLines={1} className="flex-1">
+                {t('calendars.receivedTitle', { count: receivedCollections.length })}
+              </Text>
               <Accordion.Indicator />
             </Accordion.Trigger>
             <Accordion.Content className="px-0 pb-0">
@@ -160,62 +152,11 @@ export function CalendarSourceList({
 
 interface GroupProps extends Omit<ComponentProps<typeof SettingsListGroup>, 'label'> {
   accountName?: string;
-  accountProvider?: ImportAccountProvider;
 }
 
-CalendarSourceList.Group = function Group({
-  accountName,
-  accountProvider,
-  children,
-  ...props
-}: GroupProps) {
-  return (
-    <SettingsListGroup {...props}>
-      {accountName != null && (
-        <Box className="px-4 pt-4 pb-1">
-          <CalendarSourceList.AccountLabel
-            accountName={accountName}
-            accountProvider={accountProvider}
-          />
-        </Box>
-      )}
-      {children}
-    </SettingsListGroup>
-  );
-};
-
-const ACCOUNT_ICON_SIZE = 18;
-
-/** 회사 로고는 상표 규정상 쓰지 않고, 묶음 종류를 우리 아이콘으로 보인다 */
-const ACCOUNT_PROVIDER_ICONS = {
-  icloud: CloudDuoIcon,
-  google: CloudDuoIcon,
-  outlook: CloudDuoIcon,
-  other: CloudDuoIcon,
-  device: DeviceDuoIcon,
-  subscribed: LinkDuoIcon,
-  birthdays: LinkDuoIcon,
-} as const satisfies Record<ImportAccountProvider, StyledIcon>;
-
-CalendarSourceList.AccountLabel = function AccountLabel({
-  accountName,
-  accountProvider,
-}: {
-  accountName: string;
-  accountProvider?: ImportAccountProvider;
-}) {
-  const fontScaledSize = useFontScaledSize();
-  const iconSize = fontScaledSize(ACCOUNT_ICON_SIZE);
-  const Icon = accountProvider == null ? null : ACCOUNT_PROVIDER_ICONS[accountProvider];
-
-  return (
-    <HStack align="center" gap={6} className="flex-1">
-      {Icon != null && <Icon width={iconSize} height={iconSize} colorClassName="text-gray-7" />}
-      <Text size="b2" weight="semibold" shade={9} numberOfLines={1} className="flex-1">
-        {accountName}
-      </Text>
-    </HStack>
-  );
+/** 회사 로고는 상표 규정상 쓰지 않고, iOS 캘린더처럼 계정 이름만 글자로 보인다 */
+CalendarSourceList.Group = function Group({ accountName, ...props }: GroupProps) {
+  return <SettingsListGroup label={accountName} {...props} />;
 };
 
 interface ItemProps extends Omit<ComponentProps<typeof ListRow>, 'left' | 'contents' | 'right'> {
@@ -280,6 +221,9 @@ CalendarSourceList.Item = function Item({
 CalendarSourceList.Loading = function Loading() {
   return (
     <SettingsListGroup>
+      <Box className="px-4 pt-4 pb-1">
+        <TextSkeleton size="b2" className="w-24" />
+      </Box>
       <ItemSkeleton />
       <SettingsListGroup.Separator />
       <ItemSkeleton />

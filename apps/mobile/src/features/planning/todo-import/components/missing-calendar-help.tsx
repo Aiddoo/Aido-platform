@@ -1,4 +1,5 @@
 import { useTranslation } from '@src/shared/i18n';
+import { IS_IOS_APP_ON_MAC, IS_IPAD } from '@src/shared/infra/device/device-info';
 import {
   Button,
   H4,
@@ -10,6 +11,7 @@ import {
   WordWrapText,
 } from '@src/shared/ui';
 import type { ComponentProps } from 'react';
+import { match } from 'ts-pattern';
 
 /** 폰 캘린더에 계정을 더하는 곳은 OS 설정이라 앱이 바로 열 수 없어 순서를 글로 안내한다 */
 export function MissingCalendarHelp(
@@ -37,7 +39,6 @@ export function MissingCalendarHelp(
 
 MissingCalendarHelp.Guide = function Guide() {
   const { t } = useTranslation('todoImport');
-  const isAndroid = process.env.EXPO_OS === 'android';
 
   return (
     <VStack gap={16}>
@@ -47,22 +48,53 @@ MissingCalendarHelp.Guide = function Guide() {
           {t('calendars.missingHelp.description')}
         </WordWrapText>
       </VStack>
-      {isAndroid ? (
-        <VStack gap={10}>
-          <Step order={1} text={t('calendars.missingHelp.android.addAccount')} />
-          <Step order={2} text={t('calendars.missingHelp.android.turnOnSync')} />
-          <Step order={3} text={t('calendars.missingHelp.comeBack')} />
-        </VStack>
-      ) : (
-        <VStack gap={10}>
-          <Step order={1} text={t('calendars.missingHelp.ios.openSettings')} />
-          <Step order={2} text={t('calendars.missingHelp.ios.addAccount')} />
-          <Step order={3} text={t('calendars.missingHelp.comeBack')} />
-        </VStack>
-      )}
+      {match(findHelpDevice())
+        .with('iphone', () => (
+          <VStack gap={10}>
+            <Step order={1} text={t('calendars.missingHelp.iphone.openSettings')} />
+            <Step order={2} text={t('calendars.missingHelp.ios.addAccount')} />
+            <Step order={3} text={t('calendars.missingHelp.comeBack')} />
+          </VStack>
+        ))
+        .with('ipad', () => (
+          <VStack gap={10}>
+            <Step order={1} text={t('calendars.missingHelp.ipad.openSettings')} />
+            <Step order={2} text={t('calendars.missingHelp.ios.addAccount')} />
+            <Step order={3} text={t('calendars.missingHelp.comeBack')} />
+          </VStack>
+        ))
+        .with('mac', () => (
+          <VStack gap={10}>
+            <Step order={1} text={t('calendars.missingHelp.mac.openSettings')} />
+            <Step order={2} text={t('calendars.missingHelp.mac.addAccount')} />
+            <Step order={3} text={t('calendars.missingHelp.comeBack')} />
+          </VStack>
+        ))
+        .with('android', () => (
+          <VStack gap={10}>
+            <Step order={1} text={t('calendars.missingHelp.android.addAccount')} />
+            <Step order={2} text={t('calendars.missingHelp.android.turnOnSync')} />
+            <Step order={3} text={t('calendars.missingHelp.comeBack')} />
+          </VStack>
+        ))
+        .exhaustive()}
     </VStack>
   );
 };
+
+// 계정을 더하는 설정 위치가 기기마다 다르다. iPhone Duo는 휴대폰이라 iPhone이다
+function findHelpDevice(): 'iphone' | 'ipad' | 'mac' | 'android' {
+  if (process.env.EXPO_OS === 'android') {
+    return 'android';
+  }
+  if (IS_IOS_APP_ON_MAC) {
+    return 'mac';
+  }
+  if (IS_IPAD) {
+    return 'ipad';
+  }
+  return 'iphone';
+}
 
 function Step({ order, text }: { order: number; text: string }) {
   return (

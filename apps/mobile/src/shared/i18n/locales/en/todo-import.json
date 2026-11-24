@@ -12,7 +12,7 @@
   "permission": {
     "title": "Bring your calendar events in as to-dos",
     "facts": {
-      "sources": "Works with the iCloud, Google, and Outlook calendars on your phone",
+      "sources": "Works with the iCloud, Google, and Outlook calendars on this device",
       "read": "Aido only takes the title, date, and time of events in the calendars you choose",
       "noAccountInfo": "Your calendar account details, like your email, are never sent to Aido",
       "oneTime": "It copies your events once. Your calendar stays exactly as it is",
@@ -34,7 +34,8 @@
       "year": "1 year"
     },
     "lockedPreset": "{{label}}, Premium only",
-    "freeUntil": "Free plan imports up to {{date}}",
+    "freeUntil_one": "The free plan imports events for the next {{count}} day (through {{date}}). Go Premium for events further ahead",
+    "freeUntil_other": "The free plan imports events for the next {{count}} days (through {{date}}). Go Premium for events further ahead",
     "freeUntilHint": "Opens Premium info"
   },
   "calendars": {
@@ -60,13 +61,22 @@
     "missingHelp": {
       "open": "Missing a calendar?",
       "title": "Missing a calendar?",
-      "description": "Aido can import only the calendars shown in your phone's calendar app. If a calendar lives only in another app, add that account to your phone.",
+      "description": "Aido can import only the calendars shown in this device's calendar app. If a calendar lives only in another app, add that account to this device.",
+      "iphone": {
+        "openSettings": "Open iPhone Settings > Calendar > Accounts"
+      },
+      "ipad": {
+        "openSettings": "Open iPad Settings > Calendar > Accounts"
+      },
       "ios": {
-        "openSettings": "Open iPhone Settings > Calendar > Accounts",
         "addAccount": "Tap Add Account, add your Google or Outlook account, and turn on Calendars"
       },
+      "mac": {
+        "openSettings": "On your Mac, open System Settings > Internet Accounts",
+        "addAccount": "Add your Google or Outlook account and turn on Calendars"
+      },
       "android": {
-        "addAccount": "Open phone Settings > Accounts and add your Google or Outlook account",
+        "addAccount": "Open Settings > Accounts and add your Google or Outlook account",
         "turnOnSync": "In your calendar app, turn on and sync that account's calendars"
       },
       "comeBack": "Come back to Aido and it shows up in the list"

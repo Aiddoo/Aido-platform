@@ -6,15 +6,7 @@ import { formatYearAwareDateKeyLabel } from '@src/shared/date/format/date-format
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import {
-  ActionButton,
-  HStack,
-  LockIcon,
-  SheetChipRow,
-  Text,
-  TextSkeleton,
-  VStack,
-} from '@src/shared/ui';
+import { ActionButton, HStack, LockIcon, SheetChipRow, VStack, WordWrapText } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps } from 'react';
@@ -79,20 +71,23 @@ export function ImportEndDateChips({
         </HStack>
       </SheetChipRow>
 
-      {EntitlementPolicy.shouldOfferPremium(snapshot) && lastAllowedDate != null && (
-        <PressableFeedback
-          accessibilityRole="button"
-          accessibilityHint={t('range.freeUntilHint')}
-          onPress={() => gate.promptLimit()}
-          className="self-start"
-        >
-          <Text size="b4" shade={6} lineBreakStrategyIOS="hangul-word">
-            {t('range.freeUntil', {
-              date: formatYearAwareDateKeyLabel(lastAllowedDate, todayKey, dateFormatContext),
-            })}
-          </Text>
-        </PressableFeedback>
-      )}
+      {EntitlementPolicy.shouldOfferPremium(snapshot) &&
+        horizonDays != null &&
+        lastAllowedDate != null && (
+          <PressableFeedback
+            accessibilityRole="button"
+            accessibilityHint={t('range.freeUntilHint')}
+            onPress={() => gate.promptLimit()}
+            className="self-start"
+          >
+            <WordWrapText size="b4" shade={6}>
+              {t('range.freeUntil', {
+                count: horizonDays,
+                date: formatYearAwareDateKeyLabel(lastAllowedDate, todayKey, dateFormatContext),
+              })}
+            </WordWrapText>
+          </PressableFeedback>
+        )}
     </VStack>
   );
 }
@@ -124,14 +119,11 @@ ImportEndDateChips.Chip = function Chip({ preset, isSelected, isLocked, onPress 
 
 ImportEndDateChips.Loading = function Loading() {
   return (
-    <VStack gap={8}>
-      <HStack gap={8}>
-        <ActionButton.Loading className="w-16" />
-        <ActionButton.Loading className="w-20" />
-        <ActionButton.Loading className="w-20" />
-      </HStack>
-      <TextSkeleton size="b4" className="w-48" />
-    </VStack>
+    <HStack gap={8}>
+      <ActionButton.Loading className="w-16" />
+      <ActionButton.Loading className="w-20" />
+      <ActionButton.Loading className="w-20" />
+    </HStack>
   );
 };
 

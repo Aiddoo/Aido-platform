@@ -238,21 +238,18 @@ CategoryMappingList.Item = function Item({
 
 CategoryMappingList.Loading = function Loading() {
   return (
-    <VStack gap={12}>
-      <TextSkeleton size="b3" className="w-48" />
-      <SettingsListGroup>
-        {range(LOADING_ROW_COUNT).map((index) => (
-          <ListRow
-            key={index}
-            horizontalPadding="medium"
-            verticalPadding="medium"
-            left={<Skeleton className="size-2.5 rounded-full" />}
-            contents={<TextSkeleton size="b2" className="w-24" />}
-            right={<Skeleton className="h-7 w-20 rounded-full" />}
-          />
-        ))}
-      </SettingsListGroup>
-    </VStack>
+    <SettingsListGroup>
+      {range(LOADING_ROW_COUNT).map((index) => (
+        <ListRow
+          key={index}
+          horizontalPadding="medium"
+          verticalPadding="medium"
+          left={<Skeleton className="size-2.5 rounded-full" />}
+          contents={<TextSkeleton size="b2" className="w-24" />}
+          right={<Skeleton className="h-7 w-20 rounded-full" />}
+        />
+      ))}
+    </SettingsListGroup>
   );
 };
 

@@ -12,7 +12,7 @@
   "permission": {
     "title": "캘린더 일정을 할 일로 가져올게요",
     "facts": {
-      "sources": "휴대폰에 추가한 iCloud·Google·Outlook 캘린더에서 가져와요",
+      "sources": "이 기기에 추가한 iCloud·Google·Outlook 캘린더에서 가져와요",
       "read": "고른 캘린더에서 일정의 제목·날짜·시간만 가져와요",
       "noAccountInfo": "이메일 같은 캘린더 계정 정보는 아이두로 보내지 않아요",
       "oneTime": "지금 있는 일정을 한 번만 옮겨 와요. 캘린더 일정은 바꾸거나 지우지 않아요",
@@ -34,7 +34,7 @@
       "year": "1년"
     },
     "lockedPreset": "{{label}}, 프리미엄 전용",
-    "freeUntil": "무료는 {{date}}까지 가져올 수 있어요",
+    "freeUntil": "무료 플랜은 오늘부터 {{count}}일 동안의 일정을 가져올 수 있어요 ({{date}}까지). 더 먼 일정은 프리미엄에서 가져와요",
     "freeUntilHint": "프리미엄 안내를 열어요"
   },
   "calendars": {
@@ -58,13 +58,22 @@
     "missingHelp": {
       "open": "캘린더가 목록에 없나요?",
       "title": "캘린더가 목록에 없나요?",
-      "description": "아이두는 휴대폰 캘린더 앱에 보이는 캘린더만 가져올 수 있어요. 다른 앱에만 있는 캘린더는 휴대폰에 계정을 추가해 주세요.",
+      "description": "아이두는 이 기기의 캘린더 앱에 보이는 캘린더만 가져올 수 있어요. 다른 앱에만 있는 캘린더는 이 기기에 계정을 추가해 주세요.",
+      "iphone": {
+        "openSettings": "iPhone 설정 > 캘린더 > 계정으로 가요"
+      },
+      "ipad": {
+        "openSettings": "iPad 설정 > 캘린더 > 계정으로 가요"
+      },
       "ios": {
-        "openSettings": "iPhone 설정 > 캘린더 > 계정으로 가요",
         "addAccount": "계정 추가에서 Google·Outlook 계정을 추가하고 캘린더를 켜요"
       },
+      "mac": {
+        "openSettings": "Mac의 시스템 설정 > 인터넷 계정으로 가요",
+        "addAccount": "Google·Outlook 계정을 추가하고 캘린더를 켜요"
+      },
       "android": {
-        "addAccount": "휴대폰 설정 > 계정에서 Google·Outlook 계정을 추가해요",
+        "addAccount": "설정 > 계정에서 Google·Outlook 계정을 추가해요",
         "turnOnSync": "캘린더 앱에서 그 계정의 캘린더를 켜고 동기화해요"
       },
       "comeBack": "아이두로 돌아오면 목록에 바로 보여요"
