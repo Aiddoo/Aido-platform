@@ -1,6 +1,6 @@
 # Aido 1.17.0 review notes (draft)
 
-**Status: draft, not submitted.** Menu paths follow the code at this stack. We have not run these steps on a signed build yet. Data declarations follow [privacy-label.md](privacy-label.md). The App Store Notes field allows 4,000 characters. The demo account goes in the Sign-In Information fields, not in the notes.
+**Status: entered and saved in App Store Connect on 2026-11-24, not submitted.** The Notes field keeps the standing sections from the previous version (subscriptions, AI consent, permissions, invite rewards, where to find items) and replaces only the first part with a 764-character version of the block below, so the whole field fits 4,000 characters. Menu paths follow the code at this stack. We have not run these steps on a signed build yet. Data declarations follow [privacy-label.md](privacy-label.md). The App Store Notes field allows 4,000 characters. The demo account goes in the Sign-In Information fields, not in the notes.
 
 ## App Store Connect: App Review Information > Notes
 
