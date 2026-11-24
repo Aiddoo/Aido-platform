@@ -92,6 +92,7 @@
     "description": "Choose a category for each calendar's to-dos",
     "remainingSlots_one": "You can create {{count}} more category",
     "remainingSlots_other": "You can create {{count}} more categories",
+    "noSlots": "Your categories are full, so you can't create new ones. Choose an existing category",
     "allInOne": "Put all in one category",
     "newCategory": "New category '{{name}}'",
     "newCategoryLocked": "New category '{{name}}' · You can't create more categories",

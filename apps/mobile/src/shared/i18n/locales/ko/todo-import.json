@@ -87,6 +87,7 @@
     "title": "어느 카테고리에 넣을까요?",
     "description": "캘린더마다 할 일을 넣을 카테고리를 골라 주세요",
     "remainingSlots": "새 카테고리를 {{count}}개 더 만들 수 있어요",
+    "noSlots": "카테고리가 가득 차서 새로 만들 수 없어요. 기존 카테고리에 넣어 주세요",
     "allInOne": "모두 한 카테고리에",
     "newCategory": "새 카테고리 '{{name}}'",
     "newCategoryLocked": "새 카테고리 '{{name}}' · 카테고리를 더 만들 수 없어요",

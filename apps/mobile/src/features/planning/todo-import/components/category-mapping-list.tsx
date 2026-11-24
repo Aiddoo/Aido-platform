@@ -133,8 +133,16 @@ export function CategoryMappingList({
     <VStack gap={12}>
       {remainingCategorySlots != null && (
         <InlineAlert
-          status={newCategoryCount > remainingCategorySlots ? 'warning' : 'default'}
-          title={t('categories.remainingSlots', { count: remainingCategorySlots })}
+          status={
+            remainingCategorySlots === 0 || newCategoryCount > remainingCategorySlots
+              ? 'warning'
+              : 'default'
+          }
+          title={
+            remainingCategorySlots === 0
+              ? t('categories.noSlots')
+              : t('categories.remainingSlots', { count: remainingCategorySlots })
+          }
         />
       )}
 
