@@ -58,8 +58,8 @@
       "outlookWithEmail": "Outlook Calendar · {{email}}",
       "device": "Saved on this device"
     },
-    "receivedTitle_one": "Holiday & birthday calendar ({{count}})",
-    "receivedTitle_other": "Holiday & birthday calendars ({{count}})",
+    "receivedTitle_one": "Holiday, birthday & subscribed calendar ({{count}})",
+    "receivedTitle_other": "Holiday, birthday & subscribed calendars ({{count}})",
     "itemCount_one": "{{count}} event",
     "itemCount_other": "{{count}} events",
     "noEventsInRange": "No events",
@@ -183,7 +183,8 @@
       "undone": "To-dos removed",
       "keptCompleted": "Kept because completed"
     },
-    "undoNotice": "You can undo this within 7 days. Completed to-dos stay",
+    "undoNotice_one": "You can undo this within {{count}} day. Completed to-dos stay",
+    "undoNotice_other": "You can undo this within {{count}} days. Completed to-dos stay",
     "duplicateNotice": "Importing the same events again won't add them twice",
     "viewTodos": "See to-dos",
     "undo": "Undo",
@@ -210,6 +211,7 @@
     "undoFailed": "Couldn't undo the import. Please try again",
     "permissionRequestFailed": "Couldn't ask for calendar access. Please try again",
     "rangeAdjusted": "It's past midnight, so the range now starts today",
-    "undoWhileImporting": "You can undo once the import in progress finishes"
+    "undoWhileImporting": "You can undo once the import in progress finishes",
+    "cancelTooLate": "Aido already started creating your to-dos, so this import can't be stopped"
   }
 }

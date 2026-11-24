@@ -11,6 +11,7 @@ import { todoImportParamsSchema } from '@src/features/planning/todo-import/schem
 import { toTodoImportCountBucket } from '@src/features/planning/todo-import/utils/todo-import-analytics';
 import { useTrack } from '@src/shared/analytics';
 import { useRouteParamsOrRedirect } from '@src/shared/hooks/use-route-params-or-redirect';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -69,6 +70,7 @@ TodoImportScreen.Loading = function Loading() {
 /** 다른 계정의 가져오기, 30일이 지나 지워진 기록, 잘못된 링크는 다시 시도해도 같아 새로 가져오게 한다 */
 TodoImportScreen.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation('todoImport');
+  const replace = useSingleTap(router.replace);
 
   if (!isTodoImportNotFoundError(error)) {
     return <TodoImportProgress.Error error={error} reset={reset} />;
@@ -80,7 +82,7 @@ TodoImportScreen.Error = function ErrorFallback({ error, reset }: QueryErrorFall
       title={t('result.notFoundTitle')}
       description={t('result.notFoundDescription')}
       button={
-        <Button size="large" onPress={() => router.replace('/todo-import')}>
+        <Button size="large" onPress={() => replace('/todo-import')}>
           {t('result.startNew')}
         </Button>
       }
@@ -93,7 +95,7 @@ function TodoImportStatus() {
   const [importId] = useTodoImportId();
   const { data: todoImport } = useSuspenseQuery(useGetTodoImportQueryOptions({ importId }));
 
-  useTrackImportOutcome(todoImport.status, todoImport.counts);
+  useTrackImportOutcome(todoImport);
 
   return match(todoImport.status)
     .with(P.union('UPLOADING', 'QUEUED', 'RUNNING'), () => (
@@ -162,16 +164,17 @@ function TodoImportStatus() {
 
 function StartAgainButton() {
   const { t } = useTranslation('todoImport');
+  const replace = useSingleTap(router.replace);
 
   return (
-    <Button size="large" onPress={() => router.replace('/todo-import')}>
+    <Button size="large" onPress={() => replace('/todo-import')}>
       {t('result.startAgain')}
     </Button>
   );
 }
 
 /** 이 화면에서 처리 중이던 가져오기가 끝나는 순간만 센다. 결과를 다시 열 때는 세지 않는다 */
-function useTrackImportOutcome(status: TodoImport['status'], counts: TodoImport['counts']) {
+function useTrackImportOutcome({ status, failureReason, counts }: TodoImport) {
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const accountId = useMyAccountId();
   const previousStatusRef = useRef(status);
@@ -182,7 +185,7 @@ function useTrackImportOutcome(status: TodoImport['status'], counts: TodoImport[
     if (previousStatus === status) {
       return;
     }
-    match(toImportOutcome(status))
+    match(toImportOutcome(status, failureReason))
       .with('completed', () => {
         trackEvent('todo_import_completed', {
           created_bucket: toTodoImportCountBucket(counts.created),
@@ -198,15 +201,18 @@ function useTrackImportOutcome(status: TodoImport['status'], counts: TodoImport[
       )
       .with(null, () => undefined)
       .exhaustive();
-  }, [status, counts, trackEvent, trackAttributedFeatureSuccess, accountId]);
+  }, [status, failureReason, counts, trackEvent, trackAttributedFeatureSuccess, accountId]);
 }
 
-function toImportOutcome(status: TodoImport['status']) {
-  return match(status)
-    .with('COMPLETED', () => 'completed' as const)
-    .with('FAILED', () => 'server_failed' as const)
-    .with('CANCELED', () => 'canceled' as const)
-    .with('ABANDONED', () => 'abandoned' as const)
-    .with(P.union('UPLOADING', 'QUEUED', 'RUNNING', 'UNDOING', 'UNDONE'), () => null)
-    .exhaustive();
+function toImportOutcome(status: TodoImport['status'], failureReason: TodoImport['failureReason']) {
+  return (
+    match(status)
+      .with('COMPLETED', () => 'completed' as const)
+      // 되돌리기 실패는 가져오기 실패가 아니라 세지 않는다
+      .with('FAILED', () => (failureReason === 'UNDO_FAILED' ? null : ('server_failed' as const)))
+      .with('CANCELED', () => 'canceled' as const)
+      .with('ABANDONED', () => 'abandoned' as const)
+      .with(P.union('UPLOADING', 'QUEUED', 'RUNNING', 'UNDOING', 'UNDONE'), () => null)
+      .exhaustive()
+  );
 }

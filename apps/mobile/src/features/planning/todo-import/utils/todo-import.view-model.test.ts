@@ -17,7 +17,7 @@ describe('getCalendarPermissionView', () => {
   it.each<[string, OsPermission, OsPermission | null, string]>([
     ['처음 열면 안내 뒤 묻는다', UNDETERMINED, null, 'ask'],
     ['이미 허용했으면 묻는 안내다', GRANTED, null, 'ask'],
-    ['방금 거절했지만 다시 물을 수 있으면 글만 보인다', DENIED, DENIED, 'denied'],
+    ['방금 거절했으면 다시 물을 수 있어도 다시 조르지 않는다', DENIED, DENIED, 'denied'],
     ['방금 거절해 시스템이 다시 묻지 않으면 설정 열기를 보인다', BLOCKED, BLOCKED, 'blocked'],
     [
       'Android 두 번째 거절은 읽은 값이 묻기 전이어도 설정 열기를 보인다',

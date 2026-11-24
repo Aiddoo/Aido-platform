@@ -172,7 +172,13 @@ function SettingsListGroupToggle({
   ...props
 }: SettingsListGroupToggleProps) {
   return (
-    <ControlField className={cn('min-h-12 px-4 py-3', className)} {...props}>
+    <ControlField
+      className={cn('min-h-12 px-4 py-3', className)}
+      // heroui ControlField 뿌리는 역할이 없어 스크린 리더가 켬·끔을 읽도록 스위치로 알린다
+      accessibilityRole="switch"
+      accessibilityState={{ checked: props.isSelected, disabled: props.isDisabled }}
+      {...props}
+    >
       {icon}
       <Box className="flex-1 gap-0.5">
         <Text size="b2" shade={8} lineBreakStrategyIOS="hangul-word">

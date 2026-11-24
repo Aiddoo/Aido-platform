@@ -1,3 +1,4 @@
+import { TODO_IMPORT_LIMITS } from '@aido/api/vocabulary';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -70,7 +71,9 @@ export function TodoImportResult() {
         )}
         <DashedDivider className="mx-5 my-4" />
         <WordWrapText size="b4" shade={6} className="px-5 pb-5">
-          {canUndo ? t('result.undoNotice') : t('result.duplicateNotice')}
+          {canUndo
+            ? t('result.undoNotice', { count: TODO_IMPORT_LIMITS.UNDO_WINDOW_DAYS })
+            : t('result.duplicateNotice')}
         </WordWrapText>
       </ScallopedContainer>
 

@@ -18,6 +18,10 @@ export function setCachedCalendarPermission(queryClient: QueryClient, permission
   queryClient.setQueryData(TODO_IMPORT_QUERY_KEYS.calendarPermission(), permission);
 }
 
+export function invalidateTodoImport(queryClient: QueryClient, importId: string) {
+  return queryClient.invalidateQueries({ queryKey: TODO_IMPORT_QUERY_KEYS.detail({ importId }) });
+}
+
 export function invalidateActiveTodoImport(queryClient: QueryClient) {
   return queryClient.invalidateQueries({ queryKey: TODO_IMPORT_QUERY_KEYS.active() });
 }

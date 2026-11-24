@@ -5,11 +5,7 @@ export type TodoImportCountBucket = '0' | '1_10' | '11_50' | '51_200' | '201_100
 
 export type TodoImportResumeTrigger = 'mount' | 'foreground' | 'online';
 
-export type TodoImportFailureReason =
-  | 'server_failed'
-  | 'upload_rejected'
-  | 'canceled'
-  | 'abandoned';
+export type TodoImportFailureReason = 'server_failed' | 'canceled' | 'abandoned';
 
 declare module '@src/shared/analytics/event-map' {
   interface AppEventMap {

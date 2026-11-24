@@ -14,7 +14,7 @@ import {
 import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Accordion, ControlField, Skeleton } from 'heroui-native';
-import { type ComponentProps, useMemo } from 'react';
+import type { ComponentProps } from 'react';
 import { match, P } from 'ts-pattern';
 
 import {
@@ -45,19 +45,11 @@ export function CalendarSourceList({
     useGetImportCollectionsQueryOptions({ startDate, endDate }),
   );
 
-  // 캘린더가 수십 개여도 고른 키·계정 묶음은 목록이나 선택이 바뀔 때만 다시 만든다
-  const { selectedKeys, isAtLimit } = useMemo(() => {
-    const selected = TodoImportCollectionPolicy.getSelectedCollections(collections, value);
-    return {
-      selectedKeys: new Set(selected.map((collection) => collection.collectionKey)),
-      isAtLimit: TodoImportCollectionPolicy.isAtCollectionLimit(selected),
-    };
-  }, [collections, value]);
+  const selected = TodoImportCollectionPolicy.getSelectedCollections(collections, value);
+  const selectedKeys = new Set(selected.map((collection) => collection.collectionKey));
+  const isAtLimit = TodoImportCollectionPolicy.isAtCollectionLimit(selected);
   const formatAccountLabel = useFormatAccountLabel();
-  const { accounts, receivedCollections } = useMemo(
-    () => groupCollectionsByAccount(collections),
-    [collections],
-  );
+  const { accounts, receivedCollections } = groupCollectionsByAccount(collections);
 
   if (!collections.some(TodoImportCollectionPolicy.isSelectable)) {
     return <CalendarSourceList.Empty />;

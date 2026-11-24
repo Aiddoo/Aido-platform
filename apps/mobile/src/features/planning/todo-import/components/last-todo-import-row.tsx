@@ -9,7 +9,7 @@ import { useStoredValue } from '@src/shared/storage/use-stored-value';
 import { QueryErrorBoundary, SettingsListGroup } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { type ComponentProps, Suspense } from 'react';
+import { type ComponentProps, Suspense, useEffect, useEffectEvent } from 'react';
 
 import { TodoImportPolicy } from '../domains/todo-import.model';
 import { useGetTodoImportQueryOptions } from '../queries/todo-import.queries';
@@ -21,7 +21,7 @@ type LastTodoImportRowProps = Omit<ComponentProps<typeof SettingsListGroup>, 'ch
 /** 결과 화면을 떠난 뒤 되돌리러 돌아오는 길. 되돌릴 수 있는 동안만 보이고 아니면 자리도 차지하지 않는다 */
 export function LastTodoImportRow(props: LastTodoImportRowProps) {
   const accountId = useMyAccountId();
-  const [lastImportId] = useStoredValue(lastTodoImportIdStoredValue, accountId);
+  const [lastImportId, setLastImportId] = useStoredValue(lastTodoImportIdStoredValue, accountId);
 
   if (lastImportId == null) {
     return null;
@@ -29,8 +29,13 @@ export function LastTodoImportRow(props: LastTodoImportRowProps) {
 
   return (
     <QueryErrorBoundary fallback={LastTodoImportRow.Error} resetKeys={[lastImportId]}>
-      <Suspense fallback={<LastTodoImportRow.Loading {...props} />}>
-        <LastTodoImportRow.Undoable importId={lastImportId} {...props} />
+      {/* 기한이 지난 가져오기는 줄이 그려지지 않아, 스켈레톤을 보였다 걷으면 아래 글이 들썩인다 */}
+      <Suspense fallback={null}>
+        <LastTodoImportRow.Undoable
+          importId={lastImportId}
+          onExpired={() => setLastImportId(null)}
+          {...props}
+        />
       </Suspense>
     </QueryErrorBoundary>
   );
@@ -38,15 +43,27 @@ export function LastTodoImportRow(props: LastTodoImportRowProps) {
 
 interface UndoableProps extends LastTodoImportRowProps {
   importId: string;
+  /** 끝났는데 되돌릴 수 없으면 부른다. 다음에 열 때 조회하지 않게 기억을 지운다 */
+  onExpired: () => void;
 }
 
-LastTodoImportRow.Undoable = function Undoable({ importId, ...props }: UndoableProps) {
+LastTodoImportRow.Undoable = function Undoable({ importId, onExpired, ...props }: UndoableProps) {
   const { t } = useTranslation('todoImport');
   const now = useMinuteNow();
   const todayKey = useTodayKey();
   const dateFormatContext = useDateFormatContext();
   const push = useSingleTap(router.push);
   const { data: todoImport } = useSuspenseQuery(useGetTodoImportQueryOptions({ importId }));
+  // 처리 중인 가져오기는 끝나는 것을 기다리는 조회가 같은 기억을 쓰므로 끝난 뒤에만 지운다
+  const isExpired =
+    TodoImportPolicy.isTerminal(todoImport) && !TodoImportPolicy.canUndo(todoImport, now);
+  const forgetExpired = useEffectEvent(onExpired);
+
+  useEffect(() => {
+    if (isExpired) {
+      forgetExpired();
+    }
+  }, [isExpired]);
 
   if (!TodoImportPolicy.canUndo(todoImport, now) || todoImport.undoableUntil == null) {
     return null;
@@ -64,14 +81,6 @@ LastTodoImportRow.Undoable = function Undoable({ importId, ...props }: UndoableP
         })}
         onPress={() => push({ pathname: '/todo-import/[importId]', params: { importId } })}
       />
-    </SettingsListGroup>
-  );
-};
-
-LastTodoImportRow.Loading = function Loading(props: LastTodoImportRowProps) {
-  return (
-    <SettingsListGroup {...props}>
-      <SettingsListGroup.Item.Loading descriptionLines={1} />
     </SettingsListGroup>
   );
 };

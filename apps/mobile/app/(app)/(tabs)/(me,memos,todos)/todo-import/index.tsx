@@ -189,7 +189,8 @@ function TodoImportSetup() {
           />
         </Stack.Toolbar>
       )}
-      {!isCompact && isPastFirstStep && <Stack.Screen options={{ gestureEnabled: false }} />}
+      {/* Stack.Screen은 내려갈 때 옵션을 되돌리지 않아, 첫 단계로 돌아오면 다시 켜도록 늘 그린다 */}
+      <Stack.Screen options={{ gestureEnabled: isCompact || !isPastFirstStep }} />
 
       {/* 단계 글이 점 뒤로 비쳐 보이지 않게 위에 불투명하게 얹는다 */}
       <StyledSafeAreaView edges={['left', 'right']} className="z-10 bg-white px-4 pt-3 pb-1">
@@ -248,9 +249,9 @@ function PermissionStep({ onGranted }: { onGranted: () => void }) {
             {t('common:actions.continue')}
           </KeyboardAdaptiveButton>
         ))
-        .with('denied', () => null)
-        // Mac(Designed for iPad)은 앱 설정 화면이 열리지 않아 글로 가는 길만 보인다
-        .with('blocked', () =>
+        // 거절한 뒤에는 다시 조르지 않고 설정 열기만 둔다. Mac(Designed for iPad)은 앱 설정 화면이 열리지 않아
+        // 글로 가는 길만 보인다
+        .with('denied', 'blocked', () =>
           IS_IOS_APP_ON_MAC ? null : (
             <KeyboardAdaptiveButton onPress={openSettings}>
               {t('permission.openSettings')}
@@ -617,8 +618,6 @@ function OptionsStep({
           onSelectedChange={(isSelected) =>
             setImportOptions({ timeMode: isSelected ? 'TIME' : 'DATE_ONLY' })
           }
-          accessibilityRole="switch"
-          accessibilityState={{ checked: timeMode === 'TIME' }}
         />
         <SettingsListGroup.Separator />
         <SettingsListGroup.Toggle
@@ -628,8 +627,6 @@ function OptionsStep({
           onSelectedChange={(isSelected) =>
             setImportOptions({ visibility: isSelected ? 'PUBLIC' : 'PRIVATE' })
           }
-          accessibilityRole="switch"
-          accessibilityState={{ checked: visibility === 'PUBLIC' }}
         />
       </SettingsListGroup>
     </FormStepLayout>

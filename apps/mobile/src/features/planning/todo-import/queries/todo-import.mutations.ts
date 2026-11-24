@@ -7,6 +7,7 @@ import { unwrap } from '@src/core/errors/result';
 import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
 import { useTrack } from '@src/shared/analytics';
 import { t } from '@src/shared/i18n';
+import { useMutationErrorFeedback } from '@src/shared/query/use-mutation-error-feedback';
 import { writeStoredValue } from '@src/shared/storage/define-stored-value';
 import { useStoredValueStorage } from '@src/shared/storage/use-stored-value';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
@@ -15,12 +16,14 @@ import type { TodoImportSelection } from '../domains/todo-import-session.model';
 import {
   findActiveTodoImportId,
   isTodoImportStartHandledError,
+  isTodoImportStatusConflictError,
 } from '../domains/todo-import.error';
 import { lastTodoImportIdStoredValue } from '../schemas/todo-import-last-storage.schema';
 import { toTodoImportStartedParams } from '../utils/todo-import-analytics';
 import {
   invalidateActiveTodoImport,
   setCachedCalendarPermission,
+  invalidateTodoImport,
   setTodoImportInCache,
 } from './todo-import-cache';
 import { TODO_IMPORT_MUTATION_KEYS } from './todo-import-mutation-keys';
@@ -66,6 +69,7 @@ export function useCancelTodoImportMutationOptions({ importId }: { importId: str
   const accountId = useMyAccountId();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
+  const showMutationError = useMutationErrorFeedback();
 
   return mutationOptions({
     networkMode: 'always',
@@ -75,9 +79,27 @@ export function useCancelTodoImportMutationOptions({ importId }: { importId: str
       setTodoImportInCache(queryClient, todoImport);
       trackEvent('todo_import_cancel_completed');
     },
-    onSettled: () => invalidateActiveTodoImport(queryClient),
+    // 서버가 이미 확정해 멈출 수 없으면(2305) 여러 동작이 함께 쓰는 상태 충돌 문구 대신 이유를 알린다
+    onError: (error) => {
+      if (isTodoImportStatusConflictError(error)) {
+        showMutationError(error, {
+          feature: 'todo_import',
+          title: t('todoImport:toasts.cancelTooLate'),
+        });
+      }
+    },
+    // 멈추지 못했어도 지금 상태를 다시 받아 화면이 다음 단계로 넘어간다
+    onSettled: () =>
+      Promise.all([
+        invalidateActiveTodoImport(queryClient),
+        invalidateTodoImport(queryClient, importId),
+      ]),
     meta: {
-      errorFeedback: { feature: 'todo_import', fallbackKey: 'todoImport:toasts.cancelFailed' },
+      errorFeedback: {
+        feature: 'todo_import',
+        fallbackKey: 'todoImport:toasts.cancelFailed',
+        isHandledByFeature: isTodoImportStatusConflictError,
+      },
     },
   });
 }

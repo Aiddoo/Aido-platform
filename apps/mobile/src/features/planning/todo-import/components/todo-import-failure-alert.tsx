@@ -1,6 +1,7 @@
 import { TODO_IMPORT_LIMITS } from '@aido/api/vocabulary';
 import { useTodoImportUploadSession } from '@src/bootstrap/providers/di-context';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { Button, HStack, InlineAlert } from '@src/shared/ui';
 import { router } from 'expo-router';
@@ -37,6 +38,7 @@ export function TodoImportFailureAlert(props: TodoImportFailureAlertProps) {
   const uploadSession = useTodoImportUploadSession();
   const snapshot = useSyncExternalStore(uploadSession.subscribe, uploadSession.getSnapshot);
   const gate = useEntitlementGate('CALENDAR_IMPORT', { surface: 'todo_import' });
+  const replace = useSingleTap(router.replace);
 
   if (snapshot.stage !== 'failed' || snapshot.importId !== importId) {
     return null;
@@ -56,7 +58,7 @@ export function TodoImportFailureAlert(props: TodoImportFailureAlertProps) {
             size="small"
             variant="weak"
             display="inline"
-            onPress={() => router.replace('/todo-import')}
+            onPress={() => replace('/todo-import')}
           >
             {t('failure.setUpAgain')}
           </Button>

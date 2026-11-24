@@ -45,10 +45,13 @@ export function findAccountEmail(collection: Pick<ImportCollection, 'accountName
   return EMAIL_PATTERN.test(name) ? name : null;
 }
 
-/** ask: 안내 뒤 묻는다, denied: 방금 거절해 글만 보인다, blocked: 다시 물을 수 없어 설정 열기를 보인다 */
+/**
+ * ask: 안내 뒤 묻는다, denied: 방금 거절해 다시 묻지 않고 설정 열기를 보인다,
+ * blocked: 시스템이 다시 묻지 않아 다시 들어와도 설정 열기를 보인다
+ */
 export type CalendarPermissionView = 'ask' | 'denied' | 'blocked';
 
-/** 방금 거절했으면 다시 조르지 않는다. 시스템이 다시 묻지 않는 상태면 설정 열기를 보인다 */
+/** 방금 거절했으면 다시 조르지 않는다. 다시 물을 수 있으면 다음에 들어올 때 다시 안내한다 */
 export function getCalendarPermissionView(
   permission: OsPermission,
   answered: OsPermission | null,

@@ -19,7 +19,7 @@
       "sources": "이 기기에 추가한 iCloud·Google·Outlook 캘린더에서 가져와요",
       "read": "고른 캘린더 일정의 제목·날짜·시간만 아이두에 저장해 할 일로 만들어요",
       "noAccountInfo": "이메일 같은 캘린더 계정 정보는 아이두로 보내지 않아요",
-      "oneTime": "지금 있는 일정을 한 번만 옮겨 와요. 캘린더 일정은 바꾸거나 지우지 않아요",
+      "oneTime": "지금 있는 일정을 한 번만 옮겨 와요. 캘린더 일정은 바꾸거나 삭제하지 않아요",
       "optional": "허용하지 않아도 다른 기능은 그대로 쓸 수 있어요"
     },
     "deniedTitle": "캘린더 접근이 꺼져 있어요",
@@ -56,7 +56,7 @@
       "outlookWithEmail": "Outlook 캘린더 · {{email}}",
       "device": "이 기기에만 저장된 캘린더"
     },
-    "receivedTitle": "공휴일·생일 캘린더 {{count}}개",
+    "receivedTitle": "공휴일·생일·구독 캘린더 {{count}}개",
     "itemCount": "{{count}}개",
     "noEventsInRange": "일정 없음",
     "emptyTitle": "이 기간에 가져올 일정이 없어요",
@@ -114,7 +114,7 @@
     "rejected": {
       "capacity": "이 카테고리에는 {{expected}}개 중 {{count}}개만 넣을 수 있어요. 기간을 줄이거나 다른 카테고리를 골라 주세요",
       "nameTaken": "이미 같은 이름의 카테고리가 있어요. 이름을 바꾸거나 그 카테고리를 골라 주세요",
-      "notFound": "카테고리가 지워졌어요. 다른 카테고리를 골라 주세요",
+      "notFound": "카테고리가 삭제됐어요. 다른 카테고리를 골라 주세요",
       "summary": "넣을 수 없는 카테고리가 있어요. 표시한 캘린더의 카테고리를 다시 골라 주세요"
     },
     "capacityWarning": {
@@ -158,7 +158,7 @@
     "planLimit": "지금 요금제로는 이 기간을 가져올 수 없어서 멈췄어요. 기간을 줄여 다시 설정해 주세요",
     "categoryLimit": "새 카테고리를 더 만들 수 없어서 멈췄어요. 기존 카테고리에 넣도록 다시 설정해 주세요",
     "categoryNameTaken": "같은 이름의 카테고리가 생겨서 멈췄어요. 그 카테고리를 고르거나 이름을 바꿔 다시 설정해 주세요",
-    "categoryNotFound": "넣으려던 카테고리가 지워져서 멈췄어요. 다른 카테고리를 골라 다시 설정해 주세요",
+    "categoryNotFound": "넣으려던 카테고리가 삭제돼서 멈췄어요. 다른 카테고리를 골라 다시 설정해 주세요",
     "setUpAgain": "다시 설정하기",
     "viewPlan": "요금제 보기"
   },
@@ -171,28 +171,28 @@
       "created": "만든 할 일",
       "skippedDuplicate": "이미 가져온 일정",
       "skippedCapacity": "카테고리가 가득 차서 못 넣은 일정",
-      "skippedCategoryMissing": "카테고리가 지워져서 못 넣은 일정",
+      "skippedCategoryMissing": "카테고리가 삭제돼서 못 넣은 일정",
       "skippedInvalid": "날짜나 제목을 읽지 못한 일정",
       "undone": "되돌린 할 일",
       "keptCompleted": "완료해서 남겨 둔 할 일"
     },
-    "undoNotice": "7일 안에는 한 번에 되돌릴 수 있어요. 완료한 할 일은 남겨 둬요",
+    "undoNotice": "{{count}}일 안에는 한 번에 되돌릴 수 있어요. 완료한 할 일은 남겨 둬요",
     "duplicateNotice": "같은 일정을 다시 가져와도 두 번 들어오지 않아요",
     "viewTodos": "할 일 보러 가기",
     "undo": "되돌리기",
     "undoConfirmTitle": "가져온 할 일을 되돌릴까요?",
-    "undoConfirmDescription": "아직 완료하지 않은 할 일만 지워요",
+    "undoConfirmDescription": "아직 완료하지 않은 할 일만 삭제해요",
     "failedTitle": "가져오다 멈췄어요",
     "failedDescription_zero": "아직 만든 할 일은 없어요. 다시 가져와 주세요",
     "failedDescription": "만든 할 일 {{count}}개는 그대로 있어요. 다시 가져오면 남은 일정만 이어서 만들어요",
     "undoFailedTitle": "되돌리다 멈췄어요",
-    "undoFailedDescription": "다시 되돌리면 남은 할 일을 마저 지워요. 완료한 할 일은 남겨 둬요",
+    "undoFailedDescription": "다시 되돌리면 남은 할 일을 마저 삭제해요. 완료한 할 일은 남겨 둬요",
     "undoAgain": "다시 되돌리기",
     "canceledTitle": "가져오기를 멈췄어요",
     "canceledDescription": "만든 할 일은 없어요",
     "startAgain": "다시 가져오기",
     "notFoundTitle": "가져오기 기록을 찾을 수 없어요",
-    "notFoundDescription": "다른 계정의 기록이거나 오래돼서 지워졌을 수 있어요",
+    "notFoundDescription": "다른 계정의 기록이거나 오래돼서 삭제됐을 수 있어요",
     "startNew": "새로 가져오기"
   },
   "toasts": {
@@ -201,6 +201,7 @@
     "undoFailed": "되돌리지 못했어요. 다시 시도해 주세요",
     "permissionRequestFailed": "캘린더 권한을 묻지 못했어요. 다시 시도해 주세요",
     "rangeAdjusted": "자정이 지나서 기간을 오늘부터 다시 맞췄어요",
-    "undoWhileImporting": "진행 중인 가져오기가 끝난 뒤 되돌릴 수 있어요"
+    "undoWhileImporting": "진행 중인 가져오기가 끝난 뒤 되돌릴 수 있어요",
+    "cancelTooLate": "이미 할 일을 만들기 시작해서 멈출 수 없어요"
   }
 }

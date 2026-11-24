@@ -117,7 +117,7 @@ import { SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
 
 ### SettingsListGroup.Toggle
 
-`ControlField` props를 그대로 받아요(`isSelected`, `onSelectedChange`, `isDisabled` 등). `children`만 이 컴포넌트가 채워요.
+`ControlField` props를 그대로 받아요(`isSelected`, `onSelectedChange`, `isDisabled` 등). `children`만 이 컴포넌트가 채워요. 스크린 리더가 켬·끔을 읽도록 `accessibilityRole="switch"`와 `isSelected`·`isDisabled`로 만든 `accessibilityState`를 기본으로 넣어요. 호출부가 같은 prop을 주면 그 값을 써요.
 
 | Prop          | Type        | Default | Description                                                                                  |
 | ------------- | ----------- | ------- | -------------------------------------------------------------------------------------------- |

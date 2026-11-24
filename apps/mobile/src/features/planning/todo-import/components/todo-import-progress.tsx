@@ -26,32 +26,14 @@ import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Skeleton, Spinner } from 'heroui-native';
 import { useSyncExternalStore } from 'react';
-import { match, P } from 'ts-pattern';
+import { match } from 'ts-pattern';
 
-import { type TodoImport, TodoImportPolicy } from '../domains/todo-import.model';
 import { useTodoImportId } from '../hooks/use-todo-import-id';
 import { useCancelTodoImportMutationOptions } from '../queries/todo-import.mutations';
 import { useGetTodoImportQueryOptions } from '../queries/todo-import.queries';
 import { todoImportSessionStoredValue } from '../schemas/todo-import-session-storage.schema';
-import type {
-  TodoImportPauseReason,
-  TodoImportUploadSnapshot,
-} from '../services/todo-import-upload.session';
+import { type StageStatus, toProgressView } from '../utils/todo-import-progress.view-model';
 import { TodoImportFailureAlert } from './todo-import-failure-alert';
-
-type StageStatus = 'pending' | 'active' | 'done';
-
-interface ProgressView {
-  read: StageStatus;
-  upload: StageStatus;
-  create: StageStatus;
-  ratio: number;
-  isQueued: boolean;
-  /** 이 기기의 업로드가 멈춘 이유. 멈추지 않았으면 null */
-  pauseReason: TodoImportPauseReason | null;
-  /** 업로드 중인데 이 기기가 보내고 있지도, 이어 보낼 상태를 갖고 있지도 않다(다른 기기에서 시작했다) */
-  isSentElsewhere: boolean;
-}
 
 /** 막대의 접근성 값이 백분율로 읽히게 0~100으로 그린다 */
 const METER_MAX = 100;
@@ -78,16 +60,10 @@ export function TodoImportProgress() {
   const cancelImport = useMutation(useCancelTodoImportMutationOptions({ importId }));
   const openSettings = useOpenAppSettings();
 
-  // 꺼진 채 다시 연 앱은 기기 상태가 아직 비어 있어도, 저장해 둔 업로드가 같으면 이 기기의 가져오기다
   const view = toProgressView(todoImport, snapshot, {
     hasStoredSession: storedSession?.importId === todoImport.id,
+    isOnline,
   });
-  // 업로드 중에만 이 기기의 멈춤·다른 기기 안내를 보인다. 오프라인이면 이 기기의 업로드도 아직 이어지지
-  // 않아 다른 기기로 오해하지 않게, 멈춘 이유 대신 오프라인 안내만 보인다
-  const isUploadingOnline = isOnline && TodoImportPolicy.canCancel(todoImport);
-  const pauseReason = isUploadingOnline ? view.pauseReason : null;
-  const isSentElsewhere = isUploadingOnline && view.isSentElsewhere;
-  const canStop = isSentElsewhere || pauseReason != null;
 
   const handleRetryPress = () => {
     if (accountId != null) {
@@ -120,7 +96,7 @@ export function TodoImportProgress() {
 
       <TodoImportFailureAlert />
       {!isOnline && <InlineAlert status="warning" title={t('progress.offline')} />}
-      {pauseReason === 'interrupted' && (
+      {view.pauseReason === 'interrupted' && (
         <InlineAlert
           status="warning"
           title={t('progress.paused')}
@@ -132,7 +108,7 @@ export function TodoImportProgress() {
         />
       )}
       {/* 권한이 꺼진 채 다시 시도하면 같은 자리에서 멈추므로 설정으로 보낸다. 켜고 돌아오면 앱이 이어 간다 */}
-      {pauseReason === 'permission' && (
+      {view.pauseReason === 'permission' && (
         <InlineAlert
           status="warning"
           title={t('progress.pausedPermission')}
@@ -147,8 +123,10 @@ export function TodoImportProgress() {
           }
         />
       )}
-      {isSentElsewhere && <InlineAlert status="default" title={t('progress.notOnThisDevice')} />}
-      {canStop && (
+      {view.isSentElsewhere && (
+        <InlineAlert status="default" title={t('progress.notOnThisDevice')} />
+      )}
+      {view.canStop && (
         <TextButton
           size="medium"
           className="self-center"
@@ -244,72 +222,3 @@ TodoImportProgress.Loading = function Loading() {
 TodoImportProgress.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   return <QueryErrorFallback reset={reset} />;
 };
-
-function toProgressView(
-  todoImport: TodoImport,
-  snapshot: TodoImportUploadSnapshot,
-  { hasStoredSession }: { hasStoredSession: boolean },
-): ProgressView {
-  // 시작 직후(아직 가져오기 id를 모르는 순간)도 이 기기가 보내는 중이다
-  const isThisImport =
-    snapshot.stage === 'starting' ||
-    ('importId' in snapshot && snapshot.importId === todoImport.id);
-  const localSnapshot: TodoImportUploadSnapshot = isThisImport ? snapshot : { stage: 'idle' };
-  const base = {
-    isQueued: false,
-    pauseReason: localSnapshot.stage === 'paused' ? localSnapshot.reason : null,
-    isSentElsewhere: localSnapshot.stage === 'idle' && !hasStoredSession,
-  };
-
-  return match(todoImport.status)
-    .with('UPLOADING', () =>
-      match(localSnapshot)
-        .returnType<ProgressView>()
-        .with({ stage: 'uploading' }, ({ uploadedChunkCount, chunkCount }) => ({
-          ...base,
-          read: 'done',
-          upload: 'active',
-          create: 'pending',
-          ratio: chunkCount === 0 ? 0 : uploadedChunkCount / chunkCount,
-        }))
-        .with({ stage: 'committing' }, () => ({
-          ...base,
-          read: 'done',
-          upload: 'done',
-          create: 'active',
-          ratio: 1,
-        }))
-        .with({ stage: P.union('idle', 'starting', 'reading') }, () => ({
-          ...base,
-          read: 'active',
-          upload: 'pending',
-          create: 'pending',
-          ratio: 0,
-        }))
-        // 멈췄거나 서버가 받지 않았다. 도는 단계가 없어 읽는 중처럼 보이지 않게 한다
-        .with({ stage: P.union('paused', 'failed') }, () => ({
-          ...base,
-          read: 'pending',
-          upload: 'pending',
-          create: 'pending',
-          ratio: 0,
-        }))
-        .exhaustive(),
-    )
-    .with(P.union('QUEUED', 'RUNNING', 'UNDOING'), (status) => ({
-      ...base,
-      read: 'done' as const,
-      upload: 'done' as const,
-      create: 'active' as const,
-      ratio: TodoImportPolicy.calculateProcessedRatio(todoImport),
-      isQueued: status === 'QUEUED',
-    }))
-    .with(P.union('COMPLETED', 'FAILED', 'CANCELED', 'ABANDONED', 'UNDONE'), () => ({
-      ...base,
-      read: 'done' as const,
-      upload: 'done' as const,
-      create: 'done' as const,
-      ratio: 1,
-    }))
-    .exhaustive();
-}
