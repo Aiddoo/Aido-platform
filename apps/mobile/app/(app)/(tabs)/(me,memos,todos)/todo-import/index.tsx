@@ -186,7 +186,8 @@ function TodoImportSetup() {
       )}
       {!isCompact && isPastFirstStep && <Stack.Screen options={{ gestureEnabled: false }} />}
 
-      <StyledSafeAreaView edges={['left', 'right']} className="px-4 pt-3">
+      {/* 단계 글이 점 뒤로 비쳐 보이지 않게 위에 불투명하게 얹는다 */}
+      <StyledSafeAreaView edges={['left', 'right']} className="z-10 bg-white px-4 pt-3 pb-1">
         <Steps.Dots
           index={TODO_IMPORT_STEPS.indexOf(stepper.step) - firstStepOrder}
           count={TODO_IMPORT_STEPS.length - firstStepOrder}
