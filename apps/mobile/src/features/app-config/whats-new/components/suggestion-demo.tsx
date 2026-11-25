@@ -1,7 +1,6 @@
 import { SuggestionStatus } from '@src/features/assistant/suggestion/components/suggestion-status';
 import { SuggestionsList } from '@src/features/assistant/suggestion/components/suggestions-list';
 import type { AiSuggestion } from '@src/features/assistant/suggestion/domains/suggestion.model';
-import { getNextAnalysisLabels } from '@src/features/assistant/suggestion/utils/suggestion-schedule.view-model';
 import {
   selectTimeFormat,
   useGetPreferenceQueryOptions,
@@ -67,19 +66,15 @@ function WaitingStatus({ onRequest }: { onRequest: () => void }) {
   });
 
   return (
-    <SuggestionStatus.Message
+    <SuggestionStatus.NextAnalysis
       title={t('suggestions.status.waitingForNextRun')}
-      description={t(
-        'suggestions.status.nextAnalysisAt',
-        getNextAnalysisLabels(nextAnalysisAt, timeFormat, dateFormatContext),
-      )}
+      nextAnalysisAt={nextAnalysisAt}
+      timeFormat={timeFormat}
     >
-      <SuggestionStatus.ActionRow>
-        <Button size="small" display="inline" onPress={onRequest} testID="whats-new-request-now">
-          {t('suggestions.status.requestNow')}
-        </Button>
-      </SuggestionStatus.ActionRow>
-    </SuggestionStatus.Message>
+      <Button size="small" display="inline" onPress={onRequest} testID="whats-new-request-now">
+        {t('suggestions.status.requestNow')}
+      </Button>
+    </SuggestionStatus.NextAnalysis>
   );
 }
 
@@ -107,10 +102,11 @@ function RequestedStatus() {
 }
 
 interface SuggestionListDemoProps {
-  onMake: () => void;
+  /** 예시 제안을 반복으로 만들면 다음 장면으로 넘어간다 */
+  onNext: () => void;
 }
 
-export function SuggestionListDemo({ onMake }: SuggestionListDemoProps) {
+export function SuggestionListDemo({ onNext }: SuggestionListDemoProps) {
   const { t } = useTranslation('whatsNew');
 
   // 예시라 설정을 받기까지 기다리지 않고 기본 표기로 먼저 보인다
@@ -142,7 +138,7 @@ export function SuggestionListDemo({ onMake }: SuggestionListDemoProps) {
                       t(`v1_16_0.demo.suggestions.${suggestion.id}`),
                     )}
                     timeFormat={timeFormat}
-                    onMake={onMake}
+                    onMake={onNext}
                     onDismiss={() => setDismissedIds((current) => [...current, suggestion.id])}
                     isLast={index === shownSuggestions.length - 1}
                   />

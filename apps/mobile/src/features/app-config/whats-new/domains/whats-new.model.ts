@@ -14,19 +14,16 @@ export type ReleaseId = z.infer<typeof releaseIdSchema>;
 const TOUR_RELEASE_IDS = ['1.17.0', '1.16.0'] as const satisfies readonly ReleaseId[];
 export const tourReleaseIdSchema = z.enum(TOUR_RELEASE_IDS);
 type TourReleaseId = z.infer<typeof tourReleaseIdSchema>;
+/** 소개가 없는 출시나 잘못된 값은 최신 소개로 읽는다 */
+export const tourReleaseIdOrLatestSchema = tourReleaseIdSchema.catch(TOUR_RELEASE_IDS[0]);
 
 /** 처음 본 뒤 피드 카드로 다시 열 수 있는 기간 */
 const REENTRY_WINDOW_MS = 14 * DAY_MS;
 
-/** 소개 출시를 모르는 route는 최신 소개를 연다 */
-export function getLatestTourReleaseId(): TourReleaseId {
-  return TOUR_RELEASE_IDS[0];
-}
-
 export const releaseSchema = z.object({
   id: releaseIdSchema,
   /** 서버가 자동으로 열 수 있는 출시에만 있다. 지난 출시는 목록에서만 연다 */
-  campaignId: z.string().min(1).optional(),
+  campaignId: z.string().min(1).nullable(),
   releasedOn: dateKeySchema,
 });
 export type Release = z.infer<typeof releaseSchema>;
@@ -35,21 +32,6 @@ interface AutoOpenContext {
   config: WhatsNewCampaignConfig | undefined;
   appVersion: string | null;
   hasSeen: boolean;
-}
-
-/** 서버가 켠 캠페인을 앱이 묶어 온 출시로 찾는다. 앱이 모르는 캠페인이면 없다 */
-export function findReleaseByCampaign<T extends Release>(
-  releases: readonly T[],
-  campaignId: string,
-): T | null {
-  return releases.find((release) => release.campaignId === campaignId) ?? null;
-}
-
-/** DateKey(YYYY-MM-DD)는 사전순이 날짜순이라 Date로 바꾸지 않고 비교한다 */
-export function getLatestRelease<T extends Release>(releases: readonly [T, ...T[]]): T {
-  return releases.reduce((latest, release) =>
-    release.releasedOn > latest.releasedOn ? release : latest,
-  );
 }
 
 /** 현재 시각은 분 단위 시계라 방금 연 시각보다 앞설 수 있다. 그래도 바로 보이도록 아래 경계를 두지 않는다 */
@@ -75,6 +57,18 @@ export const WhatsNewPolicy = {
       config.autoOpen &&
       !hasSeen &&
       isSemanticVersionAtLeast(appVersion, config.minAppVersion)
+    );
+  },
+
+  /** 서버가 켠 캠페인을 앱이 묶어 온 출시로 찾는다. 앱이 모르는 캠페인이면 없다 */
+  findByCampaign<T extends Release>(releases: readonly T[], campaignId: string): T | null {
+    return releases.find((release) => release.campaignId === campaignId) ?? null;
+  },
+
+  /** DateKey(YYYY-MM-DD)는 사전순이 날짜순이라 Date로 바꾸지 않고 비교한다 */
+  getLatest<T extends Release>(releases: readonly [T, ...T[]]): T {
+    return releases.reduce((latest, release) =>
+      release.releasedOn > latest.releasedOn ? release : latest,
     );
   },
 };

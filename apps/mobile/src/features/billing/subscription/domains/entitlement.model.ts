@@ -6,6 +6,7 @@ import {
 } from '@aido/api/vocabulary';
 import { type Instant, toEpochMs } from '@src/shared/date/instant';
 import { minBy } from 'es-toolkit';
+import { match } from 'ts-pattern';
 import { z } from 'zod';
 
 import {
@@ -45,6 +46,36 @@ export const entitlementSnapshotSchema = z.object({
   plans: z.record(entitlementFeatureSchema, planComparisonSchema),
 });
 export type EntitlementSnapshot = z.infer<typeof entitlementSnapshotSchema>;
+
+type PlanValueUnit = 'perMonth' | 'perDay' | 'people' | 'items' | 'days';
+
+interface PlanComparison {
+  unit: PlanValueUnit;
+  /** null은 무제한이다 */
+  free: number | null;
+  /** null은 무제한이다 */
+  premium: number | null;
+}
+
+/** 요금제가 그 기능에서 주는 것. 숫자는 모두 서버 요금제 값이다 */
+export type PlanValue =
+  | { type: 'amount'; unit: PlanValueUnit; amount: number }
+  | { type: 'unlimited' }
+  | { type: 'included' }
+  | { type: 'excluded' };
+
+interface PlanFeatureComparison {
+  free: PlanValue;
+  premium: PlanValue;
+}
+
+function toPlanValue(unit: PlanValueUnit, amount: number | null): PlanValue {
+  return amount == null ? { type: 'unlimited' } : { type: 'amount', unit, amount };
+}
+
+function toFlagPlanValue(canUse: boolean): PlanValue {
+  return canUse ? { type: 'included' } : { type: 'excluded' };
+}
 
 export const EntitlementPolicy = {
   /** 스냅샷에 없는 기능은 null이다. 서버가 판단하도록 앱은 막지 않는다 */
@@ -153,6 +184,52 @@ export const EntitlementPolicy = {
     return snapshot.tier === 'FREE' && limit != null
       ? limit
       : this.findPlanLimit(snapshot, feature, 'free');
+  },
+
+  /** 막힌 기능 하나의 "무료 → 프리미엄" 숫자. 프리미엄은 공정 사용 상한까지 서버가 집행하는 값이다 */
+  getPlanComparison(
+    snapshot: EntitlementSnapshot,
+    feature: PlanLimitFeatureKey | PlanHorizonFeatureKey,
+  ): PlanComparison {
+    return {
+      unit: match(feature)
+        .returnType<PlanValueUnit>()
+        .with('AI_PARSE', 'VOICE_NOTE', () => 'perMonth')
+        .with('CHEER', 'NUDGE', () => 'perDay')
+        .with('FRIEND', () => 'people')
+        .with('TODO_CATEGORY', () => 'items')
+        .with('CALENDAR_IMPORT', () => 'days')
+        .exhaustive(),
+      free: this.findFreeLimit(snapshot, feature),
+      premium: this.findPlanLimit(snapshot, feature, 'premium'),
+    };
+  },
+
+  /** 요금제마다 그 기능에서 주는 것(양·무제한·포함·제외) */
+  getPlanFeatureComparison(
+    snapshot: EntitlementSnapshot,
+    feature: EntitlementFeature,
+  ): PlanFeatureComparison {
+    return match(feature)
+      .returnType<PlanFeatureComparison>()
+      .with('AI_REPORT', 'AI_SUGGESTION', 'CUSTOM_REMINDER_TIME', 'APP_ICON', (flagFeature) => ({
+        free: toFlagPlanValue(this.canUseOnPlan(snapshot, flagFeature, 'free')),
+        premium: toFlagPlanValue(this.canUseOnPlan(snapshot, flagFeature, 'premium')),
+      }))
+      .with(
+        'AI_PARSE',
+        'VOICE_NOTE',
+        'CHEER',
+        'NUDGE',
+        'FRIEND',
+        'TODO_CATEGORY',
+        'CALENDAR_IMPORT',
+        (limitFeature) => {
+          const { unit, free, premium } = this.getPlanComparison(snapshot, limitFeature);
+          return { free: toPlanValue(unit, free), premium: toPlanValue(unit, premium) };
+        },
+      )
+      .exhaustive();
   },
 
   withFeatureQuota(snapshot: EntitlementSnapshot, quota: FeatureQuota): EntitlementSnapshot {

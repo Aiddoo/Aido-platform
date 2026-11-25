@@ -7,7 +7,7 @@ export interface WeeklyRecordDay {
   isUpcoming: boolean;
 }
 
-type CompletionsByDate = Record<string, { totalTodos: number; completedTodos: number }>;
+export type CompletionsByDate = Record<string, { totalTodos: number; completedTodos: number }>;
 
 /** 이번 주(월요일 시작) 막대 7칸. 아직 오지 않은 날은 기록이 없어도 0이 아니라 아직으로 구분한다 */
 export function getWeeklyRecordDays(

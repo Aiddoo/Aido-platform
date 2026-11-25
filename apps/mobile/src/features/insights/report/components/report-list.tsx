@@ -4,7 +4,6 @@ import { useGetWeeklyAchievementsInfiniteQueryOptions } from '@src/features/insi
 import { useGetDailyCompletionsInRangeQueriesOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTrack, useTrackView } from '@src/shared/analytics';
 import { getIsoWeekDateRange } from '@src/shared/date/date-key';
-import { formatDateKeyLabel } from '@src/shared/date/format/date-format';
 import { formatDateKeyRange, formatIsoWeekLabel } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
@@ -56,7 +55,6 @@ import {
   useGetReportStatusQueryOptions,
 } from '../queries/report.queries';
 import {
-  formatDailyValueLine,
   getRecentTrendWeeks,
   getTrendIsoWeekYears,
   type TrendWeek,
@@ -64,11 +62,11 @@ import {
 import { getReportTypeLabelKey } from '../utils/report-label.view-model';
 import { formatReportPeriodLabel } from '../utils/report-period.view-model';
 import { createSampleReport, getSampleTrendWeeks } from '../utils/sample-report.view-model';
-import { getWeeklyRecordDays } from '../utils/weekly-record.view-model';
 import { CompletionRateHeadline } from './completion-rate-headline';
 import { CompletionTrendLine } from './completion-trend-line';
 import { DailyCompletionChart } from './daily-completion-chart';
 import { ReportTypeChip } from './report-type-chip';
+import { ThisWeekRecordChart } from './this-week-record-chart';
 
 const LOADING_CARD_COUNT = 3;
 const LOADING_STAT_COUNT = 3;
@@ -558,28 +556,12 @@ interface ThisWeekRecordProps {
 function ThisWeekRecord({ access }: ThisWeekRecordProps) {
   const { t } = useTranslation('ai');
   const { trackEvent } = useTrack();
-  const dateFormatContext = useDateFormatContext();
   const todayKey = useTodayKey();
 
+  // Suspense라 덮는 달을 모두 받은 뒤에 그린다
   const completionsByDate = useSuspenseQueries(
     useGetDailyCompletionsInRangeQueriesOptions(getIsoWeekDateRange(todayKey)),
   );
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-
-  // Suspense라 덮는 달을 모두 받은 뒤에 그린다
-  const days = getWeeklyRecordDays(completionsByDate ?? {}, todayKey);
-  const valueLine = formatDailyValueLine(
-    selectedIndex == null ? null : (days[selectedIndex] ?? null),
-    dateFormatContext,
-  );
-
-  // 리포트 없이 할 일 기록만 그린 차트라 리포트 차트와 다른 값으로 세고 AI 리포트 사용으로 치지 않는다
-  const handleSelectedIndexChange = (index: number) => {
-    if (selectedIndex == null) {
-      trackEvent('ai_report_chart_tapped', { chart: 'this_week_record' });
-    }
-    setSelectedIndex(index);
-  };
 
   return (
     <VStack gap={16} testID="report-this-week-record">
@@ -594,19 +576,13 @@ function ThisWeekRecord({ access }: ThisWeekRecordProps) {
             .exhaustive()}
         />
       </HStack>
-      <VStack gap={8}>
-        <DailyCompletionChart
-          values={days}
-          labels={days.map((day) => formatDateKeyLabel(day.date, 'weekday', dateFormatContext))}
-          selectedIndex={selectedIndex}
-          onSelectedIndexChange={handleSelectedIndexChange}
-          accessibilityLabel={t('report.thisWeek.title')}
-          accessibilityValue={{ text: valueLine }}
-        />
-        <Text size="b4" shade={7} className="tabular-nums">
-          {valueLine}
-        </Text>
-      </VStack>
+      <ThisWeekRecordChart
+        completionsByDate={completionsByDate ?? {}}
+        todayKey={todayKey}
+        accessibilityLabel={t('report.thisWeek.title')}
+        // 리포트 없이 할 일 기록만 그린 차트라 리포트 차트와 다른 값으로 세고 AI 리포트 사용으로 치지 않는다
+        onFirstTap={() => trackEvent('ai_report_chart_tapped', { chart: 'this_week_record' })}
+      />
     </VStack>
   );
 }

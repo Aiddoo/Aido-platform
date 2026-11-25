@@ -45,7 +45,6 @@ import { LimitedFeaturePolicy } from '../domains/limited-feature.model';
 import { getCachedEntitlements, reflectFeatureQuota } from '../queries/entitlement-cache';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
 import { upsellDismissalStoredValue } from '../schemas/upsell-dismissal-storage.schema';
-import { toPlanFeatureComparison } from '../utils/plan-benefit.view-model';
 import { getPremiumGateAnalyticsFeature } from '../utils/subscription-analytics';
 import { getUpsellPresentation, type UpsellPresentation } from '../utils/upsell.view-model';
 import { useFormatPlanValue } from './use-format-plan-value';
@@ -401,7 +400,7 @@ function Comparison({ feature }: { feature: PlanLimitFeatureKey | PlanHorizonFea
   const { t } = useTranslation('subscription');
   const fontScaledSize = useFontScaledSize();
   const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
-  const { free, premium } = toPlanFeatureComparison(entitlements, feature);
+  const { free, premium } = EntitlementPolicy.getPlanFeatureComparison(entitlements, feature);
   const formatPlanValue = useFormatPlanValue();
 
   return (

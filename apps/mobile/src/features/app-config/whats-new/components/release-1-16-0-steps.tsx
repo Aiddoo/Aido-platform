@@ -28,7 +28,7 @@ import { match } from 'ts-pattern';
 
 import { RELEASE_1_16_0_STEPS } from '../constants/release-1-16-0.constants';
 import { RELEASE_1_16_0, RELEASES } from '../constants/releases.constants';
-import { getLatestRelease } from '../domains/whats-new.model';
+import { WhatsNewPolicy } from '../domains/whats-new.model';
 import { useWhatsNewFlow } from '../hooks/use-whats-new-flow';
 import { useWhatsNewParams } from '../hooks/use-whats-new-params';
 import { FreeRecordDemo, ReportHoursDemo, ReportSummaryDemo } from './report-demo';
@@ -101,7 +101,7 @@ export function Release1160Steps() {
   return (
     <>
       <WhatsNewStep.Header
-        isNew={getLatestRelease(RELEASES).id === RELEASE_1_16_0.id}
+        isNew={WhatsNewPolicy.getLatest(RELEASES).id === RELEASE_1_16_0.id}
         version={RELEASE_1_16_0.version}
         onClose={flow.close}
       />
@@ -134,7 +134,7 @@ export function Release1160Steps() {
             )}
             suggestionList={() => (
               <WhatsNewStep
-                media={<SuggestionListDemo onMake={goNext} />}
+                media={<SuggestionListDemo onNext={goNext} />}
                 badge={<PlanBadge plan="premium" />}
                 title={t('v1_16_0.suggestions.title')}
                 description={t('v1_16_0.suggestions.description', { period: analysisPeriod })}

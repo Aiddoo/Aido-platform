@@ -308,7 +308,7 @@ module.exports = {
       severity: 'error',
       from: {
         path: FEATURE,
-        pathNot: [TEST, pendingFeatures(['app-config/whats-new'])],
+        pathNot: [TEST],
       },
       to: { path: '^src/features/.+/utils/', pathNot: ['^src/features/$1/', ANALYTICS_UTILS] },
     },

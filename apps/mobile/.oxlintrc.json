@@ -1379,7 +1379,7 @@
     },
     {
       // 래칫
-      "files": ["src/bootstrap/**", "src/features/device/activation/**"],
+      "files": ["src/bootstrap/**"],
       "rules": {
         "aido/no-inline-query-options": "off"
       }
@@ -1393,7 +1393,7 @@
     },
     {
       // 래칫
-      "files": ["src/shared/draft/draft.model.ts", "src/features/app-config/whats-new/**"],
+      "files": ["src/shared/draft/draft.model.ts"],
       "rules": {
         "aido/model-function-exports": "off"
       }
@@ -1403,13 +1403,6 @@
       "files": ["src/shared/domains/completion-rate.model.ts", "src/shared/draft/draft.model.ts"],
       "rules": {
         "aido/model-exports": "off"
-      }
-    },
-    {
-      // 래칫
-      "files": ["src/features/app-config/whats-new/**"],
-      "rules": {
-        "aido/props-interface": "off"
       }
     },
     // 규칙이 처음 나오는 블록이 켜는 자리이고 뒤따르는 같은 규칙의 off 블록은 허용 경로다.

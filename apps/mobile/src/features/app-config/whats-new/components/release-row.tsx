@@ -12,9 +12,9 @@ import { WhatsNewPolicy } from '../domains/whats-new.model';
 import { useUnseenCampaignReleaseId } from '../hooks/use-unseen-campaign-release-id';
 import type { ReleaseEntry } from '../schemas/release-entry.schema';
 
-type ReleaseRowProps = {
+interface ReleaseRowProps {
   release: ReleaseEntry;
-};
+}
 
 /**
  * 기능이 주인공이고 버전·날짜는 조용히 아래에 둔다. 소개가 남은 출시는 소개를 열고,

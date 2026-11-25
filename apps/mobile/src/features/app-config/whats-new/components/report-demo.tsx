@@ -5,16 +5,15 @@ import {
 import { ActivityReport } from '@src/features/insights/report/components/activity-report';
 import { CompletionHourChart } from '@src/features/insights/report/components/completion-hour-chart';
 import { CompletionRateHeadline } from '@src/features/insights/report/components/completion-rate-headline';
-import { DailyCompletionChart } from '@src/features/insights/report/components/daily-completion-chart';
-import { type AiReport, ReportPolicy } from '@src/features/insights/report/domains/report.model';
-import { formatDailyValueLine } from '@src/features/insights/report/utils/report-chart.view-model';
+import { ThisWeekRecordChart } from '@src/features/insights/report/components/this-week-record-chart';
 import {
-  getWeeklyRecordDays,
-  type WeeklyRecordDay,
-} from '@src/features/insights/report/utils/weekly-record.view-model';
+  type AiReport,
+  type DailyCompletion,
+  ReportPolicy,
+} from '@src/features/insights/report/domains/report.model';
 import { HOURS_PER_DAY } from '@src/shared/constants/time-units';
 import { addDaysToDateKey } from '@src/shared/date/date-key';
-import { formatDateKeyLabel, formatHourLabel } from '@src/shared/date/format/date-format';
+import { formatHourLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, DashedDivider, ScallopedContainer, Text, VStack } from '@src/shared/ui';
@@ -26,17 +25,12 @@ import { DEMO_REPORT, DEMO_SCRIPT_MS, DEMO_THIS_WEEK } from '../constants/releas
 import { useDemoScript } from '../hooks/use-demo-script';
 import { WhatsNewStep } from './whats-new-step';
 
-const DEMO_REPORT_DAYS: readonly WeeklyRecordDay[] = DEMO_REPORT.dailyCompletions.map(
-  (day, offset) => ({
-    ...day,
-    date: addDaysToDateKey(DEMO_REPORT.startDate, offset),
-    isUpcoming: false,
-  }),
-);
+const DEMO_REPORT_DAYS: DailyCompletion[] = DEMO_REPORT.dailyCompletions.map((day, offset) => ({
+  ...day,
+  date: addDaysToDateKey(DEMO_REPORT.startDate, offset),
+}));
 
 export function ReportSummaryDemo() {
-  const { t } = useTranslation('ai');
-
   const report = useDemoReport();
 
   return (
@@ -48,9 +42,10 @@ export function ReportSummaryDemo() {
           </Box>
           <DashedDivider />
           <Box className="py-4">
-            <DemoDailyCompletions
-              title={t('report.detail.dailyCompletions')}
-              days={DEMO_REPORT_DAYS}
+            {/* 예시라 막대를 눌러도 지표를 남기지 않는다 */}
+            <ActivityReport.DailyCompletions
+              reportType="WEEKLY"
+              dailyCompletions={DEMO_REPORT_DAYS}
             />
           </Box>
         </VStack>
@@ -90,51 +85,20 @@ export function FreeRecordDemo() {
     <WhatsNewStep.Stage>
       <ScallopedContainer>
         <Box className="px-4 py-2">
-          <DemoDailyCompletions
-            title={t('report.thisWeek.title')}
-            days={getWeeklyRecordDays(DEMO_THIS_WEEK.completionsByDate, DEMO_THIS_WEEK.todayKey)}
-          />
+          <VStack gap={16}>
+            <Text size="b3" weight="semibold" shade={9}>
+              {t('report.thisWeek.title')}
+            </Text>
+            {/* 예시라 막대를 눌러도 지표를 남기지 않는다 */}
+            <ThisWeekRecordChart
+              completionsByDate={DEMO_THIS_WEEK.completionsByDate}
+              todayKey={DEMO_THIS_WEEK.todayKey}
+              accessibilityLabel={t('report.thisWeek.title')}
+            />
+          </VStack>
         </Box>
       </ScallopedContainer>
     </WhatsNewStep.Stage>
-  );
-}
-
-interface DemoDailyCompletionsProps {
-  title: string;
-  days: readonly WeeklyRecordDay[];
-}
-
-/** 리포트의 날마다 끝낸 할 일·무료 이번 주 기록과 같은 모양이다. 예시라 막대를 눌러도 지표를 남기지 않는다 */
-function DemoDailyCompletions({ title, days }: DemoDailyCompletionsProps) {
-  const dateFormatContext = useDateFormatContext();
-
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-
-  const valueLine = formatDailyValueLine(
-    selectedIndex == null ? null : (days[selectedIndex] ?? null),
-    dateFormatContext,
-  );
-
-  return (
-    <VStack gap={16}>
-      <Text size="b3" weight="semibold" shade={9}>
-        {title}
-      </Text>
-      <VStack gap={8}>
-        <DailyCompletionChart
-          values={days}
-          labels={days.map((day) => formatDateKeyLabel(day.date, 'weekday', dateFormatContext))}
-          selectedIndex={selectedIndex}
-          onSelectedIndexChange={setSelectedIndex}
-          accessibilityLabel={title}
-          accessibilityValue={{ text: valueLine }}
-        />
-        <Text size="b4" shade={7} className="tabular-nums">
-          {valueLine}
-        </Text>
-      </VStack>
-    </VStack>
   );
 }
 

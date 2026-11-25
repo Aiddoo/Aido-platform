@@ -4,12 +4,7 @@ import { createDateKey } from '@src/testing/date-key';
 import { RELEASE_1_17_0, RELEASES } from '../constants/releases.constants';
 import type { WhatsNewCampaignConfig } from './whats-new-campaign.model';
 import type { Release } from './whats-new.model';
-import {
-  findReleaseByCampaign,
-  getLatestRelease,
-  shouldShowReentry,
-  WhatsNewPolicy,
-} from './whats-new.model';
+import { shouldShowReentry, WhatsNewPolicy } from './whats-new.model';
 
 const createEnabledConfig = (
   overrides: Partial<Extract<WhatsNewCampaignConfig, { enabled: true }>> = {},
@@ -60,36 +55,36 @@ describe('WhatsNewPolicy', () => {
       expect(result).toBe(false);
     });
   });
-});
 
-describe('getLatestRelease', () => {
-  it('목록 순서와 상관없이 가장 최근에 나온 출시를 고른다', () => {
-    // Given
-    const releases: [Release, ...Release[]] = [
-      { ...RELEASES[0], releasedOn: createDateKey('2026-10-01') },
-      { ...RELEASES[0], releasedOn: createDateKey('2026-11-01') },
-    ];
+  describe('getLatest', () => {
+    it('목록 순서와 상관없이 가장 최근에 나온 출시를 고른다', () => {
+      // Given
+      const releases: [Release, ...Release[]] = [
+        { ...RELEASES[0], releasedOn: createDateKey('2026-10-01') },
+        { ...RELEASES[0], releasedOn: createDateKey('2026-11-01') },
+      ];
 
-    // When
-    const result = getLatestRelease(releases);
+      // When
+      const result = WhatsNewPolicy.getLatest(releases);
 
-    // Then
-    expect(result.releasedOn).toBe('2026-11-01');
+      // Then
+      expect(result.releasedOn).toBe('2026-11-01');
+    });
   });
-});
 
-describe('findReleaseByCampaign', () => {
-  it.each([
-    ['앱이 모르는', 'feature-discovery-2026-08'],
-    ['지운 지난 출시(친구 초대)가 쓰던', 'feature-discovery-2026-11'],
-    ['목록에만 남긴 지난 출시(1.15.0)가 쓰던', 'feature-discovery-2026-12'],
-    ['목록에만 남긴 지난 출시(1.16.0)가 쓰던', 'feature-discovery-1.16.0'],
-  ])('%s 캠페인이면 찾지 못해 자동으로 열지 않는다', (_label, campaignId) => {
-    // When
-    const result = findReleaseByCampaign(RELEASES, campaignId);
+  describe('findByCampaign', () => {
+    it.each([
+      ['앱이 모르는', 'feature-discovery-2026-08'],
+      ['지운 지난 출시(친구 초대)가 쓰던', 'feature-discovery-2026-11'],
+      ['목록에만 남긴 지난 출시(1.15.0)가 쓰던', 'feature-discovery-2026-12'],
+      ['목록에만 남긴 지난 출시(1.16.0)가 쓰던', 'feature-discovery-1.16.0'],
+    ])('%s 캠페인이면 찾지 못해 자동으로 열지 않는다', (_label, campaignId) => {
+      // When
+      const result = WhatsNewPolicy.findByCampaign(RELEASES, campaignId);
 
-    // Then
-    expect(result).toBeNull();
+      // Then
+      expect(result).toBeNull();
+    });
   });
 });
 

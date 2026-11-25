@@ -4,6 +4,7 @@ import { useAiDataSharingConsentGate } from '@src/features/identity/consent/hook
 import { useGetConsentQueryOptions } from '@src/features/identity/consent/queries/consent.queries';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { useTrack, useTrackView } from '@src/shared/analytics';
+import type { TimeFormat } from '@src/shared/date/format/date-format';
 import { formatDayCountLabel } from '@src/shared/date/format/date-labels';
 import type { Instant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -26,7 +27,7 @@ import {
 import { useIsFetching, useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { useIsFocused } from 'expo-router';
 import { Spinner } from 'heroui-native';
-import type { ReactNode } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 import { match } from 'ts-pattern';
 
 import { AiSuggestionListPolicy } from '../domains/suggestion-list.model';
@@ -261,6 +262,38 @@ SuggestionStatus.Message = function Message({ title, description, children }: Me
   );
 };
 
+interface NextAnalysisValueProps extends Omit<
+  ComponentProps<typeof SuggestionStatus.Message>,
+  'description'
+> {
+  nextAnalysisAt?: Instant;
+  timeFormat: TimeFormat;
+}
+
+/** 다음 분석 시각 안내. 받은 표기로 그리고 설정을 조회하지 않는다 */
+SuggestionStatus.NextAnalysis = function NextAnalysis({
+  nextAnalysisAt,
+  timeFormat,
+  children,
+  ...props
+}: NextAnalysisValueProps) {
+  const { t } = useTranslation('ai');
+  const dateFormatContext = useDateFormatContext();
+  const description =
+    nextAnalysisAt == null
+      ? ''
+      : t(
+          'suggestions.status.nextAnalysisAt',
+          getNextAnalysisLabels(nextAnalysisAt, timeFormat, dateFormatContext),
+        );
+
+  return (
+    <SuggestionStatus.Message {...props} description={description}>
+      <SuggestionStatus.ActionRow>{children}</SuggestionStatus.ActionRow>
+    </SuggestionStatus.Message>
+  );
+};
+
 /**
  * 버튼·스피너 자리. 대기 → 분석 중 → 결과는 폴링으로 제자리에서 바뀌어 비어 있어도 같은 높이를 잡는다.
  * 제안 줄이 이어지는 상태(HasSuggestions·무료 예시)는 목록이 아래를 채워 두지 않는다
@@ -341,20 +374,15 @@ interface NextAnalysisMessageProps extends NextAnalysisProps {
 }
 
 function NextAnalysisMessage({ title, nextAnalysisAt, children }: NextAnalysisMessageProps) {
-  const { t } = useTranslation('ai');
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
-  const dateFormatContext = useDateFormatContext();
-  const description =
-    nextAnalysisAt == null
-      ? ''
-      : t(
-          'suggestions.status.nextAnalysisAt',
-          getNextAnalysisLabels(nextAnalysisAt, preference.timeFormat, dateFormatContext),
-        );
 
   return (
-    <SuggestionStatus.Message title={title} description={description}>
-      <SuggestionStatus.ActionRow>{children}</SuggestionStatus.ActionRow>
-    </SuggestionStatus.Message>
+    <SuggestionStatus.NextAnalysis
+      title={title}
+      nextAnalysisAt={nextAnalysisAt}
+      timeFormat={preference.timeFormat}
+    >
+      {children}
+    </SuggestionStatus.NextAnalysis>
   );
 }

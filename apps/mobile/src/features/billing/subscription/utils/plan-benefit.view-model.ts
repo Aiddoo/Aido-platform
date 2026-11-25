@@ -1,9 +1,10 @@
-import type { PlanHorizonFeatureKey, PlanLimitFeatureKey } from '@aido/api/vocabulary';
 import { SECONDS_PER_MINUTE } from '@src/shared/constants/time-units';
-import { match } from 'ts-pattern';
 
-import { type EntitlementSnapshot } from '../domains/entitlement.model';
-import { EntitlementPolicy } from '../domains/entitlement.model';
+import {
+  type EntitlementSnapshot,
+  EntitlementPolicy,
+  type PlanValue,
+} from '../domains/entitlement.model';
 import { type EntitlementFeature } from '../domains/feature-quota.model';
 
 /** 숫자는 모두 서버 요금제 값이다. null은 무제한이고 화면은 "무제한"으로 쓴다 */
@@ -42,77 +43,6 @@ export function getPlanBenefitAmounts(snapshot: EntitlementSnapshot) {
   } as const;
 }
 
-interface PlanComparison {
-  unit: 'perMonth' | 'perDay' | 'people' | 'items' | 'days';
-  /** null은 무제한이다 */
-  free: number | null;
-  /** null은 무제한이다 */
-  premium: number | null;
-}
-
-/** 막힌 기능 하나의 "무료 → 프리미엄" 숫자. 프리미엄은 공정 사용 상한까지 서버가 집행하는 값이다 */
-export function getPlanComparison(
-  snapshot: EntitlementSnapshot,
-  feature: PlanLimitFeatureKey | PlanHorizonFeatureKey,
-): PlanComparison {
-  return {
-    unit: match(feature)
-      .returnType<PlanComparison['unit']>()
-      .with('AI_PARSE', 'VOICE_NOTE', () => 'perMonth')
-      .with('CHEER', 'NUDGE', () => 'perDay')
-      .with('FRIEND', () => 'people')
-      .with('TODO_CATEGORY', () => 'items')
-      .with('CALENDAR_IMPORT', () => 'days')
-      .exhaustive(),
-    free: EntitlementPolicy.findFreeLimit(snapshot, feature),
-    premium: EntitlementPolicy.findPlanLimit(snapshot, feature, 'premium'),
-  };
-}
-
-export type PlanValue =
-  | { type: 'amount'; unit: PlanComparison['unit']; amount: number }
-  | { type: 'unlimited' }
-  | { type: 'included' }
-  | { type: 'excluded' };
-
-interface PlanFeatureComparison {
-  free: PlanValue;
-  premium: PlanValue;
-}
-
-function toPlanValue(unit: PlanComparison['unit'], amount: number | null): PlanValue {
-  return amount == null ? { type: 'unlimited' } : { type: 'amount', unit, amount };
-}
-
-function toFlagPlanValue(canUse: boolean): PlanValue {
-  return canUse ? { type: 'included' } : { type: 'excluded' };
-}
-
-export function toPlanFeatureComparison(
-  snapshot: EntitlementSnapshot,
-  feature: EntitlementFeature,
-): PlanFeatureComparison {
-  return match(feature)
-    .with('AI_REPORT', 'AI_SUGGESTION', 'CUSTOM_REMINDER_TIME', 'APP_ICON', (flagFeature) => ({
-      free: toFlagPlanValue(EntitlementPolicy.canUseOnPlan(snapshot, flagFeature, 'free')),
-      premium: toFlagPlanValue(EntitlementPolicy.canUseOnPlan(snapshot, flagFeature, 'premium')),
-    }))
-    .with(
-      'AI_PARSE',
-      'VOICE_NOTE',
-      'CHEER',
-      'NUDGE',
-      'FRIEND',
-      'TODO_CATEGORY',
-      'CALENDAR_IMPORT',
-      (limitFeature) => {
-        const { unit, free, premium } = getPlanComparison(snapshot, limitFeature);
-        return { free: toPlanValue(unit, free), premium: toPlanValue(unit, premium) };
-      },
-    )
-    .exhaustive();
-}
-
 type BenefitQuotaLabel =
   | { type: 'premiumOnly' }
   | { type: 'upgrade'; free: PlanValue; premium: PlanValue };
@@ -121,6 +51,6 @@ export function toBenefitQuotaLabel(
   snapshot: EntitlementSnapshot,
   feature: EntitlementFeature,
 ): BenefitQuotaLabel {
-  const { free, premium } = toPlanFeatureComparison(snapshot, feature);
+  const { free, premium } = EntitlementPolicy.getPlanFeatureComparison(snapshot, feature);
   return free.type === 'excluded' ? { type: 'premiumOnly' } : { type: 'upgrade', free, premium };
 }

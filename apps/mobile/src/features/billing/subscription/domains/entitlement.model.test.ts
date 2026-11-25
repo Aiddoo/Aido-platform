@@ -390,6 +390,67 @@ describe('EntitlementPolicy', () => {
     });
   });
 
+  describe('getPlanComparison', () => {
+    it('AI 할 일 만들기는 무료 한도와 프리미엄 공정 사용 상한을 월 단위로 견준다', () => {
+      // Given
+      const snapshot = createEntitlementSnapshot();
+
+      // When
+      const comparison = EntitlementPolicy.getPlanComparison(snapshot, 'AI_PARSE');
+
+      // Then
+      expect(comparison).toEqual({
+        unit: 'perMonth',
+        free: PLAN_CATALOG.AI_PARSE.free,
+        premium: PLAN_CATALOG.AI_PARSE.fairUse.premium,
+      });
+    });
+
+    it('친구는 초대로 늘어난 서버 한도를 무료 쪽에 쓰고 프리미엄은 무제한이다', () => {
+      // Given
+      const snapshot = EntitlementPolicy.withFeatureQuota(
+        createEntitlementSnapshot(),
+        toFeatureQuota({ ...createFeatureQuotaDto('FRIEND'), limit: 7 }),
+      );
+
+      // When
+      const comparison = EntitlementPolicy.getPlanComparison(snapshot, 'FRIEND');
+
+      // Then
+      expect(comparison).toEqual({ unit: 'people', free: 7, premium: null });
+    });
+
+    it('프리미엄 사용자에게도 캘린더 가져오기는 서버 요금제의 무료·프리미엄 일 수를 견준다', () => {
+      // Given
+      const snapshot = createEntitlementSnapshot({ tier: 'PREMIUM' });
+
+      // When
+      const comparison = EntitlementPolicy.getPlanComparison(snapshot, 'CALENDAR_IMPORT');
+
+      // Then
+      expect(comparison).toEqual({
+        unit: 'days',
+        free: PLAN_CATALOG.CALENDAR_IMPORT.free,
+        premium: PLAN_CATALOG.CALENDAR_IMPORT.premium,
+      });
+    });
+  });
+
+  describe('getPlanFeatureComparison', () => {
+    it('콕 찌르기와 응원은 같은 한도라 비교표 한 줄로 보여도 맞다', () => {
+      // Given
+      const snapshot = createEntitlementSnapshot();
+
+      // When
+      const nudge = EntitlementPolicy.getPlanFeatureComparison(snapshot, 'NUDGE');
+      const cheer = EntitlementPolicy.getPlanFeatureComparison(snapshot, 'CHEER');
+
+      // Then
+      expect(nudge).toEqual(cheer);
+      expect(nudge.premium).toEqual({ type: 'unlimited' });
+    });
+  });
+
   describe('shouldOfferPremium', () => {
     it.each([
       ['스냅샷을 모르면', undefined, true],

@@ -3,8 +3,7 @@ import { i18n } from '@src/shared/i18n';
 import { orderBy, sortBy, uniq } from 'es-toolkit';
 
 import {
-  getLatestRelease,
-  getLatestTourReleaseId,
+  tourReleaseIdOrLatestSchema,
   tourReleaseIdSchema,
   WhatsNewPolicy,
 } from '../domains/whats-new.model';
@@ -38,7 +37,9 @@ describe('RELEASES', () => {
     const tourIds = RELEASES.flatMap((release) => WhatsNewPolicy.findTourId(release) ?? []);
 
     // Then
-    expect(getLatestTourReleaseId()).toBe(getLatestRelease(RELEASES).id);
+    expect(tourReleaseIdOrLatestSchema.parse(undefined)).toBe(
+      WhatsNewPolicy.getLatest(RELEASES).id,
+    );
     expect(tourIds.every((id) => latestTwoIds.has(id))).toBe(true);
     expect(tourIds).toHaveLength(tourReleaseIdSchema.options.length);
   });

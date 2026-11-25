@@ -23,10 +23,10 @@ import { Popover, PressableFeedback, Separator } from 'heroui-native';
 import { type ComponentType, type ReactNode, useState } from 'react';
 import { match } from 'ts-pattern';
 
+import { EntitlementPolicy, type PlanValue } from '../domains/entitlement.model';
 import type { EntitlementFeature } from '../domains/feature-quota.model';
 import { useFormatPlanValue } from '../hooks/use-format-plan-value';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
-import { type PlanValue, toPlanFeatureComparison } from '../utils/plan-benefit.view-model';
 import { getPremiumGateAnalyticsFeature } from '../utils/subscription-analytics';
 
 /** 응원(CHEER)은 같은 한도인 콕 찌르기 줄이 함께 보여 준다 */
@@ -221,7 +221,7 @@ function Divider() {
 
 function FeatureRow({ feature }: { feature: ComparisonFeature }) {
   const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
-  const { free, premium } = toPlanFeatureComparison(entitlements, feature);
+  const { free, premium } = EntitlementPolicy.getPlanFeatureComparison(entitlements, feature);
 
   return (
     <RowLayout

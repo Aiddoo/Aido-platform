@@ -1,7 +1,11 @@
 import { TODO_LIMITS } from '@aido/api/vocabulary';
+import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useFormatPlanValue } from '@src/features/billing/subscription/hooks/use-format-plan-value';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
-import { toPlanFeatureComparison } from '@src/features/billing/subscription/utils/plan-benefit.view-model';
+import {
+  selectTimeFormat,
+  useGetPreferenceQueryOptions,
+} from '@src/features/identity/preference/queries/preference.queries';
 import { CalendarSourceList } from '@src/features/planning/todo-import/components/calendar-source-list';
 import { ImportDestinationInput } from '@src/features/planning/todo-import/components/import-destination-input';
 import { ImportSourceList } from '@src/features/planning/todo-import/components/import-source-list';
@@ -11,12 +15,19 @@ import {
   TodoImportCollectionPolicy,
 } from '@src/features/planning/todo-import/domains/todo-import-collection.model';
 import { createTodoImportPlacement } from '@src/features/planning/todo-import/domains/todo-import-placement.model';
+import { TodoRow } from '@src/features/planning/todo/components/todo-row';
 import { TodoResourceLimitPolicy } from '@src/features/planning/todo/domains/todo-resource-limit.model';
+import { isPrivateVisibility } from '@src/features/planning/todo/domains/todo-visibility.model';
+import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { ANIMATION } from '@src/shared/constants/animation';
+import { formatTimeOfDay } from '@src/shared/date/format/date-format';
+import { toTimeOfDay } from '@src/shared/date/time-of-day';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowRightIcon,
   Box,
+  getTouchTargetInset,
   HStack,
   LabelChip,
   QueryErrorFallback,
@@ -26,9 +37,9 @@ import {
   TextSkeleton,
   VStack,
 } from '@src/shared/ui';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
-import { type ReactNode, useState } from 'react';
+import { type ComponentProps, type ReactNode, useState } from 'react';
 import Animated, { FadeIn, LinearTransition, ReduceMotion } from 'react-native-reanimated';
 
 import {
@@ -38,10 +49,13 @@ import {
   DEMO_SCRIPT_MS,
 } from '../constants/release-1-17-0.constants';
 import { useDemoScript } from '../hooks/use-demo-script';
-import { DemoTodoRow } from './demo-todo-row';
 import { WhatsNewStep } from './whats-new-step';
 
 type DemoImportedTodoId = (typeof DEMO_IMPORTED_TODOS)[number]['id'];
+
+/** 목록 줄의 체크 칸(`Checkbox`의 size-5) */
+const CHECKBOX_SIZE_PT = 20;
+const CHECKBOX_HIT_SLOP = getTouchTargetInset(CHECKBOX_SIZE_PT);
 
 const ROW_ENTERING = FadeIn.duration(ANIMATION.durationMs.slow).reduceMotion(ReduceMotion.System);
 const ROW_LAYOUT = LinearTransition.duration(ANIMATION.durationMs.slow).reduceMotion(
@@ -196,7 +210,7 @@ export function CalendarImportPlans() {
   const { data: snapshot } = useSuspenseQuery(useGetEntitlementsQueryOptions());
   const formatPlanValue = useFormatPlanValue();
 
-  const { free, premium } = toPlanFeatureComparison(snapshot, 'CALENDAR_IMPORT');
+  const { free, premium } = EntitlementPolicy.getPlanFeatureComparison(snapshot, 'CALENDAR_IMPORT');
 
   return (
     <CalendarImportPlans.Board>
@@ -278,6 +292,60 @@ function PlanSkeleton() {
       <Skeleton className="h-6 w-14 rounded-full" />
       <TextSkeleton size="t3" className="w-16" />
     </HStack>
+  );
+}
+
+type DemoTodo = Pick<Todo, 'title' | 'visibility' | 'localTime'>;
+
+interface DemoTodoRowProps extends Omit<
+  ComponentProps<typeof TodoRow>,
+  'left' | 'top' | 'middle' | 'bottom'
+> {
+  todo: DemoTodo;
+  /** 목록처럼 체크가 "끝냄"이라 줄을 긋는다 */
+  isSelected: boolean;
+  onSelectedChange: (isSelected: boolean) => void;
+}
+
+/** 할 일 목록 줄을 저장 없이 예시 값으로 그린다 */
+function DemoTodoRow({ todo, isSelected, onSelectedChange, ...rowProps }: DemoTodoRowProps) {
+  const dateFormatContext = useDateFormatContext();
+  // 예시라 설정을 받기까지 기다리지 않고 기본 표기로 먼저 보인다
+  const { data: preference } = useQuery(useGetPreferenceQueryOptions());
+
+  const timeFormat = selectTimeFormat(preference);
+  const timeLabel =
+    todo.localTime == null
+      ? null
+      : formatTimeOfDay(toTimeOfDay(todo.localTime), timeFormat, dateFormatContext);
+
+  return (
+    <TodoRow
+      {...rowProps}
+      left={
+        <TodoRow.Checkbox
+          accessibilityLabel={todo.title}
+          hitSlop={CHECKBOX_HIT_SLOP}
+          isSelected={isSelected}
+          onSelectedChange={onSelectedChange}
+        />
+      }
+      top={
+        <TodoRow.TitleLine
+          label={
+            <TodoRow.Label isCompleted={isSelected} className="flex-1">
+              {todo.title}
+            </TodoRow.Label>
+          }
+          isPrivate={isPrivateVisibility(todo.visibility)}
+        />
+      }
+      middle={
+        timeLabel == null ? undefined : (
+          <TodoRow.ScheduleLine repeat={null} isRepeating={false} timeLabel={timeLabel} />
+        )
+      }
+    />
   );
 }
 

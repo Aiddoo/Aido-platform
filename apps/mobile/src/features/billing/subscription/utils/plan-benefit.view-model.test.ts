@@ -6,12 +6,7 @@ import {
 } from '../__tests__/entitlement.fixtures';
 import { toFeatureQuota } from '../apis/entitlement.mapper';
 import { EntitlementPolicy } from '../domains/entitlement.model';
-import {
-  getPlanBenefitAmounts,
-  getPlanComparison,
-  toBenefitQuotaLabel,
-  toPlanFeatureComparison,
-} from './plan-benefit.view-model';
+import { getPlanBenefitAmounts, toBenefitQuotaLabel } from './plan-benefit.view-model';
 
 describe('getPlanBenefitAmounts', () => {
   it('무료 사용자의 친구 수는 초대로 늘어난 서버 한도를 쓰고 프리미엄 양은 서버 요금제 값을 쓴다', () => {
@@ -76,59 +71,13 @@ describe('운영 중 바뀐 요금제 값', () => {
 
     // When
     const amounts = getPlanBenefitAmounts(snapshot);
-    const comparison = toPlanFeatureComparison(snapshot, 'TODO_CATEGORY');
+    const comparison = EntitlementPolicy.getPlanFeatureComparison(snapshot, 'TODO_CATEGORY');
 
     // Then
     expect([amounts.free.category, amounts.premium.category]).toEqual([5, 50]);
     expect(comparison).toEqual({
       free: { type: 'amount', unit: 'items', amount: 5 },
       premium: { type: 'amount', unit: 'items', amount: 50 },
-    });
-  });
-});
-
-describe('getPlanComparison', () => {
-  it('AI 할 일 만들기는 무료 한도와 프리미엄 공정 사용 상한을 월 단위로 견준다', () => {
-    // Given
-    const snapshot = createEntitlementSnapshot();
-
-    // When
-    const comparison = getPlanComparison(snapshot, 'AI_PARSE');
-
-    // Then
-    expect(comparison).toEqual({
-      unit: 'perMonth',
-      free: PLAN_CATALOG.AI_PARSE.free,
-      premium: PLAN_CATALOG.AI_PARSE.fairUse.premium,
-    });
-  });
-
-  it('친구는 초대로 늘어난 서버 한도를 무료 쪽에 쓰고 프리미엄은 무제한이다', () => {
-    // Given
-    const snapshot = EntitlementPolicy.withFeatureQuota(
-      createEntitlementSnapshot(),
-      toFeatureQuota({ ...createFeatureQuotaDto('FRIEND'), limit: 7 }),
-    );
-
-    // When
-    const comparison = getPlanComparison(snapshot, 'FRIEND');
-
-    // Then
-    expect(comparison).toEqual({ unit: 'people', free: 7, premium: null });
-  });
-
-  it('프리미엄 사용자에게도 캘린더 가져오기는 서버 요금제의 무료·프리미엄 일 수를 견준다', () => {
-    // Given
-    const snapshot = createEntitlementSnapshot({ tier: 'PREMIUM' });
-
-    // When
-    const comparison = getPlanComparison(snapshot, 'CALENDAR_IMPORT');
-
-    // Then
-    expect(comparison).toEqual({
-      unit: 'days',
-      free: PLAN_CATALOG.CALENDAR_IMPORT.free,
-      premium: PLAN_CATALOG.CALENDAR_IMPORT.premium,
     });
   });
 });
@@ -161,20 +110,5 @@ describe('toBenefitQuotaLabel', () => {
       free: { type: 'amount', unit: 'perMonth', amount: 15 },
       premium: { type: 'amount', unit: 'perMonth', amount: PLAN_CATALOG.AI_PARSE.fairUse.premium },
     });
-  });
-});
-
-describe('toPlanFeatureComparison', () => {
-  it('콕 찌르기와 응원은 같은 한도라 비교표 한 줄로 보여도 맞다', () => {
-    // Given
-    const snapshot = createEntitlementSnapshot();
-
-    // When
-    const nudge = toPlanFeatureComparison(snapshot, 'NUDGE');
-    const cheer = toPlanFeatureComparison(snapshot, 'CHEER');
-
-    // Then
-    expect(nudge).toEqual(cheer);
-    expect(nudge.premium).toEqual({ type: 'unlimited' });
   });
 });

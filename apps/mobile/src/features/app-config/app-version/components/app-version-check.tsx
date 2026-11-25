@@ -1,5 +1,4 @@
 import { useApplicationMetadata } from '@src/bootstrap/providers/di-context';
-import { useTrack } from '@src/shared/analytics';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -17,7 +16,6 @@ export function AppVersionCheck() {
   const { t } = useTranslation(['appVersion', 'common']);
   const applicationMetadata = useApplicationMetadata();
   const toast = useAppToast();
-  const { trackEvent } = useTrack();
   const confirmDialog = useConfirmDialog();
   const spinnerColor = useResolvedColor('text-accent');
   const installation = applicationMetadata.getInstallation();
@@ -43,14 +41,12 @@ export function AppVersionCheck() {
       return;
     }
 
-    await match(AppVersionPolicy.getUpdateStatus({ config: result.data, ...installation }))
+    await match(AppVersionPolicy.getUpdateStatus(result.data, installation))
       .with('unknown', () => {
         toast.error(t('checkFailed'));
       })
       .with('outdated', () => {
-        openStoreListing.mutate(undefined, {
-          onSuccess: () => trackEvent('app_update_store_opened', { source: 'settings' }),
-        });
+        openStoreListing.mutate({ source: 'settings' });
       })
       .with('up-to-date', () =>
         confirmDialog.openAsync({

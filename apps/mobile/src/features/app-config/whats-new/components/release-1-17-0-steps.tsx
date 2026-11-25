@@ -24,7 +24,7 @@ import {
 
 import { RELEASE_1_17_0_STEPS } from '../constants/release-1-17-0.constants';
 import { RELEASE_1_17_0, RELEASES } from '../constants/releases.constants';
-import { getLatestRelease } from '../domains/whats-new.model';
+import { WhatsNewPolicy } from '../domains/whats-new.model';
 import { useWhatsNewFlow } from '../hooks/use-whats-new-flow';
 import { useWhatsNewParams } from '../hooks/use-whats-new-params';
 import {
@@ -88,7 +88,7 @@ export function Release1170Steps() {
   return (
     <>
       <WhatsNewStep.Header
-        isNew={getLatestRelease(RELEASES).id === RELEASE_1_17_0.id}
+        isNew={WhatsNewPolicy.getLatest(RELEASES).id === RELEASE_1_17_0.id}
         version={RELEASE_1_17_0.version}
         onClose={flow.close}
       />
@@ -101,7 +101,7 @@ export function Release1170Steps() {
           <stepper.Render
             intro={() => (
               <WhatsNewStep
-                media={<IntroMedia onStart={goNext} />}
+                media={<IntroMedia onNext={goNext} />}
                 title={t('whatsNew:v1_17_0.intro.title')}
                 description={t('whatsNew:v1_17_0.intro.description')}
               />
@@ -197,7 +197,7 @@ export function Release1170Steps() {
   );
 }
 
-function IntroMedia({ onStart }: { onStart: () => void }) {
+function IntroMedia({ onNext }: { onNext: () => void }) {
   const { t } = useTranslation(['whatsNew', 'todoImport']);
 
   return (
@@ -207,7 +207,7 @@ function IntroMedia({ onStart }: { onStart: () => void }) {
         Icon={CalendarImportIcon}
         title={t('todoImport:entry.menu')}
         description={t('whatsNew:v1_17_0.intro.card')}
-        onPress={onStart}
+        onPress={onNext}
         testID="whats-new-intro-todo-import"
         className="bg-white"
       />

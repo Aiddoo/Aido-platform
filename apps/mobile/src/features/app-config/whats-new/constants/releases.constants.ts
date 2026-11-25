@@ -19,6 +19,7 @@ export const RELEASE_1_16_0 = {
   id: RELEASE_ID.v1_16_0,
   version: '1.16.0',
   releasedOn: dateKeySchema.parse('2026-11-17'),
+  campaignId: null,
   titleKey: 'v1_16_0.release.title',
   descriptionKey: 'v1_16_0.release.description',
   // 무료면 제안 화면이 결제 안내로 이어진다
@@ -29,6 +30,7 @@ export const RELEASE_1_15_0 = {
   id: RELEASE_ID.v1_15_0,
   version: '1.15.0',
   releasedOn: dateKeySchema.parse('2026-11-10'),
+  campaignId: null,
   titleKey: 'v1_15_0.release.title',
   descriptionKey: 'v1_15_0.release.description',
   // 어느 탭에서 와도 오늘 피드 위에 시트를 열어 만든 할 일이 시트 뒤에 보인다. `/todo/new?startVoice=1` 링크는 그대로 둔다

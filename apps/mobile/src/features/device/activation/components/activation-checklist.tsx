@@ -16,7 +16,7 @@ import { Box, CheckmarkIcon, HStack, LabelChip, Text, VStack } from '@src/shared
 import { cn } from '@src/shared/utils/cn';
 import { useQuery } from '@tanstack/react-query';
 import { PressableFeedback } from 'heroui-native';
-import { type ReactNode, useCallback, useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import Animated, {
   ReduceMotion,
@@ -27,6 +27,7 @@ import Animated, {
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { ActivationPolicy } from '../domains/activation.model';
+import { selectActivationTodoRecord } from '../queries/activation.queries';
 import { activationProgressStoredValue } from '../schemas/activation-progress-storage.schema';
 
 interface ActivationChecklistProps {
@@ -51,7 +52,7 @@ export function ActivationChecklist({ className }: ActivationChecklistProps) {
   if (isVisible && !isMounted) {
     setIsMounted(true);
   }
-  const handleCollapsed = useCallback(() => setIsMounted(false), []);
+  const handleCollapsed = () => setIsMounted(false);
 
   if (!isMounted) {
     return null;
@@ -268,22 +269,22 @@ function useActivationChecklist() {
   const shouldOfferChecklist =
     isAuthenticated &&
     user != null &&
-    ActivationPolicy.shouldOfferChecklist(user, { progress, now });
+    ActivationPolicy.shouldOfferChecklist(progress, { signedUpAt: user.createdAt, now });
   // 재설치·다른 기기에서도 같은 진행을 보이도록 서버의 할 일 기록을 함께 본다. 대상 사용자에게만 부른다
   const todoRecordQuery = useQuery({
     ...useGetTodoOverviewQueryOptions(),
-    select: ({ hasTodo, hasCompletedTodo }) => ({ hasTodo, hasCompletedTodo }),
+    select: selectActivationTodoRecord,
     enabled: shouldOfferChecklist,
   });
-  const steps = ActivationPolicy.getChecklistSteps(progress, todoRecordQuery.data);
+  const todoRecord = todoRecordQuery.data ?? null;
   // 끝낸 사용자에게 카드가 잠깐 보였다 사라지지 않게 서버 기록을 읽은 뒤 띄우고, 실패하면 기기 기록만 본다
   const hasSettledTodoRecord = todoRecordQuery.isSuccess || todoRecordQuery.isError;
 
   return {
-    steps,
+    steps: ActivationPolicy.getChecklistSteps(progress, todoRecord),
     isVisible:
       shouldOfferChecklist &&
       hasSettledTodoRecord &&
-      !ActivationPolicy.hasFinishedRequiredSteps(steps),
+      !ActivationPolicy.hasFinishedRequiredSteps(progress, todoRecord),
   };
 }

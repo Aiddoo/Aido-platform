@@ -285,7 +285,88 @@ describe('문의 화면', () => {
       await act(() => jest.advanceTimersByTimeAsync(1_000));
 
       // Then
-      expect(httpClient.post).toHaveBeenCalledTimes(1);
+      expect(httpClient.post).toHaveBeenCalledTimes(2);
     });
+
+    function leaveWhileSending() {
+      const navigation = { isFocused: true };
+      jest.mocked(useNavigation).mockImplementation(() => ({
+        isFocused: () => navigation.isFocused,
+        getParent: () => undefined,
+        addListener: () => () => undefined,
+      }));
+      jest
+        .mocked(useLocalSearchParams)
+        .mockReturnValue({ category: INQUIRY_CATEGORY.PAYMENT, content: CONTENT });
+      const pending = createPendingResponse(ok(createInquiryResponseDto()));
+      httpClient.post
+        .mockReturnValueOnce(pending.response)
+        .mockResolvedValue(ok(createInquiryResponseDto()));
+
+      return {
+        send: async () => {
+          await renderInquiry(httpClient);
+          await waitFor(() => expect(screen.getByTestId('inquiry-submit')).toBeEnabled());
+          await fireEvent.press(screen.getByTestId('inquiry-submit'));
+          navigation.isFocused = false;
+        },
+        settleAndReturn: async () => {
+          await act(async () => {
+            pending.settle();
+          });
+          await act(() => jest.advanceTimersByTimeAsync(1_000));
+          navigation.isFocused = true;
+        },
+      };
+    }
+
+    it('미리 채운 문의를 보내는 사이 떠났다가 접수된 뒤 돌아오면 내용이 비고 보내기가 꺼져 있다', async () => {
+      // Given
+      const { send, settleAndReturn } = leaveWhileSending();
+      await send();
+
+      // When
+      await settleAndReturn();
+
+      // Then
+      expect(screen.getByTestId('inquiry-content-input')).toHaveDisplayValue('');
+      await waitFor(() => expect(screen.getByTestId('inquiry-submit')).toBeDisabled());
+    });
+
+    it('미리 채운 문의가 떠난 사이 접수된 뒤 새로 쓴 글은 고른 종류로 보낸다', async () => {
+      // Given
+      const { send, settleAndReturn } = leaveWhileSending();
+      await send();
+      await settleAndReturn();
+
+      // When
+      await fireEvent.changeText(screen.getByTestId('inquiry-content-input'), OTHER_CONTENT);
+      await act(() => jest.advanceTimersByTimeAsync(0));
+      await fireEvent.press(screen.getByTestId('inquiry-submit'));
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+
+      // Then
+      expect(httpClient.post).toHaveBeenCalledTimes(2);
+      expect(httpClient.post).toHaveBeenLastCalledWith('v1/inquiries', {
+        category: INQUIRY_CATEGORY.PAYMENT,
+        content: OTHER_CONTENT,
+      });
+    });
+  });
+
+  it('내용을 쳐도 폼을 가진 화면은 다시 그려지지 않고 칸과 버튼만 바뀐다', async () => {
+    // Given
+    await renderInquiry(httpClient);
+    // 폼을 가진 화면만 navigation을 읽어, 그 호출 수가 화면이 그려진 횟수다
+    const renderCountBeforeTyping = jest.mocked(useNavigation).mock.calls.length;
+
+    // When
+    await fireEvent.changeText(screen.getByTestId('inquiry-content-input'), '앱');
+    await fireEvent.changeText(screen.getByTestId('inquiry-content-input'), CONTENT);
+    await fireEvent.changeText(screen.getByTestId('inquiry-content-input'), `${CONTENT} 다시`);
+    await waitFor(() => expect(screen.getByTestId('inquiry-submit')).toBeEnabled());
+
+    // Then
+    expect(jest.mocked(useNavigation).mock.calls).toHaveLength(renderCountBeforeTyping);
   });
 });

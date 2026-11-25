@@ -180,7 +180,7 @@ describe('앱 버전 확인', () => {
     expect(countStoreOpenedEvents(analytics)).toEqual([]);
   });
 
-  it('스토어가 열리는 사이 화면이 내려가면 스토어 열기를 남기지 못한다', async () => {
+  it('스토어가 열리는 사이 화면이 내려가도 스토어 열기를 남긴다', async () => {
     // Given
     const jsonFetcher = createJsonFetcherStub();
     jsonFetcher.get.mockResolvedValue(ENABLED_RESPONSE);
@@ -199,7 +199,7 @@ describe('앱 버전 확인', () => {
     });
 
     // Then
-    expect(countStoreOpenedEvents(analytics)).toHaveLength(0);
+    expect(countStoreOpenedEvents(analytics)).toHaveLength(1);
   });
 
   it('이미 최신이면 스토어를 열지 않고 최신이라고 알린다', async () => {
