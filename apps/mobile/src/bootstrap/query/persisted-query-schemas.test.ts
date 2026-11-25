@@ -58,7 +58,7 @@ function createValidCache(): CacheEntry[] {
       { categories: [toTodoCategoryWithCount(createTodoCategoryWithCountDto())] },
     ],
     [
-      TODO_QUERY_KEYS.completionsByRange({ startDate: '2026-11-01', endDate: '2026-11-07' }),
+      TODO_QUERY_KEYS.completionsByMonth({ month: '2026-11-01' }),
       toDailyCompletionsResult(createDailyCompletionsDto()),
     ],
     [ENTITLEMENT_QUERY_KEYS.snapshot(), createEntitlementSnapshot()],
@@ -264,9 +264,8 @@ describe('PERSISTED_QUERY_SCHEMAS', () => {
     'PREFERENCE_QUERY_KEYS.current': PREFERENCE_QUERY_KEYS.current(),
     'TODO_CATEGORY_QUERY_KEYS.list': TODO_CATEGORY_QUERY_KEYS.list(),
     'TODO_QUERY_KEYS.listByDate': LIST_KEY,
-    'TODO_QUERY_KEYS.completionsByRange': TODO_QUERY_KEYS.completionsByRange({
-      startDate: '2026-11-01',
-      endDate: '2026-11-07',
+    'TODO_QUERY_KEYS.completionsByMonth': TODO_QUERY_KEYS.completionsByMonth({
+      month: '2026-11-01',
     }),
     'FRIEND_QUERY_KEYS.friends': FRIEND_QUERY_KEYS.friends(),
     'WEATHER_QUERY_KEYS.location': WEATHER_QUERY_KEYS.location(),

@@ -4,6 +4,7 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import type { AppIconKey } from '../domains/app-icon.model';
 import { cancelAppIcon, setAppIconInCache } from './app-icon-cache';
+import { APP_ICON_MUTATION_KEYS } from './app-icon-mutation-keys';
 
 export function useChangeAppIconMutationOptions() {
   const appIconService = useAppIconService();
@@ -11,6 +12,7 @@ export function useChangeAppIconMutationOptions() {
   const { trackEvent } = useTrack();
 
   return mutationOptions({
+    mutationKey: APP_ICON_MUTATION_KEYS.changeAppIcon(),
     // 기기 안에서만 처리해 연결 상태와 무관하다
     networkMode: 'always',
     mutationFn: (key: AppIconKey) => appIconService.changeIcon(key),

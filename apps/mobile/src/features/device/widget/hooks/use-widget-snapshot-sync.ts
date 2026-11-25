@@ -2,7 +2,7 @@ import { useErrorReporter, useWidgetSyncService } from '@src/bootstrap/providers
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
 import {
-  useGetDailyCompletionsQueryOptions,
+  useGetDailyCompletionsInRangeQueriesOptions,
   useGetTodoSummaryQueryOptions,
 } from '@src/features/planning/todo/queries/todo.queries';
 import { getNowInstant } from '@src/shared/date/clock';
@@ -10,7 +10,7 @@ import { addDaysToDateKey, getCalendarWeek, type DateKey } from '@src/shared/dat
 import { i18n } from '@src/shared/i18n';
 import { toResolvedLanguage } from '@src/shared/preferences/language.preference';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
-import { useQueries, useQuery } from '@tanstack/react-query';
+import { useQueries } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { useEffect, useEffectEvent } from 'react';
 import { match } from 'ts-pattern';
@@ -133,10 +133,17 @@ export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
   const [{ data }, { data: tomorrowData }] = useQueries({
     queries: [todayQueryOptions, tomorrowQueryOptions],
   });
-  const { data: completions } = useQuery({
-    ...useGetDailyCompletionsQueryOptions({ startDate: rangeStart, endDate: rangeEnd }),
-    enabled: isUserDataEnabled,
-    throwOnError: false,
+  const weekCompletionsOptions = useGetDailyCompletionsInRangeQueriesOptions({
+    startDate: rangeStart,
+    endDate: rangeEnd,
+  });
+  const completions = useQueries({
+    queries: weekCompletionsOptions.queries.map((options) => ({
+      ...options,
+      enabled: isUserDataEnabled,
+      throwOnError: false,
+    })),
+    combine: weekCompletionsOptions.combine,
   });
 
   const syncCurrent = useEffectEvent(() => {

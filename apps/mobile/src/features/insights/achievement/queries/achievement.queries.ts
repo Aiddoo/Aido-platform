@@ -1,6 +1,6 @@
 import { useAchievementApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
-import { getNextCursor, selectPageItems } from '@src/shared/domains/cursor-page.model';
+import { getNextCursor, selectPageItems } from '@src/shared/query/cursor-page';
 import { type InfiniteData, infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 
 import type { WeeklyAchievementPage } from '../domains/achievement.model';

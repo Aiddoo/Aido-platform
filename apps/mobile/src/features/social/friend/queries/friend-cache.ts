@@ -1,4 +1,4 @@
-import { mapInfiniteItems, selectPageItems } from '@src/shared/domains/cursor-page.model';
+import { mapInfiniteItems, selectPageItems } from '@src/shared/query/cursor-page';
 import type { InfiniteData, QueryClient } from '@tanstack/react-query';
 
 import type {
@@ -118,7 +118,7 @@ export function getCachedFriendList(queryClient: QueryClient) {
 }
 
 /** 받은 친구 목록이 있을 때만 바꾼다 */
-export function updateFriendListInCache(
+export function setFriendListInCache(
   queryClient: QueryClient,
   update: (pages: FriendPages) => FriendPages,
 ) {

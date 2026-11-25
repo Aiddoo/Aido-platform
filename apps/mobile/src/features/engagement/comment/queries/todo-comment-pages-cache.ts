@@ -1,4 +1,4 @@
-import { selectPageItems } from '@src/shared/domains/cursor-page.model';
+import { selectPageItems } from '@src/shared/query/cursor-page';
 import type { InfiniteData } from '@tanstack/react-query';
 import { compact } from 'es-toolkit';
 

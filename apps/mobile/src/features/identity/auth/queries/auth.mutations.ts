@@ -37,6 +37,7 @@ import type {
 } from '../schemas/auth-request.schema';
 import { getOAuthProviderLabelKey } from '../utils/oauth-provider.view-model';
 import { invalidateLinkedAccounts } from './auth-cache';
+import { AUTH_MUTATION_KEYS } from './auth-mutation-keys';
 
 type EmailVerificationSource = AppEventMap['auth_email_verified']['source'];
 
@@ -58,7 +59,6 @@ function useTrackLoginFailure() {
   };
 }
 
-// 인증 폼은 오프라인에 스피너로 멈추지 않고 바로 실패해 입력값을 둔 채 안내한다
 export function useEmailLoginMutationOptions() {
   const haptics = useHaptics();
   const signInService = useSignInService();
@@ -68,6 +68,8 @@ export function useEmailLoginMutationOptions() {
   const toast = useAppToast();
 
   return mutationOptions({
+    mutationKey: AUTH_MUTATION_KEYS.emailLogin(),
+    // 인증 폼이 오프라인에 스피너로 멈추지 않고 바로 실패해 입력값을 둔 채 안내한다
     networkMode: 'always',
     mutationFn: async ({ email, password }: { email: string; password: string }) =>
       unwrap(await signInService.emailLogin({ email, password })),
@@ -104,6 +106,8 @@ export function useExchangeCodeMutationOptions() {
   const haptics = useHaptics();
 
   return mutationOptions({
+    mutationKey: AUTH_MUTATION_KEYS.exchangeCode(),
+    // 받은 코드로 바로 로그인해야 해 오프라인에 멈추지 않고 실패해 다시 로그인하게 한다
     networkMode: 'always',
     mutationFn: async ({ code }: ExchangeCodeInput & { provider: OAuthProviderSlug }) =>
       unwrap(await signInService.exchangeCode({ code })),
@@ -141,6 +145,8 @@ export function useOpenAppleLoginMutationOptions() {
   const haptics = useHaptics();
 
   return mutationOptions({
+    mutationKey: AUTH_MUTATION_KEYS.openAppleLogin(),
+    // 오프라인에 멈추면 버튼이 돌기만 하다 연결되는 순간 로그인 창이 뜬다. 바로 실패해 안내한다
     networkMode: 'always',
     mutationFn: async () => unwrap(await signInService.openAppleLogin()),
     onSuccess: (data) => {
@@ -174,6 +180,8 @@ export function useOpenGoogleLoginMutationOptions() {
   const trackLoginFailure = useTrackLoginFailure();
 
   return mutationOptions({
+    mutationKey: AUTH_MUTATION_KEYS.openGoogleLogin(),
+    // 오프라인에 멈추면 버튼이 돌기만 하다 연결되는 순간 로그인 창이 뜬다. 바로 실패해 안내한다
     networkMode: 'always',
     mutationFn: async () => unwrap(await signInService.openGoogleLogin()),
     onError: (error) => {
@@ -199,6 +207,8 @@ export function useOpenKakaoLoginMutationOptions() {
   const trackLoginFailure = useTrackLoginFailure();
 
   return mutationOptions({
+    mutationKey: AUTH_MUTATION_KEYS.openKakaoLogin(),
+    // 오프라인에 멈추면 버튼이 돌기만 하다 연결되는 순간 로그인 창이 뜬다. 바로 실패해 안내한다
     networkMode: 'always',
     mutationFn: async () => unwrap(await signInService.openKakaoLogin()),
     onError: (error) => {
@@ -224,6 +234,8 @@ export function useOpenNaverLoginMutationOptions() {
   const trackLoginFailure = useTrackLoginFailure();
 
   return mutationOptions({
+    mutationKey: AUTH_MUTATION_KEYS.openNaverLogin(),
+    // 오프라인에 멈추면 버튼이 돌기만 하다 연결되는 순간 로그인 창이 뜬다. 바로 실패해 안내한다
     networkMode: 'always',
     mutationFn: async () => unwrap(await signInService.openNaverLogin()),
     onError: (error) => {
@@ -249,6 +261,7 @@ export function useLogoutMutationOptions() {
   const { signOut } = useAuthSession();
 
   return mutationOptions({
+    mutationKey: AUTH_MUTATION_KEYS.logout(),
     // 오프라인에서도 멈추지 않고 바로 이 기기의 세션을 끝낸다
     networkMode: 'always',
     // 세션 만료가 먼저 커밋되면 정리가 콜백을 지우므로 나간 것으로 끝나게 콜백에 두지 않는다(캐시는 부팅 훅이 비운다)
@@ -290,6 +303,8 @@ export function useDeleteAccountMutationOptions() {
   };
 
   return mutationOptions({
+    mutationKey: AUTH_MUTATION_KEYS.deleteAccount(),
+    // 탈퇴를 누른 뒤 연결되는 순간 사용자 모르게 탈퇴하지 않게 오프라인이면 바로 실패한다
     networkMode: 'always',
     // 푸시 기기는 서버 탈퇴가 함께 푼다. 먼저 풀면 비밀번호 오류에도 알림이 끊긴다
     // 세션 만료가 먼저 커밋되면 정리가 콜백을 지워 초안·안내 기록이 남으므로 콜백에 두지 않는다
@@ -335,6 +350,8 @@ export function useRegisterMutationOptions() {
   const toast = useAppToast();
 
   return mutationOptions({
+    mutationKey: AUTH_MUTATION_KEYS.register(),
+    // 인증 폼이 오프라인에 스피너로 멈추지 않고 바로 실패해 입력값을 둔 채 안내한다
     networkMode: 'always',
     mutationFn: async (input: RegisterInput) => unwrap(await authApi.register(input)),
     onSuccess: ({ isEmailSent }) => {
@@ -360,6 +377,8 @@ export function useVerifyEmailMutationOptions() {
   const { signIn } = useAuthSession();
 
   return mutationOptions({
+    mutationKey: AUTH_MUTATION_KEYS.verifyEmail(),
+    // 인증 폼이 오프라인에 스피너로 멈추지 않고 바로 실패해 입력값을 둔 채 안내한다
     networkMode: 'always',
     mutationFn: async ({ email, code }: VerifyEmailVariables) =>
       unwrap(await signInService.verifyEmail({ email, code })),
@@ -377,6 +396,8 @@ export function useResendVerificationMutationOptions() {
   const toast = useAppToast();
 
   return mutationOptions({
+    mutationKey: AUTH_MUTATION_KEYS.resendVerification(),
+    // 인증 폼이 오프라인에 스피너로 멈추지 않고 바로 실패해 입력값을 둔 채 안내한다
     networkMode: 'always',
     mutationFn: async ({ email }: ResendVerificationVariables) =>
       unwrap(await authApi.resendVerification({ email })),
@@ -393,6 +414,8 @@ export function useForgotPasswordMutationOptions() {
   const { trackEvent } = useTrack();
 
   return mutationOptions({
+    mutationKey: AUTH_MUTATION_KEYS.forgotPassword(),
+    // 인증 폼이 오프라인에 스피너로 멈추지 않고 바로 실패해 입력값을 둔 채 안내한다
     networkMode: 'always',
     mutationFn: async (input: ForgotPasswordInput) => unwrap(await authApi.forgotPassword(input)),
     onSuccess: () => {
@@ -410,6 +433,8 @@ export function useResetPasswordMutationOptions() {
   const toast = useAppToast();
 
   return mutationOptions({
+    mutationKey: AUTH_MUTATION_KEYS.resetPassword(),
+    // 인증 폼이 오프라인에 스피너로 멈추지 않고 바로 실패해 입력값을 둔 채 안내한다
     networkMode: 'always',
     mutationFn: async (input: ResetPasswordInput) => unwrap(await authApi.resetPassword(input)),
     onSuccess: () => {
@@ -429,6 +454,8 @@ export function useChangePasswordMutationOptions() {
   const toast = useAppToast();
 
   return mutationOptions({
+    mutationKey: AUTH_MUTATION_KEYS.changePassword(),
+    // 인증 폼이 오프라인에 스피너로 멈추지 않고 바로 실패해 입력값을 둔 채 안내한다
     networkMode: 'always',
     mutationFn: async (input: ChangePasswordInput) => unwrap(await authApi.changePassword(input)),
     onSuccess: () => {
@@ -460,6 +487,8 @@ export function useLinkAccountMutationOptions() {
   const haptics = useHaptics();
 
   return mutationOptions({
+    mutationKey: AUTH_MUTATION_KEYS.linkAccount(),
+    // 오프라인에 멈추면 연결 버튼이 돌기만 하다 연결되는 순간 로그인 창이 뜬다. 바로 실패해 안내한다
     networkMode: 'always',
     mutationFn: async (provider: OAuthProviderSlug) =>
       unwrap(await signInService.linkAccount(provider)),
@@ -496,6 +525,7 @@ export function useUnlinkAccountMutationOptions() {
   const toast = useAppToast();
 
   return mutationOptions({
+    mutationKey: AUTH_MUTATION_KEYS.unlinkAccount(),
     networkMode: 'always',
     mutationFn: async (provider: OAuthProvider) => unwrap(await authApi.unlinkAccount(provider)),
     onSuccess: async (_data, provider) => {

@@ -8,11 +8,12 @@ export const TODO_QUERY_KEYS = {
   all: ['todo'] as const,
 
   completions: () => [...TODO_QUERY_KEYS.all, 'completion'] as const,
-  // 위젯 요약·존재 여부와 데이터 모양이 달라 낙관적 갱신이 이 범위만 고르도록 따로 묶는다
-  completionRanges: () => [...TODO_QUERY_KEYS.completions(), 'range'] as const,
-  completionsByRange: ({ startDate, endDate }: { startDate: string; endDate: string }) =>
+  // 위젯 요약·존재 여부와 데이터 모양이 달라 낙관적 갱신이 이 묶음만 고르도록 따로 둔다.
+  // 달력·이번 주 기록·위젯·날씨가 달(그 달 1일) 키를 나눠 쓰고 기간은 useQueries의 combine으로 자른다
+  completionMonths: () => [...TODO_QUERY_KEYS.completions(), 'month'] as const,
+  completionsByMonth: ({ month }: { month: string }) =>
     queryOptions<DailyCompletionsResult>({
-      queryKey: [...TODO_QUERY_KEYS.completionRanges(), { startDate, endDate }],
+      queryKey: [...TODO_QUERY_KEYS.completionMonths(), { month }],
     }).queryKey,
 
   // 홈 위젯 요약. completions() 하위라 토글·생성·삭제의 invalidation을 그대로 상속한다

@@ -1,6 +1,6 @@
 import { useLogger } from '@src/bootstrap/providers/di-context';
 import type { Todo } from '@src/features/planning/todo/domains/todo.model';
-import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
+import { settleTodoBatchWrite } from '@src/features/planning/todo/queries/todo-cache';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTrack } from '@src/shared/analytics';
 import { getNowInstant } from '@src/shared/date/clock';
@@ -69,7 +69,7 @@ export function WeatherRescheduleSubmitButton({
   ).length;
 
   const refreshAndReportFailures = (failures: unknown[]) => {
-    invalidateTodos(queryClient);
+    settleTodoBatchWrite(queryClient);
     // 영향받는 할 일은 서버가 고르므로 옮긴 할 일이 브리핑에서 빠지려면 리포트를 다시 받는다
     invalidateWeatherReports(queryClient);
     // 여러 할 일을 한 번에 옮겨 실패는 첫 번째 하나로 한 번만 알린다

@@ -16,7 +16,8 @@ import {
   getCachedConsent,
   invalidateAiConsentDependentQueries,
   invalidateConsent,
-  updateConsentInCache,
+  settleConsentResponse,
+  setConsentInCache,
 } from './consent-cache';
 import { CONSENT_MUTATION_KEYS } from './consent-mutation-keys';
 
@@ -37,7 +38,7 @@ function revertConsentFields(
   if (previousData == null) {
     return;
   }
-  updateConsentInCache(queryClient, (consent) => ({ ...consent, ...pick(previousData, fields) }));
+  setConsentInCache(queryClient, (consent) => ({ ...consent, ...pick(previousData, fields) }));
 }
 
 const AI_DATA_SHARING_FIELDS = [
@@ -65,9 +66,10 @@ export function useUpdateAiDataSharingConsentMutationOptions() {
     },
 
     onMutate: async ({ agreed }) => {
+      const startedWithOthers = !isLastMutation(queryClient, CONSENT_MUTATION_KEYS.aiDataSharing());
       await cancelConsent(queryClient);
       const previousData = getCachedConsent(queryClient);
-      updateConsentInCache(queryClient, (consent) => ({
+      setConsentInCache(queryClient, (consent) => ({
         ...consent,
         aiDataSharingDecision: agreed
           ? AI_DATA_SHARING_DECISION.AGREED
@@ -75,15 +77,17 @@ export function useUpdateAiDataSharingConsentMutationOptions() {
         aiDataSharingAgreedAt: agreed ? getNowInstant() : null,
         aiDataSharingConsentVersion: AI_DATA_SHARING_CONSENT.VERSION,
       }));
-      return { previousData };
+      return { previousData, startedWithOthers };
     },
 
-    onSuccess: (result, { agreed }) => {
+    onSuccess: (result, { agreed }, { startedWithOthers }) => {
       trackEvent('ai_data_sharing_consent_changed', { agreed });
-      if (!isLastMutation(queryClient, CONSENT_MUTATION_KEYS.aiDataSharing())) {
-        return;
-      }
-      updateConsentInCache(queryClient, (consent) => ({ ...consent, ...result }));
+      settleConsentResponse(queryClient, {
+        mutationKey: CONSENT_MUTATION_KEYS.aiDataSharing(),
+        startedWithOthers,
+        writeResponse: () =>
+          setConsentInCache(queryClient, (consent) => ({ ...consent, ...result })),
+      });
     },
 
     onError: (_error, _input, context) => {
@@ -118,15 +122,16 @@ export function useUpdateMarketingConsentMutationOptions() {
     mutationFn: async (input: ConsentAgreement) =>
       unwrap(await consentApi.updateMarketingConsent(input)),
     onMutate: async ({ agreed }) => {
+      const startedWithOthers = !isLastMutation(queryClient, CONSENT_MUTATION_KEYS.marketing());
       await cancelConsent(queryClient);
       const previousData = getCachedConsent(queryClient);
-      updateConsentInCache(queryClient, (consent) => ({
+      setConsentInCache(queryClient, (consent) => ({
         ...consent,
         marketingAgreedAt: agreed ? getNowInstant() : null,
       }));
-      return { previousData };
+      return { previousData, startedWithOthers };
     },
-    onSuccess: (data, { agreed }) => {
+    onSuccess: (data, { agreed }, { startedWithOthers }) => {
       trackEvent(agreed ? 'marketing_opted_in' : 'marketing_opted_out', { source: 'settings' });
       const result = findConsentResult({
         agreedAt: data.marketingAgreedAt,
@@ -135,13 +140,15 @@ export function useUpdateMarketingConsentMutationOptions() {
       if (result != null) {
         showConsentResult('marketing', result);
       }
-      if (!isLastMutation(queryClient, CONSENT_MUTATION_KEYS.marketing())) {
-        return;
-      }
-      updateConsentInCache(queryClient, (consent) => ({
-        ...consent,
-        marketingAgreedAt: data.marketingAgreedAt,
-      }));
+      settleConsentResponse(queryClient, {
+        mutationKey: CONSENT_MUTATION_KEYS.marketing(),
+        startedWithOthers,
+        writeResponse: () =>
+          setConsentInCache(queryClient, (consent) => ({
+            ...consent,
+            marketingAgreedAt: data.marketingAgreedAt,
+          })),
+      });
     },
 
     onError: (_error, _input, context) => {
@@ -167,15 +174,16 @@ export function useUpdateMarketingPushConsentMutationOptions() {
     mutationFn: async ({ agreed }: MarketingPushConsentVariables) =>
       unwrap(await consentApi.updateMarketingPushConsent({ agreed })),
     onMutate: async ({ agreed }) => {
+      const startedWithOthers = !isLastMutation(queryClient, CONSENT_MUTATION_KEYS.marketingPush());
       await cancelConsent(queryClient);
       const previousData = getCachedConsent(queryClient);
-      updateConsentInCache(queryClient, (consent) => ({
+      setConsentInCache(queryClient, (consent) => ({
         ...consent,
         marketingPushAgreedAt: agreed ? getNowInstant() : null,
       }));
-      return { previousData };
+      return { previousData, startedWithOthers };
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (data, variables, { startedWithOthers }) => {
       match(variables)
         .with({ agreed: true }, ({ source }) => trackEvent('marketing_push_opted_in', { source }))
         .with({ agreed: false }, ({ source }) => trackEvent('marketing_push_opted_out', { source }))
@@ -187,13 +195,15 @@ export function useUpdateMarketingPushConsentMutationOptions() {
       if (result != null) {
         showConsentResult('marketingPush', result);
       }
-      if (!isLastMutation(queryClient, CONSENT_MUTATION_KEYS.marketingPush())) {
-        return;
-      }
-      updateConsentInCache(queryClient, (consent) => ({
-        ...consent,
-        marketingPushAgreedAt: data.marketingPushAgreedAt,
-      }));
+      settleConsentResponse(queryClient, {
+        mutationKey: CONSENT_MUTATION_KEYS.marketingPush(),
+        startedWithOthers,
+        writeResponse: () =>
+          setConsentInCache(queryClient, (consent) => ({
+            ...consent,
+            marketingPushAgreedAt: data.marketingPushAgreedAt,
+          })),
+      });
     },
     onError: (_error, _input, context) => {
       revertConsentFields(queryClient, context?.previousData, ['marketingPushAgreedAt']);

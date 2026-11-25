@@ -6,7 +6,13 @@ import { mutationOptions, type QueryClient, useQueryClient } from '@tanstack/rea
 
 import { type UpdateProfileResult } from '../domains/user.model';
 import { PROFILE_FIELDS, type ProfileChange } from '../schemas/update-profile-request.schema';
-import { cancelMe, getCachedMe, invalidateMe, updateMeInCache } from './user-cache';
+import {
+  cancelMe,
+  getCachedMe,
+  invalidateMe,
+  settleProfileWrite,
+  updateMeInCache,
+} from './user-cache';
 import { USER_MUTATION_KEYS } from './user-mutation-keys';
 
 /** 다른 필드는 진행 중인 저장보다 오래됐을 수 있고 통째로 덮으면 그 저장을 지워 바꾼 필드만 덮는다 */
@@ -37,6 +43,7 @@ export function useUpdateProfileMutationOptions() {
       return unwrap(result);
     },
     onMutate: async (input) => {
+      const startedWithOthers = !isLastMutation(queryClient, USER_MUTATION_KEYS.updateProfile());
       await cancelMe(queryClient);
       const previousData = getCachedMe(queryClient);
       updateMeInCache(queryClient, (me) => ({
@@ -45,15 +52,16 @@ export function useUpdateProfileMutationOptions() {
         // oxlint-disable-next-line aido/no-strict-nullish -- profileImage null은 사진 지우기다
         ...(input.profileImage !== undefined && { profileImage: input.profileImage }),
       }));
-      return { previousData };
+      return { previousData, startedWithOthers };
     },
-    onSuccess: (data, input) => {
+    onSuccess: (data, input, { startedWithOthers }) => {
       for (const field of PROFILE_FIELDS.filter((name) => name in input)) {
         trackEvent('profile_edited', { field });
       }
-      if (isLastMutation(queryClient, USER_MUTATION_KEYS.updateProfile())) {
-        writeChangedProfileFields(queryClient, input, data);
-      }
+      settleProfileWrite(queryClient, {
+        startedWithOthers,
+        writeResponse: () => writeChangedProfileFields(queryClient, input, data),
+      });
     },
     onError: (_error, input, context) => {
       if (context?.previousData != null) {

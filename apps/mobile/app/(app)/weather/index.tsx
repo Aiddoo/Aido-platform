@@ -18,7 +18,7 @@ import type { WeatherLocationStatus } from '@src/features/weather/domains/weathe
 import { useWeatherLocation } from '@src/features/weather/hooks/use-weather-location';
 import { useWeatherOpenKey } from '@src/features/weather/hooks/use-weather-open-key';
 import {
-  useGetForecastCompletionsQueryOptions,
+  usePrefetchForecastCompletions,
   useWeatherLocationRevision,
 } from '@src/features/weather/queries/weather.queries';
 import { weatherEntryParamsSchema } from '@src/features/weather/schemas/weather-entry-params.schema';
@@ -38,7 +38,6 @@ import {
   Spacing,
   VStack,
 } from '@src/shared/ui';
-import { usePrefetchQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';
 import { match } from 'ts-pattern';
 
@@ -138,7 +137,7 @@ export default function WeatherScreen() {
 
 function ForecastCards() {
   // 리포트를 기다리는 블록 안에서 받으면 할 일 점 조회가 리포트 응답 뒤에 나간다
-  usePrefetchQuery(useGetForecastCompletionsQueryOptions());
+  usePrefetchForecastCompletions();
 
   return (
     <VStack gap={CARD_GAP} px={SCREEN_GUTTER}>

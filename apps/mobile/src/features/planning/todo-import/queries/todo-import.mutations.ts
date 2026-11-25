@@ -81,6 +81,7 @@ export function useCancelTodoImportMutationOptions({ importId }: { importId: str
   const showMutationError = useMutationErrorFeedback();
 
   return mutationOptions({
+    // 취소를 누른 뒤 연결되는 순간 사용자 모르게 취소되지 않게 오프라인이면 바로 실패한다
     networkMode: 'always',
     mutationKey: TODO_IMPORT_MUTATION_KEYS.cancel({ importId }),
     mutationFn: async () => unwrap(await uploadSession.cancel({ accountId, importId })),
@@ -120,6 +121,7 @@ export function useUndoTodoImportMutationOptions({ importId }: { importId: strin
   const { trackEvent } = useTrack();
 
   return mutationOptions({
+    // 되돌리기를 누른 뒤 연결되는 순간 사용자 모르게 할 일이 지워지지 않게 오프라인이면 바로 실패한다
     networkMode: 'always',
     mutationKey: TODO_IMPORT_MUTATION_KEYS.undo({ importId }),
     mutationFn: async () => unwrap(await todoImportApi.undoImport(importId)),

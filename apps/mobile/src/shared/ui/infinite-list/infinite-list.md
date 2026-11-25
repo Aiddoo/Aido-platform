@@ -8,7 +8,7 @@
 ```tsx
 import { InfiniteList } from '@src/shared/ui';
 
-// 옵션의 select: selectPageItems(shared/domains/cursor-page.model)가 쪽을 항목 목록으로 편다
+// 옵션의 select: selectPageItems(shared/query/cursor-page)가 쪽을 항목 목록으로 편다
 const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError } =
   useSuspenseInfiniteQuery(options);
 // 당겨서 새로고침은 기능의 cache helper(`refresh{Feature}`)가 다시 받는다

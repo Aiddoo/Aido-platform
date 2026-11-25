@@ -4,7 +4,7 @@ import { emitTodoCreated } from '@src/core/events/todo-created';
 import { isLimitedFeatureError } from '@src/features/billing/subscription/domains/entitlement.error';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
-import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
+import { settleTodoBatchWrite } from '@src/features/planning/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { t } from '@src/shared/i18n';
@@ -37,6 +37,7 @@ export function useActOnSuggestionMutationOptions() {
   const gate = useEntitlementGate('AI_SUGGESTION', { surface: 'suggestions' });
 
   return mutationOptions({
+    mutationKey: SUGGESTION_MUTATION_KEYS.actOnSuggestion(),
     // 수락 시트와 거절 버튼이 응답까지 돈다. 오프라인에 멈춰 두면 연결되는 순간 몰래 보내므로 바로 실패해 안내한다
     networkMode: 'always',
     mutationFn: async ({ suggestionId, input }: ActOnSuggestionVariables) =>
@@ -65,7 +66,7 @@ export function useActOnSuggestionMutationOptions() {
     },
     onSettled: async (_result, error, { input }) => {
       if (input.action === 'accept' && error == null) {
-        invalidateTodos(queryClient);
+        settleTodoBatchWrite(queryClient);
       }
       // 수락은 시트를 닫고 피드로 떠나고, 실패는 오프라인이면 다시 받기가 연결될 때까지 멈춰 기다리지 않는다
       if (input.action === 'accept' || error != null) {

@@ -1,10 +1,10 @@
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
-import { selectPageItems } from '@src/shared/domains/cursor-page.model';
 import { getUserFacingMessage } from '@src/shared/errors';
 import { useAppWindow } from '@src/shared/hooks/use-app-window';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
+import { selectPageItems } from '@src/shared/query/cursor-page';
 import {
   Box,
   Button,

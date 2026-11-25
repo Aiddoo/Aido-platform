@@ -4,12 +4,12 @@ import type { NudgeInteraction } from '@src/features/social/nudge/domains/nudge-
 import { isNudgeDisabledError } from '@src/features/social/nudge/domains/todo-nudge.error';
 import { refreshNudges } from '@src/features/social/nudge/queries/todo-nudge-cache';
 import { useGetNudgeInteractionsInfiniteQueryOptions } from '@src/features/social/nudge/queries/todo-nudge.queries';
-import { selectPageItems } from '@src/shared/domains/cursor-page.model';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
+import { selectPageItems } from '@src/shared/query/cursor-page';
 import {
   InfiniteList,
   NotificationIllustration,

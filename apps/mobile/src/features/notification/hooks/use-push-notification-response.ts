@@ -23,7 +23,7 @@ import { getNowInstant } from '@src/shared/date/clock';
 import type { DateKey } from '@src/shared/date/date-key';
 import { formatClockTime } from '@src/shared/date/format/date-format';
 import type { Instant } from '@src/shared/date/instant';
-import { getErrorMessage } from '@src/shared/errors';
+import { getErrorMessage, NetworkError } from '@src/shared/errors';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { useTranslation } from '@src/shared/i18n';
@@ -32,11 +32,12 @@ import { readWithoutBlocking } from '@src/shared/query/read-without-blocking';
 import { useAppToast } from '@src/shared/ui';
 import {
   mutationOptions,
+  onlineManager,
   useIsRestoring,
   useMutation,
   useQueryClient,
 } from '@tanstack/react-query';
-import { noop } from 'es-toolkit';
+import { noop, TimeoutError as WaitTimeoutError, withTimeout } from 'es-toolkit';
 import {
   useCallback,
   useEffect,
@@ -49,7 +50,10 @@ import { match } from 'ts-pattern';
 
 import { parsePushNotification } from '../apis/push-notification.mapper';
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
-import { NOTIFICATION_ENTRY_HOLD_MAX_MS } from '../constants/notification.constants';
+import {
+  NOTIFICATION_ENTRY_HOLD_MAX_MS,
+  TODO_REMINDER_DETAILS_WAIT_MS,
+} from '../constants/notification.constants';
 import { getTodoReminderActionFailure } from '../domains/notification.error';
 import {
   type PushNotificationResponse,
@@ -381,17 +385,23 @@ function useOpenReadyEntry(
   }, [entry, isEnteringApp]);
 }
 
-/** 성공 안내를 띄울 결과와, 안내 없이 분석에만 남기는 결과 */
+/** 성공 안내를 띄울 결과, 연결 안내를 띄울 실패, 안내 없이 분석에만 남기는 결과 */
 type TodoReminderActionResult =
   | { outcome: 'succeeded'; message: string; description: string | null }
-  | { outcome: Exclude<TodoReminderActionOutcome, 'succeeded'> };
+  | { outcome: 'failed'; notice: 'network' | 'timeout' | null }
+  | { outcome: Exclude<TodoReminderActionOutcome, 'succeeded' | 'failed'> };
+
+function toTodoReminderActionFailure(error: unknown): TodoReminderActionResult {
+  const outcome = getTodoReminderActionFailure(error);
+  return outcome === 'failed' ? { outcome, notice: null } : { outcome };
+}
 
 /**
  * 리마인드 알림 버튼(완료·10분 뒤 다시)으로 할 일을 바꾸고 결과를 알린다. 이미 끝낸 할 일은 부드럽게 알리고,
  * 지운 할 일은 할 일 화면의 볼 수 없음 안내가, 그 밖의 실패는 상세 조회의 화면 오류나 변경의 전역 오류 피드백이 알린다
  */
 function useRunTodoReminderAction() {
-  const { t } = useTranslation('notification');
+  const { t } = useTranslation(['notification', 'common']);
   const queryClient = useQueryClient();
   const sessionEpoch = useSessionEpoch();
   const logger = useLogger();
@@ -407,8 +417,28 @@ function useRunTodoReminderAction() {
     todoId: number,
     dateKey: DateKey | null,
   ): Promise<TodoReminderActionResult> => {
+    // 화면이 먼저 연 같은 상세 조회가 오프라인에 멈춰 있으면 networkMode로도 풀리지 않고 그 조회에 합류해
+    // 연결되는 순간 완료가 나간다. 오프라인이면 기다리지 않고, 오프라인을 늦게 아는 콜드 스타트는 제한 시간에 끝낸다
+    if (!onlineManager.isOnline()) {
+      return { outcome: 'failed', notice: 'network' };
+    }
     // 다른 기기에서 끝냈을 수 있어 캐시가 아닌 서버 값으로 정한다. 방금 연 할 일 화면과 같은 조회라 요청은 하나다
-    const { todo } = await fetchFreshTodoDetails(queryClient, getTodoDetailsQueryOptions(todoId));
+    const details = await withTimeout(
+      () => fetchFreshTodoDetails(queryClient, getTodoDetailsQueryOptions(todoId)),
+      TODO_REMINDER_DETAILS_WAIT_MS,
+    ).catch((error: unknown) => {
+      if (error instanceof WaitTimeoutError) {
+        return 'timeout' as const;
+      }
+      if (error instanceof NetworkError) {
+        return 'network' as const;
+      }
+      throw error;
+    });
+    if (typeof details === 'string') {
+      return { outcome: 'failed', notice: details };
+    }
+    const { todo } = details;
     if (todo.completed) {
       return { outcome: 'already_completed' };
     }
@@ -460,9 +490,7 @@ function useRunTodoReminderAction() {
       .with({ type: 'complete' }, ({ todoId, dateKey }) => complete(todoId, dateKey))
       .with({ type: 'snooze' }, ({ todoId, notificationId }) => snooze(todoId, notificationId))
       .exhaustive()
-      .catch((error: unknown): TodoReminderActionResult => ({
-        outcome: getTodoReminderActionFailure(error),
-      }));
+      .catch(toTodoReminderActionFailure);
     // 기다리는 사이 로그아웃했으면 다음 계정 화면에 안내와 기록을 남기지 않는다
     if (sessionEpoch.current() !== epoch) {
       return;
@@ -474,8 +502,15 @@ function useRunTodoReminderAction() {
       .with({ outcome: 'already_completed' }, () =>
         toast.toast(t('reminderActions.alreadyCompleted')),
       )
-      // 지운 할 일은 할 일 화면이, 연결 끊김은 상세 조회의 화면 오류나 변경의 전역 오류 피드백이 알렸다
-      .with({ outcome: 'not_found' }, { outcome: 'failed' }, noop)
+      // 상세를 받지 못해 완료를 보내지 않았다. 멈춘 화면은 오류를 보이지 않아 여기서 알린다
+      .with({ outcome: 'failed', notice: 'network' }, () =>
+        toast.warning(t('common:infraErrors.network')),
+      )
+      .with({ outcome: 'failed', notice: 'timeout' }, () =>
+        toast.warning(t('common:infraErrors.timeout')),
+      )
+      // 지운 할 일은 할 일 화면이, 그 밖의 실패는 상세 조회의 화면 오류나 변경의 전역 오류 피드백이 알렸다
+      .with({ outcome: 'not_found' }, { outcome: 'failed', notice: null }, noop)
       .exhaustive();
     trackEvent('todo_reminder_action_tapped', { action: request.type, outcome: result.outcome });
   };

@@ -44,7 +44,7 @@ import {
   snapshotTodo,
   syncDailyCompletionWithList,
   updateCachedTodo,
-  updateCachedTodoOverview,
+  setTodoOverviewInCache,
   withTodoCompleted,
 } from './todo-cache';
 import { TODO_MUTATION_KEYS } from './todo-mutation-keys';
@@ -106,7 +106,7 @@ export function useToggleTodoMutationOptions() {
       if (!variables.body.completed) {
         return;
       }
-      updateCachedTodoOverview(queryClient, withTodoCompleted);
+      setTodoOverviewInCache(queryClient, withTodoCompleted);
       recordActiveDay();
       // 오늘 목록의 마지막 할 일을 끝낸 순간 — 피드의 '다 끝낸 날' 배너와 같은 순간이다
       const todayTodos = getCachedTodosByDate(queryClient, { date: todayKey }) ?? [];

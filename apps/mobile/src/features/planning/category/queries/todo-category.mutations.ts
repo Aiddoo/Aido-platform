@@ -41,7 +41,7 @@ import {
   type OptimisticTodoCategoryWithCount,
   removeDeletedCategory,
   settleTodoCategoryChange,
-  updateCachedTodoCategories,
+  setTodoCategoriesInCache,
   withCategoryAdded,
   withCategoryChanged,
   withCategoryRemoved,
@@ -75,14 +75,14 @@ export function useCreateTodoCategoryMutationOptions() {
         optimistic: true,
       };
 
-      updateCachedTodoCategories(queryClient, (result) =>
+      setTodoCategoriesInCache(queryClient, (result) =>
         withCategoryAdded(result, optimisticCategory),
       );
 
       return { optimisticCategoryId: optimisticCategory.id };
     },
     onSuccess: (savedCategory, variables, { optimisticCategoryId }) => {
-      updateCachedTodoCategories(queryClient, (result) =>
+      setTodoCategoriesInCache(queryClient, (result) =>
         withCategorySaved(result, optimisticCategoryId, savedCategory),
       );
       toast.success(t('todo:toast.categoryAdded'));
@@ -90,7 +90,7 @@ export function useCreateTodoCategoryMutationOptions() {
     },
     onError: (_error, _variables, context) => {
       if (context != null) {
-        updateCachedTodoCategories(queryClient, (result) =>
+        setTodoCategoriesInCache(queryClient, (result) =>
           withCategoryRemoved(result, context.optimisticCategoryId),
         );
       }
@@ -129,6 +129,7 @@ export function useUpdateTodoCategoryMutationOptions() {
   const toast = useAppToast();
 
   return mutationOptions({
+    // 오프라인에 멈추면 시트가 잠긴 채 남고 연결되는 순간 이름·색이 바뀐다. 바로 실패해 되돌린다
     networkMode: 'always',
     mutationKey: TODO_CATEGORY_MUTATION_KEYS.writes(),
     mutationFn: async ({ id, input }: UpdateTodoCategoryVariables) =>
@@ -142,7 +143,7 @@ export function useUpdateTodoCategoryMutationOptions() {
         id,
       );
 
-      updateCachedTodoCategories(queryClient, (result) => withCategoryChanged(result, id, input));
+      setTodoCategoriesInCache(queryClient, (result) => withCategoryChanged(result, id, input));
 
       return { previous, startedWithOthers };
     },
@@ -157,7 +158,7 @@ export function useUpdateTodoCategoryMutationOptions() {
     onError: (_error, { id }, context) => {
       const previous = context?.previous;
       if (previous != null) {
-        updateCachedTodoCategories(queryClient, (result) =>
+        setTodoCategoriesInCache(queryClient, (result) =>
           withCategoryChanged(result, id, pick(previous, ['name', 'color'])),
         );
       }
@@ -221,6 +222,7 @@ export function useDeleteTodoCategoryMutationOptions() {
   const toast = useAppToast();
 
   return mutationOptions({
+    mutationKey: TODO_CATEGORY_MUTATION_KEYS.deleteTodoCategory(),
     // 오프라인에 멈춰 두면 삭제 중 표시가 끝나지 않는다. 바로 실패해 시트를 그대로 두고 알린다
     networkMode: 'always',
     mutationFn: async ({ id, deletion }: DeleteTodoCategoryVariables) =>
@@ -269,6 +271,7 @@ export function useReorderTodoCategoryMutationOptions() {
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
 
   return mutationOptions({
+    mutationKey: TODO_CATEGORY_MUTATION_KEYS.reorderTodoCategory(),
     // 저장하는 동안 목록이 끌기 전 순서를 붙잡는다. 오프라인에 멈춰 두면 연결될 때까지 묶이니 바로 실패해 제자리로 돌리고 알린다
     networkMode: 'always',
     mutationFn: async ({ id, input }: ReorderTodoCategoryVariables) =>

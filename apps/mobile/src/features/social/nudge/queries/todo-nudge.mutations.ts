@@ -24,6 +24,7 @@ import {
   invalidateRemindNudgeCooldown,
   setNudgeInteractionInCache,
 } from './todo-nudge-cache';
+import { TODO_NUDGE_MUTATION_KEYS } from './todo-nudge-mutation-keys';
 
 export function useReplyToNudgeMutationOptions() {
   const todoNudgeApi = useTodoNudgeApi();
@@ -31,6 +32,7 @@ export function useReplyToNudgeMutationOptions() {
   const { trackEvent } = useTrack();
 
   return mutationOptions({
+    mutationKey: TODO_NUDGE_MUTATION_KEYS.replyToNudge(),
     // 화면에 머물며 답장 버튼이 응답까지 꺼진다. 오프라인에 멈춰 두면 연결되는 순간 몰래 보내므로 바로 실패해 안내한다
     networkMode: 'always',
     mutationFn: async ({ nudgeId, input }: { nudgeId: number; input: ReplyToNudgeInput }) =>
@@ -55,6 +57,7 @@ export function useSendNudgeThanksMutationOptions() {
   const { trackEvent } = useTrack();
 
   return mutationOptions({
+    mutationKey: TODO_NUDGE_MUTATION_KEYS.sendNudgeThanks(),
     // 감사 버튼이 응답까지 돈다. 답장과 같은 이유로 오프라인에서 멈추지 않는다
     networkMode: 'always',
     mutationFn: async ({ todoId, input }: { todoId: number; input: SendNudgeThanksInput }) =>
@@ -84,6 +87,7 @@ export function useSendRemindNudgeMutationOptions() {
   const toast = useAppToast();
 
   return mutationOptions({
+    mutationKey: TODO_NUDGE_MUTATION_KEYS.sendRemindNudge(),
     // 저장 후 떠나는 시트라 오프라인에서도 멈춰 기다리지 않고 바로 실패해 안내한다
     networkMode: 'always',
     mutationFn: async (input: CreateRemindNudgeInput) =>
@@ -108,6 +112,7 @@ export function useSendTodoNudgeMutationOptions() {
   const gate = useEntitlementGate('NUDGE', { surface: 'todo_nudge' });
 
   return mutationOptions({
+    mutationKey: TODO_NUDGE_MUTATION_KEYS.sendTodoNudge(),
     networkMode: 'always',
     mutationFn: async (input: CreateNudgeInput) => unwrap(await todoNudgeApi.sendNudge(input)),
     // 남은 횟수는 보낸 뒤에만 바뀐다. 한도에 막힌 실패는 한도 시트가 받은 한도로 스냅샷을 맞춘다

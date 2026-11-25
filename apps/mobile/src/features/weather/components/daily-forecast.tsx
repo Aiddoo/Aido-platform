@@ -14,7 +14,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { CalendarIcon } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { useQuery, useSuspenseQueries } from '@tanstack/react-query';
+import { useQueries, useSuspenseQueries } from '@tanstack/react-query';
 import { range, round, zip } from 'es-toolkit';
 import { Accordion, PressableFeedback } from 'heroui-native';
 import { memo, type PropsWithChildren, useMemo } from 'react';
@@ -32,7 +32,7 @@ import { useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useWeatherSurface } from '../hooks/use-weather-surface';
 import {
-  useGetForecastCompletionsQueryOptions,
+  useGetForecastCompletionsQueriesOptions,
   useGetWeatherReportQueryOptions,
   WeatherReportSelect,
 } from '../queries/weather.queries';
@@ -78,7 +78,7 @@ export function DailyForecast() {
       useGetPreferenceQueryOptions(),
     ],
   });
-  const { data: completions } = useQuery(useGetForecastCompletionsQueryOptions());
+  const completions = useQueries(useGetForecastCompletionsQueriesOptions());
   const fontScaleRatio = useFontScaleRatio();
   const dateFormat = useLocationDateFormat(weather.location.timezone);
   const now = useMinuteNow();

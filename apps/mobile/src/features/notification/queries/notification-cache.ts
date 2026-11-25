@@ -1,4 +1,4 @@
-import { mapInfiniteItems, selectPageItems } from '@src/shared/domains/cursor-page.model';
+import { mapInfiniteItems, selectPageItems } from '@src/shared/query/cursor-page';
 import { type InfiniteData, notifyManager, type QueryClient } from '@tanstack/react-query';
 import { uniq } from 'es-toolkit';
 

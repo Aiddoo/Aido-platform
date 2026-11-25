@@ -1,4 +1,4 @@
-import { useGetDailyCompletionsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
+import { useGetDailyCompletionsInRangeQueriesOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTrack } from '@src/shared/analytics';
 import { formatDateKeyLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
@@ -17,7 +17,7 @@ import {
   TextSkeleton,
   VStack,
 } from '@src/shared/ui';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseQueries } from '@tanstack/react-query';
 import { Popover } from 'heroui-native';
 import { useState } from 'react';
 import { match } from 'ts-pattern';
@@ -37,12 +37,13 @@ export function ThisWeekRecord({ access }: ThisWeekRecordProps) {
   const dateFormatContext = useDateFormatContext();
   const todayKey = useTodayKey();
 
-  const { data: completionsByDate } = useSuspenseQuery(
-    useGetDailyCompletionsQueryOptions(getWeeklyRecordRange(todayKey)),
+  const completionsByDate = useSuspenseQueries(
+    useGetDailyCompletionsInRangeQueriesOptions(getWeeklyRecordRange(todayKey)),
   );
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
-  const days = getWeeklyRecordDays(completionsByDate, todayKey);
+  // Suspense라 덮는 달을 모두 받은 뒤에 그린다
+  const days = getWeeklyRecordDays(completionsByDate ?? {}, todayKey);
   const valueLine = formatDailyValueLine(
     selectedIndex == null ? null : (days[selectedIndex] ?? null),
     dateFormatContext,

@@ -33,6 +33,7 @@ import {
 } from './todo.mutations';
 
 const TODAY = createDateKey('2026-10-27');
+const TODAY_MONTH_COMPLETIONS = TODO_QUERY_KEYS.completionsByMonth({ month: '2026-10-01' });
 const YESTERDAY = createDateKey('2026-10-26');
 const ACCOUNT_ID = 'account-1';
 /** 리뷰 요청은 이 두 날에 오늘이 더해져 3일을 채워야 열린다 */
@@ -189,7 +190,7 @@ describe('useToggleTodoMutationOptions', () => {
         createParentTodo({ id: 41, completed: false }),
         createParentTodo({ id: 42, completed: false }),
       ]);
-      givenCached(TODO_QUERY_KEYS.completionsByRange({ startDate: TODAY, endDate: TODAY }));
+      givenCached(TODAY_MONTH_COMPLETIONS);
       const first = createPendingResponse(respondWithTodo(42));
       httpClient.patch
         .mockReturnValueOnce(first.response)
@@ -200,9 +201,7 @@ describe('useToggleTodoMutationOptions', () => {
       await toggle(41, true, TODAY);
 
       // Then
-      expect(
-        isInvalidated(TODO_QUERY_KEYS.completionsByRange({ startDate: TODAY, endDate: TODAY })),
-      ).toBe(false);
+      expect(isInvalidated(TODAY_MONTH_COMPLETIONS)).toBe(false);
       await act(async () => first.settle());
     });
 
@@ -211,7 +210,7 @@ describe('useToggleTodoMutationOptions', () => {
       const { httpClient, givenList, givenCached, toggle, isInvalidated } = await renderToggle();
       givenList(TODAY, [createParentTodo({ id: 42, startDate: TODAY, completed: false })]);
       givenCached(TODO_QUERY_KEYS.widgetSummaryByDate({ date: TODAY, userId: ACCOUNT_ID }));
-      givenCached(TODO_QUERY_KEYS.completionsByRange({ startDate: TODAY, endDate: TODAY }));
+      givenCached(TODAY_MONTH_COMPLETIONS);
       httpClient.patch.mockResolvedValue(respondWithTodo(42));
 
       // When
@@ -222,9 +221,7 @@ describe('useToggleTodoMutationOptions', () => {
         isInvalidated(TODO_QUERY_KEYS.widgetSummaryByDate({ date: TODAY, userId: ACCOUNT_ID })),
       ).toBe(true);
       expect(isInvalidated(TODO_QUERY_KEYS.listByDate({ date: TODAY }))).toBe(false);
-      expect(
-        isInvalidated(TODO_QUERY_KEYS.completionsByRange({ startDate: TODAY, endDate: TODAY })),
-      ).toBe(false);
+      expect(isInvalidated(TODAY_MONTH_COMPLETIONS)).toBe(false);
     });
 
     it('체크가 확정되면 서버가 정하는 감사 가능 여부를 다시 받도록 상세를 무효화한다', async () => {
@@ -245,7 +242,7 @@ describe('useToggleTodoMutationOptions', () => {
       // Given
       const { httpClient, givenList, givenCached, toggle, isInvalidated } = await renderToggle();
       givenList(TODAY, [createParentTodo({ id: 42, startDate: TODAY, completed: false })]);
-      givenCached(TODO_QUERY_KEYS.completionsByRange({ startDate: TODAY, endDate: TODAY }));
+      givenCached(TODAY_MONTH_COMPLETIONS);
       httpClient.patch.mockResolvedValue(fail(createTodoApiError()));
 
       // When
@@ -253,9 +250,7 @@ describe('useToggleTodoMutationOptions', () => {
 
       // Then
       expect(isInvalidated(TODO_QUERY_KEYS.listByDate({ date: TODAY }))).toBe(true);
-      expect(
-        isInvalidated(TODO_QUERY_KEYS.completionsByRange({ startDate: TODAY, endDate: TODAY })),
-      ).toBe(true);
+      expect(isInvalidated(TODAY_MONTH_COMPLETIONS)).toBe(true);
     });
 
     it('지난 날짜를 체크하면 그 해의 주간 달성 목록을 다시 부른다', async () => {

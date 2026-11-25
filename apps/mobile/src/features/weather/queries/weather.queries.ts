@@ -5,11 +5,14 @@ import {
   useWeatherApi,
 } from '@src/bootstrap/providers/di-context';
 import { type AppLogger } from '@src/core/ports/app-logger';
-import { useGetDailyCompletionsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
+import {
+  useGetDailyCompletionsInRangeQueriesOptions,
+  usePrefetchDailyCompletionsInRange,
+} from '@src/features/planning/todo/queries/todo.queries';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
 import { getNowInstant } from '@src/shared/date/clock';
-import { addDaysToDateKey } from '@src/shared/date/date-key';
+import { addDaysToDateKey, type DateKey } from '@src/shared/date/date-key';
 import { fromEpochMs, type Instant, toEpochMs } from '@src/shared/date/instant';
 import { getErrorMessage, toError, unwrap } from '@src/shared/errors';
 import { useTodayKey } from '@src/shared/hooks/use-today-key';
@@ -54,7 +57,7 @@ import { WEATHER_QUERY_KEYS } from './weather-query-keys';
 const LOCATION_STALE_TIME_MS = 30 * MINUTE_MS;
 
 /** 권한이 없던 사용자가 설정에서 돌아오면 30분을 기다리지 않고 바로 다시 확인한다. */
-function refetchOnFocus(query: Query<LocationReading, Error>) {
+function refetchOnFocus(query: Query<LocationReading>) {
   return query.state.data?.status === 'located' ? true : 'always';
 }
 
@@ -114,11 +117,11 @@ export function useWeatherLocationRevision(): number {
   return WeatherLocationPolicy.getReadingRevision(reading);
 }
 
-function getReportStaleTime(query: Query<WeatherReport, Error>): number {
+function getReportStaleTime(query: Query<WeatherReport>): number {
   return getReportStaleTimeMs(query.state.data, fromEpochMs(query.state.dataUpdatedAt));
 }
 
-function getReportRefetchInterval(query: Query<WeatherReport, Error>): number | false {
+function getReportRefetchInterval(query: Query<WeatherReport>): number | false {
   return getReportRefetchIntervalMs(query.state.data, getNowInstant());
 }
 
@@ -175,13 +178,17 @@ export function useGetWeatherReportQueryOptions() {
   });
 }
 
-/** 10일 예보에 할 일 점을 찍을 완료 기록. 화면의 prefetch와 예보 카드가 같은 키를 쓰게 범위를 한 곳에서 정한다 */
-export function useGetForecastCompletionsQueryOptions() {
-  const todayKey = useTodayKey();
-  return useGetDailyCompletionsQueryOptions({
-    startDate: todayKey,
-    endDate: addDaysToDateKey(todayKey, FORECAST_DAYS - 1),
-  });
+/** 10일 예보에 할 일 점을 찍을 기간. 화면의 prefetch와 예보 카드가 같은 달 키를 쓰게 한 곳에서 정한다 */
+function getForecastCompletionsRange(todayKey: DateKey) {
+  return { startDate: todayKey, endDate: addDaysToDateKey(todayKey, FORECAST_DAYS - 1) };
+}
+
+export function useGetForecastCompletionsQueriesOptions() {
+  return useGetDailyCompletionsInRangeQueriesOptions(getForecastCompletionsRange(useTodayKey()));
+}
+
+export function usePrefetchForecastCompletions() {
+  usePrefetchDailyCompletionsInRange(getForecastCompletionsRange(useTodayKey()));
 }
 
 function selectHero(report: WeatherReport) {

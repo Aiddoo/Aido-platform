@@ -11,6 +11,7 @@ import type { BlockTarget } from '../domains/user-block.model';
 import type { UserReportTarget } from '../domains/user-report.model';
 import type { UserReportFormValues } from '../schemas/user-report-form.schema';
 import { invalidateAfterBlockChange } from './moderation-cache';
+import { MODERATION_MUTATION_KEYS } from './moderation-mutation-keys';
 
 export function useBlockUserMutationOptions() {
   const haptics = useHaptics();
@@ -20,6 +21,7 @@ export function useBlockUserMutationOptions() {
   const toast = useAppToast();
 
   return mutationOptions({
+    mutationKey: MODERATION_MUTATION_KEYS.blockUser(),
     // 오프라인에 멈춰 있으면 확인 창을 닫지 못한다. 바로 실패해 알린다
     networkMode: 'always',
     mutationFn: async ({ userId }: BlockTarget) => unwrap(await moderationApi.blockUser(userId)),
@@ -42,6 +44,7 @@ export function useUnblockUserMutationOptions() {
   const toast = useAppToast();
 
   return mutationOptions({
+    mutationKey: MODERATION_MUTATION_KEYS.unblockUser(),
     // 오프라인에 멈춰 두면 해제 버튼이 연결될 때까지 돈다. 바로 실패해 알린다
     networkMode: 'always',
     mutationFn: async ({ userId }: BlockTarget) => unwrap(await moderationApi.unblockUser(userId)),
@@ -68,6 +71,7 @@ export function useReportContentMutationOptions() {
   const { trackEvent } = useTrack();
 
   return mutationOptions({
+    mutationKey: MODERATION_MUTATION_KEYS.reportContent(),
     networkMode: 'always',
     mutationFn: async ({ target, form }: ReportContentVariables) =>
       unwrap(await moderationApi.reportContent(toUserReportRequest(target, form))),

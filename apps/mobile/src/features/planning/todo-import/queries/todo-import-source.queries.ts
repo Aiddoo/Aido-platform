@@ -47,7 +47,7 @@ export function useGetImportCollectionsQueryOptions({
   const { timezone } = useDateFormatContext();
 
   return queryOptions({
-    queryKey: TODO_IMPORT_QUERY_KEYS.calendarCollections({ startDate, endDate }),
+    queryKey: TODO_IMPORT_QUERY_KEYS.calendarCollections({ startDate, endDate, timezone }),
     queryFn: async () => {
       const collections = await todoImportSource.listCollections();
       // 수만 세므로 제목·회차 키(해시)는 읽지 않는다. 해시는 고른 캘린더를 올릴 때만 만든다

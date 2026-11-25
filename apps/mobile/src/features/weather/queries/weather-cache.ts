@@ -67,7 +67,7 @@ export function invalidateWeatherReports(queryClient: QueryClient) {
 }
 
 /** 다시 등록한 위치를 위치 캐시에 반영한다. 위치를 읽기 전이면 다음 위치 확인에서 채운다. */
-export function setRegisteredWeatherLocation(
+export function setWeatherLocationInCache(
   queryClient: QueryClient,
   registered: RegisteredLocation,
 ) {
@@ -84,7 +84,7 @@ export function getCachedWeatherReport(
   queryClient: QueryClient,
   { locationRevision }: { locationRevision: number },
 ) {
-  return queryClient.getQueryData<WeatherReport>(WEATHER_QUERY_KEYS.report({ locationRevision }));
+  return queryClient.getQueryData(WEATHER_QUERY_KEYS.report({ locationRevision }));
 }
 
 /** 그 리비전의 리포트가 받는 중이면 끝나기를 기다려 위치를 읽는다. 실패는 비교할 위치가 없는 것으로 본다 */

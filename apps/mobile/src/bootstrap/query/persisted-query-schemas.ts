@@ -22,7 +22,7 @@ export const PERSISTED_QUERY_SCHEMAS: readonly PersistedQuerySchema[] = [
   { queryKey: USER_QUERY_KEYS.me(), schema: userSchema },
   { queryKey: TODO_QUERY_KEYS.lists(), schema: todoListResultSchema },
   { queryKey: TODO_CATEGORY_QUERY_KEYS.list(), schema: todoCategoriesResultSchema },
-  { queryKey: TODO_QUERY_KEYS.completionRanges(), schema: dailyCompletionsResultSchema },
+  { queryKey: TODO_QUERY_KEYS.completionMonths(), schema: dailyCompletionsResultSchema },
   { queryKey: ENTITLEMENT_QUERY_KEYS.snapshot(), schema: entitlementSnapshotSchema },
   { queryKey: PREFERENCE_QUERY_KEYS.current(), schema: preferenceSchema },
   { queryKey: FRIEND_QUERY_KEYS.friends(), schema: friendUserPagesSchema },

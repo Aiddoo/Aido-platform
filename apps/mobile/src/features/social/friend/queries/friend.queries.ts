@@ -1,7 +1,7 @@
 import { useFriendApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
-import { getNextCursor, selectPageItems } from '@src/shared/domains/cursor-page.model';
+import { getNextCursor, selectPageItems } from '@src/shared/query/cursor-page';
 import { type InfiniteData, infiniteQueryOptions } from '@tanstack/react-query';
 import { useCallback } from 'react';
 

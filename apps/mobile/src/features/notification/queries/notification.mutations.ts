@@ -137,6 +137,7 @@ export function useOptOutMarketingPushMutationOptions() {
   const showConsentResult = useConsentResultToast();
 
   return mutationOptions({
+    mutationKey: NOTIFICATION_MUTATION_KEYS.optOutMarketingPush(),
     mutationFn: async (token: string) => unwrap(await notificationApi.optOutMarketingPush(token)),
     onMutate: () => ({ epoch: sessionEpoch.current() }),
     // 보내는 사이 로그아웃했으면 끝난 화면·캐시에 안내와 무효화를 남기지 않는다
@@ -168,6 +169,7 @@ export function useSnoozeTodoReminderMutationOptions() {
   const notificationApi = useNotificationApi();
 
   return mutationOptions({
+    mutationKey: NOTIFICATION_MUTATION_KEYS.snoozeTodoReminder(),
     // 멈췄다가 연결된 뒤 보내면 누른 때가 아니라 연결된 때부터 10분 뒤라 바로 실패시켜 알린다
     networkMode: 'always',
     mutationFn: async ({ todoId, notificationId }: SnoozeTodoReminderVariables) =>

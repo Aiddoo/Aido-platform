@@ -2,7 +2,7 @@ import { useTodoNudgeApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { DEFAULT_PAGE_SIZE } from '@src/shared/constants/page-size';
 import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
-import { getNextCursor, selectPageItems } from '@src/shared/domains/cursor-page.model';
+import { getNextCursor, selectPageItems } from '@src/shared/query/cursor-page';
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 
 import type { NudgeThanksCursor } from '../domains/nudge-interaction.model';

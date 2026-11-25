@@ -12,7 +12,7 @@ import { reflectFeatureQuota } from '@src/features/billing/subscription/queries/
 import { isAiDataSharingConsentRequiredError } from '@src/features/identity/consent/domains/consent.error';
 import { markAiDataSharingConsentRequired } from '@src/features/identity/consent/queries/consent-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
-import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
+import { settleTodoBatchWrite } from '@src/features/planning/todo/queries/todo-cache';
 import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
 import {
   getVoicePlanFailureCause,
@@ -68,6 +68,7 @@ export function useCreateMemoMutationOptions() {
   const queryClient = useQueryClient();
 
   return mutationOptions({
+    mutationKey: MEMO_MUTATION_KEYS.createMemo(),
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 글자를 남긴 채 안내한다. 글자는 초안에도 있다
     networkMode: 'always',
     // 시간 초과돼도 서버는 늦게 저장할 수 있어 다시 저장할 때 같은 키를 보낸다. 서버는 그 키로 만든 메모를 돌려준다
@@ -198,6 +199,7 @@ export function useDeleteMemoMutationOptions() {
   const toast = useAppToast();
 
   return mutationOptions({
+    mutationKey: MEMO_MUTATION_KEYS.deleteMemo(),
     // 오프라인에 멈춰 두면 진행 중인 다이얼로그를 닫을 수 없다. 바로 실패해 안내한다
     networkMode: 'always',
     mutationFn: async (memoId: number) => unwrap(await memoApi.deleteMemo(memoId)),
@@ -225,6 +227,7 @@ export function useConvertMemoToTodosMutationOptions() {
   const toast = useAppToast();
 
   return mutationOptions({
+    mutationKey: MEMO_MUTATION_KEYS.convertMemoToTodos(),
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 시트와 입력값을 남긴 채 안내한다
     networkMode: 'always',
     mutationFn: async ({ memoId, values }: { memoId: number; values: TodoFormValues }) =>
@@ -244,7 +247,7 @@ export function useConvertMemoToTodosMutationOptions() {
     onSettled: () => {
       invalidateMemoList(queryClient);
       invalidateMemoResourceLimit(queryClient);
-      invalidateTodos(queryClient);
+      settleTodoBatchWrite(queryClient);
     },
     meta: {
       errorFeedback: {

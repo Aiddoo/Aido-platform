@@ -92,7 +92,7 @@ export function InviteCodeEntryForm({ children }: PropsWithChildren) {
   const submitInviteCode = () =>
     form.handleSubmit(
       async ({ inviteCode }) => {
-        // 오프라인이면 조회가 연결될 때까지 멈춰 버튼이 돌기만 한다. 입력한 코드를 둔 채 바로 알린다
+        // 오프라인이면 보내 보지 않고 입력한 코드를 둔 채 초대 화면의 연결 안내로 바로 알린다
         if (!onlineManager.isOnline()) {
           toast.warning(t('errors.offline'));
           return;

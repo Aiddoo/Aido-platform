@@ -5,6 +5,7 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { isPushReportRetryableError } from '../domains/notification.error';
+import { NOTIFICATION_MUTATION_KEYS } from './notification-mutation-keys';
 import { invalidatePushPermission } from './push-permission-cache';
 
 /** 화면 뒤에서 기기 상태를 서버에 알린다. 실패는 다음 동기화 때 다시 보내므로 사용자에게 보이지 않는다 */
@@ -14,6 +15,7 @@ export function useReportPushDeviceMutationOptions() {
   const queryClient = useQueryClient();
 
   return mutationOptions({
+    mutationKey: NOTIFICATION_MUTATION_KEYS.reportPushDevice(),
     mutationFn: async ({ force }: { force: boolean }) =>
       unwrap(await pushRegistrationService.report({ force })),
     onSettled: () => invalidatePushPermission(queryClient),

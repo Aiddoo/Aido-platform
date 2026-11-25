@@ -13,6 +13,7 @@ import {
   createTodoItemResponseDto,
   createTodoListResponseDto,
 } from '@src/features/planning/todo/__tests__/todo.fixtures';
+import { getCompletionMonthRange } from '@src/features/planning/todo/domains/daily-completion.model';
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import type { TodoRepeat } from '@src/features/planning/todo/domains/todo-repeat.model';
 import {
@@ -32,6 +33,7 @@ import {
   useUpdateTodoScheduleMutationOptions,
 } from '@src/features/planning/todo/queries/todo.mutations';
 import {
+  useGetDailyCompletionsInRangeQueriesOptions,
   useGetDailyCompletionsQueryOptions,
   useGetFriendTodosQueryOptions,
   useGetTodoDetailsQueryOptions,
@@ -49,7 +51,7 @@ import {
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
-import { hashKey, type QueryKey, useMutation, useQuery } from '@tanstack/react-query';
+import { hashKey, type QueryKey, useMutation, useQueries, useQuery } from '@tanstack/react-query';
 import { act } from '@testing-library/react-native';
 import { noop } from 'es-toolkit';
 import { Profiler } from 'react';
@@ -63,8 +65,8 @@ import {
 const DAY = createDateKey('2026-03-08');
 const OTHER_DAY = createDateKey('2026-03-20');
 const MOVED_DAY = createDateKey('2026-04-20');
-const MONTH = { startDate: createDateKey('2026-02-23'), endDate: createDateKey('2026-04-05') };
-const NEXT_MONTH = { startDate: createDateKey('2026-04-06'), endDate: createDateKey('2026-05-10') };
+const MONTH = createDateKey('2026-03-01');
+const NEXT_MONTH = createDateKey('2026-04-01');
 const FRIEND_ID = 'friend-1';
 const OWNER_ID = 'clz7x5p8k0010qz0z8z8z8z8z';
 const WEEKLY: TodoRepeat = {
@@ -78,8 +80,8 @@ const WEEKLY: TodoRepeat = {
 const WATCHED: Record<string, QueryKey> = {
   'list:day': TODO_QUERY_KEYS.listByDate({ date: DAY }),
   'list:other-day': TODO_QUERY_KEYS.listByDate({ date: OTHER_DAY }),
-  'calendar:month': TODO_QUERY_KEYS.completionsByRange(MONTH),
-  'calendar:next-month': TODO_QUERY_KEYS.completionsByRange(NEXT_MONTH),
+  'calendar:month': TODO_QUERY_KEYS.completionsByMonth({ month: MONTH }),
+  'calendar:next-month': TODO_QUERY_KEYS.completionsByMonth({ month: NEXT_MONTH }),
   'widget:day': TODO_QUERY_KEYS.widgetSummaryByDate({ date: DAY, userId: OWNER_ID }),
   overview: TODO_QUERY_KEYS.overview(),
   categories: TODO_CATEGORY_QUERY_KEYS.list(),
@@ -292,7 +294,7 @@ function createTodoServer() {
 
 function WatchedQueries() {
   useQuery(useGetTodosByDateQueryOptions({ date: OTHER_DAY }));
-  useQuery(useGetDailyCompletionsQueryOptions(NEXT_MONTH));
+  useQuery(useGetDailyCompletionsQueryOptions({ month: NEXT_MONTH }));
   // 고정 날짜(DAY)는 기기 오늘이 아니라 묻는 날짜 판정을 끈다. 그 판정은 todo-cache.test가 본다
   useQuery({ ...useGetTodoSummaryQueryOptions({ date: DAY, userId: OWNER_ID }), enabled: true });
   useQuery(useGetTodoOverviewQueryOptions());
@@ -303,7 +305,7 @@ function WatchedQueries() {
 
 function CalendarProbe() {
   // MyCalendar처럼 data와 isError만 읽는다
-  const query = useQuery(useGetDailyCompletionsQueryOptions(MONTH));
+  const query = useQuery(useGetDailyCompletionsQueryOptions({ month: MONTH }));
   return query.isError || query.data == null ? null : null;
 }
 
@@ -439,7 +441,7 @@ async function renderFeed() {
       ?.todos.find((todo) => todo.id === todoId);
   const calendarDay = () =>
     queryClient
-      .getQueryData(TODO_QUERY_KEYS.completionsByRange(MONTH))
+      .getQueryData(TODO_QUERY_KEYS.completionsByMonth({ month: MONTH }))
       ?.completions.find((completion) => completion.date === DAY);
   const detailTodo = () => queryClient.getQueryData(TODO_QUERY_KEYS.detail({ todoId: 1 }))?.todo;
 
@@ -822,7 +824,7 @@ function respondAsServer(
     return ok(createTodoCategoryListDto());
   }
   if (url === 'v1/daily-completions') {
-    return ok(completionsDto(params?.startDate === WEEK.startDate ? WEEK : MONTH, hasCreated));
+    return ok(completionsDto(getCompletionMonthRange(MONTH), hasCreated));
   }
   if (url === 'v1/todos/overview') {
     return ok({ hasTodo: true, hasCompletedTodo: false, hasActiveRepeat: false });
@@ -843,7 +845,7 @@ function respondAsServer(
 
 function FeedCalendarProbe() {
   // MyCalendar처럼 data와 isError만 읽는다
-  const query = useQuery(useGetDailyCompletionsQueryOptions(MONTH));
+  const query = useQuery(useGetDailyCompletionsQueryOptions({ month: MONTH }));
   return query.isError || query.data == null ? null : null;
 }
 
@@ -858,7 +860,7 @@ function BackgroundProbe() {
   // 위젯 동기화·시작 체크리스트가 피드 뒤에서 붙들고 있는 조회
   // 고정 날짜(DAY)는 기기 오늘이 아니라 묻는 날짜 판정을 끈다. 그 판정은 todo-cache.test가 본다
   useQuery({ ...useGetTodoSummaryQueryOptions({ date: DAY, userId: OWNER_ID }), enabled: true });
-  useQuery(useGetDailyCompletionsQueryOptions(WEEK));
+  useQueries(useGetDailyCompletionsInRangeQueriesOptions(WEEK));
   useQuery(useGetTodoOverviewQueryOptions());
   return null;
 }
@@ -986,8 +988,7 @@ describe('할 일을 만든 뒤 다시 받는 조회', () => {
     expect(refetched).toEqual(
       expect.arrayContaining([
         hashKey(TODO_QUERY_KEYS.listByDate({ date: DAY })),
-        hashKey(TODO_QUERY_KEYS.completionsByRange(MONTH)),
-        hashKey(TODO_QUERY_KEYS.completionsByRange(WEEK)),
+        hashKey(TODO_QUERY_KEYS.completionsByMonth({ month: MONTH })),
       ]),
     );
     expect(queryClient.getQueryData(TODO_QUERY_KEYS.listByDate({ date: DAY }))?.todos).toHaveLength(

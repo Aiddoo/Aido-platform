@@ -10,7 +10,10 @@ import {
   createTodoDto,
   createTodoFormValues,
 } from '@src/features/planning/todo/__tests__/todo.fixtures';
-import type { DailyCompletionsResult } from '@src/features/planning/todo/domains/daily-completion.model';
+import {
+  type DailyCompletionsResult,
+  getCompletionMonthRange,
+} from '@src/features/planning/todo/domains/daily-completion.model';
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import type {
   Todo,
@@ -46,11 +49,11 @@ import { useCreateTodoMutationOptions } from './todo-composer.mutations';
 const DAY_1 = createDateKey('2026-03-08');
 const DAY_2 = createDateKey('2026-03-09');
 const DAY_3 = createDateKey('2026-03-10');
-const WEEK = { startDate: createDateKey('2026-03-08'), endDate: createDateKey('2026-03-14') };
+const MONTH = createDateKey('2026-03-01');
 const LIST_DAY_1 = TODO_QUERY_KEYS.listByDate({ date: DAY_1 });
 const LIST_DAY_2 = TODO_QUERY_KEYS.listByDate({ date: DAY_2 });
 const LIST_DAY_3 = TODO_QUERY_KEYS.listByDate({ date: DAY_3 });
-const WEEK_COMPLETIONS = TODO_QUERY_KEYS.completionsByRange(WEEK);
+const MONTH_COMPLETIONS = TODO_QUERY_KEYS.completionsByMonth({ month: MONTH });
 const RED = '#FF0000';
 const CATEGORY = { id: 1, name: '기본', color: RED };
 
@@ -69,7 +72,7 @@ const createCompletions = (totalTodos: number, completedTodos: number): DailyCom
     },
   ],
   totalCompleteDays: totalTodos > 0 && totalTodos === completedTodos ? 1 : 0,
-  dateRange: WEEK,
+  dateRange: getCompletionMonthRange(MONTH),
 });
 
 async function renderMutations() {
@@ -154,7 +157,7 @@ describe('useTodoMutations', () => {
         LIST_DAY_1,
         toList([createParentTodo({ startDate: DAY_1, completed: true })]),
       );
-      queryClient.setQueryData(WEEK_COMPLETIONS, createCompletions(1, 1));
+      queryClient.setQueryData(MONTH_COMPLETIONS, createCompletions(1, 1));
       const response = respondWith({ id: 1 });
       httpClient.post.mockReturnValue(response.response);
 
@@ -167,7 +170,7 @@ describe('useTodoMutations', () => {
       expect(cachedTodo(LIST_DAY_1)?.completed).toBe(false);
       expect(progress(cachedTodo(LIST_DAY_1))).toEqual({ total: 1, completed: 0 });
       expect(
-        queryClient.getQueryData<DailyCompletionsResult>(WEEK_COMPLETIONS)?.completions[0],
+        queryClient.getQueryData<DailyCompletionsResult>(MONTH_COMPLETIONS)?.completions[0],
       ).toEqual(expect.objectContaining({ completedTodos: 0, isComplete: false }));
       response.settle();
       await flush();
@@ -393,7 +396,7 @@ describe('useTodoMutations', () => {
           createParentTodo({ id: 2, startDate: DAY_1 }),
         ]),
       );
-      queryClient.setQueryData(WEEK_COMPLETIONS, createCompletions(2, 0));
+      queryClient.setQueryData(MONTH_COMPLETIONS, createCompletions(2, 0));
       const subToggle = respondWith({ id: 1 });
       const todoToggle = respondWith({ id: 2 });
       httpClient.patch
@@ -425,7 +428,7 @@ describe('useTodoMutations', () => {
 
       // Then
       expect(isInvalidated(LIST_DAY_1)).toBe(true);
-      expect(isInvalidated(WEEK_COMPLETIONS)).toBe(true);
+      expect(isInvalidated(MONTH_COMPLETIONS)).toBe(true);
     });
 
     it('하위 항목을 바꾸면 다른 날짜 목록에 남은 같은 할 일도 낡은 값으로 표시한다', async () => {
@@ -641,10 +644,10 @@ describe('useTodoMutations', () => {
       // Given
       const { httpClient, queryClient, mutations } = await renderMutations();
       queryClient.setQueryData(LIST_DAY_1, toList([createParentTodo({ startDate: DAY_1 })]));
-      queryClient.setQueryData(WEEK_COMPLETIONS, createCompletions(1, 0));
+      queryClient.setQueryData(MONTH_COMPLETIONS, createCompletions(1, 0));
       const failed = createPendingResponse(fail(createTodoApiError()));
       httpClient.patch.mockReturnValue(failed.response);
-      const completions = () => queryClient.getQueryData<DailyCompletionsResult>(WEEK_COMPLETIONS);
+      const completions = () => queryClient.getQueryData<DailyCompletionsResult>(MONTH_COMPLETIONS);
 
       // When
       await act(async () => {
@@ -678,7 +681,7 @@ describe('useTodoMutations', () => {
           createParentTodo({ id: 2, startDate: createDateKey('2026-03-07'), endDate: DAY_1 }),
         ]),
       );
-      queryClient.setQueryData(WEEK_COMPLETIONS, createCompletions(1, 0));
+      queryClient.setQueryData(MONTH_COMPLETIONS, createCompletions(1, 0));
       const pending = respondWith({ id: 1 });
       httpClient.patch.mockReturnValue(pending.response);
 
@@ -689,7 +692,7 @@ describe('useTodoMutations', () => {
 
       // Then
       expect(
-        queryClient.getQueryData<DailyCompletionsResult>(WEEK_COMPLETIONS)?.completions[0],
+        queryClient.getQueryData<DailyCompletionsResult>(MONTH_COMPLETIONS)?.completions[0],
       ).toEqual(expect.objectContaining({ totalTodos: 2, completedTodos: 1, isComplete: false }));
       pending.settle();
       await flush();
@@ -762,7 +765,7 @@ describe('useTodoMutations', () => {
       // Given
       const { httpClient, queryClient, mutations, isInvalidated } = await renderMutations();
       queryClient.setQueryData(LIST_DAY_1, toList([]));
-      queryClient.setQueryData(WEEK_COMPLETIONS, createCompletions(0, 0));
+      queryClient.setQueryData(MONTH_COMPLETIONS, createCompletions(0, 0));
       queryClient.setQueryData(TODO_CATEGORY_QUERY_KEYS.list(), {
         categories: [{ ...CATEGORY, sortOrder: 0, todoCount: 0 }],
       });
@@ -788,7 +791,7 @@ describe('useTodoMutations', () => {
       expect(todos()).toHaveLength(1);
       expect(todos()?.[0]?.endDate).toBe(DAY_3);
       expect(
-        queryClient.getQueryData<DailyCompletionsResult>(WEEK_COMPLETIONS)?.completions[0]
+        queryClient.getQueryData<DailyCompletionsResult>(MONTH_COMPLETIONS)?.completions[0]
           ?.totalTodos,
       ).toBe(1);
 
@@ -799,7 +802,7 @@ describe('useTodoMutations', () => {
       // Then
       expect(todos()).toHaveLength(0);
       expect(
-        queryClient.getQueryData<DailyCompletionsResult>(WEEK_COMPLETIONS)?.completions[0]
+        queryClient.getQueryData<DailyCompletionsResult>(MONTH_COMPLETIONS)?.completions[0]
           ?.totalTodos ?? 0,
       ).toBe(0);
       expect(isInvalidated(LIST_DAY_1)).toBe(true);
@@ -915,11 +918,11 @@ describe('useTodoMutations', () => {
           createParentTodo({ id: 2, startDate: DAY_1 }),
         ]),
       );
-      queryClient.setQueryData(WEEK_COMPLETIONS, createCompletions(2, 0));
+      queryClient.setQueryData(MONTH_COMPLETIONS, createCompletions(2, 0));
       const failed = createPendingResponse(fail(createTodoApiError()));
       httpClient.delete.mockReturnValue(failed.response);
       const totalTodos = () =>
-        queryClient.getQueryData<DailyCompletionsResult>(WEEK_COMPLETIONS)?.completions[0]
+        queryClient.getQueryData<DailyCompletionsResult>(MONTH_COMPLETIONS)?.completions[0]
           ?.totalTodos;
 
       // When

@@ -3,8 +3,8 @@ import { useInviteApi, useInviteService, useLogger } from '@src/bootstrap/provid
 import { unwrap } from '@src/core/errors/result';
 import { DEFAULT_PAGE_SIZE } from '@src/shared/constants/page-size';
 import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
-import { getNextCursor, selectPageItems } from '@src/shared/domains/cursor-page.model';
 import { getErrorMessage } from '@src/shared/errors';
+import { getNextCursor, selectPageItems } from '@src/shared/query/cursor-page';
 import {
   queryOptions,
   type InfiniteData,

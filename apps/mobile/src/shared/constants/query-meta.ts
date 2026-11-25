@@ -1,5 +1,5 @@
 import type { ErrorReportFeature } from '@src/core/observability/telemetry-keys';
-import type { MutationMeta, QueryMeta } from '@tanstack/react-query';
+import type { DefaultError, MutationMeta, QueryMeta } from '@tanstack/react-query';
 import type { DefaultNamespace, FlatNamespace, ParseKeysWithoutVariables } from 'i18next';
 
 /** 전역 `t`가 받는 키 모양(기본 네임스페이스는 접두사 없이, 나머지는 `ns:key`) */
@@ -42,6 +42,8 @@ declare module '@tanstack/react-query' {
   interface Register {
     queryMeta: AppQueryMeta;
     mutationMeta: AppMutationMeta;
+    // queryFn·mutationFn은 Error가 아닌 값도 던질 수 있어 경계·재시도 판정처럼 좁혀 읽게 한다
+    defaultError: unknown;
   }
 }
 
@@ -52,3 +54,9 @@ export type AppQueryMetaGuard = AssertClosedQueryMeta<keyof QueryMeta>;
 type AssertClosedMutationMeta<Key extends keyof AppMutationMeta> = Key;
 /** MutationMeta가 Record<string, unknown>으로 돌아가면 컴파일 오류가 난다 */
 export type AppMutationMetaGuard = AssertClosedMutationMeta<keyof MutationMeta>;
+
+type AssertUnknownDefaultError<IsUnknown extends true> = IsUnknown;
+/** DefaultError가 Error로 돌아가면(Register 보강이 풀리면) 컴파일 오류가 난다 */
+export type AppDefaultErrorGuard = AssertUnknownDefaultError<
+  unknown extends DefaultError ? true : false
+>;

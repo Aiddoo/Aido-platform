@@ -1,3 +1,4 @@
+import { settleOverlappingWrite } from '@src/shared/query/settle-overlapping-write';
 import {
   type DefaultError,
   hashKey,
@@ -7,6 +8,7 @@ import {
 } from '@tanstack/react-query';
 
 import { type User } from '../domains/user.model';
+import { USER_MUTATION_KEYS } from './user-mutation-keys';
 import { USER_QUERY_KEYS } from './user-query-keys';
 
 /** 조회 함수가 DI Api를 써서 `useGetMeQueryOptions`가 만들고 고른 값(select)은 옵션이 정한다 */
@@ -35,6 +37,19 @@ export function cancelMe(queryClient: QueryClient) {
 /** 받은 내 정보가 있을 때만 바꾼다 */
 export function updateMeInCache(queryClient: QueryClient, update: (me: User) => User) {
   queryClient.setQueryData(USER_QUERY_KEYS.me(), (me) => (me == null ? me : update(me)));
+}
+
+/** 프로필 저장 응답을 쓴다. 겹친 저장은 응답 대신 마지막에 서버 값을 다시 받는다 */
+export function settleProfileWrite(
+  queryClient: QueryClient,
+  { startedWithOthers, writeResponse }: { startedWithOthers: boolean; writeResponse: () => void },
+) {
+  return settleOverlappingWrite(queryClient, {
+    mutationKey: USER_MUTATION_KEYS.updateProfile(),
+    queryKey: USER_QUERY_KEYS.me(),
+    startedWithOthers,
+    writeResponse,
+  });
 }
 
 export function invalidateMe(queryClient: QueryClient) {

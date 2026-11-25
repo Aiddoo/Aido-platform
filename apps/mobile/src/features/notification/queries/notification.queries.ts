@@ -1,7 +1,7 @@
 import { useNotificationApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import type { DateKey } from '@src/shared/date/date-key';
-import { getNextCursor, selectPageItems } from '@src/shared/domains/cursor-page.model';
+import { getNextCursor, selectPageItems } from '@src/shared/query/cursor-page';
 import type { InfiniteData } from '@tanstack/react-query';
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 import { uniqBy } from 'es-toolkit';

@@ -4,6 +4,7 @@ import type { TodoListResult } from '@src/features/planning/todo/domains/todo.mo
 import { syncDailyCompletionWithList } from '@src/features/planning/todo/queries/todo-cache';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
+import { SECOND_MS } from '@src/shared/constants/time-units';
 import { createMemorySyncStorage, createTestQueryClient } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
@@ -11,6 +12,7 @@ import type { QueryClient } from '@tanstack/react-query';
 import {
   persistQueryClientRestore,
   persistQueryClientSave,
+  persistQueryClientSubscribe,
 } from '@tanstack/react-query-persist-client';
 import { z } from 'zod';
 
@@ -190,6 +192,57 @@ describe('createQueryPersistOptions', () => {
     return target.getQueryData(['opted']);
   };
 
+  const subscribeCountingStorage = () => {
+    const backing = createMemorySyncStorage();
+    const storage = createQueryCacheStorage(backing);
+    storage.setOwner('user-1');
+    const countCacheWrites = () =>
+      backing.set.mock.calls.filter(([key]) => key.startsWith(`${QUERY_CACHE_STORAGE_KEY}:`))
+        .length;
+    const client = createClient();
+    client.getQueryCache().build(client, { queryKey: ['opted'], ...PERSISTED_QUERY_OPTIONS });
+    client.setQueryData(['opted'], { version: 0 });
+    const options = createQueryPersistOptions({ storage, buster: 'b', schemas: TEST_SCHEMAS });
+    const unsubscribe = persistQueryClientSubscribe({ queryClient: client, ...options });
+    return { client, storage, countCacheWrites, options, unsubscribe };
+  };
+
+  it('영속하지 않는 조회를 3초마다 1분 폴링하는 동안 영속 캐시는 12번만 쓴다(기본 1초면 40번)', async () => {
+    // Given
+    const { client, countCacheWrites, unsubscribe } = subscribeCountingStorage();
+
+    // When
+    for (let poll = 0; poll < 20; poll += 1) {
+      await client.query({
+        queryKey: ['polled'],
+        queryFn: async () => ({ poll }),
+        staleTime: 0,
+      });
+      await jest.advanceTimersByTimeAsync(3 * SECOND_MS);
+    }
+    await jest.runAllTimersAsync();
+
+    // Then
+    expect(countCacheWrites()).toBe(12);
+    unsubscribe();
+  });
+
+  it('앱이 뒤로 갈 때 flush하면 미뤄 둔 마지막 상태를 기다리지 않고 쓴다', async () => {
+    // Given
+    const { client, storage, options, unsubscribe } = subscribeCountingStorage();
+    client.setQueryData(['opted'], { version: 1 });
+    await jest.advanceTimersByTimeAsync(0);
+    client.setQueryData(['opted'], { version: 2 });
+
+    // When
+    options.flush();
+    await jest.advanceTimersByTimeAsync(0);
+
+    // Then
+    expect(storage.getItem(QUERY_CACHE_STORAGE_KEY)).toContain('"version":2');
+    unsubscribe();
+  });
+
   it('같은 앱 버전이면 저장한 조회를 Instant 문자열 그대로 복원한다', async () => {
     // Given
     const buster = createQueryCacheBuster({ appVersion: '1.14.0', language: 'ko' });
@@ -201,16 +254,16 @@ describe('createQueryPersistOptions', () => {
     expect(restored).toEqual({ savedAt: '2026-11-02T00:00:00.000Z' });
   });
 
-  it('옛 캐시 스키마 버전(5)이 옛 쿼리 키로 저장한 캐시는 복원하지 않고 다시 조회하게 둔다', async () => {
+  it('옛 캐시 스키마 버전(6)이 기간 키로 저장한 완료 기록 캐시는 복원하지 않고 다시 조회하게 둔다', async () => {
     // Given
-    const legacyBuster = '5:1.14.0:ko';
+    const legacyBuster = '6:1.14.0:ko';
     const currentBuster = createQueryCacheBuster({ appVersion: '1.14.0', language: 'ko' });
 
     // When
     const restored = await saveAndRestore(legacyBuster, currentBuster);
 
     // Then
-    expect(currentBuster.startsWith('6:')).toBe(true);
+    expect(currentBuster.startsWith('7:')).toBe(true);
     expect(restored).toBeUndefined();
   });
 
@@ -218,10 +271,7 @@ describe('createQueryPersistOptions', () => {
     // Given
     const date = createDateKey('2026-11-05');
     const listKey = TODO_QUERY_KEYS.listByDate({ date });
-    const rangeKey = TODO_QUERY_KEYS.completionsByRange({
-      startDate: '2026-11-01',
-      endDate: '2026-11-07',
-    });
+    const rangeKey = TODO_QUERY_KEYS.completionsByMonth({ month: '2026-11-01' });
     const storage = createQueryCacheStorage(createMemorySyncStorage());
     storage.setOwner('user-1');
     const options = createQueryPersistOptions({

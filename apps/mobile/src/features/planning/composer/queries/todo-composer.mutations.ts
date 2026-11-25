@@ -33,7 +33,7 @@ import {
   settleTodoSeriesWrite,
   settleTodoWrite,
   syncDailyCompletionWithList,
-  updateCachedTodoOverview,
+  setTodoOverviewInCache,
   withTodoCreated,
 } from '@src/features/planning/todo/queries/todo-cache';
 import { TODO_MUTATION_KEYS } from '@src/features/planning/todo/queries/todo-mutation-keys';
@@ -111,7 +111,7 @@ export function useCreateTodoMutationOptions() {
         saveCreatedTodo(queryClient, { date: startDate, optimisticId }, saved);
         changeCachedCategoryTodoCount(queryClient, { categoryId: saved.category.id, delta: 1 });
       }
-      updateCachedTodoOverview(queryClient, withTodoCreated);
+      setTodoOverviewInCache(queryClient, withTodoCreated);
       emitTodoCreated();
       toast.success(t('todo:toast.todoAdded'));
       trackEvent('todo_created', {

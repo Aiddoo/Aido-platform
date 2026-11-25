@@ -5,7 +5,7 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text, TextSkeleton } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
+import { useIsFocused, useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { match } from 'ts-pattern';
 
@@ -31,10 +31,13 @@ function selectBadge(report: WeatherReport) {
 /** 헤더라 경계 대신 상태별로 그리고, 위치·리포트가 없어도 날씨 화면(권한 안내·다시 시도)으로 갈 배지를 남긴다 */
 export function WeatherForecastBadge() {
   const location = useWeatherLocation();
+  // 리포트 만료마다 다시 받는 폴링이 다른 탭·화면에 가려진 동안 돌지 않게 구독을 끊는다. 다시 보이면 낡은 리포트를 바로 받는다
+  const isFocused = useIsFocused();
   const { data: badge, isPending } = useQuery({
     ...useGetWeatherReportQueryOptions(),
     select: selectBadge,
     enabled: WeatherLocationPolicy.shouldFetchReport(location),
+    subscribed: isFocused,
   });
 
   return match(location)

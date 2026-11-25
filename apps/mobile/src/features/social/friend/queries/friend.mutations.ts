@@ -28,7 +28,7 @@ import {
   invalidateReceivedFriendRequests,
   invalidateSentFriendRequests,
   patchSearchedUser,
-  updateFriendListInCache,
+  setFriendListInCache,
   withFriendRemoved,
   withFriendRestored,
 } from './friend-cache';
@@ -41,6 +41,7 @@ export function useAcceptRequestMutationOptions() {
   const toast = useAppToast();
 
   return mutationOptions({
+    mutationKey: FRIEND_MUTATION_KEYS.acceptRequest(),
     // 오프라인에 멈춘 채 나중에 실행되지 않게 바로 실패해 안내한다
     networkMode: 'always',
     mutationFn: async (userId: string) => {
@@ -65,6 +66,7 @@ export function useCancelRequestMutationOptions() {
   const { trackEvent } = useTrack();
 
   return mutationOptions({
+    mutationKey: FRIEND_MUTATION_KEYS.cancelRequest(),
     // 오프라인에 멈춘 채 나중에 실행되지 않게 바로 실패해 안내한다
     networkMode: 'always',
     mutationFn: async (userId: string) => {
@@ -88,6 +90,7 @@ export function useRejectRequestMutationOptions() {
   const toast = useAppToast();
 
   return mutationOptions({
+    mutationKey: FRIEND_MUTATION_KEYS.rejectRequest(),
     // 오프라인에 멈춘 채 나중에 실행되지 않게 바로 실패해 안내한다
     networkMode: 'always',
     mutationFn: async (userId: string) => {
@@ -121,7 +124,7 @@ export function useRemoveFriendMutationOptions() {
       await cancelFriendList(queryClient);
       const cachedFriends = getCachedFriendList(queryClient);
       const placement = cachedFriends == null ? null : findFriendPlacement(cachedFriends, userId);
-      updateFriendListInCache(queryClient, (pages) => withFriendRemoved(pages, userId));
+      setFriendListInCache(queryClient, (pages) => withFriendRemoved(pages, userId));
       return { placement };
     },
     onSuccess: () => {
@@ -131,7 +134,7 @@ export function useRemoveFriendMutationOptions() {
     onError: (_error, _userId, context) => {
       const placement = context?.placement;
       if (placement != null) {
-        updateFriendListInCache(queryClient, (pages) => withFriendRestored(pages, placement));
+        setFriendListInCache(queryClient, (pages) => withFriendRestored(pages, placement));
       }
     },
     // 친구 수가 한도(FRIEND)를 돌려받아 남은 횟수를 다시 받는다. 목록은 앞 지우기 뒤에 다시 받으면
@@ -158,6 +161,7 @@ export function useReorderFriendMutationOptions() {
   const queryClient = useQueryClient();
 
   return mutationOptions({
+    mutationKey: FRIEND_MUTATION_KEYS.reorderFriend(),
     // 순서를 저장하는 동안 끌기가 막힌다. 오프라인에 멈춰 두면 연결될 때까지 막히니 바로 실패해 제자리로 돌린다
     networkMode: 'always',
     mutationFn: async ({ followId, input }: ReorderFriendVariables) => {
@@ -185,6 +189,7 @@ export function useSendRequestByTagMutationOptions({
   const gate = useEntitlementGate('FRIEND', { surface: 'friend_request' });
 
   return mutationOptions({
+    mutationKey: FRIEND_MUTATION_KEYS.sendRequestByTag(),
     // 저장 후 떠나는 폼이라 오프라인에서도 멈춰 기다리지 않고 바로 실패해 입력값을 남긴 채 안내한다
     networkMode: 'always',
     mutationFn: async (userTag: string) => {

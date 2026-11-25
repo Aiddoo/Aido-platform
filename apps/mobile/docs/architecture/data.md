@@ -78,9 +78,10 @@ const storage = useStoredValueStorage(upsellDismissalStoredValue); // 핸들러�
 | 업무 판정                                        | Policy               | 테스트 단위다                                                             |
 
 - **키에는 서버 인자만 넣는다.** 클라이언트 필터·정렬·`limit`·날짜 범위는 키에 넣지 않고 `select`로 같은 캐시를 나눠 쓴다. 범위를 키에 넣으면 같은 데이터를 범위마다 따로 받고 따로 영속한다. `queryFn`이 쓰는 값(시간대 포함)은 모두 키에 있다.
+  - 완료 기록은 달(그 달 1일) 키 하나(`TODO_QUERY_KEYS.completionsByMonth`)이고 그 달을 일요일 시작 주로 채운 칸을 받는다. 달력은 달 키를 그대로, 위젯 주·이번 주 기록·날씨 10일은 `useGetDailyCompletionsInRangeQueriesOptions(range)`로 기간을 덮는 달 키(한 달 칸이 덮지 못하면 두 달)를 `useQueries`·`useSuspenseQueries`에 넘기고 `combine`이 기간의 날만 고른다.
 - **`select`는 캐시를 쪼개지 않는다.** 캐시 항목은 `queryKey`로만 정해지고 `select`는 관찰자마다 그 위에서 돌며 결과는 구조 공유된다. 화면마다 다른 `select`는 TanStack Query가 권하는 방식이다([Render Optimizations](https://tanstack.com/query/v5/docs/framework/react/guides/render-optimizations#select)).
 - `select` 함수는 `queries/{entity}.queries.ts`의 이름 있는 모듈 함수(`select{X}`, 여럿이면 객체 `{X}Select`)다. 옵션 훅이 `filters`·`orderBy`·`limit`(모델의 `Filter{X}`·`OrderBy{X}`)을 받아 안에서 쓰거나, 컴포넌트가 `{ ...useGetXQueryOptions(), select: selectX }`로 고른다. `select`로 오류를 던지거나 DTO를 바꾸지 않는다.
-- 무한 목록 도구는 `shared/domains/cursor-page.model.ts` 하나다: `cursorPageSchema(item, cursor)`(`{ items, nextCursor }`), `getNextCursor(page)`(`getNextPageParam`), `selectPageItems(data)`(`select`), `mapInfiniteItems(data, fn)`(캐시 패치).
+- 무한 목록의 쪽 모양은 모델 `shared/domains/cursor-page.model.ts`의 `cursorPageSchema(item, cursor)`(`{ items, nextCursor }`) 하나이고, TanStack 도구는 `shared/query/cursor-page.ts`의 `getNextCursor(page)`(`getNextPageParam`), `selectPageItems(data)`(`select`), `mapInfiniteItems(data, fn)`(캐시 패치)다.
   - 쪽 모델은 `cursorPageSchema(item, cursor).extend({ totalCount })`처럼 만든다. 서버의 `hasNext`·`hasMore`와 "마지막 항목 id가 커서"는 mapper가 `nextCursor`로 접고 마지막 쪽이면 `null`이다. 계약은 그대로 둔다.
   - 첫 쪽은 `initialPageParam: undefined`, 다음 쪽은 `getNextPageParam: getNextCursor`다. 위아래로 잇는 댓글 목록만 `pagination`과 자기 page param을 쓴다([todo-comments](../todo-comments.md)).
   - 마지막 항목 id가 커서인 목록은 캐시에서 항목을 빼거나 되돌릴 때 그 쪽 `nextCursor`를 남은 마지막 항목으로 다시 맞춘다(`friend-cache.ts`). 지운 항목의 id로 이어 받으면 서버가 빈 쪽을 줘 목록이 일찍 끝난다.
@@ -102,21 +103,35 @@ export const NOTIFICATION_QUERY_KEYS = {
 ```
 
 - 키 팩토리는 `queries/{feature}-query-keys.ts`, mutation 키는 `queries/{feature}-mutation-keys.ts`다. 쿼리 옵션·cache helper와 함께 바뀌어 같은 폴더에 둔다. `aido/query-key-location`이 그 밖의 `queryKey: [`를 막는다.
+- mutation은 모두 키를 갖는다. 같은 캐시를 쓰는 변경은 묶음 키(`writes()`)를 함께 써 `isLastMutation`·`useIsMutating`이 세고, 그 밖의 변경은 옵션 이름의 키(`AUTH_MUTATION_KEYS.emailLogin()`)다. 아직 키가 없는 것은 권한 층이 다루는 OS 권한 요청 3개와 댓글 층의 정렬 미리 받기 1개다.
 - 루트는 기능 이름 하나다(`['notification']`). 한 루트가 다른 기능 루트의 접두사가 되지 않는다(`bootstrap/query/query-key-roots.test.ts`). mutation 키 루트는 `[feature, 'mutation']`이다.
 - 모든 잎은 `queryOptions<T>({ queryKey }).queryKey`로 데이터 타입을 붙여 `getQueryData`·`setQueryData`가 제네릭 없이 타입을 안다. 인자는 이름 있는 객체 하나이고 잎은 루트와 같지 않다. 그룹(`lists()`)은 무효화에 쓸 때만 만든다.
 - OS에 묻는 값(권한, 위치, 캘린더 목록) 쿼리는 `['device', …]` 루트에 둔다. 기능 무효화에 휩쓸려 OS를 다시 묻지 않는다. 앱 아이콘은 기능 루트 `['app-icon']`이다([권한](../permissions.md)).
 - 키를 컴포넌트에서 만들거나 하드코딩하지 않는다. 키 자리에 기대는 구조 분해(`const [, , params] = queryKey`)를 쓰지 않는다.
-- 조회 옵션은 `useGet{X}QueryOptions`·`useGet{X}InfiniteQueryOptions` 훅이고 `queryFn`은 `unwrap(await api.getX(…, signal))`이다. 화면은 `useSuspenseQuery(useGetXQueryOptions(…))`를 직접 부른다. 서로 독립인 조회는 `useSuspenseQueries`나 블록별 경계로 나눠 워터폴을 만들지 않는다. 안쪽 블록이 멈춘 뒤에야 시작될 조회는 바깥에서 같은 옵션으로 `usePrefetchQuery`를 불러 함께 시작한다(`memo-list.tsx`의 내 정보, 날씨 `ForecastCards`의 할 일 점). 이유를 주석 한 줄로 남긴다.
-- 폴링 간격·`staleTime`·재시도 지연은 `queries/{entity}.queries.ts`(세션은 `services/{name}.session.ts`)의 지역 표다. 모델은 의미 값만 준다. 폴링 쿼리는 `subscribed: isFocused`로 가려진 화면에서 멈춘다.
-- 영속하는 무한 목록은 `maxPages`를 둔다. 없으면 복원 뒤 모든 페이지를 차례로 다시 받는다. `useQueries`의 `combine`은 배열·plain 객체를 돌려준다(`Map`은 구조 공유가 안 돼 매번 다시 그린다).
+- 조회 옵션은 `useGet{X}QueryOptions`·`useGet{X}InfiniteQueryOptions` 훅이고 `queryFn`은 `unwrap(await api.getX(…, signal))`이다. 화면은 `useSuspenseQuery(useGetXQueryOptions(…))`를 직접 부른다. 서로 독립인 조회는 `useSuspenseQueries`나 블록별 경계로 나눠 워터폴을 만들지 않는다.
+- **워터폴은 `usePrefetchQuery`로 막는다.** 안쪽 경계가 멈춘 뒤에야 시작될 조회는 경계 바깥 컴포넌트에서 같은 옵션으로 `usePrefetchQuery`를 불러 함께 시작한다(`memo-list.tsx`의 내 정보, 날씨 `ForecastCards`의 할 일 점은 `usePrefetchForecastCompletions`). 캐시가 이미 있으면 아무것도 하지 않고 기다리지도 않는다. 이유를 주석 한 줄로 남긴다([Prefetching](https://tanstack.com/query/v5/docs/framework/react/guides/prefetching)).
+- 폴링 간격·`staleTime`·재시도 지연은 `queries/{entity}.queries.ts`(세션은 `services/{name}.session.ts`)의 지역 표다. 모델은 의미 값만 준다. 폴링 쿼리는 `subscribed: isFocused`로 가려진 화면에서 멈추고 다시 보이면 낡은 값을 바로 받는다. 가져오기 진행 폴링은 예외다. 끝났음을 받아야 할 일 목록을 다시 맞추므로 다른 탭에 가려져도 돈다.
+- `maxPages`는 앞뒤 커서(`getPreviousPageParam`)가 있는 목록에만 둔다. 앞 쪽을 버리면 다시 받기가 남은 첫 쪽의 커서부터 시작해 위쪽을 되찾을 길이 없다. 서버 커서가 앞으로만 가는 목록(영속하는 친구 목록 포함)은 두지 않는다. `useQueries`의 `combine`은 배열·plain 객체를 돌려준다(`Map`은 구조 공유가 안 돼 매번 다시 그린다).
 
 ## 무효화
 
-1. `queryClient`는 `queries/{feature}-cache.ts`만 만진다(앱 조립 `bootstrap/**`과 공용 도구 `shared/query/**`는 예외, [guardrails](./guardrails.md)). 컴포넌트·훅·route는 helper(`invalidate{X}`, `set{X}InCache`)를 부른다.
+1. `queryClient`는 `queries/{feature}-cache.ts`만 만진다(앱 조립 `bootstrap/**`과 공용 도구 `shared/query/**`는 예외, [guardrails](./guardrails.md)). 컴포넌트·훅·route는 helper를 부른다. helper 이름의 동사는 하는 일을 말한다.
+
+   | 동사                                    | 하는 일                                                            | 예                                                 |
+   | --------------------------------------- | ------------------------------------------------------------------ | -------------------------------------------------- |
+   | `set{X}InCache`                         | 응답이나 updater로 캐시 값을 쓴다                                  | `setPreferenceInCache`, `setTodoCategoriesInCache` |
+   | `update…`                               | 받은 값이 있을 때만 updater로 고쳐 쓴다(새 이름은 `set{X}InCache`) | `updateMeInCache`, `updateCachedTodo`              |
+   | `invalidate{X}`                         | 낡음 표시, 보이는 조회는 다시 받는다                               | `invalidateTodos`                                  |
+   | `settle{X}`                             | 겹친 쓰기의 응답을 마무리한다(응답 쓰기 또는 낡음 표시·다시 받기)  | `settleTodoWrite`, `settlePreferenceWrite`         |
+   | `refresh{Feature}`                      | 당겨서 새로고침. 활성 조회만 기다려 다시 받는다                    | `refreshMemos`                                     |
+   | `refetch{X}`                            | 낡음 표시 없이 그 조회만 지금 다시 받는다                          | `refetchMe`                                        |
+   | `cancel{X}`·`ensure{X}`·`fetchFresh{X}` | 받기 멈추기, 없을 때만 받기, 늘 서버 값 받기(`queryClient.query`)  | `ensurePreference`                                 |
+   | `getCached{X}`·`findCached{X}`          | 읽기만 한다                                                        | `getCachedMe`                                      |
+
 2. mutation 옵션이 캐시 효과를 모두 갖는다. `onSuccess`는 응답을 캐시에 쓰고 무효화는 `onSettled`에 둔다. 같은 무효화를 `onSuccess`·`onError`에 두 번 쓰지 않고, 방금 set한 키를 다시 invalidate하지 않는다.
 3. 다른 기능에 미치는 효과는 쿼리 옵션의 `meta.refreshOn*`(`refreshOnPremiumChange`)나 그 기능이 내보낸 helper로만 한다. 남의 `all`을 무효화하지 않는다. 바뀐 것만 무효화하고, 범위를 모를 때(반복 묶음, 카테고리 삭제, 언어 변경)만 넓게 쓴다.
 4. 당겨서 새로고침은 기능마다 `refresh{Feature}(queryClient)` 하나이고 활성 쿼리만 다시 받는다. 표시는 `useRefresh`가 당긴 동안만 한다.
-5. 영속 쿼리는 옵션에 `PERSISTED_QUERY_OPTIONS`(`meta.persist: true`)를 펼치고, 복원 때 검증할 모델 스키마는 `bootstrap/query/persisted-query-schemas.ts` 표에 키와 함께 한 줄 둔다. 복원 시점에는 쿼리 옵션이 없고 Zod 스키마는 직렬화되지 않아 키 → 스키마 표가 한 곳 필요하다. 두 곳이 어긋나지 않는 것은 `persisted-query-schemas.test.ts`가 지킨다. 영속 키 값을 바꾸면 `QUERY_CACHE_SCHEMA_VERSION`을 올린다.
+5. 영속 쿼리는 옵션에 `PERSISTED_QUERY_OPTIONS`(`meta.persist: true`)를 펼치고, 복원 때 검증할 모델 스키마는 `bootstrap/query/persisted-query-schemas.ts` 표에 키와 함께 한 줄 둔다. 복원 시점에는 쿼리 옵션이 없고 Zod 스키마는 직렬화되지 않아 키 → 스키마 표가 한 곳 필요하다. 두 곳이 어긋나지 않는 것은 `persisted-query-schemas.test.ts`가 지킨다. 영속 키 값을 바꾸면 `QUERY_CACHE_SCHEMA_VERSION`을 올린다. 저장은 조회 캐시 이벤트마다 영속 조회 전체를 직렬화해 쓰므로 5초에 한 번으로 미루고(`QUERY_CACHE_PERSIST_THROTTLE_MS`. 3초 폴링 1분 동안 기본 1초면 40번, 5초면 12번 쓴다) 앱이 뒤로 갈 때 미룬 저장을 바로 쓴다(`flush`).
 6. 마지막 변경 판정은 `shared/query/is-last-mutation.ts`의 `isLastMutation(queryClient, mutationKey)` 하나다. mutation 콜백 안에서 불러 자기 자신까지 센다. 누른 동작 앞에서 조회 값을 막지 않고 읽을 때(AI 동의 확인, 마케팅 푸시 제안)는 `shared/query/read-without-blocking.ts`의 `readWithoutBlocking(cached, fetch, onFailure)` 하나다: 캐시 → 오프라인이면 null → 3초 제한.
 7. 변경이 다른 기능의 값에 닿으면 그 helper로 맞춘다. 콕 보내기 → 할 일 상세 `permissions.canNudge`, 계정 연결·해제 → `me`, 카테고리 수정 → `TODO.pages()`.
 
@@ -152,17 +167,17 @@ export function useUpdateTodoCategoryMutationOptions() {
 - 오류 피드백은 mutation마다 둔 `meta.errorFeedback` 하나다(`aido/mutation-error-feedback`, 펼친 옵션은 이어받는다). 값마다 전역이 하는 일, `isHandledByFeature`·`false`를 쓰는 곳, 기능 `onError`가 맡는 것은 [error-handling](../error-handling.md#mutation-오류-피드백)이 원본이다.
 - 서버가 확정한 결과는 mutation `onSuccess`·`onError`에서 추적하고 온 UI는 변수 `source`로 받는다. Api·Service·Repository·Store·mapper·모델·cache는 추적하지 않는다([observability](../observability.md)).
 - 무효화는 늘 `onSettled`에 두고, 기다릴지는 반환으로 정한다. 저장 뒤 바로 떠나는 변경은 Promise를 돌려주지 않는다(돌려주면 `mutateAsync`가 재조회까지 기다린다). 결과가 화면에 남는 행 버튼(친구 수락·거절)은 무효화 Promise를 돌려줘 `isPending`이 행이 사라질 때까지 이어진다.
-- 멈췄다가 나중에 실행되면 안 되는 쓰기와 그 쓰기 앞에서 기다리는 조회(`fetchQuery`)는 `networkMode: 'always'`에 이유 주석을 단다. 기본 `'online'`이면 오프라인에서 실패하지 않고 멈췄다가 연결되면 사용자 모르게 실행된다.
+- 멈췄다가 나중에 실행되면 안 되는 쓰기와 그 쓰기 앞에서 기다리는 조회(`queryClient.query`)는 `networkMode: 'always'`에 이유 주석을 단다. 기본 `'online'`이면 오프라인에서 실패하지 않고 멈췄다가 연결되면 사용자 모르게 실행된다. 같은 조회가 이미 진행 중이거나 멈춰 있으면 `networkMode`·`retry`는 듣지 않고 그 조회에 합류하므로, 기다리기 전에 오프라인이면 끝내고(`onlineManager.isOnline()`) 기다림에는 제한 시간(es-toolkit `withTimeout`)을 둔다(알림 [완료]). 훅 밖 조회는 `queryClient.query`(`ensure`는 `staleTime: 'static'`)이고 `fetchQuery`·`ensureQueryData`·`prefetchQuery`는 쓰지 않는다(5.108에서 deprecated).
 
 **낙관적 갱신.** 여러 화면이 같은 값을 보이면 캐시로, 그 버튼 하나만 보이면 `useMutation`의 `variables`로 그린다. 되돌릴 수 없는 삭제는 미리 빼지 않는다. 같은 캐시의 변경은 함께 진행된다고 보고 이 순서를 지킨다.
 
 1. `mutationKey: {FEATURE}_MUTATION_KEYS.writes()`로 같은 캐시를 쓰는 변경을 한 묶음으로 센다. `scope`는 서버에 닿는 순서가 중요한 연타(댓글 하트)에만 둔다.
 2. `onMutate`: 덮어쓸 키만 `cancelQueries`(단건은 `exact: true`) → 바꿀 엔티티·칸만 읽어 둔다 → `setQueryData(key, (old) => old && withX(old, …))`. updater는 `-cache.ts`의 순수 함수다.
 3. `onError`: 읽어 둔 값으로 같은 updater를 지금 캐시에 다시 적용한다. 스냅숏으로 통째로 덮으면 함께 진행 중인 변경이 지워진다.
-4. `onSuccess`: 응답이 확정한 칸은 `isLastMutation`일 때만 쓴다. 응답이 오는 순서는 서버가 처리한 순서와 다를 수 있어, 앞서 끝난 변경은 낡음만 표시하고(`refetchType: 'none'`) 마지막 변경이 겹쳤으면(시작할 때 다른 변경이 있었거나 낡음 표시가 남음) 다시 받는다(`settleTodoCategoryChange`·`settleMemoWrite`). 만들기는 임시 id를 서버 행으로 바꾼다. 지운 엔티티의 상세는 `removeQueries({ type: 'inactive' })`로 버린다. 보고 있는 상세는 버리면 다시 받다 경계로 내려가므로 화면을 떠날 때까지 둔다.
+4. `onSuccess`: 응답이 확정한 칸은 `isLastMutation`일 때만 쓴다. 응답이 오는 순서는 서버가 처리한 순서와 다를 수 있어, 앞서 끝난 변경은 낡음만 표시하고(`refetchType: 'none'`) 마지막 변경이 겹쳤으면(시작할 때 다른 변경이 있었거나 낡음 표시가 남음) 다시 받는다. 조회 하나를 고치는 쓰기는 `shared/query/settle-overlapping-write.ts`의 `settleOverlappingWrite`(설정·프로필·동의), 목록 항목을 고치는 쓰기는 기능 helper다(`settleTodoCategoryChange`·`settleMemoWrite`). 만들기는 임시 id를 서버 행으로 바꾼다. 지운 엔티티의 상세는 `removeQueries({ type: 'inactive' })`로 버린다. 보고 있는 상세는 버리면 다시 받다 경계로 내려가므로 화면을 떠날 때까지 둔다.
 5. `onSettled`: 실패했거나 응답이 바뀐 값을 다 담지 못하면 마지막 변경일 때만 다시 받는다. 응답이 필요한 정리(`settleTodoEdit`)도 여기서 `data`로 한다.
 
-- 할 일 목록은 `features/planning/todo/queries/todo-cache.ts`의 `beginTodoWrite`·`updateCachedTodo`·`settleTodoWrite`로만 고친다. 날짜는 할 일의 시작일이 아니라 보고 있는 목록의 날짜다. 임시 id는 음수(`createOptimisticId`)이고 `isOptimistic*` Policy로 막는다. 임시 행의 버튼·끌기는 끄고 route는 양수 id만 받는다.
+- 할 일 목록은 `features/planning/todo/queries/todo-cache.ts`의 `beginTodoWrite`·`updateCachedTodo`·`settleTodoWrite`로만 고친다. 쓰기 묶음(`TODO_MUTATION_KEYS.listWrites()`) 밖에서 여러 할 일을 만들거나 옮긴 쓰기(음성·메모 변환·제안 수락·날씨 옮기기)는 `settleTodoBatchWrite`로 맞춰, 진행 중인 체크가 있으면 낡음만 표시하고 그 체크의 마지막 쓰기가 다시 받는다. 날짜는 할 일의 시작일이 아니라 보고 있는 목록의 날짜다. 임시 id는 음수(`createOptimisticId`)이고 `isOptimistic*` Policy로 막는다. 임시 행의 버튼·끌기는 끄고 route는 양수 id만 받는다.
 
 ## 메모리와 수명
 

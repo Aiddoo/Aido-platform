@@ -1,6 +1,6 @@
-import { isLastMutation } from '@src/shared/query/is-last-mutation';
-import type { FetchQueryOptions, QueryClient } from '@tanstack/react-query';
-import { pick } from 'es-toolkit';
+import { settleOverlappingWrite } from '@src/shared/query/settle-overlapping-write';
+import type { DefaultError, QueryClient, QueryExecuteOptions } from '@tanstack/react-query';
+import { noop, pick } from 'es-toolkit';
 
 import type {
   TodoCategoryDeletionPreview,
@@ -111,7 +111,7 @@ export function cancelTodoCategories(queryClient: QueryClient) {
 }
 
 /** 받은 목록만 고친다. 받지 않았으면 새로 만들지 않는다 */
-export function updateCachedTodoCategories(
+export function setTodoCategoriesInCache(
   queryClient: QueryClient,
   update: (result: TodoCategoriesResult) => TodoCategoriesResult,
 ) {
@@ -130,17 +130,15 @@ export function settleTodoCategoryChange(
   queryClient: QueryClient,
   { saved, startedWithOthers }: { saved: TodoCategory; startedWithOthers: boolean },
 ) {
-  const listKey = TODO_CATEGORY_QUERY_KEYS.list();
-  if (!isLastMutation(queryClient, TODO_CATEGORY_MUTATION_KEYS.writes())) {
-    return queryClient.invalidateQueries({ queryKey: listKey, exact: true, refetchType: 'none' });
-  }
-  if (startedWithOthers || queryClient.getQueryState(listKey)?.isInvalidated === true) {
-    return queryClient.invalidateQueries({ queryKey: listKey, exact: true });
-  }
-  updateCachedTodoCategories(queryClient, (result) =>
-    withCategoryChanged(result, saved.id, pick(saved, ['name', 'color'])),
-  );
-  return Promise.resolve();
+  return settleOverlappingWrite(queryClient, {
+    mutationKey: TODO_CATEGORY_MUTATION_KEYS.writes(),
+    queryKey: TODO_CATEGORY_QUERY_KEYS.list(),
+    startedWithOthers,
+    writeResponse: () =>
+      setTodoCategoriesInCache(queryClient, (result) =>
+        withCategoryChanged(result, saved.id, pick(saved, ['name', 'color'])),
+      ),
+  });
 }
 
 /** 할 일 하나를 만들거나 지운 응답으로 개수를 고친다. 목록 전체를 다시 받지 않는다 */
@@ -148,7 +146,7 @@ export function changeCachedCategoryTodoCount(
   queryClient: QueryClient,
   { categoryId, delta }: { categoryId: number; delta: number },
 ) {
-  updateCachedTodoCategories(queryClient, (result) =>
+  setTodoCategoriesInCache(queryClient, (result) =>
     withTodoCountChanged(result, categoryId, delta),
   );
 }
@@ -161,7 +159,7 @@ export function removeDeletedCategory(
     deletionResult,
   }: { categoryId: number; deletionResult: TodoCategoryDeletionResult },
 ) {
-  updateCachedTodoCategories(queryClient, (result) =>
+  setTodoCategoriesInCache(queryClient, (result) =>
     withCategoryDeleted(result, categoryId, deletionResult),
   );
 }
@@ -169,15 +167,17 @@ export function removeDeletedCategory(
 /** 삭제를 누를 때마다 지금 개수를 미리 받는다. 지난 미리보기를 먼저 버려 시트가 옛 개수로 그려지지 않는다 */
 export function prefetchDeletionPreview(
   queryClient: QueryClient,
-  options: FetchQueryOptions<
+  options: QueryExecuteOptions<
     TodoCategoryDeletionPreview,
-    Error,
+    DefaultError,
+    TodoCategoryDeletionPreview,
     TodoCategoryDeletionPreview,
     ReturnType<typeof TODO_CATEGORY_QUERY_KEYS.deletionPreview>
   >,
 ) {
   queryClient.removeQueries({ queryKey: options.queryKey, exact: true });
-  return queryClient.prefetchQuery(options);
+  // 미리 받기라 실패는 시트가 열릴 때 그 조회가 다시 받아 보인다
+  return queryClient.query(options).catch(noop);
 }
 
 /** 미리보기와 달라 서버가 거절하면(그사이 할 일이 생기거나 마지막 카테고리가 됨) 지금 개수로 다시 받아 고르기 화면을 맞춘다 */

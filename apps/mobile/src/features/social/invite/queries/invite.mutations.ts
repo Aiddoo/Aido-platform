@@ -24,10 +24,11 @@ import {
 import type { InviteShareChannel, InviteShareContent } from '../services/invite-share.service';
 import {
   invalidateAfterRedeem,
-  replaceMyInvite,
+  setMyInviteInCache,
   setInvitePreviewInCache,
-  storeRedemptionResult,
+  setRedemptionResultInCache,
 } from './invite-cache';
+import { INVITE_MUTATION_KEYS } from './invite-mutation-keys';
 
 /** 코드 입력에서 없는 코드를 바로 알리고, 받은 미리보기는 초대 카드가 다시 부르지 않게 캐시에 둔다 */
 export function useCheckInvitePreviewMutationOptions() {
@@ -35,6 +36,7 @@ export function useCheckInvitePreviewMutationOptions() {
   const queryClient = useQueryClient();
 
   return mutationOptions({
+    mutationKey: INVITE_MUTATION_KEYS.checkInvitePreview(),
     // 보내는 사이 연결이 끊겨도 멈추지 않고 바로 실패한다. 서버가 거절한 코드는 폼이 코드 칸에, 그 밖은 전역 피드백이 알린다
     networkMode: 'always',
     mutationFn: async (inviteCode: InviteCode) =>
@@ -59,6 +61,7 @@ export function useRedeemInviteMutationOptions() {
   const { trackEvent } = useTrack();
 
   return mutationOptions({
+    mutationKey: INVITE_MUTATION_KEYS.redeemInvite(),
     // 오프라인에 멈춰 있다가 나중에 수락되지 않게 바로 실패해 토스트로 알린다
     networkMode: 'always',
     mutationFn: async (inviteCode: InviteCode) => unwrap(await inviteService.redeem(inviteCode)),
@@ -68,7 +71,7 @@ export function useRedeemInviteMutationOptions() {
         outcome: result.outcome,
         friendship: InviteRedemptionPolicy.findFriendship(result) ?? 'NONE',
       });
-      storeRedemptionResult(queryClient, result);
+      setRedemptionResultInCache(queryClient, result);
       await invalidateAfterRedeem(queryClient, { inviteCode }).catch((error) =>
         logger.warn(INVITE_LOG_EVENT.POST_REDEEM_REFRESH_FAILED, { error: getErrorMessage(error) }),
       );
@@ -90,11 +93,12 @@ export function useRotateInviteCodeMutationOptions() {
   const toast = useAppToast();
 
   return mutationOptions({
+    mutationKey: INVITE_MUTATION_KEYS.rotateInviteCode(),
     // 오프라인에 멈춘 채 나중에 코드가 바뀌지 않게 바로 실패해 토스트로 알린다
     networkMode: 'always',
     mutationFn: async () => unwrap(await inviteApi.rotateInviteCode()),
     onSuccess: (myInvite) => {
-      replaceMyInvite(queryClient, myInvite);
+      setMyInviteInCache(queryClient, myInvite);
       haptics.notify('success');
       toast.success(t('invite:toast.rotated'));
     },
@@ -115,6 +119,7 @@ export function useShareInviteMutationOptions() {
   const queryClient = useQueryClient();
 
   return mutationOptions({
+    mutationKey: INVITE_MUTATION_KEYS.shareInvite(),
     // 기기 안에서만 처리해 연결 상태와 무관하다
     networkMode: 'always',
     mutationFn: ({ channel, content }: ShareInviteVariables) =>

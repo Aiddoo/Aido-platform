@@ -11,7 +11,11 @@ import {
 import { range } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
-import type { DailyCompletionSummary } from '../domains/daily-completion.model';
+import {
+  type DailyCompletionRange,
+  type DailyCompletionSummary,
+  getCompletionMonthRange,
+} from '../domains/daily-completion.model';
 import type { CalendarViewMode } from '../schemas/calendar-view-mode-storage.schema';
 
 /** 앱 달력 주(일요일 시작)의 첫날 */
@@ -39,31 +43,30 @@ export function getMonthWeekStartKeys(dateKey: DateKey, minWeekCount = 0): DateK
   );
 }
 
-export interface CalendarDateRange {
-  startDate: DateKey;
-  endDate: DateKey;
-}
-
-/** 그 날이 속한 달을 앞뒤 주까지 채운 달력 범위(일요일 시작) */
-function getMonthGridRange(dateKey: DateKey): CalendarDateRange {
+/**
+ * 고른 날의 달과 앞 달·다음 달(이웃)의 1일. 주 보기도 같은 달로 받아 달을 넘겨도 키가 같다.
+ * 주 보기의 앞뒤 주는 고른 날이 든 달 칸이나 그 이웃 달 칸 안에 있다
+ */
+export function getCalendarMonths(
+  dateKey: DateKey,
+): Record<'selected' | 'previous' | 'next', DateKey> {
+  const monthStartKey = getMonthStartDateKey(dateKey);
   return {
-    startDate: getWeekStartKey(getMonthStartDateKey(dateKey)),
-    endDate: getCalendarWeek(getMonthEndDateKey(dateKey)).endDateKey,
+    selected: monthStartKey,
+    previous: addMonthsToDateKey(monthStartKey, -1),
+    next: addMonthsToDateKey(monthStartKey, 1),
   };
 }
 
-/**
- * 고른 날의 달과 앞 달·다음 달(이웃)의 달력 범위. 주 보기도 같은 달 범위로 받아 달을 넘겨도 키가 같다.
- * 주 보기의 앞뒤 주는 고른 날이 든 달 범위나 그 이웃 달 범위 안에 있다
- */
+/** 이웃 달까지 그 달을 앞뒤 주로 채운 달력 칸 범위(일요일 시작) */
 export function getCalendarMonthRanges(
   dateKey: DateKey,
-): Record<'selected' | 'previous' | 'next', CalendarDateRange> {
-  const monthStartKey = getMonthStartDateKey(dateKey);
+): Record<'selected' | 'previous' | 'next', DailyCompletionRange> {
+  const { selected, previous, next } = getCalendarMonths(dateKey);
   return {
-    selected: getMonthGridRange(monthStartKey),
-    previous: getMonthGridRange(addMonthsToDateKey(monthStartKey, -1)),
-    next: getMonthGridRange(addMonthsToDateKey(monthStartKey, 1)),
+    selected: getCompletionMonthRange(selected),
+    previous: getCompletionMonthRange(previous),
+    next: getCompletionMonthRange(next),
   };
 }
 

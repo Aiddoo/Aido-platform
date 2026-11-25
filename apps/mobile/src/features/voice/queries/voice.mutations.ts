@@ -8,7 +8,7 @@ import { reflectFeatureQuota } from '@src/features/billing/subscription/queries/
 import { isAiDataSharingConsentRequiredError } from '@src/features/identity/consent/domains/consent.error';
 import { markAiDataSharingConsentRequired } from '@src/features/identity/consent/queries/consent-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
-import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
+import { settleTodoBatchWrite } from '@src/features/planning/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
 import { NetworkError } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
@@ -24,6 +24,7 @@ import type { PlannedAction, VoicePlanSource } from '../domains/voice-plan.model
 import { getVoicePlanFailureCause, isPlanInProgressError } from '../domains/voice.error';
 import type { CreateQuickPlanInput } from '../schemas/quick-plan-request.schema';
 import { toAnalyticsSource, summarizePlanForAnalytics } from '../utils/voice-analytics';
+import { VOICE_MUTATION_KEYS } from './voice-mutation-keys';
 
 /** 응답을 놓친 뒤 다시 보냈는데 앞선 요청이 아직 처리 중이면 안내만 하고 끝내지 않고 결과가 나올 때까지 기다린다 */
 export const planInProgressRetryOptions = {
@@ -61,6 +62,7 @@ export function useApplyActionPlanMutationOptions({
   const showMutationError = useMutationErrorFeedback();
 
   return mutationOptions({
+    mutationKey: VOICE_MUTATION_KEYS.applyActionPlan(),
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 고친 카드를 남긴 채 안내한다
     networkMode: 'always',
     mutationFn: async ({
@@ -130,7 +132,7 @@ export function useApplyActionPlanMutationOptions({
     // 응답을 놓친 실패도 서버에는 저장됐을 수 있고, 거절(내 카테고리가 아님)은 카테고리를 다시 받아야 한다.
     // 저장 완료가 다시 받기를 기다리지 않게 돌려주지 않는다
     onSettled: () => {
-      invalidateTodos(queryClient);
+      settleTodoBatchWrite(queryClient);
     },
     meta: { errorFeedback: false },
   });
@@ -156,6 +158,7 @@ export function useCreateQuickPlanMutationOptions({
   const gate = useEntitlementGate('AI_PARSE', { surface: 'add_todo_sheet' });
 
   return mutationOptions({
+    mutationKey: VOICE_MUTATION_KEYS.createQuickPlan(),
     ...planInProgressRetryOptions,
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 글자를 남긴 채 안내한다
     networkMode: 'always',
@@ -219,6 +222,7 @@ export function useCreateVoiceNoteDigestMutationOptions() {
   const gate = useEntitlementGate('VOICE_NOTE', { surface: 'voice_note' });
 
   return mutationOptions({
+    mutationKey: VOICE_MUTATION_KEYS.createVoiceNoteDigest(),
     ...planInProgressRetryOptions,
     // 오프라인에도 멈춰 기다리지 않고 바로 실패해 글자를 남긴 채 안내한다
     networkMode: 'always',

@@ -4,7 +4,12 @@ import { z } from 'zod';
 
 import dailyCompletionCases from '../../../../../../../packages/api/test/fixtures/daily-completion-cases.json';
 import { createParentTodo } from '../__tests__/sub-todo.fixtures';
-import { DailyCompletionPolicy, type DailyCompletionsResult } from './daily-completion.model';
+import {
+  DailyCompletionPolicy,
+  type DailyCompletionsResult,
+  getCompletionMonthRange,
+  getCompletionMonthsCovering,
+} from './daily-completion.model';
 
 /**
  * 서버 tallyDailyCompletions도 같은 표를 읽는다. 앱은 하루짜리 쓰기 뒤 이 계산으로 달력을 고치고 다시 받지 않으므로
@@ -39,6 +44,59 @@ const SHARED_DAY_TALLY_CASES = z
     ),
   })
   .parse(dailyCompletionCases).dayTally;
+
+describe('getCompletionMonthRange', () => {
+  it.each([
+    { month: '2026-11-01', startDate: '2026-11-01', endDate: '2026-12-05' },
+    { month: '2026-03-01', startDate: '2026-03-01', endDate: '2026-04-04' },
+    { month: '2027-08-01', startDate: '2027-08-01', endDate: '2027-09-04' },
+  ])('$month 칸은 $startDate(일)부터 $endDate(토)까지다', ({ month, ...expected }) => {
+    // When
+    const range = getCompletionMonthRange(createDateKey(month));
+
+    // Then
+    expect(range).toEqual(expected);
+  });
+});
+
+describe('getCompletionMonthsCovering', () => {
+  it.each([
+    { name: '달 안의 주', startDate: '2026-11-23', endDate: '2026-11-29', months: ['2026-11-01'] },
+    {
+      name: '다음 달 첫 주까지 이어진 앞 달 칸 안의 10일',
+      startDate: '2026-11-25',
+      endDate: '2026-12-04',
+      months: ['2026-11-01'],
+    },
+    {
+      name: '앞 달 칸 밖으로 나가지만 다음 달 칸이 덮는 주',
+      startDate: '2026-11-30',
+      endDate: '2026-12-06',
+      months: ['2026-12-01'],
+    },
+    {
+      name: '어느 한 달 칸도 덮지 못하는 주',
+      startDate: '2027-07-26',
+      endDate: '2027-08-01',
+      months: ['2027-07-01', '2027-08-01'],
+    },
+    {
+      name: '해를 넘기는 10일',
+      startDate: '2026-12-28',
+      endDate: '2027-01-06',
+      months: ['2027-01-01'],
+    },
+  ])('$name은 $months 달로 받는다', ({ startDate, endDate, months }) => {
+    // When
+    const covering = getCompletionMonthsCovering({
+      startDate: createDateKey(startDate),
+      endDate: createDateKey(endDate),
+    });
+
+    // Then
+    expect(covering).toEqual(months);
+  });
+});
 
 describe('DailyCompletionPolicy', () => {
   describe('withTodoDailyCompletion — 서버와 같은 하루 집계 표', () => {

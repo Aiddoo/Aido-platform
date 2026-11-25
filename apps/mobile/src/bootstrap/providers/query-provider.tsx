@@ -55,6 +55,18 @@ export function QueryProvider({
     return () => focusManager.setEventListener(() => undefined);
   }, [appLifecycle]);
 
+  // 뒤에 간 앱은 곧 멈추거나 꺼질 수 있어 미뤄 둔 캐시 저장을 바로 쓴다
+  useEffect(() => {
+    if (persistOptions == null) {
+      return;
+    }
+    return appLifecycle.subscribe((state) => {
+      if (state === 'background') {
+        persistOptions.flush();
+      }
+    });
+  }, [appLifecycle, persistOptions]);
+
   // 서버가 Accept-Language로 만든 값(날씨·알림·AI 결과)은 키에 언어가 없어, 언어가 바뀌면 한 번 모두 다시 받는다
   useEffect(() => {
     let currentLanguage = i18n.language;

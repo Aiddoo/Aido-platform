@@ -6,6 +6,7 @@ import { useAppToast } from '@src/shared/ui';
 import { mutationOptions } from '@tanstack/react-query';
 
 import type { InquiryFormValues } from '../schemas/inquiry-form.schema';
+import { INQUIRY_MUTATION_KEYS } from './inquiry-mutation-keys';
 
 export function useCreateInquiryMutationOptions() {
   const inquiryApi = useInquiryApi();
@@ -14,6 +15,7 @@ export function useCreateInquiryMutationOptions() {
   const { trackEvent } = useTrack();
 
   return mutationOptions({
+    mutationKey: INQUIRY_MUTATION_KEYS.createInquiry(),
     // 오프라인에 멈춰 두면 연결된 뒤 지금 화면에서 나도 모르게 전송된다. 바로 실패해 글자를 남긴 채 안내한다
     networkMode: 'always',
     mutationFn: async (input: InquiryFormValues) => unwrap(await inquiryApi.createInquiry(input)),

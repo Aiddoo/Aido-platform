@@ -16,8 +16,17 @@ export const TODO_IMPORT_QUERY_KEYS = {
   /** 캘린더 권한·목록은 OS 상태라 `['device', …]`에 둬 가져오기 무효화에 휩쓸려 다시 읽지 않는다 */
   calendarPermission: () =>
     queryOptions<OsPermission>({ queryKey: ['device', 'calendar-permission'] }).queryKey,
-  calendarCollections: ({ startDate, endDate }: { startDate: DateKey; endDate: DateKey }) =>
+  /** 기간을 기기 시간대로 잘라 세므로 시간대가 바뀌면 다시 센다 */
+  calendarCollections: ({
+    startDate,
+    endDate,
+    timezone,
+  }: {
+    startDate: DateKey;
+    endDate: DateKey;
+    timezone: string;
+  }) =>
     queryOptions<ImportCollection[]>({
-      queryKey: ['device', 'calendar-collections', { startDate, endDate }],
+      queryKey: ['device', 'calendar-collections', { startDate, endDate, timezone }],
     }).queryKey,
 } as const;

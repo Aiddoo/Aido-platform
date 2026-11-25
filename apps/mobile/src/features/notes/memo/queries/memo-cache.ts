@@ -1,4 +1,4 @@
-import { mapInfiniteItems } from '@src/shared/domains/cursor-page.model';
+import { mapInfiniteItems } from '@src/shared/query/cursor-page';
 import { isLastMutation } from '@src/shared/query/is-last-mutation';
 import type { QueryClient } from '@tanstack/react-query';
 
@@ -68,14 +68,14 @@ export async function settleMemoWrite(
   ]);
   queryClient.setQueryData(detailKey, memo);
   if (isListItemReplaced) {
-    replaceMemoInList(queryClient, memo);
+    setMemoListItemInCache(queryClient, memo);
   }
   if (hasOverlapped) {
     await invalidateMemo(queryClient, { memoId: memo.id });
   }
 }
 
-export function replaceMemoInList(queryClient: QueryClient, memo: Memo) {
+export function setMemoListItemInCache(queryClient: QueryClient, memo: Memo) {
   queryClient.setQueryData(
     MEMO_QUERY_KEYS.list(),
     (data) => data && mapInfiniteItems(data, (item) => (item.id === memo.id ? memo : item)),
