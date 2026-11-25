@@ -56,4 +56,49 @@ describe('PushPermissionSettings', () => {
       expect.anything(),
     );
   });
+
+  it('거절해 다시 물을 수 없는 기기는 시스템 창 대신 기기 설정을 열고 설정에서 열었다고 남긴다', async () => {
+    // Given
+    const user = userEvent.setup();
+    const { row, pushNotification, externalLink, analytics } = await renderSettings({
+      status: 'denied',
+      canAskAgain: false,
+      iosStatus: null,
+    });
+
+    // When
+    await user.press(row);
+
+    // Then
+    await waitFor(() => expect(externalLink.openSettings).toHaveBeenCalledTimes(1));
+    expect(pushNotification.requestPermission).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(analytics.trackEvent).toHaveBeenCalledWith('push_permission_settings_opened', {
+        source: 'settings',
+      }),
+    );
+  });
+
+  it('아직 묻지 않은 기기는 [계속]으로 시스템 창을 한 번 띄운다', async () => {
+    // Given
+    const user = userEvent.setup();
+    const { row, pushNotification, externalLink, analytics } = await renderSettings({
+      status: 'undetermined',
+      canAskAgain: true,
+      iosStatus: null,
+    });
+
+    // When
+    await user.press(row);
+
+    // Then
+    await waitFor(() => expect(pushNotification.requestPermission).toHaveBeenCalledTimes(1));
+    expect(externalLink.openSettings).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(analytics.trackEvent).toHaveBeenCalledWith('push_permission_requested', {
+        source: 'settings',
+        status: 'GRANTED',
+      }),
+    );
+  });
 });

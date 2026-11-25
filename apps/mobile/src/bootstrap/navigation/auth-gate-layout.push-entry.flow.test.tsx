@@ -862,6 +862,59 @@ describe('푸시 탭 진입', () => {
     await waitFor(() => expect(gateway.clearLastResponse).toHaveBeenCalled());
   });
 
+  it('앱 종료 상태 탭: 마지막 응답이 리스너로 다시 와도 읽음·열림·이동·열림 분석이 한 번씩이다', async () => {
+    // Given
+    const user = userEvent.setup();
+    const { route, gateway, httpClient, analytics } = await setup({
+      status: 'loading',
+      lastResponse: TODO_RESPONSE,
+    });
+    await user.press(screen.getByRole('button', { name: 'boot-authenticated' }));
+    await waitFor(() => expect(route.getPathname()).toBe('/todo/42'));
+    await waitFor(() => expect(gateway.clearLastResponse).toHaveBeenCalled());
+
+    // When
+    await act(async () => gateway.emitResponse(TODO_RESPONSE));
+
+    // Then
+    expect(route.getPathname()).toBe('/todo/42');
+    expect(router.canGoBack()).toBe(true);
+    await act(() => router.back());
+    expect(route.getPathname()).toBe('/feed');
+    expect(httpClient.patch).toHaveBeenCalledTimes(1);
+    expect(
+      httpClient.post.mock.calls.filter(([url]) => url === 'v1/notifications/7/opened'),
+    ).toHaveLength(1);
+    expect(
+      jest
+        .mocked(analytics.trackEvent)
+        .mock.calls.filter(([eventName]) => eventName === 'push_notification_opened'),
+    ).toHaveLength(1);
+  });
+
+  it.each([
+    ['칸이 모두 깨진 data', { notificationId: 'broken', type: 3, navigation: 'broken' }],
+    ['비어 있는 data', {}],
+  ])('읽을 칸이 없는 푸시(%s)는 읽음·열림을 묻지 않고 알림함으로 연다', async (_case, data) => {
+    // Given
+    const { route, gateway, httpClient, analytics } = await setup({ status: 'authenticated' });
+    await waitFor(() => expect(route.getPathname()).toBe('/feed'));
+
+    // When
+    await act(async () => gateway.emitResponse({ ...TODO_RESPONSE, data }));
+
+    // Then
+    await waitFor(() => expect(route.getPathname()).toBe('/notifications'));
+    await waitFor(() =>
+      expect(analytics.trackEvent).toHaveBeenCalledWith(
+        'push_notification_opened',
+        expect.objectContaining({ type: 'UNKNOWN', action: 'DEEP_LINK' }),
+      ),
+    );
+    expect(httpClient.patch).not.toHaveBeenCalled();
+    expect(httpClient.post).not.toHaveBeenCalled();
+  });
+
   describe('알림 종류마다 열리는 자리(접힌 화면)', () => {
     it.each(LANDING_CASES)(
       '$kind: 꺼진 앱에서 누르면 화면을 가진 탭에 열고 읽음·열림을 한 번 남긴다',

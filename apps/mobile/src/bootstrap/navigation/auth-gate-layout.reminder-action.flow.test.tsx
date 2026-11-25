@@ -409,6 +409,31 @@ describe('리마인드 알림 버튼', () => {
       outcome: 'already_completed',
     });
   });
+
+  it('같은 버튼 응답이 다시 와도 완료 요청·열림·버튼 결과를 한 번씩만 남긴다', async () => {
+    // Given
+    const { route, gateway, httpClient, analytics } = await setup({
+      complete: async () =>
+        ok({
+          message: '할 일이 완료되었습니다.',
+          todo: createTodoDto({ id: TODO_ID, title: '저녁 운동', completed: true }),
+        }),
+    });
+    const countEvents = (eventName: string) =>
+      jest.mocked(analytics.trackEvent).mock.calls.filter(([name]) => name === eventName).length;
+
+    // When
+    await act(async () => gateway.emitResponse(createReminderResponse('complete')));
+    await waitFor(() => expect(countEvents('todo_reminder_action_tapped')).toBe(1));
+    await act(async () => gateway.emitResponse(createReminderResponse('complete')));
+
+    // Then
+    expect(route.getPathname()).toBe(`/todo/${TODO_ID}`);
+    expect(countEvents('push_notification_opened')).toBe(1);
+    expect(countEvents('todo_reminder_action_tapped')).toBe(1);
+    expect(httpClient.patch.mock.calls.filter(([url]) => url === COMPLETE_PATH)).toHaveLength(1);
+    expect(httpClient.post.mock.calls.filter(([url]) => url.endsWith('/opened'))).toHaveLength(1);
+  });
 });
 
 describe('리마인드 알림 [완료]를 오프라인에서 누름', () => {
