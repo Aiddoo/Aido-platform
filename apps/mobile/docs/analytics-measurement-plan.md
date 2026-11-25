@@ -6,11 +6,11 @@ GA로 무엇을 보고 어떤 결정을 내리는지, 퍼널·지표 정의를 �
 
 ## 1. 이벤트
 
-이벤트 이름·파라미터는 코드의 `AppEventMap`이 원본이라 이 문서에 다시 적지 않는다. 이름 규칙과 파라미터 타입은 `aido/analytics-event-catalog`가 막고, 보내는 자리·측정 규칙(내부 트래픽, 매출 원본, 사용자 속성 `is_premium`·`subscription_status`·`premium_source`, 가입·로그인 한 번)은 [관측](./observability.md#analytics)이 원본이다.
+이벤트 이름·파라미터는 코드의 `AppEventMap`이 원본이라 이 문서에 다시 적지 않는다. `source`·`surface`·`view_tab_changed.view`의 값 목록은 [event-vocabulary](../src/shared/analytics/event-vocabulary.ts) 한 곳이다. 이름 규칙과 파라미터 타입은 `aido/analytics-event-catalog`가 막고, 보내는 자리·측정 규칙(내부 트래픽, 매출 원본, 사용자 속성 `is_premium`·`subscription_status`·`premium_source`, 가입·로그인 한 번)은 [관측](./observability.md#analytics)이 원본이다.
 
 | 영역               | 이벤트 파일                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 앱 공통            | [event-map](../src/shared/analytics/event-map.ts)(`feature_action_success`·`local_day_changed`·`view_tab_changed` 등)                                                                                                                                                                                                                                                                                                                                                                              |
+| 앱 공통            | [event-map](../src/shared/analytics/event-map.ts)(`feature_action_success`·`local_day_changed`·`view_tab_changed` 등) · 값 어휘 [event-vocabulary](../src/shared/analytics/event-vocabulary.ts)                                                                                                                                                                                                                                                                                                    |
 | identity           | [auth](../src/features/identity/auth/constants/auth.events.ts) · [consent](../src/features/identity/consent/constants/consent.events.ts) · [preference](../src/features/identity/preference/constants/preference.events.ts) · [user](../src/features/identity/user/constants/user.events.ts)                                                                                                                                                                                                       |
 | planning           | [todo](../src/features/planning/todo/constants/todo.events.ts) · [category](../src/features/planning/category/constants/todo-category.events.ts)                                                                                                                                                                                                                                                                                                                                                   |
 | notes·voice        | [memo](../src/features/notes/memo/constants/memo.events.ts) · [voice](../src/features/voice/constants/voice.events.ts)                                                                                                                                                                                                                                                                                                                                                                             |
@@ -107,14 +107,14 @@ Measurement Protocol(서버 → GA)은 도입하지 않는다. 위 신호는 SQL
 
 대시보드 의존을 확인한 뒤 바꾼다. 이름을 바꾸면 이력이 끊긴다. 이벤트 이름 40자·값 100자·예약 접두사(`firebase_`·`google_`·`ga_`) 한도는 지금 넘지 않는다(가장 긴 이름 `weather_location_permission_result` 34자).
 
-| 현재                                                    | 제안                                                                                     |
-| ------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `todo_completed{is_completed}`(해제도 completed)        | 유지. GA에선 항상 `is_completed=true` 필터                                               |
-| `notification_center_opened`(실제로는 항목 탭)          | `notification_center_item_tapped`(새 이름 병행 뒤 옛 이름 제거)                          |
-| `remind_nudge_sent`                                     | `nudge_remind_sent`                                                                      |
-| `badge_opened_from_notification`                        | 제거(`push_notification_opened{type=WEEKLY_ACHIEVEMENT}`과 같은 뜻)                      |
-| `memo_converted_to_todos`                               | 대시보드를 `voice_plan_applied{source=memo}`로 옮긴 뒤 제거                              |
-| `subscription_started`                                  | 결제 UI 단계로만 본다. 매출은 RC `purchase`, 자동 `in_app_purchase`는 키 이벤트에서 해제 |
-| `todo_edited.field`(콤마 조합, 값 100자를 넘을 수 있다) | 다중 필드면 `multiple` 버킷 또는 첫 필드만                                               |
-| `local_day_changed`                                     | Sentry breadcrumb로만 이동 검토                                                          |
-| `voice_plan_failed`의 `consent-required`                | 동의 안내로 빠져 보내지 않는다(동의 이탈은 `ai_consent_prompt_dismissed`)                |
+| 현재                                                                       | 제안                                                                                     |
+| -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `todo_completed{is_completed}`(해제도 completed)                           | 유지. GA에선 항상 `is_completed=true` 필터                                               |
+| `notification_center_opened`(실제로는 항목 탭)                             | `notification_center_item_tapped`(새 이름 병행 뒤 옛 이름 제거)                          |
+| `remind_nudge_sent`                                                        | `nudge_remind_sent`                                                                      |
+| `badge_opened_from_notification`                                           | 제거(`push_notification_opened{type=WEEKLY_ACHIEVEMENT}`과 같은 뜻)                      |
+| `memo_converted_to_todos`                                                  | 대시보드를 `voice_plan_applied{source=memo}`로 옮긴 뒤 제거                              |
+| `subscription_started`                                                     | 결제 UI 단계로만 본다. 매출은 RC `purchase`, 자동 `in_app_purchase`는 키 이벤트에서 해제 |
+| `todo_edited.field`(폼 순서 콤마 조합 127가지와 `repeat`, 가장 긴 값 68자) | 다중 필드면 `multiple` 버킷 또는 첫 필드만                                               |
+| `local_day_changed`                                                        | Sentry breadcrumb로만 이동 검토                                                          |
+| `voice_plan_failed`의 `consent-required`                                   | 동의 안내로 빠져 보내지 않는다(동의 이탈은 `ai_consent_prompt_dismissed`)                |

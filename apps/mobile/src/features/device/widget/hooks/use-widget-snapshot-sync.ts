@@ -7,6 +7,7 @@ import {
 } from '@src/features/planning/todo/queries/todo.queries';
 import { getNowInstant } from '@src/shared/date/clock';
 import { addDaysToDateKey, getCalendarWeek, type DateKey } from '@src/shared/date/date-key';
+import { reportUnexpectedError } from '@src/shared/errors';
 import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { i18n } from '@src/shared/i18n';
 import { toResolvedLanguage } from '@src/shared/preferences/language.preference';
@@ -107,7 +108,7 @@ function reportWidgetSync(
       }),
     )
     .with({ status: 'failed' }, ({ error }) =>
-      errorReporter.captureException(error, { feature: 'widget', method }),
+      reportUnexpectedError(errorReporter, error, 'widget', { method }),
     )
     .with({ status: 'unchanged' }, { status: 'superseded' }, noop)
     .exhaustive();
@@ -170,7 +171,7 @@ export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
       return;
     }
     try {
-      errorReporter.captureException(failure.error, { feature: 'widget', method: failure.method });
+      reportUnexpectedError(errorReporter, failure.error, 'widget', { method: failure.method });
     } catch {
       // 관측 실패가 앱 시작을 막지 않는다
     }

@@ -2,9 +2,10 @@ import { createAnalyticsStub, createTestDi } from '@src/testing/core';
 import { renderScreen, renderScreenHook } from '@src/testing/render';
 import { StrictMode } from 'react';
 
+import type { AnalyticsViewTab } from './event-vocabulary';
 import { useTrackView } from './use-track-view';
 
-type ViewKey = string | null;
+type ViewKey = AnalyticsViewTab | null;
 
 function useTabView(key: ViewKey) {
   useTrackView(
@@ -14,14 +15,18 @@ function useTabView(key: ViewKey) {
 }
 
 describe('useTrackView', () => {
-  it.each<{ name: string; keys: ViewKey[]; expected: string[] }>([
-    { name: 'params 객체만 새로 만들어 다시 그리면', keys: ['week', 'week'], expected: ['week'] },
+  it.each<{ name: string; keys: ViewKey[]; expected: AnalyticsViewTab[] }>([
+    {
+      name: 'params 객체만 새로 만들어 다시 그리면',
+      keys: ['WEEKLY', 'WEEKLY'],
+      expected: ['WEEKLY'],
+    },
     {
       name: 'key가 바뀌었다 돌아오면',
-      keys: ['week', 'month', 'week'],
-      expected: ['week', 'month'],
+      keys: ['WEEKLY', 'MONTHLY', 'WEEKLY'],
+      expected: ['WEEKLY', 'MONTHLY'],
     },
-    { name: '숨었다 다시 보이면', keys: [null, 'week', null, 'week'], expected: ['week'] },
+    { name: '숨었다 다시 보이면', keys: [null, 'WEEKLY', null, 'WEEKLY'], expected: ['WEEKLY'] },
   ])('$name 마운트 안에서 key마다 한 번만 보낸다', async ({ keys, expected }) => {
     // Given
     const [firstKey = null, ...nextKeys] = keys;
@@ -46,7 +51,7 @@ describe('useTrackView', () => {
     // Given
     const analytics = createAnalyticsStub();
     function Probe() {
-      useTabView('week');
+      useTabView('WEEKLY');
       return null;
     }
 

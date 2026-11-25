@@ -82,6 +82,7 @@ function useWhatsNewTracking({ release, source, accountId }: WhatsNewTrackingInp
 
     return () => {
       if (!isFinishedRef.current) {
+        // oxlint-disable-next-line aido/no-tracking-in-effect -- 위 노출과 한 수명의 짝인 닫힘이다
         trackEvent('feature_hub_dismissed', { campaign_id: campaignId, source });
       }
     };

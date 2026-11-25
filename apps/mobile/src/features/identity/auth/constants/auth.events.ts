@@ -1,4 +1,5 @@
 import type { SessionExpiredReason } from '@src/core/observability/telemetry-event';
+import type { AnalyticsSource } from '@src/shared/analytics/event-vocabulary';
 
 import { type LoginFailureReason } from '../domains/auth.error';
 import { type OAuthProviderSlug } from '../domains/oauth.model';
@@ -14,8 +15,8 @@ declare module '@src/shared/analytics/event-map' {
       step: 'name' | 'email' | 'password' | 'passwordConfirm' | 'verification';
     };
     /** 가입 직후(sign_up)와 미인증 계정 로그인(login) 중 어디서 인증했는지 */
-    auth_email_verified: { source: 'sign_up' | 'login' };
-    auth_email_verification_resent: { source: 'sign_up' | 'login' };
+    auth_email_verified: { source: AnalyticsSource<'sign_up' | 'login'> };
+    auth_email_verification_resent: { source: AnalyticsSource<'sign_up' | 'login'> };
     /** 단계 이름은 비밀번호 찾기 흐름의 키와 같다 */
     auth_password_reset_step_viewed: {
       step: 'email' | 'verificationCode' | 'newPassword' | 'newPasswordConfirm';

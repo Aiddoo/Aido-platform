@@ -1,4 +1,5 @@
 import { type PurchaseFailureKind, PurchasesGatewayError } from '@src/core/ports/purchases-gateway';
+import { ENV } from '@src/shared/config/env';
 import { createAppLoggerStub } from '@src/testing/ports/app-logger.stub';
 import Purchases, {
   INTRO_ELIGIBILITY_STATUS,
@@ -18,16 +19,16 @@ import {
 } from './revenuecat-purchases-gateway';
 
 const mockLogOut = jest.fn(async () => undefined);
-const mockExtra: { revenueCatAppleApiKey?: string } = {};
 
-jest.mock('expo-constants', () => ({
-  __esModule: true,
-  default: {
-    get expoConfig() {
-      return { extra: { isDevelopment: false, ...mockExtra } };
-    },
-  },
-}));
+/** 운영 빌드에 Apple 키가 들어 있다. 개발 Debug 빌드는 테스트 키를 쓰므로 운영으로 둔다 */
+function givenAppleApiKey() {
+  jest.replaceProperty(ENV, 'APP_ENV', 'production');
+  jest.replaceProperty(ENV, 'REVENUECAT_API_KEYS', {
+    apple: 'appl_fixture',
+    google: undefined,
+    test: undefined,
+  });
+}
 
 jest.mock('react-native-purchases', () => ({
   ...jest.requireActual('react-native-purchases'),
@@ -239,7 +240,6 @@ describe('createRevenueCatPurchasesGateway', () => {
   });
 
   afterEach(() => {
-    delete mockExtra.revenueCatAppleApiKey;
     jest.resetAllMocks();
   });
 
@@ -400,7 +400,7 @@ describe('createRevenueCatPurchasesGateway', () => {
 
   it('이 빌드에 결제 키가 있으면 SDK를 초기화한다', () => {
     // Given
-    mockExtra.revenueCatAppleApiKey = 'appl_fixture';
+    givenAppleApiKey();
     const gateway = createRevenueCatPurchasesGateway({ isLogEnabled: false, logger });
 
     // When
@@ -425,7 +425,7 @@ describe('createRevenueCatPurchasesGateway', () => {
 
   it('다시 불러도 SDK는 한 번만 초기화하고 처음 결과를 돌려준다', () => {
     // Given
-    mockExtra.revenueCatAppleApiKey = 'appl_fixture';
+    givenAppleApiKey();
     const gateway = createRevenueCatPurchasesGateway({ isLogEnabled: false, logger });
     gateway.configure();
 
@@ -439,7 +439,7 @@ describe('createRevenueCatPurchasesGateway', () => {
 
   it('초기화가 실패하면 다음 호출이 다시 초기화한다', () => {
     // Given
-    mockExtra.revenueCatAppleApiKey = 'appl_fixture';
+    givenAppleApiKey();
     const gateway = createRevenueCatPurchasesGateway({ isLogEnabled: false, logger });
     purchases.configure.mockImplementationOnce(() => {
       throw new Error('native module not ready');

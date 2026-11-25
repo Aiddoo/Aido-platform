@@ -19,7 +19,7 @@ export function initErrorReporting(): void {
 
   Sentry.init({
     dsn: ENV.SENTRY_DSN,
-    enabled: ENV.SENTRY_ENABLED,
+    enabled: ENV.TELEMETRY.isSentrySdkEnabled,
     environment: toSentryEnvironment(ENV.APP_ENV, IS_PHYSICAL_DEVICE),
 
     // RN SDK 8은 dataCollection을 받지 않고 이 값으로 IP 추론·라우트 URL·딥링크 수집을 가른다. 사용자는 ErrorReporter.setUserId의 id만 싣는다

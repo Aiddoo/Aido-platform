@@ -65,8 +65,8 @@ export function createDevicePorts(): DevicePorts {
   const tokenStore = withSessionEpoch(createSecureTokenStore(storage), sessionEpoch);
 
   // 크래시·오류·로그는 Sentry, Firebase는 제품 지표만. Sentry init은 앱 루트(initErrorReporting)에서 한 번
-  const consoleLogger = createConsoleLogger({ minLevel: ENV.IS_PRODUCTION ? 'warn' : 'debug' });
-  const logger = ENV.IS_PRODUCTION
+  const consoleLogger = createConsoleLogger({ minLevel: ENV.TELEMETRY.consoleMinLevel });
+  const logger = ENV.TELEMETRY.usesVendorAdapters
     ? createCompositeLogger([consoleLogger, createSentryLogger()])
     : consoleLogger;
   const errorReporter = createEnvironmentErrorReporter();

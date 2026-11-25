@@ -1,3 +1,5 @@
+import type { AnalyticsSource } from '@src/shared/analytics/event-vocabulary';
+
 declare module '@src/shared/analytics/event-map' {
   interface AppEventMap {
     memo_created: undefined;
@@ -5,9 +7,7 @@ declare module '@src/shared/analytics/event-map' {
     memo_deleted: { memo_id: number };
     memo_pin_toggled: { memo_id: number; is_pinned: boolean };
     memo_converted_to_todo: { memo_id: number };
-    memo_converted_to_todos: { memo_id: number; todo_count: number; source: 'ai' };
+    memo_converted_to_todos: { memo_id: number; todo_count: number; source: AnalyticsSource<'ai'> };
     ai_parse_used: { success: boolean };
   }
 }
-
-export {};

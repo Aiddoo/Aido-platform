@@ -1,6 +1,6 @@
 import { createEventChannel } from './event-channel';
 
-interface TodoCompletionChange {
+export interface TodoCompletionChange {
   isCompleted: boolean;
 }
 

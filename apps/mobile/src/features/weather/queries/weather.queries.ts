@@ -14,7 +14,7 @@ import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
 import { getNowInstant } from '@src/shared/date/clock';
 import { addDaysToDateKey, type DateKey } from '@src/shared/date/date-key';
 import { fromEpochMs, type Instant, toEpochMs } from '@src/shared/date/instant';
-import { getErrorMessage, toError, unwrap } from '@src/shared/errors';
+import { getErrorMessage, reportUnexpectedError, toError, unwrap } from '@src/shared/errors';
 import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { shouldRetryQuery } from '@src/shared/query/query-retry';
 import {
@@ -78,17 +78,18 @@ export function useGetWeatherLocationQueryOptions() {
   const logger = useLogger();
   const errorReporter = useErrorReporter();
 
+  // 위치 등록(PUT)은 4xx·연결 끊김도 올 수 있어 분류를 보고기에 맡긴다. 예상한 오류는 breadcrumb로 남는다
   const reportUnexpectedFailure = ({ step, error }: UnexpectedLocationFailure) =>
-    errorReporter.captureException(
-      toError(error),
-      match(step)
-        .with('read', () => ({
-          feature: 'weather_location' as const,
+    match(step)
+      .with('read', () =>
+        reportUnexpectedError(errorReporter, error, 'weather_location', {
           errorCode: WEATHER_ERROR_CODE.LOCATION_UNAVAILABLE,
-        }))
-        .with('register', () => ({ feature: 'weather_location' as const }))
-        .exhaustive(),
-    );
+        }),
+      )
+      .with('register', () =>
+        errorReporter.captureException(toError(error), { feature: 'weather_location' }),
+      )
+      .exhaustive();
 
   return queryOptions({
     queryKey: WEATHER_QUERY_KEYS.location(),

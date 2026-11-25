@@ -3,12 +3,21 @@ import path from 'node:path';
 
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 import { match } from 'ts-pattern';
+import { z } from 'zod';
 
 import enNativeLocale from './native-locales/en.json';
 import koNativeLocale from './native-locales/ko.json';
 import { version } from './package.json';
+// 설정 파일은 Node가 바로 읽어 src의 TS 값을 import할 수 없다. 타입만 가져와 앱과 같은 목록인지 확인한다
+import type { AppEnvironment } from './src/shared/config/env';
 
-type AppEnvironment = 'development' | 'preview' | 'production';
+const appEnvironmentSchema = z.enum([
+  'development',
+  'preview',
+  'production',
+] as const satisfies readonly AppEnvironment[]);
+// APP_ENV가 없을 때만 본다. Jest는 test, expo start는 development, 번들 내보내기는 production을 넣는다
+const nodeEnvironmentSchema = z.enum(['development', 'test', 'production']);
 
 interface EnvironmentConfig {
   name: string;
@@ -132,15 +141,37 @@ const getEnvironmentConfig = (environment: AppEnvironment): EnvironmentConfig =>
     .exhaustive();
 };
 
-const resolveEnvironment = (rawEnv: string): AppEnvironment =>
-  match(rawEnv)
-    .with('production', () => 'production' as const)
-    .with('preview', () => 'preview' as const)
-    .otherwise(() => 'development' as const);
+/** 모르는 APP_ENV·NODE_ENV는 개발로 내려가지 않고 설정을 읽을 때 실패한다 */
+export function resolveAppEnvironment({
+  appEnv,
+  nodeEnv,
+}: {
+  appEnv: string | undefined;
+  nodeEnv: string | undefined;
+}): AppEnvironment {
+  if (appEnv !== undefined) {
+    const parsed = appEnvironmentSchema.safeParse(appEnv);
+    if (!parsed.success) {
+      throw new Error(
+        `APP_ENV는 ${appEnvironmentSchema.options.join('·')} 중 하나입니다(받은 값: '${appEnv}').`,
+      );
+    }
+    return parsed.data;
+  }
+  const parsedNodeEnv = nodeEnvironmentSchema.safeParse(nodeEnv ?? 'development');
+  if (!parsedNodeEnv.success) {
+    throw new Error(
+      `APP_ENV가 없어 NODE_ENV(${nodeEnvironmentSchema.options.join('·')})로 정하는데 모르는 값입니다(받은 값: '${nodeEnv}').`,
+    );
+  }
+  return parsedNodeEnv.data === 'production' ? 'production' : 'development';
+}
 
 export default ({ config }: ConfigContext): ExpoConfig => {
-  const rawEnv = process.env.APP_ENV ?? process.env.NODE_ENV ?? 'development';
-  const env = resolveEnvironment(rawEnv);
+  const env = resolveAppEnvironment({
+    appEnv: process.env.APP_ENV,
+    nodeEnv: process.env.NODE_ENV,
+  });
   const isDevelopment = env === 'development';
   const isProduction = env === 'production';
 
@@ -569,6 +600,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       env,
       apiUrl: envConfig.apiUrl,
       devMachineIp: process.env.EXPO_PUBLIC_DEV_MACHINE_IP,
+      // 앱은 env만 읽지만 fingerprint가 평가된 extra를 해시해 지우면 runtimeVersion이 바뀐다
       isDevelopment,
       isProduction,
       revenueCatAppleApiKey: process.env.REVENUECAT_APPLE_API_KEY,

@@ -1,17 +1,17 @@
-import type { AnalyticsEventParams } from '@src/core/ports/analytics';
 import { useAnalytics } from '@src/shared/di/shared-di-context';
 import { useEffect, useEffectEvent, useRef } from 'react';
 
 import type { AppEventMap } from './event-map';
+import type { AppEventName } from './track';
 
 type ViewEventName = {
-  [E in keyof AppEventMap & string]: AppEventMap[E] extends undefined ? never : E;
-}[keyof AppEventMap & string];
+  [E in AppEventName]: AppEventMap[E] extends undefined ? never : E;
+}[AppEventName];
 
 interface TrackedView<E extends ViewEventName> {
   /** 같은 보기인지 가르는 값. 마운트 안에서 key마다 한 번 보낸다 */
   key: string;
-  params: AppEventMap[E] & AnalyticsEventParams;
+  params: AppEventMap[E];
 }
 
 /**

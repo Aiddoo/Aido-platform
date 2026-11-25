@@ -1,11 +1,9 @@
-import type { AnalyticsEventParams } from '@src/core/ports/analytics';
 import { useAnalytics, useFeatureAttribution, useLogger } from '@src/shared/di/shared-di-context';
 import { useCallback } from 'react';
 
-import type { AppEventMap } from './event-map';
 import { trackAttributedFeatureSuccess as emitAttributedFeatureSuccess } from './feature-attribution';
 import type { FeatureKey } from './feature-key';
-import { track } from './track';
+import { type AppEventArguments, type AppEventName, track } from './track';
 
 export function useTrack() {
   const analytics = useAnalytics();
@@ -13,12 +11,7 @@ export function useTrack() {
   const logger = useLogger();
 
   const trackEvent = useCallback(
-    <E extends keyof AppEventMap & string>(
-      eventName: E,
-      ...eventParams: AppEventMap[E] extends undefined
-        ? []
-        : [params: AppEventMap[E] & AnalyticsEventParams]
-    ): void => {
+    <E extends AppEventName>(eventName: E, ...eventParams: AppEventArguments<E>): void => {
       track(analytics, eventName, ...eventParams);
     },
     [analytics],

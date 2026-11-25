@@ -1,5 +1,5 @@
 import type { KeyValueStorage } from '@src/core/ports/key-value-storage';
-import { getErrorMessage, isKeychainLockedError, toError } from '@src/shared/errors';
+import { getErrorMessage, isKeychainLockedError, reportUnexpectedError } from '@src/shared/errors';
 import type { EncryptedStorageBootstrap } from '@src/shared/infra/storage/encrypted-draft-storage';
 import { readStoredValue, removeStoredValue } from '@src/shared/storage/define-stored-value';
 import type { QueryClient } from '@tanstack/react-query';
@@ -54,7 +54,7 @@ export function createCompositionRoot({
       return;
     }
     hasReportedStorageFailure = true;
-    errorReporter.captureException(toError(failure), { feature: 'draft' });
+    reportUnexpectedError(errorReporter, failure, 'draft');
   };
 
   const open = async (): Promise<AppContainerPorts> => {

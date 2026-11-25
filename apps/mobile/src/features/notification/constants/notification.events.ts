@@ -1,3 +1,5 @@
+import type { AnalyticsSource } from '@src/shared/analytics/event-vocabulary';
+
 import type { TimezoneOffsetBucket } from '../domains/device-timezone.model';
 import type { Notification } from '../domains/notification.model';
 import type {
@@ -38,20 +40,23 @@ declare module '@src/shared/analytics/event-map' {
       type: Notification['type'];
       destination: NotificationDestination['kind'];
     };
-    marketing_push_opted_out: { source: 'push_action' | 'settings' };
-    marketing_push_opted_in: { source: 'completion_sheet' | 'settings' };
-    marketing_push_prompt_shown: { source: 'completion_sheet' };
-    marketing_push_prompt_dismissed: { source: 'completion_sheet' };
-    push_permission_prompt_shown: { source: PushPermissionPromptSource; step: PushPermissionStep };
+    marketing_push_opted_out: { source: AnalyticsSource<'push_action' | 'settings'> };
+    marketing_push_opted_in: { source: AnalyticsSource<'completion_sheet' | 'settings'> };
+    marketing_push_prompt_shown: { source: AnalyticsSource<'completion_sheet'> };
+    marketing_push_prompt_dismissed: { source: AnalyticsSource<'completion_sheet'> };
+    push_permission_prompt_shown: {
+      source: AnalyticsSource<PushPermissionPromptSource>;
+      step: PushPermissionStep;
+    };
     push_permission_prompt_dismissed: {
-      source: PushPermissionPromptSource;
+      source: AnalyticsSource<PushPermissionPromptSource>;
       step: PushPermissionStep;
     };
     push_permission_requested: {
-      source: PushPermissionPromptSource;
+      source: AnalyticsSource<PushPermissionPromptSource>;
       status: PushPermission['status'];
     };
-    push_permission_settings_opened: { source: PushPermissionPromptSource };
+    push_permission_settings_opened: { source: AnalyticsSource<PushPermissionPromptSource> };
     /** 시간대 이름·도시는 보내지 않고 바뀐 폭만 보낸다. 여행 빈도와 기기 예약 전환 판단에 쓴다. */
     device_timezone_changed: {
       offset_bucket: TimezoneOffsetBucket;

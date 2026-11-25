@@ -13,7 +13,7 @@ import { feedParamsSchema } from '@src/features/planning/todo/schemas/feed-param
 import { useTrack } from '@src/shared/analytics';
 import { getNowInstant } from '@src/shared/date/clock';
 import { toEpochMs } from '@src/shared/date/instant';
-import { toError } from '@src/shared/errors';
+import { reportUnexpectedError } from '@src/shared/errors';
 import { useLinkingUrl } from '@src/shared/infra/linking/use-linking-url';
 import { openEntryHref } from '@src/shared/navigation/open-entry-href';
 import { useFocusedRouteParams } from '@src/shared/navigation/use-focused-route-params';
@@ -133,10 +133,7 @@ export function useWidgetAppEntry() {
           commandRestoredAtRef.current = toEpochMs(getNowInstant());
         }
       } catch (error) {
-        errorReporter.captureException(toError(error), {
-          feature: 'widget',
-          method: 'useWidgetAppEntry',
-        });
+        reportUnexpectedError(errorReporter, error, 'widget', { method: 'useWidgetAppEntry' });
       }
     },
   );

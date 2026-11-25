@@ -1,4 +1,5 @@
 import type { InviteFriendship, RedeemOutcome } from '@aido/api/vocabulary';
+import type { AnalyticsSource } from '@src/shared/analytics/event-vocabulary';
 
 import type { RedeemFailureReason } from '../domains/invite.error';
 import type { InviteLinkSource } from '../domains/pending-redemption.model';
@@ -21,7 +22,7 @@ declare module '@src/shared/analytics/event-map' {
   interface AppEventMap {
     invite_link_shared: { channel: InviteShareChannel };
     invite_entry_tapped: { entry: InviteEntrySource };
-    invite_link_opened: { source: InviteLinkSource };
+    invite_link_opened: { source: AnalyticsSource<InviteLinkSource> };
     invite_redeemed: { outcome: RedeemOutcome; friendship: InviteFriendship | 'NONE' };
     invite_redeem_failed: { reason: RedeemFailureReason };
   }

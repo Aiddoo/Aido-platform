@@ -1,4 +1,5 @@
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
+import type { AnalyticsSource } from '@src/shared/analytics/event-vocabulary';
 
 import type { VoiceCaptureFailureReason } from '../domains/voice-capture.model';
 import type { VoicePlanFailureCause } from '../domains/voice.error';
@@ -53,16 +54,19 @@ declare module '@src/shared/analytics/event-map' {
     /** 핵심 포인트를 눌러 그 지점부터 들었다. 위치는 구간으로만 남긴다 */
     voice_note_key_point_played: { position_bucket: VoiceDurationBucket };
     voice_plan_generated: {
-      source: VoicePlanAnalyticsSource;
+      source: AnalyticsSource<VoicePlanAnalyticsSource>;
       todo_count: number;
       memo_count: number;
       duplicate_count: number;
       /** 서버가 알려 준 차감 여부. 성공해도 false일 수 있고, 메모 나누기 응답에는 없다 */
       charged?: boolean;
     };
-    voice_plan_failed: { source: VoicePlanAnalyticsSource; cause: VoicePlanFailureCause };
+    voice_plan_failed: {
+      source: AnalyticsSource<VoicePlanAnalyticsSource>;
+      cause: VoicePlanFailureCause;
+    };
     voice_plan_applied: {
-      source: VoicePlanAnalyticsSource;
+      source: AnalyticsSource<VoicePlanAnalyticsSource>;
       todo_count: number;
       memo_count: number;
       skipped_count: number;

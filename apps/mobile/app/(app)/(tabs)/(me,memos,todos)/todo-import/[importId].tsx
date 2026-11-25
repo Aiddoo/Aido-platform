@@ -29,7 +29,7 @@ import {
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useRouter, Stack } from 'expo-router';
 import { Spinner } from 'heroui-native';
-import { Suspense, useEffect, useRef } from 'react';
+import { Suspense, useEffect, useEffectEvent, useRef } from 'react';
 import { match, P } from 'ts-pattern';
 
 export default function TodoImportRoute() {
@@ -181,12 +181,7 @@ function useTrackImportOutcome({ status, failureReason, counts }: TodoImport) {
   const accountId = useMyAccountId();
   const previousStatusRef = useRef(status);
 
-  useEffect(() => {
-    const previousStatus = previousStatusRef.current;
-    previousStatusRef.current = status;
-    if (previousStatus === status) {
-      return;
-    }
+  const handleStatusChanged = useEffectEvent(() => {
     match(toImportOutcome(status, failureReason))
       .with('completed', () => {
         trackEvent('todo_import_completed', {
@@ -203,7 +198,15 @@ function useTrackImportOutcome({ status, failureReason, counts }: TodoImport) {
       )
       .with(null, () => undefined)
       .exhaustive();
-  }, [status, failureReason, counts, trackEvent, trackAttributedFeatureSuccess, accountId]);
+  });
+
+  useEffect(() => {
+    const previousStatus = previousStatusRef.current;
+    previousStatusRef.current = status;
+    if (previousStatus !== status) {
+      handleStatusChanged();
+    }
+  }, [status]);
 }
 
 function toImportOutcome(status: TodoImport['status'], failureReason: TodoImport['failureReason']) {

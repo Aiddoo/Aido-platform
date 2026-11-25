@@ -29,7 +29,7 @@ let mockAuthSessionStore = createAuthSessionStoreStub('loading');
 function useMountedView(screenName: ScreenName) {
   useTrackView('view_tab_changed', {
     key: 'mounted',
-    params: { screen_name: screenName, view: 'mounted' },
+    params: { screen_name: screenName, view: 'all' },
   });
 }
 

@@ -8,7 +8,6 @@ import {
   getCachedTodoCategories,
   invalidateTodoCategories,
 } from '@src/features/planning/category/queries/todo-category-cache';
-import type { TodoEditedFields } from '@src/features/planning/todo/constants/todo.events';
 import type { TodoRepeat } from '@src/features/planning/todo/domains/todo-repeat.model';
 import { isTodoSeriesFailure } from '@src/features/planning/todo/domains/todo-series.error';
 import {
@@ -39,6 +38,7 @@ import {
 import { TODO_MUTATION_KEYS } from '@src/features/planning/todo/queries/todo-mutation-keys';
 import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
 import type { TodoSeriesEditOptions } from '@src/features/planning/todo/schemas/todo-series-request.schema';
+import { toTodoEditedFields } from '@src/features/planning/todo/utils/todo-analytics';
 import { useTrack } from '@src/shared/analytics';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui';
@@ -226,30 +226,6 @@ export function useCreateRecurringTodoMutationOptions() {
   });
 }
 
-// 수정 폼이 칸을 담는 순서다. 분석의 field 값이 이 순서로 이어진다
-const TODO_EDITED_FIELD_ORDER = [
-  'title',
-  'categoryId',
-  'startDate',
-  'endDate',
-  'scheduledTime',
-  'isAllDay',
-  'visibility',
-] as const satisfies readonly (keyof TodoFieldChanges)[];
-
-// 칸을 고치지 않고 반복만 바꾼 수정(단일 → 반복 포함)은 repeat 한 칸으로 남긴다
-function toEditedFields(
-  fields: TodoFieldChanges,
-  options: TodoSeriesEditOptions = {},
-): TodoEditedFields | undefined {
-  const [first, ...rest] = TODO_EDITED_FIELD_ORDER.filter((field) => field in fields);
-  if (first == null) {
-    // oxlint-disable-next-line aido/no-strict-nullish -- repeat null은 반복 끝내기라 바꾼 것이다
-    return options.repeat === undefined ? undefined : 'repeat';
-  }
-  return rest.length === 0 ? first : `${first},${rest.join(',')}`;
-}
-
 interface UpdateTodoVariables {
   todoId: number;
   fields: TodoFieldChanges;
@@ -277,7 +253,7 @@ export function useUpdateTodoMutationOptions() {
       toast.success(t('todo:toast.todoUpdated'));
       trackEvent('todo_edited', {
         todo_id: variables.todoId,
-        field: toEditedFields(variables.fields, variables.options),
+        field: toTodoEditedFields(variables.fields, variables.options),
       });
       if (variables.options?.scope != null) {
         trackEvent('todo_series_edited', { scope: variables.options.scope });

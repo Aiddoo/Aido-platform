@@ -1,7 +1,6 @@
-import Constants from 'expo-constants';
+import { ENV } from '@src/shared/config/env';
 import type { PlatformOSType } from 'react-native';
 import { match } from 'ts-pattern';
-import { z } from 'zod';
 
 type RevenueCatApiKeyContext = {
   isDebugBuild: boolean;
@@ -27,22 +26,13 @@ export function resolveRevenueCatApiKey(context: RevenueCatApiKeyContext): strin
   return platformApiKey?.startsWith('test_') ? undefined : platformApiKey;
 }
 
-const revenueCatExtraSchema = z.object({
-  isDevelopment: z.boolean(),
-  revenueCatAppleApiKey: z.string().optional(),
-  revenueCatGoogleApiKey: z.string().optional(),
-  revenueCatTestApiKey: z.string().optional(),
-});
-
 export function getRevenueCatApiKey(): string | undefined {
-  const extra = revenueCatExtraSchema.parse(Constants.expoConfig?.extra);
-
   return resolveRevenueCatApiKey({
     isDebugBuild: __DEV__,
-    isDevelopmentEnvironment: extra.isDevelopment,
+    isDevelopmentEnvironment: ENV.APP_ENV === 'development',
     platform: process.env.EXPO_OS,
-    appleApiKey: extra.revenueCatAppleApiKey,
-    googleApiKey: extra.revenueCatGoogleApiKey,
-    testApiKey: extra.revenueCatTestApiKey,
+    appleApiKey: ENV.REVENUECAT_API_KEYS.apple,
+    googleApiKey: ENV.REVENUECAT_API_KEYS.google,
+    testApiKey: ENV.REVENUECAT_API_KEYS.test,
   });
 }

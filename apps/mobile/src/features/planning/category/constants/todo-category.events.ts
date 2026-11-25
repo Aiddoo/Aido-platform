@@ -1,3 +1,5 @@
+import type { AnalyticsSource } from '@src/shared/analytics/event-vocabulary';
+
 import type {
   CategoryColorParam,
   CategoryDeletedTodoHandling,
@@ -15,6 +17,6 @@ declare module '@src/shared/analytics/event-map' {
       todo_handling: CategoryDeletedTodoHandling;
       todo_count_bucket: TodoCountBucket;
     };
-    category_reordered: { source: 'settings' };
+    category_reordered: { source: AnalyticsSource<'settings'> };
   }
 }

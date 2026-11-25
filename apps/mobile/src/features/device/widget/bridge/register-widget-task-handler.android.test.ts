@@ -1,5 +1,5 @@
 import { captureException, init } from '@sentry/react-native';
-import { ENV } from '@src/shared/config/env';
+import { ENV, resolveTelemetryGates } from '@src/shared/config/env';
 import { resetSentryClient } from '@src/testing/mocks/sentry-react-native';
 import { registerWidgetTaskHandler as registerNativeWidgetTaskHandler } from 'react-native-android-widget';
 import type { WidgetTaskHandler, WidgetTaskHandlerProps } from 'react-native-android-widget';
@@ -35,7 +35,11 @@ describe('registerWidgetTaskHandler', () => {
 
   it('앱 화면 없이 위젯만 깨어난 프로세스는 오류를 Sentry로 보내지 않고 작업을 끝낸다', async () => {
     // Given
-    jest.replaceProperty(ENV, 'IS_PRODUCTION', true);
+    jest.replaceProperty(
+      ENV,
+      'TELEMETRY',
+      resolveTelemetryGates({ appEnv: 'production', sentryDebug: false }),
+    );
     let handler: WidgetTaskHandler | undefined;
     jest.mocked(registerNativeWidgetTaskHandler).mockImplementation((registered) => {
       handler = registered;

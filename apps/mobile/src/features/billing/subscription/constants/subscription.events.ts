@@ -1,3 +1,4 @@
+import type { AnalyticsSurface } from '@src/shared/analytics/event-vocabulary';
 import type { PlanType } from '@src/shared/domains/plan-type.model';
 
 import type { SubscriptionPlan } from '../domains/subscription.model';
@@ -53,19 +54,19 @@ declare module '@src/shared/analytics/event-map' {
     /** 프리미엄 안내를 띄웠다. 같은 기능을 그날 이미 닫았으면 toast, 잠금 카드는 보일 때 inline이다 */
     premium_gate_shown: {
       feature: PremiumGateAnalyticsFeature;
-      surface: EntitlementGateSurface;
+      surface: AnalyticsSurface<EntitlementGateSurface>;
       presentation: PremiumGatePresentation;
     };
     /** 안내 시트·토스트·잠금 카드에서 프리미엄 보기를 눌렀다 */
     premium_gate_cta_tapped: {
       feature: PremiumGateAnalyticsFeature;
-      surface: EntitlementGateSurface;
+      surface: AnalyticsSurface<EntitlementGateSurface>;
       presentation: PremiumGatePresentation;
     };
     /** 시트를 프리미엄 보기·대안 동작 없이 닫았다(나중에·밀어 닫기). 그날 같은 기능은 토스트로 바뀐다 */
     premium_upsell_dismissed: {
       feature: PremiumGateAnalyticsFeature;
-      surface: EntitlementGateSurface;
+      surface: AnalyticsSurface<EntitlementGateSurface>;
     };
     /** 요금제를 받아 페이월을 보여 줬다. `plans`는 보상 기간 영수증에서 요금제로 넘어온 경우, `feature`는 막혀서 들어온 기능이다 */
     paywall_viewed: { view: SubscriptionView; feature?: PremiumGateAnalyticsFeature };
@@ -88,12 +89,12 @@ declare module '@src/shared/analytics/event-map' {
     /** 횟수·개수 한도에 닿아 안내를 띄웠다(premium_gate_shown과 함께 남는다) */
     limit_reached_shown: {
       feature: PremiumGateAnalyticsFeature;
-      surface: EntitlementGateSurface;
+      surface: AnalyticsSurface<EntitlementGateSurface>;
       trigger: LimitReachedTrigger;
     };
     limit_reached_cta_tapped: {
       feature: PremiumGateAnalyticsFeature;
-      surface: EntitlementGateSurface;
+      surface: AnalyticsSurface<EntitlementGateSurface>;
     };
   }
 }

@@ -24,8 +24,9 @@ EAS 빌드·로컬 빌드, 환경 변수, 스토어 제출, 배포 순서를 다
 
 ```bash
 # 런타임
-APP_ENV                      # development | preview | production
+APP_ENV                      # development | preview | production. 모르는 값은 설정·빌드가 실패한다
 EXPO_PUBLIC_API_URL          # API 서버 URL
+EXPO_PUBLIC_DEV_MACHINE_IP   # (선택, development) 실기기가 붙을 개발 머신 IP. 없으면 자동 감지
 EXPO_PUBLIC_SENTRY_DSN       # Sentry DSN (publishable)
 EXPO_PUBLIC_SENTRY_DEBUG     # (선택) dev에서 Sentry SDK만 켠다. 'true'일 때만
 EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY  # 카카오톡 공유 네이티브 앱 키 (publishable)
@@ -40,13 +41,11 @@ SENTRY_AUTH_TOKEN            # Sentry 소스맵 업로드 (sensitive)
 EXPO_PUBLIC_EAS_PROJECT_ID   # EAS 프로젝트 ID
 ```
 
-OAuth 클라이언트 ID·시크릿은 앱에 두지 않고 **API 서버 환경 변수**에서 관리한다([인증](./auth.md#소셜-로그인)). 값·서명 파일·로그를 Git에 넣지 않는다.
+`APP_ENV`는 `app.config.ts`의 `resolveAppEnvironment`가 Zod로 검증해 모르는 값(`prod`·빈 값)이 개발로 내려가지 않는다. 없을 때만 `NODE_ENV`를 본다(`production`이면 운영, `development`·`test`·없음이면 개발, 그 밖은 실패. 표는 `app.config.test.ts`). 빌드 프로필은 `eas.json`의 `env`, OTA(`pnpm update:*`)는 EAS environment의 `APP_ENV`를 쓴다. 앱 코드는 빌드 값을 `shared/config/env.ts`의 `ENV`로 읽고(푸시 토큰의 EAS `projectId`만 `expo-push-notification-gateway.ts`가 `Constants`에서 직접 읽는다) 관측 도구를 켜는 기준은 `ENV.TELEMETRY`([관측](./observability.md#환경별-구현))다. OAuth 클라이언트 ID·시크릿은 앱에 두지 않고 **API 서버 환경 변수**에서 관리한다([인증](./auth.md#소셜-로그인)). 값·서명 파일·로그를 Git에 넣지 않는다.
 
 ## EAS 환경 변수
 
-값은 EAS environment(`development`·`preview`·`production`)마다 `eas env:set`으로 넣고 `eas env:list <environment>`로 확인한다. 세 environment 모두 `APP_ENV`를 둔다. Apple 팀 ID는 비밀이 아니라 `app.config.ts`의 상수다.
-
-`app.config.ts`가 설정을 읽을 때 환경 변수를 Base64 디코딩해 Firebase 파일(`google-services.json`, 환경별 `GoogleService-Info*.plist`)을 복원하고(`restoreBase64File`), `googleServicesFile`이 그 파일을 참조한다.
+값은 EAS environment(`development`·`preview`·`production`)마다 `eas env:set`으로 넣고 `eas env:list <environment>`로 확인한다. 세 environment 모두 `APP_ENV`를 둔다. Apple 팀 ID는 비밀이 아니라 `app.config.ts`의 상수다. `app.config.ts`가 설정을 읽을 때 환경 변수를 Base64 디코딩해 Firebase 파일(`google-services.json`, 환경별 `GoogleService-Info*.plist`)을 복원하고(`restoreBase64File`), `googleServicesFile`이 그 파일을 참조한다.
 
 ```bash
 # Android: 모든 환경이 같은 파일을 쓴다

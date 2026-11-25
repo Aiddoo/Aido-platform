@@ -5,5 +5,7 @@ import { createConsoleErrorReporter } from './console-error-reporter';
 import { createSentryErrorReporter } from './sentry-error-reporter';
 
 export function createEnvironmentErrorReporter(): ErrorReporter {
-  return ENV.IS_PRODUCTION ? createSentryErrorReporter() : createConsoleErrorReporter();
+  return ENV.TELEMETRY.usesVendorAdapters
+    ? createSentryErrorReporter()
+    : createConsoleErrorReporter();
 }

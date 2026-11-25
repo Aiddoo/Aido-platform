@@ -8,7 +8,7 @@ import {
   readLocalDateState,
 } from '@src/shared/date/clock';
 import { useAnalytics, useAppLifecycle, useErrorReporter } from '@src/shared/di/shared-di-context';
-import { toError } from '@src/shared/errors';
+import { reportUnexpectedError } from '@src/shared/errors';
 import { refreshAppTimezone } from '@src/shared/infra/localization/app-timezone';
 import {
   type SystemCalendar,
@@ -75,8 +75,7 @@ export function LocalDateProvider({
         track(analytics, 'local_day_changed', { trigger });
       } catch (error) {
         try {
-          errorReporter.captureException(toError(error), {
-            feature: 'lifecycle',
+          reportUnexpectedError(errorReporter, error, 'lifecycle', {
             method: 'LocalDateProvider.trackLocalDateChanged',
           });
         } catch {

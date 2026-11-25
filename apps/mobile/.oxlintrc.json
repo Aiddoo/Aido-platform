@@ -1629,7 +1629,9 @@
               "weather_reschedule_applied",
               "weather_reschedule_undone",
               "whats_new_cta_pressed"
-            ]
+            ],
+            // source·surface 값은 shared/analytics/event-vocabulary.ts 한 곳에서 고른다
+            "vocabularyParams": { "source": "AnalyticsSource", "surface": "AnalyticsSurface" }
           }
         ]
       }
