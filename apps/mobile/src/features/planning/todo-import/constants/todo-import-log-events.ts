@@ -5,6 +5,7 @@ export const TODO_IMPORT_LOG_EVENT = {
   UPLOAD_CHUNK_RETRYING: 'todo-import.upload-chunk.retrying',
   UPLOAD_PAUSED: 'todo-import.upload.paused',
   UPLOAD_REJECTED: 'todo-import.upload.rejected',
+  UPLOAD_CANCEL_FAILED: 'todo-import.upload-cancel.failed',
   SESSION_FINGERPRINT_MISMATCH: 'todo-import.session.fingerprint-mismatch',
   SESSION_WRITE_DROPPED_AFTER_SIGN_OUT: 'todo-import.session.write-dropped-after-sign-out',
   RESUME_FAILED: 'todo-import.resume.failed',

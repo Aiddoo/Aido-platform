@@ -1,17 +1,13 @@
-import { TODO_IMPORT_LIMITS, TODO_LIMITS } from '@aido/api/vocabulary';
+import { TODO_LIMITS } from '@aido/api/vocabulary';
 import { dateKeySchema } from '@src/shared/date/date-key';
 import { toInstant } from '@src/shared/date/instant';
-import { range } from 'es-toolkit';
 
-import { createImportItem } from '../__tests__/todo-import.fixtures';
+import { createTodoImportItem } from '../__tests__/todo-import.fixtures';
 import {
-  chunkItems,
-  countByCollection,
-  filterByRange,
-  fingerprintItems,
   getAllDayEndDate,
   getTimedDates,
   normalizeImportTitle,
+  TodoImportItemPolicy,
 } from './todo-import-item.model';
 
 const UNTITLED = '제목 없는 일정';
@@ -100,150 +96,101 @@ describe('getTimedDates', () => {
   });
 });
 
-describe('filterByRange', () => {
-  it('기간 전에 끝난 하루 일정과 기간 뒤 일정은 뺀다', () => {
-    // Given
-    const before = createImportItem({
-      sourceKey: 'b',
-      startDate: dateKeySchema.parse('2026-11-23'),
-    });
-    const first = createImportItem({
-      sourceKey: 'f',
-      startDate: dateKeySchema.parse('2026-11-24'),
-    });
-    const last = createImportItem({ sourceKey: 'l', startDate: dateKeySchema.parse('2026-12-23') });
-    const after = createImportItem({
-      sourceKey: 'a',
-      startDate: dateKeySchema.parse('2026-12-24'),
+describe('TodoImportItemPolicy', () => {
+  describe('filterByRange', () => {
+    it('기간 전에 끝난 하루 일정과 기간 뒤 일정은 뺀다', () => {
+      // Given
+      const before = createTodoImportItem({
+        sourceKey: 'b',
+        startDate: dateKeySchema.parse('2026-11-23'),
+      });
+      const first = createTodoImportItem({
+        sourceKey: 'f',
+        startDate: dateKeySchema.parse('2026-11-24'),
+      });
+      const last = createTodoImportItem({
+        sourceKey: 'l',
+        startDate: dateKeySchema.parse('2026-12-23'),
+      });
+      const after = createTodoImportItem({
+        sourceKey: 'a',
+        startDate: dateKeySchema.parse('2026-12-24'),
+      });
+
+      // When
+      const items = TodoImportItemPolicy.filterByRange([before, first, last, after], {
+        startDate: dateKeySchema.parse('2026-11-24'),
+        endDate: dateKeySchema.parse('2026-12-23'),
+      });
+
+      // Then
+      expect(items.map((item) => item.sourceKey)).toEqual(['f', 'l']);
     });
 
-    // When
-    const items = filterByRange([before, first, last, after], {
-      startDate: dateKeySchema.parse('2026-11-24'),
-      endDate: dateKeySchema.parse('2026-12-23'),
+    it.each([
+      {
+        scenario: '기간 전에 시작해 기간 안까지 이어지는 여러 날 일정은 첫날을 기간 첫날로 당긴다',
+        startDate: '2026-11-20',
+        endDate: '2026-11-26',
+        expected: { startDate: '2026-11-24', endDate: '2026-11-26' },
+      },
+      {
+        scenario: '기간 첫날에 끝나는 여러 날 일정은 기간 첫날 하루 일정이 된다',
+        startDate: '2026-11-20',
+        endDate: '2026-11-24',
+        expected: { startDate: '2026-11-24', endDate: null },
+      },
+    ])('$scenario', ({ startDate, endDate, expected }) => {
+      // Given
+      const ongoing = createTodoImportItem({
+        startDate: dateKeySchema.parse(startDate),
+        endDate: dateKeySchema.parse(endDate),
+        localTime: null,
+      });
+
+      // When
+      const items = TodoImportItemPolicy.filterByRange([ongoing], {
+        startDate: dateKeySchema.parse('2026-11-24'),
+        endDate: dateKeySchema.parse('2026-12-23'),
+      });
+
+      // Then
+      expect(items).toEqual([{ ...ongoing, ...expected }]);
     });
 
-    // Then
-    expect(items.map((item) => item.sourceKey)).toEqual(['f', 'l']);
+    it('기간 전에 끝난 여러 날 일정은 뺀다', () => {
+      // Given
+      const ended = createTodoImportItem({
+        startDate: dateKeySchema.parse('2026-11-20'),
+        endDate: dateKeySchema.parse('2026-11-23'),
+        localTime: null,
+      });
+
+      // When
+      const items = TodoImportItemPolicy.filterByRange([ended], {
+        startDate: dateKeySchema.parse('2026-11-24'),
+        endDate: dateKeySchema.parse('2026-12-23'),
+      });
+
+      // Then
+      expect(items).toEqual([]);
+    });
   });
 
-  it.each([
-    {
-      scenario: '기간 전에 시작해 기간 안까지 이어지는 여러 날 일정은 첫날을 기간 첫날로 당긴다',
-      startDate: '2026-11-20',
-      endDate: '2026-11-26',
-      expected: { startDate: '2026-11-24', endDate: '2026-11-26' },
-    },
-    {
-      scenario: '기간 첫날에 끝나는 여러 날 일정은 기간 첫날 하루 일정이 된다',
-      startDate: '2026-11-20',
-      endDate: '2026-11-24',
-      expected: { startDate: '2026-11-24', endDate: null },
-    },
-  ])('$scenario', ({ startDate, endDate, expected }) => {
-    // Given
-    const ongoing = createImportItem({
-      startDate: dateKeySchema.parse(startDate),
-      endDate: dateKeySchema.parse(endDate),
-      localTime: null,
+  describe('calculateCountByCollection', () => {
+    it('캘린더마다 일정 수를 센다', () => {
+      // Given
+      const items = [
+        createTodoImportItem({ sourceKey: '1', collectionKey: 'a' }),
+        createTodoImportItem({ sourceKey: '2', collectionKey: 'a' }),
+        createTodoImportItem({ sourceKey: '3', collectionKey: 'b' }),
+      ];
+
+      // When
+      const counts = TodoImportItemPolicy.calculateCountByCollection(items);
+
+      // Then
+      expect(counts).toEqual({ a: 2, b: 1 });
     });
-
-    // When
-    const items = filterByRange([ongoing], {
-      startDate: dateKeySchema.parse('2026-11-24'),
-      endDate: dateKeySchema.parse('2026-12-23'),
-    });
-
-    // Then
-    expect(items).toEqual([{ ...ongoing, ...expected }]);
-  });
-
-  it('기간 전에 끝난 여러 날 일정은 뺀다', () => {
-    // Given
-    const ended = createImportItem({
-      startDate: dateKeySchema.parse('2026-11-20'),
-      endDate: dateKeySchema.parse('2026-11-23'),
-      localTime: null,
-    });
-
-    // When
-    const items = filterByRange([ended], {
-      startDate: dateKeySchema.parse('2026-11-24'),
-      endDate: dateKeySchema.parse('2026-12-23'),
-    });
-
-    // Then
-    expect(items).toEqual([]);
-  });
-});
-
-describe('countByCollection', () => {
-  it('캘린더마다 일정 수를 센다', () => {
-    // Given
-    const items = [
-      createImportItem({ sourceKey: '1', collectionKey: 'a' }),
-      createImportItem({ sourceKey: '2', collectionKey: 'a' }),
-      createImportItem({ sourceKey: '3', collectionKey: 'b' }),
-    ];
-
-    // When
-    const counts = countByCollection(items);
-
-    // Then
-    expect(counts).toEqual({ a: 2, b: 1 });
-  });
-});
-
-describe('chunkItems', () => {
-  it('같은 키는 한 번만, 가까운 날짜·시각 순으로 100개씩 나눈다', () => {
-    // Given
-    const items = range(TODO_IMPORT_LIMITS.MAX_ITEMS_PER_CHUNK + 1).map((index) =>
-      createImportItem({
-        sourceKey: String(index).padStart(4, '0'),
-        startDate: dateKeySchema.parse(index === 0 ? '2026-12-01' : '2026-11-30'),
-      }),
-    );
-    const duplicate = createImportItem({ sourceKey: '0001' });
-
-    // When
-    const chunks = chunkItems([...items, duplicate]);
-
-    // Then
-    expect(chunks.map((chunk) => chunk.length)).toEqual([
-      TODO_IMPORT_LIMITS.MAX_ITEMS_PER_CHUNK,
-      1,
-    ]);
-    expect(chunks.at(-1)?.[0]?.sourceKey).toBe('0000');
-  });
-
-  it('날짜가 같으면 종일(시각 없음)이 먼저이고 그다음 이른 시각이다', () => {
-    // Given
-    const evening = createImportItem({ sourceKey: 'e', localTime: '19:00' });
-    const allDay = createImportItem({ sourceKey: 'd', localTime: null });
-    const morning = createImportItem({ sourceKey: 'm', localTime: '08:00' });
-
-    // When
-    const [chunk] = chunkItems([evening, allDay, morning]);
-
-    // Then
-    expect(chunk?.map((item) => item.sourceKey)).toEqual(['d', 'm', 'e']);
-  });
-});
-
-describe('fingerprintItems', () => {
-  it('다시 읽은 일정이 같으면 순서가 달라도 같은 지문이고, 하나라도 다르면 다른 지문이다', () => {
-    // Given
-    const first = createImportItem({ sourceKey: '1'.repeat(64) });
-    const second = createImportItem({ sourceKey: '2'.repeat(64) });
-    const other = createImportItem({ sourceKey: '3'.repeat(64) });
-
-    // When
-    const original = fingerprintItems(chunkItems([first, second]));
-    const reread = fingerprintItems(chunkItems([second, first]));
-    const changed = fingerprintItems(chunkItems([first, other]));
-
-    // Then
-    expect(reread).toBe(original);
-    expect(changed).not.toBe(original);
   });
 });

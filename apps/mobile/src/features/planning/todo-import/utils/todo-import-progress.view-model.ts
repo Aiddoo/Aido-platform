@@ -1,6 +1,10 @@
 import { match, P } from 'ts-pattern';
 
-import { type TodoImport, TodoImportPolicy } from '../domains/todo-import.model';
+import {
+  type TodoImport,
+  type TodoImportDeviceUpload,
+  TodoImportPolicy,
+} from '../domains/todo-import.model';
 import type {
   TodoImportPauseReason,
   TodoImportUploadSnapshot,
@@ -43,14 +47,13 @@ export function toProgressView(
   const isUploadingOnline = isOnline && TodoImportPolicy.canCancel(todoImport);
   const pauseReason =
     isUploadingOnline && localSnapshot.stage === 'paused' ? localSnapshot.reason : null;
-  const isSentElsewhere = isUploadingOnline && localSnapshot.stage === 'idle' && !hasStoredSession;
-  // 서버가 받지 않아 이 기기의 업로드가 끝났어도 서버에는 업로드 중으로 남아 있다
-  const hasFailedHere = isUploadingOnline && localSnapshot.stage === 'failed';
+  const deviceUpload = toDeviceUpload(localSnapshot, hasStoredSession);
   const base = {
     isQueued: false,
     pauseReason,
-    isSentElsewhere,
-    canStop: isSentElsewhere || pauseReason != null || hasFailedHere,
+    isSentElsewhere: isUploadingOnline && deviceUpload === 'elsewhere',
+    // 오프라인이면 멈춤 요청도 닿지 않아 오프라인 안내만 보인다
+    canStop: isOnline && TodoImportPolicy.canStop(todoImport, deviceUpload),
   };
 
   return match(todoImport.status)
@@ -103,5 +106,20 @@ export function toProgressView(
       create: 'done' as const,
       ratio: 1,
     }))
+    .exhaustive();
+}
+
+// 서버가 받지 않아 이 기기의 업로드가 끝났어도 서버에는 업로드 중으로 남아 있다(failed).
+// 꺼진 채 다시 연 앱은 기기 상태가 비어 있어도 저장해 둔 업로드가 있으면 이 기기가 이어 보낸다(sending)
+function toDeviceUpload(
+  snapshot: TodoImportUploadSnapshot,
+  hasStoredSession: boolean,
+): TodoImportDeviceUpload {
+  return match(snapshot)
+    .returnType<TodoImportDeviceUpload>()
+    .with({ stage: 'paused' }, () => 'paused')
+    .with({ stage: 'failed' }, () => 'failed')
+    .with({ stage: 'idle' }, () => (hasStoredSession ? 'sending' : 'elsewhere'))
+    .with({ stage: P.union('starting', 'reading', 'uploading', 'committing') }, () => 'sending')
     .exhaustive();
 }

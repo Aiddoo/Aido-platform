@@ -12,6 +12,7 @@
 - **메서드는 호출로만 쓴다.** 값으로 넘기면 `this`가 끊긴다. 콜백은 화살표로 감싼다(`notifications.filter((notification) => NotificationPolicy.isUnread(notification))`, `aido/no-unbound-policy-method`).
 - **Policy 메서드의 첫 인자는 모델 전체다.** 값 하나만 필요해도 `notification: Notification`으로 받고 `Pick`·`Partial`·객체 리터럴로 좁히지 않는다. 목록 규칙은 `readonly X[]`를 받는다. 모델 일부(폼 값, 검색어, route id, `select` 결과)만 가진 곳의 규칙은 원시 인자 순수 함수다. 다른 파일의 모델을 받는 규칙은 그 모델의 Policy에 둔다(`aido/policy-model-parameter`).
 - **모델을 받는 규칙의 입구는 Policy 하나다.** 모델을 첫 인자로 받는 함수를 낱개로 export하지 않는다. Policy 밖 export는 스키마, 타입, `create*`, 원시 인자 순수 함수뿐이다(`aido/model-exports`, `aido/model-function-exports`).
+  - 예외는 목록에 넘기는 거르기·정렬 키다. 모델 하나를 받는 `filterBy{X}(model, 값)`·`orderBy{X}(model)`은 낱개 함수로 export해 `filters`·`orderBy`와 es-toolkit `orderBy`·`sortBy`에 값으로 넘긴다(`orderBy={orderByAnnualRate}`). Policy 메서드는 `this` 때문에 값으로 넘기지 못한다. 목록을 받거나 판정·계산인 규칙은 이 이름으로 빼지 않는다.
 - **한 파일, 한 엔티티, 한 Policy.** 두 엔티티가 섞이면 파일을 나눈다(`push-notification.model.ts`, `push-notification-response.model.ts`). `create*`는 Policy에 넣지 않는다. 규칙 없는 모델에는 빈 Policy를 만들지 않는다.
   - 예외는 `social/nudge/domains/nudge-interaction.model.ts` 하나다. 콕 응답(`NudgeInteractionPolicy`)·감사 미리보기(`NudgeThanksPreviewPolicy`)는 한 감사 흐름에서 함께 바뀌어 한 파일에 둔다. 할 일을 감사할 수 있는지는 서버 상세 `permissions.canThank`다.
 - **업무 규칙 표**는 모델 파일 안 비공개 상수이고 `satisfies Record<Union, …>`를 건다. 서버가 종류를 더하면 빌드가 깨진다.

@@ -4,7 +4,6 @@ import {
   useTodoImportUploadSession,
 } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
-import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
 import { useTrack } from '@src/shared/analytics';
 import { t } from '@src/shared/i18n';
 import { useMutationErrorFeedback } from '@src/shared/query/use-mutation-error-feedback';
@@ -12,7 +11,7 @@ import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-st
 import { useStoredValueStorage } from '@src/shared/storage/use-stored-value';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import type { TodoImportSelection } from '../domains/todo-import-session.model';
+import type { TodoImportSelection } from '../domains/todo-import-selection.model';
 import {
   findActiveTodoImportId,
   isTodoImportStartHandledError,
@@ -23,8 +22,8 @@ import { lastTodoImportIdsStoredValue } from '../schemas/todo-import-last-storag
 import { toTodoImportStartedParams } from '../utils/todo-import-analytics';
 import {
   invalidateActiveTodoImport,
-  setCachedCalendarPermission,
   invalidateTodoImport,
+  setCalendarPermissionInCache,
   setTodoImportInCache,
 } from './todo-import-cache';
 import { TODO_IMPORT_MUTATION_KEYS } from './todo-import-mutation-keys';
@@ -72,10 +71,15 @@ export function useStartTodoImportMutationOptions() {
   });
 }
 
+interface CancelTodoImportInput {
+  importId: string;
+  // 이 기기에서 올리던 가져오기의 저장 상태를 지울 계정. 아직 모르면 null이다
+  accountId: string | null;
+}
+
 /** 업로드 중인 가져오기를 멈춘다. 이 기기에서 올리던 것이면 이어 올릴 상태도 함께 지운다 */
-export function useCancelTodoImportMutationOptions({ importId }: { importId: string }) {
+export function useCancelTodoImportMutationOptions({ importId, accountId }: CancelTodoImportInput) {
   const uploadSession = useTodoImportUploadSession();
-  const accountId = useMyAccountId();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
   const showMutationError = useMutationErrorFeedback();
@@ -155,7 +159,7 @@ export function useRequestCalendarPermissionMutationOptions() {
     networkMode: 'always',
     mutationFn: () => todoImportSource.requestPermission(),
     onSuccess: (permission) => {
-      setCachedCalendarPermission(queryClient, permission);
+      setCalendarPermissionInCache(queryClient, permission);
       trackEvent('todo_import_permission_requested', { status: permission.status });
     },
     meta: {

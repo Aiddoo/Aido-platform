@@ -246,6 +246,67 @@ test('다른 feature의 utils/는 분석 helper만 import할 수 있다', () => 
   assert.deepEqual(results, [true, false]);
 });
 
+test('feature와 route는 shared/infra를 직접 import하지 못하고 경계 파일·위젯 헤드리스 진입점·루트 레이아웃만 된다', () => {
+  // Given
+  const deviceInfo = 'src/shared/infra/device/device-info.ts';
+  const cases = [
+    ['src/features/planning/todo-import/components/missing-calendar-help.tsx', deviceInfo],
+    [
+      'src/features/notes/memo/hooks/use-memo-editor.ts',
+      'src/shared/infra/logger/global-logger.ts',
+    ],
+    ['app/(app)/(tabs)/(me,memos,todos)/todo-import/index.tsx', deviceInfo],
+    // 기능이 쓰지 않는 경계 훅(bootstrap만 쓴다)은 열어 두지 않는다
+    [
+      'src/features/social/invite/hooks/use-invite-link.ts',
+      'src/shared/infra/linking/use-linking-url.ts',
+    ],
+    [
+      'src/features/insights/achievement/components/achievement-summary.tsx',
+      'src/shared/infra/view-capture/capturable-view.tsx',
+    ],
+    [
+      'src/features/voice/hooks/use-voice-note-player.ts',
+      'src/shared/infra/audio/use-audio-part-playlist.ts',
+    ],
+    ['app/(app)/voice-notes/record.tsx', 'src/shared/infra/keep-awake/use-keep-screen-awake.ts'],
+    [
+      'src/features/device/widget/bridge/android-widgets.bridge.ts',
+      'src/shared/infra/storage/widget-storage.ts',
+    ],
+    ['app/_layout.tsx', 'src/shared/infra/logger/global-logger.ts'],
+    ['src/features/planning/todo-import/components/missing-calendar-help.test.tsx', deviceInfo],
+  ];
+
+  // When
+  const missing = cases
+    .flatMap(([from, to]) => (from.startsWith('app/') ? [from, to] : [to]))
+    .filter((file) => !existsSync(new URL(`../../${file}`, import.meta.url)));
+  const results = cases.map(([from, to]) => violates('feature-to-infra', from, to));
+
+  // Then
+  assert.deepEqual(missing, []);
+  assert.deepEqual(results, [true, true, true, true, false, false, false, false, false, false]);
+});
+
+test('기기 상수를 직접 읽는 route 두 곳만 래칫으로 남는다', () => {
+  // Given
+  const deviceInfo = 'src/shared/infra/device/device-info.ts';
+  const routes = [
+    'app/(app)/(tabs)/(me)/_layout.tsx',
+    'app/(app)/(tabs)/(me,memos,todos)/friends/search.tsx',
+    'app/(app)/(tabs)/(me,memos,todos)/friends/index.tsx',
+  ];
+
+  // When
+  const missing = routes.filter((file) => !existsSync(new URL(`../../${file}`, import.meta.url)));
+  const results = routes.map((from) => violates('feature-to-infra', from, deviceInfo));
+
+  // Then
+  assert.deepEqual(missing, []);
+  assert.deepEqual(results, [false, false, true]);
+});
+
 test('컴포넌트·훅 하나만 쓰고 자체 테스트가 없는 기능 파일을 경고한다', () => {
   // Given
   const importer = 'src/features/social/friend/components/friend-list.tsx';

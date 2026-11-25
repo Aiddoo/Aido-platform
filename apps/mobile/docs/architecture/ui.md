@@ -11,6 +11,7 @@
 - **바깥 여백을 모른다.** 루트에 margin·`self-*`·위치·safe area를 두지 않는다. 자기 모양(`rounded-2xl bg-gray-1`)과 안쪽 여백만 컴포넌트 몫이고, 바깥 간격은 화면의 `Spacing`이나 화면이 원본 `className`으로 넘긴 값이다(`<UnreadNotificationCard className="mx-4 my-2" />`).
 - **입력은 `value`/`onChange`다.** 값은 모델 값이다. 누르면 시트를 열어 고르게 하는 입력도 고른 값을 `onChange`로 준다. heroui 원본을 넓힌 부품만 원본 이름을 따른다: shared `Input`·`TextArea`는 `value`/`onChange`, `Checkbox`·`Switch`·`ControlField`는 `isSelected`/`onSelectedChange`, `RadioGroup`·`Tabs`는 `value`/`onValueChange`, 시트·다이얼로그는 `isOpen`/`onOpenChange`, 비활성은 `isDisabled`다. `disabled`·`selected`·`onToggle`을 새로 만들지 않는다.
 - **목록은 `filters`·`orderBy`·`limit`를 받는다.** 타입은 모델의 `Filter{X}`·`OrderBy{X}`이고 거르기·정렬은 쿼리 `select`가 한다([data](./data.md#흐름-mapper--캐시--select--view-model)). 거르기·정렬을 바꿀 곳이 생긴 목록만 연다(`CategoryPickForm`의 `filters`). 쓰는 화면이 하나인 목록은 인자 없이 자기 조회를 부른다(`CategoryList`, `SuggestionsList`).
+- **누름을 스스로 처리하는 부품도 받은 `onPress`를 이어 부른다.** `Popover.Trigger asChild`·`Link asChild`·코치마크가 자식에 `onPress`를 넣는다. 나머지 props를 펼친 뒤 `onPress`를 덮으면 그 누름이 조용히 사라지므로, `onPress`를 꺼내 자기 동작 뒤에 부른다(`aido/forward-on-press`).
 - **받지 않는 것.** 폼(`form`·`control`, [forms](./forms.md)), 단계(`stepper`), 내비게이션 객체, 화면 하나만 쓰는 boolean 모드. 자리는 같고 구현이 갈리면 `mode` 대신 컴포넌트를 prop으로 넘긴다(`toolbar={MemoEditor.StackToolbar}`).
 - **원본을 확장하면 원본 Props를 지킨다.** `interface XProps extends Omit<ComponentProps<typeof X>, …>`로 적고 남은 Props는 `...props`로 원본에 넘긴다. 직접 구현하는 prop만 `Omit`하고 `className`·`style`·`testID`·접근성 prop·`hitSlop`은 남긴다. Props는 `interface`이고 더할 것 없는 별칭만 `type`이다. `ReturnType<typeof useX>`로 만들지 않는다.
 - 레이아웃 원시(`Box`·`HStack`·`VStack`·`Flex`)를 감쌀 때는 `ComponentProps<typeof Box>`를 펼치지 않고 쓰는 prop(`children`, `className`, 필요한 접근성 prop)만 적는다.
@@ -55,6 +56,7 @@ export function MemoSummary() {
 - 부모 없이 의미 없는 조각은 **무엇이든** 부모 파일 아래 `Parent.Part`로 둔다(`PlanSummary.Quota`, `DailyForecast.TemperatureBar`, `TodoCommentThreadList.SortBar`). 부모를 지우면 함께 지워지고, 이름이 부모와의 결합을 알린다.
 - 같은 뜻은 같은 조각 이름이다: `.Loading`·`.Error`·`.Empty`·`.Item`(행), `.Link`(행을 감싼 Link), `.Contents`(id를 좁혀 받는 조각). `Row`·`Cell`·`Entry`·`PaneLoading`·`ItemLink`와 객체 묶음 네임스페이스를 쓰지 않는다. 행마다 로딩은 `X.Item.Loading`이다.
 - 형태는 `X.Part = function Part() {}`다(`Object.assign` 금지). 부속에 또 `.Loading`을 달면 TS가 `X.Part.Loading`을 모르므로 그 부속만 함수 선언을 대입한다(`SettingsListGroup.Item`, `ListRow.Texts`). 쓰지 않는 부속은 만들지 않는다.
+- **값이 올 때까지 꺼 두기만 하는 컨트롤은 기다리지 않고 읽는다.** 다음 버튼처럼 값이 없으면 꺼 둘 뿐인 컨트롤은 `useQuery`로 읽어 `data == null`이면 꺼 두고 경계·`.Loading`·`.Error`를 두지 않는다. 오류와 다시 시도는 같은 조회를 보여 주는 칸의 경계가 맡는다(`ConfirmImportPlanButton`).
 - **스스로 조회하면 `.Loading`·`.Error`를 짝으로 둔다.** 부모 경계 하나에 묶여 함께 그려지는 조각(날씨 리포트 칸)은 그 부모의 조각이고 자기 짝을 두지 않는다. route 시트는 `RouteBottomSheet`가 오류·문의를 그리므로 `.Error`를 두지 않는다. 원본을 넘기기만 하는 `X.Item = (props) => <UserList.Item {...props} />`을 만들지 않고, 같은 fallback은 `X.Error = UserList.Error`로 잇는다.
 - 같은 모양으로 반복되는 **고정** UI는 역할이 드러나는 지역 컴포넌트로 추상화하고(`Fact`, `Stat`) 항목마다 **한 줄씩** 쓴다. 설정 배열을 `.map`하지 않는다. "이 항목만 강조·숨김" 같은 기획 수정이 그 한 줄에서 끝난다. `.map`·`FlashList`는 서버 데이터 목록에만 쓴다([목록](#레이아웃-시프트워터폴목록)). 화면 등록 설정(`app/(app)/_layout.tsx`의 `SHEET_ROUTES.map`)은 UI가 아니라 예외다. 본보기는 `plan-comparison-table.tsx`의 비교 줄이다.
 

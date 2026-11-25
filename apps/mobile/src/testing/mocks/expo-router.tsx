@@ -215,9 +215,8 @@ export function useRouter() {
   return router;
 }
 
-export function Redirect() {
-  return null;
-}
+// 어디로 보냈는지 테스트가 호출 기록(props의 href)으로 읽는다
+export const Redirect = jest.fn(() => null);
 
 // ThemeProvider는 내비게이션 컨텍스트에 테마만 전한다. 테스트는 배경색이 정해지는지만 읽는다
 export const DarkTheme = { colors: { background: 'black' } };

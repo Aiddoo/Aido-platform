@@ -1297,6 +1297,7 @@
       ],
       "rules": {
         "aido/error-boundary-fallback": "error",
+        "aido/forward-on-press": "error",
         "aido/namespace-part-name": "error",
         "aido/no-inline-query-options": "error",
         "aido/no-route-id-props": "error",
@@ -1364,7 +1365,6 @@
         "src/features/identity/user/**",
         "src/features/insights/achievement/**",
         "src/features/notes/memo/**",
-        "src/features/planning/todo-import/**",
         "src/features/weather/**"
       ],
       "rules": {
@@ -1419,7 +1419,6 @@
         "src/features/planning/category/**",
         "src/features/planning/composer/**",
         "src/features/planning/todo/**",
-        "src/features/planning/todo-import/**",
         "src/features/social/invite/**",
         "src/features/voice/**",
         "src/features/weather/**"
@@ -1460,7 +1459,6 @@
       "files": [
         "src/features/planning/category/**",
         "src/features/planning/todo/**",
-        "src/features/planning/todo-import/**",
         "src/features/voice/**",
         "src/features/weather/**"
       ],

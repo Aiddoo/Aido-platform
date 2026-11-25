@@ -9,13 +9,18 @@ import { useDictation } from '../hooks/use-dictation';
 
 interface DictationButtonProps extends Omit<
   IconButtonProps,
-  'icon' | 'accessibilityLabel' | 'onPress' | 'onChange' | 'className' | 'style'
+  'icon' | 'accessibilityLabel' | 'onChange' | 'className' | 'style'
 > {
   value: string;
   onChange: (value: string) => void;
 }
 
-export function DictationButton({ value, onChange, ...pressableProps }: DictationButtonProps) {
+export function DictationButton({
+  value,
+  onChange,
+  onPress,
+  ...pressableProps
+}: DictationButtonProps) {
   const dismissKeyboard = useDismissKeyboard();
   const { t } = useTranslation('voice');
   const fontScaledSize = useFontScaledSize();
@@ -59,7 +64,13 @@ export function DictationButton({ value, onChange, ...pressableProps }: Dictatio
       }
       hitSlop={4}
       {...pressableProps}
-      onPress={handlePress}
+      onPress={(event) => {
+        handlePress();
+        // asChild 트리거·코치마크가 자식에 넣은 onPress를 이어 불러 그 누름이 사라지지 않게 한다
+        if (typeof onPress === 'function') {
+          onPress(event);
+        }
+      }}
       className="size-9 min-h-0 min-w-0 rounded-full bg-main/10"
     />
   );

@@ -9,7 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
-import { findLastAllowedDate } from '../domains/todo-import.model';
+import { findLastAllowedDate } from '../domains/todo-import-range.model';
 import { toUnbreakableLabel } from '../utils/todo-import.view-model';
 
 interface ImportFreePlanNoticeProps extends Omit<
@@ -20,8 +20,12 @@ interface ImportFreePlanNoticeProps extends Omit<
   onPremiumPress?: () => void;
 }
 
-/** 무료 플랜이 가져올 수 있는 기간. 요금제를 모르거나 기간 제한이 없으면 그리지 않는다 */
-export function ImportFreePlanNotice({ onPremiumPress, ...props }: ImportFreePlanNoticeProps) {
+// 무료 플랜이 가져올 수 있는 기간. 요금제를 모르거나 기간 제한이 없으면 그리지 않는다. className은 누르는 영역(없으면 글)에 건다
+export function ImportFreePlanNotice({
+  onPremiumPress,
+  className,
+  ...props
+}: ImportFreePlanNoticeProps) {
   const { t } = useTranslation('todoImport');
   const todayKey = useTodayKey();
   const dateFormatContext = useDateFormatContext();
@@ -40,24 +44,24 @@ export function ImportFreePlanNotice({ onPremiumPress, ...props }: ImportFreePla
     return null;
   }
 
-  const notice = (
-    <WordWrapText size="b4" shade={6} {...props}>
-      {[
-        {
-          text: `${t('range.freeUntil', {
-            count: horizonDays,
-            date: toUnbreakableLabel(
-              formatYearAwareDateKeyLabel(lastAllowedDate, todayKey, dateFormatContext),
-            ),
-          })} `,
-        },
-        { text: t('range.freeUntilPremium'), isUnderlined: onPremiumPress != null },
-      ]}
-    </WordWrapText>
-  );
+  const noticeParts = [
+    {
+      text: `${t('range.freeUntil', {
+        count: horizonDays,
+        date: toUnbreakableLabel(
+          formatYearAwareDateKeyLabel(lastAllowedDate, todayKey, dateFormatContext),
+        ),
+      })} `,
+    },
+    { text: t('range.freeUntilPremium'), isUnderlined: onPremiumPress != null },
+  ];
 
   if (onPremiumPress == null) {
-    return notice;
+    return (
+      <WordWrapText size="b4" shade={6} className={className} {...props}>
+        {noticeParts}
+      </WordWrapText>
+    );
   }
 
   return (
@@ -65,9 +69,11 @@ export function ImportFreePlanNotice({ onPremiumPress, ...props }: ImportFreePla
       accessibilityRole="button"
       accessibilityHint={t('range.freeUntilHint')}
       onPress={onPremiumPress}
-      className="self-start"
+      className={className}
     >
-      {notice}
+      <WordWrapText size="b4" shade={6} {...props}>
+        {noticeParts}
+      </WordWrapText>
     </PressableFeedback>
   );
 }

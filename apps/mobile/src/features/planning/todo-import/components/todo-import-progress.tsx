@@ -34,8 +34,8 @@ import { todoImportSessionStoredValue } from '../schemas/todo-import-session-sto
 import { type StageStatus, toProgressView } from '../utils/todo-import-progress.view-model';
 import { TodoImportFailureAlert } from './todo-import-failure-alert';
 
-/** 막대의 접근성 값이 백분율로 읽히게 0~100으로 그린다 */
-const METER_MAX = 100;
+// 막대의 접근성 값이 백분율로 읽히게 0~100으로 그린다
+const METER_MAX_PERCENT = 100;
 
 const STAGE_ICON_SIZE = 12;
 
@@ -56,7 +56,7 @@ export function TodoImportProgress() {
   const snapshot = useSyncExternalStore(uploadSession.subscribe, uploadSession.getSnapshot);
   const [storedSession] = useStoredValue(todoImportSessionStoredValue, accountId);
   const isOnline = useIsOnline();
-  const cancelImport = useMutation(useCancelTodoImportMutationOptions({ importId }));
+  const cancelImport = useMutation(useCancelTodoImportMutationOptions({ importId, accountId }));
   const appSettings = useOpenAppSettings();
 
   const view = toProgressView(todoImport, snapshot, {
@@ -91,7 +91,7 @@ export function TodoImportProgress() {
         />
       </VStack>
 
-      <Meter value={Math.round(view.ratio * METER_MAX)} max={METER_MAX} size="medium" />
+      <TodoImportProgress.Meter ratio={view.ratio} />
 
       <TodoImportFailureAlert />
       {!isOnline && <InlineAlert status="warning" title={t('progress.offline')} />}
@@ -190,6 +190,18 @@ TodoImportProgress.Stage = function Stage({ status, label }: StageProps) {
         </Text>
       }
     />
+  );
+};
+
+interface ProgressMeterProps {
+  // 0~1
+  ratio: number;
+}
+
+// 진행 화면과 새 기능 소개 데모가 같은 막대를 쓴다
+TodoImportProgress.Meter = function ProgressMeter({ ratio }: ProgressMeterProps) {
+  return (
+    <Meter value={Math.round(ratio * METER_MAX_PERCENT)} max={METER_MAX_PERCENT} size="medium" />
   );
 };
 

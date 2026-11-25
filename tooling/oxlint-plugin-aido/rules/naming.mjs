@@ -19,6 +19,10 @@ function getMemberPropertyName(node) {
     : null;
 }
 
+// id를 좁혀 받는 조각의 정해진 이름(`X.Contents`, namespace-part-name이 `Content`를 이 이름으로 바꾸라고 한다).
+// 네임스페이스 조각으로 단 이름이 정확히 이것일 때만 접미사 금지에서 뺀다
+const NARROWED_PART_NAME = 'Contents';
+
 // 역할이 드러나지 않는 조각 이름(Body, Frame, Section, Blocks, Wrapper)을 막는다.
 // standaloneNames는 네임스페이스 조각(`X.Header`)이 아닌 선언에만 건다. allowNames는 공용 카탈로그가 정한 이름이라 예외다
 const componentName = {
@@ -42,6 +46,9 @@ const componentName = {
     const standaloneNames = new Set(context.options[0]?.standaloneNames ?? []);
     function check(node, name, isStandalone) {
       if (!isComponentName(name) || allowNames.has(name)) {
+        return;
+      }
+      if (!isStandalone && name === NARROWED_PART_NAME) {
         return;
       }
       const suffix = suffixes.find((candidate) => name.endsWith(candidate));

@@ -23,14 +23,34 @@ const POSITION_NAMES = {
   standaloneNames: ['Header', 'Footer'],
 };
 
+// 앱 설정처럼 Content·Contents를 접미사로 막아도, id를 좁혀 받는 조각 이름 `X.Contents`만은 통과한다
+const CONTENTS_NAMES = { suffixes: ['Content', 'Contents'] };
+
 tester.run('component-name (위치 이름)', rules['component-name'], {
   valid: [
     { code: 'TodoList.Header = function Header() { return null; };', options: [POSITION_NAMES] },
     { code: 'function TodoHeader() { return null; }', options: [POSITION_NAMES] },
     { code: 'function TodoBody() { return null; }', options: [POSITION_NAMES] },
+    {
+      code: 'MemoSummary.Contents = function Contents() { return null; };',
+      options: [CONTENTS_NAMES],
+    },
   ],
   invalid: [
     { code: 'function SettingsPanel() { return null; }', options: [POSITION_NAMES], errors: 1 },
+    { code: 'function Contents() { return null; }', options: [CONTENTS_NAMES], errors: 1 },
+    { code: 'function MemoContents() { return null; }', options: [CONTENTS_NAMES], errors: 1 },
+    { code: 'const Contents = () => null;', options: [CONTENTS_NAMES], errors: 1 },
+    {
+      code: 'MemoSummary.MemoContents = function MemoContents() { return null; };',
+      options: [CONTENTS_NAMES],
+      errors: 1,
+    },
+    {
+      code: 'MemoSummary.Content = function Content() { return null; };',
+      options: [CONTENTS_NAMES],
+      errors: 1,
+    },
     {
       code: 'Sheet.FeatureDetail = function FeatureDetail() { return null; };',
       options: [POSITION_NAMES],

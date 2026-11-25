@@ -1,9 +1,6 @@
+import { useExternalLink } from '@src/bootstrap/providers/di-context';
+import type { SettingsApp } from '@src/core/ports/external-link-gateway';
 import { useTranslation } from '@src/shared/i18n';
-import {
-  IOS_MAJOR_VERSION,
-  IS_IOS_APP_ON_MAC,
-  IS_IPAD,
-} from '@src/shared/infra/device/device-info';
 import {
   Button,
   H4,
@@ -17,13 +14,12 @@ import {
 import type { ComponentProps } from 'react';
 import { match } from 'ts-pattern';
 
-// iOS 18부터 앱마다의 설정이 설정 > 앱 아래로 옮겨져 캘린더 계정 메뉴 이름도 바뀌었다
-const HAS_APPS_SETTINGS_MENU = IOS_MAJOR_VERSION != null && 18 <= IOS_MAJOR_VERSION;
+type MissingCalendarHelpProps = Omit<ComponentProps<typeof TextButton>, 'children' | 'onPress'>;
 
-/** 폰 캘린더에 계정을 더하는 곳은 OS 설정이라 앱이 바로 열 수 없어 순서를 글로 안내한다 */
-export function MissingCalendarHelp(
-  props: Omit<ComponentProps<typeof TextButton>, 'children' | 'onPress'>,
-) {
+type HelpDevice = 'iphone' | 'ipad' | 'mac' | 'android';
+
+// 폰 캘린더에 계정을 더하는 곳은 OS 설정이라 앱이 바로 열 수 없어 순서를 글로 안내한다
+export function MissingCalendarHelp(props: MissingCalendarHelpProps) {
   const { t } = useTranslation(['todoImport', 'common']);
   const openSheet = useOpenSheet();
 
@@ -46,6 +42,7 @@ export function MissingCalendarHelp(
 
 MissingCalendarHelp.Guide = function Guide() {
   const { t } = useTranslation('todoImport');
+  const { settingsApp } = useExternalLink();
 
   return (
     <VStack gap={16}>
@@ -55,13 +52,14 @@ MissingCalendarHelp.Guide = function Guide() {
           {t('calendars.missingHelp.description')}
         </WordWrapText>
       </VStack>
-      {match(findHelpDevice())
+      {match(getHelpDevice(settingsApp))
         .with('iphone', () => (
           <VStack gap={10}>
             <Step
               order={1}
               text={
-                HAS_APPS_SETTINGS_MENU
+                // 설정 > 앱 아래로 옮겨진 OS는 캘린더 계정 메뉴 이름도 다르다
+                settingsApp.hasAppsMenu
                   ? t('calendars.missingHelp.iphone.openAppsSettings')
                   : t('calendars.missingHelp.iphone.openSettings')
               }
@@ -75,7 +73,7 @@ MissingCalendarHelp.Guide = function Guide() {
             <Step
               order={1}
               text={
-                HAS_APPS_SETTINGS_MENU
+                settingsApp.hasAppsMenu
                   ? t('calendars.missingHelp.ipad.openAppsSettings')
                   : t('calendars.missingHelp.ipad.openSettings')
               }
@@ -103,21 +101,12 @@ MissingCalendarHelp.Guide = function Guide() {
   );
 };
 
-// 계정을 더하는 설정 위치가 기기마다 다르다. iPhone Duo는 휴대폰이라 iPhone이다
-function findHelpDevice(): 'iphone' | 'ipad' | 'mac' | 'android' {
-  if (process.env.EXPO_OS === 'android') {
-    return 'android';
-  }
-  if (IS_IOS_APP_ON_MAC) {
-    return 'mac';
-  }
-  if (IS_IPAD) {
-    return 'ipad';
-  }
-  return 'iphone';
+interface StepProps {
+  order: number;
+  text: string;
 }
 
-function Step({ order, text }: { order: number; text: string }) {
+function Step({ order, text }: StepProps) {
   return (
     <HStack gap={10} align="start">
       <Text size="b3" weight="semibold" tone="brand" className="tabular-nums">
@@ -128,4 +117,17 @@ function Step({ order, text }: { order: number; text: string }) {
       </WordWrapText>
     </HStack>
   );
+}
+
+// 계정을 더하는 설정 위치가 기기마다 다르다. iPhone Duo는 휴대폰이라 iPhone이다
+function getHelpDevice({ device }: SettingsApp): HelpDevice {
+  if (process.env.EXPO_OS === 'android') {
+    return 'android';
+  }
+  return match(device)
+    .returnType<HelpDevice>()
+    .with('desktop', () => 'mac')
+    .with('tablet', () => 'ipad')
+    .with('phone', () => 'iphone')
+    .exhaustive();
 }

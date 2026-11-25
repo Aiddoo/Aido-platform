@@ -636,7 +636,30 @@ function hasLiteralDefault(parameter) {
   return parameter.type === 'AssignmentPattern' && unwrap(parameter.right).type === 'Literal';
 }
 
-// 모델을 받는 규칙의 입구는 Policy 하나다. Policy 밖에서 내보내는 함수는 create* 팩토리, 스키마를 만드는 *Schema, 원시 인자 순수 함수뿐이다
+// 목록 인터페이스(`filters`·`orderBy`, es-toolkit `orderBy`·`filter`)에 값으로 넘기는 함수. Policy 메서드는 this 때문에 값으로 넘기지 못한다
+const LIST_INTERFACE_NAME = /^(?:filterBy|orderBy)[A-Z]/u;
+
+/** 이 파일이나 다른 모델 파일이 선언한 모델 하나(목록·일부·제네릭·nullable이 아닌 것)인지 본다 */
+function isSingleModelType(type, scope) {
+  if (type.type !== 'TSTypeReference' || type.typeName.type !== 'Identifier') {
+    return false;
+  }
+  if ((getTypeArguments(type)?.params ?? []).length > 0) {
+    return false;
+  }
+  const { name } = type.typeName;
+  if (MODEL_MODULE.test(scope.imports.get(name) ?? '')) {
+    return true;
+  }
+  const alias = scope.aliases.get(name);
+  if (alias != null) {
+    return alias.type === 'TSTypeReference' && getInferredSchemaName(alias) != null;
+  }
+  return scope.interfaces.has(name);
+}
+
+// 모델을 받는 규칙의 입구는 Policy 하나다. Policy 밖에서 내보내는 함수는 create* 팩토리, 스키마를 만드는 *Schema, 원시 인자 순수 함수와
+// 목록에 넘기는 filterBy*·orderBy*(모델 하나를 받는 것)뿐이다
 const modelFunctionExports = {
   meta: { type: 'suggestion' },
   create(context) {
@@ -669,9 +692,12 @@ const modelFunctionExports = {
         if (type != null && isPlainValueType(type, scope, typeParameters, new Set())) {
           return;
         }
+        if (type != null && LIST_INTERFACE_NAME.test(name) && isSingleModelType(type, scope)) {
+          return;
+        }
         context.report({
           node: parameter,
-          message: `${name}: 모델을 첫 인자로 받는 함수를 낱개로 export하지 않습니다. Policy 메서드로 옮겨 \`XPolicy.${name}(model)\`로 부르거나, 모델이 아닌 값(날짜 key·수·문자열)만 받는 순수 함수로 바꾸세요. 새 값을 만드는 create*만 예외입니다.`,
+          message: `${name}: 모델을 첫 인자로 받는 함수를 낱개로 export하지 않습니다. Policy 메서드로 옮겨 \`XPolicy.${name}(model)\`로 부르거나, 모델이 아닌 값(날짜 key·수·문자열)만 받는 순수 함수로 바꾸세요. 새 값을 만드는 create*와 목록에 값으로 넘기는 filterBy*·orderBy*(모델 하나를 받는 것)만 예외입니다.`,
         });
       },
     };

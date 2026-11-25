@@ -22,7 +22,7 @@ import {
   TodoImportSessionPolicy,
 } from '../domains/todo-import-session.model';
 import { todoImportSessionStoredValue } from '../schemas/todo-import-session-storage.schema';
-import { useTodoImportResume } from './use-todo-import-resume';
+import { useResumeTodoImportUpload } from './use-resume-todo-import-upload';
 
 const ACCOUNT_ID = 'user-1';
 const DETAIL_PATH = `v1/todo-imports/${IMPORT_ID}`;
@@ -68,7 +68,7 @@ function setup() {
   return { httpClient, draftStorage, di, upload, uploadStarted };
 }
 
-describe('useTodoImportResume', () => {
+describe('useResumeTodoImportUpload', () => {
   beforeEach(() => {
     onlineManager.setOnline(true);
   });
@@ -76,7 +76,7 @@ describe('useTodoImportResume', () => {
   it('앱 화면 묶음이 내려가면 올리던 업로드를 멈추고 확정하지 않는다', async () => {
     // Given
     const { httpClient, draftStorage, di, upload, uploadStarted } = setup();
-    const { unmount } = await renderScreenHook(() => useTodoImportResume(), { di });
+    const { unmount } = await renderScreenHook(() => useResumeTodoImportUpload(), { di });
     await uploadStarted.promise;
 
     // When

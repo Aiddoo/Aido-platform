@@ -2,7 +2,7 @@ import type { OsPermission } from '@src/core/ports/os-permission';
 import type { DateKey } from '@src/shared/date/date-key';
 import { queryOptions } from '@tanstack/react-query';
 
-import type { ImportCollection } from '../domains/todo-import-collection.model';
+import type { TodoImportCollection } from '../domains/todo-import-collection.model';
 import type { TodoImport } from '../domains/todo-import.model';
 
 export const TODO_IMPORT_QUERY_KEYS = {
@@ -26,7 +26,7 @@ export const TODO_IMPORT_QUERY_KEYS = {
     endDate: DateKey;
     timezone: string;
   }) =>
-    queryOptions<ImportCollection[]>({
+    queryOptions<TodoImportCollection[]>({
       queryKey: ['device', 'calendar-collections', { startDate, endDate, timezone }],
     }).queryKey,
 } as const;

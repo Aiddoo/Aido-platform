@@ -29,4 +29,4 @@ OS 권한(알림, 위치, 마이크·음성 인식, 캘린더)을 읽고 묻는 
 - 다시 물을 수 있는지는 `getOsPermissionAccess(permission)`(`shared/utils/get-os-permission-access.ts`) 하나로 정한다. `granted`·`ask`(시스템 창)·`settings`(OS가 다시 묻지 않아 설정 앱에서만 켠다)다. 알림은 서버 어휘 모델이라 `PushPermissionPolicy.getDeviceStep`이 같은 기준으로 정한다.
 - `settings`면 시스템 창을 다시 띄우지 않고 설정 열기를 보인다. 방금 거절했으면 다시 물을 수 있어도 같은 화면에서 다시 조르지 않는다(캘린더 `getCalendarPermissionView`).
 - 설정 앱 열기는 `useOpenAppSettings()`(`shared/hooks/use-open-app-settings.ts`) 하나다. `{ canOpen, open }`을 돌려주고 `open()`은 reject하지 않는다. 실패는 그 훅이 로그로 남기고 결과(`{ isOpened: false, error }`)로 알려, 토스트로 알리는 알림 설정 mutation은 그 오류를 다시 던진다.
-- Mac(Designed for iPad)은 이 앱의 설정 화면이 열리지 않는다. 어댑터가 `ExternalLinkGateway.canOpenSettings`로 알리고 `canOpen`이 false인 화면은 버튼 대신 시스템 설정으로 가는 길을 글로 보인다(캘린더 가져오기). 알림·위치·음성은 아직 `canOpen`을 보지 않고 `open()`을 부른다. 기능은 문구와 배치만 정한다.
+- Mac(Designed for iPad)은 이 앱의 설정 화면이 열리지 않는다. 어댑터가 `ExternalLinkGateway.canOpenSettings`로 알리고 `canOpen`이 false인 화면은 버튼 대신 시스템 설정으로 가는 길을 글로 보인다(캘린더 가져오기). 알림·위치·음성은 아직 `canOpen`을 보지 않고 `open()`을 부른다. 기능은 문구와 배치만 정한다. 앱이 바로 열 수 없는 설정(캘린더 계정 추가)으로 가는 길은 `ExternalLinkGateway.settingsApp`(기기 종류, 설정의 앱 메뉴 유무)으로 고르고 기기 상수를 직접 읽지 않는다(캘린더 가져오기의 계정 안내).

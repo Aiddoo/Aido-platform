@@ -3,17 +3,15 @@ import { useFormatPlanValue } from '@src/features/billing/subscription/hooks/use
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import { toPlanFeatureComparison } from '@src/features/billing/subscription/utils/plan-benefit.view-model';
 import { CalendarSourceList } from '@src/features/planning/todo-import/components/calendar-source-list';
-import { ImportDestinationButton } from '@src/features/planning/todo-import/components/import-destination-button';
+import { ImportDestinationInput } from '@src/features/planning/todo-import/components/import-destination-input';
 import { ImportSourceList } from '@src/features/planning/todo-import/components/import-source-list';
 import { TodoImportProgress } from '@src/features/planning/todo-import/components/todo-import-progress';
 import {
-  type ImportCollection,
+  type TodoImportCollection,
   TodoImportCollectionPolicy,
 } from '@src/features/planning/todo-import/domains/todo-import-collection.model';
-import {
-  findTargetPlacement,
-  placeImportTargets,
-} from '@src/features/planning/todo-import/domains/todo-import-target.model';
+import { createTodoImportPlacement } from '@src/features/planning/todo-import/domains/todo-import-placement.model';
+import { TodoResourceLimitPolicy } from '@src/features/planning/todo/domains/todo-resource-limit.model';
 import { ANIMATION } from '@src/shared/constants/animation';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -21,7 +19,6 @@ import {
   Box,
   HStack,
   LabelChip,
-  Meter,
   QueryErrorFallback,
   type QueryErrorFallbackProps,
   SettingsListGroup,
@@ -46,9 +43,6 @@ import { WhatsNewStep } from './whats-new-step';
 
 type DemoImportedTodoId = (typeof DEMO_IMPORTED_TODOS)[number]['id'];
 
-/** 막대의 접근성 값이 백분율로 읽히는 실제 진행 화면과 같다 */
-const METER_MAX = 100;
-
 const ROW_ENTERING = FadeIn.duration(ANIMATION.durationMs.slow).reduceMotion(ReduceMotion.System);
 const ROW_LAYOUT = LinearTransition.duration(ANIMATION.durationMs.slow).reduceMotion(
   ReduceMotion.System,
@@ -70,7 +64,7 @@ export function CalendarChoiceDemo() {
 
   return (
     <WhatsNewStep.Stage accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-      <CalendarSourceList.Group accountName={t('v1_17_0.demo.account')}>
+      <SettingsListGroup label={t('v1_17_0.demo.account')}>
         {collections.map((collection, index) => (
           <Box key={collection.collectionKey}>
             {index > 0 && <SettingsListGroup.Separator />}
@@ -89,7 +83,7 @@ export function CalendarChoiceDemo() {
             />
           </Box>
         ))}
-      </CalendarSourceList.Group>
+      </SettingsListGroup>
     </WhatsNewStep.Stage>
   );
 }
@@ -112,27 +106,17 @@ export function ImportDestinationDemo() {
   });
   const destinationIndex = (pressedIndex ?? switchedCount) % DEMO_CATEGORIES.length;
   const destination = DEMO_CATEGORIES[destinationIndex];
-  const target =
+  // 남은 자리는 실제 화면처럼 서버 한도 모양의 값으로 센다
+  const placement =
     destination == null
       ? null
-      : ({ kind: 'EXISTING_CATEGORY', categoryId: destination.id } as const);
-  // 남은 자리는 실제 화면처럼 서버 한도 모양의 값으로 센다
-  const limits = new Map(
-    DEMO_CATEGORIES.map(({ id, activeCount }) => [
-      id,
-      { maxPerCategory: TODO_LIMITS.MAX_PER_CATEGORY, activeCount },
-    ]),
-  );
-  const placement =
-    target == null
-      ? null
-      : findTargetPlacement(
-          placeImportTargets(
-            collections,
-            Object.fromEntries(collections.map(({ collectionKey }) => [collectionKey, target])),
-            limits,
-          ),
-          target,
+      : createTodoImportPlacement(
+          { kind: 'EXISTING_CATEGORY', categoryId: destination.id },
+          TodoImportCollectionPolicy.calculateItemCount(collections),
+          TodoResourceLimitPolicy.calculateRoomLeft({
+            maxPerCategory: TODO_LIMITS.MAX_PER_CATEGORY,
+            activeCount: destination.activeCount,
+          }),
         );
 
   return (
@@ -145,7 +129,7 @@ export function ImportDestinationDemo() {
         {destination != null && (
           // 넣을 곳이 바뀌면 카드를 새로 그려 바뀐 이름이 스며들듯 나타난다
           <Animated.View key={destination.id} entering={ROW_ENTERING}>
-            <ImportDestinationButton.Card
+            <ImportDestinationInput.Card
               appearance={{
                 name: t(`v1_17_0.demo.categories.${destination.key}`),
                 color: destination.color,
@@ -183,11 +167,7 @@ export function ImportProgressDemo() {
           status={isCreated ? 'done' : 'active'}
           label={t('todoImport:progress.creating')}
         />
-        <Meter
-          value={Math.round((createdCount / DEMO_IMPORTED_TODOS.length) * METER_MAX)}
-          max={METER_MAX}
-          size="medium"
-        />
+        <TodoImportProgress.Meter ratio={createdCount / DEMO_IMPORTED_TODOS.length} />
       </VStack>
       {createdTodos.map(({ id, localTime }) => (
         <Animated.View key={id} entering={ROW_ENTERING} layout={ROW_LAYOUT}>
@@ -301,7 +281,7 @@ function PlanSkeleton() {
   );
 }
 
-function useDemoCollections(): ImportCollection[] {
+function useDemoCollections(): TodoImportCollection[] {
   const { t } = useTranslation('whatsNew');
   const accountName = t('v1_17_0.demo.account');
 

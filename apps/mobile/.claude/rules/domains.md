@@ -8,7 +8,7 @@ paths:
 
 - 모델은 Zod 클라이언트 모델(`xSchema` + `type X`), 원시 인자 순수 함수, `XPolicy = { method(x) { … } }`로 이루어진다.
 - 파일 하나에 엔티티 하나, Policy 하나다(`{entity}.model.ts`). 파일·타입·Policy는 같은 엔티티 이름이다.
-- Policy는 메서드 객체이고 첫 인자는 그 파일이 선언한 모델 전체다(`aido/policy-facade`, `aido/policy-model-parameter`). 메서드끼리는 `this`로 부르고, 메서드는 값으로 넘기지 않고 화살표로 감싼다(`aido/no-unbound-policy-method`). 모델을 첫 인자로 받는 함수를 낱개로 export하지 않는다(`aido/model-function-exports`).
+- Policy는 메서드 객체이고 첫 인자는 그 파일이 선언한 모델 전체다(`aido/policy-facade`, `aido/policy-model-parameter`). 메서드끼리는 `this`로 부르고, 메서드는 값으로 넘기지 않고 화살표로 감싼다(`aido/no-unbound-policy-method`). 모델을 첫 인자로 받는 함수를 낱개로 export하지 않는다(`aido/model-function-exports`). 목록에 값으로 넘기는 `filterBy{X}(model, 값)`·`orderBy{X}(model)`만 낱개 함수다.
 - 업무 규칙만 둔다: `can/should/is/has`(긍정형), `calculate`, `filterBy`/`orderBy`, `with`.
 - 모델에 i18n 키, 색, 배치, 표시 방식, 폴링·재시도 주기를 두지 않는다. 표시 값은 `utils/*.view-model.ts`, 주기는 `queries/`·세션의 지역 표다.
 - 계약(`@aido/api` 요청·응답 타입)을 import하지 않는다. 바깥 값 변환은 `apis/{entity}.mapper.ts`가 한다.

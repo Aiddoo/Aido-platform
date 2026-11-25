@@ -1,4 +1,5 @@
 import {
+  childNodes,
   getCalleeName,
   getImportedName,
   getKeyName,
@@ -440,7 +441,107 @@ const propsInterface = {
   },
 };
 
+/** props 인자에서 나머지를 받은 이름(`...props`, 인자 `props`)과 그 자리에서 onPress를 꺼냈는지 */
+function describePropsParameter(functionNode) {
+  const [parameter] = functionNode.params;
+  const pattern = parameter?.type === 'AssignmentPattern' ? parameter.left : parameter;
+  if (pattern?.type === 'Identifier') {
+    return { restName: pattern.name, takesOnPress: false };
+  }
+  if (pattern?.type !== 'ObjectPattern') {
+    return null;
+  }
+  const rest = pattern.properties.find((property) => property.type === 'RestElement');
+  if (rest?.argument.type !== 'Identifier') {
+    return null;
+  }
+  return {
+    restName: rest.argument.name,
+    takesOnPress: pattern.properties.some(
+      (property) => property.type === 'Property' && getKeyName(property) === 'onPress',
+    ),
+  };
+}
+
+/** `props.onPress`나 `const { onPress } = props`로 받은 onPress를 읽는지 */
+function readsOnPress(node, restName) {
+  if (
+    node.type === 'MemberExpression' &&
+    !node.computed &&
+    node.object.type === 'Identifier' &&
+    node.object.name === restName &&
+    node.property.name === 'onPress'
+  ) {
+    return true;
+  }
+  if (
+    node.type === 'VariableDeclarator' &&
+    node.init?.type === 'Identifier' &&
+    node.init.name === restName &&
+    node.id.type === 'ObjectPattern' &&
+    node.id.properties.some(
+      (property) => property.type === 'Property' && getKeyName(property) === 'onPress',
+    )
+  ) {
+    return true;
+  }
+  for (const child of childNodes(node)) {
+    if (readsOnPress(child, restName)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function findPropsOwner(node, restName) {
+  for (let current = node.parent; current != null; current = current.parent) {
+    if (isFunction(current) || current.type === 'FunctionDeclaration') {
+      const props = describePropsParameter(current);
+      if (props?.restName === restName) {
+        return { functionNode: current, takesOnPress: props.takesOnPress };
+      }
+    }
+  }
+  return null;
+}
+
+// `Popover.Trigger asChild`·`Link asChild`·코치마크는 자식에 onPress를 넣는다. 나머지 props를 펼친 뒤 onPress를 덮으면
+// 그 누름이 조용히 사라지므로, 누름을 스스로 처리하는 부품도 받은 onPress를 꺼내 이어 부른다
+const forwardOnPress = {
+  meta: { type: 'problem' },
+  create(context) {
+    return {
+      JSXOpeningElement(node) {
+        const onPressIndex = node.attributes.findIndex(
+          (attribute) => attribute.type === 'JSXAttribute' && attribute.name.name === 'onPress',
+        );
+        if (onPressIndex < 0) {
+          return;
+        }
+        const overridden = node.attributes.slice(0, onPressIndex).flatMap((attribute) => {
+          if (attribute.type !== 'JSXSpreadAttribute' || attribute.argument.type !== 'Identifier') {
+            return [];
+          }
+          const owner = findPropsOwner(node, attribute.argument.name);
+          return owner == null ? [] : [{ restName: attribute.argument.name, ...owner }];
+        });
+        const dropped = overridden.find(
+          ({ restName, functionNode, takesOnPress }) =>
+            !takesOnPress && !readsOnPress(functionNode.body, restName),
+        );
+        if (dropped != null) {
+          context.report({
+            node: node.attributes[onPressIndex],
+            message: `{...${dropped.restName}} 뒤의 onPress가 밖에서 받은 onPress를 덮습니다. props에서 onPress를 꺼내 자기 동작 뒤에 이어 부르세요(\`onPress?.(event)\`). asChild 트리거와 코치마크가 자식에 넣은 누름이 사라집니다.`,
+          });
+        }
+      },
+    };
+  },
+};
+
 export default {
+  'forward-on-press': forwardOnPress,
   'error-boundary-fallback': errorBoundaryFallback,
   'props-interface': propsInterface,
   'tabs-label-text': tabsLabelText,

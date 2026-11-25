@@ -14,14 +14,22 @@ import {
   createTestDi,
   createTodoImportSourceStub,
   respondByPath,
+  type TestDi,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
-import { router } from 'expo-router';
+import { Redirect, router, usePreventRemove } from 'expo-router';
 
 import TodoImportSetupRoute from '../../../../../app/(app)/(tabs)/(me,memos,todos)/todo-import';
-import { createTodoImportApiError, createTodoImportDto, IMPORT_ID } from './todo-import.fixtures';
+import { invalidateActiveTodoImport } from '../queries/todo-import-cache';
+import { TODO_IMPORT_QUERY_KEYS } from '../queries/todo-import-query-keys';
+import {
+  createTodoImport,
+  createTodoImportApiError,
+  createTodoImportDto,
+  IMPORT_ID,
+} from './todo-import.fixtures';
 
 /** 2026-11-24 10:00 KST. 기본 기간은 이날부터 2026-12-23까지다 */
 const NOW = new Date('2026-11-24T01:00:00.000Z');
@@ -60,12 +68,15 @@ interface RenderSetupOptions {
   /** 개인 캘린더의 일정 수. 회사 캘린더는 늘 3개다 */
   personalEventCount?: number;
   startImport?: () => Promise<StartResponse>;
+  /** 화면을 그리기 전에 조회 캐시에 받아 둔 값을 넣는다 */
+  seedQueryCache?: (queryClient: TestDi['queryClient']) => void | Promise<void>;
 }
 
 async function renderSetup({
   permission = { status: 'granted', canAskAgain: true },
   personalEventCount = 2,
   startImport = async () => ok({ todoImport: createTodoImportDto() }),
+  seedQueryCache,
 }: RenderSetupOptions = {}) {
   const httpClient = createHttpClientStub();
   httpClient.get.mockImplementation(
@@ -91,11 +102,9 @@ async function renderSetup({
     ],
   });
 
-  await renderScreen(<TodoImportSetupRoute />, {
-    di: createTestDi({ ports: { httpClient, todoImportSource } }),
-    withLocalDate: true,
-    withOverlay: true,
-  });
+  const di = createTestDi({ ports: { httpClient, todoImportSource } });
+  await seedQueryCache?.(di.queryClient);
+  await renderScreen(<TodoImportSetupRoute />, { di, withLocalDate: true, withOverlay: true });
 
   return { httpClient, todoImportSource };
 }
@@ -147,6 +156,8 @@ async function goToCategories() {
 }
 
 async function goToOptions() {
+  // 넣을 곳을 읽는 동안 꺼져 있던 버튼이 켜진 뒤에 누른다
+  await waitFor(() => expect(screen.getByRole('button', { name: '다음' })).toBeEnabled());
   await pressNext();
   await screen.findByText(OPTIONS_TITLE);
 }
@@ -416,6 +427,74 @@ describe('캘린더 가져오기 설정 화면', () => {
       expect(findStartRequests(httpClient)).toHaveLength(1);
       await act(async () => pending.settle());
       await waitFor(() => expect(router.replace).toHaveBeenCalledTimes(1));
+    });
+  });
+
+  describe('진행 중인 가져오기', () => {
+    it('진행 중인 가져오기를 알고 있으면 설정 대신 그 진행 화면으로 보낸다', async () => {
+      // Given
+      const activeImport = createTodoImport();
+
+      // When
+      await renderSetup({
+        seedQueryCache: (queryClient) => {
+          queryClient.setQueryData(TODO_IMPORT_QUERY_KEYS.active(), activeImport);
+        },
+      });
+
+      // Then
+      expect(jest.mocked(Redirect).mock.calls.at(-1)?.[0]).toEqual({
+        href: { pathname: '/todo-import/[importId]', params: { importId: IMPORT_ID } },
+      });
+      expect(screen.queryByText(CALENDARS_TITLE)).not.toBeOnTheScreen();
+    });
+
+    it('진행 중으로 알던 값에 낡음 표시가 붙었으면 믿지 않고 설정 화면을 연다', async () => {
+      // Given
+      const seedStaleActiveImport = async (queryClient: TestDi['queryClient']) => {
+        queryClient.setQueryData(TODO_IMPORT_QUERY_KEYS.active(), createTodoImport());
+        await invalidateActiveTodoImport(queryClient);
+      };
+
+      // When
+      await renderSetup({ seedQueryCache: seedStaleActiveImport });
+
+      // Then
+      expect(await screen.findByText(CALENDARS_TITLE)).toBeOnTheScreen();
+      expect(Redirect).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('다시 그리기', () => {
+    // 단계 조립(폼과 단계를 가진 컴포넌트)만 뒤로 가기 막기를 걸어, 그 호출 수가 단계 조립이 그려진 횟수다
+    function countSetupRenders() {
+      return jest.mocked(usePreventRemove).mock.calls.length;
+    }
+
+    it('캘린더를 고르고 옵션을 바꿔도 단계 조립은 다시 그려지지 않는다', async () => {
+      // Given
+      await renderSetup();
+      await screen.findByText('일정 5개를 가져와요');
+      const renderCountOnCalendars = countSetupRenders();
+
+      // When
+      await fireEvent.press(screen.getByRole('checkbox', { name: '회사, 3개' }));
+      await screen.findByText('일정 2개를 가져와요');
+      const renderCountAfterChoosing = countSetupRenders();
+      await goToCategories();
+      await goToOptions();
+      const renderCountOnOptions = countSetupRenders();
+      await fireEvent.press(screen.getByRole('switch', { name: /시간도 가져오기/ }));
+      await fireEvent.press(screen.getByRole('switch', { name: /친구에게 공개/ }));
+      await waitFor(() =>
+        expect(screen.getByRole('switch', { name: /친구에게 공개/ })).toBeChecked(),
+      );
+
+      // Then
+      expect(renderCountAfterChoosing).toBe(renderCountOnCalendars);
+      expect(countSetupRenders()).toBe(renderCountOnOptions);
+      // 단계가 바뀔 때는 다시 그려져, 위 두 값이 같은 것이 세지 못해서가 아니다
+      expect(renderCountOnOptions).toBeGreaterThan(renderCountOnCalendars);
     });
   });
 });

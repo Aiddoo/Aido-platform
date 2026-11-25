@@ -1,5 +1,5 @@
 import { CATEGORY_COLORS } from '@src/features/planning/category/constants/todo-category.constants';
-import type { ImportCollection } from '@src/features/planning/todo-import/domains/todo-import-collection.model';
+import type { TodoImportCollection } from '@src/features/planning/todo-import/domains/todo-import-collection.model';
 
 /** 소개 단계 순서. 이름은 지표 값(whats_new_step_viewed.step)이라 바꾸지 않는다 */
 export const RELEASE_1_17_0_STEPS = [
@@ -16,7 +16,7 @@ export const DEMO_CALENDARS = [
   { id: 'personal', color: CATEGORY_COLORS[6], accountKind: 'cloud', itemCount: 12 },
   { id: 'school', color: CATEGORY_COLORS[9], accountKind: 'cloud', itemCount: 18 },
   { id: 'holidays', color: CATEGORY_COLORS[14], accountKind: 'holidays', itemCount: 9 },
-] as const satisfies readonly (Pick<ImportCollection, 'color' | 'accountKind' | 'itemCount'> & {
+] as const satisfies readonly (Pick<TodoImportCollection, 'color' | 'accountKind' | 'itemCount'> & {
   id: string;
 })[];
 

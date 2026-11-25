@@ -3,11 +3,11 @@ import { HStack, SettingsListGroup, Text, VStack } from '@src/shared/ui';
 import { compact } from 'es-toolkit';
 import type { ComponentProps } from 'react';
 
-import type { ImportCollection } from '../domains/todo-import-collection.model';
+import type { TodoImportCollection } from '../domains/todo-import-collection.model';
 import {
-  CALENDAR_SOURCE_LABEL_KEYS,
+  getCalendarSourceLabelKey,
   groupCollectionsBySource,
-  type ImportSourceGroup,
+  type TodoImportSourceGroup,
 } from '../utils/todo-import.view-model';
 import { CalendarSourceBadge } from './calendar-source-badge';
 
@@ -15,10 +15,10 @@ interface ImportSourceListProps extends Omit<
   ComponentProps<typeof SettingsListGroup>,
   'children' | 'label'
 > {
-  collections: readonly ImportCollection[];
+  collections: readonly TodoImportCollection[];
 }
 
-/** 가져올 일정을 출처 계정마다 한 줄로 줄여 보인다. 캘린더가 많아도 계정 수만큼만 길어진다 */
+// 가져올 일정을 출처 계정마다 한 줄로 줄여 보인다. 캘린더가 많아도 계정 수만큼만 길어진다
 export function ImportSourceList({ collections, ...props }: ImportSourceListProps) {
   const groups = groupCollectionsBySource(collections);
 
@@ -27,15 +27,19 @@ export function ImportSourceList({ collections, ...props }: ImportSourceListProp
       {groups.map((group, index) => (
         <VStack key={group.sourceKey}>
           {index > 0 && <SettingsListGroup.Separator />}
-          <ImportSourceList.Row group={group} />
+          <ImportSourceList.Item group={group} />
         </VStack>
       ))}
     </SettingsListGroup>
   );
 }
 
-/** [서비스] 캘린더 이름들 · 일정 수. 같은 서비스 계정이 둘이면 둘째 줄에 계정을 붙여 가린다 */
-ImportSourceList.Row = function Row({ group }: { group: ImportSourceGroup }) {
+interface ItemProps {
+  group: TodoImportSourceGroup;
+}
+
+// [서비스] 캘린더 이름들 · 일정 수. 같은 서비스 계정이 둘이면 둘째 줄에 계정을 붙여 가린다
+ImportSourceList.Item = function Item({ group }: ItemProps) {
   const { t } = useTranslation('todoImport');
   const count = t('calendars.itemCount', { count: group.itemCount });
 
@@ -44,7 +48,7 @@ ImportSourceList.Row = function Row({ group }: { group: ImportSourceGroup }) {
       align="center"
       accessible
       accessibilityLabel={compact([
-        t(CALENDAR_SOURCE_LABEL_KEYS[group.provider]),
+        t(getCalendarSourceLabelKey(group.provider)),
         group.accountLabel,
         group.calendarNames,
         count,

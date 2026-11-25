@@ -234,11 +234,39 @@ tester.run('model-function-exports', rules['model-function-exports'], {
     `${MODEL_FILE}export function pageSchema<TItem extends z.ZodType>(item: TItem) { return z.object({ items: z.array(item) }); }`,
     `${MODEL_FILE}function isOptimistic(todo: Todo) { return todo.id < 0; }`,
     `${MODEL_FILE}export const TodoPolicy = { isOptimistic(todo: Todo) { return todo.id < 0; } };`,
+    // 목록의 filters·orderBy에 값으로 넘기는 함수는 모델 하나를 받는 낱개 함수다
+    `${MODEL_FILE}export function filterByStartDate(todo: Todo, startDate?: DateKey | null) { return true; }`,
+    `${MODEL_FILE}export function orderByStartDate(todo: Todo) { return todo.startDate; }`,
+    `${MODEL_FILE}export function orderByRepeat(repeat: TodoRepeat) { return 0; }`,
   ],
   invalid: [
     {
       code: `${MODEL_FILE}export function isOptimistic(todo: Todo) { return todo.id < 0; }`,
       errors: [{ message: /isOptimistic: 모델을 첫 인자로 받는 함수/ }],
+    },
+    {
+      code: `${MODEL_FILE}export function filterByStartDate(todos: readonly Todo[], startDate: DateKey) { return todos; }`,
+      errors: 1,
+    },
+    {
+      code: `${MODEL_FILE}export function orderBySpan(todo: TodoSpan) { return 1; }`,
+      errors: 1,
+    },
+    {
+      code: `${MODEL_FILE}export function orderByStartDate<T extends Todo>(todo: T) { return todo.startDate; }`,
+      errors: 1,
+    },
+    {
+      code: `${MODEL_FILE}export function filterByMemo(details: TodoDetails | null) { return false; }`,
+      errors: 1,
+    },
+    {
+      code: `${MODEL_FILE}export function getOrderByStartDate(todo: Todo) { return todo.startDate; }`,
+      errors: 1,
+    },
+    {
+      code: `${MODEL_FILE}export function orderbyStartDate(todo: Todo) { return todo.startDate; }`,
+      errors: 1,
     },
     {
       code: `${MODEL_FILE}export function findTodo(todos: readonly Todo[], id: number) { return null; }`,

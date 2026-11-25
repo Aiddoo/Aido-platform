@@ -3,7 +3,7 @@ import { sumBy } from 'es-toolkit';
 import { match, P } from 'ts-pattern';
 
 import type { TodoImportCountBucket } from '../constants/todo-import.events';
-import type { TodoImportSelection } from '../domains/todo-import-session.model';
+import type { TodoImportSelection } from '../domains/todo-import-selection.model';
 
 export function toTodoImportCountBucket(count: number): TodoImportCountBucket {
   return match(count)

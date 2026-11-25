@@ -1,10 +1,12 @@
 import type { ImportCollectionRecord } from '@src/core/ports/todo-import-source';
 
-import type { ImportAccountProvider } from '../domains/todo-import-collection.model';
+import type { TodoImportAccountProvider } from '../domains/todo-import-collection.model';
 import { toAccountProvider } from './todo-import-collection.mapper';
 
 describe('toAccountProvider', () => {
-  it.each<[string, string | null, ImportCollectionRecord['accountKind'], ImportAccountProvider]>([
+  it.each<
+    [string, string | null, ImportCollectionRecord['accountKind'], TodoImportAccountProvider]
+  >([
     ['iOS Google 계정은 기본 설명이 Gmail이다', 'Gmail', 'cloud', 'google'],
     ['Android Google 계정은 이메일이다', 'me@gmail.com', 'holidays', 'google'],
     ['iCloud', 'iCloud', 'cloud', 'icloud'],

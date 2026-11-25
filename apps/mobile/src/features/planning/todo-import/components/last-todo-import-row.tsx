@@ -23,7 +23,7 @@ export function LastTodoImportRow(props: LastTodoImportRowProps) {
   const accountId = useMyAccountId();
   const [lastImportIds, setLastImportIds] = useStoredValue(lastTodoImportIdsStoredValue, accountId);
   // 새것부터 본다. 되돌릴 수 없게 끝났으면(아무것도 만들지 않은 다시 가져오기 등) 빼고 그 앞의 가져오기를 보인다
-  const lastImportId = lastImportIds[0] ?? null;
+  const [lastImportId = null] = lastImportIds;
 
   if (lastImportId == null) {
     return null;
@@ -34,7 +34,7 @@ export function LastTodoImportRow(props: LastTodoImportRowProps) {
     <QueryErrorBoundary fallback={QueryErrorFallback.Hidden} resetKeys={[lastImportId]}>
       {/* 기한이 지난 가져오기는 줄이 그려지지 않아, 스켈레톤을 보였다 걷으면 아래 글이 들썩인다 */}
       <Suspense fallback={null}>
-        <LastTodoImportRow.Undoable
+        <LastTodoImportRow.Contents
           key={lastImportId}
           importId={lastImportId}
           onExpired={() => setLastImportIds(lastImportIds.filter((id) => id !== lastImportId))}
@@ -45,13 +45,14 @@ export function LastTodoImportRow(props: LastTodoImportRowProps) {
   );
 }
 
-interface UndoableProps extends LastTodoImportRowProps {
+interface ContentsProps extends LastTodoImportRowProps {
   importId: string;
-  /** 끝났는데 되돌릴 수 없으면 부른다. 다음에 열 때 조회하지 않게 기억을 지운다 */
+  // 끝났는데 되돌릴 수 없으면 부른다. 다음에 열 때 조회하지 않게 기억을 지운다
   onExpired: () => void;
 }
 
-LastTodoImportRow.Undoable = function Undoable({ importId, onExpired, ...props }: UndoableProps) {
+// 되돌릴 수 있는 동안만 그린다
+LastTodoImportRow.Contents = function Contents({ importId, onExpired, ...props }: ContentsProps) {
   const { t } = useTranslation('todoImport');
   const now = useMinuteNow();
   const todayKey = useTodayKey();

@@ -2,14 +2,14 @@ import { useTranslation } from '@src/shared/i18n';
 import { LabelChip } from '@src/shared/ui';
 import type { ComponentProps } from 'react';
 
-import type { ImportAccountProvider } from '../domains/todo-import-collection.model';
-import { CALENDAR_SOURCE_LABEL_KEYS } from '../utils/todo-import.view-model';
+import type { TodoImportAccountProvider } from '../domains/todo-import-collection.model';
+import { getCalendarSourceLabelKey } from '../utils/todo-import.view-model';
 
 interface CalendarSourceBadgeProps extends Omit<
   ComponentProps<typeof LabelChip>,
   'label' | 'color'
 > {
-  provider: ImportAccountProvider;
+  provider: TodoImportAccountProvider;
 }
 
 /**
@@ -22,7 +22,7 @@ export function CalendarSourceBadge({ provider, labelProps, ...props }: Calendar
   return (
     <LabelChip
       color="default"
-      label={t(CALENDAR_SOURCE_LABEL_KEYS[provider])}
+      label={t(getCalendarSourceLabelKey(provider))}
       labelProps={{ numberOfLines: 1, ...labelProps }}
       pointerEvents="none"
       {...props}

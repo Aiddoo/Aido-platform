@@ -1,12 +1,15 @@
 import { TODO_IMPORT_LIMITS } from '@aido/api/vocabulary';
 
-import { createImportCollection } from '../__tests__/todo-import.fixtures';
+import { createTodoImportCollection } from '../__tests__/todo-import.fixtures';
 import { TodoImportCollectionPolicy } from './todo-import-collection.model';
 
-const PERSONAL = createImportCollection({ collectionKey: 'personal', accountKind: 'cloud' });
-const HOLIDAYS = createImportCollection({ collectionKey: 'holidays', accountKind: 'holidays' });
-const BIRTHDAYS = createImportCollection({ collectionKey: 'birthdays', accountKind: 'birthdays' });
-const EMPTY = createImportCollection({ collectionKey: 'empty', itemCount: 0 });
+const PERSONAL = createTodoImportCollection({ collectionKey: 'personal', accountKind: 'cloud' });
+const HOLIDAYS = createTodoImportCollection({ collectionKey: 'holidays', accountKind: 'holidays' });
+const BIRTHDAYS = createTodoImportCollection({
+  collectionKey: 'birthdays',
+  accountKind: 'birthdays',
+});
+const EMPTY = createTodoImportCollection({ collectionKey: 'empty', itemCount: 0 });
 
 describe('TodoImportCollectionPolicy', () => {
   describe('getSelectedCollections', () => {
@@ -36,7 +39,7 @@ describe('TodoImportCollectionPolicy', () => {
       // Given
       const limit = TODO_IMPORT_LIMITS.MAX_COLLECTIONS;
       const collections = Array.from({ length: limit + 2 }, (_, index) =>
-        createImportCollection({ collectionKey: `calendar-${index}`, itemCount: index + 1 }),
+        createTodoImportCollection({ collectionKey: `calendar-${index}`, itemCount: index + 1 }),
       );
 
       // When
@@ -53,7 +56,7 @@ describe('TodoImportCollectionPolicy', () => {
       // Given
       const limit = TODO_IMPORT_LIMITS.MAX_COLLECTIONS;
       const collections = Array.from({ length: limit + 1 }, (_, index) =>
-        createImportCollection({ collectionKey: `calendar-${index}` }),
+        createTodoImportCollection({ collectionKey: `calendar-${index}` }),
       );
 
       // When
@@ -75,10 +78,29 @@ describe('TodoImportCollectionPolicy', () => {
       ['골뱅이만 있는 이름', '@회의실', false],
     ])('%s → %s', (_case, title, expected) => {
       // When
-      const hasEmail = TodoImportCollectionPolicy.hasEmailTitle(createImportCollection({ title }));
+      const hasEmail = TodoImportCollectionPolicy.hasEmailTitle(
+        createTodoImportCollection({ title }),
+      );
 
       // Then
       expect(hasEmail).toBe(expected);
+    });
+  });
+
+  describe('findAccountEmail', () => {
+    it.each([
+      ['Android 계정 이름은 이메일이라 그대로 보인다', ' me@gmail.com ', 'me@gmail.com'],
+      ['계정 설명에 이메일이 섞여도 이름 전체가 이메일이 아니면 없다', '회사 (me@corp.com)', null],
+      ['iOS 계정 설명은 이메일이 아니다', 'Gmail', null],
+      ['계정 이름이 없으면 없다', null, null],
+    ])('%s', (_case, accountName, expected) => {
+      // When
+      const email = TodoImportCollectionPolicy.findAccountEmail(
+        createTodoImportCollection({ accountName }),
+      );
+
+      // Then
+      expect(email).toBe(expected);
     });
   });
 
@@ -86,11 +108,11 @@ describe('TodoImportCollectionPolicy', () => {
     it('고른 일정 수가 한 번에 가져올 수 있는 수와 같으면 시작할 수 있다', () => {
       // Given
       const collections = [
-        createImportCollection({
+        createTodoImportCollection({
           collectionKey: 'a',
           itemCount: TODO_IMPORT_LIMITS.MAX_ITEMS_PER_IMPORT - 1,
         }),
-        createImportCollection({ collectionKey: 'b', itemCount: 1 }),
+        createTodoImportCollection({ collectionKey: 'b', itemCount: 1 }),
       ];
 
       // When
@@ -103,11 +125,11 @@ describe('TodoImportCollectionPolicy', () => {
     it('한 개라도 넘으면 시작하지 못한다', () => {
       // Given
       const collections = [
-        createImportCollection({
+        createTodoImportCollection({
           collectionKey: 'a',
           itemCount: TODO_IMPORT_LIMITS.MAX_ITEMS_PER_IMPORT,
         }),
-        createImportCollection({ collectionKey: 'b', itemCount: 1 }),
+        createTodoImportCollection({ collectionKey: 'b', itemCount: 1 }),
       ];
 
       // When

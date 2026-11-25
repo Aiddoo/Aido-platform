@@ -4,9 +4,9 @@ import { createApiError } from '@src/testing/api-error';
 import { defineFixture } from '@src/testing/fixture';
 import type { z } from 'zod';
 
-import { importCollectionSchema } from '../domains/todo-import-collection.model';
-import { importItemSchema } from '../domains/todo-import-item.model';
-import { todoImportSelectionSchema } from '../domains/todo-import-session.model';
+import { todoImportCollectionSchema } from '../domains/todo-import-collection.model';
+import { todoImportItemSchema } from '../domains/todo-import-item.model';
+import { todoImportSelectionSchema } from '../domains/todo-import-selection.model';
 import { todoImportSchema } from '../domains/todo-import.model';
 
 export const IMPORT_ID = 'clz7x5p8k0010qz0z8z8z8z8z';
@@ -45,7 +45,7 @@ export const createTodoImportDto = defineFixture(todoImportDtoSchema, TODO_IMPOR
 
 export const createTodoImport = defineFixture(todoImportSchema, TODO_IMPORT);
 
-export const createImportCollection = defineFixture(importCollectionSchema, {
+export const createTodoImportCollection = defineFixture(todoImportCollectionSchema, {
   collectionKey: PERSONAL_COLLECTION_KEY,
   title: '개인',
   color: '#FF6B43',
@@ -55,7 +55,7 @@ export const createImportCollection = defineFixture(importCollectionSchema, {
   itemCount: 2,
 });
 
-export const createImportItem = defineFixture(importItemSchema, {
+export const createTodoImportItem = defineFixture(todoImportItemSchema, {
   sourceKey: '1'.repeat(64),
   collectionKey: PERSONAL_COLLECTION_KEY,
   title: '팀 회의',

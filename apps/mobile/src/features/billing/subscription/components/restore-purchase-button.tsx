@@ -9,10 +9,10 @@ import { useRestoreMutationOptions } from '../queries/subscription.mutations';
 
 type RestorePurchaseButtonProps = Omit<
   ComponentProps<typeof TextButton>,
-  'children' | 'onPress' | 'isDisabled' | 'variant'
+  'children' | 'isDisabled' | 'variant'
 >;
 
-export function RestorePurchaseButton(props: RestorePurchaseButtonProps) {
+export function RestorePurchaseButton({ onPress, ...props }: RestorePurchaseButtonProps) {
   const { t } = useTranslation('subscription');
   const restore = useMutation(useRestoreMutationOptions());
   const isOnline = useIsOnline();
@@ -24,7 +24,13 @@ export function RestorePurchaseButton(props: RestorePurchaseButtonProps) {
     <TextButton
       {...props}
       variant="underline"
-      onPress={handleRestore}
+      onPress={(event) => {
+        handleRestore();
+        // asChild 트리거·코치마크가 자식에 넣은 onPress를 이어 불러 그 누름이 사라지지 않게 한다
+        if (typeof onPress === 'function') {
+          onPress(event);
+        }
+      }}
       isDisabled={restore.isPending || !isOnline}
     >
       {t('subscriber.restoreButton')}

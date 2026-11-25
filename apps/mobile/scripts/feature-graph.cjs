@@ -280,7 +280,6 @@ const LOCAL_ONLY_PENDING_FEATURES = new Set([
   'notification',
   'planning/category',
   'planning/todo',
-  'planning/todo-import',
   'social/invite',
   'social/moderation',
   'voice',

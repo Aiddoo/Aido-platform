@@ -1,4 +1,3 @@
-import type { DateKey } from '@src/shared/date/date-key';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -15,88 +14,82 @@ import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Accordion, ControlField, Skeleton } from 'heroui-native';
 import type { ComponentProps } from 'react';
+import { match, P } from 'ts-pattern';
 
 import {
-  type ImportCollection,
+  type TodoImportCollection,
   TodoImportCollectionPolicy,
 } from '../domains/todo-import-collection.model';
-import { useFormatCalendarSource } from '../hooks/use-format-calendar-source';
-import { useGetImportCollectionsQueryOptions } from '../queries/todo-import-source.queries';
-import { groupCollectionsByAccount } from '../utils/todo-import.view-model';
+import type { TodoImportRange } from '../domains/todo-import-range.model';
+import {
+  selectCollectionsByAccount,
+  useGetImportCollectionsQueryOptions,
+} from '../queries/todo-import-source.queries';
 
-interface CalendarSourceListProps {
-  startDate: DateKey;
-  endDate: DateKey;
-  /** null은 아직 고르지 않아 기본 선택(공휴일·생일·구독 제외)을 보인다 */
+interface CalendarSourceListProps extends TodoImportRange {
+  // null은 아직 고르지 않아 기본 선택(공휴일·생일·구독 제외)을 보인다
   value: readonly string[] | null;
-  onValueChange: (collectionKeys: string[]) => void;
+  onChange: (collectionKeys: string[]) => void;
 }
 
 const RECEIVED_ACCORDION_VALUE = 'received';
 
+// 고른 기간에 일정이 있는 캘린더를 계정마다 묶어 고르게 한다
 export function CalendarSourceList({
   startDate,
   endDate,
   value,
-  onValueChange,
+  onChange,
 }: CalendarSourceListProps) {
   const { t } = useTranslation('todoImport');
-  const { data: collections } = useSuspenseQuery(
-    useGetImportCollectionsQueryOptions({ startDate, endDate }),
-  );
+  const formatCalendarSource = useFormatCalendarSource();
 
+  const { data: groups } = useSuspenseQuery({
+    ...useGetImportCollectionsQueryOptions({ startDate, endDate }),
+    select: selectCollectionsByAccount,
+  });
+
+  const { collections, accounts, receivedCollections } = groups;
   const selected = TodoImportCollectionPolicy.getSelectedCollections(collections, value);
   const selectedKeys = new Set(selected.map((collection) => collection.collectionKey));
   const isAtLimit = TodoImportCollectionPolicy.isAtCollectionLimit(selected);
-  const formatCalendarSource = useFormatCalendarSource();
-  const { accounts, receivedCollections } = groupCollectionsByAccount(collections);
+  const hasSelectedReceived = receivedCollections.some((collection) =>
+    selectedKeys.has(collection.collectionKey),
+  );
 
   if (!collections.some((collection) => TodoImportCollectionPolicy.isSelectable(collection))) {
     return <CalendarSourceList.Empty />;
   }
 
-  const handleSelectedChange = (collectionKey: string, isSelected: boolean) => {
-    onValueChange(
-      collections
-        .filter((collection) =>
-          collection.collectionKey === collectionKey
-            ? isSelected
-            : selectedKeys.has(collection.collectionKey),
-        )
-        .map((collection) => collection.collectionKey),
-    );
-  };
-
-  // 접는 목록은 머리말이 계정 이름이라 묶음에 다시 적지 않는다
-  const renderGroup = (group: readonly ImportCollection[], account?: ImportCollection) => (
-    <CalendarSourceList.Group
-      accountName={account == null ? undefined : formatCalendarSource(account)}
-    >
-      {group.map((collection, index) => (
-        <Box key={collection.collectionKey}>
-          {index > 0 && <SettingsListGroup.Separator />}
-          <CalendarSourceList.Item
-            collection={collection}
-            isSelected={selectedKeys.has(collection.collectionKey)}
-            // 한 번에 고를 수 있는 캘린더 수에 닿으면 고르지 않은 캘린더를 막는다. 이유는 스크린이 버튼 위에 보인다
-            isDisabled={isAtLimit && !selectedKeys.has(collection.collectionKey)}
-            onSelectedChange={(isSelected) =>
-              handleSelectedChange(collection.collectionKey, isSelected)
-            }
-          />
-        </Box>
-      ))}
-    </CalendarSourceList.Group>
-  );
-
-  const hasSelectedReceived = receivedCollections.some((collection) =>
-    selectedKeys.has(collection.collectionKey),
-  );
+  const getItemProps = (collection: TodoImportCollection) => ({
+    collection,
+    isSelected: selectedKeys.has(collection.collectionKey),
+    // 한 번에 고를 수 있는 캘린더 수에 닿으면 고르지 않은 캘린더를 막는다. 이유는 스크린이 버튼 위에 보인다
+    isDisabled: isAtLimit && !selectedKeys.has(collection.collectionKey),
+    onSelectedChange: (isSelected: boolean) =>
+      onChange(
+        collections
+          .filter(({ collectionKey }) =>
+            collectionKey === collection.collectionKey
+              ? isSelected
+              : selectedKeys.has(collectionKey),
+          )
+          .map(({ collectionKey }) => collectionKey),
+      ),
+  });
 
   return (
     <VStack gap={12}>
       {accounts.map(({ accountKey, account, collections: group }) => (
-        <Box key={accountKey}>{renderGroup(group, account)}</Box>
+        // 회사 로고는 상표 규정상 쓰지 않고, iOS 캘린더처럼 계정 이름만 글자로 보인다
+        <SettingsListGroup key={accountKey} label={formatCalendarSource(account)}>
+          {group.map((collection, index) => (
+            <Box key={collection.collectionKey}>
+              {index > 0 && <SettingsListGroup.Separator />}
+              <CalendarSourceList.Item {...getItemProps(collection)} />
+            </Box>
+          ))}
+        </SettingsListGroup>
       ))}
 
       {receivedCollections.length > 0 && (
@@ -113,7 +106,15 @@ export function CalendarSourceList({
               <Accordion.Indicator />
             </Accordion.Trigger>
             <Accordion.Content className="px-0 pb-0">
-              {renderGroup(receivedCollections)}
+              {/* 접는 목록은 머리말이 묶음 이름이라 묶음에 다시 적지 않는다 */}
+              <SettingsListGroup>
+                {receivedCollections.map((collection, index) => (
+                  <Box key={collection.collectionKey}>
+                    {index > 0 && <SettingsListGroup.Separator />}
+                    <CalendarSourceList.Item {...getItemProps(collection)} />
+                  </Box>
+                ))}
+              </SettingsListGroup>
             </Accordion.Content>
           </Accordion.Item>
         </Accordion>
@@ -122,21 +123,12 @@ export function CalendarSourceList({
   );
 }
 
-interface GroupProps extends Omit<ComponentProps<typeof SettingsListGroup>, 'label'> {
-  accountName?: string;
-}
-
-/** 회사 로고는 상표 규정상 쓰지 않고, iOS 캘린더처럼 계정 이름만 글자로 보인다 */
-CalendarSourceList.Group = function Group({ accountName, ...props }: GroupProps) {
-  return <SettingsListGroup label={accountName} {...props} />;
-};
-
 interface ItemProps extends Omit<ComponentProps<typeof ControlField>, 'children'> {
-  collection: ImportCollection;
+  collection: TodoImportCollection;
 }
 
-/** 데모가 같은 줄을 값만 바꿔 쓴다. 일정이 없는 캘린더는 스스로 막는다 */
-CalendarSourceList.Item = function Item({
+// 데모가 같은 줄을 값만 바꿔 쓴다. 일정이 없는 캘린더는 스스로 막는다
+function CalendarSourceListItem({
   collection,
   isSelected,
   isDisabled: isDisabledByParent = false,
@@ -189,7 +181,22 @@ CalendarSourceList.Item = function Item({
       />
     </ControlField>
   );
+}
+
+CalendarSourceListItem.Loading = function Loading() {
+  return (
+    <ListRow
+      verticalPadding="medium"
+      horizontalPadding="medium"
+      className="min-h-12"
+      left={<Skeleton className="size-2.5 rounded-full" />}
+      contents={<TextSkeleton size="b2" className="w-28" />}
+      right={<Skeleton className="size-5 rounded-md" />}
+    />
+  );
 };
+
+CalendarSourceList.Item = CalendarSourceListItem;
 
 CalendarSourceList.Loading = function Loading() {
   return (
@@ -197,11 +204,11 @@ CalendarSourceList.Loading = function Loading() {
       <Box className="px-4 pt-4 pb-1">
         <TextSkeleton size="b2" className="w-24" />
       </Box>
-      <ItemSkeleton />
+      <CalendarSourceList.Item.Loading />
       <SettingsListGroup.Separator />
-      <ItemSkeleton />
+      <CalendarSourceList.Item.Loading />
       <SettingsListGroup.Separator />
-      <ItemSkeleton />
+      <CalendarSourceList.Item.Loading />
     </SettingsListGroup>
   );
 };
@@ -220,15 +227,31 @@ CalendarSourceList.Empty = function Empty() {
   );
 };
 
-function ItemSkeleton() {
-  return (
-    <ListRow
-      verticalPadding="medium"
-      horizontalPadding="medium"
-      className="min-h-12"
-      left={<Skeleton className="size-2.5 rounded-full" />}
-      contents={<TextSkeleton size="b2" className="w-28" />}
-      right={<Skeleton className="size-5 rounded-md" />}
-    />
-  );
+// 캘린더가 어디서 왔는지 보이는 묶음 이름. 계정 캘린더는 계정 이름이고, 공휴일·생일·구독 캘린더는 계정과 상관없이
+// 따로 모은 묶음 이름이다
+function useFormatCalendarSource(): (collection: TodoImportCollection) => string {
+  const { t } = useTranslation('todoImport');
+
+  return (collection) => {
+    if (TodoImportCollectionPolicy.isReceivedCalendar(collection)) {
+      return t('calendars.accounts.received');
+    }
+    const email = TodoImportCollectionPolicy.findAccountEmail(collection);
+    return match(collection.accountProvider)
+      .with('icloud', () => t('calendars.accounts.icloud'))
+      .with('google', () =>
+        email == null
+          ? t('calendars.accounts.google')
+          : t('calendars.accounts.googleWithEmail', { email }),
+      )
+      .with('outlook', () =>
+        email == null
+          ? t('calendars.accounts.outlook')
+          : t('calendars.accounts.outlookWithEmail', { email }),
+      )
+      .with('device', () => t('calendars.accounts.device'))
+      .with(P.union('subscribed', 'birthdays'), () => t('calendars.otherAccount'))
+      .with('other', () => collection.accountName ?? t('calendars.otherAccount'))
+      .exhaustive();
+  };
 }

@@ -5,7 +5,8 @@ import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status
 import { useLogoutMutationOptions } from '@src/features/identity/auth/queries/auth.mutations';
 import { useOfferMarketingPushAfterCompletion } from '@src/features/notification/hooks/use-offer-marketing-push-after-completion';
 import { usePushOnboardingGuard } from '@src/features/notification/hooks/use-push-onboarding-guard';
-import { useTodoImportResume } from '@src/features/planning/todo-import/hooks/use-todo-import-resume';
+import { useRefreshWhenTodoImportFinishes } from '@src/features/planning/todo-import/hooks/use-refresh-when-todo-import-finishes';
+import { useResumeTodoImportUpload } from '@src/features/planning/todo-import/hooks/use-resume-todo-import-upload';
 import { classifyError, getErrorReportTags } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -120,7 +121,7 @@ function AppLayout() {
         </Stack.Protected>
       </Stack>
       <TodoEventWatchers />
-      <TodoImportWatcher />
+      <TodoImportWatchers />
     </>
   );
 }
@@ -134,9 +135,10 @@ function TodoEventWatchers() {
   return null;
 }
 
-/** 끊긴 캘린더 업로드를 이어 가는 감시. 레이아웃이 다시 그려지지 않게 null을 그리는 형제에 둔다 */
-function TodoImportWatcher() {
-  useTodoImportResume();
+/** 끊긴 캘린더 업로드를 이어 가고, 떠난 사이 끝난 가져오기의 할 일을 다시 받는 감시. 레이아웃이 다시 그려지지 않게 null을 그리는 형제에 둔다 */
+function TodoImportWatchers() {
+  useResumeTodoImportUpload();
+  useRefreshWhenTodoImportFinishes();
 
   return null;
 }

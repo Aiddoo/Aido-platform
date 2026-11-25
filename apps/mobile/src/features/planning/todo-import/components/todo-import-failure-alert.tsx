@@ -4,6 +4,7 @@ import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { Button, HStack, InlineAlert } from '@src/shared/ui';
+import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { type ComponentProps, useSyncExternalStore } from 'react';
 
@@ -12,6 +13,7 @@ import {
   type TodoImportUploadFailure,
 } from '../domains/todo-import.error';
 import { useTodoImportId } from '../hooks/use-todo-import-id';
+import { invalidateActiveTodoImport } from '../queries/todo-import-cache';
 
 const FAILURE_LABEL_KEYS = {
   TOO_MANY_ITEMS: 'failure.tooManyItems',
@@ -38,6 +40,7 @@ export function TodoImportFailureAlert(props: TodoImportFailureAlertProps) {
   const uploadSession = useTodoImportUploadSession();
   const snapshot = useSyncExternalStore(uploadSession.subscribe, uploadSession.getSnapshot);
   const gate = useEntitlementGate('CALENDAR_IMPORT', { surface: 'todo_import' });
+  const queryClient = useQueryClient();
   const router = useRouter();
   const replace = useSingleTap(router.replace);
 
@@ -49,18 +52,20 @@ export function TodoImportFailureAlert(props: TodoImportFailureAlertProps) {
   const failure = getTodoImportUploadFailure(rejection);
   const isLimitFailure = failure === 'PLAN_LIMIT' || failure === 'CATEGORY_LIMIT';
 
+  // 이 기기의 업로드는 끝났지만 서버에는 아직 업로드 중으로 남아 있을 수 있다. 진행 중으로 알던 값을 낡게 해
+  // 설정 화면이 이 가져오기로 되돌려 보내지 않는다
+  const handleSetUpAgainPress = () => {
+    invalidateActiveTodoImport(queryClient);
+    replace('/todo-import');
+  };
+
   return (
     <InlineAlert
       status="danger"
       title={t(FAILURE_LABEL_KEYS[failure], { limit: TODO_IMPORT_LIMITS.MAX_ITEMS_PER_IMPORT })}
       action={
         <HStack gap={8} className="flex-wrap">
-          <Button
-            size="small"
-            variant="weak"
-            display="inline"
-            onPress={() => replace('/todo-import')}
-          >
+          <Button size="small" variant="weak" display="inline" onPress={handleSetUpAgainPress}>
             {t('failure.setUpAgain')}
           </Button>
           {isLimitFailure && (

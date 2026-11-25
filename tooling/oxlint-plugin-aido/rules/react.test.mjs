@@ -175,3 +175,34 @@ tester.run('props-interface', rules['props-interface'], {
     { code: 'export type ReleaseRowProps = { release: Release };', errors: 1 },
   ],
 });
+
+tester.run('forward-on-press', rules['forward-on-press'], {
+  valid: [
+    'function Card({ onPress, ...props }) { const handlePress = (event) => { open(); onPress?.(event); }; return <Pressable {...props} onPress={handlePress} />; }',
+    'function Card({ onPress, ...props }) { return <Pressable {...props} onPress={onPress} />; }',
+    'function Card(props) { return <Pressable {...props} onPress={(event) => { open(); props.onPress?.(event); }} />; }',
+    'function Card(props) { const { onPress } = props; return <Pressable {...props} onPress={() => { open(); onPress?.(); }} />; }',
+    'function Card({ label }) { return <Pressable onPress={open}>{label}</Pressable>; }',
+    'function Card({ label, ...props }) { return <Pressable onPress={open} {...props} />; }',
+    'function List({ items }) { const itemProps = getItemProps(); return <Row {...itemProps} onPress={open} />; }',
+    'function Card({ ...props }) { return <Pressable {...props} onLongPress={open} />; }',
+  ],
+  invalid: [
+    {
+      code: 'function Card({ plan, ...props }) { return <Pressable {...props} onPress={handlePress} />; }',
+      errors: [{ message: /밖에서 받은 onPress를 덮습니다/ }],
+    },
+    {
+      code: 'function Card(props) { return <Pressable {...props} onPress={() => open()} />; }',
+      errors: 1,
+    },
+    {
+      code: 'List.Item = function Item({ id, ...rest }) { return <Row {...rest} onPress={() => open(id)} />; };',
+      errors: 1,
+    },
+    {
+      code: 'const Card = ({ plan, ...props }) => <Pressable {...props} variant="weak" onPress={open} />;',
+      errors: 1,
+    },
+  ],
+});

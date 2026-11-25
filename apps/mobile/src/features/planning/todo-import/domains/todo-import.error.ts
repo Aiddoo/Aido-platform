@@ -10,6 +10,8 @@ import { type ApiError, isApiError } from '@src/core/errors/api-error';
 import { isTransientError } from '@src/shared/errors';
 import { isMatching, match, P } from 'ts-pattern';
 
+import type { TodoImportSelection } from './todo-import-selection.model';
+
 /** 자리 부족이면 지금 수·가져올 수·한도가 함께 온다 */
 export interface TodoImportTargetRejection {
   targetKey: string;
@@ -33,12 +35,30 @@ export function findActiveTodoImportId(error: unknown): string | null {
   return details.success ? details.data.importId : null;
 }
 
-export function findRejectedTargets(error: unknown): TodoImportTargetRejection[] {
+// 대상 거절이 아니면 빈 목록이다
+export function getRejectedTargets(error: unknown): TodoImportTargetRejection[] {
   if (!isApiError(error) || !error.hasCode(ErrorCode.TODO_IMPORT_2303)) {
     return [];
   }
   const details = todoImportTargetsRejectedErrorDetailsSchema.safeParse(error.details);
   return details.success ? details.data.targets : [];
+}
+
+interface RejectedTargetError {
+  collectionKey: string;
+  rejection: TodoImportTargetRejection;
+}
+
+// 거절된 대상을 고른 캘린더마다 칸 오류 하나다
+export function toRejectedTargetErrors(
+  selection: TodoImportSelection,
+  rejections: readonly TodoImportTargetRejection[],
+): RejectedTargetError[] {
+  return rejections.flatMap((rejection) =>
+    selection.collections
+      .filter((collection) => collection.targetKey === rejection.targetKey)
+      .map(({ collectionKey }) => ({ collectionKey, rejection })),
+  );
 }
 
 /** 이어 보낼 것이 없어 기기 상태를 지운다 */
@@ -110,7 +130,7 @@ export function getTodoImportUploadFailure(error: unknown): TodoImportUploadFail
   if (!isApiError(error)) {
     return 'REJECTED';
   }
-  const [rejectedTarget] = findRejectedTargets(error);
+  const [rejectedTarget] = getRejectedTargets(error);
   return match(error.code)
     .returnType<TodoImportUploadFailure>()
     .with(ErrorCode.TODO_IMPORT_2309, () => 'TOO_MANY_ITEMS')
