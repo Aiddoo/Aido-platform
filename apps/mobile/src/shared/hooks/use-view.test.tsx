@@ -50,16 +50,16 @@ describe('useView', () => {
     // Given
     const route = await renderRouteHook(() => useView('view', viewSchema), {
       url: '/friends',
-      routes: ['other'],
+      routes: ['notifications'],
     });
     const [, setView] = route.hook();
-    await act(async () => router.push('/other'));
+    await act(async () => router.push('/notifications'));
 
     // When
     await act(async () => setView('receiver'));
 
     // Then
-    expect(route.url()).toBe('/other');
+    expect(route.url()).toBe('/notifications');
 
     // When
     await act(async () => router.back());
