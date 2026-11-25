@@ -35,7 +35,6 @@ import type { AuthSessionStore } from '@src/features/identity/auth/stores/auth-s
 import type { ConsentApi } from '@src/features/identity/consent/apis/consent.api';
 import type { PreferenceApi } from '@src/features/identity/preference/apis/preference.api';
 import type { UserApi } from '@src/features/identity/user/apis/user.api';
-import type { MyPageDetailRootStore } from '@src/features/identity/user/stores/my-page-detail-root.store';
 import type { MyPagePaneLayoutStore } from '@src/features/identity/user/stores/my-page-pane-layout.store';
 import type { AchievementApi } from '@src/features/insights/achievement/apis/achievement.api';
 import type { ReportApi } from '@src/features/insights/report/apis/report.api';
@@ -113,7 +112,6 @@ export interface DIContainer extends SharedDependencies {
   /** 마이 메뉴 칸의 스크롤 위치(칸이 화면마다 다시 그려져도 이어진다) */
   myPagePaneLayoutStore: MyPagePaneLayoutStore;
   /** 넓은 화면 마이 Stack의 첫 상세 판단 */
-  myPageDetailRootStore: MyPageDetailRootStore;
 
   entitlementApi: EntitlementApi;
   purchasesSession: PurchasesSession;
@@ -304,9 +302,6 @@ export function useUserApi() {
 }
 export function useMyPagePaneLayoutStore() {
   return useDI().myPagePaneLayoutStore;
-}
-export function useMyPageDetailRootStore() {
-  return useDI().myPageDetailRootStore;
 }
 
 export function useEntitlementApi() {

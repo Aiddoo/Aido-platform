@@ -1,7 +1,6 @@
 import { useTodoApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { emitTodoCompletionChanged } from '@src/core/events/todo-completion-changed';
-import { useStoreReviewMoment } from '@src/features/device/store-review/hooks/use-store-review-moment';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { invalidateWeeklyAchievements } from '@src/features/insights/achievement/queries/achievement-cache';
 import {
@@ -16,7 +15,6 @@ import { isLastMutation } from '@src/shared/query/is-last-mutation';
 import { useAppToast } from '@src/shared/ui';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { TodoListPolicy } from '../domains/todo-list.model';
 import { TodoOverviewPolicy } from '../domains/todo-overview.model';
 import type { TodoUpdateScope, TodoEditScope } from '../domains/todo-repeat.model';
 import { isTodoSeriesFailure } from '../domains/todo-series.error';
@@ -28,7 +26,6 @@ import type {
 } from '../schemas/todo-request.schema';
 import {
   beginTodoWrite,
-  getCachedTodoListByDate,
   findCachedTodo,
   getCachedTodoDateSpan,
   getTodoOverviewFilters,
@@ -50,7 +47,7 @@ import { TODO_MUTATION_KEYS } from './todo-mutation-keys';
 import { TODO_QUERY_KEYS } from './todo-query-keys';
 import { useTodoSeriesFailureFeedback } from './todo-series.mutations';
 
-interface ToggleTodoVariables {
+export interface ToggleTodoVariables {
   todoId: number;
   body: TodoCompletionChange;
   /** 체크한 목록의 날짜. 여러 날 할 일은 시작일이 아니라 보고 있는 날짜 목록을 고친다 */
@@ -62,7 +59,6 @@ export function useToggleTodoMutationOptions() {
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const todayKey = useTodayKey();
-  const { recordActiveDay, requestReviewAt } = useStoreReviewMoment();
 
   return mutationOptions({
     // 응답까지 이 체크박스가 꺼진다. 오프라인에 멈춰 두면 연결될 때까지 꺼진 채 남으니 바로 실패해 되돌리고 알린다
@@ -109,12 +105,6 @@ export function useToggleTodoMutationOptions() {
       setTodoOverviewInCache(queryClient, (overview) =>
         TodoOverviewPolicy.withTodoCompleted(overview),
       );
-      recordActiveDay();
-      // 오늘 목록의 마지막 할 일을 끝낸 순간 — 피드의 '다 끝낸 날' 배너와 같은 순간이다
-      const todayTodos = getCachedTodoListByDate(queryClient, { date: todayKey });
-      if (TodoListPolicy.isLastOpenTodo(todayTodos, variables.todoId)) {
-        requestReviewAt('all_todos_done');
-      }
     },
     onError: (_error, { todoId, body, date }) => {
       // 완료 여부만 되돌려 같은 할 일의 서브투두 변경은 지키게 한다

@@ -44,14 +44,12 @@ import { TodoListPolicy } from '../../domains/todo-list.model';
 import { type Todo, TodoPolicy } from '../../domains/todo.model';
 import { useFeedDateKey } from '../../hooks/use-feed-params';
 import { useOpenFeedTodoDetail } from '../../hooks/use-open-feed-todo-detail';
+import { useToggleTodoWithReviewMutationOptions } from '../../hooks/use-toggle-todo-with-review-mutation-options';
 import {
   useReorderSubTodosMutationOptions,
   useToggleSubTodoMutationOptions,
 } from '../../queries/sub-todo.mutations';
-import {
-  useReorderTodoMutationOptions,
-  useToggleTodoMutationOptions,
-} from '../../queries/todo.mutations';
+import { useReorderTodoMutationOptions } from '../../queries/todo.mutations';
 import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
 import { formatTodoTime } from '../../utils/todo-time.view-model';
 import { TODO_ROW_ACCESSIBILITY_ACTION, TodoRow } from '../todo-row';
@@ -144,7 +142,7 @@ TodoList.Item = function Item({
   const selectTodo = useSingleTap(onOpenDetail);
   const router = useRouter();
   const push = useSingleTap(router.push);
-  const toggleTodo = useMutation(useToggleTodoMutationOptions());
+  const toggleTodo = useMutation(useToggleTodoWithReviewMutationOptions());
   const toggleSubTodo = useMutation(useToggleSubTodoMutationOptions());
   const reorderSubTodos = useMutation(useReorderSubTodosMutationOptions());
   const subTodoReorderableList = useReorderableList({

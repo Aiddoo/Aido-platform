@@ -11,7 +11,8 @@ import {
   createWidgetSummary,
 } from '../__tests__/widget-snapshot.fixtures';
 import { toWidgetProps } from '../apis/widget-props.mapper';
-import { toWidgetSnapshot } from '../apis/widget-snapshot.mapper';
+import { toWidgetDaySnapshot } from '../apis/widget-snapshot.mapper';
+import { getWidgetSnapshotStrings, getWidgetWeek } from '../utils/widget-snapshot.view-model';
 
 require('./widgets.ios');
 const registration = jest.mocked(createWidget).mock.calls[0];
@@ -70,20 +71,22 @@ describe('iOS 위젯 격리 렌더링과 앱 이동', () => {
       if (!registration) {
         throw new Error('위젯 등록을 찾지 못했습니다');
       }
-      const {
-        days: [snapshot],
-      } = toWidgetSnapshot(
+      const summary = createWidgetSummary({
+        topTodos: range(8).map((index) => ({
+          id: index + 1,
+          title: `QA 할 일 ${index + 1}`,
+          completed: false,
+          categoryColor: '#FF6B43',
+        })),
+      });
+      const context = createWidgetSnapshotContext();
+      const snapshot = toWidgetDaySnapshot(
+        summary,
         {
-          today: createWidgetSummary({
-            topTodos: range(8).map((index) => ({
-              id: index + 1,
-              title: `QA 할 일 ${index + 1}`,
-              completed: false,
-              categoryColor: '#FF6B43',
-            })),
-          }),
+          strings: getWidgetSnapshotStrings(context.t, summary),
+          week: getWidgetWeek(summary, context),
         },
-        createWidgetSnapshotContext(),
+        context.locale,
       );
       const props = toWidgetProps(snapshot, 'data', 'aido-dev');
       const jsx = (type: string, elementProps: object) => createElement(type, elementProps);

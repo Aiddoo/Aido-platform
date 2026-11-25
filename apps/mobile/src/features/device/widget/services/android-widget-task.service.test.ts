@@ -6,7 +6,7 @@ import type { WidgetTaskHandlerProps } from 'react-native-android-widget';
 import { ANDROID_WIDGET_NAVIGATION_ACTION } from '../constants/widget.constants';
 import { createWidgetNavigationRepository } from '../repositories/widget-navigation.repository';
 import { widgetHeadlessFailureStoredValue } from '../schemas/widget-headless-failure-storage.schema';
-import { createAndroidWidgetTaskHandler } from './android-widget-task-handler';
+import { AndroidWidgetTaskService } from './android-widget-task.service';
 
 const TAPPED_AT = toInstant('2026-11-05T00:00:00.000Z');
 
@@ -20,7 +20,7 @@ function createHandler(isAppActive = false) {
     openApp,
     storage,
     renderStoredWidget,
-    handler: createAndroidWidgetTaskHandler({
+    handler: new AndroidWidgetTaskService({
       navigationRepository,
       openApp,
       isAppActive: () => isAppActive,
@@ -28,7 +28,7 @@ function createHandler(isAppActive = false) {
       createCommandId: () => 'widget-tap',
       failureStorage: storage,
       renderStoredWidget,
-    }),
+    }).handleTask,
   };
 }
 

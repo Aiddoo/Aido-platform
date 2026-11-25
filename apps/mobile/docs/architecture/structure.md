@@ -10,7 +10,7 @@ src/
 ├── bootstrap/               앱 조립. 낱개 파일 없이 폴더로 모은다
 │   ├── auth/  hooks/        시작 인증 판정(순수), 앱 시작 때 한 번 도는 훅
 │   ├── navigation/          인증 게이트 레이아웃, 콜드 스타트 링크, 두 route가 함께 쓰는 조립
-│   ├── providers/           composition-root, create-device-ports, create-app-container, di-provider, di-context
+│   ├── providers/           composition-root, create-device-ports, create-app-container, di-provider, di-context, 위젯 헤드리스 진입점
 │   └── query/  startup/     QueryClient·캐시 복원, 시작 때 한 번 하는 정리
 ├── core/                    ports(앱의 말), errors(Result·ApiError), events, observability, session
 ├── features/{area}/{feature}/
@@ -83,7 +83,6 @@ features/{area}/{feature}/
 - 쿼리 키는 `queries/`에 둔다. `constants/`는 일반 상수(시간·한도·id, 장면 팔레트 같은 고정 값)·이벤트·로그 키만 두고 `domains/`를 import하지 않는다. 업무 규칙 표는 모델에, 라벨 키는 view-model에, 저장 키는 `*-storage.schema.ts`에 둔다.
 - 파일 이름은 kebab-case, 접두사는 다루는 엔티티 이름, 접미사는 위 골격의 역할 이름이다(역할 폴더별 접미사는 ls-lint). 기능 이름이 엔티티를 줄인 것이면 엔티티 이름을 쓴다(`social/nudge`의 `todo-nudge-query-keys.ts`). `helpers`·`utils`·`common` 같은 파일 이름을 쓰지 않는다.
 - 캐시 모양만 다루는 순수 함수(무한 목록 페이지 고치기·cursor)는 `queries/{entity}-pages-cache.ts`에 둔다(`todo-comment-pages-cache.ts`). `queryClient`는 만지지 않고 `-cache.ts` helper가 부른다.
-- `utils/`의 예외는 `store-review/utils/wait-for-settled-screen.ts` 하나다. 앱 상태 포트·타이머·abort로 화면이 가라앉기를 기다리는 한 번짜리 함수라 Session(수명 객체)이 아니고, 훅이 화면 판정(`isScreenReady`)을 넘겨 테스트가 시트·키보드·백그라운드 갈래를 모두 돈다.
 
 ## 층별 역할과 책임
 
@@ -162,13 +161,13 @@ composition-root(프로세스 수명) → DIProvider: createAppContainer(ports)(
 | 프로세스 | `AppLogger`·`Analytics`·`ErrorReporter`, `QueryClient`, 보안·암호화 저장소, `TokenStore`·토큰 갱신기, HTTP 클라이언트, 결제 SDK 게이트웨이, 그 밖의 기기 어댑터, 루트 "다시 시도"를 넘어 기억할 메모리 store(`inviteLinkOpenedStore`) | `composition-root.ts`가 한 번                         |
 | 마운트   | Api, service, repository, store                                                                                                                                                                                                       | `DIProvider`가 마운트마다 `createAppContainer(ports)` |
 
-- 프로세스 수명 객체를 담는 모듈 수준 값은 `composition-root.ts`에만 둔다. 그 밖의 모듈 전역 상태는 DI store(`pushOnboardingGuardStore`, `myPagePaneLayoutStore`, `myPageDetailRootStore`, 프로세스 수명 포트의 `inviteLinkOpenedStore`)나 어댑터 팩토리의 클로저 변수(푸시 게이트웨이의 앞 알림 표시 판단)로 옮긴다. DI보다 먼저 있거나 DI 밖에서 읽어 옮길 수 없는 것만 남기고 늘리지 않는다.
+- 프로세스 수명 객체를 담는 모듈 수준 값은 `composition-root.ts`에만 둔다. 그 밖의 모듈 전역 상태는 DI store(`pushOnboardingGuardStore`, `myPagePaneLayoutStore`, 프로세스 수명 포트의 `inviteLinkOpenedStore`)나 어댑터 팩토리의 클로저 변수(푸시 게이트웨이의 앞 알림 표시 판단)로 옮긴다. DI보다 먼저 있거나 DI 밖에서 읽어 옮길 수 없는 것만 남기고 늘리지 않는다.
   - `bootstrap/navigation/cold-start-link`: 앱 트리·DI보다 먼저 받은 첫 URL을 Index가 한 번 읽는다
   - `shared/ui/bottom-sheet/keyboard-bottom-sheet`의 열린 시트 수: 키보드 컨트롤러가 네이티브 전역 하나라 수도 그 수명을 따른다
   - `shared/infra/logger/global-logger`: DI 밖(루트 오류 화면, 접근성 설정 store, 위젯 진입점)이 쓰는 로거. `composition-root`가 한 번 정한다
   - `core/events/*`의 이벤트 채널 리스너와 `event-channel`의 리스너 오류 보고기: `core`는 DI를 모른다. 구독은 해제 함수를 돌려주고 보고기는 `DIProvider`가 마운트 때 건다
   - 접근성 설정 store(`shared/hooks/use-is-reduce-motion-enabled`, `shared/hooks/use-is-reduce-transparency-enabled`): OS 설정 하나를 구독 하나로 나눠 읽는다. 모션 줄이기는 DI 밖(루트 오류 화면)에서도 그리는 `shared/ui`가 읽는다
-  - `shared/infra/storage/widget-storage.android`, `shared/infra/app-lifecycle/react-native-app-lifecycle-gateway`, `features/device/widget/bridge/android-widgets.bridge`의 스냅숏·이동 저장소와 렌더러: 위젯만 깨어난 헤드리스 프로세스에는 앱 트리·DI가 없다. 앱의 조립은 `create-device-ports`가 같은 값을 넘긴다
+  - `shared/infra/storage/widget-storage.android`, `shared/infra/app-lifecycle/react-native-app-lifecycle-gateway`: 위젯만 깨어난 헤드리스 프로세스에는 앱 트리·DI가 없다. 그 진입점(`bootstrap/providers/register-widget-task-handler`)과 앱 조립(`bootstrap/providers/create-widget-bridge`)이 같은 저장소로 `AndroidWidgetService`를 만든다
   - `features/billing/subscription/components/plan-picker`의 보고한 스토어 진단 코드(`WeakMap<ErrorReporter, Set<string>>`): 같은 스토어 설정 문제를 앱 실행마다 한 번만 남긴다. 마운트 수명 DI store는 루트 "다시 시도"마다 새로 만들어져 다시 보낸다. 키가 프로세스 수명 `ErrorReporter`라 그 수명을 따른다
   - React 밖 cache helper가 부르는 `shared/utils/create-optimistic-id`(프로세스 안에서 겹치지 않아야 한다)와 `features/planning/todo/queries/todo-cache`의 쓰기 순번(`WeakMap<QueryClient, number>`, 먼저 시작해 늦게 끝난 쓰기 사이를 센다. `QueryClient` 수명을 따른다)
   - `shared/date/format/intl-formatter`의 포매터 캐시, `shared/date/timezone`의 `isSupportedTimezone` 결과(`memoize`, 런타임이 아는 이름은 바뀌지 않는다), `shared/utils/number-format`의 퍼센트 포매터(많아야 4개): 상태가 아닌 순수 캐시다
@@ -185,7 +184,7 @@ composition-root(프로세스 수명) → DIProvider: createAppContainer(ports)(
 
 - `shared/infra` 안 경계 파일(`audio/use-audio-part-playlist.ts`, `keep-awake/use-keep-screen-awake.ts`, `localization/device-locale.ts`, `linking/use-linking-url.ts`, `view-capture/capturable-view.tsx`): 라이브러리 자체가 훅·컴포넌트라 DI 값으로 바꿀 수 없다
 - `create-device-ports`·`composition-root`, `app/_layout.tsx`의 루트 오류 보고기, `bootstrap/navigation/open-support-mail.ts`(루트 경계의 문의 메일): 조립하는 곳이거나 Provider 밖에서 그려진다
-- 위젯 진입점(`device/widget/bridge/`), `shared/infra/device/device-info.ts`의 시작 상수, DI보다 위의 Provider: 앱 트리·DI가 없거나 DI보다 먼저다
+- 위젯 헤드리스 진입점(`bootstrap/providers/register-widget-task-handler`), `shared/infra/device/device-info.ts`의 시작 상수, DI보다 위의 Provider: 앱 트리·DI가 없거나 DI보다 먼저다
 - `expo-router`(route와 route 경계 훅), `shared/config/env.ts`의 `expo-constants`, 루트 레이아웃의 `expo-splash-screen`: 포트로 숨기지 않는 라이브러리다
 
 ## 공개 면

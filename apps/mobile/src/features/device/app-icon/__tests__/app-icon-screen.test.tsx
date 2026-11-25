@@ -168,7 +168,7 @@ describe('AppIconScreen', () => {
     expect(changedIcons()).toEqual([]);
   });
 
-  it('같은 프레임에 같은 아이콘을 두 번 누르면 바꾼 기록이 두 번 남는다(지금 동작)', async () => {
+  it('같은 프레임에 같은 아이콘을 두 번 눌러도 바꾼 기록은 한 번 남는다', async () => {
     // Given
     const { changedIcons } = await renderAppIconScreen();
     const radio = await screen.findByRole('radio', { name: '샴' });
@@ -181,10 +181,7 @@ describe('AppIconScreen', () => {
 
     // Then
     await waitFor(() => expect(screen.getByRole('radio', { name: '샴' })).toBeChecked());
-    expect(changedIcons()).toEqual([
-      { setting: 'app_icon', value: 'siamese' },
-      { setting: 'app_icon', value: 'siamese' },
-    ]);
+    expect(changedIcons()).toEqual([{ setting: 'app_icon', value: 'siamese' }]);
   });
 
   it('지금 아이콘 줄을 누른 바로 뒤 다른 아이콘을 눌러도 그 아이콘으로 바꾼다', async () => {

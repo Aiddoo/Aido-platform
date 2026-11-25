@@ -13,7 +13,6 @@ const babel = require(require.resolve('@babel/core', { paths: [PRESET_PATH] }));
 // React Compiler가 건너뛰는 파일. 이 파일의 메모(useMemo·useCallback)는 이유 주석과 함께 손으로 둔다
 const KNOWN_BAILOUTS = [
   // try…finally, catch 없는 try, try 안 조건식
-  'src/features/device/store-review/hooks/use-store-review-moment.ts',
   'src/shared/hooks/use-refresh.ts',
   // 훅을 prop 값으로 받는 DI
   'src/shared/providers/language-provider.tsx',

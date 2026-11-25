@@ -1,7 +1,16 @@
 import type { Href } from 'expo-router';
 import { match } from 'ts-pattern';
 
-import { parseWidgetNavigationUri } from '../domains/widget-navigation.model';
+import type { WidgetNavigationDestination } from '../domains/widget-navigation.model';
+import { widgetNavigationUriSchema } from '../schemas/widget-navigation-payload.schema';
+
+/** 위젯 URI를 목적지로 읽는다. 허용하지 않거나 깨진 URI는 null이다 */
+export function parseWidgetNavigation(uri: string | null): WidgetNavigationDestination | null {
+  if (!uri) {
+    return null;
+  }
+  return widgetNavigationUriSchema.safeParse(uri).data ?? null;
+}
 
 interface ShownRoute {
   pathname: string;
@@ -16,15 +25,8 @@ interface WidgetEntry {
   isShown: (current: ShownRoute) => boolean;
 }
 
-/**
- * 위젯 URI를 앱 진입으로 바꾼다. 새 목적지는 `widgetNavigationDestinationSchema`에 항목 하나, 아래 `match`에 한 줄이다.
- * 허용하지 않거나 손상된 URI는 null이다
- */
-export function findWidgetEntry(uri: string | null): WidgetEntry | null {
-  const destination = parseWidgetNavigationUri(uri);
-  if (destination == null) {
-    return null;
-  }
+/** 목적지를 라우터 주소·분석 값·지금 화면과의 대조로 바꾼다. 새 목적지는 스키마 항목 하나와 아래 `match` 한 줄이다 */
+export function toWidgetEntry(destination: WidgetNavigationDestination): WidgetEntry {
   return match(destination)
     .with({ kind: 'todo' }, ({ todoId }) => ({
       href: { pathname: '/todo/[todoId]', params: { todoId } } satisfies Href,
@@ -41,10 +43,4 @@ export function findWidgetEntry(uri: string | null): WidgetEntry | null {
         action === params.action,
     }))
     .exhaustive();
-}
-
-/** Android 위젯이 명령을 저장한 뒤 앱을 깨우는 링크. iOS 위젯 본문 링크와 모양이 같다 */
-export function isWidgetWakeLink(uri: string): boolean {
-  const destination = parseWidgetNavigationUri(uri);
-  return destination?.kind === 'feed' && destination.date === 'today' && destination.action == null;
 }

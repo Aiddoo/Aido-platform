@@ -30,8 +30,9 @@ import {
 import { createWidget, type WidgetEnvironment } from 'expo-widgets';
 import type { ReactElement } from 'react';
 
+import { toRegisteredWidgetProps } from '../apis/widget-props.mapper';
 import type { WidgetProps } from '../schemas/widget-props-payload.schema';
-import { createRegisteredWidgetProps } from '../utils/widget-initial-props.view-model';
+import { getRegisteredWidgetCopy } from '../utils/widget-initial-copy.view-model';
 
 // Widget layouts execute in isolation; helpers and palette must stay inside this function.
 function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment) {
@@ -464,7 +465,7 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
 const aidoTodayListWidget = createWidget<WidgetProps>(
   'AidoTodayList',
   AidoTodayListLayout,
-  createRegisteredWidgetProps(),
+  toRegisteredWidgetProps(getRegisteredWidgetCopy()),
 );
 
 export const AIDO_WIDGETS = [{ widget: aidoTodayListWidget }];

@@ -2,8 +2,9 @@ import { range } from 'es-toolkit';
 import { Children, isValidElement, type ReactNode } from 'react';
 import type { WidgetInfo } from 'react-native-android-widget';
 
+import { toInitialWidgetProps } from '../apis/widget-props.mapper';
 import type { WidgetProps } from '../schemas/widget-props-payload.schema';
-import { createInitialWidgetProps } from '../utils/widget-initial-props.view-model';
+import { getInitialWidgetCopy } from '../utils/widget-initial-copy.view-model';
 import { renderAndroidWidget } from './widgets.android';
 
 type NodeProps = {
@@ -69,7 +70,7 @@ function createWidgetInfo(maxRows: number, overrides: Partial<WidgetInfo> = {}):
 
 function createProps(maxRows: number, locale: 'ko' | 'en' = 'ko'): WidgetProps {
   return {
-    ...createInitialWidgetProps(locale),
+    ...toInitialWidgetProps(getInitialWidgetCopy(locale)),
     state: 'data',
     maxRows,
     totalTodos: 8,

@@ -270,8 +270,9 @@ test('feature와 route는 shared/infra를 직접 import하지 못하고 경계 �
       'src/shared/infra/audio/use-audio-part-playlist.ts',
     ],
     ['app/(app)/voice-notes/record.tsx', 'src/shared/infra/keep-awake/use-keep-screen-awake.ts'],
+    // 위젯만 깨어난 프로세스의 조립은 bootstrap이 한다(feature 밖이라 규칙이 보지 않는다)
     [
-      'src/features/device/widget/bridge/android-widgets.bridge.ts',
+      'src/bootstrap/providers/register-widget-task-handler.android.ts',
       'src/shared/infra/storage/widget-storage.ts',
     ],
     ['app/_layout.tsx', 'src/shared/infra/logger/global-logger.ts'],

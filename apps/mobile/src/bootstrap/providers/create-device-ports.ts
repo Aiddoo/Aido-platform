@@ -1,6 +1,5 @@
 import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-epoch';
 import { createSessionManager } from '@src/core/session/session-manager';
-import { createWidgetBridge } from '@src/features/device/widget/bridge/create-widget-bridge';
 import { createInviteLinkOpenedStore } from '@src/features/social/invite/stores/invite-link-opened.store';
 import { ENV } from '@src/shared/config/env';
 import { i18n } from '@src/shared/i18n';
@@ -52,6 +51,7 @@ import { widgetStorage } from '@src/shared/infra/storage/widget-storage';
 import { viewShotViewCaptureGateway } from '@src/shared/infra/view-capture/view-shot-view-capture-gateway';
 
 import type { AppContainerPorts } from './create-app-container';
+import { createWidgetBridge } from './create-widget-bridge';
 
 /** 앱을 연 뒤에 정하는 저장소와 QueryClient를 뺀 기기 포트 */
 export type DevicePorts = Omit<

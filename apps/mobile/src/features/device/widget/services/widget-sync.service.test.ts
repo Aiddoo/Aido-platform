@@ -3,10 +3,17 @@ import { writeStoredValue } from '@src/shared/storage/define-stored-value';
 import { createMemorySyncStorage, createWidgetBridgeStub } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 
-import type { WidgetSnapshotContext, WidgetSummaryInput } from '../apis/widget-snapshot.mapper';
-import type { WidgetBridge } from '../bridge/widget-bridge';
+import {
+  createWidgetSnapshotContext,
+  createWidgetSummary,
+} from '../__tests__/widget-snapshot.fixtures';
+import type { WidgetSummaryInput } from '../apis/widget-snapshot.mapper';
 import { widgetHeadlessFailureStoredValue } from '../schemas/widget-headless-failure-storage.schema';
-import { WidgetSyncService } from './widget-sync.service';
+import {
+  type WidgetBridge,
+  type WidgetSnapshotContext,
+  WidgetSyncService,
+} from './widget-sync.service';
 
 const context: WidgetSnapshotContext = {
   t: (key) => key,
@@ -50,6 +57,47 @@ describe('WidgetSyncService', () => {
       USER_ID,
     );
     expect(result).toEqual({ status: 'written', snapshot: expect.anything() });
+  });
+
+  it('내일 요약을 받으면 오늘 다음 day로 함께 담고 각 날짜의 주간 달력을 만든다', async () => {
+    // Given
+    // 토요일 다음 날은 새 주의 일요일이다
+    const bridge = createWidgetBridgeStub();
+    const { service } = createService(bridge);
+    const today = createWidgetSummary({ date: createDateKey('2026-07-18'), totalTodos: 2 });
+    const tomorrow = createWidgetSummary({
+      date: createDateKey('2026-07-19'),
+      totalTodos: 0,
+      topTodos: [],
+    });
+
+    // When
+    await service.syncSummary({ today, tomorrow }, createWidgetSnapshotContext(), USER_ID);
+
+    // Then
+    const days = bridge.writeSnapshot.mock.lastCall?.[0].days ?? [];
+    expect(days.map((day) => [day.date, day.state])).toEqual([
+      ['2026-07-18', 'data'],
+      ['2026-07-19', 'empty'],
+    ]);
+    expect(days[1]?.weekDays?.[0]?.date).toBe('2026-07-19');
+  });
+
+  it('로그아웃 스냅샷의 안내 문구는 앱 언어로 구워 담는다', async () => {
+    // Given
+    const bridge = createWidgetBridgeStub();
+    const { service } = createService(bridge);
+
+    // When
+    await service.syncLoggedOut(
+      createDateKey('2026-07-12'),
+      createWidgetSnapshotContext({ locale: 'en' }),
+    );
+
+    // Then
+    const [day] = bridge.writeSnapshot.mock.lastCall?.[0].days ?? [];
+    expect(day?.locale).toBe('en');
+    expect(day?.strings.loggedOutTitle).toBe('widget:state.loggedOutTitle');
   });
 
   it('브리지 실패는 throw하지 않고 실패 결과로 돌려준다 (위젯 실패는 앱에 영향 없음)', async () => {

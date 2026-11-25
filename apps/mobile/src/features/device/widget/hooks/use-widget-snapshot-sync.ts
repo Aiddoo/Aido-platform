@@ -17,9 +17,13 @@ import { noop } from 'es-toolkit';
 import { useEffect, useEffectEvent } from 'react';
 import { match } from 'ts-pattern';
 
-import type { WidgetSnapshotContext, WidgetSummaryInput } from '../apis/widget-snapshot.mapper';
+import type { WidgetSummaryInput } from '../apis/widget-snapshot.mapper';
 import { WIDGET_TOP_TODOS_LIMIT } from '../constants/widget.constants';
-import type { WidgetSyncResult, WidgetSyncService } from '../services/widget-sync.service';
+import type {
+  WidgetSnapshotContext,
+  WidgetSyncResult,
+  WidgetSyncService,
+} from '../services/widget-sync.service';
 import type { WidgetTranslateFn } from '../utils/widget-snapshot.view-model';
 
 export type WidgetSyncAuthState = 'authenticated' | 'unauthenticated' | 'resolving';

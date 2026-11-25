@@ -4,9 +4,9 @@ import { TodoDetailSchedule } from '@src/features/planning/todo/components/todo-
 import { TodoRow } from '@src/features/planning/todo/components/todo-row';
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
+import { useToggleTodoWithReviewMutationOptions } from '@src/features/planning/todo/hooks/use-toggle-todo-with-review-mutation-options';
 import { useToggleSubTodoMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
 import { getOptimisticListDate } from '@src/features/planning/todo/queries/todo-cache';
-import { useToggleTodoMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
 import { useGetTodoDetailsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { ThanksSummaryRow } from '@src/features/social/nudge/components/thanks-summary-row';
 import { TodoNudgeButton } from '@src/features/social/nudge/components/todo-nudge-button';
@@ -82,7 +82,7 @@ TodoDetailSummary.Owner = function Owner() {
 TodoDetailSummary.Task = function Task() {
   const [todoId] = useTodoId();
   const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
-  const toggleTodo = useMutation(useToggleTodoMutationOptions());
+  const toggleTodo = useMutation(useToggleTodoWithReviewMutationOptions());
   const todayKey = useTodayKey();
   const fontScaledSize = useFontScaledSize();
   const { todo } = detail;

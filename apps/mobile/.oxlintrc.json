@@ -1386,13 +1386,6 @@
     },
     {
       // 래칫
-      "files": ["src/features/device/widget/**"],
-      "rules": {
-        "aido/policy-model-parameter": "off"
-      }
-    },
-    {
-      // 래칫
       "files": ["src/shared/draft/draft.model.ts"],
       "rules": {
         "aido/model-function-exports": "off"

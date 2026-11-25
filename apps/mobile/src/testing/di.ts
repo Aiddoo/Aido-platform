@@ -68,7 +68,6 @@ type TestDiSeeds = Partial<
     | 'pushNotificationEntryStore'
     | 'pushOnboardingGuardStore'
     | 'myPagePaneLayoutStore'
-    | 'myPageDetailRootStore'
   >
 >;
 

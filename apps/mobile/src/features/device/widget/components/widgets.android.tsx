@@ -16,6 +16,7 @@ import {
 } from 'react-native-android-widget';
 import { match } from 'ts-pattern';
 
+import { parseWidgetColor } from '../apis/widget-props.mapper';
 import {
   ANDROID_WIDGET_FIXED_COLORS,
   ANDROID_WIDGET_NAVIGATION_ACTION,
@@ -27,7 +28,6 @@ import {
   getAndroidWidgetDesignSize,
   getAndroidWidgetSlotSize,
 } from '../utils/android-widget-slot.geometry';
-import { isHexColor } from '../utils/widget-color.view-model';
 
 // SvgWidget needs inline SVG; Metro otherwise transforms ic_paw.svg into a React component.
 const PAW_PATH =
@@ -175,7 +175,7 @@ function Count({ layout, size, width }: { layout: Layout; size: number; width: n
 
 function TodoRow({ layout, todo }: { layout: Layout; todo: WidgetProps['topTodos'][number] }) {
   const { palette, scale } = layout;
-  const color = isHexColor(todo.color) ? todo.color : BRAND;
+  const color = parseWidgetColor(todo.color) ?? BRAND;
   return (
     <FlexWidget
       {...toClickAction(layout, { destination: todo.destination, label: todo.title })}

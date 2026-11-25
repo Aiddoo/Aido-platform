@@ -1,11 +1,11 @@
 import {
+  parseWidgetNavigation,
+  toWidgetEntry,
+} from '@src/features/device/widget/apis/widget-navigation.mapper';
+import {
   type WidgetNavigationCommand,
   WidgetNavigationPolicy,
 } from '@src/features/device/widget/domains/widget-navigation.model';
-import {
-  findWidgetEntry,
-  isWidgetWakeLink,
-} from '@src/features/device/widget/utils/widget-navigation-link.view-model';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
@@ -30,6 +30,12 @@ import {
 
 /** Android 클릭은 명령을 저장하고 피드 깨우기 링크로 앱을 연다. 명령을 옮긴 직후 들어온 그 링크는 같은 탭이다 */
 const WAKE_LINK_AFTER_COMMAND_MS = 5 * SECOND_MS;
+
+/** 위젯 URI가 여는 앱 진입. 위젯이 열 수 없는 URI는 null이다 */
+function findWidgetEntry(uri: string | null) {
+  const destination = parseWidgetNavigation(uri);
+  return destination == null ? null : toWidgetEntry(destination);
+}
 
 export function useWidgetAppEntry() {
   const status = useAuthStatus();
@@ -71,9 +77,11 @@ export function useWidgetAppEntry() {
       return;
     }
     const restoredAt = commandRestoredAtRef.current;
+    const destination = parseWidgetNavigation(uri);
     if (
       restoredAt != null &&
-      isWidgetWakeLink(uri) &&
+      destination != null &&
+      WidgetNavigationPolicy.isWakeDestination(destination) &&
       toEpochMs(getNowInstant()) - restoredAt < WAKE_LINK_AFTER_COMMAND_MS
     ) {
       commandRestoredAtRef.current = null;

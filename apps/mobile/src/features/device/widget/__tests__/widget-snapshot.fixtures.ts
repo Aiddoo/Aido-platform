@@ -2,12 +2,13 @@ import { toInstant } from '@src/shared/date/instant';
 import { createDateKey } from '@src/testing/date-key';
 import { defineFixture } from '@src/testing/fixture';
 
-import type { WidgetSnapshotContext, WidgetSummaryInput } from '../apis/widget-snapshot.mapper';
+import type { WidgetSummaryInput } from '../apis/widget-snapshot.mapper';
 import {
-  type WidgetDaySnapshot,
-  widgetDaySnapshotSchema,
-  widgetSnapshotSchema,
+  type StoredWidgetDay,
+  widgetDayStorageSchema,
+  widgetSnapshotStorageSchema,
 } from '../schemas/widget-snapshot-storage.schema';
+import type { WidgetSnapshotContext } from '../services/widget-sync.service';
 
 /** t를 key(params) 형태로 에코해 굽기 로직을 검증할 수 있게 한다 */
 export const echoTranslate: WidgetSnapshotContext['t'] = (key, params) =>
@@ -43,7 +44,7 @@ export function createWidgetSummary(
   };
 }
 
-export const createWidgetDaySnapshot = defineFixture(widgetDaySnapshotSchema, {
+export const createWidgetDaySnapshot = defineFixture(widgetDayStorageSchema, {
   state: 'data',
   date: '2026-07-12',
   totalTodos: 5,
@@ -69,7 +70,7 @@ export const createWidgetDaySnapshot = defineFixture(widgetDaySnapshotSchema, {
   },
 });
 
-const widgetSnapshot = defineFixture(widgetSnapshotSchema, {
+const widgetSnapshot = defineFixture(widgetSnapshotStorageSchema, {
   version: 2,
   updatedAtIso: '2026-07-12T09:00:00.000Z',
   days: [createWidgetDaySnapshot()],
@@ -77,8 +78,8 @@ const widgetSnapshot = defineFixture(widgetSnapshotSchema, {
 
 /** 인자 하나가 day 하나다. 생략하면 2026-07-12 하루짜리 v2 snapshot을 만든다. */
 export function createWidgetSnapshot(
-  todayOverrides: Partial<WidgetDaySnapshot> = {},
-  tomorrowOverrides?: Partial<WidgetDaySnapshot>,
+  todayOverrides: Partial<StoredWidgetDay> = {},
+  tomorrowOverrides?: Partial<StoredWidgetDay>,
 ) {
   const today = createWidgetDaySnapshot(todayOverrides);
   if (tomorrowOverrides == null) {

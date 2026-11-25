@@ -94,7 +94,7 @@ Expo Router 권장 방식을 따른다. 라우터 교체는 route 전체를 바�
 - 컴포넌트·훅의 `router`는 `useRouter()`나 공용 이동 훅(`useGoBack`, `useSingleTap`으로 감싼 이동)에서 얻는다. 모듈 `router`(`import { router } from 'expo-router'`)는 React 밖(`+native-intent`, 앱 트리 밖 콜백)에서만 쓴다.
 - Expo Router의 비공개 API(`router.linkTo`, `__internal__popToNavigator`)는 `shared/navigation` 한 곳에서만 쓰고, 그 API가 없어질 때의 공개 대체 경로를 테스트로 묶는다(`open-entry-href.test.tsx`).
 - 저장·AI·조회를 기다린 뒤 이동하면 그 사이 떠났는지 먼저 본다. 화면은 `navigation.isFocused()`, 화면 안에서 바뀌는 조각(pane의 메모 편집기)은 마운트 여부도 본다. 떠났으면 지금 보는 화면 위로 끌고 가지 않는다. 메모 AI 정리 결과는 mutation이 초안에 남겨, 그 메모에서 다시 누르면 차감 없이 바로 결과 화면으로 간다.
-- 목적지를 계산하는 곳은 하나다. 알림은 `features/notification/utils/notification-destination.view-model.ts`, 위젯은 `findWidgetEntry`(`features/device/widget/utils/widget-navigation-link.view-model.ts`, 명령 유효성은 `WidgetNavigationPolicy`)다.
+- 목적지를 계산하는 곳은 하나다. 알림은 `features/notification/utils/notification-destination.view-model.ts`, 위젯은 `toWidgetEntry`(`features/device/widget/apis/widget-navigation.mapper.ts`, 명령 유효성은 `WidgetNavigationPolicy`)다.
 - 켜진 앱에 앱 밖에서 들어온 이동(누른 푸시, 인증 뒤 여는 위젯 목적지)은 `openEntryHref(href)`(`shared/navigation/open-entry-href.ts`)로 OS가 같은 URL을 연 것처럼 연다. Stack에 그 화면이 있으면 그리로 돌아가고 없으면 쌓는다. `router.navigate`는 탭 위 화면(할 일 상세·시트·결제 모달)에서 탭 화면을 열면 탭 묶음을 하나 더 쌓는다.
 - 탭 위 화면(시트·결제 모달·새 기능 소개·콕 상세·초대 카드)이 탭 화면으로 떠날 때는 `dismissToTab(href)`(같은 파일)다. 시트는 `close({ type: 'dismiss-to', href })`, 결제 모달은 `useCheckoutRoute().leaveTo`가 이것을 부른다. 탭 안과 탭 위에서 함께 도는 코드(오류 화면 문의하기)는 `openEntryHref`다. 탭 화면으로 `push`·`replace`하면 탭 바가 두 겹이 된다. `router.dismissTo`를 바로 쓰면 함께 쓰는 화면이 마이 탭에 열린다(아래 표).
 - 뒤로 가기는 `useGoBack({ fallbackHref })`(돌아갈 화면이 없을 때 화면이 아닌 일을 하면 `{ onFallback }`), Android 뒤로 가기 버튼은 `useAndroidBackHandler`다([hooks](./hooks.md)). `router.canGoBack() ? router.back() : …`을 직접 쓰지 않는다(연타로 두 번 돌아간다).
@@ -170,7 +170,7 @@ app/(app)/(tabs)/
 **새 진입 더하기.** 진입 하나는 스키마 하나와 처리 한 줄이다.
 
 - 앱 화면 링크: route 파일 하나다(위 [탭과 함께 쓰는 화면](#탭과-함께-쓰는-화면) 표). 로그인 판정 전에 열린 보호 route는 `cold-start-link`가 첫 세그먼트로 받아 Index가 연다.
-- 위젯 목적지: `widgetNavigationDestinationSchema`에 항목 하나, `findWidgetEntry`의 `match`에 한 줄(href·분석 값·이미 보이는지)이다. `exhaustive()`라 빠뜨리면 타입 검사가 막는다.
+- 위젯 목적지: `widgetNavigationDestinationSchema`에 항목 하나, `widgetNavigationUriSchema`에 주소 읽기, `toWidgetEntry`의 `match`에 한 줄(href·분석 값·이미 보이는지)이다. `exhaustive()`라 빠뜨리면 타입 검사가 막는다.
 - 초대 링크 모양: `inviteLinkSourceSchema`에 값 하나(분석 `source`와 같다), `matchInviteLink`에 갈래 하나다.
 - 링크·URI·저장 값은 외부 계약이라 추가만 한다. `auth-gate-layout.invite-entry.flow.test.tsx`·`auth-gate-layout.widget-entry.flow.test.tsx`·`oauth-callback-screen.test.tsx`가 출시한 링크·위젯 URI·이어서 열 초대 원문·콜백 URL 표로 착지와 뒤로 가기를 지킨다.
 

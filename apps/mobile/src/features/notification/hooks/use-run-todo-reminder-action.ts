@@ -6,8 +6,8 @@ import {
 } from '@src/features/identity/preference/queries/preference-cache';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { isTodoUnavailableError } from '@src/features/planning/todo/domains/todo.error';
+import { useToggleTodoWithReviewMutationOptions } from '@src/features/planning/todo/hooks/use-toggle-todo-with-review-mutation-options';
 import { fetchFreshTodoDetails } from '@src/features/planning/todo/queries/todo-cache';
-import { useToggleTodoMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
 import { useGetTodoDetailsQueryOptionsFactory } from '@src/features/planning/todo/queries/todo.queries';
 import { useTrack } from '@src/shared/analytics';
 import type { DateKey } from '@src/shared/date/date-key';
@@ -168,7 +168,7 @@ export function useRunTodoReminderAction(): (request: TodoReminderActionRequest)
  * 볼 수 없음 안내 하나로 보여 전역 토스트를 더하지 않는다
  */
 function useCompleteRemindedTodoMutationOptions() {
-  const toggleTodoOptions = useToggleTodoMutationOptions();
+  const toggleTodoOptions = useToggleTodoWithReviewMutationOptions();
   const errorFeedback = toggleTodoOptions.meta?.errorFeedback;
 
   return mutationOptions({

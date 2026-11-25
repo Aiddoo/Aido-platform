@@ -5,13 +5,9 @@ import {
   createWidgetSummary,
   echoTranslate,
 } from '../__tests__/widget-snapshot.fixtures';
-import {
-  getWidgetDayState,
-  toWidgetSnapshotStrings,
-  toWidgetWeek,
-} from './widget-snapshot.view-model';
+import { getWidgetSnapshotStrings, getWidgetWeek } from './widget-snapshot.view-model';
 
-describe('toWidgetWeek', () => {
+describe('getWidgetWeek', () => {
   it('주간 발자국은 할 일이 있고 모두 완료한 날에만 표시한다', () => {
     // Given
     const summary = createWidgetSummary({ date: createDateKey('2026-07-15'), isComplete: false });
@@ -25,7 +21,7 @@ describe('toWidgetWeek', () => {
     });
 
     // When
-    const week = toWidgetWeek(summary, context);
+    const week = getWidgetWeek(summary, context);
 
     // Then
     expect(week.days.map((day) => day.date)).toEqual([
@@ -63,7 +59,7 @@ describe('toWidgetWeek', () => {
     });
 
     // When
-    const week = toWidgetWeek(summary, createWidgetSnapshotContext({ locale: 'en' }));
+    const week = getWidgetWeek(summary, createWidgetSnapshotContext({ locale: 'en' }));
 
     // Then
     expect(week.days[0]?.date).toBe('2026-12-27');
@@ -80,7 +76,7 @@ describe('toWidgetWeek', () => {
     const summary = createWidgetSummary({ date: createDateKey('2026-10-01') });
 
     // When
-    const week = toWidgetWeek(summary, createWidgetSnapshotContext());
+    const week = getWidgetWeek(summary, createWidgetSnapshotContext());
 
     // Then
     expect(week.days[0]?.date).toBe('2026-09-27');
@@ -100,7 +96,7 @@ describe('toWidgetWeek', () => {
       const summary = createWidgetSummary({ date: createDateKey(date) });
 
       // When
-      const week = toWidgetWeek(summary, createWidgetSnapshotContext());
+      const week = getWidgetWeek(summary, createWidgetSnapshotContext());
 
       // Then
       expect(week.title).toBe(title);
@@ -108,10 +104,10 @@ describe('toWidgetWeek', () => {
   );
 });
 
-describe('toWidgetSnapshotStrings', () => {
+describe('getWidgetSnapshotStrings', () => {
   it('문자열을 t로 구워 담는다 (카운트·퍼센트·스트릭 보간)', () => {
     // When
-    const strings = toWidgetSnapshotStrings(echoTranslate, createWidgetSummary());
+    const strings = getWidgetSnapshotStrings(echoTranslate, createWidgetSummary());
 
     // Then
     expect(strings.progressTitle).toBe('widget:progress.title');
@@ -125,7 +121,7 @@ describe('toWidgetSnapshotStrings', () => {
     const summary = createWidgetSummary({ completionRate: 33.333 });
 
     // When
-    const strings = toWidgetSnapshotStrings(echoTranslate, summary);
+    const strings = getWidgetSnapshotStrings(echoTranslate, summary);
 
     // Then
     expect(strings.percentLabel).toBe('widget:progress.percent({"rate":33})');
@@ -133,23 +129,10 @@ describe('toWidgetSnapshotStrings', () => {
 
   it('moreLabelTemplate은 {count} 플레이스홀더를 남긴 채 굽는다 (표시 행 수는 위젯만 안다)', () => {
     // When
-    const strings = toWidgetSnapshotStrings(echoTranslate, createWidgetSummary());
+    const strings = getWidgetSnapshotStrings(echoTranslate, createWidgetSummary());
 
     // Then
     // 렌더 시점에 위젯이 {count}를 실제 초과분으로 치환한다
     expect(strings.moreLabelTemplate).toBe('widget:list.more({"overflow":"{count}"})');
-  });
-});
-
-describe('getWidgetDayState', () => {
-  it.each([
-    [0, 'empty'],
-    [1, 'data'],
-  ] as const)('할 일 %i개면 %s 상태다', (totalTodos, expected) => {
-    // When
-    const state = getWidgetDayState({ totalTodos });
-
-    // Then
-    expect(state).toBe(expected);
   });
 });

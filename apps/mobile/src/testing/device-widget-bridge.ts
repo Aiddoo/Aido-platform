@@ -1,4 +1,4 @@
-import { createWidgetBridge } from '@src/features/device/widget/bridge/create-widget-bridge';
+import { createWidgetBridge } from '@src/bootstrap/providers/create-widget-bridge';
 
 /**
  * 운영 조립(`create-device-ports`)이 넣는 플랫폼 위젯 브리지. `create-device-ports`는 Jest에서 읽지 못하는 SDK를 함께 불러

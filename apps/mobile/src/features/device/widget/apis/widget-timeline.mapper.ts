@@ -3,10 +3,10 @@ import { instantToDate } from '@src/shared/date/native-date';
 import { getNextLocalMidnight, toDateKey } from '@src/shared/date/zoned';
 import type { WidgetTimelineEntry } from 'expo-widgets';
 
-import { toWidgetProps } from '../apis/widget-props.mapper';
 import { WidgetSnapshotPolicy } from '../domains/widget-snapshot.model';
 import type { WidgetProps } from '../schemas/widget-props-payload.schema';
-import { type WidgetSnapshot } from '../schemas/widget-snapshot-storage.schema';
+import type { StoredWidgetSnapshot } from '../schemas/widget-snapshot-storage.schema';
+import { toWidgetProps } from './widget-props.mapper';
 
 interface WidgetTimelineContext {
   now: Instant;
@@ -17,7 +17,7 @@ interface WidgetTimelineContext {
 
 // [지금: 오늘] → [다음 자정: 내일(없으면 stale)] → [그다음 자정: stale]이고 WidgetKit이 앱 없이 자정에 넘긴다
 export function toWidgetTimelineEntries(
-  snapshot: WidgetSnapshot,
+  snapshot: StoredWidgetSnapshot,
   { now, timezone, appScheme }: WidgetTimelineContext,
 ): WidgetTimelineEntry<WidgetProps>[] {
   const current = WidgetSnapshotPolicy.getDay(snapshot, toDateKey(now, timezone));

@@ -1,5 +1,3 @@
-import { useMyPageDetailRootStore } from '@src/bootstrap/providers/di-context';
-import { getMyPageDetailOptions } from '@src/features/identity/user/utils/my-page-detail-options.view-model';
 import {
   Box,
   getPaneEdgeInsets,
@@ -9,7 +7,7 @@ import {
   useStackScreenOptions,
 } from '@src/shared/ui';
 import { findVerticalFold } from '@src/shared/utils/find-vertical-fold';
-import { Stack } from 'expo-router';
+import { type NativeStackNavigationOptions, Stack, useRootNavigationState } from 'expo-router';
 import type { ReactNode } from 'react';
 import { I18nManager } from 'react-native';
 import { ReservedRegionsProvider, useReservedRegions } from 'react-native-reserved-regions';
@@ -22,16 +20,16 @@ import { SafeAreaInsetsContext, useSafeAreaInsets } from 'react-native-safe-area
 export function MyPageStack({ menu, children }: { menu: ReactNode; children?: ReactNode }) {
   const isCompact = usePaneSizeClass() === 'compact';
   const screenOptions = useStackScreenOptions({ hasContentBackground: true });
-  const detailRootStore = useMyPageDetailRootStore();
+  const getDetailOptions = useMyPageDetailOptions();
 
   // 화면 안 칸들은 바깥 `PaneArea`가 잰 탭 안 영역 inset을 받는다
   return (
     <Stack
       // 제목은 화면이 스스로 정한다(`Stack.Screen options`). 정하지 않은 화면은 route 이름 대신 빈 제목이다
-      screenOptions={(input) => ({
+      screenOptions={({ route }) => ({
         ...screenOptions,
         title: '',
-        ...(!isCompact && getMyPageDetailOptions(input, detailRootStore.getRequestedPathname())),
+        ...(!isCompact && getDetailOptions(route)),
       })}
       screenLayout={({ children: screen }) => (
         <MyPageScreenLayout menu={menu}>{screen}</MyPageScreenLayout>
@@ -40,6 +38,55 @@ export function MyPageStack({ menu, children }: { menu: ReactNode; children?: Re
       {children}
     </Stack>
   );
+}
+
+const DETAIL_ROOT_OPTIONS = {
+  headerBackVisible: false,
+  gestureEnabled: false,
+  animation: 'none',
+} as const satisfies NativeStackNavigationOptions;
+
+// 메뉴 칸이 화면마다 같은 자리에 있어 밀어 넣지 않고 겹쳐 바꿔야 상세만 바뀌어 보인다
+const STACKED_DETAIL_OPTIONS = {
+  animation: 'fade',
+  animationMatchesGesture: true,
+} as const satisfies NativeStackNavigationOptions;
+
+interface StackStateNode {
+  routes: readonly { key?: string; state?: StackStateNode }[];
+}
+
+type MyPageDetailOptionsGetter = (route: { key?: string }) => NativeStackNavigationOptions;
+
+// 첫 상세(메뉴가 고른 화면)는 뒤로 가기 없이, 더 들어간 화면은 네이티브 뒤로 가기로. 렌더 중 getState 대신 구독한 루트 상태에서 자리를 찾는다
+function useMyPageDetailOptions(): MyPageDetailOptionsGetter {
+  const rootState = useRootNavigationState();
+
+  return (route) => {
+    // Stack은 이 렌더의 루트 상태로 화면을 그려 그 route는 늘 그 안에 있다. 걷고 바로 연 메뉴도 같은 렌더에서 자리 1이다
+    const stackIndex = findStackRouteKeys(rootState, route.key)?.indexOf(route.key ?? '') ?? -1;
+    if (stackIndex <= 0) {
+      return {};
+    }
+    return stackIndex === 1 ? DETAIL_ROOT_OPTIONS : STACKED_DETAIL_OPTIONS;
+  };
+}
+
+/** 그 route가 든 Stack의 route key들. 루트 상태 나무를 내려가며 찾는다 */
+function findStackRouteKeys(
+  state: StackStateNode,
+  routeKey: string | undefined,
+): readonly string[] | null {
+  if (state.routes.some(({ key }) => key === routeKey)) {
+    return state.routes.map(({ key }) => key ?? '');
+  }
+  for (const route of state.routes) {
+    const found = route.state == null ? null : findStackRouteKeys(route.state, routeKey);
+    if (found != null) {
+      return found;
+    }
+  }
+  return null;
 }
 
 interface MyPageScreenLayoutProps {

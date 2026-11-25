@@ -1,4 +1,3 @@
-import { useMyPageDetailRootStore } from '@src/bootstrap/providers/di-context';
 import { createEventChannel } from '@src/core/events/event-channel';
 import { useDismissKeyboard } from '@src/shared/hooks/use-dismiss-keyboard';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -47,13 +46,11 @@ export function MyPageMenuNavigationProvider({ children }: PropsWithChildren) {
   const dismissKeyboard = useDismissKeyboard();
   const pathname = usePathname();
   const isCompact = usePaneSizeClass() === 'compact';
-  const detailRootStore = useMyPageDetailRootStore();
   const [currentPathname] = useState(() => createCurrentPathnameStore(pathname));
 
   useEffect(() => {
     currentPathname.set(pathname);
-    detailRootStore.clear();
-  }, [currentPathname, detailRootStore, pathname]);
+  }, [currentPathname, pathname]);
 
   const router = useRouter();
   const navigate = useSingleTap((target: Href) => {
@@ -64,7 +61,6 @@ export function MyPageMenuNavigationProvider({ children }: PropsWithChildren) {
     dismissKeyboard();
     // 넓은 화면은 상세를 고른 메뉴 하나로 바꾼다. 그 안에서 더 들어간 화면이 뒤로 가기에 남지 않게 먼저 걷어 낸다
     if (!isCompact && router.canDismiss()) {
-      detailRootStore.request(typeof target === 'string' ? target : target.pathname);
       router.dismissAll();
     }
     router.push(target);

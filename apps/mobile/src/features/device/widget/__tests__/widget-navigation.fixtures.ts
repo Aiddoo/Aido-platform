@@ -1,10 +1,11 @@
 import { defineFixture } from '@src/testing/fixture';
 
-import { widgetNavigationCommandSchema } from '../domains/widget-navigation.model';
+import { widgetNavigationCommandStorageSchema } from '../schemas/widget-navigation-command-storage.schema';
 
-export const createWidgetNavigationCommand = defineFixture(widgetNavigationCommandSchema, {
+// 저장 모양으로 검증해 위젯이 열 수 없는 주소의 명령을 만들지 않는다. 만든 시각은 저장 원문(에포크 ms)으로 적는다
+export const createWidgetNavigationCommand = defineFixture(widgetNavigationCommandStorageSchema, {
   id: 'command-1',
   uri: 'aido://feed?date=today',
   userId: 'user-1',
-  createdAt: '2026-11-05T00:00:00.000Z',
+  createdAt: 1_793_836_800_000,
 });

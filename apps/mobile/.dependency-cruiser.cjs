@@ -80,8 +80,6 @@ const DRAFT_UTILS = '/utils/[^/]+-draft\\.ts$';
 // 실제로 쓰는 것만 둔다: 녹음 재생(voice), 화면 켜 두기(녹음 route), 시스템 언어 훅(weather), 화면 캡처(achievement)
 const INFRA_BOUNDARY_FILES =
   '^src/shared/infra/(?:audio/use-audio-part-playlist|keep-awake/use-keep-screen-awake|localization/device-locale|view-capture/capturable-view)\\.tsx?$';
-// 위젯만 깨어난 헤드리스 프로세스에는 앱 트리·DI가 없어 진입점이 어댑터를 직접 조립한다
-const WIDGET_HEADLESS_ENTRY = '^src/features/device/widget/bridge/';
 // 루트 오류 경계는 DI 밖에서 그려져 오류 보고기·로거를 직접 만든다
 const ROOT_LAYOUT = '^app/_layout\\.tsx$';
 // 래칫: 기기 상수(iPad·Mac 판정)를 직접 읽는 route. 포트 값으로 옮기면 지운다
@@ -134,7 +132,7 @@ const modelAndFolderRules = [
     severity: 'error',
     from: {
       path: DOMAIN_MODEL,
-      pathNot: [TEST, pendingFeatures(['device/widget'])],
+      pathNot: [TEST, pendingFeatures([])],
     },
     to: { path: '/schemas/' },
   },
@@ -156,7 +154,7 @@ const modelAndFolderRules = [
     severity: 'error',
     from: {
       path: '[^/]+\\.mapper\\.tsx?$',
-      pathNot: [TEST, pendingFeatures(['device/widget'])],
+      pathNot: [TEST, pendingFeatures([])],
     },
     to: { path: featureFolders(['utils']) },
   },
@@ -167,7 +165,7 @@ const modelAndFolderRules = [
     severity: 'error',
     from: {
       path: featureFolders(['queries']),
-      pathNot: [TEST, pendingFeatures(['planning/todo'])],
+      pathNot: [TEST, pendingFeatures([])],
     },
     to: {
       path: featureFolders(['hooks', 'utils', 'services']),
@@ -359,11 +357,11 @@ module.exports = {
     {
       name: 'feature-to-infra',
       comment:
-        'feature와 route는 shared/infra 어댑터를 직접 import하지 않는다. 기기 값·SDK는 core/ports의 포트로 받고 di-context 훅으로 꺼내, 테스트가 stub으로 기기를 고정한다. 라이브러리 자체가 훅·컴포넌트라 DI 값으로 바꿀 수 없는 경계 파일, 앱 트리·DI가 없는 위젯 헤드리스 진입점, DI 밖 루트 레이아웃만 된다(docs/architecture/structure.md#di포트수명).',
+        'feature와 route는 shared/infra 어댑터를 직접 import하지 않는다. 기기 값·SDK는 core/ports의 포트로 받고 di-context 훅으로 꺼내, 테스트가 stub으로 기기를 고정한다. 라이브러리 자체가 훅·컴포넌트라 DI 값으로 바꿀 수 없는 경계 파일, DI 밖 루트 레이아웃만 된다. 위젯 헤드리스 진입점은 bootstrap이 조립한다(docs/architecture/structure.md#di포트수명).',
       severity: 'error',
       from: {
         path: '^(?:src/features|app)/',
-        pathNot: [TEST, WIDGET_HEADLESS_ENTRY, ROOT_LAYOUT, PENDING_INFRA_ROUTES],
+        pathNot: [TEST, ROOT_LAYOUT, PENDING_INFRA_ROUTES],
       },
       to: {
         path: '^src/shared/infra/',

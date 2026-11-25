@@ -1,15 +1,12 @@
+import type { SupportedLocale } from '@aido/api/vocabulary';
 import type { DateKey } from '@src/shared/date/date-key';
-import { type Instant } from '@src/shared/date/instant';
-import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
+import type { Instant } from '@src/shared/date/instant';
 
-import type { WidgetDaySnapshot, WidgetSnapshot } from '../schemas/widget-snapshot-storage.schema';
-import {
-  getWidgetDayState,
-  toWidgetSnapshotStrings,
-  toWidgetWeek,
-  type WidgetTranslateFn,
-  type WidgetWeekCompletion,
-} from '../utils/widget-snapshot.view-model';
+import type {
+  StoredWidgetDay,
+  StoredWidgetSnapshot,
+  StoredWidgetStrings,
+} from '../schemas/widget-snapshot-storage.schema';
 
 /** todo feature에 의존하지 않도록 GET v1/todos/summary 모델과 같은 모양을 구조적 타입으로 둔다 */
 export interface WidgetSummaryInput {
@@ -27,90 +24,69 @@ export interface WidgetSummaryInput {
   }[];
 }
 
-export interface WidgetSnapshotContext {
-  t: WidgetTranslateFn;
-  locale: ResolvedLanguage;
-  now: Instant;
-  /** 쓰기 시점의 기기 시간대. 표시 내용이 같아도 바뀌면 iOS timeline의 자정 경계를 다시 써야 한다. */
-  timezone: string;
-  weekCompletions?: readonly WidgetWeekCompletion[];
-}
-
 export interface WidgetDaySummaries {
   today: WidgetSummaryInput;
   /** 자정 이후 표시할 잠정 요약. 받지 못했으면 생략하고 자정부터 stale을 표시한다. */
   tomorrow?: WidgetSummaryInput;
 }
 
-export function toWidgetSnapshot(
-  { today, tomorrow }: WidgetDaySummaries,
-  context: WidgetSnapshotContext,
-): WidgetSnapshot {
-  const todaySnapshot = toWidgetDaySnapshot(today, context);
-  return {
-    version: 2,
-    updatedAtIso: context.now,
-    days:
-      tomorrow == null ? [todaySnapshot] : [todaySnapshot, toWidgetDaySnapshot(tomorrow, context)],
+/** 위젯은 번역하지 못해 쓰기 전에 구워 둔 그날의 문구와 주간 달력이다 */
+export interface WidgetDayCopy {
+  strings: StoredWidgetStrings;
+  week: {
+    days: NonNullable<StoredWidgetDay['weekDays']>;
+    title: string;
+    rangeLabel: string;
   };
 }
 
-function toWidgetDaySnapshot(
+export function toWidgetDaySnapshot(
   summary: WidgetSummaryInput,
-  context: WidgetSnapshotContext,
-): WidgetDaySnapshot {
-  const topTodos = summary.topTodos.map((todo) => ({
-    id: todo.id,
-    title: todo.title,
-    completed: todo.completed,
-    categoryColor: todo.categoryColor,
-  }));
-  const week = toWidgetWeek(summary, context);
-
+  { strings, week }: WidgetDayCopy,
+  locale: SupportedLocale,
+): StoredWidgetDay {
   return {
-    state: getWidgetDayState(summary),
+    state: summary.totalTodos > 0 ? 'data' : 'empty',
     date: summary.date,
     totalTodos: summary.totalTodos,
     completedTodos: summary.completedTodos,
     completionRate: summary.completionRate,
     isComplete: summary.isComplete,
     currentStreak: summary.currentStreak,
-    topTodos,
-    locale: context.locale,
+    topTodos: summary.topTodos.map((todo) => ({
+      id: todo.id,
+      title: todo.title,
+      completed: todo.completed,
+      categoryColor: todo.categoryColor,
+    })),
+    locale,
     weekDays: week.days,
-    strings: {
-      ...toWidgetSnapshotStrings(context.t, summary),
-      weekTitle: week.title,
-      weekRangeLabel: week.rangeLabel,
-    },
+    strings: { ...strings, weekTitle: week.title, weekRangeLabel: week.rangeLabel },
   };
 }
 
-export function toLoggedOutWidgetSnapshot(
+export function toLoggedOutWidgetDaySnapshot(
   localDate: DateKey,
-  context: WidgetSnapshotContext,
-): WidgetSnapshot {
+  strings: StoredWidgetStrings,
+  locale: SupportedLocale,
+): StoredWidgetDay {
   return {
-    version: 2,
-    updatedAtIso: context.now,
-    days: [
-      {
-        state: 'loggedOut',
-        date: localDate,
-        totalTodos: 0,
-        completedTodos: 0,
-        completionRate: 0,
-        isComplete: false,
-        currentStreak: 0,
-        topTodos: [],
-        locale: context.locale,
-        strings: toWidgetSnapshotStrings(context.t, {
-          completedTodos: 0,
-          totalTodos: 0,
-          completionRate: 0,
-          currentStreak: 0,
-        }),
-      },
-    ],
+    state: 'loggedOut',
+    date: localDate,
+    totalTodos: 0,
+    completedTodos: 0,
+    completionRate: 0,
+    isComplete: false,
+    currentStreak: 0,
+    topTodos: [],
+    locale,
+    strings,
   };
+}
+
+export function toWidgetSnapshot(
+  days: StoredWidgetSnapshot['days'],
+  updatedAt: Instant,
+): StoredWidgetSnapshot {
+  return { version: 2, updatedAtIso: updatedAt, days };
 }

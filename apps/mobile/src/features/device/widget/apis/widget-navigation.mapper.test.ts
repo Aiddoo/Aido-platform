@@ -1,4 +1,37 @@
-import { findWidgetEntry } from './widget-navigation-link.view-model';
+import { parseWidgetNavigation, toWidgetEntry } from './widget-navigation.mapper';
+
+/** 앱 진입 훅처럼 URI를 읽어 앱 진입으로 바꾼다 */
+function findWidgetEntry(uri: string | null) {
+  const destination = parseWidgetNavigation(uri);
+  return destination == null ? null : toWidgetEntry(destination);
+}
+
+describe('parseWidgetNavigation', () => {
+  it('고정 날짜와 생성 동작을 원시값으로 보존한다', () => {
+    // Given
+    const uri = 'aido://feed?date=2026-10-05&action=add-todo';
+
+    // When
+    const destination = parseWidgetNavigation(uri);
+
+    // Then
+    expect(destination).toEqual({ kind: 'feed', date: '2026-10-05', action: 'add-todo' });
+  });
+
+  it.each([
+    'aido://feed:8080?date=today',
+    'aido://todo/1?extra=true',
+    'aido://feed?date=2026-02-30',
+    'aido://feed?date=today&date=2026-10-05',
+    'aido://feed?date=today&action=add-todo&action=add-todo',
+  ])('외부 포트나 지원하지 않는 URI %s를 거절한다', (uri) => {
+    // When
+    const destination = parseWidgetNavigation(uri);
+
+    // Then
+    expect(destination).toBeNull();
+  });
+});
 
 describe('위젯 앱 진입 경로 검증', () => {
   it.each(['aido', 'aido-dev', 'aido-preview'])('%s 위젯의 오늘 생성 요청을 유지한다', (scheme) => {

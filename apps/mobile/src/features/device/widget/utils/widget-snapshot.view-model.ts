@@ -6,7 +6,7 @@ import { APP_LOCALES } from '@src/shared/i18n/app-locales';
 import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
 import { keyBy, range } from 'es-toolkit';
 
-import type { WidgetSnapshotStrings } from '../schemas/widget-snapshot-storage.schema';
+import type { StoredWidgetStrings } from '../schemas/widget-snapshot-storage.schema';
 
 /** 스냅샷 문구를 굽는 최소 번역 함수 — i18next `t`가 그대로 만족한다 (순수성/테스트 용이성) */
 export type WidgetTranslateFn = (
@@ -43,17 +43,13 @@ export interface WidgetWeekCompletion {
   isComplete: boolean;
 }
 
-export function getWidgetDayState(summary: Pick<WidgetDayCounts, 'totalTodos'>) {
-  return summary.totalTodos > 0 ? ('data' as const) : ('empty' as const);
-}
-
-export function toWidgetSnapshotStrings(
+export function getWidgetSnapshotStrings(
   t: WidgetTranslateFn,
   summary: Pick<
     WidgetDayCounts,
     'completedTodos' | 'totalTodos' | 'completionRate' | 'currentStreak'
   >,
-): WidgetSnapshotStrings {
+): StoredWidgetStrings {
   return {
     progressTitle: t('widget:progress.title'),
     percentLabel: t('widget:progress.percent', { rate: Math.round(summary.completionRate) }),
@@ -76,7 +72,7 @@ export function toWidgetSnapshotStrings(
 /** 위젯 주는 날짜 key만 그린다. 날짜 key는 시간대와 상관없이 같은 날이라 고정 시간대로 읽는다 */
 const WIDGET_WEEK_TIMEZONE = 'UTC';
 
-export function toWidgetWeek(
+export function getWidgetWeek(
   summary: Pick<WidgetDayCounts, 'date' | 'totalTodos' | 'isComplete'>,
   {
     locale,

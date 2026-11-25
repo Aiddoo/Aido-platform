@@ -1,4 +1,4 @@
-import type { WidgetBridge } from '@src/features/device/widget/bridge/widget-bridge';
+import type { WidgetBridge } from '@src/features/device/widget/services/widget-sync.service';
 
 import { mockMethod } from '../mock-method';
 

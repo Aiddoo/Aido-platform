@@ -52,9 +52,11 @@ import { AppIconService } from '@src/features/device/app-icon/services/app-icon.
 import { createCoachmarkRepository } from '@src/features/device/coachmark/repositories/coachmark.repository';
 import { createStoreReviewRepository } from '@src/features/device/store-review/repositories/store-review.repository';
 import { StoreReviewService } from '@src/features/device/store-review/services/store-review.service';
-import type { WidgetBridge } from '@src/features/device/widget/bridge/widget-bridge';
 import { createWidgetNavigationRepository } from '@src/features/device/widget/repositories/widget-navigation.repository';
-import { WidgetSyncService } from '@src/features/device/widget/services/widget-sync.service';
+import {
+  type WidgetBridge,
+  WidgetSyncService,
+} from '@src/features/device/widget/services/widget-sync.service';
 import { TodoCommentApi } from '@src/features/engagement/comment/apis/todo-comment.api';
 import { AuthApi } from '@src/features/identity/auth/apis/auth.api';
 import { createPendingRevocationRepository } from '@src/features/identity/auth/repositories/pending-revocation.repository';
@@ -67,7 +69,6 @@ import { createAuthSessionStore } from '@src/features/identity/auth/stores/auth-
 import { ConsentApi } from '@src/features/identity/consent/apis/consent.api';
 import { PreferenceApi } from '@src/features/identity/preference/apis/preference.api';
 import { UserApi } from '@src/features/identity/user/apis/user.api';
-import { createMyPageDetailRootStore } from '@src/features/identity/user/stores/my-page-detail-root.store';
 import { createMyPagePaneLayoutStore } from '@src/features/identity/user/stores/my-page-pane-layout.store';
 import { AchievementApi } from '@src/features/insights/achievement/apis/achievement.api';
 import { ReportApi } from '@src/features/insights/report/apis/report.api';
@@ -394,7 +395,6 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
 
     userApi: new UserApi(authHttpClient),
     myPagePaneLayoutStore: createMyPagePaneLayoutStore(),
-    myPageDetailRootStore: createMyPageDetailRootStore(),
 
     entitlementApi: new EntitlementApi(authHttpClient),
     purchasesSession,

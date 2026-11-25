@@ -1,7 +1,7 @@
 import type { WeatherCondition } from '@aido/api/vocabulary';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { TodoRow } from '@src/features/planning/todo/components/todo-row';
-import { useToggleTodoMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
+import { useToggleTodoWithReviewMutationOptions } from '@src/features/planning/todo/hooks/use-toggle-todo-with-review-mutation-options';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTrack, useTrackView } from '@src/shared/analytics';
 import {
@@ -215,7 +215,7 @@ WeatherBriefing.Item = function Item({
   const todayKey = useTodayKey();
   const router = useRouter();
   const push = useSingleTap(router.push);
-  const toggleTodo = useMutation(useToggleTodoMutationOptions());
+  const toggleTodo = useMutation(useToggleTodoWithReviewMutationOptions());
   const isChipStacked = useFontScale().fontScale === 'xlarge';
   const { todo, tone } = row;
   const time = formatHHmmTime(todo.localTime, timeFormat, dateFormat);
