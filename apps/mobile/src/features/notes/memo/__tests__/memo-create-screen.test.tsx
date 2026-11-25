@@ -165,6 +165,20 @@ describe('메모 만들기 화면', () => {
     expect(countEvents(setup.analytics, 'memo_created')).toBe(0);
   });
 
+  it('글자 수 한도를 넘기면 저장 버튼을 끄고 보내지 않는다', async () => {
+    // Given
+    const setup = createMemoScreenDi();
+    await renderMemoCreate(setup);
+
+    // When
+    await typeContent('가'.repeat(5_001));
+    await pressToolbar('저장');
+
+    // Then
+    expect(screen.getByLabelText('저장')).toBeDisabled();
+    expect(setup.httpClient.post).not.toHaveBeenCalled();
+  });
+
   it('빈 화면에서 뒤로 가면 아무것도 보내지 않고 돌아간다', async () => {
     // Given
     const setup = createMemoScreenDi();
