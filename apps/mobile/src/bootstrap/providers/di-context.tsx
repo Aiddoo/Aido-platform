@@ -188,7 +188,8 @@ export interface DIContainer extends SharedDependencies {
   activationService: ActivationService;
 }
 
-const DIContext = createContext<DIContainer | null>(null);
+/** 테스트의 Skia mock이 Canvas 안을 DI 없이 그리려고 값을 비운다. 앱은 `StaticDIProvider`로만 채운다 */
+export const DIContext = createContext<DIContainer | null>(null);
 
 interface StaticDIProviderProps extends PropsWithChildren {
   container: DIContainer;

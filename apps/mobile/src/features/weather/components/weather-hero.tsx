@@ -1,4 +1,3 @@
-import { useTrackView } from '@src/shared/analytics';
 import { ANIMATION } from '@src/shared/constants/animation';
 import { formatRelativeTimeLabel } from '@src/shared/date/format/date-labels';
 import { type Instant } from '@src/shared/date/instant';
@@ -8,45 +7,19 @@ import { useMinimumFontScale } from '@src/shared/hooks/use-minimum-font-scale';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
 import { useSystemLocale } from '@src/shared/infra/localization/device-locale';
-import {
-  Box,
-  Button,
-  HStack,
-  Text,
-  TextSkeleton,
-  type QueryErrorFallbackProps,
-  VStack,
-} from '@src/shared/ui';
-import { cn } from '@src/shared/utils/cn';
-import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { compact, noop } from 'es-toolkit';
-import { type ComponentProps, type ReactNode } from 'react';
+import { Box, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { compact } from 'es-toolkit';
 import Animated, { Easing, FadeInDown, ReduceMotion } from 'react-native-reanimated';
-import { match, P } from 'ts-pattern';
+import { match } from 'ts-pattern';
 
-import {
-  HERO_TEXT_SHADOW_COLOR,
-  LIGHT_BUTTON_TEXT_CLASS,
-} from '../constants/weather-colors.constants';
+import { HERO_TEXT_SHADOW_COLOR } from '../constants/weather-colors.constants';
 import type { ForecastDay } from '../domains/forecast-day.model';
 import type { PlaceName } from '../domains/location-reading.model';
-import {
-  isOfflineError,
-  isTimeoutError,
-  isLocationNotRegisteredError,
-  isWeatherProviderUnavailableError,
-} from '../domains/weather.error';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useWeatherLocation } from '../hooks/use-weather-location';
-import { useWeatherOpenKey } from '../hooks/use-weather-open-key';
-import { useUpdateWeatherLocationMutationOptions } from '../queries/weather.mutations';
-import {
-  useGetWeatherLocationQueryOptions,
-  useGetWeatherReportQueryOptions,
-  WeatherReportSelect,
-} from '../queries/weather.queries';
+import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import { findForeignCountryName } from '../utils/foreign-country-name.view-model';
-import { toWeatherReportFailedCause } from '../utils/weather-analytics';
 import { getWeatherConditionLabelKey } from '../utils/weather-labels.view-model';
 import {
   type TemperatureReading,
@@ -55,7 +28,6 @@ import {
   toTemperatureReading,
 } from '../utils/weather-temperature.view-model';
 import { WeatherIcon } from './weather-icon';
-import { WeatherMascot } from './weather-mascot';
 
 const HERO_TEXT_SHADOW = {
   textShadowColor: HERO_TEXT_SHADOW_COLOR,
@@ -337,160 +309,5 @@ WeatherHero.Loading = function Loading() {
       <TextSkeleton size="t3" className="w-20 opacity-40" />
       <TextSkeleton size="t3" className="w-36 opacity-40" />
     </VStack>
-  );
-};
-
-/** 리포트는 모든 블록이 같은 요청을 쓰므로 실패도 여기 한 곳에서만 보여 준다 */
-WeatherHero.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
-  const { t } = useTranslation(['weather', 'common']);
-  const location = useWeatherLocation();
-  const openKey = useWeatherOpenKey();
-  const cause = toWeatherReportFailedCause(error);
-  // 위치 등록을 기다리는 동안은 실패가 아니라 로딩으로 보인다
-  const isWaitingForLocation = cause === 'no_location' && location.status === 'checking';
-
-  // 위치 확인이 다시 돌아 로딩과 실패를 오가도 같은 열기의 같은 원인은 한 번만 센다
-  useTrackView(
-    'weather_report_failed',
-    isWaitingForLocation ? null : { key: `${openKey}:${cause}`, params: { cause } },
-  );
-
-  const retryButton = (
-    <WeatherResult.Action onPress={reset}>{t('common:actions.retry')}</WeatherResult.Action>
-  );
-
-  return match(error)
-    .with(P.when(isLocationNotRegisteredError), () =>
-      location.status === 'checking' ? (
-        <WeatherHero.Loading />
-      ) : (
-        <WeatherHero.LocationUnavailable onRecovered={reset} />
-      ),
-    )
-    .with(P.when(isWeatherProviderUnavailableError), () => (
-      <WeatherResult
-        title={t('weather:screen.providerUnavailable')}
-        description={t('weather:screen.retryLater')}
-      >
-        {retryButton}
-      </WeatherResult>
-    ))
-    .with(P.when(isTimeoutError), () => (
-      <WeatherResult
-        title={t('weather:screen.timeout')}
-        description={t('weather:screen.retryLater')}
-      >
-        {retryButton}
-      </WeatherResult>
-    ))
-    .with(P.when(isOfflineError), () => (
-      <WeatherResult
-        title={t('weather:screen.offline')}
-        description={t('weather:screen.offlineDescription')}
-      >
-        {retryButton}
-      </WeatherResult>
-    ))
-    .otherwise(() => (
-      <WeatherResult
-        title={t('weather:screen.loadFailed')}
-        description={t('weather:screen.retryLater')}
-      >
-        {retryButton}
-      </WeatherResult>
-    ));
-};
-
-interface LocationUnavailableProps {
-  onRecovered: () => void;
-}
-
-/** 서버 저장 위치가 있으면 그 위치를 다시 등록하고, 없으면 기기 위치를 다시 읽은 뒤 리포트 경계를 푼다 */
-WeatherHero.LocationUnavailable = function LocationUnavailable({
-  onRecovered,
-}: LocationUnavailableProps) {
-  const { t } = useTranslation(['weather', 'common']);
-  const location = useWeatherLocation();
-  const { data: reading } = useQuery(useGetWeatherLocationQueryOptions());
-  const updateLocation = useMutation(useUpdateWeatherLocationMutationOptions());
-
-  const handleRetry = async () => {
-    if (reading?.status === 'located') {
-      const { latitude, longitude } = reading.registered;
-      await updateLocation.mutateAsync({ latitude, longitude }).catch(noop);
-    } else if (location.status === 'unavailable') {
-      await location.retry();
-    }
-    onRecovered();
-  };
-
-  return (
-    <WeatherResult
-      title={t('weather:locationPrompt.unavailableTitle')}
-      description={t('weather:locationPrompt.unavailableDescription')}
-    >
-      <WeatherResult.Action isLoading={updateLocation.isPending} onPress={handleRetry}>
-        {t('common:actions.retry')}
-      </WeatherResult.Action>
-    </WeatherResult>
-  );
-};
-
-interface WeatherResultProps {
-  title: string;
-  description?: string;
-  children?: ReactNode;
-}
-
-/** 시안 V2States 2·6. 마스코트 이미지는 장식이라 보조 기술에서 숨긴다 */
-function WeatherResult({ title, description, children }: WeatherResultProps) {
-  return (
-    <VStack align="center" px={8}>
-      <WeatherMascot name="weatherAnchor" className="size-[136px]" fallbackCondition="CLEAR" />
-      <Text
-        size="t2"
-        weight="semibold"
-        tone="onSky"
-        align="center"
-        className="mt-3.5 max-w-[280px] text-[24px] leading-[32px] tracking-[-0.7px]"
-        accessibilityRole="header"
-        lineBreakStrategyIOS="hangul-word"
-      >
-        {title}
-      </Text>
-      {description != null && (
-        <Text
-          size="b3"
-          align="center"
-          className="mt-2 max-w-[300px] leading-[22px] text-on-sky/80"
-          lineBreakStrategyIOS="hangul-word"
-        >
-          {description}
-        </Text>
-      )}
-      {children != null && <VStack className="mt-7 w-full gap-2">{children}</VStack>}
-    </VStack>
-  );
-}
-
-interface WeatherResultActionProps extends Omit<
-  ComponentProps<typeof Button>,
-  'variant' | 'color' | 'size' | 'display' | 'children'
-> {
-  children: string;
-}
-
-/** 하늘 위 다시 시도 버튼은 밝은 면이다 */
-WeatherResult.Action = function Action({
-  children,
-  className,
-  ...props
-}: WeatherResultActionProps) {
-  return (
-    <Button display="full" className={cn('bg-on-sky/95', className)} {...props}>
-      <Text size="b1" weight="semibold" align="center" className={LIGHT_BUTTON_TEXT_CLASS}>
-        {children}
-      </Text>
-    </Button>
   );
 };

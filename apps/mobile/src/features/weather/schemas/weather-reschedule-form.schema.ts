@@ -15,7 +15,10 @@ export function toSelectionKey(todoId: number): string {
   return `todo-${todoId}`;
 }
 
-/** 시트에 남아 있는 할 일만 옮긴다. 목록에서 뺀 할 일의 이전 선택은 무시한다. */
+/**
+ * 받은 할 일(지금 영향받는 할 일) 가운데 선택이 남은 것만 옮긴다. 목록에서 뺀 할 일은 칸이 내려가며 선택이
+ * 지워져(shouldUnregister) 여기서 걸러지지 않아도 실리지 않는다
+ */
 export function toScheduleChanges(
   { selections }: WeatherRescheduleFormValues,
   todoIds: readonly number[],

@@ -369,3 +369,32 @@ test('이유를 적어 둔 파일은 한 곳만 써도 경고하지 않고, 더�
     [shared, removed],
   );
 });
+
+test('폴더로 적은 이유는 그 아래 파일만 가리고, 아래에 한 곳만 쓰는 파일이 없어지면 지우라고 알린다', () => {
+  // Given
+  const scene = 'src/features/social/friend/components/friend-scene/friend-scene.tsx';
+  const layer = 'src/features/social/friend/components/friend-scene/star-layer.tsx';
+  const sibling = 'src/features/social/friend/components/friend-scene-caption.tsx';
+  const modules = [
+    { source: layer, dependents: [scene] },
+    { source: sibling, dependents: [scene] },
+  ];
+  const allowed = {
+    'src/features/social/friend/components/friend-scene/': '스스로 완결된 장면 레이어',
+    'src/features/social/friend/components/friend-gone/': '낡은 이유',
+  };
+
+  // When
+  const warnings = findLocalOnlyFiles(modules, allowed);
+  const stale = findStaleLocalOnlyAllowances(modules, allowed);
+
+  // Then
+  assert.deepEqual(
+    warnings.map((warning) => warning.split(':')[0]),
+    [sibling],
+  );
+  assert.deepEqual(
+    stale.map((error) => error.split(':')[0]),
+    ['src/features/social/friend/components/friend-gone/'],
+  );
+});

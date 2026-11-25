@@ -55,14 +55,14 @@ const SHARD = {
 } as const;
 const SHARD_COLOR = 'rgba(240,246,255,0.9)';
 
-type HailLayerProps = {
+interface HailLayerProps {
   density: number;
   wind: number;
   width: number;
   height: number;
   isLowEndDevice: boolean;
   time: SharedValue<number>;
-};
+}
 
 type Hailstone = {
   depth: number;

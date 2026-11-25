@@ -32,7 +32,7 @@ const CRYSTAL_SIZE_RATIO = 3.2;
 const CRYSTAL_ALPHA = 0.4;
 const CRYSTAL_SPIN = 0.6;
 
-type SnowLayerProps = {
+interface SnowLayerProps {
   density: number;
   speed: number;
   angle: number;
@@ -42,7 +42,7 @@ type SnowLayerProps = {
   height: number;
   isLowEndDevice: boolean;
   time: SharedValue<number>;
-};
+}
 
 type Flake = {
   x: number;

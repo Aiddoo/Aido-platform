@@ -15,6 +15,7 @@ import { getNowInstant } from '@src/shared/date/clock';
 import { addDaysToDateKey, type DateKey } from '@src/shared/date/date-key';
 import { fromEpochMs, type Instant, toEpochMs } from '@src/shared/date/instant';
 import { getErrorMessage, reportUnexpectedError, toError, unwrap } from '@src/shared/errors';
+import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { shouldRetryQuery } from '@src/shared/query/query-retry';
 import {
@@ -25,7 +26,6 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import { clamp, orderBy, pick } from 'es-toolkit';
-import { useLocalSearchParams } from 'expo-router';
 import { match } from 'ts-pattern';
 
 import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
@@ -39,7 +39,7 @@ import { weatherDevParamsSchema } from '../schemas/weather-dev-params.schema';
 import { type WeatherDevOverride } from '../schemas/weather-report-query-key.schema';
 import { type WeatherRescheduleParams } from '../schemas/weather-reschedule-params.schema';
 import { type UnexpectedLocationFailure } from '../services/weather-location.service';
-import { type WeatherSceneInput } from '../utils/weather-scene.view-model';
+import { type WeatherSceneInput, type WeatherSkyInput } from '../utils/weather-scene.view-model';
 import {
   findCachedReportLocation,
   getCachedWeatherLocation,
@@ -169,10 +169,12 @@ function shouldRetryReport(failureCount: number, error: unknown): boolean {
 
 /** 개발 빌드 QA용: `/weather?devScene=HAIL&devNight=1`로 연 날씨 화면에서만 지금 날씨를 바꿔 보여 준다. */
 function useRouteDevOverride() {
-  const parsed = weatherDevParamsSchema.safeParse(useLocalSearchParams());
-  const override: WeatherDevOverride | null = parsed.success
-    ? { condition: parsed.data.devScene, isDaylight: parsed.data.devNight === '0' }
-    : null;
+  const [{ devScene, devNight }] = useRouteParams(weatherDevParamsSchema);
+  // 둘 중 하나라도 낯선 값이면 덮어쓰지 않는다
+  const override: WeatherDevOverride | null =
+    devScene == null || devNight == null
+      ? null
+      : { condition: devScene, isDaylight: devNight === '0' };
 
   return [override] as const;
 }
@@ -183,7 +185,10 @@ function useNoDevOverride() {
   return [override] as const;
 }
 
-/** 운영 번들에서는 `__DEV__`가 false로 치환되어 파라미터를 읽는 코드가 빠진다. */
+/**
+ * 개발 빌드에서만 route를 읽는다. 인자로 넘기면 개발용 값이 호출부 17곳에 퍼진다.
+ * 운영 번들에서는 `__DEV__`가 false로 치환되어 파라미터를 읽는 코드가 빠진다
+ */
 export const useWeatherDevOverride = __DEV__ ? useRouteDevOverride : useNoDevOverride;
 
 /** 지금 날씨·시간별 예보(낮밤 포함)·오늘 예보가 모두 같은 날씨로 보이게 바꾼다. 다른 날과 수치는 실제 값을 둔다. */
@@ -426,6 +431,11 @@ function selectScene(report: WeatherReport): WeatherSceneInput {
   };
 }
 
+/** 카드 색조는 날씨 상태와 낮밤만으로 정해진다. 장면의 다른 값(강수 강도·구름·바람·달)이 바뀌어도 카드를 다시 그리지 않게 따로 고른다 */
+function selectSky(report: WeatherReport): WeatherSkyInput {
+  return pick(report.current, ['condition', 'isDaylight']);
+}
+
 function selectBadge(report: WeatherReport) {
   return {
     current: report.current,
@@ -452,5 +462,6 @@ export const WeatherReportSelect = {
   airQuality: selectAirQuality,
   attribution: selectAttribution,
   scene: selectScene,
+  sky: selectSky,
   badge: selectBadge,
 } as const;

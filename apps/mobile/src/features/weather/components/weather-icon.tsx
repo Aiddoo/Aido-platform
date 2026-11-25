@@ -246,16 +246,13 @@ export function WeatherIcon({ condition, isDaylight, ...props }: WeatherIconProp
   return <GlyphIcon glyph={GLYPHS[toGlyphName({ condition, isDaylight })]} {...props} />;
 }
 
-WeatherIcon.Sunrise = function Sunrise(props: GlyphIconProps) {
-  return <GlyphIcon glyph={GLYPHS.sunrise} {...props} />;
-};
+interface NamedGlyphIconProps extends GlyphIconProps {
+  glyph: Extract<GlyphName, 'sunrise' | 'sunset' | 'warning'>;
+}
 
-WeatherIcon.Sunset = function Sunset(props: GlyphIconProps) {
-  return <GlyphIcon glyph={GLYPHS.sunset} {...props} />;
-};
-
-WeatherIcon.Warning = function Warning(props: GlyphIconProps) {
-  return <GlyphIcon glyph={GLYPHS.warning} {...props} />;
+/** 날씨 상태가 아닌 그림(일출·일몰·특보)은 쓰는 곳이 이름으로 고른다 */
+WeatherIcon.Glyph = function Glyph({ glyph, ...props }: NamedGlyphIconProps) {
+  return <GlyphIcon glyph={GLYPHS[glyph]} {...props} />;
 };
 
 interface CardIconProps extends Omit<

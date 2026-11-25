@@ -30,6 +30,7 @@ import {
   createWeatherHttpClient,
   getTrackedEvents,
   REPORT_PATH,
+  respondWeather,
   TODOS_PATH,
   WEATHER_NOW,
   WEATHER_TODAY,
@@ -260,15 +261,15 @@ describe('WeatherRescheduleSheetRoute', () => {
       await waitFor(() => expect(route.getPathname()).toBe('/weather'));
     });
 
-    // 알려진 버그: 버튼은 링크의 할 일 id로만 세어, 시트가 지금 영향받는 할 일 전체로 바꿔 보여도 0개다
-    it('링크의 할 일이 낡아 지금 영향받는 할 일을 모두 보일 때 옮기기 버튼은 0개로 꺼져 있다', async () => {
+    // 버튼은 링크의 할 일 id가 아니라 목록이 보이는 할 일을 센다. 링크가 낡으면 둘이 다르다
+    it('링크의 할 일이 낡아 지금 영향받는 할 일을 모두 보일 때 옮기기 버튼도 그 할 일들을 센다', async () => {
       // When
       await openSheet({ link: 'todoIds=99&reason=rain' });
 
       // Then
       expect(await screen.findByText('산책')).toBeOnTheScreen();
       expect(screen.getByText('장보기')).toBeOnTheScreen();
-      expect(getSubmitButton(0)).toBeDisabled();
+      expect(getSubmitButton(2)).toBeEnabled();
     });
   });
 
@@ -301,6 +302,83 @@ describe('WeatherRescheduleSheetRoute', () => {
       // Then
       await waitFor(() => expect(route.getPathname()).toBe('/weather'));
       expect(httpClient.patch).not.toHaveBeenCalled();
+    });
+
+    it('그대로 두기로 하나를 뺀 뒤 옮기면 남은 할 일만 요청에 실린다', async () => {
+      // Given
+      const { httpClient, analytics, route } = await openSheet({
+        link: 'todoIds=7,8&reason=rain',
+      });
+      respondScheduleUpdates(httpClient);
+      const [keepWalk] = await screen.findAllByText('이 할 일은 그대로 두기');
+      if (keepWalk == null) {
+        throw new Error('그대로 두기 버튼이 없습니다');
+      }
+      await fireEvent.press(keepWalk);
+      await waitFor(() => expect(screen.queryByText('산책')).not.toBeOnTheScreen());
+
+      // When
+      await fireEvent.press(getSubmitButton(1));
+
+      // Then
+      await waitFor(() => expect(route.getPathname()).toBe('/weather'));
+      expect(getScheduleRequests(httpClient)).toEqual([
+        [
+          'v1/todos/8/schedule',
+          { startDate: WEATHER_TODAY, endDate: null, scheduledTime: '18:00', isAllDay: false },
+        ],
+      ]);
+      expect(getTrackedEvents(analytics, 'weather_reschedule_applied')).toEqual([
+        { moved_count: 1, reason: 'rain' },
+      ]);
+    });
+
+    it('뺀 할 일이 리포트를 다시 받아 목록에 돌아오면 전에 고른 시각이 아니라 추천 시각으로 다시 센다', async () => {
+      // Given
+      const { httpClient, route } = await openSheet({ link: 'todoIds=7,8&reason=rain' });
+      respondScheduleUpdates(httpClient);
+      const [walkAtSeven] = await screen.findAllByRole('radio', {
+        name: '오후 7:00, 강수 확률 10%',
+      });
+      const [keepWalk] = screen.getAllByText('이 할 일은 그대로 두기');
+      if (walkAtSeven == null || keepWalk == null) {
+        throw new Error('산책 칸이 없습니다');
+      }
+      await fireEvent.press(walkAtSeven);
+      await fireEvent.press(keepWalk);
+      await waitFor(() => expect(screen.queryByText('산책')).not.toBeOnTheScreen());
+
+      // When
+      // 남긴 장보기는 더 영향받지 않고 뺀 산책만 영향받는다. 링크의 할 일이 낡아 지금 영향받는 산책을 다시 보인다
+      const walkOnly = createBriefingDto({
+        reason: 'rain',
+        affectedTodoIds: [WALK.id],
+        rescheduleOptions: [{ todoId: WALK.id, options: EVENING_OPTIONS }],
+      });
+      respondWeather(httpClient, {
+        report: ok(createRainyReportDto({ briefing: walkOnly })),
+        todos: [WALK, GROCERY, LAUNDRY],
+      });
+      await act(() => route.queryClient.refetchQueries());
+
+      // Then
+      expect(await screen.findByText('산책')).toBeOnTheScreen();
+      expect(screen.queryByText('장보기')).not.toBeOnTheScreen();
+      expect(
+        screen.getByRole('radio', { name: '오후 6:00, 강수 확률 10%', checked: true }),
+      ).toBeOnTheScreen();
+
+      // When
+      await fireEvent.press(getSubmitButton(1));
+
+      // Then
+      await waitFor(() => expect(httpClient.patch).toHaveBeenCalledTimes(1));
+      expect(getScheduleRequests(httpClient)).toEqual([
+        [
+          'v1/todos/7/schedule',
+          { startDate: WEATHER_TODAY, endDate: null, scheduledTime: '18:00', isAllDay: false },
+        ],
+      ]);
     });
   });
 
@@ -343,6 +421,27 @@ describe('WeatherRescheduleSheetRoute', () => {
       ]);
       expect(countGetRequests(httpClient)[TODOS_PATH]).toBe(2);
       expect(countGetRequests(httpClient)[REPORT_PATH]).toBe(2);
+    });
+
+    it('옮기기를 같은 프레임에 두 번 눌러도 일정 변경은 할 일마다 한 번만 보낸다', async () => {
+      // Given
+      const { httpClient, analytics } = await openSheet({ link: 'todoIds=7,8&reason=rain' });
+      respondScheduleUpdates(httpClient);
+      await screen.findByText('산책');
+      const submit = getSubmitButton(2);
+
+      // When
+      await act(async () => {
+        await fireEvent.press(submit);
+        await fireEvent.press(submit);
+      });
+
+      // Then
+      await waitFor(() => expect(screen.getAllByText('할 일 2개를 옮겼어요')).not.toHaveLength(0));
+      expect(httpClient.patch).toHaveBeenCalledTimes(2);
+      expect(getTrackedEvents(analytics, 'weather_reschedule_applied')).toEqual([
+        { moved_count: 2, reason: 'rain' },
+      ]);
     });
 
     it('되돌리기를 누르면 옮기기 전 날짜와 시각으로 다시 저장한다', async () => {

@@ -10,7 +10,6 @@ import {
   formatInstantHour,
   type TimeFormat,
 } from '@src/shared/date/format/date-format';
-import { type Instant } from '@src/shared/date/instant';
 import { toHHmm } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaleRatio } from '@src/shared/hooks/use-font-scale-ratio';
@@ -43,16 +42,16 @@ import { match } from 'ts-pattern';
 
 import { toWeatherBriefingTodo } from '../apis/weather-briefing.mapper';
 import { BRIEFING_ROW_TONES, type BriefingRowTone } from '../constants/weather-colors.constants';
-import type { WeatherBriefing as WeatherBriefingModel } from '../domains/weather-briefing.model';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
-import { useWeatherOpenKey } from '../hooks/use-weather-open-key';
+import { useWeatherOpenKey } from '../hooks/use-weather-entry-params';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import { toWeatherRescheduleHref } from '../schemas/weather-reschedule-params.schema';
-import { toWeatherBriefingKind } from '../utils/weather-analytics';
+import { toWeatherBriefingKind, type WeatherBriefingKind } from '../utils/weather-analytics';
 import {
   type BriefingAction,
   type BriefingCopy,
   type BriefingRow,
+  type BriefingView,
   toBriefingView,
 } from '../utils/weather-briefing.view-model';
 import { formatTemperature } from '../utils/weather-temperature.view-model';
@@ -71,9 +70,12 @@ type SuggestTodoAction = Extract<BriefingAction, { kind: 'suggestTodo' }>;
 
 /** 리포트 실패는 리포트 경계 한 곳에서만 보이도록 던지지 않는 useQuery로 구독하고, 이 경계는 할 일 실패만 맡는다 */
 export function WeatherBriefing() {
+  const { t } = useTranslation('weather');
   const todayKey = useTodayKey();
   const now = useMinuteNow();
-  const { timezone: deviceTimezone } = useDateFormatContext();
+  const dateFormat = useDateFormatContext();
+  const { timezone: deviceTimezone } = dateFormat;
+  const unit = useTemperatureUnit();
   const [{ data: todoList }, { data: preference }] = useSuspenseQueries({
     queries: [useGetTodosByDateQueryOptions({ date: todayKey }), useGetPreferenceQueryOptions()],
   });
@@ -89,33 +91,12 @@ export function WeatherBriefing() {
   if (weather == null) {
     return <WeatherBriefing.Loading />;
   }
-  if (weather.briefing == null) {
+  const { briefing } = weather;
+  if (briefing == null) {
     return <WeatherBriefing.Empty />;
   }
 
-  return (
-    <WeatherBriefing.Card
-      briefing={weather.briefing}
-      now={now}
-      timeFormat={preference.timeFormat}
-    />
-  );
-}
-
-WeatherBriefing.Card = function Card({
-  briefing,
-  now,
-  timeFormat,
-}: {
-  briefing: WeatherBriefingModel;
-  now: Instant;
-  timeFormat: TimeFormat;
-}) {
-  const { t } = useTranslation('weather');
-  const translate = useTranslateBriefingCopy();
-  const openKey = useWeatherOpenKey();
-  const dateFormat = useDateFormatContext();
-  const unit = useTemperatureUnit();
+  const { timeFormat } = preference;
   const view = toBriefingView(briefing, {
     now,
     formatClock: (date) => formatClockTime(date, timeFormat, dateFormat),
@@ -124,15 +105,38 @@ WeatherBriefing.Card = function Card({
     formatTemperature: (celsius) => formatTemperature(celsius, unit),
     formatChance: (percent) => t('details.percentValue', { value: percent }),
   });
+
+  return (
+    <WeatherBriefing.Contents
+      view={view}
+      kind={toWeatherBriefingKind(briefing.kind)}
+      timeFormat={timeFormat}
+    />
+  );
+}
+
+interface WeatherBriefingContentsProps {
+  view: BriefingView;
+  /** 이 열기에서 처음 보인 브리핑의 종류(분석 값) */
+  kind: WeatherBriefingKind;
+  timeFormat: TimeFormat;
+}
+
+/** 브리핑이 있을 때만 그린다. 무엇을 알릴지는 서버 머리글과 view-model이 정하고 여기서는 그 문구와 줄을 그린다 */
+WeatherBriefing.Contents = function Contents({
+  view,
+  kind,
+  timeFormat,
+}: WeatherBriefingContentsProps) {
+  const { t } = useTranslation('weather');
+  const translate = useTranslateBriefingCopy();
+  const [openKey] = useWeatherOpenKey();
   const visibleRows = view.rows.slice(0, VISIBLE_TODO_LIMIT);
   const hiddenCount = view.rows.length - visibleRows.length;
   const { action } = view;
 
   // 분 단위 갱신·할 일 변경으로 종류가 바뀌어도 이 열기에서는 처음 보인 브리핑만 센다
-  useTrackView('weather_briefing_shown', {
-    key: openKey,
-    params: { kind: toWeatherBriefingKind(briefing.kind) },
-  });
+  useTrackView('weather_briefing_shown', { key: openKey, params: { kind } });
 
   return (
     <WeatherCard

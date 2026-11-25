@@ -171,6 +171,11 @@
             ],
             "patterns": [
               {
+                "regex": "/di-context$",
+                "importNames": ["DIContext"],
+                "message": "DIContext는 src/testing의 Skia mock만 값을 비우려고 읽습니다. 앱 코드는 di-context의 use{X} 훅으로 꺼내세요(직접 읽으면 누락 검사를 건너뜁니다)."
+              },
+              {
                 "regex": "^@src/shared/ui$|/form-field$",
                 "importNames": ["FormField"],
                 "message": "폼은 변수 form, useForm 제네릭 없이, Controller로 씁니다. FormProvider, useFormContext, FormField, methods, formMethods를 쓰지 않고 form을 props로 넘기세요."
@@ -217,6 +222,11 @@
               }
             ],
             "patterns": [
+              {
+                "regex": "/di-context$",
+                "importNames": ["DIContext"],
+                "message": "DIContext는 src/testing의 Skia mock만 값을 비우려고 읽습니다. 앱 코드는 di-context의 use{X} 훅으로 꺼내세요(직접 읽으면 누락 검사를 건너뜁니다)."
+              },
               {
                 "regex": "^@src/shared/ui$|/form-field$",
                 "importNames": ["FormField"],
@@ -269,6 +279,11 @@
               }
             ],
             "patterns": [
+              {
+                "regex": "/di-context$",
+                "importNames": ["DIContext"],
+                "message": "DIContext는 src/testing의 Skia mock만 값을 비우려고 읽습니다. 앱 코드는 di-context의 use{X} 훅으로 꺼내세요(직접 읽으면 누락 검사를 건너뜁니다)."
+              },
               {
                 "regex": "^@src/shared/ui$|/form-field$",
                 "importNames": ["FormField"],
@@ -337,6 +352,11 @@
             ],
             "patterns": [
               {
+                "regex": "/di-context$",
+                "importNames": ["DIContext"],
+                "message": "DIContext는 src/testing의 Skia mock만 값을 비우려고 읽습니다. 앱 코드는 di-context의 use{X} 훅으로 꺼내세요(직접 읽으면 누락 검사를 건너뜁니다)."
+              },
+              {
                 "regex": "^@src/shared/ui$|/form-field$",
                 "importNames": ["FormField"],
                 "message": "폼은 변수 form, useForm 제네릭 없이, Controller로 씁니다. FormProvider, useFormContext, FormField, methods, formMethods를 쓰지 않고 form을 props로 넘기세요."
@@ -380,6 +400,11 @@
               }
             ],
             "patterns": [
+              {
+                "regex": "/di-context$",
+                "importNames": ["DIContext"],
+                "message": "DIContext는 src/testing의 Skia mock만 값을 비우려고 읽습니다. 앱 코드는 di-context의 use{X} 훅으로 꺼내세요(직접 읽으면 누락 검사를 건너뜁니다)."
+              },
               {
                 "regex": "^@src/shared/ui$|/form-field$",
                 "importNames": ["FormField"],
@@ -1356,8 +1381,7 @@
       "files": [
         "src/shared/ui/steps/**",
         "src/features/insights/achievement/**",
-        "src/features/notes/memo/**",
-        "src/features/weather/**"
+        "src/features/notes/memo/**"
       ],
       "rules": {
         "aido/namespace-part-name": "off"
@@ -1407,21 +1431,21 @@
     },
     {
       // 래칫
-      "files": ["src/features/app-config/whats-new/**", "src/features/weather/**"],
+      "files": ["src/features/app-config/whats-new/**"],
       "rules": {
         "aido/props-interface": "off"
       }
     },
     {
       // 래칫
-      "files": ["src/features/voice/**", "src/features/weather/**"],
+      "files": ["src/features/voice/**"],
       "rules": {
         "aido/form-owner": "off"
       }
     },
     {
       // 래칫
-      "files": ["src/features/voice/**", "src/features/weather/**"],
+      "files": ["src/features/voice/**"],
       "rules": {
         "aido/component-outer-spacing": "off"
       }

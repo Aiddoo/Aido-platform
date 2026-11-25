@@ -109,6 +109,8 @@ export function DailyForecast() {
       <Accordion hideSeparator className="mt-2">
         {zip(weather.daily, bars).map(([day, bar]) => {
           const isToday = day.date === forecastTodayKey;
+          // 할 일 점 조회가 아직이거나 실패한 날은 점을 찍지 않는다
+          const todoCount = completions?.[day.date]?.totalTodos;
           return (
             <DailyForecast.Item
               key={day.date}
@@ -120,7 +122,7 @@ export function DailyForecast() {
                   ? t('common:relativeDay.today')
                   : formatDateKeyLabel(day.date, 'weekday', format.dateFormat)
               }
-              hasTodo={(completions?.[day.date]?.totalTodos ?? 0) > 0}
+              hasTodo={todoCount != null && todoCount > 0}
               format={format}
             />
           );

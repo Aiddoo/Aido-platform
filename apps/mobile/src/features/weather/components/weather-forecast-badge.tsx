@@ -34,18 +34,20 @@ export function WeatherForecastBadge() {
   });
 
   return match(location)
-    .with({ status: 'needsPermission' }, { status: 'denied' }, () => <WeatherForecastBadge.Entry />)
+    .with({ status: 'needsPermission' }, { status: 'denied' }, () => <WeatherForecastBadge.Empty />)
     .with({ status: 'checking' }, { status: 'unavailable' }, { status: 'ready' }, () => {
       if (badge == null) {
-        return isPending ? <WeatherForecastBadge.Loading /> : <WeatherForecastBadge.Entry />;
+        return isPending ? <WeatherForecastBadge.Loading /> : <WeatherForecastBadge.Empty />;
       }
-      return <WeatherForecastBadge.Item current={badge.current} serviceName={badge.serviceName} />;
+      return (
+        <WeatherForecastBadge.Contents current={badge.current} serviceName={badge.serviceName} />
+      );
     })
     .exhaustive();
 }
 
 /** 헤더 폭에는 로고(1x 38pt)를 줄이지 않고 넣을 수 없어 날씨 화면으로 보내고 접근성 이름에 공급자를 밝힌다 */
-WeatherForecastBadge.Item = function Item({
+WeatherForecastBadge.Contents = function Contents({
   current,
   serviceName,
 }: {
@@ -83,7 +85,16 @@ WeatherForecastBadge.Item = function Item({
   );
 };
 
-WeatherForecastBadge.Entry = function Entry() {
+WeatherForecastBadge.Loading = function Loading() {
+  return (
+    <HStack align="center" className="min-h-11 min-w-16 px-1">
+      <TextSkeleton size="b4" className="w-8" />
+    </HStack>
+  );
+};
+
+/** 받은 리포트가 없을 때(권한 안내 중·조회 실패) 기온 없이 날씨 화면으로 가는 길만 남긴다 */
+WeatherForecastBadge.Empty = function Empty() {
   const { t } = useTranslation('weather');
   const fontScaledSize = useFontScaledSize();
   const openWeather = useOpenBadgeWeather();
@@ -110,14 +121,6 @@ WeatherForecastBadge.Entry = function Entry() {
         </Text>
       </HStack>
     </PressableFeedback>
-  );
-};
-
-WeatherForecastBadge.Loading = function Loading() {
-  return (
-    <HStack align="center" className="min-h-11 min-w-16 px-1">
-      <TextSkeleton size="b4" className="w-8" />
-    </HStack>
   );
 };
 

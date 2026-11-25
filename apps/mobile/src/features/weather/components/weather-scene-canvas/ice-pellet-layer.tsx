@@ -28,13 +28,13 @@ const SPAWN_ABOVE = 10;
 const EXIT_BELOW = 10;
 const ALPHA = 0.75;
 
-type IcePelletLayerProps = {
+interface IcePelletLayerProps {
   density: number;
   width: number;
   height: number;
   isLowEndDevice: boolean;
   time: SharedValue<number>;
-};
+}
 
 type Pellet = {
   radius: number;

@@ -33,15 +33,12 @@ import {
   type HourlyPrecipitationOutlook,
   isFrozenPrecipitation,
 } from '../domains/forecast-hour.model';
-import type {
-  MinuteForecast,
-  PrecipitationPrecision,
-  PrecipitationWindow,
-} from '../domains/weather-report.model';
+import type { PrecipitationPrecision, PrecipitationWindow } from '../domains/weather-report.model';
 import { useFormatLocalTime, useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import {
   NEXT_HOUR_CHART_SIZE,
+  type NextHourChart,
   type PrecipitationLevel,
   toNextHourChart,
 } from '../utils/next-hour-chart.geometry';
@@ -104,6 +101,7 @@ export function NextHourPrecipitation() {
 
   const { headline, detail } = toMessage(weather.window);
   const summary = detail == null ? headline : t('nextHour.summary', { headline, detail });
+  const chart = toNextHourChart(weather.nextHour.minutes);
 
   return (
     <WeatherCard
@@ -128,7 +126,7 @@ export function NextHourPrecipitation() {
         )}
       </VStack>
       <Separator thickness={0.5} className="mt-3 bg-on-sky/[0.18]" />
-      <NextHourPrecipitation.Chart minutes={weather.nextHour.minutes} summary={summary} />
+      {chart != null && <NextHourPrecipitation.Chart chart={chart} summary={summary} />}
     </WeatherCard>
   );
 }
@@ -195,29 +193,24 @@ NextHourPrecipitation.HourlyOutlook = function HourlyOutlook({
 
 /** viewBox를 같은 비율로 늘려 회전·창 크기 변경에도 다시 계산하지 않는다. 동작 줄이기에서는 바로 완성해 보인다 */
 NextHourPrecipitation.Chart = function Chart({
-  minutes,
+  chart,
   summary,
 }: {
-  minutes: MinuteForecast[];
+  chart: NextHourChart;
   summary: string;
 }) {
   const { t } = useTranslation('weather');
   const isReducedMotion = useIsReduceMotionEnabled();
-  const chart = toNextHourChart(minutes);
   const guideColor = useResolvedColor('text-on-sky/22');
   const guideLabelColor = useResolvedColor('text-on-sky/50');
   const baselineColor = useResolvedColor('text-on-sky/35');
-  const length = chart?.length ?? 0;
+  const { length } = chart;
   const lineProgress = useSharedValue(isReducedMotion ? 1 : 0);
   const areaOpacity = useSharedValue(isReducedMotion ? 1 : 0);
   const { width, height, baseline } = NEXT_HOUR_CHART_SIZE;
-  const hasChart = chart != null;
 
   // 그래프가 처음 나타날 때만 그린다. 재조회로 선만 바뀌면 지웠다 다시 그리지 않고 그대로 바꾼다
   useEffect(() => {
-    if (!hasChart) {
-      return;
-    }
     if (isReducedMotion) {
       lineProgress.set(1);
       areaOpacity.set(1);
@@ -231,16 +224,12 @@ NextHourPrecipitation.Chart = function Chart({
       cancelAnimation(lineProgress);
       cancelAnimation(areaOpacity);
     };
-  }, [hasChart, isReducedMotion, lineProgress, areaOpacity]);
+  }, [isReducedMotion, lineProgress, areaOpacity]);
 
   const lineProps = useAnimatedProps(() => ({
     strokeDashoffset: length * (1 - lineProgress.get()),
   }));
   const areaProps = useAnimatedProps(() => ({ opacity: areaOpacity.get() }));
-
-  if (chart == null) {
-    return null;
-  }
 
   return (
     <VStack

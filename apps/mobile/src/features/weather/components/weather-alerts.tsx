@@ -107,7 +107,7 @@ WeatherAlerts.Item = function Item({
               ALERT_GLYPH_BACKGROUND_CLASS,
             )}
           >
-            <WeatherIcon.Warning width={glyphSize} height={glyphSize} />
+            <WeatherIcon.Glyph glyph="warning" width={glyphSize} height={glyphSize} />
           </Box>
           <VStack flex={1} gap={1}>
             <Text

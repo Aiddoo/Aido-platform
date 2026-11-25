@@ -15,19 +15,20 @@ import { WeatherReportGate } from '@src/features/weather/components/weather-repo
 import { WeatherScrollView } from '@src/features/weather/components/weather-scroll-view';
 import { WeatherSunMoon } from '@src/features/weather/components/weather-sun-moon/weather-sun-moon';
 import type { WeatherLocationStatus } from '@src/features/weather/domains/location-reading.model';
+import {
+  useWeatherEntry,
+  useWeatherOpenKey,
+} from '@src/features/weather/hooks/use-weather-entry-params';
 import { useWeatherLocation } from '@src/features/weather/hooks/use-weather-location';
-import { useWeatherOpenKey } from '@src/features/weather/hooks/use-weather-open-key';
 import {
   usePrefetchForecastCompletions,
   useWeatherLocationRevision,
 } from '@src/features/weather/queries/weather.queries';
-import { weatherEntryParamsSchema } from '@src/features/weather/schemas/weather-entry-params.schema';
 import {
   toWeatherLocationRegisteredResult,
   toWeatherOpenedEntry,
 } from '@src/features/weather/utils/weather-analytics';
 import { useTrackView } from '@src/shared/analytics';
-import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import {
   AdaptivePane,
   usePaneSizeClass,
@@ -39,6 +40,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { Suspense } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { match } from 'ts-pattern';
 
 const SCREEN_GUTTER = 16;
@@ -46,6 +48,7 @@ const HERO_GUTTER = 24;
 const HERO_TOP = 6;
 const CARDS_TOP = 32;
 const CARD_GAP = 12;
+const DEV_BADGE_BOTTOM = 8;
 /** 넓은 pane에서 카드가 과하게 늘어나지 않게 하는 최대 폭 */
 const COLUMN_STYLE = { maxWidth: 560 };
 
@@ -55,6 +58,7 @@ export default function WeatherScreen() {
   useWeatherScreenTracking(location.status);
   const locationRevision = useWeatherLocationRevision();
   const isCompact = usePaneSizeClass() === 'compact';
+  const insets = useSafeAreaInsets();
 
   return (
     <>
@@ -130,7 +134,10 @@ export default function WeatherScreen() {
           </>
         ))
         .exhaustive()}
-      <DevOverrideBadge />
+      <DevOverrideBadge
+        className="absolute self-center"
+        style={{ bottom: insets.bottom + DEV_BADGE_BOTTOM }}
+      />
     </>
   );
 }
@@ -160,10 +167,11 @@ function ForecastCards() {
   );
 }
 
+/** 리포트 실패 안내를 하늘 장면 가운데에 두고, 당겨서 다시 받을 수 있게 스크롤 안에 그린다 */
 WeatherScreen.Error = function ErrorFallback(props: QueryErrorFallbackProps) {
   return (
     <WeatherScrollView.Status>
-      <WeatherHero.Error {...props} />
+      <WeatherReportGate.Error {...props} />
     </WeatherScrollView.Status>
   );
 };
@@ -174,8 +182,8 @@ WeatherScreen.Error = function ErrorFallback(props: QueryErrorFallbackProps) {
  * 이름을 써서 경로 보기(`screen_view`)와 따로 남기는 예외다(observability.md)
  */
 function useWeatherScreenTracking(locationStatus: WeatherLocationStatus['status']): void {
-  const [{ entry }] = useRouteParams(weatherEntryParamsSchema);
-  const openKey = useWeatherOpenKey();
+  const [entry] = useWeatherEntry();
+  const [openKey] = useWeatherOpenKey();
   const locationResult = toWeatherLocationRegisteredResult(locationStatus);
 
   useTrackView('weather_opened', {

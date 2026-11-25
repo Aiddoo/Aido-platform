@@ -75,12 +75,12 @@ const VIGNETTE = {
   color: 'rgba(180,225,255,0.28)',
 } as const;
 
-type FrostLayerProps = {
+interface FrostLayerProps {
   width: number;
   height: number;
   isLowEndDevice: boolean;
   time: SharedValue<number>;
-};
+}
 
 /** 강추위: 칼바람 줄기와 바닥의 눈가루, 바람에 실려 반짝이는 얼음 결정, 가장자리 성에와 차가운 테두리 */
 export function FrostLayer({ width, height, isLowEndDevice, time }: FrostLayerProps) {

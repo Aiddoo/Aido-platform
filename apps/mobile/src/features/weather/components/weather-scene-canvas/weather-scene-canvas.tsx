@@ -67,14 +67,14 @@ function useSceneCrossFade(scene: WeatherScene) {
   return { entries: outgoing == null ? [current] : [outgoing, current], current, finishFade };
 }
 
-type WeatherSceneCanvasProps = {
+interface WeatherSceneCanvasProps {
   scene: WeatherScene;
   /** 투명 헤더 아래 내용이 시작하는 높이. 해·달을 헤더 버튼 아래에 둔다. */
   contentTop: number;
   /** 지명·기온이 놓인 단의 시작과 폭. 넓은 화면에서는 왼쪽 단, 옆 레일이 있으면 레일을 뺀 영역이다. */
   heroLeft: number;
   heroWidth: number;
-};
+}
 
 export function WeatherSceneCanvas({
   scene,
@@ -163,7 +163,7 @@ function findCloudLight(
   return scene.hasMoon ? { ...position, rgb: MOON_LIGHT_RGB } : null;
 }
 
-type SceneLayersProps = {
+interface SceneLayersProps {
   entry: SceneEntry;
   isDark: boolean;
   /** Canvas의 자식은 React context를 받지 못해 DI 훅을 부를 수 없다. 캔버스 밖에서 읽어 내린다 */
@@ -177,7 +177,7 @@ type SceneLayersProps = {
   size: SceneSize;
   time: SharedValue<number>;
   onFaded: (id: number) => void;
-};
+}
 
 function SceneLayers({
   entry,

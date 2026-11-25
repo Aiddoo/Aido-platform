@@ -1,15 +1,7 @@
-import { findScheduledTime } from '@src/features/planning/todo/domains/todo-schedule.model';
+import { type Todo, TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import type { DateKey } from '@src/shared/date/date-key';
 import type { Instant } from '@src/shared/date/instant';
 import { toHHmm } from '@src/shared/date/zoned';
-
-/** 할 일에서 일정 요청이 읽는 칸. 옮기기 전 값을 되돌리기에 그대로 쓴다 */
-interface TodoScheduleSnapshot {
-  startDate: DateKey;
-  endDate: DateKey | null;
-  localTime: string | null;
-  isAllDay: boolean;
-}
 
 interface TodoScheduleRequest {
   startDate: DateKey;
@@ -33,7 +25,7 @@ export function toRescheduleOutcome<TTodo>(
 
 /** 후보 시각은 할 일과 같은 날(기기 시간대)이라 날짜는 두고 시각(기기 시간대 HH:mm)만 바꾼다 */
 export function toMovedScheduleRequest(
-  todo: TodoScheduleSnapshot,
+  todo: Pick<Todo, 'startDate' | 'endDate'>,
   startsAt: Instant,
   timezone: string,
 ): TodoScheduleRequest {
@@ -45,12 +37,15 @@ export function toMovedScheduleRequest(
   };
 }
 
-/** 되돌리기: 옮기기 전 날짜·시각·종일 여부를 그대로 다시 저장한다. */
-export function toOriginalScheduleRequest(todo: TodoScheduleSnapshot): TodoScheduleRequest {
+/**
+ * 되돌리기: 옮기기 전 날짜·시각·종일 여부를 그대로 다시 저장한다. 시각은 날씨 목록이 보인 것과 같게 읽어
+ * (`toWeatherBriefingTodo`), 서버가 벽시계를 비운 할 일도 그 순간의 기기 시각으로 되돌린다
+ */
+export function toOriginalScheduleRequest(todo: Todo, timezone: string): TodoScheduleRequest {
   return {
     startDate: todo.startDate,
     endDate: todo.endDate,
-    scheduledTime: findScheduledTime(todo.isAllDay, todo.localTime),
+    scheduledTime: TodoPolicy.findLocalTime(todo, timezone),
     isAllDay: todo.isAllDay,
   };
 }

@@ -278,11 +278,19 @@ const LOCAL_ONLY_PENDING_FEATURES = new Set([
   'social/invite',
   'social/moderation',
   'voice',
-  'weather',
 ]);
 
-// 한 파일만 쓰지만 따로 두는 파일과 이유. 새 파일은 경고하고, 더는 해당하지 않는 파일은 목록에서 지우라고 실패한다
+// 한 파일만 쓰지만 따로 두는 파일과 이유. 새 파일은 경고하고, 더는 해당하지 않는 파일은 목록에서 지우라고 실패한다.
+// `/`로 끝나는 항목은 그 폴더 아래 전부다. 같은 이유로 따로 두는 파일 묶음(Skia 장면 레이어)을 한 줄로 적는다
 const ALLOWED_LOCAL_ONLY_FILES = {
+  'src/features/weather/components/weather-scene-canvas/':
+    '하늘 장면(weather-scene-canvas)과 그 레이어(구름·비·눈·번개·밤하늘 등)다. 레이어마다 셰이더·입자·경로 수명을 스스로 갖는 완결된 Skia 그리기 부품이고 Canvas 안에서 도는 코드라, 장면 파일에 합치면 3,000줄이 넘는다',
+  'src/features/weather/components/weather-detail-grid/weather-dial.tsx':
+    '상세 격자만 쓴다. 나침반·기압계를 받은 값만으로 그리는 스스로 완결된 SVG 다이얼이다',
+  'src/features/weather/components/weather-sun-moon/weather-sun-arc.tsx':
+    '해와 달 카드만 쓴다. 해의 길과 지금 위치를 받은 값만으로 그리는 스스로 완결된 차트다',
+  'src/features/weather/components/weather-sun-moon/weather-moon-icon.tsx':
+    '해와 달 카드만 쓴다. 달의 위상을 받은 값만으로 그리는 스스로 완결된 그림이다',
   'src/features/engagement/comment/components/todo-comment-thread-list.tsx':
     '상세 칸(todo-comment-pane)만 쓴다. 칸은 세션·경계·작성 바 조립이고 이 파일은 목록·정렬·묶음·답글·키보드 스크롤이라, 합치면 한 파일이 1,000줄을 넘어 위에서 아래로 읽히지 않는다',
   'src/features/engagement/comment/components/todo-comment-item.tsx':
@@ -316,27 +324,36 @@ function listLocalOnlyFiles(modules) {
   });
 }
 
+/** 이유를 적은 항목이 그 파일을 가리키는가. `/`로 끝나는 항목은 그 폴더 아래 파일 전부를 가리킨다 */
+function isAllowedBy(allowance, source) {
+  return allowance.endsWith('/') ? source.startsWith(allowance) : source === allowance;
+}
+
 /**
  * 한 곳만 쓰는데 따로 둔 파일(경고). 이유를 적어 둔 파일(`allowed`)은 뺀다.
  * 한 곳만 쓰는 조각은 쓰는 파일 안에 둔다(docs/architecture/ui.md#네임스페이스지역-컴포넌트)
  */
 function findLocalOnlyFiles(modules, allowed = ALLOWED_LOCAL_ONLY_FILES) {
+  const allowances = Object.keys(allowed);
   return listLocalOnlyFiles(modules)
-    .filter(({ source }) => !(source in allowed))
+    .filter(({ source }) => !allowances.some((allowance) => isAllowedBy(allowance, source)))
     .map(
       ({ source, importer }) =>
         `${source}: ${importer} 하나만 씁니다. 그 파일의 지역 컴포넌트·훅이나 네임스페이스 조각으로 옮기세요.`,
     );
 }
 
-/** 이유를 적어 둔 파일이 더는 한 곳만 쓰는 파일이 아니면(쓰는 곳이 늘었거나 자체 테스트가 생겼거나 사라졌으면) 지우게 한다 */
+/**
+ * 이유를 적어 둔 파일이 더는 한 곳만 쓰는 파일이 아니면(쓰는 곳이 늘었거나 자체 테스트가 생겼거나 사라졌으면) 지우게 한다.
+ * 폴더 항목은 그 아래에 한 곳만 쓰는 파일이 하나도 남지 않았을 때 낡은 것이다
+ */
 function findStaleLocalOnlyAllowances(modules, allowed = ALLOWED_LOCAL_ONLY_FILES) {
-  const localOnly = new Set(listLocalOnlyFiles(modules).map(({ source }) => source));
+  const localOnly = listLocalOnlyFiles(modules).map(({ source }) => source);
   return Object.keys(allowed)
-    .filter((path) => !localOnly.has(path))
+    .filter((allowance) => !localOnly.some((source) => isAllowedBy(allowance, source)))
     .map(
-      (path) =>
-        `${path}: 이제 컴포넌트·훅 하나만 쓰는 파일이 아닙니다. scripts/feature-graph.cjs의 ALLOWED_LOCAL_ONLY_FILES에서 지우세요.`,
+      (allowance) =>
+        `${allowance}: 이제 컴포넌트·훅 하나만 쓰는 파일이 아닙니다. scripts/feature-graph.cjs의 ALLOWED_LOCAL_ONLY_FILES에서 지우세요.`,
     );
 }
 

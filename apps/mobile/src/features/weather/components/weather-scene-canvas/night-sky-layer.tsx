@@ -62,7 +62,7 @@ const SHOOTING_STAR = {
 } as const;
 const SHOOTING_STAR_ANGLE = Math.atan2(SHOOTING_STAR.travel.y, SHOOTING_STAR.travel.x);
 
-type NightSkyLayerProps = {
+interface NightSkyLayerProps {
   hasMoon: boolean;
   celestialCenter: { x: number; y: number };
   moonPhase: number;
@@ -75,7 +75,7 @@ type NightSkyLayerProps = {
   width: number;
   height: number;
   time: SharedValue<number>;
-};
+}
 
 /** 박자가 제각각인 별, 위상대로 차오른 달과 달무리, 가끔 지나가는 별똥별 */
 export function NightSkyLayer({
@@ -114,7 +114,11 @@ export function NightSkyLayer({
   );
 }
 
-type SkyAreaProps = { width: number; height: number; time: SharedValue<number> };
+interface SkyAreaProps {
+  width: number;
+  height: number;
+  time: SharedValue<number>;
+}
 
 NightSkyLayer.Stars = function Stars({
   clouds,

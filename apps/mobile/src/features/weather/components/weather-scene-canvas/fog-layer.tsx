@@ -13,13 +13,13 @@ const UNIT = [0, 1];
 const HAZE_BAND = { center: 0.52, height: 0.24 } as const;
 const HAZE_FULL_AMOUNT = 0.4;
 
-type FogLayerProps = {
+interface FogLayerProps {
   amount: number;
   sky: WeatherSceneSky;
   width: number;
   height: number;
   time: SharedValue<number>;
-};
+}
 
 /** 화면 아래쪽에 낮게 깔린 물안개와 천천히 떠오르는 옅은 띠 */
 export function FogLayer({ amount, sky, width, height, time }: FogLayerProps) {

@@ -106,6 +106,9 @@ export type WeatherSceneInput = {
   latitude: number;
 };
 
+/** 하늘 색조를 정하는 값. 장면의 나머지 값과 달리 날씨 상태와 낮밤뿐이다 */
+export type WeatherSkyInput = Pick<WeatherSceneInput, 'condition' | 'isDaylight'>;
+
 type SkyPair = { day: WeatherSceneSky; night: WeatherSceneSky };
 
 type ConditionProfile = {
@@ -326,6 +329,12 @@ function resolveSun(sky: OpenSky, sun: VisibleSun): WeatherSceneSun {
   return 'hidden';
 }
 
+/** 카드 색조처럼 장면 전체가 필요 없는 곳이 하늘만 고른다. 장면의 하늘과 같은 값이다 */
+export function getWeatherSceneSky({ condition, isDaylight }: WeatherSkyInput): WeatherSceneSky {
+  const { sky } = getConditionProfile(condition);
+  return isDaylight ? sky.day : sky.night;
+}
+
 export function toWeatherScene(input: WeatherSceneInput): WeatherScene {
   const profile = getConditionProfile(input.condition);
   const isDry = profile.precipitation === 'none';
@@ -344,7 +353,7 @@ export function toWeatherScene(input: WeatherSceneInput): WeatherScene {
   const hasMoon = isNight && input.moonPhase != null && isSkyVisible(sky, MOON_MAX_CLOUDS);
 
   return {
-    sky: input.isDaylight ? profile.sky.day : profile.sky.night,
+    sky: getWeatherSceneSky(input),
     ...visibleSky,
     precipitation: {
       kind: profile.precipitation,

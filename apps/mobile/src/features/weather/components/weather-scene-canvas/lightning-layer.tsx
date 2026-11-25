@@ -24,11 +24,11 @@ const BOLT_SALT = { start: 0, branch: 1, branchDirection: 2, segment: 3 } as con
 const GLOW = { color: 'rgba(190,210,255,0.9)', width: 6, blur: 8 } as const;
 const CORE = { color: 'rgba(245,248,255,1)', width: 2 } as const;
 
-type LightningLayerProps = {
+interface LightningLayerProps {
   width: number;
   height: number;
   time: SharedValue<number>;
-};
+}
 
 /** 하늘이 번쩍일 때마다 구간마다 모양이 다른 번개 줄기가 갈라지며 내리친다. */
 export function LightningLayer({ width, height, time }: LightningLayerProps) {

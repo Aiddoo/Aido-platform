@@ -57,7 +57,7 @@ export function MemoSummary() {
 - 같은 뜻은 같은 조각 이름이다: `.Loading`·`.Error`·`.Empty`·`.Item`(행), `.Link`(행을 감싼 Link), `.Contents`(id를 좁혀 받는 조각). `Row`·`Cell`·`Entry`·`PaneLoading`·`ItemLink`와 객체 묶음 네임스페이스를 쓰지 않는다. 행마다 로딩은 `X.Item.Loading`이다.
 - 형태는 `X.Part = function Part() {}`다(`Object.assign` 금지). 부속에 또 `.Loading`을 달면 TS가 `X.Part.Loading`을 모르므로 그 부속만 함수 선언을 대입한다(`SettingsListGroup.Item`, `ListRow.Texts`). 쓰지 않는 부속은 만들지 않는다.
 - **값이 올 때까지 꺼 두기만 하는 컨트롤은 기다리지 않고 읽는다.** 다음 버튼처럼 값이 없으면 꺼 둘 뿐인 컨트롤은 `useQuery`로 읽어 `data == null`이면 꺼 두고 경계·`.Loading`·`.Error`를 두지 않는다. 오류와 다시 시도는 같은 조회를 보여 주는 칸의 경계가 맡는다(`ConfirmImportPlanButton`).
-- **스스로 조회하면 `.Loading`·`.Error`를 짝으로 둔다.** 부모 경계 하나에 묶여 함께 그려지는 조각(날씨 리포트 칸)은 그 부모의 조각이고 자기 짝을 두지 않는다. route 시트는 `RouteBottomSheet`가 오류·문의를 그리므로 `.Error`를 두지 않는다. 원본을 넘기기만 하는 `X.Item = (props) => <UserList.Item {...props} />`을 만들지 않고, 같은 fallback은 `X.Error = UserList.Error`로 잇는다.
+- **스스로 조회하면 `.Loading`·`.Error`를 짝으로 둔다.** 부모 경계 하나에 묶여 함께 그려지는 조각(날씨 리포트 칸)은 그 부모의 조각이고 자기 짝을 두지 않는다(칸은 `.Loading`만, 실패는 부모 `WeatherReportGate.Error` 하나). route 시트는 `RouteBottomSheet`가 오류·문의를 그리므로 `.Error`를 두지 않는다. 원본을 넘기기만 하는 `X.Item = (props) => <UserList.Item {...props} />`을 만들지 않고, 같은 fallback은 `X.Error = UserList.Error`로 잇는다.
 - 같은 모양으로 반복되는 **고정** UI는 역할이 드러나는 지역 컴포넌트로 추상화하고(`Fact`, `Stat`) 항목마다 **한 줄씩** 쓴다. 설정 배열을 `.map`하지 않는다. "이 항목만 강조·숨김" 같은 기획 수정이 그 한 줄에서 끝난다. `.map`·`FlashList`는 서버 데이터 목록에만 쓴다([목록](#레이아웃-시프트워터폴목록)). 화면 등록 설정(`app/(app)/_layout.tsx`의 `SHEET_ROUTES.map`)은 UI가 아니라 예외다. 본보기는 `plan-comparison-table.tsx`의 비교 줄이다.
 
 ```tsx
@@ -168,7 +168,7 @@ route 파일이 화면을 조립한다. 제목, 경계, 문구, `Spacing`, `matc
 4. **멈춤 조건 하나.** 꾸밈 프레임 콜백·`withRepeat`는 `useIsAnimationActive()`(화면 포커스 + 앱 앞 + 모션 줄이기)로 켜고 끈다. 값을 모으는 프레임 콜백·재생 위치는 투명 시트·제어 센터(`inactive`)에도 이어져야 해서 `useIsAppInBackground()`일 때만 멈춘다.
 5. **크기.** Skia 2.14의 `Canvas onSize`는 멈출 수 없는 프레임 콜백으로 매 프레임 잰다. 감싼 View의 `onLayout`에서 shared value로 `set`한다(JS 값이 필요하면 `useLayoutSize`). `onSize`는 이미 프레임마다 그리는 Canvas에서만 쓴다.
 6. **품질.** 기기 등급별 입자 상한을 지킨다(날씨는 `weather-scene-particles.geometry.ts`의 `PARTICLE_BUDGETS`, 저사양은 `lowEndCap`). 그린 화면을 다시 읽는 셰이더(`BackdropFilter`, 무더위 아지랑이)는 저사양(`isLowEndDevice`)에서 끈다.
-7. **Canvas 안은 context가 없다.** Skia는 자기 reconciler로 그려 `<Canvas>`의 자식이 React context를 받지 못한다. 자식(레이어)에서 DI·i18n·router 같은 context 훅을 부르지 않고, Canvas 밖에서 읽어 props로 내린다. 테스트의 Skia mock은 자식을 그리지 않아 이 실수를 잡지 못한다.
+7. **Canvas 안은 context가 없다.** Skia는 자기 reconciler로 그려 `<Canvas>`의 자식이 React context를 받지 못한다. 자식(레이어)에서 DI·i18n·router 같은 context 훅을 부르지 않고, Canvas 밖에서 읽어 props로 내린다. 테스트의 Skia mock은 Canvas의 자식을 DI 없이 그려 DI 훅을 부른 레이어를 실패시킨다(`src/testing/mocks/react-native-skia.test.tsx`). i18n·router·theme context는 비우지 못해 기기에서 확인한다.
 
 ## 확인
 

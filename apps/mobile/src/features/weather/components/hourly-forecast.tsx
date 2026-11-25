@@ -338,7 +338,6 @@ function SunCell({
 }) {
   const time = formatClockTime(at, timeFormat, dateFormat);
   const event = kind === 'sunrise' ? t('hourly.sunrise') : t('hourly.sunset');
-  const Icon = kind === 'sunrise' ? WeatherIcon.Sunrise : WeatherIcon.Sunset;
 
   return (
     <VStack
@@ -359,7 +358,7 @@ function SunCell({
         {time}
       </Text>
       <CellIcon chance={null}>
-        <Icon width={ICON_SIZE} height={ICON_SIZE} />
+        <WeatherIcon.Glyph glyph={kind} width={ICON_SIZE} height={ICON_SIZE} />
       </CellIcon>
       <Text
         size="b1"
@@ -386,7 +385,7 @@ function CellIcon({ chance, children }: { chance: string | null; children: React
         weight="semibold"
         className={cn('min-h-[14px] tabular-nums', PRECIPITATION_CHANCE_TEXT_CLASS)}
       >
-        {chance ?? ''}
+        {chance}
       </Text>
     </VStack>
   );

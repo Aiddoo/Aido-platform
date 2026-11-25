@@ -49,7 +49,7 @@ const SILVER_LINING = { radius: 0.45, alpha: 0.35 } as const;
 const NIGHT_ALPHA_RATIO = 0.52;
 const SPRITE_CENTER = { x: CLOUD_SPRITE.width / 2, y: CLOUD_SPRITE.height / 2 };
 
-type CloudLayerProps = {
+interface CloudLayerProps {
   amount: number;
   wind: number;
   sky: WeatherSceneSky;
@@ -60,7 +60,7 @@ type CloudLayerProps = {
   width: number;
   height: number;
   time: SharedValue<number>;
-};
+}
 
 export type CloudLight = { x: number; y: number; rgb: string };
 

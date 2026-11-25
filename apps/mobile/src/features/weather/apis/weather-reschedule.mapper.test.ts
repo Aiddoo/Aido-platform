@@ -1,3 +1,4 @@
+import { createParentTodo } from '@src/features/planning/todo/__tests__/sub-todo.fixtures';
 import { toInstant } from '@src/shared/date/instant';
 import { createDateKey } from '@src/testing/date-key';
 
@@ -47,12 +48,7 @@ describe('toMovedScheduleRequest', () => {
 
     // When
     const input = toMovedScheduleRequest(
-      {
-        startDate: createDateKey('2026-11-02'),
-        endDate: null,
-        localTime: '16:00',
-        isAllDay: false,
-      },
+      { startDate: createDateKey('2026-11-02'), endDate: null },
       startsAt,
       'Asia/Seoul',
     );
@@ -70,15 +66,15 @@ describe('toMovedScheduleRequest', () => {
 describe('toOriginalScheduleRequest', () => {
   it('되돌릴 때는 원래 날짜와 시각을 그대로 되돌린다', () => {
     // Given
-    const todo = {
+    const todo = createParentTodo({
       startDate: createDateKey('2026-11-02'),
       endDate: createDateKey('2026-11-03'),
       localTime: '16:30',
-      isAllDay: false,
-    };
+      scheduledAt: toInstant('2026-11-02T07:30:00.000Z'),
+    });
 
     // When
-    const input = toOriginalScheduleRequest(todo);
+    const input = toOriginalScheduleRequest(todo, 'Asia/Seoul');
 
     // Then
     expect(input).toEqual({
@@ -89,17 +85,32 @@ describe('toOriginalScheduleRequest', () => {
     });
   });
 
-  it('종일이었다면 시각 없이 종일로 되돌린다', () => {
+  it('서버가 벽시계를 비운 할 일을 되돌려도 시각이 지워지지 않고 그 순간의 기기 시각으로 되돌린다', () => {
     // Given
-    const todo = {
+    // 서울 16:30. 날씨 목록도 같은 대체로 이 할 일을 16:30으로 보인다
+    const todo = createParentTodo({
       startDate: createDateKey('2026-11-02'),
-      endDate: null,
-      localTime: '16:30',
-      isAllDay: true,
-    };
+      localTime: null,
+      scheduledAt: toInstant('2026-11-02T07:30:00.000Z'),
+    });
 
     // When
-    const input = toOriginalScheduleRequest(todo);
+    const input = toOriginalScheduleRequest(todo, 'Asia/Seoul');
+
+    // Then
+    expect(input).toMatchObject({ scheduledTime: '16:30', isAllDay: false });
+  });
+
+  it('종일이었다면 시각 없이 종일로 되돌린다', () => {
+    // Given
+    const todo = createParentTodo({
+      startDate: createDateKey('2026-11-02'),
+      localTime: '16:30',
+      isAllDay: true,
+    });
+
+    // When
+    const input = toOriginalScheduleRequest(todo, 'Asia/Seoul');
 
     // Then
     expect(input).toMatchObject({ scheduledTime: null, isAllDay: true });
