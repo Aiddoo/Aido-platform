@@ -125,9 +125,30 @@ tester.run('icon-prop-name', rules['icon-prop-name'], {
   ],
 });
 
-tester.run('loading-namespace-name', rules['loading-namespace-name'], {
-  valid: ['TodoList.Loading = TodoListLoading;', 'TodoList.Item.Loading = TodoItemLoading;'],
-  invalid: [{ code: 'TodoList.ItemSkeleton = TodoItemSkeleton;', errors: 1 }],
+tester.run('namespace-part-name', rules['namespace-part-name'], {
+  valid: [
+    'TodoList.Loading = TodoListLoading;',
+    'TodoList.Item.Loading = TodoItemLoading;',
+    'TodoList.Contents = function Contents() { return null; };',
+    'MemoList.Item = function Item() { return null; };',
+    'export const TodoPolicy = { isDone(todo) { return todo.isCompleted; } };',
+    'export const WEATHER_ICONS = { Sunny: SunIcon };',
+    'const Steps = { Permission: PermissionStep };',
+    'this.Row = row;',
+  ],
+  invalid: [
+    { code: 'TodoList.ItemSkeleton = TodoItemSkeleton;', errors: 1 },
+    { code: 'WeeklyList.Row = function Row() { return null; };', errors: 1 },
+    { code: 'MemoList.Cell = function Cell() { return null; };', errors: 1 },
+    { code: 'ForecastBadge.Entry = function Entry() { return null; };', errors: 1 },
+    { code: 'MemoEditor.PaneLoading = function PaneLoading() { return null; };', errors: 1 },
+    { code: 'MemoEditor.PaneError = function PaneError() { return null; };', errors: 1 },
+    { code: 'TodoList.Skeleton = TodoListSkeleton;', errors: 1 },
+    { code: 'TodoList.Fallback = TodoListFallback;', errors: 1 },
+    { code: 'TodoDetail.Content = function Content() { return null; };', errors: 1 },
+    { code: 'export const UserList = { Root: UserListRoot, Item: UserListItem };', errors: 1 },
+    { code: 'export const Steps = { Root: () => null };', errors: 1 },
+  ],
 });
 
 tester.run('namespace-function-name', rules['namespace-function-name'], {

@@ -103,6 +103,20 @@ export function getImportedName(specifier) {
   return imported.type === 'Identifier' ? imported.name : imported.value;
 }
 
+/** 자식 노드. parent 역참조는 따라가지 않는다 */
+export function* childNodes(node) {
+  for (const [key, value] of Object.entries(node)) {
+    if (key === 'parent') {
+      continue;
+    }
+    if (Array.isArray(value)) {
+      yield* value.filter((item) => typeof item?.type === 'string');
+    } else if (typeof value?.type === 'string') {
+      yield value;
+    }
+  }
+}
+
 /** 최상위 문장. `export` 선언은 안의 선언으로 푼다 */
 export function* topLevelDeclarations(program) {
   for (const statement of program.body) {

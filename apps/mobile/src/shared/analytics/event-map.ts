@@ -17,6 +17,7 @@ export interface AppEventMap {
   /** 오프라인 배너가 뜨는 전환(오프라인 구간)마다 한 번 */
   offline_banner_shown: undefined;
   /** URL로 바뀌는 탭(`ViewTabs`)을 다른 탭으로 바꿨을 때. 같은 탭을 다시 누르면 보내지 않는다 */
+  // oxlint-disable-next-line aido/analytics-event-catalog -- 보기 값은 기능 스키마의 z.enum이 닫지만 shared는 기능 스키마를 몰라 string 별칭이다
   view_tab_changed: { screen_name: ScreenName; view: ViewTabValue };
   /** 조회 오류 화면의 다시 시도. 어느 화면에서 실패가 잦은지 본다 */
   error_fallback_retry_tapped: { screen_name: ScreenName };

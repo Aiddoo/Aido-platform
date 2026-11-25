@@ -1,6 +1,6 @@
 // feature 층 표와 dependency-cruiser 리포터. 규칙(.dependency-cruiser.cjs)과 리포터가 같은 표를 읽는다.
 // 모듈 import 규칙은 dependency-cruiser가 보고, 이 리포터는 규칙으로 쓸 수 없는 feature 그래프만 본다:
-// di-context 훅이 돌려주는 값의 주인 feature, 두 feature가 서로 import하는 쌍.
+// di-context 훅이 돌려주는 값의 주인 feature, 두 feature가 서로 import하는 쌍, 컴포넌트·훅 하나만 쓰는 파일(경고).
 //   depcruise src app --config .dependency-cruiser.cjs --output-type plugin:$PWD/scripts/feature-graph.cjs
 const { readFileSync } = require('node:fs');
 const { resolve } = require('node:path');
@@ -265,12 +265,60 @@ function checkFeatureGraph(modules, root) {
   return errors;
 }
 
+const LOCAL_ONLY_CANDIDATE = /^src\/features\/.+\/(?:components|hooks)\/.+\.tsx?$/u;
+// route·bootstrap이 쓰는 파일은 기능의 공개 면이라 따로 둔다. 컴포넌트·훅 하나만 쓰면 그 파일의 지역 조각이다
+const COMPONENT_OR_HOOK_IMPORTER = /^src\/(?:features|shared)\/.+\/(?:components|hooks)\//u;
+// 래칫: 아직 고치지 않은 feature. 그 feature 층이 끝나면 지운다. 남길 파일(Skia 레이어·차트·상태 기계 훅)은 자체 테스트를 둔다
+const LOCAL_ONLY_PENDING_FEATURES = new Set([
+  'app-config/whats-new',
+  'billing/subscription',
+  'device/coachmark',
+  'engagement/comment',
+  'identity/auth',
+  'insights/report',
+  'notes/memo',
+  'notification',
+  'planning/category',
+  'planning/todo',
+  'planning/todo-import',
+  'social/invite',
+  'social/moderation',
+  'voice',
+  'weather',
+]);
+
+/**
+ * 운영 importer가 컴포넌트·훅 하나뿐이고 자체 테스트가 없는 기능 components/·hooks/ 파일(경고).
+ * 한 곳만 쓰는 조각은 쓰는 파일 안에 둔다(docs/architecture/ui.md#네임스페이스반복-ui추출)
+ */
+function findLocalOnlyFiles(modules) {
+  return modules.flatMap((module) => {
+    const feature = getFeatureName(module.source);
+    if (
+      !LOCAL_ONLY_CANDIDATE.test(module.source) ||
+      TEST_PATH.test(module.source) ||
+      LOCAL_ONLY_PENDING_FEATURES.has(feature)
+    ) {
+      return [];
+    }
+    const dependents = module.dependents ?? [];
+    if (dependents.some((dependent) => TEST_PATH.test(dependent))) {
+      return [];
+    }
+    return dependents.length === 1 && COMPONENT_OR_HOOK_IMPORTER.test(dependents[0])
+      ? [
+          `${module.source}: ${dependents[0]} 하나만 씁니다. 그 파일의 지역 컴포넌트·훅이나 네임스페이스 조각으로 옮기세요.`,
+        ]
+      : [];
+  });
+}
+
 function formatViolation({ rule, from, to }, comments) {
   const comment = comments.get(rule.name);
   return `  ${rule.severity} ${rule.name}: ${from} → ${to}${comment == null ? '' : `\n    ${comment}`}`;
 }
 
-/** dependency-cruiser 리포터. 규칙 위반과 feature 그래프 위반을 함께 내고 하나라도 있으면 실패한다 */
+/** dependency-cruiser 리포터. 규칙 위반과 feature 그래프 위반을 함께 내고 하나라도 있으면 실패한다. 지역 파일 경고는 실패시키지 않는다 */
 function report(result) {
   const { modules, summary } = result;
   // 리포터 등록 때 dependency-cruiser가 빈 결과로 한 번 불러 모양을 확인한다
@@ -282,16 +330,20 @@ function report(result) {
   );
   const violations = summary.violations.filter(({ rule }) => rule.severity !== 'ignore');
   const graphErrors = checkFeatureGraph(modules, process.cwd());
+  const warnings = findLocalOnlyFiles(modules).map(
+    (warning) => `  warn local-only-file: ${warning}`,
+  );
   const lines = [
     ...violations.map((violation) => formatViolation(violation, comments)),
     ...graphErrors.map((error) => `  error feature-graph: ${error}`),
   ];
   const total = violations.length + graphErrors.length;
   const stats = `${summary.totalCruised} modules, ${summary.totalDependenciesCruised} dependencies cruised`;
+  const warningOutput = warnings.length === 0 ? '' : `${warnings.join('\n')}\n\n`;
   return total === 0
-    ? { output: `✔ no dependency violations found (${stats})\n`, exitCode: 0 }
+    ? { output: `${warningOutput}✔ no dependency violations found (${stats})\n`, exitCode: 0 }
     : {
-        output: `${lines.join('\n')}\n\n✘ ${total} dependency violations (${stats})\n`,
+        output: `${warningOutput}${lines.join('\n')}\n\n✘ ${total} dependency violations (${stats})\n`,
         exitCode: 1,
       };
 }
@@ -299,3 +351,4 @@ function report(result) {
 module.exports = report;
 module.exports.FEATURE_LAYERS = FEATURE_LAYERS;
 module.exports.FEATURE_PATTERN = FEATURE_PATTERN;
+module.exports.findLocalOnlyFiles = findLocalOnlyFiles;

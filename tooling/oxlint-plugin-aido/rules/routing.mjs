@@ -2,7 +2,9 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import {
+  childNodes,
   getCalleeName,
+  getImportedName,
   getKeyName,
   getMemberNames,
   isFunction,
@@ -190,24 +192,78 @@ const myPageMenuNavigation = {
   },
 };
 
+// 컴포넌트·훅의 이동은 useRouter()나 공용 이동 훅이다. 모듈 router는 React 밖(+native-intent, 푸시 응답)에서만 쓴다
+const noModuleRouter = {
+  meta: { type: 'suggestion' },
+  createOnce(context) {
+    return {
+      ImportDeclaration(node) {
+        if (node.source.value !== 'expo-router' || node.importKind === 'type') {
+          return;
+        }
+        for (const specifier of node.specifiers) {
+          if (
+            specifier.type === 'ImportSpecifier' &&
+            specifier.importKind !== 'type' &&
+            getImportedName(specifier) === 'router'
+          ) {
+            context.report({
+              node: specifier,
+              message:
+                '컴포넌트·훅에서 expo-router의 모듈 router를 import하지 않습니다. const router = useRouter()나 공용 이동 훅(useGoBack 등)을 쓰세요. 모듈 router는 React 밖에서만 씁니다.',
+            });
+          }
+        }
+      },
+    };
+  },
+};
+
 const QUERY_HOOK_NAMES = new Set([
   'useInfiniteQuery',
   'useMutation',
   'useQuery',
+  'useSuspenseInfiniteQuery',
   'useSuspenseQuery',
 ]);
 
-// 조회·변경 옵션은 queries의 옵션 훅이 소유한다
+const INLINE_DEFINITION_KEYS = new Set(['queryKey', 'queryFn', 'mutationFn']);
+
+/**
+ * 인라인으로 만든 옵션. 옵션 훅이 준 옵션을 펼치고 이름 있는 select나 호출부 값(enabled 등)만 더하면 통과한다.
+ * `{ ...options, select: selectX }`는 되고 `select: (data) => …`는 queries/의 이름 있는 함수로 옮긴다
+ */
+function isInlineQueryOptions(options) {
+  if (!options.properties.some((property) => property.type === 'SpreadElement')) {
+    return true;
+  }
+  return options.properties.some((property) => {
+    if (property.type !== 'Property') {
+      return false;
+    }
+    const key = getKeyName(property);
+    return (
+      INLINE_DEFINITION_KEYS.has(key) || (key === 'select' && isFunction(unwrap(property.value)))
+    );
+  });
+}
+
+// 조회·변경 옵션은 queries의 옵션 훅이 소유한다. 화면마다 다른 select는 queries의 이름 있는 함수를 펼친 옵션에 더한다
 const noInlineQueryOptions = {
   meta: { type: 'suggestion' },
   createOnce(context) {
     return {
       CallExpression(node) {
         const name = getCalleeName(node.callee);
-        if (QUERY_HOOK_NAMES.has(name) && node.arguments[0]?.type === 'ObjectExpression') {
+        const options = unwrap(node.arguments[0]);
+        if (
+          QUERY_HOOK_NAMES.has(name) &&
+          options?.type === 'ObjectExpression' &&
+          isInlineQueryOptions(options)
+        ) {
           context.report({
             node,
-            message: `${name} 옵션을 컴포넌트나 훅 안에 인라인으로 만들지 마세요. presentations/queries의 옵션 팩토리가 소유해야 합니다.`,
+            message: `${name} 옵션을 컴포넌트나 훅 안에 인라인으로 만들지 마세요. queries/의 옵션 훅이 소유하고, 화면마다 다른 select는 { ...options, select: selectX }로 queries/의 이름 있는 함수를 더합니다.`,
           });
         }
       },
@@ -499,7 +555,90 @@ const formShape = {
   },
 };
 
+const FORM_OBJECT_TYPES = new Set(['UseFormReturn', 'Control']);
+const FORM_OWNER_MESSAGE =
+  '기능 컴포넌트는 폼을 갖지 않습니다. form·control을 받지 말고 value·onChange·errorMessage를 받으세요. 폼은 화면(route 파일)이나 스스로 useForm을 가진 시트·작성기가 갖고 칸은 Controller로 잇습니다.';
+
+function referencesType(node, names) {
+  if (node.type === 'TSTypeReference' && node.typeName.type === 'Identifier') {
+    if (names.has(node.typeName.name)) {
+      return true;
+    }
+  }
+  for (const child of childNodes(node)) {
+    if (referencesType(child, names)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// 화면이 폼을 갖는다(apps/mobile/docs/architecture/data.md#폼). 스스로 useForm을 가진 파일(시트·작성기)은 폼 객체를 같은 파일 조각에 넘겨도 된다
+const formOwner = {
+  meta: { type: 'suggestion' },
+  create(context) {
+    const formTypeNames = new Set();
+    const formObjectMembers = [];
+    let ownsForm = false;
+    return {
+      ImportDeclaration(node) {
+        if (node.source.value !== 'react-hook-form') {
+          return;
+        }
+        for (const specifier of node.specifiers) {
+          if (
+            specifier.type === 'ImportSpecifier' &&
+            FORM_OBJECT_TYPES.has(getImportedName(specifier))
+          ) {
+            formTypeNames.add(specifier.local.name);
+          }
+        }
+      },
+      TSPropertySignature(node) {
+        const annotation = node.typeAnnotation?.typeAnnotation;
+        if (annotation != null && referencesType(annotation, formTypeNames)) {
+          formObjectMembers.push(node);
+        }
+      },
+      CallExpression(node) {
+        const name = getCalleeName(node.callee);
+        if (node.callee.type === 'Identifier' && name === 'useForm') {
+          ownsForm = true;
+        } else if (node.callee.type === 'Identifier' && name === 'useFormContext') {
+          context.report({ node, message: FORM_OWNER_MESSAGE });
+        } else if (
+          name === 'watch' &&
+          node.callee.type === 'MemberExpression' &&
+          node.callee.object.type === 'Identifier' &&
+          /^form$|Form$/u.test(node.callee.object.name)
+        ) {
+          context.report({
+            node,
+            message:
+              'form.watch()는 폼 전체를 구독해 화면을 통째로 다시 그립니다. 한 칸은 Controller, 여러 칸에서 읽으면 Watch(또는 지역 컴포넌트의 useWatch)로 그 조각만 다시 그리세요.',
+          });
+        }
+      },
+      JSXOpeningElement(node) {
+        if (node.name.type === 'JSXIdentifier' && node.name.name === 'FormProvider') {
+          context.report({ node, message: FORM_OWNER_MESSAGE });
+        }
+      },
+      'Program:exit'() {
+        if (ownsForm) {
+          return;
+        }
+        for (const member of formObjectMembers) {
+          context.report({ node: member, message: FORM_OWNER_MESSAGE });
+        }
+      },
+    };
+  },
+};
+
 export default {
+  'form-owner': formOwner,
+  'no-module-router': noModuleRouter,
   'route-params-guard': routeParamsGuard,
   'no-destructured-search-params': noDestructuredSearchParams,
   'route-setter-location': routeSetterLocation,

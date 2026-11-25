@@ -4,6 +4,7 @@ import test from 'node:test';
 
 const require = createRequire(import.meta.url);
 const { forbidden } = require('../../.dependency-cruiser.cjs');
+const { findLocalOnlyFiles } = require('../feature-graph.cjs');
 
 function toPatterns(value) {
   return [value ?? []].flat().map((pattern) => new RegExp(pattern));
@@ -128,4 +129,127 @@ test('Zod는 기능의 schemas와 도메인 모델 밖에서 import하지 못한
 
   // Then
   assert.deepEqual(results, [true, false, false]);
+});
+
+test('역할 폴더 밖 shared 모델도 도메인 모델 규칙을 받는다', () => {
+  // Given
+  const models = [
+    'src/shared/draft/draft.model.ts',
+    'src/features/planning/todo/domains/todo.model.ts',
+    'src/features/planning/todo/domains/todo.model.test.ts',
+  ];
+
+  // When
+  const results = models.map((from) =>
+    violates('domain-model-ports', from, 'src/core/ports/app-logger.ts'),
+  );
+
+  // Then
+  assert.deepEqual(results, [true, true, false]);
+});
+
+test('모델은 schemas/를, constants/는 domains/를 import하지 못한다', () => {
+  // Given
+  const cases = [
+    [
+      'domain-model-schemas',
+      'src/features/planning/todo/domains/todo.model.ts',
+      'src/features/planning/todo/schemas/todo-form.schema.ts',
+    ],
+    [
+      'constants-to-domains',
+      'src/features/planning/todo/constants/todo.constants.ts',
+      'src/features/planning/todo/domains/todo.model.ts',
+    ],
+    [
+      'domain-model-schemas',
+      'src/features/planning/todo/schemas/todo-form.schema.ts',
+      'src/features/planning/todo/domains/todo.model.ts',
+    ],
+  ];
+
+  // When
+  const results = cases.map(([ruleName, from, to]) => violates(ruleName, from, to));
+
+  // Then
+  assert.deepEqual(results, [true, true, false]);
+});
+
+test('mapper는 view-model을, queries는 훅·view-model·서비스를 import하지 못한다', () => {
+  // Given
+  const cases = [
+    [
+      'mapper-to-view-model',
+      'src/features/planning/category/apis/todo-category.mapper.ts',
+      'src/features/planning/category/utils/category-color.view-model.ts',
+    ],
+    [
+      'queries-to-ui',
+      'src/features/planning/category/queries/todo-category.queries.ts',
+      'src/features/planning/category/hooks/use-category-sheet.ts',
+    ],
+    [
+      'queries-to-ui',
+      'src/features/planning/category/queries/todo-category.queries.ts',
+      'src/features/planning/category/services/category.service.ts',
+    ],
+    [
+      'queries-to-ui',
+      'src/features/planning/category/queries/todo-category.mutations.ts',
+      'src/features/planning/category/utils/todo-category-analytics.ts',
+    ],
+  ];
+
+  // When
+  const results = cases.map(([ruleName, from, to]) => violates(ruleName, from, to));
+
+  // Then
+  assert.deepEqual(results, [true, true, true, false]);
+});
+
+test('다른 feature의 utils/는 분석 helper만 import할 수 있다', () => {
+  // Given
+  const from = 'src/features/planning/category/components/category-list.tsx';
+  const targets = [
+    'src/features/planning/todo/utils/todo-period.view-model.ts',
+    'src/features/billing/subscription/utils/subscription-analytics.ts',
+  ];
+
+  // When
+  const results = targets.map((to) => violates('feature-utils-import', from, to));
+
+  // Then
+  assert.deepEqual(results, [true, false]);
+});
+
+test('컴포넌트·훅 하나만 쓰고 자체 테스트가 없는 기능 파일을 경고한다', () => {
+  // Given
+  const importer = 'src/features/social/friend/components/friend-list.tsx';
+  const modules = [
+    {
+      source: 'src/features/social/friend/components/friend-badge.tsx',
+      dependents: [importer],
+    },
+    {
+      source: 'src/features/social/friend/components/friend-chart.tsx',
+      dependents: [importer, 'src/features/social/friend/components/friend-chart.test.tsx'],
+    },
+    {
+      source: 'src/features/social/friend/components/friend-screen.tsx',
+      dependents: ['app/(app)/friends/index.tsx'],
+    },
+    {
+      source: 'src/features/social/friend/hooks/use-friend-filter.ts',
+      dependents: [importer, 'src/features/social/friend/components/friend-search.tsx'],
+    },
+  ];
+
+  // When
+  const warnings = findLocalOnlyFiles(modules);
+
+  // Then
+  assert.deepEqual(
+    warnings.map((warning) => warning.split(':')[0]),
+    ['src/features/social/friend/components/friend-badge.tsx'],
+  );
 });

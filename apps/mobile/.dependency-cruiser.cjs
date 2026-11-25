@@ -8,7 +8,8 @@ const FEATURE = `^src/features/(${FEATURE_PATTERN})/`;
 const KNOWN_FEATURE = `^src/features/(?:${Object.keys(FEATURE_LAYERS).join('|')})/`;
 // 다른 층 어디서든 가져와도 되는 것: 타입(규칙에서 type-only로 뺀다), Policy가 있는 모델, 캐시 무효화 함수
 const ANY_LAYER = '/domains/[^/]+\\.model\\.tsx?$|/queries/[^/]+-cache\\.tsx?$';
-const DOMAIN_MODEL = '^src/.*/domains/[^/]+\\.model\\.ts$';
+// 역할 폴더 없는 shared 모듈의 모델(shared/draft/draft.model.ts)도 모델이다
+const DOMAIN_MODEL = '^src/.+\\.model\\.ts$';
 const WIRE_CONTRACT = '^\\.\\./\\.\\./packages/api/(?:dist|src)/contracts/|^@aido/api/contracts/';
 
 function npm(names) {
@@ -65,6 +66,16 @@ function featureFolders(folders) {
   return `^src/features/.+/(?:${folders.join('|')})/`;
 }
 
+// 래칫: 아직 고치지 않은 feature. 그 feature 층이 위반을 고치면 목록에서 지운다(docs/architecture/guardrails.md)
+function pendingFeatures(features) {
+  return `^src/features/(?:${features.join('|')})/`;
+}
+
+// 분석 helper(utils/*-analytics.ts)는 mutation 콜백과 다른 feature가 부르는 추적 입구다(docs/observability.md)
+const ANALYTICS_UTILS = '/utils/[^/]+-analytics\\.ts$';
+// 초안 변환(utils/*-draft.ts)은 저장 요청의 재료라 mutation이 쓴다
+const DRAFT_UTILS = '/utils/[^/]+-draft\\.ts$';
+
 const modelAndFolderRules = [
   {
     name: 'domain-model-constants',
@@ -94,6 +105,79 @@ const modelAndFolderRules = [
         '^src/shared/infra/',
         CLOCK,
       ],
+    },
+  },
+  {
+    name: 'domain-model-ports',
+    comment:
+      '도메인 모델은 core/ports를 import하지 않는다. 포트는 어댑터·서비스가 쓰고, 모델은 포트가 준 값을 인자로 받는다(docs/architecture/model.md).',
+    severity: 'error',
+    from: { path: DOMAIN_MODEL, pathNot: [TEST, pendingFeatures(['notification', 'voice'])] },
+    to: { path: '^src/core/ports/' },
+  },
+  {
+    name: 'domain-model-schemas',
+    comment:
+      '도메인 모델은 schemas/를 import하지 않는다. 폼·route·요청 스키마가 모델에서 pick·omit·extend로 유도하고 거꾸로는 가지 않는다.',
+    severity: 'error',
+    from: {
+      path: DOMAIN_MODEL,
+      pathNot: [TEST, pendingFeatures(['device/widget', 'engagement/comment'])],
+    },
+    to: { path: '/schemas/' },
+  },
+  {
+    name: 'constants-to-domains',
+    comment:
+      'constants/는 domains/의 값을 import하지 않는다(타입은 된다). 시간·한도·id·이벤트·로그 키는 모델보다 아래다.',
+    severity: 'error',
+    from: {
+      path: featureFolders(['constants']),
+      pathNot: [TEST, pendingFeatures(['social/invite'])],
+    },
+    to: { path: '/domains/', dependencyTypesNot: ['type-only'] },
+  },
+  {
+    name: 'mapper-to-view-model',
+    comment:
+      'mapper는 바깥 값과 모델만 바꾼다. 기능 utils/(view-model의 라벨 키·포맷)를 import하지 않는다. 표시는 컴포넌트가 view-model로 한다.',
+    severity: 'error',
+    from: {
+      path: '[^/]+\\.mapper\\.tsx?$',
+      pathNot: [TEST, pendingFeatures(['device/widget'])],
+    },
+    to: { path: featureFolders(['utils']) },
+  },
+  {
+    name: 'queries-to-ui',
+    comment:
+      'queries/(키·옵션·select·cache helper)는 hooks/·utils/·services/를 import하지 않는다(타입은 된다). 서비스는 DI 훅으로 받고, 토스트·이동은 호출부가, 표시 가공은 컴포넌트가 한다. 분석 helper와 초안 변환은 된다.',
+    severity: 'error',
+    from: {
+      path: featureFolders(['queries']),
+      pathNot: [
+        TEST,
+        pendingFeatures([
+          'assistant/suggestion',
+          'billing/subscription',
+          'identity/auth',
+          'identity/consent',
+          'notes/memo',
+          'notification',
+          'planning/composer',
+          'planning/todo',
+          'planning/todo-import',
+          'social/friend',
+          'social/nudge',
+          'voice',
+          'weather',
+        ]),
+      ],
+    },
+    to: {
+      path: featureFolders(['hooks', 'utils', 'services']),
+      pathNot: [ANALYTICS_UTILS, DRAFT_UTILS],
+      dependencyTypesNot: ['type-only'],
     },
   },
   {
@@ -221,6 +305,28 @@ module.exports = {
           '^src/features/billing/subscription/apis/entitlement\\.mapper\\.ts$',
         ],
       },
+    },
+    {
+      name: 'feature-utils-import',
+      comment:
+        '다른 feature의 utils/(view-model·geometry·초안)를 import하지 않는다. 표시 가공은 그 feature의 컴포넌트가 하고, 함께 쓸 계산은 모델이나 shared로 옮긴다. 분석 helper(*-analytics)는 된다.',
+      severity: 'error',
+      from: {
+        path: FEATURE,
+        pathNot: [
+          TEST,
+          pendingFeatures([
+            'app-config/whats-new',
+            'engagement/comment',
+            'notes/memo',
+            'notification',
+            'social/friend',
+            'social/invite',
+            'voice',
+          ]),
+        ],
+      },
+      to: { path: '^src/features/.+/utils/', pathNot: ['^src/features/$1/', ANALYTICS_UTILS] },
     },
     {
       name: 'sdk-outside-infra',

@@ -883,8 +883,7 @@
         "aido/no-strict-nullish": "error",
         "aido/range-comparison-order": "error",
         "aido/predicate-name": "error",
-        "aido/icon-prop-name": "error",
-        "aido/loading-namespace-name": "error"
+        "aido/icon-prop-name": "error"
       }
     },
     {
@@ -1214,7 +1213,6 @@
     {
       "files": ["src/features/engagement/comment/**", "app/?app?/todo/?todoId?/**"],
       "rules": {
-        "aido/no-inline-query-options": "error",
         "aido/no-router-push": "error"
       }
     },
@@ -1236,12 +1234,6 @@
       ],
       "rules": {
         "aido/route-setter-location": "error"
-      }
-    },
-    {
-      "files": ["src/features/engagement/comment/components/**", "app/?app?/todo/?todoId?/**"],
-      "rules": {
-        "aido/no-route-id-props": "error"
       }
     },
     {
@@ -1285,6 +1277,176 @@
       ],
       "rules": {
         "aido/todo-comment-test-purity": "error"
+      }
+    },
+    // 앱 구조 규칙(docs/architecture/guardrails.md). 켜는 블록 뒤의 "래칫" off 블록은 아직 고치지 않은 기능 폴더다.
+    // 기능 층이 그 폴더의 위반을 고치면 그 줄을 지운다. 새 폴더는 처음부터 켜진다
+    {
+      "files": ["src/**", "app/**"],
+      "excludeFiles": [
+        "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "**/__tests__/**",
+        "src/testing/**"
+      ],
+      "rules": {
+        "aido/error-boundary-fallback": "error",
+        "aido/namespace-part-name": "error",
+        "aido/no-inline-query-options": "error",
+        "aido/no-route-id-props": "error",
+        "aido/props-interface": "error"
+      }
+    },
+    {
+      "files": ["src/features/**/components/**"],
+      "excludeFiles": [
+        "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "**/__tests__/**",
+        "src/testing/**"
+      ],
+      "rules": {
+        "aido/form-owner": "error",
+        "aido/component-outer-spacing": "error"
+      }
+    },
+    {
+      "files": ["app/**", "src/features/**/components/**", "src/**/hooks/**"],
+      "excludeFiles": [
+        "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "**/__tests__/**",
+        "src/testing/**"
+      ],
+      "rules": {
+        "aido/no-module-router": "error"
+      }
+    },
+    {
+      // 시트를 닫거나 시트 props를 이어야 하는 시트 fallback은 인라인 함수로 둔다
+      "files": [
+        "src/shared/ui/route-bottom-sheet/route-bottom-sheet.tsx",
+        "src/features/planning/todo-import/hooks/use-open-category-target-sheet.tsx",
+        "src/features/social/invite/components/invite-welcome-bottom-sheet.tsx",
+        "src/features/social/nudge/components/nudge-thanks-bottom-sheet.tsx"
+      ],
+      "rules": {
+        "aido/error-boundary-fallback": "off"
+      }
+    },
+    {
+      // 래칫
+      "files": [
+        "app/**",
+        "src/bootstrap/**",
+        "src/features/billing/subscription/**",
+        "src/features/device/app-icon/**",
+        "src/features/identity/auth/**",
+        "src/features/notification/**",
+        "src/features/planning/todo/**",
+        "src/features/social/friend/**",
+        "src/features/social/nudge/**",
+        "src/features/voice/**",
+        "src/features/weather/**"
+      ],
+      "rules": {
+        "aido/error-boundary-fallback": "off"
+      }
+    },
+    {
+      // 래칫
+      "files": [
+        "src/shared/ui/steps/**",
+        "src/features/identity/user/**",
+        "src/features/insights/achievement/**",
+        "src/features/notes/memo/**",
+        "src/features/planning/todo-import/**",
+        "src/features/weather/**"
+      ],
+      "rules": {
+        "aido/namespace-part-name": "off"
+      }
+    },
+    {
+      // 래칫
+      "files": [
+        "src/bootstrap/**",
+        "src/features/assistant/suggestion/**",
+        "src/features/device/activation/**",
+        "src/features/insights/achievement/**",
+        "src/features/notification/**",
+        "src/features/planning/todo/**",
+        "src/features/social/nudge/**"
+      ],
+      "rules": {
+        "aido/no-inline-query-options": "off"
+      }
+    },
+    {
+      // 래칫
+      "files": ["src/features/notes/memo/**", "src/features/planning/todo/**"],
+      "rules": {
+        "aido/no-route-id-props": "off"
+      }
+    },
+    {
+      // 래칫
+      "files": ["src/features/app-config/whats-new/**", "src/features/weather/**"],
+      "rules": {
+        "aido/props-interface": "off"
+      }
+    },
+    {
+      // 래칫
+      "files": [
+        "src/features/identity/auth/**",
+        "src/features/planning/category/**",
+        "src/features/planning/composer/**",
+        "src/features/voice/**",
+        "src/features/weather/**"
+      ],
+      "rules": {
+        "aido/form-owner": "off"
+      }
+    },
+    {
+      // 래칫
+      "files": [
+        "src/features/planning/category/**",
+        "src/features/planning/todo/**",
+        "src/features/planning/todo-import/**",
+        "src/features/voice/**",
+        "src/features/weather/**"
+      ],
+      "rules": {
+        "aido/component-outer-spacing": "off"
+      }
+    },
+    {
+      // 래칫
+      "files": [
+        "app/**",
+        "src/shared/**",
+        "src/features/app-config/whats-new/**",
+        "src/features/assistant/suggestion/**",
+        "src/features/billing/subscription/**",
+        "src/features/engagement/comment/**",
+        "src/features/identity/auth/**",
+        "src/features/identity/user/**",
+        "src/features/insights/achievement/**",
+        "src/features/insights/report/**",
+        "src/features/notes/memo/**",
+        "src/features/notification/**",
+        "src/features/planning/category/**",
+        "src/features/planning/todo/**",
+        "src/features/planning/todo-import/**",
+        "src/features/social/friend/**",
+        "src/features/social/invite/**",
+        "src/features/social/moderation/**",
+        "src/features/social/nudge/**",
+        "src/features/support/inquiry/**",
+        "src/features/voice/**",
+        "src/features/weather/**"
+      ],
+      "rules": {
+        "aido/no-module-router": "off"
       }
     },
     // 규칙이 처음 나오는 블록이 켜는 자리이고 뒤따르는 같은 규칙의 off 블록은 허용 경로다.

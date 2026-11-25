@@ -1,4 +1,4 @@
-import { collectImportedNames, isComponentName, isFunction } from '../ast.mjs';
+import { collectImportedNames, getKeyName, isComponentName, isFunction } from '../ast.mjs';
 
 const DEFAULT_FORBIDDEN_SUFFIXES = [
   'Body',
@@ -267,17 +267,68 @@ const iconPropName = {
   },
 };
 
-// 로딩 자리 조각은 `X.Loading`(행마다면 `X.Item.Loading`)으로 건다
-const loadingNamespaceName = {
+// 같은 뜻의 조각은 한 이름이다(docs/architecture/ui.md#네임스페이스반복-ui추출)
+const NAMESPACE_PART_NAMES = new Map([
+  ['Row', 'Item'],
+  ['Cell', 'Item'],
+  ['Entry', 'Item'],
+  ['PaneLoading', 'Loading'],
+  ['Skeleton', 'Loading'],
+  ['PaneError', 'Error'],
+  ['Fallback', 'Error'],
+  ['Content', 'Contents'],
+]);
+
+function getNamespacePartReplacement(property) {
+  if (NAMESPACE_PART_NAMES.has(property)) {
+    return NAMESPACE_PART_NAMES.get(property);
+  }
+  return property.endsWith('Skeleton') ? 'Loading' : null;
+}
+
+/** `export const X = { Root: XRoot, Item }`: 컴포넌트만 담은 객체 */
+function isComponentObject(node) {
+  return (
+    node?.type === 'ObjectExpression' &&
+    node.properties.length > 0 &&
+    node.properties.every(
+      (property) =>
+        property.type === 'Property' &&
+        isComponentName(getKeyName(property)) &&
+        ((property.value.type === 'Identifier' && isComponentName(property.value.name)) ||
+          isFunction(property.value)),
+    )
+  );
+}
+
+// 조각은 `X.Part = function Part`로 달고 이름은 Item·Loading·Error·Empty·Link·Contents다. 객체로 묶은 네임스페이스는 쓰지 않는다
+const namespacePartName = {
   meta: { type: 'suggestion' },
   createOnce(context) {
     return {
       AssignmentExpression(node) {
         const property = node.operator === '=' ? getMemberPropertyName(node.left) : null;
-        if (isComponentName(property) && property.endsWith('Skeleton')) {
+        if (!isComponentName(property) || node.left.object.type === 'ThisExpression') {
+          return;
+        }
+        const replacement = getNamespacePartReplacement(property);
+        if (replacement != null) {
           context.report({
             node: node.left.property,
-            message: `${property}: 로딩 자리 조각은 \`X.Loading\`으로 거세요. 행마다 다르면 \`X.Item.Loading\`처럼 그 행에 겁니다.`,
+            message: `${property}: 네임스페이스 조각은 \`X.${replacement}\`로 거세요. 행마다 다른 로딩은 \`X.Item.Loading\`처럼 그 행에 겁니다.`,
+          });
+        }
+      },
+      VariableDeclarator(node) {
+        if (
+          node.parent.parent?.type === 'ExportNamedDeclaration' &&
+          node.id.type === 'Identifier' &&
+          /^\p{Lu}[\p{Ll}\d]/u.test(node.id.name) &&
+          isComponentObject(node.init)
+        ) {
+          context.report({
+            node: node.id,
+            message: `${node.id.name}: 컴포넌트를 객체로 묶지 않습니다. 본체 함수에 \`${node.id.name}.Item = function Item\`처럼 조각을 답니다.`,
           });
         }
       },
@@ -537,7 +588,7 @@ export default {
   'predicate-name': predicateName,
   'type-name': typeName,
   'icon-prop-name': iconPropName,
-  'loading-namespace-name': loadingNamespaceName,
+  'namespace-part-name': namespacePartName,
   'namespace-function-name': namespaceFunctionName,
   'no-abbreviation': noAbbreviation,
   'read-model-suffix': readModelSuffix,

@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 
-import { getCalleeName, getKeyName, unwrap } from '../ast.mjs';
+import { getCalleeName, getKeyName, topLevelDeclarations, unwrap } from '../ast.mjs';
 
 const EVENT_VERBS = [
   'shown',
@@ -36,11 +36,39 @@ function getParamMembers(type) {
   return [];
 }
 
-function isBareString(type) {
-  if (type?.type === 'TSStringKeyword') {
-    return true;
+/**
+ * 맨 string이 들어오는 타입. 같은 파일의 별칭(`type X = string`)과 `${string}`이 든 템플릿 리터럴 타입도 따라간다.
+ * 다른 파일에서 가져온 별칭은 따라가지 않는다
+ */
+function isBareString(type, aliases, seen = new Set()) {
+  switch (type?.type) {
+    case 'TSStringKeyword':
+      return true;
+    case 'TSUnionType':
+      return type.types.some((member) => isBareString(member, aliases, seen));
+    case 'TSTemplateLiteralType':
+      return type.types.some((member) => isBareString(member, aliases, seen));
+    case 'TSTypeReference': {
+      const name = type.typeName.type === 'Identifier' ? type.typeName.name : null;
+      if (name == null || !aliases.has(name) || seen.has(name)) {
+        return false;
+      }
+      seen.add(name);
+      return isBareString(aliases.get(name), aliases, seen);
+    }
+    default:
+      return false;
   }
-  return type?.type === 'TSUnionType' && type.types.some(isBareString);
+}
+
+function collectTypeAliases(program) {
+  const aliases = new Map();
+  for (const declaration of topLevelDeclarations(program)) {
+    if (declaration.type === 'TSTypeAliasDeclaration') {
+      aliases.set(declaration.id.name, declaration.typeAnnotation);
+    }
+  }
+  return aliases;
 }
 
 // 이벤트 카탈로그(AppEventMap)의 이름은 {entity}_{object?}_{verb}, 파라미터는 snake_case이고 맨 string을 쓰지 않는다.
@@ -58,6 +86,7 @@ const analyticsEventCatalog = {
   },
   create(context) {
     const frozenNames = new Set(context.options[0]?.frozenNames ?? []);
+    let aliases = new Map();
 
     function checkParams(eventName, type) {
       for (const member of getParamMembers(type)) {
@@ -71,7 +100,7 @@ const analyticsEventCatalog = {
             message: `${eventName}.${name}: 이벤트 파라미터는 snake_case로 씁니다.`,
           });
         }
-        if (isBareString(member.typeAnnotation?.typeAnnotation)) {
+        if (isBareString(member.typeAnnotation?.typeAnnotation, aliases)) {
           context.report({
             node: member,
             message: `${eventName}.${name}: 맨 string 대신 값 목록 유니온이나 도메인 타입을 씁니다. 자유 문자열은 개인정보와 높은 카디널리티를 싣습니다.`,
@@ -81,6 +110,9 @@ const analyticsEventCatalog = {
     }
 
     return {
+      Program(program) {
+        aliases = collectTypeAliases(program);
+      },
       TSInterfaceDeclaration(node) {
         if (node.id.name !== 'AppEventMap') {
           return;

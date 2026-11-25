@@ -1,4 +1,11 @@
-import { getCalleeName, getImportedName, getKeyName, isComponentName, unwrap } from '../ast.mjs';
+import {
+  getCalleeName,
+  getImportedName,
+  getKeyName,
+  isComponentName,
+  isFunction,
+  unwrap,
+} from '../ast.mjs';
 
 function isJsxMemberName(name, object, property) {
   return (
@@ -234,31 +241,36 @@ const cardUsesHerouiCard = {
   },
 };
 
+// route params 스키마(schemas/*-params.schema.ts)가 읽는 식별자와 댓글 위치 식별자
 const ROUTE_IDENTIFIER_PROP_NAMES = new Set([
   'anchorCommentId',
+  'categoryId',
   'commentId',
+  'draftId',
   'focusCommentId',
+  'friendId',
+  'importId',
+  'memoId',
+  'nudgeId',
   'parentId',
+  'releaseId',
+  'reportId',
   'rootId',
+  'subTodoId',
+  'suggestionId',
   'threadId',
   'todoId',
 ]);
+// 목록 행은 행마다 route를 파싱하지 않게 부모가 넘긴 id를 받는다(docs/architecture/state-and-routing.md)
+const LIST_ROW_NAME = /(?:Item|Row)$/u;
 const CALL_THROUGH_TYPES = new Set(['TSAsExpression', 'TSSatisfiesExpression']);
+const DEFAULT_EXPORT = Symbol('default export');
 
-function getAssignedName(left) {
-  if (left.type === 'Identifier') {
-    return left.name;
-  }
-  return left.type === 'MemberExpression' && !left.computed ? (left.property.name ?? null) : null;
-}
-
-function isComponentFunction(node) {
-  if (node.type !== 'ArrowFunctionExpression' && isComponentName(node.id?.name ?? null)) {
-    return true;
-  }
-  if (node.type === 'FunctionDeclaration') {
-    return node.id == null && node.parent.type === 'ExportDefaultDeclaration';
-  }
+/**
+ * 파일이 내보내는 컴포넌트 함수의 이름(`export default`는 DEFAULT_EXPORT). 아니면 null.
+ * 같은 파일 조각(`X.Contents`, 지역 컴포넌트)은 부모가 좁힌 id를 받으므로 보지 않는다
+ */
+function getExportedComponentName(node) {
   let current = node;
   while (current.parent != null) {
     const { parent } = current;
@@ -269,19 +281,41 @@ function isComponentFunction(node) {
       current = parent;
       continue;
     }
-    if (parent.type === 'VariableDeclarator' && parent.init === current) {
-      return parent.id.type === 'Identifier' && isComponentName(parent.id.name);
+    if (parent.type === 'ExportDefaultDeclaration') {
+      return current.id == null || isComponentName(current.id.name) ? DEFAULT_EXPORT : null;
+    }
+    if (parent.type === 'ExportNamedDeclaration' && current.type === 'FunctionDeclaration') {
+      return isComponentName(current.id?.name ?? null) ? current.id.name : null;
     }
     if (
-      parent.type === 'AssignmentExpression' &&
-      parent.operator === '=' &&
-      parent.right === current
+      parent.type === 'VariableDeclarator' &&
+      parent.init === current &&
+      parent.id.type === 'Identifier' &&
+      parent.parent?.parent?.type === 'ExportNamedDeclaration'
     ) {
-      return isComponentName(getAssignedName(parent.left));
+      return isComponentName(parent.id.name) ? parent.id.name : null;
     }
-    return parent.type === 'ExportDefaultDeclaration';
+    return null;
   }
-  return false;
+  return null;
+}
+
+function collectExportedNames(program) {
+  const names = new Set();
+  for (const statement of program.body) {
+    const declaration = statement.type === 'ExportNamedDeclaration' ? statement.declaration : null;
+    if (declaration?.type === 'FunctionDeclaration' && declaration.id != null) {
+      names.add(declaration.id.name);
+    }
+    if (declaration?.type === 'VariableDeclaration') {
+      for (const declarator of declaration.declarations) {
+        if (declarator.id.type === 'Identifier') {
+          names.add(declarator.id.name);
+        }
+      }
+    }
+  }
+  return names;
 }
 
 function getPropsMembers(declaration) {
@@ -308,28 +342,40 @@ function getInlinePropsMembers(type) {
   return [];
 }
 
-// 댓글 화면 식별자는 Expo Router의 검증된 route hook에서 읽는다(.claude/todo-comments.md)
+// 화면 식별자는 Expo Router의 검증된 route 튜플 훅에서 읽는다(docs/architecture/ui.md#컴포넌트-계약).
+// 내보내는 컴포넌트와 그 `{이름}Props`만 본다. 목록 행(`*Item`·`*Row`)은 예외다
 const noRouteIdProps = {
   meta: { type: 'suggestion' },
-  createOnce(context) {
+  create(context) {
+    let exportedNames = new Set();
     function checkMembers(members) {
       for (const member of members) {
         const name = getKeyName(member);
         if (name != null && ROUTE_IDENTIFIER_PROP_NAMES.has(name)) {
           context.report({
             node: member,
-            message: `댓글 화면 식별자 ${name}를 props로 전달하지 마세요. Expo Router의 검증된 route hook에서 직접 읽어야 합니다.`,
+            message: `화면 식별자 ${name}를 props로 전달하지 마세요. 그 화면의 route 튜플 훅(const [${name}] = use…())으로 읽습니다. 목록 행이면 X.Item·*Row로 이름 짓고 부모가 넘깁니다.`,
           });
         }
       }
     }
     function checkDeclaration(node) {
-      if (node.id.name.endsWith('Props')) {
+      const componentName = node.id.name.endsWith('Props') ? node.id.name.slice(0, -5) : null;
+      if (
+        componentName != null &&
+        exportedNames.has(componentName) &&
+        isComponentName(componentName) &&
+        !LIST_ROW_NAME.test(componentName)
+      ) {
         checkMembers(getPropsMembers(node));
       }
     }
     function checkFunction(node) {
-      if (!isComponentFunction(node)) {
+      const componentName = getExportedComponentName(node);
+      if (
+        componentName == null ||
+        (typeof componentName === 'string' && LIST_ROW_NAME.test(componentName))
+      ) {
         return;
       }
       for (const parameter of node.params) {
@@ -338,6 +384,9 @@ const noRouteIdProps = {
       }
     }
     return {
+      Program(program) {
+        exportedNames = collectExportedNames(program);
+      },
       TSInterfaceDeclaration: checkDeclaration,
       TSTypeAliasDeclaration: checkDeclaration,
       FunctionDeclaration: checkFunction,
@@ -347,7 +396,53 @@ const noRouteIdProps = {
   },
 };
 
+// 조회 실패 자리는 조회 컴포넌트의 X.Error, 실패하면 비우는 조각은 QueryErrorFallback.Hidden 하나로 건다(docs/architecture/ui.md)
+const errorBoundaryFallback = {
+  meta: { type: 'suggestion' },
+  createOnce(context) {
+    return {
+      JSXAttribute(node) {
+        const element = node.parent;
+        if (
+          node.name.type !== 'JSXIdentifier' ||
+          node.name.name !== 'fallback' ||
+          element?.name.type !== 'JSXIdentifier' ||
+          element.name.name !== 'QueryErrorBoundary' ||
+          node.value?.type !== 'JSXExpressionContainer' ||
+          !isFunction(unwrap(node.value.expression))
+        ) {
+          return;
+        }
+        context.report({
+          node,
+          message:
+            'QueryErrorBoundary의 fallback에 인라인 함수를 쓰지 않습니다. 조회 컴포넌트의 fallback={X.Error}, 실패하면 비우는 조각은 fallback={QueryErrorFallback.Hidden}을 겁니다.',
+        });
+      },
+    };
+  },
+};
+
+// Props는 interface로 선언하고 원본을 넓히면 extends Omit<ComponentProps<typeof X>, …>다. 더할 것 없는 별칭(type XProps = Omit<…>)은 type이다
+const propsInterface = {
+  meta: { type: 'suggestion' },
+  createOnce(context) {
+    return {
+      TSTypeAliasDeclaration(node) {
+        if (node.id.name.endsWith('Props') && node.typeAnnotation.type === 'TSTypeLiteral') {
+          context.report({
+            node: node.id,
+            message: `${node.id.name}: 객체 리터럴 Props는 interface ${node.id.name} { … }로 씁니다. 원본을 넓히면 interface ${node.id.name} extends Omit<ComponentProps<typeof X>, …>입니다.`,
+          });
+        }
+      },
+    };
+  },
+};
+
 export default {
+  'error-boundary-fallback': errorBoundaryFallback,
+  'props-interface': propsInterface,
   'tabs-label-text': tabsLabelText,
   'menu-item-title-text': menuItemTitleText,
   'no-classname-concat': noClassNameConcat,

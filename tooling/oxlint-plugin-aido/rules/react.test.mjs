@@ -93,16 +93,30 @@ tester.run('card-uses-heroui-card', rules['card-uses-heroui-card'], {
 
 tester.run('no-route-id-props', rules['no-route-id-props'], {
   valid: [
-    'type CommentRowProps = { comment: TodoComment };',
+    'export function CommentList() { return null; }\ninterface CommentListProps { comment: TodoComment }',
     'function toThread(todoId: string) { return todoId; }',
-    'function useThread({ todoId }: { todoId: string }) { return todoId; }',
+    'export function useThread({ todoId }: { todoId: string }) { return todoId; }',
+    'export function CommentRow({ todoId }: { todoId: number }) { return null; }',
+    'export function FriendItem(props: FriendItemProps) { return null; }\ninterface FriendItemProps { friendId: string }',
+    'TodoDetail.Contents = function Contents({ todoId }: { todoId: number }) { return null; };',
+    'function RemoveRecordingButton({ draftId }: { draftId?: string }) { return null; }',
+    'interface UndoableProps { importId: string }\nexport function LastImport() { return null; }',
   ],
   invalid: [
-    { code: 'type CommentRowProps = { todoId: string; comment: TodoComment };', errors: 1 },
-    { code: 'interface ReplyListProps extends Base { rootId: string }', errors: 1 },
-    { code: 'type ComposerProps = Base & { parentId?: string };', errors: 1 },
     {
-      code: 'export function CommentRow({ commentId }: { commentId: string }) { return null; }',
+      code: 'export function CommentThread(props: CommentThreadProps) { return null; }\ntype CommentThreadProps = { todoId: string; comment: TodoComment };',
+      errors: 1,
+    },
+    {
+      code: 'export function ReplyList(props: ReplyListProps) { return null; }\ninterface ReplyListProps extends Base { rootId: string }',
+      errors: 1,
+    },
+    {
+      code: 'export function Composer(props: ComposerProps) { return null; }\ntype ComposerProps = Base & { parentId?: string };',
+      errors: 1,
+    },
+    {
+      code: 'export function CommentCard({ commentId }: { commentId: string }) { return null; }',
       errors: 1,
     },
     {
@@ -113,5 +127,51 @@ tester.run('no-route-id-props', rules['no-route-id-props'], {
       code: 'export default function ({ anchorCommentId }: { anchorCommentId: string }) { return null; }',
       errors: 1,
     },
+    {
+      code: 'export function FriendCalendar(props: FriendCalendarProps) { return null; }\ninterface FriendCalendarProps { friendId: string }',
+      errors: 1,
+    },
+    {
+      code: 'export function MemoConvertBottomSheet({ categoryId }: { categoryId: number }) { return null; }',
+      errors: 1,
+    },
+  ],
+});
+
+tester.run('error-boundary-fallback', rules['error-boundary-fallback'], {
+  valid: [
+    '<QueryErrorBoundary fallback={TodoList.Error}><TodoList /></QueryErrorBoundary>;',
+    '<QueryErrorBoundary fallback={QueryErrorFallback.Hidden}><PlanTypeValue /></QueryErrorBoundary>;',
+    '<QueryErrorBoundary><TodoList /></QueryErrorBoundary>;',
+    '<Suspense fallback={<TodoList.Loading />}><TodoList /></Suspense>;',
+    '<ErrorBoundary fallback={() => null}><TodoList /></ErrorBoundary>;',
+  ],
+  invalid: [
+    {
+      code: '<QueryErrorBoundary fallback={() => null}><Badge /></QueryErrorBoundary>;',
+      errors: 1,
+    },
+    {
+      code: '<QueryErrorBoundary fallback={(props) => <Steps.Error {...props} progress={progress} />}><Steps /></QueryErrorBoundary>;',
+      errors: 1,
+    },
+    {
+      code: '<QueryErrorBoundary fallback={function Fallback() { return null; }}><Badge /></QueryErrorBoundary>;',
+      errors: 1,
+    },
+  ],
+});
+
+tester.run('props-interface', rules['props-interface'], {
+  valid: [
+    'interface TodoRowProps { todo: Todo }',
+    'type TodoRowProps = Omit<ComponentProps<typeof Row>, "children">;',
+    'type TodoRowProps = BaseProps & { todo: Todo };',
+    'type Palette = { background: string };',
+    'type StepContexts = { permission: Record<string, never> };',
+  ],
+  invalid: [
+    { code: 'type GustLayerProps = { width: number; height: number };', errors: 1 },
+    { code: 'export type ReleaseRowProps = { release: Release };', errors: 1 },
   ],
 });

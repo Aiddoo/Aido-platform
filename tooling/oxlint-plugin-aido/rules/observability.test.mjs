@@ -27,6 +27,10 @@ tester.run('analytics-event-catalog', rules['analytics-event-catalog'], {
     'interface AppEventMap { auth_password_reset_completed: undefined; auth_password_changed: undefined }',
     'interface AppEventMap { subscription_management_opened: undefined; support_inquiry_submitted: undefined }',
     'interface AppEventMap { marketing_push_opted_in: undefined; marketing_push_opted_out: undefined }',
+    "type MemoShareTarget = 'kakao' | 'link';\ninterface AppEventMap { memo_share_tapped: { target: MemoShareTarget } }",
+    "import type { ScreenName } from './screen-name';\ninterface AppEventMap { view_tab_changed: { screen_name: ScreenName } }",
+    "type Step = 'a' | `b_${'x' | 'y'}`;\ninterface AppEventMap { memo_share_tapped: { step: Step } }",
+    'type Loop = Loop;\ninterface AppEventMap { memo_share_tapped: { step: Loop } }',
   ],
   invalid: [
     { code: 'interface AppEventMap { ai_parse_used: undefined }', errors: 1 },
@@ -37,6 +41,18 @@ tester.run('analytics-event-catalog', rules['analytics-event-catalog'], {
     { code: 'interface AppEventMap { memo_share_tapped: { shareTarget: Target } }', errors: 1 },
     { code: 'interface AppEventMap { memo_share_tapped: { target: string } }', errors: 1 },
     { code: 'interface AppEventMap { memo_share_tapped: { target?: string | null } }', errors: 1 },
+    {
+      code: 'type ViewTabValue = string;\ninterface AppEventMap { view_tab_changed: { view: ViewTabValue } }',
+      errors: 1,
+    },
+    {
+      code: "type Field = 'title' | 'memo';\nexport type Fields = Field | `${Field},${string}`;\ninterface AppEventMap { todo_updated: { field?: Fields } }",
+      errors: 1,
+    },
+    {
+      code: 'interface AppEventMap { memo_share_tapped: { path: `/${string}` } }',
+      errors: 1,
+    },
     {
       code: 'interface AppEventMap { ai_parse_used: { field: string } }',
       options: [FROZEN],

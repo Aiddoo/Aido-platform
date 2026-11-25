@@ -33,6 +33,7 @@ declare module '@src/shared/analytics/event-map' {
     };
     todo_completed: { todo_id: number; is_completed: boolean };
     todo_deleted: { todo_id: number };
+    // oxlint-disable-next-line aido/analytics-event-catalog -- 바뀐 칸 여럿을 쉼표로 이어 보내 값 목록이 열려 있다. 할 일 기능 층에서 닫는다
     todo_edited: { todo_id: number; field?: TodoEditedFields };
     todo_series_edited: { scope: TodoEditScope };
     todo_series_deleted: { scope: TodoEditScope };
