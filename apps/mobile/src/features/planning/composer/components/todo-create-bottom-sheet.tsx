@@ -44,17 +44,29 @@ import {
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
-import { type ComponentProps, Suspense, useEffect, useEffectEvent, useRef, useState } from 'react';
-import { Controller, useForm, type UseFormReturn, useFormState, useWatch } from 'react-hook-form';
+import { Suspense, useEffect, useEffectEvent, useRef, useState } from 'react';
+import {
+  Controller,
+  type FieldError,
+  FormState,
+  type RefCallBack,
+  useForm,
+  Watch,
+} from 'react-hook-form';
 import { match, P } from 'ts-pattern';
 
 import { useAddTodoQuickVoice } from '../hooks/use-add-todo-quick-voice';
+import { useFocusTodoTitle } from '../hooks/use-focus-todo-title';
 import { useReopenTodoRepeatPicker } from '../hooks/use-reopen-todo-repeat-picker';
 import {
   useCreateRecurringTodoMutationOptions,
   useCreateTodoMutationOptions,
 } from '../queries/todo-composer.mutations';
-import { TodoComposerChips } from './todo-composer-chips';
+import {
+  setTodoComposerChipFields,
+  TODO_COMPOSER_CHIP_FIELDS,
+  TodoComposerChips,
+} from './todo-composer-chips';
 import { TodoComposerSubmitButton } from './todo-composer-submit-button';
 
 interface TodoCreateBottomSheetProps {
@@ -167,13 +179,6 @@ function TodoCreateForm({
     resolver: zodResolver(todoFormSchema),
     defaultValues,
   });
-  const { isSubmitting, isSubmitSuccessful, isValid } = useFormState({ control: form.control });
-  const title = useWatch({ control: form.control, name: 'title' });
-  // 한도 아래로 지워도 칸을 바꾸지 않는다. 다시 마운트되면 커서와 키보드가 튄다
-  const [hasExceededTitleLimit, setHasExceededTitleLimit] = useState(false);
-  if (!hasExceededTitleLimit && title.length > TODO_LIMITS.TITLE_MAX_LENGTH) {
-    setHasExceededTitleLimit(true);
-  }
   const [isTitleFocused, setIsTitleFocused] = useState(false);
   const [hasTouchedForm, setHasTouchedForm] = useState(false);
   const hasStartedRequestedVoiceRef = useRef(false);
@@ -181,6 +186,7 @@ function TodoCreateForm({
   const createTodo = useMutation(useCreateTodoMutationOptions());
   const createRecurringTodo = useMutation(useCreateRecurringTodoMutationOptions());
   const reopenRepeatPicker = useReopenTodoRepeatPicker(form);
+  const focusTitle = useFocusTodoTitle(form.setFocus);
   const voice = useAddTodoQuickVoice({ form, onExit });
   const startRequestedVoice = useEffectEvent(() => {
     voice.start().catch(reportUnexpectedError);
@@ -190,9 +196,6 @@ function TodoCreateForm({
   const canSuggestVoice = aiParseQuotaType !== 'used-up';
   const isVoiceHintShown = canSuggestVoice && isVoiceHintPending;
   const isFormStep = VoiceCapturePolicy.isManualInput(voice.state);
-  // 저장하면 시트가 내려가는 동안에도 같은 제목이 남아 있다. 그동안 다시 보내지 않는다
-  const isSubmitLocked = isSubmitting || isSubmitSuccessful;
-  const isSubmitDisabled = !isValid || isSubmitLocked;
   const voiceDismissAction = VoiceCapturePolicy.findDismissAction(voice.state);
 
   useOnScreenBlur(voice.interrupt);
@@ -204,12 +207,6 @@ function TodoCreateForm({
     hasStartedRequestedVoiceRef.current = true;
     startRequestedVoice();
   }, [isVoiceStartRequested, isOpen]);
-  // 한도를 넘긴 뒤로는 글자를 고칠 때마다 다시 검사해 저장이 꺼진 이유를 칸 아래에 바로 보인다
-  useEffect(() => {
-    if (hasExceededTitleLimit) {
-      form.trigger('title').catch(reportUnexpectedError);
-    }
-  }, [form, hasExceededTitleLimit, title, reportUnexpectedError]);
 
   // 실패는 여기서 받지 않는다. RHF가 실패로 알아야 isSubmitSuccessful이 꺼진 채 남아 다시 보낼 수 있다
   const saveTodo = form.handleSubmit(async (values) => {
@@ -236,7 +233,7 @@ function TodoCreateForm({
   });
 
   // 저장 중이거나 저장해 닫히는 중에는 아무 일도 하지 않는다. 시트를 닫으면 저장 결과를 볼 수 없다
-  const handleTitleSubmit = () => {
+  const handleTitleSubmit = (title: string, isSubmitLocked: boolean) => {
     if (isSubmitLocked) {
       return;
     }
@@ -304,17 +301,28 @@ function TodoCreateForm({
           <QuickVoicePlanning transcript={voice.state.transcript} onCancel={voice.cancelPlanning} />
         ))
         .with({ status: 'review' }, ({ plan, isCharged }) => (
-          <TodoCreateVoiceReview
-            form={form}
-            plan={plan}
-            isCharged={isCharged}
-            onMemoChanged={onMemoChanged}
-            onApplied={onClose}
-            onRestart={() => {
-              voice.restart().catch(reportUnexpectedError);
-            }}
-            onTypeInstead={voice.typeInstead}
-          />
+          // 고르는 단계. 카드가 쓰는 조회가 실패해도 시트(루트 overlay)가 앱 경계까지 터지지 않게 이 안에서 처리한다
+          <QueryErrorBoundary fallback={QuickVoiceReview.Error}>
+            <Suspense fallback={<QuickVoiceReview.Loading />}>
+              <Watch
+                control={form.control}
+                name="categoryId"
+                render={(categoryId) => (
+                  <QuickVoiceReview
+                    plan={plan}
+                    isCharged={isCharged}
+                    fallbackCategoryId={categoryId}
+                    onMemoChanged={onMemoChanged}
+                    onApplied={onClose}
+                    onRestart={() => {
+                      voice.restart().catch(reportUnexpectedError);
+                    }}
+                    onTypeInstead={voice.typeInstead}
+                  />
+                )}
+              />
+            </Suspense>
+          </QueryErrorBoundary>
         ))
         .with({ status: P.union('idle', 'failed') }, () => (
           <VStack gap={12} testID="todo-add-sheet" onTouchStart={() => setHasTouchedForm(true)}>
@@ -329,53 +337,58 @@ function TodoCreateForm({
             <Controller
               control={form.control}
               name="title"
-              render={({ field: { onChange, value, ref }, fieldState: { error } }) =>
-                voice.state.status === 'failed' || hasExceededTitleLimit ? (
-                  // 넘친 글은 한 줄 칸으로 돌아가지 않고 칸 안에서 스크롤한다. maxLength는 Android가 200자 뒤를 지워 쓰지 않는다
-                  <TextArea
-                    ref={ref}
-                    autoFocus={!voice.isRestarting}
-                    placeholder={t('add.placeholder')}
-                    value={value}
-                    onChange={onChange}
-                    isInvalid={error?.type === 'too_big'}
-                    errorMessage={
-                      error?.type === 'too_big'
-                        ? resolveValidationMessage(error, { default: 'todoTitle.tooLong' })
-                        : undefined
-                    }
-                    growsWithContent
-                    textSize="b3"
-                    preserveErrorSpace={false}
-                    className="max-h-28 min-h-12"
-                    returnKeyType="done"
-                    submitBehavior="submit"
-                    onFocus={() => setIsTitleFocused(true)}
-                    onBlur={() => setIsTitleFocused(false)}
-                    onSubmitEditing={handleTitleSubmit}
-                  />
-                ) : (
-                  <Input
-                    ref={ref}
-                    // 처음 안내는 키보드 없이 띄운다. 키보드 뒤로 잘리거나 첫 탭을 빼앗지 않게 하려는 것이다
-                    autoFocus={!isVoiceHintShown && !isVoiceStartRequested && !voice.isRestarting}
-                    onFocus={() => setIsTitleFocused(true)}
-                    onBlur={() => setIsTitleFocused(false)}
-                    placeholder={t('add.placeholder')}
-                    value={value}
-                    onChange={onChange}
-                    maxLength={TODO_LIMITS.TITLE_MAX_LENGTH}
-                    size="medium"
-                    renderErrorMessage={false}
-                    returnKeyType="done"
-                    onSubmitEditing={handleTitleSubmit}
-                    testID="todo-add-title-input"
-                  />
-                )
-              }
+              render={({ field, fieldState, formState: { isSubmitting, isSubmitSuccessful } }) => (
+                <TitleInput
+                  ref={field.ref}
+                  value={field.value}
+                  onChange={field.onChange}
+                  error={fieldState.error}
+                  isVoiceFailed={voice.state.status === 'failed'}
+                  // 처음 안내는 키보드 없이 띄운다. 키보드 뒤로 잘리거나 첫 탭을 빼앗지 않게 하려는 것이다
+                  isAutoFocusDeferred={isVoiceHintShown || isVoiceStartRequested}
+                  isVoiceRestarting={voice.isRestarting}
+                  onFocusChange={setIsTitleFocused}
+                  onSubmitEditing={() =>
+                    handleTitleSubmit(
+                      field.value,
+                      // 저장하면 시트가 내려가는 동안에도 같은 제목이 남아 있다. 그동안 다시 보내지 않는다
+                      isSubmitting || isSubmitSuccessful,
+                    )
+                  }
+                  onRevalidate={() => {
+                    form.trigger('title').catch(reportUnexpectedError);
+                  }}
+                />
+              )}
             />
 
-            <TodoComposerChips form={form} />
+            <Watch
+              control={form.control}
+              name={TODO_COMPOSER_CHIP_FIELDS}
+              render={([
+                startDate,
+                endDate,
+                scheduledTime,
+                isAllDay,
+                repeat,
+                visibility,
+                categoryId,
+              ]) => (
+                <TodoComposerChips
+                  value={{
+                    startDate,
+                    endDate,
+                    scheduledTime,
+                    isAllDay,
+                    repeat,
+                    visibility,
+                    categoryId,
+                  }}
+                  onChange={(next) => setTodoComposerChipFields(form.setValue, next)}
+                  onPickerCloseStart={focusTitle}
+                />
+              )}
+            />
 
             <Separator thickness={1} className="bg-gray-2" />
 
@@ -398,11 +411,16 @@ function TodoCreateForm({
                   testID="todo-quick-voice-button"
                 />
               </CoachmarkPopover>
-              <TodoComposerSubmitButton
-                isDisabled={isSubmitDisabled}
-                isSubmitting={isSubmitLocked}
-                onPress={() => handleSavePress()}
-                testID="todo-add-submit"
+              <FormState
+                control={form.control}
+                render={({ isValid, isSubmitting, isSubmitSuccessful }) => (
+                  <TodoComposerSubmitButton
+                    isDisabled={!isValid || isSubmitting || isSubmitSuccessful}
+                    isSubmitting={isSubmitting || isSubmitSuccessful}
+                    onPress={() => handleSavePress()}
+                    testID="todo-add-submit"
+                  />
+                )}
               />
             </HStack>
           </VStack>
@@ -412,20 +430,90 @@ function TodoCreateForm({
   );
 }
 
-type TodoCreateVoiceReviewProps = Omit<
-  ComponentProps<typeof QuickVoiceReview>,
-  'fallbackCategoryId'
-> & { form: UseFormReturn<TodoFormValues> };
+interface TitleInputProps {
+  ref: RefCallBack;
+  value: string;
+  onChange: (title: string) => void;
+  error: FieldError | undefined;
+  isVoiceFailed: boolean;
+  isAutoFocusDeferred: boolean;
+  isVoiceRestarting: boolean;
+  onFocusChange: (isFocused: boolean) => void;
+  onSubmitEditing: () => void;
+  onRevalidate: () => void;
+}
 
-/** 고르는 단계. 카드가 쓰는 조회가 실패해도 시트(루트 overlay)가 앱 경계까지 터지지 않게 이 안에서 처리한다 */
-function TodoCreateVoiceReview({ form, ...props }: TodoCreateVoiceReviewProps) {
-  const categoryId = useWatch({ control: form.control, name: 'categoryId' });
+/** 한도를 넘기면 여러 줄 칸으로 바꾼다. 넘긴 상태는 이 칸만 기억해 글자를 칠 때 시트가 다시 그려지지 않는다 */
+function TitleInput({
+  ref,
+  value,
+  onChange,
+  error,
+  isVoiceFailed,
+  isAutoFocusDeferred,
+  isVoiceRestarting,
+  onFocusChange,
+  onSubmitEditing,
+  onRevalidate,
+}: TitleInputProps) {
+  const { t } = useTranslation('todo');
+  // 한도 아래로 지워도 칸을 바꾸지 않는다. 다시 마운트되면 커서와 키보드가 튄다
+  const [hasExceededTitleLimit, setHasExceededTitleLimit] = useState(false);
+  if (!hasExceededTitleLimit && value.length > TODO_LIMITS.TITLE_MAX_LENGTH) {
+    setHasExceededTitleLimit(true);
+  }
+  const revalidate = useEffectEvent(onRevalidate);
+
+  // 한도를 넘긴 뒤로는 글자를 고칠 때마다 다시 검사해 저장이 꺼진 이유를 칸 아래에 바로 보인다
+  useEffect(() => {
+    if (hasExceededTitleLimit) {
+      revalidate();
+    }
+  }, [hasExceededTitleLimit, value]);
+
+  if (isVoiceFailed || hasExceededTitleLimit) {
+    return (
+      // 넘친 글은 한 줄 칸으로 돌아가지 않고 칸 안에서 스크롤한다. maxLength는 Android가 200자 뒤를 지워 쓰지 않는다
+      <TextArea
+        ref={ref}
+        autoFocus={!isVoiceRestarting}
+        placeholder={t('add.placeholder')}
+        value={value}
+        onChange={onChange}
+        isInvalid={error?.type === 'too_big'}
+        errorMessage={
+          error?.type === 'too_big'
+            ? resolveValidationMessage(error, { default: 'todoTitle.tooLong' })
+            : undefined
+        }
+        growsWithContent
+        textSize="b3"
+        preserveErrorSpace={false}
+        className="max-h-28 min-h-12"
+        returnKeyType="done"
+        submitBehavior="submit"
+        onFocus={() => onFocusChange(true)}
+        onBlur={() => onFocusChange(false)}
+        onSubmitEditing={onSubmitEditing}
+      />
+    );
+  }
 
   return (
-    <QueryErrorBoundary fallback={QuickVoiceReview.Error}>
-      <Suspense fallback={<QuickVoiceReview.Loading />}>
-        <QuickVoiceReview {...props} fallbackCategoryId={categoryId} />
-      </Suspense>
-    </QueryErrorBoundary>
+    <Input
+      ref={ref}
+      autoFocus={!isAutoFocusDeferred && !isVoiceRestarting}
+      onFocus={() => onFocusChange(true)}
+      onBlur={() => onFocusChange(false)}
+      placeholder={t('add.placeholder')}
+      value={value}
+      onChange={onChange}
+      maxLength={TODO_LIMITS.TITLE_MAX_LENGTH}
+      size="medium"
+      renderErrorMessage={false}
+      returnKeyType="done"
+      onSubmitEditing={onSubmitEditing}
+      testID="todo-add-title-input"
+    />
   );
 }

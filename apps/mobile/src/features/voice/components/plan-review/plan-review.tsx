@@ -399,7 +399,7 @@ PlanReview.CategoryHeader = function CategoryHeader({ categoryId }: { categoryId
   if (category == null) {
     return null;
   }
-  return <CategoryHeaderPill label={category.name} color={category.color} />;
+  return <CategoryHeaderPill label={category.name} color={category.color} className="self-start" />;
 };
 
 PlanReview.TodoRow = function PlanTodoRow({

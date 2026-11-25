@@ -1423,23 +1423,14 @@
     },
     {
       // 래칫
-      "files": [
-        "src/features/planning/category/**",
-        "src/features/planning/composer/**",
-        "src/features/voice/**",
-        "src/features/weather/**"
-      ],
+      "files": ["src/features/voice/**", "src/features/weather/**"],
       "rules": {
         "aido/form-owner": "off"
       }
     },
     {
       // 래칫
-      "files": [
-        "src/features/planning/category/**",
-        "src/features/voice/**",
-        "src/features/weather/**"
-      ],
+      "files": ["src/features/voice/**", "src/features/weather/**"],
       "rules": {
         "aido/component-outer-spacing": "off"
       }

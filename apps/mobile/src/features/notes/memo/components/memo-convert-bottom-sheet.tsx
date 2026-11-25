@@ -1,7 +1,12 @@
 import { TODO_LIMITS } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { TodoComposerChips } from '@src/features/planning/composer/components/todo-composer-chips';
+import {
+  setTodoComposerChipFields,
+  TODO_COMPOSER_CHIP_FIELDS,
+  TodoComposerChips,
+} from '@src/features/planning/composer/components/todo-composer-chips';
 import { TodoComposerSubmitButton } from '@src/features/planning/composer/components/todo-composer-submit-button';
+import { useFocusTodoTitle } from '@src/features/planning/composer/hooks/use-focus-todo-title';
 import { useReopenTodoRepeatPicker } from '@src/features/planning/composer/hooks/use-reopen-todo-repeat-picker';
 import { shouldReopenRepeatPicker } from '@src/features/planning/todo/domains/todo-series.error';
 import { createTodoTitle } from '@src/features/planning/todo/domains/todo.model';
@@ -14,7 +19,7 @@ import { Input, HStack, KeyboardBottomSheet, VStack } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
 import type { ComponentProps } from 'react';
-import { Controller, useForm, useFormState } from 'react-hook-form';
+import { Controller, useForm, useFormState, Watch } from 'react-hook-form';
 
 import { isMemoUnavailableError } from '../domains/memo.error';
 import type { Memo } from '../domains/memo.model';
@@ -74,6 +79,7 @@ MemoConvertBottomSheet.Form = function Form({
   const { isSubmitting, isSubmitSuccessful, isValid } = useFormState({ control: form.control });
   const convertMemo = useMutation(useConvertMemoToTodosMutationOptions());
   const reopenRepeatPicker = useReopenTodoRepeatPicker(form);
+  const focusTitle = useFocusTodoTitle(form.setFocus);
   // 옮기면 시트가 내려가는 동안에도 같은 제목이 남고 요청에 멱등 키가 없다. 그동안 다시 보내지 않는다
   const isSubmitLocked = isSubmitting || isSubmitSuccessful;
   const isSubmitDisabled = !isValid || isSubmitLocked;
@@ -135,7 +141,17 @@ MemoConvertBottomSheet.Form = function Form({
         )}
       />
 
-      <TodoComposerChips form={form} />
+      <Watch
+        control={form.control}
+        name={TODO_COMPOSER_CHIP_FIELDS}
+        render={([startDate, endDate, scheduledTime, isAllDay, repeat, visibility, categoryId]) => (
+          <TodoComposerChips
+            value={{ startDate, endDate, scheduledTime, isAllDay, repeat, visibility, categoryId }}
+            onChange={(next) => setTodoComposerChipFields(form.setValue, next)}
+            onPickerCloseStart={focusTitle}
+          />
+        )}
+      />
 
       <Separator thickness={1} className="bg-gray-2" />
 

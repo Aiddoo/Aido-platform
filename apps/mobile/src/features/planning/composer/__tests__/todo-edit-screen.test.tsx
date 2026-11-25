@@ -100,6 +100,53 @@ describe('TodoEditSheetRoute', () => {
     expect(httpClient.patch).toHaveBeenCalledWith('v1/todos/5', { title: '장보기와 요리' });
   });
 
+  it('같은 프레임에 저장을 두 번 눌러도 한 번 보낸다', async () => {
+    // Given
+    const { httpClient } = await renderEditRoute(
+      createParentTodo({ id: 5, title: '장보기', startDate: TODAY, isAllDay: true }),
+    );
+    await editTitle('장보기와 요리');
+    const submit = screen.getByRole('button', { name: '저장하기' });
+
+    // When
+    await act(async () => {
+      await fireEvent.press(submit);
+      await fireEvent.press(submit);
+    });
+    await act(() => jest.advanceTimersByTimeAsync(1_000));
+
+    // Then
+    expect(httpClient.patch).toHaveBeenCalledTimes(1);
+  });
+
+  it('반복 할 일에서 같은 프레임에 저장을 두 번 눌러도 범위를 한 번 묻고 한 번 보낸다', async () => {
+    // Given
+    const { httpClient } = await renderEditRoute(
+      createParentTodo({
+        id: 5,
+        title: '물 마시기',
+        startDate: TODAY,
+        isAllDay: true,
+        ...DAILY_SERIES,
+      }),
+    );
+    await editTitle('물 두 잔 마시기');
+    const submit = screen.getByRole('button', { name: '저장하기' });
+
+    // When
+    await act(async () => {
+      fireEvent.press(submit).catch(() => undefined);
+      fireEvent.press(submit).catch(() => undefined);
+    });
+    const scopeTitles = await screen.findAllByText('반복 할 일 수정');
+    await userEvent.press(screen.getByRole('button', { name: '이 할 일과 이후 할 일' }));
+    await act(() => jest.advanceTimersByTimeAsync(1_000));
+
+    // Then
+    expect(scopeTitles).toHaveLength(1);
+    expect(httpClient.patch).toHaveBeenCalledTimes(1);
+  });
+
   it('아무것도 바꾸지 않고 저장하면 요청을 보내지 않는다', async () => {
     // Given
     const { httpClient } = await renderEditRoute(

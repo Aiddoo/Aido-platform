@@ -1,4 +1,6 @@
+import { TODO_LIMITS } from '@aido/api/vocabulary';
 import { DictationButton } from '@src/features/voice/components/dictation-button';
+import { truncateGraphemes } from '@src/shared/domains/text-limit.model';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -13,9 +15,6 @@ import {
 } from '@src/shared/ui';
 import { Popover, PressableFeedback, Separator, Skeleton } from 'heroui-native';
 import { type ComponentProps, type ReactNode, useState } from 'react';
-import { Controller, type UseFormReturn, useWatch } from 'react-hook-form';
-
-import { subTodoFormSchema, type SubTodoFormValues } from '../schemas/sub-todo-form.schema';
 
 interface SubTodoBottomSheetProps extends Omit<
   ComponentProps<typeof RouteKeyboardBottomSheet>,
@@ -46,57 +45,45 @@ SubTodoBottomSheet.Loading = function Loading() {
   );
 };
 
-interface SubTodoFormPartProps {
-  form: UseFormReturn<SubTodoFormValues>;
-}
+// 하위 항목 제목은 서버 계약이 할 일 제목과 같은 한도로 받는다
+const SUB_TODO_TITLE_MAX_LENGTH = TODO_LIMITS.TITLE_MAX_LENGTH;
 
-interface SubTodoTitleInputProps extends SubTodoFormPartProps {
-  onSubmitEditing: () => void;
-}
+type SubTodoTitleInputProps = Omit<
+  ComponentProps<typeof Input>,
+  'autoFocus' | 'placeholder' | 'maxLength' | 'size' | 'renderErrorMessage' | 'returnKeyType'
+>;
 
-const SUB_TODO_TITLE_MAX_LENGTH = subTodoFormSchema.shape.title.out.maxLength ?? undefined;
-
-export function SubTodoTitleInput({ form, onSubmitEditing }: SubTodoTitleInputProps) {
+export function SubTodoTitleInput(props: SubTodoTitleInputProps) {
   const { t } = useTranslation('todo');
 
   return (
-    <Controller
-      control={form.control}
-      name="title"
-      render={({ field }) => (
-        <Input
-          testID="sub-todo-input"
-          autoFocus
-          placeholder={t('subTodo.placeholder')}
-          value={field.value}
-          onChange={field.onChange}
-          maxLength={SUB_TODO_TITLE_MAX_LENGTH}
-          size="medium"
-          renderErrorMessage={false}
-          returnKeyType="done"
-          onSubmitEditing={onSubmitEditing}
-        />
-      )}
+    <Input
+      testID="sub-todo-input"
+      autoFocus
+      placeholder={t('subTodo.placeholder')}
+      maxLength={SUB_TODO_TITLE_MAX_LENGTH}
+      size="medium"
+      renderErrorMessage={false}
+      returnKeyType="done"
+      {...props}
     />
   );
 }
 
-export function SubTodoDictation({ form }: SubTodoFormPartProps) {
-  const title = useWatch({ control: form.control, name: 'title' });
+interface SubTodoDictationProps {
+  value: string;
+  onChange: (title: string) => void;
+}
 
+export function SubTodoDictation({ value, onChange }: SubTodoDictationProps) {
   return (
     <>
       <SpeechTooltip />
       {/* 입력칸은 최대 길이를 막지만 받아쓴 글은 넘을 수 있어, 넘으면 조용히 전송이 멈추지 않게 자른다.
-          적은 글자처럼 고친 칸으로 두고 바로 검사해 다시 받은 값이 덮지 않고 전송·완료 키가 따른다 */}
+          한도에 걸친 이모지는 반으로 자르지 않고 그 앞까지 담는다 */}
       <DictationButton
-        value={title}
-        onChange={(text) =>
-          form.setValue('title', text.slice(0, SUB_TODO_TITLE_MAX_LENGTH), {
-            shouldDirty: true,
-            shouldValidate: true,
-          })
-        }
+        value={value}
+        onChange={(text) => onChange(truncateGraphemes(text, SUB_TODO_TITLE_MAX_LENGTH))}
       />
     </>
   );

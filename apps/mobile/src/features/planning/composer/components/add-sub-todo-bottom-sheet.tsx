@@ -3,11 +3,13 @@ import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { useSuspenseSheetTodo } from '@src/features/planning/todo/hooks/use-suspense-sheet-todo';
 import { useTodoSheetDateKey } from '@src/features/planning/todo/hooks/use-todo-sheet-date-key';
 import { useAddSubTodoMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { Box, HStack, VStack } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
+import { noop } from 'es-toolkit';
 import { Separator } from 'heroui-native';
 import { type ComponentProps } from 'react';
-import { useForm, useFormState } from 'react-hook-form';
+import { Controller, FormState, useForm, Watch } from 'react-hook-form';
 
 import { subTodoFormSchema } from '../schemas/sub-todo-form.schema';
 import { SubTodoBottomSheet, SubTodoDictation, SubTodoTitleInput } from './sub-todo-bottom-sheet';
@@ -39,12 +41,25 @@ function AddSubTodoForm({ todo, onClose }: { todo: Todo; onClose: () => void }) 
     resolver: zodResolver(subTodoFormSchema),
     defaultValues: { title: '' },
   });
-  const { isValid } = useFormState({ control: form.control });
   const addSubTodo = useMutation(useAddSubTodoMutationOptions());
-  const isSubmitDisabled = !isValid || addSubTodo.isPending;
+
+  const saveSubTodo = form.handleSubmit(async ({ title }) => {
+    if (addSubTodo.isPending) {
+      return;
+    }
+    await addSubTodo.mutateAsync({ todoId: todo.id, title, date });
+    form.reset();
+    onClose();
+  });
+
+  // isPending은 다음 렌더에야 켜져 같은 프레임의 두 번째 탭·완료 키가 하나 더 만든다.
+  // 실패 안내와 보고는 mutation의 meta.errorFeedback이 맡고 적은 제목은 그대로 둔다
+  const handleSavePress = useSingleTap(() => {
+    saveSubTodo().catch(noop);
+  });
 
   // 저장 중에는 아무 일도 하지 않는다. 시트를 닫으면 저장 결과를 볼 수 없다. 빈 제목은 저장 대신 닫는다
-  const handleTitleSubmit = () => {
+  const handleTitleSubmit = (isValid: boolean) => {
     if (addSubTodo.isPending) {
       return;
     }
@@ -53,39 +68,51 @@ function AddSubTodoForm({ todo, onClose }: { todo: Todo; onClose: () => void }) 
 
       return;
     }
-    submit();
+    handleSavePress();
   };
-
-  const submit = form.handleSubmit(async ({ title }) => {
-    if (addSubTodo.isPending) {
-      return;
-    }
-
-    try {
-      await addSubTodo.mutateAsync({ todoId: todo.id, title, date });
-    } catch {
-      return;
-    }
-
-    form.reset();
-    onClose();
-  });
 
   return (
     <VStack gap={12}>
-      <SubTodoTitleInput form={form} onSubmitEditing={handleTitleSubmit} />
+      <Controller
+        control={form.control}
+        name="title"
+        render={({ field, formState: { isValid } }) => (
+          <SubTodoTitleInput
+            value={field.value}
+            onChange={field.onChange}
+            onSubmitEditing={() => handleTitleSubmit(isValid)}
+          />
+        )}
+      />
 
       <Separator thickness={1} className="bg-gray-2" />
 
       <HStack gap={8} align="center">
         <Box className="flex-1" />
 
-        <SubTodoDictation form={form} />
-        <TodoComposerSubmitButton
-          testID="sub-todo-submit"
-          isDisabled={isSubmitDisabled}
-          isSubmitting={addSubTodo.isPending}
-          onPress={() => submit()}
+        <Watch
+          control={form.control}
+          name="title"
+          render={(title) => (
+            <SubTodoDictation
+              value={title}
+              // 적은 글자처럼 고친 칸으로 두고 바로 검사해 전송·완료 키가 따른다
+              onChange={(text) =>
+                form.setValue('title', text, { shouldDirty: true, shouldValidate: true })
+              }
+            />
+          )}
+        />
+        <FormState
+          control={form.control}
+          render={({ isValid }) => (
+            <TodoComposerSubmitButton
+              testID="sub-todo-submit"
+              isDisabled={!isValid || addSubTodo.isPending}
+              isSubmitting={addSubTodo.isPending}
+              onPress={() => handleSavePress()}
+            />
+          )}
         />
       </HStack>
     </VStack>

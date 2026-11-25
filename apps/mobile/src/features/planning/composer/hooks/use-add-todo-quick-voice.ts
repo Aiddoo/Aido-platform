@@ -85,11 +85,7 @@ export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptio
     setIsRestarting(true);
     planRequest.forget();
     session.cancel();
-    try {
-      await start();
-    } finally {
-      setIsRestarting(false);
-    }
+    await start().finally(() => setIsRestarting(false));
   };
 
   /** 정리를 기다리다 그만둔다. 글자는 입력 칸에 남기고, 같은 글자를 다시 보내면 같은 키라 두 번 차감되지 않는다 */

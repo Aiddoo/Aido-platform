@@ -5,4 +5,3 @@ import { z } from 'zod';
 export const subTodoFormSchema = z.object({
   title: trimmed(createTodoItemSchema.shape.title),
 });
-export type SubTodoFormValues = z.infer<typeof subTodoFormSchema>;

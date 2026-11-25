@@ -173,7 +173,6 @@ const modelAndFolderRules = [
           'assistant/suggestion',
           'notes/memo',
           'notification',
-          'planning/composer',
           'planning/todo',
           'social/friend',
           'social/nudge',

@@ -91,7 +91,11 @@ FriendTodoList.Contents = function Contents({
     <Box gap={16}>
       {categoryGroups.map((group) => (
         <VStack key={group.category.id} gap={8}>
-          <CategoryHeaderPill label={group.category.name} color={group.category.color} />
+          <CategoryHeaderPill
+            label={group.category.name}
+            color={group.category.color}
+            className="self-start"
+          />
           <Box>
             {group.todos.map((todo) => (
               <FriendTodoList.Item
@@ -258,7 +262,7 @@ FriendTodoList.Link = function ItemLink({
 FriendTodoList.Loading = function Loading() {
   return (
     <VStack gap={8}>
-      <CategoryHeaderPill.Loading />
+      <CategoryHeaderPill.Loading className="self-start" />
       <Box>
         {range(3).map((index) => (
           <TodoRow.Loading key={index} />

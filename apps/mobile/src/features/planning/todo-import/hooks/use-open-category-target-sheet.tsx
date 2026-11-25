@@ -2,7 +2,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
-import { CategoryFormFields } from '@src/features/planning/category/components/category-form-fields';
+import { CategoryColorInput } from '@src/features/planning/category/components/category-color-input';
+import {
+  CategoryNameInput,
+  getCategoryNameErrorMessage,
+} from '@src/features/planning/category/components/category-name-input';
 import {
   filterByName,
   type TodoCategory,
@@ -34,7 +38,7 @@ import { usePrefetchQuery, useSuspenseQueries } from '@tanstack/react-query';
 import { noop, pick } from 'es-toolkit';
 import { RadioGroup } from 'heroui-native';
 import { Fragment, Suspense, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { match, P } from 'ts-pattern';
 
 import { CalendarSourceBadge } from '../components/calendar-source-badge';
@@ -242,7 +246,29 @@ function CategoryTargetSheet({
               </H4>
               <TextButton onPress={() => setView('pick')}>{t('common:actions.back')}</TextButton>
             </HStack>
-            <CategoryFormFields control={form.control} onSubmit={confirmNewCategory} />
+            <VStack gap={20}>
+              <Controller
+                control={form.control}
+                name="name"
+                render={({ field, fieldState }) => (
+                  <CategoryNameInput
+                    ref={field.ref}
+                    value={field.value}
+                    onChange={field.onChange}
+                    isInvalid={fieldState.error != null}
+                    errorMessage={getCategoryNameErrorMessage(fieldState.error)}
+                    onSubmitEditing={confirmNewCategory}
+                  />
+                )}
+              />
+              <Controller
+                control={form.control}
+                name="color"
+                render={({ field }) => (
+                  <CategoryColorInput value={field.value} onValueChange={field.onChange} />
+                )}
+              />
+            </VStack>
           </VStack>
         ))
         .exhaustive()}

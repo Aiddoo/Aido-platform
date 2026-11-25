@@ -2,18 +2,19 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { Button, KeyboardBottomSheet, useSheetRoute } from '@src/shared/ui';
+import { Button, KeyboardBottomSheet, useSheetRoute, VStack } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { type ComponentProps, useEffect, useEffectEvent, useState } from 'react';
-import { useForm, useFormState } from 'react-hook-form';
+import { Controller, FormState, useForm } from 'react-hook-form';
 
 import { useCreateTodoCategoryMutationOptions } from '../queries/todo-category.mutations';
 import {
   TODO_CATEGORY_FORM_DEFAULT_VALUES,
   todoCategoryFormSchema,
 } from '../schemas/todo-category-form.schema';
-import { CategoryFormFields } from './category-form-fields';
+import { CategoryColorInput } from './category-color-input';
+import { CategoryNameInput, getCategoryNameErrorMessage } from './category-name-input';
 
 type CategoryCreateBottomSheetProps = Omit<
   ComponentProps<typeof KeyboardBottomSheet>,
@@ -32,12 +33,8 @@ export function CategoryCreateBottomSheet(props: CategoryCreateBottomSheetProps)
     defaultValues: TODO_CATEGORY_FORM_DEFAULT_VALUES,
     mode: 'onChange',
   });
-  const { isSubmitting, isSubmitSuccessful } = useFormState({ control: form.control });
 
   const createCategory = useMutation(useCreateTodoCategoryMutationOptions());
-
-  // 추가하면 시트가 내려가는 동안에도 같은 이름이 남아 있다. 그동안 다시 보내지 않는다
-  const isSubmitLocked = isSubmitting || isSubmitSuccessful;
 
   // 이름 시트 없이 안내만 띄우고 안내가 끝나면 떠난다. 그사이 한도가 풀렸어도 빈 route가 화면을 막지 않게 떠난다
   const promptLimitOnEntry = useEffectEvent(() => {
@@ -51,7 +48,6 @@ export function CategoryCreateBottomSheet(props: CategoryCreateBottomSheetProps)
     }
   }, [isBlockedOnEntry]);
 
-  // useSingleTap이 훅이라 이 핸들러들은 조기 반환보다 앞에 둔다.
   // 실패는 여기서 받지 않는다. RHF가 실패로 알아야 isSubmitSuccessful이 꺼진 채 남아 다시 보낼 수 있다
   const saveCategory = form.handleSubmit(async (values) => {
     await createCategory.mutateAsync(values, {
@@ -60,8 +56,9 @@ export function CategoryCreateBottomSheet(props: CategoryCreateBottomSheetProps)
       onError: (error) => gate.promptIfBlockedError(error, { onSubscribe: sheet.exit }),
     });
   });
-  // 완료 키는 버튼이 꺼져도 들어와 여기서도 막는다. 실패 안내는 mutation의 meta.errorFeedback과 위 업셀이 맡는다
-  const handleSavePress = useSingleTap(() => {
+  // 훅이라 조기 반환보다 앞에 둔다. 완료 키는 버튼이 꺼져도 들어와 여기서도 막는다.
+  // 실패 안내는 mutation의 meta.errorFeedback과 위 업셀이 맡는다
+  const handleSavePress = useSingleTap((isSubmitLocked: boolean) => {
     if (isSubmitLocked) {
       return;
     }
@@ -78,12 +75,45 @@ export function CategoryCreateBottomSheet(props: CategoryCreateBottomSheetProps)
       isOpen={sheet.isOpen}
       onOpenChange={sheet.onOpenChange}
       footer={
-        <Button size="large" onPress={handleSavePress} isLoading={isSubmitLocked}>
-          {t('common:actions.confirm')}
-        </Button>
+        <FormState
+          control={form.control}
+          // 추가하면 시트가 내려가는 동안에도 같은 이름이 남아 있다. 그동안 다시 보내지 않는다
+          render={({ isSubmitting, isSubmitSuccessful }) => (
+            <Button
+              size="large"
+              onPress={() => handleSavePress(isSubmitting || isSubmitSuccessful)}
+              isLoading={isSubmitting || isSubmitSuccessful}
+            >
+              {t('common:actions.confirm')}
+            </Button>
+          )}
+        />
       }
     >
-      <CategoryFormFields control={form.control} onSubmit={handleSavePress} />
+      <VStack gap={20}>
+        <Controller
+          control={form.control}
+          name="name"
+          render={({ field, fieldState, formState: { isSubmitting, isSubmitSuccessful } }) => (
+            <CategoryNameInput
+              ref={field.ref}
+              value={field.value}
+              onChange={field.onChange}
+              isInvalid={fieldState.error != null}
+              errorMessage={getCategoryNameErrorMessage(fieldState.error)}
+              onSubmitEditing={() => handleSavePress(isSubmitting || isSubmitSuccessful)}
+            />
+          )}
+        />
+
+        <Controller
+          control={form.control}
+          name="color"
+          render={({ field }) => (
+            <CategoryColorInput value={field.value} onValueChange={field.onChange} />
+          )}
+        />
+      </VStack>
     </KeyboardBottomSheet>
   );
 }

@@ -10,7 +10,7 @@ export function useReopenTodoRepeatPicker(
   form: Pick<UseFormReturn<TodoFormValues>, 'getValues' | 'setFocus' | 'setValue'>,
 ) {
   const openRepeatPicker = useOpenTodoRepeatPicker();
-  const focusTitle = useFocusTodoTitle(form);
+  const focusTitle = useFocusTodoTitle(form.setFocus);
 
   return async () => {
     const values = form.getValues();

@@ -11,11 +11,12 @@ import {
   QueryErrorFallback,
   type QueryErrorFallbackProps,
   useSheetRoute,
+  VStack,
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { type ComponentProps, Suspense, useEffect } from 'react';
-import { useForm, useFormState } from 'react-hook-form';
+import { Controller, FormState, useForm } from 'react-hook-form';
 
 import { toTodoCategoryFormValues } from '../apis/todo-category.mapper';
 import { type TodoCategory, TodoCategoryPolicy } from '../domains/todo-category.model';
@@ -23,7 +24,8 @@ import { useTodoCategoryId } from '../hooks/use-todo-category-id';
 import { useUpdateTodoCategoryMutationOptions } from '../queries/todo-category.mutations';
 import { useGetTodoCategoriesQueryOptions } from '../queries/todo-category.queries';
 import { todoCategoryFormSchema } from '../schemas/todo-category-form.schema';
-import { CategoryFormFields } from './category-form-fields';
+import { CategoryColorInput } from './category-color-input';
+import { CategoryNameInput, getCategoryNameErrorMessage } from './category-name-input';
 
 type CategoryEditBottomSheetProps = Omit<
   ComponentProps<typeof KeyboardBottomSheet>,
@@ -102,32 +104,59 @@ function CategoryEditForm({ category, onClose, ...props }: CategoryEditFormProps
     resetOptions: SERVER_VALUES_RESET_OPTIONS,
     mode: 'onChange',
   });
-  const { isSubmitting } = useFormState({ control: form.control });
 
-  // 실패하면 토스트는 mutation이 한 번 알리고 시트와 입력값은 그대로 둔다
-  const submitCategory = form.handleSubmit(async (values) => {
+  // 실패는 호출부가 받는다. 토스트는 mutation이 한 번 알리고 시트와 입력값은 그대로 둔다
+  const saveCategory = form.handleSubmit(async (values) => {
     if (!TodoCategoryPolicy.hasChanges(category, values)) {
       onClose();
 
       return;
     }
 
-    await updateCategory
-      .mutateAsync({ id: category.id, input: values }, { onSuccess: onClose })
-      .catch(noop);
+    await updateCategory.mutateAsync({ id: category.id, input: values }, { onSuccess: onClose });
   });
-  const handleSubmit = useSingleTap(() => submitCategory());
+  const handleSavePress = useSingleTap(() => {
+    saveCategory().catch(noop);
+  });
 
   return (
     <KeyboardBottomSheet
       {...props}
       footer={
-        <Button size="large" onPress={handleSubmit} isLoading={isSubmitting}>
-          {t('actions.confirm')}
-        </Button>
+        <FormState
+          control={form.control}
+          render={({ isSubmitting }) => (
+            <Button size="large" onPress={() => handleSavePress()} isLoading={isSubmitting}>
+              {t('actions.confirm')}
+            </Button>
+          )}
+        />
       }
     >
-      <CategoryFormFields control={form.control} onSubmit={handleSubmit} />
+      <VStack gap={20}>
+        <Controller
+          control={form.control}
+          name="name"
+          render={({ field, fieldState }) => (
+            <CategoryNameInput
+              ref={field.ref}
+              value={field.value}
+              onChange={field.onChange}
+              isInvalid={fieldState.error != null}
+              errorMessage={getCategoryNameErrorMessage(fieldState.error)}
+              onSubmitEditing={() => handleSavePress()}
+            />
+          )}
+        />
+
+        <Controller
+          control={form.control}
+          name="color"
+          render={({ field }) => (
+            <CategoryColorInput value={field.value} onValueChange={field.onChange} />
+          )}
+        />
+      </VStack>
     </KeyboardBottomSheet>
   );
 }

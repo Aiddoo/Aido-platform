@@ -18,6 +18,7 @@ import {
   createSpeechRecognizerStub,
   createTestDi,
   createTestQueryClient,
+  deliverQueryNotifications,
   createVoiceNoteStorageFake,
 } from '@src/testing/core';
 import { startDismissingTopSheet } from '@src/testing/mocks/react-native-true-sheet-reanimated';
@@ -101,7 +102,7 @@ async function renderCreateSheet(
     });
   }
 
-  return { httpClient, speechRecognizer, errorReporter };
+  return { httpClient, speechRecognizer, errorReporter, queryClient };
 }
 
 describe('TodoCreateBottomSheet', () => {
@@ -275,10 +276,13 @@ describe('TodoCreateBottomSheet', () => {
       return jest.mocked(useIsFocused).mock.calls.length;
     }
 
-    it('제목을 칠 때 시트 맨 위가 글자마다 다시 그려진다', async () => {
+    it('제목을 칠 때 시트 맨 위는 다시 그려지지 않고 제목 칸만 바뀐다', async () => {
       // Given
-      await renderCreateSheet();
+      const { queryClient } = await renderCreateSheet();
       const input = await screen.findByPlaceholderText(PLACEHOLDER);
+      // 요금제·안내 조회가 끝나 다시 그려지는 것은 글자와 상관없어 끝난 뒤부터 센다
+      await waitFor(() => expect(queryClient.isFetching()).toBe(0));
+      await act(() => deliverQueryNotifications());
       const renderCountBeforeTyping = countSheetRenders();
 
       // When
@@ -288,7 +292,7 @@ describe('TodoCreateBottomSheet', () => {
 
       // Then
       expect(screen.getByPlaceholderText(PLACEHOLDER)).toHaveDisplayValue('우유 사기');
-      expect(countSheetRenders()).toBeGreaterThan(renderCountBeforeTyping);
+      expect(countSheetRenders()).toBe(renderCountBeforeTyping);
     });
   });
 

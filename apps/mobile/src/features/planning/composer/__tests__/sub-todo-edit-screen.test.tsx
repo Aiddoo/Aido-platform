@@ -90,6 +90,23 @@ describe('SubTodoEditSheetRoute', () => {
     settleRequests();
   });
 
+  it('같은 프레임에 보내기와 완료 키를 함께 눌러도 한 번 보낸다', async () => {
+    // Given
+    const { httpClient, settleRequests } = await renderEditRoute();
+    await fireEvent.changeText(screen.getByTestId('sub-todo-input'), '장 보고 오기');
+
+    // When
+    await act(async () => {
+      await fireEvent.press(screen.getByTestId('sub-todo-submit'));
+      await fireEvent(screen.getByTestId('sub-todo-input'), 'submitEditing');
+    });
+
+    // Then
+    await waitFor(() => expect(httpClient.patch).toHaveBeenCalled());
+    expect(httpClient.patch).toHaveBeenCalledTimes(1);
+    settleRequests();
+  });
+
   it('지우면 그 항목을 지우는 요청을 보내고 목록에서 바로 빠진다', async () => {
     // Given
     const { httpClient, readSubTodoTitles, settleRequests } = await renderEditRoute();
@@ -104,7 +121,7 @@ describe('SubTodoEditSheetRoute', () => {
     settleRequests();
   });
 
-  it('받아쓴 제목이 한도를 넘으면 한도에서 자르고, 한도에 걸친 이모지는 반으로 잘린 글자가 남는다', async () => {
+  it('받아쓴 제목이 한도를 넘으면 한도에서 자르고, 한도에 걸친 이모지는 반으로 자르지 않고 뺀다', async () => {
     // Given
     const { dictate } = await renderEditRoute();
     await fireEvent.changeText(screen.getByTestId('sub-todo-input'), '');
@@ -113,6 +130,6 @@ describe('SubTodoEditSheetRoute', () => {
     await dictate(`${'가'.repeat(199)}😀`);
 
     // Then
-    expect(screen.getByTestId('sub-todo-input').props.value).toBe(`${'가'.repeat(199)}\ud83d`);
+    expect(screen.getByTestId('sub-todo-input').props.value).toBe('가'.repeat(199));
   });
 });

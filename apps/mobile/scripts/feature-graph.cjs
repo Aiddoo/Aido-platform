@@ -275,7 +275,6 @@ const LOCAL_ONLY_PENDING_FEATURES = new Set([
   'insights/report',
   'notes/memo',
   'notification',
-  'planning/category',
   'social/invite',
   'social/moderation',
   'voice',

@@ -239,7 +239,7 @@ TodoDetailSummary.Loading = function Loading() {
       <VStack className="ms-9 gap-2.5">
         <VStack gap={6}>
           <HStack gap={8} align="center">
-            <CategoryHeaderPill.Loading />
+            <CategoryHeaderPill.Loading className="self-start" />
             <TextSkeleton size="e1" className="w-14" />
           </HStack>
         </VStack>

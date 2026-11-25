@@ -16,8 +16,6 @@ const KNOWN_BAILOUTS = [
   'src/features/device/store-review/hooks/use-store-review-moment.ts',
   'src/features/notes/memo/components/memo-editor.tsx',
   'src/features/notification/hooks/use-push-notification-response.ts',
-  'src/features/planning/composer/components/todo-edit-bottom-sheet.tsx',
-  'src/features/planning/composer/hooks/use-add-todo-quick-voice.ts',
   'src/features/voice/hooks/use-dictation.ts',
   'src/shared/hooks/use-refresh.ts',
   // 훅을 prop 값으로 받는 DI

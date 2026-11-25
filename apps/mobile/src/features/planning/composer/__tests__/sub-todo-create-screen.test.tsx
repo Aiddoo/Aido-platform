@@ -66,6 +66,23 @@ describe('SubTodoCreateSheetRoute', () => {
     settle();
   });
 
+  it('같은 프레임에 보내기와 완료 키를 함께 눌러도 한 번 만든다', async () => {
+    // Given
+    const { httpClient, settle } = await renderCreateRoute();
+    await fireEvent.changeText(screen.getByTestId('sub-todo-input'), '우유');
+
+    // When
+    await act(async () => {
+      await fireEvent.press(screen.getByTestId('sub-todo-submit'));
+      await fireEvent(screen.getByTestId('sub-todo-input'), 'submitEditing');
+    });
+    await act(() => jest.advanceTimersByTimeAsync(1_000));
+
+    // Then
+    expect(httpClient.post).toHaveBeenCalledTimes(1);
+    settle();
+  });
+
   it('제목이 비어 있으면 보내기가 꺼지고 요청을 보내지 않는다', async () => {
     // Given
     const { httpClient } = await renderCreateRoute();

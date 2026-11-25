@@ -333,7 +333,7 @@ TodoList.Item = function Item({
 TodoList.Loading = function Loading() {
   return (
     <Box gap={8}>
-      <CategoryHeaderPill.Loading />
+      <CategoryHeaderPill.Loading className="self-start" />
       <Box>
         {range(5).map((index) => (
           <TodoRow.Loading key={index} />

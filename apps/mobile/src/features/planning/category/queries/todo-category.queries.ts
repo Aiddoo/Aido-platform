@@ -14,14 +14,15 @@ export function useGetTodoCategoriesQueryOptions({
   return queryOptions({
     queryKey: TODO_CATEGORY_QUERY_KEYS.list(),
     queryFn: async ({ signal }) => unwrap(await todoCategoryApi.getCategories(signal)),
-    select:
-      filters == null
-        ? undefined
-        : (result: TodoCategoriesResult) => ({
-            ...result,
-            categories: result.categories.filter(filters),
-          }),
+    select: filters == null ? undefined : selectFilteredCategories(filters),
     ...PERSISTED_QUERY_OPTIONS,
+  });
+}
+
+function selectFilteredCategories(filters: FilterTodoCategory) {
+  return (result: TodoCategoriesResult): TodoCategoriesResult => ({
+    ...result,
+    categories: result.categories.filter(filters),
   });
 }
 

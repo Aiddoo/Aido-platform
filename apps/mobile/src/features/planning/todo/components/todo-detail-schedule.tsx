@@ -55,7 +55,11 @@ export function TodoDetailSchedule() {
         </HStack>
       )}
       <HStack gap={8} align="center" wrap="wrap">
-        <CategoryHeaderPill label={todo.category.name} color={todo.category.color} />
+        <CategoryHeaderPill
+          label={todo.category.name}
+          color={todo.category.color}
+          className="self-start"
+        />
         <Text size="e1" shade={6}>
           {dateLabel}
         </Text>
