@@ -244,6 +244,60 @@ describe('위젯으로 들어온 흐름', () => {
     expect(feedParams()).toEqual({ todoId: '8' });
   });
 
+  it.each([
+    ['aido://todo/9', '/todo/9', { todoId: '9' }],
+    [
+      'aido://feed?date=2026-11-13&action=add-todo',
+      '/feed',
+      { date: '2026-11-13', action: 'add-todo' },
+    ],
+  ] as const)(
+    '켜 둔 앱의 피드에서 Android 위젯 %s를 누르면 %s를 연다',
+    async (widgetUri, pathname, params) => {
+      // Given
+      const { route, tapAndroidWidget, pendingWidgetCommand } = await setup({
+        status: 'authenticated',
+        url: '/feed',
+      });
+
+      // When
+      await tapAndroidWidget(widgetUri);
+
+      // Then
+      await waitFor(() => expect(route.getSearchParams()).toEqual(params));
+      expect(route.getPathname()).toBe(pathname);
+      await waitFor(() => expect(pendingWidgetCommand()).toBeNull());
+    },
+  );
+
+  // 위젯이 만들지 않는 주소와 깨진 주소는 저장하지 않아 보던 화면에 남는다
+  it.each([
+    'aido://settings',
+    'aido://todo/abc',
+    'aido://todo/0',
+    'aido://feed?date=2026-02-30',
+    'aido://feed?date=today&action=delete',
+    'https://aido.app/feed?date=today',
+    'not a uri',
+    // 피드 주소의 query는 목적지 종류를 바꾸지 못한다
+    'aido://feed?kind=todo&todoId=1',
+    'aido://feed?kind=todo&todoId=abc',
+    'aido://feed?date=today&kind=compose',
+  ])('켜 둔 앱의 할 일 상세에서 Android 위젯 명령 %s는 열지 않는다', async (widgetUri) => {
+    // Given
+    const { route, tapAndroidWidget, pendingWidgetCommand } = await setup({
+      status: 'authenticated',
+      url: '/todo/3',
+    });
+
+    // When
+    await tapAndroidWidget(widgetUri);
+
+    // Then
+    expect(pendingWidgetCommand()).toBeNull();
+    expect(route.getPathname()).toBe('/todo/3');
+  });
+
   it('켜 둔 앱에서 할 일 상세를 보던 중 Android 위젯 날짜를 누르면 피드로 돌아가 탭 묶음이 두 겹 쌓이지 않는다', async () => {
     // Given
     const { route, rootStack, tapAndroidWidget } = await setup({

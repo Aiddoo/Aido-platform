@@ -99,4 +99,74 @@ describe('MyPageStack', () => {
     expect(screen.queryByTestId('menu', { includeHiddenElements: true })).toBeNull();
     expect(onScreenMount.mock.calls).toEqual([['mypage'], ['notifications']]);
   });
+
+  describe('넓은 화면 상세의 전환', () => {
+    beforeEach(() => {
+      stubWindowDimensions(1032);
+    });
+
+    it('메뉴에서 연 첫 상세는 애니메이션·스와이프 없이 바꾸고 더 들어간 화면은 겹쳐 바꾼다', async () => {
+      // Given
+      await renderMyPageStack('/mypage');
+
+      // When
+      await act(() => router.push('/settings/notifications'));
+      await act(() => router.push('/settings/notifications/push'));
+
+      // Then
+      expect(describeNativeScreens()).toEqual([
+        { stackAnimation: undefined, gestureEnabled: undefined },
+        { stackAnimation: 'none', gestureEnabled: false },
+        { stackAnimation: 'fade', gestureEnabled: undefined },
+      ]);
+    });
+
+    it('링크로 바로 연 상세도 첫 상세라 애니메이션 없이 연다', async () => {
+      // When
+      await renderMyPageStack('/settings/notifications');
+
+      // Then
+      expect(describeNativeScreens()).toEqual([
+        { stackAnimation: undefined, gestureEnabled: undefined },
+        { stackAnimation: 'none', gestureEnabled: false },
+      ]);
+    });
+
+    it('좁은 화면으로 접으면 상세도 기본 전환이다', async () => {
+      // Given
+      stubWindowDimensions(390);
+      await renderMyPageStack('/mypage');
+
+      // When
+      await act(() => router.push('/settings/notifications'));
+
+      // Then
+      expect(describeNativeScreens()).toEqual([
+        { stackAnimation: undefined, gestureEnabled: undefined },
+        { stackAnimation: undefined, gestureEnabled: undefined },
+      ]);
+    });
+  });
 });
+
+/** 네이티브 Stack이 화면마다 받은 전환. 쌓인 순서이고 정하지 않은 값(기본 전환)은 undefined다 */
+function describeNativeScreens() {
+  const found: { stackAnimation: unknown; gestureEnabled: unknown }[] = [];
+  const visit = (node: ReturnType<typeof screen.getByTestId>) => {
+    if ('stackAnimation' in node.props) {
+      found.push({
+        stackAnimation: node.props.stackAnimation,
+        gestureEnabled: node.props.gestureEnabled,
+      });
+    }
+    for (const child of node.children) {
+      if (typeof child !== 'string') {
+        visit(child);
+      }
+    }
+  };
+  if (screen.root != null) {
+    visit(screen.root);
+  }
+  return found;
+}

@@ -54,6 +54,9 @@ describe('위젯 앱 진입 경로 검증', () => {
     'aido://todo/1?extra=true',
     'aido://user:password@todo/1',
     'aido://todo/1#fragment',
+    'aido://feed?kind=todo&todoId=1',
+    'aido://feed?kind=todo&todoId=abc',
+    'aido://feed?date=today&kind=compose',
   ])('허용되지 않거나 손상된 초기 URL %s는 다시 이동하지 않는다', (url) => {
     // Given
     const initialUrl = url;

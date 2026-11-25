@@ -6,6 +6,7 @@ import { createDailyCompletionsDto } from '@src/features/planning/todo/__tests__
 import { invalidateWidgetSummary } from '@src/features/planning/todo/queries/todo-cache';
 import { DAY_MS } from '@src/shared/constants/time-units';
 import { addDaysToDateKey, dateKeySchema } from '@src/shared/date/date-key';
+import { i18n } from '@src/shared/i18n';
 import { writeStoredValue } from '@src/shared/storage/define-stored-value';
 import {
   createErrorReporterStub,
@@ -132,6 +133,114 @@ describe('useWidgetSnapshotSync', () => {
       // Then
       expect(requestedSummaryDates(httpClient)).toEqual([newToday]);
       expect(staleToday).not.toBe(newToday);
+    });
+  });
+
+  describe('다시 쓰는 때', () => {
+    setupFakeTimersPerTest({ now: new Date('2026-11-23T03:00:00.000Z') });
+
+    afterEach(async () => {
+      await act(() => i18n.changeLanguage('ko'));
+    });
+
+    async function renderSyncedOnce() {
+      const summary = { title: '처음 할 일' };
+      const rendered = await renderSync({
+        authState: 'authenticated',
+        getSummary: async (date) =>
+          ok({
+            ...createSummaryDto(date),
+            topTodos: [{ id: 1, title: summary.title, completed: false, categoryColor: '#FFB3B3' }],
+          }),
+      });
+      await waitFor(() => expect(rendered.widgetBridge.writeSnapshot).toHaveBeenCalledTimes(1));
+      return { ...rendered, summary };
+    }
+
+    it('인증 판정 중에는 앞 위젯을 그대로 두고 쓰지 않는다', async () => {
+      // When
+      const { widgetBridge } = await renderSync({ authState: 'resolving' });
+      await act(() => jest.advanceTimersByTimeAsync(0));
+
+      // Then
+      expect(widgetBridge.writeSnapshot).not.toHaveBeenCalled();
+    });
+
+    it('같은 내용을 다시 받으면 다시 쓰지 않는다', async () => {
+      // Given
+      const { queryClient, widgetBridge } = await renderSyncedOnce();
+
+      // When
+      await act(() => invalidateWidgetSummary(queryClient));
+      await act(() => jest.advanceTimersByTimeAsync(0));
+
+      // Then
+      expect(widgetBridge.writeSnapshot).toHaveBeenCalledTimes(1);
+    });
+
+    it('할 일이 바뀌어 다시 받으면 한 번 더 쓴다', async () => {
+      // Given
+      const { queryClient, widgetBridge, summary } = await renderSyncedOnce();
+      summary.title = '바꾼 할 일';
+
+      // When
+      await act(() => invalidateWidgetSummary(queryClient));
+
+      // Then
+      await waitFor(() => expect(widgetBridge.writeSnapshot).toHaveBeenCalledTimes(2));
+      expect(widgetBridge.writeSnapshot.mock.lastCall?.[0].days[0].topTodos).toEqual([
+        { id: 1, title: '바꾼 할 일', completed: false, categoryColor: '#FFB3B3' },
+      ]);
+    });
+
+    it('앱 언어를 바꾸면 같은 요약을 그 언어 문구로 한 번 더 쓴다', async () => {
+      // Given
+      const { widgetBridge } = await renderSyncedOnce();
+
+      // When
+      await act(() => i18n.changeLanguage('en'));
+
+      // Then
+      await waitFor(() => expect(widgetBridge.writeSnapshot).toHaveBeenCalledTimes(2));
+      expect(widgetBridge.writeSnapshot.mock.lastCall?.[0].days[0].locale).toBe('en');
+    });
+
+    it('자정을 넘겨 날짜가 바뀌면 새 오늘의 요약으로 한 번 더 쓴다', async () => {
+      // Given
+      const { widgetBridge } = await renderSyncedOnce();
+      const writtenDates = () =>
+        widgetBridge.writeSnapshot.mock.calls.map(([snapshot]) => snapshot.days[0].date);
+      const [firstDate] = writtenDates();
+
+      // When
+      await act(() => jest.advanceTimersByTimeAsync(DAY_MS));
+
+      // Then
+      await waitFor(() =>
+        expect(writtenDates()).toEqual([
+          firstDate,
+          addDaysToDateKey(dateKeySchema.parse(firstDate), 1),
+        ]),
+      );
+    });
+
+    it('로그아웃하면 로그인 안내를 한 번 쓰고 다시 로그인하면 그 계정의 요약을 쓴다', async () => {
+      // Given
+      const { changeAuthState, writtenStates } = await renderSyncedOnce();
+
+      // When
+      await changeAuthState('unauthenticated');
+      await act(() => jest.advanceTimersByTimeAsync(0));
+      await changeAuthState('authenticated');
+
+      // Then
+      await waitFor(() =>
+        expect(writtenStates()).toEqual([
+          { state: 'data', userId: ACCOUNT_ID },
+          { state: 'loggedOut', userId: null },
+          { state: 'data', userId: ACCOUNT_ID },
+        ]),
+      );
     });
   });
 
