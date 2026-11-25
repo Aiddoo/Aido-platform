@@ -6,7 +6,8 @@ import { range } from 'es-toolkit';
 import { PressableFeedback, RadioGroup, Skeleton } from 'heroui-native';
 import { useState } from 'react';
 
-import { type FilterTodoCategory, TodoCategoryPolicy } from '../domains/todo-category.model';
+import type { FilterTodoCategory } from '../domains/todo-categories.model';
+import { TodoCategoryPolicy } from '../domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '../queries/todo-category.queries';
 
 const LOADING_ROW_COUNT = 3;

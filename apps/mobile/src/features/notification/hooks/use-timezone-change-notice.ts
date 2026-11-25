@@ -4,7 +4,10 @@ import {
   selectTimeFormat,
   useGetPreferenceQueryOptions,
 } from '@src/features/identity/preference/queries/preference.queries';
-import { TodoPolicy, type TodoListResult } from '@src/features/planning/todo/domains/todo.model';
+import {
+  TodoListPolicy,
+  type TodoListResult,
+} from '@src/features/planning/todo/domains/todo-list.model';
 import { useGetUpcomingTodosQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTrack } from '@src/shared/analytics';
 import { getNowInstant, readLocalDateState } from '@src/shared/date/clock';
@@ -164,8 +167,7 @@ function useHasUpcomingTimedTodo({ now }: { now: DeviceNow | null }) {
   return useQuery({
     ...useGetUpcomingTodosQueryOptions({ todayKey: now?.dateKey ?? todayKey }),
     enabled: now != null,
-    select: ({ todos }: TodoListResult) =>
-      now != null && TodoPolicy.hasUpcomingTimedTodo(todos, now),
+    select: (list: TodoListResult) => now != null && TodoListPolicy.hasUpcomingTimedTodo(list, now),
   });
 }
 

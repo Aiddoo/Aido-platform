@@ -4,7 +4,7 @@ import { Box } from '@src/shared/ui';
 import type { ComponentProps } from 'react';
 import { match } from 'ts-pattern';
 
-import { isBeyondRepeatHorizon, isMonthBeyondRepeatHorizon } from '../../domains/todo-repeat.model';
+import { isBeyondRepeatHorizon, isMonthBeyondRepeatHorizon } from '../../domains/todo-series.model';
 import { useCalendarCompletions } from '../../hooks/use-calendar-completions';
 import { useFeedDateKey } from '../../hooks/use-feed-params';
 import { calendarViewModeStoredValue } from '../../schemas/calendar-view-mode-storage.schema';

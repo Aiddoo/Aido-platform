@@ -21,7 +21,7 @@ import {
   createTodoCategoryWithCount,
   createTodoCategoryWithCountDto,
 } from '../__tests__/todo-category.fixtures';
-import type { TodoCategoryWithCount } from '../domains/todo-category.model';
+import type { TodoCategoryWithCount } from '../domains/todo-categories.model';
 import { TODO_CATEGORY_QUERY_KEYS } from '../queries/todo-category-query-keys';
 import { CategoryDeleteBottomSheet } from './category-delete-bottom-sheet';
 

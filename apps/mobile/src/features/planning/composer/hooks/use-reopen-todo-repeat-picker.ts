@@ -1,4 +1,4 @@
-import { withScheduleRepeat } from '@src/features/planning/todo/domains/todo.model';
+import { TodoSchedulePolicy } from '@src/features/planning/todo/domains/todo-schedule.model';
 import { useOpenTodoRepeatPicker } from '@src/features/planning/todo/hooks/use-open-todo-repeat-picker';
 import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
 import type { UseFormReturn } from 'react-hook-form';
@@ -18,7 +18,7 @@ export function useReopenTodoRepeatPicker(
     if (next == null) {
       return;
     }
-    const { startDate, endDate, repeat } = withScheduleRepeat(values, next);
+    const { startDate, endDate, repeat } = TodoSchedulePolicy.withRepeat(values, next);
     form.setValue('startDate', startDate, { shouldDirty: true });
     form.setValue('endDate', endDate, { shouldDirty: true });
     form.setValue('repeat', repeat, { shouldDirty: true });

@@ -1,5 +1,6 @@
 import { timeOfDaySchema } from '@aido/api/common';
-import { TODO_LIMITS, type TodoImportTimeMode } from '@aido/api/vocabulary';
+import type { TodoImportTimeMode } from '@aido/api/vocabulary';
+import { createTodoTitle } from '@src/features/planning/todo/domains/todo.model';
 import { addDaysToDateKey, type DateKey, dateKeySchema } from '@src/shared/date/date-key';
 import type { Instant } from '@src/shared/date/instant';
 import { toDateKey, toHHmm } from '@src/shared/date/zoned';
@@ -27,31 +28,6 @@ export type TodoImportItem = z.infer<typeof todoImportItemSchema>;
 const LINE_BREAKING_CHARACTERS = /[\p{Cc}\p{Zl}\p{Zp}]+/gu;
 const REPEATED_SPACES = /\s{2,}/gu;
 
-// Hermes에 Segmenter가 없으면 코드 포인트로 나눈다
-function splitGraphemes(text: string): string[] {
-  if (typeof Intl.Segmenter === 'function') {
-    return Array.from(new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(text)).map(
-      ({ segment }) => segment,
-    );
-  }
-  return Array.from(text);
-}
-
-// 서버 한도는 UTF-16 길이라 글자를 앞에서부터 한도 안까지만 담는다
-export function truncateGraphemes(text: string, maxLength: number): string {
-  if (text.length <= maxLength) {
-    return text;
-  }
-  let truncated = '';
-  for (const grapheme of splitGraphemes(text)) {
-    if (maxLength < truncated.length + grapheme.length) {
-      break;
-    }
-    truncated += grapheme;
-  }
-  return truncated;
-}
-
 // 비면 부른 쪽이 준 문구(앱 언어)를 쓴다
 export function normalizeImportTitle(title: string | null, untitledTitle: string): string {
   const singleLine = (title ?? '')
@@ -59,7 +35,7 @@ export function normalizeImportTitle(title: string | null, untitledTitle: string
     .replaceAll(REPEATED_SPACES, ' ')
     .trim();
   const normalized = singleLine === '' ? untitledTitle : singleLine;
-  return truncateGraphemes(normalized, TODO_LIMITS.TITLE_MAX_LENGTH).trim();
+  return createTodoTitle(normalized).trim();
 }
 
 // 종일 일정의 끝은 배타적이다. 하루짜리면 null, 여러 날이면 마지막 날(포함)이다

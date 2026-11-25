@@ -4,6 +4,7 @@ import { TodoComposerChips } from '@src/features/planning/composer/components/to
 import { TodoComposerSubmitButton } from '@src/features/planning/composer/components/todo-composer-submit-button';
 import { useReopenTodoRepeatPicker } from '@src/features/planning/composer/hooks/use-reopen-todo-repeat-picker';
 import { shouldReopenRepeatPicker } from '@src/features/planning/todo/domains/todo-series.error';
+import { createTodoTitle } from '@src/features/planning/todo/domains/todo.model';
 import { todoFormSchema } from '@src/features/planning/todo/schemas/todo-form.schema';
 import type { DateKey } from '@src/shared/date/date-key';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
@@ -60,7 +61,7 @@ MemoConvertBottomSheet.Form = function Form({
   const form = useForm({
     resolver: zodResolver(todoFormSchema),
     defaultValues: {
-      title: memo.content.slice(0, TODO_LIMITS.TITLE_MAX_LENGTH),
+      title: createTodoTitle(memo.content),
       startDate: selectedDate,
       endDate: null,
       scheduledTime: null,

@@ -1,6 +1,4 @@
 import { NUDGE_LIMITS } from '@aido/api/vocabulary';
-import type { Todo } from '@src/features/planning/todo/domains/todo.model';
-import type { DateKey } from '@src/shared/date/date-key';
 import { hasInstantPassed, type Instant, instantSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
 
@@ -33,13 +31,6 @@ export function normalizeMessage(input: NudgeMessageInput): string | undefined {
 export function isMessageTooLong(input: NudgeMessageInput): boolean {
   return (normalizeMessage(input)?.length ?? 0) > MAX_MESSAGE_LENGTH;
 }
-
-export const TodoNudgePolicy = {
-  // 친구 피드 행에는 서버 권한이 없어 버튼만 미리 감춘다. 서버 콕 보내기 규칙(끝내지 않은 오늘 할 일, NUDGE_1106)과 같다
-  canNudgeTodoOnDate(todo: Todo, targetDateKey: DateKey, todayKey: DateKey): boolean {
-    return !todo.completed && targetDateKey === todayKey;
-  },
-};
 
 export const NudgeCooldownPolicy = {
   // 서버는 쿨다운 중일 때만 canNudge가 false다. 받은 쿨다운 끝 순간이 지나면 다시 묻지 않아도 찌를 수 있다

@@ -5,7 +5,7 @@ import {
   createSubTodo,
 } from '@src/features/planning/todo/__tests__/sub-todo.fixtures';
 import '@src/shared/i18n/init';
-import type { TodoListResult } from '@src/features/planning/todo/domains/todo.model';
+import type { TodoListResult } from '@src/features/planning/todo/domains/todo-list.model';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
 import {
   createAnalyticsStub,

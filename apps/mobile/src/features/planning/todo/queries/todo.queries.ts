@@ -18,7 +18,6 @@ import {
   getCompletionMonthRange,
   getCompletionMonthsCovering,
 } from '../domains/daily-completion.model';
-import type { CompletionsByDate } from '../utils/calendar-grid.view-model';
 import {
   getTodoSummaryRefetchInterval,
   isTodoSummaryDateRequestable,
@@ -42,6 +41,9 @@ export function useGetTodosByDateQueryOptions({ date }: { date: DateKey }) {
     ...(shouldPersistTodosByDate({ date, todayKey }) && PERSISTED_QUERY_OPTIONS),
   });
 }
+
+/** 날짜 key로 찾는 완료 기록. 달력 칸이 자기 날짜로 읽는다 */
+export type CompletionsByDate = Record<string, DailyCompletionSummary>;
 
 function selectCompletionsByDate(data: DailyCompletionsResult): CompletionsByDate {
   return keyBy(data.completions, (completion) => completion.date);
@@ -67,6 +69,15 @@ function selectCompletionsInRange(
     orderBy(inRange, [(completion) => completion.date], ['asc']),
     (completion) => completion.date,
   );
+}
+
+/** 고른 달과 앞뒤 달의 결과를 한 달력으로 합친다. 겹치는 앞뒤 주는 고른 달의 결과로 그린다 */
+export function mergeCalendarCompletions({
+  selected,
+  previous,
+  next,
+}: Record<'selected' | 'previous' | 'next', CompletionsByDate | undefined>): CompletionsByDate {
+  return { ...previous, ...next, ...selected };
 }
 
 function dailyCompletionsQueryOptions(todoApi: TodoApi, month: DateKey) {

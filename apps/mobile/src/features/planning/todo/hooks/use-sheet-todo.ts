@@ -3,6 +3,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { useEffect, useEffectEvent } from 'react';
 
 import type { SubTodo } from '../domains/sub-todo.model';
+import { TodoListPolicy } from '../domains/todo-list.model';
 import { type Todo, TodoPolicy } from '../domains/todo.model';
 import { useGetTodosByDateQueryOptions } from '../queries/todo.queries';
 import { useSubTodoId, useTodoId } from './use-todo-params';
@@ -21,7 +22,7 @@ export function useSheetTodo({ onMissing }: SheetTargetOptions): Todo | null {
   const [todoId] = useTodoId();
   const [date] = useTodoSheetDateKey();
   const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
-  const todo = useRetainedValue(TodoPolicy.findTodo(todosByDate.todos, todoId));
+  const todo = useRetainedValue(TodoListPolicy.findTodo(todosByDate, todoId));
 
   useCloseWhenMissing(todo, onMissing);
 

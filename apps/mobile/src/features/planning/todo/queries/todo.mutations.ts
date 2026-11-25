@@ -16,9 +16,10 @@ import { isLastMutation } from '@src/shared/query/is-last-mutation';
 import { useAppToast } from '@src/shared/ui';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
+import { TodoListPolicy } from '../domains/todo-list.model';
+import { TodoOverviewPolicy } from '../domains/todo-overview.model';
 import type { TodoUpdateScope, TodoEditScope } from '../domains/todo-repeat.model';
 import { isTodoSeriesFailure } from '../domains/todo-series.error';
-import { TodoPolicy } from '../domains/todo.model';
 import { useTodoSeriesFailureFeedback } from '../hooks/use-todo-series-failure-feedback';
 import type {
   TodoCategoryMove,
@@ -28,7 +29,7 @@ import type {
 } from '../schemas/todo-request.schema';
 import {
   beginTodoWrite,
-  getCachedTodosByDate,
+  getCachedTodoListByDate,
   findCachedTodo,
   getCachedTodoDateSpan,
   getTodoOverviewFilters,
@@ -45,7 +46,6 @@ import {
   syncDailyCompletionWithList,
   updateCachedTodo,
   setTodoOverviewInCache,
-  withTodoCompleted,
 } from './todo-cache';
 import { TODO_MUTATION_KEYS } from './todo-mutation-keys';
 import { TODO_QUERY_KEYS } from './todo-query-keys';
@@ -106,11 +106,13 @@ export function useToggleTodoMutationOptions() {
       if (!variables.body.completed) {
         return;
       }
-      setTodoOverviewInCache(queryClient, withTodoCompleted);
+      setTodoOverviewInCache(queryClient, (overview) =>
+        TodoOverviewPolicy.withTodoCompleted(overview),
+      );
       recordActiveDay();
       // 오늘 목록의 마지막 할 일을 끝낸 순간 — 피드의 '다 끝낸 날' 배너와 같은 순간이다
-      const todayTodos = getCachedTodosByDate(queryClient, { date: todayKey }) ?? [];
-      if (TodoPolicy.isLastOpenTodo(todayTodos, variables.todoId)) {
+      const todayTodos = getCachedTodoListByDate(queryClient, { date: todayKey });
+      if (TodoListPolicy.isLastOpenTodo(todayTodos, variables.todoId)) {
         requestReviewAt('all_todos_done');
       }
     },

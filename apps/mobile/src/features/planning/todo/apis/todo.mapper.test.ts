@@ -18,14 +18,11 @@ import {
 } from '../__tests__/todo.fixtures';
 import { dailyCompletionsResultSchema } from '../domains/daily-completion.model';
 import { SubTodoPolicy } from '../domains/sub-todo.model';
+import { todoDetailsSchema } from '../domains/todo-details.model';
+import { todoListResultSchema } from '../domains/todo-list.model';
 import type { TodoRepeat } from '../domains/todo-repeat.model';
-import {
-  todoDetailsSchema,
-  todoListResultSchema,
-  TodoPolicy,
-  todoSchema,
-  todoSummarySchema,
-} from '../domains/todo.model';
+import { todoSummarySchema } from '../domains/todo-summary.model';
+import { TodoPolicy, todoSchema } from '../domains/todo.model';
 import { todoDetailsEnvelopeSchema } from '../schemas/todo-response.schema';
 import {
   toUpdateTodoRequest,
@@ -35,6 +32,7 @@ import {
   toTodoFormValues,
   toTodoDetails,
   toTodoListResult,
+  toTodoResourceLimit,
   toTodoSummary,
 } from './todo.mapper';
 
@@ -206,6 +204,19 @@ describe('todo.mapper', () => {
       // Then
       expect(todoDetailsSchema.parse(result)).toEqual(result);
     });
+  });
+});
+
+describe('toTodoResourceLimit', () => {
+  it('카테고리 없이 물어 응답에 수가 없으면 0이 아니라 null이다', () => {
+    // Given
+    const dto = { maxPerCategory: 300 };
+
+    // When
+    const limit = toTodoResourceLimit(dto);
+
+    // Then
+    expect(limit).toEqual({ maxPerCategory: 300, activeCount: null });
   });
 });
 

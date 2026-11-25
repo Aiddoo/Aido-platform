@@ -1,12 +1,11 @@
 import { ReorderCoachmark } from '@src/features/device/coachmark/components/reorder-coachmark';
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { CategoryHeaderPill } from '@src/features/planning/category/components/category-header-pill';
-import {
-  TodoCategoryPolicy,
-  type TodoCategoryWithCount,
-} from '@src/features/planning/category/domains/todo-category.model';
+import type { TodoCategoryWithCount } from '@src/features/planning/category/domains/todo-categories.model';
+import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import type { DateKey } from '@src/shared/date/date-key';
+import { canReorderItems } from '@src/shared/domains/reorderable-list.model';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useReorderableList } from '@src/shared/hooks/use-reorderable-list';
@@ -26,7 +25,7 @@ import {
   MIN_TOUCH_TARGET_PT,
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
-import { groupBy, noop, range } from 'es-toolkit';
+import { noop, range } from 'es-toolkit';
 import { useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { useState } from 'react';
@@ -39,7 +38,8 @@ import {
 import { match } from 'ts-pattern';
 
 import { type SubTodo, SubTodoPolicy } from '../../domains/sub-todo.model';
-import { isPrivateVisibility, type Todo, TodoPolicy } from '../../domains/todo.model';
+import { TodoListPolicy } from '../../domains/todo-list.model';
+import { type Todo, TodoPolicy } from '../../domains/todo.model';
 import { useFeedDateKey } from '../../hooks/use-feed-params';
 import { useFeedSelectedTodoId } from '../../hooks/use-feed-selected-todo-id';
 import {
@@ -83,12 +83,15 @@ export function TodoList({ isReminderOff = false }: TodoListProps) {
       useGetPreferenceQueryOptions(),
     ],
     combine: ([categories, todosByDate]) => ({
-      categoryGroups: groupTodosByCategory(todosByDate.data.todos, categories.data.categories),
+      categoryGroups: TodoListPolicy.groupByCategories(
+        todosByDate.data,
+        categories.data.categories,
+      ),
       dataUpdatedAt: todosByDate.dataUpdatedAt,
     }),
   });
 
-  const canReorderTodos = categoryGroups.some((group) => TodoPolicy.canReorderTodos(group.todos));
+  const canReorderTodos = categoryGroups.some((group) => canReorderItems(group.todos.length));
 
   return (
     <Box gap={16}>
@@ -327,7 +330,7 @@ TodoList.Item = function Item({
               {todo.title}
             </TodoRow.Label>
           }
-          isPrivate={isPrivateVisibility(todo.visibility)}
+          isPrivate={TodoPolicy.isPrivateTodo(todo)}
         />
       }
       middle={
@@ -415,8 +418,3 @@ TodoList.Item = function Item({
     </TodoRow>
   );
 };
-
-function groupTodosByCategory(todos: readonly Todo[], categories: TodoCategoryWithCount[]) {
-  const grouped = groupBy(todos, (todo) => todo.category.id);
-  return categories.map((category) => ({ category, todos: grouped[category.id] ?? [] }));
-}

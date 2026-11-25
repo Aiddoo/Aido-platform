@@ -3,7 +3,7 @@ import { unwrap } from '@src/core/errors/result';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { queryOptions } from '@tanstack/react-query';
 
-import type { FilterTodoCategory, TodoCategoriesResult } from '../domains/todo-category.model';
+import type { FilterTodoCategory, TodoCategoriesResult } from '../domains/todo-categories.model';
 import { TODO_CATEGORY_QUERY_KEYS } from './todo-category-query-keys';
 
 export function useGetTodoCategoriesQueryOptions({

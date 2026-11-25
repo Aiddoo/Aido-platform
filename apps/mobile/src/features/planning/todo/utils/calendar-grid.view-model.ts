@@ -13,7 +13,6 @@ import { match } from 'ts-pattern';
 
 import {
   type DailyCompletionRange,
-  type DailyCompletionSummary,
   getCompletionMonthRange,
 } from '../domains/daily-completion.model';
 import type { CalendarViewMode } from '../schemas/calendar-view-mode-storage.schema';
@@ -68,17 +67,6 @@ export function getCalendarMonthRanges(
     previous: getCompletionMonthRange(previous),
     next: getCompletionMonthRange(next),
   };
-}
-
-export type CompletionsByDate = Record<string, DailyCompletionSummary>;
-
-/** 겹치는 앞뒤 주는 고른 달의 결과로 그린다 */
-export function mergeCalendarCompletions({
-  selected,
-  previous,
-  next,
-}: Record<'selected' | 'previous' | 'next', CompletionsByDate | undefined>): CompletionsByDate {
-  return { ...previous, ...next, ...selected };
 }
 
 interface ShiftCalendarDateInput {

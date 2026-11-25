@@ -19,13 +19,14 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
-import { groupBy, range } from 'es-toolkit';
+import { range } from 'es-toolkit';
 import { Link } from 'expo-router';
 import { type ComponentProps, type ReactNode, useState } from 'react';
 
 import { SubTodoPolicy } from '../domains/sub-todo.model';
+import { TodoListPolicy, type TodoListResult } from '../domains/todo-list.model';
 import { isFriendFeedUnavailableError } from '../domains/todo.error';
-import type { Todo, TodoListResult } from '../domains/todo.model';
+import type { Todo } from '../domains/todo.model';
 import { useFeedDateKey, useFeedFriendId } from '../hooks/use-feed-params';
 import { useFeedSelectedTodoId } from '../hooks/use-feed-selected-todo-id';
 import { useGetFriendTodosQueryOptions } from '../queries/todo.queries';
@@ -65,7 +66,7 @@ export function FriendTodoList({
     queries: [
       {
         ...useGetFriendTodosQueryOptions({ friendUserId: friendId, date: dateKey }),
-        select: (result: TodoListResult) => groupFriendTodosByCategory(result.todos),
+        select: (result: TodoListResult) => TodoListPolicy.groupByCategory(result),
       },
       useGetPreferenceQueryOptions(),
     ],
@@ -301,10 +302,3 @@ FriendTodoList.Empty = function Empty({ action }: { action: ReactNode }) {
     </HStack>
   );
 };
-
-function groupFriendTodosByCategory(todos: readonly Todo[]) {
-  return Object.values(groupBy(todos, (todo) => todo.category.id)).flatMap((items) => {
-    const first = items[0];
-    return first == null ? [] : [{ category: first.category, todos: items }];
-  });
-}

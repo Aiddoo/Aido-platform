@@ -1,6 +1,6 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
+import { TodoListPolicy } from '@src/features/planning/todo/domains/todo-list.model';
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTrack, useTrackView } from '@src/shared/analytics';
 import { getNowInstant } from '@src/shared/date/clock';
@@ -49,7 +49,7 @@ export function PushPermissionNotice({ className }: PushPermissionNoticeProps) {
   const isVisible =
     PushPermissionPolicy.findAskMoment(permission, {
       surface: 'feed',
-      hasUpcomingTimedTodo: TodoPolicy.hasUpcomingTimedTodo(todayTodos.todos, {
+      hasUpcomingTimedTodo: TodoListPolicy.hasUpcomingTimedTodo(todayTodos, {
         dateKey: todayKey,
         time: toHHmm(now, timezone),
         timezone,

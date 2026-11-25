@@ -3,9 +3,9 @@ import { CategoryHeaderPill } from '@src/features/planning/category/components/c
 import { TodoDetailSchedule } from '@src/features/planning/todo/components/todo-detail-schedule';
 import { TodoRow } from '@src/features/planning/todo/components/todo-row';
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
-import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useToggleSubTodoMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
+import { getOptimisticListDate } from '@src/features/planning/todo/queries/todo-cache';
 import { useToggleTodoMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
 import { useGetTodoDetailsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { ThanksSummaryRow } from '@src/features/social/nudge/components/thanks-summary-row';
@@ -103,7 +103,7 @@ TodoDetailSummary.Task = function Task() {
                   toggleTodo.mutate({
                     todoId,
                     body: { completed: !todo.completed },
-                    date: TodoPolicy.getOptimisticListDate(todo, todayKey),
+                    date: getOptimisticListDate(todo, todayKey),
                   })
               : undefined
           }
@@ -155,7 +155,7 @@ TodoDetailSummary.SubTodos = function SubTodos() {
                           todoId,
                           subTodoId: subTodo.id,
                           isCompleted: !subTodo.completed,
-                          date: TodoPolicy.getOptimisticListDate(todo, todayKey),
+                          date: getOptimisticListDate(todo, todayKey),
                         })
                     : undefined
                 }

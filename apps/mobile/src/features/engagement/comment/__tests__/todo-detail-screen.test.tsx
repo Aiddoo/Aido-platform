@@ -10,7 +10,7 @@ import {
   createTodoItemResponseDto,
   createTodoListResponseDto,
 } from '@src/features/planning/todo/__tests__/todo.fixtures';
-import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
+import { TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { updateCachedTodo } from '@src/features/planning/todo/queries/todo-cache';
 import { invalidateAfterBlockChange } from '@src/features/social/moderation/queries/moderation-cache';
 import { DRAFT_SAVE_DELAY_MS } from '@src/shared/draft/use-form-draft-autosave';
@@ -789,7 +789,7 @@ describe('TodoDetailRoute', () => {
           queryClient,
           { date: createDateKey(todo.startDate), todoId: TODO_ID },
           (cached) =>
-            SubTodoPolicy.withSubTodoAdded(cached, {
+            TodoPolicy.withSubTodoAdded(cached, {
               id: -1,
               title: '스트레칭',
               completed: false,

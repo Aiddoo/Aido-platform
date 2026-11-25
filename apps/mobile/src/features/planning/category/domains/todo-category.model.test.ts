@@ -1,10 +1,29 @@
 import { createTodoCategoryWithCount } from '../__tests__/todo-category.fixtures';
-import { findFirstInSortOrder, TodoCategoryPolicy } from './todo-category.model';
+import { filterByName, TodoCategoryPolicy } from './todo-category.model';
 
 const PERSONAL = createTodoCategoryWithCount({ id: 1, name: '개인', sortOrder: 0 });
 const WORK = createTodoCategoryWithCount({ id: 3, name: '업무', sortOrder: 2 });
 const WORKOUT = createTodoCategoryWithCount({ id: 7, name: '운동', sortOrder: 1, todoCount: 12 });
 const CATEGORIES = [PERSONAL, WORK, WORKOUT];
+
+describe('filterByName', () => {
+  const categories = ['할 일', 'Work', '업무 일지'].map((name, index) =>
+    createTodoCategoryWithCount({ id: index + 1, name }),
+  );
+
+  it.each([
+    ['비어 있으면 모두 남긴다', '  ', ['할 일', 'Work', '업무 일지']],
+    ['대소문자를 가리지 않는다', 'work', ['Work']],
+    ['이름 가운데 들어 있어도 찾는다', '일', ['할 일', '업무 일지']],
+    ['없으면 비어 있다', '공부', []],
+  ])('%s', (_case, query, expected) => {
+    // When
+    const filtered = categories.filter((category) => filterByName(category, query));
+
+    // Then
+    expect(filtered.map(({ name }) => name)).toEqual(expected);
+  });
+});
 
 describe('TodoCategoryPolicy', () => {
   describe('findCategory', () => {
@@ -186,36 +205,48 @@ describe('TodoCategoryPolicy', () => {
     });
   });
 
-  describe('filterByName', () => {
-    const categories = ['할 일', 'Work', '업무 일지'].map((name, index) =>
-      createTodoCategoryWithCount({ id: index + 1, name }),
-    );
-
-    it.each([
-      ['비어 있으면 모두 남긴다', '  ', ['할 일', 'Work', '업무 일지']],
-      ['대소문자를 가리지 않는다', 'work', ['Work']],
-      ['이름 가운데 들어 있어도 찾는다', '일', ['할 일', '업무 일지']],
-      ['없으면 비어 있다', '공부', []],
-    ])('%s', (_case, query, expected) => {
+  describe('findFirstInSortOrder', () => {
+    it('목록 순서와 관계없이 정렬 순서가 가장 작은 것을 찾고, 비었으면 null이다', () => {
       // When
-      const filtered = categories.filter((category) =>
-        TodoCategoryPolicy.filterByName(category, query),
-      );
+      const first = TodoCategoryPolicy.findFirstInSortOrder([WORK, WORKOUT, PERSONAL]);
+      const none = TodoCategoryPolicy.findFirstInSortOrder([]);
 
       // Then
-      expect(filtered.map(({ name }) => name)).toEqual(expected);
+      expect(first).toEqual(PERSONAL);
+      expect(none).toBeNull();
     });
   });
-});
 
-describe('findFirstInSortOrder', () => {
-  it('목록 순서와 관계없이 정렬 순서가 가장 작은 것을 찾고, 비었으면 null이다', () => {
-    // When
-    const first = findFirstInSortOrder([WORK, WORKOUT, PERSONAL]);
-    const none = findFirstInSortOrder([]);
+  describe('calculateNextSortOrder', () => {
+    it('새 카테고리는 목록 마지막 다음 순서다', () => {
+      // When
+      const sortOrder = TodoCategoryPolicy.calculateNextSortOrder([PERSONAL, WORK]);
 
-    // Then
-    expect(first).toEqual(PERSONAL);
-    expect(none).toBeNull();
+      // Then
+      expect(sortOrder).toBe(WORK.sortOrder + 1);
+    });
+
+    it.each([
+      ['카테고리가 없으면', []],
+      ['목록을 아직 불러오지 않았으면', undefined],
+    ])('%s 첫 순서(1)다', (_case, categories) => {
+      // When
+      const sortOrder = TodoCategoryPolicy.calculateNextSortOrder(categories);
+
+      // Then
+      expect(sortOrder).toBe(1);
+    });
+  });
+
+  describe('findCategory — 아직 불러오지 않은 목록', () => {
+    it('목록을 불러오지 않았으면 찾지 못하고 처음 고를 카테고리도 없다', () => {
+      // When
+      const category = TodoCategoryPolicy.findCategory(undefined, PERSONAL.id);
+      const initialCategoryId = TodoCategoryPolicy.findInitialCategoryId(undefined, PERSONAL.id);
+
+      // Then
+      expect(category).toBeNull();
+      expect(initialCategoryId).toBeNull();
+    });
   });
 });

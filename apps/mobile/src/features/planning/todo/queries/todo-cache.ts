@@ -21,15 +21,11 @@ import {
   type DailyCompletionsResult,
   getCompletionMonthRange,
 } from '../domains/daily-completion.model';
-import {
-  getTodoDateSpan,
-  type Todo,
-  type TodoDateSpan,
-  type TodoDetails,
-  type TodoListResult,
-  type TodoOverview,
-  TodoPolicy,
-} from '../domains/todo.model';
+import { type TodoDetails, TodoDetailsPolicy } from '../domains/todo-details.model';
+import { type TodoListResult, TodoListPolicy } from '../domains/todo-list.model';
+import type { TodoOverview } from '../domains/todo-overview.model';
+import { createTodoDateSpan, type TodoDateSpan } from '../domains/todo-schedule.model';
+import { type Todo, TodoPolicy } from '../domains/todo.model';
 import { todoDateQueryKeySchema, todoMonthQueryKeySchema } from '../schemas/todo-query-key.schema';
 import { TODO_MUTATION_KEYS } from './todo-mutation-keys';
 import { TODO_QUERY_KEYS } from './todo-query-keys';
@@ -74,10 +70,21 @@ export function getTodoSummaryRefetchInterval(
     : false;
 }
 
+/** 응답 전 목록에 넣는 임시 행. 임시 id를 가진다 */
+export type OptimisticTodo = Todo & { readonly optimistic: true };
+
 export interface TodoSnapshot {
   date: DateKey;
   todo: Todo;
   index: number;
+}
+
+/**
+ * 낙관적 갱신이 고칠 목록(캐시 항목)을 고르는 규칙이라 cache helper에 둔다.
+ * 상세 화면은 피드 날짜를 모른다. 오늘이 기간 안이면 오늘 목록을, 아니면 시작일 목록을 먼저 고친다
+ */
+export function getOptimisticListDate(todo: Todo, todayKey: DateKey): DateKey {
+  return TodoPolicy.isTodoOnDate(todo, todayKey) ? todayKey : todo.startDate;
 }
 
 /** 할 일의 기간. 그날 목록도 상세도 불러오지 않았으면 보고 있는 하루로 본다 */
@@ -86,73 +93,19 @@ export function getCachedTodoDateSpan(
   { date, todoId }: { date: DateKey; todoId: number },
 ): TodoDateSpan {
   const todo = findCachedTodo(queryClient, { date, todoId });
-  return todo == null ? { startDate: date, endDate: date } : getTodoDateSpan(todo);
-}
-
-export function withTodoAdded(list: TodoListResult, todo: Todo): TodoListResult {
-  return { ...list, todos: [...list.todos, todo] };
-}
-
-export function withTodoRemoved(list: TodoListResult, todoId: number): TodoListResult {
-  return { ...list, todos: list.todos.filter((todo) => todo.id !== todoId) };
-}
-
-export function withTodoUpdated(
-  list: TodoListResult,
-  todoId: number,
-  update: (todo: Todo) => Todo,
-): TodoListResult {
-  return { ...list, todos: list.todos.map((todo) => (todo.id === todoId ? update(todo) : todo)) };
-}
-
-/** 그 할 일 하나만 되돌린다. 아직 목록에 있으면 값만, 빠졌으면 원래 자리에 넣어 같은 날짜의 다른 변경은 지킨다 */
-export function withTodoRestored(
-  list: TodoListResult,
-  snapshot: Pick<TodoSnapshot, 'todo' | 'index'>,
-): TodoListResult {
-  if (list.todos.some((todo) => todo.id === snapshot.todo.id)) {
-    return withTodoUpdated(list, snapshot.todo.id, () => snapshot.todo);
-  }
-  return {
-    ...list,
-    todos: [
-      ...list.todos.slice(0, snapshot.index),
-      snapshot.todo,
-      ...list.todos.slice(snapshot.index),
-    ],
-  };
-}
-
-/** 만든 할 일 응답으로 임시 행을 바꾼다. 그사이 다시 받아 임시 행이 사라졌으면 서버 행이 없을 때만 끝에 붙인다 */
-export function withTodoSaved(
-  list: TodoListResult,
-  optimisticId: number,
-  saved: Todo,
-): TodoListResult {
-  if (list.todos.some((todo) => todo.id === optimisticId)) {
-    return withTodoUpdated(list, optimisticId, () => saved);
-  }
-  if (list.todos.some((todo) => todo.id === saved.id)) {
-    return list;
-  }
-  return withTodoAdded(list, saved);
-}
-
-export function withTodoCreated(overview: TodoOverview): TodoOverview {
-  return overview.hasTodo ? overview : { ...overview, hasTodo: true };
-}
-
-export function withTodoCompleted(overview: TodoOverview): TodoOverview {
-  return overview.hasCompletedTodo ? overview : { ...overview, hasCompletedTodo: true };
+  return todo == null ? createTodoDateSpan(date, null) : TodoPolicy.getDateSpan(todo);
 }
 
 export function snapshotTodo(
   queryClient: QueryClient,
   { date, todoId }: { date: DateKey; todoId: number },
 ): TodoSnapshot | null {
-  const todos = getCachedTodosByDate(queryClient, { date }) ?? [];
-  const index = todos.findIndex((todo) => todo.id === todoId);
-  const todo = todos[index];
+  const list = getCachedTodoListByDate(queryClient, { date });
+  if (list == null) {
+    return null;
+  }
+  const index = list.todos.findIndex((todo) => todo.id === todoId);
+  const todo = list.todos[index];
 
   if (todo == null) {
     return null;
@@ -190,7 +143,9 @@ export function findCachedTodo(
 ): Todo | null {
   const isTarget = (todo: Todo) => todo.id === todoId;
   return (
-    (date == null ? undefined : getCachedTodosByDate(queryClient, { date })?.find(isTarget)) ??
+    (date == null
+      ? undefined
+      : getCachedTodoListByDate(queryClient, { date })?.todos.find(isTarget)) ??
     queryClient.getQueryData(TODO_QUERY_KEYS.detail({ todoId }))?.todo ??
     queryClient
       .getQueriesData<TodoListResult>({ queryKey: TODO_QUERY_KEYS.lists() })
@@ -200,12 +155,12 @@ export function findCachedTodo(
   );
 }
 
-/** 그 날짜 목록에 지금 보이는 할 일. 아직 불러오지 않았으면 undefined */
-export function getCachedTodosByDate(
+/** 그 날짜 목록에 지금 보이는 할 일 목록. 아직 불러오지 않았으면 undefined */
+export function getCachedTodoListByDate(
   queryClient: QueryClient,
   { date }: { date: DateKey },
-): Todo[] | undefined {
-  return queryClient.getQueryData(TODO_QUERY_KEYS.listByDate({ date }))?.todos;
+): TodoListResult | undefined {
+  return queryClient.getQueryData(TODO_QUERY_KEYS.listByDate({ date }));
 }
 
 /** 이미 불러온 모든 날짜의 할 일 제목. 따로 요청하지 않는다 */
@@ -223,11 +178,11 @@ export function updateCachedTodo(
 ) {
   queryClient.setQueryData(
     TODO_QUERY_KEYS.listByDate({ date }),
-    (old) => old && withTodoUpdated(old, todoId, update),
+    (old) => old && TodoListPolicy.withTodoUpdated(old, todoId, update),
   );
   queryClient.setQueryData(
     TODO_QUERY_KEYS.detail({ todoId }),
-    (old) => old && { ...old, todo: update(old.todo) },
+    (old) => old && TodoDetailsPolicy.withTodo(old, update(old.todo)),
   );
 }
 
@@ -238,7 +193,7 @@ export function appendTodoToList(
 ) {
   queryClient.setQueryData(
     TODO_QUERY_KEYS.listByDate({ date }),
-    (old) => old && withTodoAdded(old, todo),
+    (old) => old && TodoListPolicy.withTodoAdded(old, todo),
   );
 }
 
@@ -249,7 +204,7 @@ export function saveCreatedTodo(
 ) {
   queryClient.setQueryData(
     TODO_QUERY_KEYS.listByDate({ date }),
-    (old) => old && withTodoSaved(old, optimisticId, saved),
+    (old) => old && TodoListPolicy.withTodoSaved(old, optimisticId, saved),
   );
 }
 
@@ -259,14 +214,14 @@ export function removeTodoFromList(
 ) {
   queryClient.setQueryData(
     TODO_QUERY_KEYS.listByDate({ date }),
-    (old) => old && withTodoRemoved(old, todoId),
+    (old) => old && TodoListPolicy.withTodoRemoved(old, todoId),
   );
 }
 
 export function restoreTodo(queryClient: QueryClient, snapshot: TodoSnapshot) {
   queryClient.setQueryData(
     TODO_QUERY_KEYS.listByDate({ date: snapshot.date }),
-    (old) => old && withTodoRestored(old, snapshot),
+    (old) => old && TodoListPolicy.withTodoRestored(old, snapshot),
   );
 }
 
@@ -511,10 +466,10 @@ export function settleTodoEdit(
   }
   queryClient.setQueryData(
     TODO_QUERY_KEYS.detail({ todoId: after.id }),
-    (old) => old && { ...old, todo: after },
+    (old) => old && TodoDetailsPolicy.withTodo(old, after),
   );
-  const beforeSpan = getTodoDateSpan(before);
-  const afterSpan = getTodoDateSpan(after);
+  const beforeSpan = TodoPolicy.getDateSpan(before);
+  const afterSpan = TodoPolicy.getDateSpan(after);
   const spans = isSameSpan(beforeSpan, afterSpan) ? [afterSpan] : [beforeSpan, afterSpan];
   const isCategoryChanged = before.category.id !== after.category.id;
   const isCalendarChanged =

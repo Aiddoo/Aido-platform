@@ -7,6 +7,11 @@ describe('TodoResourceLimitPolicy', () => {
       { scenario: '290개면 10개 더 넣을 수 있다', activeCount: 290, expected: 10 },
       { scenario: '300개면 가득 찼다', activeCount: 300, expected: 0 },
       { scenario: '한도를 넘었어도 음수가 아니라 0이다', activeCount: 310, expected: 0 },
+      {
+        scenario: '서버가 세지 않은 새 카테고리는 한도만큼 넣을 수 있다',
+        activeCount: null,
+        expected: 300,
+      },
     ])('$scenario', ({ activeCount, expected }) => {
       // When
       const roomLeft = TodoResourceLimitPolicy.calculateRoomLeft({

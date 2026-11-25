@@ -1,12 +1,9 @@
 import { createTodoFormValues } from '@src/features/planning/todo/__tests__/todo.fixtures';
+import type { TodoRepeat } from '@src/features/planning/todo/domains/todo-repeat.model';
 import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
 import { createDateKey } from '@src/testing/date-key';
 
-import {
-  getTodoUpdateChanges,
-  TodoChangePolicy,
-  type TodoUpdateChanges,
-} from './todo-change.model';
+import { createTodoChange, type TodoChange, TodoChangePolicy } from './todo-change.model';
 
 const SAVED = createTodoFormValues({
   title: '운동',
@@ -16,7 +13,7 @@ const SAVED = createTodoFormValues({
   repeat: { frequency: 'WEEKLY', interval: 1, weekdays: ['MON', 'THU'], end: { type: 'NEVER' } },
 });
 
-describe('getTodoUpdateChanges', () => {
+describe('createTodoChange', () => {
   it.each([
     { name: '바뀐 게 없으면 보낼 것이 없다', edited: {}, expected: { fields: {} } },
     {
@@ -51,11 +48,11 @@ describe('getTodoUpdateChanges', () => {
       edited: { startDate: createDateKey('2026-11-06') },
       expected: { fields: { startDate: createDateKey('2026-11-06') } },
     },
-  ] satisfies { name: string; edited: Partial<TodoFormValues>; expected: TodoUpdateChanges }[])(
+  ] satisfies { name: string; edited: Partial<TodoFormValues>; expected: TodoChange }[])(
     '$name',
     ({ edited, expected }) => {
       // When
-      const changes = getTodoUpdateChanges({ ...SAVED, ...edited }, SAVED);
+      const changes = createTodoChange({ ...SAVED, ...edited }, SAVED);
 
       // Then
       expect(changes).toEqual(expected);
@@ -97,5 +94,58 @@ describe('TodoChangePolicy', () => {
       // Then
       expect(result).toBe(expected);
     });
+  });
+
+  describe('getEditScopeDecision', () => {
+    const rule: TodoRepeat = { frequency: 'DAILY', end: { type: 'NEVER' } };
+    const day = createDateKey('2026-11-06');
+
+    it.each([
+      {
+        title: '시리즈가 아니고 반복 규칙이 없으면 no-scope이다',
+        change: { fields: { title: '달리기' } },
+        isSeries: false,
+        expected: 'no-scope',
+      },
+      {
+        title: '시리즈가 아니면 반복 규칙이 있어도 no-scope이다',
+        change: { fields: {}, repeat: rule },
+        isSeries: false,
+        expected: 'no-scope',
+      },
+      {
+        title: '시리즈여도 반복 규칙이 null이면 no-scope이다',
+        change: { fields: {}, repeat: null },
+        isSeries: true,
+        expected: 'no-scope',
+      },
+      {
+        title: '시리즈이고 반복 규칙이 있으면 이후 전체만 묻는다',
+        change: { fields: {}, repeat: rule },
+        isSeries: true,
+        expected: 'ask-following-only',
+      },
+      {
+        title: '시리즈의 날짜만 바꾸면 이번 회차만 바꾼다',
+        change: { fields: { startDate: day } },
+        isSeries: true,
+        expected: 'this-only',
+      },
+      {
+        title: '시리즈의 날짜 외 항목을 바꾸면 범위를 묻는다',
+        change: { fields: { title: '달리기' } },
+        isSeries: true,
+        expected: 'ask',
+      },
+    ] satisfies { title: string; change: TodoChange; isSeries: boolean; expected: string }[])(
+      '$title',
+      ({ change: todoChange, isSeries, expected }) => {
+        // When
+        const decision = TodoChangePolicy.getEditScopeDecision(todoChange, isSeries);
+
+        // Then
+        expect(decision).toBe(expected);
+      },
+    );
   });
 });

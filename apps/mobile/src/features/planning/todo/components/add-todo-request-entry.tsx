@@ -20,10 +20,7 @@ export function AddTodoRequestEntry() {
     enabled: isRequested,
     throwOnError: false,
   });
-  const categoryId = TodoCategoryPolicy.findInitialCategoryId(
-    categories.data?.categories ?? [],
-    null,
-  );
+  const categoryId = TodoCategoryPolicy.findInitialCategoryId(categories.data?.categories, null);
 
   const router = useRouter();
   useEffect(() => {

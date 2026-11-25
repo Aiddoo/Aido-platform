@@ -1,4 +1,4 @@
-import type { TodoOverview } from '@src/features/planning/todo/domains/todo.model';
+import type { TodoOverview } from '@src/features/planning/todo/domains/todo-overview.model';
 import { DAY_MS } from '@src/shared/constants/time-units';
 import { type Instant, instantSchema, toEpochMs } from '@src/shared/date/instant';
 import { z } from 'zod';

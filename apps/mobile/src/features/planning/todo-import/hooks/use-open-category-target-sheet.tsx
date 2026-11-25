@@ -4,6 +4,7 @@ import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import { CategoryFormFields } from '@src/features/planning/category/components/category-form-fields';
 import {
+  filterByName,
   type TodoCategory,
   TodoCategoryPolicy,
 } from '@src/features/planning/category/domains/todo-category.model';
@@ -295,9 +296,7 @@ CategoryTargetSheet.Choices = function Choices({ categories, current, onChoose }
   const { t } = useTranslation('todoImport');
   const [query, setQuery] = useState('');
 
-  const visibleCategories = categories.filter((category) =>
-    TodoCategoryPolicy.filterByName(category, query),
-  );
+  const visibleCategories = categories.filter((category) => filterByName(category, query));
   const currentValue = match(current)
     .with({ kind: 'NEW_CATEGORY' }, () => NEW_CATEGORY_VALUE)
     .with({ kind: 'EXISTING_CATEGORY' }, ({ categoryId }) => String(categoryId))

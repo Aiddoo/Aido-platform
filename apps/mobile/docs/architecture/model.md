@@ -18,6 +18,7 @@
 - **업무 규칙 표**는 모델 파일 안 비공개 상수이고 `satisfies Record<Union, …>`를 건다. 서버가 종류를 더하면 빌드가 깨진다.
 - **인자는 도메인 단위 이름이다.** `monthlyAmount`·`dueDateKey`처럼 무엇의 어떤 단위인지 이름에 넣는다. 모델 파일 이름에 상태 접두사(`pending-`·`current-`)를 붙이지 않는다(엔티티 이름이다). 파일·타입·Policy는 같은 엔티티 이름이다(`todo-import-collection.model.ts` → `TodoImportCollection`·`TodoImportCollectionPolicy`).
 - **시각은 인자다.** 지금·오늘·시간대를 받고 `Date.now()`·`new Date()`·기기 시간대를 읽지 않는다(`aido/no-clock-read`, `domain-model-clock`). 기간 규칙은 `shouldShow*(record, now)`이고 상수 이름에 단위를 넣는다(`PUSH_PROMPT_SNOOZE_DAYS`).
+- **여러 모델이 함께 쓰는 원시 규칙**(임시 id 판정, 순서 바꾸기 최소 개수, 글자 단위 자르기)은 `shared/domains`의 모델 파일에 둔다. 모델은 `shared/utils`를 import하지 않는다.
 - **import는 zod, `@aido/api/vocabulary`·`common`·`errors`, 순수 `shared/date`, `shared/constants/time-units`, 다른 모델뿐이다.** 계약(`@aido/api` 루트·`contracts/*`), `core/ports`, `schemas/`, `constants/`, i18n, `shared/ui`, `react-native`, React, TanStack을 import하지 않는다(`domain-model-contract`, `domain-model-presentation`, `domain-model-constants`).
 - **Zod는 최신 문법만 쓴다.** `z.int()`, `z.iso.*`, `z.email()`·`z.url()`, `z.enum(튜플)`, `z.discriminatedUnion`, `z.codec`, `.brand<'X'>()`. `z.nativeEnum`, `z.string().email()`, `.passthrough()`는 쓰지 않는다.
 
@@ -33,6 +34,8 @@ Policy는 의미 값(등급, 단계, 종류, 한도 일수)을 돌려준다. 그
 | 폼 값·초안·저장 모양                       | `schemas/*-form`·`-draft`·`-storage.schema.ts`                                                  |
 | 서버가 계산한 값의 재계산                  | 하지 않는다([서버·앱 책임](../../../../docs/conventions/ownership.md))                          |
 | 다른 기능 Policy의 재수출·위임             | 쓰는 곳이 그 Policy를 직접 부른다                                                               |
+
+쿼리 데이터를 거르고 묶는 일은 `queries/`의 `select`가 한다. 묶는 기준이 업무 규칙이면(어느 카테고리를 어떤 순서로, 빈 묶음을 둘지) 그 규칙은 Policy에 두고 `select`가 부른다(`TodoListPolicy.groupByCategory`).
 
 view-model은 모델 → 라벨 키·포맷·색 토큰만 한다. 판정은 Policy, 파싱은 mapper, 쿼리 데이터 묶기는 `select`다. 할 일이 그것뿐이면 view-model 파일을 두지 않는다.
 

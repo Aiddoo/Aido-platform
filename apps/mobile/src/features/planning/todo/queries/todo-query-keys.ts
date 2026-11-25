@@ -1,8 +1,11 @@
 import { queryOptions } from '@tanstack/react-query';
 
 import type { DailyCompletionsResult } from '../domains/daily-completion.model';
+import type { TodoDetails } from '../domains/todo-details.model';
+import type { TodoListResult } from '../domains/todo-list.model';
+import type { TodoOverview } from '../domains/todo-overview.model';
 import type { TodoResourceLimit } from '../domains/todo-resource-limit.model';
-import type { TodoDetails, TodoListResult, TodoOverview, TodoSummary } from '../domains/todo.model';
+import type { TodoSummary } from '../domains/todo-summary.model';
 
 export const TODO_QUERY_KEYS = {
   all: ['todo'] as const,

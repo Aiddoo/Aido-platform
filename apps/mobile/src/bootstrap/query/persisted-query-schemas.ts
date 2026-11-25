@@ -4,10 +4,10 @@ import { preferenceSchema } from '@src/features/identity/preference/domains/pref
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/queries/preference-query-keys';
 import { userSchema } from '@src/features/identity/user/domains/user.model';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
-import { todoCategoriesResultSchema } from '@src/features/planning/category/domains/todo-category.model';
+import { todoCategoriesResultSchema } from '@src/features/planning/category/domains/todo-categories.model';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/queries/todo-category-query-keys';
 import { dailyCompletionsResultSchema } from '@src/features/planning/todo/domains/daily-completion.model';
-import { todoListResultSchema } from '@src/features/planning/todo/domains/todo.model';
+import { todoListResultSchema } from '@src/features/planning/todo/domains/todo-list.model';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
 import { friendUserPagesSchema } from '@src/features/social/friend/domains/friend.model';
 import { FRIEND_QUERY_KEYS } from '@src/features/social/friend/queries/friend-query-keys';

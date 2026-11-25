@@ -85,7 +85,7 @@ TodoActionsBottomSheet.ActionList = function ActionList({
   // 저장 중에는 같은 요청이 두 번 가거나 저장 중에 지우거나 고치러 들어가지 않게 모든 행을 잠근다
   const isBusy =
     deleteMutation.isPending || updateScheduleMutation.isPending || stopSeriesMutation.isPending;
-  const isTodoToday = todo.startDate === todayKey;
+  const isTodoToday = TodoPolicy.isTodoStartingOn(todo, todayKey);
 
   const sheetParams = { todoId: todo.id, date };
 

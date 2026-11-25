@@ -3,6 +3,7 @@ import {
   type TodoCategory,
   TodoCategoryPolicy,
 } from '@src/features/planning/category/domains/todo-category.model';
+import { truncateGraphemes } from '@src/shared/domains/text-limit.model';
 import { minBy, uniq } from 'es-toolkit';
 import { z } from 'zod';
 
@@ -11,7 +12,6 @@ import {
   type TodoImportCollection,
   TodoImportCollectionPolicy,
 } from './todo-import-collection.model';
-import { truncateGraphemes } from './todo-import-item.model';
 
 // 새 카테고리는 확정할 때 서버가 만든다
 export const todoImportTargetSchema = z.discriminatedUnion('kind', [

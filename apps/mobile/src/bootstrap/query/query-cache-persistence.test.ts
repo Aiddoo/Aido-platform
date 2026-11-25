@@ -1,6 +1,6 @@
 import { createParentTodo } from '@src/features/planning/todo/__tests__/sub-todo.fixtures';
 import type { DailyCompletionsResult } from '@src/features/planning/todo/domains/daily-completion.model';
-import type { TodoListResult } from '@src/features/planning/todo/domains/todo.model';
+import type { TodoListResult } from '@src/features/planning/todo/domains/todo-list.model';
 import { syncDailyCompletionWithList } from '@src/features/planning/todo/queries/todo-cache';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';

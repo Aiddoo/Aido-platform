@@ -25,7 +25,8 @@ import { act, screen } from '@testing-library/react-native';
 
 import { createParentTodo } from '../__tests__/sub-todo.fixtures';
 import { createTodoApiError, createTodoDto } from '../__tests__/todo.fixtures';
-import type { Todo, TodoListResult } from '../domains/todo.model';
+import type { TodoListResult } from '../domains/todo-list.model';
+import type { Todo } from '../domains/todo.model';
 import { TODO_QUERY_KEYS } from './todo-query-keys';
 import {
   useToggleTodoMutationOptions,

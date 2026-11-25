@@ -21,7 +21,7 @@
 ## 지금 코드의 예
 
 - 날씨 브리핑 카드: `decideWeatherHeadline`(`apps/api/src/modules/weather/weather-reports/domain/weather-headline.domain-service.ts`)이 아침·저녁 날씨 알림과 같은 판단으로 `GET /v2/weather`의 `headline`을 싣는다. 앱 `findWeatherBriefing`은 그 머리글을 오늘 목록 줄과 묶기만 한다.
-- 콕: `canNudgeTodoOn`(`apps/api/src/modules/social/nudges/domain/nudge-eligibility.domain-service.ts`) 하나가 콕 보내기 거절(`NUDGE_1106`)과 할 일 상세 `permissions.canNudge`를 정한다. 상세도 보내기처럼 맞팔 친구(`isMutualFriend`)일 때만 true다. 친구 피드 행의 버튼 감춤(`TodoNudgePolicy.canNudgeTodoOnDate`)은 같은 조건의 UX다.
+- 콕: `canNudgeTodoOn`(`apps/api/src/modules/social/nudges/domain/nudge-eligibility.domain-service.ts`) 하나가 콕 보내기 거절(`NUDGE_1106`)과 할 일 상세 `permissions.canNudge`를 정한다. 상세도 보내기처럼 맞팔 친구(`isMutualFriend`)일 때만 true다. 친구 피드 행의 버튼 감춤(`TodoPolicy.canNudgeOnDate`)은 같은 조건의 UX다.
 - 한도: 남은 횟수·`resetsAt`은 `GET /v1/entitlements`의 `features`, 결제 화면의 무료·프리미엄 숫자는 `plans`(`resolvePlanComparisons`)다. 앱은 `EntitlementPolicy`로 읽고 `PLAN_CATALOG` 숫자를 화면에 쓰지 않는다.
 - 감사: `judgeNudgeThanks`(`apps/api/src/modules/social/nudges/domain/nudge-interaction.domain-service.ts`) 하나가 감사 보내기 거절과 할 일 상세 `permissions.canThank`(내 할 일·완료·공개)를 정한다.
 - 리포트: 끝낸 날 규칙은 `@aido/api/vocabulary`의 `isAllCompleted` 하나이고 연속 기록·달력 물고기·리포트 `stats.perfectDays`가 쓴다. 주로 끝낸 시간 `peakHour`와 `timePatterns` 순서(많은 수, 같으면 이른 시간)는 서버가 정한다.

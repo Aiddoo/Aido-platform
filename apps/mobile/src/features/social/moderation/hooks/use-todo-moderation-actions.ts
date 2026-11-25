@@ -1,11 +1,10 @@
+import { TodoDetailsPolicy } from '@src/features/planning/todo/domains/todo-details.model';
 import { useGetTodoDetailsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { useQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { useRouter } from 'expo-router';
-
-import { TodoReportPolicy } from '../domains/user-report.model';
 
 /**
  * 친구 할 일 상세의 신고·차단. 내 할 일이거나 상세를 아직 못 불러왔으면 쓸 수 없다.
@@ -17,7 +16,7 @@ export function useTodoModerationActions({ todoId }: { todoId: number }) {
   const push = useSingleTap(router.push);
   const { data: detail } = useQuery(useGetTodoDetailsQueryOptions({ todoId }));
 
-  if (detail == null || !TodoReportPolicy.canReportTodo(detail)) {
+  if (detail == null || !TodoDetailsPolicy.canReport(detail)) {
     return { isAvailable: false, report: noop, block: noop } as const;
   }
 

@@ -4,7 +4,7 @@ import { CategoryHeaderPill } from '@src/features/planning/category/components/c
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import { TodoRow } from '@src/features/planning/todo/components/todo-row';
-import { isPrivateVisibility } from '@src/features/planning/todo/domains/todo.model';
+import { isPrivateVisibility } from '@src/features/planning/todo/domains/todo-visibility.model';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTodayKey } from '@src/shared/hooks/use-today-key';

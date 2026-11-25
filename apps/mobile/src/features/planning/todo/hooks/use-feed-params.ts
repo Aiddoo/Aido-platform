@@ -2,8 +2,11 @@ import type { DateKey } from '@src/shared/date/date-key';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useTodayKey } from '@src/shared/hooks/use-today-key';
 
-import { CLEARED_TODO_SELECTION, feedParamsSchema } from '../schemas/feed-params.schema';
-import { toFeedDateKey } from '../utils/feed-date.view-model';
+import {
+  CLEARED_TODO_SELECTION,
+  feedParamsSchema,
+  toFeedDateKey,
+} from '../schemas/feed-params.schema';
 
 /** 피드에서 고른 날짜 key. 오늘을 고르면 URL에서 `date`를 지워 자정이 지나면 새 오늘을 따라간다 */
 export function useFeedDateKey() {

@@ -1,11 +1,10 @@
 import type { FriendTodoMenuAction } from '@src/features/planning/todo/components/friend-todo-list';
-import type { Todo } from '@src/features/planning/todo/domains/todo.model';
+import { type Todo, TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import type { FriendUser } from '@src/features/social/friend/domains/friend.model';
 import type { DateKey } from '@src/shared/date/date-key';
 import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 
-import { TodoNudgePolicy } from '../domains/todo-nudge.model';
 import { useOpenTodoNudge } from './use-open-todo-nudge';
 
 /** 친구 할 일 행 메뉴의 콕. 줄의 콕 버튼처럼 오늘의 끝나지 않은 할 일에만 둔다 */
@@ -22,7 +21,7 @@ export function useFriendTodoNudgeMenuAction({
   const receiver = { id: friend.id, displayName: friend.name ?? t('friend:fallbackName') };
 
   return (todo: Todo): FriendTodoMenuAction | null => {
-    if (!TodoNudgePolicy.canNudgeTodoOnDate(todo, selectedDateKey, todayKey)) {
+    if (!TodoPolicy.canNudgeOnDate(todo, selectedDateKey, todayKey)) {
       return null;
     }
     return {

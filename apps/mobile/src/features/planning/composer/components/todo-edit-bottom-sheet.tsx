@@ -2,10 +2,7 @@ import { TODO_LIMITS, TODO_UPDATE_SCOPES } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toTodoFormValues } from '@src/features/planning/todo/apis/todo.mapper';
 import { TodoScopeSelect } from '@src/features/planning/todo/components/todo-scope-select';
-import {
-  getTodoEditScopeDecision,
-  type TodoUpdateScope,
-} from '@src/features/planning/todo/domains/todo-repeat.model';
+import type { TodoUpdateScope } from '@src/features/planning/todo/domains/todo-repeat.model';
 import { shouldReopenRepeatPicker } from '@src/features/planning/todo/domains/todo-series.error';
 import { type Todo, TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { useSheetTodo } from '@src/features/planning/todo/hooks/use-sheet-todo';
@@ -34,7 +31,7 @@ import { Suspense } from 'react';
 import { Controller, useForm, useFormState } from 'react-hook-form';
 import { match } from 'ts-pattern';
 
-import { getTodoUpdateChanges, TodoChangePolicy } from '../domains/todo-change.model';
+import { createTodoChange, TodoChangePolicy } from '../domains/todo-change.model';
 import { useFocusTodoTitle } from '../hooks/use-focus-todo-title';
 import { useReopenTodoRepeatPicker } from '../hooks/use-reopen-todo-repeat-picker';
 import { useUpdateTodoMutationOptions } from '../queries/todo-composer.mutations';
@@ -145,18 +142,14 @@ function TodoEditForm({ todo, isOpen, onOpenChange, onClose }: TodoEditFormProps
 
   const submitTodo = form.handleSubmit(async (values) => {
     try {
-      const changes = getTodoUpdateChanges(values, savedValues);
+      const changes = createTodoChange(values, savedValues);
       if (!TodoChangePolicy.hasTodoUpdateChanges(changes)) {
         onClose();
 
         return;
       }
       const choice = await match(
-        getTodoEditScopeDecision({
-          isSeries: TodoPolicy.hasRepeatRule(todo),
-          repeat: changes.repeat,
-          isDateOnly: TodoChangePolicy.hasOnlyDateChanges(changes),
-        }),
+        TodoChangePolicy.getEditScopeDecision(changes, TodoPolicy.hasRepeatRule(todo)),
       )
         .returnType<Promise<EditScopeChoice>>()
         .with('no-scope', async () => ({ kind: 'unscoped' }))

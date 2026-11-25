@@ -716,7 +716,7 @@ function useMemoAiParse({
   const isStartingRef = useRef(false);
   const isMountedRef = useRef(false);
   const defaultCategoryId = TodoCategoryPolicy.findInitialCategoryId(
-    categoriesQuery.data?.categories ?? [],
+    categoriesQuery.data?.categories,
     null,
   );
 
@@ -830,7 +830,7 @@ function useOpenMemoConvertSheet({
   const openKeyboardSheet = useOpenKeyboardSheet();
   const categoriesQuery = useQuery(useGetTodoCategoriesQueryOptions());
   const defaultCategoryId = TodoCategoryPolicy.findInitialCategoryId(
-    categoriesQuery.data?.categories ?? [],
+    categoriesQuery.data?.categories,
     null,
   );
 

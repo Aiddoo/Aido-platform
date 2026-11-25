@@ -4,10 +4,7 @@ import {
   TodoScheduleChips,
   type TodoScheduleChipsValue,
 } from '@src/features/planning/todo/components/todo-schedule-chips';
-import {
-  findScheduledTime,
-  hasScheduleChanged,
-} from '@src/features/planning/todo/domains/todo.model';
+import { TodoSchedulePolicy } from '@src/features/planning/todo/domains/todo-schedule.model';
 import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
 import { VStack } from '@src/shared/ui';
 import type { ComponentProps } from 'react';
@@ -47,7 +44,10 @@ export function TodoComposerChips({ form, ...chipsProps }: TodoComposerChipsProp
 
   const handleChange = (next: TodoScheduleChipsValue) => {
     setScheduleFields(form, next);
-    if (hasScheduleChanged(next, schedule) && findScheduledTime(next) != null) {
+    if (
+      TodoSchedulePolicy.hasTimeChanged(next, schedule) &&
+      TodoSchedulePolicy.findScheduledTime(next) != null
+    ) {
       askPushPermission();
     }
   };
@@ -60,7 +60,7 @@ export function TodoComposerChips({ form, ...chipsProps }: TodoComposerChipsProp
         onChange={handleChange}
         onPickerCloseStart={focusTitle}
       />
-      <TodoTimePushNotice isTimed={findScheduledTime(schedule) != null} />
+      <TodoTimePushNotice isTimed={TodoSchedulePolicy.findScheduledTime(schedule) != null} />
     </VStack>
   );
 }

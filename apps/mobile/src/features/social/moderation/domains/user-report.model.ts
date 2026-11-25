@@ -1,5 +1,4 @@
 import { USER_REPORT_TARGET_TYPES } from '@aido/api/vocabulary';
-import type { TodoDetails } from '@src/features/planning/todo/domains/todo.model';
 import { z } from 'zod';
 
 // 시트를 연 화면이 대상을 정하고 시트는 사유와 상세만 받는다. 대상은 route의 id로 만들어 Policy 밖 함수로 둔다
@@ -53,10 +52,3 @@ export function createCheerMessageReportTarget({
 }): UserReportTarget {
   return { targetUserId: senderId, targetType: 'CHEER_MESSAGE', targetId: String(cheerId) };
 }
-
-export const TodoReportPolicy = {
-  // 할 일은 주인만 고칠 수 있어 수정 권한이 있으면 내 할 일이다. 내 할 일은 신고·차단하지 않는다
-  canReportTodo(details: TodoDetails): boolean {
-    return !details.permissions.canEdit;
-  },
-};

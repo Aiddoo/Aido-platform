@@ -7,7 +7,8 @@ import {
   createTodoCategoryDto,
   createTodoCategoryListDto,
 } from '../__tests__/todo-category.fixtures';
-import { todoCategoriesResultSchema, todoCategorySchema } from '../domains/todo-category.model';
+import { todoCategoriesResultSchema } from '../domains/todo-categories.model';
+import { todoCategorySchema } from '../domains/todo-category.model';
 import { toTodoCategory, toTodoCategoryWithCounts } from './todo-category.mapper';
 
 describe('todo-category.mapper', () => {

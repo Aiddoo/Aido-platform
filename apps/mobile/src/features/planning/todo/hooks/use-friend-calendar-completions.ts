@@ -1,11 +1,11 @@
 import type { DateKey } from '@src/shared/date/date-key';
 import { useQuery } from '@tanstack/react-query';
 
-import { useGetFriendDailyCompletionsQueryOptions } from '../queries/todo.queries';
 import {
-  getCalendarMonthRanges,
   mergeCalendarCompletions,
-} from '../utils/calendar-grid.view-model';
+  useGetFriendDailyCompletionsQueryOptions,
+} from '../queries/todo.queries';
+import { getCalendarMonthRanges } from '../utils/calendar-grid.view-model';
 
 /** 내 달력과 같다. 볼 수 없는 친구면 고른 달 하나만 실패하고 앞뒤 달은 묻지 않는다 */
 export function useFriendCalendarCompletions({

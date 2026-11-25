@@ -1,4 +1,4 @@
-import { DAYS_OF_WEEK, type DayOfWeek } from '@aido/api/vocabulary';
+import { DAYS_OF_WEEK, type DayOfWeek, WEEKDAYS, WEEKEND_DAYS } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useHaptics } from '@src/bootstrap/providers/di-context';
 import type { DateKey } from '@src/shared/date/date-key';
@@ -16,28 +16,22 @@ import { ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
 import { toTodoRepeatFormValues } from '../../apis/todo-repeat.mapper';
-import {
-  getRepeatPresetDays,
-  type TodoRepeat,
-  TodoRepeatPolicy,
-} from '../../domains/todo-repeat.model';
+import { type TodoRepeat, TodoRepeatPolicy } from '../../domains/todo-repeat.model';
 import { type DatePicker, useDatePicker } from '../../hooks/use-date-picker';
 import {
+  findTodoRepeatFormFirstOccurrenceKey,
   findTodoRepeatFormIssue,
   getTodoRepeatFormMonthDay,
-  toTodoRepeat,
+  isTodoRepeatFormPreset,
   todoRepeatFormSchema,
   type TodoRepeatFormValues,
-} from '../../schemas/todo-repeat-form.schema';
-import {
-  findTodoRepeatFormFirstOccurrenceKey,
-  isTodoRepeatFormPreset,
+  toTodoRepeat,
   withTodoRepeatFormBiweeklyToggled,
   withTodoRepeatFormCalendarDate,
   withTodoRepeatFormDayToggled,
   withTodoRepeatFormMonthlyToggled,
   withTodoRepeatFormPreset,
-} from '../../utils/todo-repeat-form.view-model';
+} from '../../schemas/todo-repeat-form.schema';
 import { PickerTitleBar } from '../picker-title-bar';
 import { RepeatHintLine } from '../repeat-hint-line';
 import { RepeatCalendar } from './repeat-calendar';
@@ -194,21 +188,13 @@ TodoRepeatPicker.DayOfWeekSelector = function DayOfWeekSelector({ form }: { form
         />
         <TodoRepeatPicker.PresetChip
           label={t('picker.presetWeekdays')}
-          isSelected={isPresetSelected(getRepeatPresetDays('WEEKDAYS'))}
-          onPress={() =>
-            applyFormValues(
-              withTodoRepeatFormPreset(form.getValues(), getRepeatPresetDays('WEEKDAYS')),
-            )
-          }
+          isSelected={isPresetSelected(WEEKDAYS)}
+          onPress={() => applyFormValues(withTodoRepeatFormPreset(form.getValues(), WEEKDAYS))}
         />
         <TodoRepeatPicker.PresetChip
           label={t('picker.presetWeekends')}
-          isSelected={isPresetSelected(getRepeatPresetDays('WEEKENDS'))}
-          onPress={() =>
-            applyFormValues(
-              withTodoRepeatFormPreset(form.getValues(), getRepeatPresetDays('WEEKENDS')),
-            )
-          }
+          isSelected={isPresetSelected(WEEKEND_DAYS)}
+          onPress={() => applyFormValues(withTodoRepeatFormPreset(form.getValues(), WEEKEND_DAYS))}
         />
         {DAYS_OF_WEEK.map((day) => (
           <TodoRepeatPicker.DayOfWeekChip
@@ -262,11 +248,11 @@ TodoRepeatPicker.RepeatSummary = function RepeatSummary({ form }: { form: Repeat
       () => t('picker.repeatDaily'),
     )
     .when(
-      ({ weekdays: selected }) => hasSameDaysOfWeek(selected, getRepeatPresetDays('WEEKDAYS')),
+      ({ weekdays: selected }) => hasSameDaysOfWeek(selected, WEEKDAYS),
       () => t('picker.repeatWeekdays'),
     )
     .when(
-      ({ weekdays: selected }) => hasSameDaysOfWeek(selected, getRepeatPresetDays('WEEKENDS')),
+      ({ weekdays: selected }) => hasSameDaysOfWeek(selected, WEEKEND_DAYS),
       () => t('picker.repeatWeekends'),
     )
     .otherwise(() => t('picker.repeatWeekly', { days }));

@@ -6,7 +6,36 @@ import { useIsFocused } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { useKeyboardState } from 'react-native-keyboard-controller';
 
-import { isStableFeedForeground } from '../utils/feed-foreground.view-model';
+interface StableFeedForegroundInput {
+  authStatus: AuthStatus;
+  isFocused: boolean;
+  isAppActive: boolean;
+  isKeyboardVisible: boolean;
+  hasActiveOverlay: boolean;
+  hasPendingDeepLink: boolean;
+  /** 곧 다른 화면으로 넘어갈 일이 남았다. 자동 안내가 그 앞에 끼어들지 않게 한다 */
+  hasPendingNavigation: boolean;
+}
+
+export function isStableFeedForeground({
+  authStatus,
+  isFocused,
+  isAppActive,
+  isKeyboardVisible,
+  hasActiveOverlay,
+  hasPendingDeepLink,
+  hasPendingNavigation,
+}: StableFeedForegroundInput): boolean {
+  return (
+    authStatus === 'authenticated' &&
+    isFocused &&
+    isAppActive &&
+    !isKeyboardVisible &&
+    !hasActiveOverlay &&
+    !hasPendingDeepLink &&
+    !hasPendingNavigation
+  );
+}
 
 /** 로그인 상태와 곧 일어날 이동은 shared가 모르는 일이라 화면이 넘긴다 */
 export function useStableFeedForeground({

@@ -3,7 +3,8 @@ import {
   useGetPreferenceQueryOptions,
 } from '@src/features/identity/preference/queries/preference.queries';
 import { TodoRow } from '@src/features/planning/todo/components/todo-row';
-import { isPrivateVisibility, type Todo } from '@src/features/planning/todo/domains/todo.model';
+import { isPrivateVisibility } from '@src/features/planning/todo/domains/todo-visibility.model';
+import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { formatTimeOfDay } from '@src/shared/date/format/date-format';
 import { toTimeOfDay } from '@src/shared/date/time-of-day';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';

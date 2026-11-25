@@ -5,14 +5,7 @@ import { z } from 'zod';
 import repeatLastOccurrenceCases from '../../../../../../../packages/api/test/fixtures/repeat-last-occurrence-cases.json';
 import repeatOccurrenceCases from '../../../../../../../packages/api/test/fixtures/repeat-occurrence-cases.json';
 import { toRepeat } from '../apis/todo-repeat.mapper';
-import {
-  getTodoEditScopeDecision,
-  isBeyondRepeatHorizon,
-  isMonthBeyondRepeatHorizon,
-  type TodoRepeat,
-  TodoRepeatPolicy,
-  todoRepeatSchema,
-} from './todo-repeat.model';
+import { type TodoRepeat, TodoRepeatPolicy, todoRepeatSchema } from './todo-repeat.model';
 
 /** 서버 RepeatRule도 같은 표를 읽는다. 두 구현이 어긋나면 어느 한쪽 테스트가 깨진다 */
 const SHARED_OCCURRENCE_CASES = z
@@ -393,82 +386,5 @@ describe('todoRepeatSchema', () => {
 
     // Then
     expect(result.success).toBe(isValid);
-  });
-});
-
-describe('getTodoEditScopeDecision', () => {
-  const rule: TodoRepeat = { frequency: 'DAILY', end: { type: 'NEVER' } };
-
-  it.each([
-    {
-      title: '시리즈가 아니고 반복 규칙이 없으면 no-scope이다',
-      input: { isSeries: false, isDateOnly: false },
-      expected: 'no-scope',
-    },
-    {
-      title: '시리즈가 아니면 반복 규칙이 있어도 no-scope이다',
-      input: { isSeries: false, repeat: rule, isDateOnly: false },
-      expected: 'no-scope',
-    },
-    {
-      title: '시리즈여도 반복 규칙이 null이면 no-scope이다',
-      input: { isSeries: true, repeat: null, isDateOnly: false },
-      expected: 'no-scope',
-    },
-    {
-      title: '시리즈이고 반복 규칙이 있으면 이후 전체만 묻는다',
-      input: { isSeries: true, repeat: rule, isDateOnly: false },
-      expected: 'ask-following-only',
-    },
-    {
-      title: '시리즈의 날짜만 바꾸면 이번 회차만 바꾼다',
-      input: { isSeries: true, isDateOnly: true },
-      expected: 'this-only',
-    },
-    {
-      title: '시리즈의 날짜 외 항목을 바꾸면 범위를 묻는다',
-      input: { isSeries: true, isDateOnly: false },
-      expected: 'ask',
-    },
-  ] as const)('$title', ({ input, expected }) => {
-    // When
-    const decision = getTodoEditScopeDecision(input);
-
-    // Then
-    expect(decision).toBe(expected);
-  });
-});
-
-const HORIZON_TODAY = createDateKey('2026-11-05');
-
-describe('isBeyondRepeatHorizon', () => {
-  it.each([
-    { title: '오늘은 미리 만든 범위 안이다', dateKey: '2026-11-05', expected: false },
-    { title: '오늘 + 90일은 미리 만든 범위 안이다', dateKey: '2027-02-03', expected: false },
-    { title: '오늘 + 91일부터는 미리 만든 범위를 넘는다', dateKey: '2027-02-04', expected: true },
-  ])('$title', ({ dateKey, expected }) => {
-    // When
-    const result = isBeyondRepeatHorizon(createDateKey(dateKey), HORIZON_TODAY);
-
-    // Then
-    expect(result).toBe(expected);
-  });
-});
-
-describe('isMonthBeyondRepeatHorizon', () => {
-  it.each([
-    { title: '말일이 범위 안인 달은 넘어간 달이 아니다', dateKey: '2027-01-15', expected: false },
-    {
-      title: '말일이 범위를 넘는 달은 월초여도 넘어간 달이다',
-      dateKey: '2027-02-01',
-      expected: true,
-    },
-    { title: '범위를 완전히 벗어난 달은 넘어간 달이다', dateKey: '2027-03-01', expected: true },
-  ])('$title', ({ dateKey, expected }) => {
-    // When
-    const result = isMonthBeyondRepeatHorizon(createDateKey(dateKey), HORIZON_TODAY);
-
-    // Then
-    expect(result).toBe(expected);
   });
 });

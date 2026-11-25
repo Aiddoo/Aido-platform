@@ -8,24 +8,25 @@ import {
   getCachedTodoCategories,
   invalidateTodoCategories,
 } from '@src/features/planning/category/queries/todo-category-cache';
+import { TodoOverviewPolicy } from '@src/features/planning/todo/domains/todo-overview.model';
 import type { TodoRepeat } from '@src/features/planning/todo/domains/todo-repeat.model';
+import {
+  createTodoDateSpan,
+  TodoSchedulePolicy,
+} from '@src/features/planning/todo/domains/todo-schedule.model';
 import { isTodoSeriesFailure } from '@src/features/planning/todo/domains/todo-series.error';
 import {
   isCategoryTodoLimitError,
   isRecurringCategoryTodoLimitError,
   isRecurringTodoRejection,
 } from '@src/features/planning/todo/domains/todo.error';
-import {
-  findScheduledTime,
-  getTodoDateSpan,
-  type OptimisticTodo,
-  type TodoFieldChanges,
-} from '@src/features/planning/todo/domains/todo.model';
+import type { TodoFieldChanges } from '@src/features/planning/todo/domains/todo.model';
 import { useTodoSeriesFailureFeedback } from '@src/features/planning/todo/hooks/use-todo-series-failure-feedback';
 import {
   appendTodoToList,
   beginTodoWrite,
   findCachedTodo,
+  type OptimisticTodo,
   removeTodoFromList,
   saveCreatedTodo,
   settleTodoEdit,
@@ -33,7 +34,6 @@ import {
   settleTodoWrite,
   syncDailyCompletionWithList,
   setTodoOverviewInCache,
-  withTodoCreated,
 } from '@src/features/planning/todo/queries/todo-cache';
 import { TODO_MUTATION_KEYS } from '@src/features/planning/todo/queries/todo-mutation-keys';
 import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
@@ -66,14 +66,14 @@ export function useCreateTodoMutationOptions() {
     },
     onMutate: async ({ values }) => {
       const startDate = values.startDate;
-      const span = getTodoDateSpan(values);
+      const span = TodoSchedulePolicy.getDateSpan(values);
       const ticket = await beginTodoWrite(queryClient, {
         date: startDate,
         isCompletionAffected: true,
       });
 
       const category = TodoCategoryPolicy.findCategory(
-        getCachedTodoCategories(queryClient)?.categories ?? [],
+        getCachedTodoCategories(queryClient)?.categories,
         values.categoryId,
       );
 
@@ -89,7 +89,7 @@ export function useCreateTodoMutationOptions() {
         endDate: values.endDate,
         category: { id: category.id, name: category.name, color: category.color },
         completed: false,
-        localTime: findScheduledTime(values),
+        localTime: TodoSchedulePolicy.findScheduledTime(values),
         scheduledAt: null,
         isAllDay: values.isAllDay,
         visibility: values.visibility,
@@ -111,14 +111,16 @@ export function useCreateTodoMutationOptions() {
         saveCreatedTodo(queryClient, { date: startDate, optimisticId }, saved);
         changeCachedCategoryTodoCount(queryClient, { categoryId: saved.category.id, delta: 1 });
       }
-      setTodoOverviewInCache(queryClient, withTodoCreated);
+      setTodoOverviewInCache(queryClient, (overview) =>
+        TodoOverviewPolicy.withTodoCreated(overview),
+      );
       emitTodoCreated();
       toast.success(t('todo:toast.todoAdded'));
       trackEvent('todo_created', {
         source: 'manual',
         creation_entry: 'manual',
         is_recurring: false,
-        has_scheduled_time: findScheduledTime(values) != null,
+        has_scheduled_time: TodoSchedulePolicy.findScheduledTime(values) != null,
         is_all_day: values.isAllDay,
         visibility: values.visibility,
       });
@@ -145,7 +147,7 @@ export function useCreateTodoMutationOptions() {
       }
       settleTodoWrite(queryClient, {
         date: values.startDate,
-        span: context?.span ?? getTodoDateSpan({ startDate: values.startDate, endDate: null }),
+        span: context?.span ?? createTodoDateSpan(values.startDate, null),
         isCompletionAffected: true,
         hasFailed: error != null || context?.optimisticId == null,
         ticket: context?.ticket,
@@ -189,7 +191,7 @@ export function useCreateRecurringTodoMutationOptions() {
         source: 'manual',
         creation_entry: 'recurring',
         is_recurring: true,
-        has_scheduled_time: findScheduledTime(values) != null,
+        has_scheduled_time: TodoSchedulePolicy.findScheduledTime(values) != null,
         is_all_day: values.isAllDay,
         visibility: values.visibility,
         repeat_frequency: values.repeat.frequency,

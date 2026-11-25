@@ -10,7 +10,7 @@ import { createApiError } from '@src/testing/api-error';
 import { createDateKey } from '@src/testing/date-key';
 import { defineFixture } from '@src/testing/fixture';
 
-import { todoDetailsSchema } from '../domains/todo.model';
+import { todoDetailsSchema } from '../domains/todo-details.model';
 import { todoFormSchema } from '../schemas/todo-form.schema';
 import { createParentTodo } from './sub-todo.fixtures';
 

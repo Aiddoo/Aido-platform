@@ -9,6 +9,7 @@ import {
   type DailyCompletionsResult,
   getCompletionMonthRange,
   getCompletionMonthsCovering,
+  getDistinctCategoryColors,
 } from './daily-completion.model';
 
 /**
@@ -95,6 +96,22 @@ describe('getCompletionMonthsCovering', () => {
 
     // Then
     expect(covering).toEqual(months);
+  });
+});
+
+describe('getDistinctCategoryColors', () => {
+  it('서버가 어떤 순서로 모아도 같은 색 목록이 되어 다시 받아도 구조적 공유로 같은 값이다', () => {
+    // Given
+    const fromServer = ['#FF0000', '#0000FF', '#FF0000'];
+    const fromList = ['#0000FF', '#FF0000'];
+
+    // When
+    const serverColors = getDistinctCategoryColors(fromServer);
+    const listColors = getDistinctCategoryColors(fromList);
+
+    // Then
+    expect(serverColors).toEqual(['#0000FF', '#FF0000']);
+    expect(serverColors).toEqual(listColors);
   });
 });
 
@@ -238,22 +255,6 @@ describe('DailyCompletionPolicy', () => {
       // Then
       expect(outside).toBe(given);
       expect(counted.completions[1]?.totalTodos).toBe(2);
-    });
-  });
-
-  describe('toCategoryColors', () => {
-    it('서버가 어떤 순서로 모아도 같은 색 목록이 되어 다시 받아도 구조적 공유로 같은 값이다', () => {
-      // Given
-      const fromServer = ['#FF0000', '#0000FF', '#FF0000'];
-      const fromList = ['#0000FF', '#FF0000'];
-
-      // When
-      const serverColors = DailyCompletionPolicy.toCategoryColors(fromServer);
-      const listColors = DailyCompletionPolicy.toCategoryColors(fromList);
-
-      // Then
-      expect(serverColors).toEqual(['#0000FF', '#FF0000']);
-      expect(serverColors).toEqual(listColors);
     });
   });
 });

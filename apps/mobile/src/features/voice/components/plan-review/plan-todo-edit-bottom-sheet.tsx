@@ -4,7 +4,8 @@ import {
   TodoScheduleChips,
   type TodoScheduleChipsValue,
 } from '@src/features/planning/todo/components/todo-schedule-chips';
-import { findScheduledTime, getVisibility } from '@src/features/planning/todo/domains/todo.model';
+import { TodoSchedulePolicy } from '@src/features/planning/todo/domains/todo-schedule.model';
+import { getVisibility } from '@src/features/planning/todo/domains/todo-visibility.model';
 import { useTranslation } from '@src/shared/i18n';
 import { Input, Button, KeyboardBottomSheet, VStack } from '@src/shared/ui';
 import { Controller, useForm, useFormState, useWatch, type UseFormReturn } from 'react-hook-form';
@@ -122,7 +123,7 @@ function withScheduleChips(
     ...todo,
     startDate: next.startDate,
     endDate: next.endDate,
-    scheduledTime: findScheduledTime(next),
+    scheduledTime: TodoSchedulePolicy.findScheduledTime(next),
     repeat: next.repeat,
     visibility: next.visibility === previous.visibility ? todo.visibility : next.visibility,
     categoryId: next.categoryId === previous.categoryId ? todo.categoryId : next.categoryId,

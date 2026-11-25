@@ -100,7 +100,7 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾸고,
 - 정렬을 바꾸면 새 정렬의 첫 페이지를 미리 받은 뒤 URL을 바꿔 목록이 fallback으로 빠지지 않는다. 미리 받지 못하면(서버 장애) 정렬은 바꾸고 목록 자리에 실패와 다시 시도를 보인다. 오프라인이면 미리 받기가 멈춰 연결될 때까지 정렬 버튼이 기다리고 보던 목록은 그대로다. 목록 `key`에는 정렬을 넣지 않는다(다시 마운트하면 FlashList가 다시 재는 동안 행이 빈다). FlashList가 보던 첫 행 자리를 지키려 옮긴 스크롤은 같은 커밋에서 맨 위로 되돌린다.
 - 할 일을 볼 수 없으면(`TodoAvailabilityGuard`, `TODO_0801`) 본문·댓글 대신 `TodoDetailSummary.Unavailable` 하나만 보인다.
 - `TodoDetailSummary`는 `Owner`(친구 할 일만) → `Task`(체크와 제목 t3) → 일정 줄(시간·반복·카테고리·날짜, 할 일 기능의 `TodoDetailSchedule`) → `SubTodos` → `Metrics`(조회수는 여기 한 곳) 순서다. 구분선은 카드와 댓글 사이 하나, 댓글 수와 정렬은 한 줄이다.
-- 체크는 내 할 일(`permissions.canEdit`)만 기존 토글 mutation으로 눌리고 친구 할 일은 읽기 전용이다. 상세는 피드 날짜를 몰라 `TodoPolicy.getOptimisticListDate`로 고칠 목록을 고른다.
+- 체크는 내 할 일(`permissions.canEdit`)만 기존 토글 mutation으로 눌리고 친구 할 일은 읽기 전용이다. 상세는 피드 날짜를 몰라 `todo-cache`의 `getOptimisticListDate`로 고칠 목록을 고른다.
 - 상세 응답에는 반복 규칙이 없다. 내 반복 할 일은 시작일 목록에서 규칙을 읽어 요약하고, 친구 할 일과 받기 전에는 "반복"만 보인다.
 
 ## 묶음과 답글

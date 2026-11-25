@@ -8,8 +8,8 @@ import { ErrorCode, type ErrorCodeType } from '@aido/api/errors';
 import { createApiError } from '@src/testing/api-error';
 import { defineFixture } from '@src/testing/fixture';
 
+import { todoCategoryWithCountSchema } from '../domains/todo-categories.model';
 import { todoCategoryDeletionPreviewSchema } from '../domains/todo-category-deletion.model';
-import { todoCategoryWithCountSchema } from '../domains/todo-category.model';
 
 export const createTodoCategoryWithCount = defineFixture(todoCategoryWithCountSchema, {
   id: 1,

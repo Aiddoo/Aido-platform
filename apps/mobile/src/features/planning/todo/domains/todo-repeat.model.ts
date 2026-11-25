@@ -17,7 +17,6 @@ import {
   getDayOfMonth,
   getDaysInDateKeyMonth,
   getMondayOfDateKey,
-  getMonthEndDateKey,
   getMonthStartDateKey,
   dateKeyFieldSchema,
   type DateKey,
@@ -33,17 +32,6 @@ import { z } from 'zod';
 
 /** 반복을 횟수로 끝낼 때의 범위. 서버 시리즈 한도와 같다 */
 export const todoRepeatCountSchema = z.int().min(1).max(TODO_SERIES_LIMITS.MAX_COUNT);
-
-/** 평일·주말 반복으로 읽는 요일 묶음. 반복 피커의 평일·주말 칩도 같은 요일을 고른다 */
-const REPEAT_PRESET_DAYS = {
-  WEEKDAYS,
-  WEEKENDS: WEEKEND_DAYS,
-} as const satisfies Record<'WEEKDAYS' | 'WEEKENDS', readonly DayOfWeek[]>;
-type RepeatPreset = keyof typeof REPEAT_PRESET_DAYS;
-
-export function getRepeatPresetDays(preset: RepeatPreset): readonly DayOfWeek[] {
-  return REPEAT_PRESET_DAYS[preset];
-}
 
 const todoEditScopeSchema = z.enum(TODO_EDIT_SCOPES);
 export type TodoEditScope = z.infer<typeof todoEditScopeSchema>;
@@ -99,31 +87,6 @@ function normalizeRepeat(repeat: TodoRepeat | null): TodoRepeat | null {
   return repeat.interval === 1 && repeat.weekdays.length === DAYS_OF_WEEK.length
     ? { frequency: 'DAILY', end: repeat.end }
     : { ...repeat, weekdays: sortDaysOfWeek(repeat.weekdays) };
-}
-
-type TodoEditScopeDecision = 'no-scope' | 'this-only' | 'ask' | 'ask-following-only';
-
-interface TodoEditScopeInput {
-  isSeries: boolean;
-  /** 생략은 규칙 유지, null은 반복 끝내기 */
-  repeat?: TodoRepeat | null;
-  isDateOnly: boolean;
-}
-
-// 서버는 회차 규칙 변경을 THIS_AND_FOLLOWING으로만(TODO_0845), 끝내기는 범위 없이 받고 날짜 이동은 이 회차에만 적용한다
-export function getTodoEditScopeDecision({
-  isSeries,
-  repeat,
-  isDateOnly,
-}: TodoEditScopeInput): TodoEditScopeDecision {
-  // oxlint-disable-next-line aido/no-strict-nullish -- repeat null은 반복 끝내기, 생략은 규칙 유지다
-  if (!isSeries || repeat === null) {
-    return 'no-scope';
-  }
-  if (repeat != null) {
-    return 'ask-following-only';
-  }
-  return isDateOnly ? 'this-only' : 'ask';
 }
 
 // 서버 RepeatRule과 같은 걷기: 하루씩 보지 않고 규칙이 맞는 날로 건너뛴다. 격주는 시작일이 속한 월요일 시작 주 기준이다
@@ -222,17 +185,8 @@ function* walkOccurrenceDateKeys(
   }
 }
 
-// 서버가 반복 회차를 미리 만드는 범위(오늘 + VISIBLE_AHEAD_DAYS, 그 날 포함)를 넘어간 날짜인지
-export function isBeyondRepeatHorizon(dateKey: DateKey, todayKey: DateKey): boolean {
-  return dateKey > addDaysToDateKey(todayKey, TODO_SERIES_LIMITS.VISIBLE_AHEAD_DAYS);
-}
-
-// 그 날짜가 속한 달의 마지막 날이 미리 만드는 범위를 넘어가는지. 달력에서 일부라도 비어 보일 수 있는 달이다
-export function isMonthBeyondRepeatHorizon(dateKey: DateKey, todayKey: DateKey): boolean {
-  return isBeyondRepeatHorizon(getMonthEndDateKey(dateKey), todayKey);
-}
-
 export const TodoRepeatPolicy = {
+  // 월~금 매주는 평일, 토·일 매주는 주말로 읽는다. 반복 피커의 평일·주말 칩도 같은 요일 묶음을 고른다
   getRepeatKind(repeat: TodoRepeat): TodoRepeatKind {
     return match(repeat)
       .returnType<TodoRepeatKind>()
@@ -247,11 +201,11 @@ export const TodoRepeatPolicy = {
             () => 'DAILY',
           )
           .when(
-            (days) => hasSameDaysOfWeek(days, REPEAT_PRESET_DAYS.WEEKDAYS),
+            (days) => hasSameDaysOfWeek(days, WEEKDAYS),
             () => 'WEEKDAYS',
           )
           .when(
-            (days) => hasSameDaysOfWeek(days, REPEAT_PRESET_DAYS.WEEKENDS),
+            (days) => hasSameDaysOfWeek(days, WEEKEND_DAYS),
             () => 'WEEKENDS',
           )
           .otherwise(() => 'WEEKLY'),

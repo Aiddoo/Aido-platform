@@ -1,54 +1,11 @@
-import { createParentTodo } from '@src/features/planning/todo/__tests__/sub-todo.fixtures';
 import { toInstant } from '@src/shared/date/instant';
-import { createDateKey } from '@src/testing/date-key';
 
 import {
   isMessageTooLong,
   type NudgeCooldownInfo,
   NudgeCooldownPolicy,
   normalizeMessage,
-  TodoNudgePolicy,
 } from './todo-nudge.model';
-
-const TODAY_KEY = createDateKey('2026-02-25');
-const NEXT_DAY_KEY = createDateKey('2026-02-26');
-
-describe('TodoNudgePolicy', () => {
-  describe('canNudgeTodoOnDate', () => {
-    it('미완료 + 오늘이면 true를 반환한다', () => {
-      // Given
-      const todo = createParentTodo({ completed: false });
-
-      // When
-      const result = TodoNudgePolicy.canNudgeTodoOnDate(todo, TODAY_KEY, TODAY_KEY);
-
-      // Then
-      expect(result).toBe(true);
-    });
-
-    it('완료된 할 일은 오늘이어도 false를 반환한다', () => {
-      // Given
-      const todo = createParentTodo({ completed: true });
-
-      // When
-      const result = TodoNudgePolicy.canNudgeTodoOnDate(todo, TODAY_KEY, TODAY_KEY);
-
-      // Then
-      expect(result).toBe(false);
-    });
-
-    it('미완료여도 오늘이 아니면 false를 반환한다', () => {
-      // Given
-      const todo = createParentTodo({ completed: false });
-
-      // When
-      const result = TodoNudgePolicy.canNudgeTodoOnDate(todo, NEXT_DAY_KEY, TODAY_KEY);
-
-      // Then
-      expect(result).toBe(false);
-    });
-  });
-});
 
 describe('normalizeMessage', () => {
   it('메시지 칸이 없으면 undefined를 반환한다', () => {

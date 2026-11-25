@@ -15,11 +15,9 @@ import {
   getCompletionMonthRange,
 } from '@src/features/planning/todo/domains/daily-completion.model';
 import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
-import type {
-  Todo,
-  TodoDetails,
-  TodoListResult,
-} from '@src/features/planning/todo/domains/todo.model';
+import type { TodoDetails } from '@src/features/planning/todo/domains/todo-details.model';
+import type { TodoListResult } from '@src/features/planning/todo/domains/todo-list.model';
+import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import {
   useAddSubTodoMutationOptions,
   useDeleteSubTodoMutationOptions,

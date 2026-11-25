@@ -8,6 +8,10 @@ import {
 } from '@aido/api/contracts/memo/v1';
 import { toRepeat } from '@src/features/planning/todo/apis/todo-repeat.mapper';
 import { toCreateTodoRequest } from '@src/features/planning/todo/apis/todo.mapper';
+import {
+  findPeriodEndDate,
+  findScheduledTime,
+} from '@src/features/planning/todo/domains/todo-schedule.model';
 import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
 import {
   type PlannedAction,
@@ -57,8 +61,11 @@ export function toMemoVoicePlan(planId: string, dto: ParseMemoPlanResponse): Voi
     actionId: `memo-todo-${index}`,
     title: todo.title,
     startDate: dateKeySchema.parse(todo.startDate),
-    endDate: todo.repeat != null || todo.endDate == null ? null : dateKeySchema.parse(todo.endDate),
-    scheduledTime: todo.isAllDay ? null : todo.scheduledTime,
+    endDate: findPeriodEndDate(
+      todo.endDate == null ? null : dateKeySchema.parse(todo.endDate),
+      todo.repeat != null,
+    ),
+    scheduledTime: findScheduledTime(todo.isAllDay, todo.scheduledTime),
     repeat: todo.repeat == null ? null : toRepeat(todo.repeat),
     visibility: null,
     items: todo.items,

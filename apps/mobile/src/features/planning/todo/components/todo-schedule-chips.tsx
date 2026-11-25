@@ -28,14 +28,8 @@ import { cn } from '@src/shared/utils/cn';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';
 
-import {
-  findScheduledTime,
-  isPrivateVisibility,
-  type TodoSchedule,
-  withScheduleRepeat,
-  withScheduleStartDate,
-  withVisibilityToggled,
-} from '../domains/todo.model';
+import { type TodoSchedule, TodoSchedulePolicy } from '../domains/todo-schedule.model';
+import { getToggledVisibility, isPrivateVisibility } from '../domains/todo-visibility.model';
 import { useOpenTodoRepeatPicker } from '../hooks/use-open-todo-repeat-picker';
 import type { TodoFormValues } from '../schemas/todo-form.schema';
 import { formatTodoPeriod } from '../utils/todo-period.view-model';
@@ -78,7 +72,10 @@ export function TodoScheduleChips({
       <DateChip
         value={value}
         onChange={(startDate) =>
-          onChange({ ...value, ...withScheduleStartDate(value, startDate, { isSeriesOccurrence }) })
+          onChange({
+            ...value,
+            ...TodoSchedulePolicy.withStartDate(value, startDate, { isSeriesOccurrence }),
+          })
         }
         sheetOptions={sheetOptions}
       />
@@ -90,11 +87,16 @@ export function TodoScheduleChips({
       {canChangeRepeat && (
         <RepeatChip
           value={value}
-          onChange={(repeat) => onChange({ ...value, ...withScheduleRepeat(value, repeat) })}
+          onChange={(repeat) =>
+            onChange({ ...value, ...TodoSchedulePolicy.withRepeat(value, repeat) })
+          }
           sheetOptions={sheetOptions}
         />
       )}
-      <VisibilityChip value={value} onChange={() => onChange(withVisibilityToggled(value))} />
+      <VisibilityChip
+        value={value}
+        onChange={() => onChange({ ...value, visibility: getToggledVisibility(value.visibility) })}
+      />
       {/* 루트 overlay에 그려지므로 칩 조회 실패가 앱 경계까지 올라가지 않게 칩만 숨긴다 */}
       <QueryErrorBoundary fallback={QueryErrorFallback.Hidden}>
         <Suspense fallback={<ActionButton.Loading />}>
@@ -146,7 +148,7 @@ function TimeChip({
   const dateFormatContext = useDateFormatContext();
   // 루트 overlay라 경계로 터지지 않게 Suspense 대신 상태로 읽는다. 읽지 못하면 설정 기본 표기다
   const { data: preference, isError } = useQuery(useGetPreferenceQueryOptions());
-  const displayedTime = findScheduledTime(value);
+  const displayedTime = TodoSchedulePolicy.findScheduledTime(value);
 
   // 설정을 읽는 동안 다른 표기로 먼저 보였다가 바뀌지 않게 카테고리 칩과 같은 자리 잡기를 보인다
   if (displayedTime != null && preference == null && !isError) {

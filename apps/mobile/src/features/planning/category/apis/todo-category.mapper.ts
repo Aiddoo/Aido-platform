@@ -6,12 +6,13 @@ import type {
 } from '@aido/api/contracts/todo-category/v1';
 import { pick } from 'es-toolkit';
 
+import type { TodoCategoryWithCount } from '../domains/todo-categories.model';
 import type {
   TodoCategoryDeletionRequest,
   TodoCategoryDeletionPreview,
   TodoCategoryDeletionResult,
 } from '../domains/todo-category-deletion.model';
-import type { TodoCategory, TodoCategoryWithCount } from '../domains/todo-category.model';
+import type { TodoCategory } from '../domains/todo-category.model';
 import type { TodoCategoryFormValues } from '../schemas/todo-category-form.schema';
 import type { TodoCategoryRemoval } from '../schemas/todo-category-request.schema';
 

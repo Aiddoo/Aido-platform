@@ -1,11 +1,10 @@
-import type { Todo } from '@src/features/planning/todo/domains/todo.model';
+import { type Todo, TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import type { FriendUser } from '@src/features/social/friend/domains/friend.model';
 import type { DateKey } from '@src/shared/date/date-key';
 import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import { getTouchTargetInset } from '@src/shared/ui';
 
-import { TodoNudgePolicy } from '../domains/todo-nudge.model';
 import { TodoNudgeButton } from './todo-nudge-button';
 
 /** 줄에 맞춘 높이(py-1.5 위아래 12 + 가장 작은 글꼴 단계의 발바닥 아이콘 16) */
@@ -33,7 +32,7 @@ export function FriendTodoNudgeAction({
 }: FriendTodoNudgeActionProps) {
   const { t } = useTranslation('friend');
   const todayKey = useTodayKey();
-  const canNudgeTodo = TodoNudgePolicy.canNudgeTodoOnDate(todo, selectedDateKey, todayKey);
+  const canNudgeTodo = TodoPolicy.canNudgeOnDate(todo, selectedDateKey, todayKey);
 
   if (!canNudgeTodo) {
     return null;

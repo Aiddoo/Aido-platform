@@ -65,6 +65,11 @@ export function getCompletionMonthsCovering(range: DailyCompletionRange): [DateK
   return coveringMonth == null ? months : [coveringMonth];
 }
 
+/** 서버는 GROUP BY 순서로 색을 모아 응답마다 순서가 바뀔 수 있다. 서버 값도 목록에서 계산한 값도 같은 순서로 두면 같은 날을 다시 받아도 달력이 다시 그려지지 않는다 */
+export function getDistinctCategoryColors(colors: readonly string[]): string[] {
+  return uniq(colors).sort();
+}
+
 function createDailyCompletionSummary(
   summary: Pick<
     DailyCompletionSummary,
@@ -92,11 +97,6 @@ function withCompletions(
 }
 
 export const DailyCompletionPolicy = {
-  /** 서버는 GROUP BY 순서로 색을 모아 응답마다 순서가 바뀔 수 있다. 정렬해 두면 같은 날을 다시 받아도 달력이 다시 그려지지 않는다 */
-  toCategoryColors(colors: readonly string[]): string[] {
-    return uniq(colors).sort();
-  },
-
   withTodoDailyCompletion(
     result: DailyCompletionsResult,
     date: DateKey,
@@ -119,7 +119,9 @@ export const DailyCompletionPolicy = {
               date,
               totalTodos: dayTodos.length,
               completedTodos: dayTodos.filter((todo) => todo.completed).length,
-              categoryColors: this.toCategoryColors(dayTodos.map((todo) => todo.category.color)),
+              categoryColors: getDistinctCategoryColors(
+                dayTodos.map((todo) => todo.category.color),
+              ),
             }),
           ],
     );

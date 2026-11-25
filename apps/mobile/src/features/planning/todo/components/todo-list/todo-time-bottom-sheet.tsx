@@ -4,7 +4,8 @@ import { useMutation } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 
 import type { TodoUpdateScope } from '../../domains/todo-repeat.model';
-import { findScheduledTime, hasScheduleChanged, TodoPolicy } from '../../domains/todo.model';
+import { findScheduledTime } from '../../domains/todo-schedule.model';
+import { TodoPolicy } from '../../domains/todo.model';
 import { useSelectTodoScope } from '../../hooks/use-select-todo-scope';
 import { useSheetTodo } from '../../hooks/use-sheet-todo';
 import { useUpdateTodoScheduleMutationOptions } from '../../queries/todo.mutations';
@@ -58,11 +59,7 @@ TodoTimeBottomSheet.TimeForm = function TimeForm({
         onCancel={onClose}
         isConfirmDisabled={updateSchedule.isPending}
         onChange={async ({ scheduledTime, isAllDay }) => {
-          const isUnchanged = !hasScheduleChanged(
-            { isAllDay, scheduledTime },
-            { isAllDay: todo.isAllDay, scheduledTime: localTime },
-          );
-          if (isUnchanged) {
+          if (!TodoPolicy.hasTimeChanged(todo, { isAllDay, scheduledTime }, timezone)) {
             onClose();
 
             return;
@@ -76,7 +73,7 @@ TodoTimeBottomSheet.TimeForm = function TimeForm({
                 input: {
                   startDate: todo.startDate,
                   endDate: todo.endDate,
-                  scheduledTime: findScheduledTime({ isAllDay, scheduledTime }),
+                  scheduledTime: findScheduledTime(isAllDay, scheduledTime),
                   isAllDay,
                 },
               },
