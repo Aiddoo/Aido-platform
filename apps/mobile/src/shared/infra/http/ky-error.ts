@@ -57,7 +57,7 @@ const SECOND_MS = 1000;
 const DELTA_SECONDS_PATTERN = /^\d+$/u;
 
 /** `Retry-After`는 초(정수)나 HTTP 날짜다. 날짜는 응답의 `Date`를 기준으로 재 기기 시계 오차를 피한다. 읽지 못하면 null */
-export function parseRetryAfterMs(response: Response): number | null {
+function parseRetryAfterMs(response: Response): number | null {
   const value = response.headers.get(RETRY_AFTER_HEADER)?.trim();
   if (value == null || value === '') {
     return null;

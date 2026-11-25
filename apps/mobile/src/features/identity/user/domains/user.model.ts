@@ -22,25 +22,21 @@ export type User = z.infer<typeof userSchema>;
 const updateProfileResultSchema = userSummarySchema.pick({ name: true, profileImage: true });
 export type UpdateProfileResult = z.infer<typeof updateProfileResultSchema>;
 
-function hasCredential(user: User) {
-  return user.providers.includes('CREDENTIAL');
-}
-
-function isAdmin(user: User) {
-  return user.role === USER_ROLE.ADMIN;
-}
-
-/** 역할·프리미엄 효력·기간이 바뀌면 서버가 주는 한도·사용량도 달라진다 */
-function hasEntitlementChanged(previous: User, next: User) {
-  return (
-    previous.role !== next.role ||
-    previous.isPremium !== next.isPremium ||
-    PremiumAccessPolicy.hasChanged(previous.premiumAccess, next.premiumAccess)
-  );
-}
-
 export const UserPolicy = {
-  hasCredential,
-  isAdmin,
-  hasEntitlementChanged,
-} as const;
+  hasCredential(user: User): boolean {
+    return user.providers.includes('CREDENTIAL');
+  },
+
+  isAdmin(user: User): boolean {
+    return user.role === USER_ROLE.ADMIN;
+  },
+
+  /** 역할·프리미엄 효력·기간이 바뀌면 서버가 주는 한도·사용량도 달라진다 */
+  hasEntitlementChanged(previous: User, next: User): boolean {
+    return (
+      previous.role !== next.role ||
+      previous.isPremium !== next.isPremium ||
+      PremiumAccessPolicy.hasChanged(previous.premiumAccess, next.premiumAccess)
+    );
+  },
+};

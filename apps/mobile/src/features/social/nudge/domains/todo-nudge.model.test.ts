@@ -13,38 +13,40 @@ import {
 const TODAY_KEY = createDateKey('2026-02-25');
 const NEXT_DAY_KEY = createDateKey('2026-02-26');
 
-describe('canNudgeTodoOnDate', () => {
-  it('미완료 + 오늘이면 true를 반환한다', () => {
-    // Given
-    const todo = createParentTodo({ completed: false });
+describe('TodoNudgePolicy', () => {
+  describe('canNudgeTodoOnDate', () => {
+    it('미완료 + 오늘이면 true를 반환한다', () => {
+      // Given
+      const todo = createParentTodo({ completed: false });
 
-    // When
-    const result = TodoNudgePolicy.canNudgeTodoOnDate(todo, TODAY_KEY, TODAY_KEY);
+      // When
+      const result = TodoNudgePolicy.canNudgeTodoOnDate(todo, TODAY_KEY, TODAY_KEY);
 
-    // Then
-    expect(result).toBe(true);
-  });
+      // Then
+      expect(result).toBe(true);
+    });
 
-  it('완료된 할 일은 오늘이어도 false를 반환한다', () => {
-    // Given
-    const todo = createParentTodo({ completed: true });
+    it('완료된 할 일은 오늘이어도 false를 반환한다', () => {
+      // Given
+      const todo = createParentTodo({ completed: true });
 
-    // When
-    const result = TodoNudgePolicy.canNudgeTodoOnDate(todo, TODAY_KEY, TODAY_KEY);
+      // When
+      const result = TodoNudgePolicy.canNudgeTodoOnDate(todo, TODAY_KEY, TODAY_KEY);
 
-    // Then
-    expect(result).toBe(false);
-  });
+      // Then
+      expect(result).toBe(false);
+    });
 
-  it('미완료여도 오늘이 아니면 false를 반환한다', () => {
-    // Given
-    const todo = createParentTodo({ completed: false });
+    it('미완료여도 오늘이 아니면 false를 반환한다', () => {
+      // Given
+      const todo = createParentTodo({ completed: false });
 
-    // When
-    const result = TodoNudgePolicy.canNudgeTodoOnDate(todo, NEXT_DAY_KEY, TODAY_KEY);
+      // When
+      const result = TodoNudgePolicy.canNudgeTodoOnDate(todo, NEXT_DAY_KEY, TODAY_KEY);
 
-    // Then
-    expect(result).toBe(false);
+      // Then
+      expect(result).toBe(false);
+    });
   });
 });
 
@@ -130,40 +132,42 @@ describe('isMessageTooLong', () => {
   });
 });
 
-describe('canNudgeAfterCooldown', () => {
-  // 10:00Z에 끝나는 쿨다운을 받은 뒤 화면을 켜 두었다
-  const COOLING_DOWN: NudgeCooldownInfo = {
-    canNudge: false,
-    cooldownEndsAt: toInstant('2026-11-18T10:00:00.000Z'),
-    remainingSeconds: 3600,
-  };
-
-  it.each([
-    { now: '2026-11-18T09:59:59.999Z', expected: false },
-    { now: '2026-11-18T10:00:00.000Z', expected: true },
-  ])('쿨다운이 10:00Z에 끝나면 $now에 찌를 수 있음은 $expected다', ({ now, expected }) => {
-    // When
-    const canNudge = NudgeCooldownPolicy.canNudgeAfterCooldown(COOLING_DOWN, toInstant(now));
-
-    // Then
-    expect(canNudge).toBe(expected);
-  });
-
-  it('서버가 찌를 수 있다고 했으면 쿨다운 끝 순간과 무관하게 찌를 수 있다', () => {
-    // Given
-    const available: NudgeCooldownInfo = {
-      canNudge: true,
-      cooldownEndsAt: null,
-      remainingSeconds: null,
+describe('NudgeCooldownPolicy', () => {
+  describe('canNudgeAfterCooldown', () => {
+    // 10:00Z에 끝나는 쿨다운을 받은 뒤 화면을 켜 두었다
+    const COOLING_DOWN: NudgeCooldownInfo = {
+      canNudge: false,
+      cooldownEndsAt: toInstant('2026-11-18T10:00:00.000Z'),
+      remainingSeconds: 3600,
     };
 
-    // When
-    const canNudge = NudgeCooldownPolicy.canNudgeAfterCooldown(
-      available,
-      toInstant('2026-11-18T09:00:00.000Z'),
-    );
+    it.each([
+      { now: '2026-11-18T09:59:59.999Z', expected: false },
+      { now: '2026-11-18T10:00:00.000Z', expected: true },
+    ])('쿨다운이 10:00Z에 끝나면 $now에 찌를 수 있음은 $expected다', ({ now, expected }) => {
+      // When
+      const canNudge = NudgeCooldownPolicy.canNudgeAfterCooldown(COOLING_DOWN, toInstant(now));
 
-    // Then
-    expect(canNudge).toBe(true);
+      // Then
+      expect(canNudge).toBe(expected);
+    });
+
+    it('서버가 찌를 수 있다고 했으면 쿨다운 끝 순간과 무관하게 찌를 수 있다', () => {
+      // Given
+      const available: NudgeCooldownInfo = {
+        canNudge: true,
+        cooldownEndsAt: null,
+        remainingSeconds: null,
+      };
+
+      // When
+      const canNudge = NudgeCooldownPolicy.canNudgeAfterCooldown(
+        available,
+        toInstant('2026-11-18T09:00:00.000Z'),
+      );
+
+      // Then
+      expect(canNudge).toBe(true);
+    });
   });
 });

@@ -43,11 +43,9 @@ export function createUnreadablePushNotification(): PushNotification {
   };
 }
 
-function hasServerRecord(pushNotification: PushNotification) {
-  return isServerNotificationId(pushNotification.notificationId);
-}
-
 /** 기기가 받은 푸시 */
 export const PushNotificationPolicy = {
-  hasServerRecord,
-} as const;
+  hasServerRecord(pushNotification: PushNotification): boolean {
+    return isServerNotificationId(pushNotification.notificationId);
+  },
+};

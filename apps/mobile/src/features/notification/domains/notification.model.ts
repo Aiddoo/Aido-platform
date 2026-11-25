@@ -112,17 +112,14 @@ const AI_FEATURE_BY_TYPE = {
   NUDGE_SUGGEST: false,
 } as const satisfies Record<NotificationType, boolean>;
 
-/** 프리미엄 AI 기능이 만든 알림. 열기 전에 기능 한도를 묻는다 */
-function isAiFeature(notification: Notification) {
-  return AI_FEATURE_BY_TYPE[notification.type];
-}
-
-function isUnread(notification: Notification) {
-  return !notification.isRead;
-}
-
 /** 받은 알림(알림함 항목) */
 export const NotificationPolicy = {
-  isAiFeature,
-  isUnread,
-} as const;
+  /** 프리미엄 AI 기능이 만든 알림. 열기 전에 기능 한도를 묻는다 */
+  isAiFeature(notification: Notification): boolean {
+    return AI_FEATURE_BY_TYPE[notification.type];
+  },
+
+  isUnread(notification: Notification): boolean {
+    return !notification.isRead;
+  },
+};

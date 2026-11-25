@@ -17,10 +17,6 @@ export type AuthSessionEvent =
   | { type: 'signedOut' }
   | { type: 'sessionExpired' };
 
-function isAuthBootPending({ status }: AuthSessionState) {
-  return status === 'loading' || status === 'locked';
-}
-
 function resolveBootState(status: ResolvedAuthStatus): AuthSessionState {
   return match(status)
     .returnType<AuthSessionState>()
@@ -30,29 +26,30 @@ function resolveBootState(status: ResolvedAuthStatus): AuthSessionState {
     .exhaustive();
 }
 
-/** 늦게 끝난 부팅 판정이 로그아웃을 되돌리거나 로그인 화면의 401이 만료로 잡히지 않게 해당 상태에서만 반영한다 */
-function transitionAuthSession(state: AuthSessionState, event: AuthSessionEvent): AuthSessionState {
-  const pending = { status: P.union('loading', 'locked') };
-
-  return match<[AuthSessionState, AuthSessionEvent], AuthSessionState>([state, event])
-    .with([pending, { type: 'bootResolved', status: P.select() }], resolveBootState)
-    .with([pending, { type: 'bootFailed' }], () => ({
-      status: 'unauthenticated',
-      reason: 'boot-failed',
-    }))
-    .with([P.any, { type: 'signedIn' }], () => ({ status: 'authenticated' }))
-    .with([P.any, { type: 'signedOut' }], () => ({
-      status: 'unauthenticated',
-      reason: 'signed-out',
-    }))
-    .with([{ status: 'authenticated' }, { type: 'sessionExpired' }], () => ({
-      status: 'unauthenticated',
-      reason: 'expired',
-    }))
-    .otherwise(() => state);
-}
-
 export const AuthSessionPolicy = {
-  isAuthBootPending,
-  transitionAuthSession,
-} as const;
+  isAuthBootPending({ status }: AuthSessionState): boolean {
+    return status === 'loading' || status === 'locked';
+  },
+
+  /** 늦게 끝난 부팅 판정이 로그아웃을 되돌리거나 로그인 화면의 401이 만료로 잡히지 않게 해당 상태에서만 반영한다 */
+  transitionAuthSession(state: AuthSessionState, event: AuthSessionEvent): AuthSessionState {
+    const pending = { status: P.union('loading', 'locked') };
+
+    return match<[AuthSessionState, AuthSessionEvent], AuthSessionState>([state, event])
+      .with([pending, { type: 'bootResolved', status: P.select() }], resolveBootState)
+      .with([pending, { type: 'bootFailed' }], () => ({
+        status: 'unauthenticated',
+        reason: 'boot-failed',
+      }))
+      .with([P.any, { type: 'signedIn' }], () => ({ status: 'authenticated' }))
+      .with([P.any, { type: 'signedOut' }], () => ({
+        status: 'unauthenticated',
+        reason: 'signed-out',
+      }))
+      .with([{ status: 'authenticated' }, { type: 'sessionExpired' }], () => ({
+        status: 'unauthenticated',
+        reason: 'expired',
+      }))
+      .otherwise(() => state);
+  },
+};

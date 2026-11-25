@@ -125,7 +125,7 @@ export function toChangePasswordResult(dto: ChangePasswordResponse): ChangePassw
   };
 }
 
-export function toLinkedAccount(dto: LinkedAccountDto): LinkedAccount {
+function toLinkedAccount(dto: LinkedAccountDto): LinkedAccount {
   return {
     provider: dto.provider,
     linked: dto.linked,

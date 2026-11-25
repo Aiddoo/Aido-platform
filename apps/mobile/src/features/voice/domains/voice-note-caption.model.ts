@@ -123,21 +123,6 @@ function toTimedSentences(
   });
 }
 
-export function commitProvisional(captions: VoiceNoteCaptions, nowMs: number): VoiceNoteCaptions {
-  if (captions.provisional.length === 0) {
-    return captions;
-  }
-  const committed = captions.provisional.map(({ text, startMs }, index) => ({
-    text,
-    startMs,
-    endMs: Math.max(startMs, captions.provisional[index + 1]?.startMs ?? nowMs),
-    isBookmarked: false,
-    lowConfidenceWords: [],
-  }));
-
-  return { ...captions, sentences: [...captions.sentences, ...committed], provisional: [] };
-}
-
 /** 다시 쌓인 interim이 이전보다 이 비율 아래로 짧고 앞 글자가 달라야 재시작으로 본다 */
 const INTERIM_RESTART_LENGTH_RATIO = 0.5;
 const INTERIM_RESTART_PREFIX_LENGTH = 8;
@@ -158,7 +143,7 @@ function applyInterim(
   nowMs: number,
 ): VoiceNoteCaptions {
   const base = hasRestartedInterim(captions.provisional, transcript)
-    ? commitProvisional(captions, nowMs)
+    ? VoiceNoteCaptionPolicy.commitProvisional(captions, nowMs)
     : captions;
 
   return {
@@ -205,66 +190,6 @@ function applyFinal(
   };
 }
 
-export function applyCaptionResult(
-  captions: VoiceNoteCaptions,
-  result: SpeechResultInput,
-  clock: CaptionClock,
-): VoiceNoteCaptions {
-  return result.isFinal
-    ? applyFinal(captions, result, clock)
-    : applyInterim(captions, result.transcript, clock.nowMs);
-}
-
-export function withBookmark(captions: VoiceNoteCaptions, nowMs: number): VoiceNoteCaptions {
-  return { ...captions, bookmarksMs: [...captions.bookmarksMs, nowMs] };
-}
-
-// 저장·표시할 문장 전체. 깃발은 그 시각에 말하고 있던 문장(말이 없었으면 직전 문장)에 붙는다
-export function getCaptionSentences(
-  captions: VoiceNoteCaptions,
-  nowMs: number,
-): VoiceNoteSentence[] {
-  const { sentences } = commitProvisional(captions, nowMs);
-
-  return sentences.map((sentence, index) => {
-    const rangeStart = index === 0 ? Number.NEGATIVE_INFINITY : sentence.startMs;
-    const nextStart = sentences[index + 1]?.startMs ?? Number.POSITIVE_INFINITY;
-    return {
-      ...sentence,
-      isBookmarked: captions.bookmarksMs.some((ms) => rangeStart <= ms && ms < nextStart),
-    };
-  });
-}
-
-// 녹음 중 카드로 그릴 문장. 아직 바뀔 수 있는 마지막 문장은 빼고, 남은 문장은 그 다음 문장이 시작할 때 끝난다
-export function getSettledSentences(captions: VoiceNoteCaptions): VoiceNoteSentence[] {
-  const settling = captions.provisional.at(-1);
-
-  return getCaptionSentences(
-    { ...captions, provisional: captions.provisional.slice(0, -1) },
-    settling?.startMs ?? 0,
-  );
-}
-
-// 중요 표시한 문장 수. 같은 문장을 여러 번 눌러도 하나고, 아직 문장이 없으면 곧 나올 첫 문장 하나에 붙는다
-export function getMarkedSentenceCount(captions: VoiceNoteCaptions): number {
-  const sentences = getCaptionSentences(captions, 0);
-  if (sentences.length === 0) {
-    return Math.min(captions.bookmarksMs.length, 1);
-  }
-
-  return sentences.filter(({ isBookmarked }) => isBookmarked).length;
-}
-
-// 지울 때 물어봐야 할 글자가 있는지. 아직 확정되지 않은 꼬리도 들은 글자다
-export function hasCaptionText(captions: VoiceNoteCaptions): boolean {
-  return captions.sentences.length > 0 || captions.provisional.length > 0;
-}
-
-export function getCaptionInterimText(captions: VoiceNoteCaptions): string {
-  return captions.provisional.at(-1)?.text ?? '';
-}
-
 interface CreateTranscribedVoiceNoteInput {
   draftId: string;
   locale: SpeechLocale;
@@ -292,22 +217,86 @@ export function createTranscribedVoiceNote({
   );
 }
 
-export function toVoiceNoteCaptions({ sentences }: VoiceNote): VoiceNoteCaptions {
-  return {
-    sentences,
-    provisional: [],
-    bookmarksMs: sentences.filter(({ isBookmarked }) => isBookmarked).map(({ startMs }) => startMs),
-  };
-}
-
 export const VoiceNoteCaptionPolicy = {
-  toVoiceNoteCaptions,
-  commitProvisional,
-  applyCaptionResult,
-  withBookmark,
-  getCaptionSentences,
-  getSettledSentences,
-  getCaptionInterimText,
-  getMarkedSentenceCount,
-  hasCaptionText,
-} as const;
+  commitProvisional(captions: VoiceNoteCaptions, nowMs: number): VoiceNoteCaptions {
+    if (captions.provisional.length === 0) {
+      return captions;
+    }
+    const committed = captions.provisional.map(({ text, startMs }, index) => ({
+      text,
+      startMs,
+      endMs: Math.max(startMs, captions.provisional[index + 1]?.startMs ?? nowMs),
+      isBookmarked: false,
+      lowConfidenceWords: [],
+    }));
+
+    return { ...captions, sentences: [...captions.sentences, ...committed], provisional: [] };
+  },
+
+  applyCaptionResult(
+    captions: VoiceNoteCaptions,
+    result: SpeechResultInput,
+    clock: CaptionClock,
+  ): VoiceNoteCaptions {
+    return result.isFinal
+      ? applyFinal(captions, result, clock)
+      : applyInterim(captions, result.transcript, clock.nowMs);
+  },
+
+  withBookmark(captions: VoiceNoteCaptions, nowMs: number): VoiceNoteCaptions {
+    return { ...captions, bookmarksMs: [...captions.bookmarksMs, nowMs] };
+  },
+
+  // 저장·표시할 문장 전체. 깃발은 그 시각에 말하고 있던 문장(말이 없었으면 직전 문장)에 붙는다
+  getCaptionSentences(captions: VoiceNoteCaptions, nowMs: number): VoiceNoteSentence[] {
+    const { sentences } = this.commitProvisional(captions, nowMs);
+
+    return sentences.map((sentence, index) => {
+      const rangeStart = index === 0 ? Number.NEGATIVE_INFINITY : sentence.startMs;
+      const nextStart = sentences[index + 1]?.startMs ?? Number.POSITIVE_INFINITY;
+      return {
+        ...sentence,
+        isBookmarked: captions.bookmarksMs.some((ms) => rangeStart <= ms && ms < nextStart),
+      };
+    });
+  },
+
+  // 녹음 중 카드로 그릴 문장. 아직 바뀔 수 있는 마지막 문장은 빼고, 남은 문장은 그 다음 문장이 시작할 때 끝난다
+  getSettledSentences(captions: VoiceNoteCaptions): VoiceNoteSentence[] {
+    const settling = captions.provisional.at(-1);
+
+    return this.getCaptionSentences(
+      { ...captions, provisional: captions.provisional.slice(0, -1) },
+      settling?.startMs ?? 0,
+    );
+  },
+
+  // 중요 표시한 문장 수. 같은 문장을 여러 번 눌러도 하나고, 아직 문장이 없으면 곧 나올 첫 문장 하나에 붙는다
+  getMarkedSentenceCount(captions: VoiceNoteCaptions): number {
+    const sentences = this.getCaptionSentences(captions, 0);
+    if (sentences.length === 0) {
+      return Math.min(captions.bookmarksMs.length, 1);
+    }
+
+    return sentences.filter(({ isBookmarked }) => isBookmarked).length;
+  },
+
+  // 지울 때 물어봐야 할 글자가 있는지. 아직 확정되지 않은 꼬리도 들은 글자다
+  hasCaptionText(captions: VoiceNoteCaptions): boolean {
+    return captions.sentences.length > 0 || captions.provisional.length > 0;
+  },
+
+  getCaptionInterimText(captions: VoiceNoteCaptions): string {
+    return captions.provisional.at(-1)?.text ?? '';
+  },
+
+  toVoiceNoteCaptions({ sentences }: VoiceNote): VoiceNoteCaptions {
+    return {
+      sentences,
+      provisional: [],
+      bookmarksMs: sentences
+        .filter(({ isBookmarked }) => isBookmarked)
+        .map(({ startMs }) => startMs),
+    };
+  },
+};

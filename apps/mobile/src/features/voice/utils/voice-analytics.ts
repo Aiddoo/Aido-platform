@@ -36,9 +36,10 @@ export function toAnalyticsSource(source: VoicePlanSource) {
 /** 제목·내용 없이 개수만 센다 */
 export function summarizePlanForAnalytics(plan: VoicePlan) {
   return {
-    todo_count: plan.actions.filter(VoicePlanPolicy.isTodoAction).length,
+    todo_count: plan.actions.filter((action) => VoicePlanPolicy.isTodoAction(action)).length,
     memo_count: plan.actions.filter((action) => !VoicePlanPolicy.isTodoAction(action)).length,
-    duplicate_count: plan.actions.filter(VoicePlanPolicy.isDuplicateAction).length,
+    duplicate_count: plan.actions.filter((action) => VoicePlanPolicy.isDuplicateAction(action))
+      .length,
   };
 }
 

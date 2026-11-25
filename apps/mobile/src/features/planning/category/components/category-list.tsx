@@ -60,7 +60,7 @@ CategoryList.Reorder = function Reorder() {
     updatedAt: dataUpdatedAt,
     isPending: reorderCategory.isPending,
     getItemId: (category) => category.id,
-    isOptimistic: TodoCategoryPolicy.isOptimisticCategory,
+    isOptimistic: (category) => TodoCategoryPolicy.isOptimisticCategory(category),
     onReorder: ({ instruction: { movedId, targetId, position } }) => {
       reorderCategory.mutate({
         id: movedId,

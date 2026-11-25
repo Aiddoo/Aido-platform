@@ -62,7 +62,7 @@ export function toTodoImportSelection(values: TodoImportFormValues): TodoImportS
   });
   const uniqueTargets = uniqWith(
     chosen.map(({ target }) => target),
-    TodoImportTargetPolicy.isSameTarget,
+    (target, other) => TodoImportTargetPolicy.isSameTarget(target, other),
   ).map((target, index) => ({ target, targetKey: toTargetKey(target, index) }));
   const findTargetKey = (target: ImportTarget) =>
     uniqueTargets.find((unique) => TodoImportTargetPolicy.isSameTarget(unique.target, target))

@@ -17,7 +17,10 @@ import { useCheckoutRoute } from '@src/features/billing/subscription/hooks/use-c
 import { useOpenSubscriptionManagement } from '@src/features/billing/subscription/hooks/use-open-subscription-management';
 import { useSubscriptionParams } from '@src/features/billing/subscription/hooks/use-subscription-params';
 import { useSubscriptionReceipt } from '@src/features/billing/subscription/hooks/use-subscription-receipt';
-import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
+import {
+  selectHasFullAccess,
+  useGetEntitlementsQueryOptions,
+} from '@src/features/billing/subscription/queries/entitlement.queries';
 import { useGetOfferingsQueryOptions } from '@src/features/billing/subscription/queries/subscription.queries';
 import type { SubscriptionView } from '@src/features/billing/subscription/schemas/subscription-params.schema';
 import { toSubscriptionLoadFailure } from '@src/features/billing/subscription/utils/subscription-failure.view-model';
@@ -278,7 +281,7 @@ SubscriptionScreen.Loading = function Loading() {
   const [pathname] = useCheckoutRoute();
   const { data: hasFullAccess = false } = useQuery({
     ...useGetEntitlementsQueryOptions(),
-    select: EntitlementPolicy.hasFullAccess,
+    select: selectHasFullAccess,
   });
   const isPlansShape = view === 'plans' || pathname === '/paywall' || !hasFullAccess;
 

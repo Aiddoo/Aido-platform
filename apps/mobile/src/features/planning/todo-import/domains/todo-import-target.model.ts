@@ -117,7 +117,7 @@ export function placeImportTargets(
   });
   const uniqueTargets = uniqWith(
     assigned.map(({ target }) => target),
-    isSameTarget,
+    (target, other) => TodoImportTargetPolicy.isSameTarget(target, other),
   );
 
   return uniqueTargets.flatMap((target) => {
@@ -126,7 +126,7 @@ export function placeImportTargets(
       return [];
     }
     const importCount = sumBy(
-      assigned.filter((entry) => isSameTarget(entry.target, target)),
+      assigned.filter((entry) => TodoImportTargetPolicy.isSameTarget(entry.target, target)),
       ({ collection }) => collection.itemCount,
     );
     const roomLeft = TodoResourceLimitPolicy.calculateRoomLeft(limit);
@@ -167,7 +167,10 @@ export function findTargetPlacement(
   placements: readonly TargetPlacement[],
   target: ImportTarget,
 ): TargetPlacement | null {
-  return placements.find((placement) => isSameTarget(placement.target, target)) ?? null;
+  return (
+    placements.find((placement) => TodoImportTargetPolicy.isSameTarget(placement.target, target)) ??
+    null
+  );
 }
 
 /** 새로 만들 카테고리 수. 이름이 같은 새 카테고리는 서버가 하나로 만들어 한 번만 센다 */
@@ -178,44 +181,40 @@ export function countNewCategories(targets: readonly ImportTarget[]) {
   return new Set(names).size;
 }
 
-function isSameTarget(target: ImportTarget, other: ImportTarget) {
-  if (target.kind === 'NEW_CATEGORY' && other.kind === 'NEW_CATEGORY') {
-    return toComparableName(target.name) === toComparableName(other.name);
-  }
-  if (target.kind === 'EXISTING_CATEGORY' && other.kind === 'EXISTING_CATEGORY') {
-    return target.categoryId === other.categoryId;
-  }
-  return false;
-}
-
-/** 이름이 같은 카테고리(공백·대소문자 무시)가 있으면 새로 만들지 않고 그 카테고리에 넣는다 */
-function findSameNameCategory<TCategory extends TodoCategory>(
-  target: ImportTarget,
-  categories: readonly TCategory[],
-): TCategory | null {
-  if (target.kind !== 'NEW_CATEGORY') {
-    return null;
-  }
-  const name = toComparableName(target.name);
-  return (
-    categories.find(
-      (category) =>
-        !TodoCategoryPolicy.isOptimisticCategory(category) &&
-        toComparableName(category.name) === name,
-    ) ?? null
-  );
-}
-
-/** 고른 카테고리가 목록에서 사라졌다(가져오기 전에 삭제했다). 새 카테고리는 아직 없어 사라질 수 없다 */
-function isMissingCategory(target: ImportTarget, categories: readonly TodoCategory[]) {
-  return (
-    target.kind === 'EXISTING_CATEGORY' &&
-    TodoCategoryPolicy.findCategory(categories, target.categoryId) == null
-  );
-}
-
 export const TodoImportTargetPolicy = {
-  isSameTarget,
-  findSameNameCategory,
-  isMissingCategory,
-} as const;
+  isSameTarget(target: ImportTarget, other: ImportTarget): boolean {
+    if (target.kind === 'NEW_CATEGORY' && other.kind === 'NEW_CATEGORY') {
+      return toComparableName(target.name) === toComparableName(other.name);
+    }
+    if (target.kind === 'EXISTING_CATEGORY' && other.kind === 'EXISTING_CATEGORY') {
+      return target.categoryId === other.categoryId;
+    }
+    return false;
+  },
+
+  /** 이름이 같은 카테고리(공백·대소문자 무시)가 있으면 새로 만들지 않고 그 카테고리에 넣는다 */
+  findSameNameCategory<TCategory extends TodoCategory>(
+    target: ImportTarget,
+    categories: readonly TCategory[],
+  ): TCategory | null {
+    if (target.kind !== 'NEW_CATEGORY') {
+      return null;
+    }
+    const name = toComparableName(target.name);
+    return (
+      categories.find(
+        (category) =>
+          !TodoCategoryPolicy.isOptimisticCategory(category) &&
+          toComparableName(category.name) === name,
+      ) ?? null
+    );
+  },
+
+  /** 고른 카테고리가 목록에서 사라졌다(가져오기 전에 삭제했다). 새 카테고리는 아직 없어 사라질 수 없다 */
+  isMissingCategory(target: ImportTarget, categories: readonly TodoCategory[]): boolean {
+    return (
+      target.kind === 'EXISTING_CATEGORY' &&
+      TodoCategoryPolicy.findCategory(categories, target.categoryId) == null
+    );
+  },
+};

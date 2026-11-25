@@ -59,49 +59,43 @@ export const widgetNavigationCommandSchema = z.object({
 });
 export type WidgetNavigationCommand = z.infer<typeof widgetNavigationCommandSchema>;
 
-function isFresh(command: WidgetNavigationCommand, now: Instant): boolean {
-  const elapsedMs = diffMs(now, command.createdAt);
-  return 0 <= elapsedMs && elapsedMs < WIDGET_NAVIGATION_COMMAND_TTL_MS;
-}
-
-function isOwnedBy(command: WidgetNavigationCommand, userId: string): boolean {
-  return command.userId === userId;
-}
-
-function isSameCommand(first: WidgetNavigationCommand, second: WidgetNavigationCommand): boolean {
-  return (
-    first.id === second.id &&
-    first.uri === second.uri &&
-    first.userId === second.userId &&
-    first.createdAt === second.createdAt
-  );
-}
-
 /** 만료를 먼저 보고(계정을 몰라도 지운다), 계정을 모르면 기다리고, 다른 계정의 명령이면 지운다 */
 type WidgetCommandState = 'stale' | 'ownerUnknown' | 'foreign' | 'valid';
 
-function getCommandState(
-  command: WidgetNavigationCommand,
-  { userId, now }: { userId: string | null; now: Instant },
-): WidgetCommandState {
-  if (!isFresh(command, now)) {
-    return 'stale';
-  }
-  if (userId == null) {
-    return 'ownerUnknown';
-  }
-  return isOwnedBy(command, userId) ? 'valid' : 'foreign';
-}
-
-/** 계정 정보가 없는 위젯(로그인 전 화면)의 클릭은 할 일이나 작성 동작 없이 피드만 연다 */
-function canOpenWithoutOwner(destination: WidgetNavigationDestination): boolean {
-  return destination.kind === 'feed' && destination.action == null;
-}
-
 export const WidgetNavigationPolicy = {
-  isFresh,
-  isOwnedBy,
-  isSameCommand,
-  getCommandState,
-  canOpenWithoutOwner,
-} as const;
+  isFresh(command: WidgetNavigationCommand, now: Instant): boolean {
+    const elapsedMs = diffMs(now, command.createdAt);
+    return 0 <= elapsedMs && elapsedMs < WIDGET_NAVIGATION_COMMAND_TTL_MS;
+  },
+
+  isOwnedBy(command: WidgetNavigationCommand, userId: string): boolean {
+    return command.userId === userId;
+  },
+
+  isSameCommand(first: WidgetNavigationCommand, second: WidgetNavigationCommand): boolean {
+    return (
+      first.id === second.id &&
+      first.uri === second.uri &&
+      first.userId === second.userId &&
+      first.createdAt === second.createdAt
+    );
+  },
+
+  getCommandState(
+    command: WidgetNavigationCommand,
+    { userId, now }: { userId: string | null; now: Instant },
+  ): WidgetCommandState {
+    if (!this.isFresh(command, now)) {
+      return 'stale';
+    }
+    if (userId == null) {
+      return 'ownerUnknown';
+    }
+    return this.isOwnedBy(command, userId) ? 'valid' : 'foreign';
+  },
+
+  /** 계정 정보가 없는 위젯(로그인 전 화면)의 클릭은 할 일이나 작성 동작 없이 피드만 연다 */
+  canOpenWithoutOwner(destination: WidgetNavigationDestination): boolean {
+    return destination.kind === 'feed' && destination.action == null;
+  },
+};

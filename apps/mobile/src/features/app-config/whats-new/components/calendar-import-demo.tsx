@@ -60,7 +60,7 @@ export function CalendarChoiceDemo() {
   const [pressedSelection, setPressedSelection] = useState<Partial<Record<string, boolean>>>({});
 
   const defaultSelectedKeys = collections
-    .filter(TodoImportCollectionPolicy.isDefaultSelected)
+    .filter((collection) => TodoImportCollectionPolicy.isDefaultSelected(collection))
     .map((collection) => collection.collectionKey);
   const checkedCount = useDemoScript({
     frameCount: defaultSelectedKeys.length,
@@ -100,7 +100,9 @@ export function CalendarChoiceDemo() {
  */
 export function ImportDestinationDemo() {
   const { t } = useTranslation('whatsNew');
-  const collections = useDemoCollections().filter(TodoImportCollectionPolicy.isDefaultSelected);
+  const collections = useDemoCollections().filter((collection) =>
+    TodoImportCollectionPolicy.isDefaultSelected(collection),
+  );
   const [pressedIndex, setPressedIndex] = useState<number | null>(null);
 
   const switchedCount = useDemoScript({

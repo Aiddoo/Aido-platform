@@ -44,42 +44,6 @@ export function createVoiceStallWatch(
   return { lastTextAt: now, voicedMs: 0, lastSampleAt: null, isVoiceAudible: false, lastRestartAt };
 }
 
-export function withVolumeSample(
-  watch: VoiceStallWatch,
-  level: number,
-  now: number,
-): VoiceStallWatch {
-  const isVoiceAudible = level >= SPEAKING_VOLUME_THRESHOLD;
-  const gapMs = watch.lastSampleAt == null ? 0 : Math.max(0, now - watch.lastSampleAt);
-  return {
-    ...watch,
-    voicedMs:
-      watch.voicedMs + (isVoiceAudible && gapMs <= VOICE_STALL_RESTART.maxSampleGapMs ? gapMs : 0),
-    lastSampleAt: now,
-    isVoiceAudible,
-  };
-}
-
-export function withTextHeard(watch: VoiceStallWatch, now: number): VoiceStallWatch {
-  return { ...createVoiceStallWatch(now), lastSampleAt: watch.lastSampleAt };
-}
-
-// 파형은 움직이는데 글자가 오지 않으면 구간을 다시 연다. 앱이 stop을 부른 구간은 곧 end가 와서 열지 않는다
-export function shouldRestartStalledRecognizer(
-  { isStopRequested, stallWatch: watch }: VoiceRecognizerLink,
-  state: Pick<VoiceCaptureState, 'status'>,
-  now: number,
-): boolean {
-  return (
-    !isStopRequested &&
-    state.status === 'listening' &&
-    watch.isVoiceAudible &&
-    watch.voicedMs >= VOICE_STALL_RESTART.voicedMs &&
-    now - watch.lastTextAt >= VOICE_STALL_RESTART.textlessMs &&
-    (watch.lastRestartAt == null || now - watch.lastRestartAt >= VOICE_STALL_RESTART.minIntervalMs)
-  );
-}
-
 /** 인식기와 세션의 연결 상태. 화면에 보이지 않고 시각은 호출한 쪽이 넘긴다 */
 export interface VoiceRecognizerLink {
   /** 인식기에 시작을 맡긴 뒤 `end`를 아직 받지 못했다 */
@@ -126,72 +90,97 @@ function getQuickEndCount(
   return now - lastStartedAt < VOICE_RESTART_LOOP.windowMs ? quickEndCount + 1 : 0;
 }
 
-export function isRestartLooping(link: VoiceRecognizerLink, now: number): boolean {
-  return getQuickEndCount(link, now) >= VOICE_RESTART_LOOP.limit;
-}
-
-// 음량이 말소리만큼 크고, 글자가 아직 없거나 방금 왔으면 말하는 중이다. 글자가 끊긴 큰 소리는 주변 소리다
-export function isSpeaking(
-  { lastTextAt }: VoiceRecognizerLink,
-  level: number,
-  now: number,
-): boolean {
-  return (
-    level >= SPEAKING_VOLUME_THRESHOLD &&
-    (lastTextAt == null || now - lastTextAt < SPEECH_TEXT_GRACE_MS)
-  );
-}
-
-export function reduceRecognizerLink(
-  link: VoiceRecognizerLink,
-  event: VoiceRecognizerLinkEvent,
-): VoiceRecognizerLink {
-  return match(event)
-    .returnType<VoiceRecognizerLink>()
-    .with({ type: 'start-requested' }, ({ at }) => ({
-      ...link,
-      isRunning: true,
-      isStopRequested: false,
-      lastStartedAt: at,
-      quickEndCount: 0,
-      stallWatch: createVoiceStallWatch(at),
-    }))
-    .with({ type: 'segment-restarted' }, ({ at }) => ({
-      ...link,
-      isRunning: true,
-      isStopRequested: false,
-      lastStartedAt: at,
-      quickEndCount: getQuickEndCount(link, at),
-    }))
-    .with({ type: 'started' }, ({ at }) => ({
-      ...link,
-      stallWatch: createVoiceStallWatch(at, link.stallWatch.lastRestartAt),
-    }))
-    .with({ type: 'stop-requested' }, () => ({ ...link, isStopRequested: true }))
-    .with({ type: 'stall-restarted' }, ({ at }) => ({
-      ...link,
-      stallWatch: createVoiceStallWatch(at, at),
-    }))
-    .with({ type: 'ended' }, () => ({ ...link, isRunning: false, isStopRequested: false }))
-    .with({ type: 'text-heard' }, ({ transcript, at }) => ({
-      ...link,
-      lastTranscript: transcript,
-      lastTextAt: transcript === link.lastTranscript ? link.lastTextAt : at,
-      // stop 뒤에 온 마지막 결과는 살아 있다는 뜻이 아니다. 다시 연 간격을 지우지 않는다
-      stallWatch: link.isStopRequested ? link.stallWatch : withTextHeard(link.stallWatch, at),
-    }))
-    .with({ type: 'volume-sampled' }, ({ level, at }) => ({
-      ...link,
-      stallWatch: withVolumeSample(link.stallWatch, level, at),
-    }))
-    .exhaustive();
-}
-
 export const VoiceRecognizerLinkPolicy = {
-  isRestartLooping,
-  isSpeaking,
-  shouldRestartStalledRecognizer,
-  withVolumeSample,
-  withTextHeard,
-  reduceRecognizerLink,
-} as const;
+  withVolumeSample(watch: VoiceStallWatch, level: number, now: number): VoiceStallWatch {
+    const isVoiceAudible = level >= SPEAKING_VOLUME_THRESHOLD;
+    const gapMs = watch.lastSampleAt == null ? 0 : Math.max(0, now - watch.lastSampleAt);
+    return {
+      ...watch,
+      voicedMs:
+        watch.voicedMs +
+        (isVoiceAudible && gapMs <= VOICE_STALL_RESTART.maxSampleGapMs ? gapMs : 0),
+      lastSampleAt: now,
+      isVoiceAudible,
+    };
+  },
+
+  withTextHeard(watch: VoiceStallWatch, now: number): VoiceStallWatch {
+    return { ...createVoiceStallWatch(now), lastSampleAt: watch.lastSampleAt };
+  },
+
+  // 파형은 움직이는데 글자가 오지 않으면 구간을 다시 연다. 앱이 stop을 부른 구간은 곧 end가 와서 열지 않는다
+  shouldRestartStalledRecognizer(
+    { isStopRequested, stallWatch: watch }: VoiceRecognizerLink,
+    state: Pick<VoiceCaptureState, 'status'>,
+    now: number,
+  ): boolean {
+    return (
+      !isStopRequested &&
+      state.status === 'listening' &&
+      watch.isVoiceAudible &&
+      watch.voicedMs >= VOICE_STALL_RESTART.voicedMs &&
+      now - watch.lastTextAt >= VOICE_STALL_RESTART.textlessMs &&
+      (watch.lastRestartAt == null ||
+        now - watch.lastRestartAt >= VOICE_STALL_RESTART.minIntervalMs)
+    );
+  },
+
+  isRestartLooping(link: VoiceRecognizerLink, now: number): boolean {
+    return getQuickEndCount(link, now) >= VOICE_RESTART_LOOP.limit;
+  },
+
+  // 음량이 말소리만큼 크고, 글자가 아직 없거나 방금 왔으면 말하는 중이다. 글자가 끊긴 큰 소리는 주변 소리다
+  isSpeaking({ lastTextAt }: VoiceRecognizerLink, level: number, now: number): boolean {
+    return (
+      level >= SPEAKING_VOLUME_THRESHOLD &&
+      (lastTextAt == null || now - lastTextAt < SPEECH_TEXT_GRACE_MS)
+    );
+  },
+
+  reduceRecognizerLink(
+    link: VoiceRecognizerLink,
+    event: VoiceRecognizerLinkEvent,
+  ): VoiceRecognizerLink {
+    return match(event)
+      .returnType<VoiceRecognizerLink>()
+      .with({ type: 'start-requested' }, ({ at }) => ({
+        ...link,
+        isRunning: true,
+        isStopRequested: false,
+        lastStartedAt: at,
+        quickEndCount: 0,
+        stallWatch: createVoiceStallWatch(at),
+      }))
+      .with({ type: 'segment-restarted' }, ({ at }) => ({
+        ...link,
+        isRunning: true,
+        isStopRequested: false,
+        lastStartedAt: at,
+        quickEndCount: getQuickEndCount(link, at),
+      }))
+      .with({ type: 'started' }, ({ at }) => ({
+        ...link,
+        stallWatch: createVoiceStallWatch(at, link.stallWatch.lastRestartAt),
+      }))
+      .with({ type: 'stop-requested' }, () => ({ ...link, isStopRequested: true }))
+      .with({ type: 'stall-restarted' }, ({ at }) => ({
+        ...link,
+        stallWatch: createVoiceStallWatch(at, at),
+      }))
+      .with({ type: 'ended' }, () => ({ ...link, isRunning: false, isStopRequested: false }))
+      .with({ type: 'text-heard' }, ({ transcript, at }) => ({
+        ...link,
+        lastTranscript: transcript,
+        lastTextAt: transcript === link.lastTranscript ? link.lastTextAt : at,
+        // stop 뒤에 온 마지막 결과는 살아 있다는 뜻이 아니다. 다시 연 간격을 지우지 않는다
+        stallWatch: link.isStopRequested
+          ? link.stallWatch
+          : this.withTextHeard(link.stallWatch, at),
+      }))
+      .with({ type: 'volume-sampled' }, ({ level, at }) => ({
+        ...link,
+        stallWatch: this.withVolumeSample(link.stallWatch, level, at),
+      }))
+      .exhaustive();
+  },
+};

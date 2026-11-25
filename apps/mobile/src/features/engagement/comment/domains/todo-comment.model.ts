@@ -95,116 +95,8 @@ export type TodoCommentLikeResult = z.infer<typeof todoCommentLikeResultSchema>;
 
 type TodoCommentDisplayState = 'active' | 'deleted' | 'blockedAuthor';
 
-export function getDisplayState(comment: TodoComment): TodoCommentDisplayState {
-  return match(comment)
-    .returnType<TodoCommentDisplayState>()
-    .with({ isAuthorBlocked: true }, () => 'blockedAuthor')
-    .with({ isDeleted: true }, () => 'deleted')
-    .otherwise(() => 'active');
-}
-
 function isActiveComment(comment: TodoComment) {
-  return getDisplayState(comment) === 'active';
-}
-
-export function isReply(comment: TodoComment) {
-  return comment.threadCommentId != null;
-}
-
-export function canLikeComment(comment: TodoComment) {
-  return isActiveComment(comment);
-}
-
-export function canReplyToComment(comment: TodoComment) {
-  return isActiveComment(comment) && comment.viewer.canReply;
-}
-
-export function canEditComment(comment: TodoComment) {
-  return isActiveComment(comment) && comment.viewer.canEdit;
-}
-
-export function canDeleteComment(comment: TodoComment) {
-  return isActiveComment(comment) && comment.viewer.canDelete;
-}
-
-// 내 할 일에 달린 남의 글. 수정은 작성자만 할 수 있어 지울 수만 있으면 남의 글이다
-export function canDeleteOnlyAsTodoOwner(comment: TodoComment) {
-  return canDeleteComment(comment) && !comment.viewer.canEdit;
-}
-
-export function canCopyComment(comment: TodoComment) {
-  return isActiveComment(comment) && comment.content != null;
-}
-
-export function canReportComment(comment: TodoComment) {
-  return isActiveComment(comment) && comment.viewer.canReport;
-}
-
-export function canBlockCommentAuthor(comment: TodoComment) {
-  return isActiveComment(comment) && comment.author != null && comment.viewer.canBlock;
-}
-
-export function hasCommentActions(comment: TodoComment) {
-  return (
-    canEditComment(comment) ||
-    canCopyComment(comment) ||
-    canDeleteComment(comment) ||
-    canReportComment(comment) ||
-    canBlockCommentAuthor(comment)
-  );
-}
-
-// 답글이 남은 댓글은 지워도 "삭제된 댓글이에요"로 남는다
-export function isTombstonedOnDelete(comment: TodoComment) {
-  return !isReply(comment) && comment.replyCount > 0;
-}
-
-export function getHiddenReplyCount(thread: TodoCommentThread, loadedCount: number) {
-  return Math.max(0, thread.replySummary.totalCount - loadedCount);
-}
-
-// 접힌 묶음은 대표 답글 하나를 보이므로, 대표 답글이 없으면 답글 전체가 숨은 수다
-export function getCollapsedHiddenReplyCount(thread: TodoCommentThread) {
-  return thread.previewReply == null
-    ? thread.replySummary.totalCount
-    : thread.replySummary.hiddenCount;
-}
-
-export function hasRepliesToShow(thread: TodoCommentThread) {
-  return thread.replySummary.totalCount > 0;
-}
-
-export function flattenThreads(pages: readonly TodoCommentThreadPage[]) {
-  return uniqBy(selectPageItems({ pages }), (thread) => thread.comment.id);
-}
-
-// 방금 쓴 답글은 마지막 페이지 끝에 먼저 붙고, 남은 페이지를 받으면 그 뒤 위치(작성 순)로 옮겨 간다
-export function flattenReplies(pages: readonly TodoCommentReplyPage[]) {
-  return uniqBy(selectPageItems({ pages }).toReversed(), (reply) => reply.id).toReversed();
-}
-
-export function withLiked(comment: TodoComment, isLiked: boolean): TodoComment {
-  if (comment.viewer.isLiked === isLiked) {
-    return comment;
-  }
-
-  return {
-    ...comment,
-    likeCount: Math.max(0, comment.likeCount + (isLiked ? 1 : -1)),
-    viewer: { ...comment.viewer, isLiked },
-  };
-}
-
-export function withLikeResult(comment: TodoComment, result: TodoCommentLikeResult): TodoComment {
-  return {
-    ...comment,
-    likeCount: result.likeCount,
-    viewer: { ...comment.viewer, isLiked: result.isLiked },
-  };
-}
-
-export function withContentEdited(comment: TodoComment, content: string): TodoComment {
-  return { ...comment, content, isEdited: true };
+  return TodoCommentPolicy.getDisplayState(comment) === 'active';
 }
 
 function withReplyCount(thread: TodoCommentThread, totalCount: number): TodoCommentThread {
@@ -220,20 +112,6 @@ function withReplyCount(thread: TodoCommentThread, totalCount: number): TodoComm
       hiddenCount: Math.max(0, visibleCount - previewCount),
     },
   };
-}
-
-// 새 답글은 묶음 수만 늘리고, 대표 답글이 없던 묶음은 그 답글을 대표로 보인다
-export function withReplyAdded(
-  thread: TodoCommentThread,
-  replies: readonly TodoComment[],
-): TodoCommentThread {
-  const [firstReply] = replies;
-  const withPreview =
-    thread.previewReply == null && firstReply != null
-      ? { ...thread, previewReply: firstReply }
-      : thread;
-
-  return withReplyCount(withPreview, thread.replySummary.totalCount + replies.length);
 }
 
 function toTombstone(comment: TodoComment): TodoComment {
@@ -255,57 +133,152 @@ function toTombstone(comment: TodoComment): TodoComment {
   };
 }
 
-// 답글이 남은 댓글은 tombstone이 되고, 답글 없는 tombstone 댓글은 묶음째 사라져 null이다
-export function withCommentRemoved(
-  thread: TodoCommentThread,
-  removed: TodoComment,
-): TodoCommentThread | null {
-  if (thread.comment.id === removed.id) {
-    return hasRepliesToShow(thread) ? { ...thread, comment: toTombstone(thread.comment) } : null;
-  }
-
-  if (removed.threadCommentId !== thread.comment.id) {
-    return thread;
-  }
-
-  const withoutPreview =
-    thread.previewReply?.id === removed.id ? { ...thread, previewReply: null } : thread;
-  const next = withReplyCount(withoutPreview, thread.replySummary.totalCount - 1);
-
-  return next.comment.isDeleted && next.replySummary.totalCount === 0 ? null : next;
-}
-
-export function withRepliesRemoved(replies: readonly TodoComment[], commentId: string) {
-  return replies.filter((reply) => reply.id !== commentId);
-}
-
-export function findCommentInThread(thread: TodoCommentThread, commentId: string) {
-  return [thread.comment, thread.previewReply].find((comment) => comment?.id === commentId) ?? null;
-}
-
 export const TodoCommentPolicy = {
-  getDisplayState,
-  isReply,
-  canLikeComment,
-  canReplyToComment,
-  canEditComment,
-  canDeleteComment,
-  canDeleteOnlyAsTodoOwner,
-  canCopyComment,
-  canReportComment,
-  canBlockCommentAuthor,
-  hasCommentActions,
-  isTombstonedOnDelete,
-  getHiddenReplyCount,
-  getCollapsedHiddenReplyCount,
-  hasRepliesToShow,
-  flattenThreads,
-  flattenReplies,
-  withLiked,
-  withLikeResult,
-  withContentEdited,
-  withReplyAdded,
-  withCommentRemoved,
-  withRepliesRemoved,
-  findCommentInThread,
-} as const;
+  getDisplayState(comment: TodoComment): TodoCommentDisplayState {
+    return match(comment)
+      .returnType<TodoCommentDisplayState>()
+      .with({ isAuthorBlocked: true }, () => 'blockedAuthor')
+      .with({ isDeleted: true }, () => 'deleted')
+      .otherwise(() => 'active');
+  },
+
+  isReply(comment: TodoComment): boolean {
+    return comment.threadCommentId != null;
+  },
+
+  canLikeComment(comment: TodoComment): boolean {
+    return isActiveComment(comment);
+  },
+
+  canReplyToComment(comment: TodoComment): boolean {
+    return isActiveComment(comment) && comment.viewer.canReply;
+  },
+
+  canEditComment(comment: TodoComment): boolean {
+    return isActiveComment(comment) && comment.viewer.canEdit;
+  },
+
+  canDeleteComment(comment: TodoComment): boolean {
+    return isActiveComment(comment) && comment.viewer.canDelete;
+  },
+
+  // 내 할 일에 달린 남의 글. 수정은 작성자만 할 수 있어 지울 수만 있으면 남의 글이다
+  canDeleteOnlyAsTodoOwner(comment: TodoComment): boolean {
+    return this.canDeleteComment(comment) && !comment.viewer.canEdit;
+  },
+
+  canCopyComment(comment: TodoComment): boolean {
+    return isActiveComment(comment) && comment.content != null;
+  },
+
+  canReportComment(comment: TodoComment): boolean {
+    return isActiveComment(comment) && comment.viewer.canReport;
+  },
+
+  canBlockCommentAuthor(comment: TodoComment): boolean {
+    return isActiveComment(comment) && comment.author != null && comment.viewer.canBlock;
+  },
+
+  hasCommentActions(comment: TodoComment): boolean {
+    return (
+      this.canEditComment(comment) ||
+      this.canCopyComment(comment) ||
+      this.canDeleteComment(comment) ||
+      this.canReportComment(comment) ||
+      this.canBlockCommentAuthor(comment)
+    );
+  },
+
+  // 답글이 남은 댓글은 지워도 "삭제된 댓글이에요"로 남는다
+  isTombstonedOnDelete(comment: TodoComment): boolean {
+    return !this.isReply(comment) && comment.replyCount > 0;
+  },
+
+  getHiddenReplyCount(thread: TodoCommentThread, loadedCount: number): number {
+    return Math.max(0, thread.replySummary.totalCount - loadedCount);
+  },
+
+  // 접힌 묶음은 대표 답글 하나를 보이므로, 대표 답글이 없으면 답글 전체가 숨은 수다
+  getCollapsedHiddenReplyCount(thread: TodoCommentThread): number {
+    return thread.previewReply == null
+      ? thread.replySummary.totalCount
+      : thread.replySummary.hiddenCount;
+  },
+
+  hasRepliesToShow(thread: TodoCommentThread): boolean {
+    return thread.replySummary.totalCount > 0;
+  },
+
+  flattenThreads(pages: readonly TodoCommentThreadPage[]): TodoCommentThread[] {
+    return uniqBy(selectPageItems({ pages }), (thread) => thread.comment.id);
+  },
+
+  // 방금 쓴 답글은 마지막 페이지 끝에 먼저 붙고, 남은 페이지를 받으면 그 뒤 위치(작성 순)로 옮겨 간다
+  flattenReplies(pages: readonly TodoCommentReplyPage[]): TodoComment[] {
+    return uniqBy(selectPageItems({ pages }).toReversed(), (reply) => reply.id).toReversed();
+  },
+
+  withLiked(comment: TodoComment, isLiked: boolean): TodoComment {
+    if (comment.viewer.isLiked === isLiked) {
+      return comment;
+    }
+
+    return {
+      ...comment,
+      likeCount: Math.max(0, comment.likeCount + (isLiked ? 1 : -1)),
+      viewer: { ...comment.viewer, isLiked },
+    };
+  },
+
+  withLikeResult(comment: TodoComment, result: TodoCommentLikeResult): TodoComment {
+    return {
+      ...comment,
+      likeCount: result.likeCount,
+      viewer: { ...comment.viewer, isLiked: result.isLiked },
+    };
+  },
+
+  withContentEdited(comment: TodoComment, content: string): TodoComment {
+    return { ...comment, content, isEdited: true };
+  },
+
+  // 새 답글은 묶음 수만 늘리고, 대표 답글이 없던 묶음은 그 답글을 대표로 보인다
+  withReplyAdded(thread: TodoCommentThread, replies: readonly TodoComment[]): TodoCommentThread {
+    const [firstReply] = replies;
+    const withPreview =
+      thread.previewReply == null && firstReply != null
+        ? { ...thread, previewReply: firstReply }
+        : thread;
+
+    return withReplyCount(withPreview, thread.replySummary.totalCount + replies.length);
+  },
+
+  // 답글이 남은 댓글은 tombstone이 되고, 답글 없는 tombstone 댓글은 묶음째 사라져 null이다
+  withCommentRemoved(thread: TodoCommentThread, removed: TodoComment): TodoCommentThread | null {
+    if (thread.comment.id === removed.id) {
+      return this.hasRepliesToShow(thread)
+        ? { ...thread, comment: toTombstone(thread.comment) }
+        : null;
+    }
+
+    if (removed.threadCommentId !== thread.comment.id) {
+      return thread;
+    }
+
+    const withoutPreview =
+      thread.previewReply?.id === removed.id ? { ...thread, previewReply: null } : thread;
+    const next = withReplyCount(withoutPreview, thread.replySummary.totalCount - 1);
+
+    return next.comment.isDeleted && next.replySummary.totalCount === 0 ? null : next;
+  },
+
+  withRepliesRemoved(replies: readonly TodoComment[], commentId: string): TodoComment[] {
+    return replies.filter((reply) => reply.id !== commentId);
+  },
+
+  findCommentInThread(thread: TodoCommentThread, commentId: string): TodoComment | null {
+    return (
+      [thread.comment, thread.previewReply].find((comment) => comment?.id === commentId) ?? null
+    );
+  },
+};

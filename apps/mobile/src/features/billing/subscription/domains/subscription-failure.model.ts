@@ -35,13 +35,6 @@ function getSubscriptionErrorCause(error: SubscriptionError): SubscriptionFailur
     .exhaustive();
 }
 
-function getFailureCause(error: unknown): SubscriptionFailureCause {
-  return match(error)
-    .with(P.instanceOf(SubscriptionError), getSubscriptionErrorCause)
-    .with(P.instanceOf(NetworkError), P.instanceOf(TimeoutError), () => 'network' as const)
-    .otherwise(() => 'server' as const);
-}
-
 export interface StoreUnavailable {
   kind: 'setup' | 'temporary';
   diagnosticCode: string;
@@ -51,20 +44,6 @@ export type OfferingsAvailability =
   | { status: 'available'; offering: SubscriptionOffering }
   | { status: 'unavailable'; unavailable: StoreUnavailable };
 
-/** 예상한 상태라 오류 경계로 보내지 않고 화면이 안내한다. setup은 설정 문제, temporary는 스토어 일시 장애다 */
-function findStoreUnavailableKind(error: unknown): StoreUnavailable['kind'] | null {
-  return match(error)
-    .with(
-      P.instanceOf(SubscriptionError).and({ code: SUBSCRIPTION_ERROR_CODE.STORE_UNAVAILABLE }),
-      () => 'setup' as const,
-    )
-    .with(
-      P.instanceOf(SubscriptionError).and({ code: SUBSCRIPTION_ERROR_CODE.STORE_PROBLEM }),
-      () => 'temporary' as const,
-    )
-    .otherwise(() => null);
-}
-
 /** 스토어를 쓸 수 없는 상태는 화면이 안내하고, 그 밖의 실패는 오류 경계로 던진다 */
 export function toOfferingsAvailability(
   result: Result<SubscriptionOffering, SubscriptionError>,
@@ -73,7 +52,7 @@ export function toOfferingsAvailability(
     return { status: 'available', offering: result.value };
   }
 
-  const kind = findStoreUnavailableKind(result.error);
+  const kind = SubscriptionFailurePolicy.findStoreUnavailableKind(result.error);
   if (kind == null) {
     throw result.error;
   }
@@ -84,6 +63,24 @@ export function toOfferingsAvailability(
 }
 
 export const SubscriptionFailurePolicy = {
-  getFailureCause,
-  findStoreUnavailableKind,
-} as const;
+  getFailureCause(error: unknown): SubscriptionFailureCause {
+    return match(error)
+      .with(P.instanceOf(SubscriptionError), getSubscriptionErrorCause)
+      .with(P.instanceOf(NetworkError), P.instanceOf(TimeoutError), () => 'network' as const)
+      .otherwise(() => 'server' as const);
+  },
+
+  /** 예상한 상태라 오류 경계로 보내지 않고 화면이 안내한다. setup은 설정 문제, temporary는 스토어 일시 장애다 */
+  findStoreUnavailableKind(error: unknown): StoreUnavailable['kind'] | null {
+    return match(error)
+      .with(
+        P.instanceOf(SubscriptionError).and({ code: SUBSCRIPTION_ERROR_CODE.STORE_UNAVAILABLE }),
+        () => 'setup' as const,
+      )
+      .with(
+        P.instanceOf(SubscriptionError).and({ code: SUBSCRIPTION_ERROR_CODE.STORE_PROBLEM }),
+        () => 'temporary' as const,
+      )
+      .otherwise(() => null);
+  },
+};

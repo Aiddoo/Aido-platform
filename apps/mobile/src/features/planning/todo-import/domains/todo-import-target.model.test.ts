@@ -296,24 +296,6 @@ describe('findTargetPlacement', () => {
   });
 });
 
-describe('TodoImportTargetPolicy.isMissingCategory', () => {
-  it.each([
-    ['목록에 있는 카테고리는 그대로다', { kind: 'EXISTING_CATEGORY', categoryId: 7 }, false],
-    ['가져오기 전에 삭제한 카테고리다', { kind: 'EXISTING_CATEGORY', categoryId: 99 }, true],
-    [
-      '새 카테고리는 사라질 수 없다',
-      { kind: 'NEW_CATEGORY', name: '학교', color: '#339AF0' },
-      false,
-    ],
-  ] as const)('%s', (_case, target, expected) => {
-    // When
-    const isMissing = TodoImportTargetPolicy.isMissingCategory(target, [DEFAULT, WORK]);
-
-    // Then
-    expect(isMissing).toBe(expected);
-  });
-});
-
 describe('countNewCategories', () => {
   it('이름이 같은 새 카테고리는 하나로 센다', () => {
     // When
@@ -329,26 +311,50 @@ describe('countNewCategories', () => {
   });
 });
 
-describe('TodoImportTargetPolicy.findSameNameCategory', () => {
-  const pending = createTodoCategoryWithCount({ id: -1, name: '학교' });
+describe('TodoImportTargetPolicy', () => {
+  describe('isMissingCategory', () => {
+    it.each([
+      ['목록에 있는 카테고리는 그대로다', { kind: 'EXISTING_CATEGORY', categoryId: 7 }, false],
+      ['가져오기 전에 삭제한 카테고리다', { kind: 'EXISTING_CATEGORY', categoryId: 99 }, true],
+      [
+        '새 카테고리는 사라질 수 없다',
+        { kind: 'NEW_CATEGORY', name: '학교', color: '#339AF0' },
+        false,
+      ],
+    ] as const)('%s', (_case, target, expected) => {
+      // When
+      const isMissing = TodoImportTargetPolicy.isMissingCategory(target, [DEFAULT, WORK]);
 
-  it.each([
-    [
-      '새 카테고리 이름이 같으면(공백·대소문자 무시) 그 카테고리다',
-      { kind: 'NEW_CATEGORY', name: '업무', color: '#339AF0' },
-      WORK.id,
-    ],
-    [
-      '만드는 중인 카테고리는 견주지 않는다',
-      { kind: 'NEW_CATEGORY', name: '학교', color: '#339AF0' },
-      null,
-    ],
-    ['이미 있는 카테고리를 고른 대상은 없다', { kind: 'EXISTING_CATEGORY', categoryId: 7 }, null],
-  ] as const)('%s', (_case, target, expectedCategoryId) => {
-    // When
-    const category = TodoImportTargetPolicy.findSameNameCategory(target, [DEFAULT, WORK, pending]);
+      // Then
+      expect(isMissing).toBe(expected);
+    });
+  });
 
-    // Then
-    expect(category?.id ?? null).toBe(expectedCategoryId);
+  describe('findSameNameCategory', () => {
+    const pending = createTodoCategoryWithCount({ id: -1, name: '학교' });
+
+    it.each([
+      [
+        '새 카테고리 이름이 같으면(공백·대소문자 무시) 그 카테고리다',
+        { kind: 'NEW_CATEGORY', name: '업무', color: '#339AF0' },
+        WORK.id,
+      ],
+      [
+        '만드는 중인 카테고리는 견주지 않는다',
+        { kind: 'NEW_CATEGORY', name: '학교', color: '#339AF0' },
+        null,
+      ],
+      ['이미 있는 카테고리를 고른 대상은 없다', { kind: 'EXISTING_CATEGORY', categoryId: 7 }, null],
+    ] as const)('%s', (_case, target, expectedCategoryId) => {
+      // When
+      const category = TodoImportTargetPolicy.findSameNameCategory(target, [
+        DEFAULT,
+        WORK,
+        pending,
+      ]);
+
+      // Then
+      expect(category?.id ?? null).toBe(expectedCategoryId);
+    });
   });
 });

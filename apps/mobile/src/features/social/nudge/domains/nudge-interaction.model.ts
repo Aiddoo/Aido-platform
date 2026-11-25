@@ -64,71 +64,66 @@ interface NudgeThanksSummary {
   pendingRecipientCount: number;
 }
 
-export function getNudgeInteractionStatus(nudge: NudgeInteraction): NudgeInteractionStatus {
-  return match({
-    isAvailable: nudge.isAvailable,
-    isTodoCompleted: nudge.isTodoCompleted,
-    hasReply: nudge.replyKind != null,
-    isThanked: nudge.thankedAt != null,
-  })
-    .returnType<NudgeInteractionStatus>()
-    .with({ isAvailable: false }, () => 'UNAVAILABLE')
-    .with({ isThanked: true }, () => 'THANKED')
-    .with({ isTodoCompleted: true }, () => 'COMPLETED')
-    .with({ hasReply: true }, () => 'REPLIED')
-    .with({ hasReply: false }, () => 'WAITING')
-    .exhaustive();
-}
-
-export function isReceivedBy(nudge: NudgeInteraction, userId: string): boolean {
-  return nudge.receiverId === userId;
-}
-
-export function hasThankableRecipients(preview: NudgeThanksPreview): boolean {
-  return preview.throughNudgeId != null && preview.items.length > 0;
-}
-
-export function getThanksSummary(preview: NudgeThanksPreview): NudgeThanksSummary {
-  const pendingRecipientCount = hasThankableRecipients(preview) ? preview.totalRecipients : 0;
-  const state = match({
-    hasPending: pendingRecipientCount > 0,
-    hasThanked: preview.thankedRecipientCount > 0,
-  })
-    .returnType<NudgeThanksSummaryState>()
-    .with({ hasPending: true, hasThanked: true }, () => 'SENT_WITH_PENDING')
-    .with({ hasPending: true, hasThanked: false }, () => 'PENDING')
-    .with({ hasPending: false, hasThanked: true }, () => 'SENT')
-    .with({ hasPending: false, hasThanked: false }, () => 'NONE')
-    .exhaustive();
-  return { state, pendingRecipientCount };
-}
-
 type NudgeResponseStage = 'unavailable' | 'reply' | 'thanksPrompt' | 'thanked' | 'status';
 
-// 받은 사람은 끝나지 않은 할 일이면 답장이 먼저고, 완료된 뒤에는 고맙다고 했는지로 가른다
-export function getResponseStage(nudge: NudgeInteraction, userId: string): NudgeResponseStage {
-  const status = getNudgeInteractionStatus(nudge);
-  if (status === 'UNAVAILABLE') {
-    return 'unavailable';
-  }
-  const isReceived = isReceivedBy(nudge, userId);
-  if (isReceived && !nudge.isTodoCompleted) {
-    return 'reply';
-  }
-  if (isReceived && nudge.isTodoCompleted) {
-    return status === 'THANKED' ? 'thanked' : 'thanksPrompt';
-  }
-
-  return status === 'THANKED' ? 'thanked' : 'status';
-}
-
 export const NudgeInteractionPolicy = {
-  getNudgeInteractionStatus,
-  getResponseStage,
-  isReceivedBy,
-} as const;
+  getNudgeInteractionStatus(nudge: NudgeInteraction): NudgeInteractionStatus {
+    return match({
+      isAvailable: nudge.isAvailable,
+      isTodoCompleted: nudge.isTodoCompleted,
+      hasReply: nudge.replyKind != null,
+      isThanked: nudge.thankedAt != null,
+    })
+      .returnType<NudgeInteractionStatus>()
+      .with({ isAvailable: false }, () => 'UNAVAILABLE')
+      .with({ isThanked: true }, () => 'THANKED')
+      .with({ isTodoCompleted: true }, () => 'COMPLETED')
+      .with({ hasReply: true }, () => 'REPLIED')
+      .with({ hasReply: false }, () => 'WAITING')
+      .exhaustive();
+  },
+
+  isReceivedBy(nudge: NudgeInteraction, userId: string): boolean {
+    return nudge.receiverId === userId;
+  },
+
+  // 받은 사람은 끝나지 않은 할 일이면 답장이 먼저고, 완료된 뒤에는 고맙다고 했는지로 가른다
+  getResponseStage(nudge: NudgeInteraction, userId: string): NudgeResponseStage {
+    const status = this.getNudgeInteractionStatus(nudge);
+    if (status === 'UNAVAILABLE') {
+      return 'unavailable';
+    }
+    const isReceived = this.isReceivedBy(nudge, userId);
+    if (isReceived && !nudge.isTodoCompleted) {
+      return 'reply';
+    }
+    if (isReceived && nudge.isTodoCompleted) {
+      return status === 'THANKED' ? 'thanked' : 'thanksPrompt';
+    }
+
+    return status === 'THANKED' ? 'thanked' : 'status';
+  },
+};
 
 export const NudgeThanksPreviewPolicy = {
-  hasThankableRecipients,
-  getThanksSummary,
-} as const;
+  hasThankableRecipients(preview: NudgeThanksPreview): boolean {
+    return preview.throughNudgeId != null && preview.items.length > 0;
+  },
+
+  getThanksSummary(preview: NudgeThanksPreview): NudgeThanksSummary {
+    const pendingRecipientCount = this.hasThankableRecipients(preview)
+      ? preview.totalRecipients
+      : 0;
+    const state = match({
+      hasPending: pendingRecipientCount > 0,
+      hasThanked: preview.thankedRecipientCount > 0,
+    })
+      .returnType<NudgeThanksSummaryState>()
+      .with({ hasPending: true, hasThanked: true }, () => 'SENT_WITH_PENDING')
+      .with({ hasPending: true, hasThanked: false }, () => 'PENDING')
+      .with({ hasPending: false, hasThanked: true }, () => 'SENT')
+      .with({ hasPending: false, hasThanked: false }, () => 'NONE')
+      .exhaustive();
+    return { state, pendingRecipientCount };
+  },
+};

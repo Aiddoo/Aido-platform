@@ -15,6 +15,30 @@ export function unwrap(node) {
   return current;
 }
 
+const POLICY_NAME = /^[A-Z][A-Za-z0-9]*Policy$/u;
+
+export function isPolicyName(name) {
+  return name != null && POLICY_NAME.test(name);
+}
+
+/** `const XPolicy = { … }`의 객체 리터럴이면 그 Policy 이름. `as const`·`satisfies`로 감싼 것도 본다 */
+export function getPolicyNameOfObject(objectNode) {
+  let current = objectNode;
+  while (WRAPPER_TYPES.has(current.parent?.type) && current.parent.expression === current) {
+    current = current.parent;
+  }
+  const declarator = current.parent;
+  if (
+    declarator?.type !== 'VariableDeclarator' ||
+    declarator.init !== current ||
+    declarator.id.type !== 'Identifier' ||
+    !isPolicyName(declarator.id.name)
+  ) {
+    return null;
+  }
+  return declarator.id.name;
+}
+
 /** 식별자·문자열 키의 이름. 계산된 키는 null */
 export function getKeyName(node) {
   if (node == null || node.computed === true) {

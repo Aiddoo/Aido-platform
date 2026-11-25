@@ -22,11 +22,9 @@ export const pendingRedemptionSchema = z.strictObject({
 });
 export type PendingRedemption = z.infer<typeof pendingRedemptionSchema>;
 
-function isFresh(pending: PendingRedemption, now: Instant) {
-  return diffMs(now, pending.savedAt) < INVITE_REDEEM_WINDOW_DAYS * DAY_MS;
-}
-
 /** 기기에 저장해 둔 수락 대기 초대 */
 export const PendingRedemptionPolicy = {
-  isFresh,
-} as const;
+  isFresh(pending: PendingRedemption, now: Instant): boolean {
+    return diffMs(now, pending.savedAt) < INVITE_REDEEM_WINDOW_DAYS * DAY_MS;
+  },
+};

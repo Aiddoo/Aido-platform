@@ -114,7 +114,10 @@ function selectInvitedFriendSummary(
   const totalCount = selectInvitedFriendTotalCount(invitedFriendPages);
   const invitedFriends = orderBy(
     selectPageItems(invitedFriendPages),
-    [InvitedFriendPolicy.orderByWaitingFirst, InvitedFriendPolicy.orderByJoinedAtDesc],
+    [
+      (friend) => InvitedFriendPolicy.orderByWaitingFirst(friend),
+      (friend) => InvitedFriendPolicy.orderByJoinedAtDesc(friend),
+    ],
     ['asc', 'asc'],
   );
 

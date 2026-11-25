@@ -39,24 +39,6 @@ export interface BriefingTodo {
   subTodoProgress: BriefingSubTodoProgress;
 }
 
-/** 여러 날 할 일은 시작일이 어제여도 오늘 목록에 있어 보고 있는 날짜 + 벽시계 + 기기 시간대로 시각을 만든다 */
-function toBriefingTodo(
-  todo: Todo,
-  { date, timezone }: { date: DateKey; timezone: string },
-): BriefingTodo {
-  const localTime = TodoPolicy.findLocalTime(todo, timezone);
-  return {
-    id: todo.id,
-    title: todo.title,
-    localTime,
-    scheduledAt: localTime == null ? null : toZonedInstant({ date, time: localTime, timezone }),
-    completed: todo.completed,
-    subTodoProgress: SubTodoPolicy.hasSubTodos(todo.subTodos)
-      ? SubTodoPolicy.getSubTodoStats(todo.subTodos)
-      : null,
-  };
-}
-
 export interface ForecastTodo {
   todoId: number;
   title: string;
@@ -106,50 +88,6 @@ function getHourIndexAt(hourly: readonly HourlyForecastEntry[], at: Instant): nu
   });
 }
 
-/** 지금 이후로 시각이 정해진 할 일을 그 시각의 예보와 묶는다. 완료 여부는 남기고, 예보 범위 밖이면 뺀다. */
-function getForecastTodos(
-  hourly: readonly HourlyForecastEntry[],
-  todos: readonly BriefingTodo[],
-  now: Instant,
-): ForecastTodo[] {
-  return todos.flatMap((todo) => {
-    const { localTime, scheduledAt } = todo;
-    if (localTime == null || scheduledAt == null || toEpochMs(scheduledAt) < toEpochMs(now)) {
-      return [];
-    }
-    const hour = hourly[getHourIndexAt(hourly, scheduledAt)];
-    if (hour == null) {
-      return [];
-    }
-    return [
-      {
-        todoId: todo.id,
-        title: todo.title,
-        localTime,
-        scheduledAt,
-        completed: todo.completed,
-        subTodoProgress: todo.subTodoProgress,
-        hour,
-      },
-    ];
-  });
-}
-
-/** 서버가 고른 순서(시각 순)대로 오늘 목록의 할 일과 묶는다. 목록에서 사라졌거나 이미 지난 할 일은 뺀다. */
-function getAffectedTodos(
-  briefing: WeatherReportBriefing,
-  forecastTodos: readonly ForecastTodo[],
-): AffectedTodo[] {
-  const forecastTodosById = keyBy(forecastTodos, (todo) => todo.todoId);
-  const optionsByTodoId = keyBy(briefing.rescheduleOptions, (entry) => entry.todoId);
-  return briefing.affectedTodoIds.flatMap((todoId) => {
-    const todo = forecastTodosById[todoId];
-    return todo == null
-      ? []
-      : [{ ...todo, rescheduleOptions: optionsByTodoId[todoId]?.options ?? [] }];
-  });
-}
-
 function isOvercastNow(hourly: readonly HourlyForecastEntry[], now: Instant): boolean {
   const current = hourly[getHourIndexAt(hourly, now)];
   return current != null && OVERCAST_CONDITIONS.has(current.condition);
@@ -174,8 +112,8 @@ export function findWeatherBriefing(
   if (briefing == null || headline == null) {
     return null;
   }
-  const forecastTodos = getForecastTodos(hourly, todos, now);
-  const affectedTodos = getAffectedTodos(briefing, forecastTodos);
+  const forecastTodos = WeatherBriefingPolicy.getForecastTodos(hourly, todos, now);
+  const affectedTodos = WeatherBriefingPolicy.getAffectedTodos(briefing, forecastTodos);
   const isOvercast = isOvercastNow(hourly, now);
 
   return match(headline)
@@ -224,21 +162,6 @@ export function findWeatherBriefing(
     .exhaustive();
 }
 
-/** 추천 시간대 안에서 지금 이후 첫 시간별 예보의 시작 시각. 30분 단위 시간대도 예보 칸에 맞는다. 모두 지났으면 제안하지 않는다. */
-function findSuggestedStartAt(
-  range: HourWindow,
-  hourly: readonly HourlyForecastEntry[],
-  now: Instant,
-): Instant | null {
-  const next = hourly.find(
-    (hour) =>
-      toEpochMs(now) <= toEpochMs(hour.startsAt) &&
-      toEpochMs(range.startsAt) <= toEpochMs(hour.startsAt) &&
-      toEpochMs(hour.startsAt) < toEpochMs(range.endsAt),
-  );
-  return next?.startsAt ?? null;
-}
-
 type BriefingState = 'loading' | 'hidden' | 'visible';
 
 // 브리핑 카드는 예보의 브리핑 칸만 구독해 Policy 밖 함수로 두고 필요한 칸만 받는다
@@ -258,22 +181,92 @@ export function getBriefingState(
   return 'visible';
 }
 
-function isTodoWithinRange(todo: ForecastTodo, range: HourWindow): boolean {
-  return (
-    toEpochMs(range.startsAt) <= toEpochMs(todo.scheduledAt) &&
-    toEpochMs(todo.scheduledAt) < toEpochMs(range.endsAt)
-  );
-}
-
-function getUncompletedTodoIds(todos: readonly ForecastTodo[]) {
-  return todos.filter((todo) => !todo.completed).map((todo) => todo.todoId);
-}
-
 export const WeatherBriefingPolicy = {
-  isTodoWithinRange,
-  getUncompletedTodoIds,
-  toBriefingTodo,
-  findSuggestedStartAt,
-  getForecastTodos,
-  getAffectedTodos,
-} as const;
+  /** 여러 날 할 일은 시작일이 어제여도 오늘 목록에 있어 보고 있는 날짜 + 벽시계 + 기기 시간대로 시각을 만든다 */
+  toBriefingTodo(
+    todo: Todo,
+    { date, timezone }: { date: DateKey; timezone: string },
+  ): BriefingTodo {
+    const localTime = TodoPolicy.findLocalTime(todo, timezone);
+    return {
+      id: todo.id,
+      title: todo.title,
+      localTime,
+      scheduledAt: localTime == null ? null : toZonedInstant({ date, time: localTime, timezone }),
+      completed: todo.completed,
+      subTodoProgress: SubTodoPolicy.hasSubTodos(todo.subTodos)
+        ? SubTodoPolicy.getSubTodoStats(todo.subTodos)
+        : null,
+    };
+  },
+
+  /** 지금 이후로 시각이 정해진 할 일을 그 시각의 예보와 묶는다. 완료 여부는 남기고, 예보 범위 밖이면 뺀다. */
+  getForecastTodos(
+    hourly: readonly HourlyForecastEntry[],
+    todos: readonly BriefingTodo[],
+    now: Instant,
+  ): ForecastTodo[] {
+    return todos.flatMap((todo) => {
+      const { localTime, scheduledAt } = todo;
+      if (localTime == null || scheduledAt == null || toEpochMs(scheduledAt) < toEpochMs(now)) {
+        return [];
+      }
+      const hour = hourly[getHourIndexAt(hourly, scheduledAt)];
+      if (hour == null) {
+        return [];
+      }
+      return [
+        {
+          todoId: todo.id,
+          title: todo.title,
+          localTime,
+          scheduledAt,
+          completed: todo.completed,
+          subTodoProgress: todo.subTodoProgress,
+          hour,
+        },
+      ];
+    });
+  },
+
+  /** 서버가 고른 순서(시각 순)대로 오늘 목록의 할 일과 묶는다. 목록에서 사라졌거나 이미 지난 할 일은 뺀다. */
+  getAffectedTodos(
+    briefing: WeatherReportBriefing,
+    forecastTodos: readonly ForecastTodo[],
+  ): AffectedTodo[] {
+    const forecastTodosById = keyBy(forecastTodos, (todo) => todo.todoId);
+    const optionsByTodoId = keyBy(briefing.rescheduleOptions, (entry) => entry.todoId);
+    return briefing.affectedTodoIds.flatMap((todoId) => {
+      const todo = forecastTodosById[todoId];
+      return todo == null
+        ? []
+        : [{ ...todo, rescheduleOptions: optionsByTodoId[todoId]?.options ?? [] }];
+    });
+  },
+
+  /** 추천 시간대 안에서 지금 이후 첫 시간별 예보의 시작 시각. 30분 단위 시간대도 예보 칸에 맞는다. 모두 지났으면 제안하지 않는다. */
+  findSuggestedStartAt(
+    range: HourWindow,
+    hourly: readonly HourlyForecastEntry[],
+    now: Instant,
+  ): Instant | null {
+    const next = hourly.find(
+      (hour) =>
+        toEpochMs(now) <= toEpochMs(hour.startsAt) &&
+        toEpochMs(range.startsAt) <= toEpochMs(hour.startsAt) &&
+        toEpochMs(hour.startsAt) < toEpochMs(range.endsAt),
+    );
+    return next?.startsAt ?? null;
+  },
+
+  isTodoWithinRange(todo: ForecastTodo, range: HourWindow): boolean {
+    return (
+      toEpochMs(range.startsAt) <= toEpochMs(todo.scheduledAt) &&
+      toEpochMs(todo.scheduledAt) < toEpochMs(range.endsAt)
+    );
+  },
+
+  getUncompletedTodoIds(todos: readonly ForecastTodo[]): number[] {
+    return todos.filter((todo) => !todo.completed).map((todo) => todo.todoId);
+  },
+};

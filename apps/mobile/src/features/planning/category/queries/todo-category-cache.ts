@@ -70,7 +70,7 @@ export function withCategoryChanged(
 }
 
 /** 할 일을 만들거나 지운 만큼 그 카테고리의 개수만 바꾼다. 개수는 서버가 세는 카테고리의 할 일 수와 같다 */
-export function withTodoCountChanged(
+function withTodoCountChanged(
   result: TodoCategoriesResult,
   categoryId: number,
   delta: number,

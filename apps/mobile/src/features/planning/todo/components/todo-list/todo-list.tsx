@@ -172,7 +172,7 @@ function TodoReorderableList({
     updatedAt,
     isPending: reorderMutation.isPending,
     getItemId: (todo) => todo.id,
-    isOptimistic: TodoPolicy.isOptimisticTodo,
+    isOptimistic: (todo) => TodoPolicy.isOptimisticTodo(todo),
     onReorder: ({ instruction: { movedId, targetId, position } }) => {
       reorderMutation.mutate({
         todoId: movedId,
@@ -236,7 +236,7 @@ TodoList.Item = function Item({
     updatedAt,
     isPending: reorderSubTodos.isPending,
     getItemId: (subTodo) => subTodo.id,
-    isOptimistic: SubTodoPolicy.isOptimisticSubTodo,
+    isOptimistic: (subTodo) => SubTodoPolicy.isOptimisticSubTodo(subTodo),
     onReorder: ({ items: reorderedSubTodos }) => {
       reorderSubTodos.mutate({
         todoId: todo.id,

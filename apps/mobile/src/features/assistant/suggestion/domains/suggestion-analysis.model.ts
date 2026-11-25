@@ -16,10 +16,8 @@ export interface AiSuggestionList {
   analysis: SuggestionAnalysis | null;
 }
 
-export function shouldWaitForResult(analysis: SuggestionAnalysis): boolean {
-  return analysis.state === 'ANALYZING';
-}
-
 export const SuggestionAnalysisPolicy = {
-  shouldWaitForResult,
-} as const;
+  shouldWaitForResult(analysis: SuggestionAnalysis): boolean {
+    return analysis.state === 'ANALYZING';
+  },
+};

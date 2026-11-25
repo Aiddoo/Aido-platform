@@ -54,11 +54,9 @@ export function createCheerMessageReportTarget({
   return { targetUserId: senderId, targetType: 'CHEER_MESSAGE', targetId: String(cheerId) };
 }
 
-// 할 일은 주인만 고칠 수 있어 수정 권한이 있으면 내 할 일이다. 내 할 일은 신고·차단하지 않는다
-export function canReportTodo(details: TodoDetails) {
-  return !details.permissions.canEdit;
-}
-
 export const TodoReportPolicy = {
-  canReportTodo,
-} as const;
+  // 할 일은 주인만 고칠 수 있어 수정 권한이 있으면 내 할 일이다. 내 할 일은 신고·차단하지 않는다
+  canReportTodo(details: TodoDetails): boolean {
+    return !details.permissions.canEdit;
+  },
+};

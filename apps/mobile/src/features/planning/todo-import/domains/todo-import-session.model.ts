@@ -108,39 +108,33 @@ export function getRetryDelayMs({
   return Math.max(Math.floor(random() * ceilingMs), retryAfterMs ?? 0);
 }
 
-/** 다시 읽은 일정이 지난번과 같으면 끊긴 묶음부터, 달라졌으면 처음부터 보낸다. 서버가 받은 키는 무시해 안전하다 */
-function getNextChunkIndex(session: TodoImportSession, fingerprint: string) {
-  return session.fingerprint === fingerprint ? session.nextChunkIndex : 0;
-}
-
-function hasFingerprintChanged(session: TodoImportSession, fingerprint: string) {
-  return session.fingerprint != null && session.fingerprint !== fingerprint;
-}
-
-function withImportId(session: TodoImportSession, importId: string): TodoImportSession {
-  return { ...session, importId };
-}
-
-function withChunks(
-  session: TodoImportSession,
-  { fingerprint, chunkCount }: { fingerprint: string; chunkCount: number },
-): TodoImportSession {
-  return {
-    ...session,
-    fingerprint,
-    chunkCount,
-    nextChunkIndex: getNextChunkIndex(session, fingerprint),
-  };
-}
-
-function withUploadedChunk(session: TodoImportSession, chunkIndex: number): TodoImportSession {
-  return { ...session, nextChunkIndex: chunkIndex + 1 };
-}
-
 export const TodoImportSessionPolicy = {
-  getNextChunkIndex,
-  hasFingerprintChanged,
-  withImportId,
-  withChunks,
-  withUploadedChunk,
-} as const;
+  /** 다시 읽은 일정이 지난번과 같으면 끊긴 묶음부터, 달라졌으면 처음부터 보낸다. 서버가 받은 키는 무시해 안전하다 */
+  getNextChunkIndex(session: TodoImportSession, fingerprint: string): number {
+    return session.fingerprint === fingerprint ? session.nextChunkIndex : 0;
+  },
+
+  hasFingerprintChanged(session: TodoImportSession, fingerprint: string): boolean {
+    return session.fingerprint != null && session.fingerprint !== fingerprint;
+  },
+
+  withImportId(session: TodoImportSession, importId: string): TodoImportSession {
+    return { ...session, importId };
+  },
+
+  withChunks(
+    session: TodoImportSession,
+    { fingerprint, chunkCount }: { fingerprint: string; chunkCount: number },
+  ): TodoImportSession {
+    return {
+      ...session,
+      fingerprint,
+      chunkCount,
+      nextChunkIndex: this.getNextChunkIndex(session, fingerprint),
+    };
+  },
+
+  withUploadedChunk(session: TodoImportSession, chunkIndex: number): TodoImportSession {
+    return { ...session, nextChunkIndex: chunkIndex + 1 };
+  },
+};

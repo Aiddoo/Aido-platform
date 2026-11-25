@@ -28,11 +28,9 @@ function hasCooldownElapsed(prompt: MarketingPushPromptState, now: Instant): boo
   return diffMs(now, prompt.dismissedAt) >= DECLINE_COOLDOWN_DAYS * DAY_MS;
 }
 
-/** 이미 동의했거나 거절한 지 90일이 안 됐으면 제안하지 않는다 */
-function shouldPrompt(prompt: MarketingPushPromptState, { consent, now }: ShouldPromptContext) {
-  return consent.marketingPushAgreedAt == null && hasCooldownElapsed(prompt, now);
-}
-
 export const MarketingPushPromptPolicy = {
-  shouldPrompt,
-} as const;
+  /** 이미 동의했거나 거절한 지 90일이 안 됐으면 제안하지 않는다 */
+  shouldPrompt(prompt: MarketingPushPromptState, { consent, now }: ShouldPromptContext): boolean {
+    return consent.marketingPushAgreedAt == null && hasCooldownElapsed(prompt, now);
+  },
+};

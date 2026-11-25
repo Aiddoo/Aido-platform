@@ -63,37 +63,39 @@ describe('getTodoUpdateChanges', () => {
   );
 });
 
-describe('hasTodoUpdateChanges', () => {
-  it.each([
-    ['바뀐 칸이 없으면', { fields: {} }, false],
-    ['제목이 바뀌면', { fields: { title: '달리기' } }, true],
-    ['반복을 끝내면(repeat null)', { fields: {}, repeat: null }, true],
-  ] as const)('%s %s다', (_label, changes, expected) => {
-    // When
-    const result = TodoChangePolicy.hasTodoUpdateChanges(changes);
+describe('TodoChangePolicy', () => {
+  describe('hasTodoUpdateChanges', () => {
+    it.each([
+      ['바뀐 칸이 없으면', { fields: {} }, false],
+      ['제목이 바뀌면', { fields: { title: '달리기' } }, true],
+      ['반복을 끝내면(repeat null)', { fields: {}, repeat: null }, true],
+    ] as const)('%s %s다', (_label, changes, expected) => {
+      // When
+      const result = TodoChangePolicy.hasTodoUpdateChanges(changes);
 
-    // Then
-    expect(result).toBe(expected);
+      // Then
+      expect(result).toBe(expected);
+    });
   });
-});
 
-describe('hasOnlyDateChanges', () => {
-  const day = createDateKey('2026-11-06');
-  it.each([
-    ['시작일만 바뀌면', { fields: { startDate: day } }, true],
-    [
-      '시작일과 종료일만 바뀌면',
-      { fields: { startDate: day, endDate: createDateKey('2026-11-07') } },
-      true,
-    ],
-    ['바뀐 칸이 없으면', { fields: {} }, false],
-    ['날짜와 제목이 함께 바뀌면', { fields: { startDate: day, title: '달리기' } }, false],
-    ['날짜와 함께 반복을 끝내면', { fields: { startDate: day }, repeat: null }, false],
-  ] as const)('%s %s다', (_label, changes, expected) => {
-    // When
-    const result = TodoChangePolicy.hasOnlyDateChanges(changes);
+  describe('hasOnlyDateChanges', () => {
+    const day = createDateKey('2026-11-06');
+    it.each([
+      ['시작일만 바뀌면', { fields: { startDate: day } }, true],
+      [
+        '시작일과 종료일만 바뀌면',
+        { fields: { startDate: day, endDate: createDateKey('2026-11-07') } },
+        true,
+      ],
+      ['바뀐 칸이 없으면', { fields: {} }, false],
+      ['날짜와 제목이 함께 바뀌면', { fields: { startDate: day, title: '달리기' } }, false],
+      ['날짜와 함께 반복을 끝내면', { fields: { startDate: day }, repeat: null }, false],
+    ] as const)('%s %s다', (_label, changes, expected) => {
+      // When
+      const result = TodoChangePolicy.hasOnlyDateChanges(changes);
 
-    // Then
-    expect(result).toBe(expected);
+      // Then
+      expect(result).toBe(expected);
+    });
   });
 });

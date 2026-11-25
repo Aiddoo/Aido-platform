@@ -122,44 +122,9 @@ export function hasScheduleChanged(
   );
 }
 
-// 시트 route의 대상 할 일. 목록에서 사라졌으면(삭제·다른 날짜) null
-export function findTodo(todos: readonly Todo[], todoId: number): Todo | null {
-  return todos.find((todo) => todo.id === todoId) ?? null;
-}
-
-export function findSubTodo(todo: Todo | null, subTodoId: number): SubTodo | null {
-  return todo?.subTodos.find((subTodo) => subTodo.id === subTodoId) ?? null;
-}
-
 // 묶음 id가 있으면 반복에서 생긴 할 일이다. 예시 카드처럼 할 일 모델이 없는 곳도 같은 규칙을 쓴다
-export function isRecurring(recurrenceGroupId: string | null): boolean {
+function isRecurring(recurrenceGroupId: string | null): boolean {
   return recurrenceGroupId != null;
-}
-
-export function isRecurringTodo(todo: Todo): boolean {
-  return isRecurring(todo.recurrenceGroupId);
-}
-
-// 규칙 없는 묶음(이관에서 패턴을 잃음)은 서버가 범위 수정·끝내기를 받지 않아 "이 할 일만"으로 다룬다
-export function hasRepeatRule(todo: Todo): boolean {
-  return todo.recurrenceGroupId != null && todo.repeat != null;
-}
-
-// 규칙 없는 묶음의 회차는 서버가 반복 전환을 받지 않는다(TODO_0845)
-export function canChangeRepeat(todo: Todo): boolean {
-  return todo.recurrenceGroupId == null || hasRepeatRule(todo);
-}
-
-// 단일 할 일은 묻지 않으므로 비어 있다. 규칙 없는 묶음은 "이후"의 기준이 없다
-export function getDeleteScopes(todo: Todo): readonly TodoEditScope[] {
-  if (todo.recurrenceGroupId == null) {
-    return [];
-  }
-  return hasRepeatRule(todo) ? TODO_EDIT_SCOPES : ['THIS_ONLY', 'ALL'];
-}
-
-export function isMultiDayTodo(todo: Todo): boolean {
-  return todo.endDate != null && todo.endDate !== todo.startDate;
 }
 
 // 할 일과 폼의 날짜 칸이 함께 쓰는 기간 규칙이라 필요한 날짜만 받는다
@@ -217,19 +182,6 @@ export function withScheduleRepeat(
   return { ...schedule, startDate, repeat, endDate: repeat == null ? schedule.endDate : null };
 }
 
-// 서버 응답 전의 임시 행. 임시 id로는 요청을 보낼 수 없다
-export function isOptimisticTodo(todo: Todo): boolean {
-  return todo.id < 0;
-}
-
-// 하나뿐인 날도 그 하나를 끝내면 다 끝낸 날이다. 여러 날 할 일은 시작일 목록만 낙관적으로 바뀌어 끝낸 것은 완료로 본다
-export function isLastOpenTodo(todos: readonly Todo[], completedTodoId: number): boolean {
-  return (
-    todos.some((todo) => todo.id === completedTodoId) &&
-    todos.every((todo) => todo.id === completedTodoId || todo.completed)
-  );
-}
-
 /** 할 일이 걸친 날짜. 여러 날 할 일만 시작일과 끝날이 다르다 */
 export interface TodoDateSpan {
   startDate: DateKey;
@@ -241,74 +193,103 @@ export function getTodoDateSpan(todo: Pick<Todo, 'startDate' | 'endDate'>): Todo
   return { startDate: todo.startDate, endDate: todo.endDate ?? todo.startDate };
 }
 
-export function isTodoOnDate(todo: Todo, date: DateKey): boolean {
-  const { startDate, endDate } = getTodoDateSpan(todo);
-  return startDate <= date && date <= endDate;
-}
-
-// 서버가 준 벽시계는 어디서든 그 시각이고 칸을 비워 둔 시간 행만 순간을 시간대로 읽는다. 종일·시간 없음은 null
-export function findLocalTime(todo: Todo, timezone: string): string | null {
-  if (todo.isAllDay) {
-    return null;
-  }
-  if (todo.localTime != null) {
-    return todo.localTime;
-  }
-  return todo.scheduledAt == null ? null : toHHmm(todo.scheduledAt, timezone);
-}
-
-// 완료 전이고 시간이 있으며 아직 지나지 않은 할 일이 있는가. 시각은 어디서든 그 시각이라 벽시계로 비교한다
-export function hasUpcomingTimedTodo(
-  todos: readonly Todo[],
-  now: { dateKey: DateKey; time: string; timezone: string },
-): boolean {
-  return todos.some((todo) => {
-    const localTime = findLocalTime(todo, now.timezone);
-    return (
-      !todo.completed &&
-      localTime != null &&
-      (todo.startDate > now.dateKey || (todo.startDate === now.dateKey && localTime > now.time))
-    );
-  });
-}
-
-// 상세 화면은 피드 날짜를 모른다. 오늘이 기간 안이면 오늘 목록을, 아니면 시작일 목록을 먼저 고친다
-export function getOptimisticListDate(todo: Todo, todayKey: DateKey): DateKey {
-  return isTodoOnDate(todo, todayKey) ? todayKey : todo.startDate;
-}
-
-// 오늘 할 일은 내일로, 다른 날 할 일은 오늘로 옮기고 새 시작일보다 앞선 끝 날짜는 지운다
-export function getTodayToggleDates(
-  todo: Todo,
-  todayKey: DateKey,
-): Pick<Todo, 'startDate' | 'endDate'> {
-  const startDate = todo.startDate === todayKey ? addDaysToDateKey(todayKey, 1) : todayKey;
-  return {
-    startDate,
-    endDate: todo.endDate != null && todo.endDate < startDate ? null : todo.endDate,
-  };
-}
-
 const MIN_REORDERABLE_COUNT = 2;
 
-export function canReorderTodos(todos: readonly Todo[]) {
-  return todos.length >= MIN_REORDERABLE_COUNT;
-}
-
 export const TodoPolicy = {
-  canReorderTodos,
-  findTodo,
-  findSubTodo,
-  getOptimisticListDate,
-  isTodoOnDate,
-  isRecurringTodo,
-  hasRepeatRule,
-  canChangeRepeat,
-  getDeleteScopes,
-  isMultiDayTodo,
-  getTodayToggleDates,
-  isOptimisticTodo,
-  isLastOpenTodo,
-  findLocalTime,
-  hasUpcomingTimedTodo,
-} as const;
+  // 시트 route의 대상 할 일. 목록에서 사라졌으면(삭제·다른 날짜) null
+  findTodo(todos: readonly Todo[], todoId: number): Todo | null {
+    return todos.find((todo) => todo.id === todoId) ?? null;
+  },
+
+  findSubTodo(todo: Todo | null, subTodoId: number): SubTodo | null {
+    return todo?.subTodos.find((subTodo) => subTodo.id === subTodoId) ?? null;
+  },
+
+  isRecurringTodo(todo: Todo): boolean {
+    return isRecurring(todo.recurrenceGroupId);
+  },
+
+  // 규칙 없는 묶음(이관에서 패턴을 잃음)은 서버가 범위 수정·끝내기를 받지 않아 "이 할 일만"으로 다룬다
+  hasRepeatRule(todo: Todo): boolean {
+    return todo.recurrenceGroupId != null && todo.repeat != null;
+  },
+
+  // 규칙 없는 묶음의 회차는 서버가 반복 전환을 받지 않는다(TODO_0845)
+  canChangeRepeat(todo: Todo): boolean {
+    return todo.recurrenceGroupId == null || this.hasRepeatRule(todo);
+  },
+
+  // 단일 할 일은 묻지 않으므로 비어 있다. 규칙 없는 묶음은 "이후"의 기준이 없다
+  getDeleteScopes(todo: Todo): readonly TodoEditScope[] {
+    if (todo.recurrenceGroupId == null) {
+      return [];
+    }
+    return this.hasRepeatRule(todo) ? TODO_EDIT_SCOPES : ['THIS_ONLY', 'ALL'];
+  },
+
+  isMultiDayTodo(todo: Todo): boolean {
+    return todo.endDate != null && todo.endDate !== todo.startDate;
+  },
+
+  // 서버 응답 전의 임시 행. 임시 id로는 요청을 보낼 수 없다
+  isOptimisticTodo(todo: Todo): boolean {
+    return todo.id < 0;
+  },
+
+  // 하나뿐인 날도 그 하나를 끝내면 다 끝낸 날이다. 여러 날 할 일은 시작일 목록만 낙관적으로 바뀌어 끝낸 것은 완료로 본다
+  isLastOpenTodo(todos: readonly Todo[], completedTodoId: number): boolean {
+    return (
+      todos.some((todo) => todo.id === completedTodoId) &&
+      todos.every((todo) => todo.id === completedTodoId || todo.completed)
+    );
+  },
+
+  isTodoOnDate(todo: Todo, date: DateKey): boolean {
+    const { startDate, endDate } = getTodoDateSpan(todo);
+    return startDate <= date && date <= endDate;
+  },
+
+  // 서버가 준 벽시계는 어디서든 그 시각이고 칸을 비워 둔 시간 행만 순간을 시간대로 읽는다. 종일·시간 없음은 null
+  findLocalTime(todo: Todo, timezone: string): string | null {
+    if (todo.isAllDay) {
+      return null;
+    }
+    if (todo.localTime != null) {
+      return todo.localTime;
+    }
+    return todo.scheduledAt == null ? null : toHHmm(todo.scheduledAt, timezone);
+  },
+
+  // 완료 전이고 시간이 있으며 아직 지나지 않은 할 일이 있는가. 시각은 어디서든 그 시각이라 벽시계로 비교한다
+  hasUpcomingTimedTodo(
+    todos: readonly Todo[],
+    now: { dateKey: DateKey; time: string; timezone: string },
+  ): boolean {
+    return todos.some((todo) => {
+      const localTime = this.findLocalTime(todo, now.timezone);
+      return (
+        !todo.completed &&
+        localTime != null &&
+        (todo.startDate > now.dateKey || (todo.startDate === now.dateKey && localTime > now.time))
+      );
+    });
+  },
+
+  // 상세 화면은 피드 날짜를 모른다. 오늘이 기간 안이면 오늘 목록을, 아니면 시작일 목록을 먼저 고친다
+  getOptimisticListDate(todo: Todo, todayKey: DateKey): DateKey {
+    return this.isTodoOnDate(todo, todayKey) ? todayKey : todo.startDate;
+  },
+
+  // 오늘 할 일은 내일로, 다른 날 할 일은 오늘로 옮기고 새 시작일보다 앞선 끝 날짜는 지운다
+  getTodayToggleDates(todo: Todo, todayKey: DateKey): Pick<Todo, 'startDate' | 'endDate'> {
+    const startDate = todo.startDate === todayKey ? addDaysToDateKey(todayKey, 1) : todayKey;
+    return {
+      startDate,
+      endDate: todo.endDate != null && todo.endDate < startDate ? null : todo.endDate,
+    };
+  },
+
+  canReorderTodos(todos: readonly Todo[]): boolean {
+    return todos.length >= MIN_REORDERABLE_COUNT;
+  },
+};

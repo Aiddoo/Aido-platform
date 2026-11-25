@@ -9,32 +9,27 @@ export const inviteRewardSchema = z.object({
 });
 export type InviteReward = z.infer<typeof inviteRewardSchema>;
 
-export function isPremiumDaysReward(reward: InviteReward) {
-  return reward.rewardType === REWARD_TYPE.PREMIUM_DAYS;
-}
-
 function isFriendSlotReward(reward: InviteReward) {
   return reward.rewardType === REWARD_TYPE.FRIEND_SLOT;
 }
 
-export function calculateRewardQuantity(
-  rewards: readonly InviteReward[],
-  isTarget: (reward: InviteReward) => boolean,
-) {
-  return sumBy(rewards.filter(isTarget), (reward) => reward.quantity);
-}
-
-export function getPremiumDays(rewards: readonly InviteReward[]) {
-  return calculateRewardQuantity(rewards, isPremiumDaysReward);
-}
-
-export function getFriendSlots(rewards: readonly InviteReward[]) {
-  return calculateRewardQuantity(rewards, isFriendSlotReward);
-}
-
 export const InviteRewardPolicy = {
-  getPremiumDays,
-  getFriendSlots,
-  isPremiumDaysReward,
-  calculateRewardQuantity,
-} as const;
+  isPremiumDaysReward(reward: InviteReward): boolean {
+    return reward.rewardType === REWARD_TYPE.PREMIUM_DAYS;
+  },
+
+  calculateRewardQuantity(
+    rewards: readonly InviteReward[],
+    isTarget: (reward: InviteReward) => boolean,
+  ): number {
+    return sumBy(rewards.filter(isTarget), (reward) => reward.quantity);
+  },
+
+  getPremiumDays(rewards: readonly InviteReward[]): number {
+    return this.calculateRewardQuantity(rewards, (reward) => this.isPremiumDaysReward(reward));
+  },
+
+  getFriendSlots(rewards: readonly InviteReward[]): number {
+    return this.calculateRewardQuantity(rewards, isFriendSlotReward);
+  },
+};

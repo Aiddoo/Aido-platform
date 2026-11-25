@@ -42,62 +42,58 @@ export function isOneTimeMilestone(milestone: Pick<InviterRewardMilestone, 'repe
   return milestone.repeatEvery == null;
 }
 
-export function findRemainingToNextMilestone(invite: Invite) {
-  return invite.nextMilestone == null
-    ? null
-    : calculateRemainingInvites(invite.qualifiedCount, invite.nextMilestone.qualifiedCount);
-}
-
-// 다음 발자국에서 받는 프리미엄 일수(없으면 0)
-export function getNextPremiumDays(invite: Invite) {
-  return InviteRewardPolicy.getPremiumDays(invite.nextMilestone?.rewards ?? []);
-}
-
-export function getNextFriendSlots(invite: Invite) {
-  return InviteRewardPolicy.getFriendSlots(invite.nextMilestone?.rewards ?? []);
-}
-
-export function getEarnedPremiumDays(invite: Invite) {
-  return InviteRewardPolicy.getPremiumDays(invite.rewardsEarned);
-}
-
-export function getEarnedFriendSlots(invite: Invite) {
-  return InviteRewardPolicy.getFriendSlots(invite.rewardsEarned);
-}
-
-// 시작 체크리스트 완료 기준: 가입까지 마친 초대 친구가 한 명이라도 있다
-export function hasInvitedAnyone(invite: Invite) {
-  return calculateInvitedCount(invite.qualifiedCount, invite.waitingCount) > 0;
-}
-
-// 지난번 축하한 뒤로 사용을 시작한 친구가 늘었다
-export function hasNewPawPrints(invite: Invite, celebratedCount: number) {
-  return invite.qualifiedCount > celebratedCount;
-}
-
-// 진행 안내가 말할 상황(문구는 화면이 고른다). 상한은 서버의 premiumCapState를 따른다
-export function getProgress(invite: Invite) {
-  return match({
-    premiumCapState: invite.premiumCapState,
-    hasPawPrint: invite.qualifiedCount > 0,
-  })
-    .with({ premiumCapState: PREMIUM_CAP_STATE.TOTAL_REACHED }, () => 'total-cap-reached' as const)
-    .with(
-      { premiumCapState: PREMIUM_CAP_STATE.WINDOW_REACHED },
-      () => 'monthly-cap-reached' as const,
-    )
-    .with({ hasPawPrint: false }, () => 'not-started' as const)
-    .with({ hasPawPrint: true }, () => 'in-progress' as const)
-    .exhaustive();
-}
-
 export const InvitePolicy = {
-  findRemainingToNextMilestone,
-  getNextPremiumDays,
-  getNextFriendSlots,
-  getEarnedPremiumDays,
-  getEarnedFriendSlots,
-  hasInvitedAnyone,
-  hasNewPawPrints,
-  getProgress,
-} as const;
+  findRemainingToNextMilestone(invite: Invite): number | null {
+    return invite.nextMilestone == null
+      ? null
+      : calculateRemainingInvites(invite.qualifiedCount, invite.nextMilestone.qualifiedCount);
+  },
+
+  // 다음 발자국에서 받는 프리미엄 일수(없으면 0)
+  getNextPremiumDays(invite: Invite): number {
+    return InviteRewardPolicy.getPremiumDays(invite.nextMilestone?.rewards ?? []);
+  },
+
+  getNextFriendSlots(invite: Invite): number {
+    return InviteRewardPolicy.getFriendSlots(invite.nextMilestone?.rewards ?? []);
+  },
+
+  getEarnedPremiumDays(invite: Invite): number {
+    return InviteRewardPolicy.getPremiumDays(invite.rewardsEarned);
+  },
+
+  getEarnedFriendSlots(invite: Invite): number {
+    return InviteRewardPolicy.getFriendSlots(invite.rewardsEarned);
+  },
+
+  // 시작 체크리스트 완료 기준: 가입까지 마친 초대 친구가 한 명이라도 있다
+  hasInvitedAnyone(invite: Invite): boolean {
+    return calculateInvitedCount(invite.qualifiedCount, invite.waitingCount) > 0;
+  },
+
+  // 지난번 축하한 뒤로 사용을 시작한 친구가 늘었다
+  hasNewPawPrints(invite: Invite, celebratedCount: number): boolean {
+    return invite.qualifiedCount > celebratedCount;
+  },
+
+  // 진행 안내가 말할 상황(문구는 화면이 고른다). 상한은 서버의 premiumCapState를 따른다
+  getProgress(
+    invite: Invite,
+  ): 'total-cap-reached' | 'monthly-cap-reached' | 'not-started' | 'in-progress' {
+    return match({
+      premiumCapState: invite.premiumCapState,
+      hasPawPrint: invite.qualifiedCount > 0,
+    })
+      .with(
+        { premiumCapState: PREMIUM_CAP_STATE.TOTAL_REACHED },
+        () => 'total-cap-reached' as const,
+      )
+      .with(
+        { premiumCapState: PREMIUM_CAP_STATE.WINDOW_REACHED },
+        () => 'monthly-cap-reached' as const,
+      )
+      .with({ hasPawPrint: false }, () => 'not-started' as const)
+      .with({ hasPawPrint: true }, () => 'in-progress' as const)
+      .exhaustive();
+  },
+};

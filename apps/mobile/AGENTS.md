@@ -39,7 +39,7 @@ Expo SDK 58 · React Native 0.88 · React 19(Compiler) · Expo Router · TanStac
 
 - **사용성이 먼저다.** 입력칸과 저장 버튼은 키보드 위에 보이고, 키보드가 열린 채 첫 탭에 눌리고, 저장이 실패해도 글자가 남는다. 구조를 고치다 나빠지면 구조를 양보한다([ui](docs/architecture/ui.md#사용성-구조보다-먼저)).
 - **같은 일은 한 가지 방법으로, 변경점은 한 곳이다.** 공용 부품·훅·도구가 있으면 그것을 쓰고, 없으면 만들기 전에 [ui-catalog](docs/architecture/ui-catalog.md)·[hooks](docs/architecture/hooks.md)를 확인한다. 라이브러리가 주는 것을 다시 만들지 않는다.
-- **모델은 업무 규칙만 담는다.** 문구 키·색·배치·표시 방식은 view-model·컴포넌트, 폴링·재시도 주기는 `queries/`로 보낸다. 모델은 계약을 import하지 않고 mapper가 바꾼다. Policy는 메서드 객체(`this`로 조합)이고 첫 인자는 모델 전체이며, 모델을 받는 규칙의 입구는 Policy 하나다(`domain-model-contract`, [model](docs/architecture/model.md#모델과-policy)).
+- **모델은 업무 규칙만 담는다.** 문구 키·색·배치·표시 방식은 view-model·컴포넌트, 폴링·재시도 주기는 `queries/`로 보낸다. 모델은 계약을 import하지 않고 mapper가 바꾼다. Policy는 메서드 객체(`this`로 조합)이고 첫 인자는 모델 전체이며, 모델을 받는 규칙의 입구는 Policy 하나다(`domain-model-contract`, `aido/policy-facade`, [model](docs/architecture/model.md#모델과-policy)).
 - **데이터는 쓰는 컴포넌트가 조회한다.** 화면 id는 route 튜플 훅(`const [todoId] = useTodoId()`)으로 읽고, 컴포넌트는 바깥 여백을 모르며 `form`·`stepper`를 받지 않는다. 입력은 `value`/`onChange`, 원본 확장은 `interface XProps extends Omit<ComponentProps<typeof X>, …>` + `...props`다([ui](docs/architecture/ui.md#컴포넌트-계약)).
 - **스크린이 조립한다.** route 파일이 단계·경계·`Spacing`·화면 문구·폼을 위에서 아래로 나열하고, 조회·규칙·오류 판별·시트 열기는 기능 컴포넌트가 갖는다. fallback은 `X.Error`이고 화살표로 감싸지 않는다. 위치만 말하는 이름(`*Section`, `*Detail`, `*Content`, `*Panel`)을 만들지 않는다(`aido/component-name`, [ui](docs/architecture/ui.md#스크린)).
 - **한 곳만 쓰는 것은 쓰는 파일 안에 둔다.** 부모 없이 의미 없는 조각은 `Parent.Part`, 반복 고정 UI는 역할이 드러나는 지역 컴포넌트로 항목마다 한 줄씩 쓴다(설정 배열 map 금지). 큰 글자·작은 화면을 이유로 적은 주석은 코드와 함께 옮긴다([ui](docs/architecture/ui.md#네임스페이스지역-컴포넌트)).

@@ -33,10 +33,14 @@ export function TodoCommentDeleteProvider({ children }: PropsWithChildren) {
     await confirmDialog.openAsync({
       title: t('deleteConfirm.title'),
       description: match(comment)
-        .when(TodoCommentPolicy.canDeleteOnlyAsTodoOwner, () =>
-          t('deleteConfirm.othersDescription'),
+        .when(
+          (comment) => TodoCommentPolicy.canDeleteOnlyAsTodoOwner(comment),
+          () => t('deleteConfirm.othersDescription'),
         )
-        .when(TodoCommentPolicy.isTombstonedOnDelete, () => t('deleteConfirm.tombstoneDescription'))
+        .when(
+          (comment) => TodoCommentPolicy.isTombstonedOnDelete(comment),
+          () => t('deleteConfirm.tombstoneDescription'),
+        )
         .otherwise(() => t('deleteConfirm.description')),
       confirmLabel: t('deleteConfirm.confirm'),
       confirmColor: 'danger',

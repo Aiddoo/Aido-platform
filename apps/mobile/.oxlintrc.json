@@ -1092,7 +1092,7 @@
       }
     },
     {
-      "files": ["src/features/**/domains/**/*.model.ts"],
+      "files": ["src/**/*.model.ts"],
       "excludeFiles": [
         "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
         "**/__tests__/**",
@@ -1100,6 +1100,13 @@
       ],
       "rules": {
         "aido/model-exports": "error"
+      }
+    },
+    {
+      // 테스트에서도 메서드를 값으로 넘기면 this가 끊긴다
+      "files": ["src/**", "app/**"],
+      "rules": {
+        "aido/no-unbound-policy-method": "error"
       }
     },
     {
@@ -1293,7 +1300,19 @@
         "aido/namespace-part-name": "error",
         "aido/no-inline-query-options": "error",
         "aido/no-route-id-props": "error",
+        "aido/policy-model-parameter": "error",
         "aido/props-interface": "error"
+      }
+    },
+    {
+      "files": ["src/**/*.model.ts"],
+      "excludeFiles": [
+        "**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "**/__tests__/**",
+        "src/testing/**"
+      ],
+      "rules": {
+        "aido/model-function-exports": "error"
       }
     },
     {
@@ -1384,6 +1403,48 @@
       "files": ["src/features/notes/memo/**", "src/features/planning/todo/**"],
       "rules": {
         "aido/no-route-id-props": "off"
+      }
+    },
+    {
+      // 래칫
+      "files": [
+        "src/features/billing/subscription/**",
+        "src/features/device/widget/**",
+        "src/features/engagement/comment/**",
+        "src/features/planning/todo/**",
+        "src/features/social/invite/**",
+        "src/features/social/moderation/**",
+        "src/features/social/nudge/**",
+        "src/features/voice/**",
+        "src/features/weather/**"
+      ],
+      "rules": {
+        "aido/policy-model-parameter": "off"
+      }
+    },
+    {
+      // 래칫
+      "files": [
+        "src/shared/draft/draft.model.ts",
+        "src/features/app-config/whats-new/**",
+        "src/features/billing/subscription/**",
+        "src/features/planning/category/**",
+        "src/features/planning/composer/**",
+        "src/features/planning/todo/**",
+        "src/features/planning/todo-import/**",
+        "src/features/social/invite/**",
+        "src/features/voice/**",
+        "src/features/weather/**"
+      ],
+      "rules": {
+        "aido/model-function-exports": "off"
+      }
+    },
+    {
+      // 래칫
+      "files": ["src/shared/domains/completion-rate.model.ts", "src/shared/draft/draft.model.ts"],
+      "rules": {
+        "aido/model-exports": "off"
       }
     },
     {

@@ -101,32 +101,6 @@ export const planReviewDraftSchema = z.object({
 });
 export type PlanReviewDraft = z.infer<typeof planReviewDraftSchema>;
 
-export function isTodoAction(action: PlannedAction): action is PlannedTodo {
-  return action.type === 'create-todo';
-}
-
-export function isDuplicateAction(action: PlannedAction) {
-  return isTodoAction(action) && action.duplicateOfTodoId != null;
-}
-
-export function getDefaultSelection(plan: VoicePlan): PlanSelection {
-  return Object.fromEntries(
-    plan.actions.map((action) => [action.actionId, !isDuplicateAction(action)]),
-  );
-}
-
-export function getSelectedActions(plan: VoicePlan, selection: PlanSelection) {
-  return plan.actions.filter((action) => selection[action.actionId] === true);
-}
-
-export function getSelectedTodoCount(plan: VoicePlan, selection: PlanSelection) {
-  return getSelectedActions(plan, selection).filter(isTodoAction).length;
-}
-
-export function canApplyPlan(plan: VoicePlan, selection: PlanSelection) {
-  return getSelectedActions(plan, selection).length > 0;
-}
-
 // 고르기 시트의 폼 카드도 묶어 Policy 밖 함수로 두고 종류와 카테고리만 받는다
 type PlanGroupableAction = Pick<PlannedTodo, 'type' | 'categoryId'> | Pick<PlannedMemo, 'type'>;
 
@@ -177,30 +151,49 @@ export type PlanHeadline =
   | { kind: 'memo' }
   | { kind: 'already-added' };
 
-// 계획 카드 위 머리글이 말할 내용. 문구는 화면이 고른다
-export function getHeadline(plan: VoicePlan, selection: PlanSelection): PlanHeadline {
-  const selectedTodoCount = getSelectedTodoCount(plan, selection);
-  if (selectedTodoCount > 0) {
-    return { kind: 'todos', count: selectedTodoCount };
-  }
-  if (getSelectedActions(plan, selection).length > 0) {
-    return { kind: 'memo' };
-  }
-  const todos = plan.actions.filter(isTodoAction);
-  if (todos.length === 0) {
-    return { kind: 'memo' };
-  }
-  return todos.every(isDuplicateAction)
-    ? { kind: 'already-added' }
-    : { kind: 'todos', count: todos.length };
-}
-
 export const VoicePlanPolicy = {
-  getDefaultSelection,
-  isTodoAction,
-  isDuplicateAction,
-  getSelectedActions,
-  getSelectedTodoCount,
-  getHeadline,
-  canApplyPlan,
-} as const;
+  isTodoAction(action: PlannedAction): action is PlannedTodo {
+    return action.type === 'create-todo';
+  },
+
+  isDuplicateAction(action: PlannedAction): boolean {
+    return this.isTodoAction(action) && action.duplicateOfTodoId != null;
+  },
+
+  getDefaultSelection(plan: VoicePlan): PlanSelection {
+    return Object.fromEntries(
+      plan.actions.map((action) => [action.actionId, !this.isDuplicateAction(action)]),
+    );
+  },
+
+  getSelectedActions(plan: VoicePlan, selection: PlanSelection): PlannedAction[] {
+    return plan.actions.filter((action) => selection[action.actionId] === true);
+  },
+
+  getSelectedTodoCount(plan: VoicePlan, selection: PlanSelection): number {
+    return this.getSelectedActions(plan, selection).filter((action) => this.isTodoAction(action))
+      .length;
+  },
+
+  canApplyPlan(plan: VoicePlan, selection: PlanSelection): boolean {
+    return this.getSelectedActions(plan, selection).length > 0;
+  },
+
+  // 계획 카드 위 머리글이 말할 내용. 문구는 화면이 고른다
+  getHeadline(plan: VoicePlan, selection: PlanSelection): PlanHeadline {
+    const selectedTodoCount = this.getSelectedTodoCount(plan, selection);
+    if (selectedTodoCount > 0) {
+      return { kind: 'todos', count: selectedTodoCount };
+    }
+    if (this.getSelectedActions(plan, selection).length > 0) {
+      return { kind: 'memo' };
+    }
+    const todos = plan.actions.filter((action) => this.isTodoAction(action));
+    if (todos.length === 0) {
+      return { kind: 'memo' };
+    }
+    return todos.every((action) => this.isDuplicateAction(action))
+      ? { kind: 'already-added' }
+      : { kind: 'todos', count: todos.length };
+  },
+};

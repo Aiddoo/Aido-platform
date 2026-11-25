@@ -233,23 +233,8 @@ const NOWCAST_EXPIRES_AFTER_MS = 6 * HOUR_MS;
 /** 시간별 예보에서 이 확률 이상이면 비가 오는 시간으로 본다. 서버 날씨 알림과 같은 기준이다. */
 const WET_HOUR_CHANCE = WEATHER_BRIEFING_RULES.WET_HOUR_CHANCE;
 
-function isFrozenPrecipitation(type: WeatherPrecipitationType): boolean {
-  return WEATHER_FROZEN_PRECIPITATION_TYPES.some((frozen) => frozen === type);
-}
-
-function isWetHour(hour: HourlyForecastEntry): boolean {
-  return hour.precipitationChance >= WET_HOUR_CHANCE;
-}
-
 function getHourEndsAt(hour: HourlyForecastEntry): number {
   return toEpochMs(hour.startsAt) + HOUR_MS;
-}
-
-function getUpcomingHours(
-  hourly: readonly HourlyForecastEntry[],
-  now: Instant,
-): HourlyForecastEntry[] {
-  return hourly.filter((hour) => getHourEndsAt(hour) > toEpochMs(now));
 }
 
 // 날씨 화면 부품은 예보에서 쓰는 칸만 select로 구독해 그 칸이 바뀔 때만 다시 그린다.
@@ -289,7 +274,9 @@ function findFirstDryHourStart(
   hourly: readonly HourlyForecastEntry[],
   after: number,
 ): Instant | null {
-  const dryHour = hourly.find((hour) => toEpochMs(hour.startsAt) >= after && !isWetHour(hour));
+  const dryHour = hourly.find(
+    (hour) => toEpochMs(hour.startsAt) >= after && !WeatherReportPolicy.isWetHour(hour),
+  );
   return dryHour?.startsAt ?? null;
 }
 
@@ -347,7 +334,9 @@ export function getPrecipitationWindow(
   }
 
   const searchFrom = nextHour == null ? nowMs : getNextHourHorizon(nextHour, now);
-  const wetHour = hourly.find((hour) => getHourEndsAt(hour) > searchFrom && isWetHour(hour));
+  const wetHour = hourly.find(
+    (hour) => getHourEndsAt(hour) > searchFrom && WeatherReportPolicy.isWetHour(hour),
+  );
   if (wetHour == null) {
     return { kind: 'dry' };
   }
@@ -366,24 +355,6 @@ const HOURLY_OUTLOOK_RANGE_HOURS = 6;
 export interface HourlyPrecipitationOutlook {
   hour: HourlyForecastEntry;
   isOngoing: boolean;
-}
-
-/** 지금 시간부터 6시간 안에서 비가 오는 첫 시간을 고른다. 없으면 빈 카드를 만들지 않도록 null이다. */
-function findHourlyPrecipitationOutlook(
-  hourly: readonly HourlyForecastEntry[],
-  now: Instant,
-): HourlyPrecipitationOutlook | null {
-  const until = toEpochMs(now) + HOURLY_OUTLOOK_RANGE_HOURS * HOUR_MS;
-  const hour = hourly.find(
-    (candidate) =>
-      getHourEndsAt(candidate) > toEpochMs(now) &&
-      toEpochMs(candidate.startsAt) < until &&
-      isWetHour(candidate),
-  );
-  if (hour == null) {
-    return null;
-  }
-  return { hour, isOngoing: toEpochMs(hour.startsAt) <= toEpochMs(now) };
 }
 
 /** 서버가 같은 리포트를 주는 남은 시간. 공급자 장애로 받은 마지막 리포트와 이미 지난 만료는 0이다 */
@@ -442,34 +413,56 @@ export function findTodayOrFirstForecast(
   return report.daily.find((day) => day.date === todayKey) ?? report.daily[0] ?? null;
 }
 
-/** 서버가 심각도 순으로 보내므로 순서는 두고 만료된 특보만 뺀다. 발효 전 특보는 미리 알도록 남긴다 */
-function getActiveAlerts(alerts: readonly WeatherAlert[], now: Instant): WeatherAlert[] {
-  return alerts.filter((alert) => toEpochMs(alert.expiresAt) > toEpochMs(now));
-}
-
-function isAlertInEffect(alert: WeatherAlert, now: Instant): boolean {
-  return toEpochMs(alert.effectiveAt) <= toEpochMs(now);
-}
-
 type SunEvents =
   | { kind: 'regular'; sunrise: Instant | null; sunset: Instant | null }
   | { kind: 'polarDay' }
   | { kind: 'polarNight' };
 
-/** 일출·일몰이 모두 없으면 백야·극야인데, 둘을 가르는 값이 계약에 없어 지금 낮인지로 정한다 */
-function getSunEvents(day: DailyForecastEntry, { isDaylight }: { isDaylight: boolean }): SunEvents {
-  if (day.sunrise == null && day.sunset == null) {
-    return { kind: isDaylight ? 'polarDay' : 'polarNight' };
-  }
-  return { kind: 'regular', sunrise: day.sunrise, sunset: day.sunset };
-}
-
 export const WeatherReportPolicy = {
-  isWetHour,
-  isFrozenPrecipitation,
-  getUpcomingHours,
-  findHourlyPrecipitationOutlook,
-  getActiveAlerts,
-  isAlertInEffect,
-  getSunEvents,
-} as const;
+  isFrozenPrecipitation(type: WeatherPrecipitationType): boolean {
+    return WEATHER_FROZEN_PRECIPITATION_TYPES.some((frozen) => frozen === type);
+  },
+
+  isWetHour(hour: HourlyForecastEntry): boolean {
+    return hour.precipitationChance >= WET_HOUR_CHANCE;
+  },
+
+  getUpcomingHours(hourly: readonly HourlyForecastEntry[], now: Instant): HourlyForecastEntry[] {
+    return hourly.filter((hour) => getHourEndsAt(hour) > toEpochMs(now));
+  },
+
+  /** 지금 시간부터 6시간 안에서 비가 오는 첫 시간을 고른다. 없으면 빈 카드를 만들지 않도록 null이다. */
+  findHourlyPrecipitationOutlook(
+    hourly: readonly HourlyForecastEntry[],
+    now: Instant,
+  ): HourlyPrecipitationOutlook | null {
+    const until = toEpochMs(now) + HOURLY_OUTLOOK_RANGE_HOURS * HOUR_MS;
+    const hour = hourly.find(
+      (candidate) =>
+        getHourEndsAt(candidate) > toEpochMs(now) &&
+        toEpochMs(candidate.startsAt) < until &&
+        this.isWetHour(candidate),
+    );
+    if (hour == null) {
+      return null;
+    }
+    return { hour, isOngoing: toEpochMs(hour.startsAt) <= toEpochMs(now) };
+  },
+
+  /** 서버가 심각도 순으로 보내므로 순서는 두고 만료된 특보만 뺀다. 발효 전 특보는 미리 알도록 남긴다 */
+  getActiveAlerts(alerts: readonly WeatherAlert[], now: Instant): WeatherAlert[] {
+    return alerts.filter((alert) => toEpochMs(alert.expiresAt) > toEpochMs(now));
+  },
+
+  isAlertInEffect(alert: WeatherAlert, now: Instant): boolean {
+    return toEpochMs(alert.effectiveAt) <= toEpochMs(now);
+  },
+
+  /** 일출·일몰이 모두 없으면 백야·극야인데, 둘을 가르는 값이 계약에 없어 지금 낮인지로 정한다 */
+  getSunEvents(day: DailyForecastEntry, { isDaylight }: { isDaylight: boolean }): SunEvents {
+    if (day.sunrise == null && day.sunset == null) {
+      return { kind: isDaylight ? 'polarDay' : 'polarNight' };
+    }
+    return { kind: 'regular', sunrise: day.sunrise, sunset: day.sunset };
+  },
+};

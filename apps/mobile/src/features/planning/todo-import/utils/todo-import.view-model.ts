@@ -84,9 +84,8 @@ export function groupCollectionsByAccount(collections: readonly ImportCollection
   accounts: ImportAccountGroup[];
   receivedCollections: ImportCollection[];
 } {
-  const [receivedCollections, ownCollections] = partition(
-    collections,
-    TodoImportCollectionPolicy.isSubscribedCalendar,
+  const [receivedCollections, ownCollections] = partition(collections, (collection) =>
+    TodoImportCollectionPolicy.isSubscribedCalendar(collection),
   );
   const accounts = Object.entries(
     groupBy(ownCollections, (collection) => collection.accountName ?? ''),

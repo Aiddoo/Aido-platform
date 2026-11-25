@@ -223,7 +223,9 @@ export class PushRegistrationService {
       return result;
     }
 
-    await this.#updateRegistration(PushRegistrationPolicy.recordReleased).catch((error: unknown) =>
+    await this.#updateRegistration((registration) =>
+      PushRegistrationPolicy.recordReleased(registration),
+    ).catch((error: unknown) =>
       this.#logger.warn(NOTIFICATION_LOG_EVENT.PUSH_REGISTRATION_SAVE_FAILED, {
         error: getErrorMessage(error),
       }),
@@ -298,7 +300,9 @@ export class PushRegistrationService {
       return 'throttled';
     }
     if (this.#releaseCancelCount === cancelCount) {
-      await this.#updateRegistration(PushRegistrationPolicy.recordReleased);
+      await this.#updateRegistration((registration) =>
+        PushRegistrationPolicy.recordReleased(registration),
+      );
     }
     return 'done';
   };

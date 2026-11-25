@@ -59,82 +59,8 @@ type PushNotificationResponseAction =
   | { type: 'defer'; reason: 'auth-resolving' | 'authentication-required' }
   | { type: 'drop'; reason: 'expired' };
 
-/** 공개 수신 거부 버튼을 누른 응답. 인증과 상관없이 따로 처리하고 다음 탭에 밀리지 않게 둔다 */
-function isMarketingOptOut(response: PushNotificationResponse) {
-  return marketingOptOutActionSchema.safeParse(response.actionIdentifier).success;
-}
-
-/**
- * 리마인드 알림 버튼을 누른 응답이면 할 일. 할 일을 여는 리마인드 알림의 버튼만 받고,
- * 다시 알림은 누른 알림 id로 한 번만 예약하므로 서버 기록이 있는 알림만 받는다
- */
-function findTodoReminderAction(
-  response: PushNotificationResponse,
-): TodoReminderActionRequest | null {
-  const action = todoReminderActionSchema.safeParse(response.actionIdentifier);
-  const { notification } = response;
-  const { target } = notification;
-  if (!action.success || notification.type !== 'TODO_REMINDER' || target.kind !== 'TODO') {
-    return null;
-  }
-  return match(action.data)
-    .returnType<TodoReminderActionRequest | null>()
-    .with('complete', () => ({ type: 'complete', todoId: target.todoId, dateKey: target.dateKey }))
-    .with('snooze', () =>
-      PushNotificationPolicy.hasServerRecord(notification)
-        ? { type: 'snooze', todoId: target.todoId, notificationId: notification.notificationId }
-        : null,
-    )
-    .exhaustive();
-}
-
-/**
- * 처리가 끝나면 OS 알림 센터에서 그 알림을 지울 응답. 앱이 등록한 버튼(수신 거부·완료·다시 알림)만 지운다.
- * Android 알림 버튼은 알림을 닫지 않아, 남기면 다른 버튼을 다시 눌러 이미 끝낸 할 일 안내만 받는다.
- * 본문 탭과 모르는 동작은 OS가 하는 대로 둔다
- */
-function shouldDismissNotification(response: PushNotificationResponse) {
-  return (
-    isMarketingOptOut(response) ||
-    todoReminderActionSchema.safeParse(response.actionIdentifier).success
-  );
-}
-
 function isExpired(response: PushNotificationResponse, now: Instant) {
   return diffMs(now, response.receivedAt) > PENDING_RESPONSE_LIFETIME_MS;
-}
-
-/** 눌린 응답을 지금 어떻게 할지. 공개 수신 거부 액션은 인증과 무관하게 처리한다. */
-function getResponseAction(
-  response: PushNotificationResponse,
-  { authStatus, now }: { authStatus: AuthStatus; now: Instant },
-): PushNotificationResponseAction {
-  if (isExpired(response, now)) {
-    return { type: 'drop', reason: 'expired' };
-  }
-  if (isMarketingOptOut(response)) {
-    return { type: 'optOut' };
-  }
-  return match(authStatus)
-    .returnType<PushNotificationResponseAction>()
-    .with('loading', 'locked', () => ({ type: 'defer', reason: 'auth-resolving' }))
-    .with('unauthenticated', () => ({ type: 'defer', reason: 'authentication-required' }))
-    .with('authenticated', () => ({ type: 'open' }))
-    .exhaustive();
-}
-
-function getOpenAppState(response: PushNotificationResponse): PushOpenAppState {
-  if (response.isLaunchResponse) {
-    return 'cold';
-  }
-  if (
-    response.appState !== 'active' ||
-    response.activeSince == null ||
-    diffMs(response.receivedAt, response.activeSince) < FOREGROUND_TAP_SETTLE_MS
-  ) {
-    return 'background';
-  }
-  return 'foreground';
 }
 
 /**
@@ -166,9 +92,79 @@ export function rememberHandledResponse(
 
 /** 사용자가 누른 푸시 */
 export const PushNotificationResponsePolicy = {
-  isMarketingOptOut,
-  getResponseAction,
-  findTodoReminderAction,
-  shouldDismissNotification,
-  getOpenAppState,
-} as const;
+  /** 공개 수신 거부 버튼을 누른 응답. 인증과 상관없이 따로 처리하고 다음 탭에 밀리지 않게 둔다 */
+  isMarketingOptOut(response: PushNotificationResponse): boolean {
+    return marketingOptOutActionSchema.safeParse(response.actionIdentifier).success;
+  },
+
+  /**
+   * 리마인드 알림 버튼을 누른 응답이면 할 일. 할 일을 여는 리마인드 알림의 버튼만 받고,
+   * 다시 알림은 누른 알림 id로 한 번만 예약하므로 서버 기록이 있는 알림만 받는다
+   */
+  findTodoReminderAction(response: PushNotificationResponse): TodoReminderActionRequest | null {
+    const action = todoReminderActionSchema.safeParse(response.actionIdentifier);
+    const { notification } = response;
+    const { target } = notification;
+    if (!action.success || notification.type !== 'TODO_REMINDER' || target.kind !== 'TODO') {
+      return null;
+    }
+    return match(action.data)
+      .returnType<TodoReminderActionRequest | null>()
+      .with('complete', () => ({
+        type: 'complete',
+        todoId: target.todoId,
+        dateKey: target.dateKey,
+      }))
+      .with('snooze', () =>
+        PushNotificationPolicy.hasServerRecord(notification)
+          ? { type: 'snooze', todoId: target.todoId, notificationId: notification.notificationId }
+          : null,
+      )
+      .exhaustive();
+  },
+
+  /**
+   * 처리가 끝나면 OS 알림 센터에서 그 알림을 지울 응답. 앱이 등록한 버튼(수신 거부·완료·다시 알림)만 지운다.
+   * Android 알림 버튼은 알림을 닫지 않아, 남기면 다른 버튼을 다시 눌러 이미 끝낸 할 일 안내만 받는다.
+   * 본문 탭과 모르는 동작은 OS가 하는 대로 둔다
+   */
+  shouldDismissNotification(response: PushNotificationResponse): boolean {
+    return (
+      this.isMarketingOptOut(response) ||
+      todoReminderActionSchema.safeParse(response.actionIdentifier).success
+    );
+  },
+
+  /** 눌린 응답을 지금 어떻게 할지. 공개 수신 거부 액션은 인증과 무관하게 처리한다. */
+  getResponseAction(
+    response: PushNotificationResponse,
+    { authStatus, now }: { authStatus: AuthStatus; now: Instant },
+  ): PushNotificationResponseAction {
+    if (isExpired(response, now)) {
+      return { type: 'drop', reason: 'expired' };
+    }
+    if (this.isMarketingOptOut(response)) {
+      return { type: 'optOut' };
+    }
+    return match(authStatus)
+      .returnType<PushNotificationResponseAction>()
+      .with('loading', 'locked', () => ({ type: 'defer', reason: 'auth-resolving' }))
+      .with('unauthenticated', () => ({ type: 'defer', reason: 'authentication-required' }))
+      .with('authenticated', () => ({ type: 'open' }))
+      .exhaustive();
+  },
+
+  getOpenAppState(response: PushNotificationResponse): PushOpenAppState {
+    if (response.isLaunchResponse) {
+      return 'cold';
+    }
+    if (
+      response.appState !== 'active' ||
+      response.activeSince == null ||
+      diffMs(response.receivedAt, response.activeSince) < FOREGROUND_TAP_SETTLE_MS
+    ) {
+      return 'background';
+    }
+    return 'foreground';
+  },
+};

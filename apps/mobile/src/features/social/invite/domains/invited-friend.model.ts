@@ -30,37 +30,31 @@ function calculateActiveDaysLeft(activeDays: number, requiredDays: number) {
   return Math.max(requiredDays - activeDays, 0);
 }
 
-export function orderByJoinedAtDesc(friend: InvitedFriend) {
-  return -toEpochMs(friend.joinedAt);
-}
-
-// 발자국을 기다리는 친구가 먼저 보이게 한다. orderByJoinedAtDesc와 함께 쓴다
-export function orderByWaitingFirst(friend: InvitedFriend) {
-  return friend.status === REDEMPTION_STATUS.JOINED ? 0 : 1;
-}
-
-export function hasStartedActiveDays(friend: InvitedFriend) {
-  return friend.activeDayCount > 0;
-}
-
-export function getActiveDaysLeft(friend: InvitedFriend) {
-  return calculateActiveDaysLeft(friend.activeDayCount, INVITE_QUALIFICATION.MIN_ACTIVE_DAYS);
-}
-
-// 목록 행 칩: 발자국을 찍었는지, 기다리는 중인지, 보상에서 빠졌는지
-export function getPawPrintState(friend: InvitedFriend) {
-  return match(friend.status)
-    .with(REDEMPTION_STATUS.QUALIFIED, REDEMPTION_STATUS.REWARDED, () => 'stamped' as const)
-    .with(REDEMPTION_STATUS.JOINED, () => 'waiting' as const)
-    .with(REDEMPTION_STATUS.REJECTED, () => 'excluded' as const)
-    .with(REDEMPTION_STATUS_UNKNOWN, () => 'unknown' as const)
-    .exhaustive();
-}
-
 export const InvitedFriendPolicy = {
-  hasStartedActiveDays,
-  getActiveDaysLeft,
-  getPawPrintState,
-  orderByJoinedAtDesc,
-  orderByWaitingFirst,
-} as const;
+  orderByJoinedAtDesc(friend: InvitedFriend): number {
+    return -toEpochMs(friend.joinedAt);
+  },
+
+  // 발자국을 기다리는 친구가 먼저 보이게 한다. orderByJoinedAtDesc와 함께 쓴다
+  orderByWaitingFirst(friend: InvitedFriend): 1 | 0 {
+    return friend.status === REDEMPTION_STATUS.JOINED ? 0 : 1;
+  },
+
+  hasStartedActiveDays(friend: InvitedFriend): boolean {
+    return friend.activeDayCount > 0;
+  },
+
+  getActiveDaysLeft(friend: InvitedFriend): number {
+    return calculateActiveDaysLeft(friend.activeDayCount, INVITE_QUALIFICATION.MIN_ACTIVE_DAYS);
+  },
+
+  // 목록 행 칩: 발자국을 찍었는지, 기다리는 중인지, 보상에서 빠졌는지
+  getPawPrintState(friend: InvitedFriend): 'unknown' | 'stamped' | 'waiting' | 'excluded' {
+    return match(friend.status)
+      .with(REDEMPTION_STATUS.QUALIFIED, REDEMPTION_STATUS.REWARDED, () => 'stamped' as const)
+      .with(REDEMPTION_STATUS.JOINED, () => 'waiting' as const)
+      .with(REDEMPTION_STATUS.REJECTED, () => 'excluded' as const)
+      .with(REDEMPTION_STATUS_UNKNOWN, () => 'unknown' as const)
+      .exhaustive();
+  },
+};

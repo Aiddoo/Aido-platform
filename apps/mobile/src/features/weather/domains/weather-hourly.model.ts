@@ -167,7 +167,7 @@ export function findHourlySummary(
     };
   }
 
-  const wetHour = hours.find(WeatherReportPolicy.isWetHour);
+  const wetHour = hours.find((hour) => WeatherReportPolicy.isWetHour(hour));
   if (wetHour != null) {
     return {
       kind: 'precipitationUpcoming',

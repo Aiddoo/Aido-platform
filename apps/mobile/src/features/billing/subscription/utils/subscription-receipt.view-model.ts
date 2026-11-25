@@ -320,7 +320,10 @@ export function toSubscriptionReceiptViewModel(
   const access = user.premiumAccess;
 
   return match(user)
-    .when(UserPolicy.isAdmin, () => toAdminReceipt(access))
+    .when(
+      (user) => UserPolicy.isAdmin(user),
+      () => toAdminReceipt(access),
+    )
     .when(
       () => PremiumAccessPolicy.isGrantOnly(access),
       () => toRewardReceipt(access, context),

@@ -7,11 +7,9 @@ const todoResourceLimitSchema = z.object({
 });
 export type TodoResourceLimit = z.infer<typeof todoResourceLimitSchema>;
 
-/** 카테고리에 더 넣을 수 있는 할 일 수. 이미 한도를 넘었으면 0이다 */
-function calculateRoomLeft(limit: TodoResourceLimit) {
-  return Math.max(0, limit.maxPerCategory - limit.activeCount);
-}
-
 export const TodoResourceLimitPolicy = {
-  calculateRoomLeft,
-} as const;
+  /** 카테고리에 더 넣을 수 있는 할 일 수. 이미 한도를 넘었으면 0이다 */
+  calculateRoomLeft(limit: TodoResourceLimit): number {
+    return Math.max(0, limit.maxPerCategory - limit.activeCount);
+  },
+};

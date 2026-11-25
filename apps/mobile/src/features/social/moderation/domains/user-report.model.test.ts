@@ -86,30 +86,32 @@ describe('메시지 신고 대상', () => {
   });
 });
 
-describe('canReportTodo', () => {
-  it('수정할 수 없는 남의 할 일은 신고할 수 있다', () => {
-    // Given
-    const details = createTodoDetails({
-      permissions: { canEdit: false, canComment: true, canNudge: true, canThank: false },
+describe('TodoReportPolicy', () => {
+  describe('canReportTodo', () => {
+    it('수정할 수 없는 남의 할 일은 신고할 수 있다', () => {
+      // Given
+      const details = createTodoDetails({
+        permissions: { canEdit: false, canComment: true, canNudge: true, canThank: false },
+      });
+
+      // When
+      const result = TodoReportPolicy.canReportTodo(details);
+
+      // Then
+      expect(result).toBe(true);
     });
 
-    // When
-    const result = TodoReportPolicy.canReportTodo(details);
+    it('수정할 수 있는 내 할 일은 신고할 수 없다', () => {
+      // Given
+      const details = createTodoDetails({
+        permissions: { canEdit: true, canComment: true, canNudge: true, canThank: false },
+      });
 
-    // Then
-    expect(result).toBe(true);
-  });
+      // When
+      const result = TodoReportPolicy.canReportTodo(details);
 
-  it('수정할 수 있는 내 할 일은 신고할 수 없다', () => {
-    // Given
-    const details = createTodoDetails({
-      permissions: { canEdit: true, canComment: true, canNudge: true, canThank: false },
+      // Then
+      expect(result).toBe(false);
     });
-
-    // When
-    const result = TodoReportPolicy.canReportTodo(details);
-
-    // Then
-    expect(result).toBe(false);
   });
 });

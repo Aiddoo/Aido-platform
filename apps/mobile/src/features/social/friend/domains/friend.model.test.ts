@@ -49,25 +49,27 @@ describe('isValidUserTag', () => {
   );
 });
 
-describe('getRequestState', () => {
-  it.each([
-    { isFriend: true, requestPending: false, expected: 'friend' },
-    { isFriend: true, requestPending: true, expected: 'friend' },
-    { isFriend: false, requestPending: true, expected: 'pending' },
-    { isFriend: false, requestPending: false, expected: 'none' },
-  ] as const)(
-    '친구 $isFriend, 요청 대기 $requestPending이면 $expected로 본다',
-    ({ expected, isFriend, requestPending }) => {
-      // Given
-      const user = createSearchedUser({ isFriend, requestPending });
+describe('FriendPolicy', () => {
+  describe('getRequestState', () => {
+    it.each([
+      { isFriend: true, requestPending: false, expected: 'friend' },
+      { isFriend: true, requestPending: true, expected: 'friend' },
+      { isFriend: false, requestPending: true, expected: 'pending' },
+      { isFriend: false, requestPending: false, expected: 'none' },
+    ] as const)(
+      '친구 $isFriend, 요청 대기 $requestPending이면 $expected로 본다',
+      ({ expected, isFriend, requestPending }) => {
+        // Given
+        const user = createSearchedUser({ isFriend, requestPending });
 
-      // When
-      const state = FriendPolicy.getRequestState(user);
+        // When
+        const state = FriendPolicy.getRequestState(user);
 
-      // Then
-      expect(state).toBe(expected);
-    },
-  );
+        // Then
+        expect(state).toBe(expected);
+      },
+    );
+  });
 });
 
 describe('getFriendLimit', () => {

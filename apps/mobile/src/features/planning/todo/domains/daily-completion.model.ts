@@ -23,11 +23,6 @@ export const dailyCompletionsResultSchema = z.object({
 });
 export type DailyCompletionsResult = z.infer<typeof dailyCompletionsResultSchema>;
 
-/** 서버는 GROUP BY 순서로 색을 모아 응답마다 순서가 바뀔 수 있다. 정렬해 두면 같은 날을 다시 받아도 달력이 다시 그려지지 않는다 */
-export function toCategoryColors(colors: readonly string[]): string[] {
-  return uniq(colors).sort();
-}
-
 function createDailyCompletionSummary(
   summary: Pick<
     DailyCompletionSummary,
@@ -54,35 +49,37 @@ function withCompletions(
   };
 }
 
-export function withTodoDailyCompletion(
-  result: DailyCompletionsResult,
-  date: DateKey,
-  todos: readonly Todo[],
-): DailyCompletionsResult {
-  const { startDate, endDate } = result.dateRange;
-  const isInRange = startDate <= date && date <= endDate;
-  if (!isInRange) {
-    return result;
-  }
-  const dayTodos = todos.filter((todo) => TodoPolicy.isTodoOnDate(todo, date));
-  const others = result.completions.filter((completion) => completion.date !== date);
-  return withCompletions(
-    result,
-    dayTodos.length === 0
-      ? others
-      : [
-          ...others,
-          createDailyCompletionSummary({
-            date,
-            totalTodos: dayTodos.length,
-            completedTodos: dayTodos.filter((todo) => todo.completed).length,
-            categoryColors: toCategoryColors(dayTodos.map((todo) => todo.category.color)),
-          }),
-        ],
-  );
-}
-
 export const DailyCompletionPolicy = {
-  toCategoryColors,
-  withTodoDailyCompletion,
-} as const;
+  /** 서버는 GROUP BY 순서로 색을 모아 응답마다 순서가 바뀔 수 있다. 정렬해 두면 같은 날을 다시 받아도 달력이 다시 그려지지 않는다 */
+  toCategoryColors(colors: readonly string[]): string[] {
+    return uniq(colors).sort();
+  },
+
+  withTodoDailyCompletion(
+    result: DailyCompletionsResult,
+    date: DateKey,
+    todos: readonly Todo[],
+  ): DailyCompletionsResult {
+    const { startDate, endDate } = result.dateRange;
+    const isInRange = startDate <= date && date <= endDate;
+    if (!isInRange) {
+      return result;
+    }
+    const dayTodos = todos.filter((todo) => TodoPolicy.isTodoOnDate(todo, date));
+    const others = result.completions.filter((completion) => completion.date !== date);
+    return withCompletions(
+      result,
+      dayTodos.length === 0
+        ? others
+        : [
+            ...others,
+            createDailyCompletionSummary({
+              date,
+              totalTodos: dayTodos.length,
+              completedTodos: dayTodos.filter((todo) => todo.completed).length,
+              categoryColors: this.toCategoryColors(dayTodos.map((todo) => todo.category.color)),
+            }),
+          ],
+    );
+  },
+};

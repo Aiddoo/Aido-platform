@@ -80,46 +80,40 @@ const POLL_INTERVAL_MS = {
   UNDOING: 2000,
 } as const;
 
-function isTerminal(todoImport: TodoImport) {
-  return match(todoImport.status)
-    .with(P.union('COMPLETED', 'FAILED', 'CANCELED', 'ABANDONED', 'UNDONE'), () => true)
-    .with(P.union('UPLOADING', 'QUEUED', 'RUNNING', 'UNDOING'), () => false)
-    .exhaustive();
-}
-
-/**
- * 되돌릴 수 있는지는 서버가 정한다. 완료·실패이고 남은 할 일이 있으며 7일 안일 때만 기한이 온다.
- * 앱은 지금이 그 기한 전인지만 본다
- */
-function canUndo(todoImport: TodoImport, now: Instant) {
-  return todoImport.undoableUntil != null && !hasInstantPassed(todoImport.undoableUntil, now);
-}
-
-/** 확정 뒤에는 서버 잡이 끝까지 만든다 */
-function canCancel(todoImport: TodoImport) {
-  return todoImport.status === 'UPLOADING';
-}
-
-function getPollIntervalMs(todoImport: TodoImport): number | false {
-  return match(todoImport.status)
-    .with(P.union('COMPLETED', 'FAILED', 'CANCELED', 'ABANDONED', 'UNDONE'), () => false as const)
-    .with(
-      P.union('UPLOADING', 'QUEUED', 'RUNNING', 'UNDOING'),
-      (status) => POLL_INTERVAL_MS[status],
-    )
-    .exhaustive();
-}
-
-/** 받은 수가 없으면 0이다 */
-function calculateProcessedRatio(todoImport: TodoImport) {
-  const total = Math.max(todoImport.receivedItemCount, todoImport.expectedItemCount);
-  return total === 0 ? 0 : clamp(todoImport.processedItemCount / total, 0, 1);
-}
-
 export const TodoImportPolicy = {
-  isTerminal,
-  canUndo,
-  canCancel,
-  getPollIntervalMs,
-  calculateProcessedRatio,
-} as const;
+  isTerminal(todoImport: TodoImport): boolean {
+    return match(todoImport.status)
+      .with(P.union('COMPLETED', 'FAILED', 'CANCELED', 'ABANDONED', 'UNDONE'), () => true)
+      .with(P.union('UPLOADING', 'QUEUED', 'RUNNING', 'UNDOING'), () => false)
+      .exhaustive();
+  },
+
+  /**
+   * 되돌릴 수 있는지는 서버가 정한다. 완료·실패이고 남은 할 일이 있으며 7일 안일 때만 기한이 온다.
+   * 앱은 지금이 그 기한 전인지만 본다
+   */
+  canUndo(todoImport: TodoImport, now: Instant): boolean {
+    return todoImport.undoableUntil != null && !hasInstantPassed(todoImport.undoableUntil, now);
+  },
+
+  /** 확정 뒤에는 서버 잡이 끝까지 만든다 */
+  canCancel(todoImport: TodoImport): boolean {
+    return todoImport.status === 'UPLOADING';
+  },
+
+  getPollIntervalMs(todoImport: TodoImport): number | false {
+    return match(todoImport.status)
+      .with(P.union('COMPLETED', 'FAILED', 'CANCELED', 'ABANDONED', 'UNDONE'), () => false as const)
+      .with(
+        P.union('UPLOADING', 'QUEUED', 'RUNNING', 'UNDOING'),
+        (status) => POLL_INTERVAL_MS[status],
+      )
+      .exhaustive();
+  },
+
+  /** 받은 수가 없으면 0이다 */
+  calculateProcessedRatio(todoImport: TodoImport): number {
+    const total = Math.max(todoImport.receivedItemCount, todoImport.expectedItemCount);
+    return total === 0 ? 0 : clamp(todoImport.processedItemCount / total, 0, 1);
+  },
+};

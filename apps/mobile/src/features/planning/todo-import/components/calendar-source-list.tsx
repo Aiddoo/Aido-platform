@@ -51,7 +51,7 @@ export function CalendarSourceList({
   const formatCalendarSource = useFormatCalendarSource();
   const { accounts, receivedCollections } = groupCollectionsByAccount(collections);
 
-  if (!collections.some(TodoImportCollectionPolicy.isSelectable)) {
+  if (!collections.some((collection) => TodoImportCollectionPolicy.isSelectable(collection))) {
     return <CalendarSourceList.Empty />;
   }
 

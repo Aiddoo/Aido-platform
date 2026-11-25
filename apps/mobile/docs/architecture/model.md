@@ -8,10 +8,10 @@
 
 - **모양.** Zod 클라이언트 모델 `xSchema`와 `type X = z.infer<typeof xSchema>`다. 서버 응답 모양이 아니라 앱이 쓰는 모양이다. 목록 인터페이스의 타입(`FilterX = (x: X) => boolean`, `OrderByX`)도 여기에 둔다.
 - **원시 인자 순수 함수.** 모델이 아닌 값(날짜 key, 수, 문자열)만 받는 규칙은 모듈 `function`으로 export하고 따로 테스트한다. 인자 이름이 단위를 말한다(`calculateRangeEndDate(startDate, days)`). 규칙 이름은 `can`·`should`·`is`·`has`(긍정형), `get`, `calculate`, `find`(없으면 `null`), `with`(불변 갱신), `filterBy`·`orderBy`로 시작하고 새 값을 만드는 것은 `create*`다. 정렬은 es-toolkit `orderBy`·`take`로 한다(원본을 바꾸지 않고, Hermes에 `toSorted`가 없다).
-- **Policy는 메서드 객체다.** `export const XPolicy = { method(x: X, …) { … } }`. 메서드는 순수 함수를 조합하고 다른 메서드는 `this.other(x)`로 부른다. 다른 메서드를 부르는 메서드는 반환 타입을 적는다(서로 부르면 추론이 순환한다). 화살표 속성, 별칭, 펼침, class를 쓰지 않는다.
-- **메서드는 호출로만 쓴다.** 값으로 넘기면 `this`가 끊긴다. 콜백은 화살표로 감싼다(`notifications.filter((notification) => NotificationPolicy.isUnread(notification))`).
-- **Policy 메서드의 첫 인자는 모델 전체다.** 값 하나만 필요해도 `notification: Notification`으로 받고 `Pick`·`Partial`·객체 리터럴로 좁히지 않는다. 목록 규칙은 `readonly X[]`를 받는다. 모델 일부(폼 값, 검색어, route id, `select` 결과)만 가진 곳의 규칙은 원시 인자 순수 함수다.
-- **모델을 받는 규칙의 입구는 Policy 하나다.** 모델을 첫 인자로 받는 함수를 낱개로 export하지 않는다. Policy 밖 export는 스키마, 타입, `create*`, 원시 인자 순수 함수뿐이다.
+- **Policy는 메서드 객체다.** `export const XPolicy = { method(x: X, …) { … } }`. 메서드는 순수 함수를 조합하고 다른 메서드는 `this.other(x)`로 부른다. 다른 메서드를 부르는 메서드는 반환 타입을 적는다(서로 부르면 추론이 순환한다). 화살표 속성, 별칭, 펼침, class를 쓰지 않는다(`aido/policy-facade`).
+- **메서드는 호출로만 쓴다.** 값으로 넘기면 `this`가 끊긴다. 콜백은 화살표로 감싼다(`notifications.filter((notification) => NotificationPolicy.isUnread(notification))`, `aido/no-unbound-policy-method`).
+- **Policy 메서드의 첫 인자는 모델 전체다.** 값 하나만 필요해도 `notification: Notification`으로 받고 `Pick`·`Partial`·객체 리터럴로 좁히지 않는다. 목록 규칙은 `readonly X[]`를 받는다. 모델 일부(폼 값, 검색어, route id, `select` 결과)만 가진 곳의 규칙은 원시 인자 순수 함수다. 다른 파일의 모델을 받는 규칙은 그 모델의 Policy에 둔다(`aido/policy-model-parameter`).
+- **모델을 받는 규칙의 입구는 Policy 하나다.** 모델을 첫 인자로 받는 함수를 낱개로 export하지 않는다. Policy 밖 export는 스키마, 타입, `create*`, 원시 인자 순수 함수뿐이다(`aido/model-exports`, `aido/model-function-exports`).
 - **한 파일, 한 엔티티, 한 Policy.** 두 엔티티가 섞이면 파일을 나눈다(`push-notification.model.ts`, `push-notification-response.model.ts`). `create*`는 Policy에 넣지 않는다. 규칙 없는 모델에는 빈 Policy를 만들지 않는다.
   - 예외는 `social/nudge/domains/nudge-interaction.model.ts` 하나다. 콕 응답(`NudgeInteractionPolicy`)·감사 미리보기(`NudgeThanksPreviewPolicy`)는 한 감사 흐름에서 함께 바뀌어 한 파일에 둔다. 할 일을 감사할 수 있는지는 서버 상세 `permissions.canThank`다.
 - **업무 규칙 표**는 모델 파일 안 비공개 상수이고 `satisfies Record<Union, …>`를 건다. 서버가 종류를 더하면 빌드가 깨진다.
