@@ -26,10 +26,11 @@
 
 ## 명령어
 
-`pnpm install`의 `postinstall`이 이 패키지를 먼저 빌드한다. 서버·앱은 `dist` 타입을 읽으므로 스키마를 바꾸면 다시 빌드하고 서버 계약 테스트로 공개 계약을 확인한다.
+`pnpm install`의 `postinstall`이 이 패키지를 먼저 빌드한다. 서버·앱은 `dist`를 읽으므로 스키마를 바꾸면 다시 빌드하고 서버 계약 테스트로 공개 계약을 확인한다. 루트 `pnpm dev`는 이 패키지의 `dev`(`tsc --build --watch`)도 함께 돌려 `dist`를 다시 만든다.
 
 ```sh
 pnpm --filter @aido/api build          # tsc --build → dist/
+pnpm --filter @aido/api dev            # tsc --build --watch
 pnpm --filter @aido/api test           # Vitest
 pnpm --filter @aido/server test:contract
 ```

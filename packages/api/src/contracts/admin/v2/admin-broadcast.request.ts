@@ -2,12 +2,25 @@ import { z } from "zod";
 
 import { dateSchema, timeOfDaySchema } from "../../../common/datetime.js";
 import { entityIdSchema } from "../../../common/entity-id.js";
+import { ADMIN_NOTIFICATION_LIMITS } from "../../../vocabulary/admin.constants.js";
 import { SUPPORTED_LOCALES } from "../../../vocabulary/locale.constants.js";
 import { broadcastNotificationSchema } from "../v1/admin.request.js";
 
 const localizedCopySchema = z.object({
-  title: z.string().min(1, "제목을 입력해주세요").max(100, "제목은 100자 이하로 입력해주세요"),
-  body: z.string().min(1, "내용을 입력해주세요").max(500, "내용은 500자 이하로 입력해주세요"),
+  title: z
+    .string()
+    .min(1, "제목을 입력해주세요")
+    .max(
+      ADMIN_NOTIFICATION_LIMITS.TITLE_MAX_LENGTH,
+      `제목은 ${ADMIN_NOTIFICATION_LIMITS.TITLE_MAX_LENGTH}자 이하로 입력해주세요`,
+    ),
+  body: z
+    .string()
+    .min(1, "내용을 입력해주세요")
+    .max(
+      ADMIN_NOTIFICATION_LIMITS.BODY_MAX_LENGTH,
+      `내용은 ${ADMIN_NOTIFICATION_LIMITS.BODY_MAX_LENGTH}자 이하로 입력해주세요`,
+    ),
 });
 
 export const broadcastDeliverySchema = z

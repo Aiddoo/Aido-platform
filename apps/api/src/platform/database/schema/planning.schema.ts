@@ -1,4 +1,8 @@
-import { TODO_IMPORT_ACTIVE_STATUSES, type TodoImportFailureReason } from "@aido/api/vocabulary";
+import {
+  TODO_CATEGORY_LIMITS,
+  TODO_IMPORT_ACTIVE_STATUSES,
+  type TodoImportFailureReason,
+} from "@aido/api/vocabulary";
 import { sql } from "drizzle-orm";
 import {
   pgTable,
@@ -145,7 +149,7 @@ export const todoCategory = pgTable(
       .default(sql`now()`)
       .notNull(),
     id: serial().primaryKey(),
-    name: varchar({ length: 50 }).notNull(),
+    name: varchar({ length: TODO_CATEGORY_LIMITS.NAME_MAX_LENGTH }).notNull(),
     sortOrder: integer().default(0).notNull(),
     // 카테고리 저장소가 ClockPort 값으로 insert·update마다 명시한다(순서 밀기 포함)
     updatedAt: instant().notNull(),

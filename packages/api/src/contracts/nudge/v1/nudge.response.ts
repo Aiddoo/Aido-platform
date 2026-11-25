@@ -3,6 +3,7 @@ import { z } from "zod";
 import { datetimeSchema, nullableDatetimeSchema } from "../../../common/datetime.js";
 import { entityIdSchema } from "../../../common/entity-id.js";
 import { USER_TAG_LENGTH } from "../../../vocabulary/follow.constants.js";
+import { NUDGE_LIMITS, REMIND_NUDGE_LIMITS } from "../../../vocabulary/nudge.constants.js";
 import { TODO_LIMITS } from "../../../vocabulary/todo.constants.js";
 
 export const nudgeSchema = z
@@ -13,7 +14,7 @@ export const nudgeSchema = z
     todoId: z.int().positive().meta({ description: "대상 할 일 ID (양의 정수)" }),
     message: z
       .string()
-      .max(200)
+      .max(NUDGE_LIMITS.MAX_MESSAGE_LENGTH)
       .nullable()
       .meta({ description: "응원 메시지 (최대 200자, 미설정 시 null)" }),
     createdAt: datetimeSchema.meta({
@@ -282,7 +283,7 @@ export const remindNudgeSchema = z
     receiverId: entityIdSchema.meta({ description: "받은 사용자 ID" }),
     message: z
       .string()
-      .max(200)
+      .max(REMIND_NUDGE_LIMITS.MAX_MESSAGE_LENGTH)
       .nullable()
       .meta({ description: "독촉 메시지 (최대 200자, 미설정 시 null)" }),
     createdAt: datetimeSchema.meta({ description: "생성 시각 (ISO 8601 UTC)" }),

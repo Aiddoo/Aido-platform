@@ -1219,6 +1219,9 @@ importers:
       '@aido/test-config':
         specifier: workspace:*
         version: link:../../tooling/test-config
+      '@aido/typescript-config':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
       '@aido/vitest-config':
         specifier: workspace:*
         version: link:../../tooling/vitest

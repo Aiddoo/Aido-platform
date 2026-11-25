@@ -1,6 +1,6 @@
 {
   "$schema": "https://turborepo.com/schema.json",
-  "globalDependencies": [".nvmrc", "patches/**", "tooling/typescript/**"],
+  "globalDependencies": [".nvmrc", "patches/**"],
   "tasks": {
     "transit": {
       "dependsOn": ["^transit"]

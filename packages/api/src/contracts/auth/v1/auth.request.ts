@@ -6,8 +6,10 @@ import {
   OAUTH_MODES,
   OAUTH_PROVIDERS,
   PASSWORD_RULES,
+  USER_PROFILE_LIMITS,
   VERIFICATION_CODE,
 } from "../../../vocabulary/auth.constants.js";
+import { SESSION_DEVICE_NAME_MAX_LENGTH } from "../../../vocabulary/device.constants.js";
 import { profileIconKeySchema } from "./auth.common.js";
 
 export const emailSchema = z
@@ -38,9 +40,14 @@ export const registerSchema = z
       .string()
       .trim()
       .min(1, "이름을 입력해주세요")
-      .max(20, "이름은 20자 이내여야 합니다")
+      .max(
+        USER_PROFILE_LIMITS.NAME_MAX_LENGTH,
+        `이름은 ${USER_PROFILE_LIMITS.NAME_MAX_LENGTH}자 이내여야 합니다`,
+      )
       .optional()
-      .meta({ description: "사용자 이름 (선택, 최대 20자, 예: 홍길동)" }),
+      .meta({
+        description: `사용자 이름 (선택, 최대 ${USER_PROFILE_LIMITS.NAME_MAX_LENGTH}자, 예: 홍길동)`,
+      }),
     termsAgreed: z
       .literal(true, {
         error: "서비스 이용약관에 동의해주세요",
@@ -75,7 +82,7 @@ export const loginSchema = z
     password: z.string().min(1, "비밀번호를 입력해주세요").meta({ description: "비밀번호" }),
     deviceName: z
       .string()
-      .max(100)
+      .max(SESSION_DEVICE_NAME_MAX_LENGTH)
       .optional()
       .meta({ description: "기기 이름 (선택, 세션 구분용, 예: iPhone 15 Pro)" }),
     deviceType: deviceTypeSchema
@@ -197,13 +204,21 @@ export const updateProfileSchema = z
       .string()
       .trim()
       .min(1, "이름을 입력해주세요")
-      .max(20, "이름은 20자 이내여야 합니다")
+      .max(
+        USER_PROFILE_LIMITS.NAME_MAX_LENGTH,
+        `이름은 ${USER_PROFILE_LIMITS.NAME_MAX_LENGTH}자 이내여야 합니다`,
+      )
       .optional()
       .meta({ description: "사용자 이름" }),
     profileImage: z
       .union([
         profileIconKeySchema,
-        z.url("올바른 URL 형식이 아닙니다").max(500, "프로필 이미지 URL은 500자 이내여야 합니다"),
+        z
+          .url("올바른 URL 형식이 아닙니다")
+          .max(
+            USER_PROFILE_LIMITS.IMAGE_URL_MAX_LENGTH,
+            `프로필 이미지 URL은 ${USER_PROFILE_LIMITS.IMAGE_URL_MAX_LENGTH}자 이내여야 합니다`,
+          ),
       ])
       .optional()
       .nullable()
@@ -232,13 +247,16 @@ export const appleMobileCallbackSchema = z
     }),
     userName: z
       .string()
-      .max(20, "이름은 20자 이내여야 합니다")
+      .max(
+        USER_PROFILE_LIMITS.NAME_MAX_LENGTH,
+        `이름은 ${USER_PROFILE_LIMITS.NAME_MAX_LENGTH}자 이내여야 합니다`,
+      )
       .trim()
       .optional()
       .meta({ description: "Apple에서 제공한 사용자 이름 (첫 로그인 시에만 제공)" }),
     deviceName: z
       .string()
-      .max(100)
+      .max(SESSION_DEVICE_NAME_MAX_LENGTH)
       .optional()
       .meta({ description: "기기 이름 (선택, 세션 구분용, 예: iPhone 15 Pro)" }),
     deviceType: deviceTypeSchema
@@ -257,13 +275,16 @@ export const googleMobileCallbackSchema = z
       .meta({ description: "Google에서 발급받은 ID Token (서버에서 google-auth-library로 검증)" }),
     userName: z
       .string()
-      .max(20, "이름은 20자 이내여야 합니다")
+      .max(
+        USER_PROFILE_LIMITS.NAME_MAX_LENGTH,
+        `이름은 ${USER_PROFILE_LIMITS.NAME_MAX_LENGTH}자 이내여야 합니다`,
+      )
       .trim()
       .optional()
       .meta({ description: "사용자 이름 (프로필에서 가져온 이름 대신 사용할 경우)" }),
     deviceName: z
       .string()
-      .max(100)
+      .max(SESSION_DEVICE_NAME_MAX_LENGTH)
       .optional()
       .meta({ description: "기기 이름 (선택, 세션 구분용, 예: iPhone 15 Pro)" }),
     deviceType: deviceTypeSchema
@@ -280,13 +301,16 @@ export const kakaoMobileCallbackSchema = z
       .meta({ description: "Kakao에서 발급받은 Access Token (서버에서 /v2/user/me API로 검증)" }),
     userName: z
       .string()
-      .max(20, "이름은 20자 이내여야 합니다")
+      .max(
+        USER_PROFILE_LIMITS.NAME_MAX_LENGTH,
+        `이름은 ${USER_PROFILE_LIMITS.NAME_MAX_LENGTH}자 이내여야 합니다`,
+      )
       .trim()
       .optional()
       .meta({ description: "사용자 이름 (프로필에서 가져온 이름 대신 사용할 경우)" }),
     deviceName: z
       .string()
-      .max(100)
+      .max(SESSION_DEVICE_NAME_MAX_LENGTH)
       .optional()
       .meta({ description: "기기 이름 (선택, 세션 구분용, 예: iPhone 15 Pro)" }),
     deviceType: deviceTypeSchema
@@ -303,13 +327,16 @@ export const naverMobileCallbackSchema = z
       .meta({ description: "Naver에서 발급받은 Access Token (서버에서 /v1/nid/me API로 검증)" }),
     userName: z
       .string()
-      .max(20, "이름은 20자 이내여야 합니다")
+      .max(
+        USER_PROFILE_LIMITS.NAME_MAX_LENGTH,
+        `이름은 ${USER_PROFILE_LIMITS.NAME_MAX_LENGTH}자 이내여야 합니다`,
+      )
       .trim()
       .optional()
       .meta({ description: "사용자 이름 (프로필에서 가져온 이름 대신 사용할 경우)" }),
     deviceName: z
       .string()
-      .max(100)
+      .max(SESSION_DEVICE_NAME_MAX_LENGTH)
       .optional()
       .meta({ description: "기기 이름 (선택, 세션 구분용, 예: iPhone 15 Pro)" }),
     deviceType: deviceTypeSchema

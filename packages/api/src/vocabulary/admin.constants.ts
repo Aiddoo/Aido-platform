@@ -2,6 +2,12 @@
  * Admin 도메인 상수
  */
 
+/** 관리자 알림(전체·대상 지정·다국어 문구) 제목·내용 길이 한도 */
+export const ADMIN_NOTIFICATION_LIMITS = {
+  TITLE_MAX_LENGTH: 100,
+  BODY_MAX_LENGTH: 500,
+} as const;
+
 /**
  * 브로드캐스트 알림 대상 필터
  *

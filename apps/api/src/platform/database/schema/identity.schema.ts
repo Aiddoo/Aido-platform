@@ -1,4 +1,4 @@
-import { USER_TAG_LENGTH } from "@aido/api/vocabulary";
+import { USER_PROFILE_LIMITS, USER_TAG_LENGTH } from "@aido/api/vocabulary";
 import { sql } from "drizzle-orm";
 import {
   pgTable,
@@ -231,13 +231,13 @@ export const oAuthState = pgTable(
     initiatingUserId: varchar({ length: 36 }),
     isNewUser: boolean(),
     mode: varchar({ length: 10 }),
-    profileImage: varchar({ length: 500 }),
+    profileImage: varchar({ length: USER_PROFILE_LIMITS.IMAGE_URL_MAX_LENGTH }),
     provider: accountProvider().notNull(),
     redirectUri: varchar({ length: 500 }).notNull(),
     refreshToken: varchar({ length: 1000 }),
     state: varchar({ length: 64 }).notNull(),
     userId: varchar({ length: 255 }),
-    userName: varchar({ length: 20 }),
+    userName: varchar({ length: USER_PROFILE_LIMITS.NAME_MAX_LENGTH }),
   },
   (table) => [
     index("OAuthState_expiresAt_idx").using("btree", table.expiresAt.asc().nullsLast()),
@@ -291,8 +291,8 @@ export const userProfile = pgTable(
   "UserProfile",
   {
     id: text().primaryKey().$defaultFn(createEntityId),
-    name: varchar({ length: 20 }),
-    profileImage: varchar({ length: 500 }),
+    name: varchar({ length: USER_PROFILE_LIMITS.NAME_MAX_LENGTH }),
+    profileImage: varchar({ length: USER_PROFILE_LIMITS.IMAGE_URL_MAX_LENGTH }),
     userId: text().notNull(),
   },
   (table) => [
