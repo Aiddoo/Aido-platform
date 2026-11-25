@@ -33,7 +33,7 @@
 **파일과 위치**
 
 - 한 곳만 쓰는 훅은 쓰는 파일 아래 지역 훅이다(화면만 쓰는 route 값 훅도 그 route 파일 안). 파일을 따로 두는 경우는 [structure의 공개 면](./structure.md#공개-면)과 같다. 제품 말 없이 설명되고 두 기능 이상이 쓰면 `shared/`다.
-- 파일 이름은 export의 kebab-case다(`usePushPermissionAction` → `use-push-permission-action.ts`). 파일 하나에 공개 훅 하나다. 같은 params 스키마의 튜플 훅은 `hooks/use-{name}-params.ts` 하나에 모으고, 같은 원천(store·Context·저장소)을 다른 모양으로 읽는 짝(`usePushOnboardingGuard`·`usePushOnboardingGuardState`)은 한 파일에 둔다.
+- 파일 이름은 export의 kebab-case다(`usePushPermissionAction` → `use-push-permission-action.ts`). 파일 하나에 공개 훅 하나다. 같은 params 스키마의 튜플 훅은 `hooks/use-{name}-params.ts` 하나에 모으고, 같은 원천(store·Context·저장소)을 다른 모양으로 읽는 짝(`useIsPushOnboardingGuardOpen`·`usePushOnboardingGuardState`)은 한 파일에 둔다.
 - 훅이 아닌 export(순수 함수, 상수, 로그 키)는 `utils/`·`constants/`에 둔다.
 
 **effect**

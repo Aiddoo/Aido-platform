@@ -1,6 +1,7 @@
 import { ok } from '@src/core/errors/result';
 import type { AuthStatus } from '@src/core/session/auth-status';
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
+import { fromEpochMs } from '@src/shared/date/instant';
 import { NetworkError, ServerError } from '@src/shared/errors';
 import {
   createAnalyticsStub,
@@ -19,8 +20,8 @@ import { useState } from 'react';
 import { Pressable, Text } from 'react-native';
 
 import { createMarkReadResponseDto } from '../__tests__/notification.fixtures';
+import { parsePushNotificationResponse } from '../apis/push-notification-response.mapper';
 import { NOTIFICATION_ENTRY_HOLD_MAX_MS } from '../constants/notification.constants';
-import { toPushNotificationResponseId } from '../domains/push-notification-response.model';
 import { usePushNotificationResponse } from './use-push-notification-response';
 
 jest.unmock('expo-router');
@@ -30,7 +31,16 @@ const RESPONSE = {
   actionIdentifier: 'default',
   data: { notificationId: 0, type: 'FOLLOW_NEW', action: { type: 'NONE' } },
 };
-const RESPONSE_ID = toPushNotificationResponseId(RESPONSE.id, RESPONSE.actionIdentifier);
+
+/** 슬롯이 이 OS 응답을 부르는 id */
+function toResponseId(actionIdentifier: string) {
+  return parsePushNotificationResponse(
+    { ...RESPONSE, actionIdentifier },
+    { receivedAt: fromEpochMs(0), isLaunchResponse: false, appState: 'active', activeSince: null },
+  ).response.id;
+}
+
+const RESPONSE_ID = toResponseId(RESPONSE.actionIdentifier);
 
 async function setup({ status }: { status: AuthStatus }) {
   const gateway = createPushNotificationGatewayStub();
@@ -91,7 +101,7 @@ describe('usePushNotificationResponse', () => {
     const { gateway, store } = await setup({ status: 'unauthenticated' });
     // Android 알림 버튼은 알림을 닫지 않아 같은 알림의 본문을 다시 누를 수 있다
     await act(async () => gateway.emitResponse({ ...RESPONSE, actionIdentifier: 'complete' }));
-    await act(async () => store.settle(toPushNotificationResponseId(RESPONSE.id, 'complete')));
+    await act(async () => store.settle(toResponseId('complete')));
     const listener = jest.fn();
     store.subscribe(listener);
 
@@ -352,6 +362,46 @@ describe('usePushNotificationResponse', () => {
     await waitFor(() => expect(gateway.clearLastResponse).toHaveBeenCalled());
     expect(store.getSnapshot().ready).toBeNull();
     expect(gateway.dismissNotification).not.toHaveBeenCalled();
+  });
+
+  it('연 뒤의 기록이 던져도 응답을 끝내 슬롯을 비우고 다음 알림을 연다', async () => {
+    // Given
+    const { gateway, httpClient, analytics, logger, store } = await setup({
+      status: 'authenticated',
+    });
+    httpClient.patch.mockResolvedValue(ok(createMarkReadResponseDto()));
+    httpClient.post.mockResolvedValue(ok({ opened: true }));
+    // 분석이 던지고 그 경고까지 던지면 열림 기록 전체가 던진다
+    analytics.trackEvent.mockImplementation(() => {
+      throw new Error('analytics down');
+    });
+    logger.warn.mockImplementation((event) => {
+      if (event === 'notification.open-analytics.failed') {
+        throw new Error('logger down');
+      }
+    });
+    await act(async () => store.markAppEntry(false));
+    const openNoneResponse = (id: string) =>
+      act(async () =>
+        gateway.emitResponse({
+          ...RESPONSE,
+          id,
+          data: { ...RESPONSE.data, notificationId: 7, navigation: { kind: 'NONE' } },
+        }),
+      );
+
+    // When
+    await openNoneResponse('response-1');
+    await waitFor(() => expect(gateway.clearLastResponse).toHaveBeenCalledTimes(1));
+    await openNoneResponse('response-2');
+
+    // Then
+    await waitFor(() => expect(gateway.clearLastResponse).toHaveBeenCalledTimes(2));
+    expect(store.getSnapshot().ready).toBeNull();
+    expect(store.getSnapshot().pending).toBeNull();
+    expect(logger.warn).toHaveBeenCalledWith('notification.response.open-failed', {
+      error: 'logger down',
+    });
   });
 
   it('처리한 버튼 알림을 지우지 못해도 경고만 남긴다', async () => {

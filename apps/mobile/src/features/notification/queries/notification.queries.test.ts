@@ -3,7 +3,7 @@ import { createDateKey } from '@src/testing/date-key';
 
 import { createNotificationListResponseDto } from '../__tests__/notification.fixtures';
 import { toNotification } from '../apis/notification.mapper';
-import { getDateSectionKey, toDateSectionedListItems } from './notification-section.view-model';
+import { getDateSectionKey, toDateSectionedListItems } from './notification.queries';
 
 describe('getDateSectionKey', () => {
   it('이번 주는 달력과 같은 일요일 시작 주다', () => {

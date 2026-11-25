@@ -1394,7 +1394,6 @@
         "src/features/assistant/suggestion/**",
         "src/features/device/activation/**",
         "src/features/insights/achievement/**",
-        "src/features/notification/**",
         "src/features/social/nudge/**"
       ],
       "rules": {

@@ -1,4 +1,3 @@
-import { TODO_REMINDER_SNOOZE_MINUTES } from '@aido/api/vocabulary';
 import {
   useAppLifecycle,
   useLogger,
@@ -7,109 +6,66 @@ import {
   usePushNotificationEntryStore,
   useSessionEpoch,
 } from '@src/bootstrap/providers/di-context';
-import type { PushNotificationResponse as OsPushNotificationResponse } from '@src/core/ports/push-notification-gateway';
+import type { AppLogger } from '@src/core/ports/app-logger';
+import type {
+  PushNotificationResponse as OsPushNotificationResponse,
+  PushNotificationGateway,
+} from '@src/core/ports/push-notification-gateway';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
-import {
-  ensurePreference,
-  getCachedPreference,
-} from '@src/features/identity/preference/queries/preference-cache';
-import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
-import { isTodoUnavailableError } from '@src/features/planning/todo/domains/todo.error';
-import { fetchFreshTodoDetails } from '@src/features/planning/todo/queries/todo-cache';
-import { useToggleTodoMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
-import { useGetTodoDetailsQueryOptionsFactory } from '@src/features/planning/todo/queries/todo.queries';
 import { useTrack } from '@src/shared/analytics';
 import { getNowInstant } from '@src/shared/date/clock';
-import type { DateKey } from '@src/shared/date/date-key';
-import { formatClockTime } from '@src/shared/date/format/date-format';
-import type { Instant } from '@src/shared/date/instant';
-import { getErrorMessage, NetworkError } from '@src/shared/errors';
-import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { getErrorMessage } from '@src/shared/errors';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
-import { useTranslation } from '@src/shared/i18n';
 import { openEntryHref } from '@src/shared/navigation/open-entry-href';
-import { readWithoutBlocking } from '@src/shared/query/read-without-blocking';
-import { useAppToast } from '@src/shared/ui';
-import {
-  mutationOptions,
-  onlineManager,
-  useIsRestoring,
-  useMutation,
-  useQueryClient,
-} from '@tanstack/react-query';
-import { noop, TimeoutError as WaitTimeoutError, withTimeout } from 'es-toolkit';
-import {
-  useCallback,
-  useEffect,
-  useEffectEvent,
-  useLayoutEffect,
-  useRef,
-  useSyncExternalStore,
-} from 'react';
-import { match } from 'ts-pattern';
+import { useIsRestoring, useMutation } from '@tanstack/react-query';
+import { useEffect, useEffectEvent, useLayoutEffect, useRef, useSyncExternalStore } from 'react';
 
-import { parsePushNotification } from '../apis/push-notification.mapper';
+import { parsePushNotificationResponse } from '../apis/push-notification-response.mapper';
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
-import {
-  NOTIFICATION_ENTRY_HOLD_MAX_MS,
-  TODO_REMINDER_DETAILS_WAIT_MS,
-} from '../constants/notification.constants';
-import { getTodoReminderActionFailure } from '../domains/notification.error';
+import { NOTIFICATION_ENTRY_HOLD_MAX_MS } from '../constants/notification.constants';
 import {
   type PushNotificationResponse,
   PushNotificationResponsePolicy,
-  toPushNotificationResponseId,
-  type TodoReminderActionOutcome,
-  type TodoReminderActionRequest,
 } from '../domains/push-notification-response.model';
-import {
-  createUnreadablePushNotification,
-  PushNotificationPolicy,
-} from '../domains/push-notification.model';
+import { PushNotificationPolicy } from '../domains/push-notification.model';
 import {
   useOptOutMarketingPushMutationOptions,
   useRecordPushOpenedMutationOptions,
-  useSnoozeTodoReminderMutationOptions,
 } from '../queries/notification.mutations';
 import type { ReadyPushNotificationEntry } from '../stores/push-notification-entry.store';
+import { toPushNotificationOpenedEvent } from '../utils/push-notification-analytics';
 import {
   useOpenNotificationDestination,
   useResolveNotificationDestination,
 } from './use-notification-destination';
 import { usePushNotificationEntry } from './use-push-notification-entry';
+import { useRunTodoReminderAction } from './use-run-todo-reminder-action';
 
-/** 푸시 응답의 입구 하나. 마지막 응답과 응답 리스너를 슬롯 하나로 모은다 */
+/**
+ * 눌린 푸시의 입구 하나. OS 응답은 여기서만 구독해 슬롯(DI store)에 넣고, 아래 단계는 슬롯의 칸만 읽어
+ * 응답 하나를 한 번씩 처리한다: 수신 거부 보내기, 소유를 확인해 목적지 정하기, 연 뒤 기록하기
+ */
 export function usePushNotificationResponse(): void {
-  const status = useAuthStatus();
+  const { pending, ready, optOut } = usePushNotificationEntrySlots();
+
+  useReceivePushNotificationResponses();
+  useForgetResponsesOnSignOut();
+  useMarketingOptOut(optOut);
+  useResolveResponse(pending);
+  useOpenReadyEntry(ready);
+}
+
+function usePushNotificationEntrySlots() {
+  const store = usePushNotificationEntryStore();
+  return useSyncExternalStore(store.subscribe, store.getSnapshot);
+}
+
+/** 시작할 때 읽은 마지막 응답과 응답 리스너를 슬롯 하나로 모은다. 같은 응답이 다시 오면 슬롯이 버린다 */
+function useReceivePushNotificationResponses() {
   const gateway = usePushNotification();
   const appLifecycle = useAppLifecycle();
   const store = usePushNotificationEntryStore();
   const logger = useLogger();
-  const { pending, ready, optOut } = useSyncExternalStore(store.subscribe, store.getSnapshot);
-  // React Compiler가 try…finally를 다루지 못해 이 훅을 건너뛰므로 손으로 메모한다
-  const clearLastResponse = useCallback(() => {
-    try {
-      gateway.clearLastResponse();
-    } catch (error) {
-      logger.warn(NOTIFICATION_LOG_EVENT.SESSION_RESPONSE_CLEANUP_FAILED, {
-        error: getErrorMessage(error),
-      });
-    }
-  }, [gateway, logger]);
-  const finishResponse = useCallback(
-    (response: PushNotificationResponse) => {
-      store.settle(response.id);
-      clearLastResponse();
-      if (PushNotificationResponsePolicy.shouldDismissNotification(response)) {
-        gateway.dismissNotification(response.notificationIdentifier).catch((error: unknown) =>
-          logger.warn(NOTIFICATION_LOG_EVENT.ACTION_NOTIFICATION_DISMISS_FAILED, {
-            error: getErrorMessage(error),
-          }),
-        );
-      }
-    },
-    [clearLastResponse, gateway, logger, store],
-  );
 
   useLayoutEffect(() => {
     let activeSince = appLifecycle.getCurrentState() === 'active' ? getNowInstant() : null;
@@ -117,43 +73,47 @@ export function usePushNotificationResponse(): void {
       activeSince = state === 'active' ? getNowInstant() : null;
     });
     const receive = (
-      response: OsPushNotificationResponse,
+      osResponse: OsPushNotificationResponse,
       { isLaunchResponse }: { isLaunchResponse: boolean },
     ) => {
-      const { notification, droppedPaths } = parsePushNotification(response.data);
-      if (droppedPaths.length > 0) {
-        logger.warn(NOTIFICATION_LOG_EVENT.PUSH_PAYLOAD_DROPPED, {
-          source: 'response',
-          responseId: response.id,
-          droppedPaths: droppedPaths.join(','),
-          isReadable: notification != null,
-        });
-      }
-      store.receive({
-        id: toPushNotificationResponseId(response.id, response.actionIdentifier),
-        notificationIdentifier: response.id,
-        actionIdentifier: response.actionIdentifier,
-        notification: notification ?? createUnreadablePushNotification(),
+      const { response, droppedPaths, isReadable } = parsePushNotificationResponse(osResponse, {
         receivedAt: getNowInstant(),
         isLaunchResponse,
         appState: appLifecycle.getCurrentState(),
         activeSince,
       });
+      if (droppedPaths.length > 0) {
+        logger.warn(NOTIFICATION_LOG_EVENT.PUSH_PAYLOAD_DROPPED, {
+          source: 'response',
+          responseId: osResponse.id,
+          droppedPaths: droppedPaths.join(','),
+          isReadable,
+        });
+      }
+      store.receive(response);
     };
     const launchResponse = gateway.getLastResponse();
     if (launchResponse != null) {
       receive(launchResponse, { isLaunchResponse: true });
     }
-    const removeResponseListener = gateway.subscribeResponse((response) =>
-      receive(response, { isLaunchResponse: false }),
+    const removeResponseListener = gateway.subscribeResponse((osResponse) =>
+      receive(osResponse, { isLaunchResponse: false }),
     );
     return () => {
       removeAppStateListener();
       removeResponseListener();
     };
   }, [appLifecycle, gateway, logger, store]);
+}
 
+/** 로그인한 세션이 끝나면 슬롯과 OS의 마지막 응답을 지워 다음 계정이 앞 계정의 탭을 열지 않게 한다 */
+function useForgetResponsesOnSignOut() {
+  const status = useAuthStatus();
+  const gateway = usePushNotification();
+  const store = usePushNotificationEntryStore();
+  const logger = useLogger();
   const wasAuthenticatedRef = useRef(status === 'authenticated');
+
   useLayoutEffect(() => {
     const wasAuthenticated = wasAuthenticatedRef.current;
     wasAuthenticatedRef.current = status === 'authenticated';
@@ -161,22 +121,35 @@ export function usePushNotificationResponse(): void {
       return;
     }
     store.clear();
-    clearLastResponse();
-  }, [clearLastResponse, status, store]);
-
-  useMarketingOptOut(optOut, finishResponse);
-  useResolveResponse(pending, finishResponse);
-  useOpenReadyEntry(ready, finishResponse);
+    clearLastResponse(gateway, logger);
+  }, [gateway, logger, status, store]);
 }
 
-function useMarketingOptOut(
-  response: PushNotificationResponse | null,
-  finishResponse: (response: PushNotificationResponse) => void,
-) {
+/** 끝난 응답을 슬롯에서 빼고 재시작 중복을 막는다. 처리한 버튼 응답의 알림은 알림 센터에서 지운다 */
+function useFinishResponse() {
+  const gateway = usePushNotification();
+  const store = usePushNotificationEntryStore();
+  const logger = useLogger();
+
+  return (response: PushNotificationResponse) => {
+    store.settle(response.id);
+    clearLastResponse(gateway, logger);
+    if (PushNotificationResponsePolicy.shouldDismissNotification(response)) {
+      gateway.dismissNotification(response.notificationIdentifier).catch((error: unknown) =>
+        logger.warn(NOTIFICATION_LOG_EVENT.ACTION_NOTIFICATION_DISMISS_FAILED, {
+          error: getErrorMessage(error),
+        }),
+      );
+    }
+  };
+}
+
+function useMarketingOptOut(response: PushNotificationResponse | null) {
   const status = useAuthStatus();
   const appLifecycle = useAppLifecycle();
   const logger = useLogger();
   const reportUnexpectedError = useReportUnexpectedError('notification');
+  const finishResponse = useFinishResponse();
   const { mutateAsync: optOut } = useMutation(useOptOutMarketingPushMutationOptions());
   // 앞에 온 순간과 응답이 같은 틱에 두 번 부를 수 있어 응답 id로 한 번만 보낸다
   const inFlightIdRef = useRef<string | null>(null);
@@ -196,18 +169,18 @@ function useMarketingOptOut(
       return;
     }
     inFlightIdRef.current = target.id;
+    let isSent = false;
     try {
       await optOut(token);
+      isSent = true;
     } catch (error) {
       // 응답을 남겨 앞에 오면 다시 보낸다. 연결 끊김·4xx는 다시 보내면 되고 5xx·파싱 실패만 이슈로 남긴다
       logger.warn(NOTIFICATION_LOG_EVENT.RESPONSE_DEFERRED, { error: getErrorMessage(error) });
       reportUnexpectedError(error);
-      return;
-    } finally {
-      inFlightIdRef.current = null;
     }
+    inFlightIdRef.current = null;
     // 보내는 사이 로그아웃으로 슬롯이 비었으면 새 세션의 응답을 지우지 않는다
-    if (!signal.aborted) {
+    if (isSent && !signal.aborted) {
       finishResponse(target);
     }
   });
@@ -231,10 +204,7 @@ function useMarketingOptOut(
 }
 
 /** 인증과 복원이 끝난 탭의 소유를 확인하고 목적지를 정한다 */
-function useResolveResponse(
-  response: PushNotificationResponse | null,
-  finishResponse: (response: PushNotificationResponse) => void,
-) {
+function useResolveResponse(response: PushNotificationResponse | null) {
   const status = useAuthStatus();
   const isRestoring = useIsRestoring();
   const store = usePushNotificationEntryStore();
@@ -242,6 +212,7 @@ function useResolveResponse(
   const sessionEpoch = useSessionEpoch();
   const logger = useLogger();
   const resolveDestination = useResolveNotificationDestination();
+  const finishResponse = useFinishResponse();
   const inFlightIdRef = useRef<string | null>(null);
 
   const resolve = useEffectEvent(async (target: PushNotificationResponse) => {
@@ -257,24 +228,23 @@ function useResolveResponse(
       const ownership = await notificationApi.markAsReadAndCheckOwnership(
         notification.notificationId,
       );
-      if (!isCurrent()) {
-        return;
+      // 처리 중 표시를 풀기 전에 끝나지 않게 return 대신 갈래로 둔다. 끝난 세션이나 밀려난 탭이면 아무것도 하지 않는다
+      if (isCurrent()) {
+        if (ownership === 'foreign') {
+          finishResponse(target);
+        } else {
+          store.markReady(target.id, resolveDestination(notification.target));
+        }
       }
-      if (ownership === 'foreign') {
-        finishResponse(target);
-        return;
-      }
-      store.markReady(target.id, resolveDestination(notification.target));
     } catch (error) {
       logger.warn(NOTIFICATION_LOG_EVENT.RESPONSE_OPEN_FAILED, { error: getErrorMessage(error) });
       // 끝난 세션이나 밀려난 탭의 실패로 새 탭의 마지막 응답을 지우지 않는다
       if (isCurrent()) {
         finishResponse(target);
       }
-    } finally {
-      if (inFlightIdRef.current === target.id) {
-        inFlightIdRef.current = null;
-      }
+    }
+    if (inFlightIdRef.current === target.id) {
+      inFlightIdRef.current = null;
     }
   });
 
@@ -299,75 +269,57 @@ function useResolveResponse(
   }, [isRestoring, response, status]);
 }
 
-/** 앱에 들어가는 중이면 Index가 경로를 열고, 앱 안이면 여기서 연다 */
-function useOpenReadyEntry(
-  entry: ReadyPushNotificationEntry | null,
-  finishResponse: (response: PushNotificationResponse) => void,
-) {
+/** 앱에 들어가는 중이면 Index가 경로를 열고, 앱 안이면 여기서 연다. 연 뒤 열림을 한 번 남긴다 */
+function useOpenReadyEntry(entry: ReadyPushNotificationEntry | null) {
   const { isEnteringApp } = usePushNotificationEntry();
   const logger = useLogger();
   // 앱이 켜져 있을 때 누른 푸시도 OS 링크처럼 연다. 탭 위 화면에서 열어도 탭 묶음·첫 화면이 두 번 쌓이지 않는다
   const openDestination = useOpenNotificationDestination({ openRoute: openEntryHref });
-  const { trackEvent } = useTrack();
-  const { mutate: recordOpened } = useMutation(useRecordPushOpenedMutationOptions());
+  const finishResponse = useFinishResponse();
+  const { record: recordOpened, recordOnServer: recordOpenedOnServer } = useRecordOpened();
   const runTodoReminderAction = useRunTodoReminderAction();
   const openedByIndexIdRef = useRef<string | null>(null);
   const inFlightIdRef = useRef<string | null>(null);
+
+  // 할 일 화면에 내린 뒤 보내 결과 안내가 그 화면 위에 뜬다. 응답 슬롯은 기다리지 않고 비운다
+  const startTodoReminderAction = (response: PushNotificationResponse) => {
+    const reminderAction = PushNotificationResponsePolicy.findTodoReminderAction(response);
+    if (reminderAction == null) {
+      return;
+    }
+    runTodoReminderAction(reminderAction).catch((error: unknown) =>
+      logger.warn(NOTIFICATION_LOG_EVENT.REMINDER_ACTION_FAILED, {
+        error: getErrorMessage(error),
+      }),
+    );
+  };
 
   const open = useEffectEvent(async ({ response, destination }: ReadyPushNotificationEntry) => {
     if (inFlightIdRef.current === response.id) {
       return;
     }
     inFlightIdRef.current = response.id;
-    const { notification } = response;
+    const isOpenedByIndex =
+      destination.kind === 'route' && openedByIndexIdRef.current === response.id;
+    // finally를 쓰면 React Compiler가 이 훅을 건너뛰어, 정리는 try/catch 뒤에 둬 어느 길로 끝나도 돈다
     try {
-      if (destination.kind !== 'route' || openedByIndexIdRef.current !== response.id) {
+      if (!isOpenedByIndex) {
         await openDestination(destination);
       }
-      try {
-        trackEvent('push_notification_opened', {
-          type: notification.type ?? 'UNKNOWN',
-          action: notification.actionType,
-          app_state: PushNotificationResponsePolicy.getOpenAppState(response),
-          ...(notification.campaignKey && { campaign_key: notification.campaignKey }),
-          ...(notification.variantId && { variant_id: notification.variantId }),
-          ...(notification.purpose && { purpose: notification.purpose }),
-        });
-        if (notification.type === 'WEEKLY_ACHIEVEMENT') {
-          trackEvent('badge_opened_from_notification');
-        }
-      } catch (error) {
-        logger.warn(NOTIFICATION_LOG_EVENT.OPEN_ANALYTICS_FAILED, {
-          error: getErrorMessage(error),
-        });
-      }
-      if (PushNotificationPolicy.hasServerRecord(notification)) {
-        recordOpened(notification.notificationId);
-      }
-      const reminderAction = PushNotificationResponsePolicy.findTodoReminderAction(response);
-      if (reminderAction != null) {
-        // 할 일 화면에 내린 뒤 보내 결과 안내가 그 화면 위에 뜬다. 응답 슬롯은 기다리지 않고 비운다
-        runTodoReminderAction(reminderAction).catch((error: unknown) =>
-          logger.warn(NOTIFICATION_LOG_EVENT.REMINDER_ACTION_FAILED, {
-            error: getErrorMessage(error),
-          }),
-        );
-      }
+      recordOpened(response);
+      startTodoReminderAction(response);
     } catch (error) {
-      // 외부 링크를 열지 못한 경우다. 같은 탭을 다시 시도하지 않고 끝낸다
+      // 외부 링크를 열지 못했거나 연 뒤의 기록이 실패한 경우다. 같은 탭을 다시 시도하지 않고 끝낸다
       logger.warn(NOTIFICATION_LOG_EVENT.RESPONSE_OPEN_FAILED, { error: getErrorMessage(error) });
-    } finally {
-      inFlightIdRef.current = null;
-      finishResponse(response);
     }
+    inFlightIdRef.current = null;
+    finishResponse(response);
   });
 
   // 목적지로 못 가 피드로 보내도 사용자는 알림을 열었으므로 열람(읽음 포함)은 남긴다
   const abandon = useEffectEvent(({ response }: ReadyPushNotificationEntry) => {
     logger.warn(NOTIFICATION_LOG_EVENT.RESPONSE_OPEN_FAILED, { responseId: response.id });
-    if (PushNotificationPolicy.hasServerRecord(response.notification)) {
-      recordOpened(response.notification.notificationId);
-    }
+    recordOpenedOnServer(response);
     finishResponse(response);
   });
 
@@ -386,157 +338,46 @@ function useOpenReadyEntry(
   }, [entry, isEnteringApp]);
 }
 
-/** 성공 안내를 띄울 결과, 연결 안내를 띄울 실패, 안내 없이 분석에만 남기는 결과 */
-type TodoReminderActionResult =
-  | { outcome: 'succeeded'; message: string; description: string | null }
-  | { outcome: 'failed'; notice: 'network' | 'timeout' | null }
-  | { outcome: Exclude<TodoReminderActionOutcome, 'succeeded' | 'failed'> };
-
-function toTodoReminderActionFailure(error: unknown): TodoReminderActionResult {
-  const outcome = getTodoReminderActionFailure(error);
-  return outcome === 'failed' ? { outcome, notice: null } : { outcome };
+interface RecordOpened {
+  /** 연 푸시를 분석에 한 번, 서버 기록이 있으면 열림(읽음 포함)에 한 번 남긴다. 분석이 실패해도 열림은 남긴다 */
+  record: (response: PushNotificationResponse) => void;
+  /** 목적지로 가지 못했어도 사용자가 연 알림의 열림만 남긴다 */
+  recordOnServer: (response: PushNotificationResponse) => void;
 }
 
-/**
- * 리마인드 알림 버튼(완료·10분 뒤 다시)으로 할 일을 바꾸고 결과를 알린다. 이미 끝낸 할 일은 부드럽게 알리고,
- * 지운 할 일은 할 일 화면의 볼 수 없음 안내가, 그 밖의 실패는 상세 조회의 화면 오류나 변경의 전역 오류 피드백이 알린다
- */
-function useRunTodoReminderAction() {
-  const { t } = useTranslation(['notification', 'common']);
-  const queryClient = useQueryClient();
-  const sessionEpoch = useSessionEpoch();
+function useRecordOpened(): RecordOpened {
   const logger = useLogger();
-  const toast = useAppToast();
   const { trackEvent } = useTrack();
-  const dateFormatContext = useDateFormatContext();
-  const preferenceQueryOptions = useGetPreferenceQueryOptions();
-  const getTodoDetailsQueryOptions = useGetTodoDetailsQueryOptionsFactory();
-  const { mutateAsync: completeTodo } = useMutation(useCompleteRemindedTodoMutationOptions());
-  const { mutateAsync: snoozeTodoReminder } = useMutation(useSnoozeTodoReminderMutationOptions());
+  const { mutate: recordPushOpened } = useMutation(useRecordPushOpenedMutationOptions());
 
-  const complete = async (
-    todoId: number,
-    dateKey: DateKey | null,
-  ): Promise<TodoReminderActionResult> => {
-    // 화면이 먼저 연 같은 상세 조회가 오프라인에 멈춰 있으면 networkMode로도 풀리지 않고 그 조회에 합류해
-    // 연결되는 순간 완료가 나간다. 오프라인이면 기다리지 않고, 오프라인을 늦게 아는 콜드 스타트는 제한 시간에 끝낸다
-    if (!onlineManager.isOnline()) {
-      return { outcome: 'failed', notice: 'network' };
+  const recordOnServer = (response: PushNotificationResponse) => {
+    if (PushNotificationPolicy.hasServerRecord(response.notification)) {
+      recordPushOpened(response.notification.notificationId);
     }
-    // 다른 기기에서 끝냈을 수 있어 캐시가 아닌 서버 값으로 정한다. 방금 연 할 일 화면과 같은 조회라 요청은 하나다
-    const details = await withTimeout(
-      () => fetchFreshTodoDetails(queryClient, getTodoDetailsQueryOptions(todoId)),
-      TODO_REMINDER_DETAILS_WAIT_MS,
-    ).catch((error: unknown) => {
-      if (error instanceof WaitTimeoutError) {
-        return 'timeout' as const;
+  };
+
+  const record = (response: PushNotificationResponse) => {
+    try {
+      trackEvent('push_notification_opened', toPushNotificationOpenedEvent(response));
+      if (response.notification.type === 'WEEKLY_ACHIEVEMENT') {
+        trackEvent('badge_opened_from_notification');
       }
-      if (error instanceof NetworkError) {
-        return 'network' as const;
-      }
-      throw error;
-    });
-    if (typeof details === 'string') {
-      return { outcome: 'failed', notice: details };
+    } catch (error) {
+      logger.warn(NOTIFICATION_LOG_EVENT.OPEN_ANALYTICS_FAILED, { error: getErrorMessage(error) });
     }
-    const { todo } = details;
-    if (todo.completed) {
-      return { outcome: 'already_completed' };
-    }
-    const saved = await completeTodo({
-      todoId,
-      body: { completed: true },
-      date: dateKey ?? todo.startDate,
-    });
-    return {
-      outcome: 'succeeded',
-      message: t('reminderActions.completed', { title: saved.title }),
-      description: null,
-    };
+    recordOnServer(response);
   };
 
-  // 서버가 정한 시각을 앱의 12·24시간 설정으로 보인다. 설정을 바로 읽지 못하면 시각 없이 알린다
-  const describeRemindAt = async (remindAt: Instant) => {
-    const preference = await readWithoutBlocking(
-      getCachedPreference(queryClient),
-      () => ensurePreference(queryClient, preferenceQueryOptions),
-      (error) =>
-        logger.warn(NOTIFICATION_LOG_EVENT.REMINDER_SNOOZE_TIME_SKIPPED, {
-          error: getErrorMessage(error),
-        }),
-    );
-    if (preference == null) {
-      return null;
-    }
-    return t('reminderActions.snoozedAt', {
-      time: formatClockTime(remindAt, preference.timeFormat, dateFormatContext),
-    });
-  };
-
-  const snooze = async (
-    todoId: number,
-    notificationId: number,
-  ): Promise<TodoReminderActionResult> => {
-    const remindAt = await snoozeTodoReminder({ todoId, notificationId });
-    return {
-      outcome: 'succeeded',
-      message: t('reminderActions.snoozed', { minutes: TODO_REMINDER_SNOOZE_MINUTES }),
-      description: await describeRemindAt(remindAt),
-    };
-  };
-
-  return async (request: TodoReminderActionRequest) => {
-    const epoch = sessionEpoch.current();
-    const result = await match(request)
-      .with({ type: 'complete' }, ({ todoId, dateKey }) => complete(todoId, dateKey))
-      .with({ type: 'snooze' }, ({ todoId, notificationId }) => snooze(todoId, notificationId))
-      .exhaustive()
-      .catch(toTodoReminderActionFailure);
-    // 기다리는 사이 로그아웃했으면 다음 계정 화면에 안내와 기록을 남기지 않는다
-    if (sessionEpoch.current() !== epoch) {
-      return;
-    }
-    match(result)
-      .with({ outcome: 'succeeded' }, ({ message, description }) =>
-        toast.success(message, description == null ? undefined : { description }),
-      )
-      .with({ outcome: 'already_completed' }, () =>
-        toast.toast(t('reminderActions.alreadyCompleted')),
-      )
-      // 상세를 받지 못해 완료를 보내지 않았다. 멈춘 화면은 오류를 보이지 않아 여기서 알린다
-      .with({ outcome: 'failed', notice: 'network' }, () =>
-        toast.warning(t('common:infraErrors.network')),
-      )
-      .with({ outcome: 'failed', notice: 'timeout' }, () =>
-        toast.warning(t('common:infraErrors.timeout')),
-      )
-      // 지운 할 일은 할 일 화면이, 그 밖의 실패는 상세 조회의 화면 오류나 변경의 전역 오류 피드백이 알렸다
-      .with({ outcome: 'not_found' }, { outcome: 'failed', notice: null }, noop)
-      .exhaustive();
-    trackEvent('todo_reminder_action_tapped', { action: request.type, outcome: result.outcome });
-  };
+  return { record, recordOnServer };
 }
 
-/**
- * 리마인드 알림의 [완료]. 할 일 완료와 같은 변경이고, 지운 할 일은 방금 연 할 일 화면이
- * 볼 수 없음 안내 하나로 보여 전역 토스트를 더하지 않는다
- */
-function useCompleteRemindedTodoMutationOptions() {
-  const toggleTodoOptions = useToggleTodoMutationOptions();
-  const errorFeedback = toggleTodoOptions.meta?.errorFeedback;
-
-  return mutationOptions({
-    ...toggleTodoOptions,
-    meta: {
-      errorFeedback:
-        errorFeedback == null || errorFeedback === false
-          ? errorFeedback
-          : {
-              ...errorFeedback,
-              isHandledByFeature: (error) =>
-                isTodoUnavailableError(error) ||
-                (errorFeedback.isHandledByFeature?.(error) ?? false),
-            },
-    },
-  });
+/** 재시작 중복을 막으려 OS의 마지막 응답을 지운다. 지우지 못해도 슬롯이 처리한 응답을 기억해 경고만 남긴다 */
+function clearLastResponse(gateway: PushNotificationGateway, logger: AppLogger) {
+  try {
+    gateway.clearLastResponse();
+  } catch (error) {
+    logger.warn(NOTIFICATION_LOG_EVENT.SESSION_RESPONSE_CLEANUP_FAILED, {
+      error: getErrorMessage(error),
+    });
+  }
 }

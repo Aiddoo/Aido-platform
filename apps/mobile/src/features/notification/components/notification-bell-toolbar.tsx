@@ -7,7 +7,6 @@ import { Stack, useRouter } from 'expo-router';
 import { match } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
 
-import { NotificationBadgePolicy } from '../domains/notification-badge.model';
 import { useGetUnreadCountQueryOptions } from '../queries/notification.queries';
 
 // 읽지 않은 알림은 종을 채워 main으로 칠한다. 채운 기호에 점 자리가 뚫려 있어 같은 색이어도 점이 보인다
@@ -28,7 +27,7 @@ export function NotificationBellToolbar() {
     isLoadingError,
     refetch,
   } = useQuery(useGetUnreadCountQueryOptions());
-  const hasUnread = unreadCount != null && NotificationBadgePolicy.hasUnread(unreadCount);
+  const hasUnread = unreadCount != null && unreadCount > 0;
   const { tintColor, accessibilityLabel } = match({ isLoadingError, hasUnread })
     .with({ isLoadingError: true }, () => ({
       tintColor: errorTint,

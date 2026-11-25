@@ -1,11 +1,13 @@
+import { takeRight, without } from 'es-toolkit';
+
 import {
-  type HandledResponseIds,
-  hasHandledResponse,
   type PushNotificationResponse,
   PushNotificationResponsePolicy,
-  rememberHandledResponse,
 } from '../domains/push-notification-response.model';
 import type { NotificationDestination } from '../utils/notification-destination.view-model';
+
+/** 같은 응답이 다시 오는 경우(콜드 스타트의 마지막 응답과 리스너, 다시 그린 레이아웃)를 막기에 충분한 최근 기억 수 */
+const HANDLED_RESPONSE_ID_LIMIT = 20;
 
 interface PushNotificationEntryState {
   /** 아직 열지 못한 탭 하나. 마지막 탭이 이긴다 */
@@ -46,7 +48,8 @@ const INITIAL_STATE: PushNotificationEntryState = {
 /** 응답 슬롯. 라우트 경계가 다시 그려도 남도록 DI가 소유한다 */
 export function createPushNotificationEntryStore(): PushNotificationEntryStore {
   let state = INITIAL_STATE;
-  let handledResponseIds: HandledResponseIds = [];
+  // 끝난 응답 id. 한 탭은 한 번만 열고, 최근 것만 기억해 앱을 오래 써도 늘지 않는다
+  let handledResponseIds: readonly string[] = [];
   const listeners = new Set<() => void>();
 
   function setState(next: PushNotificationEntryState) {
@@ -66,7 +69,7 @@ export function createPushNotificationEntryStore(): PushNotificationEntryStore {
     },
     receive: (response) => {
       if (
-        hasHandledResponse(handledResponseIds, response.id) ||
+        handledResponseIds.includes(response.id) ||
         response.id === state.pending?.id ||
         response.id === state.ready?.response.id ||
         response.id === state.optOut?.id
@@ -86,7 +89,10 @@ export function createPushNotificationEntryStore(): PushNotificationEntryStore {
       setState({ ...state, pending: null, ready: { response: state.pending, destination } });
     },
     settle: (responseId) => {
-      handledResponseIds = rememberHandledResponse(handledResponseIds, responseId);
+      handledResponseIds = takeRight(
+        [...without(handledResponseIds, responseId), responseId],
+        HANDLED_RESPONSE_ID_LIMIT,
+      );
       setState({
         ...state,
         pending: state.pending?.id === responseId ? null : state.pending,

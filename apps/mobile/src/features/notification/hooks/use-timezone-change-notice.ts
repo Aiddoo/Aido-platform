@@ -4,14 +4,9 @@ import {
   selectTimeFormat,
   useGetPreferenceQueryOptions,
 } from '@src/features/identity/preference/queries/preference.queries';
-import {
-  TodoListPolicy,
-  type TodoListResult,
-} from '@src/features/planning/todo/domains/todo-list.model';
 import { useGetUpcomingTodosQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTrack } from '@src/shared/analytics';
 import { getNowInstant, readLocalDateState } from '@src/shared/date/clock';
-import type { DateKey } from '@src/shared/date/date-key';
 import { formatTimeOfDay } from '@src/shared/date/format/date-format';
 import type { TimeOfDay } from '@src/shared/date/time-of-day';
 import { toHHmm } from '@src/shared/date/zoned';
@@ -29,6 +24,7 @@ import { useEffect, useEffectEvent, useState } from 'react';
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { DeviceTimezonePolicy } from '../domains/device-timezone.model';
 import type { DeviceTimezone, DeviceTimezoneChange } from '../domains/device-timezone.model';
+import { type DeviceWallClock, selectHasUpcomingTimedTodo } from '../queries/notification.queries';
 import { deviceTimezoneStoredValue } from '../schemas/device-timezone-storage.schema';
 import { getTimezoneOffsetBucket } from '../utils/device-timezone-analytics';
 
@@ -52,7 +48,8 @@ export function useTimezoneChangeNotice({
 
   const [recorded, settleChange] = useRecordedTimezoneChange({ accountId, reportCount });
   const change = recorded?.change ?? null;
-  const isOffsetChanged = change != null && DeviceTimezonePolicy.hasOffsetChanged(change);
+  const isOffsetChanged =
+    change != null && DeviceTimezonePolicy.hasOffsetChanged(change.previous, change.current);
   const upcomingTimedTodo = useHasUpcomingTimedTodo({
     now: isOffsetChanged ? (recorded?.now ?? null) : null,
   });
@@ -110,16 +107,10 @@ export function useTimezoneChangeNotice({
   ]);
 }
 
-/** 바뀐 순간의 기기 날짜·벽시계. 할 일을 묻는 범위와 "앞으로"의 기준이다 */
-interface DeviceNow {
-  dateKey: DateKey;
-  time: string;
-  timezone: string;
-}
-
 interface RecordedTimezoneChange {
   change: DeviceTimezoneChange;
-  now: DeviceNow;
+  /** 바뀐 순간의 기기 날짜·벽시계. 할 일을 묻는 범위와 "앞으로"의 기준이다 */
+  now: DeviceWallClock;
 }
 
 /** 보고할 때마다 기기 시간대를 남기고, 이 계정이 남긴 값과 달라졌으면 안내가 끝날 때까지 그 변화를 쥔다 */
@@ -162,12 +153,12 @@ function useRecordedTimezoneChange({
 }
 
 /** 그 시각 뒤로 끝나지 않은 시간 있는 할 일이 있는가. 기준 시각이 있을 때만 묻는다 */
-function useHasUpcomingTimedTodo({ now }: { now: DeviceNow | null }) {
+function useHasUpcomingTimedTodo({ now }: { now: DeviceWallClock | null }) {
   const todayKey = useTodayKey();
   return useQuery({
     ...useGetUpcomingTodosQueryOptions({ todayKey: now?.dateKey ?? todayKey }),
     enabled: now != null,
-    select: (list: TodoListResult) => now != null && TodoListPolicy.hasUpcomingTimedTodo(list, now),
+    select: selectHasUpcomingTimedTodo(now),
   });
 }
 

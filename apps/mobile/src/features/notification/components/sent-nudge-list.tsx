@@ -10,7 +10,6 @@ import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
-import { selectPageItems } from '@src/shared/query/cursor-page';
 import {
   InfiniteList,
   NotificationIllustration,
@@ -24,7 +23,7 @@ import { type Href, useRouter } from 'expo-router';
 import { Separator } from 'heroui-native';
 import { match } from 'ts-pattern';
 
-import { toDateSectionedListItems } from '../utils/notification-section.view-model';
+import { selectSentNudgeSections } from '../queries/notification.queries';
 import { NotificationList } from './notification-list';
 import { NotificationListRow } from './notification-list-row';
 
@@ -40,8 +39,7 @@ export function SentNudgeList() {
   } = useSuspenseInfiniteQuery({
     ...useGetNudgeInteractionsInfiniteQueryOptions({ direction: 'sent' }),
     // 날짜가 바뀌면 다시 받지 않고 구역만 다시 나눈다
-    select: (infinitePages) =>
-      toDateSectionedListItems(selectPageItems(infinitePages), todayKey, currentTimezone),
+    select: selectSentNudgeSections({ todayDateKey: todayKey, timezone: currentTimezone }),
   });
   const queryClient = useQueryClient();
   const [isRefreshing, handleRefresh] = useRefresh(() => refreshNudges(queryClient));

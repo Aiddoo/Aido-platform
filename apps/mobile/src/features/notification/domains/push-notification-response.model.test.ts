@@ -5,12 +5,7 @@ import {
   createPushNotification,
   createPushNotificationResponse,
 } from '../__tests__/notification.fixtures';
-import {
-  hasHandledResponse,
-  PushNotificationResponsePolicy,
-  rememberHandledResponse,
-  toPushNotificationResponseId,
-} from './push-notification-response.model';
+import { PushNotificationResponsePolicy } from './push-notification-response.model';
 
 describe('PushNotificationResponsePolicy', () => {
   describe('isMarketingOptOut', () => {
@@ -274,48 +269,5 @@ describe('PushNotificationResponsePolicy', () => {
       // Then
       expect(result).toBe(expected);
     });
-  });
-});
-
-describe('toPushNotificationResponseId', () => {
-  it('같은 알림이어도 버튼과 본문 탭은 다른 응답이고, 같은 알림의 같은 동작은 같은 응답이다', () => {
-    // Given
-    const notificationIdentifier = 'notification-42';
-    const bodyTap = 'expo.modules.notifications.actions.DEFAULT';
-
-    // When
-    const button = toPushNotificationResponseId(notificationIdentifier, 'complete');
-    const body = toPushNotificationResponseId(notificationIdentifier, bodyTap);
-    const redelivered = toPushNotificationResponseId(notificationIdentifier, bodyTap);
-
-    // Then
-    expect(body).not.toBe(button);
-    expect(redelivered).toBe(body);
-  });
-});
-
-describe('rememberHandledResponse', () => {
-  it('처리한 응답은 다른 탭이 끼어도 다시 처리하지 않는다', () => {
-    // Given
-    const handledResponseIds = ['a', 'b'].reduce(rememberHandledResponse, []);
-
-    // When
-    const hasHandled = hasHandledResponse(handledResponseIds, 'a');
-
-    // Then
-    expect(hasHandled).toBe(true);
-  });
-
-  it('최근 20개만 기억해 앱을 오래 써도 기억이 늘지 않는다', () => {
-    // Given
-    const responseIds = Array.from({ length: 21 }, (_, index) => `response-${index}`);
-
-    // When
-    const handledResponseIds = responseIds.reduce(rememberHandledResponse, []);
-
-    // Then
-    expect(handledResponseIds).toHaveLength(20);
-    expect(hasHandledResponse(handledResponseIds, 'response-0')).toBe(false);
-    expect(hasHandledResponse(handledResponseIds, 'response-20')).toBe(true);
   });
 });

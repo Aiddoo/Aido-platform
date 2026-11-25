@@ -274,7 +274,6 @@ const LOCAL_ONLY_PENDING_FEATURES = new Set([
   'device/coachmark',
   'insights/report',
   'notes/memo',
-  'notification',
   'social/invite',
   'social/moderation',
   'voice',
@@ -301,6 +300,8 @@ const ALLOWED_LOCAL_ONLY_FILES = {
     '피드 달력만 쓴다. 가장 긴 제목을 그리기 전에 재어 한 줄·두 줄 배치를 정하는 측정 부품이라, 쪽 넘김·칸을 가진 달력에 합치면 한 파일이 800줄에 가깝고 두 가지 일이 섞인다',
   'src/features/planning/todo/components/todo-detail-schedule.tsx':
     '할 일 상세 요약(engagement/comment)만 쓴다. 할 일의 view-model(시간·기간·반복 문구)로 그리는 조각이라 그 기능 파일로 옮기면 다른 기능의 utils를 import하게 된다',
+  'src/features/notification/components/todo-time-push-notice.tsx':
+    '할 일 작성 칩(planning/composer)만 쓴다. 알림 권한 조회와 권한 단계(usePushPermissionAction)로 그리는 조각이라 그 기능 파일로 옮기면 작성기가 알림 기능의 권한 조회·단계를 직접 갖게 된다',
 };
 
 /** 운영 importer가 컴포넌트·훅 하나뿐이고 자체 테스트가 없는 기능 components/·hooks/ 파일과 그 importer */

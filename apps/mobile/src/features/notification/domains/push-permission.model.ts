@@ -31,6 +31,8 @@ export type PushPermissionStep =
   | 'ENABLE_IN_APP'
   | 'NONE';
 type PushDeviceStep = Exclude<PushPermissionStep, 'ENABLE_IN_APP'>;
+/** 알림 설정 줄에 보일 지금 상태. 기기에서 꺼짐은 앱에서 켰는데 기기가 거절해 닿지 않는 때다 */
+export type PushSummary = 'on' | 'off' | 'deviceOff';
 /** 알림을 어떻게 물을지. 코드에서 부르는 이름은 constants의 PUSH_ASK_MOMENT */
 export type PushAskMoment = 'ONBOARDING_SCREEN' | 'SYSTEM_DIALOG' | 'DENIED_NOTICE';
 
@@ -41,7 +43,7 @@ type PushAskContext =
       prompt: Pick<PushPermissionPrompt, 'deferredAt'>;
       now: Instant;
     }
-  | { surface: 'todo-time' }
+  | { surface: 'todo_time' }
   | {
       surface: 'feed';
       hasUpcomingTimedTodo: boolean;
@@ -106,7 +108,7 @@ export const PushPermissionPolicy = {
           ? 'ONBOARDING_SCREEN'
           : null,
       )
-      .with({ surface: 'todo-time' }, () =>
+      .with({ surface: 'todo_time' }, () =>
         this.isUndecided(permission) ? 'SYSTEM_DIALOG' : 'DENIED_NOTICE',
       )
       .with({ surface: 'feed' }, ({ hasUpcomingTimedTodo, prompt, now }) =>
@@ -138,6 +140,17 @@ export const PushPermissionPolicy = {
         () => 'ASK',
       )
       .otherwise(() => 'REQUEST_SYSTEM');
+  },
+
+  /**
+   * 알림 설정 값. 앱에서 켰는데 기기에서 거절해 닿지 않으면 그 이유를 따로 보인다.
+   * 아직 묻지 않은 기기는 거절한 것이 아니라 꺼짐으로 둔다
+   */
+  getSummary(permission: PushPermission, { pushEnabled }: { pushEnabled: boolean }): PushSummary {
+    if (this.isPushDeliverable(permission)) {
+      return pushEnabled ? 'on' : 'off';
+    }
+    return pushEnabled && !this.isUndecided(permission) ? 'deviceOff' : 'off';
   },
 
   /** 알림을 받으려면 사용자가 다음에 무엇을 해야 하는지 정한다. 문구·화면은 컴포넌트가 정한다 */

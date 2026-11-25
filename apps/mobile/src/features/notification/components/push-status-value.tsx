@@ -4,8 +4,8 @@ import { QueryErrorBoundary, QueryErrorFallback, SettingsListGroup } from '@src/
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { Suspense } from 'react';
 
+import { type PushSummary, PushPermissionPolicy } from '../domains/push-permission.model';
 import { useGetPushPermissionQueryOptions } from '../queries/push-permission.queries';
-import { getPushSummaryLabelKey, toPushSummary } from '../utils/push-permission.view-model';
 
 /** 알림 설정 행의 현재 값. 알림 설정 화면의 푸시 값과 같은 말을 쓴다. 못 읽으면 값 없이 둔다 */
 export function PushStatusValue() {
@@ -23,10 +23,15 @@ function PushStatus() {
   const [{ data: permission }, { data: preference }] = useSuspenseQueries({
     queries: [useGetPushPermissionQueryOptions(), useGetPreferenceQueryOptions()],
   });
+  const labelKeys = {
+    on: 'settings.on',
+    off: 'settings.off',
+    deviceOff: 'settings.deviceOff',
+  } as const satisfies Record<PushSummary, string>;
 
   return (
     <SettingsListGroup.Value testID="push-status-value">
-      {t(getPushSummaryLabelKey(toPushSummary(permission, preference)))}
+      {t(labelKeys[PushPermissionPolicy.getSummary(permission, preference)])}
     </SettingsListGroup.Value>
   );
 }

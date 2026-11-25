@@ -4,7 +4,7 @@ import { useRecordTodoCreated } from '@src/features/device/activation/hooks/use-
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useLogoutMutationOptions } from '@src/features/identity/auth/queries/auth.mutations';
 import { useOfferMarketingPushAfterCompletion } from '@src/features/notification/hooks/use-offer-marketing-push-after-completion';
-import { usePushOnboardingGuard } from '@src/features/notification/hooks/use-push-onboarding-guard';
+import { useIsPushOnboardingGuardOpen } from '@src/features/notification/hooks/use-push-onboarding-guard';
 import { useRefreshWhenTodoImportFinishes } from '@src/features/planning/todo-import/hooks/use-refresh-when-todo-import-finishes';
 import { useResumeTodoImportUpload } from '@src/features/planning/todo-import/hooks/use-resume-todo-import-upload';
 import { classifyError, getErrorReportTags } from '@src/shared/errors';
@@ -53,7 +53,7 @@ function AppLayout() {
   const headerOptions = useStackScreenOptions();
   const { t } = useTranslation(['todo', 'ai']);
   // 알림 안내 화면의 Stack.Protected guard라 내비게이터를 그리는 레이아웃이 판정한다
-  const isPushOnboardingDue = usePushOnboardingGuard();
+  const isPushOnboardingDue = useIsPushOnboardingGuardOpen();
 
   return (
     <>

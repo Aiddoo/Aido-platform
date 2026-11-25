@@ -124,7 +124,7 @@ const modelAndFolderRules = [
     comment:
       '도메인 모델은 core/ports를 import하지 않는다. 포트는 어댑터·서비스가 쓰고, 모델은 포트가 준 값을 인자로 받는다(docs/architecture/model.md).',
     severity: 'error',
-    from: { path: DOMAIN_MODEL, pathNot: [TEST, pendingFeatures(['notification'])] },
+    from: { path: DOMAIN_MODEL, pathNot: [TEST] },
     to: { path: '^src/core/ports/' },
   },
   {
@@ -172,7 +172,6 @@ const modelAndFolderRules = [
         pendingFeatures([
           'assistant/suggestion',
           'notes/memo',
-          'notification',
           'planning/todo',
           'social/friend',
           'social/nudge',
@@ -324,7 +323,6 @@ module.exports = {
           pendingFeatures([
             'app-config/whats-new',
             'notes/memo',
-            'notification',
             'social/friend',
             'social/invite',
             'voice',

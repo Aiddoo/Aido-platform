@@ -1,4 +1,4 @@
-import { WeatherNotificationSettings } from '@src/features/notification/components/weather-notification-settings/weather-notification-settings';
+import { WeatherNotificationSettings } from '@src/features/notification/components/weather-notification-settings';
 import { useTranslation } from '@src/shared/i18n';
 import { Stack } from 'expo-router';
 

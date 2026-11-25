@@ -45,6 +45,26 @@ describe('createPushNotificationEntryStore', () => {
     expect(store.getSnapshot().pending).toBeNull();
   });
 
+  it('최근 20개만 기억해 앱을 오래 써도 기억이 늘지 않는다', () => {
+    // Given
+    const store = createPushNotificationEntryStore();
+    const responseIds = Array.from({ length: 21 }, (_, index) => `response-${index}`);
+    for (const responseId of responseIds) {
+      store.receive(tap(responseId));
+      store.settle(responseId);
+    }
+
+    // When
+    store.receive(tap('response-1'));
+    const secondOldestPending = store.getSnapshot().pending?.id ?? null;
+    store.receive(tap('response-0'));
+    const oldestPending = store.getSnapshot().pending?.id ?? null;
+
+    // Then
+    expect(secondOldestPending).toBeNull();
+    expect(oldestPending).toBe('response-0');
+  });
+
   it('수신 거부는 다음 탭에 밀리지 않는다', () => {
     // Given
     const store = createPushNotificationEntryStore();

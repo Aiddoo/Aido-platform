@@ -13,7 +13,7 @@ import { pushPermissionDeferredAtStoredValue } from '../schemas/push-permission-
 import type { PushOnboardingGuardState } from '../stores/push-onboarding-guard.store';
 
 /** 앱 화면 묶음의 `Stack.Protected` guard. 판정은 여기 한 곳에서 하고, 그려진 뒤에야 피드가 화면을 열 수 있게 알린다 */
-export function usePushOnboardingGuard(): boolean {
+export function useIsPushOnboardingGuardOpen(): boolean {
   const guardStore = usePushOnboardingGuardStore();
   const state = usePushOnboardingDueState();
 

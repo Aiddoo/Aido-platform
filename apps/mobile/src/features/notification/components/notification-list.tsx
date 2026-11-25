@@ -38,12 +38,14 @@ import {
 import { useNotificationCategory } from '../hooks/use-notification-params';
 import { refreshNotifications } from '../queries/notification-cache';
 import { useMarkAsReadMutationOptions } from '../queries/notification.mutations';
-import { useGetNotificationsInfiniteQueryOptions } from '../queries/notification.queries';
+import {
+  type DateSectionKey,
+  useGetNotificationsInfiniteQueryOptions,
+} from '../queries/notification.queries';
 import {
   findRootStackDetailHref,
   type NotificationDestination,
 } from '../utils/notification-destination.view-model';
-import type { DateSectionKey } from '../utils/notification-section.view-model';
 import { getNotificationLabelKey } from '../utils/notification.view-model';
 import { NotificationListRow } from './notification-list-row';
 
