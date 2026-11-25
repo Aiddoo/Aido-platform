@@ -1,5 +1,7 @@
 import { AppError } from '@src/core/errors/app-error';
 
+import type { OsPermission } from './os-permission';
+
 export class LocationUnavailableError extends AppError {
   override readonly name = 'LocationUnavailableError';
 }
@@ -15,16 +17,11 @@ export interface PlaceName {
   district: string | null;
 }
 
-export interface LocationPermission {
-  isGranted: boolean;
-  canAskAgain: boolean;
-}
-
 export interface LocationGateway {
-  getPermission(): Promise<LocationPermission>;
-  requestPermission(): Promise<LocationPermission>;
+  getPermission(): Promise<OsPermission>;
+  requestPermission(): Promise<OsPermission>;
   /** 이미 허용한 사용자의 권한을 앱을 켠 직후에 다시 확인한다. 처음 묻는 요청은 `requestPermission`이다. */
-  recheckPermission(): Promise<LocationPermission>;
+  recheckPermission(): Promise<OsPermission>;
   getCoordinates(signal: AbortSignal): Promise<LocationCoordinates>;
   getPlace(
     coordinates: LocationCoordinates,

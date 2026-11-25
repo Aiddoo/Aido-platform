@@ -2,12 +2,12 @@ import {
   LocationUnavailableError,
   type LocationCoordinates,
   type LocationGateway,
-  type LocationPermission,
 } from '@src/core/ports/location-gateway';
 import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
 import * as Location from 'expo-location';
 
 import { IS_IOS_APP_ON_MAC } from '../device/device-info';
+import { toOsPermission } from '../permission/to-os-permission';
 import { toPlaceName } from './place-name';
 
 const LAST_KNOWN_LOCATION_MAX_AGE_MS = 30 * MINUTE_MS;
@@ -108,21 +108,13 @@ async function getPlace(coordinates: LocationCoordinates, signal: AbortSignal) {
   };
 }
 
-function toLocationPermission({
-  granted,
-  canAskAgain,
-}: Location.LocationPermissionResponse): LocationPermission {
-  return { isGranted: granted, canAskAgain };
-}
-
 export const expoLocationGateway: LocationGateway = {
-  getPermission: async () => toLocationPermission(await Location.getForegroundPermissionsAsync()),
-  requestPermission: async () =>
-    toLocationPermission(await Location.requestForegroundPermissionsAsync()),
+  getPermission: async () => toOsPermission(await Location.getForegroundPermissionsAsync()),
+  requestPermission: async () => toOsPermission(await Location.requestForegroundPermissionsAsync()),
   // Mac(Designed for iPad)은 앱을 다시 켠 직후 OS에 허용이 남아 있어도 상태 읽기가 응답하지 않는 경우가 있다.
   // 요청 API는 이미 허용한 앱에는 창 없이 허용을 돌려주므로 Mac에서만 요청으로 다시 확인한다.
   recheckPermission: async () =>
-    toLocationPermission(
+    toOsPermission(
       IS_IOS_APP_ON_MAC
         ? await Location.requestForegroundPermissionsAsync()
         : await Location.getForegroundPermissionsAsync(),

@@ -12,8 +12,9 @@ import type { PushDeviceApi } from '../apis/push-device.api';
 import { toPushPermission } from '../apis/push-permission.mapper';
 import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { isPushRequestThrottledError } from '../domains/notification.error';
+import type { PushDevice } from '../domains/push-device.model';
 import { PushPermissionPolicy } from '../domains/push-permission.model';
-import type { PushDevice, PushPermission } from '../domains/push-permission.model';
+import type { PushPermission } from '../domains/push-permission.model';
 import {
   createEmptyPushRegistration,
   type PushRegistration,

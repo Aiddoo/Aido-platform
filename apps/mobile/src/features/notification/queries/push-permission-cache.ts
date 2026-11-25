@@ -20,7 +20,7 @@ export function ensurePushPermission(
   queryClient: QueryClient,
   options: PushPermissionQueryOptions,
 ) {
-  return queryClient.ensureQueryData(options);
+  return queryClient.query({ ...options, staleTime: 'static' });
 }
 
 export function invalidatePushPermission(queryClient: QueryClient) {

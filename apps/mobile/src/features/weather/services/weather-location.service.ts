@@ -4,11 +4,13 @@ import type { AppLogger } from '@src/core/ports/app-logger';
 import {
   type LocationCoordinates,
   type LocationGateway,
-  type LocationPermission,
   LocationUnavailableError,
 } from '@src/core/ports/location-gateway';
+import type { OsPermission } from '@src/core/ports/os-permission';
 import type { SyncStorage } from '@src/core/ports/sync-storage';
+import { getErrorMessage } from '@src/shared/errors';
 import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
+import { getOsPermissionAccess } from '@src/shared/utils/get-os-permission-access';
 
 import type { WeatherApi } from '../apis/weather.api';
 import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
@@ -54,11 +56,21 @@ export class WeatherLocationService {
     this.#logger = logger;
   }
 
-  /** 안내에서 '계속'을 누른 뒤에만 부른다. 처음 묻는 권한 창은 설명 없이 띄우지 않는다 */
-  requestPermission = async (): Promise<LocationPermission> => {
-    const permission = await this.#gateway.requestPermission();
-    this.#rememberGranted(permission.isGranted);
-    return permission;
+  /**
+   * 안내에서 '계속'을 누른 뒤에만 부른다. 처음 묻는 권한 창은 설명 없이 띄우지 않는다.
+   * 창을 띄우지 못하면 로그만 남기고 null이다. 화면은 위치를 다시 읽어 안내를 그대로 보인다
+   */
+  requestPermission = async (): Promise<OsPermission | null> => {
+    try {
+      const permission = await this.#gateway.requestPermission();
+      this.#rememberGranted(permission);
+      return permission;
+    } catch (error) {
+      this.#logger.warn(WEATHER_LOG_EVENT.LOCATION_PERMISSION_REQUEST_FAILED, {
+        error: getErrorMessage(error),
+      });
+      return null;
+    }
   };
 
   // 직전 위치도 없으면 unavailable로 서버 저장 위치를 쓰게 한다. 등록 거절(4xx)은 fail, 네트워크·서버 장애는 throw다
@@ -69,12 +81,12 @@ export class WeatherLocationService {
     onUnexpectedFailure,
   }: ResolveLocationInput): Promise<Result<LocationReading, ApiError>> => {
     const previousLocated = previous?.status === 'located' ? previous : null;
-    const permission = await this.#readPermission(previousLocated);
-    if (!permission.isGranted) {
-      if (permission.canAskAgain && previousLocated != null) {
-        return ok({ ...previousLocated, isLastKnown: true });
-      }
-      return ok({ status: permission.canAskAgain ? 'needsPermission' : 'denied' });
+    const access = getOsPermissionAccess(await this.#readPermission(previousLocated));
+    if (access === 'ask' && previousLocated != null) {
+      return ok({ ...previousLocated, isLastKnown: true });
+    }
+    if (access !== 'granted') {
+      return ok({ status: access === 'ask' ? 'needsPermission' : 'denied' });
     }
 
     const revision = WeatherLocationPolicy.getReadingRevision(previous);
@@ -128,11 +140,10 @@ export class WeatherLocationService {
    */
   #readPermission = async (
     previousLocated: Extract<LocationReading, { status: 'located' }> | null,
-  ): Promise<LocationPermission> => {
+  ): Promise<OsPermission> => {
     const permission = await this.#gateway.getPermission();
-    const isSettled = permission.isGranted || !permission.canAskAgain;
-    if (isSettled) {
-      this.#rememberGranted(permission.isGranted);
+    if (getOsPermissionAccess(permission) !== 'ask') {
+      this.#rememberGranted(permission);
       return permission;
     }
     const hasBeenGranted =
@@ -142,12 +153,16 @@ export class WeatherLocationService {
       return permission;
     }
     const rechecked = await this.#gateway.recheckPermission();
-    this.#rememberGranted(rechecked.isGranted);
+    this.#rememberGranted(rechecked);
     return rechecked;
   };
 
-  #rememberGranted = (isGranted: boolean) => {
-    writeStoredValue(this.#storage, weatherLocationPermissionGrantedStoredValue, isGranted);
+  #rememberGranted = (permission: OsPermission) => {
+    writeStoredValue(
+      this.#storage,
+      weatherLocationPermissionGrantedStoredValue,
+      getOsPermissionAccess(permission) === 'granted',
+    );
   };
 
   #readCoordinates = async (

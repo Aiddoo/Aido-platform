@@ -13,6 +13,7 @@ import {
   removeStoredValue,
   writeStoredValue,
 } from '@src/shared/storage/define-stored-value';
+import { getOsPermissionAccess } from '@src/shared/utils/get-os-permission-access';
 import { compact, delay, noop, retry } from 'es-toolkit';
 
 import { toImportItem } from '../apis/todo-import-item.mapper';
@@ -448,7 +449,7 @@ export class TodoImportUploadSession {
     try {
       // 설정에서 캘린더 접근을 끄면 읽기가 계속 실패한다. 다시 시도해도 같으니 권한 이유로 멈춘다
       const permission = await this.#ports.source.getPermission();
-      if (permission.status !== 'granted') {
+      if (getOsPermissionAccess(permission) !== 'granted') {
         this.#ports.logger.warn(TODO_IMPORT_LOG_EVENT.SOURCE_PERMISSION_MISSING, {
           status: permission.status,
         });

@@ -1,6 +1,7 @@
 import type { OsPermission } from '@src/core/ports/os-permission';
 import { invalidateEntitlements } from '@src/features/billing/subscription/queries/entitlement-cache';
 import { invalidateTodos } from '@src/features/planning/todo/queries/todo-cache';
+import { getOsPermissionAccess } from '@src/shared/utils/get-os-permission-access';
 import type { QueryClient } from '@tanstack/react-query';
 
 import { type TodoImport, TodoImportPolicy } from '../domains/todo-import.model';
@@ -14,8 +15,10 @@ export function keepBlockedCalendarPermission(
   previous: OsPermission | undefined,
   read: OsPermission,
 ): OsPermission {
-  const isBlocked = previous?.status === 'denied' && !previous.canAskAgain;
-  return isBlocked && read.status !== 'granted' ? previous : read;
+  if (previous == null || getOsPermissionAccess(previous) !== 'settings') {
+    return read;
+  }
+  return getOsPermissionAccess(read) === 'granted' ? read : previous;
 }
 
 export function getCachedTodoImport(queryClient: QueryClient, importId: string) {

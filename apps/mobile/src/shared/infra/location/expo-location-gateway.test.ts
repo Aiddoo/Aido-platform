@@ -4,7 +4,7 @@ import * as Location from 'expo-location';
 import { expoLocationGateway } from './expo-location-gateway';
 
 jest.mock('expo-location', () => ({
-  PermissionStatus: { GRANTED: 'granted' },
+  PermissionStatus: { GRANTED: 'granted', DENIED: 'denied' },
   Accuracy: { Balanced: 3 },
   getForegroundPermissionsAsync: jest.fn(),
   requestForegroundPermissionsAsync: jest.fn(),
@@ -96,7 +96,25 @@ describe('recheckPermission', () => {
     const permission = await expoLocationGateway.recheckPermission();
 
     // Then
-    expect(permission).toEqual({ isGranted: true, canAskAgain: true });
+    expect(permission).toEqual({ status: 'granted', canAskAgain: true });
     expect(Location.requestForegroundPermissionsAsync).not.toHaveBeenCalled();
+  });
+});
+
+describe('requestPermission', () => {
+  it('다시 묻지 않는 거절을 OsPermission의 status·canAskAgain으로 바꾼다', async () => {
+    // Given
+    jest.mocked(Location.requestForegroundPermissionsAsync).mockResolvedValue({
+      status: Location.PermissionStatus.DENIED,
+      expires: 'never',
+      granted: false,
+      canAskAgain: false,
+    });
+
+    // When
+    const permission = await expoLocationGateway.requestPermission();
+
+    // Then
+    expect(permission).toEqual({ status: 'denied', canAskAgain: false });
   });
 });

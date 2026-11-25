@@ -18,6 +18,8 @@ import {
 } from 'expo-speech-recognition';
 import { match } from 'ts-pattern';
 
+import { toOsPermission } from '../permission/to-os-permission';
+
 /** Apple 권장 상한. 한 항목은 한두 단어로 둔다(SFSpeechRecognitionRequest.contextualStrings) */
 const MAX_SPEECH_HINTS = 100;
 /** 연속 인식·녹음 저장이 들어온 Android 13 */
@@ -42,10 +44,11 @@ async function readMissingSpeechPermission(): Promise<MissingSpeechPermission> {
 }
 
 async function toSpeechPermission(
-  { status, canAskAgain }: PermissionResponse,
+  response: PermissionResponse,
   { isMicrophoneOnly }: { isMicrophoneOnly: boolean },
 ): Promise<SpeechPermission> {
-  if (status === PermissionStatus.GRANTED) {
+  const { status, canAskAgain } = toOsPermission(response);
+  if (status === 'granted') {
     return { status, canAskAgain };
   }
   return {

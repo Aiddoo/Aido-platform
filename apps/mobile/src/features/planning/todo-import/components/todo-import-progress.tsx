@@ -4,7 +4,6 @@ import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import { useOpenAppSettings } from '@src/shared/hooks/use-open-app-settings';
 import { useTranslation } from '@src/shared/i18n';
-import { IS_IOS_APP_ON_MAC } from '@src/shared/infra/device/device-info';
 import { useStoredValue } from '@src/shared/storage/use-stored-value';
 import {
   Box,
@@ -58,7 +57,7 @@ export function TodoImportProgress() {
   const [storedSession] = useStoredValue(todoImportSessionStoredValue, accountId);
   const isOnline = useIsOnline();
   const cancelImport = useMutation(useCancelTodoImportMutationOptions({ importId }));
-  const openSettings = useOpenAppSettings();
+  const appSettings = useOpenAppSettings();
 
   const view = toProgressView(todoImport, snapshot, {
     hasStoredSession: storedSession?.importId === todoImport.id,
@@ -112,14 +111,14 @@ export function TodoImportProgress() {
         <InlineAlert
           status="warning"
           title={t('progress.pausedPermission')}
-          // Mac(Designed for iPad)은 앱 설정 화면이 열리지 않아 글로 가는 길만 보인다
-          description={IS_IOS_APP_ON_MAC ? t('permission.deniedDescriptionMac') : undefined}
+          // 설정 화면이 없는 기기(Mac)는 글로 가는 길만 보인다
+          description={appSettings.canOpen ? undefined : t('permission.deniedDescriptionMac')}
           action={
-            IS_IOS_APP_ON_MAC ? undefined : (
-              <Button size="small" variant="weak" display="inline" onPress={openSettings}>
+            appSettings.canOpen ? (
+              <Button size="small" variant="weak" display="inline" onPress={appSettings.open}>
                 {t('permission.openSettings')}
               </Button>
-            )
+            ) : undefined
           }
         />
       )}

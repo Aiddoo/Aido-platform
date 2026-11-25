@@ -1,5 +1,6 @@
-import { useExternalLink, usePushRegistrationService } from '@src/bootstrap/providers/di-context';
+import { usePushRegistrationService } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
+import { useOpenAppSettings } from '@src/shared/hooks/use-open-app-settings';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import type { PushPermissionPromptSource } from '../constants/notification.events';
@@ -17,11 +18,17 @@ interface OpenPushSettingsVariables {
 
 /** 알림을 거절해 시스템 창을 다시 띄울 수 없을 때 이 앱의 설정 화면을 연다. 돌아오면 권한 쿼리가 다시 읽는다 */
 export function useOpenPushSettingsMutationOptions() {
-  const externalLink = useExternalLink();
+  const appSettings = useOpenAppSettings();
   const { trackEvent } = useTrack();
 
   return mutationOptions({
-    mutationFn: (_variables: OpenPushSettingsVariables) => externalLink.openSettings(),
+    // 열지 못한 원래 오류를 그대로 던져 전역 오류 피드백이 알린다
+    mutationFn: async (_variables: OpenPushSettingsVariables) => {
+      const result = await appSettings.open();
+      if (!result.isOpened) {
+        throw result.error;
+      }
+    },
     networkMode: 'always',
     onSuccess: (_opened, { source }) => {
       if (source != null) {

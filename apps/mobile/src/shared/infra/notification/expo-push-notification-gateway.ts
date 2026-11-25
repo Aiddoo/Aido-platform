@@ -13,6 +13,7 @@ import { Mutex, withTimeout } from 'es-toolkit';
 import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
 
+import { toOsPermission } from '../permission/to-os-permission';
 import { PUSH_NOTIFICATION_LOG_EVENT } from './push-notification-log-events';
 
 /** 서버가 보내는 푸시의 채널 id와 같다. 바꾸면 기존 설치의 채널과 어긋난다 */
@@ -36,8 +37,7 @@ function toPushPermissionResponse(
   response: Notifications.NotificationPermissionsStatus,
 ): PushPermissionResponse {
   return {
-    status: response.status,
-    canAskAgain: response.canAskAgain,
+    ...toOsPermission(response),
     iosStatus: response.ios ? IOS_AUTHORIZATION_STATUS[response.ios.status] : null,
   };
 }

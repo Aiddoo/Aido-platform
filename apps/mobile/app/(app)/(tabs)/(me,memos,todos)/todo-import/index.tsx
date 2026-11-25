@@ -74,7 +74,6 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
-import { IS_IOS_APP_ON_MAC } from '@src/shared/infra/device/device-info';
 import {
   ArrowRightIcon,
   Box,
@@ -281,7 +280,7 @@ function PermissionStep({ progress, onGranted }: { progress: ReactNode; onGrante
   const { t } = useTranslation(['todoImport', 'common']);
   const { data: permission } = useSuspenseQuery(useGetCalendarPermissionQueryOptions());
   const request = useMutation(useRequestCalendarPermissionMutationOptions());
-  const openSettings = useOpenAppSettings();
+  const appSettings = useOpenAppSettings();
 
   const view = getCalendarPermissionView(permission, request.data ?? null);
 
@@ -307,14 +306,13 @@ function PermissionStep({ progress, onGranted }: { progress: ReactNode; onGrante
             {t('permission.continue')}
           </KeyboardAdaptiveButton>
         ))
-        // 거절한 뒤에는 다시 조르지 않고 설정 열기만 둔다. Mac(Designed for iPad)은 앱 설정 화면이 열리지 않아
-        // 글로 가는 길만 보인다
+        // 거절한 뒤에는 다시 조르지 않고 설정 열기만 둔다. 설정 화면이 없는 기기는 글로 가는 길만 보인다
         .with('denied', 'blocked', () =>
-          IS_IOS_APP_ON_MAC ? null : (
-            <KeyboardAdaptiveButton onPress={openSettings}>
+          appSettings.canOpen ? (
+            <KeyboardAdaptiveButton onPress={appSettings.open}>
               {t('permission.openSettings')}
             </KeyboardAdaptiveButton>
-          ),
+          ) : null,
         )
         .exhaustive()}
     >

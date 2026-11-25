@@ -29,7 +29,7 @@ Expo SDK 58 · React Native 0.88 · React 19(Compiler) · Expo Router · TanStac
 | 날짜·시간대·언어·문구                                                  | [dates-and-i18n.md](docs/dates-and-i18n.md)                                                                                                               |
 | 오류 처리                                                              | [error-handling.md](docs/error-handling.md)                                                                                                               |
 | 푸시 · 위젯 · 인증 · 댓글                                              | [push-notifications.md](docs/push-notifications.md) · [widgets.md](docs/widgets.md) · [auth.md](docs/auth.md) · [todo-comments.md](docs/todo-comments.md) |
-| OS 권한(알림·위치·마이크·캘린더)                                       | [permissions.md](docs/permissions.md)                                                                                                                     |
+| OS 권한(알림·위치·마이크·음성 인식·캘린더), 거절 뒤 설정 열기          | [permissions.md](docs/permissions.md)                                                                                                                     |
 | 빌드·배포·EAS·스토어·환경 변수                                         | [build-and-release.md](docs/build-and-release.md), 새 기능 소개 [whats-new-release.md](docs/whats-new-release.md)                                         |
 | 문서·rules·스킬 고치기                                                 | [문서 규칙](../../docs/conventions/docs.md)                                                                                                               |
 

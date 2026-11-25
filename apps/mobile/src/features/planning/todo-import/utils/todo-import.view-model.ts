@@ -1,6 +1,7 @@
 import type { OsPermission } from '@src/core/ports/os-permission';
 import type { TodoCategory } from '@src/features/planning/category/domains/todo-category.model';
 import type { DateKey } from '@src/shared/date/date-key';
+import { getOsPermissionAccess } from '@src/shared/utils/get-os-permission-access';
 import { countBy, groupBy, partition, sortBy } from 'es-toolkit';
 
 import {
@@ -59,11 +60,10 @@ export function getCalendarPermissionView(
   permission: OsPermission,
   answered: OsPermission | null,
 ): CalendarPermissionView {
-  if (permission.status === 'granted') {
+  if (getOsPermissionAccess(permission) === 'granted') {
     return 'ask';
   }
-  const latest = answered ?? permission;
-  if (latest.status === 'denied' && !latest.canAskAgain) {
+  if (getOsPermissionAccess(answered ?? permission) === 'settings') {
     return 'blocked';
   }
   return answered == null ? 'ask' : 'denied';

@@ -13,6 +13,7 @@ import { CryptoDigestAlgorithm, CryptoEncoding, digestStringAsync } from 'expo-c
 import { PermissionsAndroid } from 'react-native';
 
 import { getDeviceTimezone } from '../localization/device-timezone';
+import { toOsPermission } from '../permission/to-os-permission';
 import {
   buildCollectionKey,
   type CalendarEventFields,
@@ -27,10 +28,6 @@ const ANDROID_ALL_DAY_TIMEZONE = 'UTC';
 
 function hashSha256(text: string): Promise<string> {
   return digestStringAsync(CryptoDigestAlgorithm.SHA256, text, { encoding: CryptoEncoding.HEX });
-}
-
-function toOsPermission(response: Calendar.PermissionResponse): OsPermission {
-  return { status: response.status, canAskAgain: response.canAskAgain };
 }
 
 // expo-calendar는 Android에서 READ·WRITE를 함께 보고 둘 다 허용돼야 granted로 준다. WRITE를 막았으므로 READ만 직접 다룬다

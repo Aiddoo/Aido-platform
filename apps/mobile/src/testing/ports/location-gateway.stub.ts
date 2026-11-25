@@ -1,8 +1,5 @@
-import type {
-  LocationCoordinates,
-  LocationGateway,
-  LocationPermission,
-} from '@src/core/ports/location-gateway';
+import type { LocationCoordinates, LocationGateway } from '@src/core/ports/location-gateway';
+import type { OsPermission } from '@src/core/ports/os-permission';
 
 import { mockMethod } from '../mock-method';
 
@@ -10,7 +7,7 @@ type Place = Awaited<ReturnType<LocationGateway['getPlace']>>;
 
 interface LocationGatewayStubOptions {
   /** 세 권한 조회가 같은 값을 돌려준다 */
-  permission?: LocationPermission;
+  permission?: OsPermission;
   coordinates?: LocationCoordinates;
   place?: Place;
 }
@@ -25,7 +22,7 @@ function failUnset(method: 'getCoordinates' | 'getPlace') {
 
 /** 아직 권한을 묻지 않은 기기가 기본값이다. 좌표와 장소는 필요한 테스트가 정한다 */
 export function createLocationGatewayStub({
-  permission = { isGranted: false, canAskAgain: true },
+  permission = { status: 'undetermined', canAskAgain: true },
   coordinates,
   place,
 }: LocationGatewayStubOptions = {}): jest.Mocked<LocationGateway> {

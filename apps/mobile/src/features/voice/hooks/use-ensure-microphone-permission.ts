@@ -9,6 +9,7 @@ import { useOpenAppSettings } from '@src/shared/hooks/use-open-app-settings';
 import { t } from '@src/shared/i18n';
 import { useConfirmDialog } from '@src/shared/ui';
 import { useAppToast } from '@src/shared/ui';
+import { getOsPermissionAccess } from '@src/shared/utils/get-os-permission-access';
 import { useCallback } from 'react';
 import { match } from 'ts-pattern';
 
@@ -37,12 +38,12 @@ export function useEnsureMicrophonePermission() {
   const { trackEvent } = useTrack();
   const toast = useAppToast();
   const confirmDialog = useConfirmDialog();
-  const openAppSettings = useOpenAppSettings();
+  const appSettings = useOpenAppSettings();
 
   return useCallback(
     async (mode: SpeechMode, locale: SpeechLocale) => {
       const current = await speechRecognizer.getPermission(mode, locale);
-      const shouldRequest = current.status !== 'granted' && current.canAskAgain;
+      const shouldRequest = getOsPermissionAccess(current) === 'ask';
       const permission = shouldRequest
         ? await speechRecognizer.requestPermission(mode, locale)
         : current;
@@ -58,7 +59,7 @@ export function useEnsureMicrophonePermission() {
         return true;
       }
       const copy = getPermissionCopy(permission.missing);
-      if (permission.canAskAgain) {
+      if (getOsPermissionAccess(permission) === 'ask') {
         toast.error(copy.denied);
         return false;
       }
@@ -69,10 +70,10 @@ export function useEnsureMicrophonePermission() {
         confirmLabel: t('common:permissions.openSettings'),
       });
       if (shouldOpenSettings) {
-        await openAppSettings();
+        await appSettings.open();
       }
       return false;
     },
-    [speechRecognizer, trackEvent, toast, confirmDialog, openAppSettings],
+    [speechRecognizer, trackEvent, toast, confirmDialog, appSettings],
   );
 }

@@ -1,4 +1,5 @@
 import { useTodoImportSource } from '@src/bootstrap/providers/di-context';
+import { OS_PERMISSION_QUERY_OPTIONS } from '@src/shared/constants/os-permission-query';
 import type { DateKey } from '@src/shared/date/date-key';
 import { addDaysToDateKey } from '@src/shared/date/date-key';
 import { getStartOfDateKey } from '@src/shared/date/zoned';
@@ -23,10 +24,7 @@ export function useGetCalendarPermissionQueryOptions() {
         client.getQueryData(queryKey),
         await todoImportSource.getPermission(),
       ),
-    // 기기 안에서만 읽어 연결 상태와 무관하다
-    networkMode: 'always',
-    // 설정 앱에서 허용하고 돌아올 수 있어 화면을 열거나 앱으로 돌아올 때마다 다시 본다
-    staleTime: 0,
+    ...OS_PERMISSION_QUERY_OPTIONS,
     // 받은 "다시 묻지 않음" 답을 이번 실행 동안 남긴다
     gcTime: Number.POSITIVE_INFINITY,
   });

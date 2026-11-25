@@ -1,4 +1,6 @@
+import type { OsPermission } from '@src/core/ports/os-permission';
 import { isConnectivityError } from '@src/shared/errors/infra-error';
+import { getOsPermissionAccess } from '@src/shared/utils/get-os-permission-access';
 import { match, P } from 'ts-pattern';
 
 import type { BriefingResult } from '../domains/weather-briefing.model';
@@ -73,14 +75,14 @@ export function toWeatherReportFailedCause(error: unknown): WeatherReportFailedC
 export type WeatherPermissionResult = 'granted' | 'needs_permission' | 'denied';
 
 /** 권한 요청 자체가 실패하면(null) 다시 물을 수 있는 상태로 본다. */
-export function toPermissionResult(
-  permission: { isGranted: boolean; canAskAgain: boolean } | null,
-): WeatherPermissionResult {
+export function toPermissionResult(permission: OsPermission | null): WeatherPermissionResult {
   if (permission == null) {
     return 'needs_permission';
   }
-  if (permission.isGranted) {
-    return 'granted';
-  }
-  return permission.canAskAgain ? 'needs_permission' : 'denied';
+  return match(getOsPermissionAccess(permission))
+    .returnType<WeatherPermissionResult>()
+    .with('granted', () => 'granted')
+    .with('ask', () => 'needs_permission')
+    .with('settings', () => 'denied')
+    .exhaustive();
 }

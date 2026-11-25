@@ -5,11 +5,12 @@ import {
   fromEpochMs,
   hasInstantPassed,
   type Instant,
-  instantSchema,
   toEpochMs,
 } from '@src/shared/date/instant';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
+
+import type { PushPermissionPrompt } from './push-permission-prompt.model';
 
 /** 홈 알림 안내를 닫으면 이 날수 동안 다시 보이지 않는다 */
 const PUSH_PROMPT_SNOOZE_DAYS = 14;
@@ -21,20 +22,6 @@ export const pushPermissionSchema = z.object({
   canAskAgain: z.boolean(),
 });
 export type PushPermission = z.infer<typeof pushPermissionSchema>;
-
-const pushDeviceSchema = z.object({
-  permission: pushPermissionSchema,
-  hasActiveToken: z.boolean(),
-  reportedAt: instantSchema,
-});
-export type PushDevice = z.infer<typeof pushDeviceSchema>;
-
-/** 계정마다 기기에 남긴 답. 알림 화면과 피드 꺼짐 안내를 닫은 시각이다 */
-const pushPermissionPromptSchema = z.object({
-  deferredAt: instantSchema.nullable(),
-  noticeDismissedAt: instantSchema.nullable(),
-});
-type PushPermissionPrompt = z.infer<typeof pushPermissionPromptSchema>;
 
 /** 알림을 받으려면 사용자가 다음에 할 일. 코드에서 부르는 이름은 constants의 PUSH_PERMISSION_STEP */
 export type PushPermissionStep =

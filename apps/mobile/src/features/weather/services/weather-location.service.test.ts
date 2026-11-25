@@ -1,4 +1,5 @@
 import type { LocationGateway } from '@src/core/ports/location-gateway';
+import type { OsPermission } from '@src/core/ports/os-permission';
 import type { ApiError } from '@src/shared/errors';
 import { fail, NetworkError, ok, type Result } from '@src/shared/errors';
 import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
@@ -22,14 +23,14 @@ const SEOUL = { latitude: 37.5636, longitude: 126.9976 };
 const SEOUL_REGISTERED = { ...SEOUL, timezone: 'Asia/Seoul' };
 const SEOUL_PLACE: Place = { countryCode: 'KR', name: { city: '서울', district: '중구' } };
 const UNKNOWN_PLACE: Place = { countryCode: null, name: null };
-const NOT_ASKED = { isGranted: false, canAskAgain: true };
+const NOT_ASKED: OsPermission = { status: 'undetermined', canAskAgain: true };
 
 setupFakeTimersPerTest();
 
 /** 역지오코딩과 위치 등록은 테스트가 풀 때까지 끝나지 않는다 */
 function setup() {
   const gateway = createLocationGatewayStub({
-    permission: { isGranted: true, canAskAgain: true },
+    permission: { status: 'granted', canAskAgain: true },
     coordinates: SEOUL,
   });
   const place = Promise.withResolvers<Place>();
@@ -58,6 +59,7 @@ function setup() {
   const rememberGrant = () =>
     writeStoredValue(storage, weatherLocationPermissionGrantedStoredValue, true);
   return {
+    service,
     gateway,
     httpClient,
     place,
@@ -209,7 +211,7 @@ describe('WeatherLocationService.resolveLocation', () => {
       // Given
       const { gateway, resolveLocation, hasRememberedGrant, rememberGrant } = setup();
       gateway.getPermission.mockResolvedValue(NOT_ASKED);
-      gateway.recheckPermission.mockResolvedValue({ isGranted: false, canAskAgain: false });
+      gateway.recheckPermission.mockResolvedValue({ status: 'denied', canAskAgain: false });
       rememberGrant();
 
       // When
@@ -232,6 +234,36 @@ describe('WeatherLocationService.resolveLocation', () => {
 
       // Then
       expect(hasRememberedGrant()).toBe(true);
+    });
+  });
+});
+
+describe('WeatherLocationService.requestPermission', () => {
+  it('허용하면 기기에 허용을 기억하고 OS 값을 그대로 돌려준다', async () => {
+    // Given
+    const { service, gateway, hasRememberedGrant } = setup();
+
+    // When
+    const permission = await service.requestPermission();
+
+    // Then
+    expect(permission).toEqual({ status: 'granted', canAskAgain: true });
+    expect(gateway.requestPermission).toHaveBeenCalledTimes(1);
+    expect(hasRememberedGrant()).toBe(true);
+  });
+
+  it('권한 창을 띄우지 못하면 던지지 않고 경고만 남겨 안내가 그대로 남는다', async () => {
+    // Given
+    const { service, gateway, logger } = setup();
+    gateway.requestPermission.mockRejectedValue(new Error('permission unavailable'));
+
+    // When
+    const permission = await service.requestPermission();
+
+    // Then
+    expect(permission).toBeNull();
+    expect(logger.warn).toHaveBeenCalledWith('weather.location-permission-request.failed', {
+      error: 'permission unavailable',
     });
   });
 });

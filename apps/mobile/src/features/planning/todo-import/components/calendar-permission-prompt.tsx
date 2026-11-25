@@ -1,6 +1,6 @@
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useOpenAppSettings } from '@src/shared/hooks/use-open-app-settings';
 import { useTranslation } from '@src/shared/i18n';
-import { IS_IOS_APP_ON_MAC } from '@src/shared/infra/device/device-info';
 import {
   CalendarIllustration,
   CheckmarkIcon,
@@ -55,6 +55,7 @@ CalendarPermissionPrompt.Ask = function Ask() {
 /** Mac은 아이두 설정 화면이 아니라 시스템 설정의 개인정보 보호에서 켠다 */
 CalendarPermissionPrompt.Denied = function Denied() {
   const { t } = useTranslation('todoImport');
+  const appSettings = useOpenAppSettings();
 
   return (
     <Prompt>
@@ -63,9 +64,9 @@ CalendarPermissionPrompt.Denied = function Denied() {
           {t('permission.deniedTitle')}
         </Text>
         <WordWrapText size="b3" shade={6} align="center">
-          {IS_IOS_APP_ON_MAC
-            ? t('permission.deniedDescriptionMac')
-            : t('permission.deniedDescription')}
+          {appSettings.canOpen
+            ? t('permission.deniedDescription')
+            : t('permission.deniedDescriptionMac')}
         </WordWrapText>
       </VStack>
     </Prompt>
