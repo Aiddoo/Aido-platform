@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import type { VoiceCaptureState } from './voice-capture.model';
 
-/** 이 음량(0..1)을 넘으면 말하는 중으로 본다 */
+/** 인식기 음량 표본(0..1, 50ms마다) 하나가 이 값 이상이면 말소리로 본다. 침묵 자동 마무리와 멈춤 감시가 함께 쓴다 */
 const SPEAKING_VOLUME_THRESHOLD = 0.18;
 
 /** 음량이 커도 이만큼 새 글자가 없으면 말이 아니라 주변 소리로 본다. 시끄러운 곳에서도 자동으로 마무리되게 한다 */

@@ -19,10 +19,10 @@ import { match } from 'ts-pattern';
 
 import { PLAN_IN_PROGRESS_RETRY } from '../constants/voice.constants';
 import type { PreparedPlanRequest } from '../domains/plan-request.model';
-import type { VoiceNoteDigestInput } from '../domains/voice-note.model';
 import type { PlannedAction, VoicePlanSource } from '../domains/voice-plan.model';
 import { getVoicePlanFailureCause, isPlanInProgressError } from '../domains/voice.error';
 import type { CreateQuickPlanInput } from '../schemas/quick-plan-request.schema';
+import type { VoiceNoteDigestInput } from '../schemas/voice-note-digest-request.schema';
 import { toAnalyticsSource, summarizePlanForAnalytics } from '../utils/voice-analytics';
 import { VOICE_MUTATION_KEYS } from './voice-mutation-keys';
 

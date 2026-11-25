@@ -61,14 +61,6 @@ export const VOICE_LIGHT_ORB = {
   gradientStops: [0, 0.55, 1],
 };
 
-export const VOICE_FRAME_BUDGET = {
-  /** 30fps 아래 */
-  slowFrameMs: 34,
-  sustainedSlowMs: 2_000,
-  /** 앱을 다녀오면 프레임이 크게 벌어진다. 기기 성능이 아니므로 세지 않는다 */
-  ignoreFrameMs: 500,
-} as const;
-
 export const VOICE_EDGE_GLOW = {
   blur: 14,
   rimWidth: 1.5,

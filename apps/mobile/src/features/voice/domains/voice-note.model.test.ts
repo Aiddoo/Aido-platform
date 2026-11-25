@@ -1,6 +1,4 @@
-import { ACTION_PLAN_LIMITS } from '@aido/api/vocabulary';
 import { toInstant } from '@src/shared/date/instant';
-import { range } from 'es-toolkit';
 import { ZodError } from 'zod';
 
 import {
@@ -10,13 +8,7 @@ import {
   createVoiceNoteSentence,
 } from '../__tests__/voice-note.fixtures';
 import { createPlanReviewDraft } from '../utils/plan-review-draft';
-import {
-  getRecordingIndexAt,
-  VoiceNotePolicy,
-  createVoiceNote,
-  createDigestInput,
-  createDigestMemo,
-} from './voice-note.model';
+import { isRecordingFileExpired, VoiceNotePolicy, createVoiceNote } from './voice-note.model';
 import { voicePlanSchema } from './voice-plan.model';
 
 const createPlanDraftWithActions = (actions: unknown[]) =>
@@ -47,98 +39,34 @@ const createPlannedTodo = (actionId: string, title: string) => ({
   duplicateOfTodoId: null,
 });
 
-describe('createDigestInput', () => {
-  it('문장을 글자와 시각 구간으로 만들고 길이는 초로 보낸다', () => {
-    // Given
-    const note = createSpokenVoiceNote({
-      durationMs: 178_400,
-      sentences: [
-        createVoiceNoteSentence({ text: '첫 문장.', startMs: 0, endMs: 2_000 }),
-        createVoiceNoteSentence({ text: '   ', startMs: 2_000, endMs: 3_000 }),
-        createVoiceNoteSentence({
-          text: '둘째 문장.',
-          startMs: 3_000,
-          endMs: 5_000,
-          isBookmarked: true,
-        }),
-      ],
-    });
-
-    // When
-    const input = createDigestInput(note);
-
-    // Then
-    expect(input).toEqual({
-      text: '첫 문장. 둘째 문장.',
-      durationSeconds: 178,
-      segments: [
-        { startMs: 0, text: '첫 문장.', isBookmarked: false },
-        { startMs: 3_000, text: '둘째 문장.', isBookmarked: true },
-      ],
-    });
-  });
-
-  it('문장이 서버 상한을 넘으면 이웃끼리 묶어 상한 안에 넣고 깃발은 남긴다', () => {
-    // Given
-    const sentences = range(1_000).map((index) =>
-      createVoiceNoteSentence({
-        text: `문장 ${index}`,
-        startMs: index * 1_000,
-        endMs: index * 1_000 + 1_000,
-        isBookmarked: index === 1,
-      }),
-    );
-    const note = createSpokenVoiceNote({ sentences });
-
-    // When
-    const { segments } = createDigestInput(note);
-
-    // Then
-    expect(segments.length).toBeLessThanOrEqual(ACTION_PLAN_LIMITS.DIGEST_MAX_SEGMENTS);
-    expect(segments[0]).toEqual({ startMs: 0, text: '문장 0 문장 1', isBookmarked: true });
-  });
-});
-
-describe('createDigestMemo', () => {
-  it('요약과 핵심 포인트를 메모 한 장으로 만든다', () => {
-    // Given
-    const note = createSpokenVoiceNote({
-      digest: createVoiceNoteDigest({
-        title: '회의',
-        summary: '요약',
-        keyPoints: [createVoiceNoteKeyPoint({ text: '포인트' })],
-      }),
-    });
-
-    // When
-    const memo = createDigestMemo(note);
-
-    // Then
-    expect(memo).toMatchObject({ type: 'create-memo', title: '회의', content: '요약\n- 포인트' });
-  });
-});
-
-describe('getRecordingIndexAt', () => {
-  const recordings = [{ startMs: 0 }, { startMs: 30_000 }, { startMs: 90_000 }];
-
-  it.each([
-    [0, 0],
-    [29_999, 0],
-    [30_000, 1],
-    [120_000, 2],
-  ])('%dms는 %d번째 조각이다', (positionMs, index) => {
-    // When
-    const found = getRecordingIndexAt(recordings, positionMs);
-
-    // Then
-    expect(found).toBe(index);
-  });
-});
-
 const spokenSentences = [
   createVoiceNoteSentence({ text: '하나', startMs: 1_000, isBookmarked: true }),
   createVoiceNoteSentence({ text: '두번째', startMs: 5_000 }),
 ];
+
+describe('isRecordingFileExpired', () => {
+  const now = toInstant('2026-11-05T01:00:00.000Z');
+
+  it.each([
+    { scenario: '수정 시각을 모르는 파일', modifiedAtMs: null, expected: true },
+    {
+      scenario: '수정한 지 1시간이 되기 직전',
+      modifiedAtMs: Date.parse('2026-11-05T00:00:00.001Z'),
+      expected: false,
+    },
+    {
+      scenario: '수정한 지 1시간이 되는 순간',
+      modifiedAtMs: Date.parse('2026-11-05T00:00:00.000Z'),
+      expected: true,
+    },
+  ])('$scenario이면 만료인지: $expected', ({ modifiedAtMs, expected }) => {
+    // When
+    const result = isRecordingFileExpired(modifiedAtMs, now);
+
+    // Then
+    expect(result).toBe(expected);
+  });
+});
 
 describe('createVoiceNote', () => {
   it('글자·녹음·정리·저장 기록이 모두 비어 있는 새 노트를 만든다', () => {
@@ -184,6 +112,25 @@ describe('createVoiceNote', () => {
 });
 
 describe('VoiceNotePolicy', () => {
+  describe('findDigestMemo', () => {
+    it('요약과 핵심 포인트를 메모 한 장으로 만든다', () => {
+      // Given
+      const note = createSpokenVoiceNote({
+        digest: createVoiceNoteDigest({
+          title: '회의',
+          summary: '요약',
+          keyPoints: [createVoiceNoteKeyPoint({ text: '포인트' })],
+        }),
+      });
+
+      // When
+      const memo = VoiceNotePolicy.findDigestMemo(note);
+
+      // Then
+      expect(memo).toMatchObject({ type: 'create-memo', title: '회의', content: '요약\n- 포인트' });
+    });
+  });
+
   describe('getListedNotes', () => {
     it('최근에 만든 노트부터 보인다', () => {
       // Given

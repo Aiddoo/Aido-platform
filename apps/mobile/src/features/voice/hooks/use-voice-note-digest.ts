@@ -7,14 +7,12 @@ import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpecte
 import { useMutation } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 
+import { toVoiceNoteDigestInput } from '../apis/voice-plan.mapper';
 import { PlanRequestPolicy, type PreparedPlanRequest } from '../domains/plan-request.model';
-import {
-  type VoiceNoteDigestInput,
-  VoiceNotePolicy,
-  createDigestInput,
-} from '../domains/voice-note.model';
+import { VoiceNotePolicy } from '../domains/voice-note.model';
 import { getVoicePlanFailureCause, type VoicePlanFailureCause } from '../domains/voice.error';
 import { useCreateVoiceNoteDigestMutationOptions } from '../queries/voice.mutations';
+import type { VoiceNoteDigestInput } from '../schemas/voice-note-digest-request.schema';
 import { createPlanReviewDraft } from '../utils/plan-review-draft';
 
 export interface VoiceNoteDigestFailure {
@@ -61,7 +59,7 @@ export function useVoiceNoteDigest({ accountId, draftId }: { accountId: string; 
     }
 
     setFailure(null);
-    const input = createDigestInput(note);
+    const input = toVoiceNoteDigestInput(note);
     const request: PreparedPlanRequest<VoiceNoteDigestInput> = {
       fingerprint: JSON.stringify(input),
       input,

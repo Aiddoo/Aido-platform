@@ -1,4 +1,8 @@
-import { toApplyActionPlanRequest, toVoicePlan } from './voice-plan.mapper';
+import { ACTION_PLAN_LIMITS } from '@aido/api/vocabulary';
+import { range } from 'es-toolkit';
+
+import { createSpokenVoiceNote, createVoiceNoteSentence } from '../__tests__/voice-note.fixtures';
+import { toApplyActionPlanRequest, toVoiceNoteDigestInput, toVoicePlan } from './voice-plan.mapper';
 
 const todoDto = {
   type: 'CREATE_TODO',
@@ -66,5 +70,57 @@ describe('toApplyActionPlanRequest', () => {
       source: 'QUICK_TEXT',
       actions: [{ type: 'CREATE_TODO', categoryId: 7, startDate: '2026-11-05' }],
     });
+  });
+});
+
+describe('toVoiceNoteDigestInput', () => {
+  it('문장을 글자와 시각 구간으로 만들고 길이는 초로 보낸다', () => {
+    // Given
+    const note = createSpokenVoiceNote({
+      durationMs: 178_400,
+      sentences: [
+        createVoiceNoteSentence({ text: '첫 문장.', startMs: 0, endMs: 2_000 }),
+        createVoiceNoteSentence({ text: '   ', startMs: 2_000, endMs: 3_000 }),
+        createVoiceNoteSentence({
+          text: '둘째 문장.',
+          startMs: 3_000,
+          endMs: 5_000,
+          isBookmarked: true,
+        }),
+      ],
+    });
+
+    // When
+    const input = toVoiceNoteDigestInput(note);
+
+    // Then
+    expect(input).toEqual({
+      text: '첫 문장. 둘째 문장.',
+      durationSeconds: 178,
+      segments: [
+        { startMs: 0, text: '첫 문장.', isBookmarked: false },
+        { startMs: 3_000, text: '둘째 문장.', isBookmarked: true },
+      ],
+    });
+  });
+
+  it('문장이 서버 상한을 넘으면 이웃끼리 묶어 상한 안에 넣고 깃발은 남긴다', () => {
+    // Given
+    const sentences = range(1_000).map((index) =>
+      createVoiceNoteSentence({
+        text: `문장 ${index}`,
+        startMs: index * 1_000,
+        endMs: index * 1_000 + 1_000,
+        isBookmarked: index === 1,
+      }),
+    );
+    const note = createSpokenVoiceNote({ sentences });
+
+    // When
+    const { segments } = toVoiceNoteDigestInput(note);
+
+    // Then
+    expect(segments.length).toBeLessThanOrEqual(ACTION_PLAN_LIMITS.DIGEST_MAX_SEGMENTS);
+    expect(segments[0]).toEqual({ startMs: 0, text: '문장 0 문장 1', isBookmarked: true });
   });
 });

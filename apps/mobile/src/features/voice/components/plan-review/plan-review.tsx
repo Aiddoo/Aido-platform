@@ -37,15 +37,15 @@ import { ScrollView, type StyleProp, type ViewStyle } from 'react-native';
 import { match } from 'ts-pattern';
 
 import { PlanRequestPolicy } from '../../domains/plan-request.model';
-import {
-  getPlanActionGroups,
-  sortPlanActionsByGroup,
-  type VoicePlan,
-  VoicePlanPolicy,
-} from '../../domains/voice-plan.model';
+import { type VoicePlan, VoicePlanPolicy } from '../../domains/voice-plan.model';
 import { isPlanKeyConflictError, isSourceMemoMissingError } from '../../domains/voice.error';
 import { useApplyActionPlanMutationOptions } from '../../queries/voice.mutations';
 import { type PlanReviewFormValues } from '../../schemas/plan-review-form.schema';
+import {
+  getPlanActionGroups,
+  sortPlanActionsByGroup,
+} from '../../utils/plan-action-group.view-model';
+import { getPlanHeadline } from '../../utils/plan-headline.view-model';
 import { toPlanSelection, toPlannedActions } from '../../utils/plan-review-draft';
 import { findPlanTodoSubtitle } from '../../utils/plan-todo-subtitle.view-model';
 import { PlanTodoEditBottomSheet } from './plan-todo-edit-bottom-sheet';
@@ -146,7 +146,7 @@ export function PlanReview({
   const selection = toPlanSelection({ actions });
   const todoCount = VoicePlanPolicy.getSelectedTodoCount(plan, selection);
   const canApply = VoicePlanPolicy.canApplyPlan(plan, selection);
-  const headline = VoicePlanPolicy.getHeadline(plan, selection);
+  const headline = getPlanHeadline(plan, selection);
 
   if (fields.length === 0) {
     return (

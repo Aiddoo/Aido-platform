@@ -14,6 +14,7 @@ import { type RefObject, useCallback, useEffect, useEffectEvent, useRef, useStat
 import { useSharedValue } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
+import { toSpeechStartOptions } from '../apis/speech-hint.mapper';
 import { COMMON_SPEECH_HINTS } from '../constants/speech-hints.constants';
 import {
   AUTO_FINISH_SILENCE_MS,
@@ -21,7 +22,6 @@ import {
   VOICE_PREPARING_TIMEOUT_MS,
 } from '../constants/voice.constants';
 import type { VoiceCaptureEntry } from '../constants/voice.events';
-import { getRecognizerStartOptions } from '../domains/speech-context.model';
 import {
   type VoiceCaptureEvent,
   VoiceCapturePolicy,
@@ -469,7 +469,7 @@ function useRecognizerLink(): RecognizerLink {
   };
 
   const startRecognizer = (options: SpeechStartOptions) =>
-    speechRecognizer.start(getRecognizerStartOptions(options, COMMON_SPEECH_HINTS[options.locale]));
+    speechRecognizer.start(toSpeechStartOptions(options, COMMON_SPEECH_HINTS[options.locale]));
 
   const start = (options: SpeechStartOptions) => {
     update({ type: 'start-requested', at: Date.now() });

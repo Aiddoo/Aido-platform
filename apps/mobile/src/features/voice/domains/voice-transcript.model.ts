@@ -1,4 +1,4 @@
-import type { SpeechSegment } from '@src/core/ports/speech-recognizer';
+import type { SpeechSegment } from '@aido/api/vocabulary';
 import { compact } from 'es-toolkit';
 import { z } from 'zod';
 
@@ -20,6 +20,15 @@ export type SpeechResult = z.infer<typeof speechResultSchema>;
 // 빈 받아쓰기에서 시작하고 이어 받는 곳(노트 복원·예시 화면)은 일부 값만 넘긴다
 export function createVoiceTranscript(overrides: Partial<VoiceTranscript> = {}): VoiceTranscript {
   return { sentences: [], interim: '', ...overrides };
+}
+
+// 신뢰도를 주지 않는 기기는 0 이하(Android -1, iOS 중간 결과 0)라 고르지 않는다
+export function getLowConfidenceWords(segments: readonly SpeechSegment[]): string[] {
+  return compact(
+    segments
+      .filter(({ confidence }) => 0 < confidence && confidence < LOW_CONFIDENCE_THRESHOLD)
+      .map(({ text }) => text.trim()),
+  );
 }
 
 function replaceInterimResult(transcript: VoiceTranscript, text: string): VoiceTranscript {
@@ -71,14 +80,5 @@ export const VoiceTranscriptPolicy = {
 
   withInterimFinalized(transcript: VoiceTranscript): VoiceTranscript {
     return this.appendFinalResult(transcript, transcript.interim);
-  },
-
-  // 신뢰도를 주지 않는 기기는 0 이하(Android -1, iOS 중간 결과 0)라 고르지 않는다
-  getLowConfidenceWords(segments: readonly SpeechSegment[]): string[] {
-    return compact(
-      segments
-        .filter(({ confidence }) => 0 < confidence && confidence < LOW_CONFIDENCE_THRESHOLD)
-        .map(({ text }) => text.trim()),
-    );
   },
 };

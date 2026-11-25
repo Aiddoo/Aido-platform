@@ -8,13 +8,10 @@ import { getErrorMessage } from '@src/shared/errors/to-error';
 import { useAudioPartPlaylist } from '@src/shared/infra/audio/use-audio-part-playlist';
 import { useEffect, useState } from 'react';
 
+import { toVoiceNotePlayback } from '../apis/voice-note-playback.mapper';
 import { VOICE_LOG_EVENT } from '../constants/voice-log-events';
 import { VOICE_NOTE_POSITION_INTERVAL_MS } from '../constants/voice-note.constants';
-import {
-  findPartSeek,
-  getVoiceNotePlayback,
-  type VoiceNotePlayback,
-} from '../utils/voice-note-playback.view-model';
+import { findPartSeek, type VoiceNotePlayback } from '../domains/voice-note-playback.model';
 
 interface VoiceNotePlayerPart {
   uri: string;
@@ -51,7 +48,7 @@ function createVoiceNotePlayer({ playlist, parts, durationMs, logger }: CreatePl
   const lastIndex = parts.length - 1;
   let status: AudioPartPlaylistStatus = playlist.currentStatus;
   let pendingStart: PendingStart | null = null;
-  let { playback, memory } = getVoiceNotePlayback(status, parts, {
+  let { playback, memory } = toVoiceNotePlayback(status, parts, {
     hasFinished: false,
     resolvedDurationMs: durationMs,
   });
@@ -110,7 +107,7 @@ function createVoiceNotePlayer({ playlist, parts, durationMs, logger }: CreatePl
   };
 
   const notify = () => {
-    ({ playback, memory } = getVoiceNotePlayback(status, parts, memory));
+    ({ playback, memory } = toVoiceNotePlayback(status, parts, memory));
     for (const listener of listeners) {
       listener();
     }

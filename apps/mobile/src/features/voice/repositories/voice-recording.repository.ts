@@ -8,7 +8,7 @@ import {
   VOICE_RECORDING_EXTENSION,
   VOICE_RECORDING_ROOT_DIRECTORY,
 } from '../constants/voice-note.constants';
-import { VoiceRecordingFilePolicy } from '../domains/voice-recording-file.model';
+import { isRecordingFileExpired } from '../domains/voice-note.model';
 
 interface SaveRecordingInput {
   accountId: string;
@@ -136,8 +136,7 @@ export function createVoiceRecordingRepository(
       const directory = createOwnerDirectory(accountId);
       const expired = listSafely(directory).filter(
         (file) =>
-          !referencedFileNames.has(file.name) &&
-          VoiceRecordingFilePolicy.isRecordingFileExpired(file, now),
+          !referencedFileNames.has(file.name) && isRecordingFileExpired(file.modifiedAtMs, now),
       );
       for (const file of expired) {
         removeSafely(directory, file.name);

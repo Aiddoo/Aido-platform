@@ -1386,11 +1386,7 @@
     },
     {
       // 래칫
-      "files": [
-        "src/features/device/widget/**",
-        "src/features/social/invite/**",
-        "src/features/voice/**"
-      ],
+      "files": ["src/features/device/widget/**", "src/features/social/invite/**"],
       "rules": {
         "aido/policy-model-parameter": "off"
       }
@@ -1400,8 +1396,7 @@
       "files": [
         "src/shared/draft/draft.model.ts",
         "src/features/app-config/whats-new/**",
-        "src/features/social/invite/**",
-        "src/features/voice/**"
+        "src/features/social/invite/**"
       ],
       "rules": {
         "aido/model-function-exports": "off"

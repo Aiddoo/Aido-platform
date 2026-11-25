@@ -1,5 +1,40 @@
 import { createTranscript } from '../__tests__/voice.fixtures';
-import { createVoiceTranscript, VoiceTranscriptPolicy } from './voice-transcript.model';
+import {
+  createVoiceTranscript,
+  getLowConfidenceWords,
+  VoiceTranscriptPolicy,
+} from './voice-transcript.model';
+
+describe('getLowConfidenceWords', () => {
+  const segment = (text: string, confidence: number) => ({
+    text,
+    startMs: 0,
+    endMs: 1,
+    confidence,
+  });
+
+  it('기준보다 낮은 단어만 고른다', () => {
+    // Given
+    const segments = [segment('높음', 0.9), segment('낮음', 0.2), segment('경계', 0.5)];
+
+    // When
+    const words = getLowConfidenceWords(segments);
+
+    // Then
+    expect(words).toEqual(['낮음']);
+  });
+
+  it.each([-1, 0])('신뢰도 %d은 값이 없는 것이라 고르지 않는다', (confidence) => {
+    // Given
+    const segments = [segment('단어', confidence)];
+
+    // When
+    const words = getLowConfidenceWords(segments);
+
+    // Then
+    expect(words).toEqual([]);
+  });
+});
 
 describe('VoiceTranscriptPolicy', () => {
   describe('applyResult', () => {
@@ -91,37 +126,6 @@ describe('VoiceTranscriptPolicy', () => {
 
       // Then
       expect(isEmpty).toBe(true);
-    });
-  });
-
-  describe('getLowConfidenceWords', () => {
-    const segment = (text: string, confidence: number) => ({
-      text,
-      startMs: 0,
-      endMs: 1,
-      confidence,
-    });
-
-    it('기준보다 낮은 단어만 고른다', () => {
-      // Given
-      const segments = [segment('높음', 0.9), segment('낮음', 0.2), segment('경계', 0.5)];
-
-      // When
-      const words = VoiceTranscriptPolicy.getLowConfidenceWords(segments);
-
-      // Then
-      expect(words).toEqual(['낮음']);
-    });
-
-    it.each([-1, 0])('신뢰도 %d은 값이 없는 것이라 고르지 않는다', (confidence) => {
-      // Given
-      const segments = [segment('단어', confidence)];
-
-      // When
-      const words = VoiceTranscriptPolicy.getLowConfidenceWords(segments);
-
-      // Then
-      expect(words).toEqual([]);
     });
   });
 

@@ -1,4 +1,4 @@
-import { SPEECH_ERROR_CODES, type SpeechErrorCode } from '@src/core/ports/speech-recognizer';
+import { SPEECH_ERROR_CODES } from '@aido/api/vocabulary';
 import { SECOND_MS } from '@src/shared/constants/time-units';
 import { match, P } from 'ts-pattern';
 import { z } from 'zod';
@@ -15,6 +15,8 @@ import {
 // 인식기가 오류 없이 답하지 않아 앱이 세션을 끝낸 이유. 인식기 오류 코드와 섞지 않아 버그로 보고하지 않는다
 const RECOGNIZER_UNRESPONSIVE_REASONS = ['preparing-timeout', 'restart-loop'] as const;
 export type RecognizerUnresponsiveReason = (typeof RECOGNIZER_UNRESPONSIVE_REASONS)[number];
+
+type SpeechErrorCode = (typeof SPEECH_ERROR_CODES)[number];
 
 const voiceCaptureFailureReasonSchema = z.enum([
   ...SPEECH_ERROR_CODES,

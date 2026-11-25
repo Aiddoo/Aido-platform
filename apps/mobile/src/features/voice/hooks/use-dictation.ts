@@ -8,8 +8,8 @@ import { noop } from 'es-toolkit';
 import { useEffect, useRef, useState } from 'react';
 import { match } from 'ts-pattern';
 
+import { toSpeechStartOptions } from '../apis/speech-hint.mapper';
 import { COMMON_SPEECH_HINTS } from '../constants/speech-hints.constants';
-import { getRecognizerStartOptions } from '../domains/speech-context.model';
 import { useEnsureMicrophonePermission } from './use-ensure-microphone-permission';
 import { useSpeechEvent } from './use-speech-event';
 
@@ -111,7 +111,7 @@ export function useDictation({ onResult, onEnd }: UseDictationOptions) {
       }
       isSessionOwnerRef.current = true;
       speechRecognizer.start(
-        getRecognizerStartOptions(
+        toSpeechStartOptions(
           { locale, mode: 'dictation', hintWords: [], isOnDevice: false, recordingDirectory: null },
           COMMON_SPEECH_HINTS[locale],
         ),

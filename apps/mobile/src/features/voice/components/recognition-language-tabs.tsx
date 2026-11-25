@@ -1,4 +1,5 @@
-import { SPEECH_LOCALES, type SpeechLocale } from '@src/core/ports/speech-recognizer';
+import { SPEECH_LOCALES } from '@aido/api/vocabulary';
+import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import { useTranslation } from '@src/shared/i18n';
 import { APP_LOCALES } from '@src/shared/i18n/app-locales';
 import { SegmentTabTrigger } from '@src/shared/ui';

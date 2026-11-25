@@ -1,6 +1,6 @@
 import { range } from 'es-toolkit';
 
-import { splitIntoSentences } from './split-into-sentences';
+import { splitIntoSentences } from './sentence.model';
 
 describe('splitIntoSentences', () => {
   it('문장부호에서 나눈다', () => {

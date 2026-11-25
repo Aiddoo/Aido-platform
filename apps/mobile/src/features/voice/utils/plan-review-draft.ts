@@ -1,7 +1,7 @@
 import { createDraftKey } from '@src/shared/draft/draft.model';
 
+import type { PlanReviewDraft } from '../domains/plan-review-draft.model';
 import {
-  type PlanReviewDraft,
   type PlanSelection,
   VoicePlanPolicy,
   plannedActionSchema,

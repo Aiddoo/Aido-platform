@@ -26,7 +26,8 @@ export const WAVEFORM_BAR = {
   maxLiveBars: 160,
 } as const;
 
-export const SPEECH_LEVEL_THRESHOLD = 0.2;
+/** 녹음 파형의 칸을 말소리 색으로 칠하는 음량. 칸 하나(`WAVEFORM_BAR.intervalMs`)의 가장 큰 음량과 비교하는 표시 값이다 */
+export const WAVEFORM_SPEECH_BAR_LEVEL = 0.2;
 
 /** 끝낸 뒤 인식기가 녹음 파일을 다 쓸 때까지 화면이 기다리는 시간. 넘기면 글자만 먼저 넘긴다 */
 export const VOICE_RECORDING_SAVE_WAIT_MS = 3 * SECOND_MS;

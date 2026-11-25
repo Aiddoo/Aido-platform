@@ -5,7 +5,7 @@ import { getNowInstant } from '@src/shared/date/clock';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useRouter } from 'expo-router';
 
-import { createTranscribedVoiceNote } from '../domains/voice-note-caption.model';
+import { createTranscribedVoiceNote } from '../domains/voice-note-captions.model';
 import type { VoiceTranscript } from '../domains/voice-transcript.model';
 import { useStartVoiceNote } from './use-start-voice-note';
 

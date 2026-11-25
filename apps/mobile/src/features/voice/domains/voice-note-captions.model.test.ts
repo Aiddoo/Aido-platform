@@ -1,10 +1,10 @@
 import { toInstant } from '@src/shared/date/instant';
 
 import {
-  VoiceNoteCaptionPolicy,
+  VoiceNoteCaptionsPolicy,
   createVoiceNoteCaptions,
   createTranscribedVoiceNote,
-} from './voice-note-caption.model';
+} from './voice-note-captions.model';
 
 const clock = (nowMs: number, segmentStartMs = 0) => ({ nowMs, segmentStartMs });
 const interim = (transcript: string) => ({ transcript, isFinal: false, segments: [] });
@@ -54,23 +54,47 @@ describe('createTranscribedVoiceNote', () => {
   });
 });
 
-describe('VoiceNoteCaptionPolicy', () => {
+describe('createVoiceNoteCaptions', () => {
+  const input = {
+    draftId: 'draft-1',
+    locale: 'ko-KR',
+    createdAt: toInstant('2026-11-05T00:00:00.000Z'),
+  } as const;
+
+  it('저장된 초안에서 이어 가면 문장과 깃발이 그대로다', () => {
+    // Given
+    const note = createTranscribedVoiceNote({
+      ...input,
+      transcript: { sentences: ['첫 문장.'], interim: '' },
+      durationMs: 1_000,
+    });
+
+    // When
+    const captions = createVoiceNoteCaptions(note.sentences);
+
+    // Then
+    expect(captions.sentences).toEqual(note.sentences);
+    expect(captions.provisional).toEqual([]);
+  });
+});
+
+describe('VoiceNoteCaptionsPolicy', () => {
   describe('applyCaptionResult', () => {
     it('Android처럼 문장마다 final이 오면 문장을 차례로 쌓는다', () => {
       // Given
-      const heard = VoiceNoteCaptionPolicy.applyCaptionResult(
+      const heard = VoiceNoteCaptionsPolicy.applyCaptionResult(
         createVoiceNoteCaptions(),
         interim('첫 문장'),
         clock(1_000),
       );
 
       // When
-      const first = VoiceNoteCaptionPolicy.applyCaptionResult(
+      const first = VoiceNoteCaptionsPolicy.applyCaptionResult(
         heard,
         final('첫 문장.'),
         clock(3_000),
       );
-      const second = VoiceNoteCaptionPolicy.applyCaptionResult(
+      const second = VoiceNoteCaptionsPolicy.applyCaptionResult(
         first,
         final('둘째 문장.'),
         clock(6_000),
@@ -78,9 +102,9 @@ describe('VoiceNoteCaptionPolicy', () => {
 
       // Then
       expect(
-        VoiceNoteCaptionPolicy.getCaptionSentences(second, 6_000).map(({ text }) => text),
+        VoiceNoteCaptionsPolicy.getCaptionSentences(second, 6_000).map(({ text }) => text),
       ).toEqual(['첫 문장.', '둘째 문장.']);
-      expect(VoiceNoteCaptionPolicy.getCaptionSentences(second, 6_000)[0]).toMatchObject({
+      expect(VoiceNoteCaptionsPolicy.getCaptionSentences(second, 6_000)[0]).toMatchObject({
         startMs: 1_000,
         endMs: 3_000,
       });
@@ -91,8 +115,8 @@ describe('VoiceNoteCaptionPolicy', () => {
       const captions = createVoiceNoteCaptions();
 
       // When
-      const heard = VoiceNoteCaptionPolicy.applyCaptionResult(
-        VoiceNoteCaptionPolicy.applyCaptionResult(captions, interim('첫 문장.'), clock(1_000)),
+      const heard = VoiceNoteCaptionsPolicy.applyCaptionResult(
+        VoiceNoteCaptionsPolicy.applyCaptionResult(captions, interim('첫 문장.'), clock(1_000)),
         interim('첫 문장. 둘째 문장'),
         clock(4_000),
       );
@@ -102,19 +126,19 @@ describe('VoiceNoteCaptionPolicy', () => {
         { text: '첫 문장.', startMs: 1_000 },
         { text: '둘째 문장', startMs: 4_000 },
       ]);
-      expect(VoiceNoteCaptionPolicy.getCaptionInterimText(heard)).toBe('둘째 문장');
+      expect(VoiceNoteCaptionsPolicy.getCaptionInterimText(heard)).toBe('둘째 문장');
     });
 
     it('final이 나오기 전에 저장해도 인식 중인 글자까지 남는다', () => {
       // Given
-      const heard = VoiceNoteCaptionPolicy.applyCaptionResult(
+      const heard = VoiceNoteCaptionsPolicy.applyCaptionResult(
         createVoiceNoteCaptions(),
         interim('아직 확정 안 된 말'),
         clock(1_000),
       );
 
       // When
-      const sentences = VoiceNoteCaptionPolicy.getCaptionSentences(heard, 5_000);
+      const sentences = VoiceNoteCaptionsPolicy.getCaptionSentences(heard, 5_000);
 
       // Then
       expect(sentences).toEqual([
@@ -131,14 +155,14 @@ describe('VoiceNoteCaptionPolicy', () => {
     it('interim이 처음부터 다시 쌓이면 앞 글자를 확정해 잃지 않는다', () => {
       // Given
       const long = '오늘 회의에서 정한 내용을 길게 말하고 있어요';
-      const heard = VoiceNoteCaptionPolicy.applyCaptionResult(
+      const heard = VoiceNoteCaptionsPolicy.applyCaptionResult(
         createVoiceNoteCaptions(),
         interim(long),
         clock(1_000),
       );
 
       // When
-      const restarted = VoiceNoteCaptionPolicy.applyCaptionResult(
+      const restarted = VoiceNoteCaptionsPolicy.applyCaptionResult(
         heard,
         interim('새 말'),
         clock(9_000),
@@ -146,7 +170,7 @@ describe('VoiceNoteCaptionPolicy', () => {
 
       // Then
       expect(restarted.sentences.map(({ text }) => text)).toEqual([long]);
-      expect(VoiceNoteCaptionPolicy.getCaptionInterimText(restarted)).toBe('새 말');
+      expect(VoiceNoteCaptionsPolicy.getCaptionInterimText(restarted)).toBe('새 말');
     });
 
     it('단어 구간이 있으면 구간 시작 시각을 더해 문장 시각을 찾는다', () => {
@@ -154,7 +178,7 @@ describe('VoiceNoteCaptionPolicy', () => {
       const captions = createVoiceNoteCaptions();
 
       // When
-      const next = VoiceNoteCaptionPolicy.applyCaptionResult(
+      const next = VoiceNoteCaptionsPolicy.applyCaptionResult(
         captions,
         final('첫 문장. 둘째 문장.', [
           { text: '첫', startMs: 100, endMs: 200, confidence: 1 },
@@ -171,14 +195,14 @@ describe('VoiceNoteCaptionPolicy', () => {
 
     it('끝난 뒤 같은 문장을 다시 줘도 한 번만 남긴다', () => {
       // Given
-      const heard = VoiceNoteCaptionPolicy.applyCaptionResult(
+      const heard = VoiceNoteCaptionsPolicy.applyCaptionResult(
         createVoiceNoteCaptions(),
         final('같은 문장.'),
         clock(1_000),
       );
 
       // When
-      const next = VoiceNoteCaptionPolicy.applyCaptionResult(
+      const next = VoiceNoteCaptionsPolicy.applyCaptionResult(
         heard,
         final('같은 문장.'),
         clock(2_000),
@@ -190,14 +214,14 @@ describe('VoiceNoteCaptionPolicy', () => {
 
     it('iOS처럼 끝난 뒤 여러 문장을 통째로 다시 줘도 한 번만 남긴다', () => {
       // Given
-      const heard = VoiceNoteCaptionPolicy.applyCaptionResult(
+      const heard = VoiceNoteCaptionsPolicy.applyCaptionResult(
         createVoiceNoteCaptions(),
         final('안녕하세요. 저는 바보입니다.'),
         clock(1_000),
       );
 
       // When
-      const next = VoiceNoteCaptionPolicy.applyCaptionResult(
+      const next = VoiceNoteCaptionsPolicy.applyCaptionResult(
         heard,
         final(' 안녕하세요. 저는 바보입니다.'),
         clock(2_000),
@@ -209,14 +233,14 @@ describe('VoiceNoteCaptionPolicy', () => {
 
     it('다시 준 문장 뒤에 새 문장이 이어지면 새 문장만 더한다', () => {
       // Given
-      const heard = VoiceNoteCaptionPolicy.applyCaptionResult(
+      const heard = VoiceNoteCaptionsPolicy.applyCaptionResult(
         createVoiceNoteCaptions(),
         final('안녕하세요. 저는 바보입니다.'),
         clock(1_000),
       );
 
       // When
-      const next = VoiceNoteCaptionPolicy.applyCaptionResult(
+      const next = VoiceNoteCaptionsPolicy.applyCaptionResult(
         heard,
         final('저는 바보입니다. 오늘 장 보기.'),
         clock(2_000),
@@ -240,7 +264,7 @@ describe('VoiceNoteCaptionPolicy', () => {
       ];
 
       // When
-      const next = VoiceNoteCaptionPolicy.applyCaptionResult(
+      const next = VoiceNoteCaptionsPolicy.applyCaptionResult(
         createVoiceNoteCaptions(),
         final('첫 문장. 둘째 문장.', segments),
         clock(1_000),
@@ -258,7 +282,7 @@ describe('VoiceNoteCaptionPolicy', () => {
       const segments = [{ text: '첫', startMs: 0, endMs: 100, confidence: -1 }];
 
       // When
-      const next = VoiceNoteCaptionPolicy.applyCaptionResult(
+      const next = VoiceNoteCaptionsPolicy.applyCaptionResult(
         createVoiceNoteCaptions(),
         final('첫', segments),
         clock(100),
@@ -273,7 +297,7 @@ describe('VoiceNoteCaptionPolicy', () => {
       const captions = createVoiceNoteCaptions();
 
       // When
-      const next = VoiceNoteCaptionPolicy.applyCaptionResult(
+      const next = VoiceNoteCaptionsPolicy.applyCaptionResult(
         captions,
         final('첫 문장.'),
         clock(100),
@@ -287,14 +311,14 @@ describe('VoiceNoteCaptionPolicy', () => {
   describe('commitProvisional', () => {
     it('인식 구간이 끝나면 꼬리를 문장으로 확정한다', () => {
       // Given
-      const heard = VoiceNoteCaptionPolicy.applyCaptionResult(
+      const heard = VoiceNoteCaptionsPolicy.applyCaptionResult(
         createVoiceNoteCaptions(),
         interim('들은 말'),
         clock(1_000),
       );
 
       // When
-      const next = VoiceNoteCaptionPolicy.commitProvisional(heard, 2_000);
+      const next = VoiceNoteCaptionsPolicy.commitProvisional(heard, 2_000);
 
       // Then
       expect(next.provisional).toEqual([]);
@@ -313,19 +337,19 @@ describe('VoiceNoteCaptionPolicy', () => {
   describe('getSettledSentences', () => {
     it('아직 바뀔 수 있는 마지막 문장은 빼고 앞 문장은 다음 문장이 시작할 때 끝난다', () => {
       // Given
-      const heard = VoiceNoteCaptionPolicy.applyCaptionResult(
+      const heard = VoiceNoteCaptionsPolicy.applyCaptionResult(
         createVoiceNoteCaptions(),
         interim('첫 문장. 둘째 문장'),
         clock(1_000),
       );
-      const next = VoiceNoteCaptionPolicy.applyCaptionResult(
+      const next = VoiceNoteCaptionsPolicy.applyCaptionResult(
         heard,
         interim('첫 문장. 둘째 문장. 셋째'),
         clock(4_000),
       );
 
       // When
-      const sentences = VoiceNoteCaptionPolicy.getSettledSentences(next);
+      const sentences = VoiceNoteCaptionsPolicy.getSettledSentences(next);
 
       // Then
       expect(sentences.map(({ text, endMs }) => ({ text, endMs }))).toEqual([
@@ -338,23 +362,23 @@ describe('VoiceNoteCaptionPolicy', () => {
   describe('withBookmark', () => {
     it('깃발은 그 시각에 말하던 문장에 붙고, 말이 없던 때면 직전 문장에 붙는다', () => {
       // Given
-      const first = VoiceNoteCaptionPolicy.applyCaptionResult(
+      const first = VoiceNoteCaptionsPolicy.applyCaptionResult(
         createVoiceNoteCaptions(),
         final('첫 문장.'),
         clock(2_000),
       );
-      const second = VoiceNoteCaptionPolicy.applyCaptionResult(
+      const second = VoiceNoteCaptionsPolicy.applyCaptionResult(
         first,
         final('둘째 문장.'),
         clock(8_000),
       );
 
       // When
-      const marked = VoiceNoteCaptionPolicy.withBookmark(second, 8_500);
+      const marked = VoiceNoteCaptionsPolicy.withBookmark(second, 8_500);
 
       // Then
       expect(
-        VoiceNoteCaptionPolicy.getCaptionSentences(marked, 9_000).map(
+        VoiceNoteCaptionsPolicy.getCaptionSentences(marked, 9_000).map(
           ({ isBookmarked }) => isBookmarked,
         ),
       ).toEqual([false, true]);
@@ -364,14 +388,14 @@ describe('VoiceNoteCaptionPolicy', () => {
   describe('getMarkedSentenceCount', () => {
     it('아무것도 누르지 않았으면 0개다', () => {
       // Given
-      const captions = VoiceNoteCaptionPolicy.applyCaptionResult(
+      const captions = VoiceNoteCaptionsPolicy.applyCaptionResult(
         createVoiceNoteCaptions(),
         final('첫 문장.'),
         clock(2_000),
       );
 
       // When
-      const count = VoiceNoteCaptionPolicy.getMarkedSentenceCount(captions);
+      const count = VoiceNoteCaptionsPolicy.getMarkedSentenceCount(captions);
 
       // Then
       expect(count).toBe(0);
@@ -379,16 +403,16 @@ describe('VoiceNoteCaptionPolicy', () => {
 
     it('같은 문장을 여러 번 눌러도 한 문장으로 센다', () => {
       // Given
-      const captions = VoiceNoteCaptionPolicy.applyCaptionResult(
+      const captions = VoiceNoteCaptionsPolicy.applyCaptionResult(
         createVoiceNoteCaptions(),
         final('첫 문장.'),
         clock(2_000),
       );
 
       // When
-      const count = VoiceNoteCaptionPolicy.getMarkedSentenceCount(
-        VoiceNoteCaptionPolicy.withBookmark(
-          VoiceNoteCaptionPolicy.withBookmark(captions, 2_500),
+      const count = VoiceNoteCaptionsPolicy.getMarkedSentenceCount(
+        VoiceNoteCaptionsPolicy.withBookmark(
+          VoiceNoteCaptionsPolicy.withBookmark(captions, 2_500),
           3_000,
         ),
       );
@@ -399,20 +423,20 @@ describe('VoiceNoteCaptionPolicy', () => {
 
     it('다른 문장을 누르면 문장마다 하나씩 센다', () => {
       // Given
-      const first = VoiceNoteCaptionPolicy.applyCaptionResult(
+      const first = VoiceNoteCaptionsPolicy.applyCaptionResult(
         createVoiceNoteCaptions(),
         final('첫 문장.'),
         clock(2_000),
       );
-      const second = VoiceNoteCaptionPolicy.applyCaptionResult(
-        VoiceNoteCaptionPolicy.withBookmark(first, 2_500),
+      const second = VoiceNoteCaptionsPolicy.applyCaptionResult(
+        VoiceNoteCaptionsPolicy.withBookmark(first, 2_500),
         final('둘째 문장.'),
         clock(8_000),
       );
 
       // When
-      const count = VoiceNoteCaptionPolicy.getMarkedSentenceCount(
-        VoiceNoteCaptionPolicy.withBookmark(second, 8_500),
+      const count = VoiceNoteCaptionsPolicy.getMarkedSentenceCount(
+        VoiceNoteCaptionsPolicy.withBookmark(second, 8_500),
       );
 
       // Then
@@ -421,14 +445,14 @@ describe('VoiceNoteCaptionPolicy', () => {
 
     it('문장이 나오기 전에 누르면 곧 나올 첫 문장 하나로 센다', () => {
       // Given
-      const pressed = VoiceNoteCaptionPolicy.withBookmark(
-        VoiceNoteCaptionPolicy.withBookmark(createVoiceNoteCaptions(), 300),
+      const pressed = VoiceNoteCaptionsPolicy.withBookmark(
+        VoiceNoteCaptionsPolicy.withBookmark(createVoiceNoteCaptions(), 300),
         600,
       );
 
       // When
-      const beforeSpeech = VoiceNoteCaptionPolicy.getMarkedSentenceCount(pressed);
-      const afterSpeech = VoiceNoteCaptionPolicy.applyCaptionResult(
+      const beforeSpeech = VoiceNoteCaptionsPolicy.getMarkedSentenceCount(pressed);
+      const afterSpeech = VoiceNoteCaptionsPolicy.applyCaptionResult(
         pressed,
         final('첫 문장.'),
         clock(2_000),
@@ -436,33 +460,9 @@ describe('VoiceNoteCaptionPolicy', () => {
 
       // Then
       expect(beforeSpeech).toBe(1);
-      expect(VoiceNoteCaptionPolicy.getCaptionSentences(afterSpeech, 2_000)[0]?.isBookmarked).toBe(
+      expect(VoiceNoteCaptionsPolicy.getCaptionSentences(afterSpeech, 2_000)[0]?.isBookmarked).toBe(
         true,
       );
-    });
-  });
-
-  describe('toVoiceNoteCaptions', () => {
-    const input = {
-      draftId: 'draft-1',
-      locale: 'ko-KR',
-      createdAt: toInstant('2026-11-05T00:00:00.000Z'),
-    } as const;
-
-    it('저장된 초안에서 이어 가면 문장과 깃발이 그대로다', () => {
-      // Given
-      const note = createTranscribedVoiceNote({
-        ...input,
-        transcript: { sentences: ['첫 문장.'], interim: '' },
-        durationMs: 1_000,
-      });
-
-      // When
-      const captions = VoiceNoteCaptionPolicy.toVoiceNoteCaptions(note);
-
-      // Then
-      expect(captions.sentences).toEqual(note.sentences);
-      expect(captions.provisional).toEqual([]);
     });
   });
 
@@ -472,7 +472,7 @@ describe('VoiceNoteCaptionPolicy', () => {
       const captions = createVoiceNoteCaptions();
 
       // When
-      const result = VoiceNoteCaptionPolicy.hasCaptionText(captions);
+      const result = VoiceNoteCaptionsPolicy.hasCaptionText(captions);
 
       // Then
       expect(result).toBe(false);
@@ -480,14 +480,14 @@ describe('VoiceNoteCaptionPolicy', () => {
 
     it('아직 확정되지 않은 꼬리만 있어도 들은 글자다', () => {
       // Given
-      const captions = VoiceNoteCaptionPolicy.applyCaptionResult(
+      const captions = VoiceNoteCaptionsPolicy.applyCaptionResult(
         createVoiceNoteCaptions(),
         interim('첫 문장'),
         clock(1_000),
       );
 
       // When
-      const result = VoiceNoteCaptionPolicy.hasCaptionText(captions);
+      const result = VoiceNoteCaptionsPolicy.hasCaptionText(captions);
 
       // Then
       expect(captions.provisional).toHaveLength(1);
@@ -496,14 +496,14 @@ describe('VoiceNoteCaptionPolicy', () => {
 
     it('확정된 문장이 있으면 들은 글자다', () => {
       // Given
-      const captions = VoiceNoteCaptionPolicy.applyCaptionResult(
+      const captions = VoiceNoteCaptionsPolicy.applyCaptionResult(
         createVoiceNoteCaptions(),
         final('첫 문장.'),
         clock(1_000),
       );
 
       // When
-      const result = VoiceNoteCaptionPolicy.hasCaptionText(captions);
+      const result = VoiceNoteCaptionsPolicy.hasCaptionText(captions);
 
       // Then
       expect(captions.sentences).toHaveLength(1);

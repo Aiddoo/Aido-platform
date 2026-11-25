@@ -15,7 +15,7 @@ import { STACK_MORE_ICON, useConfirmDialog } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 
-import { createDigestMemo, VoiceNotePolicy } from '../domains/voice-note.model';
+import { VoiceNotePolicy } from '../domains/voice-note.model';
 import { isPlanKeyConflictError } from '../domains/voice.error';
 import { useCurrentVoiceNote } from '../hooks/use-current-voice-note';
 import { useVoiceNoteDraftId } from '../hooks/use-voice-note-params';
@@ -108,7 +108,7 @@ function useVoiceNoteSaveMemo({ onMemoChanged }: UseVoiceNoteSaveMemoOptions) {
       },
     }),
   );
-  const memo = createDigestMemo(note);
+  const memo = VoiceNotePolicy.findDigestMemo(note);
 
   const saveMemoRequest = (idempotencyKey: string | null) => {
     const latest = drafts.find(accountId, draftId);

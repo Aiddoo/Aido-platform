@@ -38,8 +38,30 @@ import {
 } from '../constants/voice.constants';
 import { useSkiaDensityScale } from '../hooks/use-skia-density-scale';
 import { useToggleableFrameCallback } from '../hooks/use-toggleable-frame-callback';
-import { addFrameTime, shouldUseLightOrb } from '../utils/voice-frame-budget.view-model';
 import { followLevel } from '../utils/waveform.geometry';
+
+const VOICE_FRAME_BUDGET = {
+  /** 30fps 아래 */
+  slowFrameMs: 34,
+  sustainedSlowMs: 2_000,
+  /** 앱을 다녀오면 프레임이 크게 벌어진다. 기기 성능이 아니므로 세지 않는다 */
+  ignoreFrameMs: 500,
+} as const;
+
+function addFrameTime(slowMs: number, frameMs: number): number {
+  'worklet';
+  if (frameMs >= VOICE_FRAME_BUDGET.ignoreFrameMs) {
+    return slowMs;
+  }
+  return frameMs > VOICE_FRAME_BUDGET.slowFrameMs
+    ? slowMs + frameMs
+    : Math.max(0, slowMs - frameMs);
+}
+
+function shouldUseLightOrb(slowMs: number): boolean {
+  'worklet';
+  return slowMs >= VOICE_FRAME_BUDGET.sustainedSlowMs;
+}
 
 /** SkSL 출력은 곱셈 알파다 */
 const ORB_SHADER = Skia.RuntimeEffect.Make(`

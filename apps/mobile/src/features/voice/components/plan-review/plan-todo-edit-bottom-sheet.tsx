@@ -10,7 +10,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { Input, Button, KeyboardBottomSheet, VStack } from '@src/shared/ui';
 import { Controller, useForm, useFormState, useWatch, type UseFormReturn } from 'react-hook-form';
 
-import type { PlannedTodo } from '../../domains/voice-plan.model';
+import { getPlannedCategoryId, type PlannedTodo } from '../../domains/voice-plan.model';
 import {
   type PlanTodoEditFormValues,
   planTodoEditFormSchema,
@@ -94,7 +94,7 @@ function PlanTodoScheduleChips({ form, fallbackCategoryId }: PlanTodoScheduleChi
     isAllDay: todo.scheduledTime == null,
     repeat: todo.repeat,
     visibility: getVisibility(todo.visibility),
-    categoryId: todo.categoryId ?? fallbackCategoryId,
+    categoryId: getPlannedCategoryId(todo.categoryId, fallbackCategoryId),
   };
 
   return (

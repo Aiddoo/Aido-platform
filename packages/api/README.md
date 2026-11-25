@@ -17,6 +17,7 @@
 
 - `src/contracts/<feature>/v<n>/`는 `<feature>.request.ts`, `<feature>.response.ts`, 필요하면 `<feature>.common.ts`로 나누고 공개 진입 파일 `index.ts`를 둔다. 버전 폴더는 출시 앱 계약이 갈라질 때만 더한다. 버전은 경로에만 두고 이름에 `V2`를 붙이지 않는다.
 - 서버·앱이 함께 아는 값 목록(상태·종류·언어·한도)은 `src/vocabulary/`의 `as const` 튜플 한 곳에 둔다. vocabulary에는 Zod를 넣지 않는다.
+- 앱의 모델과 포트가 함께 쓰는 값도 서버에 오지 않아도 vocabulary에 둔다(음성 인식 언어·오류 코드). 앱 모델은 포트를, 포트는 앱 `shared`를 import하지 못해 둘이 함께 보는 자리가 여기뿐이다.
 - 저장소 Entity나 ORM row를 공유 REST 타입으로 쓰지 않는다. HTTP 검증과 날짜 변환은 서버 presentation이 맡는다.
 - PATCH에서 빠진 필드는 기존 값을 유지하고, nullable 필드의 `null`은 값을 비운다. `false`와 `0`은 유효한 값이다([nullish](../../docs/conventions/nullish.md#4-계약-aidoapi-zod)).
 - 설명은 `.meta({ description })`, 정수는 `z.int()`로 쓴다. 스키마를 옮길 때 required/optional/nullish/default, 검증 메시지, 설명, 날짜 표현을 바꾸지 않는다. 배포된 앱의 OpenAPI fixture는 현재 스키마로 재생성하지 않는다.

@@ -2,7 +2,6 @@ import { ACTION_PLAN_LIMITS, TODO_ITEM_LIMITS, TODO_VISIBILITIES } from '@aido/a
 import type { FeatureQuota } from '@src/features/billing/subscription/domains/feature-quota.model';
 import { todoRepeatSchema } from '@src/features/planning/todo/domains/todo-repeat.model';
 import { dateKeyFieldSchema } from '@src/shared/date/date-key';
-import { groupBy, uniq } from 'es-toolkit';
 import { z } from 'zod';
 
 export const voicePlanIdSchema = z.string().min(1).brand<'VoicePlanId'>();
@@ -34,11 +33,11 @@ const plannedMemoShape = {
 };
 
 // 서버가 저장 때 막는 규칙(반복에는 종료일 없음, 종료일은 시작일 이후)을 카드를 고치는 동안에도 지킨다
-const plannedTodoSchema = z
+export const plannedTodoSchema = z
   .object(plannedTodoShape)
   .refine((todo) => todo.repeat == null || todo.endDate == null, { path: ['endDate'] })
   .refine((todo) => todo.endDate == null || todo.startDate <= todo.endDate, { path: ['endDate'] });
-const plannedMemoSchema = z.object(plannedMemoShape);
+export const plannedMemoSchema = z.object(plannedMemoShape);
 
 export const plannedActionSchema = z.discriminatedUnion('type', [
   plannedTodoSchema,
@@ -71,85 +70,21 @@ export interface QuickPlanResult {
   isCharged: boolean;
 }
 
-export interface VoiceNoteDigestResult extends QuickPlanResult {
-  title: string;
-  summary: string;
-  keyPoints: { text: string; startMs: number | null }[];
-}
-
 export interface AppliedPlanResult {
   todoCount: number;
   hasMemo: boolean;
 }
 
+// 카테고리를 정하지 않은 할 일은 시트의 현재 카테고리에 넣는다. 고르는 폼 카드도 같은 규칙이라 카테고리 값만 받는다
+export function getPlannedCategoryId(
+  categoryId: number | null,
+  fallbackCategoryId: number,
+): number {
+  return categoryId ?? fallbackCategoryId;
+}
+
 /** 행동별로 추가할지 고른 값. 키는 `actionId` */
 export type PlanSelection = Record<string, boolean>;
-
-const selectedField = { isSelected: z.boolean() };
-
-export const selectablePlannedTodoSchema = plannedTodoSchema.safeExtend(selectedField);
-
-const selectablePlannedActionSchema = z.discriminatedUnion('type', [
-  selectablePlannedTodoSchema,
-  plannedMemoSchema.extend(selectedField),
-]);
-
-// 고르는 중인 카드와 서버가 빼고 준 할 일 수. 말로 메모하기 초안이 이 모양(`form` 포함) 그대로 기기에 남는다
-export const planReviewDraftSchema = z.object({
-  omittedTodoCount: z.int().nonnegative(),
-  form: z.object({ actions: z.array(selectablePlannedActionSchema) }),
-});
-export type PlanReviewDraft = z.infer<typeof planReviewDraftSchema>;
-
-// 고르기 시트의 폼 카드도 묶어 Policy 밖 함수로 두고 종류와 카테고리만 받는다
-type PlanGroupableAction = Pick<PlannedTodo, 'type' | 'categoryId'> | Pick<PlannedMemo, 'type'>;
-
-/** 한 카테고리의 카드들. 메모는 카테고리가 없어 `categoryId`가 null인 묶음으로 맨 뒤에 모인다 */
-interface PlanActionGroup {
-  categoryId: number | null;
-  /** 폼 배열에서의 자리. 묶어 보여도 카드를 고칠 때는 이 자리를 쓴다 */
-  indexes: number[];
-}
-
-export function getPlanActionGroups(
-  actions: readonly PlanGroupableAction[],
-  fallbackCategoryId: number,
-): PlanActionGroup[] {
-  const memoIndexes = actions.flatMap((action, index) =>
-    action.type === 'create-memo' ? [index] : [],
-  );
-  const todos = actions.flatMap((action, index) =>
-    action.type === 'create-memo'
-      ? []
-      : [{ index, categoryId: action.categoryId ?? fallbackCategoryId }],
-  );
-  const todosByCategory = groupBy(todos, ({ categoryId }) => categoryId);
-  // 숫자 키 객체는 오름차순으로 돌아 먼저 말한 카테고리 순서를 잃는다. 순서는 uniq로 따로 지킨다
-  const groups: PlanActionGroup[] = uniq(todos.map(({ categoryId }) => categoryId)).map(
-    (categoryId) => ({
-      categoryId,
-      indexes: (todosByCategory[categoryId] ?? []).map(({ index }) => index),
-    }),
-  );
-  return memoIndexes.length === 0
-    ? groups
-    : [...groups, { categoryId: null, indexes: memoIndexes }];
-}
-
-// 화면에 묶어 보인 순서대로 늘어놓는다. 저장 순서가 사용자가 본 순서와 같아진다
-export function sortPlanActionsByGroup<TAction extends PlanGroupableAction>(
-  actions: readonly TAction[],
-  fallbackCategoryId: number,
-): TAction[] {
-  return getPlanActionGroups(actions, fallbackCategoryId).flatMap(({ indexes }) =>
-    indexes.flatMap((index) => actions.slice(index, index + 1)),
-  );
-}
-
-export type PlanHeadline =
-  | { kind: 'todos'; count: number }
-  | { kind: 'memo' }
-  | { kind: 'already-added' };
 
 export const VoicePlanPolicy = {
   isTodoAction(action: PlannedAction): action is PlannedTodo {
@@ -177,23 +112,5 @@ export const VoicePlanPolicy = {
 
   canApplyPlan(plan: VoicePlan, selection: PlanSelection): boolean {
     return this.getSelectedActions(plan, selection).length > 0;
-  },
-
-  // 계획 카드 위 머리글이 말할 내용. 문구는 화면이 고른다
-  getHeadline(plan: VoicePlan, selection: PlanSelection): PlanHeadline {
-    const selectedTodoCount = this.getSelectedTodoCount(plan, selection);
-    if (selectedTodoCount > 0) {
-      return { kind: 'todos', count: selectedTodoCount };
-    }
-    if (this.getSelectedActions(plan, selection).length > 0) {
-      return { kind: 'memo' };
-    }
-    const todos = plan.actions.filter((action) => this.isTodoAction(action));
-    if (todos.length === 0) {
-      return { kind: 'memo' };
-    }
-    return todos.every((action) => this.isDuplicateAction(action))
-      ? { kind: 'already-added' }
-      : { kind: 'todos', count: todos.length };
   },
 };

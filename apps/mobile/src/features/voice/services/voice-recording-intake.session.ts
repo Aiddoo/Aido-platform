@@ -23,7 +23,10 @@ interface VoiceRecordingIntakeSessionPorts {
   onRecordingSaved: () => void;
 }
 
-/** 인식기 파일은 화면이 내려간 뒤에도 올 수 있어 React 밖에서 받는다. 지운 초안의 파일만 바로 지운다 */
+/**
+ * 인식기 파일은 화면이 내려간 뒤에도 올 수 있어 React 밖에서 받는다. 지운 초안의 파일만 바로 지운다.
+ * 화면이 내려가면 늦은 파일 듣기(`listenForLate`)로 넘어가고, 그 듣기가 끝나면 `dispose`로 수명을 닫는다
+ */
 export class VoiceRecordingIntakeSession {
   readonly #deps: VoiceRecordingIntakeSessionPorts;
   readonly #segmentStarts = new Map<string, number>();
@@ -115,6 +118,10 @@ export class VoiceRecordingIntakeSession {
       }
     };
     this.#stopLateListening = stop;
+    const finish = () => {
+      stop();
+      this.dispose();
+    };
     const unsubscribe = subscribe((event) => {
       // 30초 안에 새 녹음을 시작하면 그 파일의 이벤트도 여기로 온다. 옮기면 새 녹음의 조각이 사라진다
       if (event.type !== 'recording-saved' || !this.#segmentStarts.has(event.uri)) {
@@ -122,12 +129,18 @@ export class VoiceRecordingIntakeSession {
       }
       this.receive(event.uri, 0);
       if (this.#segmentStarts.size === 0) {
-        stop();
+        finish();
       }
     });
     // 로그아웃하면 그 계정의 늦은 파일을 기다리지 않는다
-    const unsubscribeSignOut = this.#deps.signOutEpoch.subscribe(stop);
-    const timer = setTimeout(stop, VOICE_RECORDING_LATE_WAIT_MS);
+    const unsubscribeSignOut = this.#deps.signOutEpoch.subscribe(finish);
+    const timer = setTimeout(finish, VOICE_RECORDING_LATE_WAIT_MS);
+  };
+
+  // 구독과 타이머만 정리하고 받기는 막지 않는다. 훅이 세션 하나를 effect 재실행 너머로 쥐고 있어 그 뒤의 녹음 조각도 저장해야 한다
+  dispose = (): void => {
+    this.#stopLateListening?.();
+    this.#notifyArrived?.();
   };
 
   #save = async (sourceUri: string, startMs: number): Promise<void> => {

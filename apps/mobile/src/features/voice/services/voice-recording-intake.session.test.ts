@@ -231,4 +231,56 @@ describe('VoiceRecordingIntakeSession', () => {
     expect(intake.getRecordings()).toEqual([]);
     expect(onRecordingSaved).not.toHaveBeenCalled();
   });
+
+  it('끝내면 늦은 파일 구독과 기다림 타이머를 지우고 여러 번 불러도 같다', async () => {
+    // Given
+    const { intake } = createIntake();
+    const speechRecognizer = createSpeechRecognizerStub();
+    intake.segmentStarted('file:///documents/voice-notes/user-1/a.wav', 0);
+    intake.listenForLate((listener) => speechRecognizer.subscribe(listener));
+    const settled = intake.waitUntilSettled();
+
+    // When
+    intake.dispose();
+    intake.dispose();
+
+    // Then
+    await expect(settled).resolves.toBeUndefined();
+    expect(speechRecognizer.getListenerCount()).toBe(0);
+    expect(jest.getTimerCount()).toBe(0);
+  });
+
+  it('끝낸 뒤에도 화면이 다시 받은 파일은 전과 같이 옮겨 저장한다', async () => {
+    // Given
+    const { files, intake, onRecordingSaved } = createIntake();
+    const uri = files.addFile(DIRECTORY, 'a.wav');
+    intake.segmentStarted(uri, 0);
+    intake.dispose();
+
+    // When
+    intake.receive(uri, 0);
+    await intake.waitUntilSettled();
+
+    // Then
+    expect(intake.getRecordings()).toHaveLength(1);
+    expect(onRecordingSaved).toHaveBeenCalledTimes(1);
+  });
+
+  it('끝낸 뒤라도 지운 초안의 파일은 전과 같이 옮기지 않고 지운다', async () => {
+    // Given
+    const { files, intake, onRecordingSaved } = createIntake();
+    const uri = files.addFile(DIRECTORY, 'a.wav');
+    intake.segmentStarted(uri, 0);
+    intake.dispose();
+    intake.discard();
+
+    // When
+    intake.receive(uri, 0);
+    await intake.waitUntilSettled();
+
+    // Then
+    expect(files.hasFile(DIRECTORY, 'a.wav')).toBe(false);
+    expect(intake.getRecordings()).toEqual([]);
+    expect(onRecordingSaved).not.toHaveBeenCalled();
+  });
 });

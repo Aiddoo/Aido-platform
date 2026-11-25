@@ -7,7 +7,7 @@ import {
   type PlanReviewDraft,
   planReviewDraftSchema,
   selectablePlannedTodoSchema,
-} from '../domains/voice-plan.model';
+} from '../domains/plan-review-draft.model';
 
 export type PlanTodoFormValues = z.infer<typeof selectablePlannedTodoSchema>;
 

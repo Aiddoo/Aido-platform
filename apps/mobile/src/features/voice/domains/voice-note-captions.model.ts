@@ -1,32 +1,36 @@
-import type { SpeechLocale, SpeechSegment } from '@src/core/ports/speech-recognizer';
+import type { SpeechSegment } from '@aido/api/vocabulary';
 import { type Instant } from '@src/shared/date/instant';
-import { splitIntoSentences } from '@src/shared/utils/split-into-sentences';
+import { splitIntoSentences } from '@src/shared/domains/sentence.model';
 import { clamp, isEqual, range, sumBy } from 'es-toolkit';
+import { z } from 'zod';
 
 import {
   type VoiceNote,
   type VoiceNoteSentence,
   VoiceNotePolicy,
+  voiceNoteSentenceSchema,
   createVoiceNote,
 } from './voice-note.model';
-import { type VoiceTranscript, VoiceTranscriptPolicy } from './voice-transcript.model';
+import { getLowConfidenceWords, type VoiceTranscript } from './voice-transcript.model';
 
 /** 자막 한 카드의 최대 글자 수. 문장부호가 없어도 카드가 끝없이 길어지지 않게 끊는다 */
 const VOICE_NOTE_SENTENCE_MAX_LENGTH = 120;
 
-/** 아직 인식 중인 꼬리를 문장으로 나눈 것. 시작 시각은 그 문장을 처음 본 때다 */
-interface ProvisionalSentence {
-  text: string;
-  startMs: number;
-}
+// 아직 인식 중인 꼬리를 문장으로 나눈 것. 시작 시각은 그 문장을 처음 본 때다
+const provisionalSentenceSchema = z.object({
+  text: z.string(),
+  startMs: z.int().nonnegative(),
+});
+type ProvisionalSentence = z.infer<typeof provisionalSentenceSchema>;
 
 // Android는 문장마다 final, iOS는 interim이 쌓이다 final 하나라 꼬리도 문장으로 나눠 앱이 꺼져도 남긴다
-export interface VoiceNoteCaptions {
-  sentences: readonly VoiceNoteSentence[];
-  provisional: readonly ProvisionalSentence[];
-  /** 중요 표시를 누른 시각(노트 시계) */
-  bookmarksMs: readonly number[];
-}
+const voiceNoteCaptionsSchema = z.object({
+  sentences: z.array(voiceNoteSentenceSchema).readonly(),
+  provisional: z.array(provisionalSentenceSchema).readonly(),
+  // 중요 표시를 누른 시각(노트 시계)
+  bookmarksMs: z.array(z.int().nonnegative()).readonly(),
+});
+export type VoiceNoteCaptions = z.infer<typeof voiceNoteCaptionsSchema>;
 
 interface SpeechResultInput {
   transcript: string;
@@ -41,8 +45,15 @@ interface CaptionClock {
   segmentStartMs: number;
 }
 
-export function createVoiceNoteCaptions(): VoiceNoteCaptions {
-  return { sentences: [], provisional: [], bookmarksMs: [] };
+// 이어 듣는 초안은 저장된 문장에서 시작하고, 중요 표시한 문장은 그 시작 시각에 깃발을 둔다
+export function createVoiceNoteCaptions(
+  sentences: readonly VoiceNoteSentence[] = [],
+): VoiceNoteCaptions {
+  return {
+    sentences,
+    provisional: [],
+    bookmarksMs: sentences.filter(({ isBookmarked }) => isBookmarked).map(({ startMs }) => startMs),
+  };
 }
 
 // 자막 카드 한 장의 글자 수를 넘지 않게 문장으로 나눈다
@@ -116,7 +127,7 @@ function toTimedSentences(
       startMs,
       endMs: Math.max(startMs, ranges[index + 1]?.startMs ?? toMs),
       isBookmarked: false,
-      lowConfidenceWords: VoiceTranscriptPolicy.getLowConfidenceWords(
+      lowConfidenceWords: getLowConfidenceWords(
         getSegmentsWithin(segments, range?.fromOffset ?? 0, range?.toOffset ?? 0),
       ),
     };
@@ -143,7 +154,7 @@ function applyInterim(
   nowMs: number,
 ): VoiceNoteCaptions {
   const base = hasRestartedInterim(captions.provisional, transcript)
-    ? VoiceNoteCaptionPolicy.commitProvisional(captions, nowMs)
+    ? VoiceNoteCaptionsPolicy.commitProvisional(captions, nowMs)
     : captions;
 
   return {
@@ -192,7 +203,7 @@ function applyFinal(
 
 interface CreateTranscribedVoiceNoteInput {
   draftId: string;
-  locale: SpeechLocale;
+  locale: VoiceNote['locale'];
   createdAt: Instant;
   transcript: VoiceTranscript;
   durationMs: number;
@@ -217,7 +228,7 @@ export function createTranscribedVoiceNote({
   );
 }
 
-export const VoiceNoteCaptionPolicy = {
+export const VoiceNoteCaptionsPolicy = {
   commitProvisional(captions: VoiceNoteCaptions, nowMs: number): VoiceNoteCaptions {
     if (captions.provisional.length === 0) {
       return captions;
@@ -288,15 +299,5 @@ export const VoiceNoteCaptionPolicy = {
 
   getCaptionInterimText(captions: VoiceNoteCaptions): string {
     return captions.provisional.at(-1)?.text ?? '';
-  },
-
-  toVoiceNoteCaptions({ sentences }: VoiceNote): VoiceNoteCaptions {
-    return {
-      sentences,
-      provisional: [],
-      bookmarksMs: sentences
-        .filter(({ isBookmarked }) => isBookmarked)
-        .map(({ startMs }) => startMs),
-    };
   },
 };

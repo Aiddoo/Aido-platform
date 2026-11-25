@@ -7,23 +7,27 @@ import {
   type QuickPlanRequest,
   type VoiceNoteDigestRequest,
 } from '@aido/api/contracts/voice/v1';
-import { PLANNED_ACTION_TYPES } from '@aido/api/vocabulary';
+import { ACTION_PLAN_LIMITS, PLANNED_ACTION_TYPES } from '@aido/api/vocabulary';
 import { toFeatureQuota } from '@src/features/billing/subscription/apis/entitlement.mapper';
 import { toRepeat, toRepeatDto } from '@src/features/planning/todo/apis/todo-repeat.mapper';
+import { SECOND_MS } from '@src/shared/constants/time-units';
 import { dateKeySchema } from '@src/shared/date/date-key';
+import { chunk } from 'es-toolkit';
 import { isMatching, match, P } from 'ts-pattern';
 
-import type { VoiceNoteDigestInput } from '../domains/voice-note.model';
+import type { VoiceNoteDigestResult } from '../domains/voice-note-digest.model';
+import type { VoiceNote } from '../domains/voice-note.model';
 import {
   type AppliedPlanResult,
   type PlannedAction,
   type QuickPlanResult,
-  type VoiceNoteDigestResult,
+  getPlannedCategoryId,
   type VoicePlan,
   type VoicePlanSource,
   voicePlanSchema,
 } from '../domains/voice-plan.model';
 import type { CreateQuickPlanInput } from '../schemas/quick-plan-request.schema';
+import type { VoiceNoteDigestInput } from '../schemas/voice-note-digest-request.schema';
 import type {
   LenientActionPlan,
   LenientQuickPlanResponse,
@@ -112,7 +116,7 @@ function toApplyAction(action: PlannedAction, fallbackCategoryId: number): Apply
       repeat: todo.repeat == null ? null : toRepeatDto(todo.repeat),
       visibility: todo.visibility,
       items: todo.items,
-      categoryId: todo.categoryId ?? fallbackCategoryId,
+      categoryId: getPlannedCategoryId(todo.categoryId, fallbackCategoryId),
     }))
     .with({ type: 'create-memo' }, (memo) => ({
       type: 'CREATE_MEMO',
@@ -152,6 +156,24 @@ export function toApplyActionPlanRequest({
 
 export function toAppliedPlanResult({ todos, memo }: ApplyActionPlanResponse): AppliedPlanResult {
   return { todoCount: todos.length, hasMemo: memo != null };
+}
+
+export function toVoiceNoteDigestInput(note: VoiceNote): VoiceNoteDigestInput {
+  const sentences = note.sentences.filter((sentence) => sentence.text.trim() !== '');
+  const groupSize = Math.max(
+    1,
+    Math.ceil(sentences.length / ACTION_PLAN_LIMITS.DIGEST_MAX_SEGMENTS),
+  );
+
+  return {
+    text: sentences.map((sentence) => sentence.text.trim()).join(' '),
+    durationSeconds: Math.round(note.durationMs / SECOND_MS),
+    segments: chunk(sentences, groupSize).map((group) => ({
+      startMs: group[0]?.startMs ?? 0,
+      text: group.map((sentence) => sentence.text.trim()).join(' '),
+      isBookmarked: group.some((sentence) => sentence.isBookmarked),
+    })),
+  };
 }
 
 export function toVoiceNoteDigestRequest({

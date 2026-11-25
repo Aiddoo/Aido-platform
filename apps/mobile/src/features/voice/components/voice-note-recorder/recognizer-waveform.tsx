@@ -17,7 +17,7 @@ import {
   withTiming,
 } from 'react-native-reanimated';
 
-import { SPEECH_LEVEL_THRESHOLD, WAVEFORM_BAR } from '../../constants/voice-note.constants';
+import { WAVEFORM_SPEECH_BAR_LEVEL, WAVEFORM_BAR } from '../../constants/voice-note.constants';
 import { useSkiaDensityScale } from '../../hooks/use-skia-density-scale';
 import { useToggleableFrameCallback } from '../../hooks/use-toggleable-frame-callback';
 import {
@@ -105,7 +105,7 @@ function addLevelBars(
   const sideCount = getSideCount(width);
   for (let slot = 0; slot <= sideCount * 2; slot += 1) {
     const level = findTimelineLevel(levels, slot, sideCount);
-    if (level != null && level >= SPEECH_LEVEL_THRESHOLD === (kind === 'speech')) {
+    if (level != null && level >= WAVEFORM_SPEECH_BAR_LEVEL === (kind === 'speech')) {
       const barHeight = Math.max(
         height * WAVEFORM_BAR.minHeightRatio,
         level * height * WAVEFORM_BAR.verticalShare,

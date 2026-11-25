@@ -1,21 +1,25 @@
-import { ACTION_PLAN_LIMITS, MEMO_LIMITS, VOICE_NOTE_RETENTION_DAYS } from '@aido/api/vocabulary';
-import { SPEECH_LOCALES, type SpeechLocale } from '@src/core/ports/speech-recognizer';
-import { DAY_MS, SECOND_MS } from '@src/shared/constants/time-units';
+import { MEMO_LIMITS, SPEECH_LOCALES, VOICE_NOTE_RETENTION_DAYS } from '@aido/api/vocabulary';
+import { DAY_MS, HOUR_MS } from '@src/shared/constants/time-units';
 import { type Instant, instantSchema, toEpochMs } from '@src/shared/date/instant';
-import { chunk, maxBy, orderBy, sumBy } from 'es-toolkit';
+import { maxBy, orderBy, sumBy } from 'es-toolkit';
 import { z } from 'zod';
 
+import {
+  type PlanReviewDraft,
+  PlanReviewDraftPolicy,
+  planReviewDraftSchema,
+} from './plan-review-draft.model';
 import type { VoiceCaptureSeed } from './voice-capture.model';
 import {
-  type PlannedMemo,
-  type PlanReviewDraft,
-  planReviewDraftSchema,
   type VoiceNoteDigestResult,
-  VoicePlanPolicy,
-} from './voice-plan.model';
+  type VoiceNoteKeyPoint,
+  voiceNoteDigestSchema,
+} from './voice-note-digest.model';
+import type { PlannedMemo } from './voice-plan.model';
 import { createVoiceTranscript } from './voice-transcript.model';
 
 export const speechLocaleSchema = z.enum(SPEECH_LOCALES);
+type SpeechLocale = z.infer<typeof speechLocaleSchema>;
 
 export const voiceNoteDraftIdSchema = z.string().min(1).brand<'VoiceNoteDraftId'>();
 
@@ -29,21 +33,6 @@ export const voiceNoteSentenceSchema = z.object({
   lowConfidenceWords: z.array(z.string()),
 });
 export type VoiceNoteSentence = z.infer<typeof voiceNoteSentenceSchema>;
-
-export const voiceNoteKeyPointSchema = z.object({
-  id: z.string().min(1),
-  text: z.string().min(1),
-  // 말한 시각을 찾지 못하면 null이라 그 지점으로 갈 수 없다
-  startMs: z.int().nonnegative().nullable(),
-  isBookmarked: z.boolean(),
-});
-export type VoiceNoteKeyPoint = z.infer<typeof voiceNoteKeyPointSchema>;
-
-export const voiceNoteDigestSchema = z.object({
-  title: z.string(),
-  summary: z.string(),
-  keyPoints: z.array(voiceNoteKeyPointSchema),
-});
 
 // 멈췄다 이어 들으면 인식기가 파일을 새로 써서 조각마다 노트 시계의 시작을 든다
 const voiceNoteRecordingSchema = z.object({
@@ -119,64 +108,23 @@ function isSentenceAtKeyPoint(sentence: VoiceNoteSentence, startMs: number) {
   return sentence.startMs <= startMs && startMs < sentence.endMs;
 }
 
-export interface VoiceNoteDigestInput {
-  text: string;
-  durationSeconds: number;
-  segments: { startMs: number; text: string; isBookmarked: boolean }[];
-}
-
-export function createDigestInput(note: VoiceNote): VoiceNoteDigestInput {
-  const sentences = note.sentences.filter((sentence) => sentence.text.trim() !== '');
-  const groupSize = Math.max(
-    1,
-    Math.ceil(sentences.length / ACTION_PLAN_LIMITS.DIGEST_MAX_SEGMENTS),
-  );
-
-  return {
-    text: sentences.map((sentence) => sentence.text.trim()).join(' '),
-    durationSeconds: Math.round(note.durationMs / SECOND_MS),
-    segments: chunk(sentences, groupSize).map((group) => ({
-      startMs: group[0]?.startMs ?? 0,
-      text: group.map((sentence) => sentence.text.trim()).join(' '),
-      isBookmarked: group.some((sentence) => sentence.isBookmarked),
-    })),
-  };
-}
-
-// 정리한 내용을 메모 한 장으로 만든다. 제목이 비면 서버가 제목 없는 메모로 저장한다
-export function createDigestMemo(note: VoiceNote): PlannedMemo | null {
-  if (note.digest == null) {
-    return null;
-  }
-  const { title, summary, keyPoints } = note.digest;
-  const content = [summary, ...keyPoints.map((keyPoint) => `- ${keyPoint.text}`)]
-    .filter((line) => line.trim() !== '')
-    .join('\n')
-    .slice(0, MEMO_LIMITS.MAX_CONTENT_LENGTH);
-
-  return content === ''
-    ? null
-    : { type: 'create-memo', actionId: 'voice-note-memo', title, content };
-}
-
 type VoiceNotePlanStatus =
   | { status: 'applied' }
   | { status: 'no-todos' }
   | { status: 'lost' }
   | { status: 'reviewable'; planDraft: PlanReviewDraft };
 
-// 재생 조각 목록도 같은 규칙으로 찾아 시작 위치만 받는다
-export function getRecordingIndexAt(
-  recordings: readonly Pick<VoiceNoteRecording, 'startMs'>[],
-  positionMs: number,
-): number {
-  return Math.max(
-    0,
-    recordings.findLastIndex((recording) => recording.startMs <= positionMs),
+const RETENTION_MS = VOICE_NOTE_RETENTION_DAYS * DAY_MS;
+
+/** 글자 없이 실패한 채 앱을 끄면 남는 고아 녹음 파일의 보관 시간. 쓰는 중인 파일만 피하면 되어 짧다 */
+const VOICE_RECORDING_ORPHAN_RETENTION_MS = HOUR_MS;
+
+// 어느 초안도 가리키지 않는 녹음 파일의 보관 기한. 수정 시각을 모르면 기한이 지난 것으로 본다
+export function isRecordingFileExpired(modifiedAtMs: number | null, now: Instant): boolean {
+  return (
+    modifiedAtMs == null || toEpochMs(now) - modifiedAtMs >= VOICE_RECORDING_ORPHAN_RETENTION_MS
   );
 }
-
-const RETENTION_MS = VOICE_NOTE_RETENTION_DAYS * DAY_MS;
 
 export const VoiceNotePolicy = {
   withSentences(
@@ -255,7 +203,7 @@ export const VoiceNotePolicy = {
       note.digest != null &&
       note.appliedAt == null &&
       note.planDraft != null &&
-      !note.planDraft.form.actions.some((action) => VoicePlanPolicy.isTodoAction(action))
+      !PlanReviewDraftPolicy.hasTodo(note.planDraft)
     );
   },
 
@@ -276,10 +224,7 @@ export const VoiceNotePolicy = {
     if (note.appliedAt != null) {
       return note.appliedTodoCount;
     }
-    return (
-      note.planDraft?.form.actions.filter((action) => VoicePlanPolicy.isTodoAction(action))
-        .length ?? 0
-    );
+    return note.planDraft == null ? 0 : PlanReviewDraftPolicy.getTodoCount(note.planDraft);
   },
 
   getCharacterCount(note: VoiceNote): number {
@@ -293,6 +238,22 @@ export const VoiceNotePolicy = {
   // findLastIndex처럼 첫 문장 앞이면 -1이다
   getSentenceIndexAt(note: VoiceNote, positionMs: number): number {
     return note.sentences.findLastIndex(({ startMs }) => startMs <= positionMs);
+  },
+
+  // 정리한 내용을 메모 한 장으로 만든다. 제목이 비면 서버가 제목 없는 메모로 저장한다
+  findDigestMemo(note: VoiceNote): PlannedMemo | null {
+    if (note.digest == null) {
+      return null;
+    }
+    const { title, summary, keyPoints } = note.digest;
+    const content = [summary, ...keyPoints.map((keyPoint) => `- ${keyPoint.text}`)]
+      .filter((line) => line.trim() !== '')
+      .join('\n')
+      .slice(0, MEMO_LIMITS.MAX_CONTENT_LENGTH);
+
+    return content === ''
+      ? null
+      : { type: 'create-memo', actionId: 'voice-note-memo', title, content };
   },
 
   findDigestTitle(note: VoiceNote): string | null {

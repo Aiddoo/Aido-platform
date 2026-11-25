@@ -27,5 +27,6 @@ export * from "./weather.constants.js";
 export * from "./weekly-achievement.constants.js";
 export * from "./todo.types.js";
 export * from "./voice.constants.js";
+export * from "./voice.types.js";
 export * from "./todo-category.types.js";
 export * from "./semantic-version.js";

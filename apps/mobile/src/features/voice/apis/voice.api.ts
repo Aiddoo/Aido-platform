@@ -7,15 +7,15 @@ import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
-import type { VoiceNoteDigestInput } from '../domains/voice-note.model';
+import type { VoiceNoteDigestResult } from '../domains/voice-note-digest.model';
 import type {
   AppliedPlanResult,
   PlannedAction,
   QuickPlanResult,
-  VoiceNoteDigestResult,
   VoicePlanSource,
 } from '../domains/voice-plan.model';
 import type { CreateQuickPlanInput } from '../schemas/quick-plan-request.schema';
+import type { VoiceNoteDigestInput } from '../schemas/voice-note-digest-request.schema';
 import {
   lenientQuickPlanResponseSchema,
   lenientVoiceNoteDigestResponseSchema,
