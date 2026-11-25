@@ -77,7 +77,7 @@ import {
   getMemoColumnCount,
   getMemoListChange,
 } from '../utils/memo-list.view-model';
-import { toMemoPreview } from '../utils/memo.view-model';
+import { formatMemoPreview } from '../utils/memo.view-model';
 import { getScrollProgress } from '../utils/scroll-progress.geometry';
 import { ScrollProgressWidget } from './scroll-progress-widget';
 
@@ -278,7 +278,7 @@ MemoList.Item = function Item({
 
   const appearance = useSharedValue(isEntering && !isReduceMotionEnabled ? 0 : 1);
 
-  const { title, body } = toMemoPreview(memo);
+  const { title, body } = formatMemoPreview(memo);
   const appearanceStyle = useAnimatedStyle(() => ({
     opacity: appearance.get(),
     transform: [{ translateY: (1 - appearance.get()) * ENTERING_OFFSET_Y }],

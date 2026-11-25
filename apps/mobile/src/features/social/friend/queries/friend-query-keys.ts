@@ -1,6 +1,8 @@
 import { type InfiniteData, queryOptions } from '@tanstack/react-query';
 
-import type { FriendRequestPage, FriendUserPage, SearchedUserPage } from '../domains/friend.model';
+import type { FriendRequestPage } from '../domains/friend-request.model';
+import type { FriendUserPage } from '../domains/friend.model';
+import type { SearchedUserPage } from '../domains/searched-user.model';
 
 export const FRIEND_QUERY_KEYS = {
   all: ['friend'] as const,

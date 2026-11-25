@@ -1,5 +1,6 @@
 import { ACCOUNT_PROVIDERS, SUBSCRIPTION_STATUS, USER_ROLE } from '@aido/api/vocabulary';
-import { instantSchema } from '@src/shared/date/instant';
+import { type Instant, instantSchema } from '@src/shared/date/instant';
+import { isWithinInviteRedeemWindow } from '@src/shared/domains/invite-redeem-window.model';
 import { userSummarySchema } from '@src/shared/domains/user-summary.model';
 import { z } from 'zod';
 
@@ -34,6 +35,11 @@ export const UserPolicy = {
   /** 한 번도 구독하지 않은 계정. 만료·해지한 계정은 FREE로 돌아가지 않는다 */
   isNeverSubscribed(user: User): boolean {
     return user.subscriptionStatus === 'FREE';
+  },
+
+  /** 가입한 지 며칠 안 된 계정만 초대 보상을 기대할 수 있다. 최종 판정은 서버다 */
+  isInviteRewardExpected(user: User, now: Instant): boolean {
+    return isWithinInviteRedeemWindow(user.createdAt, now);
   },
 
   /** 역할·프리미엄 효력·기간이 바뀌면 서버가 주는 한도·사용량도 달라진다 */

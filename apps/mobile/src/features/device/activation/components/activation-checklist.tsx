@@ -1,7 +1,8 @@
+import { INVITEE_REWARDS } from '@aido/api/vocabulary';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useGetTodoOverviewQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
-import { INVITEE_PREMIUM_DAYS } from '@src/features/social/invite/constants/invite.constants';
+import { InviteRewardPolicy } from '@src/features/social/invite/domains/invite-reward.model';
 import { InvitePolicy } from '@src/features/social/invite/domains/invite.model';
 import { useIsInviteAvailable } from '@src/features/social/invite/hooks/use-is-invite-available';
 import { useOpenMyInvite } from '@src/features/social/invite/hooks/use-open-my-invite';
@@ -154,7 +155,7 @@ function ActivationInviteStep({ isCompleted, onPress }: ActivationInviteStepProp
   const { t } = useTranslation(['todo', 'invite']);
   const label = t('invite:entry.checklistStep');
   const reward = t('invite:entry.checklistReward', {
-    days: INVITEE_PREMIUM_DAYS,
+    days: InviteRewardPolicy.getPremiumDays(INVITEE_REWARDS),
   });
   const status = isCompleted ? t('activation.completed') : t('activation.incomplete');
 

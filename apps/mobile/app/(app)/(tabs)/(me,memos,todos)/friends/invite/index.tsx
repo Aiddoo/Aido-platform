@@ -1,13 +1,16 @@
-import { INVITE_QUALIFICATION, INVITE_REWARD_CAPS } from '@aido/api/vocabulary';
+import {
+  INVITE_QUALIFICATION,
+  INVITE_REWARD_CAPS,
+  INVITEE_REWARDS,
+  INVITER_REWARD_MILESTONES,
+} from '@aido/api/vocabulary';
 import { InvitePawPrintBoard } from '@src/features/social/invite/components/invite-paw-print-board';
 import { InviteShareActions } from '@src/features/social/invite/components/invite-share-actions';
 import { InviteShareToolbar } from '@src/features/social/invite/components/invite-share-toolbar';
 import { InvitedFriendSummary } from '@src/features/social/invite/components/invited-friend-summary';
 import { MyInviteCode } from '@src/features/social/invite/components/my-invite-code';
-import {
-  INVITEE_PREMIUM_DAYS,
-  FIRST_INVITER_PREMIUM_DAYS,
-} from '@src/features/social/invite/constants/invite.constants';
+import { InviteMilestonePolicy } from '@src/features/social/invite/domains/invite-milestone.model';
+import { InviteRewardPolicy } from '@src/features/social/invite/domains/invite-reward.model';
 import { isInviteDisabledError } from '@src/features/social/invite/domains/invite.error';
 import { refreshInvite } from '@src/features/social/invite/queries/invite-cache';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
@@ -79,13 +82,15 @@ export default function MyInviteScreen() {
               <InviteCard>
                 <RewardLine
                   label={t('myInvite.rewardInviteeLabel')}
-                  value={t('myInvite.rewardInvitee', { days: INVITEE_PREMIUM_DAYS })}
+                  value={t('myInvite.rewardInvitee', {
+                    days: InviteRewardPolicy.getPremiumDays(INVITEE_REWARDS),
+                  })}
                 />
                 <RewardLine
                   label={t('myInvite.rewardInviterLabel')}
                   value={t('myInvite.rewardInviter', {
                     activeDays: INVITE_QUALIFICATION.MIN_ACTIVE_DAYS,
-                    days: FIRST_INVITER_PREMIUM_DAYS,
+                    days: InviteMilestonePolicy.getPremiumDays(INVITER_REWARD_MILESTONES[0]),
                   })}
                 />
               </InviteCard>

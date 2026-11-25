@@ -1,4 +1,5 @@
 import type { CreateUserReportInput } from '@aido/api/contracts/user-report/v1';
+import { toOptionalText } from '@src/shared/utils/to-optional-text';
 
 import type { UserReportTarget } from '../domains/user-report.model';
 import type { UserReportFormValues } from '../schemas/user-report-form.schema';
@@ -8,11 +9,12 @@ export function toUserReportRequest(
   target: UserReportTarget,
   form: UserReportFormValues,
 ): CreateUserReportInput {
-  const detail = form.detail?.trim();
-
   return {
-    ...target,
+    targetUserId: target.targetUserId,
+    targetType: target.targetType,
+    // 계약은 targetId를 optional로만 받아 null을 실으면 400이다. 프로필 신고는 칸을 뺀다
+    ...(target.targetId != null && { targetId: target.targetId }),
     reason: form.reason,
-    detail: detail == null || detail.length === 0 ? undefined : detail,
+    detail: toOptionalText(form.detail),
   };
 }

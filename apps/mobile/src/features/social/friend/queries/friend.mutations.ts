@@ -15,8 +15,7 @@ import { isLastMutation } from '@src/shared/query/is-last-mutation';
 import { useAppToast } from '@src/shared/ui';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { findFriendLimit } from '../domains/friend.error';
-import { getFriendLimit } from '../domains/friend.model';
+import { findFriendLimit, getFriendLimit } from '../domains/friend.error';
 import type { ReorderFriendInput } from '../schemas/friend-request.schema';
 import {
   cancelFriendList,

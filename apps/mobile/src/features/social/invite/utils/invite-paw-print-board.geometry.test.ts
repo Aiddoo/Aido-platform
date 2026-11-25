@@ -1,27 +1,5 @@
 import { createInvite } from '../__tests__/invite.fixtures';
-import {
-  calculatePawPrintState,
-  createPawPrintBoard,
-  PAW_PRINT_BOARD_SIZE,
-} from './invite-paw-print-board.geometry';
-
-describe('calculatePawPrintState', () => {
-  const counts = { pawPrintedCount: 2, waitingCount: 1, milestoneCounts: [5] };
-
-  it.each([
-    [0, 'stamped'],
-    [1, 'stamped'],
-    [2, 'waiting'],
-    [3, 'empty'],
-    [4, 'milestone'],
-  ] as const)('%i번째 칸은 %s를 반환한다', (index, expected) => {
-    // When
-    const result = calculatePawPrintState(index, counts);
-
-    // Then
-    expect(result).toBe(expected);
-  });
-});
+import { createPawPrintBoard, PAW_PRINT_BOARD_SIZE } from './invite-paw-print-board.geometry';
 
 describe('createPawPrintBoard', () => {
   it('기기 폭과 상관없이 12칸 판을 반환한다', () => {

@@ -1,5 +1,6 @@
-import { INVITE_FRIENDSHIP } from '@aido/api/vocabulary';
+import { INVITE_FRIENDSHIP, INVITEE_REWARDS } from '@aido/api/vocabulary';
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
+import { UserPolicy } from '@src/features/identity/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { getNowInstant } from '@src/shared/date/clock';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
@@ -21,11 +22,10 @@ import { useAppToast } from '@src/shared/ui';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import { type Href, useRouter } from 'expo-router';
 
-import { INVITEE_PREMIUM_DAYS } from '../constants/invite.constants';
 import type { InviteCode } from '../domains/invite-code.model';
 import { InviteRedemptionPolicy } from '../domains/invite-redemption.model';
-import { toRedeemFailureReason } from '../domains/invite.error';
-import { InviteeUserPolicy } from '../domains/invitee-user.model';
+import { InviteRewardPolicy } from '../domains/invite-reward.model';
+import { getRedeemFailureReason } from '../domains/invite.error';
 import type { InviteLinkSource } from '../domains/pending-redemption.model';
 import { useInviteParams } from '../hooks/use-invite-params';
 import { useRedeemInviteMutationOptions } from '../queries/invite.mutations';
@@ -103,7 +103,7 @@ InviteCardActions.Redeem = function Redeem({ inviteCode }: { inviteCode: InviteC
   const toast = useAppToast();
   const now = useMinuteNow();
   const inviterName = preview.inviter.name ?? t('card.unnamedInviter');
-  const isRewardExpected = InviteeUserPolicy.isRewardExpected(me, now);
+  const isRewardExpected = UserPolicy.isInviteRewardExpected(me, now);
 
   // 이동은 호출부 콜백에 둔다. 재조회를 기다리는 사이 화면을 떠났으면 콜백이 불리지 않아 끌려가지 않는다
   const handleRedeem = () => {
@@ -133,7 +133,7 @@ InviteCardActions.Redeem = function Redeem({ inviteCode }: { inviteCode: InviteC
       },
       onError: (error) => {
         // 내 링크를 연 경우에는 내 초대 화면으로 보내 친구에게 보내게 한다
-        if (toRedeemFailureReason(error) === 'self') {
+        if (getRedeemFailureReason(error) === 'self') {
           leaveInviteCard('/friends/invite');
         }
       },
@@ -158,7 +158,9 @@ InviteCardActions.Redeem = function Redeem({ inviteCode }: { inviteCode: InviteC
           isDisabled={redeem.isPending}
         >
           {isRewardExpected
-            ? t('card.redeemWithReward', { count: INVITEE_PREMIUM_DAYS })
+            ? t('card.redeemWithReward', {
+                count: InviteRewardPolicy.getPremiumDays(INVITEE_REWARDS),
+              })
             : t('card.connect', { name: inviterName })}
         </Button>
       </ReadableContent>

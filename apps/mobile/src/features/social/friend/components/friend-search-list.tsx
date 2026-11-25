@@ -24,13 +24,14 @@ import type { ReactNode } from 'react';
 import { ScrollView, type ScrollViewProps } from 'react-native';
 import { match } from 'ts-pattern';
 
-import { FriendPolicy, isValidSearchQuery, type SearchedUser } from '../domains/friend.model';
+import { type SearchedUser, SearchedUserPolicy } from '../domains/searched-user.model';
 import { useFriendSearchTracking } from '../hooks/use-friend-search-tracking';
 import {
   useCancelRequestMutationOptions,
   useSendRequestByTagMutationOptions,
 } from '../queries/friend.mutations';
 import { useGetUserSearchInfiniteQueryOptions } from '../queries/friend.queries';
+import { isValidSearchQuery } from '../schemas/friend-request.schema';
 
 const SEARCH_CONTENT_STYLE = { ...USER_LIST_CONTENT_STYLE, paddingHorizontal: 16 };
 
@@ -132,7 +133,7 @@ FriendSearchList.Action = function Action({
   const cancelRequest = useMutation(useCancelRequestMutationOptions());
   const isProcessing = sendRequest.isPending || cancelRequest.isPending;
 
-  return match(FriendPolicy.getRequestState(user))
+  return match(SearchedUserPolicy.getRequestState(user))
     .with('friend', () => (
       <CheckIcon
         width={fontScaledSize(20)}

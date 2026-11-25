@@ -110,7 +110,7 @@ SentNudgeList.Item = function Item({
   return (
     <NotificationListRow.Link href={hasPreview ? detailHref : null}>
       <NotificationListRow
-        label={nudge.receiverName}
+        label={nudge.receiverName ?? nudge.receiverUserTag}
         title={nudge.todoTitle ?? t('interaction.unavailableTodo')}
         body={status}
         createdAt={nudge.createdAt}

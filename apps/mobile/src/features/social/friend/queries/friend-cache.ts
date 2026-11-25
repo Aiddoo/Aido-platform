@@ -1,12 +1,8 @@
 import { mapInfiniteItems, selectPageItems } from '@src/shared/query/cursor-page';
 import type { InfiniteData, QueryClient } from '@tanstack/react-query';
 
-import type {
-  FriendUser,
-  FriendUserPage,
-  SearchedUser,
-  SearchedUserPage,
-} from '../domains/friend.model';
+import type { FriendUser, FriendUserPage } from '../domains/friend.model';
+import type { SearchedUser, SearchedUserPage } from '../domains/searched-user.model';
 import { FRIEND_QUERY_KEYS } from './friend-query-keys';
 
 type FriendPages = InfiniteData<FriendUserPage, string | undefined>;

@@ -1386,18 +1386,14 @@
     },
     {
       // 래칫
-      "files": ["src/features/device/widget/**", "src/features/social/invite/**"],
+      "files": ["src/features/device/widget/**"],
       "rules": {
         "aido/policy-model-parameter": "off"
       }
     },
     {
       // 래칫
-      "files": [
-        "src/shared/draft/draft.model.ts",
-        "src/features/app-config/whats-new/**",
-        "src/features/social/invite/**"
-      ],
+      "files": ["src/shared/draft/draft.model.ts", "src/features/app-config/whats-new/**"],
       "rules": {
         "aido/model-function-exports": "off"
       }

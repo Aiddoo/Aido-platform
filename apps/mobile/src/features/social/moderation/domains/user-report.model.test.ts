@@ -47,7 +47,7 @@ describe('createProfileReportTarget', () => {
     const target = createProfileReportTarget(user);
 
     // Then
-    expect(target).toEqual({ targetUserId: USER_ID, targetType: 'PROFILE' });
+    expect(target).toEqual({ targetUserId: USER_ID, targetType: 'PROFILE', targetId: null });
   });
 });
 

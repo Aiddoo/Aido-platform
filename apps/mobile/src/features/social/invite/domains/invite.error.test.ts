@@ -8,10 +8,10 @@ import {
   isInviteCodeFieldError,
   isTerminalRedeemFailure,
   type RedeemFailureReason,
-  toRedeemFailureReason,
+  getRedeemFailureReason,
 } from './invite.error';
 
-describe('toRedeemFailureReason', () => {
+describe('getRedeemFailureReason', () => {
   it.each<[ErrorCodeType, RedeemFailureReason]>([
     ['INVITE_2101', 'not_found'],
     ['INVITE_2102', 'rotated'],
@@ -23,7 +23,9 @@ describe('toRedeemFailureReason', () => {
     ['FOLLOW_0901', 'unknown'],
   ])('서버 오류 %s면 %s를 반환한다', (code, expected) => {
     // When
-    const result = toRedeemFailureReason(createApiError(code, { message: 'message', status: 400 }));
+    const result = getRedeemFailureReason(
+      createApiError(code, { message: 'message', status: 400 }),
+    );
 
     // Then
     expect(result).toBe(expected);
@@ -31,7 +33,7 @@ describe('toRedeemFailureReason', () => {
 
   it('형식이 틀린 코드면 invalid_code를 반환한다', () => {
     // When
-    const result = toRedeemFailureReason(new BusinessError(INVITE_ERROR_CODE.INVALID_CODE));
+    const result = getRedeemFailureReason(new BusinessError(INVITE_ERROR_CODE.INVALID_CODE));
 
     // Then
     expect(result).toBe('invalid_code');
@@ -39,7 +41,7 @@ describe('toRedeemFailureReason', () => {
 
   it('서버 장애면 unknown을 반환한다', () => {
     // When
-    const result = toRedeemFailureReason(new ServerError(500));
+    const result = getRedeemFailureReason(new ServerError(500));
 
     // Then
     expect(result).toBe('unknown');

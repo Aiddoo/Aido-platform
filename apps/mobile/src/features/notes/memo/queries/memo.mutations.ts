@@ -14,6 +14,7 @@ import { markAiDataSharingConsentRequired } from '@src/features/identity/consent
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { settleTodoBatchWrite } from '@src/features/planning/todo/queries/todo-cache';
 import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
+import { PlanRequestPolicy } from '@src/features/voice/domains/plan-request.model';
 import {
   getVoicePlanFailureCause,
   isPlanKeyConflictError,
@@ -40,16 +41,8 @@ import {
   isMemoUnavailableError,
 } from '../domains/memo.error';
 import type { MemoFormValues } from '../schemas/memo-form.schema';
-import {
-  createMemoCreateRequestDraftKey,
-  createMemoDraftKey,
-  restoreOrCreateMemoCreateIdempotencyKey,
-} from '../utils/memo-draft';
-import {
-  createMemoPlanDraftKey,
-  createMemoPlanRequestDraftKey,
-  restoreOrCreateMemoPlanIdempotencyKey,
-} from '../utils/memo-plan-draft';
+import { createMemoCreateRequestDraftKey, createMemoDraftKey } from '../utils/memo-draft';
+import { createMemoPlanDraftKey, createMemoPlanRequestDraftKey } from '../utils/memo-plan-draft';
 import {
   getCachedMemo,
   invalidateMemo,
@@ -59,6 +52,57 @@ import {
   settleMemoWrite,
 } from './memo-cache';
 import { MEMO_MUTATION_KEYS } from './memo-mutation-keys';
+
+/**
+ * 같은 글을 다시 저장하면 앞 요청의 키를, 글이 바뀌었으면 새 키를 준다.
+ * 바뀐 글에 옛 키를 쓰면 늦게 저장된 첫 메모를 돌려받아 고친 글이 저장되지 않는다
+ */
+function restoreOrCreateMemoCreateIdempotencyKey(
+  draftService: Pick<DraftService, 'restore' | 'save'>,
+  {
+    userId,
+    content,
+    createIdempotencyKey,
+  }: { userId: string; content: string; createIdempotencyKey: () => string },
+): string {
+  const draftKey = createMemoCreateRequestDraftKey({ userId });
+  const restored = draftService.restore(draftKey);
+  if (restored.status === 'restored' && restored.value.content === content) {
+    return restored.value.idempotencyKey;
+  }
+  const idempotencyKey = createIdempotencyKey();
+  draftService.save(draftKey, { content, idempotencyKey });
+  return idempotencyKey;
+}
+
+export function restoreOrCreateMemoPlanIdempotencyKey(
+  draftService: Pick<DraftService, 'restore' | 'save'>,
+  {
+    userId,
+    memoId,
+    content,
+    categoryId,
+    sourceUpdatedAt,
+    createIdempotencyKey,
+  }: {
+    userId: string;
+    memoId: number;
+    content: string;
+    categoryId: number;
+    sourceUpdatedAt: number;
+    createIdempotencyKey: () => string;
+  },
+): string {
+  const draftKey = createMemoPlanRequestDraftKey({ userId, memoId });
+  const restored = draftService.restore(draftKey, { sourceUpdatedAt });
+  const request = PlanRequestPolicy.preparePlanRequest({
+    previous: restored.status === 'restored' ? restored.value : null,
+    input: { content, categoryId },
+    createIdempotencyKey,
+  });
+  draftService.save(draftKey, request, { sourceUpdatedAt });
+  return request.idempotencyKey;
+}
 
 export function useCreateMemoMutationOptions() {
   const memoApi = useMemoApi();

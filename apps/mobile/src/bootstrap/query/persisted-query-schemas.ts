@@ -9,8 +9,8 @@ import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/querie
 import { dailyCompletionsResultSchema } from '@src/features/planning/todo/domains/daily-completion.model';
 import { todoListResultSchema } from '@src/features/planning/todo/domains/todo-list.model';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
-import { friendUserPagesSchema } from '@src/features/social/friend/domains/friend.model';
 import { FRIEND_QUERY_KEYS } from '@src/features/social/friend/queries/friend-query-keys';
+import { friendUserPagesSchema } from '@src/features/social/friend/schemas/friend-list-storage.schema';
 import { locationReadingSchema } from '@src/features/weather/domains/location-reading.model';
 import { weatherReportSchema } from '@src/features/weather/domains/weather-report.model';
 import { WEATHER_QUERY_KEYS } from '@src/features/weather/queries/weather-query-keys';

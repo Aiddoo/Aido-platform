@@ -19,7 +19,7 @@ import { InviteRedemptionPolicy } from '../domains/invite-redemption.model';
 import {
   isInviteCodeFieldError,
   isRedeemRejectedError,
-  toRedeemFailureReason,
+  getRedeemFailureReason,
 } from '../domains/invite.error';
 import type { InviteShareChannel, InviteShareContent } from '../services/invite-share.service';
 import {
@@ -79,7 +79,7 @@ export function useRedeemInviteMutationOptions() {
     },
     onError: (error) => {
       if (isRedeemRejectedError(error)) {
-        trackEvent('invite_redeem_failed', { reason: toRedeemFailureReason(error) });
+        trackEvent('invite_redeem_failed', { reason: getRedeemFailureReason(error) });
       }
     },
     meta: { errorFeedback: { feature: 'invite' } },

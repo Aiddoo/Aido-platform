@@ -1,7 +1,5 @@
-import { PlanRequestPolicy } from '@src/features/voice/domains/plan-request.model';
 import { createPlanReviewDraftKey } from '@src/features/voice/utils/plan-review-draft';
 import { createDraftKey } from '@src/shared/draft/draft.model';
-import type { DraftService } from '@src/shared/draft/draft.service';
 
 import { memoPlanRequestDraftSchema } from '../schemas/memo-draft.schema';
 
@@ -35,33 +33,4 @@ export function createMemoPlanRequestDraftKey({
     target: [memoId],
     schema: memoPlanRequestDraftSchema,
   });
-}
-
-export function restoreOrCreateMemoPlanIdempotencyKey(
-  draftService: Pick<DraftService, 'restore' | 'save'>,
-  {
-    userId,
-    memoId,
-    content,
-    categoryId,
-    sourceUpdatedAt,
-    createIdempotencyKey,
-  }: {
-    userId: string;
-    memoId: number;
-    content: string;
-    categoryId: number;
-    sourceUpdatedAt: number;
-    createIdempotencyKey: () => string;
-  },
-): string {
-  const draftKey = createMemoPlanRequestDraftKey({ userId, memoId });
-  const restored = draftService.restore(draftKey, { sourceUpdatedAt });
-  const request = PlanRequestPolicy.preparePlanRequest({
-    previous: restored.status === 'restored' ? restored.value : null,
-    input: { content, categoryId },
-    createIdempotencyKey,
-  });
-  draftService.save(draftKey, request, { sourceUpdatedAt });
-  return request.idempotencyKey;
 }

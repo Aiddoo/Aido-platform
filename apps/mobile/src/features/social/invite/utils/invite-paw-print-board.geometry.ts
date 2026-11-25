@@ -1,9 +1,7 @@
+import { INVITER_REWARD_MILESTONES } from '@aido/api/vocabulary';
 import { chunk, clamp, range } from 'es-toolkit';
 
-import { ONE_TIME_MILESTONE_COUNTS } from '../constants/invite.constants';
-import type { Invite } from '../domains/invite.model';
-
-export type PawPrintState = 'stamped' | 'waiting' | 'empty' | 'milestone';
+import { type Invite, InvitePolicy, type PawPrintState } from '../domains/invite.model';
 
 export interface PawPrintCell {
   /** 첫 판부터 0으로 센 발자국 순서 */
@@ -116,40 +114,14 @@ export function calculatePawPrintGrid(availableWidth: number): PawPrintGrid {
   };
 }
 
-/** 지금 보여 줄 판(0부터). 막 채우고 아직 축하하지 않았으면 그 판을 한 번 더 보여 주고 다음에 새 판으로 넘어간다 */
-function calculateBoardIndex(pawPrintedCount: number, celebratedCount: number) {
-  const isJustFilled =
-    pawPrintedCount > 0 &&
-    pawPrintedCount % PAW_PRINT_BOARD_SIZE === 0 &&
-    celebratedCount < pawPrintedCount;
-  return isJustFilled
-    ? pawPrintedCount / PAW_PRINT_BOARD_SIZE - 1
-    : Math.floor(pawPrintedCount / PAW_PRINT_BOARD_SIZE);
-}
-
 interface PawPrintCountInput {
   pawPrintedCount: number;
   waitingCount: number;
-  milestoneCounts: readonly number[];
-}
-
-export function calculatePawPrintState(
-  index: number,
-  { pawPrintedCount, waitingCount, milestoneCounts }: PawPrintCountInput,
-): PawPrintState {
-  if (index < pawPrintedCount) {
-    return 'stamped';
-  }
-  if (index < pawPrintedCount + waitingCount) {
-    return 'waiting';
-  }
-
-  return milestoneCounts.includes(index + 1) ? 'milestone' : 'empty';
 }
 
 /** 찍힌 발자국 뒤에 이어 그리는 기다리는 칸 중 판 끝(boardEndIndex)을 넘는 수 */
 function calculateWaitingOverflow(
-  { pawPrintedCount, waitingCount }: Pick<PawPrintCountInput, 'pawPrintedCount' | 'waitingCount'>,
+  { pawPrintedCount, waitingCount }: PawPrintCountInput,
   boardEndIndex: number,
 ) {
   const waitingStart = Math.max(pawPrintedCount, boardEndIndex);
@@ -170,10 +142,13 @@ export function createPawPrintBoard(
   const counts: PawPrintCountInput = {
     pawPrintedCount: invite.qualifiedCount,
     waitingCount: invite.waitingCount,
-    milestoneCounts: ONE_TIME_MILESTONE_COUNTS,
   };
   const isPawPrinted = (index: number) => index < counts.pawPrintedCount;
-  const boardIndex = calculateBoardIndex(counts.pawPrintedCount, celebratedCount);
+  const boardIndex = InvitePolicy.getPawPrintBoardIndex(
+    invite,
+    celebratedCount,
+    PAW_PRINT_BOARD_SIZE,
+  );
   const firstIndex = boardIndex * PAW_PRINT_BOARD_SIZE;
   const rowIndexes = chunk(range(firstIndex, firstIndex + PAW_PRINT_BOARD_SIZE), columns);
 
@@ -190,7 +165,7 @@ export function createPawPrintBoard(
       return {
         cells: orderedIndexes.map((index, position) => ({
           index,
-          state: calculatePawPrintState(index, counts),
+          state: InvitePolicy.getPawPrintState(invite, index, INVITER_REWARD_MILESTONES),
           isNew: isPawPrinted(index) && index >= celebratedCount,
           isNext: index === counts.pawPrintedCount + counts.waitingCount,
           connectorBefore:

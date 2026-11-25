@@ -40,11 +40,12 @@ import { match } from 'ts-pattern';
 import {
   NudgeThanksPreviewPolicy,
   type NudgeThanksRecipient,
-} from '../domains/nudge-interaction.model';
+} from '../domains/nudge-thanks-preview.model';
 import {
   useGetNudgeInteractionAvailabilityQueryOptions,
   useGetNudgeThanksPreviewInfiniteQueryOptions,
 } from '../queries/todo-nudge.queries';
+import { formatNudgeUserName } from '../utils/nudge-user-name.view-model';
 
 const VISIBLE_AVATAR_COUNT = 2;
 const BUTTON_HIT_SLOP = 4;
@@ -298,7 +299,7 @@ function RecipientAvatars({ recipients }: { recipients: NudgeThanksRecipient[] }
       {recipients.slice(0, VISIBLE_AVATAR_COUNT).map((recipient, index) => (
         <Box key={recipient.id} className={cn(index > 0 && '-ml-2')}>
           <UserAvatar
-            alt={recipient.name}
+            alt={formatNudgeUserName(recipient.name, recipient.userTag)}
             className="size-8 border-2 border-background"
             profileImage={recipient.profileImage}
           />

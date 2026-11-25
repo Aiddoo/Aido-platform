@@ -10,7 +10,7 @@ const createReward = (overrides: Partial<InviteReward> = {}): InviteReward => ({
 });
 
 describe('InviteRewardPolicy', () => {
-  describe('calculateRewardQuantity', () => {
+  describe('getPremiumDays', () => {
     it('고른 종류의 수량만 더해서 반환한다', () => {
       // Given
       const rewards = [
@@ -20,27 +20,13 @@ describe('InviteRewardPolicy', () => {
       ] as const;
 
       // When
-      const result = InviteRewardPolicy.calculateRewardQuantity(rewards, (reward) =>
-        InviteRewardPolicy.isPremiumDaysReward(reward),
-      );
+      const result = InviteRewardPolicy.getPremiumDays(rewards);
 
       // Then
       // 7 + 7 = 14
       expect(result).toBe(14);
     });
 
-    it('보상이 없으면 0을 반환한다', () => {
-      // When
-      const result = InviteRewardPolicy.calculateRewardQuantity([], (reward) =>
-        InviteRewardPolicy.isPremiumDaysReward(reward),
-      );
-
-      // Then
-      expect(result).toBe(0);
-    });
-  });
-
-  describe('getPremiumDays', () => {
     it('프리미엄 일수 보상만 더한다', () => {
       // Given
       const rewards = [

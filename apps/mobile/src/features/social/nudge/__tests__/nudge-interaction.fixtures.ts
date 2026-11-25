@@ -1,10 +1,8 @@
 import { nudgeInteractionResponseSchema } from '@aido/api/contracts/nudge/v1';
 import { defineFixture } from '@src/testing/fixture';
 
-import {
-  nudgeInteractionSchema,
-  nudgeThanksPreviewSchema,
-} from '../domains/nudge-interaction.model';
+import { nudgeInteractionSchema } from '../domains/nudge-interaction.model';
+import { nudgeThanksPreviewSchema } from '../domains/nudge-thanks-preview.model';
 import { createSendNudgeResponseDto } from './todo-nudge.fixtures';
 
 export const createNudgeInteractionDto = defineFixture(nudgeInteractionResponseSchema, {
@@ -33,9 +31,11 @@ export const createNudgeInteraction = defineFixture(nudgeInteractionSchema, {
   id: 1,
   senderId: 'clz7x5p8k0001qz0z8z8z8z8z',
   senderName: '응원냥',
+  senderUserTag: 'SENDER01',
   senderProfileImage: null,
   receiverId: 'clz7x5p8k0005qz0z8z8z8z8z',
   receiverName: '시작냥',
+  receiverUserTag: 'RECV0001',
   receiverProfileImage: null,
   todoId: 1,
   todoTitle: '산책하기',

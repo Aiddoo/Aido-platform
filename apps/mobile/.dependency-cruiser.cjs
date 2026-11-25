@@ -145,7 +145,7 @@ const modelAndFolderRules = [
     severity: 'error',
     from: {
       path: featureFolders(['constants']),
-      pathNot: [TEST, pendingFeatures(['social/invite'])],
+      pathNot: TEST,
     },
     to: { path: '/domains/', dependencyTypesNot: ['type-only'] },
   },

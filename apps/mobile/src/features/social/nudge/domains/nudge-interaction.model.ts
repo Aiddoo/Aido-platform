@@ -1,21 +1,23 @@
 import { NUDGE_REPLY_KINDS } from '@aido/api/vocabulary';
 import { instantSchema } from '@src/shared/date/instant';
 import { cursorPageSchema } from '@src/shared/domains/cursor-page.model';
-import { userSummarySchema } from '@src/shared/domains/user-summary.model';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
 export const nudgeInteractionSchema = z.object({
   id: z.number(),
   senderId: z.string(),
-  senderName: z.string(),
+  senderName: z.string().nullable(),
+  senderUserTag: z.string(),
   senderProfileImage: z.string().nullable(),
   receiverId: z.string(),
-  receiverName: z.string(),
+  receiverName: z.string().nullable(),
+  receiverUserTag: z.string(),
   receiverProfileImage: z.string().nullable(),
   todoId: z.number(),
+  // 비공개 등으로 할 일에 접근할 수 없으면 제목·완료 여부 둘 다 null이다
   todoTitle: z.string().nullable(),
-  isTodoCompleted: z.boolean(),
+  isTodoCompleted: z.boolean().nullable(),
   message: z.string().nullable(),
   replyKind: z.enum(NUDGE_REPLY_KINDS).nullable(),
   thankedAt: instantSchema.nullable(),
@@ -35,34 +37,6 @@ const nudgeInteractionStatusSchema = z.enum([
   'WAITING',
 ]);
 export type NudgeInteractionStatus = z.infer<typeof nudgeInteractionStatusSchema>;
-
-const nudgeThanksRecipientSchema = userSummarySchema
-  .pick({ id: true, profileImage: true })
-  .extend({ name: z.string() });
-export type NudgeThanksRecipient = z.infer<typeof nudgeThanksRecipientSchema>;
-
-const nudgeThanksCursorSchema = z.object({ cursor: z.number(), throughNudgeId: z.number() });
-export type NudgeThanksCursor = z.infer<typeof nudgeThanksCursorSchema>;
-
-export const nudgeThanksPreviewSchema = cursorPageSchema(
-  nudgeThanksRecipientSchema,
-  nudgeThanksCursorSchema,
-).extend({
-  todoId: z.number(),
-  throughNudgeId: z.number().nullable(),
-  totalRecipients: z.int().nonnegative(),
-  thankedRecipientCount: z.int().nonnegative(),
-  lastThankedAt: instantSchema.nullable(),
-});
-export type NudgeThanksPreview = z.infer<typeof nudgeThanksPreviewSchema>;
-
-const nudgeThanksSummaryStateSchema = z.enum(['NONE', 'PENDING', 'SENT', 'SENT_WITH_PENDING']);
-type NudgeThanksSummaryState = z.infer<typeof nudgeThanksSummaryStateSchema>;
-
-interface NudgeThanksSummary {
-  state: NudgeThanksSummaryState;
-  pendingRecipientCount: number;
-}
 
 type NudgeResponseStage = 'unavailable' | 'reply' | 'thanksPrompt' | 'thanked' | 'status';
 
@@ -102,28 +76,5 @@ export const NudgeInteractionPolicy = {
     }
 
     return status === 'THANKED' ? 'thanked' : 'status';
-  },
-};
-
-export const NudgeThanksPreviewPolicy = {
-  hasThankableRecipients(preview: NudgeThanksPreview): boolean {
-    return preview.throughNudgeId != null && preview.items.length > 0;
-  },
-
-  getThanksSummary(preview: NudgeThanksPreview): NudgeThanksSummary {
-    const pendingRecipientCount = this.hasThankableRecipients(preview)
-      ? preview.totalRecipients
-      : 0;
-    const state = match({
-      hasPending: pendingRecipientCount > 0,
-      hasThanked: preview.thankedRecipientCount > 0,
-    })
-      .returnType<NudgeThanksSummaryState>()
-      .with({ hasPending: true, hasThanked: true }, () => 'SENT_WITH_PENDING')
-      .with({ hasPending: true, hasThanked: false }, () => 'PENDING')
-      .with({ hasPending: false, hasThanked: true }, () => 'SENT')
-      .with({ hasPending: false, hasThanked: false }, () => 'NONE')
-      .exhaustive();
-    return { state, pendingRecipientCount };
   },
 };

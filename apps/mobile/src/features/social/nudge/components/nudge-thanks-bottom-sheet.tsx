@@ -28,10 +28,11 @@ import { Suspense, type ComponentProps } from 'react';
 import {
   NudgeThanksPreviewPolicy,
   type NudgeThanksRecipient,
-} from '../domains/nudge-interaction.model';
+} from '../domains/nudge-thanks-preview.model';
 import { isNudgeUnavailableError } from '../domains/todo-nudge.error';
 import { useSendNudgeThanksMutationOptions } from '../queries/todo-nudge.mutations';
 import { useGetNudgeThanksPreviewInfiniteQueryOptions } from '../queries/todo-nudge.queries';
+import { formatNudgeUserName } from '../utils/nudge-user-name.view-model';
 
 const RECIPIENT_ROW_HEIGHT = 64;
 const LIST_MIN_HEIGHT = 72;
@@ -167,11 +168,13 @@ NudgeThanksBottomSheet.Recipient = function Recipient({
 }: {
   recipient: NudgeThanksRecipient;
 }) {
+  const name = formatNudgeUserName(recipient.name, recipient.userTag);
+
   return (
     <HStack align="center" gap={12} py={12}>
-      <UserAvatar alt={recipient.name} className="size-10" profileImage={recipient.profileImage} />
+      <UserAvatar alt={name} className="size-10" profileImage={recipient.profileImage} />
       <Text size="b3" className="shrink" numberOfLines={2}>
-        {recipient.name}
+        {name}
       </Text>
     </HStack>
   );

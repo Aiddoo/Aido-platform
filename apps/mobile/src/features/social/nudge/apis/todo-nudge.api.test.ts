@@ -15,22 +15,6 @@ describe('TodoNudgeApi', () => {
   });
 
   describe('sendNudge', () => {
-    it('메시지가 200자를 넘으면 MESSAGE_TOO_LONG 오류를 반환한다', async () => {
-      // Given
-      const longMessage = 'a'.repeat(201);
-
-      // When
-      const result = await service.sendNudge({
-        receiverId: 'user-1',
-        todoId: 1,
-        message: longMessage,
-      });
-
-      // Then
-      expect(result).toMatchObject({ ok: false, error: { code: 'TODO_NUDGE_MESSAGE_TOO_LONG' } });
-      expect(httpClient.post).not.toHaveBeenCalled();
-    });
-
     it('메시지를 보내면 콕 결과를 반환한다', async () => {
       // Given
       const dto = createSendNudgeResponseDto();

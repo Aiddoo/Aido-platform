@@ -1,6 +1,5 @@
-import { INVITE_REDEEM_WINDOW_DAYS } from '@aido/api/vocabulary';
-import { DAY_MS } from '@src/shared/constants/time-units';
-import { diffMs, type Instant, instantSchema } from '@src/shared/date/instant';
+import { type Instant, instantSchema } from '@src/shared/date/instant';
+import { isWithinInviteRedeemWindow } from '@src/shared/domains/invite-redeem-window.model';
 import { z } from 'zod';
 
 import { inviteCodeSchema } from './invite-code.model';
@@ -25,6 +24,6 @@ export type PendingRedemption = z.infer<typeof pendingRedemptionSchema>;
 /** 기기에 저장해 둔 수락 대기 초대 */
 export const PendingRedemptionPolicy = {
   isFresh(pending: PendingRedemption, now: Instant): boolean {
-    return diffMs(now, pending.savedAt) < INVITE_REDEEM_WINDOW_DAYS * DAY_MS;
+    return isWithinInviteRedeemWindow(pending.savedAt, now);
   },
 };

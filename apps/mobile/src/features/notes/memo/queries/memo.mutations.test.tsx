@@ -3,13 +3,16 @@ import { IDEMPOTENCY_KEY_HEADER } from '@aido/api/vocabulary';
 import { ok } from '@src/core/errors/result';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
-import { toEpochMs } from '@src/shared/date/instant';
+import { fromEpochMs, toEpochMs } from '@src/shared/date/instant';
+import { createDraftRepository } from '@src/shared/draft/draft.repository';
+import { DraftService } from '@src/shared/draft/draft.service';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import {
   createAnalyticsStub,
   createHapticsGatewayStub,
   createHttpClientStub,
+  createMemorySyncStorage,
   createPendingResponse,
   createTestQueryClient,
   createTestDi,
@@ -27,6 +30,7 @@ import { createMemoDraftKey } from '../utils/memo-draft';
 import { createMemoPlanDraftKey, createMemoPlanRequestDraftKey } from '../utils/memo-plan-draft';
 import { MEMO_QUERY_KEYS } from './memo-query-keys';
 import {
+  restoreOrCreateMemoPlanIdempotencyKey,
   useConvertMemoToTodosMutationOptions,
   useCreateMemoMutationOptions,
   useDeleteMemoMutationOptions,
@@ -510,5 +514,91 @@ describe('useDeleteMemoMutationOptions', () => {
       // HeroUI가 높이를 재려고 같은 토스트를 하나 더 그린다
       expect(await screen.findAllByText(new NetworkError().message)).not.toHaveLength(0);
     });
+  });
+});
+
+const DRAFT_NOW = Date.UTC(2026, 10, 5);
+const planRequest = {
+  userId: 'user-1',
+  memoId: 7,
+  content: '메모',
+  categoryId: 1,
+  sourceUpdatedAt: 1,
+};
+
+function createDraftFixture() {
+  const storage = createMemorySyncStorage();
+  const openDraftService = () =>
+    new DraftService(
+      createDraftRepository(storage),
+      () => fromEpochMs(DRAFT_NOW),
+      () => 0,
+    );
+  const createIdempotencyKey = jest
+    .fn<string, []>()
+    .mockReturnValueOnce('key-1')
+    .mockReturnValueOnce('key-2')
+    .mockReturnValueOnce('key-3');
+  return { draftService: openDraftService(), openDraftService, createIdempotencyKey };
+}
+
+describe('restoreOrCreateMemoPlanIdempotencyKey', () => {
+  it('응답을 받지 못하고 앱을 다시 켜도 같은 메모는 같은 키를 쓴다', () => {
+    // Given
+    const { draftService, openDraftService, createIdempotencyKey } = createDraftFixture();
+    const first = restoreOrCreateMemoPlanIdempotencyKey(draftService, {
+      ...planRequest,
+      createIdempotencyKey,
+    });
+
+    // When
+    const retried = restoreOrCreateMemoPlanIdempotencyKey(openDraftService(), {
+      ...planRequest,
+      createIdempotencyKey,
+    });
+
+    // Then
+    expect(retried).toBe(first);
+  });
+
+  it.each([
+    ['메모 내용을 고치면', { content: '고친 메모', sourceUpdatedAt: 2 }],
+    ['기본 카테고리가 바뀌면', { categoryId: 2 }],
+  ])('%s 새 키를 쓴다', (_label, changed) => {
+    // Given
+    const { draftService, createIdempotencyKey } = createDraftFixture();
+    const first = restoreOrCreateMemoPlanIdempotencyKey(draftService, {
+      ...planRequest,
+      createIdempotencyKey,
+    });
+
+    // When
+    const next = restoreOrCreateMemoPlanIdempotencyKey(draftService, {
+      ...planRequest,
+      ...changed,
+      createIdempotencyKey,
+    });
+
+    // Then
+    expect(next).not.toBe(first);
+  });
+
+  it('결과를 받아 키를 지우면 다음 요청은 새 키를 쓴다', () => {
+    // Given
+    const { draftService, createIdempotencyKey } = createDraftFixture();
+    const first = restoreOrCreateMemoPlanIdempotencyKey(draftService, {
+      ...planRequest,
+      createIdempotencyKey,
+    });
+    draftService.remove(createMemoPlanRequestDraftKey(planRequest));
+
+    // When
+    const next = restoreOrCreateMemoPlanIdempotencyKey(draftService, {
+      ...planRequest,
+      createIdempotencyKey,
+    });
+
+    // Then
+    expect(next).not.toBe(first);
   });
 });

@@ -1,4 +1,4 @@
-import { createInviteLinkOpenStamp, findInviteSystemPath } from './invite-link.view-model';
+import { createInviteLinkOpenStamp, findInviteSystemPath } from './invite-system-path';
 
 const options = { appScheme: 'aido', kakaoScheme: 'kakao0000test' };
 const opened = { openedAt: 1000 };

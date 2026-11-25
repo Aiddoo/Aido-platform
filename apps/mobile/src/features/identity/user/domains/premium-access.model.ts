@@ -7,6 +7,7 @@ import {
 import { hasInstantPassed, type Instant, instantSchema, toEpochMs } from '@src/shared/date/instant';
 import { calculateCalendarDaysLeft } from '@src/shared/date/zoned';
 import { planTypeSchema } from '@src/shared/domains/plan-type.model';
+import { match } from 'ts-pattern';
 import { z } from 'zod';
 
 export const premiumAccessSchema = z.object({
@@ -173,6 +174,22 @@ export const PremiumAccessPolicy = {
       startsAt: this.findBankedRewardStartsAt(access),
       endsAt: access.willRenew ? null : access.endsAt,
     };
+  },
+
+  /** 초대받아 받은 보상이 언제 시작하나. 수락 뒤 다시 받은 내 정보로만 판단한다. 구독·다른 보상 기간 중이면 서버가 쌓아 두고 그 뒤에 잇는다 */
+  getInviteRewardStart(
+    access: PremiumAccess,
+  ): 'now' | 'after-subscription' | 'after-current-reward' {
+    return match({ source: access.source, hasBankedDays: this.hasBankedDays(access) })
+      .with(
+        { source: PREMIUM_SOURCE.STORE, hasBankedDays: true },
+        () => 'after-subscription' as const,
+      )
+      .with(
+        { source: PREMIUM_SOURCE.GRANT, hasBankedDays: true },
+        () => 'after-current-reward' as const,
+      )
+      .otherwise(() => 'now' as const);
   },
 
   getReceiptKind(access: PremiumAccess, { isAdmin }: { isAdmin: boolean }): PremiumReceiptKind {

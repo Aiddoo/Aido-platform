@@ -46,7 +46,7 @@ import Svg, { Defs, Pattern, Rect } from 'react-native-svg';
 import { match, P } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
 
-import { type Invite, InvitePolicy } from '../domains/invite.model';
+import { type Invite, InvitePolicy, type PawPrintState } from '../domains/invite.model';
 import { useGetInviteQueryOptions } from '../queries/invite.queries';
 import { pawPrintCelebrationStoredValue } from '../schemas/paw-print-celebration-storage.schema';
 import {
@@ -56,7 +56,6 @@ import {
   PAW_PRINT_BOARD_SIZE,
   type PawPrintBoard,
   type PawPrintCell,
-  type PawPrintState,
 } from '../utils/invite-paw-print-board.geometry';
 import {
   fishBoneVariants,

@@ -1,29 +1,5 @@
 import { createInvite } from '../__tests__/invite.fixtures';
-import { InvitePolicy, isOneTimeMilestone } from './invite.model';
-
-describe('isOneTimeMilestone', () => {
-  it('반복 간격이 없는 단계면 true를 반환한다', () => {
-    // Given
-    const milestone = { repeatEvery: null };
-
-    // When
-    const result = isOneTimeMilestone(milestone);
-
-    // Then
-    expect(result).toBe(true);
-  });
-
-  it('반복 간격이 있는 단계면 false를 반환한다', () => {
-    // Given
-    const milestone = { repeatEvery: 1 };
-
-    // When
-    const result = isOneTimeMilestone(milestone);
-
-    // Then
-    expect(result).toBe(false);
-  });
-});
+import { InvitePolicy } from './invite.model';
 
 describe('InvitePolicy', () => {
   describe('findRemainingToNextMilestone', () => {
@@ -312,5 +288,60 @@ describe('InvitePolicy', () => {
       // Then
       expect(result).toBe(false);
     });
+  });
+
+  describe('getPawPrintState', () => {
+    const myInvite = createInvite({ qualifiedCount: 2, waitingCount: 1 });
+    const milestones = [{ qualifiedCount: 5, repeatEvery: null, rewards: [] }];
+
+    it.each([
+      [0, 'stamped'],
+      [1, 'stamped'],
+      [2, 'waiting'],
+      [3, 'empty'],
+      [4, 'milestone'],
+    ] as const)('%i번째 칸은 %s를 반환한다', (index, expected) => {
+      // When
+      const result = InvitePolicy.getPawPrintState(myInvite, index, milestones);
+
+      // Then
+      expect(result).toBe(expected);
+    });
+
+    it('반복하는 단계는 생선 칸으로 미리 보여 주지 않는다', () => {
+      // Given
+      const repeatingMilestones = [{ qualifiedCount: 5, repeatEvery: 1, rewards: [] }];
+
+      // When
+      const result = InvitePolicy.getPawPrintState(myInvite, 4, repeatingMilestones);
+
+      // Then
+      expect(result).toBe('empty');
+    });
+  });
+
+  describe('getPawPrintBoardIndex', () => {
+    it.each([
+      { qualifiedCount: 0, celebratedCount: 0, expected: 0 },
+      { qualifiedCount: 11, celebratedCount: 11, expected: 0 },
+      // 막 채우고 아직 축하하지 않은 판을 한 번 더 보여 준다
+      { qualifiedCount: 12, celebratedCount: 11, expected: 0 },
+      { qualifiedCount: 12, celebratedCount: 12, expected: 1 },
+      { qualifiedCount: 13, celebratedCount: 0, expected: 1 },
+      { qualifiedCount: 24, celebratedCount: 12, expected: 1 },
+      { qualifiedCount: 24, celebratedCount: 24, expected: 2 },
+    ])(
+      '발자국 $qualifiedCount개, 축하 $celebratedCount개면 12칸 판 중 $expected번째 판이다',
+      ({ qualifiedCount, celebratedCount, expected }) => {
+        // Given
+        const myInvite = createInvite({ qualifiedCount });
+
+        // When
+        const result = InvitePolicy.getPawPrintBoardIndex(myInvite, celebratedCount, 12);
+
+        // Then
+        expect(result).toBe(expected);
+      },
+    );
   });
 });

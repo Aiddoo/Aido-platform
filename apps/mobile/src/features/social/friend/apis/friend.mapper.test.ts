@@ -6,7 +6,9 @@ import {
   createSendFriendRequestDto,
   createSentRequestsDto,
 } from '../__tests__/friend.fixtures';
-import { friendRequestSchema, friendUserSchema, searchedUserSchema } from '../domains/friend.model';
+import { friendRequestSchema } from '../domains/friend-request.model';
+import { friendUserSchema } from '../domains/friend.model';
+import { searchedUserSchema } from '../domains/searched-user.model';
 import {
   toFriendRequestsPage,
   toFriendsPage,

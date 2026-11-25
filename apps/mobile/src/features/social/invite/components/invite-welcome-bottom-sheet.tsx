@@ -1,3 +1,4 @@
+import { PremiumAccessPolicy } from '@src/features/identity/user/domains/premium-access.model';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { PUSH_PERMISSION_STEP } from '@src/features/notification/constants/notification.constants';
 import { PushPermissionPolicy } from '@src/features/notification/domains/push-permission.model';
@@ -48,7 +49,6 @@ import { match } from 'ts-pattern';
 
 import { InviteRedemptionPolicy } from '../domains/invite-redemption.model';
 import type { RedemptionResult } from '../domains/invite-redemption.model';
-import { InviteePremiumAccessPolicy } from '../domains/invitee-premium-access.model';
 import { useGetRedemptionResultQueryOptions } from '../queries/invite.queries';
 import { inviteWelcomeParamsSchema } from '../schemas/invite-params.schema';
 
@@ -199,7 +199,7 @@ InviteWelcomeBottomSheet.Welcome = function Welcome({ redemption }: WelcomeProps
               lineBreakStrategyIOS="hangul-word"
               textBreakStrategy="highQuality"
             >
-              {match(InviteePremiumAccessPolicy.getRewardStart(me.premiumAccess))
+              {match(PremiumAccessPolicy.getInviteRewardStart(me.premiumAccess))
                 .with('now', () => t('welcome.rewardDescription', { count: premiumDays }))
                 .with('after-subscription', () =>
                   t('welcome.rewardAfterSubscription', { count: premiumDays }),

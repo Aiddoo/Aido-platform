@@ -14,7 +14,6 @@
 - **모델을 받는 규칙의 입구는 Policy 하나다.** 모델을 첫 인자로 받는 함수를 낱개로 export하지 않는다. Policy 밖 export는 스키마, 타입, `create*`, 원시 인자 순수 함수뿐이다(`aido/model-exports`, `aido/model-function-exports`).
   - 예외는 목록에 넘기는 거르기·정렬 키다. 모델 하나를 받는 `filterBy{X}(model, 값)`·`orderBy{X}(model)`은 낱개 함수로 export해 `filters`·`orderBy`와 es-toolkit `orderBy`·`sortBy`에 값으로 넘긴다(`orderBy={orderByAnnualRate}`). Policy 메서드는 `this` 때문에 값으로 넘기지 못한다. 목록을 받거나 판정·계산인 규칙은 이 이름으로 빼지 않는다.
 - **한 파일, 한 엔티티, 한 Policy.** 두 엔티티가 섞이면 파일을 나눈다(`push-notification.model.ts`, `push-notification-response.model.ts`). `create*`는 Policy에 넣지 않는다. 규칙 없는 모델에는 빈 Policy를 만들지 않는다.
-  - 예외는 `social/nudge/domains/nudge-interaction.model.ts` 하나다. 콕 응답(`NudgeInteractionPolicy`)·감사 미리보기(`NudgeThanksPreviewPolicy`)는 한 감사 흐름에서 함께 바뀌어 한 파일에 둔다. 할 일을 감사할 수 있는지는 서버 상세 `permissions.canThank`다.
 - **업무 규칙 표**는 모델 파일 안 비공개 상수이고 `satisfies Record<Union, …>`를 건다. 서버가 종류를 더하면 빌드가 깨진다.
 - **인자는 도메인 단위 이름이다.** `monthlyAmount`·`dueDateKey`처럼 무엇의 어떤 단위인지 이름에 넣는다. 모델 파일 이름에 상태 접두사(`pending-`·`current-`)를 붙이지 않는다(엔티티 이름이다). 파일·타입·Policy는 같은 엔티티 이름이다(`todo-import-collection.model.ts` → `TodoImportCollection`·`TodoImportCollectionPolicy`).
 - **시각은 인자다.** 지금·오늘·시간대를 받고 `Date.now()`·`new Date()`·기기 시간대를 읽지 않는다(`aido/no-clock-read`, `domain-model-clock`). 기간 규칙은 `shouldShow*(record, now)`이고 상수 이름에 단위를 넣는다(`PUSH_PROMPT_SNOOZE_DAYS`).

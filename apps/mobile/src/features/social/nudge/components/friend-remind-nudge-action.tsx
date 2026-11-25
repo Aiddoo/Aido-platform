@@ -8,7 +8,7 @@ import { cn } from '@src/shared/utils/cn';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 
-import { NudgeCooldownPolicy } from '../domains/todo-nudge.model';
+import { NudgeCooldownPolicy } from '../domains/nudge-cooldown.model';
 import { useGetRemindNudgeCooldownQueryOptions } from '../queries/todo-nudge.queries';
 
 /** 오늘 할 일이 없는 친구에게 독촉 시트를 여는 버튼. 쿨다운 중이면 눌러지지 않고, 쿨다운이 끝나는 순간 다시 눌린다 */

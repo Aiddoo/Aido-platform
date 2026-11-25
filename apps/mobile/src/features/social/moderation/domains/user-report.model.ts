@@ -5,7 +5,8 @@ import { z } from 'zod';
 const userReportTargetSchema = z.object({
   targetUserId: z.string(),
   targetType: z.enum(USER_REPORT_TARGET_TYPES),
-  targetId: z.string().optional(),
+  // 프로필 신고는 사람만 가리켜 대상 콘텐츠가 없다
+  targetId: z.string().nullable(),
 });
 export type UserReportTarget = z.infer<typeof userReportTargetSchema>;
 
@@ -30,7 +31,7 @@ export function createCommentReportTarget({
 }
 
 export function createProfileReportTarget({ userId }: { userId: string }): UserReportTarget {
-  return { targetUserId: userId, targetType: 'PROFILE' };
+  return { targetUserId: userId, targetType: 'PROFILE', targetId: null };
 }
 
 export function createNudgeMessageReportTarget({

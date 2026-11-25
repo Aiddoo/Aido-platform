@@ -3,27 +3,26 @@ import type {
   NudgeInteractionsResponse,
 } from '@aido/api/contracts/nudge/v1';
 import { toInstant, toNullableInstant } from '@src/shared/date/instant';
+import { pick } from 'es-toolkit';
 
-import type {
-  NudgeInteraction,
-  NudgeInteractionPage,
-  NudgeThanksCursor,
-  NudgeThanksPreview,
-} from '../domains/nudge-interaction.model';
+import type { NudgeInteraction, NudgeInteractionPage } from '../domains/nudge-interaction.model';
+import type { NudgeThanksCursor, NudgeThanksPreview } from '../domains/nudge-thanks-preview.model';
 import type { NudgeThanksPreviewEnvelope } from '../schemas/nudge-response.schema';
 
 export function toNudgeInteraction(dto: NudgeInteractionResponse): NudgeInteraction {
   return {
     id: dto.id,
     senderId: dto.sender.id,
-    senderName: dto.sender.name ?? dto.sender.userTag,
+    senderName: dto.sender.name,
+    senderUserTag: dto.sender.userTag,
     senderProfileImage: dto.sender.profileImage,
     receiverId: dto.receiver.id,
-    receiverName: dto.receiver.name ?? dto.receiver.userTag,
+    receiverName: dto.receiver.name,
+    receiverUserTag: dto.receiver.userTag,
     receiverProfileImage: dto.receiver.profileImage,
     todoId: dto.todoId,
     todoTitle: dto.todo?.title ?? null,
-    isTodoCompleted: dto.todo?.completed ?? false,
+    isTodoCompleted: dto.todo?.completed ?? null,
     message: dto.message,
     replyKind: dto.replyKind,
     thankedAt: toNullableInstant(dto.thankedAt),
@@ -56,11 +55,9 @@ export function toNudgeThanksPreview(dto: NudgeThanksPreviewEnvelope): NudgeThan
     throughNudgeId: dto.throughNudgeId,
     totalRecipients: dto.totalRecipients ?? dto.recipients.length,
     nextCursor: toNudgeThanksCursor(dto),
-    items: dto.recipients.map((recipient) => ({
-      id: recipient.id,
-      name: recipient.name ?? recipient.userTag,
-      profileImage: recipient.profileImage,
-    })),
+    items: dto.recipients.map((recipient) =>
+      pick(recipient, ['id', 'name', 'userTag', 'profileImage']),
+    ),
     thankedRecipientCount: dto.thankedRecipientCount,
     lastThankedAt: toNullableInstant(dto.lastThankedAt),
   };

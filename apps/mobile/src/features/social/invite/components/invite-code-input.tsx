@@ -16,7 +16,10 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { normalizeInviteCodeInput, normalizePastedInviteCode } from '../domains/invite-code.model';
+import {
+  normalizeInviteCodeInput,
+  normalizePastedInviteCode,
+} from '../schemas/invite-code-form.schema';
 
 /** InputOTP가 늘 넘기는 numeric inputMode를 비워 영문 자판을 띄우고 oneTimeCode 제안을 끈다. 붙여 넣은 글자는 네이티브 maxLength가 아니라 onChangeText가 자른다 */
 const CODE_TEXT_INPUT_PROPS: TextInputProps = {

@@ -11,6 +11,7 @@ import { Skeleton } from 'heroui-native';
 import { NudgeInteractionPolicy } from '../domains/nudge-interaction.model';
 import { useNudgeId } from '../hooks/use-nudge-id';
 import { useGetNudgeInteractionQueryOptions } from '../queries/todo-nudge.queries';
+import { formatNudgeUserName } from '../utils/nudge-user-name.view-model';
 
 export function NudgeSummary() {
   const [nudgeId] = useNudgeId();
@@ -22,8 +23,14 @@ export function NudgeSummary() {
   });
   const isReceived = NudgeInteractionPolicy.isReceivedBy(nudge, me.id);
   const counterpart = isReceived
-    ? { name: nudge.senderName, profileImage: nudge.senderProfileImage }
-    : { name: nudge.receiverName, profileImage: nudge.receiverProfileImage };
+    ? {
+        name: formatNudgeUserName(nudge.senderName, nudge.senderUserTag),
+        profileImage: nudge.senderProfileImage,
+      }
+    : {
+        name: formatNudgeUserName(nudge.receiverName, nudge.receiverUserTag),
+        profileImage: nudge.receiverProfileImage,
+      };
 
   return (
     <VStack gap={24}>

@@ -10,7 +10,8 @@ import type { ErrorCodeType } from '@aido/api/errors';
 import { createApiError } from '@src/testing/api-error';
 import { defineFixture } from '@src/testing/fixture';
 
-import { friendUserSchema, searchedUserSchema } from '../domains/friend.model';
+import { friendUserSchema } from '../domains/friend.model';
+import { searchedUserSchema } from '../domains/searched-user.model';
 
 export const createSendFriendRequestDto = defineFixture(sendFriendRequestResponseSchema, {
   message: '친구 요청을 보냈어요.',

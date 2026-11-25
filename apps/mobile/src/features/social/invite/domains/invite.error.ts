@@ -27,7 +27,7 @@ export function isInviteCodeFieldError(error: unknown) {
 
 /** 이유를 아는 수락 거절(아래 표). 연결·서버 장애·모르는 코드는 빼고 이유를 분석에 남긴다 */
 export function isRedeemRejectedError(error: unknown) {
-  return toRedeemFailureReason(error) !== 'unknown';
+  return getRedeemFailureReason(error) !== 'unknown';
 }
 
 /** 서버 플래그로 친구 초대가 꺼져 있다(INVITE_2105). 재시도 대신 쓸 수 없음 안내를 보인다 */
@@ -47,7 +47,7 @@ export type RedeemFailureReason =
   | 'blocked'
   | 'unknown';
 
-export function toRedeemFailureReason(error: unknown): RedeemFailureReason {
+export function getRedeemFailureReason(error: unknown): RedeemFailureReason {
   if (isCodedError(error, INVITE_ERROR_CODE.INVALID_CODE)) {
     return 'invalid_code';
   }
