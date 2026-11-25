@@ -72,12 +72,15 @@ describe("성장 지표 — identity 활동일·planning 할 일 조회 (실제 
       status: "ACTIVE",
       updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
     });
+    // 같은 서울 날짜의 두 시각이다. 실제 시계를 두 번 읽으면 그 사이 서울 자정이 지난 실행에서 행이 둘이 된다
+    const seenAt = Temporal.Instant.from("2026-07-26T03:00:00.000Z");
+    const parallelSeenAt = Temporal.Instant.from("2026-07-26T03:00:01.000Z");
 
     // When
     await activityWriter.updateLastActiveAt({
       userId: UserId.reconstitute("activity-user"),
       timezone: "Asia/Seoul",
-      seenAt: seenNow(),
+      seenAt,
     });
     const first = await client.query.userActivityDay.findFirst({
       where: { userId: "activity-user" },
@@ -92,7 +95,7 @@ describe("성장 지표 — identity 활동일·planning 할 일 조회 (실제 
         activityWriter.updateLastActiveAt({
           userId: UserId.reconstitute("activity-user"),
           timezone: "Asia/Seoul",
-          seenAt: seenNow(),
+          seenAt: parallelSeenAt,
         }),
       ),
     );
@@ -121,6 +124,39 @@ describe("성장 지표 — identity 활동일·planning 할 일 조회 (실제 
     expect(row.firstSeenAt).toEqual(preservedFirstSeenAt);
     expect(Temporal.Instant.compare(row.lastSeenAt, preservedFirstSeenAt)).toBe(1);
     expect(user.lastActiveAt).toEqual(row.lastSeenAt);
+  });
+
+  it("서울 자정을 사이에 둔 두 활동은 현지 날짜마다 한 행을 남긴다", async () => {
+    // Given
+    await client.insert(userTable).values({
+      id: "midnight-user",
+      email: "midnight@example.com",
+      userTag: "ACT00004",
+      status: "ACTIVE",
+      updatedAt: Temporal.Instant.fromEpochMilliseconds(Date.now()),
+    });
+    const beforeMidnight = Temporal.Instant.from("2026-07-26T14:59:59.999Z");
+    const atMidnight = Temporal.Instant.from("2026-07-26T15:00:00.000Z");
+
+    // When
+    await activityWriter.updateLastActiveAt({
+      userId: UserId.reconstitute("midnight-user"),
+      timezone: "Asia/Seoul",
+      seenAt: beforeMidnight,
+    });
+    await activityWriter.updateLastActiveAt({
+      userId: UserId.reconstitute("midnight-user"),
+      timezone: "Asia/Seoul",
+      seenAt: atMidnight,
+    });
+
+    // Then
+    const rows = await client
+      .select()
+      .from(userActivityDay)
+      .where(eq(userActivityDay.userId, "midnight-user"))
+      .orderBy(userActivityDay.localDate);
+    expect(rows.map((row) => row.localDate.toString())).toEqual(["2026-07-26", "2026-07-27"]);
   });
 
   it("늦게 커밋된 과거 활동이 최신 사용자·활동 시각을 되돌리지 않는다", async () => {
