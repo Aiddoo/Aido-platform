@@ -1094,4 +1094,53 @@ describe('useVoiceNoteRecording', () => {
     );
     expect(screen.getByTestId('status')).toHaveTextContent('listening');
   });
+
+  describe('앞 녹음의 파일을 기다리는 사이 녹음 화면을 다시 열면', () => {
+    it('늦게 온 앞 녹음의 파일은 앞 초안에 남지만 지금은 새 녹음도 같은 파일을 옮기려다 실패를 남긴다', async () => {
+      // Given
+      const user = userEvent.setup();
+      const speechRecognizer = createSpeechRecognizerStub();
+      const files = createLocalFileSystemFake();
+      const uri = files.addFile(RECORDING_DIRECTORY, 'recording_a.wav');
+      const di = createTestDi({
+        ports: { speechRecognizer, ...createVoiceNoteStorageFake(files).ports, logger },
+      });
+      const probe = (
+        <OverlayProvider>
+          <RecordingProbe
+            maxSeconds={null}
+            onLimitReached={jest.fn()}
+            onFinished={jest.fn()}
+            onEmpty={jest.fn()}
+          />
+        </OverlayProvider>
+      );
+      const first = await renderScreen(probe, { di });
+      await start(speechRecognizer);
+      await act(async () => speechRecognizer.emit({ type: 'recording-started', uri }));
+      await say(speechRecognizer, '첫 문장.');
+      await user.press(screen.getByRole('button', { name: 'pause' }));
+      const firstDraftId = screen.getByTestId('draft-id').props.children;
+      await act(async () => first.unmount());
+      await renderScreen(probe, { di });
+      await start(speechRecognizer);
+      await say(speechRecognizer, '둘째 녹음.');
+      const secondDraftId = screen.getByTestId('draft-id').props.children;
+
+      // When
+      await act(async () => speechRecognizer.emit({ type: 'recording-saved', uri }));
+      await act(async () => jest.advanceTimersByTimeAsync(5_000));
+
+      // Then
+      expect(files.hasFile(RECORDING_DIRECTORY, `${firstDraftId}-0.wav`)).toBe(true);
+      expect(di.voiceNoteDraftRepository.find(ACCOUNT_ID, firstDraftId)?.recordings).toHaveLength(
+        1,
+      );
+      expect(files.hasFile(RECORDING_DIRECTORY, `${secondDraftId}-0.wav`)).toBe(false);
+      expect(di.voiceNoteDraftRepository.find(ACCOUNT_ID, secondDraftId)?.recordings).toEqual([]);
+      expect(
+        logger.warn.mock.calls.filter(([event]) => event === 'voice.recording.save-failed'),
+      ).toHaveLength(1);
+    });
+  });
 });

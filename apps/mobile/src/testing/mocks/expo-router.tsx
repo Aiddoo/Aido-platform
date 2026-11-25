@@ -9,6 +9,7 @@ export const router = {
   navigate: jest.fn(),
   setParams: jest.fn(),
   canGoBack: jest.fn(),
+  dismiss: jest.fn(),
   dismissAll: jest.fn(),
   canDismiss: jest.fn(),
   dismissTo: jest.fn(),

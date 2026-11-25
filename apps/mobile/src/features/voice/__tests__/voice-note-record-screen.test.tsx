@@ -8,8 +8,10 @@ import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/querie
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui';
 import {
+  createAnalyticsStub,
   createHttpClientStub,
   createAppLoggerStub,
+  createLocalFileSystemFake,
   createMemoryKeyValueStorage,
   createSpeechRecognizerStub,
   createVoiceNoteStorageFake,
@@ -24,6 +26,7 @@ import { router, useIsFocused } from 'expo-router';
 import VoiceNoteRecordRoute from '../../../../app/(app)/voice-notes/record';
 
 const ACCOUNT_ID = 'user-1';
+const RECORDING_DIRECTORY = ['voice-notes', ACCOUNT_ID];
 let logger: ReturnType<typeof createAppLoggerStub>;
 
 beforeEach(() => {
@@ -34,7 +37,9 @@ async function renderRecordScreen(snapshot = createEntitlementSnapshot()) {
   const httpClient = createHttpClientStub();
   httpClient.get.mockReturnValue(new Promise(() => undefined));
   const speechRecognizer = createSpeechRecognizerStub();
-  const voice = createVoiceNoteStorageFake();
+  const files = createLocalFileSystemFake();
+  const voice = createVoiceNoteStorageFake(files);
+  const analytics = createAnalyticsStub();
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
@@ -49,6 +54,7 @@ async function renderRecordScreen(snapshot = createEntitlementSnapshot()) {
       syncStorage: createAllSeenCoachmarkStorage(ACCOUNT_ID).syncStorage,
       storage: createMemoryKeyValueStorage(),
       speechRecognizer,
+      analytics,
       ...voice.ports,
       logger,
     },
@@ -64,7 +70,11 @@ async function renderRecordScreen(snapshot = createEntitlementSnapshot()) {
   await waitFor(() => expect(speechRecognizer.start).toHaveBeenCalled());
   await act(async () => speechRecognizer.emit({ type: 'start' }));
 
-  return { speechRecognizer, di };
+  return { speechRecognizer, di, files, analytics };
+}
+
+function countEvents(analytics: ReturnType<typeof createAnalyticsStub>, name: string) {
+  return analytics.trackEvent.mock.calls.filter(([eventName]) => eventName === name).length;
 }
 
 const say = (speechRecognizer: ReturnType<typeof createSpeechRecognizerStub>, transcript: string) =>
@@ -74,6 +84,9 @@ const say = (speechRecognizer: ReturnType<typeof createSpeechRecognizerStub>, tr
 
 describe('VoiceNoteRecordScreen', () => {
   describe('녹음 화면', () => {
+    // 화면을 내린 뒤 남는 토스트·초안 쓰기·늦은 녹음 대기 타이머가 진짜 타이머로 남아 worker를 붙잡지 않게 한다
+    setupFakeTimersPerTest({ advanceTimers: true });
+
     it('화면이 열리면 듣기를 시작하고 무료 사용자의 남은 시간을 서버 값으로 보여 준다', async () => {
       // Given
       const snapshot = createEntitlementSnapshot({ tier: 'FREE' });
@@ -191,8 +204,6 @@ describe('VoiceNoteRecordScreen', () => {
     });
 
     describe('한도를 다 쓴 녹음', () => {
-      setupFakeTimersPerTest({ advanceTimers: true });
-
       it('들은 내용 없이 한도를 다 쓰면 정리해준다고 말하지 않고 정리 버튼도 두지 않는다', async () => {
         // Given
         await renderRecordScreen(createEntitlementSnapshot({ tier: 'FREE' }));
@@ -298,8 +309,6 @@ describe('VoiceNoteRecordScreen', () => {
     });
 
     describe('시작 신호가 없는 이어 듣기', () => {
-      setupFakeTimersPerTest({ advanceTimers: true });
-
       it('인식기가 시작 신호를 주지 않으면 잠시 뒤 멈추지 않고 실패로 알린다', async () => {
         // Given
         const { speechRecognizer } = await renderRecordScreen();
@@ -332,6 +341,93 @@ describe('VoiceNoteRecordScreen', () => {
       );
       expect(speechRecognizer.stop).not.toHaveBeenCalled();
       expect(speechRecognizer.start).toHaveBeenCalledTimes(1);
+    });
+
+    describe('기기에 남는 초안', () => {
+      it('일시정지하면 그때까지 들은 문장을 바로 저장하고 녹음 파일이 오면 조각으로 더한다', async () => {
+        // Given
+        const { speechRecognizer, di, files } = await renderRecordScreen();
+        const uri = files.addFile(RECORDING_DIRECTORY, 'recording_a.wav');
+        await act(async () => speechRecognizer.emit({ type: 'recording-started', uri }));
+        await say(speechRecognizer, '첫 문장.');
+
+        // When
+        await fireEvent.press(screen.getByTestId('voice-note-pause'));
+
+        // Then
+        const [paused] = di.voiceNoteDraftRepository.findAll(ACCOUNT_ID);
+        expect(paused?.sentences).toHaveLength(1);
+        expect(paused?.recordings).toHaveLength(0);
+
+        // When
+        await act(async () => speechRecognizer.emit({ type: 'recording-saved', uri }));
+        await act(async () => speechRecognizer.emit({ type: 'end' }));
+        await fireEvent.press(screen.getByTestId('voice-note-summarize'));
+
+        // Then
+        await waitFor(() => expect(router.replace).toHaveBeenCalledTimes(1));
+        const [saved] = di.voiceNoteDraftRepository.findAll(ACCOUNT_ID);
+        expect(saved?.sentences).toHaveLength(1);
+        expect(saved?.recordings).toHaveLength(1);
+      });
+
+      it('이어 들은 뒤 끝내면 두 구간의 문장과 녹음 조각을 한 초안에 남기고 그 초안으로 넘긴다', async () => {
+        // Given
+        const { speechRecognizer, di, files } = await renderRecordScreen();
+        const firstUri = files.addFile(RECORDING_DIRECTORY, 'recording_a.wav');
+        const secondUri = files.addFile(RECORDING_DIRECTORY, 'recording_b.wav');
+        await act(async () => speechRecognizer.emit({ type: 'recording-started', uri: firstUri }));
+        await say(speechRecognizer, '첫 문장.');
+        await fireEvent.press(screen.getByTestId('voice-note-pause'));
+        await act(async () => speechRecognizer.emit({ type: 'recording-saved', uri: firstUri }));
+        await act(async () => speechRecognizer.emit({ type: 'end' }));
+        await fireEvent.press(screen.getByTestId('voice-note-resume'));
+        await waitFor(() => expect(speechRecognizer.start).toHaveBeenCalledTimes(2));
+        await act(async () => speechRecognizer.emit({ type: 'start' }));
+        await act(async () => speechRecognizer.emit({ type: 'recording-started', uri: secondUri }));
+        await say(speechRecognizer, '둘째 문장.');
+
+        // When
+        await fireEvent.press(screen.getByTestId('voice-note-finish'));
+        await act(async () => speechRecognizer.emit({ type: 'recording-saved', uri: secondUri }));
+        await act(async () => speechRecognizer.emit({ type: 'end' }));
+
+        // Then
+        await waitFor(() => expect(router.replace).toHaveBeenCalledTimes(1));
+        const drafts = di.voiceNoteDraftRepository.findAll(ACCOUNT_ID);
+        expect(drafts).toHaveLength(1);
+        expect(drafts[0]?.sentences.map(({ text }) => text)).toEqual(['첫 문장.', '둘째 문장.']);
+        expect(drafts[0]?.recordings).toHaveLength(2);
+        expect(router.replace).toHaveBeenCalledWith({
+          pathname: '/voice-notes/[draftId]',
+          params: { draftId: drafts[0]?.draftId },
+        });
+      });
+
+      it('시작·이어 듣기·끝내기마다 분석 이벤트를 한 번씩 보낸다', async () => {
+        // Given
+        const { speechRecognizer, analytics } = await renderRecordScreen();
+        await say(speechRecognizer, '첫 문장.');
+        await fireEvent.press(screen.getByTestId('voice-note-pause'));
+        await act(async () => speechRecognizer.emit({ type: 'end' }));
+        await fireEvent.press(screen.getByTestId('voice-note-resume'));
+        await waitFor(() => expect(speechRecognizer.start).toHaveBeenCalledTimes(2));
+        await act(async () => speechRecognizer.emit({ type: 'start' }));
+
+        // When
+        await fireEvent.press(screen.getByTestId('voice-note-finish'));
+        await act(async () => speechRecognizer.emit({ type: 'end' }));
+        await waitFor(() => expect(router.replace).toHaveBeenCalledTimes(1));
+
+        // Then
+        expect(countEvents(analytics, 'voice_capture_started')).toBe(1);
+        expect(countEvents(analytics, 'voice_capture_resumed')).toBe(1);
+        expect(countEvents(analytics, 'voice_capture_finished')).toBe(1);
+        expect(analytics.trackEvent).toHaveBeenCalledWith(
+          'voice_capture_finished',
+          expect.objectContaining({ mode: 'note', outcome: 'completed', pause_count: 1 }),
+        );
+      });
     });
   });
 });
