@@ -155,7 +155,7 @@ function TodoCreateForm({
   onExit,
   onMemoChanged,
 }: TodoCreateFormProps) {
-  const { t } = useTranslation('todo');
+  const { t } = useTranslation(['todo', 'common']);
   const { t: tVoice } = useTranslation('voice');
   const reportUnexpectedError = useReportUnexpectedError('todo');
   const confirmDialog = useConfirmDialog();
@@ -253,7 +253,7 @@ function TodoCreateForm({
     const shouldDiscard = await confirmDialog.openAsync({
       title: tVoice('review.leaveTitle'),
       description: tVoice(isCharged ? 'review.leaveDescriptionCharged' : 'review.leaveDescription'),
-      confirmLabel: tVoice('review.leaveConfirm'),
+      confirmLabel: t('common:actions.close'),
       cancelLabel: tVoice('review.leaveCancel'),
     });
     if (shouldDiscard) {

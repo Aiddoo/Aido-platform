@@ -188,7 +188,6 @@
     "offline": "The import continues when you're back online",
     "paused": "Paused for now. Try again, or reopen the app to continue",
     "pausedPermission": "Paused because calendar access is off. Turn it back on in Settings to continue",
-    "retry": "Try again",
     "notOnThisDevice": "Another device is importing this. Finish it there or stop it here",
     "cancel": "Stop import",
     "cancelConfirmTitle": "Stop this import?",

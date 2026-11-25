@@ -482,7 +482,7 @@ function SubmitButton({
   isSubmitting: boolean;
   onSubmit: () => Promise<void>;
 }) {
-  const { t } = useTranslation('todoComment');
+  const { t } = useTranslation(['todoComment', 'common']);
   const fontScaledSize = useFontScaledSize();
   const { control } = useTodoCommentForm();
   const hasContent = useWatch({
@@ -504,7 +504,7 @@ function SubmitButton({
       onPress={() => {
         onSubmit().catch(noop);
       }}
-      accessibilityLabel={mode.type === 'edit' ? t('actions.save') : t('form.post')}
+      accessibilityLabel={mode.type === 'edit' ? t('common:actions.save') : t('form.post')}
     >
       <SendIcon
         width={fontScaledSize(SEND_ICON_SIZE)}

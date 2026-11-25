@@ -121,9 +121,9 @@ describe('TodoCreateBottomSheet', () => {
       await fireEvent(screen.getByPlaceholderText(PLACEHOLDER), 'submitEditing');
 
       // Then
-      expect(await screen.findAllByText('할 일을 추가했어요!')).not.toHaveLength(0);
+      expect(await screen.findAllByText('할 일을 추가했어요')).not.toHaveLength(0);
       expect(
-        within(screen.getByTestId('sheet-route')).queryAllByText('할 일을 추가했어요!'),
+        within(screen.getByTestId('sheet-route')).queryAllByText('할 일을 추가했어요'),
       ).toEqual([]);
     });
   });

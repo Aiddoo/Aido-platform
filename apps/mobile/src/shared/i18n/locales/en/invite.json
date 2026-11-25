@@ -2,7 +2,7 @@
   "codeEntry": {
     "title": "Enter invite code",
     "headline": "Enter the invite code\nyour friend sent you",
-    "description": "It's 6 characters (letters and numbers), without look-alikes like 0, O, 1, I, or L",
+    "description": "It's {{count}} characters (letters and numbers), without look-alikes like 0, O, 1, I, or L",
     "inputLabel": "Invite code",
     "submit": "Continue",
     "retry": "Check again",
@@ -29,7 +29,7 @@
       "inviterReward": "When you complete to-dos on {{activeDays}} days, {{name}} gets {{days}} days of Premium too"
     },
     "signUp": "Join and become friends",
-    "login": "I have an account · Log in",
+    "login": "I have an account · Sign in",
     "unnamedInviter": "Your friend",
     "existingAccountNote": "You already use Aido, so you'll become friends right away. Premium rewards go to friends who just joined",
     "redeemWithReward_one": "Become friends and get {{count}} day of Premium",
@@ -57,7 +57,7 @@
     "enterCode": "Enter code instead"
   },
   "errors": {
-    "invalidCode": "Invite codes are 6 characters (letters and numbers)",
+    "invalidCode": "Invite codes are {{count}} characters (letters and numbers)",
     "offline": "You can check the invite code once you're online"
   },
   "myInvite": {
@@ -144,8 +144,8 @@
     "emptyWaitingTitle": "No friends waiting for a paw print",
     "emptyWaitingDescription": "Friends show up here while they work toward a paw print",
     "unavailable": "You'll see the friends you invited when invites are back",
-    "waiting_one": "Off to a good start! {{count}} more day of to-dos to get a paw print",
-    "waiting_other": "Off to a good start! {{count}} more days of to-dos to get a paw print",
+    "waiting_one": "Off to a good start. {{count}} more day of to-dos to get a paw print",
+    "waiting_other": "Off to a good start. {{count}} more days of to-dos to get a paw print",
     "waitingNotStarted_one": "Completes to-dos on {{count}} day to get you a paw print",
     "waitingNotStarted_other": "Completes to-dos on {{count}} days to get you a paw print",
     "nudgeLabel_one": "Go nudge {{name}}. One more day to a paw print",
@@ -173,7 +173,7 @@
     "haveInviteCode": "Have an invite code?",
     "inviteCodeShort": "Invite code",
     "inviteFriends": "Invite a friend",
-    "findByTag": "Find by tag",
+    "findByTag": "Find by hashtag",
     "friendsEmptyDescription": "Invite a friend with a single link.\nThey get {{days}} days of Premium as soon as they join",
     "friendLimitDescription": "You can have up to {{limit}} friends right now.\nFor each invited friend who completes to-dos on {{activeDays}} days, you can add 1 more friend",
     "growFriendLimit": "Invite a friend to add 1 more",

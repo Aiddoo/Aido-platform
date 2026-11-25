@@ -37,7 +37,7 @@ describe('CategoryEditBottomSheet', () => {
     // Given
     const { queryClient } = await renderEditSheet();
     await fireEvent.changeText(await screen.findByDisplayValue('운동'), '');
-    expect(await screen.findByText('카테고리명을 입력해주세요')).toBeTruthy();
+    expect(await screen.findByText('카테고리 이름을 입력해주세요')).toBeTruthy();
 
     // When
     await act(async () => {
@@ -50,6 +50,6 @@ describe('CategoryEditBottomSheet', () => {
     });
 
     // Then
-    expect(screen.getByText('카테고리명을 입력해주세요')).toBeTruthy();
+    expect(screen.getByText('카테고리 이름을 입력해주세요')).toBeTruthy();
   });
 });

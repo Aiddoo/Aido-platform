@@ -27,7 +27,7 @@ const NAME = '아이두';
 const EMAIL = 'user@example.com';
 const PASSWORD = 'FakePass123';
 const CODE = '123456';
-const NAME_PLACEHOLDER = '닉네임을 입력해주세요.';
+const NAME_PLACEHOLDER = '닉네임을 입력해주세요';
 const EMAIL_PLACEHOLDER = 'example@email.com';
 const PASSWORD_PLACEHOLDER = '비밀번호를 입력해주세요';
 const CONFIRM_PLACEHOLDER = '비밀번호를 다시 입력해주세요';
@@ -356,7 +356,7 @@ describe('회원가입 화면', () => {
       expect(await screen.findByText(CODE_SENT_TO)).toBeTruthy();
       expect(
         await screen.findAllByText(
-          '가입은 됐지만 인증 메일을 보내지 못했어요. 잠시 후 다시 보내기를 눌러주세요',
+          '가입은 됐지만 인증 메일을 보내지 못했어요. 잠시 뒤 다시 보내기를 눌러주세요',
         ),
       ).toHaveLength(1);
     });

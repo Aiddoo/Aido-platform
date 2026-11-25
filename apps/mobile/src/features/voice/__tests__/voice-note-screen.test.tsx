@@ -140,7 +140,7 @@ describe('VoiceNoteScreen', () => {
       // Then
       expect(button).toBeOnTheScreen();
       expect(screen.getByTestId('voice-note-digest-cost')).toHaveTextContent(
-        '1회 사용 · 이번 달 3회 남음',
+        '1번 사용 · 이번 달 3번 남음',
       );
     });
 

@@ -21,7 +21,7 @@ const TodoCommentDeleteContext = createContext<ConfirmTodoCommentDelete | null>(
  * 사라지므로 행보다 오래 사는 세션이 띄워, 요청하는 동안 진행 중으로 남고 실패하면 행이 돌아온 뒤에도 남는다
  */
 export function TodoCommentDeleteProvider({ children }: PropsWithChildren) {
-  const { t } = useTranslation('todoComment');
+  const { t } = useTranslation(['todoComment', 'common']);
   const [todoId] = useTodoId();
   const confirmDialog = useConfirmDialog();
   const { reset, getValues } = useTodoCommentForm();
@@ -42,9 +42,9 @@ export function TodoCommentDeleteProvider({ children }: PropsWithChildren) {
           () => t('deleteConfirm.tombstoneDescription'),
         )
         .otherwise(() => t('deleteConfirm.description')),
-      confirmLabel: t('deleteConfirm.confirm'),
+      confirmLabel: t('common:actions.delete'),
       confirmColor: 'danger',
-      cancelLabel: t('actions.cancel'),
+      cancelLabel: t('common:actions.cancel'),
       onConfirm: async () => {
         // 답글이나 수정 대상으로 고른 글을 지우면 작성기가 지운 글에 보내지 않게 비운다
         if (findComposerTarget(getValues('mode'))?.id === comment.id) {

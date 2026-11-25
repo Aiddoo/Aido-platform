@@ -105,14 +105,14 @@ function PremiumSuggestionEntry({ shouldShowHint }: { shouldShowHint: boolean })
   });
 
   const label = match(view.state)
-    .with('HAS_SUGGESTIONS', () => t('todo:feed.suggestionsArrived', { count: view.count }))
-    .with('ANALYZING', () => t('todo:feed.suggestion.analyzing'))
-    .with('DONE_FOR_TODAY', () => t('todo:feed.suggestion.doneForToday'))
-    .with('NO_PATTERN_FOUND', () => t('todo:feed.suggestion.noPatternFound'))
-    .with('UNAVAILABLE_TODAY', () => t('todo:feed.suggestion.unavailableToday'))
+    .with('HAS_SUGGESTIONS', () => t('ai:suggestions.status.hasSuggestions', { count: view.count }))
+    .with('ANALYZING', () => t('ai:suggestions.status.analyzing'))
+    .with('DONE_FOR_TODAY', () => t('ai:suggestions.status.doneForToday'))
+    .with('NO_PATTERN_FOUND', () => t('ai:suggestions.status.noPatternFound'))
+    .with('UNAVAILABLE_TODAY', () => t('ai:suggestions.status.unavailableToday'))
     .with('NEEDS_MORE_TODOS', () => t('todo:feed.suggestion.needsMoreTodos'))
     .with('NEEDS_AI_CONSENT', () => t('todo:feed.suggestion.needsAiConsent'))
-    .with('WAITING_FOR_NEXT_RUN', () => t('todo:feed.suggestion.waitingForNextRun'))
+    .with('WAITING_FOR_NEXT_RUN', () => t('ai:suggestions.status.waitingForNextRun'))
     .exhaustive();
 
   return (

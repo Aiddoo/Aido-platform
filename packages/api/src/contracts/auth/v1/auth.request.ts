@@ -3,6 +3,7 @@ import { z } from "zod";
 import { entityIdSchema, entityIdSchemaWithMessage } from "../../../common/entity-id.js";
 import {
   DEVICE_TYPES,
+  EMAIL_MAX_LENGTH,
   OAUTH_MODES,
   OAUTH_PROVIDERS,
   PASSWORD_RULES,
@@ -17,7 +18,7 @@ export const emailSchema = z
   .trim()
   .toLowerCase()
   .pipe(z.email("올바른 이메일 형식이 아닙니다"))
-  .pipe(z.string().max(255, "이메일은 255자 이내여야 합니다"))
+  .pipe(z.string().max(EMAIL_MAX_LENGTH, `이메일은 ${EMAIL_MAX_LENGTH}자 이내여야 합니다`))
   .meta({ description: "이메일 주소 (소문자 자동 변환, 예: user@example.com)" });
 
 export const passwordSchema = z

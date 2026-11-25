@@ -63,7 +63,7 @@ describe('QuickVoiceQuota', () => {
     await fireEvent.press(await screen.findByTestId('todo-ai-feature-tooltip'));
 
     // Then
-    expect(await screen.findByText(/이번 달 \d+회 남았어요/)).toBeTruthy();
+    expect(await screen.findByText(/이번 달 \d+번 남았어요/)).toBeTruthy();
   });
 
   describe('이번 달 한도를 다 쓴 날', () => {
@@ -84,7 +84,7 @@ describe('QuickVoiceQuota', () => {
       });
 
       // When
-      await fireEvent.press(await screen.findByRole('button', { name: /이번 달 모두 사용/ }));
+      await fireEvent.press(await screen.findByRole('button', { name: /이번 달 다 썼어요/ }));
 
       // Then
       await waitFor(() =>

@@ -32,7 +32,8 @@ function flattenKeys(catalog: Record<string, CatalogValue>, prefix = ''): Map<st
 function extractVariables(values: string[]): Set<string> {
   const variables = new Set<string>();
   for (const value of values) {
-    for (const match of value.matchAll(/\{\{(\w+)\}\}/g)) {
+    // 서식 접미사(`{{count, number}}`)는 변수 이름이 아니다. 언어마다 서식을 다르게 써도 같은 변수로 본다
+    for (const match of value.matchAll(/\{\{\s*(\w+)\s*(?:,[^}]*)?\}\}/g)) {
       const variable = match[1];
       if (variable != null) {
         variables.add(variable);

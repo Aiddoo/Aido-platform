@@ -471,7 +471,7 @@ describe('리마인드 알림 [완료]를 오프라인에서 누름', () => {
     // When
     await act(() => jest.advanceTimersByTimeAsync(TODO_REMINDER_DETAILS_WAIT_MS));
     const timedOutNotices = screen.queryAllByText(
-      '응답이 늦어지고 있어요. 잠시 후 다시 시도해주세요',
+      '응답이 늦어지고 있어요. 잠시 뒤 다시 시도해주세요',
     );
     await act(async () => lateDetails.settle());
     await act(() => jest.advanceTimersByTimeAsync(MINUTE_MS));

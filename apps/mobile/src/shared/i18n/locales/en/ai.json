@@ -54,7 +54,7 @@
       "premiumDescription": "We analyze your to-dos and turn them into reports",
       "freeDescription": "Subscribe to Premium to get weekly and monthly AI reports",
       "subscribeCta": "Subscribe to get reports",
-      "arrivalToday": "Your first {{type}} report arrives today!",
+      "arrivalToday": "Your first {{type}} report arrives today",
       "arrivalInDays_one": "Your first {{type}} report arrives in {{count}} day",
       "arrivalInDays_other": "Your first {{type}} report arrives in {{count}} days"
     },

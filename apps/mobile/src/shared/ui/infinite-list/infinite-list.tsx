@@ -107,7 +107,7 @@ export function InfiniteListFooter({
               colorClassName="text-gray-6"
             />
             <Text size="b4" shade={6}>
-              {t('infiniteList.loadMoreFailed')}
+              {t('actions.retry')}
             </Text>
           </HStack>
         </PressableFeedback>

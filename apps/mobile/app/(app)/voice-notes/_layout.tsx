@@ -3,14 +3,14 @@ import { STACK_CLOSE_ICON, useStackBackToolbar, useStackScreenOptions } from '@s
 import { Stack } from 'expo-router';
 
 export default function VoiceNotesLayout() {
-  const { t } = useTranslation('voiceNote');
+  const { t } = useTranslation(['voiceNote', 'common']);
   const screenOptions = useStackScreenOptions({ hasContentBackground: true });
   const backToolbar = useStackBackToolbar({ fallbackHref: '/memo' });
   // 화면이 뜨기 전에도 닫을 수 있게 레이아웃이 먼저 둔다. 녹음이 시작되면 화면의 툴바가 묻고 닫는 동작으로 덮는다
   const closeToolbar = useStackBackToolbar({
     fallbackHref: '/memo',
     icon: STACK_CLOSE_ICON,
-    accessibilityLabel: t('record.close'),
+    accessibilityLabel: t('common:actions.close'),
   });
 
   return (

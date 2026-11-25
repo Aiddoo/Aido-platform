@@ -18,8 +18,8 @@
   },
   "toast": {
     "purchaseSyncPending": "결제가 반영되기까지 잠시 걸릴 수 있어요",
-    "paymentPending": "결제 승인 대기 중이에요. 승인 후 자동으로 반영돼요.",
-    "restoreSuccess": "구매를 복원했어요!",
+    "paymentPending": "결제 승인 대기 중이에요. 승인되면 자동으로 반영돼요.",
+    "restoreSuccess": "구매를 복원했어요",
     "restoreEmpty": "복원할 구매 내역이 없어요",
     "restoreEmptyWithReward": "복원할 구매가 없어요. 초대 보상은 그대로 유지돼요"
   },
@@ -188,12 +188,12 @@
     },
     "description": {
       "network": "인터넷 연결을 확인하고 다시 시도해주세요",
-      "server": "잠시 후 다시 시도해주세요. 계속 안 되면 문의해주세요",
-      "store": "스토어에 연결하지 못했어요. 잠시 후 다시 시도해주세요",
+      "server": "잠시 뒤 다시 시도해주세요. 계속 안 되면 문의해주세요",
+      "store": "스토어에 연결하지 못했어요. 잠시 뒤 다시 시도해주세요",
       "purchase": "결제가 됐는데 프리미엄이 보이지 않으면 문의해주세요",
-      "restore": "잠시 후 다시 시도해주세요. 계속 안 되면 문의해주세요",
+      "restore": "잠시 뒤 다시 시도해주세요. 계속 안 되면 문의해주세요",
       "storeSetup": "스토어 연결에 문제가 있어요. 문의를 남겨주세요. 빠르게 확인할게요",
-      "storeTemporary": "스토어가 잠시 응답하지 않아요. 잠시 후 다시 시도하거나 문의를 남겨주세요"
+      "storeTemporary": "스토어가 잠시 응답하지 않아요. 잠시 뒤 다시 시도하거나 문의를 남겨주세요"
     },
     "contactSupport": "문의하기"
   },
@@ -233,9 +233,9 @@
     "aiParse": "AI 할 일 만들기",
     "aiParseHint": "말로 할 일 만들기와 메모 나누기에 함께 써요",
     "voiceNote": "말로 메모 정리",
-    "remaining": "{{amount}}회 남음",
-    "usedUpMonth": "이번 달 모두 사용",
-    "usedUpDay": "오늘 모두 사용"
+    "remaining": "{{amount}}번 남음",
+    "usedUpMonth": "이번 달 다 썼어요",
+    "usedUpDay": "오늘 다 썼어요"
   },
   "tier": {
     "admin": "어드민",
@@ -301,7 +301,7 @@
       },
       "voiceNote": {
         "label": "말로 메모 AI 요약",
-        "term": "녹음하면 요약과 해야 할 일을 찾아줘요. 녹음 파일은 기기에만 남아요."
+        "term": "녹음하면 요약과 해야 할 일을 찾아줘요. 녹음 파일은 아이두 서버로 보내지 않아요."
       },
       "friend": {
         "label": "친구",

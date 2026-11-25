@@ -55,7 +55,7 @@ describe('문의 접수', () => {
 
     // Then
     expect(httpClient.post).toHaveBeenCalledWith('v1/inquiries', input);
-    expect(await screen.findAllByText('문의를 접수했어요.')).not.toHaveLength(0);
+    expect(await screen.findAllByText('문의를 접수했어요')).not.toHaveLength(0);
     expect(router.back).not.toHaveBeenCalled();
   });
 

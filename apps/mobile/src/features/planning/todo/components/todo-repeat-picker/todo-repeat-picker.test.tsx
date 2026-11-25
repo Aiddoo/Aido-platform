@@ -99,7 +99,7 @@ describe('TodoRepeatPicker', () => {
     await confirm();
 
     // Then
-    expect(screen.getByText('11월 5일부터 10회')).toBeOnTheScreen();
+    expect(screen.getByText('11월 5일부터 10번')).toBeOnTheScreen();
     expect(onChange).toHaveBeenCalledWith({
       startDate: START_DATE,
       repeat: counted,

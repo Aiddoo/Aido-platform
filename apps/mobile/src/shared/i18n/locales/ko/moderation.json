@@ -21,7 +21,7 @@
     "notice": "신고 내용은 운영팀만 보고, 상대에게 알리지 않아요.",
     "submit": "신고하기",
     "toast": "신고했어요",
-    "toastDescription": "검토 후 조치할게요",
+    "toastDescription": "검토한 뒤 조치할게요",
     "toastBlockAction": "차단하기"
   },
   "block": {

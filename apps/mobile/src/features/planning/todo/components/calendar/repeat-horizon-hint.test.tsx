@@ -1,8 +1,10 @@
 import '@src/shared/i18n/init';
+import { TODO_SERIES_LIMITS } from '@aido/api/vocabulary';
 import { ok, unwrap } from '@src/core/errors/result';
 import { createCoachmarkRecords } from '@src/features/device/coachmark/__tests__/coachmark.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
+import { i18n } from '@src/shared/i18n';
 import {
   createAnalyticsStub,
   createHttpClientStub,
@@ -168,5 +170,19 @@ describe('RepeatHorizonHint', () => {
     expect(
       screen.getByText('반복이 끝난 건 아니에요. 날짜가 가까워지면 자동으로 생겨요.'),
     ).toBeTruthy();
+  });
+
+  // 문구는 읽기 쉬운 "3개월"을 그대로 적는다. 서버가 보여 주는 기간이 바뀌면 이 테스트가 깨져 문구를 함께 고치게 한다
+  it('보이는 기간은 90일이고 문구는 3개월이다. 값을 바꾸면 이 문구도 함께 바꾼다', () => {
+    // When
+    const ko = i18n.getFixedT('ko', 'todo');
+    const en = i18n.getFixedT('en', 'todo');
+
+    // Then
+    expect(TODO_SERIES_LIMITS.VISIBLE_AHEAD_DAYS).toBe(90);
+    expect(ko('repeat.horizonHint')).toContain('3개월');
+    expect(ko('repeat.horizonInfo.title')).toContain('3개월');
+    expect(en('repeat.horizonHint')).toContain('3 months');
+    expect(en('repeat.horizonInfo.title')).toContain('3 months');
   });
 });

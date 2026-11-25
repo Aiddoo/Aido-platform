@@ -50,11 +50,11 @@
     },
     "empty": {
       "prompt": "Search for friends by name or hashtag",
-      "tagHint": "Know the exact 8-character hashtag? Add them directly",
+      "tagHint": "Know the exact {{count}}-character hashtag? Add them directly",
       "addByTag": "Add by hashtag",
       "noResults": "No results for '{{query}}'"
     },
-    "loadError": "Could not load search results"
+    "loadError": "Couldn't load search results"
   },
   "friendStrip": {
     "me": "Me",
@@ -62,7 +62,6 @@
     "friendLabel": "View {{name}}'s to-dos",
     "findFriends": "Friends",
     "findFriendsLabel": "Find friends",
-    "loadMoreFailed": "Try again",
     "loadMoreFailedLabel": "Couldn't load more friends. Try again",
     "emptyInvite": "Invite",
     "emptyInviteHint": "Invite friends to see and cheer on each other's to-dos",

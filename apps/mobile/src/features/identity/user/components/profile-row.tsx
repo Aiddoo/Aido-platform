@@ -1,3 +1,4 @@
+import { USER_TAG_LENGTH } from '@aido/api/vocabulary';
 import { useCopyToClipboard } from '@src/shared/hooks/use-copy-to-clipboard';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
@@ -42,7 +43,7 @@ export function ProfileRow({ tierChip }: ProfileRowProps) {
   const handleCopyUserTag = () =>
     copy(user.userTag, {
       successMessage: t('profile.tagCopied'),
-      successDescription: t('profile.tagCopiedDescription'),
+      successDescription: t('profile.tagCopiedDescription', { count: USER_TAG_LENGTH }),
       failureMessage: t('profile.tagCopyFailed'),
       failureLogEvent: USER_LOG_EVENT.TAG_COPY_FAILED,
     });

@@ -66,7 +66,7 @@ export function useEnsureMicrophonePermission() {
       const shouldOpenSettings = await confirmDialog.openAsync({
         title: copy.title,
         description: copy.message,
-        cancelLabel: t('common:permissions.cancel'),
+        cancelLabel: t('common:actions.cancel'),
         confirmLabel: t('common:permissions.openSettings'),
       });
       if (shouldOpenSettings) {

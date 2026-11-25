@@ -16,7 +16,7 @@
     "viewMore_one": "View {{formatted}} more reply",
     "viewMore_other": "View {{formatted}} more replies",
     "hide": "Hide replies",
-    "retry": "Couldn't load replies. Tap to retry"
+    "retry": "Couldn't load replies. Tap to try again"
   },
   "sort": {
     "label": "Comment sort order, {{value}}",
@@ -24,8 +24,8 @@
     "latest": "Newest"
   },
   "input": {
-    "placeholder": "Add a comment...",
-    "replyPlaceholder": "Add a reply...",
+    "placeholder": "Add a comment",
+    "replyPlaceholder": "Add a reply",
     "editPlaceholder": "Edit your comment",
     "replyingTo": "Replying to {{name}}",
     "editing": "Editing comment",
@@ -34,13 +34,9 @@
   "actions": {
     "reply": "Reply",
     "replyTo": "Reply to {{name}}",
-    "edit": "Edit",
     "copy": "Copy",
-    "delete": "Delete",
     "report": "Report",
     "block": "Block {{name}}",
-    "save": "Save",
-    "cancel": "Cancel",
     "closeComposer": "Close composer",
     "likeWithCount": "Like, {{count}} likes",
     "unlikeWithCount": "Unlike, {{count}} likes",
@@ -49,7 +45,7 @@
   },
   "form": {
     "addToChain": "Add another comment",
-    "chainPlaceholder": "Continue writing...",
+    "chainPlaceholder": "Continue writing",
     "post": "Post",
     "remove": "Remove",
     "removeFromChain": "Remove comment {{index}} from the thread",
@@ -57,10 +53,9 @@
   },
   "deleteConfirm": {
     "title": "Delete this comment?",
-    "description": "You can't undo this.",
+    "description": "This can't be undone.",
     "tombstoneDescription": "Replies stay, and this comment will show as \"This comment was deleted\".",
-    "othersDescription": "This comment is on your to-do, so you can delete it. It disappears for everyone and can't be undone.",
-    "confirm": "Delete"
+    "othersDescription": "This comment is on your to-do, so you can delete it. It disappears for everyone and can't be undone."
   },
   "hint": {
     "doubleTap": "Double-tap a comment to leave a heart 🐾",

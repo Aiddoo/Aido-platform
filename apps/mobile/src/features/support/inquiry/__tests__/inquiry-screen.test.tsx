@@ -138,7 +138,7 @@ describe('문의 화면', () => {
       category: INQUIRY_CATEGORY.FEATURE_REQUEST,
       content: CONTENT,
     });
-    expect(await screen.findAllByText('문의를 접수했어요.')).not.toHaveLength(0);
+    expect(await screen.findAllByText('문의를 접수했어요')).not.toHaveLength(0);
     expect(
       analytics.trackEvent.mock.calls.filter(([name]) => name === 'support_inquiry_submitted'),
     ).toEqual([['support_inquiry_submitted', { category: INQUIRY_CATEGORY.FEATURE_REQUEST }]]);
@@ -188,7 +188,7 @@ describe('문의 화면', () => {
     });
 
     // Then
-    expect(await screen.findAllByText('문의를 접수했어요.')).not.toHaveLength(0);
+    expect(await screen.findAllByText('문의를 접수했어요')).not.toHaveLength(0);
     expect(router.back).not.toHaveBeenCalled();
   });
 

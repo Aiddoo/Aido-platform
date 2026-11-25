@@ -45,7 +45,7 @@ async function renderMemoCreate(
 }
 
 async function typeContent(content: string) {
-  const input = await screen.findByPlaceholderText('아이디어를 자유롭게 적어보세요...');
+  const input = await screen.findByPlaceholderText('아이디어를 자유롭게 적어보세요');
   await act(async () => {
     await fireEvent.changeText(input, content);
   });
@@ -304,7 +304,7 @@ describe('메모 만들기 화면', () => {
         .mockResolvedValueOnce(ok(createMemoMutationResponseDto()));
       await typeContent('새 메모');
       await pressToolbar('저장');
-      await screen.findAllByText('응답이 늦어지고 있어요. 잠시 후 다시 시도해주세요');
+      await screen.findAllByText('응답이 늦어지고 있어요. 잠시 뒤 다시 시도해주세요');
       // 연타 가드(600ms)가 지난 뒤의 두 번째 저장이다
       await act(async () => {
         jest.advanceTimersByTime(1000);

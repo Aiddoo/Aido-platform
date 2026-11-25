@@ -15,7 +15,7 @@
     "title": "길게 말하면 AI가 할 일로 나눠요",
     "description": "마이크를 누르고 하고 싶은 일을 말해보세요. 날짜·시간·반복까지 알아서 채워드려요.",
     "examples": "\"매일\", \"월수금\", \"다음 주 내내\", \"나만 보게\"도 알아들어요.",
-    "remaining": "이번 달 {{amount}}회 남았어요",
+    "remaining": "이번 달 {{amount}}번 남았어요",
     "notCharged": "잘 안 되면 횟수는 차감되지 않아요",
     "typeStillFree": "직접 입력은 계속 무료예요",
     "usedUpChipHint": "이번 달 AI 사용량과 프리미엄 안내를 열어요"
@@ -29,7 +29,6 @@
   "listening": {
     "languageChangeFailed": "언어를 바꾸지 못했어요. 듣던 언어로 이어 갈게요.",
     "prompt": "말해보세요",
-    "cancel": "취소",
     "done": "다 말했어요",
     "resume": "이어서 말하기",
     "pausedHint": "잠시 멈췄어요. 이어서 말할까요?",
@@ -45,7 +44,6 @@
     "leaveTitle": "이 계획을 닫을까요?",
     "leaveDescription": "닫으면 이 계획은 다시 볼 수 없어요.",
     "leaveDescriptionCharged": "닫으면 이 계획은 다시 볼 수 없고, 쓴 횟수도 돌아오지 않아요.",
-    "leaveConfirm": "닫기",
     "leaveCancel": "계속 고르기"
   },
   "failed": {

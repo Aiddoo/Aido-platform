@@ -101,7 +101,7 @@ export function TodoImportProgress() {
           title={t('progress.paused')}
           action={
             <Button size="small" variant="weak" display="inline" onPress={handleRetryPress}>
-              {t('progress.retry')}
+              {t('common:actions.retry')}
             </Button>
           }
         />

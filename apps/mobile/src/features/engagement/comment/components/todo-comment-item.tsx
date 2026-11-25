@@ -415,7 +415,7 @@ interface ActionMenuProps {
 
 /** ⋯와 길게 누르기가 같은 메뉴를 연다. 내 글은 수정·복사·삭제, 남의 글은 복사·신고·차단이다 */
 function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) {
-  const { t } = useTranslation(['todoComment', 'moderation']);
+  const { t } = useTranslation(['todoComment', 'moderation', 'common']);
   const fontScaledSize = useFontScaledSize();
   const router = useRouter();
   const push = useSingleTap(router.push);
@@ -465,7 +465,7 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
         {TodoCommentPolicy.canEditComment(comment) && (
           <MenuActionItem
             Icon={EditIcon}
-            title={t('actions.edit')}
+            title={t('common:actions.edit')}
             testID="todo-comment-edit"
             onPress={() => {
               reset(toEditFormValues(comment));
@@ -485,7 +485,7 @@ function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) 
         {TodoCommentPolicy.canDeleteComment(comment) && (
           <MenuActionItem
             Icon={TrashIcon}
-            title={t('actions.delete')}
+            title={t('common:actions.delete')}
             variant="danger"
             testID="todo-comment-delete"
             onPress={() => confirmDelete(comment)}

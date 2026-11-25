@@ -185,7 +185,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
         button={
           <HStack gap={8}>
             <Result.Button isDisabled={logout.isPending} onPress={handleRetry}>
-              {t('appError.retry')}
+              {t('actions.retry')}
             </Result.Button>
             <Result.Button
               color="primary"

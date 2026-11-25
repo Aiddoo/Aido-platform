@@ -15,7 +15,7 @@ interface ProfileImageBottomSheetProps {
 }
 
 export function ProfileImageBottomSheet({ isOpen, onOpenChange }: ProfileImageBottomSheetProps) {
-  const { t } = useTranslation('user');
+  const { t } = useTranslation(['user', 'common']);
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const updateProfileMutation = useMutation(useUpdateProfileMutationOptions());
   // 고르기 전에는 저장된 사진을 보여 준다. 서버 값을 state로 복사하지 않고, 지우기는 따로 저장한다
@@ -62,7 +62,7 @@ export function ProfileImageBottomSheet({ isOpen, onOpenChange }: ProfileImageBo
             isLoading={updateProfileMutation.isPending}
             className="flex-1"
           >
-            {t('profile.imageSheet.save')}
+            {t('common:actions.save')}
           </Button>
         </HStack>
       }

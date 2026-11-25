@@ -1,3 +1,4 @@
+import { USER_PROFILE_LIMITS } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SERVER_VALUES_RESET_OPTIONS } from '@src/shared/constants/server-values-reset-options';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -81,7 +82,9 @@ export function EditNameForm({ title }: EditNameFormProps) {
               isInvalid={error != null}
               errorMessage={match(error)
                 .with(P.nullish, () => undefined)
-                .with({ type: 'too_big' }, () => t('editName.maxLength'))
+                .with({ type: 'too_big' }, () =>
+                  t('editName.maxLength', { count: USER_PROFILE_LIMITS.NAME_MAX_LENGTH }),
+                )
                 .otherwise(() => t('editName.required'))}
               onSubmitEditing={() => {
                 if (canSubmit) {

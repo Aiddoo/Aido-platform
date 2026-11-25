@@ -1,6 +1,6 @@
 {
   "toast": {
-    "todoAdded": "할 일을 추가했어요!",
+    "todoAdded": "할 일을 추가했어요",
     "todoUpdated": "할 일을 수정했어요",
     "todoDeleted": "할 일을 삭제했어요",
     "dateChanged": "날짜를 변경했어요",
@@ -11,19 +11,19 @@
     "categoryDeleted": "카테고리를 삭제했어요",
     "categoryTodosMoved": "할 일 {{count}}개를 ‘{{name}}’ 카테고리로 옮겼어요",
     "categoryDeletedWithTodos": "‘{{name}}’ 카테고리와 할 일 {{count}}개를 삭제했어요",
-    "recurringAdded": "반복 할 일을 추가했어요!",
+    "recurringAdded": "반복 할 일을 추가했어요",
     "recurringCategoryLimit": "반복 할 일을 만들면 카테고리 한도를 넘어요. 기간을 줄여주세요.",
     "categoryLimitReached": "이 카테고리에 할 일을 더 추가할 수 없어요. 완료하거나 다른 카테고리로 옮겨주세요.",
     "subTodoAddFailed": "하위 할 일을 추가하지 못했어요",
     "subTodoUpdateFailed": "하위 할 일을 수정하지 못했어요",
     "subTodoDeleteFailed": "하위 할 일을 삭제하지 못했어요",
-    "nudgeSent": "콕 찔렀어요!",
-    "remindNudgeSent": "함께 시작하자고 콕 찔렀어요!",
-    "addFailedRetry": "잠시 후 다시 추가해보세요",
-    "updateFailedRetry": "잠시 후 다시 수정해보세요",
-    "deleteFailedRetry": "잠시 후 다시 삭제해보세요",
-    "changeFailedRetry": "잠시 후 다시 변경해보세요",
-    "retryLater": "잠시 후 다시 시도해주세요",
+    "nudgeSent": "콕 찔렀어요",
+    "remindNudgeSent": "함께 시작하자고 콕 찔렀어요",
+    "addFailedRetry": "잠시 뒤 다시 추가해보세요",
+    "updateFailedRetry": "잠시 뒤 다시 수정해보세요",
+    "deleteFailedRetry": "잠시 뒤 다시 삭제해보세요",
+    "changeFailedRetry": "잠시 뒤 다시 변경해보세요",
+    "retryLater": "잠시 뒤 다시 시도해주세요",
     "seriesStopped": "반복을 끝냈어요",
     "series": {
       "not-found": {
@@ -61,7 +61,7 @@
     }
   },
   "form": {
-    "nudgeMessageMax": "메시지는 {{count}}자까지 입력할 수 있어요"
+    "nudgeMessageMax": "메시지는 {{count}}자 이내로 입력해주세요"
   },
   "picker": {
     "dateTitle": "날짜",
@@ -75,7 +75,7 @@
     "repeatPeriod": "반복 기간",
     "selectPeriod": "기간을 선택해주세요",
     "periodNever": "{{date}}부터 계속",
-    "periodCount": "{{date}}부터 {{count}}회",
+    "periodCount": "{{date}}부터 {{count}}번",
     "repeatDaily": "매일 반복",
     "repeatWeekdays": "주중 반복",
     "repeatWeekends": "주말 반복",
@@ -100,7 +100,7 @@
       "BIWEEKLY": "격주 {{days}}",
       "MONTHLY": "매월 {{day}}일",
       "untilSuffix": "{{date}}까지",
-      "countSuffix": "{{count}}회"
+      "countSuffix": "{{count}}번"
     },
     "spokenRule": "{{rule}} 반복",
     "monthEndHint": "그 날이 없는 달은 마지막 날에 반복해요",
@@ -150,14 +150,14 @@
   "actions": {
     "edit": "수정하기",
     "delete": "삭제하기",
-    "deleting": "삭제 중...",
+    "deleting": "삭제 중…",
     "changeDate": "날짜 변경",
     "changeTime": "시간 변경",
     "changeCategory": "카테고리 변경",
     "doToday": "오늘 하기",
     "doTomorrow": "내일 하기",
     "changeSubmit": "변경하기",
-    "more": "더보기",
+    "more": "더 보기",
     "complete": "완료하기",
     "uncomplete": "완료 취소",
     "stopRepeat": "반복 끝내기"
@@ -180,7 +180,7 @@
     "prompt": "친구에게 <highlight>콕</highlight> 응원을 보내볼까요?",
     "hintPrefix": "오늘을 함께하고 싶다면",
     "hintSuffix": "을 눌러 마음을 전해보세요",
-    "remaining": "오늘 {{count}}회 남았어요",
+    "remaining": "오늘 {{count}}번 남았어요",
     "sheetTitle": "친구에게 콕 응원 보내기",
     "whenTodo": "이 할 일을 함께 응원해요: {{title}}",
     "placeholder": "(선택) 네 속도로 해도 괜찮아. 응원할게!",
@@ -228,19 +228,13 @@
     "loadFailed": "캘린더 표시를 업데이트하지 못했어요"
   },
   "feed": {
-    "loading": "불러오는 중...",
-    "suggestionsLoading": "제안을 불러오는 중...",
-    "suggestionsArrived": "자주 하는 할 일 {{count}}개를 찾았어요",
+    "loading": "불러오는 중…",
+    "suggestionsLoading": "제안을 불러오는 중…",
     "suggestionsRetry": "AI 제안을 불러오지 못했어요. 눌러서 다시 시도해주세요",
     "suggestionFree": "자주 하는 일을 반복으로 만들어요",
     "suggestion": {
-      "analyzing": "최근 할 일을 살펴보고 있어요",
-      "doneForToday": "오늘 제안을 모두 정리했어요",
-      "noPatternFound": "아직 반복할 만한 할 일이 없어요",
-      "unavailableToday": "오늘은 분석하지 못했어요",
       "needsMoreTodos": "할 일을 적으면 자주 하는 일을 찾아요",
-      "needsAiConsent": "AI 제안을 받으려면 동의가 필요해요",
-      "waitingForNextRun": "다음 분석까지 기다리고 있어요"
+      "needsAiConsent": "AI 제안을 받으려면 동의가 필요해요"
     }
   },
   "activation": {

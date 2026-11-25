@@ -35,7 +35,7 @@ interface VoiceNoteToolbarProps {
 }
 
 export function VoiceNoteToolbar({ onMemoChanged }: VoiceNoteToolbarProps) {
-  const { t } = useTranslation('voiceNote');
+  const { t } = useTranslation(['voiceNote', 'common']);
   const { trackEvent } = useTrack();
   const accountId = useSuspenseMyAccountId();
   const [draftId] = useVoiceNoteDraftId();
@@ -52,9 +52,9 @@ export function VoiceNoteToolbar({ onMemoChanged }: VoiceNoteToolbarProps) {
     const isConfirmed = await confirmDialog.openAsync({
       title: t('result.deleteTitle'),
       description: t('result.deleteDescription'),
-      confirmLabel: t('result.deleteConfirm'),
+      confirmLabel: t('common:actions.delete'),
       confirmColor: 'danger',
-      cancelLabel: t('result.deleteCancel'),
+      cancelLabel: t('common:actions.cancel'),
     });
     if (isConfirmed) {
       trackEvent('voice_note_deleted', { is_digested: VoiceNotePolicy.isDigested(note) });

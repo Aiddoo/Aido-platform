@@ -1,3 +1,4 @@
+import { USER_TAG_LENGTH } from '@aido/api/vocabulary';
 import {
   USER_LIST_CONTENT_STYLE,
   UserList,
@@ -204,7 +205,7 @@ FriendSearchList.Prompt = function Prompt() {
         <Result
           icon={<SearchIllustration />}
           title={t('search.empty.prompt')}
-          description={t('search.empty.tagHint')}
+          description={t('search.empty.tagHint', { count: USER_TAG_LENGTH })}
           button={
             <Result.Button onPress={openAddFriend}>{t('search.empty.addByTag')}</Result.Button>
           }

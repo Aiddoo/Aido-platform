@@ -23,7 +23,7 @@
   "toast": {
     "purchaseSyncPending": "It may take a moment for your payment to show up",
     "paymentPending": "Payment approval is pending. It will apply automatically once approved.",
-    "restoreSuccess": "Purchases restored!",
+    "restoreSuccess": "Purchases restored",
     "restoreEmpty": "No purchases to restore",
     "restoreEmptyWithReward": "No purchases to restore. Your invite reward stays as is"
   },
@@ -220,7 +220,7 @@
     "voiceNoteTitle": "You've used all your voice notes this month",
     "nudgeTitle": "You've used all your nudges today",
     "cheerTitle": "You've used all your cheers today",
-    "friendTitle": "You've reached your friend limit",
+    "friendTitle": "You can't add more friends",
     "categoryTitle": "You can't add more categories",
     "aiReportTitle": "AI reports are a Premium feature",
     "aiReportDescription": "Get weekly and monthly AI reports.",
@@ -309,7 +309,7 @@
       },
       "voiceNote": {
         "label": "AI voice note summaries",
-        "term": "Record and get a summary and the to-dos you mentioned. Recordings stay on your device."
+        "term": "Record and get a summary and the to-dos you mentioned. Audio files aren't sent to Aido's servers."
       },
       "friend": {
         "label": "Friends",

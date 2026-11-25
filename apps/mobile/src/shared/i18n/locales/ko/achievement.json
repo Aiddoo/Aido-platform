@@ -16,7 +16,7 @@
     "statPerfect": "완벽",
     "statStreak": "연속",
     "statAverage": "평균",
-    "perfectCount": "{{count}}회",
+    "perfectCount": "{{count}}번",
     "streakWeeks": "{{count}}주",
     "eyebrow": "WEEKLY BADGE",
     "weekWithPeriod": "{{weekLabel}}({{period}})"

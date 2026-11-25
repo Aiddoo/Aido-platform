@@ -53,7 +53,7 @@
     "unreadCount": "{{count}}",
     "markAllRead": "Mark all read",
     "premiumDescription": "Subscribe to unlock AI reports and suggestions",
-    "loadError": "Could not load notifications",
+    "loadError": "Couldn't load notifications",
     "markAllReadFailed": "Couldn't mark everything as read. Please try again later"
   },
   "directions": {
@@ -62,7 +62,7 @@
   },
   "sentNudges": {
     "empty": "No nudges sent yet",
-    "loadError": "Could not load sent nudges",
+    "loadError": "Couldn't load sent nudges",
     "disabled": "Nudge replies are on their way"
   },
   "settings": {
@@ -130,7 +130,7 @@
   },
   "bell": {
     "unreadLabel": "Notifications, unread",
-    "retryLabel": "Couldn't load notifications. Retry"
+    "retryLabel": "Couldn't load notifications. Try again"
   },
   "billingReminder": {
     "label": "Trial ending reminder",

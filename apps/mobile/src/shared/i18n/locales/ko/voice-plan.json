@@ -47,15 +47,15 @@
     },
     "in-progress": {
       "title": "아직 정리하고 있어요",
-      "description": "잠시 후 다시 시도해주세요."
+      "description": "잠시 뒤 다시 시도해주세요."
     },
     "ai-unavailable": {
       "title": "지금은 정리하지 못했어요",
-      "description": "잠시 후 다시 시도해주세요."
+      "description": "잠시 뒤 다시 시도해주세요."
     },
     "unknown": {
       "title": "문제가 생겼어요",
-      "description": "잠시 후 다시 시도해주세요."
+      "description": "잠시 뒤 다시 시도해주세요."
     },
     "rejected": {
       "title": "저장할 수 없는 내용이 있어요",

@@ -110,7 +110,7 @@ describe('이름 수정 화면', () => {
     await fireEvent(screen.getByTestId('edit-name-input'), 'submitEditing');
 
     // Then
-    expect(await screen.findByText('이름은 20자까지 쓸 수 있어요')).toBeOnTheScreen();
+    expect(await screen.findByText('이름은 20자 이내로 입력해주세요')).toBeOnTheScreen();
     expect(screen.getByTestId('edit-name-submit')).toBeDisabled();
     expect(httpClient.patch).not.toHaveBeenCalled();
   });

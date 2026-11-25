@@ -1,43 +1,43 @@
 {
   "email": {
     "invalid": "Please enter a valid email address",
-    "tooLong": "Email must be 255 characters or fewer"
+    "tooLong": "Use up to {{count, number}} characters for your email"
   },
   "password": {
     "required": "Please enter your password",
-    "tooShort": "Password must be at least 8 characters",
-    "tooLong": "Password must be 72 characters or fewer",
-    "pattern": "Password must be at least 8 characters and include letters and numbers",
+    "tooShort": "Use at least {{count, number}} characters for your password",
+    "tooLong": "Use up to {{count, number}} characters for your password",
+    "pattern": "Use at least {{count, number}} characters, including letters and numbers",
     "mismatch": "Passwords don't match"
   },
   "nickname": {
     "required": "Please enter a nickname",
-    "tooLong": "Name must be 20 characters or fewer"
+    "tooLong": "Use up to {{count, number}} characters for your name"
   },
   "userTag": {
-    "length": "Hashtags are 8 characters long",
+    "length": "Hashtags are {{count, number}} characters long",
     "pattern": "Hashtags can only contain uppercase letters and numbers"
   },
   "todoTitle": {
-    "tooLong": "Titles must be 200 characters or fewer"
+    "tooLong": "Use up to {{count, number}} characters for the title"
   },
   "categoryName": {
     "required": "Please enter a category name",
-    "tooLong": "Category names must be 50 characters or fewer"
+    "tooLong": "Use up to {{count, number}} characters for the category name"
   },
   "currentPassword": {
     "required": "Please enter your current password",
     "mismatch": "Your current password doesn't match"
   },
   "inquiryContent": {
-    "tooShort": "Please enter at least 10 characters",
-    "tooLong": "Content must be 2,000 characters or fewer"
+    "tooShort": "Use at least {{count, number}} characters",
+    "tooLong": "Use up to {{count, number}} characters"
   },
   "comment": {
     "required": "Please enter a comment",
-    "tooLong": "Comments must be 500 characters or fewer"
+    "tooLong": "Use up to {{count, number}} characters for your comment"
   },
   "reportDetail": {
-    "tooLong": "Details must be 500 characters or fewer"
+    "tooLong": "Use up to {{count, number}} characters for details"
   }
 }

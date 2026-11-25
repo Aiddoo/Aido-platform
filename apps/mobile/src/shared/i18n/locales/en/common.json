@@ -74,7 +74,6 @@
     }
   },
   "infiniteList": {
-    "loadMoreFailed": "Try again",
     "loadMoreFailedLabel": "Couldn't load more. Try again"
   },
   "offlineBanner": {
@@ -89,7 +88,6 @@
     "failed": "Couldn't share"
   },
   "permissions": {
-    "cancel": "Cancel",
     "openSettings": "Open Settings",
     "microphone": {
       "title": "Microphone access needed",
@@ -129,7 +127,6 @@
   "appError": {
     "title": "Something went wrong",
     "description": "Please try again later",
-    "retry": "Try again",
     "logout": "Sign out"
   },
   "tabs": {

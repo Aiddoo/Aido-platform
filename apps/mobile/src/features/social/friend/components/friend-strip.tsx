@@ -343,7 +343,7 @@ function ListEnd({
   isFetchNextPageError: boolean;
   onRetry: () => void;
 }) {
-  const { t } = useTranslation('friend');
+  const { t } = useTranslation(['friend', 'common']);
   const fontScaledSize = useFontScaledSize();
   const router = useRouter();
   const push = useSingleTap(router.push);
@@ -364,7 +364,7 @@ function ListEnd({
                 colorClassName="text-gray-6"
               />
             }
-            label={t('friendStrip.loadMoreFailed')}
+            label={t('common:actions.retry')}
           />
         </PressableFeedback>
       </Box>

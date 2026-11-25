@@ -59,7 +59,7 @@ const MARK_HINT_HEIGHT = 124;
 
 /** 화면 전체가 녹음이라 이 컴포넌트가 곧 화면이다. 들은 글자 없이 끝나면 돌아간다 */
 export function VoiceNoteRecorder() {
-  const { t } = useTranslation('voiceNote');
+  const { t } = useTranslation(['voiceNote', 'common']);
   const isCompact = useWindowSizeClass() === 'compact';
   const toast = useAppToast();
   const reportUnexpectedError = useReportUnexpectedError('voice');
@@ -118,7 +118,7 @@ export function VoiceNoteRecorder() {
       <Stack.Toolbar placement="left">
         <Stack.Toolbar.Button
           icon={STACK_CLOSE_ICON}
-          accessibilityLabel={t('record.close')}
+          accessibilityLabel={t('common:actions.close')}
           onPress={close}
         />
       </Stack.Toolbar>
@@ -287,7 +287,7 @@ VoiceNoteRecorder.StoppedControls = function StoppedControls({
   onClose,
   onResume,
 }: VoiceNoteRecorderStoppedControlsProps) {
-  const { t } = useTranslation('voiceNote');
+  const { t } = useTranslation(['voiceNote', 'common']);
   const hasHeard = VoiceCapturePolicy.canFinish(state);
 
   return (
@@ -331,7 +331,7 @@ VoiceNoteRecorder.StoppedControls = function StoppedControls({
               onPress={onClose}
               testID="voice-note-stopped-close"
             >
-              {t('record.close')}
+              {t('common:actions.close')}
             </Button>
           )}
         </Box>

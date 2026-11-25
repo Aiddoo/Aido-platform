@@ -240,7 +240,7 @@ describe('TodoDetailRoute', () => {
 
       // Then
       expect(await screen.findByTestId('todo-comment-composer-target')).toBeOnTheScreen();
-      expect(screen.getByPlaceholderText('답글 달기…')).toBeOnTheScreen();
+      expect(screen.getByPlaceholderText('답글 달기')).toBeOnTheScreen();
 
       // When
       const [headerBack] = screen.getAllByLabelText('작성 닫기');

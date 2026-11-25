@@ -128,9 +128,9 @@ function countProgressDots() {
   return screen.root == null ? null : visit(screen.root);
 }
 
-const CALENDARS_TITLE = '가져올 캘린더를 골라 주세요';
+const CALENDARS_TITLE = '가져올 캘린더를 골라주세요';
 const CATEGORIES_TITLE = '어디에 넣을까요?';
-const OPTIONS_TITLE = '마지막으로 확인해 주세요';
+const OPTIONS_TITLE = '마지막으로 확인해주세요';
 const PERMISSION_TITLE = '캘린더 일정을 할 일로 가져올게요';
 
 async function pressNext() {
@@ -341,7 +341,7 @@ describe('캘린더 가져오기 설정 화면', () => {
 
     it('서버가 넣을 곳을 거절하면 카테고리 단계에서 그 캘린더 줄에 사유를 보이고 넣을 곳을 바꾸면 지운다', async () => {
       // Given
-      const reason = '카테고리가 삭제됐어요. 다른 카테고리를 골라 주세요';
+      const reason = '카테고리가 삭제됐어요. 다른 카테고리를 골라주세요';
       await renderSetup({
         startImport: async () =>
           fail(

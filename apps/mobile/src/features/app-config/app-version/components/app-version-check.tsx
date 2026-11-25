@@ -14,7 +14,7 @@ import { useOpenStoreListingMutationOptions } from '../queries/app-version.mutat
 import { useGetAppVersionQueryOptions } from '../queries/app-version.queries';
 
 export function AppVersionCheck() {
-  const { t } = useTranslation('appVersion');
+  const { t } = useTranslation(['appVersion', 'common']);
   const applicationMetadata = useApplicationMetadata();
   const toast = useAppToast();
   const { trackEvent } = useTrack();
@@ -56,7 +56,7 @@ export function AppVersionCheck() {
         confirmDialog.openAsync({
           title: t('latestTitle'),
           description: t('latestDescription'),
-          confirmLabel: t('confirm'),
+          confirmLabel: t('common:actions.confirm'),
         }),
       )
       .exhaustive();

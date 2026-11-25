@@ -35,7 +35,7 @@
   "withdraw": {
     "action": "탈퇴하기",
     "confirmTitle": "회원 탈퇴",
-    "confirmDescription": "탈퇴 후 {{days}}일 이내에 복구할 수 있어요.\n정말 탈퇴하시겠어요?",
+    "confirmDescription": "탈퇴한 뒤 {{days}}일 이내에 복구할 수 있어요.\n정말 탈퇴하시겠어요?",
     "confirmAction": "탈퇴하기"
   },
   "profile": {
@@ -43,15 +43,14 @@
     "defaultName": "열정적인 사용자",
     "avatarAlt": "{{name}} 프로필",
     "changeImage": "프로필 이미지 바꾸기",
-    "tagCopied": "해시태그 복사 완료",
-    "tagCopiedDescription": "8자리 해시태그를 친구에게 공유해 친구 요청을 받아보세요",
+    "tagCopied": "해시태그를 복사했어요",
+    "tagCopiedDescription": "{{count}}자리 해시태그를 친구에게 공유해 친구 요청을 받아보세요",
     "tagCopyFailed": "해시태그를 복사하지 못했어요",
     "updateFailed": "프로필 변경에 실패했어요",
     "imageSheet": {
       "title": "프로필 이미지 선택",
       "selectedAlt": "선택된 프로필 이미지",
-      "clear": "지우기",
-      "save": "저장"
+      "clear": "지우기"
     }
   },
   "editName": {
@@ -60,6 +59,6 @@
     "placeholder": "이름을 입력해주세요",
     "submit": "이름 변경",
     "required": "이름을 입력해주세요",
-    "maxLength": "이름은 20자까지 쓸 수 있어요"
+    "maxLength": "이름은 {{count}}자 이내로 입력해주세요"
   }
 }

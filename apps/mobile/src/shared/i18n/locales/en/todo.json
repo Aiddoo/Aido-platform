@@ -1,6 +1,6 @@
 {
   "toast": {
-    "todoAdded": "Added your to-do!",
+    "todoAdded": "Added your to-do",
     "todoUpdated": "Updated your to-do",
     "todoDeleted": "Deleted your to-do",
     "dateChanged": "Date updated",
@@ -13,14 +13,14 @@
     "categoryTodosMoved_other": "Moved {{count}} to-dos to \"{{name}}\"",
     "categoryDeletedWithTodos_one": "Deleted \"{{name}}\" and {{count}} to-do",
     "categoryDeletedWithTodos_other": "Deleted \"{{name}}\" and {{count}} to-dos",
-    "recurringAdded": "Added your repeating to-dos!",
+    "recurringAdded": "Added your repeating to-dos",
     "recurringCategoryLimit": "These repeating to-dos would go over the category limit. Try a shorter period.",
-    "categoryLimitReached": "This category is full. Complete some to-dos or move them to another category.",
+    "categoryLimitReached": "You can't add more to-dos to this category. Complete some or move them to another category.",
     "subTodoAddFailed": "Couldn't add the subtask",
     "subTodoUpdateFailed": "Couldn't update the subtask",
     "subTodoDeleteFailed": "Couldn't delete the subtask",
-    "nudgeSent": "Nudge sent!",
-    "remindNudgeSent": "Sent a nudge to help them get started!",
+    "nudgeSent": "Nudge sent",
+    "remindNudgeSent": "Sent a nudge to help them get started",
     "addFailedRetry": "Try adding again in a moment",
     "updateFailedRetry": "Try editing again in a moment",
     "deleteFailedRetry": "Try deleting again in a moment",
@@ -53,7 +53,7 @@
         "description": "There are too many past dates. Pick a more recent start date."
       },
       "category-full": {
-        "title": "This category is full",
+        "title": "You can't add more to-dos to this category",
         "description": "Complete some to-dos or pick another category. Your changes weren't saved."
       },
       "ended": {
@@ -63,8 +63,8 @@
     }
   },
   "form": {
-    "nudgeMessageMax_one": "Your message can be up to {{count}} character",
-    "nudgeMessageMax_other": "Your message can be up to {{count}} characters"
+    "nudgeMessageMax_one": "Use up to {{count, number}} character for your message",
+    "nudgeMessageMax_other": "Use up to {{count, number}} characters for your message"
   },
   "picker": {
     "dateTitle": "Date",
@@ -155,7 +155,7 @@
   "actions": {
     "edit": "Edit",
     "delete": "Delete",
-    "deleting": "Deleting...",
+    "deleting": "Deleting…",
     "changeDate": "Change date",
     "changeTime": "Change time",
     "changeCategory": "Change category",
@@ -237,20 +237,13 @@
     "loadFailed": "Couldn’t update calendar markers"
   },
   "feed": {
-    "loading": "Loading...",
-    "suggestionsLoading": "Loading suggestions...",
-    "suggestionsArrived_one": "Found {{count}} frequent to-do",
-    "suggestionsArrived_other": "Found {{count}} frequent to-dos",
+    "loading": "Loading…",
+    "suggestionsLoading": "Loading suggestions…",
     "suggestionsRetry": "Couldn't load your suggestions. Tap to try again",
     "suggestionFree": "Turn frequent to-dos into repeating ones",
     "suggestion": {
-      "analyzing": "Looking at your recent to-dos",
-      "doneForToday": "All caught up for today",
-      "noPatternFound": "No to-dos worth repeating yet",
-      "unavailableToday": "We couldn't check today",
       "needsMoreTodos": "Add to-dos and we'll find the ones you do often",
-      "needsAiConsent": "AI suggestions need your consent",
-      "waitingForNextRun": "Waiting for the next check"
+      "needsAiConsent": "AI suggestions need your consent"
     }
   },
   "activation": {
@@ -316,7 +309,7 @@
     "alreadyThanked": "You’ve already sent your thanks",
     "thanksLoadError": "Couldn’t load the friends who cheered you on",
     "encouragementTitle": "Cheering you on, at your own pace!",
-    "replyCompletionHint": "Sending a reply does not complete your to-do",
+    "replyCompletionHint": "Sending a reply doesn't complete your to-do",
     "completedThanksHint": "You did it! Send a little thanks to the friends who cheered you on",
     "thanksSelectionHint": "Your thanks will go to everyone in this list. Any nudges that arrive later can be thanked separately",
     "thanksSendCount_one": "Thank {{count}} friend",

@@ -29,7 +29,6 @@
   "listening": {
     "languageChangeFailed": "Couldn't switch languages. We'll keep listening in the current one.",
     "prompt": "Go ahead, we're listening",
-    "cancel": "Cancel",
     "done": "Done",
     "resume": "Keep talking",
     "pausedHint": "Paused for a moment. Keep talking?",
@@ -45,7 +44,6 @@
     "leaveTitle": "Close this plan?",
     "leaveDescription": "You won't be able to see this plan again.",
     "leaveDescriptionCharged": "You won't be able to see this plan again, and the use won't be returned.",
-    "leaveConfirm": "Close",
     "leaveCancel": "Keep choosing"
   },
   "failed": {

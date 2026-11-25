@@ -196,7 +196,7 @@ VoiceNoteDraftList.Error = function ErrorFallback({ reset }: QueryErrorFallbackP
 
 /** 상세 툴바의 삭제와 같은 확인을 거쳐 기기에서 초안·녹음을 지운다 */
 function useDeleteVoiceNoteDraft(note: VoiceNote) {
-  const { t } = useTranslation('voiceNote');
+  const { t } = useTranslation(['voiceNote', 'common']);
   const { trackEvent } = useTrack();
   const accountId = useSuspenseMyAccountId();
   const storage = useVoiceNoteStorageService();
@@ -206,9 +206,9 @@ function useDeleteVoiceNoteDraft(note: VoiceNote) {
     const isConfirmed = await confirmDialog.openAsync({
       title: t('result.deleteTitle'),
       description: t('result.deleteDescription'),
-      confirmLabel: t('result.deleteConfirm'),
+      confirmLabel: t('common:actions.delete'),
       confirmColor: 'danger',
-      cancelLabel: t('result.deleteCancel'),
+      cancelLabel: t('common:actions.cancel'),
     });
     if (isConfirmed) {
       trackEvent('voice_note_deleted', { is_digested: VoiceNotePolicy.isDigested(note) });

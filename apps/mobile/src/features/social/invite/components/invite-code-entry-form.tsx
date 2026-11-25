@@ -1,3 +1,4 @@
+import { INVITE_CODE } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTrack } from '@src/shared/analytics';
 import { getUserFacingMessage } from '@src/shared/errors';
@@ -76,11 +77,11 @@ export function InviteCodeEntryForm({ children }: PropsWithChildren) {
       return null;
     }
     if (error.type === INVITE_CODE_SERVER_ERROR) {
-      return error.message ?? t('errors.invalidCode');
+      return error.message ?? t('errors.invalidCode', { count: INVITE_CODE.LENGTH });
     }
     const invalidCharacterSummary = summarizeInvalidCharacters(invalidCharacters);
     return invalidCharacterSummary == null
-      ? t('errors.invalidCode')
+      ? t('errors.invalidCode', { count: INVITE_CODE.LENGTH })
       : formatInvalidCharacterMessage(invalidCharacterSummary);
   };
 
@@ -118,7 +119,9 @@ export function InviteCodeEntryForm({ children }: PropsWithChildren) {
           if (isInviteCodeFieldError(error)) {
             form.setError('inviteCode', {
               type: INVITE_CODE_SERVER_ERROR,
-              message: getUserFacingMessage(error) ?? t('errors.invalidCode'),
+              message:
+                getUserFacingMessage(error) ??
+                t('errors.invalidCode', { count: INVITE_CODE.LENGTH }),
             });
           }
         }

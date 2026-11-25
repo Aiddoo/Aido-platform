@@ -1,3 +1,4 @@
+import { INVITE_CODE } from '@aido/api/vocabulary';
 import { InviteCodeEntryForm } from '@src/features/social/invite/components/invite-code-entry-form';
 import { useTrackInviteLinkOpened } from '@src/features/social/invite/hooks/use-track-invite-link-opened';
 import { useTranslation } from '@src/shared/i18n';
@@ -15,7 +16,7 @@ export default function InviteCodeEntryRoute() {
         <Spacing size={8} />
 
         <Text size="b3" shade={7}>
-          {t('codeEntry.description')}
+          {t('codeEntry.description', { count: INVITE_CODE.LENGTH })}
         </Text>
 
         <Spacing size={32} />

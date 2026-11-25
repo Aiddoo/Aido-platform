@@ -407,7 +407,7 @@ type CaptureLayoutHeaderProps = Pick<CaptureLayoutProps, 'center' | 'right' | 'o
 
 /** 시트라 네이티브 헤더가 없다. 좁은 창은 오른쪽이 넓어 가운데를 남는 자리의 가운데에 둔다 */
 CaptureLayout.Header = function Header({ center, right, onClose }: CaptureLayoutHeaderProps) {
-  const { t } = useTranslation('voice');
+  const { t } = useTranslation(['voice', 'common']);
   const fontScaledSize = useFontScaledSize();
   const isCompact = useWindowSizeClass() === 'compact';
 
@@ -419,7 +419,7 @@ CaptureLayout.Header = function Header({ center, right, onClose }: CaptureLayout
           className="size-[22px]"
           hitSlop={11}
           onPress={onClose}
-          aria-label={t('listening.cancel')}
+          aria-label={t('common:actions.cancel')}
           testID="quick-voice-cancel"
         >
           <CloseIcon
