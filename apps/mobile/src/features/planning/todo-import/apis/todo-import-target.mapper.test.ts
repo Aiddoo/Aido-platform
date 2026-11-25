@@ -154,4 +154,51 @@ describe('toTodoImportSelection', () => {
       { collectionKey: work.collectionKey, targetKey: 'category-3', expectedItemCount: 5 },
     ]);
   });
+
+  it('기존 카테고리는 id로, 새 카테고리는 대상 전체에서의 순번으로 키를 짓는다', () => {
+    // Given
+    const school = createImportCollection({ collectionKey: 'a'.repeat(64), itemCount: 3 });
+    const work = createImportCollection({ collectionKey: 'b'.repeat(64), itemCount: 5 });
+
+    // When
+    const selection = toTodoImportSelection(
+      createFormValues({
+        collections: [school, work],
+        categoryMode: 'separate',
+        targets: { [school.collectionKey]: DEFAULT_TARGET, [work.collectionKey]: SCHOOL_TARGET },
+      }),
+    );
+
+    // Then
+    expect(selection.targets).toEqual([
+      { ...DEFAULT_TARGET, targetKey: 'category-3' },
+      { ...SCHOOL_TARGET, targetKey: 'new-1' },
+    ]);
+    expect(selection.collections).toEqual([
+      { collectionKey: school.collectionKey, targetKey: 'category-3', expectedItemCount: 3 },
+      { collectionKey: work.collectionKey, targetKey: 'new-1', expectedItemCount: 5 },
+    ]);
+  });
+
+  it('넣을 곳이 없는 캘린더는 요청에서 빠진다', () => {
+    // Given
+    const school = createImportCollection({ collectionKey: 'a'.repeat(64), itemCount: 3 });
+    const work = createImportCollection({ collectionKey: 'b'.repeat(64), itemCount: 5 });
+
+    // When
+    const selection = toTodoImportSelection(
+      createFormValues({
+        collections: [school, work],
+        categoryMode: 'separate',
+        singleTarget: null,
+        targets: { [school.collectionKey]: SCHOOL_TARGET },
+      }),
+    );
+
+    // Then
+    expect(selection.targets).toEqual([{ ...SCHOOL_TARGET, targetKey: 'new-0' }]);
+    expect(selection.collections).toEqual([
+      { collectionKey: school.collectionKey, targetKey: 'new-0', expectedItemCount: 3 },
+    ]);
+  });
 });

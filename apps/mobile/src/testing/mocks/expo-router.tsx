@@ -23,6 +23,8 @@ export const useSegments = jest.fn();
 export const useFocusEffect = jest.fn();
 /** 화면이 마운트된 채 focus만 잃는 경우(탭 바꾸기·위에 쌓기)는 테스트가 바꾼 navigation을 돌려준다 */
 export const useNavigation = jest.fn();
+/** 네이티브 내비게이터가 없어 막을 제거 동작이 오지 않는다. 막기를 푸는 함수만 돌려준다 */
+export const usePreventRemove = jest.fn();
 
 function createNavigation() {
   return { isFocused: () => true, getParent: () => undefined, addListener: () => () => undefined };
@@ -53,6 +55,7 @@ export function resetExpoRouterMock() {
   useSegments.mockReset().mockReturnValue([]);
   useFocusEffect.mockReset().mockImplementation(useRunFocusEffect);
   useNavigation.mockReset().mockImplementation(createNavigation);
+  usePreventRemove.mockReset().mockReturnValue(() => undefined);
 }
 
 resetExpoRouterMock();

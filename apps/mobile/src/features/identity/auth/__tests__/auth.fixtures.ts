@@ -1,6 +1,10 @@
 import {
+  changePasswordResponseSchema,
   deleteAccountResponseSchema,
+  forgotPasswordResponseSchema,
   linkedAccountsResponseSchema,
+  resendVerificationResponseSchema,
+  resetPasswordResponseSchema,
 } from '@aido/api/contracts/auth/v1';
 import type { ErrorCodeType } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
@@ -28,6 +32,23 @@ export const createDeleteAccountDto = defineFixture(deleteAccountResponseSchema,
   message: '계정이 탈퇴 처리되었습니다.',
   deletedAt: '2026-02-13T10:00:00.000Z',
   gracePeriodDays: 30,
+});
+
+export const createChangePasswordDto = defineFixture(changePasswordResponseSchema, {
+  message: '비밀번호가 성공적으로 변경되었습니다.',
+});
+
+export const createForgotPasswordDto = defineFixture(forgotPasswordResponseSchema, {
+  message: '등록된 이메일인 경우 비밀번호 재설정 코드가 발송됩니다.',
+});
+
+export const createResetPasswordDto = defineFixture(resetPasswordResponseSchema, {
+  message: '비밀번호가 성공적으로 변경되었습니다.',
+});
+
+export const createResendVerificationDto = defineFixture(resendVerificationResponseSchema, {
+  message: '인증 코드를 다시 보냈습니다.',
+  email: 'test@example.com',
 });
 
 export const createLinkedAccountsDto = defineFixture(linkedAccountsResponseSchema, {

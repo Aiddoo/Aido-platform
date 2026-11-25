@@ -1,24 +1,39 @@
 import '@src/shared/i18n/init';
 import { INQUIRY_CATEGORY } from '@aido/api/vocabulary';
-import { ok } from '@src/core/errors/result';
+import { fail, ok } from '@src/core/errors/result';
 import { NetworkError } from '@src/shared/errors/infra-error';
-import { createHapticsGatewayStub, createHttpClientStub, createTestDi } from '@src/testing/core';
+import {
+  createAnalyticsStub,
+  createHapticsGatewayStub,
+  createHttpClientStub,
+  createPendingResponse,
+  createTestDi,
+} from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 
 import InquiryRoute from '../../../../../app/(app)/(tabs)/(me,memos,todos)/settings/inquiry';
-import { createInquiryResponseDto } from './inquiry.fixtures';
+import { createInquiryApiError, createInquiryResponseDto } from './inquiry.fixtures';
 
 const CONTENT = '앱에서 할 일 추가 시 오류가 발생합니다.';
 
 async function renderInquiry(httpClient: ReturnType<typeof createHttpClientStub>) {
+  const analytics = createAnalyticsStub();
+  const haptics = createHapticsGatewayStub();
   await renderScreen(<InquiryRoute />, {
-    di: createTestDi({ ports: { httpClient, haptics: createHapticsGatewayStub() } }),
+    di: createTestDi({ ports: { httpClient, analytics, haptics } }),
     withLocalDate: true,
     withOverlay: true,
   });
+
+  return { analytics, haptics };
+}
+
+async function fillContent(content: string) {
+  await fireEvent.changeText(screen.getByTestId('inquiry-content-input'), content);
+  await waitFor(() => expect(screen.getByTestId('inquiry-submit')).toBeEnabled());
 }
 
 describe('문의 화면', () => {
@@ -89,6 +104,92 @@ describe('문의 화면', () => {
       category: INQUIRY_CATEGORY.BUG_REPORT,
       content: CONTENT,
     });
+  });
+
+  it('10자보다 짧은 내용은 칸에 알리고 보내지 않는다', async () => {
+    // Given
+    await renderInquiry(httpClient);
+
+    // When
+    await fireEvent.changeText(screen.getByTestId('inquiry-content-input'), '짧은 문의');
+    await fireEvent.press(screen.getByTestId('inquiry-submit'));
+
+    // Then
+    expect(await screen.findByText('내용은 10자 이상 입력해주세요')).toBeOnTheScreen();
+    expect(screen.getByTestId('inquiry-submit')).toBeDisabled();
+    expect(httpClient.post).not.toHaveBeenCalled();
+  });
+
+  it('고른 분류로 접수하면 접수했다고 알리고 접수를 한 번 남긴다', async () => {
+    // Given
+    httpClient.post.mockResolvedValue(ok(createInquiryResponseDto()));
+    const { analytics } = await renderInquiry(httpClient);
+    await fireEvent.press(
+      screen.getByTestId(`inquiry-category-${INQUIRY_CATEGORY.FEATURE_REQUEST}`),
+    );
+    await fillContent(CONTENT);
+
+    // When
+    await fireEvent.press(screen.getByTestId('inquiry-submit'));
+
+    // Then
+    await waitFor(() => expect(router.back).toHaveBeenCalledTimes(1));
+    expect(httpClient.post).toHaveBeenCalledWith('v1/inquiries', {
+      category: INQUIRY_CATEGORY.FEATURE_REQUEST,
+      content: CONTENT,
+    });
+    expect(await screen.findAllByText('문의를 접수했어요.')).not.toHaveLength(0);
+    expect(
+      analytics.trackEvent.mock.calls.filter(([name]) => name === 'support_inquiry_submitted'),
+    ).toEqual([['support_inquiry_submitted', { category: INQUIRY_CATEGORY.FEATURE_REQUEST }]]);
+  });
+
+  it('서버가 거절하면 한 번 알리고 입력값을 지킨 채 화면에 머문다', async () => {
+    // Given
+    httpClient.post.mockResolvedValue(
+      fail(createInquiryApiError({ code: 'SYS_0001', status: 400, message: '접수할 수 없어요' })),
+    );
+    const { haptics, analytics } = await renderInquiry(httpClient);
+    await fillContent(CONTENT);
+
+    // When
+    await fireEvent.press(screen.getByTestId('inquiry-submit'));
+
+    // Then
+    expect(await screen.findAllByText('접수할 수 없어요')).not.toHaveLength(0);
+    expect(haptics.notify).toHaveBeenCalledTimes(1);
+    expect(haptics.notify).toHaveBeenCalledWith('error');
+    expect(screen.getByTestId('inquiry-content-input').props.value).toBe(CONTENT);
+    expect(router.back).not.toHaveBeenCalled();
+    expect(analytics.trackEvent).not.toHaveBeenCalledWith(
+      'support_inquiry_submitted',
+      expect.anything(),
+    );
+  });
+
+  it('보내는 동안 화면을 떠났으면 접수가 끝나도 또 뒤로 가지 않는다', async () => {
+    // Given
+    let isFocused = true;
+    jest.mocked(useNavigation).mockImplementation(() => ({
+      isFocused: () => isFocused,
+      getParent: () => undefined,
+      addListener: () => () => undefined,
+    }));
+    const pending = createPendingResponse(ok(createInquiryResponseDto()));
+    httpClient.post.mockReturnValue(pending.response);
+    await renderInquiry(httpClient);
+    await fillContent(CONTENT);
+    await fireEvent.press(screen.getByTestId('inquiry-submit'));
+
+    // When
+    isFocused = false;
+    await act(async () => {
+      pending.settle();
+    });
+
+    // Then
+    expect(await screen.findAllByText('문의를 접수했어요.')).not.toHaveLength(0);
+    expect(router.back).not.toHaveBeenCalled();
   });
 
   describe('접수 뒤 떠나는 동안', () => {
