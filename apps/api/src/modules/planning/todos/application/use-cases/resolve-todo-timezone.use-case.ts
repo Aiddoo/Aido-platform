@@ -1,6 +1,6 @@
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import {
-  normalizeIanaTimezone,
+  parseDeviceReportedTimezone,
   resolveWallClockTimezone,
 } from "#api/shared/domain/time/timezone-name";
 
@@ -12,7 +12,7 @@ interface TodoTimezoneResolverDependencies {
 
 /**
  * 할 일 쓰기가 벽시계를 해석할 시간대를 정한다. 요청 → 저장값 → 기본값 순서이고 규칙은 여기 하나다.
- * 앱은 늘 헤더를 보내므로 DB를 읽는 일은 헤더가 없거나 잘못된 요청뿐이다.
+ * 앱은 늘 헤더를 보내므로 DB를 읽는 일은 헤더가 없거나 잘못됐거나 UTC(기기 시간대를 못 읽은 출시 앱)인 요청뿐이다.
  */
 export class ResolveTodoTimezoneUseCase {
   readonly #dependencies: TodoTimezoneResolverDependencies;
@@ -22,7 +22,7 @@ export class ResolveTodoTimezoneUseCase {
   }
 
   async execute(userId: string, requested: string | undefined): Promise<string> {
-    const timezone = normalizeIanaTimezone(requested);
+    const timezone = parseDeviceReportedTimezone(requested);
     if (timezone != null) {
       return timezone;
     }

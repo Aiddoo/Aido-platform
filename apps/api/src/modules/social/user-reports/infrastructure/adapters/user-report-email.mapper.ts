@@ -1,5 +1,7 @@
 import type { UserReportReason, UserReportTargetType } from "@aido/api/vocabulary";
 
+import { OPERATOR_TIMEZONE } from "#api/shared/domain/time/operator-timezone";
+
 import type { UserReportSubmissionReadModel } from "../../application/read-models/user-report-submission.read-model.js";
 
 const REASON_LABELS = {
@@ -18,8 +20,6 @@ const TARGET_TYPE_LABELS = {
   CHEER_MESSAGE: "응원 메시지",
 } as const satisfies Record<UserReportTargetType, string>;
 
-// 운영자가 한국에 있어 접수 시각을 한국 시각으로 보여 준다
-const OPERATOR_TIMEZONE = "Asia/Seoul";
 const MISSING_USER_TAG = "-";
 
 export interface UserReportEmailContent {

@@ -2,8 +2,8 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import type { DomainEvent } from "#api/shared/domain/model/domain-event";
+import { localDateIn } from "#api/shared/domain/time/timezone-name";
 
-import { localDateAt } from "../../../shared/domain/todo-calendar.domain-service.js";
 import {
   isAllCompletedToday,
   MILESTONE_COMPLETION_COUNT_LIMIT,
@@ -67,7 +67,7 @@ export class ApplyTodoCompletionEffectsUseCase {
   }
 
   async #readTodayStats(ownerId: UserId, timezone: string): Promise<TodayCompletionStats> {
-    const date = localDateAt(this.#dependencies.clock.now(), timezone);
+    const date = localDateIn(this.#dependencies.clock.now(), timezone);
     const stats = await this.#dependencies.todoReadRepository.getTodayTodoStats(ownerId, date);
     return { date, ...stats };
   }

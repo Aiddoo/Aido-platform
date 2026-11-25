@@ -115,5 +115,8 @@
     "typescript": "catalog:",
     "unplugin-swc": "catalog:",
     "vitest": "catalog:"
+  },
+  "engines": {
+    "node": ">=26.13.1 <27.0.0"
   }
 }

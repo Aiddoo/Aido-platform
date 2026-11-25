@@ -1,6 +1,6 @@
 import { AI_SUGGESTION_LIMITS } from "@aido/api/vocabulary";
 
-import { resolveTimezone } from "#api/shared/domain/time/timezone-name";
+import { resolveDeliveryTimezone } from "#api/shared/domain/time/timezone-name";
 import { Timezone } from "#api/shared/domain/time/timezone.vo";
 import { toZonedInstant } from "#api/shared/domain/time/zoned-time";
 
@@ -22,9 +22,9 @@ export interface SuggestionAnalysisPeriod {
   readonly to: Temporal.PlainDate;
 }
 
-// 아침 배치·지금 받기·상태가 같은 날짜를 보도록 시간대를 저장하지 않은 사용자는 모두 서울로 본다
+// 아침 배치·지금 받기·상태가 같은 날짜를 보도록 발송 시간대 규칙(저장값 없음·UTC·잘못된 값은 서비스 기본 시간대)을 쓴다
 export function resolveSuggestionTimezone(storedTimezone: string | null | undefined): string {
-  return resolveTimezone(storedTimezone ?? Timezone.SEOUL.value);
+  return resolveDeliveryTimezone(storedTimezone);
 }
 
 export function isInSuggestionDispatchWindow(input: SuggestionDispatchMoment): boolean {

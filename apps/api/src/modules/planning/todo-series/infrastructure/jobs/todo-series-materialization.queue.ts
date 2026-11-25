@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { JOB_SCHEDULE_TIMEZONE } from "#api/shared/application/job-schedule-timezone";
 import { defineQueue, JOB_POLLING_SECONDS } from "#api/shared/application/ports/job-queue.port";
 import { DAY_SECONDS } from "#api/shared/domain/time/time-units";
 
@@ -7,7 +8,7 @@ const TODO_SERIES_MATERIALIZATION_JOB_NAME = "materialize-due-series";
 
 /** 사용자 시간대와 무관한 운영 배치로, 한국 새벽 저트래픽 시간에 돈다 */
 export const TODO_SERIES_MATERIALIZATION_SCHEDULE_TIME = {
-  timezone: "Asia/Seoul",
+  timezone: JOB_SCHEDULE_TIMEZONE,
   hour: 3,
   minute: 10,
 } as const;

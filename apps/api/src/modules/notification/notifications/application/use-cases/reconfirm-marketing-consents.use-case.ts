@@ -9,7 +9,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantToDate } from "#api/shared/domain/time/instant";
-import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/time/timezone-name";
+import { resolveDeliveryTimezone } from "#api/shared/domain/time/timezone-name";
 
 import type {
   NotificationRecipientLocaleReaderPort,
@@ -119,7 +119,7 @@ export class ReconfirmMarketingConsentsUseCase {
       const notices = claimed.flatMap((recipient) =>
         this.#notice(recipient, {
           locale: localeOf(recipient.userId.value),
-          timezone: timezones.get(recipient.userId.value) ?? DEFAULT_DELIVERY_TIMEZONE,
+          timezone: resolveDeliveryTimezone(timezones.get(recipient.userId.value)),
         }),
       );
       if (notices.length > 0) {

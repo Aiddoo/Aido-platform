@@ -19,7 +19,6 @@ import {
 } from "#api/platform/database/schema/index";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { createEntityId } from "#api/shared/domain/model/entity-id";
-import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/time/timezone-name";
 import { DateClock } from "#test/doubles/platform/date-clock";
 import { createUserRowFixture } from "#test/fixtures/identity/user-row.fixture";
 import {
@@ -206,8 +205,8 @@ describe("반복 할 일 스키마 (실제 PostgreSQL)", () => {
 
   describe("이관 규칙의 시간대", () => {
     it.each([
-      { name: "설정 없음", stored: null, zone: DEFAULT_DELIVERY_TIMEZONE, time: "09:30" },
-      { name: "잘못된 값", stored: "Mars/Olympus", zone: DEFAULT_DELIVERY_TIMEZONE, time: "09:30" },
+      { name: "설정 없음", stored: null, zone: "Asia/Seoul", time: "09:30" },
+      { name: "잘못된 값", stored: "Mars/Olympus", zone: "Asia/Seoul", time: "09:30" },
       { name: "진짜 UTC", stored: "UTC", zone: "UTC", time: "00:30" },
       { name: "뉴욕", stored: "America/New_York", zone: "America/New_York", time: "09:30" },
       { name: "서울", stored: "Asia/Seoul", zone: "Asia/Seoul", time: "09:30" },

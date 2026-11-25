@@ -4,8 +4,7 @@ import { HttpClient, InjectHttpClient } from "@nestjs/http-client";
 import { requestVendorJson } from "#api/platform/http/request-vendor-json";
 import type { OutboundPolicy } from "#api/platform/resilience/outbound-policy";
 import { OutboundPolicyRegistry } from "#api/platform/resilience/outbound-policy.registry";
-import { Timezone } from "#api/shared/domain/time/timezone.vo";
-import { localDateOf } from "#api/shared/domain/time/zoned-time";
+import { localDateIn } from "#api/shared/domain/time/timezone-name";
 
 import type {
   SunTime,
@@ -15,6 +14,7 @@ import {
   weatherWeatherReportsConfig,
   type WeatherWeatherReportsConfig,
 } from "../../weather-weather-reports.config.js";
+import { KASI_TIMEZONE } from "./kasi.constants.js";
 import { kasiSunTimeSchema } from "./kasi.wire.js";
 import { KASI_POLICY } from "./weather-outbound.policy.js";
 import { WeatherProviderLogEvent } from "./weather-provider.log-events.js";
@@ -51,8 +51,7 @@ export class KasiSunTimeAdapter implements SunTimeProviderPort {
         return null;
       }
 
-      // 천문연구원은 한국 날짜(KST)로 일출·일몰을 준다
-      const locdate = localDateOf(at, Timezone.SEOUL).toString().replaceAll("-", "");
+      const locdate = localDateIn(at, KASI_TIMEZONE).toString().replaceAll("-", "");
 
       const outcome = await this.#policy.execute((signal) =>
         requestVendorJson(this.#http, {

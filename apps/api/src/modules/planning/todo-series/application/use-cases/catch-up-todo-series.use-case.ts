@@ -2,8 +2,8 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { localDateIn } from "#api/shared/domain/time/timezone-name";
 
-import { localDateAt } from "../../../shared/domain/todo-calendar.domain-service.js";
 import type { TodoSeriesId } from "../../domain/todo-series-id.vo.js";
 import type { TodoSeriesOwnerPort } from "../ports/todo-series-owner.port.js";
 import type { TodoSeriesRepositoryPort } from "../ports/todo-series.repository.port.js";
@@ -47,7 +47,7 @@ export class CatchUpTodoSeriesUseCase {
   execute(userId: string): Promise<void> {
     const at = this.#dependencies.clock.now();
     // 날짜가 바뀌는 기준은 지금처럼 UTC 달력이다
-    const todayDate = localDateAt(at, "UTC");
+    const todayDate = localDateIn(at, "UTC");
     const today = todayDate.toString();
     if (today !== this.#checkedDate) {
       this.#checkedDate = today;

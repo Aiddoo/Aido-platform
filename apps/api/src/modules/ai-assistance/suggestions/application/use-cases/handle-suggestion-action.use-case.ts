@@ -19,9 +19,9 @@ import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { localDateIn } from "#api/shared/domain/time/timezone-name";
 
 import type { UserLocalePreferenceReaderPort } from "../../../ai-generations/application/ports/user-locale-preference.reader.port.js";
-import { localDateAt } from "../../../shared/domain/user-calendar.domain-service.js";
 import { SuggestionId } from "../../domain/suggestion-id.vo.js";
 import type { Suggestion } from "../../domain/suggestion.aggregate.js";
 import type { SuggestionAction } from "../../domain/suggestions.constants.js";
@@ -126,7 +126,7 @@ export class HandleSuggestionActionUseCase {
       throw invalidSuggestionDaysOfWeek();
     }
     // 반복은 사용자 로컬 "오늘"부터 시작해야 KST 새벽·미주 저녁 수락이 하루 밀리지 않는다.
-    const localToday = localDateAt(at.now, at.timezone);
+    const localToday = localDateIn(at.now, at.timezone);
     const startDate = command.startDate ?? localToday.toString();
     const endDate =
       command.endDate ??

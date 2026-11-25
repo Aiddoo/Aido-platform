@@ -4,9 +4,9 @@ import type { WeatherReminderTodoReadModel } from "../read-models/scheduler.read
 
 export interface WeatherBriefingTodoQuery {
   readonly userIds: readonly UserId[];
-  /** 알림 시간대의 오늘 */
+  /** 발송 시간대의 오늘 */
   readonly date: Temporal.PlainDate;
-  /** 알림 시간대(기기 시간대) */
+  /** 할 일 벽시계를 만든 저장 시간대(여러 날 할 일의 그날 시각을 이 시간대로 읽는다) */
   readonly timezone: string;
   readonly from: Temporal.Instant;
   readonly until: Temporal.Instant;

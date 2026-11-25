@@ -3,6 +3,7 @@ import { omit, pickBy } from "es-toolkit";
 
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { AggregateRoot } from "#api/shared/domain/model/aggregate-root";
+import { isSameTimezone } from "#api/shared/domain/time/timezone-name";
 
 import { Streak, type StreakState } from "./streak.vo.js";
 import {
@@ -147,9 +148,16 @@ export class UserPreference extends AggregateRoot<UserPreferenceId, UserPreferen
   }
 
   // 준 칸만 바꾼다(PATCH). 모두 지금 값과 같으면 false다. 설정 행이 없으면 기본값 위에 만든다
+  // 시간대는 이름만 다른 같은 시간대(Asia/Calcutta·Asia/Kolkata)면 바꾸지 않아 기기 사이를 오가며 다시 계산하지 않는다
   changeSettings(changes: PreferenceSettingChanges): boolean {
     const settings = this.props.settings;
-    const updates = pickBy(changes, (value, key) => value != null && settings[key] !== value);
+    const timezone = isSameTimezone(settings.timezone, changes.timezone)
+      ? undefined
+      : changes.timezone;
+    const updates = pickBy(
+      { ...changes, timezone },
+      (value, key) => value != null && settings[key] !== value,
+    );
     return this.#applySettings({ ...settings, ...updates }, Object.keys(updates).length > 0);
   }
 

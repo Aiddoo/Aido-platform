@@ -1,8 +1,9 @@
-import { localDateIn } from "#api/shared/domain/time/timezone-name";
+import { localDateIn, resolveDeliveryTimezone } from "#api/shared/domain/time/timezone-name";
 
 import { nonIsoCalendarDate } from "./reminders.errors.js";
 
-// 날짜 규칙(docs/conventions/dates.md): 배치는 사용자 저장 시간대의 달력 날짜로 센다
+// 날짜 규칙(docs/conventions/dates.md): 리마인더는 발송 시간대 규칙(저장된 UTC·미상은 서울)의 달력 날짜로 센다.
+// 묶음의 현지 시각(local-clock)과 같은 규칙이어야 오늘과 며칠 전이 어긋나지 않는다
 
 /** 그 순간이 현지 달력으로 오늘보다 며칠 전인지. 같은 날이면 0이다 */
 export function localDaysSince(
@@ -10,12 +11,13 @@ export function localDaysSince(
   today: Temporal.PlainDate,
   timezone: string,
 ): number {
-  return localDateIn(since, timezone).until(today, { largestUnit: "days" }).days;
+  return localDateIn(since, resolveDeliveryTimezone(timezone)).until(today, { largestUnit: "days" })
+    .days;
 }
 
 /** 현지 날짜가 시작하는 순간. 자정이 DST 틈이면 틈 뒤 첫 순간이다 */
 export function localStartOf(date: Temporal.PlainDate, timezone: string): Temporal.Instant {
-  return date.toZonedDateTime(timezone).toInstant();
+  return date.toZonedDateTime(resolveDeliveryTimezone(timezone)).toInstant();
 }
 
 /**

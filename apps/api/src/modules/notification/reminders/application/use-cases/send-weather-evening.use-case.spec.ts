@@ -93,7 +93,12 @@ describe("SendWeatherEveningUseCase — 저녁 날씨 알림", () => {
   it("비 소식이 없으면 내일 요약을 보낸다", async () => {
     // Given
     reader.usersWithLocation = [
-      { id: "u1", timezone: "Asia/Seoul", preference: { locale: "en" }, location: TOKYO },
+      {
+        id: "u1",
+        timezone: "Asia/Seoul",
+        preference: { locale: "en", timeFormat: "TWELVE_HOUR" },
+        location: TOKYO,
+      },
     ];
     weatherReports.reports.set("u1", report());
     // When

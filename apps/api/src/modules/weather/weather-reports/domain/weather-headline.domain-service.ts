@@ -7,7 +7,7 @@ import {
 import { maxBy } from "es-toolkit";
 import { match } from "ts-pattern";
 
-import { localDateIn, resolveTimezone } from "#api/shared/domain/time/timezone-name";
+import { localDateIn, resolveDateBoundaryTimezone } from "#api/shared/domain/time/timezone-name";
 
 import {
   findContiguousHours,
@@ -132,7 +132,7 @@ function findBestOutdoorWindow(
 }
 
 function isEveningAt({ now, locationTimezone }: WeatherBriefingClock): boolean {
-  const { hour } = now.toZonedDateTimeISO(resolveTimezone(locationTimezone));
+  const { hour } = now.toZonedDateTimeISO(resolveDateBoundaryTimezone(locationTimezone));
   return hour >= WEATHER_BRIEFING_RULES.EVENING_HOUR;
 }
 

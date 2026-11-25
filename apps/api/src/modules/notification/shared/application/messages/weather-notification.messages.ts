@@ -2,6 +2,7 @@ import {
   buildWeatherRescheduleDeepLink,
   NOTIFICATION_ACTION_TYPE,
   type SupportedLocale,
+  type TimeFormat,
   type WeatherRescheduleReason,
 } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
@@ -29,6 +30,8 @@ interface WeatherBriefingMessageInput<TBriefing> extends LocalizedWeatherInput {
   readonly briefing: TBriefing;
   /** 알림 시간대로 시각을 표시한다. 카피 선택은 시간대를 모른다 */
   readonly formatTime: (instant: Date) => string;
+  /** 알림함을 다시 렌더링할 때 쓸 사용자의 시각 표기 */
+  readonly timeFormat: TimeFormat;
   /** 알림함을 다른 언어로 다시 렌더링할 때 시각을 쓸 시간대. 없으면 저장 문구를 쓴다 */
   readonly timezone?: string;
 }
@@ -51,6 +54,7 @@ export function createWeatherMorningNotificationMessage({
   briefing,
   formatTime,
   timezone,
+  timeFormat,
   locale,
   variantContext,
 }: WeatherBriefingMessageInput<MorningWeatherBriefing>): NotificationMessage {
@@ -58,6 +62,7 @@ export function createWeatherMorningNotificationMessage({
   const todoFacts = (todo: { readonly title: string; readonly scheduledAt: Temporal.Instant }) => ({
     scheduledAt: toIsoString(todo.scheduledAt),
     timezone: timezone ?? null,
+    timeFormat,
     todoTitle: todo.title,
   });
 
@@ -99,7 +104,7 @@ export function createWeatherMorningNotificationMessage({
         isSnow ? WEATHER_COPY.MORNING_SNOW_LATER : WEATHER_COPY.MORNING_RAIN_LATER,
         {
           ...options,
-          facts: { startsAt: toIsoString(startsAt), timezone: timezone ?? null },
+          facts: { startsAt: toIsoString(startsAt), timezone: timezone ?? null, timeFormat },
           templateKey: isSnow ? "weather.morning.snow_later" : "weather.morning.rain_later",
         },
       ),
@@ -125,7 +130,7 @@ export function createWeatherEveningNotificationMessage({
   variantContext,
 }: Omit<
   WeatherBriefingMessageInput<EveningWeatherBriefing>,
-  "formatTime" | "timezone"
+  "formatTime" | "timezone" | "timeFormat"
 >): NotificationMessage {
   return match(briefing)
     .with({ kind: "wetTomorrow" }, ({ isSnow, dayPart, day, isChilly }) =>

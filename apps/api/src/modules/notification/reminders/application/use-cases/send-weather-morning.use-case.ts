@@ -1,4 +1,6 @@
+import { type SupportedLocale, USER_PREFERENCE_DEFAULTS } from "@aido/api/vocabulary";
 import { groupBy } from "es-toolkit";
+import { match } from "ts-pattern";
 
 import {
   decideMorningWeatherBriefing,
@@ -8,12 +10,19 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 import { instantFromDate } from "#api/shared/domain/time/instant";
-import { resolveTimezone } from "#api/shared/domain/time/timezone-name";
+import {
+  resolveDateBoundaryTimezone,
+  resolveDeliveryTimezone,
+} from "#api/shared/domain/time/timezone-name";
 
 import type {
   NotificationHistoryReaderPort,
   PublishNotificationBatchUseCase,
 } from "../../../notifications/notification-notifications.public.js";
+import type {
+  NotificationMessage,
+  NotificationVariantContext,
+} from "../../../shared/application/messages/notification-copy-catalog.messages.js";
 import { formatWeatherNotificationTime } from "../../../shared/application/messages/notification-copy-format.messages.js";
 import {
   createWeatherMorningFallbackNotificationMessage,
@@ -127,6 +136,7 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
       const locale = weatherRecipientLocale(user);
       const variantContext = weatherVariantContext(NOTIFICATION_TYPE, user.id, today);
       const located = reports.get(user.id);
+      const deliveryTimezone = resolveDeliveryTimezone(user.timezone);
       const briefing =
         located == null
           ? null
@@ -137,7 +147,7 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
                 title: todo.title,
                 scheduledAt: instantFromDate(todo.scheduledTime),
               })),
-              { now, timezone: user.timezone, locationTimezone: located.timezone },
+              { now, timezone: deliveryTimezone, locationTimezone: located.timezone },
             );
       if (briefing == null) {
         unavailable += 1;
@@ -152,14 +162,7 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
       return buildWeatherNotification({
         userId: user.id,
         type: NOTIFICATION_TYPE,
-        message: createWeatherMorningNotificationMessage({
-          briefing,
-          locale,
-          variantContext,
-          timezone: user.timezone,
-          formatTime: (instant) =>
-            formatWeatherNotificationTime(instant, { locale, timezone: user.timezone }),
-        }),
+        message: briefingMessageOf(user, briefing, { locale, variantContext }),
         action: rescheduleActionOf(briefing),
         today,
       });
@@ -184,6 +187,7 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
   }
 
   // 오늘·다음 자정은 시간대마다 정한다. 지금 현지 시각이 같아도 자정 전 서머타임 전환은 다를 수 있다
+  // 오늘은 이 알림을 울린 발송 시간대의 날짜이고, 할 일 벽시계는 저장된 시간대 그대로 읽는다(저장된 UTC는 진짜 UTC)
   async #listTodayTodos(
     targets: readonly WeatherReminderUserReadModel[],
     now: Temporal.Instant,
@@ -191,14 +195,14 @@ export class SendWeatherMorningUseCase implements TimezoneReminderStrategyPort {
     const targetsByTimezone = groupBy(targets, (user) => user.timezone);
     const todosByTimezone = await Promise.all(
       Object.entries(targetsByTimezone).map(([storedTimezone, users]) => {
-        const timezone = resolveTimezone(storedTimezone);
-        const date = now.toZonedDateTimeISO(timezone).toPlainDate();
+        const deliveryTimezone = resolveDeliveryTimezone(storedTimezone);
+        const date = now.toZonedDateTimeISO(deliveryTimezone).toPlainDate();
         return this.#dependencies.todoReader.listTodayTodos({
           userIds: users.map((user) => UserId.reconstitute(user.id)),
           date,
-          timezone,
+          timezone: resolveDateBoundaryTimezone(storedTimezone),
           from: now,
-          until: date.add({ days: 1 }).toZonedDateTime(timezone).toInstant(),
+          until: date.add({ days: 1 }).toZonedDateTime(deliveryTimezone).toInstant(),
         });
       }),
     );
@@ -233,4 +237,42 @@ function rescheduleActionOf(briefing: MorningWeatherBriefing): NotificationActio
     return createWeatherRescheduleAction(briefing.todoIds, "rain");
   }
   return null;
+}
+
+/** 사용자의 시각 표기와 문구 시각의 시간대로 아침 브리핑 문구를 만든다 */
+function briefingMessageOf(
+  user: WeatherReminderUserReadModel,
+  briefing: MorningWeatherBriefing,
+  rendering: {
+    readonly locale: SupportedLocale;
+    readonly variantContext: NotificationVariantContext;
+  },
+): NotificationMessage {
+  const timeFormat = user.preference?.timeFormat ?? USER_PREFERENCE_DEFAULTS.TIME_FORMAT;
+  const timezone = displayTimezoneOf(briefing, {
+    wallClockTimezone: resolveDateBoundaryTimezone(user.timezone),
+    deliveryTimezone: resolveDeliveryTimezone(user.timezone),
+  });
+  return createWeatherMorningNotificationMessage({
+    briefing,
+    ...rendering,
+    timezone,
+    timeFormat,
+    formatTime: (instant) =>
+      formatWeatherNotificationTime(instant, { locale: rendering.locale, timezone, timeFormat }),
+  });
+}
+
+/**
+ * 문구 시각을 읽을 시간대. 할 일 시각은 그 벽시계를 만든 저장 시간대로 읽어야 고른 시각 그대로 보이고,
+ * 예보 시각은 알림을 보낸 발송 시간대로 읽어야 오늘·내일 판정과 같은 시계다.
+ */
+function displayTimezoneOf(
+  briefing: MorningWeatherBriefing,
+  timezones: { readonly wallClockTimezone: string; readonly deliveryTimezone: string },
+): string {
+  return match(briefing)
+    .with({ kind: "todoWet" }, { kind: "todoHot" }, () => timezones.wallClockTimezone)
+    .with({ kind: "wetLater" }, { kind: "summary" }, () => timezones.deliveryTimezone)
+    .exhaustive();
 }

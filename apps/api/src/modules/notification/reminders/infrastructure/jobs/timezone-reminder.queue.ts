@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { JOB_SCHEDULE_TIMEZONE } from "#api/shared/application/job-schedule-timezone";
 import {
   defineQueue,
   JOB_POLLING_SECONDS,
@@ -63,7 +64,7 @@ export const TIMEZONE_REMINDER_QUEUE = defineQueue({
     {
       key: "tz-reminder-sweep-scheduler",
       cron: "* * * * *",
-      timezone: "Asia/Seoul",
+      timezone: JOB_SCHEDULE_TIMEZONE,
       missed: "once",
       payload: { name: TimezoneReminderJobName.SWEEP_REMINDERS, data: {} },
     },

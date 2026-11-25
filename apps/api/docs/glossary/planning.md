@@ -9,7 +9,7 @@
 | 제목      | `TodoTitle`(VO)                                                        | 1자 이상 `TODO_LIMITS.TITLE_MAX_LENGTH`자 이하. 할 일·하위 항목·반복의 제목이 모두 이 VO를 거치고, 틀리면 `SYS_0002`      |
 | 시각      | `scheduledLocalTime`, `resolveScheduledInstant`                        | 사용자가 고른 벽시계(HH:mm)가 진실이다. 알림 순간 `scheduledTime`은 날짜 + 벽시계 + 사용자 시간대로 만든 파생값이다       |
 | 종일      | `isAllDay`                                                             | 시각이 없는 할 일. 시각이 있으면 종일이 아니다                                                                            |
-| 시간대    | `ResolveTodoTimezoneUseCase`, `localDateAt`                            | 쓰기는 요청 헤더 → 저장값 → 기본값 순으로 정한다. 스트릭·요약·회차의 "오늘"은 이 시간대의 날짜다                          |
+| 시간대    | `ResolveTodoTimezoneUseCase`, `localDateIn`                            | 쓰기는 요청 헤더 → 저장값 → 기본값 순으로 정한다. 스트릭·요약·회차의 "오늘"은 이 시간대의 날짜다                          |
 | 공개 범위 | `TodoVisibility`(`TODO_VISIBILITIES`)                                  | PUBLIC·PRIVATE. 친구 할 일·친구 일일 완료·콕 찌르기는 PUBLIC만 본다                                                       |
 | 잠금      | `TodoCategoryLockKeys.userCategories`, `TodoLockKeys.sortOrder`·`todo` | 카테고리 → 정렬 → 규칙 행 → 할 일 행 순서로 잡는다. notes·voice·ai-assistance도 같은 키를 잡으므로 문자열을 바꾸지 않는다 |
 

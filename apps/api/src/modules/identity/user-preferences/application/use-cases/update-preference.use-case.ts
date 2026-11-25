@@ -5,7 +5,11 @@ import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import type { MutationLockPort } from "#api/shared/application/ports/mutation-lock.port";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { normalizeIanaTimezone } from "#api/shared/domain/time/timezone-name";
+import {
+  isUtcOffsetTimezone,
+  parseDeviceReportedTimezone,
+  parseTimezoneName,
+} from "#api/shared/domain/time/timezone-name";
 
 import { ReminderTime } from "../../domain/reminder-time.vo.js";
 import type { PreferenceEntitlementPort } from "../ports/preference-entitlement.port.js";
@@ -38,6 +42,20 @@ interface UpdatePreferenceDependencies {
   readonly logger: ApplicationLoggerPort;
 }
 
+/**
+ * 설정 변경 body의 시간대. 모르는 이름은 거절하고, 옛 서버가 받던 고정 오프셋과 UTC와 같은 이름(기기 보고 규칙)은
+ * 출시 계약을 좁히지 않도록 4xx 없이 저장하지 않는다.
+ */
+function requestedTimezoneOf(raw: string | undefined): string | undefined {
+  if (raw == null) {
+    return undefined;
+  }
+  if (parseTimezoneName(raw) == null && !isUtcOffsetTimezone(raw)) {
+    throw invalidTimezone();
+  }
+  return parseDeviceReportedTimezone(raw) ?? undefined;
+}
+
 export class UpdatePreferenceUseCase {
   readonly #dependencies: UpdatePreferenceDependencies;
 
@@ -59,10 +77,7 @@ export class UpdatePreferenceUseCase {
 
     ReminderTime.create(input);
 
-    const timezone = input.timezone == null ? undefined : normalizeIanaTimezone(input.timezone);
-    if (input.timezone != null && timezone == null) {
-      throw invalidTimezone();
-    }
+    const timezone = requestedTimezoneOf(input.timezone);
 
     const { preferenceRepository, todoTimezoneRebase, clock } = this.#dependencies;
     const updated = await this.#dependencies.unitOfWork.run(async () => {
@@ -72,7 +87,7 @@ export class UpdatePreferenceUseCase {
       const changed = preference.changeSettings({
         pushEnabled: input.pushEnabled,
         nightPushEnabled: input.nightPushEnabled,
-        timezone: timezone ?? undefined,
+        timezone,
         morningReminderHour: input.morningReminderHour,
         morningReminderMinute: input.morningReminderMinute,
         eveningReminderHour: input.eveningReminderHour,
@@ -97,7 +112,8 @@ export class UpdatePreferenceUseCase {
     });
     await this.#dependencies.cache.invalidateUserPreference(userId);
 
-    if (input.timezone != null || input.pushEnabled != null) {
+    // 저장하지 않은 시간대(UTC 보고·고정 오프셋)는 활성 시간대 목록을 바꾸지 않는다
+    if (timezone != null || input.pushEnabled != null) {
       await this.#dependencies.reminderTimezoneCache.invalidateActiveTimezones();
     }
 

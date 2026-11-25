@@ -1,4 +1,8 @@
-import { groupTimezonesByLocalClock, reminderTimesDueAt } from "./local-clock.domain-service.js";
+import {
+  groupTimezonesByLocalClock,
+  reminderTimesDueAt,
+  timezoneContextAt,
+} from "./local-clock.domain-service.js";
 
 const clockOf = (minute: string, timezones: readonly string[]) =>
   groupTimezonesByLocalClock(Temporal.Instant.from(minute), timezones).map(
@@ -21,6 +25,27 @@ describe("groupTimezonesByLocalClock", () => {
     expect(groups).toEqual([
       { timezones: ["Asia/Seoul", "Asia/Tokyo"], clock: "2024-01-17 8:0 3" },
       { timezones: ["America/New_York"], clock: "2024-01-16 18:0 2" },
+    ]);
+  });
+
+  it("저장된 UTC·고정 오프셋·모르는 이름은 발송 시간대 규칙대로 서울 묶음에서 저장값 그대로 조회한다", () => {
+    // When
+    const groups = clockOf("2024-01-16T23:00:00Z", [
+      "Asia/Seoul",
+      "UTC",
+      "Etc/UTC",
+      "+09:00",
+      "Mars/Olympus",
+      "Europe/London",
+    ]);
+
+    // Then
+    expect(groups).toEqual([
+      {
+        timezones: ["Asia/Seoul", "UTC", "Etc/UTC", "+09:00", "Mars/Olympus"],
+        clock: "2024-01-17 8:0 3",
+      },
+      { timezones: ["Europe/London"], clock: "2024-01-16 23:0 2" },
     ]);
   });
 
@@ -162,5 +187,50 @@ describe("reminderTimesDueAt", () => {
       ["America/New_York", "America/Toronto"],
       ["America/Puerto_Rico"],
     ]);
+  });
+});
+
+describe("여행 중 아침 리마인더 묶음", () => {
+  it.each([
+    { name: "서울", minute: "2026-11-09T23:00:00Z", stored: "Asia/Seoul", today: "2026-11-10" },
+    {
+      name: "LA로 옮긴 뒤",
+      minute: "2026-11-10T16:00:00Z",
+      stored: "America/Los_Angeles",
+      today: "2026-11-10",
+    },
+    {
+      name: "서울로 돌아온 뒤",
+      minute: "2026-11-11T23:00:00Z",
+      stored: "Asia/Seoul",
+      today: "2026-11-12",
+    },
+  ])("$name: 저장 시간대의 현지 08:00에 그 사용자의 묶음이 울린다", ({ minute, stored, today }) => {
+    // When
+    const context = timezoneContextAt(Temporal.Instant.from(minute), stored);
+
+    // Then
+    expect(context.reminderTimes).toEqual([{ hour: 8, minute: 0 }]);
+    expect(context.today.toString()).toBe(today);
+  });
+});
+
+describe("timezoneContextAt", () => {
+  it("저장된 UTC 사용자 한 명의 따라잡기·다이제스트도 서울 시계로 정하고 조회 조건은 저장값이다", () => {
+    // Given
+    const minute = Temporal.Instant.from("2024-01-16T23:00:00Z");
+
+    // When
+    const context = timezoneContextAt(minute, "UTC", "user-1");
+
+    // Then
+    expect(context).toMatchObject({
+      timezones: ["UTC"],
+      localHour: 8,
+      localMinute: 0,
+      reminderTimes: [{ hour: 8, minute: 0 }],
+      userId: "user-1",
+    });
+    expect(context.today.toString()).toBe("2024-01-17");
   });
 });

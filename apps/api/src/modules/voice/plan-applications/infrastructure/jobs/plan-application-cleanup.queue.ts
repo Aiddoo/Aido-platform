@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { JOB_SCHEDULE_TIMEZONE } from "#api/shared/application/job-schedule-timezone";
 import {
   defineQueue,
   JOB_POLLING_SECONDS,
@@ -34,7 +35,7 @@ export const PLAN_APPLICATION_CLEANUP_QUEUE = defineQueue({
     {
       key: "daily-plan-application-cleanup-scheduler",
       cron: "20 3 * * *",
-      timezone: "Asia/Seoul",
+      timezone: JOB_SCHEDULE_TIMEZONE,
       missed: "once",
       payload: { name: PLAN_APPLICATION_CLEANUP_JOB_NAME, data: {} },
     },

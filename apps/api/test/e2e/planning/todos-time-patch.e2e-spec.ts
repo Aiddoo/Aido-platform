@@ -125,7 +125,7 @@ describe("할 일 부분 수정의 로컬 시간 계약", () => {
   });
 
   it.each([
-    { timezone: "UTC", expected: "2026-05-15T12:30:00.000Z" },
+    { timezone: "Atlantic/Reykjavik", expected: "2026-05-15T12:30:00.000Z" },
     { timezone: "America/Los_Angeles", expected: "2026-05-15T19:30:00.000Z" },
   ])("$timezone에서도 저장된 DATE 기준으로 시간만 수정한다", async ({ timezone, expected }) => {
     // When
@@ -136,5 +136,15 @@ describe("할 일 부분 수정의 로컬 시간 계약", () => {
       scheduledTime: expected,
     });
     expect((await savedSchedule())?.scheduledTime).toEqual(Temporal.Instant.from(expected));
+  });
+
+  it("헤더가 UTC면 보고하지 않은 것으로 읽어 저장된 시간대(서울)로 시간을 수정한다", async () => {
+    // When
+    const response = await patch({ scheduledTime: "12:30" }, "UTC").expect(200);
+    // Then
+    expect(response.body.data.todo.scheduledTime).toBe("2026-05-15T03:30:00.000Z");
+    expect((await savedSchedule())?.scheduledTime).toEqual(
+      Temporal.Instant.from("2026-05-15T03:30:00.000Z"),
+    );
   });
 });

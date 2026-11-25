@@ -13,7 +13,7 @@ import {
   type SupportedLocale,
 } from "@aido/api/vocabulary";
 
-import { normalizeIanaTimezone } from "#api/shared/domain/time/timezone-name";
+import { parseDeviceReportedTimezone } from "#api/shared/domain/time/timezone-name";
 
 /** 앱이 매 요청에 보내는 헤더를 요청당 한 번 정규화한 값. 확인되지 않은 값은 null이다. */
 export interface RequestClient {
@@ -25,7 +25,7 @@ export interface RequestClient {
   readonly platform: DeviceType | null;
   readonly osVersion: string | null;
   readonly deviceName: string | null;
-  /** 런타임이 지원하는 정규 IANA X-Timezone */
+  /** 기기가 보고한 X-Timezone(parseDeviceReportedTimezone). UTC와 같은 이름·오프셋·모르는 이름은 보고하지 않은 것(null)이다 */
   readonly timezone: string | null;
   /** Accept-Language를 보냈으면 지원 locale(requestedAppLocale), 보내지 않았으면 null */
   readonly locale: SupportedLocale | null;
@@ -133,7 +133,7 @@ export function parseRequestClient(headers: IncomingHttpHeaders, requestId: stri
     platform: normalizeDevicePlatform(singleValue(headers["x-device-type"])),
     osVersion: matchPattern(singleValue(headers["x-os-version"]), OS_VERSION_PATTERN),
     deviceName: normalizeDeviceName(singleValue(headers["x-device-name"])),
-    timezone: normalizeIanaTimezone(headers["x-timezone"]),
+    timezone: parseDeviceReportedTimezone(headers["x-timezone"]),
     locale: requestedAppLocale(headers["accept-language"], appVersion),
     idempotencyKey: matchPattern(singleValue(headers["idempotency-key"]), IDEMPOTENCY_KEY_PATTERN),
   };

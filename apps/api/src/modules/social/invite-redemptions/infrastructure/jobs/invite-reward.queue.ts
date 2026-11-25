@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { JOB_SCHEDULE_TIMEZONE } from "#api/shared/application/job-schedule-timezone";
 import { defineQueue, JOB_POLLING_SECONDS } from "#api/shared/application/ports/job-queue.port";
 import { toIsoString } from "#api/shared/domain/time/instant";
 import { DAY_SECONDS } from "#api/shared/domain/time/time-units";
@@ -39,10 +40,8 @@ export const INVITE_MAINTENANCE_JOB_NAME = "expire-stale-redemptions";
  */
 export const INVITE_QUALIFY_REMINDER_JOB_NAME = "send-qualify-reminder";
 
-const INVITE_MAINTENANCE_TIMEZONE = "Asia/Seoul";
-
 export const INVITE_MAINTENANCE_SCHEDULE = {
-  timezone: INVITE_MAINTENANCE_TIMEZONE,
+  timezone: JOB_SCHEDULE_TIMEZONE,
   catchUpHour: 3,
 } as const;
 
@@ -69,7 +68,7 @@ export const INVITE_MAINTENANCE_QUEUE = defineQueue({
     {
       key: "daily-invite-maintenance-scheduler",
       cron: "30 3 * * *",
-      timezone: INVITE_MAINTENANCE_TIMEZONE,
+      timezone: JOB_SCHEDULE_TIMEZONE,
       missed: "skip",
       payload: { name: INVITE_MAINTENANCE_JOB_NAME },
     },

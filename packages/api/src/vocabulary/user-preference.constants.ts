@@ -1,5 +1,7 @@
 export const TIME_FORMATS = ["TWELVE_HOUR", "TWENTY_FOUR_HOUR"] as const;
 
+export type TimeFormat = (typeof TIME_FORMATS)[number];
+
 export const USER_PREFERENCE_DEFAULTS = {
   // 가입 seed·DB 기본값과 같다
   PUSH_ENABLED: true,

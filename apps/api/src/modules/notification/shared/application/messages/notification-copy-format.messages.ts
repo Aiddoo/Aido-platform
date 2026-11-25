@@ -1,7 +1,7 @@
-import type { Localized, SupportedLocale } from "@aido/api/vocabulary";
+import type { Localized, SupportedLocale, TimeFormat } from "@aido/api/vocabulary";
 
 import { instantFromDate } from "#api/shared/domain/time/instant";
-import { localDateIn, resolveTimezone } from "#api/shared/domain/time/timezone-name";
+import { localDateIn, resolveDateBoundaryTimezone } from "#api/shared/domain/time/timezone-name";
 
 import type {
   NotificationCopyValues,
@@ -59,41 +59,75 @@ interface LocalizedInstantFormat {
   readonly timezone: string;
 }
 
-const NOTIFICATION_TIME_FORMAT: Localized<(input: LocalizedInstantFormat) => string> = {
-  ko: ({ instant, locale, timezone }) => {
+interface LocalizedTimeFormat extends LocalizedInstantFormat {
+  readonly timeFormat: TimeFormat;
+}
+
+// 앱 시각 표시(date-format.ts getHourCycleOptions)와 같은 시간 주기다
+function hourCycleOptionsOf(timeFormat: TimeFormat): Intl.DateTimeFormatOptions {
+  return timeFormat === "TWELVE_HOUR" ? { hour12: true } : { hourCycle: "h23" };
+}
+
+const NOTIFICATION_TIME_FORMAT: Localized<(input: LocalizedTimeFormat) => string> = {
+  ko: ({ instant, locale, timezone, timeFormat }) => {
     // Intl ko는 분이 있으면 "오후 3:30"이라 정시 표기("오후 3시")와 섞이므로 시·분을 직접 붙인다
     const parts = new Intl.DateTimeFormat(locale, {
       hour: "numeric",
       minute: "numeric",
+      ...hourCycleOptionsOf(timeFormat),
       timeZone: timezone,
     }).formatToParts(instant);
     const minute = Number(parts.find((part) => part.type === "minute")?.value ?? 0);
     const dayPeriod = parts.find((part) => part.type === "dayPeriod")?.value;
-    const hour = parts.find((part) => part.type === "hour")?.value;
+    // 24시간 표기는 Intl이 "09"처럼 두 자리로 주므로 숫자로 읽어 "9시"로 쓴다
+    const hour = Number(parts.find((part) => part.type === "hour")?.value ?? 0);
     const time = minute === 0 ? `${hour}시` : `${hour}시 ${minute}분`;
     return dayPeriod == null ? time : `${dayPeriod} ${time}`;
   },
-  en: ({ instant, locale, timezone }) => {
+  en: ({ instant, locale, timezone, timeFormat }) => {
+    if (timeFormat === "TWENTY_FOUR_HOUR") {
+      return new Intl.DateTimeFormat(locale, {
+        hour: "2-digit",
+        minute: "2-digit",
+        hourCycle: "h23",
+        timeZone: timezone,
+      }).format(instant);
+    }
     const minute = Number(
       new Intl.DateTimeFormat(locale, { minute: "numeric", timeZone: timezone }).format(instant),
     );
     return new Intl.DateTimeFormat(locale, {
       hour: "numeric",
       ...(minute !== 0 && { minute: "2-digit" }),
+      hour12: true,
       timeZone: timezone,
     }).format(instant);
   },
 };
 
 /**
- * 알림 시간대·언어의 짧은 시각 표시. 정시가 아니면 분까지 쓴다(ko "오후 3시"·"오후 3시 30분", en "3 PM"·"3:30 PM").
+ * 알림 시간대·언어·시각 표기의 짧은 시각 표시. 12시간은 정시가 아니면 분까지 쓰고(ko "오후 3시"·"오후 3시 30분",
+ * en "3 PM"·"3:30 PM"), 24시간은 ko "15시"·"15시 30분", en "15:00"·"15:30"이다.
  * 할 일 시각과 시간별 예보는 절대 시각이므로 기기 시간대로 보여 줘야 앱 화면과 같다.
  */
 export function formatWeatherNotificationTime(
   instant: Date,
-  { locale, timezone }: { readonly locale: SupportedLocale; readonly timezone: string },
+  {
+    locale,
+    timezone,
+    timeFormat,
+  }: {
+    readonly locale: SupportedLocale;
+    readonly timezone: string;
+    readonly timeFormat: TimeFormat;
+  },
 ): string {
-  return NOTIFICATION_TIME_FORMAT[locale]({ instant, locale, timezone: resolveTimezone(timezone) });
+  return NOTIFICATION_TIME_FORMAT[locale]({
+    instant,
+    locale,
+    timezone: resolveDateBoundaryTimezone(timezone),
+    timeFormat,
+  });
 }
 
 const BILLING_DATE_FORMAT = {
@@ -108,7 +142,7 @@ export function formatBillingDate(
 ): string {
   return new Intl.DateTimeFormat(locale, {
     ...BILLING_DATE_FORMAT[locale],
-    timeZone: resolveTimezone(timezone),
+    timeZone: resolveDateBoundaryTimezone(timezone),
   }).format(instant);
 }
 
@@ -130,5 +164,9 @@ export function formatConsentDate(
   instant: Date,
   { locale, timezone }: { readonly locale: SupportedLocale; readonly timezone: string },
 ): string {
-  return CONSENT_DATE_FORMAT[locale]({ instant, locale, timezone: resolveTimezone(timezone) });
+  return CONSENT_DATE_FORMAT[locale]({
+    instant,
+    locale,
+    timezone: resolveDateBoundaryTimezone(timezone),
+  });
 }

@@ -11,7 +11,7 @@ import {
   NotificationRecipientTimezoneReaderPort,
 } from "#api/modules/notification/push-dispatches/notification-push-dispatches.public";
 import { instantToDate } from "#api/shared/domain/time/instant";
-import { DEFAULT_DELIVERY_TIMEZONE } from "#api/shared/domain/time/timezone-name";
+import { resolveDeliveryTimezone } from "#api/shared/domain/time/timezone-name";
 
 import type { TrialEndingNotifierPort } from "../../application/ports/trial-ending-notifier.port.js";
 import type { TrialEndingNotice } from "../../domain/trial-ending-notice.entity.js";
@@ -47,7 +47,7 @@ export class TrialEndingNotifierAdapter implements TrialEndingNotifierPort {
       notices.map((notice) => {
         const message = createPremiumTrialEndingNotificationMessage({
           locale: localeOf(notice.userId.value),
-          timezone: timezones.get(notice.userId.value) ?? DEFAULT_DELIVERY_TIMEZONE,
+          timezone: resolveDeliveryTimezone(timezones.get(notice.userId.value)),
           endsAt: instantToDate(notice.expiresAt),
           now: instantToDate(now),
           willRenew: notice.willRenew,

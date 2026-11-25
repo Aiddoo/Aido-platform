@@ -37,7 +37,7 @@ describe("InviteRedemption — 초대 수락", () => {
         inviteId: InviteId.reconstitute(INVITE_FIXTURE_ID),
         inviterId: UserId.reconstitute(INVITE_FIXTURE_INVITER_ID),
         inviteeId: UserId.reconstitute(INVITE_FIXTURE_INVITEE_ID),
-        timezone: Timezone.SEOUL,
+        timezone: Timezone.reconstitute("Asia/Seoul"),
         inviterRewardEligible: false,
         now: JOINED_AT,
       };

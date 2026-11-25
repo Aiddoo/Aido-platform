@@ -1,24 +1,14 @@
 import { invalidTimezone } from "#api/shared/domain/exceptions/shared-domain.errors";
 import { ValueObject } from "#api/shared/domain/model/value-object";
 
-function toCanonicalTimezoneId(raw: string): string | null {
-  try {
-    const timezoneId = new Temporal.ZonedDateTime(0n, raw).timeZoneId;
-    // Temporal은 "+09:00" 같은 고정 오프셋도 받지만 오프셋은 서머타임에서 틀려 IANA 이름만 받는다
-    const isOffset = timezoneId.startsWith("+") || timezoneId.startsWith("-");
-    return isOffset ? null : timezoneId;
-  } catch {
-    return null;
-  }
-}
+import { parseTimezoneName } from "./timezone-name.js";
 
 export class Timezone extends ValueObject<string> {
+  // UTC 그 자체(UTC 달력으로 세는 집계). 날짜 경계를 모를 때의 대체값과는 뜻이 다르다
   static readonly UTC: Timezone = new Timezone("UTC");
-  // 시간대를 모르는 사용자의 기존 기본값
-  static readonly SEOUL: Timezone = new Timezone("Asia/Seoul");
 
   static create(raw: string): Timezone {
-    const timezoneId = toCanonicalTimezoneId(raw);
+    const timezoneId = parseTimezoneName(raw);
     if (timezoneId == null) {
       throw invalidTimezone();
     }

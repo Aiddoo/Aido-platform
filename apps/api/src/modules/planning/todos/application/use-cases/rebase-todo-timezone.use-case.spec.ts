@@ -45,6 +45,30 @@ describe("시간대 재계산", () => {
   it.each([
     { name: "서울 → 뉴욕", date: "2026-11-10", to: NEW_YORK, instant: "2026-11-10T15:00:00.000Z" },
     {
+      name: "서울 → LA(겨울)",
+      date: "2026-11-10",
+      to: "America/Los_Angeles",
+      instant: "2026-11-10T18:00:00.000Z",
+    },
+    {
+      name: "서울 → LA(서머타임)",
+      date: "2027-07-10",
+      to: "America/Los_Angeles",
+      instant: "2027-07-10T17:00:00.000Z",
+    },
+    {
+      name: "카트만두(+05:45)",
+      date: "2026-11-10",
+      to: "Asia/Kathmandu",
+      instant: "2026-11-10T04:15:00.000Z",
+    },
+    {
+      name: "아피아(날짜선 서쪽 +13)",
+      date: "2026-11-10",
+      to: "Pacific/Apia",
+      instant: "2026-11-09T21:00:00.000Z",
+    },
+    {
       name: "런던 서머타임 전날",
       date: "2027-03-27",
       to: "Europe/London",

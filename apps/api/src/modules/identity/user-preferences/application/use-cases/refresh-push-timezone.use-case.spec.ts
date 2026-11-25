@@ -94,4 +94,26 @@ describe("RefreshPushTimezone — 실제 변경에만 설정 캐시 갱신", () 
     expect(fixture.cache.snapshots.has(fixture.userId)).toBe(false);
     expect(fixture.reminderEnqueuer.jobs).toEqual([]);
   });
+
+  it.each([
+    { stored: "Asia/Calcutta", requested: "Asia/Kolkata" },
+    { stored: "Europe/Kiev", requested: "Europe/Kyiv" },
+  ])(
+    "$stored 저장값에 $requested가 오면 같은 시간대라 쓰지 않고 작업도 넣지 않는다",
+    async ({ stored, requested }) => {
+      // Given
+      const fixture = createUserSettingsFixture({ preference: { timezone: stored } });
+
+      // When
+      await new RefreshPushTimezoneUseCase(fixture).execute({
+        userId: fixture.userId,
+        timezone: requested,
+      });
+
+      // Then
+      expect(fixture.preferenceRepository.stored(fixture.userId)?.timezone).toBe(stored);
+      expect(fixture.todoTimezoneRebase.enqueued).toEqual([]);
+      expect(fixture.reminderTimezoneCache.activeTimezoneInvalidations).toBe(0);
+    },
+  );
 });

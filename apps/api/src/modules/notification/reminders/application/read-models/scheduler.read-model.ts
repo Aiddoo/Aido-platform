@@ -4,6 +4,8 @@
  * ORM 조회 형태를 애플리케이션 레이어에 노출하지 않기 위한 명시적 계약.
  * 어댑터가 이 형태로 투영(projection)하고, 전략은 이 타입만 소비한다.
  */
+import type { TimeFormat } from "@aido/api/vocabulary";
+
 import type { UserId } from "#api/shared/domain/identifiers/user-id.vo";
 
 import type { NotificationType } from "../../../shared/domain/notification-type.constants.js";
@@ -103,7 +105,11 @@ export interface WeatherReminderUserReadModel {
   readonly id: string;
   /** 브리핑 시각·오늘 할 일은 사용자 시간대로 정한다 */
   readonly timezone: string;
-  readonly preference: { readonly locale: string } | null;
+  /** 문구의 시각은 사용자가 고른 12·24시간 표기를 따른다 */
+  readonly preference: {
+    readonly locale: string;
+    readonly timeFormat: TimeFormat;
+  } | null;
   readonly location: {
     readonly latitude: number;
     readonly longitude: number;

@@ -6,10 +6,10 @@ import { todoCategoriesOf } from "#api/modules/planning/todo-categories/planning
 import { todosStartingBetween } from "#api/modules/planning/todos/planning-todos-queries.public";
 import type { Database, DrizzleTransactionalAdapter } from "#api/platform/database/database.client";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { instantToDate } from "#api/shared/domain/time/instant";
+import { instantFromDate, instantToDate } from "#api/shared/domain/time/instant";
 import { plainDateToDate } from "#api/shared/domain/time/plain-date";
+import { localDateIn } from "#api/shared/domain/time/timezone-name";
 
-import { localDateAt } from "../../../shared/domain/user-calendar.domain-service.js";
 import { TodoStatsReaderPort } from "../../application/ports/todo-stats.reader.port.js";
 import type { AggregateParams, AggregationInputs } from "../../domain/ai-reports.constants.js";
 import { toAggregationInputs } from "./report-aggregation.mapper.js";
@@ -77,7 +77,7 @@ export class DrizzleTodoStatsReader extends TodoStatsReaderPort {
     const { startDate, endDate, prevStartDate, prevEndDate, timezone } = params;
     const userId = UserId.reconstitute(params.userId);
     const db = this.#transactionHost.tx;
-    const day = (value: Date) => localDateAt(value, timezone);
+    const day = (value: Date) => localDateIn(instantFromDate(value), timezone);
     const current = { userId, start: day(startDate), end: day(endDate) };
     const previous = { userId, start: day(prevStartDate), end: day(prevEndDate) };
     const [daily, prev, category, categories, completed] = await Promise.all([

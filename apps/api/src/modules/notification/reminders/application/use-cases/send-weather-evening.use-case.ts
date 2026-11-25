@@ -2,6 +2,7 @@ import { decideEveningWeatherBriefing } from "#api/modules/weather/weather-repor
 import type { ApplicationLoggerPort } from "#api/shared/application/ports/application-logger.port";
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
+import { resolveDeliveryTimezone } from "#api/shared/domain/time/timezone-name";
 
 import type {
   NotificationHistoryReaderPort,
@@ -121,7 +122,7 @@ export class SendWeatherEveningUseCase implements TimezoneReminderStrategyPort {
           ? null
           : decideEveningWeatherBriefing(located.report, {
               now,
-              timezone: user.timezone,
+              timezone: resolveDeliveryTimezone(user.timezone),
               locationTimezone: located.timezone,
             });
       if (briefing == null) {

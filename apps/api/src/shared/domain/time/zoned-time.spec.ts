@@ -9,7 +9,7 @@ describe("toZonedInstant — 떠 있는 시각을 순간으로", () => {
       label: "서울 오전 10시",
       date: "2026-11-10",
       time: "10:00",
-      timezone: Timezone.SEOUL,
+      timezone: Timezone.reconstitute("Asia/Seoul"),
       expected: "2026-11-10T01:00:00Z",
     },
     {
@@ -47,13 +47,13 @@ describe("localDateOf — 순간의 현지 날짜", () => {
     {
       label: "서울 자정 직전",
       instant: "2026-11-09T14:59:59.999Z",
-      timezone: Timezone.SEOUL,
+      timezone: Timezone.reconstitute("Asia/Seoul"),
       expected: "2026-11-09",
     },
     {
       label: "서울 자정",
       instant: "2026-11-09T15:00:00Z",
-      timezone: Timezone.SEOUL,
+      timezone: Timezone.reconstitute("Asia/Seoul"),
       expected: "2026-11-10",
     },
     {

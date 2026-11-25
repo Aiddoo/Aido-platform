@@ -35,7 +35,7 @@ describe("parseRequestClient — 요청 헤더를 한 번 정규화한다", () =
       platform: "IOS",
       osVersion: "18.1",
       deviceName: "iPhone 16 Pro",
-      timezone: "America/New_York",
+      timezone: "US/Eastern",
       locale: "en",
       idempotencyKey: null,
     });
@@ -72,6 +72,9 @@ describe("parseRequestClient — 요청 헤더를 한 번 정규화한다", () =
     ["제어문자만 있는 기기 이름", { "x-device-name": "\n\t\u0000" }, "deviceName"],
     ["IANA가 아닌 시간대", { "x-timezone": "Mars/Olympus" }, "timezone"],
     ["빈 시간대", { "x-timezone": "  " }, "timezone"],
+    ["고정 오프셋 시간대", { "x-timezone": "+09:00" }, "timezone"],
+    ["UTC 시간대(기기 시간대를 못 읽은 출시 앱)", { "x-timezone": "UTC" }, "timezone"],
+    ["UTC와 같은 이름", { "x-timezone": "Etc/UTC" }, "timezone"],
     ["중복 헤더(배열)", { "x-device-name": ["a", "b"] }, "deviceName"],
   ])("%s는 null로 둔다", (_name, headers, field) => {
     // When

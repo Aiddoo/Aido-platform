@@ -1,6 +1,9 @@
 import {
   NUDGE_REPLY_KINDS,
   SUBSCRIPTION_PLAN_TYPES,
+  TIME_FORMATS,
+  type TimeFormat,
+  USER_PREFERENCE_DEFAULTS,
   WEATHER_CONDITIONS,
   WEATHER_DAY_PARTS,
 } from "@aido/api/vocabulary";
@@ -26,6 +29,8 @@ const nameFact = z.string().nullable();
 const instantFact = z.iso.datetime();
 /** 옛 사실에는 시간대가 없을 수 있어 그때는 다시 렌더링하지 않는다 */
 const timezoneFact = z.string().nullable();
+/** 1.17.1 전 사실에는 시각 표기가 없어 기본값(12시간)으로 다시 렌더링한다 */
+const timeFormatFact = z.enum(TIME_FORMATS).default(USER_PREFERENCE_DEFAULTS.TIME_FORMAT);
 
 type StaticVariant = { readonly title: NotificationCopyText; readonly body: NotificationCopyText };
 
@@ -44,8 +49,15 @@ function staticCopy(
 /** 저장한 시각을 그 언어·시간대로 쓴다. 푸시를 만들 때는 호출자가 준 표시 함수를 그대로 쓴다. */
 function weatherTime(
   context: NotificationCopyContext,
-  instant: string,
-  timezone: string | null,
+  {
+    instant,
+    timezone,
+    timeFormat,
+  }: {
+    readonly instant: string;
+    readonly timezone: string | null;
+    readonly timeFormat: TimeFormat;
+  },
 ): string | null {
   const at = new Date(instant);
   if (context.overrides.formatTime != null) {
@@ -53,7 +65,7 @@ function weatherTime(
   }
   return timezone == null
     ? null
-    : formatWeatherNotificationTime(at, { locale: context.locale, timezone });
+    : formatWeatherNotificationTime(at, { locale: context.locale, timezone, timeFormat });
 }
 
 function todoWeatherCopy({
@@ -66,12 +78,17 @@ function todoWeatherCopy({
   readonly facts: {
     readonly scheduledAt: string;
     readonly timezone: string | null;
+    readonly timeFormat: TimeFormat;
     readonly todoTitle: string;
   };
   readonly context: NotificationCopyContext;
   readonly values?: Readonly<Record<string, string | number>>;
 }): NotificationCopy | null {
-  const time = weatherTime(context, facts.scheduledAt, facts.timezone);
+  const time = weatherTime(context, {
+    instant: facts.scheduledAt,
+    timezone: facts.timezone,
+    timeFormat: facts.timeFormat,
+  });
   return time == null
     ? null
     : context.copy(variant, { ...values, time, todoTitle: context.preview(facts.todoTitle) });
@@ -99,9 +116,16 @@ function billingDate(
   });
 }
 
+const laterWeatherFacts = z.object({
+  startsAt: instantFact,
+  timezone: timezoneFact,
+  timeFormat: timeFormatFact,
+});
+
 const todoWeatherFacts = z.object({
   scheduledAt: instantFact,
   timezone: timezoneFact,
+  timeFormat: timeFormatFact,
   todoTitle: z.string(),
 });
 
@@ -245,18 +269,26 @@ export const WEATHER_COPY = {
   MORNING_RAIN_LATER: defineNotificationCopy({
     key: "weather.MORNING_RAIN_LATER",
     variants: (catalog) => catalog.weather.MORNING_RAIN_LATER,
-    facts: z.object({ startsAt: instantFact, timezone: timezoneFact }),
+    facts: laterWeatherFacts,
     render: (variant, facts, context) => {
-      const time = weatherTime(context, facts.startsAt, facts.timezone);
+      const time = weatherTime(context, {
+        instant: facts.startsAt,
+        timezone: facts.timezone,
+        timeFormat: facts.timeFormat,
+      });
       return time == null ? null : context.copy(variant, { time });
     },
   }),
   MORNING_SNOW_LATER: defineNotificationCopy({
     key: "weather.MORNING_SNOW_LATER",
     variants: (catalog) => catalog.weather.MORNING_SNOW_LATER,
-    facts: z.object({ startsAt: instantFact, timezone: timezoneFact }),
+    facts: laterWeatherFacts,
     render: (variant, facts, context) => {
-      const time = weatherTime(context, facts.startsAt, facts.timezone);
+      const time = weatherTime(context, {
+        instant: facts.startsAt,
+        timezone: facts.timezone,
+        timeFormat: facts.timeFormat,
+      });
       return time == null ? null : context.copy(variant, { time });
     },
   }),

@@ -196,7 +196,7 @@ export function describeCompletionGroupReaderContract(
       // Given
       const counter = countByDay(await createReader([span("2026-11-30", "2026-12-01")]));
       const instant = Temporal.Instant.from("2026-11-30T16:30:00Z");
-      const seoulToday = localDateOf(instant, Timezone.SEOUL);
+      const seoulToday = localDateOf(instant, Timezone.reconstitute("Asia/Seoul"));
       const laToday = localDateOf(instant, Timezone.create("America/Los_Angeles"));
 
       // When

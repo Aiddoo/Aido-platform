@@ -6,8 +6,24 @@ import { createSuggestionAnalysisRunFixture } from "#test/fixtures/ai-assistance
 import {
   isInSuggestionDispatchWindow,
   nextSuggestionDispatchAt,
+  resolveSuggestionTimezone,
   suggestionDispatchLocalDate,
 } from "./suggestion-dispatch-window.domain-service.js";
+
+describe("resolveSuggestionTimezone", () => {
+  it.each([
+    { stored: null, expected: "Asia/Seoul" },
+    { stored: "UTC", expected: "Asia/Seoul" },
+    { stored: "Mars/Olympus", expected: "Asia/Seoul" },
+    { stored: "America/New_York", expected: "America/New_York" },
+  ])("저장값 $stored의 발송 창은 $expected로 정한다", ({ stored, expected }) => {
+    // When
+    const timezone = resolveSuggestionTimezone(stored);
+
+    // Then
+    expect(timezone).toBe(expected);
+  });
+});
 
 describe("isInSuggestionDispatchWindow", () => {
   it.each([

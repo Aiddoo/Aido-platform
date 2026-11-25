@@ -2,7 +2,7 @@ import type { ApplicationLoggerPort } from "#api/shared/application/ports/applic
 import type { ClockPort } from "#api/shared/application/ports/clock.port";
 import { toErrorType } from "#api/shared/application/utils/error-message.util";
 import { UserId } from "#api/shared/domain/identifiers/user-id.vo";
-import { localDateIn, resolveTimezone } from "#api/shared/domain/time/timezone-name";
+import { localDateIn, resolveDateBoundaryTimezone } from "#api/shared/domain/time/timezone-name";
 
 import { GeoCell } from "../../../shared/domain/geo-cell.vo.js";
 import { isKoreanWeatherCovered } from "../../../shared/domain/korean-weather-coverage.domain-service.js";
@@ -152,7 +152,9 @@ export class GetWeatherReportUseCase {
   ): Promise<WeatherBriefingTodo[]> {
     const today = localDateIn(now, timezone);
     // 서머타임으로 자정이 없는 날은 그날 첫 순간이다
-    const tomorrowStart = today.add({ days: 1 }).toZonedDateTime(resolveTimezone(timezone));
+    const tomorrowStart = today
+      .add({ days: 1 })
+      .toZonedDateTime(resolveDateBoundaryTimezone(timezone));
     return this.#dependencies.scheduledTodoReader.listPendingTimedTodos({
       userId,
       date: today,
