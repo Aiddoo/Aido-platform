@@ -1,10 +1,10 @@
 import { toInstant } from '@src/shared/date/instant';
 
 import {
-  AchievementPolicy,
   type WeeklyAchievement,
+  WeeklyAchievementPolicy,
   weeklyAchievementSchema,
-} from './achievement.model';
+} from './weekly-achievement.model';
 
 function createWeeklyAchievement(overrides: Partial<WeeklyAchievement> = {}) {
   return weeklyAchievementSchema.parse({
@@ -20,7 +20,7 @@ function createWeeklyAchievement(overrides: Partial<WeeklyAchievement> = {}) {
   });
 }
 
-describe('AchievementPolicy', () => {
+describe('WeeklyAchievementPolicy', () => {
   describe('getBadgeType', () => {
     it.each([
       { name: '모두 끝낸 주', completedTodos: 10, totalTodos: 10, expected: 'perfect' },
@@ -37,7 +37,7 @@ describe('AchievementPolicy', () => {
         });
 
         // When
-        const badgeType = AchievementPolicy.getBadgeType(achievement);
+        const badgeType = WeeklyAchievementPolicy.getBadgeType(achievement);
 
         // Then
         expect(badgeType).toBe(expected);

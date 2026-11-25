@@ -7,8 +7,8 @@ import {
   diffDateKeysInDays,
   getDayOfWeek,
   getIsoWeekNumber,
+  getIsoWeekDateRange,
   getIsoWeekYear,
-  getMondayOfDateKey,
   getMonthEndDateKey,
   getMonthStartDateKey,
   getYearOfDateKey,
@@ -28,7 +28,12 @@ import {
   SAMPLE_MISSED_TODO_COUNTS,
   SAMPLE_TRAILING_PERFECT_DAYS,
 } from '../constants/sample-report.constants';
-import type { AiReport, DailyCompletion, ReportType } from '../domains/report.model';
+import {
+  type AiReport,
+  type DailyCompletion,
+  findPeakHour,
+  type ReportType,
+} from '../domains/report.model';
 import type { TrendWeek } from './report-chart.view-model';
 
 /** 예시 리포트의 만든 시각은 화면에 보이지 않아 기기 시간대 대신 고정 시간대로 정한다 */
@@ -107,10 +112,9 @@ function getSamplePeriod(
   todayKey: DateKey,
 ): AiReport['dateRange'] {
   return match(type)
-    .with('WEEKLY', () => {
-      const startDate = addDaysToDateKey(getMondayOfDateKey(todayKey), -DAYS_PER_WEEK * periodsAgo);
-      return { startDate, endDate: addDaysToDateKey(startDate, DAYS_PER_WEEK - 1) };
-    })
+    .with('WEEKLY', () =>
+      getIsoWeekDateRange(addDaysToDateKey(todayKey, -DAYS_PER_WEEK * periodsAgo)),
+    )
     .with('MONTHLY', () => {
       const startDate = getMonthStartDateKey(addMonthsToDateKey(todayKey, -periodsAgo));
       return { startDate, endDate: getMonthEndDateKey(startDate) };
@@ -190,16 +194,6 @@ function createSampleCategory(
 ): AiReport['categoryBreakdown'][number] {
   const completed = total - missed;
   return { name, color, total, completed, rate: completionRate(completed, total) };
-}
-
-/** 서버 findPeakHour와 같은 규칙이다. 가장 많이 끝낸 시각, 같으면 이른 시각이고 끝낸 할 일이 없으면 null이다 */
-function findPeakHour(timePatterns: AiReport['timePatterns']): number | null {
-  const [peak] = orderBy(
-    timePatterns.filter(({ count }) => count > 0),
-    ['count', 'hour'],
-    ['desc', 'asc'],
-  );
-  return peak?.hour ?? null;
 }
 
 function createSampleTimePatterns(completedTodos: number): AiReport['timePatterns'] {

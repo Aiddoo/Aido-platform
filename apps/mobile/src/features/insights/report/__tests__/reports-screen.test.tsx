@@ -251,7 +251,7 @@ describe('ReportsScreen', () => {
         pathname: '/paywall',
         params: { feature: 'AI_REPORT' },
       });
-      expect(getTrackedEvents(analytics, 'premium_gate_cta_tapped')).toHaveLength(2);
+      expect(getTrackedEvents(analytics, 'premium_gate_cta_tapped')).toHaveLength(1);
     });
 
     it('예시 추세 차트는 골라도 리포트 지표를 남기지 않는다', async () => {

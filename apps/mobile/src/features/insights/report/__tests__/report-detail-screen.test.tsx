@@ -117,10 +117,11 @@ describe('ReportDetailRoute', () => {
         get: { 'v1/ai/reports/99': fail(createApiError(ErrorCode.AI_1304)) },
       }),
     });
+    const backToList = await screen.findByRole('button', { name: '리포트 목록으로' });
 
     // When
     await act(async () => {
-      await fireEvent.press(await screen.findByRole('button', { name: '리포트 목록으로' }));
+      await fireEvent.press(backToList);
     });
 
     // Then

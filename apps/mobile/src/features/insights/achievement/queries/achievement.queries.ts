@@ -3,7 +3,7 @@ import { unwrap } from '@src/core/errors/result';
 import { getNextCursor, selectPageItems } from '@src/shared/query/cursor-page';
 import { type InfiniteData, infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 
-import type { WeeklyAchievementPage } from '../domains/achievement.model';
+import type { WeeklyAchievementPage } from '../domains/weekly-achievement-page.model';
 import { ACHIEVEMENT_QUERY_KEYS } from './achievement-query-keys';
 
 const FIRST_PAGE_CURSOR: number | undefined = undefined;

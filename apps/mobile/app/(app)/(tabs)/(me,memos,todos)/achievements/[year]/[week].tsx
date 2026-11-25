@@ -1,6 +1,6 @@
 import { WeeklyAchievementCertificate } from '@src/features/insights/achievement/components/weekly-achievement-certificate';
+import { useAchievementWeek } from '@src/features/insights/achievement/hooks/use-achievement-params';
 import { achievementParamsSchema } from '@src/features/insights/achievement/schemas/achievement-params.schema';
-import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useRouteParamsOrRedirect } from '@src/shared/hooks/use-route-params-or-redirect';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, QueryErrorBoundary, SafeAreaScrollView } from '@src/shared/ui';
@@ -22,7 +22,7 @@ export default function AchievementDetailRoute() {
 function AchievementDetailScreen() {
   const { t } = useTranslation('achievement');
 
-  const [{ year, week }] = useRouteParams(achievementParamsSchema);
+  const [{ year, week }] = useAchievementWeek();
 
   return (
     <>

@@ -1,11 +1,11 @@
 import { ok } from '@src/core/errors/result';
-import { getWeeklyRecordRange } from '@src/features/insights/report/utils/weekly-record.view-model';
 import { FORECAST_DAYS } from '@src/features/weather/constants/weather.constants';
 import { MINUTE_MS } from '@src/shared/constants/time-units';
 import {
   addDaysToDateKey,
   diffDateKeysInDays,
   getCalendarWeek,
+  getIsoWeekDateRange,
   type DateKey,
 } from '@src/shared/date/date-key';
 import { createHttpClientStub, createTestDi, createTestQueryClient } from '@src/testing/core';
@@ -78,7 +78,7 @@ describe('완료 기록 조회', () => {
       const todayKey = createDateKey(today);
       const week = getCalendarWeek(todayKey);
       const widgetRange = { startDate: week.startDateKey, endDate: week.endDateKey };
-      const weeklyRange = getWeeklyRecordRange(todayKey);
+      const weeklyRange = getIsoWeekDateRange(todayKey);
       const forecastRange = {
         startDate: todayKey,
         endDate: addDaysToDateKey(todayKey, FORECAST_DAYS - 1),

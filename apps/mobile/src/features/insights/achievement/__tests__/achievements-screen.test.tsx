@@ -235,7 +235,7 @@ describe('달성 배지 화면', () => {
 
     // Then
     await waitFor(() => expect(systemShare.shareImage).toHaveBeenCalledTimes(1));
-    expect(getTrackedEvents(analytics, 'badge_share_attempted')).toHaveLength(2);
+    expect(getTrackedEvents(analytics, 'badge_share_attempted')).toHaveLength(1);
   });
 
   it('기록이 하나도 없으면 빈 상장의 지금 시작하기가 피드를 한 번 열고 한 번 남긴다', async () => {
@@ -253,6 +253,6 @@ describe('달성 배지 화면', () => {
     expect(screen.getByText('배지를 모으면 기록이 쌓여요')).toBeOnTheScreen();
     expect(router.push).toHaveBeenCalledTimes(1);
     expect(router.push).toHaveBeenCalledWith('/feed');
-    expect(getTrackedEvents(analytics, 'badge_empty_cta_tapped')).toHaveLength(2);
+    expect(getTrackedEvents(analytics, 'badge_empty_cta_tapped')).toHaveLength(1);
   });
 });

@@ -1,7 +1,7 @@
 import { SuggestionsPreview } from '@src/features/assistant/suggestion/components/suggestions-preview';
 import { ActivityReport } from '@src/features/insights/report/components/activity-report';
+import { useReportId } from '@src/features/insights/report/hooks/use-report-params';
 import { reportParamsSchema } from '@src/features/insights/report/schemas/report-params.schema';
-import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useRouteParamsOrRedirect } from '@src/shared/hooks/use-route-params-or-redirect';
 import {
   QueryErrorBoundary,
@@ -23,7 +23,7 @@ export default function ReportDetailRoute() {
 }
 
 function ReportDetailScreen() {
-  const [{ reportId }] = useRouteParams(reportParamsSchema);
+  const [reportId] = useReportId();
 
   return (
     <SafeAreaScrollView className="flex-1 bg-white" contentContainerClassName="grow">

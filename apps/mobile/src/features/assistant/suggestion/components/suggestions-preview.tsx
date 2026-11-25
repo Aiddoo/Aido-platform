@@ -17,18 +17,17 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { usePrefetchQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { range, take } from 'es-toolkit';
+import { range } from 'es-toolkit';
 import { useRouter, useIsFocused } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 
-import type { AiSuggestionList } from '../domains/suggestion-analysis.model';
-import type { AiSuggestion } from '../domains/suggestion.model';
-import { useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
-import { getSuggestionSchedule } from '../utils/suggestion-schedule.view-model';
-
-const PREVIEW_SUGGESTION_COUNT = 2;
+import { PREVIEW_SUGGESTION_COUNT } from '../constants/suggestion.constants';
+import { type AiSuggestion, AiSuggestionPolicy } from '../domains/suggestion.model';
+import { SuggestionListSelect, useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
+import { formatSuggestionTime } from '../utils/suggestion-schedule.view-model';
 
 interface SuggestionsPreviewProps {
+  /** 리포트 영수증과의 간격은 상세 화면이 정한다 */
   className?: string;
 }
 
@@ -41,7 +40,7 @@ export function SuggestionsPreview({ className }: SuggestionsPreviewProps) {
   const isFocused = useIsFocused();
   const { data: suggestions } = useSuspenseQuery({
     ...useGetSuggestionsQueryOptions(),
-    select: (list: AiSuggestionList) => take(list.suggestions, PREVIEW_SUGGESTION_COUNT),
+    select: SuggestionListSelect.preview,
     subscribed: isFocused,
   });
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
@@ -91,10 +90,6 @@ SuggestionsPreview.Item = function Item({
   const dateFormatContext = useDateFormatContext();
   const router = useRouter();
   const push = useSingleTap(router.push);
-  const { repeat, timeLabel } = getSuggestionSchedule(suggestion, {
-    timeFormat,
-    dateFormatContext,
-  });
 
   const handleMakePress = () =>
     push({
@@ -113,7 +108,11 @@ SuggestionsPreview.Item = function Item({
           }
           isPrivate={false}
         />
-        <TodoRow.ScheduleLine repeat={repeat} isRepeating timeLabel={timeLabel} />
+        <TodoRow.ScheduleLine
+          repeat={AiSuggestionPolicy.getTodoRepeat(suggestion)}
+          isRepeating
+          timeLabel={formatSuggestionTime(suggestion, timeFormat, dateFormatContext)}
+        />
       </VStack>
 
       <Spacing size={12} />

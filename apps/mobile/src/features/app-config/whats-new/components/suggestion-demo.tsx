@@ -26,6 +26,8 @@ import { useDemoScript } from '../hooks/use-demo-script';
 import { WhatsNewStep } from './whats-new-step';
 
 type DemoSuggestion = (typeof DEMO_SUGGESTIONS)[number];
+/** 서버에 없는 예시 제안이라 처리 요청에 쓰지 않는 id다. 행은 예시 이름으로 구분한다 */
+const UNSENT_SUGGESTION_ID = 0;
 type DemoSuggestionId = DemoSuggestion['id'];
 
 const ROW_ENTERING = FadeIn.duration(ANIMATION.durationMs.slow).reduceMotion(ReduceMotion.System);
@@ -157,6 +159,13 @@ export function SuggestionListDemo({ onMake }: SuggestionListDemoProps) {
 function toDemoSuggestion(
   { daysOfWeek, scheduledTime, evidence }: DemoSuggestion,
   title: string,
-): Pick<AiSuggestion, 'title' | 'daysOfWeek' | 'scheduledTime' | 'evidence'> {
-  return { title, daysOfWeek: [...daysOfWeek], scheduledTime, evidence };
+): AiSuggestion {
+  return {
+    id: UNSENT_SUGGESTION_ID,
+    title,
+    daysOfWeek: [...daysOfWeek],
+    scheduledTime,
+    suggestedCategoryId: null,
+    evidence,
+  };
 }

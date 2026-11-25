@@ -7,9 +7,12 @@ import { match } from 'ts-pattern';
 import type { ReportType } from '../domains/report.model';
 import { getReportTypeLabelKey } from '../utils/report-label.view-model';
 
-type ReportTypeChipProps = Omit<ComponentProps<typeof Chip>, 'children' | 'color' | 'variant'> & {
+interface ReportTypeChipProps extends Omit<
+  ComponentProps<typeof Chip>,
+  'children' | 'color' | 'variant'
+> {
   type: ReportType;
-};
+}
 
 export function ReportTypeChip({ type, ...props }: ReportTypeChipProps) {
   const { t } = useTranslation('ai');

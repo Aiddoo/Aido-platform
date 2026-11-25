@@ -67,7 +67,7 @@ describe('AchievementDetailRoute', () => {
     // Then
     expect(screen.getByText(/11월 3주차에/)).toBeOnTheScreen();
     await waitFor(() => expect(systemShare.shareImage).toHaveBeenCalledTimes(1));
-    expect(getTrackedEvents(analytics, 'badge_share_attempted')).toHaveLength(2);
+    expect(getTrackedEvents(analytics, 'badge_share_attempted')).toHaveLength(1);
     expect(getTrackedEvents(analytics, 'badge_share_attempted')[0]).toEqual({
       badge_type: 'almost',
       year: 2026,

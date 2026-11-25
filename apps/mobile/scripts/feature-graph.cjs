@@ -269,17 +269,15 @@ const LOCAL_ONLY_CANDIDATE = /^src\/features\/.+\/(?:components|hooks)\/.+\.tsx?
 // route·bootstrap이 쓰는 파일은 기능의 공개 면이라 따로 둔다. 컴포넌트·훅 하나만 쓰면 그 파일의 지역 조각이다
 const COMPONENT_OR_HOOK_IMPORTER = /^src\/(?:features|shared)\/.+\/(?:components|hooks)\//u;
 // 래칫: 아직 고치지 않은 feature. 그 feature 층이 끝나면 지운다. 남길 파일(Skia 레이어·차트·상태 기계 훅)은 자체 테스트를 둔다
-const LOCAL_ONLY_PENDING_FEATURES = new Set([
-  'app-config/whats-new',
-  'device/coachmark',
-  'insights/report',
-]);
+const LOCAL_ONLY_PENDING_FEATURES = new Set(['app-config/whats-new', 'device/coachmark']);
 
 // 한 파일만 쓰지만 따로 두는 파일과 이유. 새 파일은 경고하고, 더는 해당하지 않는 파일은 목록에서 지우라고 실패한다.
 // `/`로 끝나는 항목은 그 폴더 아래 전부다. 같은 이유로 따로 두는 파일 묶음(Skia 장면 레이어)을 한 줄로 적는다
 const ALLOWED_LOCAL_ONLY_FILES = {
   'src/features/weather/components/weather-scene-canvas/':
     '하늘 장면(weather-scene-canvas)과 그 레이어(구름·비·눈·번개·밤하늘 등)다. 레이어마다 셰이더·입자·경로 수명을 스스로 갖는 완결된 Skia 그리기 부품이고 Canvas 안에서 도는 코드라, 장면 파일에 합치면 3,000줄이 넘는다',
+  'src/features/insights/report/components/completion-trend-line.tsx':
+    '리포트 목록의 최근 카드만 쓴다. 주별 완료율을 받은 값만으로 그리는 스스로 완결된 Skia 추세선 차트(경로 수명·밀기·접근성 조절)라 목록 파일에 합치면 900줄이 넘는다',
   'src/features/weather/components/weather-detail-grid/weather-dial.tsx':
     '상세 격자만 쓴다. 나침반·기압계를 받은 값만으로 그리는 스스로 완결된 SVG 다이얼이다',
   'src/features/weather/components/weather-sun-moon/weather-sun-arc.tsx':

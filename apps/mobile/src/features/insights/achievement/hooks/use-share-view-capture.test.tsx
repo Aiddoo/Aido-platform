@@ -13,7 +13,7 @@ async function setup() {
   const systemShare = createSystemShareGatewayStub();
   const viewCapture = createViewCaptureGatewayStub();
   const viewRef = { current: { capture: async () => 'file:///ref.png' } };
-  const hook = await renderScreenHook(() => useShareViewCapture(viewRef), {
+  const hook = await renderScreenHook(() => useShareViewCapture(viewRef, { onShare: jest.fn() }), {
     di: createTestDi({ ports: { systemShare, viewCapture } }),
   });
   return { ...hook, systemShare, viewCapture, viewRef };

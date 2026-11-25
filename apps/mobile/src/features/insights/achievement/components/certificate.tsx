@@ -24,14 +24,6 @@ export function Certificate({ subtitle, children }: { subtitle?: ReactNode; chil
   );
 }
 
-Certificate.Subtitle = function Subtitle({ children }: { children: string }) {
-  return (
-    <Text size="b4" shade={6} weight="medium">
-      {children}
-    </Text>
-  );
-};
-
 Certificate.Ornament = function Ornament() {
   return (
     <Text tone="brand" align="center">

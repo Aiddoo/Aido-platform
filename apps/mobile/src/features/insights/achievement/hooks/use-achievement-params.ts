@@ -2,7 +2,17 @@ import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useTodayKey } from '@src/shared/hooks/use-today-key';
 
 import { type AchievementYears, AchievementYearsPolicy } from '../domains/achievement-years.model';
-import { achievementListParamsSchema } from '../schemas/achievement-params.schema';
+import {
+  achievementListParamsSchema,
+  achievementParamsSchema,
+} from '../schemas/achievement-params.schema';
+
+/** 주 상장 주소의 ISO 연·주. 상세 화면과 상장이 같은 값을 읽는다 */
+export function useAchievementWeek() {
+  const [{ year, week }] = useRouteParams(achievementParamsSchema);
+
+  return [{ year, week }] as const;
+}
 
 /** 배지 화면 URL에서 고른 해(`year`). 고르지 않았으면 undefined다 */
 export function useSelectedAchievementYear() {

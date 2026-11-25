@@ -27,14 +27,18 @@ import { useMutation, usePrefetchQuery, useQuery, useSuspenseQuery } from '@tans
 import { useRouter, useIsFocused } from 'expo-router';
 
 import { isSuggestionsPremiumRequiredError } from '../domains/suggestion.error';
-import type { AiSuggestion } from '../domains/suggestion.model';
+import { type AiSuggestion, AiSuggestionPolicy } from '../domains/suggestion.model';
+import { usePromptSuggestionLimit } from '../hooks/use-prompt-suggestion-limit';
 import { useActOnSuggestionMutationOptions } from '../queries/suggestion.mutations';
 import { useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
-import { getSuggestionSchedule } from '../utils/suggestion-schedule.view-model';
+import { formatSuggestionTime } from '../utils/suggestion-schedule.view-model';
 import { SuggestionStatus } from './suggestion-status';
 
+/** 무료 예시 제안. 서버에 없는 제안이라 처리 요청에 쓰지 않는 id다 */
+const EXAMPLE_SUGGESTION_ID = 0;
+
 interface SuggestionItemProps {
-  suggestion: Pick<AiSuggestion, 'title' | 'daysOfWeek' | 'scheduledTime' | 'evidence'>;
+  suggestion: AiSuggestion;
   timeFormat: TimeFormat;
   onMake: () => void;
   onDismiss: () => void;
@@ -54,8 +58,8 @@ export function SuggestionsList() {
     subscribed: isFocused,
   });
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
-  const dismissSuggestionMutation = useMutation(useActOnSuggestionMutationOptions());
   const router = useRouter();
+  // 시트를 여는 이동은 줄과 상관없이 한 번만 쌓이게 목록이 가드 하나를 갖는다
   const push = useSingleTap(router.push);
 
   if (list.suggestions.length === 0) {
@@ -65,29 +69,16 @@ export function SuggestionsList() {
   const handleMake = (suggestionId: number) =>
     push({ pathname: '/suggestions/[suggestionId]/category', params: { suggestionId } });
 
-  const handleDismiss = (suggestionId: number) => {
-    dismissSuggestionMutation.mutate({
-      suggestionId,
-      input: { action: 'dismiss' },
-      source: 'suggestions_screen',
-    });
-  };
-
   return (
     <>
       <DashedDivider className="mx-5" />
       <Box className="px-5 pt-1">
         {list.suggestions.map((suggestion, index) => (
-          <SuggestionsList.Item
+          <PendingSuggestion
             key={suggestion.id}
             suggestion={suggestion}
             timeFormat={preference.timeFormat}
             onMake={() => handleMake(suggestion.id)}
-            onDismiss={() => handleDismiss(suggestion.id)}
-            isDismissing={
-              dismissSuggestionMutation.isPending &&
-              dismissSuggestionMutation.variables?.suggestionId === suggestion.id
-            }
             isLast={index === list.suggestions.length - 1}
           />
         ))}
@@ -114,10 +105,6 @@ SuggestionsList.Item = function Item({
 }: SuggestionItemProps) {
   const { t } = useTranslation('ai');
   const dateFormatContext = useDateFormatContext();
-  const { repeat, timeLabel } = getSuggestionSchedule(suggestion, {
-    timeFormat,
-    dateFormatContext,
-  });
 
   return (
     <Box className="py-3">
@@ -130,7 +117,11 @@ SuggestionsList.Item = function Item({
           }
           isPrivate={false}
         />
-        <TodoRow.ScheduleLine repeat={repeat} isRepeating timeLabel={timeLabel} />
+        <TodoRow.ScheduleLine
+          repeat={AiSuggestionPolicy.getTodoRepeat(suggestion)}
+          isRepeating
+          timeLabel={formatSuggestionTime(suggestion, timeFormat, dateFormatContext)}
+        />
         {suggestion.evidence != null && (
           <Text size="e1" shade={6}>
             {t('suggestions.item.evidence', {
@@ -173,7 +164,6 @@ SuggestionsList.Item = function Item({
 /** 무료는 실제 제안 화면과 같은 영수증에 예시 제안을 그린다. 줄의 버튼과 아래 버튼은 모두 결제 화면으로 간다 */
 SuggestionsList.Free = function Free() {
   const router = useRouter();
-  const push = useSingleTap(router.push);
   const { t } = useTranslation('ai');
   const { trackEvent } = useTrack();
   // 예시라 설정을 받기까지 기다리지 않고 기본 표기로 먼저 보인다
@@ -187,10 +177,11 @@ SuggestionsList.Free = function Free() {
 
   useTrackView('premium_gate_shown', { key: gateParams.feature, params: gateParams });
 
-  const handleSubscribePress = () => {
+  // 결제 화면을 한 번 여는 누름은 지표도 한 번만 남긴다
+  const handleSubscribePress = useSingleTap(() => {
     trackEvent('premium_gate_cta_tapped', gateParams);
-    push({ pathname: '/paywall', params: { feature: 'AI_SUGGESTION' } });
-  };
+    router.push({ pathname: '/paywall', params: { feature: 'AI_SUGGESTION' } });
+  });
 
   return (
     <VStack gap={16}>
@@ -208,6 +199,8 @@ SuggestionsList.Free = function Free() {
           </Box>
           <SuggestionsList.Item
             suggestion={{
+              id: EXAMPLE_SUGGESTION_ID,
+              suggestedCategoryId: null,
               title: t('suggestions.paywall.examples.vitamins'),
               daysOfWeek: [...DAYS_OF_WEEK],
               scheduledTime: '08:30',
@@ -223,6 +216,8 @@ SuggestionsList.Free = function Free() {
           />
           <SuggestionsList.Item
             suggestion={{
+              id: EXAMPLE_SUGGESTION_ID,
+              suggestedCategoryId: null,
               title: t('suggestions.paywall.examples.gym'),
               daysOfWeek: ['MON', 'WED', 'FRI'],
               scheduledTime: '19:00',
@@ -238,6 +233,8 @@ SuggestionsList.Free = function Free() {
           />
           <SuggestionsList.Item
             suggestion={{
+              id: EXAMPLE_SUGGESTION_ID,
+              suggestedCategoryId: null,
               title: t('suggestions.paywall.examples.recycling'),
               daysOfWeek: ['TUE', 'THU'],
               scheduledTime: '21:00',
@@ -253,6 +250,8 @@ SuggestionsList.Free = function Free() {
           />
           <SuggestionsList.Item
             suggestion={{
+              id: EXAMPLE_SUGGESTION_ID,
+              suggestedCategoryId: null,
               title: t('suggestions.paywall.examples.weeklyReview'),
               daysOfWeek: ['SUN'],
               scheduledTime: null,
@@ -285,3 +284,39 @@ SuggestionsList.Error = function ErrorFallback(props: QueryErrorFallbackProps) {
 
   return <SuggestionStatus.Error {...props} />;
 };
+
+interface PendingSuggestionProps {
+  suggestion: AiSuggestion;
+  timeFormat: TimeFormat;
+  onMake: () => void;
+  isLast: boolean;
+}
+
+/** 서버에 있는 제안 한 줄. 거절과 그 연타 가드를 줄마다 가져 다른 줄의 거절을 막거나 덮지 않는다 */
+function PendingSuggestion({ suggestion, timeFormat, onMake, isLast }: PendingSuggestionProps) {
+  const promptSuggestionLimit = usePromptSuggestionLimit();
+  // 한도 안내는 mutation 단계에 건다. 호출 단계 콜백은 줄이 내려가면 불리지 않는다
+  const dismissMutation = useMutation({
+    ...useActOnSuggestionMutationOptions(),
+    onError: promptSuggestionLimit,
+  });
+  // isPending은 다시 그린 뒤에야 켜져 같은 프레임의 두 번째 누름이 거절을 한 번 더 보낸다
+  const handleDismiss = useSingleTap(() =>
+    dismissMutation.mutate({
+      suggestionId: suggestion.id,
+      input: { action: 'dismiss' },
+      source: 'suggestions_screen',
+    }),
+  );
+
+  return (
+    <SuggestionsList.Item
+      suggestion={suggestion}
+      timeFormat={timeFormat}
+      onMake={onMake}
+      onDismiss={handleDismiss}
+      isDismissing={dismissMutation.isPending}
+      isLast={isLast}
+    />
+  );
+}

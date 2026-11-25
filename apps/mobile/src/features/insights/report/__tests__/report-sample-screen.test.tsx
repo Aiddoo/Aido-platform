@@ -84,7 +84,7 @@ describe('SampleReportRoute', () => {
       pathname: '/paywall',
       params: { feature: 'AI_REPORT' },
     });
-    expect(getTrackedEvents(analytics, 'premium_gate_cta_tapped')).toHaveLength(2);
+    expect(getTrackedEvents(analytics, 'premium_gate_cta_tapped')).toHaveLength(1);
   });
 
   it('프리미엄은 예시 대신 내 리포트 목록으로 보낸다', async () => {

@@ -167,7 +167,7 @@ const modelAndFolderRules = [
     severity: 'error',
     from: {
       path: featureFolders(['queries']),
-      pathNot: [TEST, pendingFeatures(['assistant/suggestion', 'planning/todo'])],
+      pathNot: [TEST, pendingFeatures(['planning/todo'])],
     },
     to: {
       path: featureFolders(['hooks', 'utils', 'services']),

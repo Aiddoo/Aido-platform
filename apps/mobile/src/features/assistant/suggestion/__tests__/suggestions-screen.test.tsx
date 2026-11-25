@@ -3,12 +3,16 @@
  * @time-zone Asia/Seoul
  */
 import '@src/shared/i18n/init';
+import { ErrorCode } from '@aido/api/errors';
 import type { AiSuggestionAnalysisState } from '@aido/api/vocabulary';
-import { ok } from '@src/core/errors/result';
+import type { ApiError } from '@src/core/errors/api-error';
+import { fail, ok, type Result } from '@src/core/errors/result';
+import { createLimitApiError } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
 import { countGetRequests } from '@src/features/planning/todo/__tests__/todo.test-utils';
 import { getTrackedEvents } from '@src/features/weather/__tests__/weather.test-utils';
 import {
   createAnalyticsStub,
+  createHapticsGatewayStub,
   createRouteParamsFake,
   createTestDi,
   setupFakeTimersPerTest,
@@ -32,16 +36,21 @@ import {
 setupFakeTimersPerTest({ now: SUGGESTION_NOW, doNotFake: ['nextTick'] });
 
 const STRETCHING = createSuggestionDto({ id: 1, title: '아침 스트레칭' });
+/** 캐시가 아직 프리미엄인데 서버가 요금제로 막으면 구독을 권하지 않고 이 제목을 토스트로 알린다 */
+const PREMIUM_ONLY_TITLE = 'AI 반복 제안은 프리미엄 기능이에요';
 
-async function renderSuggestions(httpClient = createSuggestionHttpClient()) {
+async function renderSuggestions(
+  httpClient = createSuggestionHttpClient(),
+  haptics = createHapticsGatewayStub(),
+) {
   createRouteParamsFake({});
   const analytics = createAnalyticsStub();
-  await renderScreen(<SuggestionsScreen />, {
-    di: createTestDi({ ports: { httpClient, analytics } }),
+  const { unmount } = await renderScreen(<SuggestionsScreen />, {
+    di: createTestDi({ ports: { httpClient, analytics, haptics } }),
     withLocalDate: true,
     withOverlay: true,
   });
-  return { httpClient, analytics };
+  return { httpClient, analytics, unmount };
 }
 
 function createListInState(state: AiSuggestionAnalysisState, canRequestNow = false) {
@@ -132,8 +141,8 @@ describe('SuggestionsScreen', () => {
 
     // Then
     expect(await screen.findByText('최근 할 일을 살펴보고 있어요')).toBeOnTheScreen();
-    expect(countWriteRequests(httpClient, 'post', 'v1/ai/suggestions/analyses')).toBe(2);
-    expect(getTrackedEvents(analytics, 'ai_suggestion_analysis_requested')).toHaveLength(2);
+    expect(countWriteRequests(httpClient, 'post', 'v1/ai/suggestions/analyses')).toBe(1);
+    expect(getTrackedEvents(analytics, 'ai_suggestion_analysis_requested')).toHaveLength(1);
   });
 
   it('필요 없어요를 누르면 그 제안을 거절하고 다시 받은 목록에서 행을 뺀다', async () => {
@@ -157,13 +166,88 @@ describe('SuggestionsScreen', () => {
     expect(await screen.findByText('오늘 제안을 모두 정리했어요')).toBeOnTheScreen();
     expect(screen.queryByText('아침 스트레칭')).not.toBeOnTheScreen();
     expect(httpClient.patch).toHaveBeenCalledWith('v1/ai/suggestions/1', { action: 'dismiss' });
-    expect(countWriteRequests(httpClient, 'patch', 'v1/ai/suggestions/1')).toBe(2);
+    expect(countWriteRequests(httpClient, 'patch', 'v1/ai/suggestions/1')).toBe(1);
     await waitFor(() =>
       expect(getTrackedEvents(analytics, 'ai_suggestion_acted')).toContainEqual({
         action: 'dismiss',
         source: 'suggestions_screen',
       }),
     );
+  });
+
+  it('서로 다른 두 줄의 필요 없어요를 연달아 눌러도 두 제안을 모두 거절한다', async () => {
+    // Given
+    const httpClient = createSuggestionHttpClient({
+      list: createSuggestionListDto({
+        suggestions: [STRETCHING, createSuggestionDto({ id: 2, title: '저녁 산책' })],
+      }),
+    });
+    httpClient.patch.mockReturnValue(new Promise(() => undefined));
+    await renderSuggestions(httpClient);
+    const [firstDismiss, secondDismiss] = await screen.findAllByRole('button', {
+      name: '필요 없어요',
+    });
+    if (firstDismiss == null || secondDismiss == null) {
+      throw new Error('두 줄의 필요 없어요 버튼이 없습니다');
+    }
+
+    // When
+    await act(async () => {
+      await fireEvent.press(firstDismiss);
+      await fireEvent.press(secondDismiss);
+    });
+
+    // Then
+    expect(httpClient.patch.mock.calls).toEqual([
+      ['v1/ai/suggestions/1', { action: 'dismiss' }],
+      ['v1/ai/suggestions/2', { action: 'dismiss' }],
+    ]);
+  });
+
+  describe('거절이 요금제로 막히면', () => {
+    it('프리미엄 기능이라고 알리고 오류 햅틱을 한 번 준다', async () => {
+      // Given
+      const httpClient = createSuggestionHttpClient();
+      httpClient.patch.mockResolvedValue(
+        fail(createLimitApiError(ErrorCode.AI_1309, undefined, 403)),
+      );
+      const haptics = createHapticsGatewayStub();
+      await renderSuggestions(httpClient, haptics);
+      const dismiss = await screen.findByRole('button', { name: '필요 없어요' });
+
+      // When
+      await act(async () => {
+        await fireEvent.press(dismiss);
+      });
+
+      // Then
+      expect(await screen.findByText(PREMIUM_ONLY_TITLE)).toBeOnTheScreen();
+      expect(haptics.notify.mock.calls).toEqual([['error']]);
+    });
+
+    it('누르고 응답 전에 화면을 떠나도 요금제 안내 길을 타 오류 햅틱을 한 번 준다', async () => {
+      // Given
+      const httpClient = createSuggestionHttpClient();
+      const response = Promise.withResolvers<Result<unknown, ApiError>>();
+      httpClient.patch.mockReturnValue(response.promise);
+      const haptics = createHapticsGatewayStub();
+      const { unmount } = await renderSuggestions(httpClient, haptics);
+      const dismiss = await screen.findByRole('button', { name: '필요 없어요' });
+      await act(async () => {
+        await fireEvent.press(dismiss);
+      });
+
+      // When
+      await unmount();
+      await act(async () => {
+        response.resolve(fail(createLimitApiError(ErrorCode.AI_1309, undefined, 403)));
+        await jest.advanceTimersByTimeAsync(0);
+      });
+
+      // Then
+      // 햅틱은 안내 함수가 한도·요금제 거절로 판정했을 때만 울린다
+      await waitFor(() => expect(haptics.notify.mock.calls).toEqual([['error']]));
+    });
   });
 
   it('반복으로 만들기를 같은 프레임에 두 번 눌러도 그 제안의 카테고리 시트를 한 번 연다', async () => {

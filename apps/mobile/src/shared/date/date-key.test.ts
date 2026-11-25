@@ -18,6 +18,7 @@ import {
   getWeekDateKeys,
   getDayOfWeek,
   getDaysInDateKeyMonth,
+  getIsoWeekDateRange,
   getIsoWeekNumber,
   getIsoWeekOfMonth,
   getIsoWeekYear,
@@ -214,6 +215,21 @@ describe('getMondayOfDateKey — 월요일 시작 주의 월요일', () => {
 
     // Then
     expect(monday).toBe(expected);
+  });
+});
+
+describe('getIsoWeekDateRange — 월요일 시작 주의 기간', () => {
+  it.each([
+    { today: '2026-11-16', startDate: '2026-11-16', endDate: '2026-11-22' },
+    { today: '2026-11-22', startDate: '2026-11-16', endDate: '2026-11-22' },
+    { today: '2027-01-01', startDate: '2026-12-28', endDate: '2027-01-03' },
+    { today: '2028-02-29', startDate: '2028-02-28', endDate: '2028-03-05' },
+  ])('$today이 든 주는 $startDate(월)부터 $endDate(일)까지다', ({ today, ...expected }) => {
+    // When
+    const range = getIsoWeekDateRange(createDateKey(today));
+
+    // Then
+    expect(range).toEqual(expected);
   });
 });
 

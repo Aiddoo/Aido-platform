@@ -6,7 +6,6 @@ import { formatHourLabel, type TimeFormat } from '@src/shared/date/format/date-f
 import { formatDateKeyRange } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
-import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -33,14 +32,15 @@ import { match, P } from 'ts-pattern';
 
 import type { ReportChart } from '../constants/report.events';
 import { isReportUnavailableError } from '../domains/report.error';
-import { type AiReport, type DailyCompletion, type ReportType } from '../domains/report.model';
-import { useGetReportDetailQueryOptions } from '../queries/report.queries';
-import { reportParamsSchema } from '../schemas/report-params.schema';
 import {
-  formatDailyValueLine,
-  getDailyCompletionLabels,
-  getHourlyCompletionCounts,
-} from '../utils/report-chart.view-model';
+  type AiReport,
+  type DailyCompletion,
+  ReportPolicy,
+  type ReportType,
+} from '../domains/report.model';
+import { useReportId } from '../hooks/use-report-params';
+import { useGetReportDetailQueryOptions } from '../queries/report.queries';
+import { formatDailyValueLine, getDailyCompletionLabels } from '../utils/report-chart.view-model';
 import { formatReportPeriodLabel } from '../utils/report-period.view-model';
 import { CompletionHourChart } from './completion-hour-chart';
 import { CompletionRateHeadline } from './completion-rate-headline';
@@ -51,7 +51,7 @@ const LOADING_STAT_COUNT = 3;
 
 export function ActivityReport() {
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
-  const [{ reportId }] = useRouteParams(reportParamsSchema);
+  const [reportId] = useReportId();
 
   // 시간대 차트 라벨이 시간 표기 설정을 읽으므로 리포트와 함께 받는다
   const [{ data: report }, { data: preference }] = useSuspenseQueries({
@@ -237,7 +237,7 @@ ActivityReport.CompletionHours = function CompletionHours({
 
   const [selectedHour, setSelectedHour] = useState<number | null>(null);
 
-  const hourlyCounts = getHourlyCompletionCounts(report);
+  const hourlyCounts = ReportPolicy.getHourlyCompletionCounts(report);
   const hourLabels = range(HOURS_PER_DAY).map((hour) =>
     formatHourLabel(hour, timeFormat, dateFormatContext),
   );

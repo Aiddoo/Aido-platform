@@ -1372,19 +1372,14 @@
     },
     {
       // 래칫
-      "files": ["src/shared/ui/steps/**", "src/features/insights/achievement/**"],
+      "files": ["src/shared/ui/steps/**"],
       "rules": {
         "aido/namespace-part-name": "off"
       }
     },
     {
       // 래칫
-      "files": [
-        "src/bootstrap/**",
-        "src/features/assistant/suggestion/**",
-        "src/features/device/activation/**",
-        "src/features/insights/achievement/**"
-      ],
+      "files": ["src/bootstrap/**", "src/features/device/activation/**"],
       "rules": {
         "aido/no-inline-query-options": "off"
       }

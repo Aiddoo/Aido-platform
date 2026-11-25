@@ -29,11 +29,11 @@ import { Spinner } from 'heroui-native';
 import type { ReactNode } from 'react';
 import { match } from 'ts-pattern';
 
+import { AiSuggestionListPolicy } from '../domains/suggestion-list.model';
 import { SUGGESTION_QUERY_KEYS } from '../queries/suggestion-query-keys';
 import { useRequestSuggestionAnalysisMutationOptions } from '../queries/suggestion.mutations';
 import { useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
 import { getNextAnalysisLabels } from '../utils/suggestion-schedule.view-model';
-import { getSuggestionDisplayState } from '../utils/suggestion-status.view-model';
 
 const SUGGESTION_STATUS_MASCOT_SIZE = 64;
 
@@ -45,7 +45,7 @@ export function SuggestionStatus() {
     subscribed: isFocused,
   });
   const analysis = list.analysis;
-  const displayState = getSuggestionDisplayState(list);
+  const displayState = AiSuggestionListPolicy.getDisplayState(list);
 
   useTrackView(
     'ai_suggestions_viewed',
@@ -205,10 +205,11 @@ SuggestionStatus.WaitingForNextRun = function WaitingForNextRun({
   const { trackEvent } = useTrack();
   const requestAnalysis = useMutation(useRequestSuggestionAnalysisMutationOptions());
 
-  const handleRequestPress = () => {
+  // isPending은 다시 그린 뒤에야 켜져 같은 프레임의 두 번째 누름이 분석을 한 번 더 요청한다
+  const handleRequestPress = useSingleTap(() => {
     trackEvent('ai_suggestion_analysis_requested', { source: 'suggestions_screen' });
     requestAnalysis.mutate();
-  };
+  });
 
   return (
     <NextAnalysisMessage

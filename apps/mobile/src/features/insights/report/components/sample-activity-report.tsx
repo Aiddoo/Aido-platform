@@ -35,7 +35,6 @@ SampleActivityReport.SubscribeButton = function SubscribeButton() {
   const { t } = useTranslation('ai');
   const { trackEvent } = useTrack();
   const router = useRouter();
-  const push = useSingleTap(router.push);
   const gateParams = {
     feature: getPremiumGateAnalyticsFeature('AI_REPORT'),
     surface: 'report_sample',
@@ -44,10 +43,11 @@ SampleActivityReport.SubscribeButton = function SubscribeButton() {
 
   useTrackView('premium_gate_shown', { key: gateParams.feature, params: gateParams });
 
-  const handlePress = () => {
+  // 결제 화면을 한 번 여는 누름은 지표도 한 번만 남긴다
+  const handlePress = useSingleTap(() => {
     trackEvent('premium_gate_cta_tapped', gateParams);
-    push({ pathname: '/paywall', params: { feature: 'AI_REPORT' } });
-  };
+    router.push({ pathname: '/paywall', params: { feature: 'AI_REPORT' } });
+  });
 
   return (
     <Button size="medium" testID="report-sample-subscribe" onPress={handlePress}>

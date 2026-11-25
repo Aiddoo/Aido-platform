@@ -3,7 +3,10 @@
  * @time-zone Asia/Seoul
  */
 import '@src/shared/i18n/init';
-import { ok } from '@src/core/errors/result';
+import { ErrorCode } from '@aido/api/errors';
+import type { ApiError } from '@src/core/errors/api-error';
+import { fail, ok, type Result } from '@src/core/errors/result';
+import { createLimitApiError } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
 import {
   countGetRequests,
   layoutSheetRoute,
@@ -12,6 +15,7 @@ import { getTrackedEvents } from '@src/features/weather/__tests__/weather.test-u
 import { ServerError } from '@src/shared/errors';
 import {
   createAnalyticsStub,
+  createHapticsGatewayStub,
   createRouteParamsFake,
   createTestDi,
   setupFakeTimersPerTest,
@@ -38,19 +42,21 @@ async function renderCategorySheet({
   httpClient = createSuggestionHttpClient({
     list: createSuggestionListDto({ suggestions: [STRETCHING] }),
   }),
+  haptics = createHapticsGatewayStub(),
 }: {
   params?: Record<string, string>;
   httpClient?: ReturnType<typeof createSuggestionHttpClient>;
+  haptics?: ReturnType<typeof createHapticsGatewayStub>;
 } = {}) {
   createRouteParamsFake(params);
   const analytics = createAnalyticsStub();
-  const { queryClient } = await renderScreen(<SuggestionCategorySheetRoute />, {
-    di: createTestDi({ ports: { httpClient, analytics } }),
+  const { queryClient, unmount } = await renderScreen(<SuggestionCategorySheetRoute />, {
+    di: createTestDi({ ports: { httpClient, analytics, haptics } }),
     withLocalDate: true,
     withOverlay: true,
   });
   await layoutSheetRoute();
-  return { httpClient, analytics, queryClient };
+  return { httpClient, analytics, queryClient, unmount };
 }
 
 describe('SuggestionCategorySheetRoute', () => {
@@ -86,7 +92,7 @@ describe('SuggestionCategorySheetRoute', () => {
       action: 'accept',
       categoryId: 2,
     });
-    expect(countWriteRequests(httpClient, 'patch', SUGGESTION_PATH)).toBe(2);
+    expect(countWriteRequests(httpClient, 'patch', SUGGESTION_PATH)).toBe(1);
     expect(await screen.findAllByText('매주 월·수 반복으로 만들었어요')).not.toHaveLength(0);
     expect(countGetRequests(httpClient)['v1/todo-categories']).toBeGreaterThan(
       categoryRequestsBefore ?? 0,
@@ -121,6 +127,57 @@ describe('SuggestionCategorySheetRoute', () => {
       queryClient.getQueryData(SUGGESTION_QUERY_KEYS.list())?.suggestions.map(({ id }) => id),
     ).toEqual([1]);
     expect(screen.getByTestId('category-select-submit')).toBeOnTheScreen();
+  });
+
+  describe('요금제로 거절되면', () => {
+    it('프리미엄 기능이라고 알리고 오류 햅틱을 한 번 준다', async () => {
+      // Given
+      const httpClient = createSuggestionHttpClient({
+        list: createSuggestionListDto({ suggestions: [STRETCHING] }),
+      });
+      httpClient.patch.mockResolvedValue(
+        fail(createLimitApiError(ErrorCode.AI_1309, undefined, 403)),
+      );
+      const haptics = createHapticsGatewayStub();
+      await renderCategorySheet({ httpClient, haptics });
+      const submit = await screen.findByTestId('category-select-submit');
+
+      // When
+      await act(async () => {
+        await fireEvent.press(submit);
+      });
+
+      // Then
+      // 캐시가 아직 프리미엄이라 구독을 권하지 않고 제목을 토스트로 알린다
+      expect(await screen.findByText('AI 반복 제안은 프리미엄 기능이에요')).toBeOnTheScreen();
+      expect(haptics.notify.mock.calls).toEqual([['error']]);
+    });
+
+    it('수락을 누르고 응답 전에 시트가 내려가도 요금제 안내 길을 타 오류 햅틱을 한 번 준다', async () => {
+      // Given
+      const httpClient = createSuggestionHttpClient({
+        list: createSuggestionListDto({ suggestions: [STRETCHING] }),
+      });
+      const response = Promise.withResolvers<Result<unknown, ApiError>>();
+      httpClient.patch.mockReturnValue(response.promise);
+      const haptics = createHapticsGatewayStub();
+      const { unmount } = await renderCategorySheet({ httpClient, haptics });
+      const submit = await screen.findByTestId('category-select-submit');
+      await act(async () => {
+        await fireEvent.press(submit);
+      });
+
+      // When
+      await unmount();
+      await act(async () => {
+        response.resolve(fail(createLimitApiError(ErrorCode.AI_1309, undefined, 403)));
+        await jest.advanceTimersByTimeAsync(0);
+      });
+
+      // Then
+      // 햅틱은 안내 함수가 한도·요금제 거절로 판정했을 때만 울린다
+      await waitFor(() => expect(haptics.notify.mock.calls).toEqual([['error']]));
+    });
   });
 
   it('목록에 없는 제안이면 수락하지 않고 시트를 닫는다', async () => {

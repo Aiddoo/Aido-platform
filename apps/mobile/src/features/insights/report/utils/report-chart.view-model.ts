@@ -1,13 +1,13 @@
-import { DAYS_PER_WEEK, HOURS_PER_DAY } from '@src/shared/constants/time-units';
+import { DAYS_PER_WEEK } from '@src/shared/constants/time-units';
 import { addDaysToDateKey, type DateKey, getIsoWeekYear } from '@src/shared/date/date-key';
 import { type DateFormatContext, formatDateKeyLabel } from '@src/shared/date/format/date-format';
 import { t } from '@src/shared/i18n';
 import { toLanguageOfIntlLocale } from '@src/shared/i18n/app-locales';
-import { keyBy, range, sortBy, takeRight, uniqBy } from 'es-toolkit';
+import { sortBy, takeRight, uniqBy } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
 import { TREND_WEEK_COUNT } from '../constants/report-chart.constants';
-import type { AiReport, DailyCompletion, ReportType } from '../domains/report.model';
+import type { DailyCompletion, ReportType } from '../domains/report.model';
 
 export interface TrendWeek {
   startDate: DateKey;
@@ -58,12 +58,6 @@ export function formatDailyValueLine(day: DailyValue | null, context: DateFormat
     completed: day.completed,
     total: day.total,
   });
-}
-
-// 서버는 끝낸 일이 있는 시각만 보내므로 나머지 시각을 0으로 채워 24칸을 만든다
-export function getHourlyCompletionCounts(report: AiReport): number[] {
-  const patternByHour = keyBy(report.timePatterns, (pattern) => pattern.hour);
-  return range(HOURS_PER_DAY).map((hour) => patternByHour[hour]?.count ?? 0);
 }
 
 /**

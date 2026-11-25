@@ -5,8 +5,7 @@ import { formatCount, formatPercent } from '@src/shared/utils/number-format';
 import type { ReactNode } from 'react';
 import { match } from 'ts-pattern';
 
-import type { AiReport } from '../domains/report.model';
-import { getReportHeadline } from '../utils/report-headline.view-model';
+import { type AiReport, ReportPolicy } from '../domains/report.model';
 
 interface CompletionRateHeadlineProps {
   report: AiReport;
@@ -21,7 +20,7 @@ export function CompletionRateHeadline({ report }: CompletionRateHeadlineProps) 
       <Text size="b4" shade={6}>
         {t('report.card.completionRate')}
       </Text>
-      {match(getReportHeadline(report))
+      {match(ReportPolicy.getHeadline(report))
         .with({ kind: 'noActivity' }, () => (
           <Text size="b2" weight="semibold" shade={7}>
             {t('report.headline.noActivity')}

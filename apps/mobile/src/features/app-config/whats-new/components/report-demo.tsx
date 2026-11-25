@@ -6,11 +6,8 @@ import { ActivityReport } from '@src/features/insights/report/components/activit
 import { CompletionHourChart } from '@src/features/insights/report/components/completion-hour-chart';
 import { CompletionRateHeadline } from '@src/features/insights/report/components/completion-rate-headline';
 import { DailyCompletionChart } from '@src/features/insights/report/components/daily-completion-chart';
-import type { AiReport } from '@src/features/insights/report/domains/report.model';
-import {
-  formatDailyValueLine,
-  getHourlyCompletionCounts,
-} from '@src/features/insights/report/utils/report-chart.view-model';
+import { type AiReport, ReportPolicy } from '@src/features/insights/report/domains/report.model';
+import { formatDailyValueLine } from '@src/features/insights/report/utils/report-chart.view-model';
 import {
   getWeeklyRecordDays,
   type WeeklyRecordDay,
@@ -164,7 +161,7 @@ function DemoCompletionHours({ report, peakHour }: DemoCompletionHoursProps) {
 
   const timeFormat = selectTimeFormat(preference);
   const selectedHour = touchedHour ?? (peakShownCount === 0 ? null : peakHour);
-  const hourlyCounts = getHourlyCompletionCounts(report);
+  const hourlyCounts = ReportPolicy.getHourlyCompletionCounts(report);
   const hourLabels = range(HOURS_PER_DAY).map((hour) =>
     formatHourLabel(hour, timeFormat, dateFormatContext),
   );

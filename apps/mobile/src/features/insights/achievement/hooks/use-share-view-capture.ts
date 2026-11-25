@@ -1,48 +1,32 @@
-import { useSystemShare, useViewCapture } from '@src/bootstrap/providers/di-context';
 import type { ViewCaptureHandle } from '@src/core/ports/view-capture-gateway';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { t } from '@src/shared/i18n';
-import { useAppToast } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
-import { noop } from 'es-toolkit';
 import type { RefObject } from 'react';
-import { match } from 'ts-pattern';
 
-type ShareOutcome = 'shared' | 'unsupported' | 'capture-failed';
+import { useShareCertificateMutationOptions } from '../queries/achievement.mutations';
 
-export function useShareViewCapture(viewShotRef: RefObject<ViewCaptureHandle | null>) {
-  const systemShare = useSystemShare();
-  const viewCapture = useViewCapture();
-  const toast = useAppToast();
-  const share = useMutation({
-    // 공유는 기기 안의 일이라 오프라인에도 멈추지 않는다
-    networkMode: 'always',
-    mutationFn: async (): Promise<ShareOutcome> => {
-      if (!(await systemShare.isImageShareAvailable())) {
-        return 'unsupported';
-      }
-      const uri = await viewCapture.capture(viewShotRef.current);
-      if (uri == null) {
-        return 'capture-failed';
-      }
-      await systemShare.shareImage(uri);
-      return 'shared';
-    },
-    onSuccess: (outcome) =>
-      match(outcome)
-        .with('shared', noop)
-        .with('unsupported', () => toast.warning(t('common:share.unsupported')))
-        .with('capture-failed', () => toast.error(t('common:share.prepareFailed')))
-        .exhaustive(),
-    meta: {
-      errorFeedback: { feature: 'share_view_capture', fallbackKey: 'common:share.failed' },
-    },
-  });
+interface ShareViewCaptureOptions {
+  /** 공유를 시작할 때 한 번 부른다(시도 지표). 연타·공유 중의 누름에는 부르지 않는다 */
+  onShare: () => void;
+}
+
+interface ShareViewCapture {
+  shareCapture: () => void;
+  isSharing: boolean;
+}
+
+/** 배지 상장 화면 두 곳이 같은 공유를 쓴다. 공유 시트가 떠 있는 동안의 누름은 무시한다 */
+export function useShareViewCapture(
+  viewShotRef: RefObject<ViewCaptureHandle | null>,
+  { onShare }: ShareViewCaptureOptions,
+): ShareViewCapture {
+  const share = useMutation(useShareCertificateMutationOptions());
 
   // isPending은 다시 그린 뒤에야 바뀌어 그 전의 연타는 한 번 누름으로 접는다
   const shareCapture = useSingleTap(() => {
     if (!share.isPending) {
-      share.mutate();
+      onShare();
+      share.mutate(viewShotRef.current);
     }
   });
 

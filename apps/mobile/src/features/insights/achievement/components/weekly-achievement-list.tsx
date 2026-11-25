@@ -25,10 +25,12 @@ import { useQueryClient, useSuspenseInfiniteQuery, useSuspenseQuery } from '@tan
 import { range } from 'es-toolkit';
 import { Link, useRouter } from 'expo-router';
 import { Skeleton } from 'heroui-native';
-import type { ComponentProps, ReactElement } from 'react';
+import type { ReactElement } from 'react';
 
-import { AchievementPolicy } from '../domains/achievement.model';
-import type { BadgeType, WeeklyAchievement } from '../domains/achievement.model';
+import {
+  type WeeklyAchievement,
+  WeeklyAchievementPolicy,
+} from '../domains/weekly-achievement.model';
 import { useAchievementYear } from '../hooks/use-achievement-params';
 import { refreshWeeklyAchievements } from '../queries/achievement-cache';
 import {
@@ -91,7 +93,10 @@ WeeklyAchievementList.Item = function Item({ achievement }: { achievement: Weekl
   // Link가 navigate로 열어 같은 인증서는 한 번만 쌓인다. 메뉴의 열기도 같은 동사여야 겹쳐 쌓이지 않는다
   const navigate = useSingleTap(router.navigate);
   const { trackEvent } = useTrack();
-  const badgeType = AchievementPolicy.getBadgeType(achievement);
+  const fontScaledSize = useFontScaledSize();
+  const dateFormatContext = useDateFormatContext();
+  const todayKey = useTodayKey();
+  const badgeType = WeeklyAchievementPolicy.getBadgeType(achievement);
   const href = {
     pathname: '/achievements/[year]/[week]',
     params: { year: String(achievement.year), week: String(achievement.week) },
@@ -108,7 +113,40 @@ WeeklyAchievementList.Item = function Item({ achievement }: { achievement: Weekl
   return (
     <Link href={href} asChild onPress={trackTap}>
       <Link.Trigger>
-        <WeeklyAchievementList.Row achievement={achievement} badgeType={badgeType} />
+        {/* Link가 넘기는 누름 props를 ListRow가 그대로 받아 행 전체가 눌린다 */}
+        <ListRow
+          left={<BadgeIcon type={badgeType} size="small" />}
+          contents={
+            <ListRow.Texts
+              type="2RowTypeA"
+              top={formatIsoWeekLabel(achievement.dateRange.startDate, todayKey, dateFormatContext)}
+              topProps={{ weight: 'semibold', shade: 8 }}
+              bottom={t('list.periodWithCompletedRatio', {
+                period: formatDateKeyRange(
+                  achievement.dateRange.startDate,
+                  achievement.dateRange.endDate,
+                  todayKey,
+                  dateFormatContext,
+                ),
+                completed: achievement.completedTodos,
+                total: achievement.totalTodos,
+              })}
+            />
+          }
+          right={
+            <HStack align="center" gap={4}>
+              <Text size="b3" className="text-main" weight="semibold">
+                {formatPercent(achievement.completionRate, dateFormatContext.locale)}
+              </Text>
+              <ArrowRightIcon
+                width={fontScaledSize(16)}
+                height={fontScaledSize(16)}
+                colorClassName="text-gray-6"
+              />
+            </HStack>
+          }
+          verticalPadding="medium"
+        />
       </Link.Trigger>
       <Link.Preview />
       <Link.Menu>
@@ -123,60 +161,6 @@ WeeklyAchievementList.Item = function Item({ achievement }: { achievement: Weekl
         </Link.MenuAction>
       </Link.Menu>
     </Link>
-  );
-};
-
-interface WeeklyAchievementRowProps extends Omit<ComponentProps<typeof ListRow>, 'contents'> {
-  achievement: WeeklyAchievement;
-  badgeType: BadgeType;
-}
-
-/** Link가 넘기는 누름 props를 그대로 받아 행 전체가 눌린다 */
-WeeklyAchievementList.Row = function Row({
-  achievement,
-  badgeType,
-  ...rowProps
-}: WeeklyAchievementRowProps) {
-  const { t } = useTranslation('achievement');
-  const fontScaledSize = useFontScaledSize();
-  const dateFormatContext = useDateFormatContext();
-  const todayKey = useTodayKey();
-
-  return (
-    <ListRow
-      {...rowProps}
-      left={<BadgeIcon type={badgeType} size="small" />}
-      contents={
-        <ListRow.Texts
-          type="2RowTypeA"
-          top={formatIsoWeekLabel(achievement.dateRange.startDate, todayKey, dateFormatContext)}
-          topProps={{ weight: 'semibold', shade: 8 }}
-          bottom={t('list.periodWithCompletedRatio', {
-            period: formatDateKeyRange(
-              achievement.dateRange.startDate,
-              achievement.dateRange.endDate,
-              todayKey,
-              dateFormatContext,
-            ),
-            completed: achievement.completedTodos,
-            total: achievement.totalTodos,
-          })}
-        />
-      }
-      right={
-        <HStack align="center" gap={4}>
-          <Text size="b3" className="text-main" weight="semibold">
-            {formatPercent(achievement.completionRate, dateFormatContext.locale)}
-          </Text>
-          <ArrowRightIcon
-            width={fontScaledSize(16)}
-            height={fontScaledSize(16)}
-            colorClassName="text-gray-6"
-          />
-        </HStack>
-      }
-      verticalPadding="medium"
-    />
   );
 };
 

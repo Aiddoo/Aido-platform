@@ -206,6 +206,12 @@ export function getMondayOfDateKey(dateKey: DateKey): DateKey {
   return formatDateKey(fromEpochDay(epochDay - getDaysSinceMonday(epochDay)));
 }
 
+/** 그 날이 속한 월요일 시작 주(ISO 주)의 월요일부터 일요일까지. 주간 성취·리포트가 서버와 같은 주를 본다 */
+export function getIsoWeekDateRange(dateKey: DateKey): { startDate: DateKey; endDate: DateKey } {
+  const startDate = getMondayOfDateKey(dateKey);
+  return { startDate, endDate: addDaysToDateKey(startDate, DAYS_PER_WEEK - 1) };
+}
+
 export function getYearOfDateKey(dateKey: DateKey): number {
   return toCivilDate(dateKey).year;
 }
