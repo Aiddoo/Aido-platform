@@ -65,7 +65,7 @@ Repository·Reader·스키마·마이그레이션·DB 오류 번역을 바꿀 �
 | pg-boss 테이블 조회·SQL 브리지                                              | `pg-boss-schedule-run.reader.ts`, `drizzle-pg-boss.database.ts` |
 | 연결 확인 `SELECT 1`                                                        | `DatabaseHealthIndicator`                                       |
 
-`db.execute` 결과는 칸 코덱을 거치지 않고 pg 기본 파서로 읽힌다(Drizzle 1.0 rc.6부터). 시간대 없는 `timestamp`는 프로세스 시간대로 읽혀 어긋나므로 SQL에서 `::TEXT`로 받아 `raw-timestamp.schema.ts`로 바꾼다.
+`db.execute` 결과는 칸 코덱을 거치지 않고 pg 기본 파서로 읽힌다. 시간대 없는 `timestamp`는 프로세스 시간대로 읽혀 어긋나므로 SQL에서 `::TEXT`로 받아 `raw-timestamp.schema.ts`로 바꾼다.
 
 ## 시간 칼럼
 
@@ -78,7 +78,7 @@ Repository·Reader·스키마·마이그레이션·DB 오류 번역을 바꿀 �
 - `instant`·`plainDate` customType이 Temporal을 주고받는다. `dataType()`은 기존 문자열(`"timestamp(3)"`, `"timestamp(3) with time zone"`, `"date"`)을 정확히 돌려줘 `db:generate`가 빈 diff여야 한다. custom column은 `.defaultNow()`가 없어 ``.default(sql`now()`)``를 쓴다.
 - 풀은 세션 `TimeZone=UTC`를 고정한다. 규칙은 [날짜](../../../docs/conventions/dates.md)다.
 - `updatedAt`은 도메인이 `ClockPort` 값으로 직접 둔다. 스키마 `$onUpdate`·`$defaultFn`으로 숨겨 채우지 않는다(DB 기본값이 없으면 테스트 seed도 값을 넣는다). 집합 update도 `updatedAt: now`를 명시한다. 사례: [Memo 테이블](../src/platform/database/schema/notes.schema.ts)·[DrizzleMemoRepository](../src/modules/notes/memos/infrastructure/persistence/drizzle-memo.repository.ts).
-- 새 시각 칸은 `instant`·`plainDate`만 쓴다. `timestamp(…, { mode: "date" })`·`date(…, { mode: "date" })`와 `$onUpdate`를 쓰지 않는다. 칸을 바꿀 때 그 테이블의 저장소·Reader·테스트 seed를 같은 커밋에서 Temporal로 바꾼다.
+- 새 시각 칸은 `instant`·`plainDate`만 쓴다. `timestamp(…, { mode: "date" })`·`date(…, { mode: "date" })`와 `$onUpdate`를 쓰지 않는다.
 
 ## 풀 설정
 
@@ -148,4 +148,4 @@ Repository·Reader·스키마·마이그레이션·DB 오류 번역을 바꿀 �
 | `PushDispatch.status`·`scheduledAt`(관리자 캠페인 제외)                  | `PushDispatch_status_scheduledAt_outside_broadcast_idx`(부분) | 30일 정리가 180일 남기는 관리자 캠페인 발송을 건너뛰고 지울 행만 읽는다                                                 |
 | `LoginAttempt.createdAt`·`OAuthState.expiresAt`·`Notification.createdAt` | 기존 색인                                                     | —                                                                                                                       |
 
-10만 행 합성 데이터(Testcontainers PG 16)에서 고를 행이 없는 마지막 묶음은 `Session`이 순차 읽기 2,664 버퍼 → BitmapOr 511 버퍼(남은 것은 푸시 기기가 지키는 만료 세션), `SecurityLog`가 834 → 2 버퍼였다. 이 색인들을 더하는 마이그레이션(`identity_purge_indexes`·`push_dispatch_outside_broadcast_index`)도 위 6번 절차를 따른다.
+이 색인들을 더하는 마이그레이션(`identity_purge_indexes`·`push_dispatch_outside_broadcast_index`)도 위 6번 절차를 따른다.

@@ -70,8 +70,8 @@
 | 요청 | `request_id`·`app_version`·`app_platform`(RequestClient), `http.method`·`http.route`(경로 템플릿), `user.id`만 | CLS middleware → `tagRequestScope`, `RequestScopeInterceptor` |
 | 작업 | `job.queue`·`job.name`·`job.id`·`job.attempt`, `queue.process` span(묶음 크기)                                 | `withJobScope`(pg-boss 어댑터 두 곳)                          |
 
-- 실제 URL·쿼리·기기 이름·시간대·payload는 싣지 않는다. `app_platform`은 이벤트의 `platform`(node)과 헷갈리지 않게 접두사를 붙였다.
-- 앱 Sentry가 보낸 `sentry-trace`·`baggage`는 SDK가 받아 서버 span을 이어 붙인다. 웹 출처를 위해 CORS 허용 헤더에도 넣었다. 앱 쪽 후속(한 줄): `Sentry.init`에 `tracesSampleRate: 0.05, tracePropagationTargets: [/^https:\/\/api\.aido\.kr\//]`. 서버는 앱이 정한 표본 결정을 따른다(비율 0 경로 제외).
+- 실제 URL·쿼리·기기 이름·시간대·payload는 싣지 않는다. `app_platform`은 이벤트의 `platform`(node)과 헷갈리지 않게 접두사를 붙인다.
+- 앱 Sentry가 보낸 `sentry-trace`·`baggage`는 SDK가 받아 서버 span을 이어 붙인다. 웹 출처를 위해 CORS 허용 헤더에도 넣는다(`cors-options.ts`). 앱은 `tracesSampleRate` 없이 헤더만 보내 표본은 서버가 정하고, 앞선 추적에 표본 결정이 있으면 그 결정을 따른다(비율 0 경로 제외).
 
 ## 중요 흐름과 경보
 
@@ -92,7 +92,7 @@ key·심각도·첫 대응 전체는 [경보 카탈로그](alerts.md)다. 아래
 
 ## 작업 실패 경보
 
-2026-11 운영에서 `ai-report-generation.v1`·`ai-suggestion-analysis.v1` 디스패처가 8일 넘게 매 실행 실패(392건)했지만 pg-boss `failed`와 로그에만 남았다. 그래서 작업 실패는 아래 경보로 사람에게 간다(catalog: [jobs.alerts.ts](../src/platform/jobs/jobs.alerts.ts)).
+pg-boss `failed`와 로그에만 남은 작업 실패는 디스패처가 매 실행 실패해도 아무도 보지 못한다. 그래서 작업 실패는 아래 경보로 사람에게 간다(catalog: [jobs.alerts.ts](../src/platform/jobs/jobs.alerts.ts)).
 
 | 신호(key:subject)                     | 언제                                                                                                                      | 어디서                                                                        |
 | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
@@ -104,7 +104,7 @@ key·심각도·첫 대응 전체는 [경보 카탈로그](alerts.md)다. 아래
 | Cron 모니터 `aido-job-worker`         | 감시 작업 check-in이 두 번 연속 빠지거나 실패(약 35분). worker·pg-boss가 통째로 멈춘 경우                                 | `SentryJobHeartbeatAdapter`(`withMonitor`, 설정 upsert)                       |
 
 - 태그는 `queue`·`job.name`·`job.attempt`·`error.type`·`schedule.key`뿐이고 payload 값·예외 message는 싣지 않는다. 판정은 순수 함수 [schedule-watchdog.domain-service.ts](../src/platform/jobs/schedule-watchdog.domain-service.ts)다.
-- 감시 작업은 모든 스케줄의 실행 수와 모든 DLQ 유입을 각각 문장 하나로 세고 pg-boss 풀에서 읽는다. 스케줄마다 앱 풀에서 따로 세던 때 HTTP와 연결을 다퉜다(Sentry NODE-NESTJS-2K·2J·27).
+- 감시 작업은 모든 스케줄의 실행 수와 모든 DLQ 유입을 각각 문장 하나로 세고 pg-boss 풀에서 읽는다. 스케줄마다 앱 풀에서 따로 세면 HTTP와 연결을 다툰다.
 - 판정하지 않는 것: 앞 예정 시각 뒤에 등록된 스케줄, 보관 기간(`deleteAfterSeconds`)이 지나 지워졌을 수 있는 실행, 등록되지 않은 스케줄(`server.background-initialization.failed` 로그).
 - 모니터 slug는 상수 `JOB_WORKER_MONITOR_SLUG`다. Sentry가 environment별로 나눠 보여 env로 바꾸지 않는다.
 
@@ -115,7 +115,7 @@ key·심각도·첫 대응 전체는 [경보 카탈로그](alerts.md)다. 아래
 | 경우                                       | 월 오류 이벤트                                      |
 | ------------------------------------------ | --------------------------------------------------- |
 | 평소(실패 없음)                            | 0                                                   |
-| 위 사고(매시 디스패처 2개, 8일, 단위 4개)  | 첫 4건 + 시간당 2건 × 192시간 ≈ 390건(한도의 8%)    |
+| 매시 디스패처 2개가 8일 실패(단위 4개)     | 첫 4건 + 시간당 2건 × 192시간 ≈ 390건(한도의 8%)    |
 | 사용자별 작업 1,000개가 같은 원인으로 실패 | 단위 1개라 1건                                      |
 | 상한(어떤 폭주든 한 달 내내)               | 반복 2건 × 720시간 = 1,440건 + 단위별 첫 경보(29%~) |
 

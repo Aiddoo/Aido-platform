@@ -1,27 +1,27 @@
 # 반복 할 일 휴면·복귀
 
-반복 규칙의 휴면·복귀 동작을 바꿀 때 읽는다. 오래 앱을 열지 않은 사용자의 반복 규칙이 회차와 알림을 계속 만들지 않게 멈추고, 돌아오면 앱 변경 없이(구버전 포함) 첫 목록에 오늘 회차를 보여 주는 동작이다. HTTP 응답 모양과 기존 잡 payload는 그대로다. 코드 정본은 `modules/planning/todo-series/domain/series-dormancy.domain-service.ts`, `todo-series/application/use-cases/{materialize-todo-series,catch-up-todo-series}.use-case.ts`, `TodoSeries.skipDormantGap`이다.
+반복 규칙의 휴면·복귀 동작을 바꿀 때 읽는다. 오래 앱을 열지 않은 사용자의 반복 규칙이 회차와 알림을 계속 만들지 않게 멈추고, 돌아오면 출시된 모든 앱 버전의 첫 목록에 오늘 회차를 보여 주는 동작이다. 휴면은 HTTP 응답 모양과 잡 payload에 드러나지 않는다. 코드 정본은 `modules/planning/todo-series/domain/series-dormancy.domain-service.ts`, `todo-series/application/use-cases/{materialize-todo-series,catch-up-todo-series}.use-case.ts`, `TodoSeries.skipDormantGap`이다.
 
 ## 휴면
 
 - 기준: `User.lastActiveAt`(없으면 가입일)의 날짜에서 사용자 시간대(`UserPreference.timezone`, 미상·UTC는 KST) 오늘까지 `TODO_SERIES_DORMANT_AFTER_DAYS`(60일)를 넘으면 휴면이다. 정확히 60일째는 아직 휴면이 아니다. 판단은 `isSeriesOwnerDormant` 하나다.
-- 활동 기록은 `LastActiveInterceptor`의 기존 값을 그대로 쓴다. 인증된 모든 요청을 세지만 앱에는 사용자가 열지 않은 상태에서 나가는 요청이 없다(아래). 리텐션·윈백·성장 지표가 같은 값을 쓰므로 의미를 바꾸지 않는다.
-- 유료(`PREMIUM`, 스토어 구독·보상 기간)와 `ADMIN` 등급은 휴면으로 보지 않는다(access의 `isExemptFromDormancy(tier)`, 소비자는 등급을 직접 비교하지 않는다). 매일 약 먹기처럼 알림만 받고 앱을 열지 않아도 끊기지 않는다. 구독이 끝나면 그때부터 무료 기준으로 잰다. `isPremium`의 의미는 그대로다.
+- 활동 기록은 `LastActiveInterceptor`가 남기는 값이다. 인증된 모든 요청을 세지만 앱에는 사용자가 열지 않은 상태에서 나가는 요청이 없다(아래). 리텐션·윈백·성장 지표가 같은 값을 쓰므로 의미를 바꾸지 않는다.
+- 유료(`PREMIUM`, 스토어 구독·보상 기간)와 `ADMIN` 등급은 휴면으로 보지 않는다(access의 `isExemptFromDormancy(tier)`, 소비자는 등급을 직접 비교하지 않는다). 매일 약 먹기처럼 알림만 받고 앱을 열지 않아도 끊기지 않는다. 구독이 끝나면 그때부터 무료 기준으로 잰다.
 - 회차 채우기: 무료 휴면 소유자의 규칙은 건너뛰고 커서를 그대로 둔다. 실행 결과 로그 `planning.todo-series.materialized`의 `dormantCount`로 센다.
-- 알림: 이미 큐에 있는 `TODO_REMINDER`는 발송 시점에 확인한다. 반복 회차(`Todo.seriesId` 있음)이고 소유자가 무료 휴면이면 보내지 않고 `notification.todo-reminder.dormant-owner.skipped`(info, `todoId`·`userId`·`stage`)를 남긴다. 단일 할 일은 묻지도 않는다. 잡을 지우지 않고 기존 잡 payload도 그대로라 쌓여 있던 잡과 호환된다.
-- 멈춤 안내: 처음 건너뛸 때 `send-series-paused-notice` 작업을 등록해 "반복 할 일 알림을 잠시 멈췄어요 / 앱을 열면 다시 시작돼요"(en "Repeating reminders paused / Open the app to start them again")를 보낸다. 칸을 더하지 않고 key `series-paused_{userId}_{마지막 활동일}`로 휴면 기간당 한 번만 보낸다. 멈춘 리마인더가 커서가 앞서 있던 만큼(90일 남짓) 계속 돌아오므로 끝난 행을 120일 남긴다. 종류·목적이 리마인더와 같아(`TODO_REMINDER`·`SCHEDULED_SERVICE`) 기존 알림 동의를 따르고, 탭하면 그 회차로 간다. 앱이 열리면 인증된 첫 요청이 `lastActiveAt`을 갱신해 복귀가 시작된다. 알림 도착만으로는 세지 않는다.
+- 알림: 이미 큐에 있는 `TODO_REMINDER`는 발송 시점에 확인한다. 반복 회차(`Todo.seriesId` 있음)이고 소유자가 무료 휴면이면 보내지 않고 `notification.todo-reminder.dormant-owner.skipped`(info, `todoId`·`userId`·`stage`)를 남긴다. 단일 할 일은 묻지 않는다. 잡은 지우지 않는다.
+- 멈춤 안내: 처음 건너뛸 때 `send-series-paused-notice` 작업을 등록해 "반복 할 일 알림을 잠시 멈췄어요 / 앱을 열면 다시 시작돼요"(en "Repeating reminders paused / Open the app to start them again")를 보낸다. key `series-paused_{userId}_{마지막 활동일}`로 휴면 기간당 한 번만 보낸다. 멈춘 리마인더가 커서가 앞서 있던 만큼(90일 남짓) 계속 돌아오므로 끝난 행을 120일 남긴다. 종류·목적이 리마인더와 같아(`TODO_REMINDER`·`SCHEDULED_SERVICE`) 기존 알림 동의를 따르고, 탭하면 그 회차로 간다. 앱이 열리면 인증된 첫 요청이 `lastActiveAt`을 갱신해 복귀가 시작된다. 알림 도착만으로는 세지 않는다.
 
 ### 백그라운드 요청이 활동으로 세이는가
 
 세이지 않는다. 근거:
 
-- `expo-task-manager`·`expo-background-*`·`defineTask`·`registerTaskAsync`·iOS `UIBackgroundModes`·서버 `_contentAvailable` 모두 쓴 적이 없다. 알림이 와도 JS가 깨지 않는다.
+- `expo-task-manager`·`expo-background-*`·`defineTask`·`registerTaskAsync`·iOS `UIBackgroundModes`·서버 `_contentAvailable` 모두 쓰지 않는다. 알림이 와도 JS가 깨지 않는다.
 - Android 위젯 태스크는 저장된 스냅샷을 그릴 뿐 API를 부르지 않고, 앱 화면 트리를 띄우지 않는다.
 - 푸시 기기 보고(`usePushDeviceSync`)는 로그인 확인 직후·`AppState` active·토큰 변경·언어 변경 때만 보낸다. 토큰 변경 리스너만 포그라운드가 아닐 수 있지만 JS가 살아 있는 동안뿐이라 며칠 안에 앱을 연 사용자에게만 해당한다.
 - TanStack Query `refetchInterval`은 `focusManager`(AppState) 기준으로 포그라운드에서만 돈다. `refetchIntervalInBackground`는 쓰지 않는다.
 - 토큰 갱신은 다른 요청의 401에서만 일어난다.
 
-구버전 앱은 포그라운드 여부를 헤더로 보내지 않아 요청만으로 구분할 수단도 없다. 그래서 인터셉터를 바꾸지 않았다. 나중에 백그라운드 작업을 도입하면 그 요청은 활동에서 제외해야 한다.
+출시 앱은 포그라운드 여부를 헤더로 보내지 않아 요청만으로 구분할 수단도 없다. 그래서 인터셉터는 인증된 요청을 모두 활동으로 센다. 백그라운드 작업을 도입하면 그 요청은 활동에서 뺀다.
 
 ## 복귀
 

@@ -68,7 +68,7 @@ apps/api/src/
 | identity      | `sessions`, `verifications`, `oauth-states`, `linked-accounts`, `users`, `user-preferences` (+ `shared/`)                          |
 | access        | `feature-grants`, `quota-charges` (+ `shared/`)                                                                                    |
 | billing       | `subscriptions`, `premium-grants` (+ `shared/`)                                                                                    |
-| planning      | `todos`, `todo-series`, `todo-categories` (+ `shared/`)                                                                            |
+| planning      | `todos`, `todo-series`, `todo-categories`, `todo-imports` (+ `shared/`)                                                            |
 | notes         | `memos`                                                                                                                            |
 | engagement    | `todo-comments`, `todo-comment-likes`                                                                                              |
 | social        | `friendships`, `user-blocks`, `cheers`, `nudges`, `reminder-nudges`, `invites`, `invite-redemptions`, `user-reports` (+ `shared/`) |
@@ -107,7 +107,7 @@ presentation → application → domain        infrastructure → application(po
 | Aggregate 모양·UseCase `execute` 하나·포트 id VO·`find*`의 `T \| null`·멤버 순서·인자 3개·함수 80줄·파일 400줄·오류 클래스 위치·Read Model 이름·요청 한도 위치                                                                                | oxlint `aido/aggregate-shape`·`aido/use-case-single-execute`·`aido/port-id-value-object`·`aido/port-return-shape`·`aido/member-order`·`aido/max-params`·`max-lines-per-function`·`max-lines`·`aido/error-class-location`·`aido/read-model-suffix`·`aido/rate-limit-location`(모두 error, 예외 옵션은 도메인 이벤트 포트의 `technicalIds: ["eventId"]` 하나) |
 | 타입 검사는 `src`만 읽는다. `#api/*`가 낡은 `dist`로 빠지지 않는다                                                                                                                                                                            | `apps/api/package.json` `imports`의 `"types": ["./src/*.ts", null]`(TypeScript는 `null`에서 멈추고 Node는 `types`를 읽지 않는다)                                                                                                                                                                                                                            |
 
-- 규칙은 모든 Context에 같은 세기로 걸린다. "옮긴 Context만" 같은 단계 구분을 두지 않는다.
+- 규칙은 모든 Context에 같은 세기로 걸린다.
 - 위반 기준선을 두지 않는다. 아키텍처 테스트는 비어 있는 `REMAINING_VIOLATIONS`와 이유를 적은 `DOCUMENTED_EXCEPTIONS`가 실제 위반과 같아야 통과하고(새 위반도, 고친 뒤 남은 항목도 실패), dependency-cruiser는 기준선 없이 돈다. 새 위반은 목록에 더하지 않고 코드를 고친다.
 - 다른 Context의 테이블을 직접 읽거나 쓰지 않는다. 소유 Context가 public으로 연 조회·쓰기 포트를 쓴다(예: planning `planning-todos-queries.public.ts`의 `TodoScheduleReaderPort`, 댓글 수를 바꾸는 [TodoEngagementCounterPort](../src/modules/planning/todos/application/ports/todo-engagement-counter.port.ts)). 목록을 한 SQL로 골라야 하면 소유 Context가 `infrastructure/persistence/<noun>.query-fragment.ts`의 순수 Drizzle 조건·서브쿼리 함수를 public으로 열고, 다른 Context는 그 함수만 붙인다(identity `undeletedUserCondition`, social `hasNoBlockWith`).
 - 양방향 Module 의존이 필요해 보이면 소유 Context가 좁은 Port를 public으로 열고, 반대 방향은 [이벤트](jobs-and-events.md)로 바꾼다. 다른 Context가 읽는 포트는 아무것도 import하지 않는 `<context>-<slice>-queries.module.ts`에 두어 무거운 Module을 끌어오지 않고 순환을 없앤다. 그 밖의 용도로 Module을 쪼개지 않는다.

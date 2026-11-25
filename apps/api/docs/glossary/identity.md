@@ -96,7 +96,7 @@
 | ----------------- | ------------------------------------------------------ | ------------------------- | ----------------------------------------------------------- |
 | 없음              | 저장소 `create`(`StartOAuthAuthorizationUseCase`)      | valid, 시작 + 10분        | —                                                           |
 | valid             | 콜백 `saveExchangeData`(login)·`saveLinkingData`(link) | valid, 교환 코드          | state가 없거나 만료면 `USER_0602`                           |
-| valid, 교환 코드  | `consume(now)` 뒤 저장소 `consumeExchangeCode`         | exchanged, 저장 토큰 지움 | 이미 교환·만료·다른 사용자의 연결이면 `false` → `USER_0602` |
+| valid, 교환 코드  | `consume(now)` 뒤 저장소 `save`(조건부 소비)           | exchanged, 저장 토큰 지움 | 이미 교환·만료·다른 사용자의 연결이면 `false` → `USER_0602` |
 | exchanged·expired | 교환                                                   | —                         | `USER_0602`                                                 |
 
 `validityAt`은 `valid`·`expired`·`exchanged`이고 교환이 만료보다 먼저다. 만료 시각과 같은 순간부터 만료다.
@@ -133,7 +133,7 @@
 | 역할             | `UserRole`, `USER_ROLE`, `@Admin()`                 | `USER`·`ADMIN`. 관리자 API는 ADMIN이 아니면 `ADMIN_1401`                                                                                                                                                                                                        |
 | 가입             | `RegisterUseCase`, `ProvisionUserUseCase`           | 이메일·소셜 가입이 `ProvisionUserUseCase`로 모여 User·로그인 수단·프로필·약관 동의·설정 기본값·기본 카테고리를 한 트랜잭션에 만든다. 같은 이메일 `EMAIL_0501`                                                                                                   |
 | 소셜 가입        | `isNewUser`, `NotifyOAuthSignupUseCase`             | 소셜 첫 로그인은 ACTIVE·이메일 인증 완료로 만들고 관리자 가입 알림을 보낸다. 선택 동의 화면이 없어 광고 동의는 넣지 않는다                                                                                                                                      |
-| Aido ID          | `userTag`, `generateUserTag`, `USER_TAG_LENGTH`     | 가입 때 헷갈리는 글자를 뺀 대문자·숫자로 만든다. 겹치면 다시 만들고 끝내 못 만들면 `USER_0611`                                                                                                                                                                  |
+| Aido ID          | `userTag`, `nextUserTag`, `USER_TAG_LENGTH`         | 가입 때 헷갈리는 글자를 뺀 대문자·숫자로 만든다. 겹치면 다시 만들고 끝내 못 만들면 `USER_0611`                                                                                                                                                                  |
 | 로그인 상태 검사 | `assertStatusAllowsLogin`                           | LOCKED `USER_0607`, SUSPENDED·탈퇴 대기 `USER_0605`. 로그인·세션 확인·인증 메일이 같은 함수를 쓴다. 비밀번호 로그인의 PENDING_VERIFY는 `EMAIL_0503`                                                                                                             |
 | 내 정보          | `GetCurrentUserUseCase`, `UpdateProfileUseCase`     | `/me` 응답. 프로필·구독·설정을 5분(프리미엄 경계 전까지) 캐시한다. 이름·이미지를 바꾸면(이미지 null은 지움) 캐시를 비운다                                                                                                                                       |
 | 마지막 활동      | `LastActiveInterceptor`, `UserActivityReaderPort`   | 인증 요청마다 `lastActiveAt`·활동일(`UserActivityDay`)·앱 버전을 사용자당 한 시간에 한 번 남긴다. 앱 버전이 바뀌면 바로 남긴다                                                                                                                                  |

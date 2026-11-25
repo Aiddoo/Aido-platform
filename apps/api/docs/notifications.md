@@ -2,7 +2,7 @@
 
 마케팅·대량 발송·방해 금지·발송 우선순위·지표를 설계할 때 읽는다. 알림 종류별 정책은 [푸시 알림](push-notifications.md), 큐·receipt·기기는 [푸시 발송](push-delivery.md), 관리자 채널은 [관리자 알림](admin-notifications.md), 문구·언어는 [다국어](i18n.md)에 있다.
 
-## 지금 구조
+## 구조
 
 - notification Context는 slice 여섯이다: `notifications`(알림함·알림 발행), `push-devices`(기기·토큰), `push-dispatches`(푸시 발송·receipt), `email-messages`, `reminders`(시각 기반 알림), `retention-assignments`(온보딩·리텐션 실험). 여러 slice가 함께 쓰는 알림 종류·문구 카탈로그는 `shared/`다. 관리자 캠페인은 operations `broadcast-campaigns`, 성장 지표는 identity `users`가 소유한다.
 - 대량 발송: 캠페인 커서 작업이 500명 단위로 같은 트랜잭션에 `Notification`·`PushDispatch`·`PushDispatchOutbox`를 쓴다 → 릴레이 → `push-delivery.v1` → Expo 청크 100 + 초당 500 토큰 버킷. 한 요청·한 트랜잭션이 커지지 않고 재시도는 페이지 단위다.
@@ -44,7 +44,7 @@ Nest 공식 큐 문서의 BullMQ는 Redis가 필요해 쓰지 않는다. pg-boss
 
 ## 방해 금지
 
-- 광고성 알림은 수신자 현지 21:00~08:00에 야간 동의가 없으면 보내지 않고 다음 허용 시각으로 미룬다(정보통신망법). 기존 `force`·야간 동의 규칙은 그대로다.
+- 광고성 알림은 수신자 현지 21:00~08:00에 야간 동의가 없으면 보내지 않고 다음 허용 시각으로 미룬다(정보통신망법). `force`·야간 동의 규칙도 함께 적용된다.
 - 사용자가 시각을 정한 알림(할 일 리마인더, 프리미엄 아침·저녁 리마인더, 날씨)은 야간 수신을 꺼도 보낸다. 소셜·재방문은 야간 설정을, 광고성은 야간 금지를 그대로 따른다([푸시](push-notifications.md#공통-발송-조건)).
 - 판정은 순수 함수 `isWithinQuietHours({ instant, timezone, window })`(`push-dispatches/domain/quiet-hours.domain-service.ts`, Temporal) 하나다.
 

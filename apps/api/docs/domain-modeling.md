@@ -10,7 +10,7 @@ Entity·VO·Aggregate·도메인 서비스·도메인 오류를 만들거나 바
 - 읽기만 하는 slice는 두지 않는다. 조회는 데이터를 소유한 slice의 UseCase와 Read Model이다. 여러 Context를 모으는 조회는 각 Context `-queries` 포트를 조합한다.
 - 예외는 일정 정책 slice 하나다(notification `reminders`). 다른 Context의 데이터를 시각에 맞춰 알림 초안으로 바꿀 뿐이고, "이미 보냈다"는 판단은 알림 행(`NotificationHistoryReaderPort`)으로 하므로 가진 상태가 없어 Aggregate를 두지 않는다(아키텍처 테스트 `DOCUMENTED_EXCEPTIONS`).
 - slice가 쓰는 테이블의 행 타입마다 Entity 클래스가 하나 있다. Root는 `*.aggregate.ts`(`AggregateRoot` 상속), Root를 거쳐서만 바뀌는 하위는 `*.entity.ts`다. slice 하나는 Aggregate Root 하나이고, 수명주기가 따로인 Root가 둘이면 slice를 나눈다. slice 폴더는 Root 이름의 kebab 복수형이고, `<context>/shared/domain`에는 두 slice 이상이 쓰는 VO·도메인 서비스만 두고 Aggregate를 두지 않는다.
-- 작업 원장(push outbox·발송 기록·receipt, 알림 보존, 결제 안내 기록처럼 많은 행을 한 번에 넘기는 상태)도 행 Entity 클래스를 둔다. 수백 행을 한 문장으로 바꿔야 하는 경로만 저장소에 업무 이름의 묶음 메서드(`claimDue`·`markExpired`)를 허용하고, 한 행을 바꾸는 경로는 Entity 행동 → `save`다. 원장 Entity는 실제로 지나는 경로의 팩토리만 둔다. 알림(`Notification`)은 단건·묶음 발행이 같은 중복 방지 인덱스로 거르는 insert(`createNotification`·`createManyNotificationsAndReturn`)로 만들고 읽음 전이만 `reconstitute` → `markRead` → `save`다. 푸시 발송(`PushDispatch`)은 `create` → `nextIds`·`saveAll`(insert)로 만들고 그 뒤 claim·마무리·lease는 단계 저장소의 묶음 메서드라 복원하지 않는다.
+- 작업 원장(push outbox·발송 기록·receipt, 알림 보존, 결제 안내 기록처럼 많은 행을 한 번에 넘기는 상태)도 행 Entity 클래스를 둔다. 수백 행을 한 문장으로 바꿔야 하는 경로만 저장소에 업무 이름의 묶음 메서드(`claimAvailable`·`expireUnreceipted`)를 허용하고, 한 행을 바꾸는 경로는 Entity 행동 → `save`다. 원장 Entity는 실제로 지나는 경로의 팩토리만 둔다. 알림(`Notification`)은 단건·묶음 발행이 같은 중복 방지 인덱스로 거르는 insert(`createNotification`·`createManyNotificationsAndReturn`)로 만들고 읽음 전이만 `reconstitute` → `markRead` → `save`다. 푸시 발송(`PushDispatch`)은 `create` → `nextIds`·`saveAll`(insert)로 만들고 그 뒤 claim·마무리·lease는 단계 저장소의 묶음 메서드라 복원하지 않는다.
 - 저장 Aggregate 모양(`create`·`reconstitute`·`toPrimitives()`)에서 벗어나도 되는 것은 이름으로 정한 셋뿐이다. 알림(`Notification`)과 env의 기능 소개 캠페인(`FeatureDiscoveryCampaign`, 운영 env에서 복원만 하고 서버가 만들지 않는다)은 `create` 없이 `reconstitute`만 두고, 푸시 발송(`PushDispatch`)은 `create`만 두고 복원하지 않는다. `reconstitute`가 있는데 `create`·`toPrimitives()`가 없는 Aggregate는 아키텍처 테스트(`slice-shape.spec.ts`의 `DOCUMENTED_EXCEPTIONS`)가 막는다. 새 원장도 이 목록에 이유와 함께 더하기 전에는 세 팩토리를 다 둔다.
 - 베이스 클래스는 `shared/domain/model`의 `ValueObject<TValue>`, `EntityId<TValue>`, `Entity<TId, TProps>`, `AggregateRoot<TId, TProps, TEvent>`다. VO는 `ValueObject`를 상속하고 const 객체로 VO를 흉내 내지 않는다. 다른 베이스 클래스를 만들지 않는다.
 - `ValueObject.equals`는 생성자와 값을 비교한다. Temporal 값은 자체 `equals`로 비교한다(es-toolkit `isEqual`은 같은 시각의 다른 Temporal 객체를 다르다고 본다).
@@ -42,7 +42,7 @@ Entity·VO·Aggregate·도메인 서비스·도메인 오류를 만들거나 바
 - 허용되지 않은 전이(`ACCEPTED`인 요청을 다시 수락)는 두 가지 중 하나로 정하고 slice 안에서 섞지 않는다. 같은 상태로의 재요청은 `false`(멱등), 다른 상태에서의 금지된 전이는 `domain/<slice>.errors.ts`의 이름 있는 오류다.
 - 상태 질문은 `is<State>()`(`isPending()`)·`has<Noun>()`, 행동 가능 여부는 `can<Action>()` 메서드이고 getter로 두지 않는다. 파생 값은 명사 getter(`remainingSeconds`)다. 질문 메서드는 상태를 바꾸지 않는다(Oxlint `aido/aggregate-shape`).
 - 전이 표(상태 → 행동 → 다음 상태)는 용어집의 그 Context 절에 둔다. 코드와 표가 다르면 코드를 고치거나 표를 고치는 PR에서 함께 맞춘다.
-- UseCase 이름은 `<업무 동사><Aggregate>`(`AcceptFriendRequest`, `CompleteTodo`)이고 용어집의 행동과 같은 말을 쓴다. Aggregate 안 이벤트는 `<aggregate>.<과거형>`(`todo.created`), 다른 Context로 내보내는 이벤트(`PublishedDomainEvent`)는 `<context>.<aggregate>.<과거형>`(`planning.todo.completed`)이다. durable 구독이 있는 이벤트 이름은 큐 payload 계약이라 바꾸지 않는다.
+- UseCase 이름은 `<업무 동사><Aggregate>`(`AcceptFriendRequest`, `RewriteMemo`)이고 용어집의 행동과 같은 말을 쓴다. Aggregate 안 이벤트는 `<aggregate>.<과거형>`(`todo.created`), 다른 Context로 내보내는 이벤트(`PublishedDomainEvent`)는 `<context>.<aggregate>.<과거형>`(`planning.todo.completed`)이다. durable 구독이 있는 이벤트 이름은 큐 payload 계약이라 바꾸지 않는다.
 
 ## 규칙을 둘 곳
 

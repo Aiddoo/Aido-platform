@@ -2,12 +2,11 @@
 
 캐시·잠금·dedup·프로세스 안 저장소를 만들 때, 인스턴스·DB를 늘릴 때 읽는다. 풀 설정은 [영속성](persistence.md#풀-설정), 큐 연결 예산은 [작업과 이벤트](jobs-and-events.md#큐-정의)에 있다.
 
-## 지금 (2026-11 측정)
+## 운영 구성
 
-- 운영은 서버 한 대의 API 컨테이너 하나(512MB, 힙 384MiB)와 RDS `db.t4g.micro` 하나다. 한 프로세스가 HTTP·worker·정기 작업을 모두 돌린다.
-- DB 연결은 프로세스당 앱 풀 `DATABASE_POOL_MAX` 10 + pg-boss `JOB_POOL_MAX` 3 = 최대 13이고 `max_connections`는 79다. 7일 최대 연결은 17이었다. 배포 중에는 두 컨테이너가 겹쳐 최대 26 + migrate다.
-- 병목은 연결 수가 아니라 RDS 메모리(여유 약 55MB, 스왑 약 80MB)다. 연결 하나가 수 MB를 쓰므로 풀을 키우지 않는다.
-- EC2는 2 vCPU·RAM 1.8GB이고 API 컨테이너는 CPU 약 6%다. 실제 큐 작업은 분당 최대 26건, 처리 시간은 수십 ms라 워커가 동시에 1~2개만 돈다.
+- 운영은 서버 한 대(EC2 2 vCPU·RAM 1.8GB)의 API 컨테이너 하나(512MB, 힙 384MiB)와 RDS `db.t4g.micro` 하나다. 한 프로세스가 HTTP·worker·정기 작업을 모두 돌린다.
+- DB 연결은 프로세스당 앱 풀 `DATABASE_POOL_MAX` 10 + pg-boss `JOB_POOL_MAX` 3 = 최대 13이고 `max_connections`는 79다. 배포 중에는 두 컨테이너가 겹쳐 최대 26 + migrate다.
+- 병목은 연결 수가 아니라 RDS 메모리다. 연결 하나가 수 MB를 쓰므로 풀을 키우지 않는다.
 - `CACHE_TYPE=memory`이고 운영 env에 `REDIS_URL`을 두지 않는다. 프로세스가 상시 둘 이상이 될 때 아래 체크리스트대로 켠다.
 - 실제 연결 수는 `SELECT application_name, state, count(*) FROM pg_stat_activity WHERE backend_type = 'client backend' GROUP BY 1, 2`로 본다(`aido-api`·`aido-pg-boss`).
 
@@ -53,7 +52,7 @@
 - [ ] `CACHE_TYPE=redis` + `REDIS_URL`. 안 하면 worker가 지운 캐시를 API가 TTL까지 모른다(권한 10분, 세션 30초)
 - [ ] API 프로세스는 `JOB_WORKER_ENABLED=false`, worker를 켠 프로세스는 반드시 하나 이상. 풀은 `DATABASE_POOL_MAX`·`JOB_POOL_MAX`로 프로세스마다 정하고 합계가 RDS 한도 안인지 계산한다
 - [ ] pg-boss는 그대로다(작업 꺼내기는 `SKIP LOCKED`, 정기 작업 발행은 DB가 회차마다 하나로 조정). 푸시 rate limit은 기본이 Postgres다
-- [ ] Expo 초당 발송 한도(`EXPO_PUSH_MESSAGES_PER_SECOND` 상수 500)는 프로세스별이다. 푸시를 보내는 프로세스가 둘 이상이면 그 수로 나눈다
+- [ ] Expo 초당 발송 한도(`EXPO_PUSH_CHANNEL_CONFIG.messagesPerSecond` 500)는 프로세스별이다. 푸시를 보내는 프로세스가 둘 이상이면 그 수로 나눈다
 - [ ] 커밋 뒤 캐시 정리(after-commit 구독)는 커밋한 프로세스 안에서 돈다. 캐시가 Redis면 모든 프로세스가 같이 본다
 - [ ] AI 지출 스냅샷은 프로세스 메모리다. 그 프로세스가 다음 AI 호출을 끝낼 때 DB 누적값으로 맞춰지므로, 호출이 드문 프로세스는 그만큼 늦게 안다
 - [ ] 경보 중복 제거와 회로 상태는 프로세스별이다. 같은 장애가 프로세스 수만큼 경보될 수 있다
