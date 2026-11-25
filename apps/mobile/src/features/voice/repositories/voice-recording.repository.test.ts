@@ -68,6 +68,45 @@ describe('VoiceRecordingRepository', () => {
     });
   });
 
+  it('같은 원본을 두 초안이 함께 옮기려 하면 먼저 온 쪽만 옮기고 건너뛴 사실만 남긴다', async () => {
+    // Given
+    const { files, logger, repository } = createRepository();
+    const sourceUri = files.addFile(OWNER_DIRECTORY, 'recording_abc.wav');
+
+    // When
+    const [first, second] = await Promise.all([
+      repository.save({ accountId: 'user-1', draftId: 'draft-1', partIndex: 0, sourceUri }),
+      repository.save({ accountId: 'user-1', draftId: 'draft-2', partIndex: 0, sourceUri }),
+    ]);
+
+    // Then
+    expect(first).toBe('draft-1-0.wav');
+    expect(second).toBeNull();
+    expect(files.hasFile(OWNER_DIRECTORY, 'draft-2-0.wav')).toBe(false);
+    expect(logger.warn).not.toHaveBeenCalled();
+    expect(logger.info).toHaveBeenCalledTimes(1);
+    expect(logger.info).toHaveBeenCalledWith(VOICE_LOG_EVENT.RECORDING_SHARED_SOURCE_SKIPPED);
+  });
+
+  it('옮기다 실패한 원본은 기억에 남지 않아 다시 옮길 수 있다', async () => {
+    // Given
+    const { files, repository } = createRepository();
+    const sourceUri = files.addFile(OWNER_DIRECTORY, 'recording_abc.wav');
+    files.failNextMove(new Error('ENOSPC'));
+    await repository.save({ accountId: 'user-1', draftId: 'draft-1', partIndex: 0, sourceUri });
+
+    // When
+    const fileName = await repository.save({
+      accountId: 'user-1',
+      draftId: 'draft-1',
+      partIndex: 0,
+      sourceUri,
+    });
+
+    // Then
+    expect(fileName).toBe('draft-1-0.wav');
+  });
+
   it('녹음 폴더를 만들지 못하면 save-failed를 남기고 null을 돌려준다', () => {
     // Given
     const { files, logger, repository } = createRepository();

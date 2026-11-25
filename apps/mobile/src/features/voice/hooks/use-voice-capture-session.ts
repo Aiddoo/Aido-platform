@@ -11,7 +11,7 @@ import type {
 } from '@src/core/ports/speech-recognizer';
 import { noop } from 'es-toolkit';
 import { type RefObject, useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
-import { useSharedValue } from 'react-native-reanimated';
+import { type SharedValue, useSharedValue } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
 import { toSpeechStartOptions } from '../apis/speech-hint.mapper';
@@ -68,6 +68,31 @@ export interface BeginOptions {
   seed?: VoiceCaptureSeed;
 }
 
+/** 그릴 값. 글자가 올 때마다 바뀐다 */
+export interface VoiceCapture {
+  state: VoiceCaptureState;
+  /** 파형이 UI 스레드에서 읽는 음량 */
+  level: SharedValue<number>;
+  /** 말이 멈춰 곧 알아서 끝낼 참이다 */
+  isQuiet: boolean;
+}
+
+export interface VoiceCaptureControls {
+  /** 권한·동의·한도 확인을 마친 뒤 부른다. 시작했으면 true다 */
+  begin: (options: BeginOptions) => Promise<boolean>;
+  finish: () => void;
+  pause: () => void;
+  /** 다른 화면이 올라와 듣기를 멈춘다 */
+  interrupt: () => void;
+  resume: () => void;
+  cancel: () => void;
+  /** 들은 글자를 말로 메모하기로 넘겼다. 취소와 달리 이어 가는 것이라 따로 남긴다 */
+  handOff: () => void;
+  retryPlanning: () => void;
+  changeLocale: (locale: SpeechLocale) => Promise<void>;
+  getElapsedMs: () => number;
+}
+
 /** 시트가 세션을 소유해 회전에도 끊기지 않고, 백그라운드로 가면 글자를 확정하고 멈춰 이어 들을 수 있게 둔다 */
 export function useVoiceCaptureSession({
   entry,
@@ -93,11 +118,6 @@ export function useVoiceCaptureSession({
   const silence = useSilenceAutoFinish({
     isEnabled: mode === 'quick',
     canFinish: () => VoiceCapturePolicy.canFinish(stateRef.current),
-    onSilence: (silentMs) => {
-      if (VoiceCapturePolicy.shouldAutoFinish(stateRef.current, silentMs, AUTO_FINISH_SILENCE_MS)) {
-        finish();
-      }
-    },
     onVolumeGap: () => level.set(0),
   });
 
@@ -120,7 +140,7 @@ export function useVoiceCaptureSession({
     telemetry.finished(toCaptureOutcome(next), next);
   };
 
-  function finish() {
+  const finish = () => {
     silence.cancelQuiet();
     timers.clear('deferredStart');
     const { previous, next } = dispatch({ type: 'finish', at: Date.now() });
@@ -133,7 +153,14 @@ export function useVoiceCaptureSession({
       return;
     }
     telemetry.finished(toCaptureOutcome(next), next);
-  }
+  };
+
+  /** 말이 멈춘 채 시간이 지났다. 그 사이 다시 말했거나 멈췄으면 끝내지 않는다 */
+  const finishIfStillSilent = (silentMs: number) => {
+    if (VoiceCapturePolicy.shouldAutoFinish(stateRef.current, silentMs, AUTO_FINISH_SILENCE_MS)) {
+      finish();
+    }
+  };
 
   const handleFailed = (failed: Extract<VoiceCaptureState, { status: 'failed' }>) => {
     onFailed?.(failed.transcript);
@@ -191,6 +218,15 @@ export function useVoiceCaptureSession({
     }
   };
 
+  const startPrepared = () => {
+    timers.clear('deferredStart');
+    const startOptions = startOptionsRef.current;
+    if (startOptions == null || getStatus() !== 'preparing') {
+      return;
+    }
+    recognizer.start(startOptions);
+  };
+
   /** 앞 구간이 끝나지 않았는데 다시 열면 Android가 파일을 마무리하지 않고 버린다. `end`까지 미룬다 */
   const startAfterRecognizerEnds = () => {
     if (!recognizer.linkRef.current.isRunning) {
@@ -199,15 +235,6 @@ export function useVoiceCaptureSession({
     }
     timers.set('deferredStart', startPrepared, FINALIZE_TIMEOUT_MS);
   };
-
-  function startPrepared() {
-    timers.clear('deferredStart');
-    const startOptions = startOptionsRef.current;
-    if (startOptions == null || getStatus() !== 'preparing') {
-      return;
-    }
-    recognizer.start(startOptions);
-  }
 
   useSpeechEvent((event) => {
     if (event.type === 'end') {
@@ -238,6 +265,7 @@ export function useVoiceCaptureSession({
         level.set(nextLevel);
         silence.noteVolume(
           VoiceRecognizerLinkPolicy.isSpeaking(recognizer.linkRef.current, nextLevel, Date.now()),
+          finishIfStillSilent,
         );
         stall.sampleVolume(nextLevel);
       })
@@ -304,46 +332,47 @@ export function useVoiceCaptureSession({
     },
   });
 
-  /** 권한·동의·한도 확인을 마친 뒤 부른다. 시작했으면 true다 */
-  const begin = async ({
+  const startWithCapabilities = async ({
     locale,
     hintWords,
     recordingDirectory,
-    seed,
-  }: BeginOptions): Promise<boolean> => {
+  }: Omit<BeginOptions, 'seed'>): Promise<boolean> => {
+    const capabilities = await speechRecognizer.getCapabilities(mode, locale);
+    if (isUnmountedRef.current || getStatus() !== 'preparing') {
+      return false;
+    }
+    const isOnDevice = capabilities.canRecognizeOnDevice;
+    startOptionsRef.current = {
+      locale,
+      mode,
+      hintWords,
+      isOnDevice,
+      recordingDirectory,
+    };
+    if (!capabilities.isAvailable) {
+      handleError('service-not-allowed');
+      return false;
+    }
+    startAfterRecognizerEnds();
+    haptics.impact('light');
+    telemetry.started(locale, isOnDevice);
+    return true;
+  };
+
+  const begin = async ({ seed, ...startOptions }: BeginOptions): Promise<boolean> => {
     if (isUnmountedRef.current || getStatus() !== 'idle') {
       return false;
     }
     dispatch({ type: 'prepare', seed });
-    try {
-      const capabilities = await speechRecognizer.getCapabilities(mode, locale);
-      if (isUnmountedRef.current || getStatus() !== 'preparing') {
-        return false;
-      }
-      const isOnDevice = capabilities.canRecognizeOnDevice;
-      startOptionsRef.current = {
-        locale,
-        mode,
-        hintWords,
-        isOnDevice,
-        recordingDirectory,
-      };
-      if (!capabilities.isAvailable) {
-        handleError('service-not-allowed');
-        return false;
-      }
-      startAfterRecognizerEnds();
-      haptics.impact('light');
-      telemetry.started(locale, isOnDevice);
-      return true;
-    } catch (error) {
+    // 조건이 든 try는 React Compiler가 이 훅을 건너뛰게 해 실패를 Promise로 받는다
+    return startWithCapabilities(startOptions).catch((error: unknown) => {
       if (isUnmountedRef.current) {
         return false;
       }
       telemetry.capabilityCheckFailed(error);
       handleError('unknown');
       return false;
-    }
+    });
   };
 
   const resume = () => {
@@ -378,7 +407,6 @@ export function useVoiceCaptureSession({
   };
 
   const cancel = () => reset('cancelled');
-  /** 들은 글자를 말로 메모하기로 넘겼다. 취소와 달리 이어 가는 것이라 따로 남긴다 */
   const handOff = () => reset('upgraded');
 
   const retryPlanning = () => {
@@ -405,10 +433,8 @@ export function useVoiceCaptureSession({
 
   const getElapsedMs = () => VoiceCapturePolicy.getElapsedMs(stateRef.current, Date.now());
 
-  return {
-    state,
-    level,
-    isQuiet: silence.isQuiet,
+  const capture: VoiceCapture = { state, level, isQuiet: silence.isQuiet };
+  const controls: VoiceCaptureControls = {
     begin,
     finish,
     pause: () => pause('user'),
@@ -420,6 +446,8 @@ export function useVoiceCaptureSession({
     changeLocale,
     getElapsedMs,
   };
+
+  return [capture, controls] as const;
 }
 
 /** 인식기 이벤트는 렌더를 기다리지 않고 다음 상태를 읽어야 한다. dispatch는 바뀌지 않았으면 같은 객체다 */
@@ -547,19 +575,15 @@ function useRecognizerStallRecovery({
 interface UseSilenceAutoFinishOptions {
   isEnabled: boolean;
   canFinish: () => boolean;
-  /** 말이 멈춘 채 `AUTO_FINISH_SILENCE_MS`가 지났다. 실제로 멈춘 시간을 넘긴다 */
-  onSilence: (silentMs: number) => void;
   /** 음량 이벤트가 끊겼다. `isEnabled`와 상관없이 부른다 */
   onVolumeGap: () => void;
 }
 
-/** 말이 멈춘 것을 음량과 글자로 판단해 잠시 뒤 알린다 */
-function useSilenceAutoFinish({
-  isEnabled,
-  canFinish,
-  onSilence,
-  onVolumeGap,
-}: UseSilenceAutoFinishOptions) {
+/** 말이 멈춘 채 `AUTO_FINISH_SILENCE_MS`가 지났다. 실제로 멈춘 시간을 넘긴다 */
+type SilenceListener = (silentMs: number) => void;
+
+/** 말이 멈춘 것을 음량과 글자로 판단해 잠시 뒤 알린다. 알릴 곳은 음량을 넘길 때마다 받는다 */
+function useSilenceAutoFinish({ isEnabled, canFinish, onVolumeGap }: UseSilenceAutoFinishOptions) {
   const [isQuiet, setIsQuiet] = useState(false);
   const isQuietRef = useRef(false);
   const [timers] = useState(() => createTimerSlots<'quiet' | 'volumeGap'>());
@@ -572,7 +596,7 @@ function useSilenceAutoFinish({
     }
   };
 
-  const markSilence = () => {
+  const markSilence = (onSilence: SilenceListener) => {
     if (!isEnabled || isQuietRef.current || !canFinish()) {
       return;
     }
@@ -582,19 +606,19 @@ function useSilenceAutoFinish({
     timers.set('quiet', () => onSilence(Date.now() - quietSince), AUTO_FINISH_SILENCE_MS);
   };
 
-  const noteVolume = (isSpeaking: boolean) => {
+  const noteVolume = (isSpeaking: boolean, onSilence: SilenceListener) => {
     timers.set(
       'volumeGap',
       () => {
         onVolumeGap();
-        markSilence();
+        markSilence(onSilence);
       },
       VOICE_NO_VOLUME_GAP_MS,
     );
     if (isSpeaking) {
       cancelQuiet();
     } else {
-      markSilence();
+      markSilence(onSilence);
     }
   };
 

@@ -1417,20 +1417,6 @@
         "aido/props-interface": "off"
       }
     },
-    {
-      // 래칫
-      "files": ["src/features/voice/**"],
-      "rules": {
-        "aido/form-owner": "off"
-      }
-    },
-    {
-      // 래칫
-      "files": ["src/features/voice/**"],
-      "rules": {
-        "aido/component-outer-spacing": "off"
-      }
-    },
     // 규칙이 처음 나오는 블록이 켜는 자리이고 뒤따르는 같은 규칙의 off 블록은 허용 경로다.
     {
       "files": ["src/**", "app/**"],

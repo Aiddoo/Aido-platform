@@ -14,6 +14,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { STACK_MORE_ICON, useConfirmDialog } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
+import { useRef } from 'react';
 
 import { VoiceNotePolicy } from '../domains/voice-note.model';
 import { isPlanKeyConflictError } from '../domains/voice.error';
@@ -109,6 +110,8 @@ function useVoiceNoteSaveMemo({ onMemoChanged }: UseVoiceNoteSaveMemoOptions) {
     }),
   );
   const memo = VoiceNotePolicy.findDigestMemo(note);
+  // isPending은 다음 렌더에야 켜진다. 응답을 기다리는 동안에는 렌더와 상관없이 다시 보내지 않는다
+  const isSendingRef = useRef(false);
 
   const saveMemoRequest = (idempotencyKey: string | null) => {
     const latest = drafts.find(accountId, draftId);
@@ -124,11 +127,14 @@ function useVoiceNoteSaveMemo({ onMemoChanged }: UseVoiceNoteSaveMemoOptions) {
   };
 
   const saveMemo = () => {
-    if (memo == null || mutation.isPending) {
+    // 누른 순간의 초안을 읽는다. 렌더 때의 초안은 같은 프레임의 두 번째 탭에서 앞의 탭이 남긴 키와 저장한 사실을 아직 모른다
+    const latest = drafts.find(accountId, draftId);
+    if (memo == null || isSendingRef.current || latest?.memoSavedAt != null) {
       return;
     }
+    isSendingRef.current = true;
     // 응답을 놓친 뒤 다시 눌러도 같은 키라 메모가 두 장이 되지 않는다
-    const idempotencyKey = note.memoSaveRequest?.idempotencyKey ?? idGenerator.create();
+    const idempotencyKey = latest?.memoSaveRequest?.idempotencyKey ?? idGenerator.create();
     saveMemoRequest(idempotencyKey);
     mutation.mutate(
       {
@@ -144,6 +150,9 @@ function useVoiceNoteSaveMemo({ onMemoChanged }: UseVoiceNoteSaveMemoOptions) {
           if (isPlanKeyConflictError(error)) {
             saveMemoRequest(null);
           }
+        },
+        onSettled: () => {
+          isSendingRef.current = false;
         },
       },
     );

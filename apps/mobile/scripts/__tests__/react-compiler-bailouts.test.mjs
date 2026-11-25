@@ -14,19 +14,14 @@ const babel = require(require.resolve('@babel/core', { paths: [PRESET_PATH] }));
 const KNOWN_BAILOUTS = [
   // try…finally, catch 없는 try, try 안 조건식
   'src/features/device/store-review/hooks/use-store-review-moment.ts',
-  'src/features/voice/hooks/use-dictation.ts',
   'src/shared/hooks/use-refresh.ts',
   // 훅을 prop 값으로 받는 DI
   'src/shared/providers/language-provider.tsx',
   'src/shared/providers/local-date-provider.tsx',
   // 매개변수 기본값에 둔 멤버 접근·JSX·함수
   'src/features/device/widget/components/widgets.android.tsx',
-  'src/features/voice/hooks/use-start-voice-note.ts',
   'src/shared/ui/bottom-sheet/use-sheet-route.ts',
   'src/shared/ui/inline-alert/inline-alert.tsx',
-  // 선언 전에 부르는 함수
-  'src/features/voice/hooks/use-voice-capture-session.ts',
-  'src/features/voice/hooks/use-voice-note-recording.ts',
 ];
 
 function listSourceFiles(directory) {

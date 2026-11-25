@@ -1,4 +1,5 @@
 import { useIdGenerator } from '@src/bootstrap/providers/di-context';
+import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { isAiDataSharingConsentRequiredError } from '@src/features/identity/consent/domains/consent.error';
 import { useAiDataSharingConsentGate } from '@src/features/identity/consent/hooks/use-ai-data-sharing-consent-gate';
 import { useMutation } from '@tanstack/react-query';
@@ -18,7 +19,8 @@ interface UseQuickPlanRequestOptions {
 export function useQuickPlanRequest({ onSubscribe }: UseQuickPlanRequestOptions) {
   const idGenerator = useIdGenerator();
   const aiConsent = useAiDataSharingConsentGate();
-  const planMutation = useMutation(useCreateQuickPlanMutationOptions({ onSubscribe }));
+  const gate = useEntitlementGate('AI_PARSE', { surface: 'add_todo_sheet' });
+  const planMutation = useMutation(useCreateQuickPlanMutationOptions());
   const hasAskedConsentRef = useRef(false);
   const [isConsentRequired, setIsConsentRequired] = useState(false);
   const planRequestRef = useRef<PreparedPlanRequest<CreateQuickPlanInput> | null>(null);
@@ -46,6 +48,10 @@ export function useQuickPlanRequest({ onSubscribe }: UseQuickPlanRequestOptions)
       return { plan, isCharged };
     } catch (error) {
       planRequestRef.current = PlanRequestPolicy.findRequestToRetry(request, error);
+      // 서버가 한도로 막았으면 안내 시트를 띄운다. 끊은 요청은 알리지 않는다
+      if (!abortController.signal.aborted) {
+        gate.promptIfBlockedError(error, { onSubscribe });
+      }
       if (isAiDataSharingConsentRequiredError(error) && !hasAskedConsentRef.current) {
         hasAskedConsentRef.current = true;
         if (await aiConsent.requestAgreement()) {

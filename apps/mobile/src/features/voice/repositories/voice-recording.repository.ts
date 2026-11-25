@@ -45,8 +45,11 @@ function getExtension(uri: string) {
 
 export function createVoiceRecordingRepository(
   files: LocalFileSystem,
-  logger: Pick<AppLogger, 'warn'>,
+  logger: Pick<AppLogger, 'warn' | 'info'>,
 ): VoiceRecordingRepository {
+  /** 지금 옮기는 중인 원본. 옮기기가 끝나면 지워 쌓이지 않는다 */
+  const movingSourceUris = new Set<string>();
+
   const logRemoveFailed = (error: unknown) => {
     logger.warn(VOICE_LOG_EVENT.RECORDING_REMOVE_FAILED, { error: getErrorMessage(error) });
   };
@@ -82,8 +85,15 @@ export function createVoiceRecordingRepository(
     },
 
     save: async ({ accountId, draftId, partIndex, sourceUri }) => {
-      const fileName = `${encodeURIComponent(draftId)}-${partIndex}.${getExtension(sourceUri)}`;
+      // 녹음 화면을 다시 연 직후에는 앞 녹음의 늦은 파일을 앞 세션과 새 화면이 함께 받는다. 먼저 옮기기 시작한 쪽만 옮긴다
+      if (movingSourceUris.has(sourceUri)) {
+        // 건너뛴 쪽이 앞 녹음이면 조각이 다른 메모에 붙는다. 얼마나 일어나는지 볼 수 있게 남긴다
+        logger.info(VOICE_LOG_EVENT.RECORDING_SHARED_SOURCE_SKIPPED);
+        return null;
+      }
       try {
+        movingSourceUris.add(sourceUri);
+        const fileName = `${encodeURIComponent(draftId)}-${partIndex}.${getExtension(sourceUri)}`;
         files.ensureDirectory(createOwnerDirectory(accountId));
         await files.moveFile(sourceUri, createOwnerDirectory(accountId), fileName);
         return fileName;
@@ -93,6 +103,8 @@ export function createVoiceRecordingRepository(
           error: getErrorMessage(error),
         });
         return null;
+      } finally {
+        movingSourceUris.delete(sourceUri);
       }
     },
 

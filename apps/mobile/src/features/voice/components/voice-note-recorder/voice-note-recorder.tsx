@@ -23,6 +23,8 @@ import {
   Flex,
   HStack,
   PauseIcon,
+  QueryErrorFallback,
+  type QueryErrorFallbackProps,
   STACK_CLOSE_ICON,
   StopIcon,
   SurfaceCard,
@@ -70,13 +72,14 @@ export function VoiceNoteRecorder() {
   const [{ draftId: seedDraftId, entry }] = useRouteParams(voiceNoteRecordParamsSchema);
 
   const router = useRouter();
-  const recording = useVoiceNoteRecording({
+  const [recording, recorder] = useVoiceNoteRecording({
     accountId,
     locale,
     seedDraftId,
     entry,
     maxSeconds,
-    onLimitReached: () => finishOrPromptLimit(recording),
+    onLimitReached: () =>
+      finishOrPromptLimit({ hasText: recording.hasText, finish: recorder.finish }),
     onFinished: (draftId) =>
       router.replace({ pathname: '/voice-notes/[draftId]', params: { draftId } }),
     onEmpty: () => {
@@ -84,20 +87,25 @@ export function VoiceNoteRecorder() {
       router.back();
     },
   });
-  useOnScreenBlur(recording.interrupt);
-  const requestClose = useRecordClose(recording);
-  const requestFinish = useRecordFinish(recording);
-  // 글자를 받을 때마다 recording이 새로 만들어진다. 헤더 옵션이 그때마다 바뀌면 내비게이터까지 다시 그려져 정체성을 고정한다
-  const close = useSingleTap(requestClose);
-  const changeLocaleRef = useRef(recording.changeLocale);
-  useLayoutEffect(() => {
-    changeLocaleRef.current = recording.changeLocale;
-  });
   const { state } = recording;
+  useOnScreenBlur(recorder.interrupt);
+  const requestClose = useRecordClose({
+    state,
+    hasText: recording.hasText,
+    discard: recorder.discard,
+    finish: recorder.finish,
+  });
+  const requestFinish = useRecordFinish({ state, finish: recorder.finish });
+  // 글자를 받을 때마다 동작 함수가 새로 만들어진다. 헤더 옵션이 그때마다 바뀌면 내비게이터까지 다시 그려져 정체성을 고정한다
+  const close = useSingleTap(requestClose);
+  const changeLocaleRef = useRef(recorder.changeLocale);
+  useLayoutEffect(() => {
+    changeLocaleRef.current = recorder.changeLocale;
+  });
 
   // 화면에 들어올 때 한 번만 녹음을 시작한다. 그 시점의 언어·힌트를 읽는다
   const startRecording = useEffectEvent(() => {
-    recording.start({ startLocale: locale, hintWords: getSpeechContext() }).catch((error) => {
+    recorder.start({ startLocale: locale, hintWords: getSpeechContext() }).catch((error) => {
       reportUnexpectedError(error);
       toast.error(t('record.failedTitle'));
     });
@@ -144,12 +152,12 @@ export function VoiceNoteRecorder() {
               state={state}
               limitMs={limitMs}
               markCount={recording.markCount}
-              onPause={recording.pause}
+              onPause={recorder.pause}
               onFinish={requestFinish}
-              onMark={recording.mark}
-              onSummarize={recording.finish}
+              onMark={recorder.mark}
+              onSummarize={recorder.finish}
               onClose={requestClose}
-              onResume={recording.resume}
+              onResume={recorder.resume}
             />
           )}
         </VStack>
@@ -161,12 +169,12 @@ export function VoiceNoteRecorder() {
             state={state}
             limitMs={limitMs}
             markCount={recording.markCount}
-            onPause={recording.pause}
+            onPause={recorder.pause}
             onFinish={requestFinish}
-            onMark={recording.mark}
-            onSummarize={recording.finish}
+            onMark={recorder.mark}
+            onSummarize={recorder.finish}
             onClose={requestClose}
-            onResume={recording.resume}
+            onResume={recorder.resume}
           />
         )}
       </Flex>
@@ -375,6 +383,10 @@ VoiceNoteRecorder.Loading = function Loading() {
     )
     .with(false, () => <VoiceNoteOffline className="px-4" />)
     .exhaustive();
+};
+
+VoiceNoteRecorder.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
+  return <QueryErrorFallback reset={reset} />;
 };
 
 interface RecordLanguageTabsProps {

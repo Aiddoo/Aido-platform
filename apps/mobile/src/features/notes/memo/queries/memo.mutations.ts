@@ -14,12 +14,12 @@ import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { settleTodoBatchWrite } from '@src/features/planning/todo/queries/todo-cache';
 import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
 import { PlanRequestPolicy } from '@src/features/voice/domains/plan-request.model';
+import { createPlanReviewDraft } from '@src/features/voice/domains/plan-review-draft.model';
 import {
   getVoicePlanFailureCause,
   isPlanKeyConflictError,
 } from '@src/features/voice/domains/voice.error';
 import { planInProgressRetryOptions } from '@src/features/voice/queries/voice.mutations';
-import { createPlanReviewDraft } from '@src/features/voice/utils/plan-review-draft';
 import {
   summarizePlanForAnalytics,
   toAnalyticsSource,

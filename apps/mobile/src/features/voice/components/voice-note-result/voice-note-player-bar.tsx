@@ -92,10 +92,13 @@ export function VoiceNotePlayerBar({
 
   if (!isRecordingAvailable) {
     return (
-      <HStack className="self-start rounded-xl bg-gray-1 px-3 py-2">
-        <Text size="e1" shade={7} lineBreakStrategyIOS="hangul-word" className="shrink">
-          {t('player.unavailable')}
-        </Text>
+      // 안내 알약은 글자만큼만 차지한다. 바깥 줄이 재생 줄과 같은 폭을 잡아 화면이 배치를 따로 정하지 않는다
+      <HStack>
+        <HStack className="shrink rounded-xl bg-gray-1 px-3 py-2">
+          <Text size="e1" shade={7} lineBreakStrategyIOS="hangul-word" className="shrink">
+            {t('player.unavailable')}
+          </Text>
+        </HStack>
       </HStack>
     );
   }

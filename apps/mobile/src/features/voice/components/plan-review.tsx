@@ -1,13 +1,20 @@
-import { useIdGenerator } from '@src/bootstrap/providers/di-context';
-import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
+import { ACTION_PLAN_LIMITS } from '@aido/api/vocabulary';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { CategoryHeaderPill } from '@src/features/planning/category/components/category-header-pill';
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import { TodoRow } from '@src/features/planning/todo/components/todo-row';
-import { isPrivateVisibility } from '@src/features/planning/todo/domains/todo-visibility.model';
-import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import {
+  TodoScheduleChips,
+  type TodoScheduleChipsValue,
+} from '@src/features/planning/todo/components/todo-schedule-chips';
+import { TodoScheduleSummary } from '@src/features/planning/todo/components/todo-schedule-summary';
+import { TodoSchedulePolicy } from '@src/features/planning/todo/domains/todo-schedule.model';
+import {
+  getVisibility,
+  isPrivateVisibility,
+} from '@src/features/planning/todo/domains/todo-visibility.model';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
-import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import {
   AiFilledIcon,
@@ -17,6 +24,8 @@ import {
   HintPopoverContent,
   HStack,
   InfoIcon,
+  Input,
+  KeyboardBottomSheet,
   QueryErrorBoundary,
   QueryErrorFallback,
   Result,
@@ -28,27 +37,26 @@ import {
 } from '@src/shared/ui';
 import { getTouchTargetInset } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { Popover, PressableFeedback, Separator, Skeleton } from 'heroui-native';
-import { type ReactNode, Suspense, useRef, useState } from 'react';
-import { type UseFormReturn, useFieldArray, useFormState, useWatch } from 'react-hook-form';
+import { type ReactNode, Suspense, useState } from 'react';
+import { Controller, FormState, useForm, Watch } from 'react-hook-form';
 import { ScrollView, type StyleProp, type ViewStyle } from 'react-native';
 import { match } from 'ts-pattern';
 
-import { PlanRequestPolicy } from '../../domains/plan-request.model';
-import { type VoicePlan, VoicePlanPolicy } from '../../domains/voice-plan.model';
-import { isPlanKeyConflictError, isSourceMemoMissingError } from '../../domains/voice.error';
-import { useApplyActionPlanMutationOptions } from '../../queries/voice.mutations';
-import { type PlanReviewFormValues } from '../../schemas/plan-review-form.schema';
 import {
-  getPlanActionGroups,
-  sortPlanActionsByGroup,
-} from '../../utils/plan-action-group.view-model';
-import { getPlanHeadline } from '../../utils/plan-headline.view-model';
-import { toPlanSelection, toPlannedActions } from '../../utils/plan-review-draft';
-import { findPlanTodoSubtitle } from '../../utils/plan-todo-subtitle.view-model';
-import { PlanTodoEditBottomSheet } from './plan-todo-edit-bottom-sheet';
+  PlanReviewDraftPolicy,
+  type SelectablePlannedAction,
+} from '../domains/plan-review-draft.model';
+import { getPlannedCategoryId, PlannedActionPolicy } from '../domains/planned-action.model';
+import { type VoicePlan, VoicePlanPolicy } from '../domains/voice-plan.model';
+import {
+  planTodoEditFormSchema,
+  type PlanTodoFormValues,
+} from '../schemas/plan-review-form.schema';
+import { getPlanActionGroups } from '../utils/plan-action-group.view-model';
+import { getPlanHeadline } from '../utils/plan-headline.view-model';
 
 const LOADING_ROW_COUNT = 3;
 const DUPLICATE_ICON_SIZE = 13;
@@ -68,87 +76,51 @@ const TODO_CARD_CLASS_NAME = {
   sheet: 'bg-gray-1 dark:bg-gray-2',
 } as const satisfies Record<NonNullable<PlanReviewProps['surface']>, string>;
 
-interface PlanApplyRequest {
-  idempotencyKey: string;
-  fingerprint: string;
-}
-
-interface PlanApplyRequestStore {
-  find: () => PlanApplyRequest | null;
-  save: (request: PlanApplyRequest | null) => void;
-}
+type PlanMemoFormValues = Extract<SelectablePlannedAction, { type: 'create-memo' }>;
 
 interface PlanReviewProps {
-  form: UseFormReturn<PlanReviewFormValues>;
+  /** 고르는 중인 카드. 폼을 가진 쪽이 `actions` 칸을 `Watch`로 잇는다 */
+  value: readonly SelectablePlannedAction[];
+  /** 카드 하나를 고쳤다. 폼을 가진 쪽이 그 자리(`actions.${index}`)만 써 다른 카드의 변경을 덮지 않는다 */
+  onItemChange: (index: number, action: SelectablePlannedAction) => void;
   plan: VoicePlan;
   fallbackCategoryId: number;
   /** 계획을 만들 때 횟수를 썼는지. false면 빈 결과에서 "횟수는 차감되지 않았어요"를 보여 준다 */
   isCharged?: boolean;
   surface?: 'screen' | 'sheet';
   secondaryAction?: ReactNode;
-  /** 저장 요청의 키를 화면 밖에 남길 곳. 없으면 이 화면이 떠 있는 동안만 기억한다 */
-  requestStore?: PlanApplyRequestStore;
-  /** 저장이 끝났다. 화면이 내려간 뒤에 응답이 와도 불리므로 저장 표시를 여기서 남긴다 */
-  onSaved?: (saved: { todoCount: number }) => void;
-  /** 메모가 생기거나 원본 메모가 사라졌다. 메모 목록은 메모를 아는 쪽이 다시 읽는다 */
-  onMemoChanged: () => void;
-  /** 화면이 떠 있을 때 저장이 끝났다. 초안 정리와 화면 닫기는 화면이 맡는다 */
-  onApplied?: () => void;
-  onSourceMissing?: () => void;
+  /** 폼이 보낼 수 있는 값인지. 제목을 비운 카드가 있으면 false다 */
+  isValid: boolean;
+  /** 저장을 보내는 중이거나, 저장해 시트가 내려가고 화면이 바뀌는 중이다 */
+  isApplying: boolean;
+  onApplyPress: () => void;
   className?: string;
   /** 시트 안에서 높이를 묶을 때 쓴다 */
   style?: StyleProp<ViewStyle>;
 }
 
 export function PlanReview({
-  form,
+  value,
+  onItemChange,
   plan,
   fallbackCategoryId,
   isCharged = true,
   surface = 'screen',
   secondaryAction,
-  requestStore,
-  onSaved,
-  onMemoChanged,
-  onApplied,
-  onSourceMissing,
+  isValid,
+  isApplying,
+  onApplyPress,
   className,
   style,
 }: PlanReviewProps) {
   const { t } = useTranslation(['voicePlan', 'subscription']);
-  const { control } = form;
-  const { fields } = useFieldArray({ control, name: 'actions' });
-  // 폼 전체가 아니라 목록을 다시 그릴 때 필요한 값만 구독한다. 카드 제목을 고치는 동안 화면 전체를 다시 그리지 않는다
-  const actions = useWatch({
-    control,
-    name: 'actions',
-    compute: (values) =>
-      values.map((action) => ({
-        actionId: action.actionId,
-        isSelected: action.isSelected,
-        ...(VoicePlanPolicy.isTodoAction(action)
-          ? { type: action.type, categoryId: action.categoryId }
-          : { type: action.type }),
-      })),
-  });
-  const { isValid } = useFormState({ control });
-  const planApply = usePlanApply({
-    form,
-    plan,
-    fallbackCategoryId,
-    requestStore,
-    onSaved,
-    onMemoChanged,
-    onApplied,
-    onSourceMissing,
-  });
 
-  const selection = toPlanSelection({ actions });
+  const selection = PlanReviewDraftPolicy.getSelection(value);
   const todoCount = VoicePlanPolicy.getSelectedTodoCount(plan, selection);
   const canApply = VoicePlanPolicy.canApplyPlan(plan, selection);
   const headline = getPlanHeadline(plan, selection);
 
-  if (fields.length === 0) {
+  if (value.length === 0) {
     return (
       <Result
         title={t('voicePlan:plan.empty')}
@@ -183,22 +155,32 @@ export function PlanReview({
           nestedScrollEnabled
         >
           <VStack gap={8}>
-            {getPlanActionGroups(actions, fallbackCategoryId).map((group) => (
+            {getPlanActionGroups(value, fallbackCategoryId).map((group) => (
               <VStack key={group.categoryId ?? 'memo'} gap={8}>
                 {group.categoryId != null && (
                   <PlanReview.CategoryHeader categoryId={group.categoryId} />
                 )}
-                {group.indexes.map((index) =>
-                  group.categoryId == null ? (
-                    <PlanReview.MemoRow key={fields[index]?.id} form={form} index={index} />
-                  ) : (
-                    <PlanReview.TodoRow
-                      key={fields[index]?.id}
-                      form={form}
-                      index={index}
-                      fallbackCategoryId={fallbackCategoryId}
-                      surface={surface}
-                    />
+                {group.indexes.flatMap((index) =>
+                  value.slice(index, index + 1).map((action) =>
+                    match(action)
+                      .with({ type: 'create-todo' }, (todo) => (
+                        <PlanReview.TodoItem
+                          key={todo.actionId}
+                          todo={todo}
+                          // 묶어 보여도 고친 값은 그 카드의 자리에 넣는다
+                          onChange={(next) => onItemChange(index, next)}
+                          fallbackCategoryId={fallbackCategoryId}
+                          surface={surface}
+                        />
+                      ))
+                      .with({ type: 'create-memo' }, (memo) => (
+                        <PlanReview.MemoItem
+                          key={memo.actionId}
+                          memo={memo}
+                          onChange={(next) => onItemChange(index, next)}
+                        />
+                      ))
+                      .exhaustive(),
                   ),
                 )}
               </VStack>
@@ -212,8 +194,8 @@ export function PlanReview({
         <Box className="flex-1">
           <Button
             isDisabled={!canApply || !isValid}
-            isLoading={planApply.isPending || planApply.isApplied}
-            onPress={() => planApply.apply()}
+            isLoading={isApplying}
+            onPress={onApplyPress}
             testID="plan-review-apply"
           >
             {match({ todoCount, canApply })
@@ -225,90 +207,6 @@ export function PlanReview({
       </HStack>
     </VStack>
   );
-}
-
-type UsePlanApplyOptions = Pick<
-  PlanReviewProps,
-  | 'form'
-  | 'plan'
-  | 'fallbackCategoryId'
-  | 'requestStore'
-  | 'onSaved'
-  | 'onMemoChanged'
-  | 'onApplied'
-  | 'onSourceMissing'
->;
-
-/** 고른 카드를 저장한다. 같은 카드를 다시 보내도 두 번 저장되지 않게 요청 키를 기억한다 */
-function usePlanApply({
-  form,
-  plan,
-  fallbackCategoryId,
-  requestStore,
-  onSaved,
-  onMemoChanged,
-  onApplied,
-  onSourceMissing,
-}: UsePlanApplyOptions) {
-  const idGenerator = useIdGenerator();
-  const applyMutation = useMutation(useApplyActionPlanMutationOptions({ onSaved, onMemoChanged }));
-  const memoryRequestRef = useRef<PlanApplyRequest | null>(null);
-
-  const apply = () =>
-    form.handleSubmit((values) => {
-      const selected = sortPlanActionsByGroup(
-        VoicePlanPolicy.getSelectedActions(
-          { ...plan, actions: toPlannedActions(values) },
-          toPlanSelection(values),
-        ),
-        fallbackCategoryId,
-      );
-      const input = { source: plan.source, actions: selected, fallbackCategoryId };
-      const previous = requestStore == null ? memoryRequestRef.current : requestStore.find();
-      // 같은 카드를 다시 보내면 처음 키를 다시 써 두 번 저장되지 않고, 고쳐서 보내면 새 키를 쓴다
-      const prepared = PlanRequestPolicy.preparePlanRequest({
-        previous: previous == null ? null : { ...previous, input },
-        input,
-        createIdempotencyKey: idGenerator.create,
-      });
-      const rememberRequest = (request: PlanApplyRequest | null) => {
-        memoryRequestRef.current = request;
-        requestStore?.save(request);
-      };
-      rememberRequest({
-        idempotencyKey: prepared.idempotencyKey,
-        fingerprint: prepared.fingerprint,
-      });
-
-      applyMutation.mutate(
-        {
-          source: plan.source,
-          sourceMemoId: plan.sourceMemoId,
-          actions: selected,
-          fallbackCategoryId,
-          skippedCount: values.actions.length - selected.length,
-          idempotencyKey: prepared.idempotencyKey,
-        },
-        {
-          onSuccess: () => {
-            memoryRequestRef.current = null;
-            onApplied?.();
-          },
-          // 같은 키로 다른 내용을 보낸 경우처럼 키를 바꿔야 하면 다음에 새 키로 보낸다. 고친 카드는 그대로 남는다
-          onError: (error) => {
-            if (isPlanKeyConflictError(error)) {
-              rememberRequest(null);
-            }
-            if (isSourceMemoMissingError(error)) {
-              onSourceMissing?.();
-            }
-          },
-        },
-      );
-    })();
-
-  // 성공하면 키를 잊어 같은 카드를 다시 보내면 또 저장된다. 시트가 내려가거나 화면이 바뀌는 동안 카드가 남아 있으니 그동안 막는다
-  return { apply, isPending: applyMutation.isPending, isApplied: applyMutation.isSuccess };
 }
 
 PlanReview.Loading = function Loading({
@@ -402,35 +300,24 @@ PlanReview.CategoryHeader = function CategoryHeader({ categoryId }: { categoryId
   return <CategoryHeaderPill label={category.name} color={category.color} className="self-start" />;
 };
 
-PlanReview.TodoRow = function PlanTodoRow({
-  form,
-  index,
-  fallbackCategoryId,
-  surface,
-}: {
-  form: UseFormReturn<PlanReviewFormValues>;
-  index: number;
+interface PlanReviewTodoItemProps {
+  todo: PlanTodoFormValues;
+  onChange: (todo: PlanTodoFormValues) => void;
   fallbackCategoryId: number;
   surface: NonNullable<PlanReviewProps['surface']>;
-}) {
+}
+
+PlanReview.TodoItem = function TodoItem({
+  todo,
+  onChange,
+  fallbackCategoryId,
+  surface,
+}: PlanReviewTodoItemProps) {
   const { t } = useTranslation('voicePlan');
   const openKeyboardSheet = useOpenKeyboardSheet();
-  const todo = useWatch({ control: form.control, name: `actions.${index}` });
-  const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
-  const dateFormatContext = useDateFormatContext();
-  const todayKey = useTodayKey();
   const fontScaledSize = useFontScaledSize();
 
-  if (!VoicePlanPolicy.isTodoAction(todo)) {
-    return null;
-  }
-
-  const subtitle = findPlanTodoSubtitle(todo, {
-    todayKey,
-    timeFormat: preference.timeFormat,
-    dateFormatContext,
-  });
-  const isDuplicate = VoicePlanPolicy.isDuplicateAction(todo);
+  const isDuplicate = PlannedActionPolicy.isDuplicateAction(todo);
   const unselectedClassName = !todo.isSelected && UNSELECTED_TITLE_CLASS_NAME;
 
   const handlePress = () =>
@@ -444,10 +331,7 @@ PlanReview.TodoRow = function PlanTodoRow({
             isOpen={isOpen}
             onOpenChange={onOpenChange}
             onConfirm={(edited) => {
-              form.setValue(`actions.${index}`, edited, {
-                shouldDirty: true,
-                shouldValidate: true,
-              });
+              onChange(edited);
               onOpenChange(false);
             }}
           />
@@ -461,9 +345,7 @@ PlanReview.TodoRow = function PlanTodoRow({
         accessibilityLabel={t('plan.select', { title: todo.title })}
         hitSlop={SELECT_HIT_SLOP}
         isSelected={todo.isSelected}
-        onSelectedChange={(isSelected) =>
-          form.setValue(`actions.${index}.isSelected`, isSelected, { shouldDirty: true })
-        }
+        onSelectedChange={(isSelected) => onChange({ ...todo, isSelected })}
       />
       <PressableFeedback
         onPress={handlePress}
@@ -485,11 +367,7 @@ PlanReview.TodoRow = function PlanTodoRow({
               }
               isPrivate={isPrivateVisibility(todo.visibility)}
             />
-            {subtitle != null && (
-              <Text size="e1" shade={6}>
-                {subtitle}
-              </Text>
-            )}
+            <TodoScheduleSummary value={todo} size="e1" shade={6} />
             {isDuplicate && (
               <HStack className="gap-1" align="center">
                 <InfoIcon
@@ -530,20 +408,13 @@ PlanReview.TodoRow = function PlanTodoRow({
   );
 };
 
-PlanReview.MemoRow = function MemoRow({
-  form,
-  index,
-}: {
-  form: UseFormReturn<PlanReviewFormValues>;
-  index: number;
-}) {
+interface PlanReviewMemoItemProps {
+  memo: PlanMemoFormValues;
+  onChange: (memo: PlanMemoFormValues) => void;
+}
+
+PlanReview.MemoItem = function MemoItem({ memo, onChange }: PlanReviewMemoItemProps) {
   const { t } = useTranslation('voicePlan');
-  const memo = useWatch({ control: form.control, name: `actions.${index}` });
-
-  if (VoicePlanPolicy.isTodoAction(memo)) {
-    return null;
-  }
-
   const label = memo.title === '' ? memo.content : memo.title;
 
   return (
@@ -552,9 +423,7 @@ PlanReview.MemoRow = function MemoRow({
         accessibilityLabel={t('plan.select', { title: label })}
         hitSlop={SELECT_HIT_SLOP}
         isSelected={memo.isSelected}
-        onSelectedChange={(isSelected) =>
-          form.setValue(`actions.${index}.isSelected`, isSelected, { shouldDirty: true })
-        }
+        onSelectedChange={(isSelected) => onChange({ ...memo, isSelected })}
       />
       <VStack flex={1} gap={2} className="px-4 py-3">
         <TodoRow.Label
@@ -571,3 +440,129 @@ PlanReview.MemoRow = function MemoRow({
     </HStack>
   );
 };
+
+interface PlanTodoEditBottomSheetProps {
+  todo: PlanTodoFormValues;
+  fallbackCategoryId: number;
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
+  onConfirm: (todo: PlanTodoFormValues) => void;
+}
+
+/** 카드 하나를 고치는 시트. 확인을 누르기 전에는 목록과 초안에 반영하지 않는다 */
+function PlanTodoEditBottomSheet({
+  todo,
+  fallbackCategoryId,
+  isOpen,
+  onOpenChange,
+  onConfirm,
+}: PlanTodoEditBottomSheetProps) {
+  const { t } = useTranslation('voicePlan');
+  const form = useForm({
+    resolver: zodResolver(planTodoEditFormSchema),
+    defaultValues: { todo },
+    mode: 'onChange',
+  });
+  const handleConfirm = form.handleSubmit((values) => onConfirm(values.todo));
+
+  return (
+    <KeyboardBottomSheet
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+      footer={
+        <VStack gap={12}>
+          <Watch
+            control={form.control}
+            name="todo"
+            render={(editing) => (
+              <PlanTodoScheduleChips
+                value={editing}
+                fallbackCategoryId={fallbackCategoryId}
+                // 칩이 바꾼 칸은 그릴 때의 값이 아니라 지금 폼 값에 얹는다. 제목을 치는 중에 칩을 바꿔도 친 글자가 남는다
+                onChange={(next, previous) =>
+                  form.setValue('todo', withScheduleChips(form.getValues('todo'), previous, next), {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
+              />
+            )}
+          />
+
+          <FormState
+            control={form.control}
+            render={({ isValid }) => (
+              <Button
+                isDisabled={!isValid}
+                onPress={() => handleConfirm()}
+                testID="plan-todo-edit-confirm"
+              >
+                {t('edit.confirm')}
+              </Button>
+            )}
+          />
+        </VStack>
+      }
+    >
+      <Controller
+        control={form.control}
+        name="todo.title"
+        render={({ field: { value, onChange } }) => (
+          <Input
+            accessibilityLabel={t('edit.titleLabel')}
+            value={value}
+            onChange={onChange}
+            maxLength={ACTION_PLAN_LIMITS.ACTION_TITLE_MAX_LENGTH}
+            size="medium"
+            renderErrorMessage={false}
+            returnKeyType="done"
+            onSubmitEditing={() => handleConfirm()}
+          />
+        )}
+      />
+    </KeyboardBottomSheet>
+  );
+}
+
+interface PlanTodoScheduleChipsProps {
+  value: PlanTodoFormValues;
+  /** 칩 값이 바뀌었다. 바뀐 칸만 옮길 수 있게 앞의 칩 값도 함께 준다 */
+  onChange: (next: TodoScheduleChipsValue, previous: TodoScheduleChipsValue) => void;
+  fallbackCategoryId: number;
+}
+
+/** 할 일 작성과 같은 일정 칩. 계획 카드는 종일을 시각 null로, 정하지 않은 공개 범위·카테고리를 null로 둔다 */
+function PlanTodoScheduleChips({
+  value,
+  onChange,
+  fallbackCategoryId,
+}: PlanTodoScheduleChipsProps) {
+  const chips: TodoScheduleChipsValue = {
+    startDate: value.startDate,
+    endDate: value.endDate,
+    scheduledTime: value.scheduledTime,
+    isAllDay: value.scheduledTime == null,
+    repeat: value.repeat,
+    visibility: getVisibility(value.visibility),
+    categoryId: getPlannedCategoryId(value.categoryId, fallbackCategoryId),
+  };
+
+  return <TodoScheduleChips value={chips} onChange={(next) => onChange(next, chips)} />;
+}
+
+// 칩이 바꾼 칸만 옮긴다. 정하지 않은 공개 범위·카테고리(null)는 직접 고르기 전까지 그대로 둔다
+function withScheduleChips(
+  todo: PlanTodoFormValues,
+  previous: TodoScheduleChipsValue,
+  next: TodoScheduleChipsValue,
+): PlanTodoFormValues {
+  return {
+    ...todo,
+    startDate: next.startDate,
+    endDate: next.endDate,
+    scheduledTime: TodoSchedulePolicy.findScheduledTime(next),
+    repeat: next.repeat,
+    visibility: next.visibility === previous.visibility ? todo.visibility : next.visibility,
+    categoryId: next.categoryId === previous.categoryId ? todo.categoryId : next.categoryId,
+  };
+}

@@ -1,4 +1,4 @@
-import { createPlanReviewDraftKey } from '@src/features/voice/utils/plan-review-draft';
+import { createPlanReviewDraftKey } from '@src/features/voice/schemas/plan-review-draft.schema';
 import { createDraftKey } from '@src/shared/draft/draft.model';
 
 import { memoPlanRequestDraftSchema } from '../schemas/memo-draft.schema';

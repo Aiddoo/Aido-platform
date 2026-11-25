@@ -25,11 +25,16 @@ export function useStartVoiceNote() {
   return async ({
     entry = 'memo_tab',
     onSubscribe,
-    onReadyToRecord = () => push('/voice-notes/record'),
+    onReadyToRecord,
   }: StartVoiceNoteOptions = {}) => {
     const { isReady } = await ensureReady({ locale, entry, onSubscribe });
-    if (isReady) {
-      onReadyToRecord();
+    if (!isReady) {
+      return;
     }
+    if (onReadyToRecord == null) {
+      push('/voice-notes/record');
+      return;
+    }
+    onReadyToRecord();
   };
 }

@@ -2,13 +2,9 @@ import { voiceNoteDigestResponseSchema } from '@aido/api/contracts/voice/v1';
 import { createDateKey } from '@src/testing/date-key';
 import { defineFixture } from '@src/testing/fixture';
 
+import type { PlannedMemo, PlannedTodo } from '../domains/planned-action.model';
 import { voiceCaptureStateSchema, type VoiceCaptureState } from '../domains/voice-capture.model';
-import {
-  type PlannedMemo,
-  type PlannedTodo,
-  type VoicePlan,
-  voicePlanIdSchema,
-} from '../domains/voice-plan.model';
+import { type VoicePlan, voicePlanIdSchema } from '../domains/voice-plan.model';
 import { createVoiceTranscript, voiceTranscriptSchema } from '../domains/voice-transcript.model';
 
 export const createTranscript = defineFixture(voiceTranscriptSchema, {

@@ -1,3 +1,4 @@
+import { PlannedActionPolicy } from '../domains/planned-action.model';
 import { type PlanSelection, type VoicePlan, VoicePlanPolicy } from '../domains/voice-plan.model';
 
 export type PlanHeadline =
@@ -14,11 +15,11 @@ export function getPlanHeadline(plan: VoicePlan, selection: PlanSelection): Plan
   if (VoicePlanPolicy.getSelectedActions(plan, selection).length > 0) {
     return { kind: 'memo' };
   }
-  const todos = plan.actions.filter((action) => VoicePlanPolicy.isTodoAction(action));
+  const todos = plan.actions.filter((action) => PlannedActionPolicy.isTodoAction(action));
   if (todos.length === 0) {
     return { kind: 'memo' };
   }
-  return todos.every((action) => VoicePlanPolicy.isDuplicateAction(action))
+  return todos.every((action) => PlannedActionPolicy.isDuplicateAction(action))
     ? { kind: 'already-added' }
     : { kind: 'todos', count: todos.length };
 }

@@ -33,8 +33,8 @@ import { act, fireEvent, screen, userEvent, waitFor } from '@testing-library/rea
 import { router, useIsFocused, useLocalSearchParams } from 'expo-router';
 
 import VoiceNoteRoute from '../../../../app/(app)/voice-notes/[draftId]';
+import { createPlanReviewDraft } from '../domains/plan-review-draft.model';
 import { voicePlanSchema } from '../domains/voice-plan.model';
-import { createPlanReviewDraft } from '../utils/plan-review-draft';
 import { createVoiceNoteDigest, createSpokenVoiceNote } from './voice-note.fixtures';
 import { createVoiceNoteDigestDto } from './voice.fixtures';
 
@@ -681,12 +681,15 @@ describe('VoiceNoteScreen', () => {
       await fireEvent.press(screen.getByTestId('plan-review-apply'));
       await waitFor(() => expect(getApplyKeys(httpClient)).toHaveLength(1));
       await waitFor(() => expect(screen.getByTestId('plan-review-apply')).toBeEnabled());
+      // 저장 버튼의 연타 가드(600ms)가 지난 뒤에 다시 누른다
+      await act(() => jest.advanceTimersByTimeAsync(600));
 
       // When
       await fireEvent.press(screen.getByTestId('plan-review-apply'));
       await waitFor(() => expect(getApplyKeys(httpClient)).toHaveLength(2));
       await waitFor(() => expect(screen.getByTestId('plan-review-apply')).toBeEnabled());
       await fireEvent.press(screen.getByLabelText('회의 추가하기'));
+      await act(() => jest.advanceTimersByTimeAsync(600));
       await fireEvent.press(screen.getByTestId('plan-review-apply'));
       await waitFor(() => expect(getApplyKeys(httpClient)).toHaveLength(3));
 
@@ -696,7 +699,7 @@ describe('VoiceNoteScreen', () => {
       expect(keys[2]).not.toBe(keys[0]);
     });
 
-    it('할 일 추가를 같은 프레임에 두 번 누르면 지금은 같은 키로 저장 요청이 두 번 나가고 저장 이벤트도 두 번 남는다', async () => {
+    it('할 일 추가를 같은 프레임에 두 번 눌러도 저장 요청과 저장 이벤트는 한 번이다', async () => {
       // Given
       const { httpClient, analytics } = await renderTodosTab();
       const saved = createPendingResponse(ok({ todos: [], memo: null }));
@@ -710,18 +713,18 @@ describe('VoiceNoteScreen', () => {
       });
 
       // Then
-      const keys = getApplyKeys(httpClient);
-      expect(keys).toHaveLength(2);
-      expect(keys[1]).toBe(keys[0]);
+      expect(getApplyKeys(httpClient)).toHaveLength(1);
 
       // When
       await act(async () => saved.settle());
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
 
       // Then
-      await waitFor(() => expect(countEvents(analytics, 'voice_plan_applied')).toBe(2));
+      expect(countEvents(analytics, 'voice_plan_applied')).toBe(1);
+      expect(getApplyKeys(httpClient)).toHaveLength(1);
     });
 
-    it('메모로 저장을 같은 프레임에 두 번 누르면 지금은 서로 다른 키로 저장 요청이 두 번 나간다', async () => {
+    it('메모로 저장을 같은 프레임에 두 번 눌러도 저장 요청은 한 번이다', async () => {
       // Given
       const { httpClient } = await renderVoiceNote({
         digest: createVoiceNoteDigest({ keyPoints: [] }),
@@ -738,9 +741,7 @@ describe('VoiceNoteScreen', () => {
       });
 
       // Then
-      const keys = getApplyKeys(httpClient);
-      expect(keys).toHaveLength(2);
-      expect(keys[1]).not.toBe(keys[0]);
+      expect(getApplyKeys(httpClient)).toHaveLength(1);
       await act(async () => saved.settle());
     });
   });

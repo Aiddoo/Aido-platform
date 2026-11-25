@@ -7,10 +7,10 @@ import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
+import type { PlannedAction } from '../domains/planned-action.model';
 import type { VoiceNoteDigestResult } from '../domains/voice-note-digest.model';
 import type {
   AppliedPlanResult,
-  PlannedAction,
   QuickPlanResult,
   VoicePlanSource,
 } from '../domains/voice-plan.model';

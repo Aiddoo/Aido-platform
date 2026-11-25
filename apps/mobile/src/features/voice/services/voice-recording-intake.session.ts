@@ -25,7 +25,8 @@ interface VoiceRecordingIntakeSessionPorts {
 
 /**
  * 인식기 파일은 화면이 내려간 뒤에도 올 수 있어 React 밖에서 받는다. 지운 초안의 파일만 바로 지운다.
- * 화면이 내려가면 늦은 파일 듣기(`listenForLate`)로 넘어가고, 그 듣기가 끝나면 `dispose`로 수명을 닫는다
+ * 세션을 만든 훅이 수명을 정한다: 붙을 때 `reclaim`, 놓을 때 `listenForLate`를 부른다. 놓은 뒤에는 기다리던 파일을
+ * 받거나 시간이 지나면 세션이 스스로 `dispose`한다
  */
 export class VoiceRecordingIntakeSession {
   readonly #deps: VoiceRecordingIntakeSessionPorts;
@@ -36,6 +37,8 @@ export class VoiceRecordingIntakeSession {
   #partCount = 0;
   #notifyArrived: (() => void) | null = null;
   #stopLateListening: (() => void) | null = null;
+  /** 늦은 파일을 듣고 있는 인식기 구독 함수. 같은 인식기를 화면이 다시 들으면 이 듣기를 거둔다 */
+  #lateSubscribe: SpeechRecognizer['subscribe'] | null = null;
   /** 정리 화면으로 넘겼다. 이제 초안의 주인은 그 화면이라 녹음 조각만 더한다 */
   #hasHandedOff = false;
   /** 사용자가 초안을 지웠다. 뒤늦은 글자·파일이 초안을 되살리지 않게 막는다 */
@@ -115,9 +118,11 @@ export class VoiceRecordingIntakeSession {
       unsubscribeSignOut();
       if (this.#stopLateListening === stop) {
         this.#stopLateListening = null;
+        this.#lateSubscribe = null;
       }
     };
     this.#stopLateListening = stop;
+    this.#lateSubscribe = subscribe;
     const finish = () => {
       stop();
       this.dispose();
@@ -137,7 +142,18 @@ export class VoiceRecordingIntakeSession {
     const timer = setTimeout(finish, VOICE_RECORDING_LATE_WAIT_MS);
   };
 
-  // 구독과 타이머만 정리하고 받기는 막지 않는다. 훅이 세션 하나를 effect 재실행 너머로 쥐고 있어 그 뒤의 녹음 조각도 저장해야 한다
+  /**
+   * 화면이 같은 인식기를 다시 듣기 시작했다(StrictMode·Fast Refresh로 effect가 다시 돈 경우). 앞 정리가 건 늦은 파일
+   * 듣기를 거둬 같은 파일을 화면의 구독과 함께 두 번 받지 않는다. 인식기가 바뀌었으면 옛 인식기의 파일은 화면이 듣지
+   * 못하므로 그 듣기는 그대로 둔다
+   */
+  reclaim = (subscribe: SpeechRecognizer['subscribe']): void => {
+    if (this.#lateSubscribe === subscribe) {
+      this.#stopLateListening?.();
+    }
+  };
+
+  // 구독과 타이머만 정리하고 받기는 막지 않는다. 훅이 다시 붙으면(`reclaim`) 그 뒤의 녹음 조각도 저장해야 한다
   dispose = (): void => {
     this.#stopLateListening?.();
     this.#notifyArrived?.();

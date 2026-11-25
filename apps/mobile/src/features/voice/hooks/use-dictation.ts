@@ -95,6 +95,22 @@ export function useDictation({ onResult, onEnd }: UseDictationOptions) {
     };
   }, [speechRecognizer]);
 
+  const beginListening = async () => {
+    const locale = speechLocale;
+    const isGranted = await ensureMicrophonePermission('dictation', locale);
+    if (!isGranted || !isMountedRef.current) {
+      isStartingRef.current = false;
+      return;
+    }
+    isSessionOwnerRef.current = true;
+    speechRecognizer.start(
+      toSpeechStartOptions(
+        { locale, mode: 'dictation', hintWords: [], isOnDevice: false, recordingDirectory: null },
+        COMMON_SPEECH_HINTS[locale],
+      ),
+    );
+  };
+
   const start = async () => {
     if (isStartingRef.current) {
       return;
@@ -102,26 +118,13 @@ export function useDictation({ onResult, onEnd }: UseDictationOptions) {
     isStartingRef.current = true;
     hasFailedRef.current = false;
     isStopRequestedRef.current = false;
-    try {
-      const locale = speechLocale;
-      const isGranted = await ensureMicrophonePermission('dictation', locale);
-      if (!isGranted || !isMountedRef.current) {
-        isStartingRef.current = false;
-        return;
-      }
-      isSessionOwnerRef.current = true;
-      speechRecognizer.start(
-        toSpeechStartOptions(
-          { locale, mode: 'dictation', hintWords: [], isOnDevice: false, recordingDirectory: null },
-          COMMON_SPEECH_HINTS[locale],
-        ),
-      );
-    } catch (error) {
+    // 조건이 든 try는 React Compiler가 이 훅을 건너뛰게 해 실패를 Promise로 받는다
+    await beginListening().catch((error: unknown) => {
       isStartingRef.current = false;
       isSessionOwnerRef.current = false;
       reportUnexpectedError(error);
       toast.error(getSpeechErrorMessage('unknown'));
-    }
+    });
   };
 
   const stop = () => {

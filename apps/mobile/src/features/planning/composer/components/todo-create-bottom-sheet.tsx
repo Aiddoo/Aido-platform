@@ -187,9 +187,14 @@ function TodoCreateForm({
   const createRecurringTodo = useMutation(useCreateRecurringTodoMutationOptions());
   const reopenRepeatPicker = useReopenTodoRepeatPicker(form);
   const focusTitle = useFocusTodoTitle(form.setFocus);
-  const voice = useAddTodoQuickVoice({ form, onExit });
+  const [voice, voiceControls] = useAddTodoQuickVoice({
+    getTitle: () => form.getValues('title'),
+    onTitleChange: (title) =>
+      form.setValue('title', title, { shouldDirty: true, shouldValidate: true }),
+    onExit,
+  });
   const startRequestedVoice = useEffectEvent(() => {
-    voice.start().catch(reportUnexpectedError);
+    voiceControls.start().catch(reportUnexpectedError);
   });
 
   // 이번 달 AI를 다 썼으면 말로 하라고 권하지 않는다. 직접 입력은 계속 된다
@@ -198,7 +203,7 @@ function TodoCreateForm({
   const isFormStep = VoiceCapturePolicy.isManualInput(voice.state);
   const voiceDismissAction = VoiceCapturePolicy.findDismissAction(voice.state);
 
-  useOnScreenBlur(voice.interrupt);
+  useOnScreenBlur(voiceControls.interrupt);
   // 시트가 다 열린 뒤 한 번만 시작한다. 동의·마이크를 거절하면 시트에 남아 마이크로 다시 시도한다
   useEffect(() => {
     if (!isVoiceStartRequested || !isOpen || hasStartedRequestedVoiceRef.current) {
@@ -263,8 +268,8 @@ function TodoCreateForm({
       ? undefined
       : () => {
           match(voiceDismissAction)
-            .with('cancel-capture', () => voice.cancel())
-            .with('cancel-planning', () => voice.cancelPlanning())
+            .with('cancel-capture', () => voiceControls.cancel())
+            .with('cancel-planning', () => voiceControls.cancelPlanning())
             .with('confirm-discard', () => {
               confirmDiscardPlan().catch(reportUnexpectedError);
             })
@@ -288,17 +293,20 @@ function TodoCreateForm({
             level={voice.level}
             isQuiet={voice.isQuiet}
             locale={voice.locale}
-            onLocaleChange={voice.changeLocale}
-            onFinish={voice.finish}
-            onCancel={voice.cancel}
-            onResume={voice.resume}
+            onLocaleChange={voiceControls.changeLocale}
+            onFinish={voiceControls.finish}
+            onCancel={voiceControls.cancel}
+            onResume={voiceControls.resume}
             onContinueAsVoiceNote={() => {
-              voice.continueAsVoiceNote().catch(reportUnexpectedError);
+              voiceControls.continueAsVoiceNote().catch(reportUnexpectedError);
             }}
           />
         ))
         .with({ status: 'planning' }, () => (
-          <QuickVoicePlanning transcript={voice.state.transcript} onCancel={voice.cancelPlanning} />
+          <QuickVoicePlanning
+            transcript={voice.state.transcript}
+            onCancel={voiceControls.cancelPlanning}
+          />
         ))
         .with({ status: 'review' }, ({ plan, isCharged }) => (
           // 고르는 단계. 카드가 쓰는 조회가 실패해도 시트(루트 overlay)가 앱 경계까지 터지지 않게 이 안에서 처리한다
@@ -315,9 +323,9 @@ function TodoCreateForm({
                     onMemoChanged={onMemoChanged}
                     onApplied={onClose}
                     onRestart={() => {
-                      voice.restart().catch(reportUnexpectedError);
+                      voiceControls.restart().catch(reportUnexpectedError);
                     }}
-                    onTypeInstead={voice.typeInstead}
+                    onTypeInstead={voiceControls.typeInstead}
                   />
                 )}
               />
@@ -330,8 +338,8 @@ function TodoCreateForm({
               state={voice.state}
               isConsentRequired={voice.isConsentRequired}
               isTypedTextKept={voice.isTypedTextKept}
-              onResume={voice.resume}
-              onRetryPlanning={voice.retryPlanning}
+              onResume={voiceControls.resume}
+              onRetryPlanning={voiceControls.retryPlanning}
             />
 
             <Controller
@@ -406,7 +414,7 @@ function TodoCreateForm({
               >
                 <QuickVoiceButton
                   onPress={() => {
-                    voice.start().catch(reportUnexpectedError);
+                    voiceControls.start().catch(reportUnexpectedError);
                   }}
                   testID="todo-quick-voice-button"
                 />

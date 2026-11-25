@@ -6,34 +6,39 @@ import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import { getNowInstant } from '@src/shared/date/clock';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
+import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { Result } from '@src/shared/ui';
+import { QueryErrorFallback, type QueryErrorFallbackProps, Result } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
-import type { ComponentProps } from 'react';
-import { useForm } from 'react-hook-form';
+import { FormState, useForm, Watch } from 'react-hook-form';
 import { match } from 'ts-pattern';
 
+import {
+  createDraftVoicePlan,
+  type PlanReviewDraft,
+  type SelectablePlannedAction,
+} from '../../domains/plan-review-draft.model';
 import { VoiceNotePolicy } from '../../domains/voice-note.model';
 import { voicePlanIdSchema } from '../../domains/voice-plan.model';
 import { useCurrentVoiceNote } from '../../hooks/use-current-voice-note';
+import { usePlanApply } from '../../hooks/use-plan-apply';
 import { useVoiceNoteDraftId } from '../../hooks/use-voice-note-params';
 import { planReviewFormSchema } from '../../schemas/plan-review-form.schema';
-import { toDraftVoicePlan } from '../../utils/plan-review-draft';
-import { PlanReview } from '../plan-review/plan-review';
+import { PlanReview } from '../plan-review';
 
-type VoiceNotePlanTodosProps = Pick<
-  ComponentProps<typeof PlanReview>,
-  'className' | 'onMemoChanged'
->;
+interface VoiceNotePlanTodosProps {
+  onMemoChanged: () => void;
+  className?: string;
+}
 
-export function VoiceNotePlanTodos({ className, onMemoChanged }: VoiceNotePlanTodosProps) {
+/** 정리가 찾은 할 일 카드. 추가했거나 찾지 못했으면 그 사실을 알린다 */
+export function VoiceNotePlanTodos({ onMemoChanged, className }: VoiceNotePlanTodosProps) {
   const { t } = useTranslation(['voiceNote', 'voicePlan']);
   const accountId = useSuspenseMyAccountId();
-  const [draftId] = useVoiceNoteDraftId();
   const note = useCurrentVoiceNote(accountId);
-  const drafts = useVoiceNoteDraftRepository();
-  // 설정 쿼리는 값을 쓰지 않는다. 아래 PlanReview.TodoRow가 같은 설정을 기다리다 카드 사이에서 멈추지 않게 미리 받는다
+  // 설정 쿼리는 값을 쓰지 않는다. 아래 PlanReview.TodoItem이 같은 설정을 기다리다 카드 사이에서 멈추지 않게 미리 받는다
   const [{ data: categoriesResult }] = useSuspenseQueries({
     queries: [useGetTodoCategoriesQueryOptions(), useGetPreferenceQueryOptions()],
   });
@@ -41,28 +46,6 @@ export function VoiceNotePlanTodos({ className, onMemoChanged }: VoiceNotePlanTo
     categoriesResult.categories,
     null,
   );
-  const form = useForm({
-    resolver: zodResolver(planReviewFormSchema),
-    defaultValues: note.planDraft?.form ?? { actions: [] },
-    mode: 'onChange',
-  });
-
-  useFormDraftAutosave(form.subscribe, {
-    initialValues: { actions: [] },
-    saveDraft: (values) => {
-      const latest = drafts.find(accountId, draftId);
-      if (latest?.planDraft != null) {
-        drafts.save(
-          accountId,
-          VoiceNotePolicy.withPlanDraft(latest, {
-            omittedTodoCount: latest.planDraft.omittedTodoCount,
-            form: values,
-          }),
-        );
-      }
-    },
-    clearDraft: noop,
-  });
 
   return match(VoiceNotePolicy.getPlanStatus(note))
     .with({ status: 'applied' }, () => (
@@ -88,39 +71,121 @@ export function VoiceNotePlanTodos({ className, onMemoChanged }: VoiceNotePlanTo
       fallbackCategoryId == null ? (
         <Result title={t('result.noTodos')} />
       ) : (
-        <PlanReview
-          className={className}
-          form={form}
-          plan={toDraftVoicePlan(
-            {
-              planId: voicePlanIdSchema.parse(draftId),
-              source: 'voice-note',
-              sourceMemoId: null,
-            },
-            planDraft,
-          )}
+        <VoiceNotePlanTodos.Contents
+          planDraft={planDraft}
           fallbackCategoryId={fallbackCategoryId}
           onMemoChanged={onMemoChanged}
-          requestStore={{
-            find: () => drafts.find(accountId, draftId)?.planApplyRequest ?? null,
-            save: (request) => {
-              const latest = drafts.find(accountId, draftId);
-              if (latest != null) {
-                drafts.save(accountId, VoiceNotePolicy.withPlanApplyRequest(latest, request));
-              }
-            },
-          }}
-          onSaved={({ todoCount }) => {
-            const latest = drafts.find(accountId, draftId);
-            if (latest != null) {
-              drafts.save(
-                accountId,
-                VoiceNotePolicy.withAppliedAt(latest, getNowInstant(), todoCount),
-              );
-            }
-          }}
+          className={className}
         />
       ),
     )
     .exhaustive();
 }
+
+interface VoiceNotePlanTodosContentsProps extends VoiceNotePlanTodosProps {
+  planDraft: PlanReviewDraft;
+  fallbackCategoryId: number;
+}
+
+/** 고르는 폼. 떠 있는 동안 고친 값을 초안에 남기고, 저장 요청의 키와 저장한 사실도 초안에 남긴다 */
+VoiceNotePlanTodos.Contents = function Contents({
+  planDraft,
+  fallbackCategoryId,
+  onMemoChanged,
+  className,
+}: VoiceNotePlanTodosContentsProps) {
+  const reportUnexpectedError = useReportUnexpectedError('voice');
+  const accountId = useSuspenseMyAccountId();
+  const [draftId] = useVoiceNoteDraftId();
+  const drafts = useVoiceNoteDraftRepository();
+  const form = useForm({
+    resolver: zodResolver(planReviewFormSchema),
+    defaultValues: planDraft.form,
+    mode: 'onChange',
+  });
+  const plan = createDraftVoicePlan(
+    { planId: voicePlanIdSchema.parse(draftId), source: 'voice-note', sourceMemoId: null },
+    planDraft,
+  );
+  const planApply = usePlanApply({
+    plan,
+    fallbackCategoryId,
+    onMemoChanged,
+    requestStore: {
+      find: () => drafts.find(accountId, draftId)?.planApplyRequest ?? null,
+      save: (request) => {
+        const latest = drafts.find(accountId, draftId);
+        if (latest != null) {
+          drafts.save(accountId, VoiceNotePolicy.withPlanApplyRequest(latest, request));
+        }
+      },
+    },
+    onSaved: ({ todoCount }) => {
+      const latest = drafts.find(accountId, draftId);
+      if (latest != null) {
+        drafts.save(accountId, VoiceNotePolicy.withAppliedAt(latest, getNowInstant(), todoCount));
+      }
+    },
+  });
+
+  useFormDraftAutosave(form.subscribe, {
+    initialValues: { actions: [] },
+    saveDraft: (values) => {
+      const latest = drafts.find(accountId, draftId);
+      if (latest?.planDraft != null) {
+        drafts.save(
+          accountId,
+          VoiceNotePolicy.withPlanDraft(latest, {
+            omittedTodoCount: latest.planDraft.omittedTodoCount,
+            form: values,
+          }),
+        );
+      }
+    },
+    clearDraft: noop,
+  });
+
+  // 고친 카드의 자리만 쓴다. 배열을 통째로 바꾸면 그 사이 다른 카드에 생긴 변경을 덮는다
+  const changeAction = (index: number, action: SelectablePlannedAction) =>
+    form.setValue(`actions.${index}`, action, { shouldDirty: true, shouldValidate: true });
+
+  const savePlan = form.handleSubmit(({ actions }) => planApply.apply(actions));
+  // 저장 중 표시는 다음 렌더에야 켜져 같은 프레임의 두 번째 탭이 같은 계획을 한 번 더 보낸다
+  const handleSavePress = useSingleTap(() => {
+    savePlan().catch(reportUnexpectedError);
+  });
+
+  return (
+    <FormState
+      control={form.control}
+      render={({ isValid }) => (
+        <Watch
+          control={form.control}
+          name="actions"
+          render={(actions) => (
+            <PlanReview
+              className={className}
+              value={actions}
+              onItemChange={changeAction}
+              plan={plan}
+              fallbackCategoryId={fallbackCategoryId}
+              isValid={isValid}
+              isApplying={planApply.isPending || planApply.isApplied}
+              onApplyPress={handleSavePress}
+            />
+          )}
+        />
+      )}
+    />
+  );
+};
+
+VoiceNotePlanTodos.Loading = function Loading({
+  className,
+}: Pick<VoiceNotePlanTodosProps, 'className'>) {
+  return <PlanReview.Loading className={className} />;
+};
+
+VoiceNotePlanTodos.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
+  return <QueryErrorFallback reset={reset} />;
+};

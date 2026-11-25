@@ -273,7 +273,6 @@ const LOCAL_ONLY_PENDING_FEATURES = new Set([
   'app-config/whats-new',
   'device/coachmark',
   'insights/report',
-  'voice',
 ]);
 
 // 한 파일만 쓰지만 따로 두는 파일과 이유. 새 파일은 경고하고, 더는 해당하지 않는 파일은 목록에서 지우라고 실패한다.
@@ -301,6 +300,26 @@ const ALLOWED_LOCAL_ONLY_FILES = {
     '할 일 상세 요약(engagement/comment)만 쓴다. 할 일의 view-model(시간·기간·반복 문구)로 그리는 조각이라 그 기능 파일로 옮기면 다른 기능의 utils를 import하게 된다',
   'src/features/notification/components/todo-time-push-notice.tsx':
     '할 일 작성 칩(planning/composer)만 쓴다. 알림 권한 조회와 권한 단계(usePushPermissionAction)로 그리는 조각이라 그 기능 파일로 옮기면 작성기가 알림 기능의 권한 조회·단계를 직접 갖게 된다',
+  'src/features/planning/todo/components/todo-schedule-summary.tsx':
+    '계획 검토 카드(voice)만 쓴다. 할 일의 view-model(기간·시각·반복 문구)로 그리는 조각이라 음성 파일로 옮기면 다른 기능의 utils를 import하게 된다',
+  'src/features/voice/components/dictation-button.tsx':
+    '할 일 작성 시트(planning/composer)의 하위 할 일 시트가 쓴다. 음성 기능 밖에서 import하는 파일이다',
+  'src/features/voice/components/quick-voice-button.tsx':
+    '할 일 작성 시트(planning/composer)의 할 일 만들기 시트가 쓴다. 음성 기능 밖에서 import하는 파일이다',
+  'src/features/voice/components/sheet-edge-glow.tsx':
+    '할 일 작성 시트(planning/composer)의 할 일 만들기 시트가 쓴다. 음성 기능 밖에서 import하는 파일이고, 음량을 UI 스레드에서 읽어 그리는 Skia 부품이다',
+  'src/features/voice/hooks/use-continue-as-voice-note.ts':
+    '할 일 작성 시트(planning/composer)의 빠른 말하기 훅이 쓴다. 음성 기능 밖에서 import하는 파일이다',
+  'src/features/voice/hooks/use-quick-plan-request.ts':
+    '할 일 작성 시트(planning/composer)의 빠른 말하기 훅이 쓴다. 음성 기능 밖에서 import하는 파일이다',
+  'src/features/voice/components/voice-visual.tsx':
+    '빠른 말하기 듣기 단계만 쓴다. 셰이더 구슬과 막대를 프레임 콜백으로 그리는 스스로 완결된 Skia 부품이다',
+  'src/features/voice/components/voice-note-digest/digest-scan-preview.tsx':
+    '정리 중 화면만 쓴다. 훑는 빛줄기를 그리는 스스로 완결된 Skia 부품이다',
+  'src/features/voice/components/voice-note-recorder/recognizer-waveform.tsx':
+    '녹음 화면만 쓴다. 음량 파형과 중요 표시 깃발을 프레임 콜백으로 그리는 스스로 완결된 Skia 부품이다',
+  'src/features/voice/components/voice-note-recorder/recording-timer.tsx':
+    '녹음 화면만 쓴다. 창 높이로 정한 고리 크기와 줄어드는 글자를 SVG로 그리는 스스로 완결된 그리기 부품이다',
 };
 
 /** 운영 importer가 컴포넌트·훅 하나뿐이고 자체 테스트가 없는 기능 components/·hooks/ 파일과 그 importer */

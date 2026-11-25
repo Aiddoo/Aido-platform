@@ -8,7 +8,7 @@ export default function VoiceNoteRecordRoute() {
 
   return (
     <StyledSafeAreaView edges={['left', 'right', 'bottom']} className="flex-1 bg-white">
-      <QueryErrorBoundary>
+      <QueryErrorBoundary fallback={VoiceNoteRecorder.Error}>
         <Suspense fallback={<VoiceNoteRecorder.Loading />}>
           <VoiceNoteRecorder />
         </Suspense>

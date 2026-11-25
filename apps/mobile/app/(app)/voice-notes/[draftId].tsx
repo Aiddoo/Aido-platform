@@ -2,6 +2,7 @@ import { useSuspenseMyAccountId } from '@src/features/identity/user/hooks/use-su
 import { useRefreshMemos } from '@src/features/notes/memo/hooks/use-refresh-memos';
 import { VoiceNoteDigest } from '@src/features/voice/components/voice-note-digest/voice-note-digest';
 import { VoiceNoteOffline } from '@src/features/voice/components/voice-note-offline';
+import { VoiceNotePlanTodos } from '@src/features/voice/components/voice-note-result/voice-note-plan-todos';
 import { VoiceNoteResult } from '@src/features/voice/components/voice-note-result/voice-note-result';
 import { useCurrentVoiceNoteStage } from '@src/features/voice/hooks/use-current-voice-note-stage';
 import { useVoiceNoteDraftId } from '@src/features/voice/hooks/use-voice-note-params';
@@ -48,7 +49,18 @@ VoiceNoteScreen.Stage = function Stage() {
       {match(stage)
         .with('missing', () => <VoiceNoteScreen.NotFound />)
         .with('recorded', () => <VoiceNoteDigest onMemoChanged={refreshMemos} />)
-        .with('digested', () => <VoiceNoteResult onMemoChanged={refreshMemos} />)
+        .with('digested', () => (
+          <VoiceNoteResult
+            onMemoChanged={refreshMemos}
+            planTodos={
+              <QueryErrorBoundary fallback={VoiceNotePlanTodos.Error}>
+                <Suspense fallback={<VoiceNotePlanTodos.Loading className="flex-1 pb-3" />}>
+                  <VoiceNotePlanTodos className="flex-1 pb-3" onMemoChanged={refreshMemos} />
+                </Suspense>
+              </QueryErrorBoundary>
+            }
+          />
+        ))
         .exhaustive()}
     </VStack>
   );
@@ -62,7 +74,9 @@ VoiceNoteScreen.Loading = function Loading() {
     .with(true, () => (
       // 단계는 내 정보를 받아야 알아 정리 전 노트도 결과 모양으로 기다린다. 내 정보가 캐시에 없을 때(콜드 딥링크)만 보인다
       <VStack flex={1} className="px-4 pt-2">
-        <VoiceNoteResult.Loading />
+        <VoiceNoteResult.Loading
+          planTodos={<VoiceNotePlanTodos.Loading className="flex-1 pb-3" />}
+        />
       </VStack>
     ))
     .with(false, () => <VoiceNoteOffline className="px-4" />)

@@ -283,4 +283,46 @@ describe('VoiceRecordingIntakeSession', () => {
     expect(intake.getRecordings()).toEqual([]);
     expect(onRecordingSaved).not.toHaveBeenCalled();
   });
+
+  describe('화면이 인식기를 다시 듣기 시작하면', () => {
+    it('같은 인식기에 걸어 둔 늦은 파일 듣기를 거둬 화면이 넘긴 파일을 한 번만 옮긴다', async () => {
+      // Given
+      const { files, intake, onRecordingSaved } = createIntake();
+      const speechRecognizer = createSpeechRecognizerStub();
+      const uri = files.addFile(DIRECTORY, 'a.wav');
+      intake.segmentStarted(uri, 0);
+      intake.listenForLate(speechRecognizer.subscribe);
+
+      // When
+      intake.reclaim(speechRecognizer.subscribe);
+      speechRecognizer.emit({ type: 'recording-saved', uri });
+      intake.receive(uri, 0);
+      await intake.waitUntilSettled();
+
+      // Then
+      expect(speechRecognizer.getListenerCount()).toBe(0);
+      expect(jest.getTimerCount()).toBe(0);
+      expect(intake.getRecordings()).toHaveLength(1);
+      expect(onRecordingSaved).toHaveBeenCalledTimes(1);
+    });
+
+    it('인식기가 바뀌었으면 옛 인식기의 늦은 파일 듣기를 그대로 둬 그 파일을 잃지 않는다', async () => {
+      // Given
+      const { files, intake } = createIntake();
+      const previousRecognizer = createSpeechRecognizerStub();
+      const nextRecognizer = createSpeechRecognizerStub();
+      const uri = files.addFile(DIRECTORY, 'a.wav');
+      intake.segmentStarted(uri, 0);
+      intake.listenForLate(previousRecognizer.subscribe);
+
+      // When
+      intake.reclaim(nextRecognizer.subscribe);
+      previousRecognizer.emit({ type: 'recording-saved', uri });
+      await intake.waitUntilSettled();
+
+      // Then
+      expect(intake.getRecordings()).toHaveLength(1);
+      expect(previousRecognizer.getListenerCount()).toBe(0);
+    });
+  });
 });

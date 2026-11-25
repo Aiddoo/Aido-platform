@@ -7,7 +7,7 @@ import {
   createVoiceNoteKeyPoint,
   createVoiceNoteSentence,
 } from '../__tests__/voice-note.fixtures';
-import { createPlanReviewDraft } from '../utils/plan-review-draft';
+import { createPlanReviewDraft } from './plan-review-draft.model';
 import { isRecordingFileExpired, VoiceNotePolicy, createVoiceNote } from './voice-note.model';
 import { voicePlanSchema } from './voice-plan.model';
 

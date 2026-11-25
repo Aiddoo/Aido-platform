@@ -13,11 +13,8 @@ import {
   findScheduledTime,
 } from '@src/features/planning/todo/domains/todo-schedule.model';
 import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
-import {
-  type PlannedAction,
-  type VoicePlan,
-  voicePlanSchema,
-} from '@src/features/voice/domains/voice-plan.model';
+import type { PlannedAction } from '@src/features/voice/domains/planned-action.model';
+import { type VoicePlan, voicePlanSchema } from '@src/features/voice/domains/voice-plan.model';
 import { dateKeySchema } from '@src/shared/date/date-key';
 import { toInstant } from '@src/shared/date/instant';
 import { pick } from 'es-toolkit';

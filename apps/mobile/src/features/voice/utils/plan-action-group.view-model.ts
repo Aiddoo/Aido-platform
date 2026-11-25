@@ -4,7 +4,7 @@ import {
   getPlannedCategoryId,
   type PlannedMemo,
   type PlannedTodo,
-} from '../domains/voice-plan.model';
+} from '../domains/planned-action.model';
 
 // 고르기 시트의 폼 카드도 묶어 종류와 카테고리만 받는다
 type PlanGroupableAction = Pick<PlannedTodo, 'type' | 'categoryId'> | Pick<PlannedMemo, 'type'>;

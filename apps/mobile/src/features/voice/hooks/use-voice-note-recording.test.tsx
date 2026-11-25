@@ -38,7 +38,11 @@ interface ProbeProps {
 }
 
 function RecordingProbe(props: ProbeProps) {
-  const recording = useVoiceNoteRecording({ accountId: ACCOUNT_ID, locale: 'ko-KR', ...props });
+  const [recording, recorder] = useVoiceNoteRecording({
+    accountId: ACCOUNT_ID,
+    locale: 'ko-KR',
+    ...props,
+  });
 
   return (
     <>
@@ -46,25 +50,17 @@ function RecordingProbe(props: ProbeProps) {
         accessibilityRole="button"
         accessibilityLabel="start"
         onPress={() => {
-          recording.start({ startLocale: 'ko-KR', hintWords: [] }).catch(jest.fn());
+          recorder.start({ startLocale: 'ko-KR', hintWords: [] }).catch(jest.fn());
         }}
       />
-      <Pressable accessibilityRole="button" accessibilityLabel="pause" onPress={recording.pause} />
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="resume"
-        onPress={recording.resume}
-      />
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="finish"
-        onPress={recording.finish}
-      />
-      <Pressable testID="mark" onPress={recording.mark} />
+      <Pressable accessibilityRole="button" accessibilityLabel="pause" onPress={recorder.pause} />
+      <Pressable accessibilityRole="button" accessibilityLabel="resume" onPress={recorder.resume} />
+      <Pressable accessibilityRole="button" accessibilityLabel="finish" onPress={recorder.finish} />
+      <Pressable testID="mark" onPress={recorder.mark} />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="discard"
-        onPress={recording.discard}
+        onPress={recorder.discard}
       />
       <Text testID="status">{recording.state.status}</Text>
       <Text testID="draft-id">{recording.draftId}</Text>
@@ -1096,7 +1092,7 @@ describe('useVoiceNoteRecording', () => {
   });
 
   describe('앞 녹음의 파일을 기다리는 사이 녹음 화면을 다시 열면', () => {
-    it('늦게 온 앞 녹음의 파일은 앞 초안에 남지만 지금은 새 녹음도 같은 파일을 옮기려다 실패를 남긴다', async () => {
+    it('늦게 온 앞 녹음의 파일은 앞 초안에만 한 번 옮기고 새 녹음은 그 파일을 옮기려 하지 않는다', async () => {
       // Given
       const user = userEvent.setup();
       const speechRecognizer = createSpeechRecognizerStub();
@@ -1140,7 +1136,7 @@ describe('useVoiceNoteRecording', () => {
       expect(di.voiceNoteDraftRepository.find(ACCOUNT_ID, secondDraftId)?.recordings).toEqual([]);
       expect(
         logger.warn.mock.calls.filter(([event]) => event === 'voice.recording.save-failed'),
-      ).toHaveLength(1);
+      ).toHaveLength(0);
     });
   });
 });

@@ -38,7 +38,7 @@ function SessionProbe({
   maxSeconds?: number | null;
   onLimitReached?: () => void;
 }) {
-  const session = useVoiceCaptureSession({
+  const [capture, session] = useVoiceCaptureSession({
     entry: 'add_todo_sheet',
     mode,
     maxSeconds,
@@ -85,7 +85,7 @@ function SessionProbe({
         accessibilityLabel="hand-off"
         onPress={session.handOff}
       />
-      <Text testID="status">{session.state.status}</Text>
+      <Text testID="status">{capture.state.status}</Text>
     </>
   );
 }

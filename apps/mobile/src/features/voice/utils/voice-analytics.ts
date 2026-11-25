@@ -5,8 +5,9 @@ import type {
   VoiceDurationBucket,
   VoicePlanAnalyticsSource,
 } from '../constants/voice.events';
+import { PlannedActionPolicy } from '../domains/planned-action.model';
 import type { VoiceCaptureState } from '../domains/voice-capture.model';
-import { VoicePlanPolicy, type VoicePlan, type VoicePlanSource } from '../domains/voice-plan.model';
+import type { VoicePlan, VoicePlanSource } from '../domains/voice-plan.model';
 
 const SECONDS = { thirtySeconds: 30, threeMinutes: 180, tenMinutes: 600 } as const;
 
@@ -36,9 +37,9 @@ export function toAnalyticsSource(source: VoicePlanSource) {
 /** 제목·내용 없이 개수만 센다 */
 export function summarizePlanForAnalytics(plan: VoicePlan) {
   return {
-    todo_count: plan.actions.filter((action) => VoicePlanPolicy.isTodoAction(action)).length,
-    memo_count: plan.actions.filter((action) => !VoicePlanPolicy.isTodoAction(action)).length,
-    duplicate_count: plan.actions.filter((action) => VoicePlanPolicy.isDuplicateAction(action))
+    todo_count: plan.actions.filter((action) => PlannedActionPolicy.isTodoAction(action)).length,
+    memo_count: plan.actions.filter((action) => !PlannedActionPolicy.isTodoAction(action)).length,
+    duplicate_count: plan.actions.filter((action) => PlannedActionPolicy.isDuplicateAction(action))
       .length,
   };
 }

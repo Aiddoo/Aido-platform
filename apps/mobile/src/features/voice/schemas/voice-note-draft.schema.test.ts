@@ -1,7 +1,7 @@
 import { createSpokenVoiceNote, createVoiceNoteDigest } from '../__tests__/voice-note.fixtures';
+import { createPlanReviewDraft } from '../domains/plan-review-draft.model';
 import { VoiceNotePolicy } from '../domains/voice-note.model';
 import { voicePlanSchema } from '../domains/voice-plan.model';
-import { createPlanReviewDraft } from '../utils/plan-review-draft';
 import { createVoiceNoteDraftSchema } from './voice-note-draft.schema';
 
 const createPlannedTodo = (actionId: string, title: string) => ({

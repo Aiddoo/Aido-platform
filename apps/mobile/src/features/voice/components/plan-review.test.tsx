@@ -7,24 +7,27 @@ import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/querie
 import { createTodoDto } from '@src/features/planning/todo/__tests__/todo.fixtures';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { OverlayProvider } from '@src/shared/ui';
-import { createHttpClientStub, createTestDi, createTestQueryClient } from '@src/testing/core';
+import {
+  createHttpClientStub,
+  createPendingResponse,
+  createTestDi,
+  createTestQueryClient,
+} from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Suspense, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { FormState, useForm, Watch } from 'react-hook-form';
 
-import {
-  type PlannedTodo,
-  type VoicePlan,
-  voicePlanIdSchema,
-} from '../../domains/voice-plan.model';
+import { createPlanReviewDraft } from '../domains/plan-review-draft.model';
+import type { PlannedTodo } from '../domains/planned-action.model';
+import { type VoicePlan, voicePlanIdSchema } from '../domains/voice-plan.model';
+import { usePlanApply } from '../hooks/use-plan-apply';
 import {
   type PlanReviewFormValues,
   planReviewFormSchema,
-} from '../../schemas/plan-review-form.schema';
-import { createPlanReviewFormValues } from '../../utils/plan-review-draft';
+} from '../schemas/plan-review-form.schema';
 import { PlanReview } from './plan-review';
 
 const createTodoAction = (overrides: Partial<PlannedTodo>): PlannedTodo => ({
@@ -55,19 +58,30 @@ const PLAN: VoicePlan = {
   actions: [BIWEEKLY, GROCERIES],
 };
 
+type PlanApplyRequestStore = Parameters<typeof usePlanApply>[0]['requestStore'];
+
 function PlanReviewScreen({
   plan = PLAN,
   isCharged,
   onValues,
+  requestStore,
 }: {
   plan?: VoicePlan;
   isCharged?: boolean;
   onValues?: (values: PlanReviewFormValues) => void;
+  requestStore?: PlanApplyRequestStore;
 }) {
   const form = useForm<PlanReviewFormValues>({
     resolver: zodResolver(planReviewFormSchema),
-    defaultValues: createPlanReviewFormValues(plan),
+    defaultValues: createPlanReviewDraft(plan).form,
     mode: 'onChange',
+  });
+  const planApply = usePlanApply({
+    plan,
+    fallbackCategoryId: 1,
+    requestStore,
+    onMemoChanged: jest.fn(),
+    onApplied: jest.fn(),
   });
   useEffect(() => {
     if (onValues == null) {
@@ -79,14 +93,37 @@ function PlanReviewScreen({
     });
   }, [form, onValues]);
 
+  // 폼을 가진 화면처럼 카드 칸을 Watch로 잇고 고친 카드는 그 자리만 쓰며 저장은 handleSubmit으로 보낸다
+  const savePlan = form.handleSubmit(({ actions }) => planApply.apply(actions));
+
   return (
-    <PlanReview
-      form={form}
-      plan={plan}
-      isCharged={isCharged}
-      fallbackCategoryId={1}
-      onMemoChanged={jest.fn()}
-      onApplied={jest.fn()}
+    <FormState
+      control={form.control}
+      render={({ isValid }) => (
+        <Watch
+          control={form.control}
+          name="actions"
+          render={(actions) => (
+            <PlanReview
+              value={actions}
+              onItemChange={(index, action) =>
+                form.setValue(`actions.${index}`, action, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
+              plan={plan}
+              isCharged={isCharged}
+              fallbackCategoryId={1}
+              isValid={isValid}
+              isApplying={planApply.isPending || planApply.isApplied}
+              onApplyPress={() => {
+                savePlan().catch(jest.fn());
+              }}
+            />
+          )}
+        />
+      )}
     />
   );
 }
@@ -96,6 +133,7 @@ async function renderPlan(
   isCharged?: boolean,
   onValues?: (values: PlanReviewFormValues) => void,
   httpClient: ReturnType<typeof createHttpClientStub> = createHttpClientStub(),
+  requestStore?: PlanApplyRequestStore,
 ) {
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
@@ -115,7 +153,12 @@ async function renderPlan(
     <LocalDateProvider>
       <OverlayProvider>
         <Suspense fallback={null}>
-          <PlanReviewScreen plan={plan} isCharged={isCharged} onValues={onValues} />
+          <PlanReviewScreen
+            plan={plan}
+            isCharged={isCharged}
+            onValues={onValues}
+            requestStore={requestStore}
+          />
         </Suspense>
       </OverlayProvider>
     </LocalDateProvider>,
@@ -252,6 +295,56 @@ describe('PlanReview', () => {
       // Then
       expect(httpClient.post).toHaveBeenCalledTimes(1);
     });
+
+    it('응답을 기다리는 동안 다시 눌러도 할 일은 한 번만 추가한다', async () => {
+      // Given
+      const httpClient = createHttpClientStub();
+      const saved = createPendingResponse(
+        ok({ todos: [createTodoDto({ id: 9, title: '장보기' })], memo: null }),
+      );
+      httpClient.post.mockReturnValue(saved.response);
+      await renderPlan(PLAN, true, undefined, httpClient);
+      await waitFor(() => expect(screen.getByTestId('plan-review-apply')).toBeEnabled());
+      await fireEvent.press(screen.getByTestId('plan-review-apply'));
+      // 연타 가드(600ms)가 지난 뒤다. 응답은 아직 오지 않았다
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+      expect(httpClient.post).toHaveBeenCalledTimes(1);
+
+      // When
+      await fireEvent.press(screen.getByTestId('plan-review-apply'));
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+
+      // Then
+      expect(httpClient.post).toHaveBeenCalledTimes(1);
+      await act(async () => saved.settle());
+    });
+
+    it('저장 준비 단계가 던져도 다시 누르면 저장된다', async () => {
+      // Given
+      const httpClient = createHttpClientStub();
+      httpClient.post.mockResolvedValue(
+        ok({ todos: [createTodoDto({ id: 9, title: '장보기' })], memo: null }),
+      );
+      // 저장 요청의 키를 기기에 남기다 한 번 실패한다(저장 공간 부족 등)
+      const requestStore = {
+        find: jest.fn<null, []>(() => null),
+        save: jest.fn<void, [unknown]>().mockImplementationOnce(() => {
+          throw new Error('storage full');
+        }),
+      };
+      await renderPlan(PLAN, true, undefined, httpClient, requestStore);
+      await waitFor(() => expect(screen.getByTestId('plan-review-apply')).toBeEnabled());
+      await fireEvent.press(screen.getByTestId('plan-review-apply'));
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+      expect(httpClient.post).not.toHaveBeenCalled();
+
+      // When
+      await fireEvent.press(screen.getByTestId('plan-review-apply'));
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+
+      // Then
+      expect(httpClient.post).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('제목이 비어 저장할 수 없는 카드가 있으면 추가 버튼을 막는다', async () => {
@@ -309,5 +402,26 @@ describe('PlanReview', () => {
     // Then
     expect(await screen.findByText('마트 가기')).toBeTruthy();
     expect(screen.queryByText('장보기')).toBeNull();
+  });
+
+  it('고치는 시트를 연 뒤 다른 카드의 체크를 바꿔도 확인이 그 변경을 되돌리지 않는다', async () => {
+    // Given
+    const onValues = jest.fn();
+    await renderPlan(PLAN, true, onValues);
+    await fireEvent.press(await screen.findByText('장보기'));
+    await fireEvent.changeText(await screen.findByLabelText('할 일 제목'), '마트 가기');
+    await fireEvent.press(screen.getByLabelText('운동 추가하기'));
+
+    // When
+    await waitFor(() => expect(screen.getByTestId('plan-todo-edit-confirm')).toBeEnabled());
+    await fireEvent.press(screen.getByTestId('plan-todo-edit-confirm'));
+
+    // Then
+    expect(await screen.findByText('마트 가기')).toBeTruthy();
+    const latest: PlanReviewFormValues | undefined = onValues.mock.calls.at(-1)?.[0];
+    expect(latest?.actions.map(({ title, isSelected }) => ({ title, isSelected }))).toEqual([
+      { title: '운동', isSelected: false },
+      { title: '마트 가기', isSelected: true },
+    ]);
   });
 });

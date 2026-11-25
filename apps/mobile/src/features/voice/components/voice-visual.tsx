@@ -113,9 +113,10 @@ function getBarCount(width: number) {
 interface VoiceVisualProps {
   level: SharedValue<number>;
   isActive: boolean;
+  className?: string;
 }
 
-export function VoiceVisual({ level, isActive }: VoiceVisualProps) {
+export function VoiceVisual({ level, isActive, className }: VoiceVisualProps) {
   const isReducedMotion = useIsReduceMotionEnabled();
   const { theme } = useUniwind();
   const mainColor = useResolvedColor('text-main');
@@ -258,7 +259,7 @@ export function VoiceVisual({ level, isActive }: VoiceVisualProps) {
   return (
     <Box
       pointerEvents="none"
-      className="self-stretch"
+      className={className}
       style={{ height: VOICE_VISUAL.height }}
       onLayout={handleLayout}
     >

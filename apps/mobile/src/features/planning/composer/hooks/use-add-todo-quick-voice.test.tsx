@@ -82,7 +82,13 @@ function QuickVoiceProbe({
     rules: { validate: (value) => value.trim().length > 0 },
   });
   const { isValid } = useFormState({ control: form.control });
-  const quickVoice = useAddTodoQuickVoice({ form, onExit });
+  // 시트처럼 제목 칸을 값과 콜백으로 잇는다
+  const [quickVoice, controls] = useAddTodoQuickVoice({
+    getTitle: () => form.getValues('title'),
+    onTitleChange: (heard) =>
+      form.setValue('title', heard, { shouldDirty: true, shouldValidate: true }),
+    onExit,
+  });
   const title = useWatch({ control: form.control, name: 'title' });
   const { state } = quickVoice;
   if (state.status === 'failed') {
@@ -94,42 +100,36 @@ function QuickVoiceProbe({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="begin"
-        onPress={() =>
-          quickVoice.begin({ locale: 'ko-KR', hintWords: [], recordingDirectory: null })
-        }
+        onPress={() => controls.begin({ locale: 'ko-KR', hintWords: [], recordingDirectory: null })}
       />
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="finish"
-        onPress={quickVoice.finish}
-      />
+      <Pressable accessibilityRole="button" accessibilityLabel="finish" onPress={controls.finish} />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="retry"
-        onPress={quickVoice.retryPlanning}
+        onPress={controls.retryPlanning}
       />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="type-instead"
-        onPress={quickVoice.typeInstead}
+        onPress={controls.typeInstead}
       />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="cancel-planning"
-        onPress={quickVoice.cancelPlanning}
+        onPress={controls.cancelPlanning}
       />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="start"
         onPress={() => {
-          quickVoice.start().catch(jest.fn());
+          controls.start().catch(jest.fn());
         }}
       />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="continue-as-note"
         onPress={() => {
-          quickVoice.continueAsVoiceNote().catch(jest.fn());
+          controls.continueAsVoiceNote().catch(jest.fn());
         }}
       />
       <Text testID="status">{state.status}</Text>

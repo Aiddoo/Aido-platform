@@ -7,8 +7,8 @@ import { createTodoCategoryListDto } from '@src/features/planning/category/__tes
 import { createTodoDto } from '@src/features/planning/todo/__tests__/todo.fixtures';
 import { countGetRequests } from '@src/features/planning/todo/__tests__/todo.test-utils';
 import { createPlannedTodo } from '@src/features/voice/__tests__/voice.fixtures';
+import { createPlanReviewDraft } from '@src/features/voice/domains/plan-review-draft.model';
 import { type VoicePlan, voicePlanIdSchema } from '@src/features/voice/domains/voice-plan.model';
-import { createPlanReviewDraft } from '@src/features/voice/utils/plan-review-draft';
 import { toEpochMs, toInstant } from '@src/shared/date/instant';
 import { NetworkError } from '@src/shared/errors';
 import {
@@ -215,12 +215,15 @@ describe('AiReviewScreen', () => {
       await fireEvent.press(screen.getByTestId('plan-review-apply'));
       await waitFor(() => expect(findApplyPosts(httpClient)).toHaveLength(1));
       await waitFor(() => expect(screen.getByTestId('plan-review-apply')).toBeEnabled());
+      // 저장 버튼의 연타 가드(600ms)가 지난 뒤에 다시 누른다
+      await act(() => jest.advanceTimersByTimeAsync(600));
 
       // When
       await fireEvent.press(screen.getByTestId('plan-review-apply'));
       await waitFor(() => expect(findApplyPosts(httpClient)).toHaveLength(2));
       await waitFor(() => expect(screen.getByTestId('plan-review-apply')).toBeEnabled());
       await fireEvent.press(screen.getByLabelText('운동 추가하기'));
+      await act(() => jest.advanceTimersByTimeAsync(600));
       await fireEvent.press(screen.getByTestId('plan-review-apply'));
       await waitFor(() => expect(findApplyPosts(httpClient)).toHaveLength(3));
 
@@ -233,7 +236,7 @@ describe('AiReviewScreen', () => {
       expect(screen.getByText('회의')).toBeOnTheScreen();
     });
 
-    it('추가를 같은 프레임에 두 번 누르면 지금은 같은 키로 저장 요청이 두 번 나가고 저장 이벤트도 두 번 남는다', async () => {
+    it('추가를 같은 프레임에 두 번 눌러도 저장 요청과 저장 이벤트는 한 번이다', async () => {
       // Given
       const { httpClient, analytics } = await renderAiReview();
       const saved = createPendingResponse(ok(createAppliedDto(['운동', '회의'])));
@@ -250,14 +253,15 @@ describe('AiReviewScreen', () => {
       const keys = findApplyPosts(httpClient).map(
         ([, , config]) => config?.headers?.['Idempotency-Key'],
       );
-      expect(keys).toHaveLength(2);
-      expect(keys[1]).toBe(keys[0]);
+      expect(keys).toHaveLength(1);
 
       // When
       await act(async () => saved.settle());
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
 
       // Then
-      await waitFor(() => expect(countEvents(analytics, 'voice_plan_applied')).toBe(2));
+      expect(countEvents(analytics, 'voice_plan_applied')).toBe(1);
+      expect(findApplyPosts(httpClient)).toHaveLength(1);
     });
   });
 

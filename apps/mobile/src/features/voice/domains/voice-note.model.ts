@@ -9,13 +9,13 @@ import {
   PlanReviewDraftPolicy,
   planReviewDraftSchema,
 } from './plan-review-draft.model';
+import type { PlannedMemo } from './planned-action.model';
 import type { VoiceCaptureSeed } from './voice-capture.model';
 import {
   type VoiceNoteDigestResult,
   type VoiceNoteKeyPoint,
   voiceNoteDigestSchema,
 } from './voice-note-digest.model';
-import type { PlannedMemo } from './voice-plan.model';
 import { createVoiceTranscript } from './voice-transcript.model';
 
 export const speechLocaleSchema = z.enum(SPEECH_LOCALES);

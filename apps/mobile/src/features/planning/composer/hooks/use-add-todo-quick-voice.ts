@@ -1,6 +1,5 @@
 import { useLogger } from '@src/bootstrap/providers/di-context';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
-import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
 import { VOICE_LOG_EVENT } from '@src/features/voice/constants/voice-log-events';
 import { QUICK_CAPTURE_MAX_SECONDS } from '@src/features/voice/constants/voice.constants';
 import { VoiceTranscriptPolicy } from '@src/features/voice/domains/voice-transcript.model';
@@ -10,21 +9,53 @@ import { useQuickPlanRequest } from '@src/features/voice/hooks/use-quick-plan-re
 import { useReadSpeechContext } from '@src/features/voice/hooks/use-read-speech-context';
 import { useRecognitionLanguage } from '@src/features/voice/hooks/use-recognition-language';
 import { useVoiceCaptureReadiness } from '@src/features/voice/hooks/use-voice-capture-readiness';
-import { useVoiceCaptureSession } from '@src/features/voice/hooks/use-voice-capture-session';
+import {
+  useVoiceCaptureSession,
+  type VoiceCapture,
+  type VoiceCaptureControls,
+} from '@src/features/voice/hooks/use-voice-capture-session';
 import { getErrorMessage } from '@src/shared/errors/to-error';
 import { useTranslation } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui';
 import { noop } from 'es-toolkit';
 import { useState } from 'react';
-import type { UseFormReturn } from 'react-hook-form';
 
 interface UseAddTodoQuickVoiceOptions {
-  form: UseFormReturn<TodoFormValues>;
+  /** 지금 제목 칸의 글자. 들은 글자를 옮길 때 읽는다 */
+  getTitle: () => string;
+  /** 들은 글자를 제목 칸에 넣는다. 고친 칸으로 만들고 다시 검사하는 일은 폼을 가진 시트가 한다 */
+  onTitleChange: (title: string) => void;
   onExit: () => void;
 }
 
+interface AddTodoQuickVoice extends VoiceCapture {
+  locale: SpeechLocale;
+  isConsentRequired: boolean;
+  /** 실패 때 친 글자가 있어 들은 글자를 옮기지 않았다 */
+  isTypedTextKept: boolean;
+  /** 다시 말하기로 입력 칸이 잠깐 보이는 동안이다. 키보드를 올리지 않는다 */
+  isRestarting: boolean;
+}
+
+interface AddTodoQuickVoiceControls extends Pick<
+  VoiceCaptureControls,
+  'begin' | 'finish' | 'cancel' | 'resume' | 'interrupt' | 'retryPlanning'
+> {
+  /** 한도·동의·마이크를 거쳐 듣기 시작한다 */
+  start: () => Promise<void>;
+  restart: () => Promise<void>;
+  cancelPlanning: () => void;
+  typeInstead: () => void;
+  changeLocale: (locale: SpeechLocale) => void;
+  continueAsVoiceNote: () => Promise<void>;
+}
+
 // 들은 글자를 잃지 않게 실패·취소·직접 입력 때 제목 칸으로 옮긴다
-export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptions) {
+export function useAddTodoQuickVoice({
+  getTitle,
+  onTitleChange,
+  onExit,
+}: UseAddTodoQuickVoiceOptions) {
   const ensureReady = useVoiceCaptureReadiness({
     feature: 'AI_PARSE',
     surface: 'add_todo_sheet',
@@ -38,36 +69,31 @@ export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptio
   // 실패 때 친 글자가 있어 들은 글자를 옮기지 않았는지. 고쳐 쓰는 동안 안내가 바뀌지 않게 그때 판단을 둔다
   const [isTypedTextKept, setIsTypedTextKept] = useState(false);
 
-  const session = useVoiceCaptureSession({
+  const [capture, session] = useVoiceCaptureSession({
     entry: 'add_todo_sheet',
     maxSeconds: QUICK_CAPTURE_MAX_SECONDS,
     onCaptured: planRequest.send,
     // 90초가 되면 멈추고 고르게 한다. 들은 글자로 바로 정리하거나 말로 메모하기로 이어 간다
     onLimitReached: noop,
     onFailed: (transcript) => {
-      const title = form.getValues('title').trim();
+      const title = getTitle().trim();
       const heardText = VoiceTranscriptPolicy.getTranscriptText(transcript);
       setIsTypedTextKept(title.length > 0 && title !== heardText);
       if (title.length === 0) {
-        form.setValue('title', heardText, { shouldDirty: true, shouldValidate: true });
+        onTitleChange(heardText);
       }
     },
   });
   const [locale, changeLocale] = useQuickVoiceLocale({ onChange: session.changeLocale });
 
   const moveTranscriptToTitle = () => {
-    form.setValue(
-      'title',
-      VoiceTranscriptPolicy.mergeHeardTextIntoTitle(
-        session.state.transcript,
-        form.getValues('title'),
-      ),
-      { shouldDirty: true, shouldValidate: true },
+    onTitleChange(
+      VoiceTranscriptPolicy.mergeHeardTextIntoTitle(capture.state.transcript, getTitle()),
     );
   };
 
   const start = async () => {
-    const hasFailed = session.state.status === 'failed';
+    const hasFailed = capture.state.status === 'failed';
     const readiness = await ensureReady({ locale, entry: 'add_todo_sheet', onSubscribe: onExit });
     if (!readiness.isReady) {
       return;
@@ -108,25 +134,35 @@ export function useAddTodoQuickVoice({ form, onExit }: UseAddTodoQuickVoiceOptio
     }
     return continueAsVoiceNote({
       locale,
-      heard: session.state,
+      heard: capture.state,
       onHandOff: session.handOff,
       onExit,
     });
   };
 
-  return {
-    ...session,
+  const quickVoice: AddTodoQuickVoice = {
+    ...capture,
+    locale,
     isConsentRequired: planRequest.isConsentRequired,
     isTypedTextKept,
-    locale,
-    changeLocale,
+    isRestarting,
+  };
+  const controls: AddTodoQuickVoiceControls = {
+    begin: session.begin,
+    finish: session.finish,
+    cancel: session.cancel,
+    resume: session.resume,
+    interrupt: session.interrupt,
+    retryPlanning: session.retryPlanning,
     start,
     restart,
-    isRestarting,
     cancelPlanning,
     typeInstead,
+    changeLocale,
     continueAsVoiceNote: continueAsNote,
   };
+
+  return [quickVoice, controls] as const;
 }
 
 /** 언어마다 필요한 권한이 달라 허용된 뒤에만 바꾼다. 거절하면 듣던 언어로 이어 간다 */

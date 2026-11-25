@@ -16,7 +16,7 @@ import { renderScreen } from '@src/testing/render';
 import { useMutation } from '@tanstack/react-query';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
-import type { PlannedAction } from '../domains/voice-plan.model';
+import type { PlannedAction } from '../domains/planned-action.model';
 import { useApplyActionPlanMutationOptions } from './voice.mutations';
 
 const TODO_ACTION: PlannedAction = {

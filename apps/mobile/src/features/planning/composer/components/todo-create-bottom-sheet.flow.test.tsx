@@ -230,7 +230,7 @@ describe('TodoCreateBottomSheet 빠른 말하기', () => {
       });
     });
 
-    it('추가를 같은 프레임에 두 번 누르면 지금은 같은 키로 저장 요청이 두 번 나가고 저장 이벤트도 두 번 남는다', async () => {
+    it('추가를 같은 프레임에 두 번 눌러도 저장 요청과 저장 이벤트는 한 번이다', async () => {
       // Given
       const { httpClient, speechRecognizer, analytics } = await renderCreateSheet();
       httpClient.post.mockResolvedValueOnce(ok(createQuickPlanDto([WORKOUT])));
@@ -249,14 +249,15 @@ describe('TodoCreateBottomSheet 빠른 말하기', () => {
       const keys = findPosts(httpClient, 'v1/action-plans/apply').map(
         ([, , config]) => config?.headers?.['Idempotency-Key'],
       );
-      expect(keys).toHaveLength(2);
-      expect(keys[1]).toBe(keys[0]);
+      expect(keys).toHaveLength(1);
 
       // When
       await act(async () => saved.settle());
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
 
       // Then
-      await waitFor(() => expect(countEvents(analytics, 'voice_plan_applied')).toBe(2));
+      expect(countEvents(analytics, 'voice_plan_applied')).toBe(1);
+      expect(findPosts(httpClient, 'v1/action-plans/apply')).toHaveLength(1);
     });
   });
 

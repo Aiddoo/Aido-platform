@@ -9,11 +9,11 @@ import { useEffect, useRef, useState } from 'react';
 
 import { toVoiceNoteDigestInput } from '../apis/voice-plan.mapper';
 import { PlanRequestPolicy, type PreparedPlanRequest } from '../domains/plan-request.model';
+import { createPlanReviewDraft } from '../domains/plan-review-draft.model';
 import { VoiceNotePolicy } from '../domains/voice-note.model';
 import { getVoicePlanFailureCause, type VoicePlanFailureCause } from '../domains/voice.error';
 import { useCreateVoiceNoteDigestMutationOptions } from '../queries/voice.mutations';
 import type { VoiceNoteDigestInput } from '../schemas/voice-note-digest-request.schema';
-import { createPlanReviewDraft } from '../utils/plan-review-draft';
 
 export interface VoiceNoteDigestFailure {
   cause: VoicePlanFailureCause;
@@ -85,6 +85,8 @@ export function useVoiceNoteDigest({ accountId, draftId }: { accountId: string; 
         return;
       }
       saveRequest(PlanRequestPolicy.findRequestToRetry(request, error));
+      // 서버가 한도로 막았으면 안내 시트를 띄운다. 아래에서 실패 카드는 그리지 않는다
+      gate.promptIfBlockedError(error);
       if (isAiDataSharingConsentRequiredError(error) && !hasAskedConsentRef.current) {
         hasAskedConsentRef.current = true;
         if (await aiConsent.requestAgreement()) {

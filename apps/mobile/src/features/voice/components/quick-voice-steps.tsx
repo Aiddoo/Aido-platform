@@ -4,6 +4,8 @@ import { ANIMATION } from '@src/shared/constants/animation';
 import { useAppWindow } from '@src/shared/hooks/use-app-window';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
+import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -13,6 +15,8 @@ import {
   HStack,
   QueryErrorFallback,
   type QueryErrorFallbackProps,
+  ScrollFade,
+  splitWords,
   Text,
   TextButton,
   useKeyboardSheetBodyMaxHeight,
@@ -21,8 +25,10 @@ import {
 import { cn } from '@src/shared/utils/cn';
 import { clamp } from 'es-toolkit';
 import { CloseButton, Skeleton } from 'heroui-native';
-import { type ReactNode, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { type ComponentRef, type ReactNode, useEffect, useRef } from 'react';
+import { FormState, useForm, Watch } from 'react-hook-form';
+import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -41,19 +47,26 @@ import {
   QUICK_CAPTURE_MAX_SECONDS,
 } from '../constants/voice.constants';
 import {
+  createPlanReviewDraft,
+  type SelectablePlannedAction,
+} from '../domains/plan-review-draft.model';
+import {
   VoiceCapturePolicy,
   type CapturedPlan,
   type VoiceCaptureState,
 } from '../domains/voice-capture.model';
 import { VoiceTranscriptPolicy, type VoiceTranscript } from '../domains/voice-transcript.model';
 import { useCaptureElapsedMs } from '../hooks/use-capture-elapsed-ms';
+import { usePlanApply } from '../hooks/use-plan-apply';
 import { planReviewFormSchema } from '../schemas/plan-review-form.schema';
 import { formatMediaTime } from '../utils/media-time.view-model';
-import { createPlanReviewFormValues } from '../utils/plan-review-draft';
-import { LiveTranscript } from './live-transcript';
-import { PlanReview } from './plan-review/plan-review';
+import { PlanReview } from './plan-review';
 import { RecognitionLanguageTabs } from './recognition-language-tabs';
 import { VoiceVisual } from './voice-visual';
+
+const MAX_ANIMATED_WORDS = 40;
+const WORD_FADE_MS = 450;
+const FOLLOW_THRESHOLD_PX = 24;
 
 interface QuickVoiceListeningProps {
   state: VoiceCaptureState;
@@ -100,7 +113,7 @@ export function QuickVoiceListening({
 
       {!isOverLimit && (
         <Box className={cn(isPaused && 'opacity-60')}>
-          <VoiceVisual level={level} isActive={isListening} />
+          <VoiceVisual level={level} isActive={isListening} className="self-stretch" />
         </Box>
       )}
 
@@ -237,12 +250,25 @@ export function QuickVoiceReview({
   onTypeInstead,
 }: ReviewProps) {
   const { t } = useTranslation('voice');
+  const reportUnexpectedError = useReportUnexpectedError('voice');
   const form = useForm({
     resolver: zodResolver(planReviewFormSchema),
-    defaultValues: createPlanReviewFormValues(plan),
+    defaultValues: createPlanReviewDraft(plan).form,
     mode: 'onChange',
   });
   const bodyMaxHeight = useKeyboardSheetBodyMaxHeight();
+  const planApply = usePlanApply({ plan, fallbackCategoryId, onMemoChanged, onApplied });
+
+  // 고친 카드의 자리만 쓴다. 배열을 통째로 바꾸면 그 사이 다른 카드에 생긴 변경을 덮는다
+  const changeAction = (index: number, action: SelectablePlannedAction) =>
+    form.setValue(`actions.${index}`, action, { shouldDirty: true, shouldValidate: true });
+
+  const savePlan = form.handleSubmit(({ actions }) => planApply.apply(actions));
+  // 저장 중 표시는 다음 렌더에야 켜져 같은 프레임의 두 번째 탭이 같은 계획을 한 번 더 보낸다
+  const handleSavePress = useSingleTap(() => {
+    savePlan().catch(reportUnexpectedError);
+  });
+
   const restartButton = (
     <Box className="flex-1">
       <Button variant="weak" color="dark" onPress={onRestart} testID="quick-voice-restart">
@@ -256,29 +282,42 @@ export function QuickVoiceReview({
       entering={FadeIn.duration(ANIMATION.durationMs.normal)}
       testID="quick-voice-review"
     >
-      <PlanReview
-        surface="sheet"
-        style={{ maxHeight: bodyMaxHeight }}
-        form={form}
-        plan={plan}
-        fallbackCategoryId={fallbackCategoryId}
-        isCharged={isCharged}
-        secondaryAction={
-          plan.actions.length === 0 ? (
-            <HStack gap={8}>
-              {restartButton}
-              <Box className="flex-1">
-                <Button onPress={onTypeInstead} testID="quick-voice-type-instead">
-                  {t('review.typeInstead')}
-                </Button>
-              </Box>
-            </HStack>
-          ) : (
-            restartButton
-          )
-        }
-        onMemoChanged={onMemoChanged}
-        onApplied={onApplied}
+      <FormState
+        control={form.control}
+        render={({ isValid }) => (
+          <Watch
+            control={form.control}
+            name="actions"
+            render={(actions) => (
+              <PlanReview
+                surface="sheet"
+                style={{ maxHeight: bodyMaxHeight }}
+                value={actions}
+                onItemChange={changeAction}
+                plan={plan}
+                fallbackCategoryId={fallbackCategoryId}
+                isCharged={isCharged}
+                secondaryAction={
+                  plan.actions.length === 0 ? (
+                    <HStack gap={8}>
+                      {restartButton}
+                      <Box className="flex-1">
+                        <Button onPress={onTypeInstead} testID="quick-voice-type-instead">
+                          {t('review.typeInstead')}
+                        </Button>
+                      </Box>
+                    </HStack>
+                  ) : (
+                    restartButton
+                  )
+                }
+                isValid={isValid}
+                isApplying={planApply.isPending || planApply.isApplied}
+                onApplyPress={handleSavePress}
+              />
+            )}
+          />
+        )}
       />
     </Animated.View>
   );
@@ -438,6 +477,96 @@ CaptureLayout.Header = function Header({ center, right, onClose }: CaptureLayout
     </HStack>
   );
 };
+
+interface LiveTranscriptProps {
+  transcript: VoiceTranscript;
+  placeholder?: string;
+  isWordFadeEnabled?: boolean;
+}
+
+/** 위로 올리면 따라가기를 멈추고 끝까지 내리면 다시 따른다. Android는 한글 단어 줄바꿈 prop이 없어 단어마다 그린다 */
+function LiveTranscript({
+  transcript,
+  placeholder,
+  isWordFadeEnabled = true,
+}: LiveTranscriptProps) {
+  const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
+  const isReducedMotion = useIsReduceMotionEnabled();
+  const isFollowingRef = useRef(true);
+  const finalText = VoiceTranscriptPolicy.getFinalText(transcript);
+  const finalWords = splitWords(finalText);
+  const interimWords = splitWords(transcript.interim);
+  const isAnimated =
+    isWordFadeEnabled && !isReducedMotion && finalWords.length <= MAX_ANIMATED_WORDS;
+  const isEmpty = finalWords.length === 0 && interimWords.length === 0;
+
+  const scrollToLatest = () => {
+    if (isFollowingRef.current) {
+      scrollRef.current?.scrollToEnd({ animated: false });
+    }
+  };
+
+  const followIfAtEnd = ({ nativeEvent }: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset, contentSize, layoutMeasurement } = nativeEvent;
+    isFollowingRef.current =
+      contentOffset.y + layoutMeasurement.height >= contentSize.height - FOLLOW_THRESHOLD_PX;
+  };
+
+  return (
+    <ScrollFade surface="sheet" className="flex-1">
+      <ScrollView
+        ref={scrollRef}
+        onContentSizeChange={scrollToLatest}
+        onLayout={scrollToLatest}
+        onScrollBeginDrag={() => {
+          isFollowingRef.current = false;
+        }}
+        onScrollEndDrag={followIfAtEnd}
+        onMomentumScrollEnd={followIfAtEnd}
+        showsVerticalScrollIndicator={false}
+        nestedScrollEnabled
+        testID="live-transcript"
+      >
+        <Box className="flex-row flex-wrap">
+          {isEmpty && placeholder != null && (
+            <Text size="t2" weight="semibold" shade={4} lineBreakStrategyIOS="hangul-word">
+              {placeholder}
+            </Text>
+          )}
+          {finalWords.map((word, index) =>
+            isAnimated ? (
+              <Animated.View key={`${index}-${word}`} entering={FadeIn.duration(WORD_FADE_MS)}>
+                <Text size="t2" weight="semibold" lineBreakStrategyIOS="hangul-word">
+                  {`${word} `}
+                </Text>
+              </Animated.View>
+            ) : (
+              <Text
+                key={`${index}-${word}`}
+                size="t2"
+                weight="semibold"
+                lineBreakStrategyIOS="hangul-word"
+              >
+                {`${word} `}
+              </Text>
+            ),
+          )}
+          {interimWords.map((word, index) => (
+            <Text
+              key={`interim-${index}-${word}`}
+              size="t2"
+              weight="semibold"
+              shade={5}
+              lineBreakStrategyIOS="hangul-word"
+            >
+              {`${word} `}
+            </Text>
+          ))}
+        </Box>
+      </ScrollView>
+    </ScrollFade>
+  );
+}
 
 function ListeningClock({ state }: { state: VoiceCaptureState }) {
   const elapsedMs = useCaptureElapsedMs(state);
