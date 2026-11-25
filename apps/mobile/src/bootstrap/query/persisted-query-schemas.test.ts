@@ -33,7 +33,7 @@ import {
   persistQueryClientRestore,
   persistQueryClientSave,
 } from '@tanstack/react-query-persist-client';
-import { isEqual } from 'es-toolkit';
+import { isEqual, uniq } from 'es-toolkit';
 
 import { PERSISTED_QUERY_SCHEMAS } from './persisted-query-schemas';
 import { QUERY_CACHE_LOG_EVENT } from './query-cache-log-events';
@@ -292,7 +292,7 @@ describe('PERSISTED_QUERY_SCHEMAS', () => {
         .filter((block) => block.includes('PERSISTED_QUERY_OPTIONS'))
         .map((block) => /queryKey: (\w+_QUERY_KEYS\.\w+)\(/.exec(block)?.[1] ?? 'UNKNOWN'),
     );
-    return [...new Set(names)];
+    return uniq(names);
   }
 
   it('meta.persist가 달린 쿼리 키가 모두 표에 있다', () => {

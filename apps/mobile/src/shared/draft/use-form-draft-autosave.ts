@@ -1,5 +1,5 @@
 import { debounce, type DebouncedFunction, isEqual } from 'es-toolkit';
-import { useCallback, useEffect, useEffectEvent, useRef } from 'react';
+import { useEffect, useEffectEvent, useRef } from 'react';
 import type { FieldValues, UseFormSubscribe } from 'react-hook-form';
 
 export const DRAFT_SAVE_DELAY_MS = 400;
@@ -44,8 +44,8 @@ export function useFormDraftAutosave<TValues extends FieldValues>(
     };
   }, [subscribe]);
 
-  return useCallback(() => {
+  return () => {
     pendingSaveRef.current?.cancel();
     clearDraft();
-  }, [clearDraft]);
+  };
 }

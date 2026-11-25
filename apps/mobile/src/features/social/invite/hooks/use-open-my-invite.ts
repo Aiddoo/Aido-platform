@@ -1,7 +1,6 @@
 import { useTrack } from '@src/shared/analytics';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { type Href, useRouter } from 'expo-router';
-import { useCallback } from 'react';
 
 import type { InviteEntrySource } from '../constants/invite.events';
 
@@ -11,11 +10,8 @@ export function useOpenMyInvite() {
   const router = useRouter();
   const push = useSingleTap(router.push);
 
-  return useCallback(
-    (entry: InviteEntrySource, navigate: (href: Href) => void = push) => {
-      trackEvent('invite_entry_tapped', { entry });
-      navigate('/friends/invite');
-    },
-    [push, trackEvent],
-  );
+  return (entry: InviteEntrySource, navigate: (href: Href) => void = push) => {
+    trackEvent('invite_entry_tapped', { entry });
+    navigate('/friends/invite');
+  };
 }

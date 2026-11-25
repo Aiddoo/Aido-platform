@@ -1,3 +1,5 @@
+import { isMatching, P } from 'ts-pattern';
+
 /** RN 브릿지·서드파티는 Error가 아닌 값을 던지므로 `instanceof Error`가 아니라 내용으로 판단한다 */
 
 /** 순환 참조·getter 예외에도 죽지 않는 최선의 문자열화. */
@@ -14,12 +16,7 @@ function stringify(value: unknown): string {
 }
 
 function getMessage(value: unknown): string | undefined {
-  if (typeof value !== 'object' || value == null || !('message' in value)) {
-    return undefined;
-  }
-
-  const { message } = value;
-  return typeof message === 'string' && message.length > 0 ? message : undefined;
+  return isMatching({ message: P.string.minLength(1) }, value) ? value.message : undefined;
 }
 
 export function getErrorMessage(value: unknown): string {

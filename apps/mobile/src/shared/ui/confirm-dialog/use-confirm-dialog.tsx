@@ -1,5 +1,3 @@
-import { useMemo } from 'react';
-
 import { useOverlay } from '../overlay/use-overlay';
 import { ConfirmDialog } from './confirm-dialog';
 import type { ConfirmDialogOptions } from './confirm-dialog.types';
@@ -8,23 +6,20 @@ import type { ConfirmDialogOptions } from './confirm-dialog.types';
 export function useConfirmDialog() {
   const overlay = useOverlay();
 
-  return useMemo(
-    () => ({
-      openAsync: (options: ConfirmDialogOptions) =>
-        overlay.openAsync<boolean>(
-          ({ isOpen, close, unmount }) => (
-            <ConfirmDialog
-              {...options}
-              isOpen={isOpen}
-              onFinish={(isConfirmed) => {
-                close(isConfirmed);
-                unmount();
-              }}
-            />
-          ),
-          { dismissedValue: false },
+  return {
+    openAsync: (options: ConfirmDialogOptions) =>
+      overlay.openAsync<boolean>(
+        ({ isOpen, close, unmount }) => (
+          <ConfirmDialog
+            {...options}
+            isOpen={isOpen}
+            onFinish={(isConfirmed) => {
+              close(isConfirmed);
+              unmount();
+            }}
+          />
         ),
-    }),
-    [overlay],
-  );
+        { dismissedValue: false },
+      ),
+  };
 }

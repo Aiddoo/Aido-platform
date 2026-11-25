@@ -3,7 +3,7 @@ import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status
 import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
 import { useQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
-import { useCallback, useMemo, useSyncExternalStore } from 'react';
+import { useSyncExternalStore } from 'react';
 
 import { RELEASES } from '../constants/releases.constants';
 import { findReleaseByCampaign } from '../domains/whats-new.model';
@@ -24,16 +24,10 @@ export function useWhatsNewCampaign() {
   const userId = useMyAccountId({ isEnabled: isAuthenticated });
   const campaignId = config?.enabled ? config.campaignId : null;
   const release = campaignId == null ? null : findReleaseByCampaign(RELEASES, campaignId);
-  const identity = useMemo(
-    () => (userId == null || campaignId == null || release == null ? null : { userId, campaignId }),
-    [userId, campaignId, release],
-  );
+  const identity =
+    userId == null || campaignId == null || release == null ? null : { userId, campaignId };
   const hasSeen = useSyncExternalStore(
-    useCallback(
-      (onChange: () => void) =>
-        identity == null ? noop : repository.subscribe(identity, onChange),
-      [identity, repository],
-    ),
+    (onChange: () => void) => (identity == null ? noop : repository.subscribe(identity, onChange)),
     () => identity == null || repository.hasSeen(identity),
   );
 

@@ -11,7 +11,7 @@ import { useTimezoneChangeNotice } from '@src/features/notification/hooks/use-ti
 import { invalidateNotifications } from '@src/features/notification/queries/notification-cache';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import { useQueryClient } from '@tanstack/react-query';
-import { type PropsWithChildren, useCallback, useEffect, useReducer } from 'react';
+import { type PropsWithChildren, useEffect, useReducer } from 'react';
 
 import { invalidateOnNotificationReceived } from '../query/notification-received-invalidation';
 
@@ -19,10 +19,8 @@ export function NotificationProvider({ children }: PropsWithChildren) {
   const status = useAuthStatus();
   const isAuthenticated = status === 'authenticated';
   const queryClient = useQueryClient();
-  const invalidateByType = useCallback(
-    (type: NotificationType) => invalidateOnNotificationReceived(queryClient, type),
-    [queryClient],
-  );
+  const invalidateByType = (type: NotificationType) =>
+    invalidateOnNotificationReceived(queryClient, type);
   const accountId = useMyAccountId({ isEnabled: isAuthenticated });
   const { currentTimezone } = useLocalDate();
   const [reportCount, markReported] = useReducer((count: number) => count + 1, 0);

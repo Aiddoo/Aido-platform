@@ -1,5 +1,4 @@
 import { useAnalytics, useFeatureAttribution, useLogger } from '@src/shared/di/shared-di-context';
-import { useCallback } from 'react';
 
 import { trackAttributedFeatureSuccess as emitAttributedFeatureSuccess } from './feature-attribution';
 import type { FeatureKey } from './feature-key';
@@ -10,29 +9,32 @@ export function useTrack() {
   const featureAttribution = useFeatureAttribution();
   const logger = useLogger();
 
-  const trackEvent = useCallback(
-    <E extends AppEventName>(eventName: E, ...eventParams: AppEventArguments<E>): void => {
-      track(analytics, eventName, ...eventParams);
-    },
-    [analytics],
-  );
+  const trackEvent = <E extends AppEventName>(
+    eventName: E,
+    ...eventParams: AppEventArguments<E>
+  ): void => {
+    track(analytics, eventName, ...eventParams);
+  };
 
-  const trackAttributedFeatureSuccess = useCallback(
-    ({ accountId, feature }: { accountId: string; feature: FeatureKey }): void =>
-      emitAttributedFeatureSuccess(
-        { analytics, attribution: featureAttribution, logger },
-        { accountId, feature },
-      ),
-    [analytics, featureAttribution, logger],
-  );
+  const trackAttributedFeatureSuccess = ({
+    accountId,
+    feature,
+  }: {
+    accountId: string;
+    feature: FeatureKey;
+  }): void =>
+    emitAttributedFeatureSuccess(
+      { analytics, attribution: featureAttribution, logger },
+      { accountId, feature },
+    );
 
-  const clearUser = useCallback(() => {
+  const clearUser = () => {
     analytics.clearUser();
-  }, [analytics]);
+  };
 
-  const resetData = useCallback(() => {
+  const resetData = () => {
     analytics.resetData();
-  }, [analytics]);
+  };
 
   return { trackEvent, trackAttributedFeatureSuccess, clearUser, resetData };
 }

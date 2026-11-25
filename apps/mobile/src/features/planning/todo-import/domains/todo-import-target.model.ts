@@ -178,7 +178,7 @@ export function countNewCategories(targets: readonly ImportTarget[]) {
   const names = targets.flatMap((target) =>
     target.kind === 'NEW_CATEGORY' ? [toComparableName(target.name)] : [],
   );
-  return new Set(names).size;
+  return uniq(names).length;
 }
 
 export const TodoImportTargetPolicy = {

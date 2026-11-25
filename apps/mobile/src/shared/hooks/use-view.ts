@@ -1,6 +1,5 @@
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 import type { NavigationProp, ParamListBase } from 'expo-router/react-navigation';
-import { useCallback } from 'react';
 import type { z } from 'zod';
 
 /**
@@ -15,10 +14,7 @@ export function useView<TSchema extends z.ZodType<string>>(
   const view = schema.parse(useLocalSearchParams()[key]);
   // 기본 타입은 route 목록이 없어 setParams가 값을 받지 않는다. 화면 navigation의 기본 모양으로 받는다
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
-  const setView = useCallback(
-    (next: z.output<TSchema>) => navigation.setParams({ [key]: next }),
-    [key, navigation],
-  );
+  const setView = (next: z.output<TSchema>) => navigation.setParams({ [key]: next });
 
   return [view, setView] as const;
 }

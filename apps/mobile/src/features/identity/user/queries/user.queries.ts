@@ -3,7 +3,6 @@ import { unwrap } from '@src/core/errors/result';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { useTranslation } from '@src/shared/i18n';
 import { queryOptions } from '@tanstack/react-query';
-import { useCallback } from 'react';
 
 import { type User } from '../domains/user.model';
 import { USER_QUERY_KEYS } from './user-query-keys';
@@ -24,7 +23,7 @@ export function useGetMeQueryOptions() {
   const userApi = useUserApi();
   const { t } = useTranslation('user');
   const defaultName = t('profile.defaultName');
-  const select = useCallback((user: User) => toMe(user, { defaultName }), [defaultName]);
+  const select = (user: User) => toMe(user, { defaultName });
 
   return queryOptions({
     queryKey: USER_QUERY_KEYS.me(),

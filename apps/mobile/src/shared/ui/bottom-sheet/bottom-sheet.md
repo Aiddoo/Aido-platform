@@ -70,7 +70,7 @@ import { ModalBottomSheet } from '@src/shared/ui';
 
 ### 머리글 고정 (`hasFixedHeader`, `SheetHeaderLayout`)
 
-날짜·시간·반복 피커처럼 "확인"이 머리글에 있는 시트는 스크롤해도 머리글이 남아야 한다. 머리글이 내용 쪽 폼 상태를 읽으므로 `footer`처럼 시트에 넘기지 않고, `hasFixedHeader`를 주고 내용이 `SheetHeaderLayout`을 쓴다. 시트는 본문 스크롤을 `SheetFixedHeaderContext`로 넘겨 `scrollableRef`로 잇는다. 같은 내용을 `hasFixedHeader` 없는 `BottomSheet`(할 일 메뉴의 날짜·시간 route)에 넣으면 머리글과 본문을 쌓기만 하고 시트 전체가 스크롤한다. 반복 기간처럼 늘 보여야 하는 아래 줄은 `footer`로 넘기면 본문 아래에 함께 고정된다. 본문이 넘치면 스크롤 막대와 heroui-native `ScrollShadow` 흐림이 나타난다.
+날짜·시간·반복 피커처럼 "확인"이 머리글에 있는 시트는 스크롤해도 머리글이 남아야 한다. 머리글이 내용 쪽 폼 상태를 읽으므로 `footer`처럼 시트에 넘기지 않고, `hasFixedHeader`를 주고 내용이 `SheetHeaderLayout`을 쓴다. 시트는 본문 스크롤을 `SheetFixedHeaderContext`로 넘겨 `scrollableRef`로 잇는다. 같은 내용을 `hasFixedHeader` 없는 `BottomSheet`(할 일 메뉴의 날짜·시간 route)에 넣으면 머리글과 본문을 쌓기만 하고 시트 전체가 스크롤한다. 반복 기간처럼 늘 보여야 하는 아래 줄은 `footer`로 넘기면 본문 아래에 함께 고정된다. 본문이 넘치면 스크롤 막대와 heroui-native `ScrollShadow` 흐림이 나타난다. heroui `BottomSheet.Header isSticky`는 `BottomSheet.Content`의 직계 자식이어야 고정돼(`getStickyPart`가 `Content`의 자식만 본다) 폼 상태를 읽는 내용 컴포넌트 안의 머리글에는 쓸 수 없다.
 
 ```tsx
 <ModalBottomSheet

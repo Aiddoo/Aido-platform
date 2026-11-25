@@ -5,12 +5,14 @@ import type { ComponentProps } from 'react';
 import { Text } from '../text/text';
 import type { TextProps } from '../text/text.types';
 
-type TextTabTriggerProps = Omit<ComponentProps<typeof Tabs.Trigger>, 'children' | 'className'> &
-  Pick<ComponentProps<typeof Tabs.Label>, 'numberOfLines'> & {
-    children: string;
-  };
+interface TextTabTriggerProps
+  extends
+    Omit<ComponentProps<typeof Tabs.Trigger>, 'children' | 'className'>,
+    Pick<ComponentProps<typeof Tabs.Label>, 'numberOfLines'> {
+  children: string;
+}
 
-type SegmentTabTriggerProps = TextTabTriggerProps & Pick<TextProps, 'size'>;
+interface SegmentTabTriggerProps extends TextTabTriggerProps, Pick<TextProps, 'size'> {}
 
 /** 밑줄 탭(`Tabs variant="secondary"`)의 글자 탭. heroui 라벨은 앱 글꼴을 따르지 않아 자식 Text로 넣는다 */
 export function LineTabTrigger({ children, numberOfLines, ...props }: TextTabTriggerProps) {

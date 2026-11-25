@@ -53,7 +53,7 @@ import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
 import { hashKey, type QueryKey, useMutation, useQueries, useQuery } from '@tanstack/react-query';
 import { act } from '@testing-library/react-native';
-import { noop } from 'es-toolkit';
+import { noop, uniq } from 'es-toolkit';
 import { Profiler } from 'react';
 
 import {
@@ -146,7 +146,7 @@ function createTodoServer() {
     if (url === 'v1/daily-completions') {
       const startDate = String(params.startDate);
       const endDate = String(params.endDate);
-      const dates = [...new Set(state.todos.map((todo) => todo.startDate))].filter(
+      const dates = uniq(state.todos.map((todo) => todo.startDate)).filter(
         (date) => startDate <= date && date <= endDate,
       );
       const completions = dates.sort().map((date) => {
@@ -158,7 +158,7 @@ function createTodoServer() {
           completedTodos,
           isComplete: completedTodos === dayTodos.length,
           completionRate: Math.round((completedTodos / dayTodos.length) * 100),
-          categoryColors: [...new Set(dayTodos.map((todo) => todo.category.color))].sort(),
+          categoryColors: uniq(dayTodos.map((todo) => todo.category.color)).sort(),
         };
       });
       return {
@@ -449,7 +449,7 @@ async function renderFeed() {
     server,
     queryClient,
     renders,
-    refetched: () => [...new Set(refetched)].sort(),
+    refetched: () => uniq(refetched).sort(),
     tap,
     settleWrites,
     settleWrite,

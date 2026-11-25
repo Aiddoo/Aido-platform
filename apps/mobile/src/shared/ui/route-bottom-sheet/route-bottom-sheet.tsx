@@ -25,11 +25,10 @@ interface RouteSheetProps {
   footer?: (sheet: RouteSheet) => ReactNode;
 }
 
-type RouteBottomSheetProps = Omit<
-  ComponentProps<typeof BottomSheet>,
-  'children' | 'footer' | 'isOpen' | 'onOpenChange'
-> &
-  RouteSheetProps;
+interface RouteBottomSheetProps
+  extends
+    Omit<ComponentProps<typeof BottomSheet>, 'children' | 'footer' | 'isOpen' | 'onOpenChange'>,
+    RouteSheetProps {}
 
 /** 대상이 있는 시트 route의 껍데기. 대상은 내용이 route 훅으로 읽고, 실패하면 시트를 닫은 뒤 문의 화면으로 바꾼다 */
 export function RouteBottomSheet({
@@ -55,11 +54,13 @@ export function RouteBottomSheet({
   );
 }
 
-type RouteKeyboardBottomSheetProps = Omit<
-  ComponentProps<typeof KeyboardBottomSheet>,
-  'children' | 'footer' | 'isOpen' | 'onOpenChange'
-> &
-  RouteSheetProps;
+interface RouteKeyboardBottomSheetProps
+  extends
+    Omit<
+      ComponentProps<typeof KeyboardBottomSheet>,
+      'children' | 'footer' | 'isOpen' | 'onOpenChange'
+    >,
+    RouteSheetProps {}
 
 /** 입력이 있는 시트 route의 껍데기. 경계와 떠나기는 `RouteBottomSheet`와 같다 */
 export function RouteKeyboardBottomSheet({

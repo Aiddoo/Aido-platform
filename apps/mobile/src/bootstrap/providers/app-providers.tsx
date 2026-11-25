@@ -12,6 +12,7 @@ import { QueryProvider } from '@src/bootstrap/providers/query-provider';
 import { MutationErrorFeedback } from '@src/bootstrap/query/mutation-error-feedback';
 import { QueryErrorReport } from '@src/bootstrap/query/query-error-report';
 import { toError } from '@src/shared/errors';
+import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { FontScaleProvider } from '@src/shared/providers/font-scale-provider';
 import { LanguageProvider } from '@src/shared/providers/language-provider';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
@@ -28,6 +29,7 @@ import { usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { type PropsWithChildren, useEffect, useState } from 'react';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
+import { ReducedMotionConfig, ReduceMotion } from 'react-native-reanimated';
 import { ReservedRegionsProvider } from 'react-native-reserved-regions';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -86,6 +88,15 @@ function RouteOverlayProvider({ children }: PropsWithChildren) {
   return <OverlayProvider resetKey={pathname}>{children}</OverlayProvider>;
 }
 
+/** `ReduceMotion.System`은 Reanimated가 모듈을 불러올 때 읽은 값이라, 앱이 떠 있는 동안 바꾼 OS 설정을 바로 따르게 덮는다 */
+function LiveReducedMotionConfig() {
+  const isReduceMotionEnabled = useIsReduceMotionEnabled();
+
+  return (
+    <ReducedMotionConfig mode={isReduceMotionEnabled ? ReduceMotion.Always : ReduceMotion.Never} />
+  );
+}
+
 export function AppProviders({ children, root }: AppProvidersProps) {
   const ports = useAppPorts(root);
 
@@ -95,6 +106,7 @@ export function AppProviders({ children, root }: AppProvidersProps) {
 
   return (
     <GestureHandlerProvider>
+      <LiveReducedMotionConfig />
       <KeyboardProvider>
         <FontScaleProvider>
           <LanguageProvider>

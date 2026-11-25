@@ -8,7 +8,6 @@ import {
   setAudioModeAsync,
   useAudioPlaylist,
 } from 'expo-audio';
-import { useMemo } from 'react';
 
 function toAudioPartPlaylistStatus(status: AudioPlaylistStatus): AudioPartPlaylistStatus {
   return {
@@ -57,5 +56,5 @@ export function useAudioPartPlaylist({
     updateInterval: updateIntervalMs,
   });
 
-  return useMemo(() => toAudioPartPlaylist(playlist), [playlist]);
+  return toAudioPartPlaylist(playlist);
 }

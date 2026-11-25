@@ -1,5 +1,5 @@
 import { useDraftService } from '@src/shared/di/shared-di-context';
-import { useCallback, useEffect, useEffectEvent, useState } from 'react';
+import { useEffect, useEffectEvent, useState } from 'react';
 
 import type { DraftKey } from './draft.model';
 
@@ -34,15 +34,9 @@ export function useDraftStorage<TValue>(
     }
   }, [restoreResult]);
 
-  const saveDraft = useCallback(
-    (value: TValue) => saveInSession(value, { sourceUpdatedAt }),
-    [saveInSession, sourceUpdatedAt],
-  );
+  const saveDraft = (value: TValue) => saveInSession(value, { sourceUpdatedAt });
 
-  const clearDraft = useCallback(
-    () => draftService.remove(mountedDraftKey),
-    [draftService, mountedDraftKey],
-  );
+  const clearDraft = () => draftService.remove(mountedDraftKey);
 
   return {
     restoredDraft: restoreResult.status === 'restored' ? restoreResult.value : undefined,

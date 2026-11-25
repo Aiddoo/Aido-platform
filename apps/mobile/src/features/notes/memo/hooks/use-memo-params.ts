@@ -3,7 +3,6 @@ import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { usePaneSizeClass } from '@src/shared/ui';
 import { noop } from 'es-toolkit';
 import { useRouter } from 'expo-router';
-import { useCallback } from 'react';
 import { match, P } from 'ts-pattern';
 
 import { memoParamsSchema, selectedMemoParamsSchema } from '../schemas/memo-params.schema';
@@ -21,19 +20,16 @@ export function useSelectedMemoId() {
   const paneSizeClass = usePaneSizeClass();
 
   const router = useRouter();
-  const setSelectedMemoId = useCallback(
-    (memoId: number | undefined) => {
-      match({ paneSizeClass, memoId })
-        .with({ paneSizeClass: 'compact', memoId: P.nullish }, noop)
-        // 카드의 Link가 navigate로 열어 같은 상세가 겹쳐 쌓이지 않게 같은 동사를 쓴다
-        .with({ paneSizeClass: 'compact', memoId: P.number }, ({ memoId: selected }) =>
-          router.navigate({ pathname: '/memo/[memoId]', params: { memoId: selected } }),
-        )
-        .with({ paneSizeClass: P.union('medium', 'expanded') }, () => setParams({ memoId }))
-        .exhaustive();
-    },
-    [paneSizeClass, router, setParams],
-  );
+  const setSelectedMemoId = (memoId: number | undefined) => {
+    match({ paneSizeClass, memoId })
+      .with({ paneSizeClass: 'compact', memoId: P.nullish }, noop)
+      // 카드의 Link가 navigate로 열어 같은 상세가 겹쳐 쌓이지 않게 같은 동사를 쓴다
+      .with({ paneSizeClass: 'compact', memoId: P.number }, ({ memoId: selected }) =>
+        router.navigate({ pathname: '/memo/[memoId]', params: { memoId: selected } }),
+      )
+      .with({ paneSizeClass: P.union('medium', 'expanded') }, () => setParams({ memoId }))
+      .exhaustive();
+  };
 
   return [selectedMemoId, setSelectedMemoId] as const;
 }

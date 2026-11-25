@@ -1,3 +1,5 @@
+import { isMatching, P } from 'ts-pattern';
+
 // 앱은 Temporal 없이 날짜를 계산한다. 테스트는 서버와 같은 Node 26 네이티브 Temporal을 정답으로 비교한다
 interface OracleInstant {
   toString(options: { fractionalSecondDigits: 3 }): string;
@@ -34,13 +36,7 @@ interface NativeTemporal {
 }
 
 function isNativeTemporal(value: unknown): value is NativeTemporal {
-  return (
-    typeof value === 'object' &&
-    value != null &&
-    'Instant' in value &&
-    'PlainDate' in value &&
-    'PlainTime' in value
-  );
+  return isMatching({ Instant: P.any, PlainDate: P.any, PlainTime: P.any }, value);
 }
 
 function toZonedDateTime(instant: string, timeZone: string): OracleZonedDateTime {

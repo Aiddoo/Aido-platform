@@ -1,5 +1,4 @@
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
-import { useCallback } from 'react';
 
 import {
   FRIEND_LIST_VIEW,
@@ -10,13 +9,10 @@ import {
 /** 친구 화면의 탭. 친구 탭이 아닌 곳으로 옮기면 편집 모드를 함께 끈다 */
 export function useFriendListView() {
   const [{ view }, setParams] = useRouteParams(friendListParamsSchema);
-  const setView = useCallback(
-    (next: FriendListView) =>
-      setParams(
-        next === FRIEND_LIST_VIEW.friends ? { view: next } : { view: next, isEditing: undefined },
-      ),
-    [setParams],
-  );
+  const setView = (next: FriendListView) =>
+    setParams(
+      next === FRIEND_LIST_VIEW.friends ? { view: next } : { view: next, isEditing: undefined },
+    );
 
   return [view, setView] as const;
 }
@@ -27,10 +23,7 @@ export function useFriendListView() {
  */
 export function useFriendListIsEditing() {
   const [{ isEditing }, setParams] = useRouteParams(friendListParamsSchema);
-  const setIsEditing = useCallback(
-    (next: boolean) => setParams({ isEditing: next ? true : undefined }),
-    [setParams],
-  );
+  const setIsEditing = (next: boolean) => setParams({ isEditing: next ? true : undefined });
 
   return [isEditing, setIsEditing] as const;
 }

@@ -1,7 +1,6 @@
 import { getCachedTodoCategories } from '@src/features/planning/category/queries/todo-category-cache';
 import { getCachedTodoTitles } from '@src/features/planning/todo/queries/todo-cache';
 import { useQueryClient } from '@tanstack/react-query';
-import { useCallback } from 'react';
 
 import { getSpeechContextStrings } from '../domains/speech-context.model';
 
@@ -9,12 +8,12 @@ import { getSpeechContextStrings } from '../domains/speech-context.model';
 export function useReadSpeechContext() {
   const queryClient = useQueryClient();
 
-  return useCallback(() => {
+  return () => {
     const categories = getCachedTodoCategories(queryClient)?.categories ?? [];
 
     return getSpeechContextStrings({
       categoryNames: categories.map((category) => category.name),
       todoTitles: getCachedTodoTitles(queryClient),
     });
-  }, [queryClient]);
+  };
 }

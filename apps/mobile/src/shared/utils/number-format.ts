@@ -66,24 +66,20 @@ interface PercentFormatOptions {
   signDisplay?: PercentSignDisplay;
 }
 
-// 로케일 2 × 부호 2로 많아야 네 개라 지우지 않는다. 행마다 새로 만들면 목록 스크롤이 무거워진다
-const percentFormats = new Map<string, Intl.NumberFormat>();
+// 로케일 2 × 쓰는 옵션 모양 몇 개로 묶여 지우지 않는다. 행마다 새로 만들면 목록 스크롤이 무거워진다
+const numberFormats = new Map<string, Intl.NumberFormat>();
 
-function getPercentFormat(
+function getNumberFormat(
   locale: DateFormatContext['locale'],
-  signDisplay: PercentSignDisplay,
+  options: Intl.NumberFormatOptions,
 ): Intl.NumberFormat {
-  const key = `${locale}:${signDisplay}`;
-  const cached = percentFormats.get(key);
+  const key = JSON.stringify([locale, options]);
+  const cached = numberFormats.get(key);
   if (cached != null) {
     return cached;
   }
-  const format = new Intl.NumberFormat(locale, {
-    style: 'percent',
-    maximumFractionDigits: 1,
-    signDisplay,
-  });
-  percentFormats.set(key, format);
+  const format = new Intl.NumberFormat(locale, options);
+  numberFormats.set(key, format);
   return format;
 }
 
@@ -93,11 +89,15 @@ export function formatPercent(
   locale: DateFormatContext['locale'],
   { signDisplay = 'auto' }: PercentFormatOptions = {},
 ): string {
-  return getPercentFormat(locale, signDisplay).format(round(value, 1) / 100);
+  return getNumberFormat(locale, {
+    style: 'percent',
+    maximumFractionDigits: 1,
+    signDisplay,
+  }).format(round(value, 1) / 100);
 }
 
 export function formatCount(value: number, locale: DateFormatContext['locale']): string {
-  return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(value);
+  return getNumberFormat(locale, { maximumFractionDigits: 0 }).format(value);
 }
 
 const BYTES_PER_UNIT = 1_000;
@@ -121,7 +121,7 @@ export function formatDecimal(
   locale: DateFormatContext['locale'],
   fractionDigits = 1,
 ): string {
-  return new Intl.NumberFormat(locale, {
+  return getNumberFormat(locale, {
     minimumFractionDigits: fractionDigits,
     maximumFractionDigits: fractionDigits,
   }).format(value);

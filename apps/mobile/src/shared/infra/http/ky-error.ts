@@ -9,6 +9,7 @@ import {
 } from '@src/shared/errors/infra-error';
 import { t } from '@src/shared/i18n';
 import { HTTPError, isNetworkError, TimeoutError as KyTimeoutError } from 'ky';
+import { isMatching, P } from 'ts-pattern';
 
 import { readErrorEnvelope, toKnownErrorCode } from './error-envelope';
 import { REQUEST_ID_HEADER } from './request-headers';
@@ -22,15 +23,8 @@ function isExpoFetchFailure(error: unknown) {
 }
 
 /** 본문 파서가 다른 실행 환경에서 던진 SyntaxError도 `instanceof` 없이 알아본다 */
-function isSyntaxError(error: unknown): error is { message: string } {
-  return (
-    typeof error === 'object' &&
-    error != null &&
-    'name' in error &&
-    error.name === 'SyntaxError' &&
-    'message' in error &&
-    typeof error.message === 'string'
-  );
+function isSyntaxError(error: unknown) {
+  return isMatching({ name: 'SyntaxError', message: P.string }, error);
 }
 
 /** 접속 인증 Wi-Fi의 HTML처럼 JSON이 아닌 본문은 봉투 검증 실패와 같은 `ParseError`로 바꾼다 */

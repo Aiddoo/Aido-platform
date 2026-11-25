@@ -52,6 +52,7 @@ export function LocalDateProvider({
   const currentLocalDateStateRef = useRef(localDateState);
   const { currentTimezone } = localDateState;
 
+  // React Compiler가 훅을 prop 값으로 받는 컴포넌트를 건너뛰므로 손으로 메모한다
   const addBreadcrumbSafely = useCallback(
     (breadcrumb: Parameters<typeof errorReporter.addBreadcrumb>[0]) => {
       try {

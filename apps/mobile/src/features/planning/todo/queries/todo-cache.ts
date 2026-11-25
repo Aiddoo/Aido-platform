@@ -12,6 +12,7 @@ import type {
   QueryState,
 } from '@tanstack/react-query';
 import { last } from 'es-toolkit';
+import { isMatching, P } from 'ts-pattern';
 
 import {
   DailyCompletionPolicy,
@@ -301,13 +302,8 @@ function getKeyMonthRange(queryKey: QueryKey) {
 /** 접두사로 고르면 목록과 달력 범위가 섞여 데이터 모양을 확인하고 읽는다 */
 function showsTodo(query: Pick<Query, 'state'>, todoId: number) {
   const { data } = query.state;
-  const todos: readonly unknown[] =
-    typeof data === 'object' && data != null && 'todos' in data && Array.isArray(data.todos)
-      ? data.todos
-      : [];
-  return todos.some(
-    (todo) => typeof todo === 'object' && todo != null && 'id' in todo && todo.id === todoId,
-  );
+  const todos = isMatching({ todos: P.array() }, data) ? data.todos : [];
+  return todos.some((todo) => isMatching({ id: todoId }, todo));
 }
 
 /** 그 기간과 하루라도 겹치는 달의 완료 기록 */
@@ -382,12 +378,7 @@ export function todoCompletionWritesFilter({ todoId }: { todoId: number }): Muta
 
 /** 뮤테이션마다 변수 모양이 달라 todoId 칸만 확인해 읽는다 */
 function writesTodo(variables: unknown, todoId: number) {
-  return (
-    typeof variables === 'object' &&
-    variables != null &&
-    'todoId' in variables &&
-    variables.todoId === todoId
-  );
+  return isMatching({ todoId }, variables);
 }
 
 // 쓰기를 시작한 순번. 먼저 시작해 나중에 끝난 쓰기도 그 사이 다른 쓰기가 있었는지 안다.

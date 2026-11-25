@@ -4,7 +4,7 @@ import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { noop } from 'es-toolkit';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useSyncExternalStore } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 
 import { shouldShowReentry } from '../domains/whats-new.model';
 import { useWhatsNewAutoOpen } from './use-whats-new-auto-open';
@@ -24,11 +24,7 @@ export function useWhatsNewFeed({ isStable, isOnboardingSettled }: WhatsNewFeedI
   const push = useSingleTap(router.push);
 
   const reentryOpenedAt = useSyncExternalStore(
-    useCallback(
-      (onChange: () => void) =>
-        identity == null ? noop : repository.subscribe(identity, onChange),
-      [identity, repository],
-    ),
+    (onChange: () => void) => (identity == null ? noop : repository.subscribe(identity, onChange)),
     () => (identity == null ? null : repository.findReentryOpenedAt(identity)),
   );
 

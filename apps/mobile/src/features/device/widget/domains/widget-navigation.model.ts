@@ -1,5 +1,6 @@
 import { dateKeySchema } from '@src/shared/date/date-key';
 import { diffMs, type Instant, instantSchema } from '@src/shared/date/instant';
+import { uniq } from 'es-toolkit';
 import { z } from 'zod';
 
 /** 위젯을 누른 뒤 앱이 이 시간 안에 열려야 저장된 목적지로 옮긴다 */
@@ -34,7 +35,7 @@ export function parseWidgetNavigationUri(uri: string | null): WidgetNavigationDe
     const path = `/${parsed.hostname}${parsed.pathname}`.replace(/\/$/, '');
     if (path === '/feed') {
       const parameterKeys = [...parsed.searchParams.keys()];
-      if (new Set(parameterKeys).size !== parameterKeys.length) {
+      if (uniq(parameterKeys).length !== parameterKeys.length) {
         return null;
       }
       const parameters = Object.fromEntries(parsed.searchParams);

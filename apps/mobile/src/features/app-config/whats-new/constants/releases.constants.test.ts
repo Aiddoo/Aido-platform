@@ -1,6 +1,6 @@
 import { compareSemanticVersions } from '@aido/api/vocabulary';
 import { i18n } from '@src/shared/i18n';
-import { orderBy, sortBy } from 'es-toolkit';
+import { orderBy, sortBy, uniq } from 'es-toolkit';
 
 import {
   getLatestRelease,
@@ -59,8 +59,8 @@ describe('RELEASES', () => {
     const campaignIds = RELEASES.flatMap((release) => release.campaignId ?? []);
 
     // Then
-    expect(new Set(ids).size).toBe(ids.length);
-    expect(new Set(campaignIds).size).toBe(campaignIds.length);
+    expect(uniq(ids)).toEqual(ids);
+    expect(uniq(campaignIds)).toEqual(campaignIds);
   });
 
   it('모든 출시에 목록 제목과 설명 문구가 있다', () => {

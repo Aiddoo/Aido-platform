@@ -23,11 +23,11 @@ const LABEL_SIZES = {
   lg: 'b3',
 } as const satisfies Record<ChipSize, NonNullable<TextProps['size']>>;
 
-type LabelChipProps = Omit<ChipProps, 'children' | 'color' | 'variant'> & {
+interface LabelChipProps extends Omit<ChipProps, 'children' | 'color' | 'variant'> {
   color: ChipColor;
   label: string;
   labelProps?: Omit<TextProps, 'children' | 'size'>;
-};
+}
 
 export function LabelChip({ color, label, size = 'sm', labelProps, ...chipProps }: LabelChipProps) {
   return (

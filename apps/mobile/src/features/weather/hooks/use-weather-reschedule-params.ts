@@ -1,5 +1,4 @@
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
-import { useCallback } from 'react';
 
 import {
   type WeatherRescheduleParams,
@@ -9,10 +8,7 @@ import {
 /** 옮기기 시트 URL의 할 일 id 목록. 시트 안에서 옮긴 할 일을 빼면 남은 목록을 URL에 되돌려 쓴다 */
 export function useWeatherRescheduleTodoIds() {
   const [{ todoIds }, setParams] = useRouteParams(weatherRescheduleParamsSchema);
-  const setTodoIds = useCallback(
-    (next: WeatherRescheduleParams['todoIds']) => setParams({ todoIds: next }),
-    [setParams],
-  );
+  const setTodoIds = (next: WeatherRescheduleParams['todoIds']) => setParams({ todoIds: next });
 
   return [todoIds, setTodoIds] as const;
 }

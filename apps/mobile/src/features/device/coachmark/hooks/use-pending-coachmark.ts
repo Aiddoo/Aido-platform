@@ -1,5 +1,4 @@
 import { useStoredValue } from '@src/shared/storage/use-stored-value';
-import { useCallback } from 'react';
 
 import { type CoachmarkInput, CoachmarkPolicy } from '../domains/coachmark.model';
 import { coachmarkCompletedAtStoredValue } from '../schemas/coachmark-storage.schema';
@@ -18,11 +17,11 @@ export function usePendingCoachmark({ accountId, kind }: PendingCoachmarkInput) 
   );
   const completeCoachmark = useCompleteCoachmark();
   const isPending = accountId != null && CoachmarkPolicy.shouldShow({ kind, completedAt });
-  const complete = useCallback(() => {
+  const complete = () => {
     if (accountId != null) {
       completeCoachmark({ accountId, kind });
     }
-  }, [accountId, kind, completeCoachmark]);
+  };
 
   return [isPending, complete] as const;
 }

@@ -119,6 +119,7 @@ export function createExpoPushNotificationGateway(logger: AppLogger): PushNotifi
     },
     getToken: async () => {
       await ensureChannel(logger);
+      // 인자 없는 SDK는 OTA 매니페스트의 easConfig를 먼저 본다. 앱 설정의 EAS 프로젝트를 먼저 쓰려고 직접 찾는다
       const projectId =
         Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
       const token = await withTimeout(

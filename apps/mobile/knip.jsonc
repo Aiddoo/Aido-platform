@@ -22,6 +22,8 @@
         "expo-glass-effect",
         "babel-plugin-react-compiler",
         "babel-jest",
+        // 컴파일러 건너뜀 테스트가 babel-preset-expo가 가진 @babel/core로 앱 번들과 같은 변환을 돈다
+        "@babel/core",
       ],
       // Android SDK adb와 EAS CLI는 npm 의존성이 아니라 따로 설치한다
       "ignoreBinaries": ["adb", "eas"],

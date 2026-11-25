@@ -1,5 +1,4 @@
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
-import { useCallback } from 'react';
 
 import { todoCommentParamsSchema } from '../schemas/todo-comment-params.schema';
 
@@ -16,10 +15,7 @@ export function useTodoCommentParams() {
  */
 export function useTodoCommentSort() {
   const [{ sort }, setParams] = useRouteParams(todoCommentParamsSchema);
-  const setSort = useCallback(
-    (next: typeof sort) => setParams({ sort: next, comment: undefined }),
-    [setParams],
-  );
+  const setSort = (next: typeof sort) => setParams({ sort: next, comment: undefined });
 
   return [sort, setSort] as const;
 }

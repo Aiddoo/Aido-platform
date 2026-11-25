@@ -1,5 +1,4 @@
 import { useDismissKeyboard } from '@src/shared/hooks/use-dismiss-keyboard';
-import { useCallback } from 'react';
 import { useWatch } from 'react-hook-form';
 import { match } from 'ts-pattern';
 
@@ -16,19 +15,16 @@ export function useTodoCommentBack() {
   const isSubmitting = useIsTodoCommentSubmitting();
   const backAction = getTodoCommentBackAction(mode, { isSubmitting });
 
-  const interceptBack = useCallback(
-    () =>
-      match(backAction)
-        .with('blocked', () => true)
-        .with('native', () => false)
-        .with('closeComposer', () => {
-          dismissKeyboard({ animated: false });
-          reset(EMPTY_TODO_COMMENT_FORM_VALUES);
-          return true;
-        })
-        .exhaustive(),
-    [dismissKeyboard, reset, backAction],
-  );
+  const interceptBack = () =>
+    match(backAction)
+      .with('blocked', () => true)
+      .with('native', () => false)
+      .with('closeComposer', () => {
+        dismissKeyboard({ animated: false });
+        reset(EMPTY_TODO_COMMENT_FORM_VALUES);
+        return true;
+      })
+      .exhaustive();
 
   return { backAction, interceptBack };
 }

@@ -35,6 +35,7 @@ export function useAuthBoot(): void {
   );
 
   /** `locked`는 잠금 해제를 기다리는 상태다. 잠금이 아닌 영구 오류까지 `locked`로 두면 재판정도 계속 실패해 조용히 무한 로딩에 갇힌다 */
+  // 아래 effect의 의존성이자 포그라운드 재판정이 함께 불러 effect 밖에 둔다. exhaustive-deps는 컴파일러 메모를 몰라 손으로 고정한다
   const resolveBoot = useCallback(
     async (isCancelled: () => boolean) => {
       const isStale = () =>

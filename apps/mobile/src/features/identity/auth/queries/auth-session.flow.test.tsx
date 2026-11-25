@@ -526,7 +526,7 @@ describe('탈퇴', () => {
       'authenticated',
     );
     await act(async () => {
-      await session.queryClient.fetchQuery(result.current.meOptions);
+      await session.queryClient.query(result.current.meOptions);
     });
 
     // When
@@ -561,7 +561,7 @@ describe('탈퇴', () => {
       'authenticated',
     );
     await act(async () => {
-      await session.queryClient.fetchQuery(result.current.meOptions);
+      await session.queryClient.query(result.current.meOptions);
     });
     session.draftService.save(memoDraftKey, { content: '작성 중' });
     await act(async () => {

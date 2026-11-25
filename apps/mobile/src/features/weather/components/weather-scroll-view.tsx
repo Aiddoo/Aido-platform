@@ -1,7 +1,6 @@
 import { Canvas, LinearGradient, Mask, Rect, vec } from '@shopify/react-native-skia';
 import { useAppWindow } from '@src/shared/hooks/use-app-window';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
-import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { IOS_MAJOR_VERSION } from '@src/shared/infra/device/device-info';
 import { Box, StyledSafeAreaView } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
@@ -41,7 +40,6 @@ export function WeatherScrollView({ children, bottomInset = 0 }: WeatherScrollVi
   const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
   const [isRefreshing, refresh] = useRefresh(() => refreshWeather(queryClient));
-  const refreshTint = useResolvedColor('text-on-sky');
 
   return (
     <Box flex={1}>
@@ -55,7 +53,7 @@ export function WeatherScrollView({ children, bottomInset = 0 }: WeatherScrollVi
         }}
         refreshControl={
           <RefreshControl
-            tintColor={refreshTint}
+            tintColorClassName="accent-on-sky"
             progressViewOffset={IS_IOS ? undefined : headerHeight}
             refreshing={isRefreshing}
             onRefresh={refresh}

@@ -117,6 +117,11 @@ heroui 기본은 푸른 회색(hue 286)과 파란 accent다. Aido는 무채색 �
 - **고양이 캐릭터·앱 아이콘은 부드러운 3D 렌더 톤이다**(`assets/images/ido_cat_hi.webp`, `assets/premium-app-icons/`). 손으로 그린 평면 SVG로 다시 그리지 않는다. 새 구도가 필요하면 기존 렌더를 다시 배치하거나 같은 톤의 렌더를 만든다. 화면에서는 `Mascot`으로 쓴다.
 - 장식은 한 장면에 눈에 띄는 움직임 하나다. 모션 규칙은 [ui](./architecture/ui.md#모션과-skia)에 있다.
 
+## 테마 값의 원천
+
+- 화면 색은 Uniwind 테마 하나를 따른다. `className`, `useResolvedColor`, Skia 장면(날씨·음성의 `useUniwind().theme`)이 같은 값을 읽는다.
+- 예외는 내비게이션 테마와 상태 바다. `ThemeProvider`의 `resolvedTheme`이 저장된 모드와 `useColorScheme()`으로 같은 렌더에 정한다. `Uniwind.setTheme`은 effect에서 불려, 모드를 바꾼 렌더와 앱을 처음 그린 렌더에는 `useUniwind().theme`이 앞 값(처음에는 기기 모드)이다. 이 값으로 바꾸면 그 프레임에 상태 바·내비게이션 배경이 앞 테마로 그려질 수 있어 둘을 둔다.
+
 ## 문구
 
 - 해요체로 쓴다. 앱 이름은 한국어 "아이두", 영어 "Aido"다. ko·en 카탈로그에 함께 넣는다([dates-and-i18n](./dates-and-i18n.md)).

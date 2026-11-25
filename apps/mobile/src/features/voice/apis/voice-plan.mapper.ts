@@ -11,7 +11,7 @@ import { PLANNED_ACTION_TYPES } from '@aido/api/vocabulary';
 import { toFeatureQuota } from '@src/features/billing/subscription/apis/entitlement.mapper';
 import { toRepeat, toRepeatDto } from '@src/features/planning/todo/apis/todo-repeat.mapper';
 import { dateKeySchema } from '@src/shared/date/date-key';
-import { match } from 'ts-pattern';
+import { isMatching, match, P } from 'ts-pattern';
 
 import type { VoiceNoteDigestInput } from '../domains/voice-note.model';
 import {
@@ -30,16 +30,8 @@ import type {
   LenientVoiceNoteDigestResponse,
 } from '../schemas/voice-plan-response.schema';
 
-const KNOWN_ACTION_TYPES: readonly string[] = PLANNED_ACTION_TYPES;
-
 function isKnownAction(action: unknown) {
-  return (
-    typeof action === 'object' &&
-    action != null &&
-    'type' in action &&
-    typeof action.type === 'string' &&
-    KNOWN_ACTION_TYPES.includes(action.type)
-  );
+  return isMatching({ type: P.union(...PLANNED_ACTION_TYPES) }, action);
 }
 
 function toPlannedAction(dto: PlannedActionDto): PlannedAction {

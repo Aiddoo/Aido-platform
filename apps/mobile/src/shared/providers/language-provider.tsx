@@ -38,6 +38,7 @@ export function LanguageProvider({
   const [languageMode, setLanguageMode] = useStoredValueIn(syncStorage, languageModeStoredValue);
   const deviceLanguage = useDeviceLanguage();
 
+  // React Compiler가 훅을 prop 값으로 받는 컴포넌트를 건너뛰므로 손으로 메모한다
   const resolvedLanguage = useMemo(
     () => resolveLanguage(languageMode, deviceLanguage),
     [languageMode, deviceLanguage],

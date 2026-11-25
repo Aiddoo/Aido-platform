@@ -47,7 +47,7 @@ export function MemoSummary() {
 - 행은 route 훅을 부르지 않는다. 부모가 한 번 읽어 `isSelected` 같은 파생 값과 같은 핸들러를 넘긴다.
 - 행의 현재 값은 값만 그리는 컴포넌트가 자기 경계로 읽는다(`FriendCountValue`, 실패하면 `QueryErrorFallback.Hidden`, 로딩은 `Suspense fallback={null}`).
 - 배타 상태는 `match(…).exhaustive()`, 단순 표시는 `&&`다. 저장 진행은 mutation `isPending`을 `Button`의 `isLoading`에 넘긴다.
-- 메모는 React Compiler가 한다. `useMemo`·`useCallback`·`memo`는 이유가 있을 때만 둔다(가상 목록·캘린더 칸의 `memo`). 이유 없는 직접 메모는 그 파일을 고칠 때 지운다.
+- 메모는 React Compiler가 한다. `useMemo`·`useCallback`·`memo`는 이유가 있을 때만 둔다(가상 목록·캘린더 칸의 `memo`). 이유 없는 직접 메모는 그 파일을 고칠 때 지운다. 컴파일러가 건너뛰는 파일(try…finally, 훅을 prop으로 받는 DI 등)은 `scripts/__tests__/react-compiler-bailouts.test.mjs`의 목록이고 그 파일의 메모는 이유 주석과 함께 둔다. `use(Context)`만 부르는 훅은 컴파일러가 훅으로 보지 않아 돌려주는 값을 고정하려면 `'use memo'`를 단다(`useAppToast`).
 - 색은 토큰 클래스만 쓴다. 조건부 className은 `cn`, 변형이 둘 이상이면 `tv`(`*.variants.ts`)다. 템플릿 리터럴·삼항으로 문자열을 잇지 않는다(`aido/no-classname-concat`). 인라인 `style`은 동적 값(잰 크기, 애니메이션 스타일, 계산한 inset)에만 쓴다.
 
 ## 네임스페이스·지역 컴포넌트
@@ -157,8 +157,8 @@ route 파일이 화면을 조립한다. 제목, 경계, 문구, `Spacing`, `matc
   - 피드 달력의 주↔월 높이(`CalendarHeightTransition`): 아래 피드가 접히는 달력을 따라 올라가야 해 높이만 UI 스레드에서 움직이고, 내용 폭은 안쪽에서 재어 전환 중 다시 재지 않는다
   - `Steps` 뒤로 버튼·체크 슬롯 `width`·`marginRight`: 슬롯이 열리며 다음 버튼 폭이 함께 줄어든다
   - `StepsDots` 진행 막대 `width`: `scaleX`면 둥근 끝이 함께 늘어난다
-  - `KeyboardAdaptiveButton` 좌우·아래 `padding`과 `borderRadius`: 키보드에 붙으면 버튼이 화면 폭을 채운다. `KeyboardStickyView`와 같은 시간에 맞춘다
-- 탭 전환은 애니메이션하지 않는다. 모션 줄이기는 `reduceMotion: ReduceMotion.System`이고 반복·강조 모션은 `useIsReduceMotionEnabled()`면 생략한다. 누름은 heroui `PressableFeedback`, 햅틱은 `useHaptics()` 한 번이다.
+  - `KeyboardAdaptiveButton` 좌우·아래 `padding`과 `borderRadius`: 키보드에 붙으면 버튼이 화면 폭을 채운다. 키보드가 움직이기 시작할 때 200ms로 따로 움직이고, 위치는 `KeyboardStickyView`가 키보드를 따라간다
+- 탭 전환은 애니메이션하지 않는다. 모션 줄이기는 `reduceMotion: ReduceMotion.System`이고 반복·강조 모션은 `useIsReduceMotionEnabled()`면 생략한다. `System`은 Reanimated가 모듈을 불러올 때 읽은 값이라 `AppProviders`의 `ReducedMotionConfig`가 `useIsReduceMotionEnabled()`로 덮어 앱이 떠 있는 동안 바꾼 OS 설정도 바로 따른다. 누름은 heroui `PressableFeedback`, 햅틱은 `useHaptics()` 한 번이다.
 
 1. **만들기.** `RuntimeEffect`·고정 `Path`·`Picture`는 모듈 수준이나 입력이 같으면 다시 만들지 않는 메모로 만든다. 렌더·프레임마다 `Skia.*.Make`하지 않는다.
 2. **정리.** `SkPath`·`SkImage`·텍스처는 Canvas가 더 읽지 않게 된 뒤 만든 쪽이 `dispose`한다. prop으로 넘긴 경로는 Canvas가 커밋 때 복사해 기록하므로 만든 effect의 정리 함수에서 바로 놓는다(`frost-layer`·`night-sky-layer`·재생 바 깃발). shared value에 든 경로·텍스처는 Canvas 매퍼가 UI 스레드에서 읽으므로 UI 스레드에서 새 값(내려갈 때는 빈 값)을 먼저 넣고 앞의 것을 놓는다(`useRebuiltPath`·`useOwnedTexture`). `PathBuilder`는 `detach` 뒤 바로 놓고, 되쓰는 빌더는 주인이 내려갈 때 놓는다. 값이 바뀔 때마다 다시 그리는 경로는 `useRebuiltPath(read, draw)`(`shared/hooks`)로 만든다. `read`가 읽은 값(`===`)이나 `draw`가 바뀔 때만 다시 그린다. 모양이 시계의 구간마다 바뀌면 시계 대신 구간 번호를 돌려준다(번개). Skia `usePathValue`는 앞 경로를 놓지 않아 쓰지 않는다. 경로에 넣는 사각형은 `Skia.XYWHRect`·`RRectXY` 대신 같은 모양의 평범한 객체(`toRoundedBar`)로 넘긴다.

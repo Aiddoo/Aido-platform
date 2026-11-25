@@ -3,7 +3,6 @@ import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { usePaneSizeClass } from '@src/shared/ui';
 import { noop } from 'es-toolkit';
 import { useRouter } from 'expo-router';
-import { useCallback } from 'react';
 import { match, P } from 'ts-pattern';
 
 import { CLEARED_TODO_SELECTION, feedParamsSchema } from '../schemas/feed-params.schema';
@@ -14,23 +13,20 @@ export function useFeedSelectedTodoId() {
   const paneSizeClass = usePaneSizeClass();
 
   const router = useRouter();
-  const setSelectedTodoId = useCallback(
-    (todoId: number | undefined) => {
-      match({ paneSizeClass, todoId })
-        .with({ paneSizeClass: 'compact', todoId: P.nullish }, noop)
-        // 상세 행의 Link가 navigate로 열어 같은 상세가 겹쳐 쌓이지 않게 같은 동사를 쓴다
-        .with({ paneSizeClass: 'compact', todoId: P.number }, ({ todoId: selected }) =>
-          router.navigate({ pathname: '/todo/[todoId]', params: { todoId: selected } }),
-        )
-        .with({ paneSizeClass: P.union('medium', 'expanded') }, () => {
-          if (todoId !== selectedTodoId) {
-            setParams({ ...CLEARED_TODO_SELECTION, todoId });
-          }
-        })
-        .exhaustive();
-    },
-    [paneSizeClass, router, selectedTodoId, setParams],
-  );
+  const setSelectedTodoId = (todoId: number | undefined) => {
+    match({ paneSizeClass, todoId })
+      .with({ paneSizeClass: 'compact', todoId: P.nullish }, noop)
+      // 상세 행의 Link가 navigate로 열어 같은 상세가 겹쳐 쌓이지 않게 같은 동사를 쓴다
+      .with({ paneSizeClass: 'compact', todoId: P.number }, ({ todoId: selected }) =>
+        router.navigate({ pathname: '/todo/[todoId]', params: { todoId: selected } }),
+      )
+      .with({ paneSizeClass: P.union('medium', 'expanded') }, () => {
+        if (todoId !== selectedTodoId) {
+          setParams({ ...CLEARED_TODO_SELECTION, todoId });
+        }
+      })
+      .exhaustive();
+  };
 
   return [selectedTodoId, setSelectedTodoId] as const;
 }

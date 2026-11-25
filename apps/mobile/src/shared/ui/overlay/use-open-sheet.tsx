@@ -1,4 +1,4 @@
-import { type ComponentProps, type ReactNode, useCallback } from 'react';
+import { type ComponentProps, type ReactNode } from 'react';
 
 import { ModalBottomSheet } from '../bottom-sheet/modal-bottom-sheet';
 import { useOverlay } from './use-overlay';
@@ -22,25 +22,22 @@ interface OpenSheetAnswerOptions<T> extends OpenSheetOptions {
 export function useOpenSheet() {
   const overlay = useOverlay();
 
-  return useCallback(
-    <T = void,>(
-      render: (close: (value?: T) => void) => ReactNode,
-      { footer, dismissValue, ...sheetOptions }: OpenSheetAnswerOptions<T> = {},
-    ): Promise<T | undefined> =>
-      overlay.openAsync<T | undefined>(
-        ({ isOpen, close, unmount }) => (
-          <ModalBottomSheet
-            {...sheetOptions}
-            isOpen={isOpen}
-            onOpenChange={() => close(dismissValue)}
-            onExit={unmount}
-            footer={footer?.(close)}
-          >
-            {render(close)}
-          </ModalBottomSheet>
-        ),
-        { dismissedValue: undefined },
+  return <T = void,>(
+    render: (close: (value?: T) => void) => ReactNode,
+    { footer, dismissValue, ...sheetOptions }: OpenSheetAnswerOptions<T> = {},
+  ): Promise<T | undefined> =>
+    overlay.openAsync<T | undefined>(
+      ({ isOpen, close, unmount }) => (
+        <ModalBottomSheet
+          {...sheetOptions}
+          isOpen={isOpen}
+          onOpenChange={() => close(dismissValue)}
+          onExit={unmount}
+          footer={footer?.(close)}
+        >
+          {render(close)}
+        </ModalBottomSheet>
       ),
-    [overlay],
-  );
+      { dismissedValue: undefined },
+    );
 }

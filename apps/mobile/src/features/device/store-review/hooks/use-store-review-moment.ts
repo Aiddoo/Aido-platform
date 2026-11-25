@@ -10,7 +10,7 @@ import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigation } from 'expo-router';
 import { useCallback, useEffect, useRef } from 'react';
-import { Keyboard } from 'react-native';
+import { KeyboardController } from 'react-native-keyboard-controller';
 
 import { STORE_REVIEW_LOG_EVENT } from '../constants/store-review-log-events';
 import type { StoreReviewMoment } from '../domains/store-review.model';
@@ -36,6 +36,7 @@ export function useStoreReviewMoment() {
     [],
   );
 
+  // React Compiler가 try…finally를 다루지 못해 이 훅을 건너뛰므로 손으로 메모한다
   const recordActiveDay = useCallback(() => {
     const accountId = getCachedMe(queryClient)?.id;
     if (accountId == null) {
@@ -67,7 +68,7 @@ export function useStoreReviewMoment() {
             delayMs,
             signal: controller.signal,
             appLifecycle,
-            isScreenReady: () => navigation.isFocused() && !Keyboard.isVisible(),
+            isScreenReady: () => navigation.isFocused() && !KeyboardController.isVisible(),
           }),
         );
         logger.debug(STORE_REVIEW_LOG_EVENT.REQUEST_SETTLED, { moment, outcome });

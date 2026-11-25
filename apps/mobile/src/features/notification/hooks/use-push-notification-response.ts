@@ -86,6 +86,7 @@ export function usePushNotificationResponse(): void {
   const store = usePushNotificationEntryStore();
   const logger = useLogger();
   const { pending, ready, optOut } = useSyncExternalStore(store.subscribe, store.getSnapshot);
+  // React Compiler가 try…finally를 다루지 못해 이 훅을 건너뛰므로 손으로 메모한다
   const clearLastResponse = useCallback(() => {
     try {
       gateway.clearLastResponse();

@@ -9,7 +9,7 @@ import { invalidateMe } from '@src/features/identity/user/queries/user-cache';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { debounce } from 'es-toolkit';
-import { type PropsWithChildren, useCallback, useEffect, useMemo } from 'react';
+import { type PropsWithChildren, useEffect } from 'react';
 
 import { usePurchasesSession, useSubscriptionService } from './di-context';
 
@@ -20,13 +20,9 @@ export function PurchasesProvider({ children }: PropsWithChildren) {
   const queryClient = useQueryClient();
   const isAuthenticated = status === 'authenticated';
 
-  const syncServerAfterWebhook = useMemo(
-    () =>
-      debounce(() => {
-        invalidateMe(queryClient);
-      }, WEBHOOK_SYNC_DELAY_MS),
-    [queryClient],
-  );
+  const syncServerAfterWebhook = debounce(() => {
+    invalidateMe(queryClient);
+  }, WEBHOOK_SYNC_DELAY_MS);
 
   // 프리미엄 의존 쿼리는 내 정보가 실제로 바뀌었을 때만 따라 갱신한다(스토어 이벤트가 없는 보상 기간 포함)
   useEffect(() => watchPremiumEntitlementChanges(queryClient), [queryClient]);
@@ -53,9 +49,13 @@ export function PurchasesProvider({ children }: PropsWithChildren) {
     }
   }, [isAuthenticated, userId, status, session]);
 
-  // 프리미엄은 서버 값이 원천이라 내 정보만 다시 받는다. 권한 스냅샷은 위 watcher가 따라 갱신한다
-  const onCustomerInfoUpdated = useCallback(
-    (customerInfo: CustomerInfo) => {
+  useEffect(() => {
+    if (!isAuthenticated) {
+      return undefined;
+    }
+
+    // 프리미엄은 서버 값이 원천이라 내 정보만 다시 받는다. 권한 스냅샷은 위 watcher가 따라 갱신한다
+    const onCustomerInfoUpdated = (customerInfo: CustomerInfo) => {
       if (CustomerInfoPolicy.hasStoreEntitlement(customerInfo)) {
         syncServerAfterWebhook();
         return;
@@ -63,14 +63,7 @@ export function PurchasesProvider({ children }: PropsWithChildren) {
 
       syncServerAfterWebhook.cancel();
       invalidateMe(queryClient);
-    },
-    [queryClient, syncServerAfterWebhook],
-  );
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      return undefined;
-    }
+    };
 
     const unsubscribe = subscriptionService.subscribeCustomerInfo(onCustomerInfoUpdated);
 
@@ -78,7 +71,7 @@ export function PurchasesProvider({ children }: PropsWithChildren) {
       unsubscribe();
       syncServerAfterWebhook.cancel();
     };
-  }, [isAuthenticated, subscriptionService, onCustomerInfoUpdated, syncServerAfterWebhook]);
+  }, [isAuthenticated, subscriptionService, syncServerAfterWebhook, queryClient]);
 
   return (
     <>

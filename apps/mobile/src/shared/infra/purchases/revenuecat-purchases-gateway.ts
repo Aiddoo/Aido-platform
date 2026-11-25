@@ -22,7 +22,7 @@ import Purchases, {
   type PurchasesStoreProduct,
   type Store,
 } from 'react-native-purchases';
-import { match, P } from 'ts-pattern';
+import { isMatching, match, P } from 'ts-pattern';
 import { z } from 'zod';
 
 import { PURCHASES_LOG_EVENT } from './purchases-log-events';
@@ -49,7 +49,7 @@ const STORE_SETUP_CODES = [
 ] as const;
 
 function toStoreErrorCode(error: unknown) {
-  if (typeof error !== 'object' || error == null || !('code' in error)) {
+  if (!isMatching({ code: P.any }, error)) {
     return null;
   }
   const parsed = storeErrorCodeSchema.safeParse(error.code);

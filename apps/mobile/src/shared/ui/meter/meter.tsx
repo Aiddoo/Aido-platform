@@ -20,12 +20,14 @@ const meter = tv({
   defaultVariants: { size: 'small', tone: 'surface' },
 });
 
-type MeterProps = VariantProps<typeof meter> &
-  Pick<ViewProps, 'accessibilityElementsHidden' | 'importantForAccessibility'> & {
-    value: number;
-    max: number;
-    className?: string;
-  };
+interface MeterProps
+  extends
+    VariantProps<typeof meter>,
+    Pick<ViewProps, 'accessibilityElementsHidden' | 'importantForAccessibility'> {
+  value: number;
+  max: number;
+  className?: string;
+}
 
 /** 넘친 값은 가득, 최댓값이 0이면 빈 막대다. 폭은 부모가 정한다 */
 export function Meter({

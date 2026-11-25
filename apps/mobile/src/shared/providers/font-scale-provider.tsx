@@ -5,7 +5,7 @@ import { fontScaleStoredValue } from '@src/shared/preferences/schemas/font-scale
 import { useStoredValueIn } from '@src/shared/storage/use-stored-value';
 import type { TextSize } from '@src/shared/ui';
 import { noop } from 'es-toolkit';
-import { createContext, type PropsWithChildren, use, useCallback, useMemo } from 'react';
+import { createContext, type PropsWithChildren, use } from 'react';
 
 // t2↔t1 간 6px 점프를 피하기 위해 해당 구간은 리매핑하지 않음
 // display(날씨 큰 온도)는 이미 충분히 커서 앱 글자 크기 설정과 무관하게 유지함
@@ -82,20 +82,14 @@ export function FontScaleProvider({
 }: FontScaleProviderProps) {
   const [fontScale, setFontScale] = useStoredValueIn(syncStorage, fontScaleStoredValue);
 
-  const resolveSize = useCallback(
-    (size: TextSize): TextSize => {
-      if (fontScale === 'medium') {
-        return size;
-      }
-      return SCALE_MAP[fontScale][size];
-    },
-    [fontScale],
-  );
+  const resolveSize = (size: TextSize): TextSize => {
+    if (fontScale === 'medium') {
+      return size;
+    }
+    return SCALE_MAP[fontScale][size];
+  };
 
-  const value = useMemo(
-    () => ({ fontScale, setFontScale, resolveSize }),
-    [fontScale, setFontScale, resolveSize],
-  );
+  const value = { fontScale, setFontScale, resolveSize };
 
   return <FontScaleContext value={value}>{children}</FontScaleContext>;
 }

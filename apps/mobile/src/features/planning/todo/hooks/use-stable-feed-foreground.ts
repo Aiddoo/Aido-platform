@@ -3,7 +3,7 @@ import type { AuthStatus } from '@src/core/session/auth-status';
 import { useAppLifecycleState } from '@src/shared/hooks/use-app-lifecycle-state';
 import { useOverlayState } from '@src/shared/ui';
 import { useIsFocused } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useKeyboardState } from 'react-native-keyboard-controller';
 
 import { isStableFeedForeground } from '../utils/feed-foreground.view-model';
@@ -25,16 +25,6 @@ export function useStableFeedForeground({
   const [hasPendingDeepLink, setHasPendingDeepLink] = useState(true);
   const deepLinkReleaseTaskRef = useRef<number | null>(null);
 
-  const releasePendingDeepLinkWhenIdle = useCallback(() => {
-    if (deepLinkReleaseTaskRef.current != null) {
-      cancelIdleCallback(deepLinkReleaseTaskRef.current);
-    }
-    deepLinkReleaseTaskRef.current = requestIdleCallback(() => {
-      deepLinkReleaseTaskRef.current = null;
-      setHasPendingDeepLink(false);
-    });
-  }, []);
-
   useEffect(() => {
     return appLifecycle.subscribe((nextState) => {
       if (nextState !== 'active') {
@@ -44,6 +34,16 @@ export function useStableFeedForeground({
   }, [appLifecycle]);
 
   useEffect(() => {
+    const releasePendingDeepLinkWhenIdle = () => {
+      if (deepLinkReleaseTaskRef.current != null) {
+        cancelIdleCallback(deepLinkReleaseTaskRef.current);
+      }
+      deepLinkReleaseTaskRef.current = requestIdleCallback(() => {
+        deepLinkReleaseTaskRef.current = null;
+        setHasPendingDeepLink(false);
+      });
+    };
+
     const lifecycle = new AbortController();
     incomingLink
       .getInitialUrl()
@@ -74,7 +74,7 @@ export function useStableFeedForeground({
       }
       unsubscribe();
     };
-  }, [incomingLink, releasePendingDeepLinkWhenIdle]);
+  }, [incomingLink]);
 
   return isStableFeedForeground({
     authStatus,

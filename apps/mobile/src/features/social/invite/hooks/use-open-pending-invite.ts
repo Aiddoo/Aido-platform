@@ -2,7 +2,6 @@ import { getNowInstant } from '@src/shared/date/clock';
 import { readStoredValue, removeStoredValue } from '@src/shared/storage/define-stored-value';
 import { useStoredValueStorage } from '@src/shared/storage/use-stored-value';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback } from 'react';
 
 import { PendingRedemptionPolicy } from '../domains/pending-redemption.model';
 import { pendingRedemptionStoredValue } from '../schemas/pending-redemption-storage.schema';
@@ -16,23 +15,21 @@ export function useOpenPendingInvite({ isEnabled }: { isEnabled: boolean }) {
   const storage = useStoredValueStorage(pendingRedemptionStoredValue);
   const router = useRouter();
 
-  useFocusEffect(
-    useCallback(() => {
-      if (!isEnabled) {
-        return;
-      }
-      const pending = readStoredValue(storage, pendingRedemptionStoredValue);
-      if (pending == null) {
-        return;
-      }
-      removeStoredValue(storage, pendingRedemptionStoredValue);
-      if (!PendingRedemptionPolicy.isFresh(pending, getNowInstant())) {
-        return;
-      }
-      router.navigate({
-        pathname: '/invite/[inviteCode]',
-        params: { inviteCode: pending.inviteCode, source: pending.source },
-      });
-    }, [isEnabled, router, storage]),
-  );
+  useFocusEffect(() => {
+    if (!isEnabled) {
+      return;
+    }
+    const pending = readStoredValue(storage, pendingRedemptionStoredValue);
+    if (pending == null) {
+      return;
+    }
+    removeStoredValue(storage, pendingRedemptionStoredValue);
+    if (!PendingRedemptionPolicy.isFresh(pending, getNowInstant())) {
+      return;
+    }
+    router.navigate({
+      pathname: '/invite/[inviteCode]',
+      params: { inviteCode: pending.inviteCode, source: pending.source },
+    });
+  });
 }

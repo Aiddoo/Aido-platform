@@ -6,7 +6,6 @@ import {
   createContext,
   type PropsWithChildren,
   use,
-  useCallback,
   useRef,
   useState,
 } from 'react';
@@ -20,14 +19,11 @@ export function KeyboardBottomGapProvider({ children }: PropsWithChildren) {
   const containerRef = useRef<ComponentRef<typeof View>>(null);
   const [keyboardBottomGap, setKeyboardBottomGap] = useState(0);
 
-  const measureGap = useCallback(
-    (_event: LayoutChangeEvent) => {
-      containerRef.current?.measureInWindow((_x, top, _width, height) => {
-        setKeyboardBottomGap(getDistanceToWindowBottom(windowHeight, { top, height }));
-      });
-    },
-    [windowHeight],
-  );
+  const measureGap = (_event: LayoutChangeEvent) => {
+    containerRef.current?.measureInWindow((_x, top, _width, height) => {
+      setKeyboardBottomGap(getDistanceToWindowBottom(windowHeight, { top, height }));
+    });
+  };
 
   return (
     <Box ref={containerRef} flex={1} onLayout={measureGap}>

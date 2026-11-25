@@ -1,6 +1,5 @@
 import { useLogger } from '@src/shared/di/shared-di-context';
 import { getErrorMessage } from '@src/shared/errors';
-import { useCallback } from 'react';
 import { KeyboardController } from 'react-native-keyboard-controller';
 
 import { KEYBOARD_LOG_EVENT } from '../constants/keyboard-log-events';
@@ -17,12 +16,9 @@ interface DismissKeyboardOptions {
 export function useDismissKeyboard(): (options?: DismissKeyboardOptions) => void {
   const logger = useLogger();
 
-  return useCallback(
-    (options) => {
-      KeyboardController.dismiss(options).catch((error: unknown) =>
-        logger.warn(KEYBOARD_LOG_EVENT.DISMISS_FAILED, { error: getErrorMessage(error) }),
-      );
-    },
-    [logger],
-  );
+  return (options) => {
+    KeyboardController.dismiss(options).catch((error: unknown) =>
+      logger.warn(KEYBOARD_LOG_EVENT.DISMISS_FAILED, { error: getErrorMessage(error) }),
+    );
+  };
 }

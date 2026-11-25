@@ -1,5 +1,5 @@
 import { noop } from 'es-toolkit';
-import { use, useCallback, useEffect, useId, useMemo, useRef } from 'react';
+import { use, useEffect, useId, useRef } from 'react';
 
 import { type OverlayAsyncRender, OverlayItem, type OverlayRender } from './overlay-item';
 import { OverlayContext } from './overlay-provider';
@@ -29,43 +29,40 @@ export function useOverlay(): Overlay {
     return () => controller.unmount(id);
   }, [controller, id]);
 
-  const mount = useCallback(
-    <T,>(render: OverlayAsyncRender<T>, onResolve: (value: T) => void, dismissedValue: T) => {
-      const generation = ++generationRef.current;
+  const mount = <T,>(
+    render: OverlayAsyncRender<T>,
+    onResolve: (value: T) => void,
+    dismissedValue: T,
+  ) => {
+    const generation = ++generationRef.current;
 
-      controller.mount(
-        id,
-        <OverlayItem<T>
-          render={render}
-          onResolve={onResolve}
-          dismissedValue={dismissedValue}
-          onUnmount={() => {
-            if (generationRef.current === generation) {
-              controller.unmount(id);
-            }
-          }}
-        />,
-      );
-    },
-    [controller, id],
-  );
+    controller.mount(
+      id,
+      <OverlayItem<T>
+        render={render}
+        onResolve={onResolve}
+        dismissedValue={dismissedValue}
+        onUnmount={() => {
+          if (generationRef.current === generation) {
+            controller.unmount(id);
+          }
+        }}
+      />,
+    );
+  };
 
-  const open = useCallback(
-    (render: OverlayRender): void => {
-      mount<void>(
-        ({ close, ...props }) => render({ ...props, close: () => close() }),
-        noop,
-        undefined,
-      );
-    },
-    [mount],
-  );
+  const open = (render: OverlayRender): void => {
+    mount<void>(
+      ({ close, ...props }) => render({ ...props, close: () => close() }),
+      noop,
+      undefined,
+    );
+  };
 
-  const openAsync = useCallback(
-    <T,>(render: OverlayAsyncRender<T>, { dismissedValue }: OverlayAsyncOptions<T>): Promise<T> =>
-      new Promise<T>((resolve) => mount(render, resolve, dismissedValue)),
-    [mount],
-  );
+  const openAsync = <T,>(
+    render: OverlayAsyncRender<T>,
+    { dismissedValue }: OverlayAsyncOptions<T>,
+  ): Promise<T> => new Promise<T>((resolve) => mount(render, resolve, dismissedValue));
 
-  return useMemo(() => ({ open, openAsync }), [open, openAsync]);
+  return { open, openAsync };
 }
