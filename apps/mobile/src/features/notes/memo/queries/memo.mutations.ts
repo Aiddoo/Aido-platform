@@ -7,7 +7,6 @@ import {
 import { unwrap } from '@src/core/errors/result';
 import { emitTodoCreated } from '@src/core/events/todo-created';
 import { isFreeOfChargeError } from '@src/features/billing/subscription/domains/entitlement.error';
-import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { reflectFeatureQuota } from '@src/features/billing/subscription/queries/entitlement-cache';
 import { isAiDataSharingConsentRequiredError } from '@src/features/identity/consent/domains/consent.error';
 import { markAiDataSharingConsentRequired } from '@src/features/identity/consent/queries/consent-cache';
@@ -311,13 +310,11 @@ interface ParseMemoVariables {
 }
 
 export function useParseMemoMutationOptions({ memoId }: { memoId: number }) {
-  const haptics = useHaptics();
   const memoApi = useMemoApi();
   const draftService = useDraftService();
   const idGenerator = useIdGenerator();
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
-  const gate = useEntitlementGate('AI_PARSE', { surface: 'memo_detail' });
   const { timezone } = useDateFormatContext();
 
   const forgetIdempotencyKey = () => {
@@ -388,11 +385,9 @@ export function useParseMemoMutationOptions({ memoId }: { memoId: number }) {
         return;
       }
 
+      // 한도 안내 시트는 정리를 시작한 편집기가 띄운다
       trackEvent('ai_parse_used', { success: false });
       trackEvent('voice_plan_failed', { source: 'memo', cause: getVoicePlanFailureCause(error) });
-      if (gate.promptIfBlockedError(error)) {
-        haptics.notify('error');
-      }
     },
     meta: {
       errorFeedback: {

@@ -2,17 +2,14 @@ import {
   MEMO_CREATE_BUTTON_SIZE,
   MemoCreateButton,
 } from '@src/features/notes/memo/components/memo-create-button';
-import { MemoEditor } from '@src/features/notes/memo/components/memo-editor';
+import { MemoPaneEditor } from '@src/features/notes/memo/components/memo-editor';
 import { MemoList } from '@src/features/notes/memo/components/memo-list';
 import {
   useMemoDetailHandoff,
   useSelectedMemoId,
 } from '@src/features/notes/memo/hooks/use-memo-params';
 import { NotificationBellToolbar } from '@src/features/notification/components/notification-bell-toolbar';
-import { VoiceNoteDraftList } from '@src/features/voice/components/voice-note-draft-list';
 import { VoiceNoteStartButton } from '@src/features/voice/components/voice-note-start-button';
-import { VOICE_NOTE_PREVIEW_COUNT } from '@src/features/voice/constants/voice-note.constants';
-import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   AdaptivePane,
@@ -21,8 +18,6 @@ import {
   HINT_OFFSET,
   HStack,
   QueryErrorBoundary,
-  QueryErrorFallback,
-  type QueryErrorFallbackProps,
   Spacing,
   StyledSafeAreaView,
   usePaneSizeClass,
@@ -35,8 +30,7 @@ const HEADER_GAP = 8;
 export default function MemoScreen() {
   const { t } = useTranslation('memo');
   const isCompact = usePaneSizeClass() === 'compact';
-  const [selectedMemoId, setSelectedMemoId] = useSelectedMemoId();
-  const deselectMemo = useSingleTap(() => setSelectedMemoId(undefined));
+  const [selectedMemoId] = useSelectedMemoId();
 
   useMemoDetailHandoff();
 
@@ -69,25 +63,27 @@ export default function MemoScreen() {
               <Spacing size={16} />
             </StyledSafeAreaView>
 
-            {/* 초안은 메모 목록 머리말로 함께 스크롤된다 */}
-            <QueryErrorBoundary fallback={MemoListErrorFallback}>
-              <Suspense fallback={<MemoList.Loading header={<VoiceNoteDrafts />} />}>
-                <MemoList header={<VoiceNoteDrafts />} />
-              </Suspense>
-            </QueryErrorBoundary>
+            {/* 말로 남긴 메모 초안은 메모 목록 머리말로 함께 스크롤된다 */}
+            <StyledSafeAreaView edges={['left', 'right']} className="flex-1">
+              <QueryErrorBoundary fallback={MemoList.Error}>
+                <Suspense fallback={<MemoList.Loading />}>
+                  <MemoList />
+                </Suspense>
+              </QueryErrorBoundary>
+            </StyledSafeAreaView>
           </Box>
         }
         secondary={match(selectedMemoId)
           .with(undefined, () => (
             <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-white">
-              <MemoEditor.Empty />
+              <MemoPaneEditor.Empty />
             </StyledSafeAreaView>
           ))
           .with(P.number, (id) => (
             <StyledSafeAreaView key={id} edges={['left', 'right']} className="flex-1 bg-white">
-              <QueryErrorBoundary resetKeys={[id]} fallback={MemoEditor.PaneError}>
-                <Suspense fallback={<MemoEditor.PaneLoading />}>
-                  <MemoEditor toolbar={MemoEditor.PaneToolbar} onLeave={deselectMemo} />
+              <QueryErrorBoundary resetKeys={[id]} fallback={MemoPaneEditor.Error}>
+                <Suspense fallback={<MemoPaneEditor.Loading />}>
+                  <MemoPaneEditor />
                 </Suspense>
               </QueryErrorBoundary>
             </StyledSafeAreaView>
@@ -96,20 +92,4 @@ export default function MemoScreen() {
       />
     </>
   );
-}
-
-/** 초안이 없는 사용자가 대부분이라 로딩·실패 때 자리를 잡지 않는다. 자리를 잡으면 아래 메모가 위로 밀린다 */
-function VoiceNoteDrafts() {
-  return (
-    <QueryErrorBoundary fallback={QueryErrorFallback.Hidden}>
-      <Suspense fallback={null}>
-        <VoiceNoteDraftList limit={VOICE_NOTE_PREVIEW_COUNT} />
-      </Suspense>
-    </QueryErrorBoundary>
-  );
-}
-
-/** 목록을 받지 못해도 초안은 그대로 보인다 */
-function MemoListErrorFallback(props: QueryErrorFallbackProps) {
-  return <MemoList.Error {...props} header={<VoiceNoteDrafts />} />;
 }

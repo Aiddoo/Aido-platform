@@ -273,7 +273,6 @@ const LOCAL_ONLY_PENDING_FEATURES = new Set([
   'app-config/whats-new',
   'device/coachmark',
   'insights/report',
-  'notes/memo',
   'social/invite',
   'social/moderation',
   'voice',
@@ -296,6 +295,8 @@ const ALLOWED_LOCAL_ONLY_FILES = {
     '묶음 목록만 쓴다. 댓글·답글 두 단이 함께 쓰는 행(연결선·본문·메뉴·하트·스크린리더 동작)이라 목록에 합치면 한 파일이 1,500줄을 넘는다',
   'src/features/engagement/comment/components/todo-comment-heart-burst.tsx':
     '댓글 행만 쓴다. shared value와 animated style만으로 도는 스스로 완결된 그리기 부품이다(docs/todo-comments.md의 더블탭 하트)',
+  'src/features/notes/memo/components/scroll-progress-widget.tsx':
+    '메모 목록만 쓴다. Skia 캔버스·제스처·shared value로 스크롤 위치를 그리고 맨 위로 보내는 스스로 완결된 그리기 부품이라, 카드 목록·순서 애니메이션을 가진 목록에 합치면 한 파일이 900줄을 넘고 두 가지 일이 섞인다',
   'src/features/planning/todo/components/calendar/calendar-title-bar.tsx':
     '피드 달력만 쓴다. 가장 긴 제목을 그리기 전에 재어 한 줄·두 줄 배치를 정하는 측정 부품이라, 쪽 넘김·칸을 가진 달력에 합치면 한 파일이 800줄에 가깝고 두 가지 일이 섞인다',
   'src/features/planning/todo/components/todo-detail-schedule.tsx':

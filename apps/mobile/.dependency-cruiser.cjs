@@ -171,7 +171,6 @@ const modelAndFolderRules = [
         TEST,
         pendingFeatures([
           'assistant/suggestion',
-          'notes/memo',
           'planning/todo',
           'social/friend',
           'social/nudge',

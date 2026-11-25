@@ -14,7 +14,6 @@ const babel = require(require.resolve('@babel/core', { paths: [PRESET_PATH] }));
 const KNOWN_BAILOUTS = [
   // try…finally, catch 없는 try, try 안 조건식
   'src/features/device/store-review/hooks/use-store-review-moment.ts',
-  'src/features/notes/memo/components/memo-editor.tsx',
   'src/features/voice/hooks/use-dictation.ts',
   'src/shared/hooks/use-refresh.ts',
   // 훅을 prop 값으로 받는 DI

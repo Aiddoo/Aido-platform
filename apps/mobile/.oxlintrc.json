@@ -1378,11 +1378,7 @@
     },
     {
       // 래칫
-      "files": [
-        "src/shared/ui/steps/**",
-        "src/features/insights/achievement/**",
-        "src/features/notes/memo/**"
-      ],
+      "files": ["src/shared/ui/steps/**", "src/features/insights/achievement/**"],
       "rules": {
         "aido/namespace-part-name": "off"
       }
@@ -1398,13 +1394,6 @@
       ],
       "rules": {
         "aido/no-inline-query-options": "off"
-      }
-    },
-    {
-      // 래칫
-      "files": ["src/features/notes/memo/**"],
-      "rules": {
-        "aido/no-route-id-props": "off"
       }
     },
     {

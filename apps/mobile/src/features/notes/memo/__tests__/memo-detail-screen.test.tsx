@@ -429,6 +429,29 @@ describe('메모 상세 화면', () => {
   });
 
   describe('초안', () => {
+    it('앞뒤 공백을 다듬어 저장된 글을 뒤로 가기로 저장하면 공백만 다른 초안을 남기지 않는다', async () => {
+      // Given
+      const { httpClient, di } = await renderMemoDetail();
+      echoSavedMemo(httpClient);
+      await editContent('고친 메모  ');
+
+      // When
+      await pressToolbar('뒤로 가기');
+      await waitFor(() => expect(router.back).toHaveBeenCalledTimes(1));
+      await act(deliverQueryNotifications);
+
+      // Then
+      expect(httpClient.patch).toHaveBeenCalledWith(`v1/memos/${MEMO_ID}`, {
+        content: '고친 메모',
+      });
+      await screen.unmount();
+      expect(
+        di.draftService.restore(DRAFT_KEY, {
+          sourceUpdatedAt: toEpochMs(toInstant(SAVED_MEMO_DTO.updatedAt)),
+        }).status,
+      ).not.toBe('restored');
+    });
+
     it('글 끝에 공백만 더하고 뒤로 가면 요청 없이 떠나고 초안을 남기지 않는다', async () => {
       // Given
       const { httpClient, di } = await renderMemoDetail();
@@ -637,9 +660,9 @@ describe('메모 상세 화면', () => {
   });
 
   describe('연타', () => {
-    it('저장 버튼을 같은 프레임에 두 번 누르면 지금은 두 번 보낸다', async () => {
+    it('저장 버튼을 같은 프레임에 두 번 눌러도 한 번만 보낸다', async () => {
       // Given
-      const { httpClient } = await renderMemoDetail();
+      const { httpClient, analytics } = await renderMemoDetail();
       echoSavedMemo(httpClient);
       await editContent('고친 메모');
       const save = await screen.findByLabelText('저장');
@@ -651,10 +674,11 @@ describe('메모 상세 화면', () => {
 
       // Then
       await waitFor(() => expect(screen.queryByLabelText('저장')).toBeNull());
-      expect(httpClient.patch).toHaveBeenCalledTimes(2);
+      expect(httpClient.patch).toHaveBeenCalledTimes(1);
+      expect(countEvents(analytics, 'memo_updated')).toBe(1);
     });
 
-    it('뒤로 가기를 같은 프레임에 두 번 누르면 지금은 두 번 보내고 한 번 떠난다', async () => {
+    it('뒤로 가기를 같은 프레임에 두 번 눌러도 한 번 보내고 한 번 떠난다', async () => {
       // Given
       const { httpClient } = await renderMemoDetail();
       echoSavedMemo(httpClient);
@@ -667,8 +691,62 @@ describe('메모 상세 화면', () => {
       });
 
       // Then
-      await waitFor(() => expect(httpClient.patch).toHaveBeenCalledTimes(2));
       await waitFor(() => expect(router.back).toHaveBeenCalledTimes(1));
+      expect(httpClient.patch).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('저장 뒤 떠나는 동안', () => {
+    it('저장을 기다리는 사이 밀어서 떠났으면 저장이 끝나도 이전 화면을 한 번 더 닫지 않는다', async () => {
+      // Given
+      const navigation = {
+        isFocused: jest.fn(() => true),
+        getParent: () => undefined,
+        addListener: () => () => undefined,
+      };
+      jest.mocked(useNavigation).mockReturnValue(navigation);
+      const { httpClient } = await renderMemoDetail();
+      const pending = createPendingResponse(ok({ message: 'updated', memo: SAVED_MEMO_DTO }));
+      httpClient.patch.mockReturnValue(pending.response);
+      await editContent('고친 메모');
+      await startPress(screen.getByLabelText('뒤로 가기'));
+      navigation.isFocused.mockReturnValue(false);
+
+      // When
+      await act(async () => {
+        pending.settle();
+      });
+      await act(deliverQueryNotifications);
+
+      // Then
+      expect(httpClient.patch).toHaveBeenCalledTimes(1);
+      expect(router.back).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('다시 그리기', () => {
+    // 편집기 맨 위·도구 막대·진행 표시가 메모 id를 route에서 읽어, 그 호출 수가 셋이 그려진 횟수다
+    function countEditorRenders() {
+      return jest.mocked(useLocalSearchParams).mock.calls.length;
+    }
+
+    it('글자를 칠 때 편집기 맨 위와 도구 막대는 다시 그려지지 않고 입력칸만 바뀐다', async () => {
+      // Given
+      await renderMemoDetail();
+      // 처음 고친 글자는 저장 버튼을 켜 도구 막대가 한 번 그려진다. 그 뒤부터 센다
+      await editContent('처음 메모 고침');
+      await act(deliverQueryNotifications);
+      const renderCountBeforeTyping = countEditorRenders();
+      const input = screen.getByTestId('memo-editor-input');
+
+      // When
+      await fireEvent.changeText(input, '처음 메모 고침 하나');
+      await fireEvent.changeText(input, '처음 메모 고침 하나 둘');
+      await fireEvent.changeText(input, '처음 메모 고침 하나 둘 셋');
+
+      // Then
+      expect(input).toHaveDisplayValue('처음 메모 고침 하나 둘 셋');
+      expect(countEditorRenders()).toBe(renderCountBeforeTyping);
     });
   });
 

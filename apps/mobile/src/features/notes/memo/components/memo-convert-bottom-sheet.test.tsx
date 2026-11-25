@@ -1,16 +1,18 @@
 import { ErrorCode, HttpStatus } from '@aido/api/errors';
 import '@src/shared/i18n/init';
 import { fail, ok } from '@src/core/errors/result';
+import { createTodoCategoryListDto } from '@src/features/planning/category/__tests__/todo-category.fixtures';
+import { readLocalDateState } from '@src/shared/date/clock';
+import { addDaysToDateKey } from '@src/shared/date/date-key';
 import {
   createHapticsGatewayStub,
   createHttpClientStub,
   createTestDi,
   createApiError,
 } from '@src/testing/core';
-import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
-import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, userEvent, waitFor } from '@testing-library/react-native';
 
 import { MemoConvertBottomSheet } from './memo-convert-bottom-sheet';
 
@@ -18,15 +20,13 @@ const MEMO = { id: 5, content: '장보기' };
 
 async function renderSheet() {
   const httpClient = createHttpClientStub();
-  httpClient.get.mockResolvedValue(ok({ categories: [] }));
+  httpClient.get.mockResolvedValue(ok(createTodoCategoryListDto()));
   const onClose = jest.fn();
   const onConverted = jest.fn();
   const onUnavailable = jest.fn();
   await renderScreen(
     <MemoConvertBottomSheet
       memo={MEMO}
-      selectedDate={createDateKey('2026-11-07')}
-      categoryId={1}
       isOpen
       onOpenChange={jest.fn()}
       onClose={onClose}
@@ -67,6 +67,68 @@ describe('MemoConvertBottomSheet', () => {
         todos: [expect.objectContaining({ title: '장보기', categoryId: 1 })],
       }),
     );
+  });
+
+  describe('완료 키', () => {
+    it('제목을 비우고 완료 키를 누르면 보내지 않고 시트를 닫는다', async () => {
+      // Given
+      const { httpClient, onClose } = await renderSheet();
+      await fireEvent.changeText(await screen.findByDisplayValue('장보기'), '   ');
+
+      // When
+      await act(async () => {
+        await fireEvent(screen.getByDisplayValue('   '), 'submitEditing');
+      });
+
+      // Then
+      expect(onClose).toHaveBeenCalledTimes(1);
+      expect(httpClient.post).not.toHaveBeenCalled();
+    });
+
+    it('제목을 비웠다가 다시 쓰고 완료 키를 누르면 저장 버튼과 같이 보낸다', async () => {
+      // Given
+      const { httpClient, onClose, onConverted } = await renderSheet();
+      httpClient.post.mockResolvedValue(ok({ message: 'converted', todos: [] }));
+      const input = await screen.findByDisplayValue('장보기');
+      await fireEvent.changeText(input, '');
+      await waitFor(() => expect(screen.getByLabelText('저장하기')).toBeDisabled());
+      await fireEvent.changeText(input, '우유 사기');
+      await waitFor(() => expect(screen.getByLabelText('저장하기')).toBeEnabled());
+
+      // When
+      await act(async () => {
+        await fireEvent(input, 'submitEditing');
+      });
+
+      // Then
+      await waitFor(() => expect(onConverted).toHaveBeenCalledTimes(1));
+      expect(onClose).toHaveBeenCalledTimes(1);
+      expect(httpClient.post).toHaveBeenCalledTimes(1);
+      expect(httpClient.post.mock.calls[0]?.[1]).toMatchObject({
+        todos: [expect.objectContaining({ title: '우유 사기' })],
+      });
+    });
+
+    it('칩으로 날짜를 바꾼 뒤 완료 키를 누르면 저장 버튼과 같은 판정으로 바꾼 날짜를 보낸다', async () => {
+      // Given
+      const { httpClient, onConverted } = await renderSheet();
+      httpClient.post.mockResolvedValue(ok({ message: 'converted', todos: [] }));
+      const tomorrow = addDaysToDateKey(readLocalDateState().currentLocalDateKey, 1);
+      await screen.findByText('기본');
+      await userEvent.press(screen.getByRole('button', { name: '오늘' }));
+      await userEvent.press(await screen.findByText('내일'));
+      await waitFor(() => expect(screen.getByLabelText('저장하기')).toBeEnabled());
+
+      // When
+      await submit();
+
+      // Then
+      await waitFor(() => expect(onConverted).toHaveBeenCalledTimes(1));
+      expect(httpClient.post).toHaveBeenCalledTimes(1);
+      expect(httpClient.post.mock.calls[0]?.[1]).toMatchObject({
+        todos: [expect.objectContaining({ title: '장보기', startDate: tomorrow })],
+      });
+    });
   });
 
   it('서버가 거절하면 시트와 입력값을 그대로 남긴다', async () => {
@@ -115,13 +177,11 @@ describe('MemoConvertBottomSheet', () => {
     it('메모 하나를 옮긴 뒤 같은 시트가 다른 메모를 받으면 그 메모 글로 새로 시작해 한 번 보낸다', async () => {
       // Given
       const httpClient = createHttpClientStub();
-      httpClient.get.mockResolvedValue(ok({ categories: [] }));
+      httpClient.get.mockResolvedValue(ok(createTodoCategoryListDto()));
       httpClient.post.mockResolvedValue(ok({ message: 'converted', todos: [] }));
       const sheetFor = (memo: { id: number; content: string }) => (
         <MemoConvertBottomSheet
           memo={memo}
-          selectedDate={createDateKey('2026-11-07')}
-          categoryId={1}
           isOpen
           onOpenChange={jest.fn()}
           onClose={jest.fn()}

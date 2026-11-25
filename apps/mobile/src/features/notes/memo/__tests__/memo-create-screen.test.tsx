@@ -15,7 +15,7 @@ import {
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
-import { router } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 
 import MemoCreateRoute from '../../../../../app/(app)/memo/create';
 import { MEMO_QUERY_KEYS } from '../queries/memo-query-keys';
@@ -306,6 +306,65 @@ describe('메모 만들기 화면', () => {
       pending.settle();
       await act(() => jest.advanceTimersByTimeAsync(1_000));
       expect(router.back).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('저장을 기다리는 사이 떠남', () => {
+    it.each([{ button: '저장' as const }, { button: '뒤로 가기' as const }])(
+      '$button 버튼으로 저장하는 사이 밀어서 떠났으면 저장이 끝나도 이전 화면을 한 번 더 닫지 않는다',
+      async ({ button }) => {
+        // Given
+        const navigation = {
+          isFocused: jest.fn(() => true),
+          getParent: () => undefined,
+          addListener: () => () => undefined,
+        };
+        jest.mocked(useNavigation).mockReturnValue(navigation);
+        const setup = createMemoScreenDi();
+        const pending = createPendingResponse(ok(createMemoMutationResponseDto()));
+        setup.httpClient.post.mockReturnValue(pending.response);
+        await renderMemoCreate(setup);
+        await typeContent('새 메모');
+        await pressToolbar(button);
+        navigation.isFocused.mockReturnValue(false);
+
+        // When
+        await act(async () => {
+          pending.settle();
+        });
+
+        // Then
+        await waitFor(() =>
+          expect(setup.di.draftService.restore(DRAFT_KEY).status).not.toBe('restored'),
+        );
+        expect(setup.httpClient.post).toHaveBeenCalledTimes(1);
+        expect(router.back).not.toHaveBeenCalled();
+      },
+    );
+  });
+
+  describe('다시 그리기', () => {
+    // 화면 맨 위(폼을 가진 컴포넌트)만 화면 객체를 읽어, 그 호출 수가 맨 위가 그려진 횟수다
+    function countScreenRenders() {
+      return jest.mocked(useNavigation).mock.calls.length;
+    }
+
+    it('글자를 칠 때 화면 맨 위는 다시 그려지지 않고 입력칸만 바뀐다', async () => {
+      // Given
+      await renderMemoCreate();
+      // 처음 친 글자는 저장 버튼을 켠다. 그 뒤부터 센다
+      await typeContent('새');
+      const renderCountBeforeTyping = countScreenRenders();
+      const input = screen.getByPlaceholderText('아이디어를 자유롭게 적어보세요');
+
+      // When
+      await fireEvent.changeText(input, '새 메');
+      await fireEvent.changeText(input, '새 메모');
+      await fireEvent.changeText(input, '새 메모 하나');
+
+      // Then
+      expect(input).toHaveDisplayValue('새 메모 하나');
+      expect(countScreenRenders()).toBe(renderCountBeforeTyping);
     });
   });
 
