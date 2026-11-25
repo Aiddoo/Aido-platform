@@ -133,7 +133,11 @@ export function createTestPorts({
   draftStorage = createMemorySyncStorage(),
   queryCacheStorage = createQueryCacheStorage(createMemorySyncStorage()),
   queryClient = createTestQueryClient(),
-  deviceTraits = { hasKeyboardInsetAnimation: true },
+  deviceTraits = {
+    hasKeyboardInsetAnimation: true,
+    isLowMemoryDevice: false,
+    hasSystemScrollEdgeEffect: false,
+  },
   platform = 'ios',
   deviceModel = null,
   getTimezone = () => 'Asia/Seoul',

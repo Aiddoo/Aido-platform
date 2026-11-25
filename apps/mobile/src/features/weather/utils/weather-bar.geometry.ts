@@ -1,7 +1,7 @@
 import { clamp, maxBy, minBy } from 'es-toolkit';
 
-import { type AirPollutant, getPollutantUpperBounds } from '../domains/weather-indicator.model';
-import type { DailyForecastEntry } from '../domains/weather-report.model';
+import { type AirPollutant, getPollutantUpperBounds } from '../domains/air-quality.model';
+import type { ForecastDay } from '../domains/forecast-day.model';
 
 /** 막대 끝에 점이 반쯤 잘리지 않도록 3%~97% 안에 둔다. */
 const METER_MIN = 0.03;
@@ -46,7 +46,7 @@ export interface TemperatureBar {
 }
 
 function findTemperatureRange(
-  daily: readonly DailyForecastEntry[],
+  daily: readonly ForecastDay[],
 ): { lowest: number; highest: number } | null {
   const lowest = minBy(daily, (day) => day.temperatureMin)?.temperatureMin;
   const highest = maxBy(daily, (day) => day.temperatureMax)?.temperatureMax;
@@ -54,7 +54,7 @@ function findTemperatureRange(
 }
 
 /** 예보 기간 전체의 최저~최고를 0~1로 두고 하루의 최저·최고가 놓일 위치를 구한다. */
-export function toTemperatureBars(daily: readonly DailyForecastEntry[]): TemperatureBar[] {
+export function toTemperatureBars(daily: readonly ForecastDay[]): TemperatureBar[] {
   const range = findTemperatureRange(daily);
   if (range == null) {
     return [];
@@ -67,7 +67,7 @@ export function toTemperatureBars(daily: readonly DailyForecastEntry[]): Tempera
 
 /** 예보 기간 전체의 최저~최고를 0~1로 두고 지금 기온이 놓일 위치. 예보가 없으면 null이다. */
 export function toTemperaturePosition(
-  daily: readonly DailyForecastEntry[],
+  daily: readonly ForecastDay[],
   celsius: number,
 ): number | null {
   const range = findTemperatureRange(daily);

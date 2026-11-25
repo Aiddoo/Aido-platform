@@ -16,18 +16,15 @@ import {
   TextSkeleton,
   VStack,
 } from '@src/shared/ui';
-import { useSuspenseQueries } from '@tanstack/react-query';
+import { usePrefetchQuery, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { Separator } from 'heroui-native';
 import { Fragment, Suspense } from 'react';
 import { useForm, type UseFormReturn } from 'react-hook-form';
 
-import { WeatherBriefingPolicy } from '../../domains/weather-briefing.model';
-import { WeatherReportPolicy } from '../../domains/weather-report.model';
-import {
-  getRescheduleTodos,
-  WeatherReschedulePolicy,
-} from '../../domains/weather-reschedule.model';
+import { toWeatherBriefingTodo } from '../../apis/weather-briefing.mapper';
+import { filterByUpcomingOption } from '../../domains/weather-report-briefing.model';
+import { WeatherReschedulePolicy } from '../../domains/weather-reschedule.model';
 import {
   useWeatherRescheduleReason,
   useWeatherRescheduleTodoIds,
@@ -92,29 +89,31 @@ function RescheduleTodoList({
   const [linkReason] = useWeatherRescheduleReason();
   const todayKey = useTodayKey();
   const { timezone } = useDateFormatContext();
-  const [{ data: report }, { data: todoList }, { data: preference }] = useSuspenseQueries({
-    queries: [
-      { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.briefing },
-      useGetTodosByDateQueryOptions({ date: todayKey }),
-      useGetPreferenceQueryOptions(),
-    ],
-  });
   const now = useMinuteNow();
-  const affectedTodos = getRescheduleTodos(
-    report,
-    todoList.todos.map((todo) =>
-      WeatherBriefingPolicy.toBriefingTodo(todo, { date: todayKey, timezone }),
-    ),
-    { now, linkedTodoIds: todoIds },
+  const reportOptions = useGetWeatherReportQueryOptions();
+  // 리포트의 select가 오늘 할 일을 받아 할 일 조회 뒤에 구독한다. 할 일을 기다리는 동안 리포트도 함께 받기 시작한다
+  usePrefetchQuery(reportOptions);
+  const [{ data: todoList }, { data: preference }] = useSuspenseQueries({
+    queries: [useGetTodosByDateQueryOptions({ date: todayKey }), useGetPreferenceQueryOptions()],
+  });
+  const todos = todoList.todos.map((todo) =>
+    toWeatherBriefingTodo(todo, { date: todayKey, timezone }),
   );
+  const { data: weather } = useSuspenseQuery({
+    ...reportOptions,
+    select: WeatherReportSelect.reschedule({
+      now,
+      todos,
+      link: { todoIds, reason: linkReason },
+    }),
+  });
+  const { reschedule, upcomingHours } = weather;
   // 링크의 이유가 지금 브리핑과 다르면 지금 브리핑의 이유로 문구를 고른다
-  const reason = report.briefing?.reason ?? linkReason;
+  const { reason, todos: affectedTodos } = reschedule;
   const copy = getRescheduleCopyKeys(reason);
 
   const handleExclude = (todoId: number) => {
-    const remaining = affectedTodos.flatMap((todo) =>
-      todo.todoId === todoId ? [] : [todo.todoId],
-    );
+    const remaining = WeatherReschedulePolicy.getTodoIdsWithout(reschedule, todoId);
     if (remaining.length === 0) {
       onEmpty();
       return;
@@ -137,9 +136,7 @@ function RescheduleTodoList({
       <Spacing size={16} />
       {reason === 'rain' && (
         <>
-          <WeatherRescheduleTimeline
-            hours={WeatherReportPolicy.getUpcomingHours(report.hourly, now)}
-          />
+          <WeatherRescheduleTimeline hours={upcomingHours} />
           <Spacing size={16} />
         </>
       )}
@@ -149,7 +146,7 @@ function RescheduleTodoList({
           <WeatherRescheduleTodo
             form={form}
             todo={todo}
-            options={WeatherReschedulePolicy.getUpcomingOptions(todo.rescheduleOptions, now)}
+            options={todo.rescheduleOptions.filter((option) => filterByUpcomingOption(option, now))}
             reason={reason}
             timeFormat={preference.timeFormat}
             onExclude={() => handleExclude(todo.todoId)}

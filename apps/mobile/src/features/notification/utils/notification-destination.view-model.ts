@@ -1,5 +1,5 @@
-import { toWeatherHref } from '@src/features/weather/utils/weather-link.view-model';
-import { toWeatherRescheduleHref } from '@src/features/weather/utils/weather-reschedule-link.view-model';
+import { toWeatherHref } from '@src/features/weather/schemas/weather-entry-params.schema';
+import { toWeatherRescheduleHref } from '@src/features/weather/schemas/weather-reschedule-params.schema';
 import type { DateKey } from '@src/shared/date/date-key';
 import type { WindowSizeClass } from '@src/shared/ui';
 import type { Href } from 'expo-router';

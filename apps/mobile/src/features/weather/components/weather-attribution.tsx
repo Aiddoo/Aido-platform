@@ -61,9 +61,9 @@ export function WeatherAttribution({ background }: WeatherAttributionProps) {
       useGetPreferenceQueryOptions(),
     ],
   });
-  const dateFormat = useLocationDateFormat(weather.location.timezone);
+  const dateFormat = useLocationDateFormat(weather.timezone);
   const now = useMinuteNow();
-  const localTime = useFormatLocalTime(weather.location.timezone, now);
+  const localTime = useFormatLocalTime(weather.timezone, now);
   const { attribution } = weather;
   const tone = attributionTone({ background });
 

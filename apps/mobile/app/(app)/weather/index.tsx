@@ -14,7 +14,7 @@ import { WeatherLocationPrompt } from '@src/features/weather/components/weather-
 import { WeatherReportGate } from '@src/features/weather/components/weather-report-gate';
 import { WeatherScrollView } from '@src/features/weather/components/weather-scroll-view';
 import { WeatherSunMoon } from '@src/features/weather/components/weather-sun-moon/weather-sun-moon';
-import type { WeatherLocationStatus } from '@src/features/weather/domains/weather-location.model';
+import type { WeatherLocationStatus } from '@src/features/weather/domains/location-reading.model';
 import { useWeatherLocation } from '@src/features/weather/hooks/use-weather-location';
 import { useWeatherOpenKey } from '@src/features/weather/hooks/use-weather-open-key';
 import {

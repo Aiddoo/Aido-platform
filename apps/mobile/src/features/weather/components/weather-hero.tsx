@@ -28,9 +28,8 @@ import {
   HERO_TEXT_SHADOW_COLOR,
   LIGHT_BUTTON_TEXT_CLASS,
 } from '../constants/weather-colors.constants';
-import type { PlaceName } from '../domains/weather-location.model';
-import { findTodayOrFirstForecast, isReportStale } from '../domains/weather-report.model';
-import type { DailyForecastEntry } from '../domains/weather-report.model';
+import type { ForecastDay } from '../domains/forecast-day.model';
+import type { PlaceName } from '../domains/location-reading.model';
 import {
   isOfflineError,
   isTimeoutError,
@@ -112,12 +111,13 @@ export function WeatherHero() {
   const placeStyle = scaleType(PLACE_TYPE, scale);
   const lineStyle = scaleType(LINE_TYPE, scale);
   const unit = useTemperatureUnit();
+  // select가 지금 시각으로 오늘 예보를 고르므로 조회보다 먼저 읽는다
+  const now = useMinuteNow();
   const { data: weather } = useSuspenseQuery({
     ...useGetWeatherReportQueryOptions(),
-    select: WeatherReportSelect.hero,
+    select: WeatherReportSelect.hero(now),
   });
-  const now = useMinuteNow();
-  const today = findTodayOrFirstForecast(weather, now);
+  const { today } = weather;
   const readyLocation = location.status === 'ready' ? location : null;
   const place = readyLocation?.place ?? null;
   const countryCode = readyLocation?.countryCode ?? null;
@@ -181,9 +181,7 @@ export function WeatherHero() {
           )}
         </VStack>
         {today?.restOfDay != null && <WeatherHero.RestOfDay restOfDay={today.restOfDay} />}
-        {isReportStale(weather, now) && (
-          <WeatherHero.StaleNotice fetchedAt={weather.fetchedAt} now={now} />
-        )}
+        {weather.isStale && <WeatherHero.StaleNotice fetchedAt={weather.fetchedAt} now={now} />}
       </VStack>
     </Animated.View>
   );
@@ -300,7 +298,7 @@ WeatherHero.TemperatureSymbol = function TemperatureSymbol({
 WeatherHero.RestOfDay = function RestOfDay({
   restOfDay,
 }: {
-  restOfDay: NonNullable<DailyForecastEntry['restOfDay']>;
+  restOfDay: NonNullable<ForecastDay['restOfDay']>;
 }) {
   const { t } = useTranslation('weather');
   return (

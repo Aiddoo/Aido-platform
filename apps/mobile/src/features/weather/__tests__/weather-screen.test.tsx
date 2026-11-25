@@ -16,7 +16,7 @@ import { router, Stack } from 'expo-router';
 import * as AppLayoutRoute from '../../../../app/(app)/_layout';
 import WeatherLayout from '../../../../app/(app)/weather/_layout';
 import WeatherScreen from '../../../../app/(app)/weather/index';
-import { toWeatherHref } from '../utils/weather-link.view-model';
+import { toWeatherHref } from '../schemas/weather-entry-params.schema';
 
 jest.unmock('expo-router');
 

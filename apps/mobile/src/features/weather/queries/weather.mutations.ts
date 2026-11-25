@@ -3,7 +3,7 @@ import { useUpdateTodoScheduleMutationOptions } from '@src/features/planning/tod
 import { unwrap } from '@src/shared/errors';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { type Coordinates } from '../domains/weather-location.model';
+import { type Coordinates } from '../domains/location-reading.model';
 import { invalidateWeatherReports, setWeatherLocationInCache } from './weather-cache';
 import { WEATHER_MUTATION_KEYS } from './weather-mutation-keys';
 

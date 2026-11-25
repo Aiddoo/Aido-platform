@@ -4,7 +4,7 @@ import type {
   WeatherRescheduleReason,
 } from '@aido/api/vocabulary';
 
-import type { CompassDirection } from '../domains/weather-indicator.model';
+import type { CompassDirection } from '../domains/current-weather.model';
 
 const WEATHER_CONDITION_LABEL_KEYS = {
   CLEAR: 'condition.clear',

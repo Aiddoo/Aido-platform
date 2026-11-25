@@ -10,8 +10,8 @@ import type { HttpClient } from '@src/core/ports/http-client';
 import { parseApiResponse } from '@src/shared/errors/parse-api-response';
 
 import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
-import type { Coordinates } from '../domains/weather-location.model';
-import type { RegisteredLocation, WeatherReport } from '../domains/weather-report.model';
+import type { Coordinates, RegisteredLocation } from '../domains/location-reading.model';
+import type { WeatherReport } from '../domains/weather-report.model';
 import { isLocationNotRegisteredError } from '../domains/weather.error';
 import { getFallbackFieldPaths, toRegisteredLocation, toWeatherReport } from './weather.mapper';
 

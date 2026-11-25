@@ -5,17 +5,19 @@ import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, Text, TextButton, VStack } from '@src/shared/ui';
 import { Controller, type UseFormReturn } from 'react-hook-form';
 
-import type { ForecastTodo } from '../../domains/weather-briefing.model';
-import type { RescheduleOption } from '../../domains/weather-report.model';
-import type { WeatherRescheduleFormValues } from '../../schemas/weather-reschedule-form.schema';
+import type { WeatherForecastTodo } from '../../domains/weather-briefing.model';
+import type { WeatherRescheduleOption } from '../../domains/weather-report-briefing.model';
+import {
+  toSelectionKey,
+  type WeatherRescheduleFormValues,
+} from '../../schemas/weather-reschedule-form.schema';
 import { getRescheduleCopyKeys } from '../../utils/weather-labels.view-model';
-import { toSelectionKey } from '../../utils/weather-reschedule-form.view-model';
 import { WeatherRescheduleTimeInput } from './weather-reschedule-time-input';
 
 interface WeatherRescheduleTodoProps {
   form: UseFormReturn<WeatherRescheduleFormValues>;
-  todo: ForecastTodo;
-  options: RescheduleOption[];
+  todo: WeatherForecastTodo;
+  options: WeatherRescheduleOption[];
   reason: WeatherRescheduleReason;
   timeFormat: TimeFormat;
   onExclude: () => void;

@@ -12,12 +12,7 @@ import { Separator } from 'heroui-native';
 import type { PropsWithChildren } from 'react';
 import { match } from 'ts-pattern';
 
-import { type NextSunEvent, WeatherDetailPolicy } from '../../domains/weather-detail.model';
-import {
-  findTodayOrFirstForecast,
-  getTodayKey,
-  WeatherReportPolicy,
-} from '../../domains/weather-report.model';
+import { ForecastDayPolicy, type NextSunEvent } from '../../domains/forecast-day.model';
 import { useFormatLocalTime, useLocationDateFormat } from '../../hooks/use-location-date-format';
 import {
   useGetWeatherReportQueryOptions,
@@ -55,31 +50,23 @@ const SUN_FACT_COUNT = 3;
 /** 해·달 시각은 예보 위치 시간대로 읽고, 벽시계가 기기와 다를 때만 다음 해 시각에 '현지'를 붙인다. */
 export function WeatherSunMoon() {
   const { t } = useTranslation('weather');
+  // select가 지금 시각으로 오늘 예보와 다음 해 시각을 고르므로 조회보다 먼저 읽는다
+  const now = useMinuteNow();
   const [{ data: weather }, { data: preference }] = useSuspenseQueries({
     queries: [
-      { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.sunMoon },
+      { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.sunMoon(now) },
       useGetPreferenceQueryOptions(),
     ],
   });
-  const now = useMinuteNow();
-  const dateFormat = useLocationDateFormat(weather.location.timezone);
-  const localTime = useFormatLocalTime(weather.location.timezone, now);
+  const dateFormat = useLocationDateFormat(weather.timezone);
+  const localTime = useFormatLocalTime(weather.timezone, now);
   const formatTime = (date: Instant) => formatClockTime(date, preference.timeFormat, dateFormat);
-  const today = findTodayOrFirstForecast(weather, now);
+  const { today, todayKey, nextSunEvent: nextEvent, nextFullMoon } = weather;
   if (today == null) {
     return null;
   }
-  const todayKey = getTodayKey(weather, now);
-  const sunEvents = WeatherReportPolicy.getSunEvents(today, {
-    isDaylight: weather.current.isDaylight,
-  });
-  const nextEvent = WeatherDetailPolicy.findNextSunEvent(
-    today,
-    WeatherDetailPolicy.findDayAfter(weather.daily, todayKey),
-    now,
-  );
-  const daylight = WeatherDetailPolicy.findDaylightDuration(today);
-  const nextFullMoon = WeatherDetailPolicy.findNextFullMoon(weather.daily, todayKey);
+  const sunEvents = ForecastDayPolicy.getSunEvents(today, weather.isDaylight);
+  const daylight = ForecastDayPolicy.findDaylightDuration(today);
   const headline = match(sunEvents)
     .with({ kind: 'polarDay' }, () => ({ value: t('sunMoon.polarDay'), label: null }))
     .with({ kind: 'polarNight' }, () => ({ value: t('sunMoon.polarNight'), label: null }))
@@ -159,7 +146,7 @@ export function WeatherSunMoon() {
       )}
       <Separator thickness={0.5} className="mt-3.5 bg-on-sky/[0.18]" />
       <HStack align="center" className="mt-3.5 gap-3">
-        <WeatherMoonIcon phase={today.moonPhase} latitude={weather.location.latitude} />
+        <WeatherMoonIcon phase={today.moonPhase} latitude={weather.latitude} />
         <VStack className="min-w-0 flex-1" accessible>
           <Text size="b2" weight="semibold" tone="onSky" className="leading-[22px]">
             {t(MOON_PHASE_LABEL_KEYS[today.moonPhase])}

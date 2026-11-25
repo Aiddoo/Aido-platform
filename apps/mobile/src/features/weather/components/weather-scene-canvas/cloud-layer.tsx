@@ -18,7 +18,7 @@ import {
   PARTICLE_SEED_STRIDE,
   placeSprite,
   wrap,
-} from '../../utils/weather-scene-particles.view-model';
+} from '../../utils/weather-scene-particles.geometry';
 import type { WeatherSceneSky } from '../../utils/weather-scene.view-model';
 import {
   CLOUD_SPAN_RATIO,

@@ -20,7 +20,7 @@ import { useQuery } from '@tanstack/react-query';
 import { act, waitFor } from '@testing-library/react-native';
 
 import { createSeoulReportDto } from '../__tests__/weather-report.fixtures';
-import type { LocationReading } from '../domains/weather-location.model';
+import type { LocationReading } from '../domains/location-reading.model';
 import { refetchWeatherLocation } from '../queries/weather-cache';
 import { WEATHER_QUERY_KEYS } from '../queries/weather-query-keys';
 import {

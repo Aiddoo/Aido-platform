@@ -10,7 +10,7 @@ import {
   usePrefetchDailyCompletionsInRange,
 } from '@src/features/planning/todo/queries/todo.queries';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
-import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
+import { DAY_MS, HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
 import { getNowInstant } from '@src/shared/date/clock';
 import { addDaysToDateKey, type DateKey } from '@src/shared/date/date-key';
 import { fromEpochMs, type Instant, toEpochMs } from '@src/shared/date/instant';
@@ -24,26 +24,21 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
-import { orderBy, pick } from 'es-toolkit';
+import { clamp, orderBy, pick } from 'es-toolkit';
+import { useLocalSearchParams } from 'expo-router';
 import { match } from 'ts-pattern';
 
 import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
 import { FORECAST_DAYS } from '../constants/weather.constants';
-import { findHourlySummary } from '../domains/weather-hourly.model';
-import { WeatherLocationPolicy } from '../domains/weather-location.model';
-import { type LocationReading } from '../domains/weather-location.model';
-import {
-  findTodayOrFirstForecast,
-  getReportRefetchIntervalMs,
-  getReportStaleTimeMs,
-  type HourlyForecastEntry,
-  WeatherReportPolicy,
-} from '../domains/weather-report.model';
-import { type WeatherReport } from '../domains/weather-report.model';
+import { type ForecastHour } from '../domains/forecast-hour.model';
+import { type LocationReading, LocationReadingPolicy } from '../domains/location-reading.model';
+import { type WeatherBriefingTodo } from '../domains/weather-briefing.model';
+import { type WeatherReport, WeatherReportPolicy } from '../domains/weather-report.model';
 import { WEATHER_ERROR_CODE } from '../domains/weather.error';
-import { useDevWeatherOverride } from '../hooks/use-dev-weather-override';
+import { weatherDevParamsSchema } from '../schemas/weather-dev-params.schema';
+import { type WeatherDevOverride } from '../schemas/weather-report-query-key.schema';
+import { type WeatherRescheduleParams } from '../schemas/weather-reschedule-params.schema';
 import { type UnexpectedLocationFailure } from '../services/weather-location.service';
-import { withDevWeatherOverride } from '../utils/weather-dev-override.view-model';
 import { type WeatherSceneInput } from '../utils/weather-scene.view-model';
 import {
   findCachedReportLocation,
@@ -115,7 +110,46 @@ export function useGetWeatherLocationQueryOptions() {
 /** 날씨 블록이 같은 리포트 캐시를 고르도록 위치 리비전을 돌려준다. 위치를 읽는 동안에도 0으로 바로 받는다. */
 export function useWeatherLocationRevision(): number {
   const { data: reading } = useQuery(useGetWeatherLocationQueryOptions());
-  return WeatherLocationPolicy.getReadingRevision(reading);
+  return LocationReadingPolicy.getRevision(reading);
+}
+
+/**
+ * 리포트를 다시 묻기까지 기다리는 시간의 한도. 서버가 리포트를 다시 받기 시작하는 순간(expiresAt)까지 기다리되,
+ * 만료가 지난 리포트는 1분 뒤에(서버도 공급자 실패를 1분 기억한다), 공급자 장애로 받은 마지막 리포트(만료 없음)는
+ * 모든 기기가 1분마다 묻지 않게 5분 뒤에 묻는다. 먼 만료는 타이머 최대치(2^31-1ms)를 넘지 않게 하루로 줄인다
+ */
+const REPORT_REFRESH_LIMIT_MS = {
+  expired: MINUTE_MS,
+  withoutExpiry: 5 * MINUTE_MS,
+  longest: DAY_MS,
+} as const;
+
+function getReportRefreshMs(report: WeatherReport, at: Instant): number {
+  const shortestMs =
+    report.expiresAt == null
+      ? REPORT_REFRESH_LIMIT_MS.withoutExpiry
+      : REPORT_REFRESH_LIMIT_MS.expired;
+  return clamp(
+    WeatherReportPolicy.getFreshForMs(report, at),
+    shortestMs,
+    REPORT_REFRESH_LIMIT_MS.longest,
+  );
+}
+
+/** 받은 때부터 만료까지는 같은 리포트라 묻지 않는다. 리포트가 없으면 0이다 */
+export function getReportStaleTimeMs(
+  report: WeatherReport | undefined,
+  dataUpdatedAt: Instant,
+): number {
+  return report == null ? 0 : getReportRefreshMs(report, dataUpdatedAt);
+}
+
+/** 화면을 켜 둔 동안에도 서버가 새 리포트를 받기 시작하는 순간에 다시 받는다. 리포트가 없으면 간격이 없다 */
+export function getReportRefetchIntervalMs(
+  report: WeatherReport | undefined,
+  now: Instant,
+): number | false {
+  return report == null ? false : getReportRefreshMs(report, now);
 }
 
 function getReportStaleTime(query: Query<WeatherReport>): number {
@@ -133,12 +167,50 @@ function shouldRetryReport(failureCount: number, error: unknown): boolean {
   return failureCount < REPORT_MAX_RETRIES && shouldRetryQuery(failureCount, error);
 }
 
+/** 개발 빌드 QA용: `/weather?devScene=HAIL&devNight=1`로 연 날씨 화면에서만 지금 날씨를 바꿔 보여 준다. */
+function useRouteDevOverride() {
+  const parsed = weatherDevParamsSchema.safeParse(useLocalSearchParams());
+  const override: WeatherDevOverride | null = parsed.success
+    ? { condition: parsed.data.devScene, isDaylight: parsed.data.devNight === '0' }
+    : null;
+
+  return [override] as const;
+}
+
+function useNoDevOverride() {
+  const override: WeatherDevOverride | null = null;
+
+  return [override] as const;
+}
+
+/** 운영 번들에서는 `__DEV__`가 false로 치환되어 파라미터를 읽는 코드가 빠진다. */
+export const useWeatherDevOverride = __DEV__ ? useRouteDevOverride : useNoDevOverride;
+
+/** 지금 날씨·시간별 예보(낮밤 포함)·오늘 예보가 모두 같은 날씨로 보이게 바꾼다. 다른 날과 수치는 실제 값을 둔다. */
+function withDevOverride(report: WeatherReport, override: WeatherDevOverride): WeatherReport {
+  const { condition } = override;
+  return {
+    ...report,
+    current: { ...report.current, ...override },
+    hourly: report.hourly.map((hour) => ({ ...hour, ...override })),
+    daily: report.daily.map((day, index) =>
+      index === 0
+        ? {
+            ...day,
+            condition,
+            restOfDay: day.restOfDay == null ? null : { ...day.restOfDay, condition },
+          }
+        : day,
+    ),
+  };
+}
+
 /** 개발 QA 덮어쓰기는 실제 리포트 캐시로 만들어 새로 요청하지 않고, 키를 나눠 기기에 저장하지 않는다 */
 export function useGetWeatherReportQueryOptions() {
   const weatherApi = useWeatherApi();
   const locationRevision = useWeatherLocationRevision();
   const client = useQueryClient();
-  const [devOverride] = useDevWeatherOverride();
+  const [devOverride] = useWeatherDevOverride();
 
   const reportOptions = queryOptions({
     queryKey: WEATHER_QUERY_KEYS.report({ locationRevision }),
@@ -169,11 +241,8 @@ export function useGetWeatherReportQueryOptions() {
   return queryOptions({
     queryKey: WEATHER_QUERY_KEYS.report({ locationRevision, devOverride }),
     queryFn: async ({ client: queryClient }) =>
-      withDevWeatherOverride(
-        await queryCachedWeatherReport(queryClient, reportOptions),
-        devOverride,
-      ),
-    initialData: cached == null ? undefined : withDevWeatherOverride(cached, devOverride),
+      withDevOverride(await queryCachedWeatherReport(queryClient, reportOptions), devOverride),
+    initialData: cached == null ? undefined : withDevOverride(cached, devOverride),
     staleTime: getReportStaleTime,
     retry: shouldRetryReport,
   });
@@ -192,20 +261,35 @@ export function usePrefetchForecastCompletions() {
   usePrefetchDailyCompletionsInRange(getForecastCompletionsRange(useTodayKey()));
 }
 
-function selectHero(report: WeatherReport) {
-  return pick(report, ['location', 'current', 'daily', 'fetchedAt', 'expiresAt']);
+/** 지금 시각으로 고르는 칸의 select를 만든다. 분이 바뀌어 다시 골라도 값이 같으면 구조 공유가 앞의 참조를 돌려준다 */
+function selectHero(now: Instant) {
+  return (report: WeatherReport) => ({
+    current: report.current,
+    today: WeatherReportPolicy.findToday(report, now),
+    isStale: WeatherReportPolicy.isStale(report, now),
+    fetchedAt: report.fetchedAt,
+  });
 }
 
-function selectAlerts(report: WeatherReport) {
-  return pick(report, ['location', 'alerts']);
+function selectAlerts(now: Instant) {
+  return (report: WeatherReport) => ({
+    timezone: WeatherReportPolicy.getTimezone(report),
+    alerts: WeatherReportPolicy.getActiveAlerts(report, now),
+  });
 }
 
-function selectPrecipitation(report: WeatherReport) {
-  return pick(report, ['location', 'nextHour', 'hourly', 'fetchedAt']);
+function selectPrecipitation(now: Instant) {
+  return (report: WeatherReport) => ({
+    timezone: WeatherReportPolicy.getTimezone(report),
+    isNowcastExpired: WeatherReportPolicy.isNowcastExpired(report, now),
+    nextHour: report.nextHour,
+    hourlyOutlook: WeatherReportPolicy.findHourlyPrecipitationOutlook(report, now),
+    window: WeatherReportPolicy.getPrecipitationWindow(report, now),
+  });
 }
 
 export type HourlyTimelineItem =
-  | { kind: 'hour'; hour: HourlyForecastEntry; isNow: boolean }
+  | { kind: 'hour'; hour: ForecastHour; isNow: boolean }
   | { kind: 'sunrise' | 'sunset'; at: Instant };
 
 function getTimelineTime(item: HourlyTimelineItem): number {
@@ -213,11 +297,8 @@ function getTimelineTime(item: HourlyTimelineItem): number {
 }
 
 /** 남은 시간별 예보 사이에 그 범위 안의 일출·일몰 칸을 시각 순서로 끼워 넣는다. */
-function toHourlyTimeline(
-  report: Pick<WeatherReport, 'hourly' | 'daily'>,
-  now: Instant,
-): HourlyTimelineItem[] {
-  const hours = WeatherReportPolicy.getUpcomingHours(report.hourly, now);
+function toHourlyTimeline(report: WeatherReport, now: Instant): HourlyTimelineItem[] {
+  const hours = WeatherReportPolicy.getUpcomingHours(report, now);
   const last = hours.at(-1);
   if (last == null) {
     return [];
@@ -242,29 +323,80 @@ function toHourlyTimeline(
   return orderBy([...hourItems, ...sunItems], [getTimelineTime], ['asc']);
 }
 
-/** 분마다 다시 골라도 칸이 같으면 구조 공유가 앞의 참조를 돌려준다 */
-function selectHourly(report: WeatherReport, now: Instant) {
-  return {
-    location: report.location,
+function selectHourly(now: Instant) {
+  return (report: WeatherReport) => ({
+    timezone: WeatherReportPolicy.getTimezone(report),
     timeline: toHourlyTimeline(report, now),
-    summary: findHourlySummary(report, now),
-  };
+    summary: WeatherReportPolicy.findHourlySummary(report, now),
+  });
 }
 
-function selectBriefing(report: WeatherReport) {
-  return pick(report, ['location', 'hourly', 'daily', 'fetchedAt', 'briefing', 'headline']);
+interface BriefingSelection {
+  now: Instant;
+  // 할 일 시각은 기기 시간대로 읽어 예보 위치의 벽시계가 기기와 같을 때만 겹쳐 안내한다
+  deviceTimezone: string;
+  todos: readonly WeatherBriefingTodo[];
 }
 
-function selectDaily(report: WeatherReport) {
-  return pick(report, ['location', 'daily', 'current']);
+/** 겹쳐 안내할 수 없거나 서버가 판단하지 못했으면 브리핑이 없다 */
+function selectBriefing({ now, deviceTimezone, todos }: BriefingSelection) {
+  return (report: WeatherReport) => ({
+    briefing: WeatherReportPolicy.canBriefTodos(report, now, deviceTimezone)
+      ? WeatherReportPolicy.findBriefing(report, todos, now)
+      : null,
+  });
 }
 
-function selectDetails(report: WeatherReport) {
-  return pick(report, ['location', 'current', 'hourly']);
+interface RescheduleSelection {
+  now: Instant;
+  todos: readonly WeatherBriefingTodo[];
+  // 옮기기 링크(브리핑 카드·알림)가 가리킨 할 일과 이유
+  link: WeatherRescheduleParams;
 }
 
-function selectSunMoon(report: WeatherReport) {
-  return pick(report, ['location', 'current', 'daily']);
+function selectReschedule({ now, todos, link }: RescheduleSelection) {
+  return (report: WeatherReport) => ({
+    reschedule: WeatherReportPolicy.getReschedule(report, todos, {
+      now,
+      linkedTodoIds: link.todoIds,
+      linkedReason: link.reason,
+    }),
+    upcomingHours: WeatherReportPolicy.getUpcomingHours(report, now),
+  });
+}
+
+function selectReportBriefing(report: WeatherReport) {
+  return report.briefing;
+}
+
+function selectDaily(now: Instant) {
+  return (report: WeatherReport) => ({
+    timezone: WeatherReportPolicy.getTimezone(report),
+    daily: report.daily,
+    todayKey: WeatherReportPolicy.getTodayKey(report, now),
+    currentTemperature: report.current.temperature,
+  });
+}
+
+function selectDetails(now: Instant) {
+  return (report: WeatherReport) => ({
+    timezone: WeatherReportPolicy.getTimezone(report),
+    current: report.current,
+    sunscreenWindow: WeatherReportPolicy.findSunscreenWindow(report, now),
+    nextDayPrecipitation: WeatherReportPolicy.calculateNextDayPrecipitation(report, now),
+  });
+}
+
+function selectSunMoon(now: Instant) {
+  return (report: WeatherReport) => ({
+    timezone: WeatherReportPolicy.getTimezone(report),
+    latitude: report.location.latitude,
+    isDaylight: report.current.isDaylight,
+    today: WeatherReportPolicy.findToday(report, now),
+    todayKey: WeatherReportPolicy.getTodayKey(report, now),
+    nextSunEvent: WeatherReportPolicy.findNextSunEvent(report, now),
+    nextFullMoon: WeatherReportPolicy.findNextFullMoon(report, now),
+  });
 }
 
 function selectAirQuality(report: WeatherReport) {
@@ -272,7 +404,11 @@ function selectAirQuality(report: WeatherReport) {
 }
 
 function selectAttribution(report: WeatherReport) {
-  return pick(report, ['location', 'attribution', 'fetchedAt']);
+  return {
+    timezone: WeatherReportPolicy.getTimezone(report),
+    attribution: report.attribution,
+    fetchedAt: report.fetchedAt,
+  };
 }
 
 function selectScene(report: WeatherReport): WeatherSceneInput {
@@ -285,22 +421,36 @@ function selectScene(report: WeatherReport): WeatherSceneInput {
       'windSpeed',
     ]),
     // 해·달 카드와 같은 서버 위상을 쓴다. 받은 시각의 오늘(그 위치 시간대)이다
-    moonPhase: findTodayOrFirstForecast(report, report.fetchedAt)?.moonPhase ?? null,
+    moonPhase: WeatherReportPolicy.findToday(report, report.fetchedAt)?.moonPhase ?? null,
     latitude: report.location.latitude,
   };
 }
 
-/** 모듈 수준 함수라 참조가 바뀌지 않아 TanStack이 select 결과를 재사용한다 */
+function selectBadge(report: WeatherReport) {
+  return {
+    current: report.current,
+    serviceName: report.attribution.serviceName,
+  };
+}
+
+/**
+ * 칸마다 리포트에서 쓰는 값만 골라 그 값이 바뀔 때만 다시 그린다. 지금 시각으로 고르는 칸은
+ * `select: WeatherReportSelect.hero(now)`처럼 분 단위 시각을 넘겨 select를 만들고, 그 밖의 칸은
+ * `select: WeatherReportSelect.airQuality`로 모듈 함수를 그대로 넘겨 TanStack이 결과를 재사용한다
+ */
 export const WeatherReportSelect = {
   hero: selectHero,
   alerts: selectAlerts,
   precipitation: selectPrecipitation,
   hourly: selectHourly,
   briefing: selectBriefing,
+  reschedule: selectReschedule,
+  reportBriefing: selectReportBriefing,
   daily: selectDaily,
   details: selectDetails,
   sunMoon: selectSunMoon,
   airQuality: selectAirQuality,
   attribution: selectAttribution,
   scene: selectScene,
+  badge: selectBadge,
 } as const;

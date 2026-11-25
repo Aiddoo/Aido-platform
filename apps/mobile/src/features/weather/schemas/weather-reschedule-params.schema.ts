@@ -1,4 +1,8 @@
-import { WEATHER_RESCHEDULE_MAX_TODO_IDS, WEATHER_RESCHEDULE_REASONS } from '@aido/api/vocabulary';
+import {
+  WEATHER_RESCHEDULE_DEEP_LINK,
+  WEATHER_RESCHEDULE_MAX_TODO_IDS,
+  WEATHER_RESCHEDULE_REASONS,
+} from '@aido/api/vocabulary';
 import { routeIdSchema } from '@src/shared/schemas/route-params.schema';
 import { z } from 'zod';
 
@@ -12,3 +16,11 @@ export const weatherRescheduleParamsSchema = z.object({
 });
 
 export type WeatherRescheduleParams = z.output<typeof weatherRescheduleParamsSchema>;
+
+/** 옮기기 시트 경로. 시트가 읽는 형식으로 URL 값을 만든다. */
+export function toWeatherRescheduleHref(params: WeatherRescheduleParams) {
+  return {
+    pathname: WEATHER_RESCHEDULE_DEEP_LINK,
+    params: weatherRescheduleParamsSchema.encode(params),
+  } as const;
+}

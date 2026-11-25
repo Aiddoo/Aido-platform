@@ -167,7 +167,8 @@ route 파일이 화면을 조립한다. 제목, 경계, 문구, `Spacing`, `matc
 3. **프레임 작업.** worklet의 shared·derived value로만 한다. 프레임마다 React 상태를 바꾸거나 JS로 건너가지 않는다(`scheduleOnRN`은 이벤트만). 파티클 배열은 미리 만든다. 컴포넌트·훅 안 worklet(`useDerivedValue` 콜백 포함)에는 아무것도 잡지 않는 인라인 콜백(`values.map((count) => …)`)을 두지 않는다. React Compiler가 모듈 함수 `_temp`로 빼내 UI 스레드가 worklet이 아닌 함수를 불러 멈춘다([facebook/react#32580](https://github.com/facebook/react/issues/32580)). 바꾼 배열은 렌더에서 만들어 넘기거나 모듈 수준 `'worklet'` 함수 안에서 돈다(`completion-hour-chart`).
 4. **멈춤 조건 하나.** 꾸밈 프레임 콜백·`withRepeat`는 `useIsAnimationActive()`(화면 포커스 + 앱 앞 + 모션 줄이기)로 켜고 끈다. 값을 모으는 프레임 콜백·재생 위치는 투명 시트·제어 센터(`inactive`)에도 이어져야 해서 `useIsAppInBackground()`일 때만 멈춘다.
 5. **크기.** Skia 2.14의 `Canvas onSize`는 멈출 수 없는 프레임 콜백으로 매 프레임 잰다. 감싼 View의 `onLayout`에서 shared value로 `set`한다(JS 값이 필요하면 `useLayoutSize`). `onSize`는 이미 프레임마다 그리는 Canvas에서만 쓴다.
-6. **품질.** 기기 등급별 입자 상한을 지킨다(날씨는 `weather-scene-particles.view-model.ts`의 `PARTICLE_BUDGETS`, 저사양은 `lowEndCap`). 그린 화면을 다시 읽는 셰이더(`BackdropFilter`, 무더위 아지랑이)는 저사양(`isLowEndDevice`)에서 끈다.
+6. **품질.** 기기 등급별 입자 상한을 지킨다(날씨는 `weather-scene-particles.geometry.ts`의 `PARTICLE_BUDGETS`, 저사양은 `lowEndCap`). 그린 화면을 다시 읽는 셰이더(`BackdropFilter`, 무더위 아지랑이)는 저사양(`isLowEndDevice`)에서 끈다.
+7. **Canvas 안은 context가 없다.** Skia는 자기 reconciler로 그려 `<Canvas>`의 자식이 React context를 받지 못한다. 자식(레이어)에서 DI·i18n·router 같은 context 훅을 부르지 않고, Canvas 밖에서 읽어 props로 내린다. 테스트의 Skia mock은 자식을 그리지 않아 이 실수를 잡지 못한다.
 
 ## 확인
 

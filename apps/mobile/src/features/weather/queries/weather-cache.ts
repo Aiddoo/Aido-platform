@@ -1,8 +1,8 @@
 import type { QueryClient, QueryExecuteOptions, QueryKey } from '@tanstack/react-query';
 import { last } from 'es-toolkit';
 
-import { WeatherLocationPolicy } from '../domains/weather-location.model';
-import type { RegisteredLocation, WeatherReport } from '../domains/weather-report.model';
+import { LocationReadingPolicy, type RegisteredLocation } from '../domains/location-reading.model';
+import type { WeatherReport } from '../domains/weather-report.model';
 import { weatherReportQueryKeySchema } from '../schemas/weather-report-query-key.schema';
 import { WEATHER_QUERY_KEYS } from './weather-query-keys';
 
@@ -23,9 +23,7 @@ export function queryCachedWeatherReport<TError, TQueryKey extends QueryKey>(
 /** 위치를 먼저 읽어 이전 위치의 리포트를 한 번 더 받지 않고, 연달아 불리면 진행 중인 요청을 기다린다 */
 export async function refreshWeather(queryClient: QueryClient) {
   const getRevision = () =>
-    WeatherLocationPolicy.getReadingRevision(
-      queryClient.getQueryData(WEATHER_QUERY_KEYS.location()),
-    );
+    LocationReadingPolicy.getRevision(queryClient.getQueryData(WEATHER_QUERY_KEYS.location()));
   const before = getRevision();
   await queryClient.refetchQueries(
     { queryKey: WEATHER_QUERY_KEYS.location() },
@@ -72,7 +70,7 @@ export function setWeatherLocationInCache(
   registered: RegisteredLocation,
 ) {
   queryClient.setQueryData(WEATHER_QUERY_KEYS.location(), (reading) =>
-    reading?.status === 'located' ? { ...reading, registered } : reading,
+    reading == null ? reading : LocationReadingPolicy.withRegistered(reading, registered),
   );
 }
 

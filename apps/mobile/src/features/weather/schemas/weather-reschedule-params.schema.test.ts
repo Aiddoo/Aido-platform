@@ -1,7 +1,7 @@
 import { range } from 'es-toolkit';
 import { z } from 'zod';
 
-import { weatherRescheduleParamsSchema } from '../schemas/weather-reschedule-params.schema';
+import { weatherRescheduleParamsSchema } from './weather-reschedule-params.schema';
 
 const rescheduleTodoIdsParamSchema = weatherRescheduleParamsSchema.pick({ todoIds: true });
 

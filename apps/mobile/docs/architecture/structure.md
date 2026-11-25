@@ -167,7 +167,7 @@ composition-root(프로세스 수명) → DIProvider: createAppContainer(ports)(
   - `shared/ui/bottom-sheet/keyboard-bottom-sheet`의 열린 시트 수: 키보드 컨트롤러가 네이티브 전역 하나라 수도 그 수명을 따른다
   - `shared/infra/logger/global-logger`: DI 밖(루트 오류 화면, 접근성 설정 store, 위젯 진입점)이 쓰는 로거. `composition-root`가 한 번 정한다
   - `core/events/*`의 이벤트 채널 리스너와 `event-channel`의 리스너 오류 보고기: `core`는 DI를 모른다. 구독은 해제 함수를 돌려주고 보고기는 `DIProvider`가 마운트 때 건다
-  - 접근성 설정 store(`shared/hooks/use-is-reduce-motion-enabled`, `features/weather/hooks/use-is-reduce-transparency-enabled`): OS 설정 하나를 구독 하나로 나눠 읽는다. 모션 줄이기는 DI 밖(루트 오류 화면)에서도 그리는 `shared/ui`가 읽는다
+  - 접근성 설정 store(`shared/hooks/use-is-reduce-motion-enabled`, `shared/hooks/use-is-reduce-transparency-enabled`): OS 설정 하나를 구독 하나로 나눠 읽는다. 모션 줄이기는 DI 밖(루트 오류 화면)에서도 그리는 `shared/ui`가 읽는다
   - `shared/infra/storage/widget-storage.android`, `shared/infra/app-lifecycle/react-native-app-lifecycle-gateway`, `features/device/widget/bridge/android-widgets.bridge`의 스냅숏·이동 저장소와 렌더러: 위젯만 깨어난 헤드리스 프로세스에는 앱 트리·DI가 없다. 앱의 조립은 `create-device-ports`가 같은 값을 넘긴다
   - `features/billing/subscription/components/plan-picker`의 보고한 스토어 진단 코드(`WeakMap<ErrorReporter, Set<string>>`): 같은 스토어 설정 문제를 앱 실행마다 한 번만 남긴다. 마운트 수명 DI store는 루트 "다시 시도"마다 새로 만들어져 다시 보낸다. 키가 프로세스 수명 `ErrorReporter`라 그 수명을 따른다
   - React 밖 cache helper가 부르는 `shared/utils/create-optimistic-id`(프로세스 안에서 겹치지 않아야 한다)와 `features/planning/todo/queries/todo-cache`의 쓰기 순번(`WeakMap<QueryClient, number>`, 먼저 시작해 늦게 끝난 쓰기 사이를 센다. `QueryClient` 수명을 따른다)

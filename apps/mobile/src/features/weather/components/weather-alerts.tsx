@@ -12,8 +12,7 @@ import { useSuspenseQueries } from '@tanstack/react-query';
 import { PressableFeedback } from 'heroui-native';
 
 import { ALERT_GLYPH_BACKGROUND_CLASS } from '../constants/weather-colors.constants';
-import { WeatherReportPolicy } from '../domains/weather-report.model';
-import type { WeatherAlert } from '../domains/weather-report.model';
+import { type WeatherAlert, WeatherAlertPolicy } from '../domains/weather-alert.model';
 import { useFormatLocalTime, useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import { WeatherCard } from './weather-card';
@@ -24,14 +23,15 @@ const CHEVRON_SIZE = 14;
 
 /** 서버가 심각도 순으로 보내므로 가장 심각한 특보 하나만 카드로 보이고 나머지는 개수로 알린다 */
 export function WeatherAlerts() {
+  // select가 지금 시각으로 만료된 특보를 빼므로 조회보다 먼저 읽는다
+  const now = useMinuteNow();
   const [{ data: weather }, { data: preference }] = useSuspenseQueries({
     queries: [
-      { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.alerts },
+      { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.alerts(now) },
       useGetPreferenceQueryOptions(),
     ],
   });
-  const now = useMinuteNow();
-  const [mostSevere, ...rest] = WeatherReportPolicy.getActiveAlerts(weather.alerts, now);
+  const [mostSevere, ...rest] = weather.alerts;
 
   if (mostSevere == null) {
     return <WeatherAlerts.Empty />;
@@ -39,9 +39,9 @@ export function WeatherAlerts() {
   return (
     <WeatherAlerts.Item
       alert={mostSevere}
-      isInEffect={WeatherReportPolicy.isAlertInEffect(mostSevere, now)}
+      isInEffect={WeatherAlertPolicy.isInEffect(mostSevere, now)}
       otherCount={rest.length}
-      timezone={weather.location.timezone}
+      timezone={weather.timezone}
       timeFormat={preference.timeFormat}
       now={now}
     />

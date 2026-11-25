@@ -7,7 +7,7 @@ import { RadioGroup } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { match } from 'ts-pattern';
 
-import type { RescheduleOption } from '../../domains/weather-report.model';
+import type { WeatherRescheduleOption } from '../../domains/weather-report-briefing.model';
 import { useTemperatureUnit } from '../../hooks/use-temperature-unit';
 import { formatTemperature } from '../../utils/weather-temperature.view-model';
 
@@ -17,7 +17,7 @@ interface WeatherRescheduleTimeInputProps extends Omit<
 > {
   value: string;
   onValueChange: (startsAt: string) => void;
-  options: RescheduleOption[];
+  options: WeatherRescheduleOption[];
   reason: WeatherRescheduleReason;
   timeFormat: TimeFormat;
 }
@@ -49,7 +49,7 @@ interface RescheduleTimeOptionProps extends Omit<
   ComponentProps<typeof SettingsListGroup.Radio>,
   'value' | 'label' | 'description'
 > {
-  option: RescheduleOption;
+  option: WeatherRescheduleOption;
   reason: WeatherRescheduleReason;
   timeFormat: TimeFormat;
 }

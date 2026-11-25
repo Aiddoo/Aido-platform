@@ -1392,8 +1392,7 @@
       "files": [
         "src/features/device/widget/**",
         "src/features/social/invite/**",
-        "src/features/voice/**",
-        "src/features/weather/**"
+        "src/features/voice/**"
       ],
       "rules": {
         "aido/policy-model-parameter": "off"
@@ -1405,8 +1404,7 @@
         "src/shared/draft/draft.model.ts",
         "src/features/app-config/whats-new/**",
         "src/features/social/invite/**",
-        "src/features/voice/**",
-        "src/features/weather/**"
+        "src/features/voice/**"
       ],
       "rules": {
         "aido/model-function-exports": "off"

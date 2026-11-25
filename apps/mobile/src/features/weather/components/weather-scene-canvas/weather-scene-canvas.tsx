@@ -1,9 +1,9 @@
 import { Canvas, Group } from '@shopify/react-native-skia';
+import { useDeviceTraits } from '@src/bootstrap/providers/di-context';
 import { SECOND_MS } from '@src/shared/constants/time-units';
 import { useAppWindow } from '@src/shared/hooks/use-app-window';
 import { useIsAnimationActive } from '@src/shared/hooks/use-is-animation-active';
 import { useLayoutSize } from '@src/shared/hooks/use-layout-size';
-import { DEVICE_TOTAL_MEMORY_BYTES } from '@src/shared/infra/device/device-info';
 import { Box } from '@src/shared/ui';
 import { isEqual } from 'es-toolkit';
 import { useCallback, useEffect, useState } from 'react';
@@ -21,7 +21,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { match } from 'ts-pattern';
 import { useUniwind } from 'uniwind';
 
-import { getCelestialCenter } from '../../utils/weather-scene-particles.view-model';
+import { getCelestialCenter } from '../../utils/weather-scene-particles.geometry';
 import type { WeatherScene } from '../../utils/weather-scene.view-model';
 import { type CloudLight, CloudLayer } from './cloud-layer';
 import { FogBandLayer } from './fog-band-layer';
@@ -41,9 +41,6 @@ import { SkyGradientLayer } from './sky-gradient-layer';
 import { SnowLayer } from './snow-layer';
 import { SunLayer } from './sun-layer';
 
-const LOW_END_MEMORY_BYTES = 3 * 1024 ** 3;
-const IS_LOW_END_DEVICE =
-  DEVICE_TOTAL_MEMORY_BYTES != null && DEVICE_TOTAL_MEMORY_BYTES < LOW_END_MEMORY_BYTES;
 const STATIC_SCENE_SECONDS = 12;
 const MAX_FRAME_STEP_MS = 100;
 const SCENE_FADE = { duration: 900, easing: Easing.inOut(Easing.quad) };
@@ -86,6 +83,7 @@ export function WeatherSceneCanvas({
   heroWidth,
 }: WeatherSceneCanvasProps) {
   const window = useAppWindow();
+  const { isLowMemoryDevice } = useDeviceTraits();
   const [layoutSize, handleLayout] = useLayoutSize();
   const { width, height } = layoutSize ?? window;
   const { theme } = useUniwind();
@@ -116,7 +114,7 @@ export function WeatherSceneCanvas({
       accessible={false}
       importantForAccessibility="no-hide-descendants"
     >
-      <Canvas style={StyleSheet.absoluteFill} opaque highBitDepth={!IS_LOW_END_DEVICE}>
+      <Canvas style={StyleSheet.absoluteFill} opaque highBitDepth={!isLowMemoryDevice}>
         <SkyGradientLayer
           sky={current.scene.sky}
           isDark={theme === 'dark'}
@@ -131,6 +129,7 @@ export function WeatherSceneCanvas({
             isFirst={entry.id === 0}
             isAnimating={isAnimating}
             isDark={theme === 'dark'}
+            isLowMemoryDevice={isLowMemoryDevice}
             contentTop={contentTop}
             heroLeft={heroLeft}
             heroWidth={heroWidth}
@@ -167,6 +166,8 @@ function findCloudLight(
 type SceneLayersProps = {
   entry: SceneEntry;
   isDark: boolean;
+  /** Canvas의 자식은 React context를 받지 못해 DI 훅을 부를 수 없다. 캔버스 밖에서 읽어 내린다 */
+  isLowMemoryDevice: boolean;
   contentTop: number;
   heroLeft: number;
   heroWidth: number;
@@ -181,6 +182,7 @@ type SceneLayersProps = {
 function SceneLayers({
   entry,
   isDark,
+  isLowMemoryDevice,
   contentTop,
   heroLeft,
   heroWidth,
@@ -211,7 +213,7 @@ function SceneLayers({
 
   const { precipitation } = scene;
   const area = { ...size, time };
-  const particles = { ...area, isLowEndDevice: IS_LOW_END_DEVICE };
+  const particles = { ...area, isLowEndDevice: isLowMemoryDevice };
   const fall = {
     ...particles,
     isDaylight: scene.isDaylight,

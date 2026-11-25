@@ -14,8 +14,12 @@ import { getOsPermissionAccess } from '@src/shared/utils/get-os-permission-acces
 
 import type { WeatherApi } from '../apis/weather.api';
 import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
-import { WeatherLocationPolicy } from '../domains/weather-location.model';
-import type { Coordinates, LocationReading } from '../domains/weather-location.model';
+import {
+  type Coordinates,
+  type LocationReading,
+  LocationReadingPolicy,
+  shouldRelocate,
+} from '../domains/location-reading.model';
 import { weatherLocationPermissionGrantedStoredValue } from '../schemas/weather-location-permission-storage.schema';
 
 /** 위치 읽기 실패는 위치 없이 이어 가고 등록 실패는 다시 던진다. 보고는 부른 훅이 한다 */
@@ -83,35 +87,26 @@ export class WeatherLocationService {
     const previousLocated = previous?.status === 'located' ? previous : null;
     const access = getOsPermissionAccess(await this.#readPermission(previousLocated));
     if (access === 'ask' && previousLocated != null) {
-      return ok({ ...previousLocated, isLastKnown: true });
+      return ok(LocationReadingPolicy.withLastKnown(previousLocated, true));
     }
     if (access !== 'granted') {
       return ok({ status: access === 'ask' ? 'needsPermission' : 'denied' });
     }
 
-    const revision = WeatherLocationPolicy.getReadingRevision(previous);
+    const revision = LocationReadingPolicy.getRevision(previous);
     const coordinates = await this.#readCoordinates(signal, onUnexpectedFailure);
     if (coordinates == null) {
       // 권한은 허용된 상태이므로 이전 위치를 보여 주더라도 허용 안내가 남지 않게 마지막 위치 표시를 푼다
       return ok(
         previousLocated == null
           ? { status: 'unavailable', revision }
-          : { ...previousLocated, isLastKnown: false },
+          : LocationReadingPolicy.withLastKnown(previousLocated, false),
       );
     }
     const placeRead = this.#gateway.getPlace(coordinates, signal);
 
-    if (
-      previousLocated != null &&
-      !WeatherLocationPolicy.shouldRelocate(coordinates, previousLocated.registered)
-    ) {
-      const place = await placeRead;
-      return ok({
-        ...previousLocated,
-        place: place.name ?? previousLocated.place,
-        countryCode: place.countryCode ?? previousLocated.countryCode,
-        isLastKnown: false,
-      });
+    if (previousLocated != null && !shouldRelocate(coordinates, previousLocated.registered)) {
+      return ok(LocationReadingPolicy.withPlaceRead(previousLocated, await placeRead));
     }
 
     // getPlace는 실패 대신 빈 이름으로 끝나 등록 결과만 흐름을 정한다
@@ -130,7 +125,7 @@ export class WeatherLocationService {
       place: place.name,
       countryCode: place.countryCode,
       isLastKnown: false,
-      revision: WeatherLocationPolicy.getNextRevision(previous, registered, reportLocation),
+      revision: LocationReadingPolicy.getNextRevision(previous, registered, reportLocation),
     });
   };
 

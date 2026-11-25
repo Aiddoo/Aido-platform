@@ -9,24 +9,17 @@ import { useIsFocused, useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { match } from 'ts-pattern';
 
-import { WeatherLocationPolicy } from '../domains/weather-location.model';
-import type { CurrentWeather, WeatherReport } from '../domains/weather-report.model';
+import type { CurrentWeather } from '../domains/current-weather.model';
+import { shouldFetchReport } from '../domains/location-reading.model';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useWeatherLocation } from '../hooks/use-weather-location';
-import { useGetWeatherReportQueryOptions } from '../queries/weather.queries';
-import { toWeatherHref } from '../utils/weather-link.view-model';
+import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
+import { toWeatherHref } from '../schemas/weather-entry-params.schema';
 import { formatDegrees, toDisplayTemperature } from '../utils/weather-temperature.view-model';
 import { WeatherIcon } from './weather-icon';
 
 // 날씨 카드가 아니라 피드 머리 도구 막대에 있어 앱 기본 비율(useFontScaledSize)로 키운다
 const BADGE_ICON_SIZE = 18;
-
-function selectBadge(report: WeatherReport) {
-  return {
-    current: report.current,
-    serviceName: report.attribution.serviceName,
-  };
-}
 
 /** 헤더라 경계 대신 상태별로 그리고, 위치·리포트가 없어도 날씨 화면(권한 안내·다시 시도)으로 갈 배지를 남긴다 */
 export function WeatherForecastBadge() {
@@ -35,8 +28,8 @@ export function WeatherForecastBadge() {
   const isFocused = useIsFocused();
   const { data: badge, isPending } = useQuery({
     ...useGetWeatherReportQueryOptions(),
-    select: selectBadge,
-    enabled: WeatherLocationPolicy.shouldFetchReport(location),
+    select: WeatherReportSelect.badge,
+    enabled: shouldFetchReport(location.status),
     subscribed: isFocused,
   });
 

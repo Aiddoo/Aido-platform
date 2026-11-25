@@ -1,6 +1,6 @@
 import { queryOptions } from '@tanstack/react-query';
 
-import type { LocationReading } from '../domains/weather-location.model';
+import type { LocationReading } from '../domains/location-reading.model';
 import type { WeatherReport } from '../domains/weather-report.model';
 import type { WeatherReportQueryKey } from '../schemas/weather-report-query-key.schema';
 

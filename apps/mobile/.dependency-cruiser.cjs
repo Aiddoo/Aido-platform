@@ -180,7 +180,6 @@ const modelAndFolderRules = [
           'social/friend',
           'social/nudge',
           'voice',
-          'weather',
         ]),
       ],
     },
@@ -388,13 +387,7 @@ module.exports = {
       severity: 'error',
       from: {
         path: '^(?:src/features|app)/',
-        pathNot: [
-          TEST,
-          WIDGET_HEADLESS_ENTRY,
-          ROOT_LAYOUT,
-          PENDING_INFRA_ROUTES,
-          pendingFeatures(['weather']),
-        ],
+        pathNot: [TEST, WIDGET_HEADLESS_ENTRY, ROOT_LAYOUT, PENDING_INFRA_ROUTES],
       },
       to: {
         path: '^src/shared/infra/',

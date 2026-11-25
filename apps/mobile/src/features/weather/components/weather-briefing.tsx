@@ -41,17 +41,13 @@ import { Chip, PressableFeedback, Separator } from 'heroui-native';
 import { type ComponentProps, Fragment } from 'react';
 import { match } from 'ts-pattern';
 
+import { toWeatherBriefingTodo } from '../apis/weather-briefing.mapper';
 import { BRIEFING_ROW_TONES, type BriefingRowTone } from '../constants/weather-colors.constants';
-import {
-  type BriefingResult,
-  getBriefingState,
-  findWeatherBriefing,
-  WeatherBriefingPolicy,
-} from '../domains/weather-briefing.model';
-import type { HourlyForecastEntry } from '../domains/weather-report.model';
+import type { WeatherBriefing as WeatherBriefingModel } from '../domains/weather-briefing.model';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useWeatherOpenKey } from '../hooks/use-weather-open-key';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
+import { toWeatherRescheduleHref } from '../schemas/weather-reschedule-params.schema';
 import { toWeatherBriefingKind } from '../utils/weather-analytics';
 import {
   type BriefingAction,
@@ -59,7 +55,6 @@ import {
   type BriefingRow,
   toBriefingView,
 } from '../utils/weather-briefing.view-model';
-import { toWeatherRescheduleHref } from '../utils/weather-reschedule-link.view-model';
 import { formatTemperature } from '../utils/weather-temperature.view-model';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';
@@ -79,38 +74,28 @@ export function WeatherBriefing() {
   const todayKey = useTodayKey();
   const now = useMinuteNow();
   const { timezone: deviceTimezone } = useDateFormatContext();
-  const { data: report } = useQuery({
-    ...useGetWeatherReportQueryOptions(),
-    select: WeatherReportSelect.briefing,
-  });
   const [{ data: todoList }, { data: preference }] = useSuspenseQueries({
     queries: [useGetTodosByDateQueryOptions({ date: todayKey }), useGetPreferenceQueryOptions()],
   });
+  const todos = todoList.todos.map((todo) =>
+    toWeatherBriefingTodo(todo, { date: todayKey, timezone: deviceTimezone }),
+  );
+  // select가 오늘 할 일과 지금 시각으로 브리핑을 고르므로 할 일 조회 뒤에 구독한다
+  const { data: weather } = useQuery({
+    ...useGetWeatherReportQueryOptions(),
+    select: WeatherReportSelect.briefing({ now, deviceTimezone, todos }),
+  });
 
-  const state = getBriefingState(report, { now, deviceTimezone });
-
-  if (report == null || state === 'loading') {
+  if (weather == null) {
     return <WeatherBriefing.Loading />;
   }
-  if (state === 'hidden') {
-    return <WeatherBriefing.Empty />;
-  }
-
-  const briefing = findWeatherBriefing(
-    report,
-    todoList.todos.map((todo) =>
-      WeatherBriefingPolicy.toBriefingTodo(todo, { date: todayKey, timezone: deviceTimezone }),
-    ),
-    { now },
-  );
-  if (briefing == null) {
+  if (weather.briefing == null) {
     return <WeatherBriefing.Empty />;
   }
 
   return (
     <WeatherBriefing.Card
-      briefing={briefing}
-      hourly={report.hourly}
+      briefing={weather.briefing}
       now={now}
       timeFormat={preference.timeFormat}
     />
@@ -119,12 +104,10 @@ export function WeatherBriefing() {
 
 WeatherBriefing.Card = function Card({
   briefing,
-  hourly,
   now,
   timeFormat,
 }: {
-  briefing: BriefingResult;
-  hourly: readonly HourlyForecastEntry[];
+  briefing: WeatherBriefingModel;
   now: Instant;
   timeFormat: TimeFormat;
 }) {
@@ -134,7 +117,6 @@ WeatherBriefing.Card = function Card({
   const dateFormat = useDateFormatContext();
   const unit = useTemperatureUnit();
   const view = toBriefingView(briefing, {
-    hourly,
     now,
     formatClock: (date) => formatClockTime(date, timeFormat, dateFormat),
     formatTodoTime: (localTime) => formatHHmmTime(localTime, timeFormat, dateFormat),

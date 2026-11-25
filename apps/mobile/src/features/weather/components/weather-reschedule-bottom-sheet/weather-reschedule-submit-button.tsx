@@ -14,8 +14,14 @@ import { useAppToast } from '@src/shared/ui';
 import { useMutation, useQueryClient, useSuspenseQueries } from '@tanstack/react-query';
 import { type UseFormReturn, useFormState, useWatch } from 'react-hook-form';
 
+import {
+  toMovedScheduleRequest,
+  toOriginalScheduleRequest,
+  toRescheduleOutcome,
+} from '../../apis/weather-reschedule.mapper';
 import { WEATHER_LOG_EVENT } from '../../constants/weather-log-events';
-import { WeatherReschedulePolicy } from '../../domains/weather-reschedule.model';
+import { WeatherReportBriefingPolicy } from '../../domains/weather-report-briefing.model';
+import { getExpiredTargets, getRescheduleTargets } from '../../domains/weather-reschedule.model';
 import {
   useWeatherRescheduleReason,
   useWeatherRescheduleTodoIds,
@@ -26,12 +32,11 @@ import {
   useGetWeatherReportQueryOptions,
   WeatherReportSelect,
 } from '../../queries/weather.queries';
-import type { WeatherRescheduleFormValues } from '../../schemas/weather-reschedule-form.schema';
 import {
-  toRescheduleOutcome,
   toScheduleChanges,
   toSelectionKey,
-} from '../../utils/weather-reschedule-form.view-model';
+  type WeatherRescheduleFormValues,
+} from '../../schemas/weather-reschedule-form.schema';
 
 /** 할 일마다 뜨는 저장 토스트 대신 한 번에 옮긴 결과와 되돌리기를 보여 준다. 실패도 이 버튼이 모아 한 번만 알린다. */
 export function WeatherRescheduleSubmitButton({
@@ -53,9 +58,9 @@ export function WeatherRescheduleSubmitButton({
   const { isSubmitting } = useFormState({ control: form.control });
   const todayKey = useTodayKey();
   // 시트 목록이 같은 조회를 먼저 받아 두어 보통은 바로 읽힌다
-  const [{ data: report }, { data: todoList }] = useSuspenseQueries({
+  const [{ data: reportBriefing }, { data: todoList }] = useSuspenseQueries({
     queries: [
-      { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.briefing },
+      { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.reportBriefing },
       useGetTodosByDateQueryOptions({ date: todayKey }),
     ],
   });
@@ -63,7 +68,7 @@ export function WeatherRescheduleSubmitButton({
   const todayTodos = todoList.todos;
   // shouldUnregister 폼은 남은 선택이 없으면 selections 자체를 지운다.
   const selections = useWatch({ control: form.control, name: 'selections' }) ?? {};
-  const targetCount = WeatherReschedulePolicy.getRescheduleTargets(
+  const targetCount = getRescheduleTargets(
     toScheduleChanges({ selections }, todoIds),
     todayTodos,
   ).length;
@@ -87,7 +92,7 @@ export function WeatherRescheduleSubmitButton({
       todos.map((todo) =>
         updateSchedule.mutateAsync({
           todoId: todo.id,
-          input: WeatherReschedulePolicy.getOriginalScheduleInput(todo),
+          input: toOriginalScheduleRequest(todo),
         }),
       ),
     );
@@ -103,19 +108,16 @@ export function WeatherRescheduleSubmitButton({
   };
 
   const handleApply = form.handleSubmit(async (values) => {
-    const targets = WeatherReschedulePolicy.getRescheduleTargets(
-      toScheduleChanges(values, todoIds),
-      todayTodos,
-    );
+    const targets = getRescheduleTargets(toScheduleChanges(values, todoIds), todayTodos);
     const now = getNowInstant();
-    const expired = WeatherReschedulePolicy.getExpiredTargets(targets, now);
+    const expired = getExpiredTargets(targets, now);
     if (expired.length > 0) {
       // 시트를 연 채 정시를 넘겼다. 지난 시각으로 옮기지 않고 다음 유효 후보로 바꿔 다시 확인받는다
       for (const { todo } of expired) {
-        const next = WeatherReschedulePolicy.findNextRescheduleOption(report.briefing, {
-          todoId: todo.id,
-          now,
-        });
+        const next =
+          reportBriefing == null
+            ? null
+            : WeatherReportBriefingPolicy.findNextOption(reportBriefing, todo.id, now);
         if (next != null) {
           form.setValue(`selections.${toSelectionKey(todo.id)}`, next.startsAt);
         }
@@ -127,7 +129,7 @@ export function WeatherRescheduleSubmitButton({
       targets.map(({ todo, startsAt }) =>
         updateSchedule.mutateAsync({
           todoId: todo.id,
-          input: WeatherReschedulePolicy.getMovedScheduleInput(todo, startsAt, timezone),
+          input: toMovedScheduleRequest(todo, startsAt, timezone),
         }),
       ),
     );

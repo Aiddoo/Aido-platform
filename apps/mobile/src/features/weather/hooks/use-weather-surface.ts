@@ -1,3 +1,4 @@
+import { useIsReduceTransparencyEnabled } from '@src/shared/hooks/use-is-reduce-transparency-enabled';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useQuery } from '@tanstack/react-query';
 import { useUniwind } from 'uniwind';
@@ -6,7 +7,6 @@ import { WEATHER_SCENE_PALETTES } from '../constants/weather-scene-palette.const
 import type { WeatherReport } from '../domains/weather-report.model';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import { toWeatherScene, type WeatherSceneSky } from '../utils/weather-scene.view-model';
-import { useIsReduceTransparencyEnabled } from './use-is-reduce-transparency-enabled';
 
 const DEFAULT_SKY: WeatherSceneSky = 'clearDay';
 const OPAQUE_DARK_CARD = 'rgb(30,33,40)';

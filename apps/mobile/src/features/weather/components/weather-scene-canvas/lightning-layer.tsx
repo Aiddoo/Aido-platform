@@ -7,7 +7,7 @@ import {
   getLightningWindow,
   hashCycle,
   NO_LIGHTNING_WINDOW,
-} from '../../utils/weather-scene-particles.view-model';
+} from '../../utils/weather-scene-particles.geometry';
 
 /** 시안 wxFlash의 첫 섬광 최대 불투명도 */
 const MAX_FLASH_OPACITY = 0.45;

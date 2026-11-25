@@ -1,7 +1,7 @@
 import { Canvas, LinearGradient, Mask, Rect, vec } from '@shopify/react-native-skia';
+import { useDeviceTraits } from '@src/bootstrap/providers/di-context';
 import { useAppWindow } from '@src/shared/hooks/use-app-window';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
-import { IOS_MAJOR_VERSION } from '@src/shared/infra/device/device-info';
 import { Box, StyledSafeAreaView } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { useHeaderHeight } from 'expo-router/react-navigation';
@@ -20,8 +20,6 @@ const SCREEN_BOTTOM_PADDING = 24;
 /** 헤더 아래로 페이드가 이어지는 길이 */
 const TOP_FADE_EXTENT = 40;
 const IS_IOS = process.env.EXPO_OS === 'ios';
-/** iOS 26부터는 투명 헤더 아래 내용을 시스템 스크롤 엣지 효과가 흐리므로 직접 그린 페이드를 쓰지 않는다. */
-const HAS_NATIVE_EDGE_EFFECT = IOS_MAJOR_VERSION != null && IOS_MAJOR_VERSION >= 26;
 /** 상태 표시줄 아래부터 끝까지 ease-out으로 옅어져 경계선이 생기지 않게 한다. */
 const FADE_STOPS = [
   [0, 1],
@@ -37,6 +35,7 @@ interface WeatherScrollViewProps extends PropsWithChildren {
 
 export function WeatherScrollView({ children, bottomInset = 0 }: WeatherScrollViewProps) {
   const queryClient = useQueryClient();
+  const { hasSystemScrollEdgeEffect } = useDeviceTraits();
   const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
   const [isRefreshing, refresh] = useRefresh(() => refreshWeather(queryClient));
@@ -64,7 +63,7 @@ export function WeatherScrollView({ children, bottomInset = 0 }: WeatherScrollVi
           {children}
         </StyledSafeAreaView>
       </ScrollView>
-      {!HAS_NATIVE_EDGE_EFFECT && (
+      {!hasSystemScrollEdgeEffect && (
         <TopFade solidHeight={insets.top} height={headerHeight + TOP_FADE_EXTENT} />
       )}
     </Box>

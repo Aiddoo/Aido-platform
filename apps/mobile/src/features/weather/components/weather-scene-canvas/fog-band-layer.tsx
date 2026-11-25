@@ -9,7 +9,7 @@ import {
   PARTICLE_SEED_STRIDE,
   placeSprite,
   wrap,
-} from '../../utils/weather-scene-particles.view-model';
+} from '../../utils/weather-scene-particles.geometry';
 import type { WeatherSceneSky } from '../../utils/weather-scene.view-model';
 import { FOG_BAND_SPRITE, PARTICLE_SAMPLING, useFogBandTexture } from './weather-scene-textures';
 

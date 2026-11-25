@@ -2,7 +2,7 @@ import { DAY_MS } from '@src/shared/constants/time-units';
 import { type Instant, toEpochMs } from '@src/shared/date/instant';
 import { round } from 'es-toolkit';
 
-import type { DailyForecastEntry } from '../domains/weather-report.model';
+import type { ForecastDay } from '../domains/forecast-day.model';
 import { toUnitPosition } from './weather-bar.geometry';
 import type { DialPoint } from './weather-dial.geometry';
 
@@ -65,7 +65,7 @@ function pointOnCurve([p0, p1, p2, p3]: CubicCurve, t: number): DialPoint {
 
 /** 밤은 반으로 나눠 양 끝 곡선에 둔다. 일출·일몰 중 하나라도 없으면(백야·극야) null이다 */
 export function findSunArcPosition(
-  day: Pick<DailyForecastEntry, 'sunrise' | 'sunset'>,
+  day: Pick<ForecastDay, 'sunrise' | 'sunset'>,
   now: Instant,
 ): DialPoint | null {
   const { sunrise, sunset } = day;
@@ -90,7 +90,7 @@ export function findSunArcPosition(
 
 /** 일출 전이나 일몰 뒤면 해 점을 밤처럼 흐리게 그린다. 일출·일몰을 모르면 낮으로 본다. */
 export function isSunBelowHorizon(
-  day: Pick<DailyForecastEntry, 'sunrise' | 'sunset'>,
+  day: Pick<ForecastDay, 'sunrise' | 'sunset'>,
   now: Instant,
 ): boolean {
   if (day.sunrise == null || day.sunset == null) {

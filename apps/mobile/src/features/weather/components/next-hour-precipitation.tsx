@@ -30,14 +30,14 @@ import { match } from 'ts-pattern';
 
 import { NEXT_HOUR_CHART_COLORS } from '../constants/weather-colors.constants';
 import {
-  getPrecipitationWindow,
   type HourlyPrecipitationOutlook,
-  isNowcastExpired,
-  type PrecipitationPrecision,
-  type PrecipitationWindow,
-  WeatherReportPolicy,
+  isFrozenPrecipitation,
+} from '../domains/forecast-hour.model';
+import type {
+  MinuteForecast,
+  PrecipitationPrecision,
+  PrecipitationWindow,
 } from '../domains/weather-report.model';
-import type { MinuteForecast } from '../domains/weather-report.model';
 import { useFormatLocalTime, useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import {
@@ -70,39 +70,39 @@ const GUIDE_LABEL_FONT_SIZE = 10;
 /** 분 단위 예보가 없는 지역(국내 등)은 시간 단위 카드로 알리고, 6시간 넘게 낡은 데이터로는 안내하지 않는다 */
 export function NextHourPrecipitation() {
   const { t } = useTranslation('weather');
+  // select가 지금 시각으로 강수 구간을 고르므로 조회보다 먼저 읽는다
+  const now = useMinuteNow();
   const [{ data: weather }, { data: preference }] = useSuspenseQueries({
     queries: [
-      { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.precipitation },
+      { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.precipitation(now) },
       useGetPreferenceQueryOptions(),
     ],
   });
-  const now = useMinuteNow();
   const toMessage = useFormatPrecipitationMessage({
-    timezone: weather.location.timezone,
+    timezone: weather.timezone,
     timeFormat: preference.timeFormat,
     now,
   });
   const titleIconSize = Math.round(TITLE_ICON_SIZE * useFontScaleRatio());
 
-  if (isNowcastExpired(weather, now)) {
+  if (weather.isNowcastExpired) {
     return <NextHourPrecipitation.Empty />;
   }
   if (weather.nextHour == null) {
-    const outlook = WeatherReportPolicy.findHourlyPrecipitationOutlook(weather.hourly, now);
+    const outlook = weather.hourlyOutlook;
     return outlook == null ? (
       <NextHourPrecipitation.Empty />
     ) : (
       <NextHourPrecipitation.HourlyOutlook
         outlook={outlook}
-        timezone={weather.location.timezone}
+        timezone={weather.timezone}
         timeFormat={preference.timeFormat}
         now={now}
       />
     );
   }
 
-  const window = getPrecipitationWindow(weather, now);
-  const { headline, detail } = toMessage(window);
+  const { headline, detail } = toMessage(weather.window);
   const summary = detail == null ? headline : t('nextHour.summary', { headline, detail });
 
   return (
@@ -150,7 +150,7 @@ NextHourPrecipitation.HourlyOutlook = function HourlyOutlook({
   const localTime = useFormatLocalTime(timezone, now);
   const iconSize = Math.round(HOURLY_OUTLOOK_ICON_SIZE * useFontScaleRatio());
   const { hour, isOngoing } = outlook;
-  const isSnow = WeatherReportPolicy.isFrozenPrecipitation(hour.precipitationType);
+  const isSnow = isFrozenPrecipitation(hour.precipitationType);
   const chance = hour.precipitationChance;
   const time = localTime(formatInstantHour(hour.startsAt, timeFormat, dateFormat));
   const title = match({ isOngoing, isSnow })

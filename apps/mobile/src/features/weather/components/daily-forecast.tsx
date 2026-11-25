@@ -26,9 +26,11 @@ import {
   PRECIPITATION_CHANCE_TEXT_CLASS,
   TODO_DOT_COLOR,
 } from '../constants/weather-colors.constants';
-import { FORECAST_DAYS, VISIBLE_PRECIPITATION_CHANCE } from '../constants/weather.constants';
-import { getTodayKey } from '../domains/weather-report.model';
-import type { DailyForecastEntry } from '../domains/weather-report.model';
+import {
+  FORECAST_DAYS,
+  LABELED_PRECIPITATION_CHANCE_MIN_PERCENT,
+} from '../constants/weather.constants';
+import type { ForecastDay } from '../domains/forecast-day.model';
 import { useLocationDateFormat } from '../hooks/use-location-date-format';
 import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useWeatherSurface } from '../hooks/use-weather-surface';
@@ -74,19 +76,20 @@ interface RowFormat {
 /** 할 일 조회가 실패해도 예보는 그대로 보이도록 할 일 점은 suspend하지 않고 점만 뺀다 */
 export function DailyForecast() {
   const { t } = useTranslation(['weather', 'common']);
+  // select가 지금 시각으로 예보 위치의 오늘을 고르므로 조회보다 먼저 읽는다
+  const now = useMinuteNow();
   const [{ data: weather }, { data: preference }] = useSuspenseQueries({
     queries: [
-      { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.daily },
+      { ...useGetWeatherReportQueryOptions(), select: WeatherReportSelect.daily(now) },
       useGetPreferenceQueryOptions(),
     ],
   });
   const completions = useQueries(useGetForecastCompletionsQueriesOptions());
   const fontScaleRatio = useFontScaleRatio();
-  const dateFormat = useLocationDateFormat(weather.location.timezone);
-  const now = useMinuteNow();
-  const forecastTodayKey = getTodayKey(weather, now);
+  const dateFormat = useLocationDateFormat(weather.timezone);
+  const forecastTodayKey = weather.todayKey;
   const bars = toTemperatureBars(weather.daily);
-  const nowPosition = toTemperaturePosition(weather.daily, weather.current.temperature);
+  const nowPosition = toTemperaturePosition(weather.daily, weather.currentTemperature);
   const format = useMemo<RowFormat>(
     () => ({
       dateFormat: { locale: dateFormat.locale, timezone: dateFormat.timezone },
@@ -160,7 +163,7 @@ DailyForecast.Header = function Header({ count }: { count: number }) {
 };
 
 interface DailyForecastItemProps {
-  day: DailyForecastEntry;
+  day: ForecastDay;
   bar: TemperatureBar | undefined;
   label: string;
   /** 오늘 행에만 있는 지금 기온 점의 위치(0~1) */
@@ -225,7 +228,7 @@ DailyForecast.Item = memo(function Item({
               width={ICON_SIZE}
               height={ICON_SIZE}
             />
-            {day.precipitationChance >= VISIBLE_PRECIPITATION_CHANCE && (
+            {LABELED_PRECIPITATION_CHANCE_MIN_PERCENT <= day.precipitationChance && (
               <Text
                 size="e2"
                 weight="semibold"
@@ -316,7 +319,7 @@ DailyForecast.TemperatureBar = function TemperatureBar({
   bar,
   nowPosition,
 }: {
-  day: DailyForecastEntry;
+  day: ForecastDay;
   bar: TemperatureBar | undefined;
   nowPosition: number | null;
 }) {

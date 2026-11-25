@@ -7,8 +7,8 @@ import {
   createRescheduleOptionDto,
   createWeatherReport,
 } from '../__tests__/weather-report.fixtures';
-import { type BriefingTodo, findWeatherBriefing } from '../domains/weather-briefing.model';
-import type { WeatherReport } from '../domains/weather-report.model';
+import type { WeatherBriefingTodo } from '../domains/weather-briefing.model';
+import { type WeatherReport, WeatherReportPolicy } from '../domains/weather-report.model';
 import { type BriefingViewPorts, toBriefingView } from './weather-briefing.view-model';
 
 /** 서울 15:26. 16~17시(07:00Z~09:00Z) 비, 나머지는 맑다. */
@@ -37,7 +37,6 @@ const rainyReport = createWeatherReport({
 });
 
 const DEPS: BriefingViewPorts = {
-  hourly: rainyReport.hourly,
   now: NOW,
   formatClock: (date) => `clock:${date}`,
   formatTodoTime: (localTime) => `todo:${localTime}`,
@@ -46,8 +45,8 @@ const DEPS: BriefingViewPorts = {
   formatChance: (percent) => `${percent}%`,
 };
 
-function viewFor(report: WeatherReport, todos: BriefingTodo[]) {
-  const briefing = findWeatherBriefing(report, todos, { now: NOW });
+function viewFor(report: WeatherReport, todos: WeatherBriefingTodo[]) {
+  const briefing = WeatherReportPolicy.findBriefing(report, todos, NOW);
   if (briefing == null) {
     throw new Error('서버 브리핑이 있는 리포트여야 한다');
   }

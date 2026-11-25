@@ -13,7 +13,7 @@ import {
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 
 import { WeatherApi } from '../apis/weather.api';
-import type { LocationReading } from '../domains/weather-location.model';
+import type { LocationReading } from '../domains/location-reading.model';
 import { weatherLocationPermissionGrantedStoredValue } from '../schemas/weather-location-permission-storage.schema';
 import { WeatherLocationService } from './weather-location.service';
 

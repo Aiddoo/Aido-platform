@@ -20,6 +20,24 @@ describe('toWeatherReport', () => {
     expect(report.daily[0]?.date).toBe('2026-11-02');
   });
 
+  it.each([
+    { timezone: 'Asia/Seoul', expected: 'Asia/Seoul' },
+    { timezone: 'Mars/Olympus_Mons', expected: null },
+  ])(
+    '예보 위치 시간대 $timezone은 런타임이 아는 이름일 때만 남겨 $expected로 둔다',
+    ({ timezone, expected }) => {
+      // Given
+      const dto = createWeatherReportDto({ location: { latitude: 0, longitude: 0, timezone } });
+
+      // When
+      const report = toWeatherReport(dto);
+
+      // Then
+      // 모르는 이름을 다른 시간대로 바꾸지 않는다
+      expect(report.location.timezone).toBe(expected);
+    },
+  );
+
   it('극야·백야의 일출·일몰, 분 단위 예보·대기질이 없는 지역은 null로 유지한다', () => {
     // Given
     const dto = createWeatherReportDto({ nextHour: null, airQuality: null });

@@ -3,10 +3,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { match, P } from 'ts-pattern';
 
 import {
+  LocationReadingPolicy,
+  type PlaceName,
   type WeatherLocationStatus,
-  WeatherLocationPolicy,
-} from '../domains/weather-location.model';
-import type { PlaceName } from '../domains/weather-location.model';
+} from '../domains/location-reading.model';
 import { refetchWeatherLocation } from '../queries/weather-cache';
 import { useRequestWeatherLocationPermissionMutationOptions } from '../queries/weather-location-permission.mutations';
 import { useGetWeatherLocationQueryOptions } from '../queries/weather.queries';
@@ -34,7 +34,7 @@ export function useWeatherLocation(): WeatherLocation {
   const location = match({ reading, isError })
     .returnType<WeatherLocationStatus>()
     .with({ reading: P.nonNullable }, (narrowed) =>
-      WeatherLocationPolicy.getLocationStatus(narrowed.reading),
+      LocationReadingPolicy.getStatus(narrowed.reading),
     )
     .with({ isError: true }, () => ({ status: 'unavailable' }))
     .otherwise(() => ({ status: 'checking' }));

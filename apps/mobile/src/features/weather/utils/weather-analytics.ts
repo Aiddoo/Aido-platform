@@ -3,8 +3,8 @@ import { isConnectivityError } from '@src/shared/errors/infra-error';
 import { getOsPermissionAccess } from '@src/shared/utils/get-os-permission-access';
 import { match, P } from 'ts-pattern';
 
-import type { BriefingResult } from '../domains/weather-briefing.model';
-import type { WeatherLocationStatus } from '../domains/weather-location.model';
+import type { WeatherLocationStatus } from '../domains/location-reading.model';
+import type { WeatherBriefing } from '../domains/weather-briefing.model';
 import {
   isLocationNotRegisteredError,
   isWeatherProviderUnavailableError,
@@ -39,13 +39,13 @@ const BRIEFING_KINDS = {
   tomorrowMorning: 'tomorrow_morning',
   dry: 'dry',
   noScheduledTodos: 'no_scheduled_todos',
-} as const satisfies Record<BriefingResult['kind'], WeatherBriefingKind>;
+} as const satisfies Record<WeatherBriefing['kind'], WeatherBriefingKind>;
 
 export function toWeatherOpenedEntry(entry: WeatherEntry | undefined): WeatherOpenedEntry {
   return entry ?? 'other';
 }
 
-export function toWeatherBriefingKind(kind: BriefingResult['kind']): WeatherBriefingKind {
+export function toWeatherBriefingKind(kind: WeatherBriefing['kind']): WeatherBriefingKind {
   return BRIEFING_KINDS[kind];
 }
 

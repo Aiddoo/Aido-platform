@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { WeatherLocationPolicy } from '../domains/weather-location.model';
+import { shouldFetchReport } from '../domains/location-reading.model';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import {
   toWeatherScene,
@@ -26,7 +26,7 @@ export function useWeatherScene(): WeatherScene {
   const { data: sceneInput } = useQuery({
     ...useGetWeatherReportQueryOptions(),
     select: WeatherReportSelect.scene,
-    enabled: WeatherLocationPolicy.shouldFetchReport(location),
+    enabled: shouldFetchReport(location.status),
   });
   return toWeatherScene(sceneInput ?? DEFAULT_SCENE_INPUT);
 }

@@ -12,13 +12,11 @@ import { fromEpochMs, toInstant } from '@src/shared/date/instant';
 import { defineFixture } from '@src/testing/fixture';
 
 import { toWeatherReport } from '../apis/weather.mapper';
-import type { BriefingTodo, ForecastTodo } from '../domains/weather-briefing.model';
-import {
-  airQualitySchema,
-  type CurrentWeather,
-  type DailyForecastEntry,
-  type WeatherReport,
-} from '../domains/weather-report.model';
+import { airQualitySchema } from '../domains/air-quality.model';
+import type { CurrentWeather } from '../domains/current-weather.model';
+import type { ForecastDay } from '../domains/forecast-day.model';
+import type { WeatherBriefingTodo, WeatherForecastTodo } from '../domains/weather-briefing.model';
+import type { WeatherReport } from '../domains/weather-report.model';
 
 export const createHourlyForecastDto = defineFixture(weatherHourlyForecastSchema, {
   startsAt: '2026-11-02T06:00:00.000Z',
@@ -223,9 +221,7 @@ export function createCurrentWeather(overrides: Partial<CurrentWeather> = {}): C
   return { ...createWeatherReport().current, ...overrides };
 }
 
-export function createDailyForecast(
-  overrides: Partial<DailyForecastEntry> = {},
-): DailyForecastEntry {
+export function createForecastDay(overrides: Partial<ForecastDay> = {}): ForecastDay {
   const [today] = createWeatherReport().daily;
   if (today == null) {
     throw new Error('기본 예보에 일별 예보가 없습니다');
@@ -239,7 +235,9 @@ export const createAirQuality = defineFixture(airQualitySchema, {
   source: 'AIRKOREA',
 });
 
-export function createForecastTodo(overrides: Partial<ForecastTodo> = {}): ForecastTodo {
+export function createForecastTodo(
+  overrides: Partial<WeatherForecastTodo> = {},
+): WeatherForecastTodo {
   const [hour] = createWeatherReport().hourly;
   if (hour == null) {
     throw new Error('기본 예보에 시간별 예보가 없습니다');
@@ -257,7 +255,9 @@ export function createForecastTodo(overrides: Partial<ForecastTodo> = {}): Forec
   };
 }
 
-export function createBriefingTodo(overrides: Partial<BriefingTodo> = {}): BriefingTodo {
+export function createBriefingTodo(
+  overrides: Partial<WeatherBriefingTodo> = {},
+): WeatherBriefingTodo {
   return {
     id: 1,
     title: '산책',

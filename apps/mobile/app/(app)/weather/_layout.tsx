@@ -1,6 +1,6 @@
 import Notifications from '@expo/material-symbols/notifications.xml';
 import Refresh from '@expo/material-symbols/refresh.xml';
-import { WeatherLocationPolicy } from '@src/features/weather/domains/weather-location.model';
+import { shouldFetchReport } from '@src/features/weather/domains/location-reading.model';
 import { useWeatherLocation } from '@src/features/weather/hooks/use-weather-location';
 import {
   getWeatherReportsFilters,
@@ -28,7 +28,7 @@ export default function WeatherLayout() {
   const { t } = useTranslation(['weather', 'notification']);
   const location = useWeatherLocation();
   // 리포트가 없으면 하늘 장면 대신 흰 면의 위치 권한 안내라 기본 헤더 색을 쓴다
-  const isSkyScene = WeatherLocationPolicy.shouldFetchReport(location);
+  const isSkyScene = shouldFetchReport(location.status);
   /** 하늘 장면 위 헤더 버튼의 둥근 유리 면. iOS는 네이티브 유리 버튼이 그린다. */
   const skyButtonContainerColor = useResolvedColor('text-on-sky/16');
   const headerButtonContainerColor = isSkyScene ? skyButtonContainerColor : undefined;
