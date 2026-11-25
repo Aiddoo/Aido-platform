@@ -8,10 +8,10 @@ import { useTrack } from '@src/shared/analytics';
 import { useDismissKeyboard } from '@src/shared/hooks/use-dismiss-keyboard';
 import { useTranslation } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui';
-import { useEffect, useRef } from 'react';
 
 import type { VoiceCaptureEntry } from '../constants/voice.events';
 import { useEnsureMicrophonePermission } from './use-ensure-microphone-permission';
+import { useIsUnmountedRef } from './use-is-unmounted-ref';
 
 interface UseVoiceCaptureReadinessOptions {
   feature: Extract<EntitlementFeature, 'AI_PARSE' | 'VOICE_NOTE'>;
@@ -51,15 +51,7 @@ export function useVoiceCaptureReadiness({
   const claimRenewalPrompt = useClaimAiConsentRenewal();
   const aiConsent = useAiDataSharingConsentGate({ claimRenewalPrompt });
   const ensureMicrophonePermission = useEnsureMicrophonePermission();
-  const isUnmountedRef = useRef(false);
-
-  useEffect(() => {
-    isUnmountedRef.current = false;
-
-    return () => {
-      isUnmountedRef.current = true;
-    };
-  }, []);
+  const isUnmountedRef = useIsUnmountedRef();
 
   return async ({
     locale,

@@ -126,6 +126,11 @@ export const VoiceRecognizerLinkPolicy = {
     );
   },
 
+  // 시작을 맡긴 구간이 없는데 온 시작 신호는 이미 끊은 앞 구간의 것이다. 받으면 연 적 없는 구간을 듣는 중으로 본다
+  shouldAcceptStart(link: VoiceRecognizerLink): boolean {
+    return link.isRunning;
+  },
+
   isRestartLooping(link: VoiceRecognizerLink, now: number): boolean {
     return getQuickEndCount(link, now) >= VOICE_RESTART_LOOP.limit;
   },

@@ -2,6 +2,7 @@ import { createTranscript } from '../__tests__/voice.fixtures';
 import {
   createVoiceTranscript,
   getLowConfidenceWords,
+  isSpokenText,
   VoiceTranscriptPolicy,
 } from './voice-transcript.model';
 
@@ -33,6 +34,21 @@ describe('getLowConfidenceWords', () => {
 
     // Then
     expect(words).toEqual([]);
+  });
+});
+
+describe('isSpokenText', () => {
+  it.each([
+    { text: '장보기', expected: true },
+    { text: ' 장 ', expected: true },
+    { text: '', expected: false },
+    { text: ' \n ', expected: false },
+  ])('"$text"가 말인지는 $expected다', ({ text, expected }) => {
+    // When
+    const result = isSpokenText(text);
+
+    // Then
+    expect(result).toBe(expected);
   });
 });
 

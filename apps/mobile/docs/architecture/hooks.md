@@ -76,6 +76,7 @@
 | `useSuspenseMyAccountId()`                                      | `features/identity/user/hooks`        | `string`(경계 안, `select`로 id만 골라 다른 칸이 바뀌어도 다시 그리지 않는다)                                            | id만 쓰는 `useSuspenseQuery(useGetMeQueryOptions())`                       |
 | `usePushPermissionAction({ source })`                           | `features/notification/hooks`         | `{ runStep(step), isPending }`                                                                                           | 권한 요청·추적                                                             |
 | `useVoiceCaptureReadiness({ feature, surface, mode })`          | `features/voice/hooks`                | `({ locale, entry, onSubscribe }) => Promise<{ isReady }>`(한도 → 동의 → 마이크, 답을 기다리는 사이 내려가면 준비 안 됨) | `useStartVoiceNote`·`useAddTodoQuickVoice` 복제                            |
+| `useIsUnmountedRef()`                                           | `features/voice/hooks`                | `RefObject<boolean>`(await 뒤에 읽는다. effect가 다시 돌면 다시 붙은 것으로 본다)                                        | 음성 훅마다 따로 둔 `isUnmountedRef` effect                                |
 | `useWhatsNewCampaign()`                                         | `features/app-config/whats-new/hooks` | `{ config, isConfigLoading, release, identity, hasSeen }`                                                                | 3개 훅의 같은 조회                                                         |
 
 있는 도구도 같은 일에는 하나만 쓴다.

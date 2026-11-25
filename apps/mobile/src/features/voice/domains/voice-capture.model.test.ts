@@ -869,4 +869,117 @@ describe('VoiceCapturePolicy', () => {
       expect(elapsedMs).toBe(7_000);
     });
   });
+
+  describe('세션이 상태로 정하는 판단', () => {
+    const plan = voicePlanSchema.parse({
+      planId: 'plan-1',
+      source: 'quick-voice',
+      sourceMemoId: null,
+      actions: [],
+      omittedTodoCount: 0,
+    });
+    const STATES = [
+      { status: 'idle' },
+      { status: 'preparing' },
+      { status: 'listening', listeningSince: NOW },
+      { status: 'paused', cause: 'user' },
+      { status: 'finalizing' },
+      { status: 'planning' },
+      { status: 'review', plan, isCharged: false },
+      { status: 'failed', reason: 'client' },
+    ] as const;
+
+    describe('canBegin', () => {
+      it('처음 상태에서만 새로 듣기 시작한다', () => {
+        // When
+        const startable = STATES.filter((input) =>
+          VoiceCapturePolicy.canBegin(createCaptureState(input)),
+        );
+
+        // Then
+        expect(startable.map(({ status }) => status)).toEqual(['idle']);
+      });
+    });
+
+    describe('isAwaitingStart', () => {
+      it('준비 중일 때만 인식기의 시작을 기다린다', () => {
+        // When
+        const awaiting = STATES.filter((input) =>
+          VoiceCapturePolicy.isAwaitingStart(createCaptureState(input)),
+        );
+
+        // Then
+        expect(awaiting.map(({ status }) => status)).toEqual(['preparing']);
+      });
+    });
+
+    describe('shouldReportCancel', () => {
+      it('듣기를 연 뒤의 취소만 결과로 남기고 처음 상태와 고르는 단계의 취소는 남기지 않는다', () => {
+        // When
+        const reported = STATES.filter((input) =>
+          VoiceCapturePolicy.shouldReportCancel(createCaptureState(input)),
+        );
+
+        // Then
+        expect(reported.map(({ status }) => status)).toEqual([
+          'preparing',
+          'listening',
+          'paused',
+          'finalizing',
+          'planning',
+          'failed',
+        ]);
+      });
+    });
+
+    describe('findSegmentEndAction', () => {
+      it.each([
+        { input: { status: 'preparing' }, isStartDeferred: true, expected: 'start-deferred' },
+        {
+          input: { status: 'listening', listeningSince: NOW },
+          isStartDeferred: false,
+          expected: 'restart-segment',
+        },
+        { input: { status: 'finalizing' }, isStartDeferred: false, expected: 'finalize' },
+        { input: { status: 'preparing' }, isStartDeferred: false, expected: null },
+        { input: { status: 'paused', cause: 'user' }, isStartDeferred: false, expected: null },
+      ] as const)(
+        '$input.status 상태에서 구간이 끝나면(미룬 시작 $isStartDeferred) $expected다',
+        ({ input, isStartDeferred, expected }) => {
+          // Given
+          const state = createCaptureState(input);
+
+          // When
+          const action = VoiceCapturePolicy.findSegmentEndAction(state, isStartDeferred);
+
+          // Then
+          expect(action).toBe(expected);
+        },
+      );
+    });
+
+    describe('hasEndedEmpty', () => {
+      it.each([
+        { from: { status: 'finalizing' }, to: { status: 'idle' }, expected: true },
+        { from: { status: 'preparing' }, to: { status: 'idle' }, expected: true },
+        { from: { status: 'failed', reason: 'unknown' }, to: { status: 'idle' }, expected: true },
+        { from: { status: 'idle' }, to: { status: 'idle' }, expected: false },
+        { from: { status: 'planning' }, to: { status: 'idle' }, expected: false },
+        { from: { status: 'finalizing' }, to: { status: 'planning' }, expected: false },
+      ] as const)(
+        '$from.status에서 $to.status가 되면 들은 글자 없이 끝났는지는 $expected다',
+        ({ from, to, expected }) => {
+          // Given
+          const previous = createCaptureState(from);
+          const state = createCaptureState(to);
+
+          // When
+          const result = VoiceCapturePolicy.hasEndedEmpty(state, previous);
+
+          // Then
+          expect(result).toBe(expected);
+        },
+      );
+    });
+  });
 });

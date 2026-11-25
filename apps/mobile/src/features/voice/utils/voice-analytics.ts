@@ -8,6 +8,7 @@ import type {
 import { PlannedActionPolicy } from '../domains/planned-action.model';
 import type { VoiceCaptureState } from '../domains/voice-capture.model';
 import type { VoicePlan, VoicePlanSource } from '../domains/voice-plan.model';
+import { VoiceTranscriptPolicy } from '../domains/voice-transcript.model';
 
 const SECONDS = { thirtySeconds: 30, threeMinutes: 180, tenMinutes: 600 } as const;
 
@@ -49,4 +50,12 @@ export function toCaptureOutcome(
   state: Pick<VoiceCaptureState, 'status'>,
 ): Extract<VoiceCaptureOutcome, 'completed' | 'empty'> {
   return state.status === 'planning' ? 'completed' : 'empty';
+}
+
+/** 그만둔 세션의 결과. 들은 글자가 없으면 취소든 넘기기든 빈 세션으로 센다 */
+export function toAbandonedCaptureOutcome(
+  state: Pick<VoiceCaptureState, 'transcript'>,
+  outcome: Extract<VoiceCaptureOutcome, 'cancelled' | 'upgraded'>,
+): Extract<VoiceCaptureOutcome, 'cancelled' | 'upgraded' | 'empty'> {
+  return VoiceTranscriptPolicy.isTranscriptEmpty(state.transcript) ? 'empty' : outcome;
 }

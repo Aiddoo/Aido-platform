@@ -5,6 +5,9 @@ export const QUICK_CAPTURE_MAX_SECONDS = 90;
 /** 듣기를 시작하라고 한 뒤 인식기가 이 안에 시작을 알리지 않으면 실패로 보고 글자를 들고 멈춘다 */
 export const VOICE_PREPARING_TIMEOUT_MS = 10 * SECOND_MS;
 
+/** 인식기가 stop 뒤에 end를 주지 않는 기기를 위한 안전 시간. 끝내기·이어 듣기·멈춤 복구가 함께 쓴다 */
+export const RECOGNIZER_END_TIMEOUT_MS = 1_500;
+
 export const AUTO_FINISH_SILENCE_MS = 2_500;
 
 /** 서버가 아직 처리 중(AI_1314)이면 같은 키로 잠시 뒤 다시 묻는다. 차감은 한 번뿐이다 */

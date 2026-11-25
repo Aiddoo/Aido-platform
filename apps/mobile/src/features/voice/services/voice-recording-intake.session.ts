@@ -15,7 +15,10 @@ interface VoiceRecordingIntakeSessionPorts {
   accountId: string;
   draftId: string;
   draftRepository: Pick<VoiceNoteDraftRepository, 'find' | 'save'>;
-  recordingRepository: Pick<VoiceRecordingRepository, 'remove' | 'removeSource' | 'save'>;
+  recordingRepository: Pick<
+    VoiceRecordingRepository,
+    'findSourceOwner' | 'releaseSource' | 'remove' | 'removeSource' | 'reserveSource' | 'save'
+  >;
   discard: VoiceNoteStorageService['discard'];
   /** 로그아웃·탈퇴하면 늦은 파일을 지운 계정 폴더·초안에 쓰지 않는다. 세션 만료는 같은 사람이 돌아오므로 받는다 */
   signOutEpoch: Pick<SignOutEpoch, 'current' | 'subscribe'>;
@@ -51,16 +54,17 @@ export class VoiceRecordingIntakeSession {
 
   segmentStarted = (uri: string, startMs: number): void => {
     this.#segmentStarts.set(uri, startMs);
+    this.#deps.recordingRepository.reserveSource(uri, this.#deps.draftId);
   };
 
   receive = (uri: string, fallbackStartMs: number): void => {
+    const { draftId, recordingRepository } = this.#deps;
     const startMs = this.#segmentStarts.get(uri) ?? fallbackStartMs;
     this.#segmentStarts.delete(uri);
-    if (this.#hasDiscarded || this.#hasSignedOut()) {
-      this.#deps.recordingRepository.removeSource(uri);
-    } else {
-      const saving = this.#save(uri, startMs).finally(() => this.#pendingSaves.delete(saving));
-      this.#pendingSaves.add(saving);
+    const owner = recordingRepository.findSourceOwner(uri);
+    // 다른 초안이 맡은 파일은 이 화면의 구독이 먼저 받아도 옮기거나 지우지 않는다. 기다리던 끝내기만 아래에서 풀어 준다
+    if (owner == null || owner === draftId) {
+      this.#take(uri, startMs);
     }
     if (this.#segmentStarts.size === 0) {
       this.#notifyArrived?.();
@@ -155,8 +159,25 @@ export class VoiceRecordingIntakeSession {
 
   // 구독과 타이머만 정리하고 받기는 막지 않는다. 훅이 다시 붙으면(`reclaim`) 그 뒤의 녹음 조각도 저장해야 한다
   dispose = (): void => {
+    const { draftId, recordingRepository } = this.#deps;
     this.#stopLateListening?.();
     this.#notifyArrived?.();
+    // 더 기다리지 않는 파일은 놓는다. 맡아 둔 채 두면 늦게 온 파일을 다른 녹음도 받지 못한다
+    for (const uri of this.#segmentStarts.keys()) {
+      recordingRepository.releaseSource(uri, draftId);
+    }
+  };
+
+  #take = (uri: string, startMs: number): void => {
+    const { draftId, recordingRepository } = this.#deps;
+    if (this.#hasDiscarded || this.#hasSignedOut()) {
+      recordingRepository.removeSource(uri);
+      recordingRepository.releaseSource(uri, draftId);
+      return;
+    }
+    // 맡은 표시는 옮기기가 끝날 때 저장소가 놓는다. 그때까지 같은 파일을 뒤이어 받은 화면은 옮기려 하지 않는다
+    const saving = this.#save(uri, startMs).finally(() => this.#pendingSaves.delete(saving));
+    this.#pendingSaves.add(saving);
   };
 
   #save = async (sourceUri: string, startMs: number): Promise<void> => {

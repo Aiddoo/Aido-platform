@@ -146,7 +146,43 @@ const RECOGNIZER_FAILURE_CODES: ReadonlySet<SpeechErrorCode> = new Set([
 
 type VoiceDismissAction = 'cancel-capture' | 'cancel-planning' | 'confirm-discard';
 
+/** 인식기 구간이 끝났을 때 세션이 이어서 할 일 */
+type SegmentEndAction = 'start-deferred' | 'restart-segment' | 'finalize';
+
 export const VoiceCapturePolicy = {
+  canBegin(state: VoiceCaptureState): boolean {
+    return state.status === 'idle';
+  },
+
+  // 인식기가 시작을 알리기를 기다린다. 이때만 인식기를 열고, 그 사이 그만뒀으면 열지 않는다
+  isAwaitingStart(state: VoiceCaptureState): boolean {
+    return state.status === 'preparing';
+  },
+
+  // 앞 구간의 end를 기다리던 시작이 먼저다. 사용자가 끝내지 않은 구간은 다시 열고 끝내던 구간은 마무리한다
+  findSegmentEndAction(
+    state: VoiceCaptureState,
+    isStartDeferred: boolean,
+  ): SegmentEndAction | null {
+    if (isStartDeferred) {
+      return 'start-deferred';
+    }
+    if (this.shouldRestartSegment(state)) {
+      return 'restart-segment';
+    }
+    return state.status === 'finalizing' ? 'finalize' : null;
+  },
+
+  // 듣기를 연 뒤의 취소만 세션의 결과다. 처음 상태와 계획을 고르는 단계의 취소는 듣기의 끝이 아니다
+  shouldReportCancel(state: VoiceCaptureState): boolean {
+    return state.status !== 'idle' && state.status !== 'review';
+  },
+
+  // 열려 있던 세션이 정리(planning)를 거치지 않고 처음으로 돌아왔다. 글자를 넘긴 끝내기는 planning을 거치므로 들은 글자 없이 끝난 것이다
+  hasEndedEmpty(state: VoiceCaptureState, previous: VoiceCaptureState): boolean {
+    return state.status === 'idle' && previous.status !== 'idle' && previous.status !== 'planning';
+  },
+
   getElapsedMs(state: VoiceCaptureState, now: number): number {
     return state.status === 'listening'
       ? state.elapsedMs + Math.max(0, now - state.listeningSince)

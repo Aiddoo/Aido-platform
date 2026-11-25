@@ -21,6 +21,7 @@
 - 서버가 코드로 거절한 실패는 `createApiError(code, { message, status, details, retryAfterMs })`(`api-error.ts`, `core.ts`)로 만들고 `new ApiError(`를 테스트에 직접 쓰지 않는다. 문구·상태를 주지 않으면 서버 카탈로그(`Errors[code]`)의 값이고, 기능 fixture의 `create{Feature}ApiError`는 기능 기본 코드를 정해 이것을 부른다.
 - 기타: 끝나는 시점·실패를 테스트가 정하는 Promise는 내장 `Promise.withResolvers<T>()`를 쓴다(앱 코드는 lint가 막는다). 그 위의 `createPendingResponse(value)`(정한 값으로 끝나는 HTTP 응답, 두 번 누름·늦은 응답), `createStalledBodyResponse(status)`(헤더 뒤 본문이 멈춘 응답), `observeSettlement(promise)`(끝나지 않는 대기를 시간 초과 대신 `pending`으로 단언), `respondByPath({ path: 응답 })`(HTTP stub 하나가 URL마다 다른 응답), `createWidgetBridgeStub()`, `createRouteParamsFake(initial)`(공용 expo-router mock의 URL을 움직임), `stubWindowDimensions(width)`, `OverlayStateContext.Provider`(시트 활성 여부를 값으로 준다).
 - fake timer가 켜진 테스트에서 마이크로태스크를 비울 때는 `await Promise.resolve()` 대신 `await jest.advanceTimersByTimeAsync(0)`를 쓴다.
+- 상태는 남고 effect만 다시 도는 경우(StrictMode·Fast Refresh)는 `<Activity mode="visible">`로 그린 뒤 `hidden` → `visible`로 `rerender`해 재현한다(`use-voice-capture-session.test.tsx`). 이 테스트 렌더러는 `<StrictMode>`로 감싸도 effect를 다시 돌리지 않는다.
 
 |                                     | `jest.mock`                 | stub·fake                                |
 | ----------------------------------- | --------------------------- | ---------------------------------------- |

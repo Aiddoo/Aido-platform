@@ -15,12 +15,19 @@ import { useStoredValueStorage } from '@src/shared/storage/use-stored-value';
 import { useConfirmDialog } from '@src/shared/ui';
 import { useAppToast } from '@src/shared/ui';
 import { noop } from 'es-toolkit';
-import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react';
+import {
+  type RefObject,
+  useEffect,
+  useEffectEvent,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import type { SharedValue } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
 import type { VoiceCaptureEntry } from '../constants/voice.events';
-import type { VoiceCaptureState } from '../domains/voice-capture.model';
+import { VoiceCapturePolicy, type VoiceCaptureState } from '../domains/voice-capture.model';
 import {
   VoiceNoteCaptionsPolicy,
   type VoiceNoteCaptions,
@@ -34,14 +41,16 @@ import {
 } from '../domains/voice-note.model';
 import { offlineModelDeclinedStoredValue } from '../schemas/offline-model-declined-storage.schema';
 import { VoiceRecordingIntakeSession } from '../services/voice-recording-intake.session';
+import { useIsUnmountedRef } from './use-is-unmounted-ref';
 import { useSpeechEvent } from './use-speech-event';
-import { useVoiceCaptureSession } from './use-voice-capture-session';
+import { type VoiceCaptureControls, useVoiceCaptureSession } from './use-voice-capture-session';
 import { useVoiceCaptureTelemetry } from './use-voice-capture-telemetry';
 
 type VoiceNoteEntry = Extract<VoiceCaptureEntry, 'memo_tab' | 'quick_voice_upgrade'>;
 
 /** 초안을 바로 쓸지(`now`), 잦은 변화를 모아 쓸지(`later`) */
 type PersistTiming = 'later' | 'now';
+type PersistDraft = (timing: PersistTiming) => void;
 
 interface UseVoiceNoteRecordingOptions {
   accountId: string;
@@ -94,161 +103,53 @@ export function useVoiceNoteRecording({
   onFinished,
   onEmpty,
 }: UseVoiceNoteRecordingOptions) {
-  const draftRepository = useVoiceNoteDraftRepository();
-  const recordingRepository = useVoiceRecordingRepository();
-  const idGenerator = useIdGenerator();
-  const offerOnDeviceModel = useOfferOnDeviceModel({ accountId, entry });
-
-  const [seedNote] = useState(() =>
-    seedDraftId == null ? null : draftRepository.find(accountId, seedDraftId),
-  );
-  const [baseNote] = useState<VoiceNote>(
-    () =>
-      seedNote ??
-      createVoiceNote({
-        draftId: idGenerator.create(),
-        locale,
-        createdAt: getNowInstant(),
-      }),
-  );
+  const [seedNote, baseNote] = useVoiceNoteBase({ accountId, locale, seedDraftId });
   // 저장은 아래의 세션·자막을 읽고, 세션·자막은 바뀔 때 저장을 부른다. 서로 물려 가장 최근 저장을 ref로 잇는다
-  const persistRef = useRef<(timing: PersistTiming) => void>(noop);
+  const persistRef = useRef<PersistDraft>(noop);
   const intake = useRecordingIntake({
     accountId,
     draftId: baseNote.draftId,
     onRecordingSaved: () => persistRef.current('later'),
   });
-  const currentSegmentStartRef = useRef(0);
-  const hasBegunRef = useRef(false);
-  const isUnmountedRef = useRef(false);
-
-  /** 말로 메모하기는 고르는 단계가 없다. 녹음 파일까지 받아 초안을 저장하고 넘긴 뒤 계획 없이(null) 처음으로 돌아간다 */
-  const saveFinishedNote = async () => {
-    await intake.waitUntilSettled();
-    persistRef.current('now');
-    intake.handOff();
-    // 끝내는 동안 사용자가 이미 떠났다. 글자는 저장했고 다른 화면에서 끌어오지 않는다
-    if (!isUnmountedRef.current) {
-      onFinished(baseNote.draftId);
-    }
-    return null;
-  };
-
+  const isUnmountedRef = useIsUnmountedRef();
   const [capture, session] = useVoiceCaptureSession({
     entry,
     mode: 'note',
     maxSeconds,
     onLimitReached,
-    onCaptured: saveFinishedNote,
+    onCaptured: () =>
+      handOffFinishedNote({
+        intake,
+        persistRef,
+        isUnmountedRef,
+        onHandedOff: () => onFinished(baseNote.draftId),
+      }),
   });
-
   const captions = useVoiceNoteCaptions({
     seedNote,
     getElapsedMs: session.getElapsedMs,
     onChange: () => persistRef.current('later'),
   });
-
-  const toNote = (): VoiceNote => {
-    const nowMs = session.getElapsedMs();
-    return VoiceNotePolicy.withRecordings(
-      VoiceNotePolicy.withSentences(baseNote, captions.getSentencesAt(nowMs), nowMs),
-      intake.getRecordings(),
-    );
-  };
-
-  const persist = (timing: PersistTiming) => {
-    if (!intake.canWriteDraft()) {
-      return;
-    }
-    const note = toNote();
-    if (note.sentences.length === 0) {
-      return;
-    }
-    if (timing === 'now') {
-      draftRepository.save(accountId, note);
-    } else {
-      draftRepository.scheduleSave(accountId, note);
-    }
-  };
+  const persist = usePersistDraft({
+    accountId,
+    baseNote,
+    intake,
+    captions,
+    getElapsedMs: session.getElapsedMs,
+  });
   useLayoutEffect(() => {
     persistRef.current = persist;
   });
-
-  useSpeechEvent((event) => {
-    match(event)
-      .with({ type: 'start' }, () => {
-        currentSegmentStartRef.current = session.getElapsedMs();
-      })
-      .with({ type: 'recording-started' }, ({ uri }) => {
-        intake.segmentStarted(uri, session.getElapsedMs());
-      })
-      .with({ type: 'result' }, (result) => {
-        captions.applyResult(result, currentSegmentStartRef.current);
-      })
-      .with({ type: 'end' }, () => {
-        captions.commitProvisional();
-      })
-      .with({ type: 'recording-saved' }, ({ uri }) => {
-        intake.receive(uri, currentSegmentStartRef.current);
-      })
-      .with({ type: 'volume' }, { type: 'error' }, { type: 'no-match' }, noop)
-      .exhaustive();
+  useNoteSpeechEvents({ getElapsedMs: session.getElapsedMs, captions, intake });
+  useFlushDraftWhenStopped({ status: capture.state.status, onStopped: () => persist('now') });
+  useEmptyRecordingNotice({ state: capture.state, intake, onEmpty });
+  const start = useStartRecording({
+    accountId,
+    entry,
+    seedNote,
+    begin: session.begin,
+    isAbandoned: () => isUnmountedRef.current || intake.isDiscarded(),
   });
-
-  useEffect(() => {
-    isUnmountedRef.current = false;
-
-    return () => {
-      isUnmountedRef.current = true;
-    };
-  }, []);
-
-  const { status } = capture.state;
-  const previousStatusRef = useRef(status);
-  const flushDraft = useEffectEvent(() => {
-    persist('now');
-  });
-  const notifyEmpty = useEffectEvent(() => {
-    if (hasBegunRef.current) {
-      hasBegunRef.current = false;
-      intake.discard();
-      onEmpty();
-    }
-  });
-  useEffect(() => {
-    const previousStatus = previousStatusRef.current;
-    previousStatusRef.current = status;
-    if (status === 'paused' || status === 'failed') {
-      flushDraft();
-    }
-    // 듣기를 시작한 뒤 처음으로 돌아왔다면 들은 글자 없이 끝난 것이다. 저장하고 넘긴 끝내기는 planning을 거친다
-    if (status === 'idle' && previousStatus !== 'planning') {
-      notifyEmpty();
-    }
-  }, [status]);
-
-  /** 확인을 기다리는 사이 화면이 내려갔거나 초안을 지웠다. 묻지도 듣지도 않는다 */
-  const isStartAbandoned = () => isUnmountedRef.current || intake.isDiscarded();
-
-  const start: VoiceNoteRecordingControls['start'] = async ({ startLocale, hintWords }) => {
-    await offerOnDeviceModel(startLocale, { isAbandoned: isStartAbandoned });
-    if (isStartAbandoned()) {
-      return;
-    }
-    const hasBegun = await session.begin({
-      locale: startLocale,
-      hintWords,
-      recordingDirectory: recordingRepository.prepareDirectory(accountId),
-      seed: seedNote == null ? undefined : VoiceNotePolicy.toCaptureSeed(seedNote),
-    });
-    hasBegunRef.current = hasBegun;
-  };
-
-  const discard = () => {
-    hasBegunRef.current = false;
-    session.cancel();
-    intake.discard();
-  };
 
   const recording: VoiceNoteRecordingView = {
     state: capture.state,
@@ -268,10 +169,68 @@ export function useVoiceNoteRecording({
     resume: session.resume,
     changeLocale: session.changeLocale,
     mark: captions.mark,
-    discard,
+    discard: () => {
+      session.cancel();
+      intake.discard();
+    },
   };
 
   return [recording, controls] as const;
+}
+
+interface UseVoiceNoteBaseOptions {
+  accountId: string;
+  locale: SpeechLocale;
+  seedDraftId?: string;
+}
+
+/** 이어 듣는 초안(새 녹음이면 null)과 이번 녹음이 쓰는 초안의 바탕. 화면에 들어온 순간의 값으로 고정해 녹음 중에 저장된 초안으로 바뀌지 않는다 */
+function useVoiceNoteBase({
+  accountId,
+  locale,
+  seedDraftId,
+}: UseVoiceNoteBaseOptions): [seedNote: VoiceNote | null, baseNote: VoiceNote] {
+  const draftRepository = useVoiceNoteDraftRepository();
+  const idGenerator = useIdGenerator();
+  const [seedNote] = useState(() =>
+    seedDraftId == null ? null : draftRepository.find(accountId, seedDraftId),
+  );
+  const [baseNote] = useState<VoiceNote>(
+    () =>
+      seedNote ??
+      createVoiceNote({
+        draftId: idGenerator.create(),
+        locale,
+        createdAt: getNowInstant(),
+      }),
+  );
+
+  return [seedNote, baseNote];
+}
+
+interface HandOffFinishedNoteOptions {
+  intake: VoiceRecordingIntakeSession;
+  /** 파일을 기다린 뒤의 가장 최근 저장을 읽는다 */
+  persistRef: RefObject<PersistDraft>;
+  isUnmountedRef: RefObject<boolean>;
+  onHandedOff: () => void;
+}
+
+/** 말로 메모하기는 고르는 단계가 없다. 녹음 파일까지 받아 초안을 저장하고 넘긴 뒤 계획 없이(null) 처음으로 돌아간다 */
+async function handOffFinishedNote({
+  intake,
+  persistRef,
+  isUnmountedRef,
+  onHandedOff,
+}: HandOffFinishedNoteOptions): Promise<null> {
+  await intake.waitUntilSettled();
+  persistRef.current('now');
+  intake.handOff();
+  // 끝내는 동안 사용자가 이미 떠났다. 글자는 저장했고 다른 화면에서 끌어오지 않는다
+  if (!isUnmountedRef.current) {
+    onHandedOff();
+  }
+  return null;
 }
 
 interface UseRecordingIntakeOptions {
@@ -323,8 +282,26 @@ interface UseVoiceNoteCaptionsOptions {
   onChange: () => void;
 }
 
+type CaptionResult = Parameters<typeof VoiceNoteCaptionsPolicy.applyCaptionResult>[1];
+
+interface VoiceNoteCaptionsView {
+  sentences: readonly VoiceNoteSentence[];
+  interimText: string;
+  hasText: boolean;
+  bookmarksMs: readonly number[];
+  markCount: number;
+  mark: () => void;
+  applyResult: (result: CaptionResult, segmentStartMs: number) => void;
+  commitProvisional: () => void;
+  getSentencesAt: (nowMs: number) => VoiceNoteSentence[];
+}
+
 /** 녹음 화면에 그리는 자막과 중요 표시 */
-function useVoiceNoteCaptions({ seedNote, getElapsedMs, onChange }: UseVoiceNoteCaptionsOptions) {
+function useVoiceNoteCaptions({
+  seedNote,
+  getElapsedMs,
+  onChange,
+}: UseVoiceNoteCaptionsOptions): VoiceNoteCaptionsView {
   const haptics = useHaptics();
   const [captions, setCaptions] = useState<VoiceNoteCaptions>(() =>
     seedNote == null ? createVoiceNoteCaptions() : createVoiceNoteCaptions(seedNote.sentences),
@@ -350,10 +327,7 @@ function useVoiceNoteCaptions({ seedNote, getElapsedMs, onChange }: UseVoiceNote
       haptics.selection();
       update(VoiceNoteCaptionsPolicy.withBookmark(captionsRef.current, getElapsedMs()));
     },
-    applyResult: (
-      result: Parameters<typeof VoiceNoteCaptionsPolicy.applyCaptionResult>[1],
-      segmentStartMs: number,
-    ) => {
+    applyResult: (result, segmentStartMs) => {
       update(
         VoiceNoteCaptionsPolicy.applyCaptionResult(captionsRef.current, result, {
           nowMs: getElapsedMs(),
@@ -364,8 +338,158 @@ function useVoiceNoteCaptions({ seedNote, getElapsedMs, onChange }: UseVoiceNote
     commitProvisional: () => {
       update(VoiceNoteCaptionsPolicy.commitProvisional(captionsRef.current, getElapsedMs()));
     },
-    getSentencesAt: (nowMs: number) =>
+    getSentencesAt: (nowMs) =>
       VoiceNoteCaptionsPolicy.getCaptionSentences(captionsRef.current, nowMs),
+  };
+}
+
+interface UsePersistDraftOptions {
+  accountId: string;
+  baseNote: VoiceNote;
+  intake: VoiceRecordingIntakeSession;
+  captions: VoiceNoteCaptionsView;
+  getElapsedMs: () => number;
+}
+
+/** 들은 문장과 받은 녹음 조각을 기기 초안으로 쓴다. 넘겼거나 지운 초안과 문장이 없는 초안은 쓰지 않는다 */
+function usePersistDraft({
+  accountId,
+  baseNote,
+  intake,
+  captions,
+  getElapsedMs,
+}: UsePersistDraftOptions): PersistDraft {
+  const draftRepository = useVoiceNoteDraftRepository();
+
+  const toNote = (): VoiceNote => {
+    const nowMs = getElapsedMs();
+    return VoiceNotePolicy.withRecordings(
+      VoiceNotePolicy.withSentences(baseNote, captions.getSentencesAt(nowMs), nowMs),
+      intake.getRecordings(),
+    );
+  };
+
+  return (timing) => {
+    if (!intake.canWriteDraft()) {
+      return;
+    }
+    const note = toNote();
+    if (note.sentences.length === 0) {
+      return;
+    }
+    if (timing === 'now') {
+      draftRepository.save(accountId, note);
+    } else {
+      draftRepository.scheduleSave(accountId, note);
+    }
+  };
+}
+
+interface UseNoteSpeechEventsOptions {
+  getElapsedMs: () => number;
+  captions: VoiceNoteCaptionsView;
+  intake: VoiceRecordingIntakeSession;
+}
+
+/** 인식기 이벤트를 자막과 녹음 조각 받기로 잇는다. 구간이 시작한 경과 시각을 그 구간의 글자와 파일에 붙인다 */
+function useNoteSpeechEvents({ getElapsedMs, captions, intake }: UseNoteSpeechEventsOptions) {
+  const currentSegmentStartRef = useRef(0);
+
+  useSpeechEvent((event) => {
+    match(event)
+      .with({ type: 'start' }, () => {
+        currentSegmentStartRef.current = getElapsedMs();
+      })
+      .with({ type: 'recording-started' }, ({ uri }) => {
+        intake.segmentStarted(uri, getElapsedMs());
+      })
+      .with({ type: 'result' }, (result) => {
+        captions.applyResult(result, currentSegmentStartRef.current);
+      })
+      .with({ type: 'end' }, () => {
+        captions.commitProvisional();
+      })
+      .with({ type: 'recording-saved' }, ({ uri }) => {
+        intake.receive(uri, currentSegmentStartRef.current);
+      })
+      .with({ type: 'volume' }, { type: 'error' }, { type: 'no-match' }, noop)
+      .exhaustive();
+  });
+}
+
+interface UseFlushDraftWhenStoppedOptions {
+  status: VoiceCaptureState['status'];
+  onStopped: () => void;
+}
+
+/** 멈추거나 실패하면 모아 쓰던 초안을 바로 쓴다. 그대로 앱이 꺼져도 듣던 글자가 남는다 */
+function useFlushDraftWhenStopped({ status, onStopped }: UseFlushDraftWhenStoppedOptions) {
+  const flushDraft = useEffectEvent(onStopped);
+
+  useEffect(() => {
+    if (status === 'paused' || status === 'failed') {
+      flushDraft();
+    }
+  }, [status]);
+}
+
+interface UseEmptyRecordingNoticeOptions {
+  state: VoiceCaptureState;
+  intake: VoiceRecordingIntakeSession;
+  onEmpty: () => void;
+}
+
+/** 열린 녹음이 들은 글자 없이 끝나면 초안을 지우고 알린다. 닫으며 지운 초안은 알리지 않는다 */
+function useEmptyRecordingNotice({ state, intake, onEmpty }: UseEmptyRecordingNoticeOptions) {
+  const previousStateRef = useRef(state);
+
+  // 시작이 성공했는지가 아니라 상태가 열렸다 빈 채로 돌아온 것을 본다. 기능 확인이 실패한 뒤 이어 듣기로 연 녹음도 같은 길로 알린다
+  const notifyIfEndedEmpty = useEffectEvent(() => {
+    const previous = previousStateRef.current;
+    previousStateRef.current = state;
+    if (VoiceCapturePolicy.hasEndedEmpty(state, previous) && !intake.isDiscarded()) {
+      intake.discard();
+      onEmpty();
+    }
+  });
+
+  useEffect(() => {
+    notifyIfEndedEmpty();
+  }, [state.status]);
+}
+
+interface UseStartRecordingOptions {
+  accountId: string;
+  entry: VoiceNoteEntry;
+  /** 이어 듣는 초안이 있으면 그 글자와 시간 뒤로 듣는다 */
+  seedNote: VoiceNote | null;
+  begin: VoiceCaptureControls['begin'];
+  /** 확인을 기다리는 사이 화면이 내려갔거나 초안을 지웠다. 묻지도 듣지도 않는다 */
+  isAbandoned: () => boolean;
+}
+
+/** 기기 인식 모델을 받을지 물은 뒤 녹음 폴더를 정해 듣기 시작한다 */
+function useStartRecording({
+  accountId,
+  entry,
+  seedNote,
+  begin,
+  isAbandoned,
+}: UseStartRecordingOptions): VoiceNoteRecordingControls['start'] {
+  const recordingRepository = useVoiceRecordingRepository();
+  const offerOnDeviceModel = useOfferOnDeviceModel({ accountId, entry });
+
+  return async ({ startLocale, hintWords }) => {
+    await offerOnDeviceModel(startLocale, { isAbandoned });
+    if (isAbandoned()) {
+      return;
+    }
+    await begin({
+      locale: startLocale,
+      hintWords,
+      recordingDirectory: recordingRepository.prepareDirectory(accountId),
+      seed: seedNote == null ? undefined : VoiceNotePolicy.toCaptureSeed(seedNote),
+    });
   };
 }
 

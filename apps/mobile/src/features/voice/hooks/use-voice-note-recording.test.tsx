@@ -1141,6 +1141,36 @@ describe('useVoiceNoteRecording', () => {
     });
   });
 
+  it('기능 확인이 실패해 멈춘 뒤 이어 들은 녹음이 들은 글자 없이 끝나도 초안을 남기지 않고 알린다', async () => {
+    // Given
+    const user = userEvent.setup();
+    const { speechRecognizer, di, onEmpty } = await renderRecording();
+    // 첫 확인은 모델 제안이 읽고, 듣기를 여는 둘째 확인이 실패한다
+    speechRecognizer.getCapabilities
+      .mockResolvedValueOnce({
+        isAvailable: true,
+        canRecognizeOnDevice: true,
+        canDownloadOnDeviceModel: false,
+        canSaveRecording: true,
+        canContinue: true,
+      })
+      .mockRejectedValueOnce(new Error('native'));
+    await user.press(screen.getByRole('button', { name: 'start' }));
+    await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('failed'));
+    await user.press(screen.getByRole('button', { name: 'resume' }));
+    await waitFor(() => expect(speechRecognizer.start).toHaveBeenCalledTimes(1));
+    await act(async () => speechRecognizer.emit({ type: 'start' }));
+
+    // When
+    await user.press(screen.getByRole('button', { name: 'finish' }));
+    await act(async () => speechRecognizer.emit({ type: 'end' }));
+
+    // Then
+    expect(screen.getByTestId('status')).toHaveTextContent('idle');
+    expect(onEmpty).toHaveBeenCalledTimes(1);
+    expect(di.voiceNoteDraftRepository.findAll(ACCOUNT_ID)).toEqual([]);
+  });
+
   it('StrictMode·Fast Refresh처럼 상태는 남고 effect만 다시 돌아도 화면이 받은 녹음 파일을 한 번만 옮기고 내려간 뒤 늦은 파일도 초안에 더한다', async () => {
     // Given
     const user = userEvent.setup();

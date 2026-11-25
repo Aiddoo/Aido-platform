@@ -20,6 +20,11 @@ interface SaveRecordingInput {
 export interface VoiceRecordingRepository {
   /** 인식기가 파일을 쓸 폴더. 만들지 못하면 null이라 다시 듣기 없이 글자만 남긴다 */
   prepareDirectory(accountId: string): string | null;
+  /** 인식기가 쓰기 시작한 파일을 이 초안이 맡는다. 다 쓰이면 맡은 초안만 받는다. 옮기기를 마치면 저절로 풀리고, 지우거나 그만 기다리면 `releaseSource`로 놓는다 */
+  reserveSource(sourceUri: string, draftId: string): void;
+  releaseSource(sourceUri: string, draftId: string): void;
+  /** 이 파일을 맡은 초안. 맡은 곳이 없으면 null이라 받은 쪽이 옮긴다 */
+  findSourceOwner(sourceUri: string): string | null;
   /** 인식기가 쓴 파일을 초안 이름으로 옮기고 파일 이름을 돌려준다. 실패하면 null이다 */
   save(input: SaveRecordingInput): Promise<string | null>;
   findUri(accountId: string, fileName: string): string | null;
@@ -49,6 +54,8 @@ export function createVoiceRecordingRepository(
 ): VoiceRecordingRepository {
   /** 지금 옮기는 중인 원본. 옮기기가 끝나면 지워 쌓이지 않는다 */
   const movingSourceUris = new Set<string>();
+  /** 쓰는 중이거나 옮기는 중인 원본을 맡은 초안. 옮기기를 마치거나 그만 기다리면 지워 쌓이지 않는다 */
+  const sourceOwners = new Map<string, string>();
 
   const logRemoveFailed = (error: unknown) => {
     logger.warn(VOICE_LOG_EVENT.RECORDING_REMOVE_FAILED, { error: getErrorMessage(error) });
@@ -84,10 +91,25 @@ export function createVoiceRecordingRepository(
       }
     },
 
+    // 화면이 내려간 뒤 새 녹음 화면의 구독이 먼저 받아도 앞 녹음의 파일이 새 메모에 붙지 않게, 먼저 맡은 초안이 주인이다
+    reserveSource: (sourceUri, draftId) => {
+      if (!sourceOwners.has(sourceUri)) {
+        sourceOwners.set(sourceUri, draftId);
+      }
+    },
+
+    releaseSource: (sourceUri, draftId) => {
+      if (sourceOwners.get(sourceUri) === draftId) {
+        sourceOwners.delete(sourceUri);
+      }
+    },
+
+    findSourceOwner: (sourceUri) => sourceOwners.get(sourceUri) ?? null,
+
     save: async ({ accountId, draftId, partIndex, sourceUri }) => {
-      // 녹음 화면을 다시 연 직후에는 앞 녹음의 늦은 파일을 앞 세션과 새 화면이 함께 받는다. 먼저 옮기기 시작한 쪽만 옮긴다
+      // 맡은 초안이 있는 파일은 다른 초안이 여기까지 오지 않는다. 시작 신호가 없어 아무도 맡지 못한 파일만 먼저 옮기기 시작한 쪽이 옮긴다
       if (movingSourceUris.has(sourceUri)) {
-        // 건너뛴 쪽이 앞 녹음이면 조각이 다른 메모에 붙는다. 얼마나 일어나는지 볼 수 있게 남긴다
+        // 건너뛴 쪽이 앞 녹음이면 조각이 다른 메모에 붙는다. 맡지 못한 파일이 실제로 겹쳐 오는지 볼 수 있게 남긴다
         logger.info(VOICE_LOG_EVENT.RECORDING_SHARED_SOURCE_SKIPPED);
         return null;
       }
@@ -105,6 +127,9 @@ export function createVoiceRecordingRepository(
         return null;
       } finally {
         movingSourceUris.delete(sourceUri);
+        if (sourceOwners.get(sourceUri) === draftId) {
+          sourceOwners.delete(sourceUri);
+        }
       }
     },
 

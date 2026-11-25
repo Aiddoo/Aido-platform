@@ -333,4 +333,24 @@ describe('VoiceRecognizerLinkPolicy', () => {
       expect(result).toBe(expected);
     });
   });
+
+  describe('shouldAcceptStart', () => {
+    it('시작을 맡긴 구간이 있을 때만 시작 신호를 받고 끊거나 끝난 뒤의 늦은 신호는 받지 않는다', () => {
+      // Given
+      const idle = createVoiceRecognizerLink();
+      const requested = VoiceRecognizerLinkPolicy.reduceRecognizerLink(idle, {
+        type: 'start-requested',
+        at: NOW,
+      });
+      const ended = VoiceRecognizerLinkPolicy.reduceRecognizerLink(requested, { type: 'ended' });
+
+      // When
+      const results = [idle, requested, ended].map((link) =>
+        VoiceRecognizerLinkPolicy.shouldAcceptStart(link),
+      );
+
+      // Then
+      expect(results).toEqual([false, true, false]);
+    });
+  });
 });

@@ -31,6 +31,11 @@ export function getLowConfidenceWords(segments: readonly SpeechSegment[]): strin
   );
 }
 
+/** 공백뿐인 결과는 말이 아니다. 침묵 판단과 멈춤 감시는 말이 든 결과만 글자로 센다 */
+export function isSpokenText(text: string): boolean {
+  return text.trim().length > 0;
+}
+
 function replaceInterimResult(transcript: VoiceTranscript, text: string): VoiceTranscript {
   return { ...transcript, interim: text.trim() };
 }
