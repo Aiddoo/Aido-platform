@@ -1390,7 +1390,6 @@
     {
       // 래칫
       "files": [
-        "src/features/billing/subscription/**",
         "src/features/device/widget/**",
         "src/features/planning/todo/**",
         "src/features/social/invite/**",
@@ -1408,7 +1407,6 @@
       "files": [
         "src/shared/draft/draft.model.ts",
         "src/features/app-config/whats-new/**",
-        "src/features/billing/subscription/**",
         "src/features/planning/category/**",
         "src/features/planning/composer/**",
         "src/features/planning/todo/**",

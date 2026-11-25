@@ -30,17 +30,11 @@ export const subscriptionPlanSchema = z.object({
 });
 export type SubscriptionPlan = z.infer<typeof subscriptionPlanSchema>;
 
-export const subscriptionOfferingSchema = z.object({
-  identifier: z.string(),
-  plans: z.array(subscriptionPlanSchema),
-});
-export type SubscriptionOffering = z.infer<typeof subscriptionOfferingSchema>;
-
-export function hasFreeTrial(freeTrial: FreeTrial | null) {
-  return freeTrial != null;
-}
-
 export const SubscriptionPolicy = {
+  hasFreeTrial(plan: SubscriptionPlan): boolean {
+    return plan.freeTrial != null;
+  },
+
   /** 월간 결제를 12번 한 값 대비 연간 결제가 얼마나 싼지(%) */
   getAnnualDiscountPercent(monthlyPlan: SubscriptionPlan, annualPlan: SubscriptionPlan): number {
     return Math.round((1 - annualPlan.price / (monthlyPlan.price * MONTHS_PER_YEAR)) * 100);
@@ -48,23 +42,6 @@ export const SubscriptionPolicy = {
 
   getMonthlyEquivalent(annualPlan: SubscriptionPlan): number {
     return round(annualPlan.price / MONTHS_PER_YEAR, 2);
-  },
-
-  findSelectedPlan(
-    offering: SubscriptionOffering,
-    chosenPlanId: string | undefined,
-  ): SubscriptionPlan | null {
-    if (chosenPlanId != null) {
-      return offering.plans.find((plan) => plan.identifier === chosenPlanId) ?? null;
-    }
-    return this.findPlanByType(offering.plans, 'annual') ?? offering.plans[0] ?? null;
-  },
-
-  findPlanByType(
-    plans: readonly SubscriptionPlan[],
-    planType: SubscriptionPlan['planType'],
-  ): SubscriptionPlan | null {
-    return plans.find((plan) => plan.planType === planType) ?? null;
   },
 
   /** 결제 전 예상일이다. 실제 체험 끝은 결제 뒤 서버(premiumPeriodEndsAt)가 알려 준다. 월 단위는 말일을 넘기면 그 달 마지막 날로 맞춘다 */

@@ -16,7 +16,7 @@ import type { SubscriptionPlan } from '@src/features/billing/subscription/domain
 import { useCheckoutRoute } from '@src/features/billing/subscription/hooks/use-checkout-route';
 import { useOpenSubscriptionManagement } from '@src/features/billing/subscription/hooks/use-open-subscription-management';
 import { useSubscriptionParams } from '@src/features/billing/subscription/hooks/use-subscription-params';
-import { useSubscriptionReceipt } from '@src/features/billing/subscription/hooks/use-subscription-receipt';
+import { useSuspenseSubscriptionReceipt } from '@src/features/billing/subscription/hooks/use-suspense-subscription-receipt';
 import {
   selectHasFullAccess,
   useGetEntitlementsQueryOptions,
@@ -62,8 +62,11 @@ type CheckoutStepContexts = {
   welcome: { plan: SubscriptionPlan; purchasedOn: DateKey; hadRewardOnly: boolean };
 };
 
-/** 결제가 끝나면 서버 반영과 상관없이 방금 산 요금제로 시작 화면을 보여 준다. 뒤로 가기로 결제 화면에 돌아가지 않는다 */
-function SubscriptionScreen() {
+/**
+ * 마이 탭 구독 관리(`/settings/subscription`)와 업셀 모달(`/paywall`)이 같은 결제 흐름을 그린다. 경계·바깥 safe area는 두 route가 적는다.
+ * 결제가 끝나면 서버 반영과 상관없이 방금 산 요금제로 시작 화면을 보여 준다. 뒤로 가기로 결제 화면에 돌아가지 않는다
+ */
+export function SubscriptionCheckout() {
   const { trackEvent } = useTrack();
   const todayKey = useTodayKey();
   const stepper = useStepper<CheckoutStepContexts>({
@@ -77,13 +80,15 @@ function SubscriptionScreen() {
   return (
     <stepper.Render
       status={({ history }) => (
-        <SubscriptionScreen.Status
+        <SubscriptionCheckout.Status
           onPurchased={({ plan, hadRewardOnly }) =>
             history.replace('welcome', { plan, purchasedOn: todayKey, hadRewardOnly })
           }
         />
       )}
-      welcome={({ context }) => <SubscriptionScreen.Welcome {...context} onDone={finishWelcome} />}
+      welcome={({ context }) => (
+        <SubscriptionCheckout.Welcome {...context} onDone={finishWelcome} />
+      )}
     />
   );
 }
@@ -92,12 +97,12 @@ interface PurchaseFlowProps {
   onPurchased: (purchase: { plan: SubscriptionPlan; hadRewardOnly: boolean }) => void;
 }
 
-SubscriptionScreen.Status = function Status({ onPurchased }: PurchaseFlowProps) {
+SubscriptionCheckout.Status = function Status({ onPurchased }: PurchaseFlowProps) {
   // 권한과 내 정보는 서로 몰라 한 번에 시작한다. 영수증은 같은 내 정보 캐시를 읽는다
   const [{ data: entitlements }] = useSuspenseQueries({
     queries: [useGetEntitlementsQueryOptions(), useGetMeQueryOptions()],
   });
-  const receipt = useSubscriptionReceipt();
+  const receipt = useSuspenseSubscriptionReceipt();
   const [{ view }] = useSubscriptionParams();
 
   // 보상 기간만 있으면 끝나기 전에 구독을 이어 붙일 수 있게 요금제를 보여 준다.
@@ -108,13 +113,13 @@ SubscriptionScreen.Status = function Status({ onPurchased }: PurchaseFlowProps) 
     view,
   })
     .with({ canSubscribe: true, view: 'plans' }, { hasFullAccess: false }, () => (
-      <SubscriptionScreen.Plans onPurchased={onPurchased} />
+      <SubscriptionCheckout.Plans onPurchased={onPurchased} />
     ))
-    .with({ hasFullAccess: true }, () => <SubscriptionScreen.Receipt />)
+    .with({ hasFullAccess: true }, () => <SubscriptionCheckout.Receipt />)
     .exhaustive();
 };
 
-SubscriptionScreen.Plans = function Plans({ onPurchased }: PurchaseFlowProps) {
+SubscriptionCheckout.Plans = function Plans({ onPurchased }: PurchaseFlowProps) {
   // 혜택·요금제·비교표가 형제 경계라 서로를 기다리지 않게 한 번에 시작한다
   usePrefetchQuery(useGetEntitlementsQueryOptions());
   usePrefetchQuery(useGetOfferingsQueryOptions());
@@ -186,7 +191,7 @@ interface WelcomeProps {
   onDone: () => void;
 }
 
-SubscriptionScreen.Welcome = function Welcome({
+SubscriptionCheckout.Welcome = function Welcome({
   plan,
   purchasedOn,
   hadRewardOnly,
@@ -222,9 +227,9 @@ SubscriptionScreen.Welcome = function Welcome({
   );
 };
 
-SubscriptionScreen.Receipt = function Receipt() {
+SubscriptionCheckout.Receipt = function Receipt() {
   const { t } = useTranslation('subscription');
-  const { primaryAction } = useSubscriptionReceipt();
+  const { primaryAction } = useSuspenseSubscriptionReceipt();
   const openSubscriptionManagement = useOpenSubscriptionManagement();
   const isOnline = useIsOnline();
   const router = useRouter();
@@ -277,15 +282,16 @@ SubscriptionScreen.Receipt = function Receipt() {
 };
 
 /** 로딩은 곧 그릴 화면 모양을 미리 고른다. 이용 중인 사용자는 영수증, 그 밖에는 요금제 모양이다 */
-SubscriptionScreen.Loading = function Loading() {
+SubscriptionCheckout.Loading = function Loading() {
   const isOnline = useIsOnline();
   const [{ view }] = useSubscriptionParams();
   const [pathname] = useCheckoutRoute();
-  const { data: hasFullAccess = false } = useQuery({
+  const { data: hasFullAccess } = useQuery({
     ...useGetEntitlementsQueryOptions(),
     select: selectHasFullAccess,
   });
-  const isPlansShape = view === 'plans' || pathname === '/paywall' || !hasFullAccess;
+  // 권한을 아직 모르면 이용 중이라고 단정하지 않고 요금제 모양을 잡는다
+  const isPlansShape = view === 'plans' || pathname === '/paywall' || hasFullAccess !== true;
 
   // 오프라인이면 조회가 멈춰 스켈레톤이 끝나지 않는다. 연결되면 멈춘 조회가 이어서 화면을 채운다
   if (!isOnline) {
@@ -346,7 +352,7 @@ SubscriptionScreen.Loading = function Loading() {
   );
 };
 
-SubscriptionScreen.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
+SubscriptionCheckout.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
   return (
     <StyledSafeAreaView edges={['left', 'right']} className="flex-1">
       <ReadableContent className="flex-1 px-6">
@@ -393,7 +399,7 @@ function PlansScaffold({ children, footer, isScrollEnabled = true, testID }: Pla
 /** 요금제 조회 동안의 자리. 무료 체험을 처음 보는 사용자에게만 일정 카드 자리를 잡는다 */
 function PlanPickerFallback() {
   const isOnline = useIsOnline();
-  const { data: isNeverSubscribed = false } = useQuery({
+  const { data: isNeverSubscribed } = useQuery({
     ...useGetMeQueryOptions(),
     select: (user) => user.subscriptionStatus === 'FREE',
   });
@@ -407,7 +413,8 @@ function PlanPickerFallback() {
     <VStack gap={16}>
       <PlanPicker.Loading />
       <AmountDueToday.Loading className="px-1" />
-      {isNeverSubscribed && <TrialTimeline.Loading />}
+      {/* 내 정보를 아직 모르면 체험 일정 자리를 잡지 않는다 */}
+      {isNeverSubscribed === true && <TrialTimeline.Loading />}
     </VStack>
   );
 }
@@ -448,18 +455,5 @@ function TrialReminderToggle({ reminderDateKey }: { reminderDateKey: DateKey }) 
         />
       </Suspense>
     </QueryErrorBoundary>
-  );
-}
-
-/** 마이 탭 구독 관리(`/settings/subscription`)와 업셀 모달(`/paywall`)이 같은 결제 흐름을 그린다 */
-export function SubscriptionCheckout() {
-  return (
-    <StyledSafeAreaView className="flex-1 bg-white" edges={['bottom']}>
-      <QueryErrorBoundary fallback={SubscriptionScreen.Error}>
-        <Suspense fallback={<SubscriptionScreen.Loading />}>
-          <SubscriptionScreen />
-        </Suspense>
-      </QueryErrorBoundary>
-    </StyledSafeAreaView>
   );
 }

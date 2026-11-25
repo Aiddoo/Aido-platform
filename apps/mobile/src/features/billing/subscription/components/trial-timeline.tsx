@@ -27,7 +27,7 @@ import { type ComponentProps, type ComponentType, useEffect, useRef } from 'reac
 import Animated, { FadeIn, FadeOut, ReduceMotion } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-import { SubscriptionPolicy } from '../domains/subscription.model';
+import { SubscriptionOfferingPolicy } from '../domains/subscription-offering.model';
 import { useSelectedPlanId } from '../hooks/use-subscription-params';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
 import { getPlanPriceLabelKey } from '../utils/subscription-label.view-model';
@@ -63,7 +63,7 @@ export function TrialTimeline({ reminder: Reminder, className, ...props }: Trial
   const wasVisibleRef = useRef<boolean | null>(null);
   const plan =
     availability.status === 'available'
-      ? SubscriptionPolicy.findSelectedPlan(availability.offering, planId)
+      ? SubscriptionOfferingPolicy.findSelectedPlan(availability.offering, planId)
       : null;
   const steps = plan == null ? null : toTrialScheduleSteps(plan, todayKey);
   const visiblePlanType = steps == null ? null : (plan?.planType ?? null);

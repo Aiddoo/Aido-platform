@@ -2,7 +2,7 @@ import { LabelChip, Text } from '@src/shared/ui';
 import { Chip } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
-import { type EntitlementFeature } from '../domains/entitlement.model';
+import { type EntitlementFeature } from '../domains/feature-quota.model';
 import { useQuotaStatus } from '../hooks/use-quota-status';
 
 interface QuotaChipProps extends Omit<

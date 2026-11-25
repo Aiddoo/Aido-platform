@@ -140,6 +140,15 @@ export class PurchasesSession {
     return this.#configured;
   };
 
+  /**
+   * 만든 Provider가 내려가면 기다리던 로그인·로그아웃을 건너뛰고 SDK를 더 부르지 않는다(루트 "다시 시도"가 만든 새 세션과 겹치지 않게).
+   * 이미 보낸 SDK 호출은 제한 시간 안에 끝나고, 다시 configure하면 처음처럼 쓴다(StrictMode)
+   */
+  dispose = (): void => {
+    this.#configured = false;
+    this.#latestRequest += 1;
+  };
+
   // 바뀐 사용자에게도 다시 설정한다. 결제가 로그인 큐를 기다리므로 멈춰도 정해 둔 시간 뒤 경고만 남기고 넘어간다
   #syncSubscriberAttributes = async (): Promise<void> => {
     try {

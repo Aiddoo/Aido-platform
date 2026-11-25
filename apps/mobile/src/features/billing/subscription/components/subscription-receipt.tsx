@@ -22,14 +22,14 @@ import { range } from 'es-toolkit';
 import { Skeleton } from 'heroui-native';
 import { match, P } from 'ts-pattern';
 
-import { SubscriptionPolicy } from '../domains/subscription.model';
+import { SubscriptionOfferingPolicy } from '../domains/subscription-offering.model';
 import { useFormatPlanAmount } from '../hooks/use-format-plan-amount';
 import { useFormatReceiptDate } from '../hooks/use-format-receipt-date';
-import { useSubscriptionReceipt } from '../hooks/use-subscription-receipt';
+import { useSuspenseSubscriptionReceipt } from '../hooks/use-suspense-subscription-receipt';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
 import { getPremiumBenefitAmounts } from '../utils/plan-benefit.view-model';
-import { getPlanNameKey, getPlanPriceLabelKey } from '../utils/subscription-label.view-model';
+import { getPlanNameLabelKey, getPlanPriceLabelKey } from '../utils/subscription-label.view-model';
 import {
   type SubscriptionReceiptViewModel,
   toReceiptDateLabel,
@@ -38,7 +38,7 @@ import { ReceiptBenefitRow } from './receipt-benefit-row';
 
 export function SubscriptionReceipt() {
   const { t } = useTranslation('subscription');
-  const receipt = useSubscriptionReceipt();
+  const receipt = useSuspenseSubscriptionReceipt();
   const { variant, footnote } = receipt;
   const formatAmount = useFormatPlanAmount();
   const { data: entitlements } = useSuspenseQuery(useGetEntitlementsQueryOptions());
@@ -222,9 +222,10 @@ function usePlanPrices({ isEnabled }: { isEnabled: boolean }): Record<PlanType, 
     enabled: isEnabled,
     throwOnError: false,
   });
-  const plans = availability?.status === 'available' ? availability.offering.plans : [];
+  const offering = availability?.status === 'available' ? availability.offering : null;
   const formatPlanPrice = (planType: PlanType) => {
-    const plan = SubscriptionPolicy.findPlanByType(plans, planType);
+    const plan =
+      offering == null ? null : SubscriptionOfferingPolicy.findPlanByType(offering, planType);
     return plan == null ? null : t(getPlanPriceLabelKey(planType), { price: plan.priceString });
   };
 
@@ -401,7 +402,7 @@ function PlanRow({
 }) {
   const { t } = useTranslation('subscription');
   const price = planType == null ? null : planPrices[planType];
-  const name = t(planType == null ? 'receipt.rows.planUnknown' : getPlanNameKey(planType));
+  const name = t(planType == null ? 'receipt.rows.planUnknown' : getPlanNameLabelKey(planType));
 
   return (
     <Row

@@ -6,6 +6,7 @@ import { useQuotaStatus } from '@src/features/billing/subscription/hooks/use-quo
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useLocaleContext } from '@src/shared/hooks/use-locale-context';
+import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
 import { AiFilledIcon, HintPopoverContent, HStack, InfoIcon, Text, VStack } from '@src/shared/ui';
 import { formatCount } from '@src/shared/utils/number-format';
@@ -21,9 +22,10 @@ export function QuickVoiceQuota() {
   // 말풍선 내용은 DI·Query provider 바깥의 PortalHost에 그려져 그 안에서 조회할 수 없다
   const { data: snapshot } = useQuery(useGetEntitlementsQueryOptions());
   const formatRefillSentence = useFormatRefillSentence();
+  const now = useMinuteNow();
   const remaining =
     snapshot == null ? null : EntitlementPolicy.findRemainingCount(snapshot, 'AI_PARSE');
-  const refill = formatRefillSentence(snapshot, 'AI_PARSE');
+  const refill = formatRefillSentence(snapshot, 'AI_PARSE', now);
   const { type: quotaType } = useQuotaStatus('AI_PARSE');
   // 팝오버 안은 LocalDateProvider 바깥이라 useDateFormatContext를 쓸 수 없다
   const { intlLocale } = useLocaleContext();

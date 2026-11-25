@@ -1,6 +1,6 @@
 import type { SpeechLocale, SpeechMode } from '@src/core/ports/speech-recognizer';
 import type { EntitlementGateSurface } from '@src/features/billing/subscription/constants/subscription.events';
-import type { EntitlementFeature } from '@src/features/billing/subscription/domains/entitlement.model';
+import type { EntitlementFeature } from '@src/features/billing/subscription/domains/feature-quota.model';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { useClaimAiConsentRenewal } from '@src/features/device/coachmark/hooks/use-claim-ai-consent-renewal';
 import { useAiDataSharingConsentGate } from '@src/features/identity/consent/hooks/use-ai-data-sharing-consent-gate';

@@ -5,13 +5,11 @@ import type {
   PurchasePeriodUnit,
 } from '@src/core/ports/purchases-gateway';
 import { type PlanType, toPlanType } from '@src/shared/domains/plan-type.model';
+import { compact } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
-import {
-  type FreeTrial,
-  type SubscriptionOffering,
-  type SubscriptionPlan,
-} from '../domains/subscription.model';
+import { type SubscriptionOffering } from '../domains/subscription-offering.model';
+import { type FreeTrial, type SubscriptionPlan } from '../domains/subscription.model';
 
 function toStorePlanType(packageType: PurchasePackageType): PlanType | null {
   return match(packageType)
@@ -62,6 +60,6 @@ function toSubscriptionPlan(storePackage: PurchasePackage): SubscriptionPlan | n
 export function toSubscriptionOffering(offering: PurchaseOffering): SubscriptionOffering {
   return {
     identifier: offering.identifier,
-    plans: offering.packages.flatMap((storePackage) => toSubscriptionPlan(storePackage) ?? []),
+    plans: compact(offering.packages.map((storePackage) => toSubscriptionPlan(storePackage))),
   };
 }

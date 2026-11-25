@@ -401,6 +401,26 @@ describe('toSubscriptionReceiptViewModel', () => {
       expect(result.endingNotice).toBeNull();
     });
 
+    it('자동 갱신 중이고 쌓아 둔 보상이 없으면 스토어에서 자동 갱신을 관리하라고 안내한다', () => {
+      // When
+      const result = createReceipt(createRenewingMe());
+
+      // Then
+      expect(result.footnote).toEqual({ type: 'manageAutoRenewalInStore' });
+    });
+
+    it('체험을 해지했고 보상이 쌓여 있으면 체험이 끝나는 날부터 보상이 이어진다고 안내한다', () => {
+      // When
+      const result = createReceipt({ ...PREMIUM_ME_EXAMPLES.trialDuringReward, willRenew: false });
+
+      // Then
+      expect(result.footnote).toEqual({
+        type: 'rewardStartsOn',
+        days: 5,
+        date: toInstant('2028-03-26T04:00:00.000Z'),
+      });
+    });
+
     it('자동 갱신을 끄고 보상이 쌓여 있으면 구독이 끝나는 날부터 보상이 이어진다고 안내한다', () => {
       // When
       const result = createReceipt(PREMIUM_ME_EXAMPLES.cancelledWithBanked);

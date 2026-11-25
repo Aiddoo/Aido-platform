@@ -5,7 +5,7 @@ import benefitAiVoiceNoteImage from '@assets/images/subscription/benefit-ai-voic
 import { SECOND_MS } from '@src/shared/constants/time-units';
 import type { FeatureMediaProps } from '@src/shared/ui';
 
-import type { EntitlementFeature } from '../domains/entitlement.model';
+import type { EntitlementFeature } from '../domains/feature-quota.model';
 
 export const APP_STORE_SUBSCRIPTIONS_URL = 'https://apps.apple.com/account/subscriptions';
 export const PLAY_STORE_SUBSCRIPTIONS_URL = 'https://play.google.com/store/account/subscriptions';

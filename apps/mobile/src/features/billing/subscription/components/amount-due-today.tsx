@@ -5,6 +5,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 
+import { SubscriptionOfferingPolicy } from '../domains/subscription-offering.model';
 import { SubscriptionPolicy } from '../domains/subscription.model';
 import { useSelectedPlanId } from '../hooks/use-subscription-params';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
@@ -20,7 +21,7 @@ export function AmountDueToday(props: Omit<ComponentProps<typeof HStack>, 'child
   const { data: availability } = useSuspenseQuery(useGetOfferingsQueryOptions());
   const plan =
     availability.status === 'available'
-      ? SubscriptionPolicy.findSelectedPlan(availability.offering, planId)
+      ? SubscriptionOfferingPolicy.findSelectedPlan(availability.offering, planId)
       : null;
 
   if (plan == null) {

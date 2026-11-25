@@ -1,5 +1,5 @@
 import type { BenefitSlide } from '../constants/subscription.constants';
-import type { EntitlementFeature } from '../domains/entitlement.model';
+import type { EntitlementFeature } from '../domains/feature-quota.model';
 
 /** 막혀서 들어온 기능의 혜택부터 보여 준다. 혜택 장에 없는 기능이면 첫 장이다 */
 export function getInitialBenefitIndex(

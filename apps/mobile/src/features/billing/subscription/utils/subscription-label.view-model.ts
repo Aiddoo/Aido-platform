@@ -19,7 +19,7 @@ const FREE_TRIAL_PERIOD_LABEL_KEYS = {
   year: 'trialPeriod.year',
 } as const satisfies Record<FreeTrial['periodUnit'], string>;
 
-export function getPlanNameKey(planType: PlanType) {
+export function getPlanNameLabelKey(planType: PlanType) {
   return PLAN_NAME_KEYS[planType];
 }
 

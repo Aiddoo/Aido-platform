@@ -1,13 +1,13 @@
 import { i18n } from '@src/shared/i18n';
 
-import { toSubscriptionInquiryDraft } from './subscription-inquiry-draft';
+import { formatSubscriptionInquiryDraft } from './subscription-inquiry-draft';
 
-describe('toSubscriptionInquiryDraft', () => {
+describe('formatSubscriptionInquiryDraft', () => {
   afterEach(() => i18n.changeLanguage('ko'));
 
   it('설치 정보가 있으면 오류 코드와 앱 버전·기기를 함께 적는다', () => {
     // When
-    const draft = toSubscriptionInquiryDraft({
+    const draft = formatSubscriptionInquiryDraft({
       subject: '결제를 마치지 못했어요',
       diagnosticCode: 'SUBSCRIPTION_PURCHASE_FAILED (2)',
       installation: {
@@ -26,7 +26,7 @@ describe('toSubscriptionInquiryDraft', () => {
 
   it('설치 정보를 모르면 오류 코드만 적는다', () => {
     // When
-    const draft = toSubscriptionInquiryDraft({
+    const draft = formatSubscriptionInquiryDraft({
       subject: '요금제를 불러오지 못했어요',
       diagnosticCode: 'NETWORK',
       installation: null,
@@ -38,7 +38,7 @@ describe('toSubscriptionInquiryDraft', () => {
 
   it('화면 제목의 줄바꿈은 문의 첫 줄에서 한 칸 띄어 이어 적는다', () => {
     // When
-    const draft = toSubscriptionInquiryDraft({
+    const draft = formatSubscriptionInquiryDraft({
       subject: '지금은 구독 상품을\n보여드릴 수 없어요',
       diagnosticCode: 'SUBSCRIPTION_STORE_UNAVAILABLE (23)',
       installation: null,
@@ -55,7 +55,7 @@ describe('toSubscriptionInquiryDraft', () => {
     await i18n.changeLanguage('en');
 
     // When
-    const draft = toSubscriptionInquiryDraft({
+    const draft = formatSubscriptionInquiryDraft({
       subject: "Couldn't load plans",
       diagnosticCode: 'SERVER_503',
       installation: {

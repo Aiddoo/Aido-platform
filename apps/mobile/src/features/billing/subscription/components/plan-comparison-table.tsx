@@ -23,7 +23,7 @@ import { Popover, PressableFeedback, Separator } from 'heroui-native';
 import { type ComponentType, type ReactNode, useState } from 'react';
 import { match } from 'ts-pattern';
 
-import type { EntitlementFeature } from '../domains/entitlement.model';
+import type { EntitlementFeature } from '../domains/feature-quota.model';
 import { useFormatPlanValue } from '../hooks/use-format-plan-value';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
 import { type PlanValue, toPlanFeatureComparison } from '../utils/plan-benefit.view-model';

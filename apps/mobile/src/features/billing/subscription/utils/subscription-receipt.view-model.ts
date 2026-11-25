@@ -1,5 +1,8 @@
-import { PremiumAccessPolicy } from '@src/features/identity/user/domains/premium-access.model';
-import { type PremiumAccess } from '@src/features/identity/user/domains/premium-access.model';
+import {
+  type PremiumAccess,
+  PremiumAccessPolicy,
+  type PremiumBilling,
+} from '@src/features/identity/user/domains/premium-access.model';
 import { UserPolicy } from '@src/features/identity/user/domains/user.model';
 import { type User } from '@src/features/identity/user/domains/user.model';
 import { type Instant } from '@src/shared/date/instant';
@@ -125,8 +128,9 @@ function toEndingNotice(
   return PremiumAccessPolicy.findDaysLeft(access, now, timezone) === 0 ? 'today' : 'tomorrow';
 }
 
-function toBankedReward(access: PremiumAccess, endsAt: Instant | null): BankedReward | null {
-  return PremiumAccessPolicy.hasBankedDays(access) ? { days: access.bankedDays, endsAt } : null;
+function toBankedReward(access: PremiumAccess): BankedReward | null {
+  const banked = PremiumAccessPolicy.findBankedReward(access);
+  return banked == null ? null : { days: banked.days, endsAt: banked.endsAt };
 }
 
 function toAdminReceipt(access: PremiumAccess): SubscriptionReceiptViewModel {
@@ -135,7 +139,7 @@ function toAdminReceipt(access: PremiumAccess): SubscriptionReceiptViewModel {
     details: {
       rewardRecordEndsAt:
         PremiumAccessPolicy.isGrantOnly(access) && access.endsAt != null ? access.endsAt : null,
-      bankedDays: PremiumAccessPolicy.hasBankedDays(access) ? access.bankedDays : null,
+      bankedDays: PremiumAccessPolicy.findBankedReward(access)?.days ?? null,
     },
     footnote: null,
     primaryAction: null,
@@ -143,47 +147,54 @@ function toAdminReceipt(access: PremiumAccess): SubscriptionReceiptViewModel {
   };
 }
 
-function toPaidBilling(access: PremiumAccess, periodEndsAt: Instant, now: Instant): PaidBilling {
-  if (!access.willRenew) {
-    return { type: 'subscriptionEndsOn', date: periodEndsAt };
-  }
-  return PremiumAccessPolicy.isRenewalPending(access, now)
-    ? { type: 'renewalPending' }
-    : { type: 'nextBillingDate', date: periodEndsAt };
+function toPaidBilling(billing: PremiumBilling): PaidBilling {
+  return match(billing)
+    .returnType<PaidBilling>()
+    .with({ type: 'renews' }, ({ date }) => ({ type: 'nextBillingDate', date }))
+    .with({ type: 'renewalPending' }, () => ({ type: 'renewalPending' }))
+    .with({ type: 'ends' }, ({ date }) => ({ type: 'subscriptionEndsOn', date }))
+    .exhaustive();
 }
 
 // 자동 갱신 중이면 보상이 시작하는 날이 갱신마다 밀려 날짜 없이 일수만 보인다(시작 시점은 footnote가 설명한다)
 function toPaidDetails(access: PremiumAccess, now: Instant): PaidReceiptDetails | null {
-  const { periodEndsAt } = access;
-  if (periodEndsAt == null) {
+  const billing = PremiumAccessPolicy.findBilling(access, now);
+  if (billing == null) {
     return null;
   }
 
   return {
     planType: access.planType,
-    billing: toPaidBilling(access, periodEndsAt, now),
+    billing: toPaidBilling(billing),
     willRenew: access.willRenew,
-    banked: toBankedReward(access, access.willRenew ? null : access.endsAt),
+    banked: toBankedReward(access),
   };
 }
 
-function toBankedRewardFootnote(access: PremiumAccess): SubscriptionReceiptFootnote {
-  const startsAt = PremiumAccessPolicy.findBankedRewardStartsAt(access);
+function toRewardFootnote({
+  days,
+  startsAt,
+}: {
+  days: number;
+  startsAt: Instant | null;
+}): SubscriptionReceiptFootnote {
   return startsAt == null
-    ? { type: 'rewardStartsAfterSubscription', days: access.bankedDays }
-    : { type: 'rewardStartsOn', days: access.bankedDays, date: startsAt };
+    ? { type: 'rewardStartsAfterSubscription', days }
+    : { type: 'rewardStartsOn', days, date: startsAt };
 }
 
+/** 쌓아 둔 보상이 있으면 그 안내가 먼저다. 자동 갱신 중이면 보상은 구독 뒤로 밀린다 */
 function toPaidFootnote(access: PremiumAccess): SubscriptionReceiptFootnote | null {
-  if (PremiumAccessPolicy.hasBankedDays(access)) {
-    return toBankedRewardFootnote(access);
-  }
-
-  if (access.willRenew) {
-    return { type: 'manageAutoRenewalInStore' };
-  }
-
-  return access.endsAt == null ? null : { type: 'returnsToFreePlan', date: access.endsAt };
+  return match(PremiumAccessPolicy.findAfterPeriod(access))
+    .returnType<SubscriptionReceiptFootnote | null>()
+    .with({ type: 'renews', bankedDays: 0 }, () => ({ type: 'manageAutoRenewalInStore' }))
+    .with({ type: 'renews' }, ({ bankedDays }) =>
+      toRewardFootnote({ days: bankedDays, startsAt: null }),
+    )
+    .with({ type: 'reward' }, (reward) => toRewardFootnote(reward))
+    .with({ type: 'free' }, ({ date }) => ({ type: 'returnsToFreePlan', date }))
+    .with(null, () => null)
+    .exhaustive();
 }
 
 /** 이어질 길이 없이 끝나는 안내가 먼저고, 자동 갱신 중인 연간 구독이면 결제 며칠 전에 알린다 */
@@ -212,43 +223,41 @@ function toPaidReceipt(
   };
 }
 
-function toTrialBilling(
-  access: PremiumAccess,
-  periodEndsAt: Instant,
-  now: Instant,
-): TrialBilling | null {
-  if (!access.willRenew) {
-    return null;
-  }
-  return PremiumAccessPolicy.isRenewalPending(access, now)
-    ? { type: 'renewalPending' }
-    : { type: 'firstBillingDate', date: periodEndsAt };
+/** 체험을 해지했으면 첫 결제가 없다 */
+function toTrialBilling(billing: PremiumBilling): TrialBilling | null {
+  return match(billing)
+    .returnType<TrialBilling | null>()
+    .with({ type: 'renews' }, ({ date }) => ({ type: 'firstBillingDate', date }))
+    .with({ type: 'renewalPending' }, () => ({ type: 'renewalPending' }))
+    .with({ type: 'ends' }, () => null)
+    .exhaustive();
 }
 
 function toTrialDetails(access: PremiumAccess, now: Instant): TrialReceiptDetails | null {
   const { periodEndsAt } = access;
-  if (periodEndsAt == null) {
+  const billing = PremiumAccessPolicy.findBilling(access, now);
+  if (periodEndsAt == null || billing == null) {
     return null;
   }
 
   return {
     planType: access.planType,
     trialEndsOn: periodEndsAt,
-    billing: toTrialBilling(access, periodEndsAt, now),
+    billing: toTrialBilling(billing),
     willRenew: access.willRenew,
-    banked: toBankedReward(access, access.willRenew ? null : access.endsAt),
+    banked: toBankedReward(access),
   };
 }
 
 /** 체험 중엔 "언제까지 해지하면 결제되지 않나"가 가장 궁금해 보상 안내보다 먼저 보인다(보상 일수는 행에 있다) */
 function toTrialFootnote(access: PremiumAccess): SubscriptionReceiptFootnote | null {
-  if (access.willRenew) {
-    return { type: 'cancelTrialInStore' };
-  }
-  if (PremiumAccessPolicy.hasBankedDays(access)) {
-    return toBankedRewardFootnote(access);
-  }
-  return access.endsAt == null ? null : { type: 'returnsToFreePlan', date: access.endsAt };
+  return match(PremiumAccessPolicy.findAfterPeriod(access))
+    .returnType<SubscriptionReceiptFootnote | null>()
+    .with({ type: 'renews' }, () => ({ type: 'cancelTrialInStore' }))
+    .with({ type: 'reward' }, (reward) => toRewardFootnote(reward))
+    .with({ type: 'free' }, ({ date }) => ({ type: 'returnsToFreePlan', date }))
+    .with(null, () => null)
+    .exhaustive();
 }
 
 function toTrialEndingNotice(
@@ -319,18 +328,10 @@ export function toSubscriptionReceiptViewModel(
 ): SubscriptionReceiptViewModel {
   const access = user.premiumAccess;
 
-  return match(user)
-    .when(
-      (user) => UserPolicy.isAdmin(user),
-      () => toAdminReceipt(access),
-    )
-    .when(
-      () => PremiumAccessPolicy.isGrantOnly(access),
-      () => toRewardReceipt(access, context),
-    )
-    .when(
-      () => PremiumAccessPolicy.isTrial(access),
-      () => toTrialReceipt(access, context),
-    )
-    .otherwise(() => toPaidReceipt(access, context));
+  return match(PremiumAccessPolicy.getReceiptKind(access, { isAdmin: UserPolicy.isAdmin(user) }))
+    .with('admin', () => toAdminReceipt(access))
+    .with('reward', () => toRewardReceipt(access, context))
+    .with('trial', () => toTrialReceipt(access, context))
+    .with('paid', () => toPaidReceipt(access, context))
+    .exhaustive();
 }

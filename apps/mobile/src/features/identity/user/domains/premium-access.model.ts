@@ -27,6 +27,28 @@ export const premiumAccessSchema = z.object({
 });
 export type PremiumAccess = z.infer<typeof premiumAccessSchema>;
 
+/** 영수증 출처. 관리자 > 초대 보상만 > 스토어 무료 체험 > 스토어 결제 순으로 고른다 */
+type PremiumReceiptKind = 'admin' | 'reward' | 'trial' | 'paid';
+
+/** 지금 기간 끝에 일어나는 결제. 자동 갱신 중인데 끝이 지났으면 스토어 갱신이 서버에 아직 반영되지 않았다(최대 유예 3시간) */
+export type PremiumBilling =
+  | { type: 'renews'; date: Instant }
+  | { type: 'renewalPending' }
+  | { type: 'ends'; date: Instant };
+
+/** 쌓아 둔 보상. 자동 갱신 중이면 시작·끝이 갱신마다 밀려 둘 다 모른다(null) */
+interface BankedReward {
+  days: number;
+  startsAt: Instant | null;
+  endsAt: Instant | null;
+}
+
+/** 지금 기간이 끝난 뒤. 자동 갱신(쌓아 둔 보상은 그 뒤로 밀린다), 쌓아 둔 보상이 이어짐, 무료로 돌아감 */
+type PremiumAfterPeriod =
+  | { type: 'renews'; bankedDays: number }
+  | { type: 'reward'; days: number; startsAt: Instant | null }
+  | { type: 'free'; date: Instant };
+
 function isWithinNoticeDays(daysLeft: number, noticeDays: number) {
   return daysLeft <= noticeDays;
 }
@@ -139,6 +161,53 @@ export const PremiumAccessPolicy = {
       return null;
     }
     return access.periodEndsAt;
+  },
+
+  /** 쌓아 둔 보상의 일수와 이어지는 기간. 자동 갱신 중이면 끝(전체 프리미엄의 끝)도 갱신마다 밀려 모른다 */
+  findBankedReward(access: PremiumAccess): BankedReward | null {
+    if (!this.hasBankedDays(access)) {
+      return null;
+    }
+    return {
+      days: access.bankedDays,
+      startsAt: this.findBankedRewardStartsAt(access),
+      endsAt: access.willRenew ? null : access.endsAt,
+    };
+  },
+
+  getReceiptKind(access: PremiumAccess, { isAdmin }: { isAdmin: boolean }): PremiumReceiptKind {
+    if (isAdmin) {
+      return 'admin';
+    }
+    if (this.isGrantOnly(access)) {
+      return 'reward';
+    }
+    return this.isTrial(access) ? 'trial' : 'paid';
+  },
+
+  /** 스토어 구독(체험 포함) 기간 끝의 결제. 기간을 모르면 null이다 */
+  findBilling(access: PremiumAccess, now: Instant): PremiumBilling | null {
+    if (access.periodEndsAt == null) {
+      return null;
+    }
+    if (!access.willRenew) {
+      return { type: 'ends', date: access.periodEndsAt };
+    }
+    return this.isRenewalPending(access, now)
+      ? { type: 'renewalPending' }
+      : { type: 'renews', date: access.periodEndsAt };
+  },
+
+  /** 지금 기간 뒤에 무엇이 이어지나. 자동 갱신이 먼저고, 아니면 쌓아 둔 보상, 둘 다 없으면 무료로 돌아가는 날이다 */
+  findAfterPeriod(access: PremiumAccess): PremiumAfterPeriod | null {
+    if (access.willRenew) {
+      return { type: 'renews', bankedDays: access.bankedDays };
+    }
+    const banked = this.findBankedReward(access);
+    if (banked != null) {
+      return { type: 'reward', days: banked.days, startsAt: banked.startsAt };
+    }
+    return access.endsAt == null ? null : { type: 'free', date: access.endsAt };
   },
 
   /** 서버가 다시 계산한 값이 하나라도 바뀌면 한도·사용량 같은 프리미엄 의존 데이터도 달라진다 */

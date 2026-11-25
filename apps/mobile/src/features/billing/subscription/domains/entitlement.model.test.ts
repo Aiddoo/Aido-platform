@@ -1,5 +1,4 @@
 import { PLAN_CATALOG } from '@aido/api/vocabulary';
-import { HOUR_MS, MINUTE_MS } from '@src/shared/constants/time-units';
 import { toInstant } from '@src/shared/date/instant';
 
 import {
@@ -7,31 +6,11 @@ import {
   createFeatureQuotaDto,
 } from '../__tests__/entitlement.fixtures';
 import { toFeatureQuota } from '../apis/entitlement.mapper';
-import { EntitlementPolicy, getBlockedDecision } from './entitlement.model';
+import { EntitlementPolicy } from './entitlement.model';
 
 const SEOUL = 'Asia/Seoul';
 const LOS_ANGELES = 'America/Los_Angeles';
 const NOW = toInstant('2026-11-15T00:00:00.000Z');
-
-describe('getBlockedDecision', () => {
-  it.each([
-    ['서버가 한도를 열어 두고 줬으면', 'AI_PARSE', true, 'limit-reached'],
-    ['서버가 등급에서 닫았다고 줬으면', 'AI_PARSE', false, 'locked'],
-    ['한도 정보가 없는 횟수 기능이면', 'AI_PARSE', null, 'limit-reached'],
-    ['한도 정보가 없는 켜고 끄는 기능이면', 'APP_ICON', null, 'locked'],
-  ] as const)('%s %s는 %s다', (_label, feature, allowed, expected) => {
-    // Given
-    const featureQuota =
-      allowed == null ? null : { ...toFeatureQuota(createFeatureQuotaDto(feature)), allowed };
-    const limited = { feature, featureQuota };
-
-    // When
-    const decision = getBlockedDecision(limited);
-
-    // Then
-    expect(decision).toBe(expected);
-  });
-});
 
 describe('EntitlementPolicy', () => {
   describe('hasFullAccess', () => {
@@ -423,69 +402,6 @@ describe('EntitlementPolicy', () => {
 
       // Then
       expect(shouldOffer).toBe(expected);
-    });
-  });
-
-  describe('getRefetchIntervalMs', () => {
-    // 콕(하루)은 11-05 15:00Z, AI 정리(한 달)는 11-30 15:00Z에 초기화된다
-    const snapshot = createEntitlementSnapshot();
-
-    it('가장 먼저 오는 초기화(콕 하루 한도의 자정) 순간에 다시 받는다', () => {
-      // When
-      const intervalMs = EntitlementPolicy.getRefetchIntervalMs(
-        snapshot,
-        toInstant('2026-11-05T14:30:00.000Z'),
-      );
-
-      // Then
-      expect(intervalMs).toBe(30 * MINUTE_MS);
-    });
-
-    it('초기화가 하루보다 멀면 타이머 상한을 넘지 않게 하루 뒤 다시 잰다', () => {
-      // When
-      const intervalMs = EntitlementPolicy.getRefetchIntervalMs(
-        snapshot,
-        toInstant('2026-11-01T00:00:00.000Z'),
-      );
-
-      // Then
-      expect(intervalMs).toBe(24 * HOUR_MS);
-    });
-
-    it('이미 지난 초기화와 올 초기화가 섞여 있으면 올 초기화에 맞춘다', () => {
-      // When
-      const intervalMs = EntitlementPolicy.getRefetchIntervalMs(
-        snapshot,
-        toInstant('2026-11-30T14:30:00.000Z'),
-      );
-
-      // Then
-      expect(intervalMs).toBe(30 * MINUTE_MS);
-    });
-
-    it('초기화가 모두 지났으면 1분마다 묻지 않고 시각으로 다시 묻지 않는다', () => {
-      // When
-      const intervalMs = EntitlementPolicy.getRefetchIntervalMs(
-        snapshot,
-        toInstant('2026-11-30T15:00:05.000Z'),
-      );
-
-      // Then
-      expect(intervalMs).toBe(false);
-    });
-
-    it('초기화가 없는 스냅샷(관리자)은 시각으로 다시 묻지 않는다', () => {
-      // Given
-      const admin = createEntitlementSnapshot({ tier: 'ADMIN' });
-
-      // When
-      const intervalMs = EntitlementPolicy.getRefetchIntervalMs(
-        admin,
-        toInstant('2026-11-05T14:30:00.000Z'),
-      );
-
-      // Then
-      expect(intervalMs).toBe(false);
     });
   });
 });

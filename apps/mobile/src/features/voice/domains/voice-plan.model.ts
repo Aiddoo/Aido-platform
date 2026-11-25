@@ -1,5 +1,5 @@
 import { ACTION_PLAN_LIMITS, TODO_ITEM_LIMITS, TODO_VISIBILITIES } from '@aido/api/vocabulary';
-import type { FeatureQuota } from '@src/features/billing/subscription/domains/entitlement.model';
+import type { FeatureQuota } from '@src/features/billing/subscription/domains/feature-quota.model';
 import { todoRepeatSchema } from '@src/features/planning/todo/domains/todo-repeat.model';
 import { dateKeyFieldSchema } from '@src/shared/date/date-key';
 import { groupBy, uniq } from 'es-toolkit';

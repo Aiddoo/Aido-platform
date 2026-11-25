@@ -29,6 +29,7 @@ export function PurchasesProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     session.configure();
+    return () => session.dispose();
   }, [session]);
 
   // 인증 게이트 위의 Provider라 사용자 조회에서 suspend하지 않도록 useSuspenseQuery 대신 useQuery를 쓴다

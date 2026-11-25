@@ -5,8 +5,8 @@ import { formatCount } from '@src/shared/utils/number-format';
 import { useQuery } from '@tanstack/react-query';
 import { match } from 'ts-pattern';
 
-import { type EntitlementFeature } from '../domains/entitlement.model';
 import { EntitlementPolicy } from '../domains/entitlement.model';
+import { type EntitlementFeature } from '../domains/feature-quota.model';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
 
 /** 렌더 중 읽은 지금은 React Compiler가 붙잡으므로 한도 창(일·월)이 바뀌는 순간을 놓치지 않게 분 시계로 계산한다 */

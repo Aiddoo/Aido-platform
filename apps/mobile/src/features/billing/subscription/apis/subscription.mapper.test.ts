@@ -1,6 +1,6 @@
 import type { PurchaseOffering, PurchasePackage } from '@src/core/ports/purchases-gateway';
 
-import { subscriptionOfferingSchema } from '../domains/subscription.model';
+import { subscriptionOfferingSchema } from '../domains/subscription-offering.model';
 import { toSubscriptionOffering } from './subscription.mapper';
 
 function createPurchasePackage(overrides?: Partial<PurchasePackage>): PurchasePackage {

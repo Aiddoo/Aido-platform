@@ -271,7 +271,6 @@ const COMPONENT_OR_HOOK_IMPORTER = /^src\/(?:features|shared)\/.+\/(?:components
 // 래칫: 아직 고치지 않은 feature. 그 feature 층이 끝나면 지운다. 남길 파일(Skia 레이어·차트·상태 기계 훅)은 자체 테스트를 둔다
 const LOCAL_ONLY_PENDING_FEATURES = new Set([
   'app-config/whats-new',
-  'billing/subscription',
   'device/coachmark',
   'identity/auth',
   'insights/report',

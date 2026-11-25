@@ -1,9 +1,9 @@
 import { createPremiumAccess } from '@src/features/identity/user/__tests__/premium-access.fixtures';
 
 import { createEntitlementSnapshot } from '../__tests__/entitlement.fixtures';
-import { toPlanTypeLabelKey } from './plan-type-label.view-model';
+import { getPlanTypeLabelKey } from './plan-type-label.view-model';
 
-describe('toPlanTypeLabelKey', () => {
+describe('getPlanTypeLabelKey', () => {
   it.each([
     ['연간 스토어 구독이면 연간', 'annual', 'plan.annual'],
     ['월간 스토어 구독이면 월간', 'monthly', 'plan.monthly'],
@@ -13,7 +13,7 @@ describe('toPlanTypeLabelKey', () => {
     const access = createPremiumAccess({ source: 'STORE', planType });
 
     // When
-    const key = toPlanTypeLabelKey(access, createEntitlementSnapshot({ tier: 'PREMIUM' }));
+    const key = getPlanTypeLabelKey(access, createEntitlementSnapshot({ tier: 'PREMIUM' }));
 
     // Then
     expect(key).toBe(expected);
@@ -28,7 +28,7 @@ describe('toPlanTypeLabelKey', () => {
     const access = createPremiumAccess({ source, planType: null });
 
     // When
-    const key = toPlanTypeLabelKey(access, createEntitlementSnapshot({ tier }));
+    const key = getPlanTypeLabelKey(access, createEntitlementSnapshot({ tier }));
 
     // Then
     expect(key).toBe(expected);

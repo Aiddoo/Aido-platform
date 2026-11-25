@@ -7,7 +7,7 @@ import {
 import { isApiError } from '@src/core/errors/api-error';
 import { ServerError } from '@src/shared/errors';
 
-import { type EntitlementFeature } from './entitlement.model';
+import { type EntitlementFeature } from './feature-quota.model';
 
 const LIMITED_FEATURE_BY_ERROR_CODE = {
   [ErrorCode.AI_1303]: 'AI_PARSE',

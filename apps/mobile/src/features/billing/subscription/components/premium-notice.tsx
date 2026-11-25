@@ -12,7 +12,7 @@ import { Chip } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { match, P } from 'ts-pattern';
 
-import { useSubscriptionReceipt } from '../hooks/use-subscription-receipt';
+import { useSuspenseSubscriptionReceipt } from '../hooks/use-suspense-subscription-receipt';
 import type { SubscriptionReceiptViewModel } from '../utils/subscription-receipt.view-model';
 
 type PremiumNoticeProps = Pick<ComponentProps<typeof Text>, 'className'>;
@@ -20,7 +20,7 @@ type PremiumNoticeProps = Pick<ComponentProps<typeof Text>, 'className'>;
 /** 체험은 끝나기 며칠 전부터, 그 밖의 프리미엄은 이어질 길이 없을 때 하루 안에 끝나면 알린다 */
 export function PremiumNotice({ className }: PremiumNoticeProps) {
   const { t } = useTranslation(['subscription', 'common']);
-  const receipt = useSubscriptionReceipt();
+  const receipt = useSuspenseSubscriptionReceipt();
   const toDaysLeftBadge = (daysLeft: number) =>
     match(daysLeft)
       .with(0, () => t('common:relativeDay.today'))

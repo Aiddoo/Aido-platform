@@ -10,8 +10,9 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { match } from 'ts-pattern';
 
+import { SubscriptionOfferingPolicy } from '../domains/subscription-offering.model';
 import { type SubscriptionPlan } from '../domains/subscription.model';
-import { hasFreeTrial, SubscriptionPolicy } from '../domains/subscription.model';
+import { SubscriptionPolicy } from '../domains/subscription.model';
 import { useOpenSubscriptionInquiry } from '../hooks/use-open-subscription-inquiry';
 import { useSelectedPlanId } from '../hooks/use-subscription-params';
 import { usePurchaseMutationOptions } from '../queries/subscription.mutations';
@@ -42,7 +43,7 @@ export function PurchaseButton({ onPurchased }: PurchaseButtonProps) {
   });
   const selectedPlan =
     availability?.status === 'available'
-      ? SubscriptionPolicy.findSelectedPlan(availability.offering, planId)
+      ? SubscriptionOfferingPolicy.findSelectedPlan(availability.offering, planId)
       : null;
   const freeTrial = selectedPlan?.freeTrial ?? null;
   const trialEndDateKey =
@@ -184,7 +185,7 @@ function getPurchaseLabelKey(plan: SubscriptionPlan | null) {
   if (plan == null) {
     return 'paywall.subscribeButton' as const;
   }
-  if (hasFreeTrial(plan.freeTrial)) {
+  if (SubscriptionPolicy.hasFreeTrial(plan)) {
     return 'paywall.startFreeTrial' as const;
   }
   return match(plan.planType)

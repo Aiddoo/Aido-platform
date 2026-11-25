@@ -1,11 +1,14 @@
 import { toInstant } from '@src/shared/date/instant';
 
 import { createPremiumAccess, PREMIUM_ME_EXAMPLES } from '../__tests__/premium-access.fixtures';
+import { createCurrentUserDto } from '../__tests__/user.fixtures';
 import { toUser } from '../apis/user.mapper';
 import { PremiumAccessPolicy } from './premium-access.model';
 
 const SEOUL = 'Asia/Seoul';
 const LOS_ANGELES = 'America/Los_Angeles';
+// 2028년 3월 1일 12:00 KST
+const RECEIPT_NOW = toInstant('2028-03-01T03:00:00Z');
 
 describe('PremiumAccessPolicy', () => {
   describe('isStoreSubscribed', () => {
@@ -469,6 +472,230 @@ describe('PremiumAccessPolicy', () => {
 
       // Then
       expect(isPending).toBe(false);
+    });
+  });
+
+  // 영수증 판정은 2028년 3월 1일 12:00 KST 기준이다(billing 영수증 view-model 테스트와 같은 예)
+  describe('getReceiptKind', () => {
+    it.each([
+      ['관리자는 구독·보상과 상관없이', PREMIUM_ME_EXAMPLES.newRewardAfterEnded, true, 'admin'],
+      ['초대 보상만 있으면', PREMIUM_ME_EXAMPLES.newRewardAfterEnded, false, 'reward'],
+      ['스토어 무료 체험 중이면', PREMIUM_ME_EXAMPLES.trialDuringReward, false, 'trial'],
+      [
+        '체험에서 결제로 넘어갔으면',
+        { ...PREMIUM_ME_EXAMPLES.trialDuringReward, premiumIsTrial: false },
+        false,
+        'paid',
+      ],
+      ['스토어 구독 중이면', PREMIUM_ME_EXAMPLES.buyDuringReward, false, 'paid'],
+      ['구독 상태만 ACTIVE이고 출처가 없으면', createCurrentUserDto(), false, 'paid'],
+    ] as const)('%s %s 영수증이다', (_case, me, isAdmin, expected) => {
+      // When
+      const kind = PremiumAccessPolicy.getReceiptKind(toUser(me).premiumAccess, { isAdmin });
+
+      // Then
+      expect(kind).toBe(expected);
+    });
+
+    it.each([
+      [
+        '관리자면 스토어 구독 중이어도 관리자',
+        createPremiumAccess({ source: 'STORE', willRenew: true }),
+        true,
+        'admin',
+      ],
+      [
+        '체험 표시가 남았어도 출처가 보상이면 보상',
+        createPremiumAccess({ source: 'GRANT', isTrial: true }),
+        false,
+        'reward',
+      ],
+      [
+        '체험 표시가 남았어도 출처가 없으면 결제',
+        createPremiumAccess({ source: null, isTrial: true }),
+        false,
+        'paid',
+      ],
+    ] as const)('%s 영수증이다', (_case, access, isAdmin, expected) => {
+      // When
+      const kind = PremiumAccessPolicy.getReceiptKind(access, { isAdmin });
+
+      // Then
+      expect(kind).toBe(expected);
+    });
+  });
+
+  describe('findBilling', () => {
+    const RENEWS_AT = toInstant('2028-03-10T04:00:00.000Z');
+    const TRIAL_ENDS_AT = toInstant('2028-03-26T04:00:00.000Z');
+
+    it.each([
+      [
+        'A. 자동 갱신 중이면 기간 끝에 결제된다',
+        PREMIUM_ME_EXAMPLES.buyDuringReward,
+        RECEIPT_NOW,
+        { type: 'renews', date: RENEWS_AT },
+      ],
+      [
+        '결제 예정 1분 전에는 기간 끝 결제 그대로다',
+        PREMIUM_ME_EXAMPLES.buyDuringReward,
+        toInstant('2028-03-10T03:59:00Z'),
+        { type: 'renews', date: RENEWS_AT },
+      ],
+      [
+        '결제 예정이 지났는데 갱신이 반영되지 않았으면 갱신 확인 중이다',
+        PREMIUM_ME_EXAMPLES.buyDuringReward,
+        toInstant('2028-03-10T05:00:00Z'),
+        { type: 'renewalPending' },
+      ],
+      [
+        'E. 구독을 취소했으면 기간 끝에 끝난다',
+        PREMIUM_ME_EXAMPLES.cancelledWithBanked,
+        RECEIPT_NOW,
+        { type: 'ends', date: RENEWS_AT },
+      ],
+      [
+        'G. 자동 갱신 체험은 체험 끝에 첫 결제가 된다',
+        PREMIUM_ME_EXAMPLES.trialDuringReward,
+        RECEIPT_NOW,
+        { type: 'renews', date: TRIAL_ENDS_AT },
+      ],
+      [
+        '해지한 체험은 체험 끝에 끝난다',
+        { ...PREMIUM_ME_EXAMPLES.trialDuringReward, willRenew: false },
+        RECEIPT_NOW,
+        { type: 'ends', date: TRIAL_ENDS_AT },
+      ],
+      [
+        '체험 끝이 지났는데 결제가 반영되지 않았으면 갱신 확인 중이다',
+        PREMIUM_ME_EXAMPLES.trialDuringReward,
+        toInstant('2028-03-26T05:00:00Z'),
+        { type: 'renewalPending' },
+      ],
+      ['기간을 모르면 결제 행이 없다', createCurrentUserDto(), RECEIPT_NOW, null],
+    ] as const)('%s', (_case, me, now, expected) => {
+      // When
+      const billing = PremiumAccessPolicy.findBilling(toUser(me).premiumAccess, now);
+
+      // Then
+      expect(billing).toEqual(expected);
+    });
+  });
+
+  describe('findAfterPeriod', () => {
+    it.each([
+      [
+        'A. 보상 중에 구독했으면 자동 갱신되고 쌓아 둔 5일은 구독 뒤로 밀린다',
+        PREMIUM_ME_EXAMPLES.buyDuringReward,
+        { type: 'renews', bankedDays: 5 },
+      ],
+      [
+        'C. 자동 갱신 구독 중에 보상을 받았으면 7일이 구독 뒤로 밀린다',
+        PREMIUM_ME_EXAMPLES.rewardDuringRenewingSubscription,
+        { type: 'renews', bankedDays: 7 },
+      ],
+      [
+        'F. 쌓아 둔 보상이 시작된 뒤 다시 구독했으면 5일이 구독 뒤로 밀린다',
+        PREMIUM_ME_EXAMPLES.resubscribedAfterBankedStarted,
+        { type: 'renews', bankedDays: 5 },
+      ],
+      [
+        'G. 자동 갱신 체험이면 체험 뒤 결제된다',
+        PREMIUM_ME_EXAMPLES.trialDuringReward,
+        { type: 'renews', bankedDays: 5 },
+      ],
+      [
+        'E. 구독을 취소했고 보상이 쌓여 있으면 구독이 끝나는 날부터 7일이 이어진다',
+        PREMIUM_ME_EXAMPLES.cancelledWithBanked,
+        { type: 'reward', days: 7, startsAt: toInstant('2028-03-10T04:00:00.000Z') },
+      ],
+      [
+        '취소했고 쌓아 둔 보상이 없으면 무료로 돌아간다',
+        createCurrentUserDto({
+          subscriptionStatus: 'ACTIVE',
+          premiumSource: 'STORE',
+          premiumPeriodEndsAt: '2028-03-10T04:00:00.000Z',
+          premiumEndsAt: '2028-03-10T04:00:00.000Z',
+          willRenew: false,
+          bankedPremiumDays: 0,
+          premiumGrantEndedAt: null,
+        }),
+        { type: 'free', date: toInstant('2028-03-10T04:00:00.000Z') },
+      ],
+      [
+        '해지한 체험에 쌓아 둔 보상이 없으면 체험 끝에 무료로 돌아간다',
+        {
+          ...PREMIUM_ME_EXAMPLES.trialDuringReward,
+          willRenew: false,
+          bankedPremiumDays: 0,
+          premiumEndsAt: '2028-03-26T04:00:00.000Z',
+        },
+        { type: 'free', date: toInstant('2028-03-26T04:00:00.000Z') },
+      ],
+      [
+        '구독을 취소했고 보상이 있는데 기간 끝을 모르면 보상은 구독 뒤에 이어진다(시작일 없음)',
+        createCurrentUserDto({
+          subscriptionStatus: 'ACTIVE',
+          premiumSource: 'STORE',
+          premiumPeriodEndsAt: null,
+          premiumEndsAt: '2028-03-17T04:00:00.000Z',
+          willRenew: false,
+          bankedPremiumDays: 7,
+          premiumGrantEndedAt: null,
+        }),
+        { type: 'reward', days: 7, startsAt: null },
+      ],
+      [
+        '체험을 해지했고 보상이 쌓여 있으면 체험이 끝나는 날부터 보상이 이어진다',
+        { ...PREMIUM_ME_EXAMPLES.trialDuringReward, willRenew: false },
+        { type: 'reward', days: 5, startsAt: toInstant('2028-03-26T04:00:00.000Z') },
+      ],
+      ['끝을 모르면 없다', createCurrentUserDto(), null],
+    ] as const)('%s', (_case, me, expected) => {
+      // When
+      const afterPeriod = PremiumAccessPolicy.findAfterPeriod(toUser(me).premiumAccess);
+
+      // Then
+      expect(afterPeriod).toEqual(expected);
+    });
+  });
+
+  describe('findBankedReward', () => {
+    it.each([
+      [
+        'A. 자동 갱신 중이면 시작·끝이 밀려 일수만 안다',
+        PREMIUM_ME_EXAMPLES.buyDuringReward,
+        { days: 5, startsAt: null, endsAt: null },
+      ],
+      [
+        'E. 구독을 취소했으면 구독 끝부터 전체 끝까지 이어진다',
+        PREMIUM_ME_EXAMPLES.cancelledWithBanked,
+        {
+          days: 7,
+          startsAt: toInstant('2028-03-10T04:00:00.000Z'),
+          endsAt: toInstant('2028-03-17T04:00:00.000Z'),
+        },
+      ],
+      [
+        '자동 갱신이 꺼졌는데 기간 끝을 모르면 시작일 없이 전체 끝까지다',
+        createCurrentUserDto({
+          subscriptionStatus: 'ACTIVE',
+          premiumSource: 'STORE',
+          premiumPeriodEndsAt: null,
+          premiumEndsAt: '2028-03-17T04:00:00.000Z',
+          willRenew: false,
+          bankedPremiumDays: 7,
+          premiumGrantEndedAt: null,
+        }),
+        { days: 7, startsAt: null, endsAt: toInstant('2028-03-17T04:00:00.000Z') },
+      ],
+      ['쌓아 둔 보상이 없으면 없다', PREMIUM_ME_EXAMPLES.newRewardAfterEnded, null],
+    ] as const)('%s', (_case, me, expected) => {
+      // When
+      const banked = PremiumAccessPolicy.findBankedReward(toUser(me).premiumAccess);
+
+      // Then
+      expect(banked).toEqual(expected);
     });
   });
 });

@@ -11,8 +11,8 @@ import { toSubscriptionOffering } from '../apis/subscription.mapper';
 import { SUBSCRIPTION_LOG_EVENT } from '../constants/subscription-log-events';
 import { type CustomerInfo, type SubscriptionStore } from '../domains/customer-info.model';
 import { CustomerInfoPolicy } from '../domains/customer-info.model';
+import { type SubscriptionOffering } from '../domains/subscription-offering.model';
 import { type SubscriptionError, SubscriptionErrors } from '../domains/subscription.error';
-import { type SubscriptionOffering } from '../domains/subscription.model';
 import type { PurchasesSession } from './purchases.session';
 
 interface ManagementSource {

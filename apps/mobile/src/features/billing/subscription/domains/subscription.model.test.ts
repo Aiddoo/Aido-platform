@@ -1,7 +1,6 @@
 import { createDateKey } from '@src/testing/date-key';
 
-import { type SubscriptionOffering, type SubscriptionPlan } from './subscription.model';
-import { hasFreeTrial, SubscriptionPolicy } from './subscription.model';
+import { type SubscriptionPlan, SubscriptionPolicy } from './subscription.model';
 
 function createPlan(overrides: Partial<SubscriptionPlan>): SubscriptionPlan {
   return {
@@ -17,80 +16,23 @@ function createPlan(overrides: Partial<SubscriptionPlan>): SubscriptionPlan {
   };
 }
 
-const monthly = createPlan({ identifier: 'monthly', planType: 'monthly' });
 const annual = createPlan({ identifier: 'annual', planType: 'annual' });
-const offering: SubscriptionOffering = { identifier: 'default', plans: [monthly, annual] };
-
-describe('hasFreeTrial', () => {
-  it.each([
-    [
-      '스토어가 체험을 줄 수 있다고 했으면 true',
-      { periodUnit: 'week', periodNumberOfUnits: 2 },
-      true,
-    ],
-    ['자격이 없으면 false', null, false],
-  ] as const)('%s를 반환한다', (_case, freeTrial, expected) => {
-    // When
-    const result = hasFreeTrial(freeTrial);
-
-    // Then
-    expect(result).toBe(expected);
-  });
-});
 
 describe('SubscriptionPolicy', () => {
-  describe('findSelectedPlan', () => {
-    it('고르지 않았으면 연간을 고른 것으로 본다', () => {
+  describe('hasFreeTrial', () => {
+    it.each([
+      [
+        '스토어가 체험을 줄 수 있다고 했으면 true',
+        { periodUnit: 'week', periodNumberOfUnits: 2 },
+        true,
+      ],
+      ['자격이 없으면 false', null, false],
+    ] as const)('%s를 반환한다', (_case, freeTrial, expected) => {
       // When
-      const plan = SubscriptionPolicy.findSelectedPlan(offering, undefined);
+      const result = SubscriptionPolicy.hasFreeTrial(createPlan({ freeTrial }));
 
       // Then
-      expect(plan).toBe(annual);
-    });
-
-    it('연간이 없으면 첫 요금제를 고른 것으로 본다', () => {
-      // Given
-      const monthlyOnly = { ...offering, plans: [monthly] };
-
-      // When
-      const plan = SubscriptionPolicy.findSelectedPlan(monthlyOnly, undefined);
-
-      // Then
-      expect(plan).toBe(monthly);
-    });
-
-    it('고른 요금제가 있으면 그것을 반환한다', () => {
-      // When
-      const plan = SubscriptionPolicy.findSelectedPlan(offering, 'monthly');
-
-      // Then
-      expect(plan).toBe(monthly);
-    });
-
-    it('고른 요금제가 판매에서 빠졌으면 없는 값을 반환한다', () => {
-      // When
-      const plan = SubscriptionPolicy.findSelectedPlan(offering, 'old-plan');
-
-      // Then
-      expect(plan).toBeNull();
-    });
-  });
-
-  describe('findPlanByType', () => {
-    it.each(['monthly', 'annual'] as const)('%s 요금제를 찾아 반환한다', (planType) => {
-      // When
-      const plan = SubscriptionPolicy.findPlanByType(offering.plans, planType);
-
-      // Then
-      expect(plan?.planType).toBe(planType);
-    });
-
-    it('그 종류의 요금제가 판매에서 빠졌으면 없는 값을 반환한다', () => {
-      // When
-      const plan = SubscriptionPolicy.findPlanByType([monthly], 'annual');
-
-      // Then
-      expect(plan).toBeNull();
+      expect(result).toBe(expected);
     });
   });
 
