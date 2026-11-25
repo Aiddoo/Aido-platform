@@ -5,12 +5,17 @@ import type { ComponentProps, ReactNode } from 'react';
 
 import type { StyledIcon } from '../icon/create-styled-icon';
 import { Text } from '../text/text';
+import { getTouchTargetInset } from '../touch-target/touch-target';
 
 const ICON_SIZE = 16;
 const ICON_FONT_SCALE_RATIO = 0.3;
 
-/** 칩 높이 32pt를 44pt에 가깝게 맞추도록 모양은 두고 눌리는 범위만 위아래로 넓힌다 */
-const HIT_SLOP = { top: 6, bottom: 6 };
+/** 칩 높이(h-8). 가로는 글자 폭이라 44를 넘고 옆 칩과 겹치지 않게 위아래만 넓힌다 */
+const CHIP_HEIGHT_PT = 32;
+const HIT_SLOP = {
+  top: getTouchTargetInset(CHIP_HEIGHT_PT),
+  bottom: getTouchTargetInset(CHIP_HEIGHT_PT),
+};
 
 interface ActionButtonProps extends Omit<ComponentProps<typeof PressableFeedback>, 'children'> {
   icon: ReactNode;

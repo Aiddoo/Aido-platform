@@ -1,4 +1,5 @@
 import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
+import { ANIMATION } from '@src/shared/constants/animation';
 import {
   formatClockTime,
   formatDateKeyLabel,
@@ -53,11 +54,12 @@ import { WeatherIcon } from './weather-icon';
 
 /** 낮·밤 예보가 나누는 시각(WeatherKit daytimeForecast 07~19시) */
 const DAYTIME_HOURS = { start: 7, end: 19 } as const;
+// 색을 칠한 날씨 상태 그림이라 아이콘 크기 단계를 따르지 않는다(design.md 글꼴 절)
 const ICON_SIZE = 26;
 /** 카드 제목 아이콘(`WeatherIcon.Card`)과 같은 크기 */
 const TITLE_ICON_SIZE = 13;
 const COLUMN_WIDTH = { day: 58, icon: 38, low: 46, high: 40 } as const;
-const EXPAND_ENTERING = FadeInDown.duration(600)
+const EXPAND_ENTERING = FadeInDown.duration(ANIMATION.durationMs.emphasis)
   .easing(Easing.bezier(0.2, 0.8, 0.2, 1))
   .withInitialValues({ opacity: 0, translateY: 10 });
 const ROW_LAYOUT = LinearTransition.duration(250);

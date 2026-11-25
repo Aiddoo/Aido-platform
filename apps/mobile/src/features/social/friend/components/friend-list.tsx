@@ -32,6 +32,7 @@ import {
   VStack,
   MenuContent,
   Mascot,
+  getTouchTargetInset,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
@@ -56,6 +57,9 @@ import {
   useReorderFriendMutationOptions,
 } from '../queries/friend.mutations';
 import { useGetFriendsInfiniteQueryOptions } from '../queries/friend.queries';
+
+/** 편집 안내 ⓘ 칸(size-4) */
+const EDIT_HINT_BUTTON_SIZE = 16;
 
 interface FriendListProps {
   /** 초대를 쓸 수 있으면 빈 목록에서 링크로 데려오는 길을 먼저 보인다. 없으면 태그 찾기만 안내한다 */
@@ -424,7 +428,7 @@ function EditModeGuideTooltip() {
             />
           }
           className="size-4 min-h-0 min-w-0"
-          hitSlop={8}
+          hitSlop={getTouchTargetInset(EDIT_HINT_BUTTON_SIZE)}
           onPress={() => setIsOpen(true)}
         />
       </Popover.Trigger>

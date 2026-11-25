@@ -206,6 +206,7 @@ export {
   useToastPlacement,
 } from './toast/toast-layer';
 export { useAppToast } from './toast/use-app-toast';
+export { getTouchTargetInset, MIN_TOUCH_TARGET_PT } from './touch-target/touch-target';
 export { VStack } from './v-stack/v-stack';
 export { ViewTabs } from './view-tabs/view-tabs';
 export { splitWords } from './word-wrap-text/split-text-words';

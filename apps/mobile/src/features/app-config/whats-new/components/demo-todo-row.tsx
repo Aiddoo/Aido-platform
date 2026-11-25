@@ -5,11 +5,13 @@ import { isPrivateVisibility, type Todo } from '@src/features/planning/todo/doma
 import { formatTimeOfDay } from '@src/shared/date/format/date-format';
 import { toTimeOfDay } from '@src/shared/date/time-of-day';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { getTouchTargetInset } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 
-/** 실제 목록 줄의 체크 칸과 같은 값이다 */
-const CHECKBOX_HIT_SLOP = 12;
+/** 목록 줄의 체크 칸(`Checkbox`의 size-5) */
+const CHECKBOX_SIZE_PT = 20;
+const CHECKBOX_HIT_SLOP = getTouchTargetInset(CHECKBOX_SIZE_PT);
 
 type DemoTodo = Pick<Todo, 'title' | 'visibility' | 'localTime'>;
 

@@ -8,6 +8,7 @@ import {
   QueryErrorFallback,
   type QueryErrorFallbackProps,
   Result,
+  SettingsListGroup,
   TextButton,
   TextSkeleton,
   VStack,
@@ -107,12 +108,10 @@ InvitedFriendSummary.Empty = function Empty() {
   const { t } = useTranslation('invite');
 
   return (
-    <Box className="rounded-[20px] border border-dashed border-gray-3 bg-gray-1 px-5 py-7">
-      <Result
-        icon={<FriendIllustration size="block" />}
-        title={t('friendList.emptyTitle')}
-        description={t('friendList.emptyDescription')}
-      />
-    </Box>
+    <SettingsListGroup.Empty
+      icon={<FriendIllustration size="block" />}
+      title={t('friendList.emptyTitle')}
+      description={t('friendList.emptyDescription')}
+    />
   );
 };

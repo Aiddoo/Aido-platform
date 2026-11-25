@@ -145,8 +145,8 @@ function InvitedFriendPawPrintChip({ friend }: { friend: InvitedFriend }) {
       >
         <Box className="size-5 items-center justify-center rounded-full bg-main">
           <CheckmarkIcon
-            width={fontScaledSize(11)}
-            height={fontScaledSize(11)}
+            width={fontScaledSize(12)}
+            height={fontScaledSize(12)}
             colorClassName="text-white dark:text-gray-9"
           />
         </Box>

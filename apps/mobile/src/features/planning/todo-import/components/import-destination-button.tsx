@@ -150,7 +150,7 @@ ImportDestinationButton.Loading = function Loading() {
   return (
     <VStack className="gap-1 rounded-2xl border-2 border-gray-3 bg-gray-1 px-4 py-3">
       <HStack align="center" gap={8}>
-        <Skeleton className="size-4 rounded-[4px]" />
+        <Skeleton className="size-4 rounded-sm" />
         <TextSkeleton size="b2" className="w-24" />
       </HStack>
       <TextSkeleton size="b4" className="w-40" />

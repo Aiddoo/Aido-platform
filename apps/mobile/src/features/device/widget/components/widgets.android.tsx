@@ -17,7 +17,9 @@ import {
 import { match } from 'ts-pattern';
 
 import {
+  ANDROID_WIDGET_FIXED_COLORS,
   ANDROID_WIDGET_NAVIGATION_ACTION,
+  ANDROID_WIDGET_PALETTES,
   WIDGET_BRAND_COLOR,
 } from '../constants/widget.constants';
 import type { WidgetProps } from '../schemas/widget-props-payload.schema';
@@ -198,7 +200,13 @@ function TodoRow({ layout, todo }: { layout: Layout; todo: WidgetProps['topTodos
         }}
       >
         {todo.completed ? (
-          <Label layout={layout} text="✓" size={10} weight="bold" color="#FFFFFF" />
+          <Label
+            layout={layout}
+            text="✓"
+            size={10}
+            weight="bold"
+            color={ANDROID_WIDGET_FIXED_COLORS.onFilled}
+          />
         ) : null}
       </FlexWidget>
       <FlexWidget style={{ width: 0, flex: 1 }}>
@@ -254,8 +262,8 @@ function WeekDay({
         text={day.weekdayLabel}
         size={10}
         color={match(index)
-          .with(0, () => '#FF5858' as const)
-          .with(6, () => '#2598E8' as const)
+          .with(0, () => ANDROID_WIDGET_FIXED_COLORS.sunday)
+          .with(6, () => ANDROID_WIDGET_FIXED_COLORS.saturday)
           .otherwise(() => palette.muted)}
       />
       <FlexWidget
@@ -263,7 +271,7 @@ function WeekDay({
           width: 28 * scale,
           height: 28 * scale,
           borderRadius: 14 * scale,
-          backgroundColor: day.isToday ? BRAND : '#00000000',
+          backgroundColor: day.isToday ? BRAND : ANDROID_WIDGET_FIXED_COLORS.transparent,
           alignItems: 'center',
           justifyContent: 'center',
         }}
@@ -273,7 +281,7 @@ function WeekDay({
           text={day.dayLabel}
           size={14}
           weight={day.isToday ? 'bold' : '500'}
-          color={day.isToday ? '#FFFFFF' : palette.foreground}
+          color={day.isToday ? ANDROID_WIDGET_FIXED_COLORS.onFilled : palette.foreground}
         />
       </FlexWidget>
       <FlexWidget
@@ -571,22 +579,6 @@ function LargeSurface({ layout }: { layout: Layout }) {
   );
 }
 
-const LIGHT_PALETTE: Palette = {
-  background: '#FFFFFF',
-  foreground: '#333333',
-  muted: '#8F8F8F',
-  track: '#EBEBEB',
-  brandSurface: '#FFF0EB',
-};
-
-const DARK_PALETTE: Palette = {
-  background: '#171310',
-  foreground: '#F5F5F5',
-  muted: '#B7B7B7',
-  track: '#333333',
-  brandSurface: '#3E2118',
-};
-
 export function renderAndroidWidget(
   props: WidgetProps,
   widgetInfo: WidgetInfo,
@@ -636,5 +628,8 @@ export function renderAndroidWidget(
       </ListWidget>
     </FlexWidget>
   );
-  return { light: collection(LIGHT_PALETTE), dark: collection(DARK_PALETTE) };
+  return {
+    light: collection(ANDROID_WIDGET_PALETTES.light),
+    dark: collection(ANDROID_WIDGET_PALETTES.dark),
+  };
 }

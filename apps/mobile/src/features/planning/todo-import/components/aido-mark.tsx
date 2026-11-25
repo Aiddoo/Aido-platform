@@ -21,7 +21,7 @@ export function AidoMark({ className, ...props }: AidoMarkProps) {
       accessibilityIgnoresInvertColors
       importantForAccessibility="no"
       // 주황 면이 어두운 화면에서 번지지 않게 다크에서만 옅은 테두리를 두른다
-      className={cn('rounded-[4px] dark:border dark:border-gray-3', className)}
+      className={cn('rounded-sm dark:border dark:border-gray-3', className)}
       style={{ width: size, height: size }}
       {...props}
     />

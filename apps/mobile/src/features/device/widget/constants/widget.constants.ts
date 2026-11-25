@@ -15,3 +15,29 @@ export const ANDROID_WIDGET_DEFINITIONS = [
 export const ANDROID_WIDGET_NAVIGATION_ACTION = 'AIDO_WIDGET_NAVIGATE';
 
 export const WIDGET_BRAND_COLOR = '#FF6B43';
+
+/** Android 위젯 색. 위젯은 CSS 변수를 읽지 못한다. iOS 위젯은 격리된 함수라 같은 값을 그 안에 따로 적는다 */
+export const ANDROID_WIDGET_PALETTES = {
+  light: {
+    background: '#FFFFFF',
+    foreground: '#333333',
+    muted: '#8F8F8F',
+    track: '#EBEBEB',
+    brandSurface: '#FFF0EB',
+  },
+  dark: {
+    background: '#171310',
+    foreground: '#F5F5F5',
+    muted: '#B7B7B7',
+    track: '#333333',
+    brandSurface: '#3E2118',
+  },
+} as const;
+
+/** 테마와 무관한 Android 위젯 색: 채운 면 위 글자, 달력 일·토요일 */
+export const ANDROID_WIDGET_FIXED_COLORS = {
+  onFilled: '#FFFFFF',
+  sunday: '#FF5858',
+  saturday: '#2598E8',
+  transparent: '#00000000',
+} as const;

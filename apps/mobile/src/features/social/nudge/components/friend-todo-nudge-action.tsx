@@ -3,11 +3,20 @@ import type { FriendUser } from '@src/features/social/friend/domains/friend.mode
 import type { DateKey } from '@src/shared/date/date-key';
 import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
+import { getTouchTargetInset } from '@src/shared/ui';
 
 import { TodoNudgePolicy } from '../domains/todo-nudge.model';
 import { TodoNudgeButton } from './todo-nudge-button';
 
-const COMPACT_ACTION_HIT_SLOP = { top: 8, bottom: 8, left: 0, right: 0 };
+/** 줄에 맞춘 높이(py-1.5 위아래 12 + 가장 작은 글꼴 단계의 발바닥 아이콘 16) */
+const COMPACT_ACTION_HEIGHT = 12 + 16;
+/** 가로는 버튼(min-w-11)이 이미 44이고 옆 버튼과 겹치지 않게 넓히지 않는다 */
+const COMPACT_ACTION_HIT_SLOP = {
+  top: getTouchTargetInset(COMPACT_ACTION_HEIGHT),
+  bottom: getTouchTargetInset(COMPACT_ACTION_HEIGHT),
+  left: 0,
+  right: 0,
+};
 
 interface FriendTodoNudgeActionProps {
   todo: Todo;

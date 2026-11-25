@@ -6,10 +6,9 @@ import { useLayoutSize } from '@src/shared/hooks/use-layout-size';
 import { useRebuiltPath } from '@src/shared/hooks/use-rebuilt-path';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, HStack, PauseIcon, PlayIcon, Text } from '@src/shared/ui';
+import { Box, HStack, IconButton, PauseIcon, PlayIcon, Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { noop } from 'es-toolkit';
-import { PressableFeedback } from 'heroui-native';
 import { useEffect, useMemo, useState } from 'react';
 import type { AccessibilityActionEvent, AccessibilityValue } from 'react-native';
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
@@ -103,30 +102,30 @@ export function VoiceNotePlayerBar({
 
   return (
     <HStack gap={12} className="items-center rounded-2xl bg-gray-1 px-3 py-3">
-      <PressableFeedback
-        accessibilityRole="button"
+      <IconButton
         accessibilityLabel={isPlaying ? t('player.pause') : t('player.play')}
         isDisabled={!isLoaded}
         hitSlop={4}
         onPress={() => {
           player.togglePlay().catch(noop);
         }}
-        className="size-9 items-center justify-center rounded-full bg-main"
-      >
-        {isPlaying ? (
-          <PauseIcon
-            colorClassName="text-white dark:text-gray-9"
-            width={fontScaledSize(14)}
-            height={fontScaledSize(14)}
-          />
-        ) : (
-          <PlayIcon
-            colorClassName="text-white dark:text-gray-9"
-            width={fontScaledSize(14)}
-            height={fontScaledSize(14)}
-          />
-        )}
-      </PressableFeedback>
+        className="size-9 min-h-0 min-w-0 rounded-full bg-main"
+        icon={
+          isPlaying ? (
+            <PauseIcon
+              colorClassName="text-white dark:text-gray-9"
+              width={fontScaledSize(14)}
+              height={fontScaledSize(14)}
+            />
+          ) : (
+            <PlayIcon
+              colorClassName="text-white dark:text-gray-9"
+              width={fontScaledSize(14)}
+              height={fontScaledSize(14)}
+            />
+          )
+        }
+      />
       <Scrubber
         levels={levels}
         flagIndexes={flagIndexes}

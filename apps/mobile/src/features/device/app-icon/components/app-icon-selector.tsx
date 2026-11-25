@@ -23,6 +23,7 @@ import { useChangeAppIconMutationOptions } from '../queries/app-icon.mutations';
 import { useGetCurrentAppIconQueryOptions } from '../queries/app-icon.queries';
 
 const THUMBNAIL_SIZE = 40;
+// 18pt 잠금 배지 안에 맞춘 크기라 아이콘 단계(12~)보다 작다
 const LOCK_BADGE_ICON_SIZE = 10;
 
 /** 홈 화면 아이콘 고르기. 무료 사용자가 기본 밖의 아이콘을 고르면 바꾸기 전에 프리미엄 안내를 띄운다 */
@@ -103,6 +104,7 @@ function AppIconThumbnail({ source, isLocked }: AppIconThumbnailProps) {
       <Image
         source={source}
         contentFit="cover"
+        // 앱 아이콘 모서리 비율(THUMBNAIL_SIZE 40의 1/4)에 맞춘 값이라 모서리 단계(8·12)로 옮기지 않는다
         className="rounded-[10px]"
         style={{ width: size, height: size }}
       />
@@ -128,6 +130,7 @@ AppIconSelector.Loading = function Loading() {
         <Fragment key={index}>
           {index > 0 && <SettingsListGroup.Separator />}
           <SettingsListGroup.Radio.Loading
+            // 받은 뒤 썸네일과 같은 앱 아이콘 모서리 비율이다
             icon={<Skeleton className="rounded-[10px]" style={{ width: size, height: size }} />}
           />
         </Fragment>

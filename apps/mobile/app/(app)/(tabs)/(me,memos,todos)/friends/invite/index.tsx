@@ -21,6 +21,7 @@ import {
   type QueryErrorFallbackProps,
   ReadableContent,
   StyledSafeAreaView,
+  SurfaceCard,
   Text,
   TintedRefreshControl,
   VStack,
@@ -184,17 +185,17 @@ function RewardLine({ label, value }: { label: string; value: string }) {
 }
 
 const inviteCard = tv({
-  base: 'rounded-3xl border border-gray-2 bg-gray-1 px-4.5',
+  base: 'gap-3.5 border border-gray-2 px-4.5',
   variants: { hasTitle: { true: 'py-5', false: 'py-4' } },
 });
 
 /** 제목이 있으면 위아래를 조금 더 띄운다 */
 function InviteCard({ title, children }: { title?: string; children: ReactNode }) {
   return (
-    <VStack gap={14} className={inviteCard({ hasTitle: title != null })}>
+    <SurfaceCard className={inviteCard({ hasTitle: title != null })}>
       {title != null && <H4>{title}</H4>}
       {children}
-    </VStack>
+    </SurfaceCard>
   );
 }
 

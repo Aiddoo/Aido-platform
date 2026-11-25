@@ -1,3 +1,4 @@
+import { ANIMATION } from '@src/shared/constants/animation';
 import { Box } from '@src/shared/ui';
 import { type ComponentRef, type PropsWithChildren, useEffect, useRef } from 'react';
 import { StyleSheet, type View } from 'react-native';
@@ -24,7 +25,7 @@ const CURVE_RADIUS = 12;
 const CURVE_AVATAR_GAP = 6;
 const TOGGLE_ROW_HEIGHT = 44;
 const HIGHLIGHT_FADE_IN_MS = 120;
-const HIGHLIGHT_FADE_OUT_MS = 600;
+const HIGHLIGHT_FADE_OUT_MS = ANIMATION.durationMs.emphasis;
 /** 알림으로 연 묶음으로 목록이 먼저 옮겨 간 뒤 강조한 행을 작성 바 위로 올린다 */
 const HIGHLIGHT_REVEAL_DELAY_MS = 450;
 

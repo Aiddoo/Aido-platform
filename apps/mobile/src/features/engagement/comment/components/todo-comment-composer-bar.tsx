@@ -1,5 +1,6 @@
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useGetTodoDetailsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
+import { ANIMATION } from '@src/shared/constants/animation';
 import { useTranslation } from '@src/shared/i18n';
 import { useKeyboardBottomGap } from '@src/shared/providers/keyboard-bottom-gap-provider';
 import { Box, Text } from '@src/shared/ui';
@@ -25,7 +26,7 @@ const DEFAULT_BOTTOM_INSET = 16;
 const CLOSED_EXTRA_PADDING = 4;
 const OPENED_BOTTOM_PADDING = 8;
 const KEYBOARD_OPEN_PROGRESS = 1;
-const EXTRA_PADDING_DURATION_MS = 150;
+const EXTRA_PADDING_DURATION_MS = ANIMATION.durationMs.fast;
 
 /**
  * 목록 아래 한 번 놓이는 작성 바. 키보드를 UI 스레드에서 따라가고(KeyboardStickyView + useKeyboardHandler),

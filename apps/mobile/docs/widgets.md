@@ -81,7 +81,7 @@ OS 갤러리의 이름·설명은 앱 i18n이 아니라 Expo `locales`(`native-l
 
 ## 디자인과 렌더링
 
-같은 WidgetProps, 브랜드 #FF6B43, 밝은 배경 #FFFFFF, 어두운 배경 #171310이다. 작은 위젯은 0/1·진행률·연속 기록과 밝은 주황 두 발자국, 중간은 오늘 할 일 2개와 만들기, 큰 위젯은 7일 달력·4개 할 일·초과 개수와 만들기다.
+같은 WidgetProps, 브랜드 #FF6B43(앱 `--main`과 같은 값), 밝은 배경 #FFFFFF, 어두운 배경 #171310이다. Android 색은 `widget.constants.ts`(`ANDROID_WIDGET_PALETTES`·`ANDROID_WIDGET_FIXED_COLORS`)에 두고, iOS는 격리된 위젯 함수 안에 같은 값을 적는다. 작은 위젯은 0/1·진행률·연속 기록과 밝은 주황 두 발자국, 중간은 오늘 할 일 2개와 만들기, 큰 위젯은 7일 달력·4개 할 일·초과 개수와 만들기다.
 
 - iOS는 공식 SwiftUI primitive와 SF `pawprint.fill`을 쓴다.
 - Android는 공식 FlexWidget / TextWidget / SvgWidget과 기존 paw SVG path를 쓴다.

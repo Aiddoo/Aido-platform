@@ -33,6 +33,7 @@ import {
   TodoIllustration,
   VStack,
 } from '@src/shared/ui';
+import { getTouchTargetInset } from '@src/shared/ui';
 import { formatCompactCount } from '@src/shared/utils/number-format';
 import { useMutation, useQuery, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
@@ -41,8 +42,9 @@ import { type ReactNode, Suspense } from 'react';
 
 /** 제목(t3) 한 줄 높이. 여러 줄 제목에서도 체크박스를 첫 줄 가운데에 맞춘다 */
 const TITLE_LINE_HEIGHT = 28;
-/** 24 크기 체크박스의 눌리는 영역을 44로 넓힌다 */
-const CHECKBOX_HIT_SLOP = 10;
+/** 체크박스 칸(size-6) */
+const CHECKBOX_SIZE = 24;
+const CHECKBOX_HIT_SLOP = getTouchTargetInset(CHECKBOX_SIZE);
 
 export function TodoDetailSummary() {
   return (

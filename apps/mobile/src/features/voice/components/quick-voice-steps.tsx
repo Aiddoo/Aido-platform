@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
+import { ANIMATION } from '@src/shared/constants/animation';
 import { useAppWindow } from '@src/shared/hooks/use-app-window';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
@@ -251,7 +252,10 @@ export function QuickVoiceReview({
   );
 
   return (
-    <Animated.View entering={FadeIn.duration(200)} testID="quick-voice-review">
+    <Animated.View
+      entering={FadeIn.duration(ANIMATION.durationMs.normal)}
+      testID="quick-voice-review"
+    >
       <PlanReview
         surface="sheet"
         style={{ maxHeight: bodyMaxHeight }}
@@ -386,8 +390,8 @@ function CaptureLayout({ center, right, onClose, testID, children }: CaptureLayo
 
   return (
     <Animated.View
-      entering={FadeIn.duration(200)}
-      exiting={FadeOut.duration(150)}
+      entering={FadeIn.duration(ANIMATION.durationMs.normal)}
+      exiting={FadeOut.duration(ANIMATION.durationMs.fast)}
       style={{ height }}
       testID={testID}
     >
@@ -419,8 +423,8 @@ CaptureLayout.Header = function Header({ center, right, onClose }: CaptureLayout
           testID="quick-voice-cancel"
         >
           <CloseIcon
-            width={fontScaledSize(22)}
-            height={fontScaledSize(22)}
+            width={fontScaledSize(20)}
+            height={fontScaledSize(20)}
             colorClassName="text-gray-7"
           />
         </CloseButton>

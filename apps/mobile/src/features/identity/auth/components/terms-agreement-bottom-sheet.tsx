@@ -13,12 +13,23 @@ import {
   Text,
   VStack,
   Checkbox,
+  getTouchTargetInset,
 } from '@src/shared/ui';
 import { ControlField, Label, Separator } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { Controller, type UseFormReturn, useFormState, useWatch } from 'react-hook-form';
 
 import type { SignUpFormValues } from '../schemas/sign-up-form.schema';
+
+/** 약관 보기 화살표 칸(size-4) */
+const LINK_BUTTON_SIZE = 16;
+/** 두 약관 줄의 화살표는 위아래로 24 떨어져 있어 반씩만 넓혀 서로 겹치지 않게 한다 */
+const LINK_HIT_SLOP = {
+  top: 12,
+  bottom: 12,
+  left: getTouchTargetInset(LINK_BUTTON_SIZE),
+  right: getTouchTargetInset(LINK_BUTTON_SIZE),
+};
 
 interface TermsAgreementBottomSheetProps extends Omit<
   ComponentProps<typeof BottomSheet>,
@@ -167,7 +178,7 @@ TermsAgreementBottomSheet.Item = function Item({
               />
             }
             className="size-4 min-h-0 min-w-0"
-            hitSlop={8}
+            hitSlop={LINK_HIT_SLOP}
             onPress={onPressLink}
           />
         )}

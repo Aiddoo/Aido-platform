@@ -142,7 +142,9 @@ route 파일이 화면을 조립한다. 제목, 경계, 문구, `Spacing`, `matc
 ## 글꼴과 기기
 
 - **글꼴.** 단계·OS 배율·크기 토큰은 [design](../design.md#글꼴)이 원본이다(앱 5단계, `allowFontScaling: false`). `HeroUIProvider`가 heroui 글자에도 배율을 끈다. 크기는 `Text size` 토큰, 아이콘·장식 그림은 `useFontScaledSize()`(배율 변화의 절반, 날씨 카드 안은 글자와 같은 `useFontScaleRatio()`), 버튼 누름 칸은 고정(아래), 스켈레톤은 `TextSkeleton size`다.
-- **아이콘만 있는 버튼.** 누름 칸(원·배경)은 고정 크기(`size-9` 등)이고 안의 아이콘만 `useFontScaledSize()`로 글꼴 단계를 따른다. 칸까지 배율을 따르면 큰 단계에서 버튼이 상하좌우로 늘어나 옆 버튼과 크기가 어긋난다(작성 줄 보내기·말하기·지우기).
+- **아이콘만 있는 버튼.** 누름 칸(원·배경)은 고정 크기(`size-9` 등)이고 안의 아이콘만 `useFontScaledSize()`로 글꼴 단계를 따른다. 칸까지 배율을 따르면 큰 단계에서 버튼이 상하좌우로 늘어나 옆 버튼과 크기가 어긋난다(작성 줄 보내기·말하기·지우기). 아이콘만 있는 누름은 `IconButton`이다.
+- **누르는 영역은 44pt 이상이다.** 44는 최소이고, 이미 넓은 영역은 줄이지 않는다. 보이는 모양은 두고 모자란 축만 `hitSlop`으로 채운다. 값은 `getTouchTargetInset(보이는 크기)`(`(44 - 크기) / 2`)이고 보이는 크기는 이름 있는 상수(`CHECKBOX_SIZE`)로 둔다. 글꼴로 커지는 글줄·아이콘은 가장 작은 단계 크기로 잰다. `TextButton`은 받은(또는 기본) 위아래 여백과 지금 단계의 줄 높이로 44를 채우는 여백 가운데 큰 쪽을 쓴다.
+  - 옆 컨트롤·다음 줄과 누르는 영역이 겹치는 축은 사이 간격의 절반까지만 넓히고(약관 화살표), 한쪽이 막히면 막힌 쪽은 간격만큼, 나머지를 반대쪽에 준다(카테고리 알약). 목록 행 안 작은 버튼(할 일 ⋯)은 위아래 행의 버튼과 겹쳐 44에 못 미친 채 둔다.
 - 높이가 정해진 컨트롤(버튼·칩·탭)은 고정 높이와 좌우 padding이다. 짧은 라벨은 작은 iPhone 최대 단계에서 ko·en 모두 한 줄이다. 바뀌는 숫자는 `tabular-nums`다.
 - **기기.** iPhone, iPad, 폴더블(접음·펼침), iPhone Duo, Android 휴대폰·태블릿을 지원한다. 칸 수는 사이드바·레일 inset을 뺀 탭 안 내용 폭(Android는 시스템 바·컷아웃 inset을 빼지 않은 폭) `usePaneSizeClass()`(`compact`·`medium`·`expanded`), 창 전체 정책(방향·시트 배치)은 `useWindowSizeClass()`로 정한다. 기기 이름·힌지로 나누지 않는다. 플랫폼 분기는 `process.env.EXPO_OS`다(`Platform.OS`는 `no-restricted-properties`. 개발 빌드에서도 글자로 바뀌는 `process.env.EXPO_OS` 하나로 맞춘다).
 - 2열은 `AdaptivePane` 하나라 접고 펴도 다시 마운트되지 않는다. 폭마다 다시 만드는 무거운 부품은 `useDeferredValue`로 늦춘다. 배치 규칙(짧은 창, 방향 잠금, 칸 나누기, 접힘선)은 `shared/ui/adaptive-pane/window-layout.ts`의 `WindowLayoutPolicy`다. Mac(Designed for iPad)은 늘 `compact`다.

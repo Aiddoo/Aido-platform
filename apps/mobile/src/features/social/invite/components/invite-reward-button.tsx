@@ -9,6 +9,7 @@ import {
   HStack,
   QueryErrorActions,
   type QueryErrorFallbackProps,
+  SurfaceCard,
   Text,
   TextButton,
   TextSkeleton,
@@ -55,7 +56,7 @@ export function InviteRewardButton({ className, ...props }: InviteRewardButtonPr
       accessibilityRole="button"
       onPress={() => openMyInvite('mypage_card', navigate)}
       className={cn(
-        'rounded-[20px] p-4',
+        'rounded-2xl p-4',
         isSelected ? 'bg-gray-3 dark:bg-gray-2' : 'bg-gray-1',
         className,
       )}
@@ -114,17 +115,13 @@ export function InviteRewardButton({ className, ...props }: InviteRewardButtonPr
 
 InviteRewardButton.Loading = function Loading({ className }: { className?: string }) {
   return (
-    <VStack
-      gap={12}
-      className={cn('rounded-[20px] bg-gray-1 p-4', className)}
-      accessibilityState={{ busy: true }}
-    >
+    <SurfaceCard className={cn('gap-3 p-4', className)} accessibilityState={{ busy: true }}>
       <VStack gap={2}>
         <TextSkeleton size="b2" className="w-40" />
         <TextSkeleton size="b4" className="w-32" />
       </VStack>
       <Skeleton className="h-11 rounded-full dark:bg-gray-2" />
-    </VStack>
+    </SurfaceCard>
   );
 };
 
@@ -133,7 +130,7 @@ InviteRewardButton.Error = function ErrorFallback({ reset }: QueryErrorFallbackP
   const { t } = useTranslation(['invite', 'common']);
 
   return (
-    <VStack gap={12} className="rounded-[20px] bg-gray-1 p-4">
+    <SurfaceCard className="gap-3 p-4">
       <VStack gap={2}>
         <Text size="b2" weight="bold">
           {t('invite:result.loadFailed.title')}
@@ -153,6 +150,6 @@ InviteRewardButton.Error = function ErrorFallback({ reset }: QueryErrorFallbackP
         </TextButton>
         <QueryErrorActions.Inquiry />
       </HStack>
-    </VStack>
+    </SurfaceCard>
   );
 };

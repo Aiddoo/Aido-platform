@@ -122,8 +122,8 @@ function TodoActionsButton() {
     <IconButton
       icon={
         <MoreIcon
-          width={fontScaledSize(22)}
-          height={fontScaledSize(22)}
+          width={fontScaledSize(20)}
+          height={fontScaledSize(20)}
           colorClassName="text-gray-9"
         />
       }

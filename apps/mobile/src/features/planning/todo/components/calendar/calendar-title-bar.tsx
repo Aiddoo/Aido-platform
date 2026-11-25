@@ -11,7 +11,16 @@ import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { useStoredValue } from '@src/shared/storage/use-stored-value';
-import { ArrowLeftIcon, ArrowRightIcon, Box, Flex, HStack, IconButton, Text } from '@src/shared/ui';
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  Box,
+  Flex,
+  getTouchTargetInset,
+  HStack,
+  IconButton,
+  Text,
+} from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { range } from 'es-toolkit';
 import { PressableFeedback, Tabs } from 'heroui-native';
@@ -44,6 +53,14 @@ const HEADER_GAP = 8;
 const LAST_WEEK_OF_MONTH = 5;
 // 견본과 보이는 제목이 같은 글자 모양이어야 잰 폭이 맞는다
 const TITLE_TEXT_STYLE = { size: 'b1', weight: 'semibold' } as const;
+/** 오늘 칩 높이(py-0.5 위아래 4 + 가장 작은 글꼴 단계에서 e1이 바뀌는 e2의 줄 16). 가로는 글자 폭이라 조금만 넓힌다 */
+const TODAY_CHIP_HEIGHT = 4 + 16;
+const TODAY_CHIP_HIT_SLOP = {
+  top: getTouchTargetInset(TODAY_CHIP_HEIGHT),
+  bottom: getTouchTargetInset(TODAY_CHIP_HEIGHT),
+  left: 8,
+  right: 8,
+};
 
 export function CalendarTitleBar() {
   const { t } = useTranslation('common');
@@ -82,7 +99,7 @@ export function CalendarTitleBar() {
           <PressableFeedback
             ref={todayRef}
             onPress={() => setSelectedDateKey(todayKey)}
-            hitSlop={8}
+            hitSlop={TODAY_CHIP_HIT_SLOP}
             className="rounded-full bg-gray-2 px-2 py-0.5"
           >
             <Text size="e1" weight="medium" shade={7}>

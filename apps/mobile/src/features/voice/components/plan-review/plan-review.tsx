@@ -26,6 +26,7 @@ import {
   useOpenKeyboardSheet,
   VStack,
 } from '@src/shared/ui';
+import { getTouchTargetInset } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
@@ -56,8 +57,9 @@ const GUIDE_INFO_ICON_SIZE = 16;
 const EDIT_ICON_SIZE = 16;
 /** 체크와 카드 사이 간격. 체크의 터치 여백과 같아 두 누름 영역이 겹치지 않는다 */
 const SELECT_GAP = 12;
-/** 체크(20)를 44로 넓히는 터치 여백 */
-const SELECT_HIT_SLOP = SELECT_GAP;
+/** 체크 칸(`Checkbox`의 size-5) */
+const SELECT_CHECKBOX_SIZE = 20;
+const SELECT_HIT_SLOP = getTouchTargetInset(SELECT_CHECKBOX_SIZE);
 /** 고르지 않은 카드의 글자. 카드 면 위에서 라이트·다크 모두 4.5:1 이상이라 흐려도 읽힌다 */
 const UNSELECTED_TITLE_CLASS_NAME = 'text-gray-8 dark:text-gray-6';
 /** 다크 시트 면이 gray-1이라 시트 안 카드는 한 단계 밝힌다 */

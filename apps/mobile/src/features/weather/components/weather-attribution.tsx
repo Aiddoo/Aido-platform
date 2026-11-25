@@ -3,7 +3,7 @@ import { formatClockTime } from '@src/shared/date/format/date-format';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useOpenInAppBrowser } from '@src/shared/hooks/use-open-in-app-browser';
 import { useTranslation } from '@src/shared/i18n';
-import { Image, Text, TextSkeleton, VStack } from '@src/shared/ui';
+import { getTouchTargetInset, Image, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { tv } from '@src/shared/utils/tv';
 import { useSuspenseQueries } from '@tanstack/react-query';
@@ -24,8 +24,14 @@ import {
 /** Apple 지침: 로고는 1x 크기(높이 14pt) 그대로 그린다. 폭은 언어마다 달라 원본 비율을 따른다. */
 const LOGO_HEIGHT = 14;
 const LOGO_DEFAULT_ASPECT_RATIO = 38 / 14;
-/** 링크 글자(17pt 줄)는 시안 간격 그대로 두고 터치 영역만 44pt로 넓힌다. */
-const LINK_HIT_SLOP = { top: 14, bottom: 14, left: 16, right: 16 };
+/** 링크 글자 줄(가장 작은 글꼴 단계에서 e1이 바뀌는 e2의 16pt). 시안 간격 그대로 두고 터치 영역만 44pt로 넓힌다. */
+const LINK_LINE_HEIGHT = 16;
+const LINK_HIT_SLOP = {
+  top: getTouchTargetInset(LINK_LINE_HEIGHT),
+  bottom: getTouchTargetInset(LINK_LINE_HEIGHT),
+  left: 16,
+  right: 16,
+};
 
 const attributionTone = tv({
   slots: {

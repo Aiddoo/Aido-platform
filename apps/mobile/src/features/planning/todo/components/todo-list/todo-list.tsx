@@ -23,6 +23,7 @@ import {
   PlusIcon,
   QueryErrorFallback,
   type QueryErrorFallbackProps,
+  MIN_TOUCH_TARGET_PT,
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { groupBy, noop, range } from 'es-toolkit';
@@ -53,6 +54,17 @@ import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
 import { formatTodoTime } from '../../utils/todo-time.view-model';
 import { SubTodoList } from '../sub-todo-list';
 import { TODO_ROW_ACCESSIBILITY_ACTION, TodoRow } from '../todo-row';
+
+/** 카테고리 알약 높이(Chip md의 위아래 8 + 가장 작은 글꼴 단계에서 b4가 바뀌는 e1의 줄 17) */
+const CATEGORY_PILL_HEIGHT = 8 + 17;
+/** 알약과 첫 할 일 줄 사이(`gap={8}`). 아래는 첫 줄과 겹치지 않게 이만큼만 넓히고 모자란 만큼 위로 채운다 */
+const CATEGORY_PILL_ROW_GAP = 8;
+const CATEGORY_PILL_HIT_SLOP = {
+  top: MIN_TOUCH_TARGET_PT - CATEGORY_PILL_HEIGHT - CATEGORY_PILL_ROW_GAP,
+  bottom: CATEGORY_PILL_ROW_GAP,
+  left: 8,
+  right: 8,
+};
 
 interface TodoListProps {
   /** 알림 권한은 위층 기능이라 화면이 한 번 읽어 넘긴다. 켜져 있으면 시간 옆 종 꺼짐을 그리지 않는다 */
@@ -136,7 +148,7 @@ function CategoryAddPill({ category, date }: CategoryAddPillProps) {
     <PressableFeedback
       onPress={() => push({ pathname: '/todo/new', params: { date, categoryId: category.id } })}
       isDisabled={TodoCategoryPolicy.isOptimisticCategory(category)}
-      hitSlop={8}
+      hitSlop={CATEGORY_PILL_HIT_SLOP}
       testID={`todo-add-${category.id}`}
       className="self-start"
     >

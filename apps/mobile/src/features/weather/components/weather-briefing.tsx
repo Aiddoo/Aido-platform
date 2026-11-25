@@ -66,6 +66,7 @@ import { WeatherIcon } from './weather-icon';
 import { WeatherMascot } from './weather-mascot';
 
 const MORE_CHEVRON_SIZE = 13;
+// 색을 칠한 날씨 상태 그림이라 아이콘 크기 단계를 따르지 않는다(design.md 글꼴 절)
 const CHIP_ICON_SIZE = 15;
 /** 영향이 큰 할 일만 보인다. 옮기기 시트가 있는 브리핑은 나머지를 시트에서 보고, 없으면 개수만 알린다. */
 const VISIBLE_TODO_LIMIT = 3;
@@ -269,6 +270,7 @@ WeatherBriefing.Item = function Item({
               date: todayKey,
             })
           }
+          // 기본 체크박스(20에 6)와 같은 비율을 22 칸에 맞춘 값이라 모서리 단계로 옮기지 않는다
           className="size-[22px] rounded-[7px] border-[1.5px] border-on-sky/60"
         />
       }
