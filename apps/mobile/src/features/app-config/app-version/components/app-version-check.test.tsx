@@ -1,5 +1,6 @@
 import { ServerError } from '@src/shared/errors/infra-error';
 import {
+  createAnalyticsStub,
   createAppStoreListingGatewayStub,
   createErrorReporterStub,
   createJsonFetcherStub,
@@ -8,7 +9,7 @@ import {
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { onlineManager } from '@tanstack/react-query';
-import { fireEvent, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { AppVersionCheck } from './app-version-check';
 
@@ -30,7 +31,8 @@ async function renderCheck({
   const listing = createAppStoreListingGatewayStub();
   listing.openListing.mockImplementation(openListing);
   const errorReporter = createErrorReporterStub();
-  await renderScreen(<AppVersionCheck />, {
+  const analytics = createAnalyticsStub();
+  const view = await renderScreen(<AppVersionCheck />, {
     di: createTestDi({
       ports: {
         jsonFetcher,
@@ -42,12 +44,17 @@ async function renderCheck({
         }),
         appStoreListing: listing,
         errorReporter,
+        analytics,
       },
     }),
     withOverlay: true,
   });
 
-  return { listing, errorReporter };
+  return { listing, errorReporter, analytics, unmount: view.unmount };
+}
+
+function countStoreOpenedEvents(analytics: ReturnType<typeof createAnalyticsStub>) {
+  return analytics.trackEvent.mock.calls.filter(([name]) => name === 'app_update_store_opened');
 }
 
 describe('앱 버전 확인', () => {
@@ -135,6 +142,64 @@ describe('앱 버전 확인', () => {
     // Then
     expect(await screen.findAllByText(/앱 스토어를 열지 못했어요/)).not.toHaveLength(0);
     expect(errorReporter.captureException).toHaveBeenCalledTimes(1);
+  });
+
+  it('더 새 버전이 있어 스토어를 열면 스토어 열기를 한 번 남긴다', async () => {
+    // Given
+    const jsonFetcher = createJsonFetcherStub();
+    jsonFetcher.get.mockResolvedValue(ENABLED_RESPONSE);
+    const { listing, analytics } = await renderCheck({ jsonFetcher });
+
+    // When
+    await fireEvent.press(screen.getByText('버전 정보'));
+
+    // Then
+    await waitFor(() => expect(listing.openListing).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(countStoreOpenedEvents(analytics)).toEqual([
+        ['app_update_store_opened', { source: 'settings' }],
+      ]),
+    );
+  });
+
+  it.each([
+    ['이미 최신이면', '1.15.0', '현재 최신 버전을 사용하고 있어요.'],
+    ['설치 버전을 판정할 수 없으면', '1.14', /버전 정보를 확인하지 못했어요/],
+  ])('%s 스토어를 열지 않고 스토어 열기도 남기지 않는다', async (_case, currentVersion, notice) => {
+    // Given
+    const jsonFetcher = createJsonFetcherStub();
+    jsonFetcher.get.mockResolvedValue(ENABLED_RESPONSE);
+    const { listing, analytics } = await renderCheck({ jsonFetcher, currentVersion });
+
+    // When
+    await fireEvent.press(screen.getByText('버전 정보'));
+
+    // Then
+    expect(await screen.findAllByText(notice)).not.toHaveLength(0);
+    expect(listing.openListing).not.toHaveBeenCalled();
+    expect(countStoreOpenedEvents(analytics)).toEqual([]);
+  });
+
+  it('스토어가 열리는 사이 화면이 내려가면 스토어 열기를 남기지 못한다', async () => {
+    // Given
+    const jsonFetcher = createJsonFetcherStub();
+    jsonFetcher.get.mockResolvedValue(ENABLED_RESPONSE);
+    const opening = Promise.withResolvers<void>();
+    const { listing, analytics, unmount } = await renderCheck({
+      jsonFetcher,
+      openListing: () => opening.promise,
+    });
+    await fireEvent.press(screen.getByText('버전 정보'));
+    await waitFor(() => expect(listing.openListing).toHaveBeenCalledTimes(1));
+
+    // When
+    await unmount();
+    await act(async () => {
+      opening.resolve();
+    });
+
+    // Then
+    expect(countStoreOpenedEvents(analytics)).toHaveLength(0);
   });
 
   it('이미 최신이면 스토어를 열지 않고 최신이라고 알린다', async () => {

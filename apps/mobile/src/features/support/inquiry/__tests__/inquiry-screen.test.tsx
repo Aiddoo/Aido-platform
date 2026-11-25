@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import { INQUIRY_CATEGORY } from '@aido/api/vocabulary';
+import { INQUIRY_CATEGORY, INQUIRY_CONTENT_LIMITS } from '@aido/api/vocabulary';
 import { fail, ok } from '@src/core/errors/result';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import {
@@ -18,6 +18,7 @@ import InquiryRoute from '../../../../../app/(app)/(tabs)/(me,memos,todos)/setti
 import { createInquiryApiError, createInquiryResponseDto } from './inquiry.fixtures';
 
 const CONTENT = '앱에서 할 일 추가 시 오류가 발생합니다.';
+const OTHER_CONTENT = '알림이 정해 둔 시간보다 늦게 와요.';
 
 async function renderInquiry(httpClient: ReturnType<typeof createHttpClientStub>) {
   const analytics = createAnalyticsStub();
@@ -192,6 +193,46 @@ describe('문의 화면', () => {
     expect(router.back).not.toHaveBeenCalled();
   });
 
+  it('최대 길이를 넘긴 내용은 칸에 알리고 보내지 않는다', async () => {
+    // Given
+    await renderInquiry(httpClient);
+
+    // When
+    await fireEvent.changeText(
+      screen.getByTestId('inquiry-content-input'),
+      'a'.repeat(INQUIRY_CONTENT_LIMITS.MAX_LENGTH + 1),
+    );
+    await fireEvent.press(screen.getByTestId('inquiry-submit'));
+
+    // Then
+    expect(
+      await screen.findByText(`내용은 ${INQUIRY_CONTENT_LIMITS.MAX_LENGTH}자 이내로 입력해주세요`),
+    ).toBeOnTheScreen();
+    expect(httpClient.post).not.toHaveBeenCalled();
+  });
+
+  it('같은 프레임에 두 번 눌러도 문의는 한 번만 보낸다', async () => {
+    // Given
+    const pending = createPendingResponse(ok(createInquiryResponseDto()));
+    httpClient.post.mockReturnValue(pending.response);
+    await renderInquiry(httpClient);
+    await fillContent(CONTENT);
+    const submit = screen.getByTestId('inquiry-submit');
+
+    // When
+    await act(async () => {
+      await fireEvent.press(submit);
+      await fireEvent.press(submit);
+    });
+    await act(async () => {
+      pending.settle();
+    });
+
+    // Then
+    await waitFor(() => expect(router.back).toHaveBeenCalledTimes(1));
+    expect(httpClient.post).toHaveBeenCalledTimes(1);
+  });
+
   describe('접수 뒤 떠나는 동안', () => {
     setupFakeTimersPerTest();
 
@@ -207,6 +248,39 @@ describe('문의 화면', () => {
       expect(router.back).toHaveBeenCalledTimes(1);
 
       // When
+      await fireEvent.press(screen.getByTestId('inquiry-submit'));
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+
+      // Then
+      expect(httpClient.post).toHaveBeenCalledTimes(1);
+    });
+
+    it('보내는 동안 떠났다가 접수된 뒤 돌아오면 새로 쓴 문의를 보낼 수 있다', async () => {
+      // Given
+      let isFocused = true;
+      jest.mocked(useNavigation).mockImplementation(() => ({
+        isFocused: () => isFocused,
+        getParent: () => undefined,
+        addListener: () => () => undefined,
+      }));
+      const pending = createPendingResponse(ok(createInquiryResponseDto()));
+      httpClient.post
+        .mockReturnValueOnce(pending.response)
+        .mockResolvedValue(ok(createInquiryResponseDto()));
+      await renderInquiry(httpClient);
+      await fireEvent.changeText(screen.getByTestId('inquiry-content-input'), CONTENT);
+      await waitFor(() => expect(screen.getByTestId('inquiry-submit')).toBeEnabled());
+      await fireEvent.press(screen.getByTestId('inquiry-submit'));
+      isFocused = false;
+      await act(async () => {
+        pending.settle();
+      });
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+      isFocused = true;
+
+      // When
+      await fireEvent.changeText(screen.getByTestId('inquiry-content-input'), OTHER_CONTENT);
+      await act(() => jest.advanceTimersByTimeAsync(0));
       await fireEvent.press(screen.getByTestId('inquiry-submit'));
       await act(() => jest.advanceTimersByTimeAsync(1_000));
 

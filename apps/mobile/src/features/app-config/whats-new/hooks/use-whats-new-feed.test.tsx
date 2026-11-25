@@ -24,10 +24,12 @@ async function renderFeed({
   signedUpAt,
   isOnboardingSettled = true,
   syncStorage = createMemoryObservableSyncStorage(),
+  minAppVersion = '1.15.0',
 }: {
   signedUpAt: string;
   isOnboardingSettled?: boolean;
   syncStorage?: ReturnType<typeof createMemoryObservableSyncStorage>;
+  minAppVersion?: string;
 }) {
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
@@ -39,7 +41,7 @@ async function renderFeed({
   const config: WhatsNewCampaignConfig = {
     enabled: true,
     campaignId: RELEASE_1_17_0.campaignId,
-    minAppVersion: '1.15.0',
+    minAppVersion,
     autoOpen: true,
   };
   queryClient.setQueryData(WHATS_NEW_QUERY_KEYS.campaign(), config);
@@ -114,6 +116,25 @@ describe('useWhatsNewFeed — 첫 피드', () => {
 
     // Then
     await waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));
+  });
+
+  it('소개를 묶은 첫 버전보다 낮은 앱에서는 열지 않고 본 기록도 남기지 않는다', async () => {
+    // Given
+    const syncStorage = createMemoryObservableSyncStorage();
+
+    // When
+    await renderFeed({
+      signedUpAt: '2026-10-01T00:00:00.000Z',
+      syncStorage,
+      minAppVersion: '99.0.0',
+    });
+
+    // Then
+    await act(async () => undefined);
+    expect(router.push).not.toHaveBeenCalled();
+    expect(
+      syncStorage.get(`aido_feature_discovery_seen_v1:${USER_ID}:${RELEASE_1_17_0.campaignId}`),
+    ).toBeUndefined();
   });
 
   it('이 캠페인을 이미 본 계정은 저장 키를 읽어 다시 열지 않는다', async () => {

@@ -11,7 +11,8 @@ import {
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { stubWindowDimensions } from '@src/testing/window-dimensions';
-import { act, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { noop } from 'es-toolkit';
 import { useIsFocused } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { type ComponentRef, createRef, useEffect } from 'react';
@@ -373,6 +374,142 @@ describe('CoachmarkPopover', () => {
       // Then
       expect(screen.queryByTestId('hint-popover')).toBeNull();
       expect(analytics.trackEvent).not.toHaveBeenCalledWith('coachmark_shown', expect.anything());
+    });
+  });
+
+  describe('닫기', () => {
+    const ACCOUNT_ID = createCurrentUserDto().userId;
+
+    async function renderOpenCoachmark({
+      isPassThrough = false,
+      seenAccountIds = [],
+      onTargetPress = noop,
+    }: {
+      isPassThrough?: boolean;
+      seenAccountIds?: readonly string[];
+      onTargetPress?: () => void;
+    } = {}) {
+      const httpClient = createHttpClientStub();
+      httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
+      const { syncStorage, records } = createCoachmarkStorage(
+        seenAccountIds.map((accountId) => ({ accountId, kind: 'voice-note-start' })),
+      );
+      const analytics = createAnalyticsStub();
+      const renderHint = (dismissKey: string) => (
+        <CoachmarkPopover
+          kind="voice-note-start"
+          title="안내 제목"
+          description="안내 설명"
+          isPassThrough={isPassThrough}
+          dismissKey={dismissKey}
+        >
+          <PressableFeedback testID="target" onPress={onTargetPress} />
+        </CoachmarkPopover>
+      );
+      const { rerender } = await renderScreen(renderHint('first'), {
+        di: createTestDi({ ports: { httpClient, syncStorage, analytics } }),
+        withOverlay: true,
+      });
+
+      return {
+        isSeen: () => records.hasSeen({ accountId: ACCOUNT_ID, kind: 'voice-note-start' }),
+        countEvents: (eventName: 'coachmark_shown' | 'coachmark_dismissed') =>
+          analytics.trackEvent.mock.calls.filter(([name]) => name === eventName).length,
+        moveTarget: (dismissKey: string) => rerender(renderHint(dismissKey)),
+      };
+    }
+
+    it('말풍선의 닫기를 누르면 본 것으로 남기고 닫힘을 한 번 남긴다', async () => {
+      // Given
+      const { isSeen, countEvents } = await renderOpenCoachmark();
+      // 말풍선은 자기 크기를 잰 뒤에야 누름을 받는다
+      await fireEvent(await screen.findByTestId('hint-popover', {}, POPOVER_WAIT), 'layout', {
+        nativeEvent: { layout: { x: 16, y: 120, width: 300, height: 80 } },
+      });
+
+      // When
+      await fireEvent.press(screen.getByTestId('hint-popover-close'));
+
+      // Then
+      await waitFor(() => expect(isSeen()).toBe(true));
+      expect(countEvents('coachmark_shown')).toBe(1);
+      expect(countEvents('coachmark_dismissed')).toBe(1);
+    });
+
+    it('말풍선 바깥을 누르면 본 것으로 남기고 닫힘을 한 번 남긴다', async () => {
+      // Given
+      const { isSeen, countEvents } = await renderOpenCoachmark();
+      await screen.findByTestId('hint-popover', {}, POPOVER_WAIT);
+
+      // When
+      await fireEvent.press(screen.getByTestId('hint-popover-overlay'));
+
+      // Then
+      await waitFor(() => expect(screen.queryByTestId('hint-popover')).toBeNull());
+      expect(isSeen()).toBe(true);
+      expect(countEvents('coachmark_dismissed')).toBe(1);
+    });
+
+    it('지나가게 둔 말풍선이 떠 있을 때 대상을 누르면 대상의 누름이 한 번 실행되고 안내를 끝낸다', async () => {
+      // Given
+      const onTargetPress = jest.fn();
+      const { isSeen, countEvents } = await renderOpenCoachmark({
+        isPassThrough: true,
+        onTargetPress,
+      });
+      await screen.findByTestId('hint-popover', {}, POPOVER_WAIT);
+
+      // When
+      await fireEvent.press(screen.getByTestId('target'));
+
+      // Then
+      expect(onTargetPress).toHaveBeenCalledTimes(1);
+      await waitFor(() => expect(screen.queryByTestId('hint-popover')).toBeNull());
+      expect(isSeen()).toBe(true);
+      expect(countEvents('coachmark_dismissed')).toBe(1);
+    });
+
+    it('다른 계정이 본 안내는 이 계정에 다시 연다', async () => {
+      // When
+      const { isSeen, countEvents } = await renderOpenCoachmark({
+        seenAccountIds: ['another-account'],
+      });
+
+      // Then
+      expect(await screen.findByTestId('hint-popover', {}, POPOVER_WAIT)).toBeTruthy();
+      expect(isSeen()).toBe(false);
+      expect(countEvents('coachmark_shown')).toBe(1);
+    });
+
+    describe('대상이 움직일 때', () => {
+      setupFakeTimersPerTest();
+
+      it('읽을 만큼 떠 있었으면 본 것으로 남긴다', async () => {
+        // Given
+        const { isSeen, moveTarget } = await renderOpenCoachmark();
+        await screen.findByTestId('hint-popover', {}, POPOVER_WAIT);
+        await act(() => jest.advanceTimersByTimeAsync(2_000));
+
+        // When
+        await moveTarget('second');
+
+        // Then
+        expect(isSeen()).toBe(true);
+      });
+
+      it('읽을 틈 없이 지나갔으면 본 것으로 남기지 않고 다시 연다', async () => {
+        // Given
+        const { isSeen, moveTarget, countEvents } = await renderOpenCoachmark();
+        await screen.findByTestId('hint-popover', {}, POPOVER_WAIT);
+
+        // When
+        await moveTarget('second');
+
+        // Then
+        expect(isSeen()).toBe(false);
+        expect(await screen.findByTestId('hint-popover', {}, POPOVER_WAIT)).toBeTruthy();
+        expect(countEvents('coachmark_dismissed')).toBe(0);
+      });
     });
   });
 
