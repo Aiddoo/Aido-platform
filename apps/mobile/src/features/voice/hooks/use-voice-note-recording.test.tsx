@@ -14,6 +14,7 @@ import {
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, screen, userEvent, waitFor } from '@testing-library/react-native';
+import { Activity } from 'react';
 import { Pressable } from 'react-native';
 
 import { createSpokenVoiceNote, createVoiceNoteSentence } from '../__tests__/voice-note.fixtures';
@@ -1138,5 +1139,66 @@ describe('useVoiceNoteRecording', () => {
         logger.warn.mock.calls.filter(([event]) => event === 'voice.recording.save-failed'),
       ).toHaveLength(0);
     });
+  });
+
+  it('StrictMode·Fast Refresh처럼 상태는 남고 effect만 다시 돌아도 화면이 받은 녹음 파일을 한 번만 옮기고 내려간 뒤 늦은 파일도 초안에 더한다', async () => {
+    // Given
+    const user = userEvent.setup();
+    const speechRecognizer = createSpeechRecognizerStub();
+    const files = createLocalFileSystemFake();
+    const firstUri = files.addFile(RECORDING_DIRECTORY, 'recording_a.wav');
+    const secondUri = files.addFile(RECORDING_DIRECTORY, 'recording_b.wav');
+    const di = createTestDi({
+      ports: { speechRecognizer, ...createVoiceNoteStorageFake(files).ports, logger },
+    });
+    const probe = (
+      <OverlayProvider>
+        <RecordingProbe
+          maxSeconds={null}
+          onLimitReached={jest.fn()}
+          onFinished={jest.fn()}
+          onEmpty={jest.fn()}
+        />
+      </OverlayProvider>
+    );
+    // 이 테스트 렌더러는 StrictMode의 effect 재실행을 하지 않아, 같은 일을 하는 Activity로 effect를 정리했다 다시 건다
+    const { rerender, unmount } = await renderScreen(<Activity mode="visible">{probe}</Activity>, {
+      di,
+    });
+    await rerender(<Activity mode="hidden">{probe}</Activity>);
+    await rerender(<Activity mode="visible">{probe}</Activity>);
+    await start(speechRecognizer);
+    await act(async () => speechRecognizer.emit({ type: 'recording-started', uri: firstUri }));
+    await say(speechRecognizer, '첫 문장.');
+    const draftId = screen.getByTestId('draft-id').props.children;
+
+    // When
+    await user.press(screen.getByRole('button', { name: 'pause' }));
+    await act(async () => speechRecognizer.emit({ type: 'recording-saved', uri: firstUri }));
+    await act(async () => speechRecognizer.emit({ type: 'end' }));
+    await act(async () => jest.advanceTimersByTimeAsync(2_000));
+
+    // Then
+    expect(screen.getByTestId('status')).toHaveTextContent('paused');
+    expect(speechRecognizer.start).toHaveBeenCalledTimes(1);
+    expect(di.voiceNoteDraftRepository.find(ACCOUNT_ID, draftId)?.recordings).toHaveLength(1);
+    expect(
+      logger.warn.mock.calls.filter(([event]) => event === 'voice.recording.save-failed'),
+    ).toHaveLength(0);
+    expect(
+      logger.info.mock.calls.filter(([event]) => event === 'voice.recording.shared-source-skipped'),
+    ).toHaveLength(0);
+
+    // When
+    await user.press(screen.getByRole('button', { name: 'resume' }));
+    await act(async () => speechRecognizer.emit({ type: 'start' }));
+    await act(async () => speechRecognizer.emit({ type: 'recording-started', uri: secondUri }));
+    await act(async () => unmount());
+    await act(async () => speechRecognizer.emit({ type: 'recording-saved', uri: secondUri }));
+    await act(async () => jest.advanceTimersByTimeAsync(2_000));
+
+    // Then
+    expect(di.voiceNoteDraftRepository.find(ACCOUNT_ID, draftId)?.recordings).toHaveLength(2);
+    expect(speechRecognizer.getListenerCount()).toBe(0);
   });
 });
