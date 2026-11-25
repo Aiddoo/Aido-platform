@@ -57,19 +57,15 @@ const END_REACHED_THRESHOLD = 2;
 const DRAW_DISTANCE = 600;
 
 interface FriendStripProps {
-  /** 초대를 쓸 수 있을 때 친구가 없는 줄에서 초대로 데려가는 동작. 없으면 친구 찾기로 보낸다 */
-  onInvite?: () => void;
-  /** 사용자가 피드를 내리는 등 다른 일을 시작해 안내를 닫아야 할 때 */
-  isHintDismissed?: boolean;
-  /** 먼저 뜰 자동 화면(알림 화면·새로운 기능)이 남았으면 false라 안내를 미룬다 */
-  shouldShowHint?: boolean;
+  /** 친구가 없을 때 "나" 옆에 두는 칸. 초대·안내의 조건은 화면이 알아 `FriendStrip.Empty`를 조립해 넘긴다 */
+  empty: ReactNode;
 }
 
 /**
  * 피드 위에서 나와 친구를 골라 그 사람의 피드로 바꾸는 가로 친구 줄.
  * "나"는 왼쪽에 고정하고, 친구는 서버 순서(친구 목록 편집에서 정한 순서)대로 커서 페이지를 이어 붙인다.
  */
-export function FriendStrip({ onInvite, isHintDismissed, shouldShowHint }: FriendStripProps) {
+export function FriendStrip({ empty }: FriendStripProps) {
   const { t } = useTranslation('friend');
   const listRef = useRef<FlashListRef<FriendUser>>(null);
   const [isListLoaded, setIsListLoaded] = useState(false);
@@ -110,11 +106,7 @@ export function FriendStrip({ onInvite, isHintDismissed, shouldShowHint }: Frien
       </Box>
       <Divider />
       {friends.length === 0 ? (
-        <FriendStrip.Empty
-          onInvite={onInvite}
-          isHintDismissed={isHintDismissed}
-          shouldShowHint={shouldShowHint}
-        />
+        empty
       ) : (
         <>
           <FlashList
@@ -267,6 +259,15 @@ FriendStrip.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   );
 };
 
+interface FriendStripEmptyProps {
+  /** 초대를 쓸 수 있을 때 친구가 없는 줄에서 초대로 데려가는 동작. 없으면 친구 찾기로 보낸다 */
+  onInvite?: () => void;
+  /** 사용자가 피드를 내리는 등 다른 일을 시작해 안내를 닫아야 할 때 */
+  isHintDismissed?: boolean;
+  /** 먼저 뜰 자동 화면(알림 화면·새로운 기능)이 남았으면 false라 안내를 미룬다 */
+  shouldShowHint?: boolean;
+}
+
 /**
  * 친구가 없으면 "나" 옆에서 초대(초대를 못 쓰면 친구 찾기)로 이끈다. 칸 높이는 친구가 있을 때와 같다.
  * 말풍선은 첫 탭이 칸에 닿도록 통과시키고, 닫으면 계정마다 저장돼 다시 보이지 않는다.
@@ -275,7 +276,7 @@ FriendStrip.Empty = function Empty({
   onInvite,
   isHintDismissed,
   shouldShowHint = true,
-}: FriendStripProps) {
+}: FriendStripEmptyProps) {
   const { t } = useTranslation('friend');
   const fontScaledSize = useFontScaledSize();
   const { trackEvent } = useTrack();

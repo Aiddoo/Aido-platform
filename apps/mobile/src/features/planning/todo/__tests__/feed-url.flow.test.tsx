@@ -7,11 +7,14 @@ import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
-import { useFeedAction, useFeedDateKey, useFeedFriendId } from '../hooks/use-feed-params';
 import {
+  useFeedAction,
+  useFeedDateKey,
+  useFeedFriendId,
   useFeedSelectedTodoId,
-  useFeedTodoDetailHandoff,
-} from '../hooks/use-feed-selected-todo-id';
+} from '../hooks/use-feed-params';
+import { useFeedTodoDetailHandoff } from '../hooks/use-feed-todo-detail-handoff';
+import { useOpenFeedTodoDetail } from '../hooks/use-open-feed-todo-detail';
 
 jest.unmock('expo-router');
 
@@ -25,6 +28,7 @@ function useFeedScreen() {
   const [friendId, selectFriend] = useFeedFriendId();
   const [action] = useFeedAction();
   const [selectedTodoId, setSelectedTodoId] = useFeedSelectedTodoId();
+  const openTodoDetail = useOpenFeedTodoDetail();
 
   return {
     selectedDateKey,
@@ -34,6 +38,7 @@ function useFeedScreen() {
     action,
     selectedTodoId,
     setSelectedTodoId,
+    openTodoDetail,
   };
 }
 
@@ -190,7 +195,7 @@ describe('피드 URL 플로우', () => {
       const feed = await renderFeed('/feed?date=2030-01-02', { routes: ['todo/[todoId]'] });
 
       // When
-      await feed.run(({ setSelectedTodoId }) => setSelectedTodoId(7));
+      await feed.run(({ openTodoDetail }) => openTodoDetail(7));
 
       // Then
       expect(feed.url()).toBe('/todo/7');

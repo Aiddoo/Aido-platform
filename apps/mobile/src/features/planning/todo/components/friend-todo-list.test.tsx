@@ -44,11 +44,10 @@ describe('FriendTodoList', () => {
     // When
     await renderScreen(
       <>
-        <FriendCalendar friendId={FRIEND_ID} />
+        <FriendCalendar />
         <QueryErrorBoundary fallback={FriendTodoList.Error}>
           <Suspense fallback={<FriendTodoList.Loading />}>
             <FriendTodoList
-              friendId={FRIEND_ID}
               renderRowAction={() => null}
               findMenuAction={() => null}
               emptyAction={null}
@@ -86,7 +85,6 @@ describe('FriendTodoList', () => {
     await renderScreen(
       <Suspense fallback={null}>
         <FriendTodoList
-          friendId={FRIEND_ID}
           renderRowAction={() => null}
           findMenuAction={() => null}
           emptyAction={null}

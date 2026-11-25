@@ -20,7 +20,6 @@ import { TodoListPolicy } from '../domains/todo-list.model';
 import { TodoOverviewPolicy } from '../domains/todo-overview.model';
 import type { TodoUpdateScope, TodoEditScope } from '../domains/todo-repeat.model';
 import { isTodoSeriesFailure } from '../domains/todo-series.error';
-import { useTodoSeriesFailureFeedback } from '../hooks/use-todo-series-failure-feedback';
 import type {
   TodoCategoryMove,
   TodoCompletionChange,
@@ -49,6 +48,7 @@ import {
 } from './todo-cache';
 import { TODO_MUTATION_KEYS } from './todo-mutation-keys';
 import { TODO_QUERY_KEYS } from './todo-query-keys';
+import { useTodoSeriesFailureFeedback } from './todo-series.mutations';
 
 interface ToggleTodoVariables {
   todoId: number;

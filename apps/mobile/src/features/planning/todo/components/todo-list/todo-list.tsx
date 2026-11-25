@@ -23,12 +23,14 @@ import {
   QueryErrorFallback,
   type QueryErrorFallbackProps,
   MIN_TOUCH_TARGET_PT,
+  Text,
+  VStack,
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { noop, range } from 'es-toolkit';
 import { useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
-import { useState } from 'react';
+import { type ComponentProps, useState } from 'react';
 import type { AccessibilityActionEvent } from 'react-native';
 import {
   NestedReorderableList,
@@ -41,7 +43,7 @@ import { type SubTodo, SubTodoPolicy } from '../../domains/sub-todo.model';
 import { TodoListPolicy } from '../../domains/todo-list.model';
 import { type Todo, TodoPolicy } from '../../domains/todo.model';
 import { useFeedDateKey } from '../../hooks/use-feed-params';
-import { useFeedSelectedTodoId } from '../../hooks/use-feed-selected-todo-id';
+import { useOpenFeedTodoDetail } from '../../hooks/use-open-feed-todo-detail';
 import {
   useReorderSubTodosMutationOptions,
   useToggleSubTodoMutationOptions,
@@ -52,7 +54,6 @@ import {
 } from '../../queries/todo.mutations';
 import { useGetTodosByDateQueryOptions } from '../../queries/todo.queries';
 import { formatTodoTime } from '../../utils/todo-time.view-model';
-import { SubTodoList } from '../sub-todo-list';
 import { TODO_ROW_ACCESSIBILITY_ACTION, TodoRow } from '../todo-row';
 
 /** 카테고리 알약 높이(Chip md의 위아래 8 + 가장 작은 글꼴 단계에서 b4가 바뀌는 e1의 줄 17) */
@@ -67,14 +68,14 @@ const CATEGORY_PILL_HIT_SLOP = {
 };
 
 interface TodoListProps {
-  /** 알림 권한은 위층 기능이라 화면이 한 번 읽어 넘긴다. 켜져 있으면 시간 옆 종 꺼짐을 그리지 않는다 */
+  /** 알림 권한은 위층 기능이라 이 목록이 조회하지 못해 화면이 넘긴다. 켜져 있으면 시간 옆 종 꺼짐을 그리지 않는다 */
   isReminderOff?: boolean;
 }
 
 export function TodoList({ isReminderOff = false }: TodoListProps) {
   const [date] = useFeedDateKey();
   // 행마다 route 훅을 부르면 URL이 바뀔 때마다 행 수만큼 params를 다시 파싱한다. 목록이 한 번 읽어 넘긴다
-  const [_selectedTodoId, openTodoDetail] = useFeedSelectedTodoId();
+  const openTodoDetail = useOpenFeedTodoDetail();
 
   const { categoryGroups, dataUpdatedAt } = useSuspenseQueries({
     queries: [
@@ -111,108 +112,6 @@ export function TodoList({ isReminderOff = false }: TodoListProps) {
       {/* 목록 위에 나타나면 행이 통째로 밀려 누르려던 곳이 움직인다. 나타나고 닫혀도 행은 그 자리다 */}
       {canReorderTodos && <ReorderCoachmark kind="todo" />}
     </Box>
-  );
-}
-
-TodoList.Loading = function Loading() {
-  return (
-    <Box gap={8}>
-      <CategoryHeaderPill.Loading />
-      <Box>
-        {range(5).map((index) => (
-          <TodoRow.Loading key={index} />
-        ))}
-      </Box>
-    </Box>
-  );
-};
-
-TodoList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
-  const { t } = useTranslation(['todo', 'common']);
-
-  return (
-    <HStack flex={1} justify="center" align="center">
-      <QueryErrorFallback title={t('list.loadError')} reset={reset} />
-    </HStack>
-  );
-};
-
-interface CategoryAddPillProps {
-  category: TodoCategoryWithCount;
-  date: DateKey;
-}
-
-function CategoryAddPill({ category, date }: CategoryAddPillProps) {
-  const fontScaledSize = useFontScaledSize();
-  const router = useRouter();
-  const push = useSingleTap(router.push);
-
-  return (
-    <PressableFeedback
-      onPress={() => push({ pathname: '/todo/new', params: { date, categoryId: category.id } })}
-      isDisabled={TodoCategoryPolicy.isOptimisticCategory(category)}
-      hitSlop={CATEGORY_PILL_HIT_SLOP}
-      testID={`todo-add-${category.id}`}
-      className="self-start"
-    >
-      <CategoryHeaderPill label={category.name} color={category.color} pointerEvents="none">
-        <PlusIcon
-          width={fontScaledSize(14)}
-          height={fontScaledSize(14)}
-          colorClassName="text-gray-8"
-        />
-      </CategoryHeaderPill>
-    </PressableFeedback>
-  );
-}
-
-interface TodoReorderableListProps {
-  items: Todo[];
-  updatedAt: number;
-  /** 보고 있는 날짜. 여러 날 할 일은 시작일이 아니라 이 날짜 목록을 고친다 */
-  date: DateKey;
-  isReminderOff: boolean;
-  onOpenDetail: (todoId: number) => void;
-}
-
-function TodoReorderableList({
-  items,
-  updatedAt,
-  date,
-  isReminderOff,
-  onOpenDetail,
-}: TodoReorderableListProps) {
-  const reorderMutation = useMutation(useReorderTodoMutationOptions());
-  const reorderableList = useReorderableList({
-    items,
-    updatedAt,
-    isPending: reorderMutation.isPending,
-    getItemId: (todo) => todo.id,
-    isOptimistic: (todo) => TodoPolicy.isOptimisticTodo(todo),
-    onReorder: ({ instruction: { movedId, targetId, position } }) => {
-      reorderMutation.mutate({
-        todoId: movedId,
-        input: { targetTodoId: targetId, position },
-      });
-    },
-  });
-
-  return (
-    <NestedReorderableList
-      {...reorderableList}
-      shouldUpdateActiveItem
-      scrollEnabled={false}
-      keyExtractor={(item) => String(item.id)}
-      renderItem={({ item }) => (
-        <TodoList.Item
-          todo={item}
-          updatedAt={updatedAt}
-          date={date}
-          isReminderOff={isReminderOff}
-          onOpenDetail={onOpenDetail}
-        />
-      )}
-    />
   );
 }
 
@@ -386,17 +285,14 @@ TodoList.Item = function Item({
       isDisabled={isOptimistic}
     >
       {isExpanded && (
-        <SubTodoList
-          onAddPress={handleAddSubTodoPress}
-          canAdd={SubTodoPolicy.canAddSubTodo(todo.subTodos)}
-        >
+        <VStack className="ml-8 border-l border-gray-2 pl-4" gap={0}>
           <NestedReorderableList
             {...subTodoReorderableList}
             shouldUpdateActiveItem
             scrollEnabled={false}
             keyExtractor={(item) => String(item.id)}
             renderItem={({ item }) => (
-              <SubTodoList.Item
+              <SubTodoItem
                 testID={`sub-todo-checkbox-${item.id}`}
                 label={item.title}
                 isSelected={item.completed}
@@ -413,8 +309,197 @@ TodoList.Item = function Item({
               />
             )}
           />
-        </SubTodoList>
+
+          {SubTodoPolicy.canAddSubTodo(todo.subTodos) && (
+            <PressableFeedback onPress={handleAddSubTodoPress} hitSlop={8} className="py-1.5">
+              <HStack gap={8} align="center">
+                <PlusIcon
+                  width={fontScaledSize(14)}
+                  height={fontScaledSize(14)}
+                  colorClassName="text-gray-4"
+                />
+                <Text size="e1" shade={5}>
+                  {t('subTodo.addItem')}
+                </Text>
+              </HStack>
+            </PressableFeedback>
+          )}
+        </VStack>
       )}
     </TodoRow>
   );
 };
+
+TodoList.Loading = function Loading() {
+  return (
+    <Box gap={8}>
+      <CategoryHeaderPill.Loading />
+      <Box>
+        {range(5).map((index) => (
+          <TodoRow.Loading key={index} />
+        ))}
+      </Box>
+    </Box>
+  );
+};
+
+TodoList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
+  const { t } = useTranslation(['todo', 'common']);
+
+  return (
+    <HStack flex={1} justify="center" align="center">
+      <QueryErrorFallback title={t('list.loadError')} reset={reset} />
+    </HStack>
+  );
+};
+
+interface CategoryAddPillProps {
+  category: TodoCategoryWithCount;
+  date: DateKey;
+}
+
+function CategoryAddPill({ category, date }: CategoryAddPillProps) {
+  const fontScaledSize = useFontScaledSize();
+  const router = useRouter();
+  const push = useSingleTap(router.push);
+
+  return (
+    <PressableFeedback
+      onPress={() => push({ pathname: '/todo/new', params: { date, categoryId: category.id } })}
+      isDisabled={TodoCategoryPolicy.isOptimisticCategory(category)}
+      hitSlop={CATEGORY_PILL_HIT_SLOP}
+      testID={`todo-add-${category.id}`}
+      className="self-start"
+    >
+      <CategoryHeaderPill label={category.name} color={category.color} pointerEvents="none">
+        <PlusIcon
+          width={fontScaledSize(14)}
+          height={fontScaledSize(14)}
+          colorClassName="text-gray-8"
+        />
+      </CategoryHeaderPill>
+    </PressableFeedback>
+  );
+}
+
+interface TodoReorderableListProps {
+  items: Todo[];
+  updatedAt: number;
+  /** 보고 있는 날짜. 여러 날 할 일은 시작일이 아니라 이 날짜 목록을 고친다 */
+  date: DateKey;
+  isReminderOff: boolean;
+  onOpenDetail: (todoId: number) => void;
+}
+
+function TodoReorderableList({
+  items,
+  updatedAt,
+  date,
+  isReminderOff,
+  onOpenDetail,
+}: TodoReorderableListProps) {
+  const reorderMutation = useMutation(useReorderTodoMutationOptions());
+  const reorderableList = useReorderableList({
+    items,
+    updatedAt,
+    isPending: reorderMutation.isPending,
+    getItemId: (todo) => todo.id,
+    isOptimistic: (todo) => TodoPolicy.isOptimisticTodo(todo),
+    onReorder: ({ instruction: { movedId, targetId, position } }) => {
+      reorderMutation.mutate({
+        todoId: movedId,
+        input: { targetTodoId: targetId, position },
+      });
+    },
+  });
+
+  return (
+    <NestedReorderableList
+      {...reorderableList}
+      shouldUpdateActiveItem
+      scrollEnabled={false}
+      keyExtractor={(item) => String(item.id)}
+      renderItem={({ item }) => (
+        <TodoList.Item
+          todo={item}
+          updatedAt={updatedAt}
+          date={date}
+          isReminderOff={isReminderOff}
+          onOpenDetail={onOpenDetail}
+        />
+      )}
+    />
+  );
+}
+
+interface SubTodoItemProps extends Omit<ComponentProps<typeof TodoRow.Checkbox>, 'children'> {
+  label: string;
+  isSelected: boolean;
+  onSelectedChange: (checked: boolean) => void;
+  onMorePress: () => void;
+}
+
+/** 끌어서 순서를 바꾸는 목록의 칸이라 끌기 훅을 스스로 읽는다 */
+function SubTodoItem({
+  label,
+  isSelected,
+  onSelectedChange,
+  onMorePress,
+  isDisabled,
+  ...checkboxProps
+}: SubTodoItemProps) {
+  const { t } = useTranslation('todo');
+  const fontScaledSize = useFontScaledSize();
+  const drag = useReorderableDrag();
+  const isActive = useIsActive();
+
+  const handleAccessibilityAction = (event: AccessibilityActionEvent) =>
+    match(event.nativeEvent.actionName)
+      .with(TODO_ROW_ACCESSIBILITY_ACTION.toggleCompleted, () => onSelectedChange(!isSelected))
+      .with(TODO_ROW_ACCESSIBILITY_ACTION.more, onMorePress)
+      .otherwise(noop);
+
+  return (
+    <TodoRow
+      accessibilityActions={
+        isDisabled
+          ? undefined
+          : [
+              {
+                name: TODO_ROW_ACCESSIBILITY_ACTION.toggleCompleted,
+                label: t(isSelected ? 'actions.uncomplete' : 'actions.complete'),
+              },
+              { name: TODO_ROW_ACCESSIBILITY_ACTION.more, label: t('actions.more') },
+            ]
+      }
+      onAccessibilityAction={handleAccessibilityAction}
+      left={
+        <TodoRow.Checkbox
+          {...checkboxProps}
+          isSelected={isSelected}
+          onSelectedChange={onSelectedChange}
+          isDisabled={isDisabled}
+        />
+      }
+      top={<TodoRow.Label isCompleted={isSelected}>{label}</TodoRow.Label>}
+      right={
+        <IconButton
+          accessibilityLabel={t('actions.more')}
+          icon={
+            <MoreIcon
+              width={fontScaledSize(20)}
+              height={fontScaledSize(20)}
+              colorClassName="text-gray-5"
+            />
+          }
+          className="size-5 min-h-0 min-w-0"
+          hitSlop={8}
+          onPress={isDisabled ? undefined : onMorePress}
+        />
+      }
+      onLongPress={drag}
+      isActive={isActive}
+      isDisabled={isDisabled}
+    />
+  );
+}

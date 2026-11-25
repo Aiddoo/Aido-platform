@@ -19,6 +19,13 @@ import {
   getCompletionMonthsCovering,
 } from '../domains/daily-completion.model';
 import {
+  type TodoCategoryGroup,
+  TodoListPolicy,
+  type TodoListResult,
+} from '../domains/todo-list.model';
+import type { TodoOverview } from '../domains/todo-overview.model';
+import type { Todo } from '../domains/todo.model';
+import {
   getTodoSummaryRefetchInterval,
   isTodoSummaryDateRequestable,
   shouldPersistTodosByDate,
@@ -144,6 +151,13 @@ export function useGetFriendDailyCompletionsQueryOptions({
   });
 }
 
+/** 친구의 그날 할 일을 할 일이 가진 카테고리로 묶는다 */
+export function selectTodoCategoryGroups(
+  list: TodoListResult,
+): TodoCategoryGroup<Todo['category']>[] {
+  return TodoListPolicy.groupByCategory(list);
+}
+
 export function useGetFriendTodosQueryOptions({
   friendUserId,
   date,
@@ -183,6 +197,11 @@ export function useGetTodoDetailsQueryOptions({ todoId }: { todoId: number }) {
 export function useGetTodoDetailsQueryOptionsFactory() {
   const todoApi = useTodoApi();
   return (todoId: number) => todoDetailsQueryOptions(todoApi, todoId);
+}
+
+/** 진행 중인 반복이 있는지만 고른다. 다른 칸이 바뀌어도 반복 안내는 다시 그리지 않는다 */
+export function selectHasActiveRepeat(overview: TodoOverview): boolean {
+  return overview.hasActiveRepeat;
 }
 
 /** 반복 안내·시작 체크리스트가 각자 select로 고른다. 둘 다 화면 한쪽의 보조 정보라 실패해도 경계로 보내지 않고 그 안내만 뺀다 */

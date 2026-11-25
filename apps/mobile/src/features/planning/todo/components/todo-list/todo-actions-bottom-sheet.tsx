@@ -23,7 +23,7 @@ import type { ComponentProps, ComponentType } from 'react';
 
 import { type Todo, TodoPolicy } from '../../domains/todo.model';
 import { useSelectTodoScope } from '../../hooks/use-select-todo-scope';
-import { useSheetTodo } from '../../hooks/use-sheet-todo';
+import { useSuspenseSheetTodo } from '../../hooks/use-suspense-sheet-todo';
 import { useTodoSheetDateKey } from '../../hooks/use-todo-sheet-date-key';
 import { useStopTodoSeriesMutationOptions } from '../../queries/todo-series.mutations';
 import {
@@ -34,13 +34,13 @@ import { formatTodoPeriod } from '../../utils/todo-period.view-model';
 import { TodoActionRow } from '../todo-action-row';
 import { TodoScopeStep } from '../todo-scope-step';
 
-type TodoActionsBottomSheetProps = Omit<
+interface TodoActionsBottomSheetProps extends Omit<
   ComponentProps<typeof RouteBottomSheet>,
   'fallbackHref' | 'loading' | 'children'
-> & {
+> {
   /** 목록 맨 위에 붙는 요약 줄(받은 감사 등). 다시 마운트되지 않도록 모듈 수준 컴포넌트를 넘긴다 */
   summary: ComponentType<TodoActionsSummaryProps>;
-};
+}
 
 interface TodoActionsSummaryProps {
   todo: Todo;
@@ -69,7 +69,7 @@ TodoActionsBottomSheet.ActionList = function ActionList({
   const actionIconSize = fontScaledSize(16);
   const todayKey = useTodayKey();
   const [date] = useTodoSheetDateKey();
-  const todo = useSheetTodo({ onMissing: onClose });
+  const todo = useSuspenseSheetTodo({ onMissing: onClose });
   const deleteMutation = useMutation(useDeleteTodoMutationOptions());
   const updateScheduleMutation = useMutation(useUpdateTodoScheduleMutationOptions());
   const stopSeriesMutation = useMutation(useStopTodoSeriesMutationOptions());
@@ -107,7 +107,7 @@ TodoActionsBottomSheet.ActionList = function ActionList({
     );
   };
 
-  // 할 일은 낙관적으로 빠져도 시트가 마지막 값을 들고 남아(useSheetTodo) 다이얼로그가 진행 중·실패 뒤에도 남는다
+  // 할 일은 낙관적으로 빠져도 시트가 마지막 값을 들고 남아(useSuspenseSheetTodo) 다이얼로그가 진행 중·실패 뒤에도 남는다
   const deleteMultiDayTodo = async () => {
     const isDeleted = await confirmDialog.openAsync({
       title: t('multiDayDelete.title'),

@@ -7,7 +7,7 @@ import type { ComponentProps } from 'react';
 import type { TodoUpdateScope } from '../../domains/todo-repeat.model';
 import { TodoPolicy } from '../../domains/todo.model';
 import { useSelectTodoScope } from '../../hooks/use-select-todo-scope';
-import { useSheetTodo } from '../../hooks/use-sheet-todo';
+import { useSuspenseSheetTodo } from '../../hooks/use-suspense-sheet-todo';
 import { useChangeTodoCategoryMutationOptions } from '../../queries/todo.mutations';
 import { TodoScopeStep } from '../todo-scope-step';
 
@@ -26,7 +26,7 @@ export function TodoCategoryBottomSheet(props: TodoCategoryBottomSheetProps) {
 
 TodoCategoryBottomSheet.CategoryForm = function CategoryForm({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation('todo');
-  const todo = useSheetTodo({ onMissing: onClose });
+  const todo = useSuspenseSheetTodo({ onMissing: onClose });
   const changeCategory = useMutation(useChangeTodoCategoryMutationOptions());
   const scopeSelector = useSelectTodoScope();
   const { selectEditScope } = scopeSelector;

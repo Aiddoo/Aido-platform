@@ -8,7 +8,7 @@ import { formatDaysOfWeek, getDayOfWeekLabel } from '@src/shared/date/format/dat
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
-import { Button, HStack, SheetHeaderLayout, Text, VStack } from '@src/shared/ui';
+import { Box, Button, HStack, SheetHeaderLayout, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
 import { useForm, type UseFormReturn, useFormState, useWatch } from 'react-hook-form';
@@ -16,6 +16,7 @@ import { ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
 import { toTodoRepeatFormValues } from '../../apis/todo-repeat.mapper';
+import { PICKER_MONTH_HEIGHT } from '../../constants/todo.constants';
 import { type TodoRepeat, TodoRepeatPolicy } from '../../domains/todo-repeat.model';
 import { type DatePicker, useDatePicker } from '../../hooks/use-date-picker';
 import {
@@ -32,9 +33,13 @@ import {
   withTodoRepeatFormMonthlyToggled,
   withTodoRepeatFormPreset,
 } from '../../schemas/todo-repeat-form.schema';
+import { getPickerDayType, getRepeatWeekDays } from '../../utils/calendar-day.view-model';
+import { findWeekRangeBand } from '../../utils/repeat-calendar.geometry';
+import { WeekdayRow } from '../calendar/weekday-row';
+import { PickerDateCell } from '../picker-date-cell';
+import { PickerMonthBar } from '../picker-month-bar';
 import { PickerTitleBar } from '../picker-title-bar';
 import { RepeatHintLine } from '../repeat-hint-line';
-import { RepeatCalendar } from './repeat-calendar';
 
 type RepeatForm = UseFormReturn<TodoRepeatFormValues>;
 
@@ -471,3 +476,92 @@ TodoRepeatPicker.PeriodFooter = function PeriodFooter({
     </VStack>
   );
 };
+
+interface RepeatCalendarProps {
+  picker: DatePicker;
+  todayKey: DateKey;
+  startDateKey: DateKey;
+  endDateKey: DateKey | null;
+  isOpenEnded: boolean;
+  /** 띠 안에서 실제로 반복되는 날(YYYY-MM-DD). null이면 흐리게 하지 않는다 */
+  occurrenceKeys: ReadonlySet<string> | null;
+  onValueChange: (dateKey: DateKey) => void;
+}
+
+/** 반복 기간을 띠로 보이는 한 달. 폼 값은 위의 `RepeatFormCalendar`가 읽어 넘긴다 */
+function RepeatCalendar({
+  picker,
+  todayKey,
+  startDateKey,
+  endDateKey,
+  isOpenEnded,
+  occurrenceKeys,
+  onValueChange,
+}: RepeatCalendarProps) {
+  const { displayMonthKey, weeks, goToPrevMonth, goToNextMonth } = picker;
+
+  return (
+    <VStack gap={16}>
+      <PickerMonthBar
+        displayMonthKey={displayMonthKey}
+        onPreviousMonth={goToPrevMonth}
+        onNextMonth={goToNextMonth}
+      />
+
+      <WeekdayRow />
+
+      <VStack style={{ height: PICKER_MONTH_HEIGHT }}>
+        {weeks.map((week, weekIndex) => {
+          const days = getRepeatWeekDays(week, { startDateKey, endDateKey, isOpenEnded });
+          const band = findWeekRangeBand(days);
+
+          return (
+            // 주 순서는 고정되어 index가 안정적인 key다.
+            <Box key={weekIndex} px={8}>
+              <HStack className="relative">
+                {/* 칸마다 나눠 그리면 폭이 소수점인 칸 경계에 세로선이 생겨 한 주에 띠 하나로 그린다 */}
+                {band != null && (
+                  <Box
+                    className="absolute top-[8px] h-[32px] bg-main/8"
+                    style={{
+                      left: `${band.startRatio * 100}%`,
+                      right: `${(1 - band.endRatio) * 100}%`,
+                    }}
+                  />
+                )}
+                {days.map(({ cell, isVisible, isStart, isEnd, isInRange }) => {
+                  if (!isVisible) {
+                    return <PickerDateCell.Placeholder key={cell.dateKey} />;
+                  }
+                  const isSelected = isStart || isEnd;
+                  const isToday = cell.dateKey === todayKey;
+
+                  return (
+                    <PickerDateCell
+                      key={cell.dateKey}
+                      dateKey={cell.dateKey}
+                      dayNumber={cell.dayNumber}
+                      label={cell.label}
+                      dayType={getPickerDayType({
+                        dayOfWeek: cell.dayOfWeek,
+                        isSelected,
+                        isToday,
+                      })}
+                      isSelected={isSelected}
+                      isTodayHighlighted={!isSelected && isToday}
+                      isDisabled={cell.dateKey < todayKey}
+                      isDimmed={
+                        occurrenceKeys != null && isInRange && !occurrenceKeys.has(cell.dateKey)
+                      }
+                      onPress={onValueChange}
+                    />
+                  );
+                })}
+              </HStack>
+            </Box>
+          );
+        })}
+      </VStack>
+    </VStack>
+  );
+}

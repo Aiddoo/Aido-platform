@@ -7,18 +7,18 @@ import type { TodoUpdateScope } from '../../domains/todo-repeat.model';
 import { findScheduledTime } from '../../domains/todo-schedule.model';
 import { TodoPolicy } from '../../domains/todo.model';
 import { useSelectTodoScope } from '../../hooks/use-select-todo-scope';
-import { useSheetTodo } from '../../hooks/use-sheet-todo';
+import { useSuspenseSheetTodo } from '../../hooks/use-suspense-sheet-todo';
 import { useUpdateTodoScheduleMutationOptions } from '../../queries/todo.mutations';
 import { TodoScopeStep } from '../todo-scope-step';
 import { TodoTimePicker } from '../todo-time-picker';
 
-type TodoTimeBottomSheetProps = Omit<
+interface TodoTimeBottomSheetProps extends Omit<
   ComponentProps<typeof RouteBottomSheet>,
   'fallbackHref' | 'loading' | 'children'
-> & {
+> {
   /** 종일이 아닌 시각을 저장한 뒤 불린다. 알림 권한은 위층 기능이라 route가 넘긴다 */
   onTimeScheduled?: () => void;
-};
+}
 
 export function TodoTimeBottomSheet({ onTimeScheduled, ...props }: TodoTimeBottomSheetProps) {
   return (
@@ -41,7 +41,7 @@ TodoTimeBottomSheet.TimeForm = function TimeForm({
   onTimeScheduled?: () => void;
 }) {
   const { timezone } = useDateFormatContext();
-  const todo = useSheetTodo({ onMissing: onClose });
+  const todo = useSuspenseSheetTodo({ onMissing: onClose });
   const updateSchedule = useMutation(useUpdateTodoScheduleMutationOptions());
   const scopeSelector = useSelectTodoScope();
   const { selectEditScope } = scopeSelector;

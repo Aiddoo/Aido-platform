@@ -11,8 +11,11 @@ import {
   dateKeySchema,
   diffDateKeysInMonths,
   getMonthStartDateKey,
+  diffDateKeysInCalendarWeeks,
   diffDateKeysInDays,
   getCalendarWeek,
+  getMonthCalendarWeekStartDateKeys,
+  getWeekDateKeys,
   getDayOfWeek,
   getDaysInDateKeyMonth,
   getIsoWeekNumber,
@@ -412,5 +415,67 @@ describe('isDateKey — 계산 결과를 날짜 key로 좁히는 판정', () => 
 
     // Then
     expect(result).toBe(dateKeySchema.safeParse(value).success);
+  });
+});
+
+describe('diffDateKeysInCalendarWeeks — 일요일 시작 주의 차이', () => {
+  it.each([
+    ['같은 주', '2026-04-13', '2026-04-16', 0],
+    ['다음 주', '2026-04-13', '2026-04-20', 1],
+    ['이전 주', '2026-04-13', '2026-04-06', -1],
+    ['요일이 달라도 주로 센다', '2026-04-13', '2026-04-30', 2],
+  ])('%s', (_title, from, to, expected) => {
+    // When
+    const weeks = diffDateKeysInCalendarWeeks(createDateKey(from), createDateKey(to));
+
+    // Then
+    expect(weeks).toBe(expected);
+  });
+});
+
+describe('getMonthCalendarWeekStartDateKeys — 달이 걸친 일요일 시작 주', () => {
+  it.each([
+    ['2026-07-01', 5],
+    ['2026-08-01', 6],
+    ['2026-02-15', 4],
+  ])('%s의 달은 걸친 주가 %i개다', (dateKey, expected) => {
+    // When
+    const weeks = getMonthCalendarWeekStartDateKeys(createDateKey(dateKey));
+
+    // Then
+    expect(weeks).toHaveLength(expected);
+  });
+
+  it('최소 주 수보다 적으면 뒤로 주를 붙여 쪽 높이를 맞춘다', () => {
+    // When
+    const weeks = getMonthCalendarWeekStartDateKeys(createDateKey('2026-02-15'), 6);
+
+    // Then
+    expect(weeks).toEqual([
+      '2026-02-01',
+      '2026-02-08',
+      '2026-02-15',
+      '2026-02-22',
+      '2026-03-01',
+      '2026-03-08',
+    ]);
+  });
+});
+
+describe('getWeekDateKeys — 주의 첫날부터 7일', () => {
+  it('달을 넘는 주도 이어서 준다', () => {
+    // When
+    const dateKeys = getWeekDateKeys(createDateKey('2026-12-27'));
+
+    // Then
+    expect(dateKeys).toEqual([
+      '2026-12-27',
+      '2026-12-28',
+      '2026-12-29',
+      '2026-12-30',
+      '2026-12-31',
+      '2027-01-01',
+      '2027-01-02',
+    ]);
   });
 });

@@ -15,8 +15,8 @@ export type RouteFriend =
   | { status: 'ready'; friend: FriendUser }
   | { status: 'missing' };
 
-/** route의 friendId를 친구 목록에서 확인한다. 아직 읽지 않은 쪽에 있으면 이어 읽고, 끝까지 없으면 더는 친구가 아니다 */
-export function useRouteFriend(): RouteFriend {
+/** route의 friendId를 친구 목록에서 확인한다. 친구 목록의 첫 쪽을 받을 때까지 멈추고, 아직 읽지 않은 쪽에 있으면 이어 읽고, 끝까지 없으면 더는 친구가 아니다 */
+export function useSuspenseRouteFriend(): RouteFriend {
   const [friendId] = useRouteFriendId();
   const {
     data: friend,
@@ -24,7 +24,7 @@ export function useRouteFriend(): RouteFriend {
     isFetchNextPageError,
     error,
     fetchNextPage,
-  } = useFriendQuery(friendId);
+  } = useSuspenseFriendQuery(friendId);
 
   return match({ friend, isFetchNextPageError, hasNextPage })
     .returnType<RouteFriend>()
@@ -45,7 +45,7 @@ function useRouteFriendId() {
 }
 
 /** 친구를 읽고, 아직 불러오지 않은 페이지에 있으면 다음 페이지를 이어 불러온다. */
-function useFriendQuery(friendId: string) {
+function useSuspenseFriendQuery(friendId: string) {
   const query = useSuspenseInfiniteQuery(useGetFriendInfiniteQueryOptions({ friendId }));
   const { data: friend, hasNextPage, isFetching, isFetchNextPageError, fetchNextPage } = query;
 

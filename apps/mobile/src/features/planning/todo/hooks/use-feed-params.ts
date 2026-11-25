@@ -34,3 +34,15 @@ export function useFeedAction() {
 
   return [action, setAction] as const;
 }
+
+/** 펼친 화면의 옆 칸에 고른 할 일. 할 일이 바뀌면 댓글 위치·정렬을 버리고 같은 할 일은 그대로 둔다 */
+export function useFeedSelectedTodoId() {
+  const [{ todoId: selectedTodoId }, setParams] = useRouteParams(feedParamsSchema);
+  const setSelectedTodoId = (todoId: number | undefined) => {
+    if (todoId !== selectedTodoId) {
+      setParams({ ...CLEARED_TODO_SELECTION, todoId });
+    }
+  };
+
+  return [selectedTodoId, setSelectedTodoId] as const;
+}

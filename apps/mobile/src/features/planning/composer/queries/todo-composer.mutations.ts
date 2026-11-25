@@ -21,7 +21,6 @@ import {
   isRecurringTodoRejection,
 } from '@src/features/planning/todo/domains/todo.error';
 import type { TodoFieldChanges } from '@src/features/planning/todo/domains/todo.model';
-import { useTodoSeriesFailureFeedback } from '@src/features/planning/todo/hooks/use-todo-series-failure-feedback';
 import {
   appendTodoToList,
   beginTodoWrite,
@@ -36,6 +35,7 @@ import {
   setTodoOverviewInCache,
 } from '@src/features/planning/todo/queries/todo-cache';
 import { TODO_MUTATION_KEYS } from '@src/features/planning/todo/queries/todo-mutation-keys';
+import { useTodoSeriesFailureFeedback } from '@src/features/planning/todo/queries/todo-series.mutations';
 import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-form.schema';
 import type { TodoSeriesEditOptions } from '@src/features/planning/todo/schemas/todo-series-request.schema';
 import { toTodoEditedFields } from '@src/features/planning/todo/utils/todo-analytics';

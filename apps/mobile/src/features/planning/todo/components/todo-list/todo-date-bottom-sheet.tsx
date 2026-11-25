@@ -5,7 +5,7 @@ import { Skeleton } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
 import { TodoPolicy } from '../../domains/todo.model';
-import { useSheetTodo } from '../../hooks/use-sheet-todo';
+import { useSuspenseSheetTodo } from '../../hooks/use-suspense-sheet-todo';
 import { useUpdateTodoScheduleMutationOptions } from '../../queries/todo.mutations';
 import { TodoDatePicker } from '../todo-date-picker';
 
@@ -24,7 +24,7 @@ export function TodoDateBottomSheet(props: TodoDateBottomSheetProps) {
 
 TodoDateBottomSheet.DateForm = function DateForm({ onClose }: { onClose: () => void }) {
   const { timezone } = useDateFormatContext();
-  const todo = useSheetTodo({ onMissing: onClose });
+  const todo = useSuspenseSheetTodo({ onMissing: onClose });
   const updateSchedule = useMutation(useUpdateTodoScheduleMutationOptions());
 
   if (todo == null) {

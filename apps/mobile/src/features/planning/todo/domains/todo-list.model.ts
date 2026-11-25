@@ -14,7 +14,7 @@ export const todoListResultSchema = z.object({
 export type TodoListResult = z.infer<typeof todoListResultSchema>;
 
 /** 카테고리 하나와 그 카테고리의 할 일 */
-interface TodoCategoryGroup<TCategory> {
+export interface TodoCategoryGroup<TCategory> {
   category: TCategory;
   todos: Todo[];
 }

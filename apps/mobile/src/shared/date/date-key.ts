@@ -1,5 +1,6 @@
 import { dateSchema } from '@aido/api/common';
 import { DAYS_PER_WEEK, MONTHS_PER_YEAR } from '@src/shared/constants/time-units';
+import { range } from 'es-toolkit';
 import { z } from 'zod';
 
 import { getDaysSinceAggregationWeekStart, getDaysSinceCalendarWeekStart } from './week-start';
@@ -284,4 +285,29 @@ export function getCalendarWeek(dateKey: DateKey): CalendarWeek {
     endDateKey: addDaysToDateKey(startDateKey, DAYS_PER_WEEK - 1),
     ...toWeekOfMonth(addDaysToDateKey(startDateKey, WEEK_MIDDLE_DAY_OFFSET)),
   };
+}
+
+/** 두 날이 속한 일요일 시작 주의 차이(to - from). 요일이 달라도 주로 센다 */
+export function diffDateKeysInCalendarWeeks(from: DateKey, to: DateKey): number {
+  return (
+    diffDateKeysInDays(getCalendarWeek(from).startDateKey, getCalendarWeek(to).startDateKey) /
+    DAYS_PER_WEEK
+  );
+}
+
+/** 주의 첫날부터 7일 */
+export function getWeekDateKeys(weekStartDateKey: DateKey): DateKey[] {
+  return range(DAYS_PER_WEEK).map((index) => addDaysToDateKey(weekStartDateKey, index));
+}
+
+/** 그 날이 속한 달이 걸친 일요일 시작 주의 첫날들. `minWeekCount`보다 적으면 뒤로 주를 더 붙인다 */
+export function getMonthCalendarWeekStartDateKeys(dateKey: DateKey, minWeekCount = 0): DateKey[] {
+  const firstWeekStartDateKey = getCalendarWeek(getMonthStartDateKey(dateKey)).startDateKey;
+  const lastWeekStartDateKey = getCalendarWeek(getMonthEndDateKey(dateKey)).startDateKey;
+  const weekCount =
+    diffDateKeysInDays(firstWeekStartDateKey, lastWeekStartDateKey) / DAYS_PER_WEEK + 1;
+
+  return range(Math.max(weekCount, minWeekCount)).map((weekIndex) =>
+    addDaysToDateKey(firstWeekStartDateKey, weekIndex * DAYS_PER_WEEK),
+  );
 }

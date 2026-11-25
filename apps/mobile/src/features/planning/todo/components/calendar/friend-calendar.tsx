@@ -1,14 +1,20 @@
 import { isFriendFeedUnavailableError } from '../../domains/todo.error';
-import { useFeedDateKey } from '../../hooks/use-feed-params';
+import { useFeedDateKey, useFeedFriendId } from '../../hooks/use-feed-params';
 import { useFriendCalendarCompletions } from '../../hooks/use-friend-calendar-completions';
 import { Calendar } from './calendar';
 
-interface FriendCalendarProps {
-  /** 피드가 친구 목록에서 확인한 친구의 id. route 값은 더는 친구가 아닌 사람일 수 있어 그대로 읽지 않는다 */
-  friendId: string;
+/** 친구 피드의 달력. route의 친구는 더는 친구가 아닌 사람일 수 있어, 피드가 친구임을 확인한 뒤에만 그린다 */
+export function FriendCalendar() {
+  const [friendId] = useFeedFriendId();
+
+  if (friendId == null) {
+    return <Calendar />;
+  }
+
+  return <FriendCalendar.Contents friendId={friendId} />;
 }
 
-export function FriendCalendar({ friendId }: FriendCalendarProps) {
+FriendCalendar.Contents = function Contents({ friendId }: { friendId: string }) {
   const [selectedDateKey] = useFeedDateKey();
   const calendar = useFriendCalendarCompletions({
     friendUserId: friendId,
@@ -23,4 +29,4 @@ export function FriendCalendar({ friendId }: FriendCalendarProps) {
       status={shouldOfferRetry ? <Calendar.Error onRetry={calendar.refetch} /> : undefined}
     />
   );
-}
+};

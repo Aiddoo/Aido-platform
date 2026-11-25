@@ -7,7 +7,7 @@ import { PressableFeedback } from 'heroui-native';
 import { useState } from 'react';
 
 import { useFeedDateKey } from '../../hooks/use-feed-params';
-import { useGetTodoOverviewQueryOptions } from '../../queries/todo.queries';
+import { selectHasActiveRepeat, useGetTodoOverviewQueryOptions } from '../../queries/todo.queries';
 import { RepeatHintLine } from '../repeat-hint-line';
 
 /** 안내 한 줄(가장 작은 글꼴 단계에서 b4가 바뀌는 e1의 줄 17). 가로는 글자 폭이라 넓히지 않는다 */
@@ -29,7 +29,7 @@ export function RepeatHorizonHint({ shouldShowHint = true }: RepeatHorizonHintPr
   const [selectedDateKey] = useFeedDateKey();
   const { data: hasActiveRepeat = false } = useQuery({
     ...useGetTodoOverviewQueryOptions(),
-    select: (overview) => overview.hasActiveRepeat,
+    select: selectHasActiveRepeat,
   });
   const [isInfoOpen, setIsInfoOpen] = useState(false);
 

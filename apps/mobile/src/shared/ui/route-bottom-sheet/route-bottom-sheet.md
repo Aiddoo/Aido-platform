@@ -22,7 +22,7 @@ export function TodoDateBottomSheet(props: TodoDateBottomSheetProps) {
 | -------------- | ---------------------------------- | --------------------------------------------------------- |
 | `fallbackHref` | `Href`                             | 딥링크로 바로 열려 돌아갈 화면이 없을 때 바꿀 화면        |
 | `loading`      | `ReactNode`                        | 대상을 읽는 동안 내용 자리. 내용과 같은 높이의 `.Loading` |
-| `children`     | `(sheet: RouteSheet) => ReactNode` | 내용. 대상은 route 훅(`useSheetTodo`)으로 읽는다          |
+| `children`     | `(sheet: RouteSheet) => ReactNode` | 내용. 대상은 route 훅(`useSuspenseSheetTodo`)으로 읽는다  |
 | `footer`       | `(sheet: RouteSheet) => ReactNode` | 시트 아래 고정 영역(주 버튼). 경계 밖이다                 |
 
 `RouteSheet`는 `{ isOpen, close(next?), exit(next?) }`다. 나머지는 `...props`(`BottomSheet`·`KeyboardBottomSheet`에서 `isOpen`·`onOpenChange`·`children`·`footer`를 뺀 것)다.

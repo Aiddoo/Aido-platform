@@ -24,14 +24,12 @@ import { Link } from 'expo-router';
 import { type ComponentProps, type ReactNode, useState } from 'react';
 
 import { SubTodoPolicy } from '../domains/sub-todo.model';
-import { TodoListPolicy, type TodoListResult } from '../domains/todo-list.model';
 import { isFriendFeedUnavailableError } from '../domains/todo.error';
 import type { Todo } from '../domains/todo.model';
 import { useFeedDateKey, useFeedFriendId } from '../hooks/use-feed-params';
-import { useFeedSelectedTodoId } from '../hooks/use-feed-selected-todo-id';
-import { useGetFriendTodosQueryOptions } from '../queries/todo.queries';
+import { useOpenFeedTodoDetail } from '../hooks/use-open-feed-todo-detail';
+import { selectTodoCategoryGroups, useGetFriendTodosQueryOptions } from '../queries/todo.queries';
 import { formatTodoTime } from '../utils/todo-time.view-model';
-import { SubTodoIndent } from './sub-todo-indent';
 import { TodoRow } from './todo-row';
 
 /** Link.Menu는 감싼 컴포넌트를 버려 메뉴 동작을 요소가 아닌 값으로 받는다 */
@@ -42,8 +40,6 @@ export interface FriendTodoMenuAction extends Required<
 }
 
 interface FriendTodoListProps {
-  /** 피드가 친구 목록에서 확인한 친구의 id. route 값은 더는 친구가 아닌 사람일 수 있어 그대로 읽지 않는다 */
-  friendId: string;
   /** 할 일 줄 오른쪽에 붙는 행동(콕 등). 친구·날짜 같은 화면 값은 부모가 한 번 읽어 담는다 */
   renderRowAction: (todo: Todo) => ReactNode;
   /** 길게 누른 메뉴의 열기 다음 동작(콕 등). 없으면 null */
@@ -52,21 +48,36 @@ interface FriendTodoListProps {
   emptyAction: ReactNode;
 }
 
-export function FriendTodoList({
+/** 친구의 그날 할 일. route의 친구는 더는 친구가 아닌 사람일 수 있어, 피드가 친구임을 확인한 뒤에만 그린다 */
+export function FriendTodoList(props: FriendTodoListProps) {
+  const [friendId] = useFeedFriendId();
+
+  if (friendId == null) {
+    return null;
+  }
+
+  return <FriendTodoList.Contents friendId={friendId} {...props} />;
+}
+
+interface FriendTodoListContentsProps extends FriendTodoListProps {
+  friendId: string;
+}
+
+FriendTodoList.Contents = function Contents({
   friendId,
   renderRowAction,
   findMenuAction,
   emptyAction,
-}: FriendTodoListProps) {
+}: FriendTodoListContentsProps) {
   // 행마다 route 훅을 부르면 URL이 바뀔 때마다 행 수만큼 params를 다시 파싱한다. 목록이 한 번 읽어 넘긴다
   const [dateKey] = useFeedDateKey();
-  const [_selectedTodoId, openTodoDetail] = useFeedSelectedTodoId();
+  const openTodoDetail = useOpenFeedTodoDetail();
   const paneSizeClass = usePaneSizeClass();
   const [{ data: categoryGroups }] = useSuspenseQueries({
     queries: [
       {
         ...useGetFriendTodosQueryOptions({ friendUserId: friendId, date: dateKey }),
-        select: (result: TodoListResult) => TodoListPolicy.groupByCategory(result),
+        select: selectTodoCategoryGroups,
       },
       useGetPreferenceQueryOptions(),
     ],
@@ -97,7 +108,7 @@ export function FriendTodoList({
       ))}
     </Box>
   );
-}
+};
 
 interface FriendTodoListItemProps {
   todo: Todo;
@@ -130,7 +141,7 @@ FriendTodoList.Item = function Item({
   const hasSubTodos = SubTodoPolicy.hasSubTodos(todo.subTodos);
 
   return (
-    <FriendTodoList.ItemLink
+    <FriendTodoList.Link
       todo={todo}
       isLinked={isLinked}
       isTapOpening={!hasSubTodos}
@@ -174,7 +185,7 @@ FriendTodoList.Item = function Item({
         onPress={hasSubTodos ? () => setUserExpanded(!isExpanded) : undefined}
       >
         {isExpanded && (
-          <SubTodoIndent>
+          <VStack className="ml-8 border-l border-gray-2 pl-4" gap={0}>
             {todo.subTodos.map((subTodo) => (
               <TodoRow
                 key={subTodo.id}
@@ -182,14 +193,14 @@ FriendTodoList.Item = function Item({
                 top={<TodoRow.Label isCompleted={subTodo.completed}>{subTodo.title}</TodoRow.Label>}
               />
             ))}
-          </SubTodoIndent>
+          </VStack>
         )}
       </TodoRow>
-    </FriendTodoList.ItemLink>
+    </FriendTodoList.Link>
   );
 };
 
-interface FriendTodoListItemLinkProps {
+interface FriendTodoListLinkProps {
   todo: Todo;
   isLinked: boolean;
   /** 하위 항목이 없는 행은 탭으로 상세를 연다. 하위 항목이 있으면 탭은 펼치기다 */
@@ -203,14 +214,14 @@ interface FriendTodoListItemLinkProps {
  * 친구 할 일 행을 길게 눌러 상세를 미리보고 메뉴로 연다(iOS). 탭 이동은 메뉴·댓글 버튼과 같은 `onOpen`(연타 막기)이 맡고
  * Link는 미리보기를 눌러 가는 이동만 맡는다
  */
-FriendTodoList.ItemLink = function ItemLink({
+FriendTodoList.Link = function ItemLink({
   todo,
   isLinked,
   isTapOpening,
   menuAction,
   onOpen,
   children,
-}: FriendTodoListItemLinkProps) {
+}: FriendTodoListLinkProps) {
   const { t } = useTranslation('todo');
 
   if (!isLinked) {

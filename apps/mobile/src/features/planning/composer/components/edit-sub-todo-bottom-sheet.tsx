@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { type SubTodo, SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
 import type { Todo } from '@src/features/planning/todo/domains/todo.model';
-import { useSheetSubTodo } from '@src/features/planning/todo/hooks/use-sheet-todo';
+import { useSuspenseSheetSubTodo } from '@src/features/planning/todo/hooks/use-suspense-sheet-todo';
 import { useTodoSheetDateKey } from '@src/features/planning/todo/hooks/use-todo-sheet-date-key';
 import {
   useDeleteSubTodoMutationOptions,
@@ -31,7 +31,7 @@ export function EditSubTodoBottomSheet(props: EditSubTodoBottomSheetProps) {
 }
 
 EditSubTodoBottomSheet.Form = function Form({ onClose }: { onClose: () => void }) {
-  const target = useSheetSubTodo({ onMissing: onClose });
+  const target = useSuspenseSheetSubTodo({ onMissing: onClose });
 
   if (target == null) {
     return null;

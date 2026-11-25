@@ -5,7 +5,7 @@ import { TodoScopeSelect } from '@src/features/planning/todo/components/todo-sco
 import type { TodoUpdateScope } from '@src/features/planning/todo/domains/todo-repeat.model';
 import { shouldReopenRepeatPicker } from '@src/features/planning/todo/domains/todo-series.error';
 import { type Todo, TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
-import { useSheetTodo } from '@src/features/planning/todo/hooks/use-sheet-todo';
+import { useSuspenseSheetTodo } from '@src/features/planning/todo/hooks/use-suspense-sheet-todo';
 import { todoFormSchema } from '@src/features/planning/todo/schemas/todo-form.schema';
 import { SERVER_VALUES_RESET_OPTIONS } from '@src/shared/constants/server-values-reset-options';
 import type { DateKey } from '@src/shared/date/date-key';
@@ -56,7 +56,7 @@ export function TodoEditBottomSheet() {
 
 TodoEditBottomSheet.Form = function Form() {
   const sheet = useSheetRoute('/feed');
-  const todo = useSheetTodo({ onMissing: () => sheet.exit() });
+  const todo = useSuspenseSheetTodo({ onMissing: () => sheet.exit() });
 
   if (todo == null) {
     return null;

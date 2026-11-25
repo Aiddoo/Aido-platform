@@ -11,7 +11,7 @@ import { AdaptivePane } from '@src/shared/ui';
 iPadOS 26+에서 NativeTabs(`preferredPlacement="automatic"`) 사이드바는 탭 폭을 줄이지 않고 탭 안 화면의 왼쪽 safe area inset으로 온다(iPad Pro 13인치 iPadOS 27 가로에서 280pt). iPhone Duo 레일(84pt)도 inset이다. 폭만 보고 나누면 사이드바가 열린 가로 iPad에서 목록 칸 400pt 중 280pt가 inset으로 빠져 목록이 120pt로 짓눌린다. NativeTabs는 탭 바·사이드바 배치를 알려 주지 않는다(Expo 문서: "We're working on a layout function to provide more detailed layout info in the future"). 그래서 탭 Stack을 `PaneArea`로 감싸 react-native-safe-area-context의 `SafeAreaProvider`가 잰 탭의 폭(`useSafeAreaFrame`)과 좌우 inset(`useSafeAreaInsets`)을 쓴다. 규칙은 `WindowLayoutPolicy`(`shared/ui/adaptive-pane/window-layout.ts`)에 있다.
 
 - `PaneArea`: 할 일·메모·마이 탭의 Stack 레이아웃이 감싼다. 탭 위에 여는 화면(날씨 등)은 사이드바가 없어 감싸지 않고 창 폭을 쓴다.
-- `usePaneSizeClass()`: 좌우 inset을 뺀 내용 폭으로 칸을 나눌지, 고른 항목을 칸에 열지 push할지(`useFeedSelectedTodoId`·`useSelectedMemoId`·`useOpenDetailWhenCompact`·마이 탭 메뉴)를 정한다. 같은 값을 봐야 칸은 하나인데 고른 항목이 칸에 열리는 어긋남이 없다.
+- `usePaneSizeClass()`: 좌우 inset을 뺀 내용 폭으로 칸을 나눌지, 고른 항목을 칸에 열지 push할지(`useOpenFeedTodoDetail`·`useSelectedMemoId`·`useOpenDetailWhenCompact`·마이 탭 메뉴)를 정한다. 같은 값을 봐야 칸은 하나인데 고른 항목이 칸에 열리는 어긋남이 없다.
 - 빼는 inset은 칸 자리를 차지하는 것(iOS의 iPad 사이드바·iPhone Duo 레일)뿐이다. Android 좌우 inset은 시스템 바·컷아웃이라 칸 안에서 피하고 크기 등급은 예전처럼 탭(창) 폭으로 정한다(펼친 Pixel Fold 841dp에 컷아웃 1dp씩이 와도 `expanded`). 모델은 OS를 모르고 `PaneArea`가 `insetsOccupyPane`으로 넘긴다.
 - 펼친 iPhone Duo는 레일(84pt)을 뺀 폭으로 정해 창 폭이 600/840 경계 바로 위면 한 단계 아래(`medium`·`compact`)가 될 수 있고, 레일이 옮겨 가면 경계를 넘나든다. 레일이 칸 자리를 차지하므로 의도한 동작이다.
 - `usePaneColumns()`: 두 칸인지와 목록 칸 폭이다. 목록 칸은 내용 320/400에 닿는 가장자리의 사이드바·레일 inset을 더한다(Android inset은 더하지 않는다). 접힘선이 있으면 접힘선 x, 한 칸이면 영역 전체다. `AdaptivePane`·마이 탭 칸·달력·날씨 배경이 쓴다.

@@ -277,7 +277,6 @@ const LOCAL_ONLY_PENDING_FEATURES = new Set([
   'notes/memo',
   'notification',
   'planning/category',
-  'planning/todo',
   'social/invite',
   'social/moderation',
   'voice',
@@ -292,6 +291,10 @@ const ALLOWED_LOCAL_ONLY_FILES = {
     '묶음 목록만 쓴다. 댓글·답글 두 단이 함께 쓰는 행(연결선·본문·메뉴·하트·스크린리더 동작)이라 목록에 합치면 한 파일이 1,500줄을 넘는다',
   'src/features/engagement/comment/components/todo-comment-heart-burst.tsx':
     '댓글 행만 쓴다. shared value와 animated style만으로 도는 스스로 완결된 그리기 부품이다(docs/todo-comments.md의 더블탭 하트)',
+  'src/features/planning/todo/components/calendar/calendar-title-bar.tsx':
+    '피드 달력만 쓴다. 가장 긴 제목을 그리기 전에 재어 한 줄·두 줄 배치를 정하는 측정 부품이라, 쪽 넘김·칸을 가진 달력에 합치면 한 파일이 800줄에 가깝고 두 가지 일이 섞인다',
+  'src/features/planning/todo/components/todo-detail-schedule.tsx':
+    '할 일 상세 요약(engagement/comment)만 쓴다. 할 일의 view-model(시간·기간·반복 문구)로 그리는 조각이라 그 기능 파일로 옮기면 다른 기능의 utils를 import하게 된다',
 };
 
 /** 운영 importer가 컴포넌트·훅 하나뿐이고 자체 테스트가 없는 기능 components/·hooks/ 파일과 그 importer */

@@ -3,7 +3,7 @@ import type { AuthStatus } from '@src/core/session/auth-status';
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { getCachedMe, updateMeInCache } from '@src/features/identity/user/queries/user-cache';
-import { useFeedTodoDetailHandoff } from '@src/features/planning/todo/hooks/use-feed-selected-todo-id';
+import { useFeedTodoDetailHandoff } from '@src/features/planning/todo/hooks/use-feed-todo-detail-handoff';
 import { useTrackView } from '@src/shared/analytics';
 import { openEntryHref } from '@src/shared/navigation/open-entry-href';
 import * as themeProvider from '@src/shared/providers/theme-provider';
