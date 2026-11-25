@@ -1,6 +1,6 @@
 # 인증: 세션 수명주기와 소셜 로그인
 
-세션·토큰([세션](#세션-수명주기와-불변식)), 소셜 로그인·계정 연결([소셜 로그인](#소셜-로그인)), 가입·비밀번호 폼([폼과 단계](#폼과-단계))을 고칠 때 읽는다. 인증 상태는 `useAuthStatus()`로 읽고 `useAuthSession()`의 `signIn`·`signOut`으로 쓴다. 토큰은 `TokenStore` 포트(SecureStore)에 둔다. 규칙을 지는 서비스는 셋이다: 소셜 인증·토큰 저장·탈퇴의 `SignInService`, 로그아웃의 `LogOutDeviceService`, 미인증 뒤 정리의 `SessionCleanupService`. 추적은 mutation 옵션이, 화면 이동과 칸 오류 안내는 `mutateAsync`를 부른 폼이 한다.
+세션·토큰([세션](#세션-수명주기와-불변식)), 소셜 로그인·계정 연결([소셜 로그인](#소셜-로그인)), 가입·비밀번호 폼([폼과 단계](#폼과-단계))을 고칠 때 읽는다. 인증 상태는 `useAuthStatus()`로 읽고, 쓰는 곳은 로그인·로그아웃·탈퇴 mutation(`queries/auth.mutations.ts`의 `useAuthSession()`이 주는 `signIn`·`signOut`)뿐이다. 토큰은 `TokenStore` 포트(SecureStore)에 둔다. 규칙을 지는 서비스는 셋이다: 소셜 인증·토큰 저장·탈퇴의 `SignInService`, 로그아웃의 `LogOutDeviceService`, 미인증 뒤 정리의 `SessionCleanupService`. 추적은 mutation 옵션이, 성공 뒤 화면 이동과 칸 오류 안내는 폼을 가진 화면이 한다([폼과 단계](#폼과-단계)).
 
 # 세션 수명주기와 불변식
 
@@ -33,7 +33,7 @@
 
 ## 인증 상태 (`features/identity/auth/domains/auth-session.model.ts`)
 
-상태는 순수 전이 함수 `transitionAuthSession`과 DI가 소유하는 저장소(`stores/auth-session.store.ts`)가 관리한다. 화면은 `useAuthStatus()`로 읽고 `useAuthSession()`의 `signIn()`, `signOut()`으로 쓴다.
+상태는 순수 전이 함수 `transitionAuthSession`과 DI가 소유하는 저장소(`stores/auth-session.store.ts`)가 관리한다. 화면은 `useAuthStatus()`로 읽고, 인증 mutation이 `useAuthSession()`의 `signIn()`, `signOut()`으로 쓴다.
 
 | 이벤트           | 반영되는 상태       | 결과                                      |
 | ---------------- | ------------------- | ----------------------------------------- |
@@ -197,4 +197,4 @@ SignInService.openAppleLogin()
 
 # 폼과 단계
 
-가입(`app/(auth)/sign-up.tsx`), 비밀번호 찾기·바꾸기는 `useStepper` 흐름이다. 단계 표와 같은 렌더러 규칙은 [hooks](./architecture/hooks.md#usestepper), 버튼 상태는 [forms](./architecture/forms.md#버튼과-제출)에 있다. 현재 비밀번호가 틀리면(`USER_0602`) `findPasswordFieldError`로 그 칸에 보인다(바꾸기는 `currentPassword` 단계로 돌아가고 탈퇴는 `password` 칸에 포커스). 가입 중복 이메일은 로그인하러 가기 동작이 있는 토스트다. 재설정 코드가 마지막 제출에서 거절되면(`VERIFY_0751`·`0752`·`0754`, `findVerificationCodeFieldError`) 문구는 전역 피드백이 `errors` 카탈로그로 보이고, 폼은 `code` 칸에 오류를 두고 새 비밀번호를 지킨 채 코드 단계로 돌아가 칸을 오류 상태로 연다. 화면 이동(인증 화면으로, 로그인으로, 앞 화면으로)은 mutation 옵션이 아니라 폼을 가진 화면이 `mutateAsync` 뒤에 한다.
+가입(`app/(auth)/sign-up.tsx`), 비밀번호 찾기·바꾸기는 `useStepper` 흐름이다. 단계 표와 같은 렌더러 규칙은 [hooks](./architecture/hooks.md#usestepper), 버튼 상태는 [forms](./architecture/forms.md#버튼과-제출)에 있다. 현재 비밀번호가 틀리면(`USER_0602`) `findPasswordFieldError`로 그 칸에 보인다(바꾸기는 `currentPassword` 단계로 돌아가고 탈퇴는 `password` 칸에 포커스). 가입 중복 이메일은 가입 mutation의 `onError`가 띄우는 로그인하러 가기 동작이 있는 토스트다. 재설정 코드가 마지막 제출에서 거절되면(`VERIFY_0751`·`0752`·`0754`, `findVerificationCodeFieldError`) 문구는 전역 피드백이 `errors` 카탈로그로 보이고, 폼은 `code` 칸에 오류를 두고 새 비밀번호를 지킨 채 코드 단계로 돌아가 칸을 오류 상태로 연다. 폼과 `useStepper`는 route 파일의 맨 위 화면이 갖고 단계는 같은 파일의 지역 컴포넌트다. 성공 뒤 이동(인증 화면으로, 로그인으로, 앞 화면으로)은 그 화면이 `mutateAsync` 뒤에 하고, 오류 코드별 안내에 딸린 이동(중복 이메일의 로그인하러 가기)은 기능 `onError`가 한다. 기다린 뒤 이동할 때는 그 사이 떠났는지(`navigation.isFocused()`) 먼저 본다. 비밀번호 바꾸기는 떠난 사이 바뀌었으면 폼을 비우고 첫 단계로 돌린다.

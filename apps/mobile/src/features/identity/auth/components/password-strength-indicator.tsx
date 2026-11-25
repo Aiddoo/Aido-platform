@@ -7,7 +7,7 @@ import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { CheckmarkIcon, HStack, InfoIcon, Text, VStack } from '@src/shared/ui';
 
-import { hasLetter, hasMinLength, hasNumber } from '../domains/password.model';
+import { getPasswordRuleChecks } from '../utils/password-rules.view-model';
 
 export interface PasswordStrengthIndicatorProps {
   password: string;
@@ -15,14 +15,15 @@ export interface PasswordStrengthIndicatorProps {
 
 export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicatorProps) {
   const { t } = useTranslation('auth');
+  const ruleChecks = getPasswordRuleChecks(password);
 
   return (
     <VStack gap={8}>
       <HStack gap={16} className="items-center">
-        <RuleItem isSatisfied={hasLetter(password)} label={t('passwordRules.hasLetter')} />
-        <RuleItem isSatisfied={hasNumber(password)} label={t('passwordRules.hasNumber')} />
+        <RuleItem isSatisfied={ruleChecks.hasLetter} label={t('passwordRules.hasLetter')} />
+        <RuleItem isSatisfied={ruleChecks.hasNumber} label={t('passwordRules.hasNumber')} />
         <RuleItem
-          isSatisfied={hasMinLength(password)}
+          isSatisfied={ruleChecks.hasMinLength}
           label={t('passwordRules.minLength', { count: PASSWORD_RULES.MIN_LENGTH })}
         />
       </HStack>

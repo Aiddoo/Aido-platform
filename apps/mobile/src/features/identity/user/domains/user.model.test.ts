@@ -53,6 +53,27 @@ describe('UserPolicy', () => {
     });
   });
 
+  describe('isNeverSubscribed', () => {
+    it.each([
+      ['FREE', true],
+      ['ACTIVE', false],
+      ['EXPIRED', false],
+      ['CANCELLED', false],
+    ] as const)(
+      '구독 상태가 %s면 한 번도 구독하지 않았는지 %s다',
+      (subscriptionStatus, expected) => {
+        // Given
+        const user = createUser({ subscriptionStatus });
+
+        // When
+        const result = UserPolicy.isNeverSubscribed(user);
+
+        // Then
+        expect(result).toBe(expected);
+      },
+    );
+  });
+
   describe('hasEntitlementChanged', () => {
     it('역할이 바뀌면 true를 반환한다', () => {
       // Given

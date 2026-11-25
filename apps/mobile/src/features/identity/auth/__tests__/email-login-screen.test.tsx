@@ -8,8 +8,8 @@ import {
   createTestDi,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
-import { router } from 'expo-router';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { router, useNavigation } from 'expo-router';
 import { TextInput } from 'react-native';
 
 import EmailLoginRoute from '../../../../../app/(auth)/email-login';
@@ -171,5 +171,52 @@ describe('이메일 로그인 화면', () => {
 
     // Then
     expect(router.push).toHaveBeenCalledWith(href);
+  });
+
+  it('로그인을 같은 프레임에 두 번 눌러도 요청은 한 번이다', async () => {
+    // Given
+    const pending = createPendingResponse(ok(createAuthTokensDto()));
+    httpClient.post.mockReturnValue(pending.response);
+    await renderEmailLogin(httpClient);
+    await typeCredentials(EMAIL, PASSWORD);
+    const submit = screen.getByTestId('email-login-submit');
+
+    // When
+    await act(async () => {
+      await fireEvent.press(submit);
+      await fireEvent.press(submit);
+    });
+    pending.settle();
+
+    // Then
+    await waitFor(() => expect(httpClient.post).toHaveBeenCalled());
+    expect(httpClient.post).toHaveBeenCalledTimes(1);
+  });
+
+  it('로그인을 기다리는 사이 떠났으면 인증하지 않은 이메일이어도 인증 화면을 올리지 않는다', async () => {
+    // Given
+    let isFocused = true;
+    jest.mocked(useNavigation).mockImplementation(() => ({
+      isFocused: () => isFocused,
+      getParent: () => undefined,
+      addListener: () => () => undefined,
+    }));
+    const pending = createPendingResponse(
+      fail(createAuthApiError({ code: 'EMAIL_0503', status: 403, message: '인증이 필요해요' })),
+    );
+    httpClient.post.mockReturnValue(pending.response);
+    await renderEmailLogin(httpClient);
+    await typeCredentials(EMAIL, PASSWORD);
+    await fireEvent.press(screen.getByTestId('email-login-submit'));
+
+    // When
+    isFocused = false;
+    await act(async () => {
+      pending.settle();
+    });
+
+    // Then
+    await waitFor(() => expect(screen.getByTestId('email-login-submit')).toBeEnabled());
+    expect(router.push).not.toHaveBeenCalled();
   });
 });

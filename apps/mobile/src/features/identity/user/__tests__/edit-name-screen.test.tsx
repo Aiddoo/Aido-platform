@@ -258,4 +258,20 @@ describe('이름 수정 화면', () => {
     expect(screen.getAllByText('이름을 입력해주세요')).toHaveLength(2);
     expect(screen.getByTestId('edit-name-submit')).toBeDisabled();
   });
+
+  it('이름을 쳐도 폼을 가진 화면은 다시 그려지지 않고 칸과 버튼만 바뀐다', async () => {
+    // Given
+    await renderEditName(httpClient);
+    // 폼을 가진 화면만 떠났는지 보려고 navigation을 읽어, 그 호출 수가 화면이 그려진 횟수다
+    const renderCountBeforeTyping = jest.mocked(useNavigation).mock.calls.length;
+
+    // When
+    await typeName('새');
+    await typeName('새이');
+    await typeName('새이름');
+    await waitFor(() => expect(screen.getByTestId('edit-name-submit')).toBeEnabled());
+
+    // Then
+    expect(jest.mocked(useNavigation).mock.calls).toHaveLength(renderCountBeforeTyping);
+  });
 });

@@ -14,7 +14,6 @@ const babel = require(require.resolve('@babel/core', { paths: [PRESET_PATH] }));
 const KNOWN_BAILOUTS = [
   // try…finally, catch 없는 try, try 안 조건식
   'src/features/device/store-review/hooks/use-store-review-moment.ts',
-  'src/features/identity/auth/components/email-verification-code-step.tsx',
   'src/features/notes/memo/components/memo-editor.tsx',
   'src/features/notification/hooks/use-push-notification-response.ts',
   'src/features/planning/composer/components/todo-edit-bottom-sheet.tsx',

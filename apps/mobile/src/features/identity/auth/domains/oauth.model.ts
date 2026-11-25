@@ -1,11 +1,10 @@
 import { ACCOUNT_PROVIDERS, OAUTH_MODES, OAUTH_PROVIDERS } from '@aido/api/vocabulary';
-import { instantSchema } from '@src/shared/date/instant';
 import { z } from 'zod';
 
 const accountProviderSchema = z.enum(ACCOUNT_PROVIDERS);
 type AccountProvider = z.infer<typeof accountProviderSchema>;
 
-const oauthProviderSchema = z.enum(OAUTH_PROVIDERS);
+export const oauthProviderSchema = z.enum(OAUTH_PROVIDERS);
 export type OAuthProvider = z.infer<typeof oauthProviderSchema>;
 
 const ACCOUNT_PROVIDER_SLUG = {
@@ -24,27 +23,3 @@ const oauthStartProviderSchema = oauthProviderSlugSchema.exclude(['apple']);
 export type OAuthStartProvider = z.infer<typeof oauthStartProviderSchema>;
 const oauthStartModeSchema = z.enum(OAUTH_MODES);
 export type OAuthStartMode = z.infer<typeof oauthStartModeSchema>;
-
-const linkedAccountSchema = z.object({
-  provider: oauthProviderSchema,
-  linked: z.boolean(),
-  providerAccountId: z.string().nullable(),
-  linkedAt: instantSchema.nullable(),
-});
-export type LinkedAccount = z.infer<typeof linkedAccountSchema>;
-
-const linkedAccountsResultSchema = z.object({
-  accounts: z.array(linkedAccountSchema),
-  canUnlink: z.boolean(),
-});
-export type LinkedAccountsResult = z.infer<typeof linkedAccountsResultSchema>;
-
-export const LinkedAccountsPolicy = {
-  countLinkedAccounts({ accounts }: LinkedAccountsResult): number {
-    return accounts.filter((account) => account.linked).length;
-  },
-
-  isProviderLinked({ accounts }: LinkedAccountsResult, provider: OAuthProvider): boolean {
-    return accounts.some((account) => account.provider === provider && account.linked);
-  },
-};

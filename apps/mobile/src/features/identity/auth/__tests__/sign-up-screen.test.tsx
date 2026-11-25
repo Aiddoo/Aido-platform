@@ -10,8 +10,8 @@ import {
   respondByPath,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
-import { router } from 'expo-router';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { router, useIsFocused } from 'expo-router';
 
 import SignUpRoute from '../../../../../app/(auth)/sign-up';
 import { givenAndroidBack, typeVerificationCode } from './auth-step.test-utils';
@@ -481,6 +481,58 @@ describe('회원가입 화면', () => {
       expect(screen.queryByText(CODE_SENT_TO)).toBeNull();
       expect(screen.getByPlaceholderText(PASSWORD_PLACEHOLDER).props.value).toBe(PASSWORD);
       expect(screen.queryByPlaceholderText(CONFIRM_PLACEHOLDER)).toBeNull();
+    });
+  });
+
+  describe('다시 그리기', () => {
+    // 단계 조립(폼과 단계를 가진 화면)만 Android 뒤로 가기를 화면 포커스와 묶어, 그 호출 수가 화면이 그려진 횟수다
+    function countScreenRenders() {
+      return jest.mocked(useIsFocused).mock.calls.length;
+    }
+
+    it('칸에 글자를 쳐도 단계 조립은 다시 그려지지 않는다', async () => {
+      // Given
+      await renderSignUp(httpClient);
+      const nameInput = await screen.findByPlaceholderText(NAME_PLACEHOLDER);
+      const renderCountOnName = countScreenRenders();
+
+      // When
+      await fireEvent.changeText(nameInput, '아');
+      await fireEvent.changeText(nameInput, '아이');
+      await fireEvent.changeText(nameInput, NAME);
+      await waitFor(() => expect(getNextButton()).toBeEnabled());
+      const renderCountAfterTyping = countScreenRenders();
+      await fireEvent.press(getNextButton());
+      await screen.findByPlaceholderText(EMAIL_PLACEHOLDER);
+
+      // Then
+      expect(renderCountAfterTyping).toBe(renderCountOnName);
+      // 단계가 바뀔 때는 다시 그려져, 위 두 값이 같은 것이 세지 못해서가 아니다
+      expect(countScreenRenders()).toBeGreaterThan(renderCountAfterTyping);
+    });
+  });
+
+  describe('두 번 누르기', () => {
+    it('동의하고 시작하기를 같은 프레임에 두 번 눌러도 가입 요청은 한 번이다', async () => {
+      // Given
+      const pending = createPendingResponse(ok(createRegisterDto()));
+      httpClient.post.mockReturnValue(pending.response);
+      await renderSignUp(httpClient);
+      await openTermsSheet();
+      await agreeAll();
+      const start = screen.getByRole('button', { name: START });
+
+      // When
+      await act(async () => {
+        await fireEvent.press(start);
+        await fireEvent.press(start);
+      });
+      await waitFor(() => expect(httpClient.post).toHaveBeenCalled());
+      pending.settle();
+
+      // Then
+      expect(await screen.findByText(CODE_SENT_TO)).toBeTruthy();
+      expect(httpClient.post).toHaveBeenCalledTimes(1);
     });
   });
 });

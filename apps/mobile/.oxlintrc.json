@@ -1355,7 +1355,6 @@
       // 래칫
       "files": [
         "src/shared/ui/steps/**",
-        "src/features/identity/user/**",
         "src/features/insights/achievement/**",
         "src/features/notes/memo/**",
         "src/features/weather/**"
@@ -1425,7 +1424,6 @@
     {
       // 래칫
       "files": [
-        "src/features/identity/auth/**",
         "src/features/planning/category/**",
         "src/features/planning/composer/**",
         "src/features/voice/**",

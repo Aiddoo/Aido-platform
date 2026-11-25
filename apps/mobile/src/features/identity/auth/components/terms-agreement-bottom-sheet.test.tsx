@@ -4,13 +4,15 @@ import { OverlayProvider } from '@src/shared/ui';
 import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { noop } from 'es-toolkit';
-import { useForm } from 'react-hook-form';
+import { useForm, useFormState, useWatch } from 'react-hook-form';
 
 import { signUpFormSchema, type SignUpFormValues } from '../schemas/sign-up-form.schema';
 import { TermsAgreementBottomSheet } from './terms-agreement-bottom-sheet';
 
 const SUBMIT = '동의하고 시작하기';
+const AGREEMENT_CHANGE = { shouldDirty: true, shouldValidate: true };
 
+// 가입 화면과 같이 세 동의 칸을 폼에 잇는다
 function Harness({ onValues }: { onValues: (values: SignUpFormValues) => void }) {
   const form = useForm({
     resolver: zodResolver(signUpFormSchema),
@@ -24,16 +26,25 @@ function Harness({ onValues }: { onValues: (values: SignUpFormValues) => void })
       isMarketingAgreed: false,
     },
   });
+  const [termsAgreed, privacyAgreed, isMarketingAgreed] = useWatch({
+    control: form.control,
+    name: ['termsAgreed', 'privacyAgreed', 'isMarketingAgreed'],
+  });
+  const { isValid, isSubmitting } = useFormState({ control: form.control });
 
   return (
     <TermsAgreementBottomSheet
-      form={form}
       isOpen
       onOpenChange={noop}
-      onSubmit={async () => {
-        onValues(form.getValues());
-        return true;
+      value={{ termsAgreed, privacyAgreed, isMarketingAgreed }}
+      onChange={(value) => {
+        form.setValue('termsAgreed', value.termsAgreed, AGREEMENT_CHANGE);
+        form.setValue('privacyAgreed', value.privacyAgreed, AGREEMENT_CHANGE);
+        form.setValue('isMarketingAgreed', value.isMarketingAgreed, AGREEMENT_CHANGE);
       }}
+      isSubmitDisabled={!isValid}
+      isSubmitting={isSubmitting}
+      onSubmit={() => onValues(form.getValues())}
     />
   );
 }

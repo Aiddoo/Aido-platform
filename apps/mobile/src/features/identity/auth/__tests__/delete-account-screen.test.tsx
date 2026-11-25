@@ -11,7 +11,8 @@ import {
   respondByPath,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { KeyboardController } from 'react-native-keyboard-controller';
 
 import DeleteAccountRoute from '../../../../../app/(app)/(tabs)/(me,memos,todos)/settings/delete-account';
 import { ACCOUNT_A_TOKENS } from './auth-session.test-utils';
@@ -163,5 +164,29 @@ describe('회원 탈퇴 화면', () => {
     expect(authSessionStore.getSnapshot().status).toBe('authenticated');
     await fireEvent.press(screen.getByRole('button', { name: '취소' }));
     await submitting;
+  });
+
+  it('탈퇴하기를 같은 프레임에 두 번 눌러도 확인 다이얼로그를 한 번만 연다', async () => {
+    // Given
+    await renderDeleteAccount(httpClient);
+    await fireEvent.changeText(
+      await screen.findByPlaceholderText('비밀번호를 입력해주세요'),
+      PASSWORD,
+    );
+    await waitFor(() => expect(screen.getByRole('button', { name: DELETE_BUTTON })).toBeEnabled());
+    const submit = screen.getByRole('button', { name: DELETE_BUTTON });
+    jest.mocked(KeyboardController.dismiss).mockClear();
+
+    // When
+    // 누름은 다이얼로그의 답을 기다리느라 끝나지 않아 기다리지 않는다
+    await act(async () => {
+      fireEvent.press(submit).catch(() => undefined);
+      fireEvent.press(submit).catch(() => undefined);
+    });
+
+    // Then
+    expect(await screen.findAllByText(DIALOG_MESSAGE)).toHaveLength(1);
+    // 다이얼로그를 열기 전에 키보드를 내려, 그 횟수가 다이얼로그를 연 횟수다
+    expect(KeyboardController.dismiss).toHaveBeenCalledTimes(1);
   });
 });

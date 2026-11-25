@@ -24,7 +24,10 @@ import {
 import { useGetOfferingsQueryOptions } from '@src/features/billing/subscription/queries/subscription.queries';
 import type { SubscriptionView } from '@src/features/billing/subscription/schemas/subscription-params.schema';
 import { toSubscriptionLoadFailure } from '@src/features/billing/subscription/utils/subscription-failure.view-model';
-import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
+import {
+  selectIsNeverSubscribed,
+  useGetMeQueryOptions,
+} from '@src/features/identity/user/queries/user.queries';
 import { PushPermissionToggle } from '@src/features/notification/components/push-permission-toggle';
 import { useTrack } from '@src/shared/analytics';
 import type { DateKey } from '@src/shared/date/date-key';
@@ -401,7 +404,7 @@ function PlanPickerFallback() {
   const isOnline = useIsOnline();
   const { data: isNeverSubscribed } = useQuery({
     ...useGetMeQueryOptions(),
-    select: (user) => user.subscriptionStatus === 'FREE',
+    select: selectIsNeverSubscribed,
   });
 
   // 오프라인 안내는 요금제 자리 하나가 맡는다

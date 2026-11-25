@@ -4,7 +4,7 @@ import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence
 import { useTranslation } from '@src/shared/i18n';
 import { queryOptions } from '@tanstack/react-query';
 
-import { type User } from '../domains/user.model';
+import { type User, UserPolicy } from '../domains/user.model';
 import { USER_QUERY_KEYS } from './user-query-keys';
 
 function toMe(user: User, { defaultName }: { defaultName: string }) {
@@ -17,6 +17,11 @@ function toMe(user: User, { defaultName }: { defaultName: string }) {
 /** 고른 id가 같으면 내 정보의 다른 칸이 바뀌어도 쓰는 쪽이 다시 그리지 않는다 */
 export function selectAccountId(user: User) {
   return user.id;
+}
+
+/** 무료 체험을 처음 보는 사용자인지만 골라 다른 칸이 바뀌어도 쓰는 쪽이 다시 그리지 않는다 */
+export function selectIsNeverSubscribed(user: User) {
+  return UserPolicy.isNeverSubscribed(user);
 }
 
 export function useGetMeQueryOptions() {

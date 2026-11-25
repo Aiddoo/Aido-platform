@@ -1,12 +1,12 @@
-import { maskEmail } from './email.view-model';
+import { formatMaskedEmail } from './email.view-model';
 
-describe('maskEmail', () => {
+describe('formatMaskedEmail', () => {
   it('앞 두 글자와 도메인만 남긴다', () => {
     // Given
     const email = 'matthew@aido.app';
 
     // When
-    const masked = maskEmail(email);
+    const masked = formatMaskedEmail(email);
 
     // Then
     expect(masked).toBe('ma****@aido.app');
@@ -17,7 +17,7 @@ describe('maskEmail', () => {
     const email = 'a@aido.app';
 
     // When
-    const masked = maskEmail(email);
+    const masked = formatMaskedEmail(email);
 
     // Then
     expect(masked).toBe('a****@aido.app');
@@ -28,7 +28,7 @@ describe('maskEmail', () => {
     const value = 'a@b';
 
     // When
-    const masked = maskEmail(value);
+    const masked = formatMaskedEmail(value);
 
     // Then
     expect(masked).toBe('a@b');

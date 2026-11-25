@@ -50,10 +50,10 @@ import {
   createDeleteAccountDto,
 } from '../__tests__/auth.fixtures';
 import { AUTH_LOG_EVENT } from '../constants/auth-log-events';
-import { useAuthSession } from '../hooks/use-auth-session';
 import { useAuthStatus } from '../hooks/use-auth-status';
 import { LOGOUT_REQUEST_TIMEOUT_MS } from '../services/log-out-device.service';
 import {
+  useAuthSession,
   useDeleteAccountMutationOptions,
   useEmailLoginMutationOptions,
   useExchangeCodeMutationOptions,

@@ -272,7 +272,6 @@ const COMPONENT_OR_HOOK_IMPORTER = /^src\/(?:features|shared)\/.+\/(?:components
 const LOCAL_ONLY_PENDING_FEATURES = new Set([
   'app-config/whats-new',
   'device/coachmark',
-  'identity/auth',
   'insights/report',
   'notes/memo',
   'notification',

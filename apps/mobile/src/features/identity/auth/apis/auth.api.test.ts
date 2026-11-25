@@ -50,7 +50,7 @@ describe('AuthApi', () => {
       // Then
       expect(publicHttpClient.post).toHaveBeenCalledWith(path, expect.any(Object));
       expect(authHttpClient.post).not.toHaveBeenCalled();
-      expect(result).toEqual(ok(expect.objectContaining({ userName: null, isNewUser: false })));
+      expect(result).toEqual(ok(expect.objectContaining({ userName: null, isNewUser: null })));
     },
   );
 

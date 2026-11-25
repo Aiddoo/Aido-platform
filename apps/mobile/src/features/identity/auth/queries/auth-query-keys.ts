@@ -1,6 +1,6 @@
 import { queryOptions } from '@tanstack/react-query';
 
-import type { LinkedAccountsResult } from '../domains/oauth.model';
+import type { LinkedAccountsResult } from '../domains/linked-accounts.model';
 
 export const AUTH_QUERY_KEYS = {
   all: ['auth'] as const,

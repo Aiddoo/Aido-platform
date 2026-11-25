@@ -171,8 +171,6 @@ const modelAndFolderRules = [
         TEST,
         pendingFeatures([
           'assistant/suggestion',
-          'identity/auth',
-          'identity/consent',
           'notes/memo',
           'notification',
           'planning/composer',

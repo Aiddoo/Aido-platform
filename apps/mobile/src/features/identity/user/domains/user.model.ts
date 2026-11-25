@@ -31,6 +31,11 @@ export const UserPolicy = {
     return user.role === USER_ROLE.ADMIN;
   },
 
+  /** 한 번도 구독하지 않은 계정. 만료·해지한 계정은 FREE로 돌아가지 않는다 */
+  isNeverSubscribed(user: User): boolean {
+    return user.subscriptionStatus === 'FREE';
+  },
+
   /** 역할·프리미엄 효력·기간이 바뀌면 서버가 주는 한도·사용량도 달라진다 */
   hasEntitlementChanged(previous: User, next: User): boolean {
     return (

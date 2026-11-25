@@ -317,7 +317,9 @@ describe('계정 연결 실패 안내', () => {
     );
 
     await act(async () => {
-      await result.current.mutateAsync('kakao').catch(() => undefined);
+      await result.current
+        .mutateAsync({ provider: 'kakao', providerName: '카카오' })
+        .catch(() => undefined);
     });
   }
 

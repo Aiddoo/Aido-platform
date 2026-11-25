@@ -4,8 +4,8 @@ import { NetworkError } from '@src/shared/errors';
 import { i18n } from '@src/shared/i18n';
 import { createHttpClientStub, createPendingResponse, createTestDi } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
-import { router } from 'expo-router';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { router, useNavigation } from 'expo-router';
 
 import ChangePasswordRoute from '../../../../../app/(app)/(tabs)/(me,memos,todos)/settings/change-password';
 import { givenAndroidBack } from './auth-step.test-utils';
@@ -177,6 +177,32 @@ describe('비밀번호 변경 화면', () => {
     expect(await screen.findAllByText('비밀번호가 변경되었어요')).toHaveLength(1);
   });
 
+  it('바꾸는 동안 밀어서 떠났으면 바뀐 뒤에 앞 화면을 또 닫지 않는다', async () => {
+    // Given
+    let isFocused = true;
+    jest.mocked(useNavigation).mockImplementation(() => ({
+      isFocused: () => isFocused,
+      getParent: () => undefined,
+      addListener: () => () => undefined,
+    }));
+    const pending = createPendingResponse(ok(createChangePasswordDto()));
+    httpClient.patch.mockReturnValue(pending.response);
+    await renderChangePassword(httpClient);
+    await fillAllSteps();
+    await fireEvent.press(screen.getByRole('button', { name: SUBMIT }));
+
+    // When
+    isFocused = false;
+    await act(async () => {
+      pending.settle();
+    });
+
+    // Then
+    expect(await screen.findAllByText('비밀번호가 변경되었어요')).toHaveLength(1);
+    expect(router.back).not.toHaveBeenCalled();
+    expect(router.replace).not.toHaveBeenCalled();
+  });
+
   it('돌아갈 화면이 없으면 바꾼 뒤 프로필 설정으로 간다', async () => {
     // Given
     jest.mocked(router.canGoBack).mockReturnValue(false);
@@ -270,5 +296,52 @@ describe('비밀번호 변경 화면', () => {
     expect(screen.getAllByDisplayValue(NEW_PASSWORD)).toHaveLength(2);
     expect(screen.getByRole('button', { name: SUBMIT })).toBeEnabled();
     expect(router.back).not.toHaveBeenCalled();
+  });
+
+  it('바꾸는 동안 떠났다가 바뀌면 폼을 비우고 첫 단계로 돌려 옛 비밀번호로 다시 보내지 않는다', async () => {
+    // Given
+    let isFocused = true;
+    jest.mocked(useNavigation).mockImplementation(() => ({
+      isFocused: () => isFocused,
+      getParent: () => undefined,
+      addListener: () => () => undefined,
+    }));
+    const pending = createPendingResponse(ok(createChangePasswordDto()));
+    httpClient.patch.mockReturnValue(pending.response);
+    await renderChangePassword(httpClient);
+    await fillAllSteps();
+    await fireEvent.press(screen.getByRole('button', { name: SUBMIT }));
+
+    // When
+    isFocused = false;
+    await act(async () => {
+      pending.settle();
+    });
+
+    // Then
+    expect(await screen.findByText(CURRENT_STEP_TITLE)).toBeTruthy();
+    expect(screen.getByPlaceholderText(CURRENT_PLACEHOLDER).props.value).toBe('');
+    expect(screen.getByRole('button', { name: '다음' })).toBeDisabled();
+    expect(httpClient.patch).toHaveBeenCalledTimes(1);
+  });
+
+  it('새 비밀번호 변경을 같은 프레임에 두 번 눌러도 요청은 한 번이다', async () => {
+    // Given
+    const pending = createPendingResponse(ok(createChangePasswordDto()));
+    httpClient.patch.mockReturnValue(pending.response);
+    await renderChangePassword(httpClient);
+    await fillAllSteps();
+    const submit = screen.getByRole('button', { name: SUBMIT });
+
+    // When
+    await act(async () => {
+      await fireEvent.press(submit);
+      await fireEvent.press(submit);
+    });
+    pending.settle();
+
+    // Then
+    await waitFor(() => expect(router.back).toHaveBeenCalledTimes(1));
+    expect(httpClient.patch).toHaveBeenCalledTimes(1);
   });
 });

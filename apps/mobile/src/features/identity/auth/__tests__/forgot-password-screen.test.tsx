@@ -11,8 +11,8 @@ import {
   respondByPath,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
-import { router } from 'expo-router';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { router, useNavigation } from 'expo-router';
 
 import ForgotPasswordRoute from '../../../../../app/(auth)/forgot-password';
 import { givenAndroidBack, typeVerificationCode } from './auth-step.test-utils';
@@ -358,5 +358,101 @@ describe('비밀번호 찾기 화면', () => {
     expect(screen.getAllByDisplayValue(NEW_PASSWORD)).toHaveLength(2);
     expect(screen.getByRole('button', { name: SUBMIT })).toBeEnabled();
     expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  describe('두 번 누르기와 기다리는 사이', () => {
+    it('다음을 같은 프레임에 두 번 눌러도 코드 요청은 한 번이다', async () => {
+      // Given
+      const pending = createPendingResponse(ok(createForgotPasswordDto()));
+      httpClient.post.mockReturnValue(pending.response);
+      await renderForgotPassword(httpClient);
+      await fireEvent.changeText(await screen.findByPlaceholderText(EMAIL_PLACEHOLDER), EMAIL);
+      const next = screen.getByRole('button', { name: '다음' });
+
+      // When
+      await act(async () => {
+        await fireEvent.press(next);
+        await fireEvent.press(next);
+      });
+      pending.settle();
+
+      // Then
+      expect(await screen.findByText(CODE_STEP_TITLE)).toBeTruthy();
+      expect(httpClient.post).toHaveBeenCalledTimes(1);
+    });
+
+    it('재설정을 같은 프레임에 두 번 눌러도 요청은 한 번이다', async () => {
+      // Given
+      httpClient.post.mockResolvedValue(ok(createForgotPasswordDto()));
+      await renderForgotPassword(httpClient);
+      await fillAllSteps();
+      const pending = createPendingResponse(ok(createResetPasswordDto()));
+      httpClient.post.mockReturnValue(pending.response);
+      const submit = screen.getByRole('button', { name: SUBMIT });
+
+      // When
+      await act(async () => {
+        await fireEvent.press(submit);
+        await fireEvent.press(submit);
+      });
+      pending.settle();
+
+      // Then
+      await waitFor(() => expect(router.replace).toHaveBeenCalledTimes(1));
+      expect(httpClient.post.mock.calls.filter(([path]) => path === RESET_PATH)).toHaveLength(1);
+    });
+
+    it('코드를 다시 보내는 중에 이메일 단계로 돌아가면 다음 버튼도 그 요청을 기다린다', async () => {
+      // Given
+      const androidBack = givenAndroidBack();
+      httpClient.post.mockResolvedValue(ok(createForgotPasswordDto()));
+      await renderForgotPassword(httpClient);
+      await fillEmailStep();
+      const resend = createPendingResponse(ok(createForgotPasswordDto()));
+      httpClient.post.mockReturnValue(resend.response);
+      await fireEvent.press(screen.getByText('인증코드 다시 보내기'));
+
+      // When
+      await androidBack.press();
+
+      // Then
+      expect(await screen.findByText(EMAIL_STEP_TITLE)).toBeTruthy();
+      expect(screen.queryByRole('button', { name: '다음' })).toBeNull();
+      expect(httpClient.post).toHaveBeenCalledTimes(2);
+
+      // When
+      await act(async () => {
+        resend.settle();
+      });
+
+      // Then
+      expect(await screen.findByRole('button', { name: '다음' })).toBeEnabled();
+    });
+
+    it('재설정을 기다리는 사이 떠났으면 끝나도 로그인 화면으로 바꾸지 않는다', async () => {
+      // Given
+      let isFocused = true;
+      jest.mocked(useNavigation).mockImplementation(() => ({
+        isFocused: () => isFocused,
+        getParent: () => undefined,
+        addListener: () => () => undefined,
+      }));
+      httpClient.post.mockResolvedValue(ok(createForgotPasswordDto()));
+      await renderForgotPassword(httpClient);
+      await fillAllSteps();
+      const pending = createPendingResponse(ok(createResetPasswordDto()));
+      httpClient.post.mockReturnValue(pending.response);
+      await fireEvent.press(screen.getByRole('button', { name: SUBMIT }));
+
+      // When
+      isFocused = false;
+      await act(async () => {
+        pending.settle();
+      });
+
+      // Then
+      expect(await screen.findAllByText('비밀번호가 재설정되었어요')).toHaveLength(1);
+      expect(router.replace).not.toHaveBeenCalled();
+    });
   });
 });

@@ -1,11 +1,9 @@
 import { ANIMATION } from '@src/shared/constants/animation';
 import { useDismissKeyboard } from '@src/shared/hooks/use-dismiss-keyboard';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { KeyboardAdaptiveButton, VStack, FormStepLayout, Box, Spacing } from '@src/shared/ui';
-import type { ComponentRef } from 'react';
-import { useCallback, useRef } from 'react';
-import { type ControllerFieldState } from 'react-hook-form';
+import { type ComponentRef, useRef } from 'react';
 import type { TextInput } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
@@ -18,8 +16,12 @@ import { RevealedField } from './revealed-field';
 type NewPasswordStepName = 'newPassword' | 'newPasswordConfirm';
 
 interface NewPasswordField {
-  field: { value: string; onChange: (value: string) => void };
-  fieldState: Pick<ControllerFieldState, 'error' | 'isDirty' | 'invalid'>;
+  value: string;
+  onChange: (value: string) => void;
+  /** 이 칸에 적었는지. 단계 버튼과 확인 칸의 오류 문구가 적은 뒤에만 따른다 */
+  isDirty: boolean;
+  isInvalid: boolean;
+  errorMessage?: string;
 }
 
 interface NewPasswordStepProps {
@@ -30,8 +32,8 @@ interface NewPasswordStepProps {
   newPassword: NewPasswordField;
   newPasswordConfirm: NewPasswordField;
   isSubmitting: boolean;
-  onNextStep: () => void;
-  onSubmit: () => Promise<unknown>;
+  onNext: () => void;
+  onSubmit: () => void;
   nextLabel: string;
   submitLabel: string;
 }
@@ -42,7 +44,7 @@ export function NewPasswordStep({
   newPassword,
   newPasswordConfirm,
   isSubmitting,
-  onNextStep,
+  onNext,
   onSubmit,
   nextLabel,
   submitLabel,
@@ -51,9 +53,6 @@ export function NewPasswordStep({
   const { t } = useTranslation('auth');
   const newPasswordInputRef = useRef<ComponentRef<typeof TextInput>>(null);
   const newPasswordConfirmInputRef = useRef<ComponentRef<typeof TextInput>>(null);
-  const focusConfirmInput = useCallback(() => {
-    newPasswordConfirmInputRef.current?.focus();
-  }, []);
 
   useFocusOnStepBack({
     step,
@@ -61,33 +60,30 @@ export function NewPasswordStep({
     focus: () => newPasswordInputRef.current?.focus(),
   });
 
-  const isNewPasswordReady = newPassword.fieldState.isDirty && !newPassword.fieldState.invalid;
+  const isNewPasswordReady = newPassword.isDirty && !newPassword.isInvalid;
   // 새 비밀번호를 고치면 비어 있는 확인 칸도 다시 검사해 오류가 생긴다. 확인 칸에 적기 전에는 보이지 않는다
-  const confirmError = newPasswordConfirm.fieldState.isDirty
-    ? newPasswordConfirm.fieldState.error
+  const confirmErrorMessage = newPasswordConfirm.isDirty
+    ? newPasswordConfirm.errorMessage
     : undefined;
   const isNextEnabled = match(step)
     .with('newPassword', () => isNewPasswordReady)
     .with(
       'newPasswordConfirm',
-      () =>
-        isNewPasswordReady &&
-        newPasswordConfirm.fieldState.isDirty &&
-        !newPasswordConfirm.fieldState.invalid,
+      () => isNewPasswordReady && newPasswordConfirm.isDirty && !newPasswordConfirm.isInvalid,
     )
     .exhaustive();
+
+  // 같은 프레임의 두 번째 탭은 isSubmitting이 다음 렌더에야 켜져 여기서 막는다
+  const submitOnce = useSingleTap(() => {
+    dismissKeyboard();
+    onSubmit();
+  });
 
   const handleNext = () => {
     if (!isNextEnabled || isSubmitting) {
       return;
     }
-    match(step)
-      .with('newPassword', onNextStep)
-      .with('newPasswordConfirm', () => {
-        dismissKeyboard();
-        return onSubmit();
-      })
-      .exhaustive();
+    match(step).with('newPassword', onNext).with('newPasswordConfirm', submitOnce).exhaustive();
   };
 
   return (
@@ -105,20 +101,18 @@ export function NewPasswordStep({
         }
       >
         {step === 'newPasswordConfirm' && (
-          <RevealedField onRevealed={focusConfirmInput}>
+          <RevealedField onRevealed={() => newPasswordConfirmInputRef.current?.focus()}>
             <PasswordInput
               ref={newPasswordConfirmInputRef}
               label={t('forgotPassword.newPasswordConfirmLabel')}
               placeholder={t('forgotPassword.newPasswordConfirmPlaceholder')}
-              value={newPasswordConfirm.field.value}
-              onChange={newPasswordConfirm.field.onChange}
+              value={newPasswordConfirm.value}
+              onChange={newPasswordConfirm.onChange}
               textContentType="newPassword"
               autoComplete="new-password"
               returnKeyType="done"
-              isInvalid={confirmError != null}
-              errorMessage={resolveValidationMessage(confirmError, {
-                default: 'password.mismatch',
-              })}
+              isInvalid={confirmErrorMessage != null}
+              errorMessage={confirmErrorMessage}
               onSubmitEditing={handleNext}
             />
             <Spacing size={8} />
@@ -131,8 +125,8 @@ export function NewPasswordStep({
               ref={newPasswordInputRef}
               label={t('forgotPassword.newPasswordLabel')}
               placeholder={t('forgotPassword.newPasswordPlaceholder')}
-              value={newPassword.field.value}
-              onChange={newPassword.field.onChange}
+              value={newPassword.value}
+              onChange={newPassword.onChange}
               textContentType="newPassword"
               autoComplete="new-password"
               autoFocus={step === 'newPassword'}
@@ -141,7 +135,7 @@ export function NewPasswordStep({
               renderErrorMessage={false}
               onSubmitEditing={handleNext}
             />
-            <PasswordStrengthIndicator password={newPassword.field.value} />
+            <PasswordStrengthIndicator password={newPassword.value} />
           </VStack>
         </Animated.View>
       </FormStepLayout>

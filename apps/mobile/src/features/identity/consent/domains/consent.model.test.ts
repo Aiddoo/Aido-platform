@@ -1,8 +1,7 @@
 import { AI_DATA_SHARING_CONSENT } from '@aido/api/vocabulary';
-import { toInstant } from '@src/shared/date/instant';
 
 import { createConsent } from '../__tests__/consent.fixtures';
-import { ConsentPolicy, findConsentResult } from './consent.model';
+import { ConsentPolicy } from './consent.model';
 
 describe('ConsentPolicy', () => {
   describe('hasAgreedToAiDataSharing', () => {
@@ -53,21 +52,5 @@ describe('ConsentPolicy', () => {
         expect(result).toBe(false);
       },
     );
-  });
-});
-
-describe('findConsentResult', () => {
-  const AT = toInstant('2026-11-09T03:00:00.000Z');
-
-  it.each([
-    ['동의 시각이 있으면 동의', { agreedAt: AT, withdrawnAt: null }, { type: 'agreed', at: AT }],
-    ['철회 시각만 있으면 철회', { agreedAt: null, withdrawnAt: AT }, { type: 'withdrawn', at: AT }],
-    ['둘 다 없으면(구 서버) 알리지 않음', { agreedAt: null, withdrawnAt: null }, null],
-  ] as const)('%s 결과다', (_case, times, expected) => {
-    // When
-    const result = findConsentResult(times);
-
-    // Then
-    expect(result).toEqual(expected);
   });
 });

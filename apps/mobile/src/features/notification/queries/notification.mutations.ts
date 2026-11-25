@@ -5,8 +5,8 @@ import {
   useSessionEpoch,
 } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
-import { useConsentResultToast } from '@src/features/identity/consent/hooks/use-consent-result-toast';
 import { invalidateConsent } from '@src/features/identity/consent/queries/consent-cache';
+import { useConsentResultToast } from '@src/features/identity/consent/queries/consent.mutations';
 import { isTodoUnavailableError } from '@src/features/planning/todo/domains/todo.error';
 import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage, isConnectivityError, ServerError, toError } from '@src/shared/errors';

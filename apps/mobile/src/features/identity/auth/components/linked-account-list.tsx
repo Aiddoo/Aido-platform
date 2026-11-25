@@ -23,7 +23,8 @@ import type { ReactNode } from 'react';
 import { match } from 'ts-pattern';
 
 import { toOAuthProviderSlug } from '../apis/oauth.mapper';
-import { LinkedAccountsPolicy, type OAuthProvider } from '../domains/oauth.model';
+import { LinkedAccountsPolicy } from '../domains/linked-accounts.model';
+import { type OAuthProvider } from '../domains/oauth.model';
 import {
   useLinkAccountMutationOptions,
   useUnlinkAccountMutationOptions,
@@ -136,7 +137,7 @@ function ProviderRow({ provider, icon, iconClassName }: ProviderRowProps) {
       }),
       confirmLabel: t('linkedAccounts.unlink'),
       cancelLabel: t('common:actions.cancel'),
-      onConfirm: () => unlink(provider),
+      onConfirm: () => unlink({ provider, providerName: t(getOAuthProviderLabelKey(provider)) }),
     });
   };
 
@@ -187,7 +188,16 @@ function ProviderRow({ provider, icon, iconClassName }: ProviderRowProps) {
           </Button>
         ))
         .with({ isPending: false, isLinked: false }, () => (
-          <Button size="small" display="inline" onPress={() => link(toOAuthProviderSlug(provider))}>
+          <Button
+            size="small"
+            display="inline"
+            onPress={() =>
+              link({
+                provider: toOAuthProviderSlug(provider),
+                providerName: t(getOAuthProviderLabelKey(provider)),
+              })
+            }
+          >
             {t('linkedAccounts.connect')}
           </Button>
         ))

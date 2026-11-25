@@ -15,13 +15,27 @@ import { UserAvatar } from './user-avatar';
 
 export const USER_LIST_CONTENT_STYLE = { flexGrow: 1 };
 
+/** 사용자 행을 위에서부터 쌓는 스크롤 목록. 행·로딩·비었을 때·오류 조각을 함께 단다 */
+export function UserList({ children, ...props }: ScrollViewProps) {
+  return (
+    <ScrollView className="flex-1" contentContainerStyle={USER_LIST_CONTENT_STYLE} {...props}>
+      {children}
+    </ScrollView>
+  );
+}
+
 interface UserListItemProps extends Omit<ListRowProps, 'left' | 'contents'> {
   displayName: string;
   subtitle?: string;
   profileImage: string | null;
 }
 
-function Item({ displayName, subtitle, profileImage, ...props }: UserListItemProps) {
+UserList.Item = function Item({
+  displayName,
+  subtitle,
+  profileImage,
+  ...props
+}: UserListItemProps) {
   return (
     <ListRow
       left={<UserAvatar alt={displayName} className="size-10" profileImage={profileImage} />}
@@ -41,7 +55,7 @@ function Item({ displayName, subtitle, profileImage, ...props }: UserListItemPro
       {...props}
     />
   );
-}
+};
 
 interface UserListLoadingProps {
   rows?: number;
@@ -52,7 +66,7 @@ interface UserListLoadingProps {
   scrollProps?: ScrollViewProps;
 }
 
-function Loading({
+UserList.Loading = function Loading({
   rows = 3,
   hasSubtitle = false,
   right,
@@ -60,7 +74,7 @@ function Loading({
   scrollProps,
 }: UserListLoadingProps) {
   return (
-    <ScrollView className="flex-1" contentContainerStyle={USER_LIST_CONTENT_STYLE} {...scrollProps}>
+    <UserList {...scrollProps}>
       {ListHeaderComponent}
       {range(rows).map((index) => (
         <ListRow
@@ -70,20 +84,18 @@ function Loading({
           right={right}
         />
       ))}
-    </ScrollView>
+    </UserList>
   );
-}
+};
 
-function ErrorFallback({ reset }: QueryErrorFallbackProps) {
+UserList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   return <QueryErrorFallback reset={reset} />;
-}
+};
 
-function Empty(props: ComponentProps<typeof Result>) {
+UserList.Empty = function Empty(props: ComponentProps<typeof Result>) {
   return (
     <HStack flex={1} justify="center" align="center">
       <Result {...props} />
     </HStack>
   );
-}
-
-export const UserList = { Item, Loading, Error: ErrorFallback, Empty };
+};

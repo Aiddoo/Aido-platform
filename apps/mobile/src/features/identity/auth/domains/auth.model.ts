@@ -16,22 +16,25 @@ const authTokensSchema = z.object({
   userName: z.string().nullable(),
   userProfileImage: z.string().nullable(),
   accountRestored: z.boolean(),
-  /** 소셜 로그인 응답에만 실린다. 이메일 로그인과 인증은 싣지 않아 mapper가 기존 계정(false)으로 읽는다 */
-  isNewUser: z.boolean(),
+  /** 소셜 로그인 응답에만 실린다. 이메일 로그인과 인증은 싣지 않아 null이다 */
+  isNewUser: z.boolean().nullable(),
 });
 export type AuthTokens = z.infer<typeof authTokensSchema>;
 
+export const AuthTokensPolicy = {
+  /** 서버가 새 계정이라고 알린 로그인만 가입이다. 알리지 않은 응답은 기존 계정의 로그인이다 */
+  isSignUp(tokens: AuthTokens): boolean {
+    return tokens.isNewUser === true;
+  },
+};
+
 const registerResultSchema = z.object({
-  message: z.string(),
-  email: z.string(),
   /** 인증 메일을 발송 큐에 담았는지. false면 가입은 됐고 재발송으로 다시 받는다 */
   isEmailSent: z.boolean(),
 });
 export type RegisterResult = z.infer<typeof registerResultSchema>;
 
 const resendVerificationResultSchema = z.object({
-  message: z.string(),
-  email: z.string(),
   /** 다시 보낼 수 있을 때까지 남은 초. 서버가 싣지 않으면 null이고 화면이 기본 대기 시간을 쓴다 */
   retryAfterSeconds: z.number().nullable(),
 });
