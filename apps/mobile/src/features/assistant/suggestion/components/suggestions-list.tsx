@@ -1,6 +1,9 @@
-import { AI_SUGGESTION_LIMITS, DAYS_OF_WEEK, USER_PREFERENCE_DEFAULTS } from '@aido/api/vocabulary';
+import { AI_SUGGESTION_LIMITS, DAYS_OF_WEEK } from '@aido/api/vocabulary';
 import { getPremiumGateAnalyticsFeature } from '@src/features/billing/subscription/utils/subscription-analytics';
-import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
+import {
+  selectTimeFormat,
+  useGetPreferenceQueryOptions,
+} from '@src/features/identity/preference/queries/preference.queries';
 import { TodoRow } from '@src/features/planning/todo/components/todo-row';
 import { useTrack, useTrackView } from '@src/shared/analytics';
 import type { TimeFormat } from '@src/shared/date/format/date-format';
@@ -175,7 +178,7 @@ SuggestionsList.Free = function Free() {
   const { trackEvent } = useTrack();
   // 예시라 설정을 받기까지 기다리지 않고 기본 표기로 먼저 보인다
   const { data: preference } = useQuery(useGetPreferenceQueryOptions());
-  const timeFormat = preference?.timeFormat ?? USER_PREFERENCE_DEFAULTS.TIME_FORMAT;
+  const timeFormat = selectTimeFormat(preference);
   const gateParams = {
     feature: getPremiumGateAnalyticsFeature('AI_SUGGESTION'),
     surface: 'suggestions',

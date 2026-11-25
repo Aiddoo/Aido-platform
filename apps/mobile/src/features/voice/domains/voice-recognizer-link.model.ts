@@ -1,3 +1,4 @@
+import { SECOND_MS } from '@src/shared/constants/time-units';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
@@ -12,13 +13,13 @@ const SPEECH_TEXT_GRACE_MS = 1_500;
 // Android는 멈춘 동안 no-match도 end도 주지 않아, 말소리는 들리는데 글자가 없으면 시간으로 멈춤을 알고 다시 연다
 const VOICE_STALL_RESTART = {
   // QA 로그에서 말 구간이 약 3초마다 닫혀 두 구간 길이다
-  textlessMs: 6_000,
+  textlessMs: 6 * SECOND_MS,
   // 기침·문소리 몇 번으로는 닿지 않는 말소리 합
-  voicedMs: 3_000,
+  voicedMs: 3 * SECOND_MS,
   // 음량은 50ms마다 온다. 이보다 벌어진 틈은 들은 시간으로 세지 않는다
   maxSampleGapMs: 250,
   // 시끄러운 곳에서 녹음 파일이 잘게 쪼개지지 않게 한다
-  minIntervalMs: 30_000,
+  minIntervalMs: 30 * SECOND_MS,
 } as const;
 
 /** 이 안에 end가 이만큼 연달아 오면 다시 열어도 소용없는 세션이다 */

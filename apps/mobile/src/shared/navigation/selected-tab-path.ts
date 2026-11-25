@@ -1,3 +1,4 @@
+import { stripQueryAndHash } from '@src/shared/utils/strip-query-and-hash';
 import { useNavigationContainerRef } from 'expo-router';
 import { useEffect } from 'react';
 
@@ -50,7 +51,7 @@ export function toSelectedTabPath(path: string): string {
   if (tab == null) {
     return path;
   }
-  const pathSegments = (path.split(/[?#]/, 1)[0] ?? '').split('/').filter(Boolean);
+  const pathSegments = stripQueryAndHash(path).split('/').filter(Boolean);
   const isTabScreen = tab.routeNames.some((routeName) => matchesRouteName(routeName, pathSegments));
   return isTabScreen ? `${tab.groupPath}${path}` : path;
 }

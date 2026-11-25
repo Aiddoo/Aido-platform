@@ -1,10 +1,9 @@
 import type { PlanHorizonFeatureKey, PlanLimitFeatureKey } from '@aido/api/vocabulary';
+import { SECONDS_PER_MINUTE } from '@src/shared/constants/time-units';
 import { match } from 'ts-pattern';
 
 import { type EntitlementFeature, type EntitlementSnapshot } from '../domains/entitlement.model';
 import { EntitlementPolicy } from '../domains/entitlement.model';
-
-const SECONDS_PER_MINUTE = 60;
 
 /** 숫자는 모두 서버 요금제 값이다. null은 무제한이고 화면은 "무제한"으로 쓴다 */
 function toMinutes(seconds: number | null): number | null {

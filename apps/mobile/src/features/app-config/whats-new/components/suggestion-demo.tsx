@@ -1,9 +1,11 @@
-import { USER_PREFERENCE_DEFAULTS } from '@aido/api/vocabulary';
 import { SuggestionStatus } from '@src/features/assistant/suggestion/components/suggestion-status';
 import { SuggestionsList } from '@src/features/assistant/suggestion/components/suggestions-list';
 import type { AiSuggestion } from '@src/features/assistant/suggestion/domains/suggestion.model';
 import { getNextAnalysisLabels } from '@src/features/assistant/suggestion/utils/suggestion-schedule.view-model';
-import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
+import {
+  selectTimeFormat,
+  useGetPreferenceQueryOptions,
+} from '@src/features/identity/preference/queries/preference.queries';
 import { ANIMATION } from '@src/shared/constants/animation';
 import { addDaysToDateKey } from '@src/shared/date/date-key';
 import { toZonedInstant } from '@src/shared/date/zoned';
@@ -55,7 +57,7 @@ function WaitingStatus({ onRequest }: { onRequest: () => void }) {
   // 예시라 설정을 받기까지 기다리지 않고 기본 표기로 먼저 보인다
   const { data: preference } = useQuery(useGetPreferenceQueryOptions());
 
-  const timeFormat = preference?.timeFormat ?? USER_PREFERENCE_DEFAULTS.TIME_FORMAT;
+  const timeFormat = selectTimeFormat(preference);
   const nextAnalysisAt = toZonedInstant({
     date: addDaysToDateKey(todayKey, 1),
     time: DEMO_NEXT_ANALYSIS_TIME,
@@ -119,7 +121,7 @@ export function SuggestionListDemo({ onMake }: SuggestionListDemoProps) {
     frameMs: DEMO_SCRIPT_MS.suggestionRow,
   });
 
-  const timeFormat = preference?.timeFormat ?? USER_PREFERENCE_DEFAULTS.TIME_FORMAT;
+  const timeFormat = selectTimeFormat(preference);
   const shownSuggestions = DEMO_SUGGESTIONS.slice(0, shownCount).filter(
     ({ id }) => !dismissedIds.includes(id),
   );

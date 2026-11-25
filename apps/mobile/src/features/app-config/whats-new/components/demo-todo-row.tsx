@@ -1,5 +1,7 @@
-import { USER_PREFERENCE_DEFAULTS } from '@aido/api/vocabulary';
-import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
+import {
+  selectTimeFormat,
+  useGetPreferenceQueryOptions,
+} from '@src/features/identity/preference/queries/preference.queries';
 import { TodoRow } from '@src/features/planning/todo/components/todo-row';
 import { isPrivateVisibility, type Todo } from '@src/features/planning/todo/domains/todo.model';
 import { formatTimeOfDay } from '@src/shared/date/format/date-format';
@@ -31,7 +33,7 @@ export function DemoTodoRow({ todo, isSelected, onSelectedChange, ...rowProps }:
   // 예시라 설정을 받기까지 기다리지 않고 기본 표기로 먼저 보인다
   const { data: preference } = useQuery(useGetPreferenceQueryOptions());
 
-  const timeFormat = preference?.timeFormat ?? USER_PREFERENCE_DEFAULTS.TIME_FORMAT;
+  const timeFormat = selectTimeFormat(preference);
   const timeLabel =
     todo.localTime == null
       ? null

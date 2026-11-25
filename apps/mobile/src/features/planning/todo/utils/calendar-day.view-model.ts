@@ -1,10 +1,8 @@
+import { DAY_OF_WEEK_MAP } from '@aido/api/vocabulary';
 import type { DateKey } from '@src/shared/date/date-key';
 import type { TextTone } from '@src/shared/ui';
 
 import type { CalendarDayCell } from './calendar-month.view-model';
-
-const SUNDAY = 0;
-const SATURDAY = 6;
 
 export type CalendarDayType = 'selected' | 'today' | 'sunday' | 'saturday' | 'default';
 
@@ -26,10 +24,10 @@ export function getPickerDayType({
   if (isToday) {
     return 'today';
   }
-  if (dayOfWeek === SUNDAY) {
+  if (dayOfWeek === DAY_OF_WEEK_MAP.SUN) {
     return 'sunday';
   }
-  if (dayOfWeek === SATURDAY) {
+  if (dayOfWeek === DAY_OF_WEEK_MAP.SAT) {
     return 'saturday';
   }
   return 'default';
@@ -65,10 +63,10 @@ function getMonthViewDayType({ dayOfWeek, isSelected, isToday }: DayTypeInput): 
   if (isSelected) {
     return 'selected';
   }
-  if (dayOfWeek === SUNDAY) {
+  if (dayOfWeek === DAY_OF_WEEK_MAP.SUN) {
     return 'sunday';
   }
-  if (dayOfWeek === SATURDAY) {
+  if (dayOfWeek === DAY_OF_WEEK_MAP.SAT) {
     return 'saturday';
   }
   if (isToday) {

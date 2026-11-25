@@ -1,6 +1,6 @@
 import type { AppLogger } from '@src/core/ports/app-logger';
 import type { RefreshTokensRequest } from '@src/core/ports/token-refresher';
-import { HOUR_MS } from '@src/shared/constants/time-units';
+import { DAY_MS, SECOND_MS } from '@src/shared/constants/time-units';
 import { type Instant, toEpochMs } from '@src/shared/date/instant';
 import { getErrorMessage } from '@src/shared/errors';
 import { match } from 'ts-pattern';
@@ -13,9 +13,9 @@ import type { PendingRevocationRepository } from '../repositories/pending-revoca
 import type { PendingRevocation } from '../schemas/pending-revocation-storage.schema';
 
 /** 기기에 refresh 토큰이 남는 시간이라 가장 긴 직항 비행(약 19시간)을 덮는 하루로 두고, 지나면 refresh 만료(최대 7일)에 맡긴다 */
-export const PENDING_REVOCATION_TTL_MS = 24 * HOUR_MS;
+export const PENDING_REVOCATION_TTL_MS = DAY_MS;
 
-const LOGOUT_TIMEOUT_MS = 5_000;
+const LOGOUT_TIMEOUT_MS = 5 * SECOND_MS;
 
 type IssuedAccessToken =
   | { type: 'issued'; accessToken: string }

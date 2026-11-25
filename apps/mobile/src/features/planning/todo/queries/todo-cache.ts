@@ -1,6 +1,8 @@
 import { invalidateTodoCategories } from '@src/features/planning/category/queries/todo-category-cache';
+import { SECOND_MS } from '@src/shared/constants/time-units';
 import { addDaysToDateKey, type DateKey } from '@src/shared/date/date-key';
 import { isLastMutation } from '@src/shared/query/is-last-mutation';
+import { getExponentialBackoffMs } from '@src/shared/utils/get-exponential-backoff-ms';
 import type {
   DefaultError,
   InvalidateQueryFilters,
@@ -48,7 +50,7 @@ export function isTodoSummaryDateRequestable({
   return date === todayKey || date === addDaysToDateKey(todayKey, 1);
 }
 
-const DATE_CATCH_UP_BASE_DELAY_MS = 5_000;
+const DATE_CATCH_UP_BASE_DELAY_MS = 5 * SECOND_MS;
 const DATE_CATCH_UP_MAX_ATTEMPTS = 4;
 
 type SummaryRefetchState = Pick<
@@ -67,7 +69,9 @@ export function getTodoSummaryRefetchInterval(
   }
   const attempt = dataUpdateCount + errorUpdateCount - 1;
 
-  return attempt < DATE_CATCH_UP_MAX_ATTEMPTS ? DATE_CATCH_UP_BASE_DELAY_MS * 2 ** attempt : false;
+  return attempt < DATE_CATCH_UP_MAX_ATTEMPTS
+    ? getExponentialBackoffMs(attempt, { baseMs: DATE_CATCH_UP_BASE_DELAY_MS })
+    : false;
 }
 
 export interface TodoSnapshot {

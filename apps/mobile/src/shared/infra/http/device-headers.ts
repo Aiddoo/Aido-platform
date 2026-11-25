@@ -1,9 +1,9 @@
-import { DEVICE_NAME_MAX_LENGTH, OS_VERSION_PATTERN } from '@aido/api/vocabulary';
+import { DEVICE_NAME_MAX_LENGTH, type DeviceType, OS_VERSION_PATTERN } from '@aido/api/vocabulary';
 import * as Device from 'expo-device';
 
 const PRINTABLE_ASCII = /^[\x20-\x7e]+$/;
 
-function getDeviceType(os: typeof process.env.EXPO_OS) {
+function getDeviceType(os: typeof process.env.EXPO_OS): Exclude<DeviceType, 'WEB'> {
   return os === 'ios' ? 'IOS' : 'ANDROID';
 }
 

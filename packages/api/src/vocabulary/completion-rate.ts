@@ -1,4 +1,4 @@
-const FULL_RATE = 100;
+export const FULL_RATE = 100;
 
 /**
  * 할 일 완료율(0~100 정수). 서버 응답·알림·AI 리포트와 앱이 같은 값을 보이게 한 곳에서 계산한다.

@@ -1,5 +1,7 @@
-import { USER_PREFERENCE_DEFAULTS } from '@aido/api/vocabulary';
-import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
+import {
+  selectTimeFormat,
+  useGetPreferenceQueryOptions,
+} from '@src/features/identity/preference/queries/preference.queries';
 import { CategoryPickForm } from '@src/features/planning/category/components/category-pick-form';
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
@@ -185,11 +187,7 @@ function TimeChip({
       label={
         displayedTime == null
           ? t('chip.allDay')
-          : formatHHmmTime(
-              displayedTime,
-              preference?.timeFormat ?? USER_PREFERENCE_DEFAULTS.TIME_FORMAT,
-              dateFormatContext,
-            )
+          : formatHHmmTime(displayedTime, selectTimeFormat(preference), dateFormatContext)
       }
       isActive={displayedTime != null}
       onPress={handlePress}

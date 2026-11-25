@@ -1,3 +1,4 @@
+import { DAYS_PER_WEEK } from '@src/shared/constants/time-units';
 import { addDaysToDateKey, getCalendarWeek, type DateKey } from '@src/shared/date/date-key';
 import { formatDateKeyLabel, type DateFormatContext } from '@src/shared/date/format/date-format';
 import { formatCalendarWeekLabel, formatRangeLabel } from '@src/shared/date/format/date-labels';
@@ -72,6 +73,9 @@ export function toWidgetSnapshotStrings(
   };
 }
 
+/** 위젯 주는 날짜 key만 그린다. 날짜 key는 시간대와 상관없이 같은 날이라 고정 시간대로 읽는다 */
+const WIDGET_WEEK_TIMEZONE = 'UTC';
+
 export function toWidgetWeek(
   summary: Pick<WidgetDayCounts, 'date' | 'totalTodos' | 'isComplete'>,
   {
@@ -85,10 +89,10 @@ export function toWidgetWeek(
   const completions = keyBy(weekCompletions ?? [], (completion) => completion.date);
   const dateFormatContext: DateFormatContext = {
     locale: APP_LOCALES[locale].intlLocale,
-    timezone: 'UTC',
+    timezone: WIDGET_WEEK_TIMEZONE,
   };
   const week = getCalendarWeek(summary.date);
-  const days = range(7).map((dayOffset) => {
+  const days = range(DAYS_PER_WEEK).map((dayOffset) => {
     const date = addDaysToDateKey(week.startDateKey, dayOffset);
     const completion = completions[date];
     return {

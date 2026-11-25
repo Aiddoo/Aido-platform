@@ -8,6 +8,7 @@ import {
   getMonthStartDateKey,
   type DateKey,
 } from '@src/shared/date/date-key';
+import { getDaysSinceCalendarWeekStart } from '@src/shared/date/week-start';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useLayoutSize } from '@src/shared/hooks/use-layout-size';
 import { useTodayKey } from '@src/shared/hooks/use-today-key';
@@ -137,7 +138,12 @@ function CalendarWeekPager({ pageWidth, completions }: CalendarWeekPagerProps) {
     addDaysToDateKey(baseWeekKey, (page - CALENDAR_CENTER_PAGE) * DAYS_PER_WEEK);
 
   const handleChange = (page: number) => {
-    setSelectedDateKey(addDaysToDateKey(getWeekKeyAtPage(page), getDayOfWeek(selectedDateKey)));
+    setSelectedDateKey(
+      addDaysToDateKey(
+        getWeekKeyAtPage(page),
+        getDaysSinceCalendarWeekStart(getDayOfWeek(selectedDateKey)),
+      ),
+    );
   };
 
   return (

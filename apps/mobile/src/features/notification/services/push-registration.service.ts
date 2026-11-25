@@ -4,6 +4,7 @@ import type { AppLogger } from '@src/core/ports/app-logger';
 import type { RequestConfig } from '@src/core/ports/http-client';
 import type { PushNotificationGateway } from '@src/core/ports/push-notification-gateway';
 import type { SessionEpoch } from '@src/core/session/session-epoch';
+import { SECOND_MS } from '@src/shared/constants/time-units';
 import type { Instant } from '@src/shared/date/instant';
 import { getErrorMessage } from '@src/shared/errors';
 import { isEqual, noop, withTimeout } from 'es-toolkit';
@@ -23,7 +24,7 @@ import {
 import type { PushRegistrationRepository } from '../repositories/push-registration.repository';
 import type { DeviceIdService } from './device-id.service';
 
-const REPORT_WAIT_TIMEOUT_MS = 3_000;
+const REPORT_WAIT_TIMEOUT_MS = 3 * SECOND_MS;
 
 interface PushDeviceReport {
   deviceId: string;

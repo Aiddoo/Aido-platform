@@ -5,7 +5,7 @@ import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import { useMyPendingCoachmark } from '@src/features/device/coachmark/hooks/use-my-pending-coachmark';
 import { useSuspenseMyAccountId } from '@src/features/identity/user/hooks/use-suspense-my-account-id';
-import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
+import { SECOND_MS, SECONDS_PER_MINUTE } from '@src/shared/constants/time-units';
 import { getErrorMessage } from '@src/shared/errors/to-error';
 import { useAndroidBackHandler } from '@src/shared/hooks/use-android-back-handler';
 import { useAppWindow } from '@src/shared/hooks/use-app-window';
@@ -554,7 +554,7 @@ function useVoiceNoteRecordLimit() {
     snapshot == null ? null : EntitlementPolicy.findMaxSeconds(snapshot, 'VOICE_NOTE');
 
   const finishOrPromptLimit = ({ hasText, finish }: { hasText: boolean; finish: () => void }) => {
-    const minutes = Math.round(((maxSeconds ?? 0) * SECOND_MS) / MINUTE_MS);
+    const minutes = Math.round((maxSeconds ?? 0) / SECONDS_PER_MINUTE);
     if (snapshot != null && EntitlementPolicy.hasFullAccess(snapshot)) {
       if (hasText) {
         toast.warning(t('limit.premium', { minutes }));
@@ -566,7 +566,7 @@ function useVoiceNoteRecordLimit() {
       snapshot == null
         ? null
         : EntitlementPolicy.findPlanMaxSeconds(snapshot, 'VOICE_NOTE', 'premium');
-    const premiumMinutes = Math.round(((premiumMaxSeconds ?? 0) * SECOND_MS) / MINUTE_MS);
+    const premiumMinutes = Math.round((premiumMaxSeconds ?? 0) / SECONDS_PER_MINUTE);
     gate.promptLimit({
       title: t('limit.title', { minutes }),
       description: hasText

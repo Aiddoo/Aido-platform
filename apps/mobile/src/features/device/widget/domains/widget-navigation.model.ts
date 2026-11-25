@@ -1,10 +1,11 @@
+import { MINUTE_MS } from '@src/shared/constants/time-units';
 import { dateKeySchema } from '@src/shared/date/date-key';
 import { diffMs, type Instant, instantSchema } from '@src/shared/date/instant';
 import { uniq } from 'es-toolkit';
 import { z } from 'zod';
 
 /** 위젯을 누른 뒤 앱이 이 시간 안에 열려야 저장된 목적지로 옮긴다 */
-const WIDGET_NAVIGATION_COMMAND_TTL_MS = 5 * 60_000;
+const WIDGET_NAVIGATION_COMMAND_TTL_MS = 5 * MINUTE_MS;
 
 const widgetFeedParametersSchema = z.strictObject({
   date: z.union([dateKeySchema, z.literal('today')]),

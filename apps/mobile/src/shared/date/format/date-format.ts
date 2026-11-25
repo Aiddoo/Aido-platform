@@ -53,8 +53,11 @@ function formatNumericDay(date: Date, context: DateFormatContext): string {
   return getPartValue(parts, 'day');
 }
 
+/** 날짜 key·시각만 있는 값은 UTC 자정에 놓고 UTC로 그려 기기 시간대가 날짜를 옮기지 않게 한다 */
+const WALL_CLOCK_TIMEZONE = 'UTC';
+
 function toUtcContext(context: DateFormatContext): DateFormatContext {
-  return { ...context, timezone: 'UTC' };
+  return { ...context, timezone: WALL_CLOCK_TIMEZONE };
 }
 
 function toUtcMidnight(dateKey: DateKey): Date {

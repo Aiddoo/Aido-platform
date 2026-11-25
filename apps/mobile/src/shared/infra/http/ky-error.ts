@@ -1,5 +1,6 @@
 import { ErrorCode, HttpStatus } from '@aido/api/errors';
 import { ApiError } from '@src/core/errors/api-error';
+import { SECOND_MS } from '@src/shared/constants/time-units';
 import { findErrorCodeMessage } from '@src/shared/errors/error-code-message';
 import {
   NetworkError,
@@ -47,7 +48,6 @@ export function resolveMessage(code: string | null, serverMessage: string | null
 }
 
 const RETRY_AFTER_HEADER = 'Retry-After';
-const SECOND_MS = 1000;
 const DELTA_SECONDS_PATTERN = /^\d+$/u;
 
 /** `Retry-After`는 초(정수)나 HTTP 날짜다. 날짜는 응답의 `Date`를 기준으로 재 기기 시계 오차를 피한다. 읽지 못하면 null */

@@ -7,6 +7,7 @@ import {
   weatherReportSchema as weatherReportDtoSchema,
   weatherRescheduleOptionSchema,
 } from '@aido/api/contracts/weather/v2';
+import { HOUR_MS } from '@src/shared/constants/time-units';
 import { fromEpochMs, toInstant } from '@src/shared/date/instant';
 import { defineFixture } from '@src/testing/fixture';
 
@@ -18,8 +19,6 @@ import {
   type DailyForecastEntry,
   type WeatherReport,
 } from '../domains/weather-report.model';
-
-const HOUR_MS = 60 * 60_000;
 
 export const createHourlyForecastDto = defineFixture(weatherHourlyForecastSchema, {
   startsAt: '2026-11-02T06:00:00.000Z',

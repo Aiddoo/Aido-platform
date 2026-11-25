@@ -1,7 +1,6 @@
-import { HOUR_MS, MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
+import { MINUTES_PER_HOUR, SECOND_MS, SECONDS_PER_MINUTE } from '@src/shared/constants/time-units';
 
-const MINUTE_SECONDS = MINUTE_MS / SECOND_MS;
-const HOUR_SECONDS = HOUR_MS / SECOND_MS;
+const SECONDS_PER_HOUR = MINUTES_PER_HOUR * SECONDS_PER_MINUTE;
 
 function pad(value: number) {
   return String(value).padStart(2, '0');
@@ -9,9 +8,9 @@ function pad(value: number) {
 
 export function formatMediaTime(ms: number): string {
   const totalSeconds = Math.max(0, Math.floor(ms / SECOND_MS));
-  const hours = Math.floor(totalSeconds / HOUR_SECONDS);
-  const minutes = Math.floor((totalSeconds % HOUR_SECONDS) / MINUTE_SECONDS);
-  const seconds = totalSeconds % MINUTE_SECONDS;
+  const hours = Math.floor(totalSeconds / SECONDS_PER_HOUR);
+  const minutes = Math.floor((totalSeconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE);
+  const seconds = totalSeconds % SECONDS_PER_MINUTE;
 
   return hours > 0 ? `${hours}:${pad(minutes)}:${pad(seconds)}` : `${minutes}:${pad(seconds)}`;
 }

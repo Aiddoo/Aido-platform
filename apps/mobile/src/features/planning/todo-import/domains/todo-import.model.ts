@@ -6,6 +6,7 @@ import {
   TODO_IMPORT_TIME_MODES,
   TODO_VISIBILITIES,
 } from '@aido/api/vocabulary';
+import { SECOND_MS } from '@src/shared/constants/time-units';
 import { addDaysToDateKey, type DateKey, dateKeySchema } from '@src/shared/date/date-key';
 import { hasInstantPassed, type Instant, instantSchema } from '@src/shared/date/instant';
 import { clamp, uniq } from 'es-toolkit';
@@ -74,10 +75,10 @@ export function canImportUntil(endDate: DateKey, todayKey: DateKey, horizonDays:
 
 // 업로드·대기는 서버 잡을 기다리는 동안이라 느리게, 만들기·되돌리기는 막대가 움직이니 빠르게 묻는다
 const POLL_INTERVAL_MS = {
-  UPLOADING: 3000,
-  QUEUED: 3000,
-  RUNNING: 2000,
-  UNDOING: 2000,
+  UPLOADING: 3 * SECOND_MS,
+  QUEUED: 3 * SECOND_MS,
+  RUNNING: 2 * SECOND_MS,
+  UNDOING: 2 * SECOND_MS,
 } as const;
 
 export const TodoImportPolicy = {

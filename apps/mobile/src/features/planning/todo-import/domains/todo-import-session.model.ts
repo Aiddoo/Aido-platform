@@ -1,5 +1,7 @@
 import { TODO_IMPORT_TIME_MODES, TODO_VISIBILITIES } from '@aido/api/vocabulary';
+import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
 import { type DateKey, dateKeySchema } from '@src/shared/date/date-key';
+import { getExponentialBackoffMs } from '@src/shared/utils/get-exponential-backoff-ms';
 import { z } from 'zod';
 
 /** 일정 제목은 담지 않는다(새 카테고리 이름은 캘린더 이름이다) */
@@ -87,9 +89,8 @@ export function adjustSelectionToToday(
   };
 }
 
-const RETRY_BASE_DELAY_MS = 1000;
-const MAX_RETRY_DELAY_MS = 60_000;
-const EXPONENT_BASE = 2;
+const RETRY_BASE_DELAY_MS = SECOND_MS;
+const MAX_RETRY_DELAY_MS = MINUTE_MS;
 
 /**
  * 재시도 전 기다릴 시간(full jitter). 시도마다 상한이 두 배로 늘고 60초를 넘지 않는다.
@@ -104,8 +105,12 @@ export function getRetryDelayMs({
   retryAfterMs: number | null;
   random: () => number;
 }): number {
-  const ceilingMs = Math.min(MAX_RETRY_DELAY_MS, RETRY_BASE_DELAY_MS * EXPONENT_BASE ** attempt);
-  return Math.max(Math.floor(random() * ceilingMs), retryAfterMs ?? 0);
+  const backoffMs = getExponentialBackoffMs(attempt, {
+    baseMs: RETRY_BASE_DELAY_MS,
+    maxMs: MAX_RETRY_DELAY_MS,
+    random,
+  });
+  return Math.max(backoffMs, retryAfterMs ?? 0);
 }
 
 export const TodoImportSessionPolicy = {

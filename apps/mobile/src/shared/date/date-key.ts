@@ -2,6 +2,8 @@ import { dateSchema } from '@aido/api/common';
 import { DAYS_PER_WEEK, MONTHS_PER_YEAR } from '@src/shared/constants/time-units';
 import { z } from 'zod';
 
+import { getDaysSinceAggregationWeekStart, getDaysSinceCalendarWeekStart } from './week-start';
+
 // Hinnant의 civil 날짜 ↔ 일수 변환(proleptic 그레고리력, "chrono-Compatible Low-Level Date Algorithms")이다.
 // Hermes에 Temporal이 없고 폴리필은 spike에서 버렸다. 3월을 해의 첫 달로 세면 윤일이 해의 끝에 와 식이 단순해진다
 const DATE_KEY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
@@ -159,9 +161,8 @@ function toDayOfWeek(epochDay: number): number {
   return (((epochDay + EPOCH_DAY_OF_WEEK) % DAYS_PER_WEEK) + DAYS_PER_WEEK) % DAYS_PER_WEEK;
 }
 
-/** 월요일 시작 주의 월요일까지 지난 일수 */
 function getDaysSinceMonday(epochDay: number): number {
-  return (toDayOfWeek(epochDay) + DAYS_PER_WEEK - 1) % DAYS_PER_WEEK;
+  return getDaysSinceAggregationWeekStart(toDayOfWeek(epochDay));
 }
 
 export function addDaysToDateKey(dateKey: DateKey, days: number): DateKey {
@@ -274,7 +275,10 @@ export interface CalendarWeek extends WeekOfMonth {
 
 /** 일요일 시작 주. 2027-01-01(금)의 주는 2026-12-27에 시작하고 수요일 12월 30일이 속한 12월 5주차다 */
 export function getCalendarWeek(dateKey: DateKey): CalendarWeek {
-  const startDateKey = addDaysToDateKey(dateKey, -getDayOfWeek(dateKey));
+  const startDateKey = addDaysToDateKey(
+    dateKey,
+    -getDaysSinceCalendarWeekStart(getDayOfWeek(dateKey)),
+  );
   return {
     startDateKey,
     endDateKey: addDaysToDateKey(startDateKey, DAYS_PER_WEEK - 1),

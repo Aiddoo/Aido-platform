@@ -1,10 +1,10 @@
+import { DAY_MS } from '@src/shared/constants/time-units';
 import { toEpochMs, toInstant } from '@src/shared/date/instant';
 
 import { createPushPermission } from '../__tests__/notification.fixtures';
 import { PushPermissionPolicy } from './push-permission.model';
 
 const NOW = toInstant('2026-11-04T09:00:00.000Z');
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 describe('PushPermissionPolicy', () => {
   describe('getNextStep', () => {

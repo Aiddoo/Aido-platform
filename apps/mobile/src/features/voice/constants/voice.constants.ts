@@ -1,14 +1,16 @@
+import { SECOND_MS } from '@src/shared/constants/time-units';
+
 export const QUICK_CAPTURE_MAX_SECONDS = 90;
 
 /** 듣기를 시작하라고 한 뒤 인식기가 이 안에 시작을 알리지 않으면 실패로 보고 글자를 들고 멈춘다 */
-export const VOICE_PREPARING_TIMEOUT_MS = 10_000;
+export const VOICE_PREPARING_TIMEOUT_MS = 10 * SECOND_MS;
 
 export const AUTO_FINISH_SILENCE_MS = 2_500;
 
 /** 서버가 아직 처리 중(AI_1314)이면 같은 키로 잠시 뒤 다시 묻는다. 차감은 한 번뿐이다 */
-export const PLAN_IN_PROGRESS_RETRY = { maxCount: 3, delayMs: 2_000 } as const;
+export const PLAN_IN_PROGRESS_RETRY = { maxCount: 3, delayMs: 2 * SECOND_MS } as const;
 
-export const VOICE_CLOCK_TICK_MS = 1_000;
+export const VOICE_CLOCK_TICK_MS = SECOND_MS;
 
 export const LISTENING_PANEL_HEIGHT = { windowRatio: 0.56, min: 420 } as const;
 

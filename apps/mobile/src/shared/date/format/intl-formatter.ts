@@ -1,4 +1,5 @@
 import { SERVICE_DEFAULT_TIMEZONE } from '@aido/api/vocabulary';
+import { HOURS_PER_DAY } from '@src/shared/constants/time-units';
 
 import { isSupportedTimezone } from '../timezone';
 
@@ -67,8 +68,6 @@ export function getPartValue(
 ): string {
   return parts.find((part) => part.type === type)?.value ?? '';
 }
-
-const HOURS_PER_DAY = 24;
 
 /**
  * 시 파트를 0~23으로 읽는다. Android Hermes가 hourCycle h23을 무시하고 h24로 그리면 자정이 "24"로 온다(기기 미확인).

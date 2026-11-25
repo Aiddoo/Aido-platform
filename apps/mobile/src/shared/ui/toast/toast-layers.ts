@@ -1,9 +1,10 @@
+import { SECOND_MS } from '@src/shared/constants/time-units';
 import { type Instant, toEpochMs } from '@src/shared/date/instant';
 
 type ToastDuration = number | 'persistent';
 
 /** heroui-native 토스트의 기본 표시 시간과 같다 */
-export const TOAST_DURATION_MS = 4000;
+export const TOAST_DURATION_MS = 4 * SECOND_MS;
 
 export interface ToastLayerEntry<TRender> {
   id: string;

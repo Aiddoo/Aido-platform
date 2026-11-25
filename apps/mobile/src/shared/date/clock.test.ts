@@ -1,3 +1,4 @@
+import { HOUR_MS } from '@src/shared/constants/time-units';
 import { createDateKey } from '@src/testing/date-key';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 
@@ -78,8 +79,6 @@ describe('로컬 날짜와 시간대 상태', () => {
 });
 
 describe('다음 로컬 자정 계산', () => {
-  const HOUR_MS = 60 * 60 * 1000;
-
   it('자정 100ms 전이면 기기 시간대의 자정 직후까지 한 번만 예약한다', () => {
     // Given
     const now = toInstant('2026-07-14T14:59:59.900Z');

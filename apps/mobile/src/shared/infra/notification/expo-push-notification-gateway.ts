@@ -7,6 +7,7 @@ import type {
   PushPermissionResponse,
   ReceivedPushNotification,
 } from '@src/core/ports/push-notification-gateway';
+import { SECOND_MS } from '@src/shared/constants/time-units';
 import { getErrorMessage } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { Mutex, withTimeout } from 'es-toolkit';
@@ -23,7 +24,7 @@ const CHANNEL_VIBRATION_PATTERN = [0, 250, 250, 250];
 const CHANNEL_LIGHT_COLOR = '#FF231F7C';
 
 /** APNs·FCM 등록이 끝나지 않으면 발급이 멈춘다. 다음 보고와 로그아웃이 기다리지 않게 끊는다 */
-export const PUSH_TOKEN_ISSUE_TIMEOUT_MS = 15_000;
+export const PUSH_TOKEN_ISSUE_TIMEOUT_MS = 15 * SECOND_MS;
 
 const IOS_AUTHORIZATION_STATUS = {
   [Notifications.IosAuthorizationStatus.NOT_DETERMINED]: 'NOT_DETERMINED',

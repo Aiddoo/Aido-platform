@@ -1,4 +1,7 @@
 // iOS 위젯 번들은 expo-widgets의 별도 Metro 설정으로 빌드되어 `@src` 별칭이 풀리지 않아 이 파일과 widgets.ios.tsx가 부르는 모듈은 상대 경로만 쓴다
+// 위젯 번들이 패키지 값을 읽는지 확인하지 못해 기본 언어는 타입으로만 묶는다
+import type { FALLBACK_LOCALE } from '@aido/api/vocabulary';
+
 import en from '../../../../shared/i18n/locales/en/widget.json';
 import ko from '../../../../shared/i18n/locales/ko/widget.json';
 import type { ResolvedLanguage } from '../../../../shared/preferences/language.preference';
@@ -34,5 +37,8 @@ export function createInitialWidgetProps(locale: ResolvedLanguage): WidgetProps 
 
 // 빌드 때 고정되는 문구라 영어 키로 넘긴다. SwiftUI Text는 lproj가 없으면 키를 보이므로 ko 외 언어도 영어로 보인다
 export function createRegisteredWidgetProps(): WidgetProps {
-  return { ...createInitialWidgetProps('en'), localizeStateCopy: true };
+  return {
+    ...createInitialWidgetProps('en' satisfies typeof FALLBACK_LOCALE),
+    localizeStateCopy: true,
+  };
 }

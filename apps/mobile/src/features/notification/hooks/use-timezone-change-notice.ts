@@ -1,7 +1,9 @@
-import { USER_PREFERENCE_DEFAULTS } from '@aido/api/vocabulary';
 import { useLogger } from '@src/bootstrap/providers/di-context';
 import type { SyncStorage } from '@src/core/ports/sync-storage';
-import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
+import {
+  selectTimeFormat,
+  useGetPreferenceQueryOptions,
+} from '@src/features/identity/preference/queries/preference.queries';
 import { TodoPolicy, type TodoListResult } from '@src/features/planning/todo/domains/todo.model';
 import { useGetUpcomingTodosQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTrack } from '@src/shared/analytics';
@@ -56,7 +58,7 @@ export function useTimezoneChangeNotice({
     if (isNoticeShown) {
       const time = formatTimeOfDay(
         EXAMPLE_TODO_TIME,
-        preference?.timeFormat ?? USER_PREFERENCE_DEFAULTS.TIME_FORMAT,
+        selectTimeFormat(preference),
         dateFormatContext,
       );
       toast(t('timezoneChanged.title'), {

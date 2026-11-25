@@ -11,6 +11,7 @@ import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { feedParamsSchema } from '@src/features/planning/todo/schemas/feed-params.schema';
 import { useTrack } from '@src/shared/analytics';
+import { SECOND_MS } from '@src/shared/constants/time-units';
 import { getNowInstant } from '@src/shared/date/clock';
 import { toEpochMs } from '@src/shared/date/instant';
 import { reportUnexpectedError } from '@src/shared/errors';
@@ -28,7 +29,7 @@ import {
 } from '../providers/di-context';
 
 /** Android 클릭은 명령을 저장하고 피드 깨우기 링크로 앱을 연다. 명령을 옮긴 직후 들어온 그 링크는 같은 탭이다 */
-const WAKE_LINK_AFTER_COMMAND_MS = 5_000;
+const WAKE_LINK_AFTER_COMMAND_MS = 5 * SECOND_MS;
 
 export function useWidgetAppEntry() {
   const status = useAuthStatus();

@@ -14,6 +14,7 @@ import {
   getYearOfDateKey,
   toCivilDate,
 } from '@src/shared/date/date-key';
+import { getDaysSinceAggregationWeekStart } from '@src/shared/date/week-start';
 import { getStartOfDateKey } from '@src/shared/date/zoned';
 import { t } from '@src/shared/i18n';
 import { orderBy, range, sumBy, take, takeRightWhile } from 'es-toolkit';
@@ -29,6 +30,9 @@ import {
 } from '../constants/sample-report.constants';
 import type { AiReport, DailyCompletion, ReportType } from '../domains/report.model';
 import type { TrendWeek } from './report-chart.view-model';
+
+/** 예시 리포트의 만든 시각은 화면에 보이지 않아 기기 시간대 대신 고정 시간대로 정한다 */
+const SAMPLE_REPORT_GENERATED_TIMEZONE = 'UTC';
 
 interface SampleReportContext {
   todayKey: DateKey;
@@ -82,7 +86,10 @@ export function createSampleReport(
     aiContentSource: 'AI',
     hasActivity: true,
     // 리포트는 기간이 끝난 다음 날 만들어진다. 화면에 보이지 않는 값이다
-    generatedAt: getStartOfDateKey(addDaysToDateKey(dateRange.endDate, 1), 'UTC'),
+    generatedAt: getStartOfDateKey(
+      addDaysToDateKey(dateRange.endDate, 1),
+      SAMPLE_REPORT_GENERATED_TIMEZONE,
+    ),
   };
 }
 
@@ -123,8 +130,8 @@ function createSampleDays(
 
   return range(dayCount).map((offset) => {
     const date = addDaysToDateKey(startDate, offset);
-    // 표는 월요일부터다
-    const weekday = (getDayOfWeek(date) + DAYS_PER_WEEK - 1) % DAYS_PER_WEEK;
+    // 표는 집계 주 시작(월요일)부터다
+    const weekday = getDaysSinceAggregationWeekStart(getDayOfWeek(date));
     // 월간 막대가 주마다 똑같이 되풀이되지 않게 못 끝낸 요일을 주마다 하루씩 민다
     const missedDay = (weekday + Math.floor(offset / DAYS_PER_WEEK)) % DAYS_PER_WEEK;
     const total = SAMPLE_DAILY_TODO_COUNTS[weekday] ?? 0;

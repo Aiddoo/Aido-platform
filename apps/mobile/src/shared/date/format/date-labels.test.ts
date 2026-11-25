@@ -5,6 +5,7 @@ import { createDateKey } from '@src/testing/date-key';
 import { z } from 'zod';
 
 import weekCases from '../../../../../../packages/api/test/fixtures/week-of-month-cases.json';
+import { CALENDAR_DAYS_OF_WEEK } from '../week-start';
 import {
   formatCalendarWeekLabel,
   formatDateKeyCompactRange,
@@ -15,7 +16,6 @@ import {
   formatRelativeDayLabel,
   formatRelativeTimeLabel,
   getDayOfWeekLabel,
-  getWeekdayLabels,
 } from './date-labels';
 
 const KO_SEOUL_CONTEXT = { locale: 'ko-KR', timezone: 'Asia/Seoul' } as const;
@@ -120,9 +120,9 @@ describe('로케일 인지 포맷 (i18n)', () => {
   const EN_SEOUL = { locale: 'en-US', timezone: 'Asia/Seoul' } as const;
   const TODAY_DATE_KEY = createDateKey('2026-10-26');
 
-  it('요일 라벨은 앱 언어를 따른다', async () => {
+  it('달력 머리글 요일 라벨은 일요일부터 앱 언어로 쓴다', async () => {
     // When
-    const korean = getWeekdayLabels();
+    const korean = CALENDAR_DAYS_OF_WEEK.map((day) => getDayOfWeekLabel(day, i18n.language));
 
     // Then
     expect(korean).toEqual(['일', '월', '화', '수', '목', '금', '토']);
@@ -131,17 +131,17 @@ describe('로케일 인지 포맷 (i18n)', () => {
     await i18n.changeLanguage('en');
 
     // Then
-    expect(getWeekdayLabels()).toEqual(['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']);
+    expect(CALENDAR_DAYS_OF_WEEK.map((day) => getDayOfWeekLabel(day, i18n.language))).toEqual([
+      'Sun',
+      'Mon',
+      'Tue',
+      'Wed',
+      'Thu',
+      'Fri',
+      'Sat',
+    ]);
     expect(formatDaysOfWeek(['MON', 'WED'], 'en')).toBe('Mon, Wed');
     expect(getDayOfWeekLabel('SAT', 'en')).toBe('Sat');
-  });
-
-  it('요일 라벨은 넘겨받은 언어로 만든다', () => {
-    // When
-    const labels = getWeekdayLabels('en');
-
-    // Then
-    expect(labels[0]).toBe('Sun');
   });
 
   it('주 헤더는 넘겨받은 context의 언어로 만든다', () => {

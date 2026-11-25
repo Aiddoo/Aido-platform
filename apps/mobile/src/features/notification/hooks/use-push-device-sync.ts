@@ -3,6 +3,7 @@ import {
   usePushRegistrationService,
 } from '@src/bootstrap/providers/di-context';
 import type { AuthStatus } from '@src/core/session/auth-status';
+import { SECOND_MS } from '@src/shared/constants/time-units';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import { useOnAppForeground } from '@src/shared/hooks/use-on-app-foreground';
 import { i18n } from '@src/shared/i18n';
@@ -14,7 +15,7 @@ import type { PushDevice } from '../domains/push-device.model';
 import { useReportPushDeviceMutationOptions } from '../queries/push-device.mutations';
 
 /** 권한 창·제어 센터처럼 짧게 오가는 복귀를 한 번으로 묶는다 */
-const APP_ACTIVE_SYNC_DELAY_MS = 1_000;
+const APP_ACTIVE_SYNC_DELAY_MS = SECOND_MS;
 
 interface UsePushDeviceSyncOptions {
   authStatus: AuthStatus;

@@ -1,5 +1,7 @@
-import { USER_PREFERENCE_DEFAULTS } from '@aido/api/vocabulary';
-import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/queries/preference.queries';
+import {
+  selectTimeFormat,
+  useGetPreferenceQueryOptions,
+} from '@src/features/identity/preference/queries/preference.queries';
 import { ActivityReport } from '@src/features/insights/report/components/activity-report';
 import { CompletionHourChart } from '@src/features/insights/report/components/completion-hour-chart';
 import { CompletionRateHeadline } from '@src/features/insights/report/components/completion-rate-headline';
@@ -160,7 +162,7 @@ function DemoCompletionHours({ report, peakHour }: DemoCompletionHoursProps) {
     startDelayMs: DEMO_SCRIPT_MS.peakHourSelectDelay,
   });
 
-  const timeFormat = preference?.timeFormat ?? USER_PREFERENCE_DEFAULTS.TIME_FORMAT;
+  const timeFormat = selectTimeFormat(preference);
   const selectedHour = touchedHour ?? (peakShownCount === 0 ? null : peakHour);
   const hourlyCounts = getHourlyCompletionCounts(report);
   const hourLabels = range(HOURS_PER_DAY).map((hour) =>

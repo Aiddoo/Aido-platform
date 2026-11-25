@@ -1,5 +1,6 @@
 import { INVITE_LINK_BASE_URL } from '@aido/api/vocabulary';
 import { SECOND_MS } from '@src/shared/constants/time-units';
+import { stripQueryAndHash } from '@src/shared/utils/strip-query-and-hash';
 
 import { parseInviteCode } from '../domains/invite-code.model';
 import type { InviteLinkSource } from '../domains/pending-redemption.model';
@@ -13,10 +14,6 @@ export interface InviteSystemPathOptions {
 
 const INVITE_LINK_PREFIX = `${INVITE_LINK_BASE_URL}/`;
 const RELATIVE_INVITE_LINK_PREFIX = '/i/';
-
-function stripQueryAndHash(value: string) {
-  return value.split(/[?#]/, 1)[0] ?? '';
-}
 
 function toInviteSegment(rawCode: string) {
   return stripQueryAndHash(rawCode).replace(/\/+$/, '');
