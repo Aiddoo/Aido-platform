@@ -3,7 +3,7 @@ import { useTodoApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence';
 import { MINUTE_MS } from '@src/shared/constants/time-units';
-import { readDeviceLocalDateState } from '@src/shared/date/clock';
+import { readLocalDateState } from '@src/shared/date/clock';
 import { addDaysToDateKey, type DateKey } from '@src/shared/date/date-key';
 import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { queryOptions, usePrefetchQuery } from '@tanstack/react-query';
@@ -213,7 +213,7 @@ export function useGetTodoSummaryQueryOptions({ date, userId, limit }: TodoSumma
     userId != null &&
     isTodoSummaryDateRequestable({
       date,
-      todayKey: readDeviceLocalDateState().currentLocalDateKey,
+      todayKey: readLocalDateState().currentLocalDateKey,
     });
 
   return queryOptions({

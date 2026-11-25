@@ -1,5 +1,5 @@
 import { getAppScheme } from '@src/shared/config/app-scheme';
-import { readDeviceLocalDateState } from '@src/shared/date/clock';
+import { readLocalDateState } from '@src/shared/date/clock';
 import { getDeviceLanguage } from '@src/shared/infra/localization/device-locale';
 import { widgetStorage } from '@src/shared/infra/storage/widget-storage';
 import { requestWidgetUpdate } from 'react-native-android-widget';
@@ -17,7 +17,7 @@ const navigationRepository = createWidgetNavigationRepository(widgetStorage);
 
 export const renderStoredAndroidWidget = createStoredAndroidWidgetRenderer({
   snapshotRepository,
-  readLocalDateKey: () => readDeviceLocalDateState().currentLocalDateKey,
+  readLocalDateKey: () => readLocalDateState().currentLocalDateKey,
   readDeviceLanguage: getDeviceLanguage,
   readAppScheme: getAppScheme,
   renderWidget: renderAndroidWidget,

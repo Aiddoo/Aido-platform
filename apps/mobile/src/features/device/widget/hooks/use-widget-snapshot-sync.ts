@@ -7,6 +7,7 @@ import {
 } from '@src/features/planning/todo/queries/todo.queries';
 import { getNowInstant } from '@src/shared/date/clock';
 import { addDaysToDateKey, getCalendarWeek, type DateKey } from '@src/shared/date/date-key';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { i18n } from '@src/shared/i18n';
 import { toResolvedLanguage } from '@src/shared/preferences/language.preference';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
@@ -115,7 +116,8 @@ function reportWidgetSync(
 export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
   const widgetSyncService = useWidgetSyncService();
   const errorReporter = useErrorReporter();
-  const { currentLocalDateKey: date, currentTimezone } = useLocalDate();
+  const date = useTodayKey();
+  const { currentTimezone } = useLocalDate();
   const { startDateKey: rangeStart, endDateKey: rangeEnd } = getCalendarWeek(date);
   const userId = useMyAccountId({ isEnabled: authState === 'authenticated' });
   const tomorrowDate = addDaysToDateKey(date, 1);

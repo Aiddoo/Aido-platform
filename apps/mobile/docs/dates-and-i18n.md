@@ -6,12 +6,12 @@
 
 ### 값과 도구
 
-| 값        | 앱 표현                                                                                                                                                                          | 만드는 곳                    |
-| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
-| 순간      | `Instant`(ISO 8601 문자열 brand)                                                                                                                                                 | `shared/date/instant.ts`     |
-| 달력 날짜 | `DateKey`(`YYYY-MM-DD` 문자열 brand). 경계는 `dateKeySchema`(계약 `dateSchema.brand`)로 한 번 읽고, 검증 안 된 바깥 문자열은 `isDateKey`(타입 가드), 폼은 `dateKeyFieldSchema`다 | `shared/date/date-key.ts`    |
-| 벽시계    | 모델·전송은 `HH:mm`(`timeOfDaySchema`), 계산·피커는 `TimeOfDay`(`{ hour, minute }`, `toTimeOfDay`·`isTimeOfDayInRange` 포함)                                                     | `shared/date/time-of-day.ts` |
-| 시간대    | IANA 이름. 기기 값은 `getDeviceTimezone()`(`shared/infra/localization`)                                                                                                          | `shared/date/zoned.ts`(계산) |
+| 값        | 앱 표현                                                                                                                                                                                    | 만드는 곳                    |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------- |
+| 순간      | `Instant`(ISO 8601 문자열 brand)                                                                                                                                                           | `shared/date/instant.ts`     |
+| 달력 날짜 | `DateKey`(`YYYY-MM-DD` 문자열 brand). 경계는 `dateKeySchema`(계약 `dateSchema.brand`)로 한 번 읽고, 검증 안 된 바깥 문자열은 `isDateKey`(타입 가드), 폼은 `dateKeyFieldSchema`다           | `shared/date/date-key.ts`    |
+| 벽시계    | 모델·전송은 `HH:mm`(`timeOfDaySchema`), 계산·피커는 `TimeOfDay`(`{ hour, minute }`, `toTimeOfDay`·`isTimeOfDayInRange` 포함)                                                               | `shared/date/time-of-day.ts` |
+| 시간대    | IANA 이름. 앱이 쓰는 값은 `getAppTimezone()`, 다시 정하는 것은 `refreshAppTimezone()`(`shared/infra/localization/app-timezone.ts`), 규칙은 `resolveAppTimezone`(`shared/date/timezone.ts`) | `shared/date/zoned.ts`(계산) |
 
 - 시간대 이름은 `timezone`(`currentTimezone`, `DateFormatContext.timezone`)이다. `timeZone`은 그 키를 요구하는 API(`Intl.DateTimeFormat` 옵션, expo-localization `Calendar`, 피커 `timeZoneName`)와 이미 저장된 `aido_device_timezone_v1` 값에만 쓴다.
 - 모델·캐시·전송은 문자열 brand다. 문자열은 같은 값이면 같은 참조라 재조회에도 구조 공유가 유지된다. 순간의 사전순 비교(`a < b`)는 오프셋이 다르면 틀리므로 쓰지 않는다.
@@ -19,13 +19,16 @@
 - `Date`는 `shared/date/native-date.ts`를 지나는 네이티브 피커·달력·파일 수정 시각 경계에서만 만든다. 앱 모델과 Provider·store의 공개 상태에 `Date`를 두지 않는다.
 - Hermes에는 Temporal이 없고 폴리필도 쓰지 않는다([Temporal spike](#temporal-spike)). 날짜 key 산술은 `date-key.ts`의 순수 계산(Hinnant의 civil 날짜 ↔ 일수 변환), 순간 직렬화는 `Date#toISOString`, 시간대 변환(`zoned.ts`)은 캐시한 `Intl.DateTimeFormat`이다. 테스트는 서버와 같은 Node 26 네이티브 Temporal을 정답으로 비교한다(`src/testing/temporal-oracle.ts`). `dayjs`·`temporal-polyfill` import는 depcruise(`date-library-dayjs`·`date-library-temporal`)가 막는다.
 - 같은 계산의 서버↔앱 이름은 [공통 기준의 표](../../../docs/conventions/dates.md#1-값의-종류)에 있다. 날짜 + 벽시계 → 순간은 `toZonedInstant({ date, time, timezone })` 하나이고 겹치는 시각은 앞쪽, 없는 시각은 전환 뒤 순간이다(Temporal `compatible`). 순간 직렬화는 `Date#toISOString`이라 서버 `toIsoString`(ms 3자리 내림)과 바이트 단위로 같다.
-- 표시는 캐시된 `Intl.DateTimeFormat` 하나다. 새 포매터를 만들지 않는다.
+- 표시는 캐시된 `Intl.DateTimeFormat` 하나다(`format/intl-formatter.ts`의 `getFormatter`). 새 포매터를 만들지 않는다. 런타임이 모르는 시간대 이름(서버가 준 값, 옛 저장값)은 렌더 중 `RangeError`를 던지지 않고 서비스 기본 시간대로 그린다. 렌더를 지키는 마지막 안전망이라 `shared/date`는 앱 시간대 어댑터를 import하지 않는다. 이름 확인(`isSupportedTimezone`)은 아는 이름·모르는 이름을 모두 기억한다.
+- 숫자를 읽는 계산(날짜 key·벽시계·오프셋)은 `getPartsFormatter`로 `en-US`·`calendar: 'gregory'`·`numberingSystem: 'latn'`, 시가 있으면 `hourCycle: 'h23'`을 고정한다. 시 파트는 `getHourPartValue`로 읽어 런타임이 `h23`을 무시하고 자정을 `24`로 그려도 `0`이다. 표시 helper의 형식은 이 고정과 무관하다.
 
 ```text
 shared/date/
   instant.ts  date-key.ts  time-of-day.ts  day-of-week.ts
   zoned.ts       # 시간대 계산(Intl). 순간 ↔ 날짜 key·벽시계
-  clock.ts       # 지금(getNowInstant), 오늘 상태, 다음 자정
+  timezone.ts    # 앱 시간대를 정하는 규칙(서버 parseDeviceReportedTimezone과 읽었는가가 같다)
+  clock.ts       # 지금(getNowInstant), 오늘 상태(readLocalDateState), 다음 자정
+  schemas/       # 마지막으로 읽은 시간대(aido_last_read_timezone_v1)
   format/        # Intl 표시 helper와 카탈로그 문구를 붙이는 label helper
   native-date.ts # Date가 드나드는 유일한 경계
 ```
@@ -41,13 +44,15 @@ shared/date/
   2. 화면 글자가 iOS와 같다: `formatDateLabel` 10종(`monthDayYear`·`day` 포함)·`formatClockTime`·상대 시간을 ko·en으로, 특히 오전/오후 앞 공백과 `dayNumber`·`dottedMonthDay`의 en-US 파트.
   3. 시간 피커(`openAndroidTimePicker`·설정 알림 시각)가 고른 시와 분을 그대로 돌려준다(`timeZoneName="UTC"`, 서머타임 시작일과 피커를 연 채 기기 시간대를 바꾼 뒤 포함).
   4. 자정 전환: 앱을 켠 채 자정을 넘기면 오늘 key·피드·위젯(`readLocalDateKey`)이 함께 바뀐다.
-  5. 앱을 켠 채 설정에서 시간대만 바꾸고 돌아오면 재시작 없이 오늘·달력 칸·받은 편지함 구역·콕 버튼이 새 시간대로 바뀐다. Android는 시간대 변경에 달력 변경 신호를 보내지 않아 `LocalDateProvider`가 복귀·자정마다 `getDeviceTimezone()`을 새로 읽는다. 요청 `X-Timezone`·위젯과 같은 값인지 본다.
+  5. 앱을 켠 채 설정에서 시간대만 바꾸고 돌아오면 재시작 없이 오늘·달력 칸·받은 편지함 구역·콕 버튼이 새 시간대로 바뀐다. Android는 시간대 변경에 달력 변경 신호를 보내지 않아 `LocalDateProvider`가 복귀·자정마다 `refreshAppTimezone()`으로 다시 정한다. 요청 `X-Timezone`·위젯과 같은 값인지 본다.
 
 ### 오늘과 시계
 
-- **시간대는 앱이 지어내지 않는다.** 기기 달력(`expo-localization`)에서 읽은 IANA 이름 → 마지막으로 읽은 값(기기 저장) → 서비스 기본 시간대(`@aido/api/vocabulary`의 `SERVICE_DEFAULT_TIMEZONE`) 순서로 정한다. 기기가 준 값이 UTC와 같은 시간대(`UTC`·`Etc/UTC`·`GMT` 등)이거나 `Intl`이 모르는 이름이면 읽지 못한 것으로 본다(서버도 같은 규칙으로 읽는다).
-- **계산에 쓴 시간대를 그대로 서버에 보낸다.** 앱이 "오늘"과 표시에 쓴 값이 요청 헤더(`X-Timezone`)와 푸시 기기 보고에 가고, 둘은 같은 함수 하나로 그 값을 얻는다.
-- 앱의 오늘 key와 자정 전환은 `LocalDateProvider`가 소유하고(자정 timer, foreground, `useCalendars()` 변화에서 다시 평가) 컴포넌트는 `useTodayKey()`(`DateKey`)로 읽는다. 다시 평가할 때마다 시간대를 위 순서로 새로 정한다. Android의 `useCalendars()`는 설정 변경(configuration change) 때만 바뀌어 시간대만 바꾸면 그대로라 신호로만 쓴다. Provider 밖(위젯 경계)은 같은 `readDeviceLocalDateState()`를 쓴다. 오늘 key를 읽는 길은 이 둘뿐이고 렌더 중 `new Date()`를 기준 상태로 만들지 않는다.
+- **시간대는 앱이 지어내지 않는다.** 기기 달력(`expo-localization`)에서 읽은 IANA 이름 → 마지막으로 읽은 값(`aido_last_read_timezone_v1`, 기기 범위라 계정이 바뀌어도 남는다) → 서비스 기본 시간대(`@aido/api/vocabulary`의 `SERVICE_DEFAULT_TIMEZONE`) 순서로 정한다(`resolveAppTimezone`). 기기 값을 읽는 규칙은 `parseDeviceReportedTimezone`이다. 없음·빈 값, 고정 오프셋과 기기 설정의 사용자 지정 ID(`GMT+1`·`UTC+9`), UTC와 같은 이름(`UTC_EQUIVALENT_TIMEZONE_NAMES`, 대소문자 무시), 런타임 `Intl`이 모르는 이름은 읽지 못한 것이고 `Europe/London`처럼 오프셋이 0인 지역 이름은 읽은 값이다. 읽었는가(null 여부)는 서버와 같고 서버와 같은 표(`timezone-report-cases.json`)를 `shared/date/timezone.test.ts`가 읽는다. 표기(대소문자)는 서버가 정식 표기로 맞추고 앱은 기기가 준 글자를 그대로 쓴다.
+- **계산에 쓴 시간대를 그대로 서버에 보낸다.** 시간대를 정하는 때와 읽는 때를 나눈다. `refreshAppTimezone()`이 기기에서 읽어 정하고(읽은 값이 바뀌었으면 마지막 값으로 남긴다) 정한 값을 모듈에 둔다. 부르는 곳은 `LocalDateProvider`의 재평가(시작·복귀·자정·달력 변경 신호)와 Provider 없이 도는 헤드리스 위젯 진입점(`register-widget-task-handler.android.ts`)뿐이다. `getAppTimezone()`은 정해 둔 값만 읽고(Provider보다 먼저 도는 첫 요청만 한 번 정한다) 요청 헤더 `X-Timezone`(`request-headers.ts`), 푸시 기기 보고(`PushRegistrationService`의 `getTimezone` 포트), React 밖 오늘(`readLocalDateState`)이 쓴다. 그래서 화면의 오늘과 헤더·기기 보고는 한 순간에 같은 값이다. Android에서 앱이 앞에 뜬 채 시스템 시간대만 바뀌면 다음 복귀까지 화면과 헤더가 함께 옛 값이다. 기기 보고의 시간대는 그 요청의 `X-Timezone`으로 간다.
+- 기기가 시간대를 못 주고 마지막 값도 없으면 서비스 기본 시간대로 계산하고 그 값을 보낸다. 헤더를 비우면 서버의 날짜 경계가 UTC가 돼 서울 00–09시에 앱과 서버의 오늘이 갈린다. 그 기기를 쓰는 다른 나라 사용자는 기기가 시간대를 줄 때까지 서비스 기본 시간대로 계산된다.
+- 기기가 만든 `Date`를 해석하는 자리는 앱 시간대가 아니라 기기 시스템 시간대 `getDeviceSystemTimezone()`이다. iOS 캘린더 종일 일정은 기기 시간대의 00:00~23:59:59로 오므로 기기를 UTC로 맞췄으면 UTC로 읽어야 하루다(런타임이 모르는 이름이면 앱 시간대).
+- 앱의 오늘 key와 자정 전환은 `LocalDateProvider`가 소유하고(자정 timer, foreground, `useCalendars()` 변화에서 다시 평가) 컴포넌트는 `useTodayKey()`(`DateKey`)로 읽는다. 다시 평가할 때마다 시간대를 위 순서로 새로 정한다. Android의 `useCalendars()`는 설정 변경(configuration change) 때만 바뀌어 시간대만 바꾸면 그대로라 신호로만 쓴다. React 밖(위젯 경계, 조회 시점의 판단, 서비스 포트)은 `readLocalDateState()`(`clock.ts`)를 쓴다. 오늘 key를 읽는 길은 이 둘뿐이다. Provider 상태(`LocalDateState`)는 날짜 key·시간대·오프셋이고 `Date`를 두지 않으며, 렌더 중 `new Date()`를 기준 상태로 만들지 않는다.
 - 지금 시각은 둘이다. 분 단위로 여러 화면이 함께 보는 지금(상대 시간 "5분 전", 날짜·마감 판단)은 `useMinuteNow()`로 앱 하나의 분 시계(`minute-clock-store`, 분 경계와 앱 복귀에 갱신)를 구독한다. 화면마다 다른 간격이나 마감까지 다시 읽는 지금(쿨다운 초, 녹음 경과, 갱신 시각)은 `useNow({ tickMs?, until? })`다. 새 지금 시계 훅을 만들지 않는다.
 - 한 실행 안에서 길이만 재는 값(녹음·인식 세션 경과, 프레임·대기 시간)은 `Date.now()` ms를 그대로 쓴다. 저장하거나 모델이 비교하는 시각(푸시 응답을 받은 때, 앱이 앞에 온 때)은 `getNowInstant()`의 `Instant`이고 차이는 `diffMs`다.
 - 앱 달력·위젯의 주는 `getCalendarWeek`(일요일 시작), 주간 성취·리포트는 서버와 같은 ISO 주(`getIsoWeekOfMonth`)다. 한 화면에서 두 주 규칙을 섞지 않는다. 주차는 두 체계 모두 주의 가운데 날(수·목요일)이 속한 달의 몇째 주이고 라벨은 체계마다 하나(`formatCalendarWeekLabel`·`formatIsoWeekLabel`, 위젯 제목도 `formatCalendarWeekLabel`)이고 둘 다 오늘 key를 받아 다른 해의 주에 연도를 붙인다([주차 규칙](../../../docs/conventions/dates.md#2-오늘과-시간대의-출처)). 하루 길이 상수는 `shared/constants/time-units.ts`의 `DAY_MS`다.

@@ -22,13 +22,29 @@ interface OraclePlainDate {
   toString(): string;
 }
 
+interface OracleZonedDateTime {
+  toPlainDate(): { toString(): string };
+  toPlainTime(): { toString(options: { smallestUnit: 'minute' }): string };
+}
+
 interface NativeTemporal {
+  Instant: { from(value: string): { toZonedDateTimeISO(timeZone: string): OracleZonedDateTime } };
   PlainDate: { from(value: string): OraclePlainDate };
   PlainTime: { from(value: string): unknown };
 }
 
 function isNativeTemporal(value: unknown): value is NativeTemporal {
-  return typeof value === 'object' && value != null && 'PlainDate' in value && 'PlainTime' in value;
+  return (
+    typeof value === 'object' &&
+    value != null &&
+    'Instant' in value &&
+    'PlainDate' in value &&
+    'PlainTime' in value
+  );
+}
+
+function toZonedDateTime(instant: string, timeZone: string): OracleZonedDateTime {
+  return getNativeTemporal().Instant.from(instant).toZonedDateTimeISO(timeZone);
 }
 
 function getNativeTemporal(): NativeTemporal {
@@ -59,4 +75,9 @@ export const temporalOracle = {
       .toZonedDateTime(timeZone, { disambiguation: 'compatible' })
       .toInstant()
       .toString({ fractionalSecondDigits: 3 }),
+  /** 서버 localDateIn과 같은 규칙. 그 순간의 그 시간대 달력 날짜 */
+  toDateKey: (instant: string, timeZone: string) =>
+    toZonedDateTime(instant, timeZone).toPlainDate().toString(),
+  toHHmm: (instant: string, timeZone: string) =>
+    toZonedDateTime(instant, timeZone).toPlainTime().toString({ smallestUnit: 'minute' }),
 } as const;

@@ -8,7 +8,7 @@ import { diffMs, type Instant } from '../instant';
 import { instantToDate, isValidDate, toNativeDate } from '../native-date';
 import { isValidHHmm, type TimeOfDay, toTimeOfDay } from '../time-of-day';
 import { getZonedHour, toDateKey } from '../zoned';
-import { getFormatter, getPartValue, PARTS_LOCALE } from './intl-formatter';
+import { getFormatter, getPartsFormatter, getPartValue } from './intl-formatter';
 
 /** 표시 언어(locale)는 글자 모양만, 시간대(timezone)는 날짜·시각 계산만 정한다. */
 export interface DateFormatContext {
@@ -49,10 +49,7 @@ const MID_YEAR_MONTH_INDEX = 6;
 
 // Hermes(iOS)는 ko-KR day 파트에 "일"까지 붙여 주므로 숫자만 필요한 곳은 en-US 파트에서 읽는다
 function formatNumericDay(date: Date, context: DateFormatContext): string {
-  const parts = getFormatter(
-    { ...context, locale: PARTS_LOCALE },
-    DATE_OPTIONS.dayNumber,
-  ).formatToParts(date);
+  const parts = getPartsFormatter(context.timezone, DATE_OPTIONS.dayNumber).formatToParts(date);
   return getPartValue(parts, 'day');
 }
 
@@ -88,10 +85,9 @@ export function formatDateLabel(
   return match(kind)
     .with('dayNumber', () => formatNumericDay(date, context))
     .with('dottedMonthDay', () => {
-      const parts = getFormatter(
-        { ...context, locale: PARTS_LOCALE },
-        DATE_OPTIONS.dottedMonthDay,
-      ).formatToParts(date);
+      const parts = getPartsFormatter(context.timezone, DATE_OPTIONS.dottedMonthDay).formatToParts(
+        date,
+      );
       return `${getPartValue(parts, 'month')}.${getPartValue(parts, 'day')}`;
     })
     .otherwise(() => getFormatter(context, DATE_OPTIONS[kind]).format(date));

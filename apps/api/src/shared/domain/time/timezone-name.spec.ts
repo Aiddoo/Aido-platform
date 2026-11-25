@@ -1,5 +1,6 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 
+import { UTC_EQUIVALENT_TIMEZONE_NAMES } from "@aido/api/vocabulary";
 import { z } from "zod";
 
 import {
@@ -35,6 +36,8 @@ const SHARED_TIMEZONE_REPORT_CASES = z
       ),
     ),
   );
+
+const SYSTEM_ZONEINFO_PATH = "/usr/share/zoneinfo";
 
 // 바깥 시간대 입력 하나를 해석 함수와 세 대체 정책에 넣은 결과. 바뀌면 사용자 시각이 바뀌므로 표 전체를 고정한다
 const TIMEZONE_INPUT_CASES = [
@@ -166,6 +169,37 @@ describe("시간대 이름 해석", () => {
       expect(timezone).toBe(reported);
     },
   );
+
+  it.each(UTC_EQUIVALENT_TIMEZONE_NAMES)(
+    "앱과 공유하는 UTC 계열 이름 %s는 서버 판정으로도 UTC와 같아 보고하지 않은 것이다",
+    (name) => {
+      // When
+      const isUtc = isSameTimezone(name, "UTC");
+      const reported = parseDeviceReportedTimezone(name);
+
+      // Then
+      expect(isUtc).toBe(true);
+      expect(reported).toBeNull();
+    },
+  );
+
+  it("런타임이 아는 이름 가운데 UTC와 같은데 앱과 공유하는 목록에 없는 이름이 없다", () => {
+    // Given
+    // supportedValuesOf는 대표 이름만 준다. 옛 별칭(Etc/Zulu 등)은 시스템 tzdata 파일 이름을 후보로 더한다
+    const zoneinfoNames = existsSync(SYSTEM_ZONEINFO_PATH)
+      ? readdirSync(SYSTEM_ZONEINFO_PATH, { recursive: true, encoding: "utf8" })
+      : [];
+    const candidates = [...Intl.supportedValuesOf("timeZone"), ...zoneinfoNames];
+    const listed = new Set<string>(UTC_EQUIVALENT_TIMEZONE_NAMES);
+    // 별칭 후보가 없으면(tzdata 없는 환경) 아래 검사가 빈 검사가 되므로 먼저 실패시킨다
+    expect(candidates).toContain("Etc/UTC");
+
+    // When
+    const missing = candidates.filter((name) => !listed.has(name) && isSameTimezone(name, "UTC"));
+
+    // Then
+    expect(missing).toEqual([]);
+  });
 
   it("벽시계용 해석은 앞선 유효 후보를 쓰고 저장된 UTC를 그대로 둔다", () => {
     // Given

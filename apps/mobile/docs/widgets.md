@@ -74,7 +74,7 @@ OS 갤러리의 이름·설명은 앱 i18n이 아니라 Expo `locales`(`native-l
 
 ## 날짜와 OS 갱신
 
-`LocalDateProvider`가 자정 timer, foreground, `useCalendars()`의 날짜 재평가를 소유한다. 자정은 Intl 기기 시간대로 계산한다(`getNextLocalMidnight`). Provider 밖의 위젯 경계도 `readDeviceLocalDateState()`로 오늘 key를 계산한다([날짜](./dates-and-i18n.md#날짜와-시간)).
+`LocalDateProvider`가 자정 timer, foreground, `useCalendars()`의 날짜 재평가를 소유한다. 자정은 앱 시간대(`getAppTimezone`)로 계산한다(`getNextLocalMidnight`). Provider 밖의 위젯 경계도 `readLocalDateState()`로 오늘 key를 계산한다([날짜](./dates-and-i18n.md#날짜와-시간)).
 
 - iOS: `toWidgetTimelineEntries`가 [지금: 오늘] → [다음 자정: 내일] → [그다음 자정: stale]을 `updateTimeline`에 넣는다. 내일 day가 없으면 다음 자정부터 stale이다.
 - Android: renderer가 저장된 days에서 오늘 key와 같은 day를 고른다. 세 provider는 공식 plugin의 `updatePeriodMillis: 1800000`을 쓴다. Doze·launcher 정책 때문에 정확한 자정이나 30분 이내 갱신을 보장하지 않는다.

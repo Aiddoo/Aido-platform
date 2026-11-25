@@ -1,7 +1,7 @@
 import { DAY_MS, MINUTE_MS } from '@src/shared/constants/time-units';
 
 import { addDaysToDateKey, type DateKey, diffDateKeysInDays, isDateKey } from './date-key';
-import { getFormatter, getPartValue, PARTS_LOCALE } from './format/intl-formatter';
+import { getHourPartValue, getPartsFormatter, getPartValue } from './format/intl-formatter';
 import { fromEpochMs, type Instant, toEpochMs } from './instant';
 import { toNativeDate } from './native-date';
 
@@ -10,13 +10,12 @@ const DATE_KEY_OPTIONS: Intl.DateTimeFormatOptions = {
   month: '2-digit',
   day: '2-digit',
 };
-const ZONED_HOUR_OPTIONS: Intl.DateTimeFormatOptions = { hour: '2-digit', hourCycle: 'h23' };
+const ZONED_HOUR_OPTIONS: Intl.DateTimeFormatOptions = { hour: '2-digit' };
 const ZONED_TIME_OPTIONS: Intl.DateTimeFormatOptions = { ...ZONED_HOUR_OPTIONS, minute: '2-digit' };
 const WALL_CLOCK_OPTIONS: Intl.DateTimeFormatOptions = {
   ...DATE_KEY_OPTIONS,
   hour: '2-digit',
   minute: '2-digit',
-  hourCycle: 'h23',
 };
 
 // 앱 모델은 Instant지만 네이티브 피커·파일 시각이 넘기는 Date도 같은 순간으로 읽는다
@@ -27,9 +26,7 @@ function getEpochMs(value: ZonedInput): number {
 }
 
 function formatParts(epochMs: number, timezone: string, options: Intl.DateTimeFormatOptions) {
-  return getFormatter({ locale: PARTS_LOCALE, timezone }, options).formatToParts(
-    toNativeDate(epochMs),
-  );
+  return getPartsFormatter(timezone, options).formatToParts(toNativeDate(epochMs));
 }
 
 /** 그 순간에 그 시간대의 벽시계가 UTC보다 앞선 밀리초 */
@@ -40,7 +37,7 @@ export function getZoneOffsetMs(epochMs: number, timezone: string): number {
     read('year'),
     read('month') - 1,
     read('day'),
-    read('hour'),
+    getHourPartValue(parts),
     read('minute'),
   );
   return wallClockAsUtc - (epochMs - (epochMs % MINUTE_MS));
@@ -84,7 +81,7 @@ export function getZonedHour(value: ZonedInput, timezone: string): number {
   if (!Number.isFinite(epochMs)) {
     return Number.NaN;
   }
-  return Number(getPartValue(formatParts(epochMs, timezone, ZONED_HOUR_OPTIONS), 'hour'));
+  return getHourPartValue(formatParts(epochMs, timezone, ZONED_HOUR_OPTIONS));
 }
 
 export function toHHmm(value: ZonedInput, timezone: string): string {
@@ -93,7 +90,8 @@ export function toHHmm(value: ZonedInput, timezone: string): string {
     return '';
   }
   const parts = formatParts(epochMs, timezone, ZONED_TIME_OPTIONS);
-  return `${getPartValue(parts, 'hour')}:${getPartValue(parts, 'minute')}`;
+  const hour = String(getHourPartValue(parts)).padStart(2, '0');
+  return `${hour}:${getPartValue(parts, 'minute')}`;
 }
 
 /** 같은 순간의 벽시계(날짜·시·분)가 두 시간대에서 같은지. 이름이 달라도 오프셋이 같으면(서울·도쿄) 같다. */
@@ -107,9 +105,7 @@ export function hasSameWallClock(
     return true;
   }
   const read = (zone: string) =>
-    getFormatter({ locale: PARTS_LOCALE, timezone: zone }, WALL_CLOCK_OPTIONS).format(
-      toNativeDate(epochMs),
-    );
+    getPartsFormatter(zone, WALL_CLOCK_OPTIONS).format(toNativeDate(epochMs));
   return read(timezone) === read(otherTimezone);
 }
 

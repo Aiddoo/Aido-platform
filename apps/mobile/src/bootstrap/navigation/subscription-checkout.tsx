@@ -34,8 +34,8 @@ import { useGoBack } from '@src/shared/hooks/use-go-back';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useStepper } from '@src/shared/hooks/use-stepper';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
-import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import {
   Box,
   Button,
@@ -65,7 +65,7 @@ type CheckoutStepContexts = {
 /** 결제가 끝나면 서버 반영과 상관없이 방금 산 요금제로 시작 화면을 보여 준다. 뒤로 가기로 결제 화면에 돌아가지 않는다 */
 function SubscriptionScreen() {
   const { trackEvent } = useTrack();
-  const { currentLocalDateKey } = useLocalDate();
+  const todayKey = useTodayKey();
   const stepper = useStepper<CheckoutStepContexts>({
     id: 'premium-checkout',
     initial: { step: 'status' },
@@ -79,7 +79,7 @@ function SubscriptionScreen() {
       status={({ history }) => (
         <SubscriptionScreen.Status
           onPurchased={({ plan, hadRewardOnly }) =>
-            history.replace('welcome', { plan, purchasedOn: currentLocalDateKey, hadRewardOnly })
+            history.replace('welcome', { plan, purchasedOn: todayKey, hadRewardOnly })
           }
         />
       )}
@@ -430,12 +430,8 @@ function PlanComparisonHeading() {
 /** billing은 알림 기능을 모르므로 체험 일정의 알림 칸은 화면이 알림 토글로 채운다 */
 function TrialReminderToggle({ reminderDateKey }: { reminderDateKey: DateKey }) {
   const { t } = useTranslation('notification');
-  const { currentLocalDateKey } = useLocalDate();
-  const date = formatYearAwareDateKeyLabel(
-    reminderDateKey,
-    currentLocalDateKey,
-    useDateFormatContext(),
-  );
+  const todayKey = useTodayKey();
+  const date = formatYearAwareDateKeyLabel(reminderDateKey, todayKey, useDateFormatContext());
 
   return (
     // 권한·알림 설정을 못 읽어도 요금제와 결제는 그대로 보이게 이 칸만 숨긴다

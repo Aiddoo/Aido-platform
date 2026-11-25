@@ -3,8 +3,8 @@ import { formatYearAwareDateKeyLabel } from '@src/shared/date/format/date-format
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
-import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import { Box, Button, Text, TextSkeleton, useConfirmDialog } from '@src/shared/ui';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
@@ -34,7 +34,7 @@ export function PurchaseButton({ onPurchased }: PurchaseButtonProps) {
   const purchase = useMutation(usePurchaseMutationOptions());
   const offerPurchaseInquiry = useOfferPurchaseInquiry();
   const isOnline = useIsOnline();
-  const { currentLocalDateKey } = useLocalDate();
+  const todayKey = useTodayKey();
   // 요금제 자리의 경계 밖이라 실패를 던지지 않는다. 요금제를 받기 전에는 버튼만 잠긴다
   const { data: availability, isLoading: isPlanLoading } = useQuery({
     ...useGetOfferingsQueryOptions(),
@@ -48,7 +48,7 @@ export function PurchaseButton({ onPurchased }: PurchaseButtonProps) {
   const trialEndDateKey =
     selectedPlan == null
       ? null
-      : SubscriptionPolicy.findFreeTrialEndDateKey(selectedPlan, currentLocalDateKey);
+      : SubscriptionPolicy.findFreeTrialEndDateKey(selectedPlan, todayKey);
 
   // isPending은 다음 렌더에야 바뀌어 같은 프레임의 두 번째 탭이 결제 창을 한 번 더 연다
   const handlePurchase = useSingleTap(() => {
@@ -117,7 +117,7 @@ interface PurchaseDisclosureProps {
 function PurchaseDisclosure({ plan, trialEndDateKey, isPlanLoading }: PurchaseDisclosureProps) {
   const { t } = useTranslation('subscription');
   const dateFormatContext = useDateFormatContext();
-  const { currentLocalDateKey } = useLocalDate();
+  const todayKey = useTodayKey();
 
   if (plan == null) {
     // 오프라인으로 멈춘 조회는 로딩이 아니라 자리를 잡지 않는다. 버튼 위 오프라인 안내가 대신 알린다
@@ -144,11 +144,7 @@ function PurchaseDisclosure({ plan, trialEndDateKey, isPlanLoading }: PurchaseDi
       {trialEndDateKey == null
         ? t('paywall.renewalDisclosure', { price })
         : t('paywall.trialDisclosure', {
-            date: formatYearAwareDateKeyLabel(
-              trialEndDateKey,
-              currentLocalDateKey,
-              dateFormatContext,
-            ),
+            date: formatYearAwareDateKeyLabel(trialEndDateKey, todayKey, dateFormatContext),
             price,
           })}
     </Text>

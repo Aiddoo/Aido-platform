@@ -5,7 +5,7 @@ import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/
 import { TodoPolicy, type TodoListResult } from '@src/features/planning/todo/domains/todo.model';
 import { useGetUpcomingTodosQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTrack } from '@src/shared/analytics';
-import { readDeviceLocalDateState } from '@src/shared/date/clock';
+import { getNowInstant, readLocalDateState } from '@src/shared/date/clock';
 import type { DateKey } from '@src/shared/date/date-key';
 import { formatTimeOfDay } from '@src/shared/date/format/date-format';
 import type { TimeOfDay } from '@src/shared/date/time-of-day';
@@ -132,8 +132,10 @@ function useRecordedTimezoneChange({
     if (accountId == null || reportCount === 0) {
       return;
     }
-    const { currentLocalDate, currentLocalDateKey, currentTimezone, currentUtcOffsetMinutes } =
-      readDeviceLocalDateState();
+    const now = getNowInstant();
+    const { currentLocalDateKey, currentTimezone, currentUtcOffsetMinutes } = readLocalDateState({
+      now,
+    });
     const change = recordDeviceTimezone(storage, accountId, {
       timeZone: currentTimezone,
       offsetMinutes: currentUtcOffsetMinutes,
@@ -144,7 +146,7 @@ function useRecordedTimezoneChange({
         change,
         now: {
           dateKey: currentLocalDateKey,
-          time: toHHmm(currentLocalDate, currentTimezone),
+          time: toHHmm(now, currentTimezone),
           timezone: currentTimezone,
         },
       });

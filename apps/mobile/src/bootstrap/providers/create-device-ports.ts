@@ -28,7 +28,7 @@ import { expoIdGenerator } from '@src/shared/infra/id-generator/expo-id-generato
 import { createKakaoSocialShareGateway } from '@src/shared/infra/kakao/kakao-social-share-gateway';
 import { expoExternalLinkGateway } from '@src/shared/infra/linking/expo-external-link-gateway';
 import { expoIncomingLinkGateway } from '@src/shared/infra/linking/expo-incoming-link-gateway';
-import { getDeviceTimezone } from '@src/shared/infra/localization/device-timezone';
+import { getAppTimezone } from '@src/shared/infra/localization/app-timezone';
 import { expoLocationGateway } from '@src/shared/infra/location/expo-location-gateway';
 import {
   createCompositeLogger,
@@ -138,7 +138,7 @@ export function createDevicePorts(): DevicePorts {
     syncStorage: deviceSyncStorage,
     platform: process.env.EXPO_OS === 'ios' ? 'ios' : 'android',
     deviceModel: DEVICE_MODEL_NAME,
-    getTimezone: getDeviceTimezone,
+    getTimezone: getAppTimezone,
     // 요청 헤더(Accept-Language)와 같은 값이다
     getLanguage: () => i18n.language,
     inviteLinkOpenedStore: createInviteLinkOpenedStore(),

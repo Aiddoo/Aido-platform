@@ -1,5 +1,5 @@
 import { getAppScheme } from '@src/shared/config/app-scheme';
-import { getNowInstant, readDeviceLocalDateState } from '@src/shared/date/clock';
+import { getNowInstant, readLocalDateState } from '@src/shared/date/clock';
 
 import { AIDO_WIDGETS } from '../components/widgets';
 import type { WidgetSnapshot } from '../schemas/widget-snapshot-storage.schema';
@@ -11,7 +11,7 @@ export function createExpoWidgetsBridge(): WidgetBridge {
   return {
     writeSnapshot: async (snapshot: WidgetSnapshot): Promise<void> => {
       const now = getNowInstant();
-      const { currentTimezone } = readDeviceLocalDateState(now);
+      const { currentTimezone } = readLocalDateState({ now });
       const entries = toWidgetTimelineEntries(snapshot, {
         now,
         timezone: currentTimezone,

@@ -5,6 +5,7 @@ import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage } from '@src/shared/errors';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
@@ -58,7 +59,8 @@ interface NotificationItemProps {
 
 export function NotificationList() {
   const [category] = useNotificationCategory();
-  const { currentLocalDateKey, currentTimezone } = useLocalDate();
+  const todayKey = useTodayKey();
+  const { currentTimezone } = useLocalDate();
   const {
     data: listItems,
     fetchNextPage,
@@ -69,7 +71,7 @@ export function NotificationList() {
     useGetNotificationsInfiniteQueryOptions({
       category,
       limit: NOTIFICATION_PAGE_SIZE,
-      todayDateKey: currentLocalDateKey,
+      todayDateKey: todayKey,
       timezone: currentTimezone,
     }),
   );

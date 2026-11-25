@@ -2,10 +2,10 @@ import { createDateKey } from '@src/testing/date-key';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 
 import {
-  createLocalDateState,
   getNowInstant,
   isSameLocalDateState,
   millisecondsUntilNextLocalMidnight,
+  readLocalDateState,
 } from './clock';
 import { addDaysToDateKey } from './date-key';
 import { diffMs, toInstant } from './instant';
@@ -17,8 +17,8 @@ describe('로컬 날짜와 시간대 상태', () => {
     const now = toInstant('2026-10-03T16:00:00.000Z');
 
     // When
-    const seoul = createLocalDateState(now, 'Asia/Seoul');
-    const utc = createLocalDateState(now, 'UTC');
+    const seoul = readLocalDateState({ now, timezone: 'Asia/Seoul' });
+    const utc = readLocalDateState({ now, timezone: 'UTC' });
 
     // Then
     expect(seoul.currentLocalDateKey).toBe('2026-10-04');
@@ -28,8 +28,14 @@ describe('로컬 날짜와 시간대 상태', () => {
 
   it('하루 안의 단순 시간 경과로 오늘 상태를 반복 갱신하지 않는다', () => {
     // Given
-    const previous = createLocalDateState(toInstant('2026-10-04T00:00:00.000Z'), 'Asia/Seoul');
-    const next = createLocalDateState(toInstant('2026-10-04T01:00:00.000Z'), 'Asia/Seoul');
+    const previous = readLocalDateState({
+      now: toInstant('2026-10-04T00:00:00.000Z'),
+      timezone: 'Asia/Seoul',
+    });
+    const next = readLocalDateState({
+      now: toInstant('2026-10-04T01:00:00.000Z'),
+      timezone: 'Asia/Seoul',
+    });
 
     // When
     const isSame = isSameLocalDateState(previous, next);
@@ -41,8 +47,8 @@ describe('로컬 날짜와 시간대 상태', () => {
   it('같은 날짜와 UTC 오프셋이라도 시간대가 바뀌면 갱신한다', () => {
     // Given
     const now = toInstant('2026-10-04T00:00:00.000Z');
-    const previous = createLocalDateState(now, 'Asia/Seoul');
-    const next = createLocalDateState(now, 'Asia/Tokyo');
+    const previous = readLocalDateState({ now, timezone: 'Asia/Seoul' });
+    const next = readLocalDateState({ now, timezone: 'Asia/Tokyo' });
 
     // When
     const isSame = isSameLocalDateState(previous, next);
@@ -54,11 +60,14 @@ describe('로컬 날짜와 시간대 상태', () => {
   it('같은 시간대에서 서머타임 UTC 오프셋이 바뀌면 갱신한다', () => {
     // Given
     // 뉴욕 07:00Z에 EST(-300) → EDT(-240)
-    const previous = createLocalDateState(
-      toInstant('2026-03-08T06:00:00.000Z'),
-      'America/New_York',
-    );
-    const next = createLocalDateState(toInstant('2026-03-08T16:00:00.000Z'), 'America/New_York');
+    const previous = readLocalDateState({
+      now: toInstant('2026-03-08T06:00:00.000Z'),
+      timezone: 'America/New_York',
+    });
+    const next = readLocalDateState({
+      now: toInstant('2026-03-08T16:00:00.000Z'),
+      timezone: 'America/New_York',
+    });
 
     // When
     const isSame = isSameLocalDateState(previous, next);

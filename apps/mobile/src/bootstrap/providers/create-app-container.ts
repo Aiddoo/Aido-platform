@@ -110,8 +110,7 @@ import {
   clearFeatureAttributions,
   createFeatureAttributionStore,
 } from '@src/shared/analytics/feature-attribution';
-import { getNowInstant } from '@src/shared/date/clock';
-import { toDateKey } from '@src/shared/date/zoned';
+import { getNowInstant, readLocalDateState } from '@src/shared/date/clock';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
 import { DraftService } from '@src/shared/draft/draft.service';
 import { removeStoredValue } from '@src/shared/storage/define-stored-value';
@@ -451,7 +450,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
       signOutEpoch,
       idGenerator: ports.idGenerator,
       logger,
-      getTodayKey: () => toDateKey(getNowInstant(), ports.getTimezone()),
+      getTodayKey: () => readLocalDateState({ timezone: ports.getTimezone() }).currentLocalDateKey,
       random: Math.random,
     }),
 

@@ -1,19 +1,19 @@
 import { track } from '@src/shared/analytics';
 import type { LocalDateChangeTrigger } from '@src/shared/analytics/event-map';
 import {
-  createLocalDateState,
   getNowInstant,
   isSameLocalDateState,
-  millisecondsUntilNextLocalMidnight,
   type LocalDateState,
+  millisecondsUntilNextLocalMidnight,
+  readLocalDateState,
 } from '@src/shared/date/clock';
 import { useAnalytics, useAppLifecycle, useErrorReporter } from '@src/shared/di/shared-di-context';
 import { toError } from '@src/shared/errors';
+import { refreshAppTimezone } from '@src/shared/infra/localization/app-timezone';
 import {
   type SystemCalendar,
   useSystemCalendar,
 } from '@src/shared/infra/localization/device-locale';
-import { getDeviceTimezone } from '@src/shared/infra/localization/device-timezone';
 import {
   createContext,
   type PropsWithChildren,
@@ -29,8 +29,8 @@ const LocalDateContext = createContext<LocalDateState | null>(null);
 interface LocalDateProviderProps extends PropsWithChildren {
   /** 기기 달력. 시간대·달력 설정이 바뀌었다고 OS가 알릴 때마다 새 객체를 돌려준다. 다시 읽을 신호로만 쓴다 */
   useDeviceCalendar?: () => SystemCalendar;
-  /** 지금 기기 시간대. 요청 헤더·위젯과 같은 값을 다시 읽을 때마다 새로 읽는다 */
-  readDeviceTimezone?: () => string;
+  /** 앱 시간대를 기기에서 다시 읽어 정한다. 정한 값을 요청 헤더·푸시 기기 보고·위젯이 함께 읽는다 */
+  refreshTimezone?: () => string;
 }
 
 /**
@@ -40,14 +40,14 @@ interface LocalDateProviderProps extends PropsWithChildren {
 export function LocalDateProvider({
   children,
   useDeviceCalendar = useSystemCalendar,
-  readDeviceTimezone = getDeviceTimezone,
+  refreshTimezone = refreshAppTimezone,
 }: LocalDateProviderProps) {
   const analytics = useAnalytics();
   const errorReporter = useErrorReporter();
   const appLifecycle = useAppLifecycle();
   const deviceCalendar = useDeviceCalendar();
   const [localDateState, setLocalDateState] = useState(() =>
-    createLocalDateState(getNowInstant(), readDeviceTimezone()),
+    readLocalDateState({ timezone: refreshTimezone() }),
   );
   const currentLocalDateStateRef = useRef(localDateState);
   const { currentTimezone } = localDateState;
@@ -89,7 +89,7 @@ export function LocalDateProvider({
 
   const reconcileCurrentLocalDate = useCallback(
     (trigger: LocalDateChangeTrigger) => {
-      const nextLocalDateState = createLocalDateState(getNowInstant(), readDeviceTimezone());
+      const nextLocalDateState = readLocalDateState({ timezone: refreshTimezone() });
       if (isSameLocalDateState(currentLocalDateStateRef.current, nextLocalDateState)) {
         return;
       }
@@ -116,7 +116,7 @@ export function LocalDateProvider({
         });
       }
     },
-    [addBreadcrumbSafely, readDeviceTimezone, recordLocalDateChange],
+    [addBreadcrumbSafely, recordLocalDateChange, refreshTimezone],
   );
 
   useEffect(() => {

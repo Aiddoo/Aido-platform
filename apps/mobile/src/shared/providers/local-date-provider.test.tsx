@@ -39,7 +39,7 @@ describe('앱 로컬 날짜 Provider', () => {
       <StaticDIProvider container={di}>
         <LocalDateProvider
           useDeviceCalendar={useDeviceCalendar}
-          readDeviceTimezone={() => device.timezone}
+          refreshTimezone={() => device.timezone}
         >
           {children}
         </LocalDateProvider>
@@ -106,7 +106,7 @@ describe('앱 로컬 날짜 Provider', () => {
     jest.setSystemTime(new Date('2026-07-14T00:00:00.000Z'));
     const device: FakeDeviceCalendar = { timezone: 'Asia/Seoul' };
     const { result, analytics, rerender } = await setup(device);
-    const previousDate = result.current.currentLocalDate;
+    const previousState = result.current;
 
     // When
     device.timezone = 'Asia/Tokyo';
@@ -115,7 +115,7 @@ describe('앱 로컬 날짜 Provider', () => {
     // Then
     expect(result.current.currentLocalDateKey).toBe('2026-07-14');
     expect(result.current.currentTimezone).toBe('Asia/Tokyo');
-    expect(result.current.currentLocalDate).not.toBe(previousDate);
+    expect(result.current).not.toBe(previousState);
     expect(analytics.trackEvent).not.toHaveBeenCalled();
   });
 

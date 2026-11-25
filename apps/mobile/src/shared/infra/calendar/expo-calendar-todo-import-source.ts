@@ -12,7 +12,7 @@ import * as Calendar from 'expo-calendar';
 import { CryptoDigestAlgorithm, CryptoEncoding, digestStringAsync } from 'expo-crypto';
 import { PermissionsAndroid } from 'react-native';
 
-import { getDeviceTimezone } from '../localization/device-timezone';
+import { getDeviceSystemTimezone } from '../localization/app-timezone';
 import { toOsPermission } from '../permission/to-os-permission';
 import {
   buildCollectionKey,
@@ -182,5 +182,5 @@ export function createExpoCalendarTodoImportSource(logger: AppLogger): TodoImpor
 }
 
 function getAllDayTimezone() {
-  return process.env.EXPO_OS === 'android' ? ANDROID_ALL_DAY_TIMEZONE : getDeviceTimezone();
+  return process.env.EXPO_OS === 'android' ? ANDROID_ALL_DAY_TIMEZONE : getDeviceSystemTimezone();
 }

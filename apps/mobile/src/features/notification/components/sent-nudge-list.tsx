@@ -6,6 +6,7 @@ import { refreshNudges } from '@src/features/social/nudge/queries/todo-nudge-cac
 import { useGetNudgeInteractionsInfiniteQueryOptions } from '@src/features/social/nudge/queries/todo-nudge.queries';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
@@ -28,7 +29,8 @@ import { NotificationList } from './notification-list';
 import { NotificationListRow } from './notification-list-row';
 
 export function SentNudgeList() {
-  const { currentLocalDateKey, currentTimezone } = useLocalDate();
+  const todayKey = useTodayKey();
+  const { currentTimezone } = useLocalDate();
   const {
     data: listItems,
     fetchNextPage,
@@ -39,11 +41,7 @@ export function SentNudgeList() {
     ...useGetNudgeInteractionsInfiniteQueryOptions({ direction: 'sent' }),
     // 날짜가 바뀌면 다시 받지 않고 구역만 다시 나눈다
     select: (infinitePages) =>
-      toDateSectionedListItems(
-        selectPageItems(infinitePages),
-        currentLocalDateKey,
-        currentTimezone,
-      ),
+      toDateSectionedListItems(selectPageItems(infinitePages), todayKey, currentTimezone),
   });
   const queryClient = useQueryClient();
   const [isRefreshing, handleRefresh] = useRefresh(() => refreshNudges(queryClient));

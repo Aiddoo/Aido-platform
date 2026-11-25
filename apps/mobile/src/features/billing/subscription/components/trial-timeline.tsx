@@ -6,8 +6,8 @@ import type { DateKey } from '@src/shared/date/date-key';
 import { formatYearAwareDateKeyLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
-import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import {
   Box,
   HStack,
@@ -57,7 +57,7 @@ export function TrialTimeline({ reminder: Reminder, className, ...props }: Trial
   const { t } = useTranslation(['subscription', 'common']);
   const [planId] = useSelectedPlanId();
   const { data: availability } = useSuspenseQuery(useGetOfferingsQueryOptions());
-  const { currentLocalDateKey } = useLocalDate();
+  const todayKey = useTodayKey();
   const dateFormatContext = useDateFormatContext();
   const haptics = useHaptics();
   const wasVisibleRef = useRef<boolean | null>(null);
@@ -65,7 +65,7 @@ export function TrialTimeline({ reminder: Reminder, className, ...props }: Trial
     availability.status === 'available'
       ? SubscriptionPolicy.findSelectedPlan(availability.offering, planId)
       : null;
-  const steps = plan == null ? null : toTrialScheduleSteps(plan, currentLocalDateKey);
+  const steps = plan == null ? null : toTrialScheduleSteps(plan, todayKey);
   const visiblePlanType = steps == null ? null : (plan?.planType ?? null);
 
   // 요금제를 오가며 다시 보여도 페이월을 본 한 번만 센다. 처음 보인 요금제를 남긴다
@@ -86,7 +86,7 @@ export function TrialTimeline({ reminder: Reminder, className, ...props }: Trial
     return null;
   }
   const formatDate = (dateKey: DateKey) =>
-    formatYearAwareDateKeyLabel(dateKey, currentLocalDateKey, dateFormatContext);
+    formatYearAwareDateKeyLabel(dateKey, todayKey, dateFormatContext);
   const price = t(getPlanPriceLabelKey(plan.planType), { price: plan.priceString });
   const reminderStep = steps.find((step) => step.kind === 'reminder');
   const chargeStep = steps.find((step) => step.kind === 'charge');

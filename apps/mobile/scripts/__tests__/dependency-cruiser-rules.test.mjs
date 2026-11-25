@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import test from 'node:test';
 
@@ -146,6 +147,29 @@ test('역할 폴더 밖 shared 모델도 도메인 모델 규칙을 받는다', 
 
   // Then
   assert.deepEqual(results, [true, true, false]);
+});
+
+test('모델은 시계·앱 시간대 어댑터를 import하지 못하고 순수 시간대 계산은 가져온다', () => {
+  // Given
+  const model = 'src/features/planning/todo/domains/todo.model.ts';
+  const clockFiles = [
+    'src/shared/date/clock.ts',
+    'src/shared/hooks/use-today-key.ts',
+    'src/shared/infra/localization/app-timezone.ts',
+  ];
+  const pureFiles = ['src/shared/date/zoned.ts', 'src/shared/date/timezone.ts'];
+
+  // When
+  const missing = [...clockFiles, ...pureFiles].filter(
+    (file) => !existsSync(new URL(`../../${file}`, import.meta.url)),
+  );
+  const results = [...clockFiles, ...pureFiles].map((to) =>
+    violates('domain-model-clock', model, to),
+  );
+
+  // Then
+  assert.deepEqual(missing, []);
+  assert.deepEqual(results, [true, true, true, false, false]);
 });
 
 test('모델은 schemas/를, constants/는 domains/를 import하지 못한다', () => {
