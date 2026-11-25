@@ -29,10 +29,16 @@ import { ScrollView } from 'react-native';
 import { KeyboardEvents } from 'react-native-keyboard-controller';
 import { match } from 'ts-pattern';
 
+import {
+  type TodoCommentChainSubmission,
+  toTodoCommentChainSubmission,
+  toTrimmedContents,
+} from '../apis/todo-comment.mapper';
 import { TODO_COMMENT_LOG_EVENT } from '../constants/todo-comment-log-events';
 import { TODO_COMMENT_INPUT_NATIVE_ID } from '../constants/todo-comment.constants';
 import {
-  type PreparedTodoCommentSubmission,
+  isBlankContent,
+  type TodoCommentComposer,
   TodoCommentComposerPolicy,
 } from '../domains/todo-comment-composer.model';
 import {
@@ -47,7 +53,6 @@ import {
 } from '../queries/todo-comment.mutations';
 import {
   type TodoCommentFormValues,
-  type TodoCommentComposerMode,
   EMPTY_TODO_COMMENT_FORM_VALUES,
   toReplyFormValues,
   toEditFormValues,
@@ -57,12 +62,7 @@ import {
   getTodoCommentDraftSourceUpdatedAt,
 } from '../utils/todo-comment-draft';
 import { getCommentFormMaxHeight } from '../utils/todo-comment-form.geometry';
-import {
-  getFocusedCommentFieldIndexAfterRemoval,
-  findTrimmedContents,
-  isComposerBlank,
-  findComposerTarget,
-} from '../utils/todo-comment-form.view-model';
+import { getFocusedCommentFieldIndexAfterRemoval } from '../utils/todo-comment-form.view-model';
 import { TodoCommentAuthorAvatar } from './todo-comment-author-avatar';
 import { useExpandThread } from './todo-comment-expansion';
 
@@ -91,7 +91,7 @@ export function TodoCommentForm({ style, ...scrollViewProps }: TodoCommentFormPr
   const [focusedFieldIndex, setFocusedFieldIndex] = useState(0);
   const pendingFocusFrameRef = useRef<number | null>(null);
   const submit = useTodoCommentSubmit({ userId: user.id });
-  const targetId = findComposerTarget(mode)?.id;
+  const targetId = TodoCommentComposerPolicy.findTarget(mode)?.id;
 
   const focusFieldAfterLayout = (index: number) => {
     if (pendingFocusFrameRef.current != null) {
@@ -117,7 +117,7 @@ export function TodoCommentForm({ style, ...scrollViewProps }: TodoCommentFormPr
   useEffect(() => {
     const subscription = KeyboardEvents.addListener('keyboardDidHide', () => {
       const { mode: currentMode, items } = getValues();
-      if (currentMode.type !== 'new' && isComposerBlank({ items })) {
+      if (currentMode.type !== 'new' && items.every((item) => isBlankContent(item.content))) {
         reset(EMPTY_TODO_COMMENT_FORM_VALUES);
       }
     });
@@ -208,9 +208,9 @@ function useTodoCommentSubmit({ userId }: { userId: string }) {
   const { handleSubmit, reset } = useTodoCommentForm();
   const createCommentChain = useMutation(useCreateTodoCommentChainMutationOptions({ todoId }));
   const updateComment = useMutation(useUpdateTodoCommentMutationOptions({ todoId }));
-  const preparedSubmissionRef = useRef<PreparedTodoCommentSubmission | null>(null);
+  const submissionRef = useRef<TodoCommentChainSubmission | null>(null);
 
-  const finish = (mode: TodoCommentComposerMode) => {
+  const finish = (mode: TodoCommentComposer) => {
     draftService.remove(createTodoCommentDraftKey({ userId, todoId, mode }));
     reset(EMPTY_TODO_COMMENT_FORM_VALUES);
     dismissKeyboard();
@@ -218,32 +218,35 @@ function useTodoCommentSubmit({ userId }: { userId: string }) {
 
   return () =>
     handleSubmit(async ({ mode, items }) => {
-      const contents = findTrimmedContents(items);
+      const contents = toTrimmedContents(items);
       if (contents == null) {
         return;
       }
 
       try {
         await match(mode)
-          .with({ type: 'edit' }, async ({ target }) => {
-            if (!TodoCommentComposerPolicy.isSameAsOriginal(target, contents[0])) {
-              await updateComment.mutateAsync({ target, input: { content: contents[0] } });
+          .with({ type: 'edit' }, async (editMode) => {
+            if (!TodoCommentComposerPolicy.isUnchanged(editMode, contents[0])) {
+              await updateComment.mutateAsync({
+                target: editMode.target,
+                input: { content: contents[0] },
+              });
             }
           })
           .with({ type: 'new' }, { type: 'reply' }, async (writeMode) => {
-            const submission = TodoCommentComposerPolicy.prepareSubmission({
-              previousSubmission: preparedSubmissionRef.current,
+            const submission = toTodoCommentChainSubmission({
+              previousSubmission: submissionRef.current,
               todoId,
               parentId: TodoCommentComposerPolicy.findReplyParentId(writeMode),
               contents,
               createClientRequestId: () => idGenerator.create(),
             });
-            preparedSubmissionRef.current = submission;
+            submissionRef.current = submission;
             const chain = await createCommentChain.mutateAsync({
-              input: submission.input,
-              target: findComposerTarget(writeMode),
+              input: submission.request,
+              target: TodoCommentComposerPolicy.findTarget(writeMode),
             });
-            preparedSubmissionRef.current = null;
+            submissionRef.current = null;
             const threadCommentId = chain.comments[0]?.threadCommentId;
             if (threadCommentId != null) {
               expandThread(threadCommentId);
@@ -253,7 +256,7 @@ function useTodoCommentSubmit({ userId }: { userId: string }) {
         finish(mode);
       } catch (error) {
         if (isTodoCommentRejectedError(error)) {
-          preparedSubmissionRef.current = null;
+          submissionRef.current = null;
         }
         logger.info(TODO_COMMENT_LOG_EVENT.SUBMIT_FAILED, {
           status: findTodoCommentErrorStatus(error),
@@ -269,7 +272,7 @@ function TodoCommentDraftAutosave({
   restoreItems,
 }: {
   userId: string;
-  mode: TodoCommentComposerMode;
+  mode: TodoCommentComposer;
   /** 입력칸 목록을 가진 `useFieldArray`의 `replace` */
   restoreItems: (items: TodoCommentFormValues['items']) => void;
 }) {
@@ -316,7 +319,7 @@ function TargetBanner({
   mode,
   isSubmitting,
 }: {
-  mode: TodoCommentComposerMode;
+  mode: TodoCommentComposer;
   isSubmitting: boolean;
 }) {
   const { t } = useTranslation('todoComment');
@@ -377,7 +380,7 @@ function CommentField({
 }: {
   index: number;
   fieldCount: number;
-  mode: TodoCommentComposerMode;
+  mode: TodoCommentComposer;
   isFocused: boolean;
   isSubmitting: boolean;
   onFocus: () => void;
@@ -470,7 +473,7 @@ function AppendButton({ isSubmitting, onPress }: { isSubmitting: boolean; onPres
 }
 
 function hasEveryContent(items: TodoCommentFormValues['items']) {
-  return items.every((item) => item.content.trim().length > 0);
+  return items.every((item) => !isBlankContent(item.content));
 }
 
 function SubmitButton({
@@ -478,7 +481,7 @@ function SubmitButton({
   isSubmitting,
   onSubmit,
 }: {
-  mode: TodoCommentComposerMode;
+  mode: TodoCommentComposer;
   isSubmitting: boolean;
   onSubmit: () => Promise<void>;
 }) {

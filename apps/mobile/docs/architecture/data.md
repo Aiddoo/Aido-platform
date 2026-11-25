@@ -103,7 +103,7 @@ export const NOTIFICATION_QUERY_KEYS = {
 ```
 
 - 키 팩토리는 `queries/{feature}-query-keys.ts`, mutation 키는 `queries/{feature}-mutation-keys.ts`다. 쿼리 옵션·cache helper와 함께 바뀌어 같은 폴더에 둔다. `aido/query-key-location`이 그 밖의 `queryKey: [`를 막는다.
-- mutation은 모두 키를 갖는다. 같은 캐시를 쓰는 변경은 묶음 키(`writes()`)를 함께 써 `isLastMutation`·`useIsMutating`이 세고, 그 밖의 변경은 옵션 이름의 키(`AUTH_MUTATION_KEYS.emailLogin()`)다. 아직 키가 없는 것은 권한 층이 다루는 OS 권한 요청 3개와 댓글 층의 정렬 미리 받기 1개다.
+- mutation은 모두 키를 갖는다. 같은 캐시를 쓰는 변경은 묶음 키(`writes()`)를 함께 써 `isLastMutation`·`useIsMutating`이 세고, 그 밖의 변경은 옵션 이름의 키(`AUTH_MUTATION_KEYS.emailLogin()`)다. 아직 키가 없는 것은 권한 층이 다루는 OS 권한 요청 3개다.
 - 루트는 기능 이름 하나다(`['notification']`). 한 루트가 다른 기능 루트의 접두사가 되지 않는다(`bootstrap/query/query-key-roots.test.ts`). mutation 키 루트는 `[feature, 'mutation']`이다.
 - 모든 잎은 `queryOptions<T>({ queryKey }).queryKey`로 데이터 타입을 붙여 `getQueryData`·`setQueryData`가 제네릭 없이 타입을 안다. 인자는 이름 있는 객체 하나이고 잎은 루트와 같지 않다. 그룹(`lists()`)은 무효화에 쓸 때만 만든다.
 - OS에 묻는 값(권한, 위치, 캘린더 목록) 쿼리는 `['device', …]` 루트에 둔다(`['device', 'push-permission']`·`calendar-permission`·`location`·`calendar-collections`). 기능 무효화에 휩쓸려 OS를 다시 묻지 않는다. 앱 아이콘은 기능 루트 `['app-icon']`이다([권한](../permissions.md)).

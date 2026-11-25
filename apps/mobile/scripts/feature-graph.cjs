@@ -273,7 +273,6 @@ const LOCAL_ONLY_PENDING_FEATURES = new Set([
   'app-config/whats-new',
   'billing/subscription',
   'device/coachmark',
-  'engagement/comment',
   'identity/auth',
   'insights/report',
   'notes/memo',
@@ -286,11 +285,18 @@ const LOCAL_ONLY_PENDING_FEATURES = new Set([
   'weather',
 ]);
 
-/**
- * 운영 importer가 컴포넌트·훅 하나뿐이고 자체 테스트가 없는 기능 components/·hooks/ 파일(경고).
- * 한 곳만 쓰는 조각은 쓰는 파일 안에 둔다(docs/architecture/ui.md#네임스페이스반복-ui추출)
- */
-function findLocalOnlyFiles(modules) {
+// 한 파일만 쓰지만 따로 두는 파일과 이유. 새 파일은 경고하고, 더는 해당하지 않는 파일은 목록에서 지우라고 실패한다
+const ALLOWED_LOCAL_ONLY_FILES = {
+  'src/features/engagement/comment/components/todo-comment-thread-list.tsx':
+    '상세 칸(todo-comment-pane)만 쓴다. 칸은 세션·경계·작성 바 조립이고 이 파일은 목록·정렬·묶음·답글·키보드 스크롤이라, 합치면 한 파일이 1,000줄을 넘어 위에서 아래로 읽히지 않는다',
+  'src/features/engagement/comment/components/todo-comment-item.tsx':
+    '묶음 목록만 쓴다. 댓글·답글 두 단이 함께 쓰는 행(연결선·본문·메뉴·하트·스크린리더 동작)이라 목록에 합치면 한 파일이 1,500줄을 넘는다',
+  'src/features/engagement/comment/components/todo-comment-heart-burst.tsx':
+    '댓글 행만 쓴다. shared value와 animated style만으로 도는 스스로 완결된 그리기 부품이다(docs/todo-comments.md의 더블탭 하트)',
+};
+
+/** 운영 importer가 컴포넌트·훅 하나뿐이고 자체 테스트가 없는 기능 components/·hooks/ 파일과 그 importer */
+function listLocalOnlyFiles(modules) {
   return modules.flatMap((module) => {
     const feature = getFeatureName(module.source);
     if (
@@ -305,11 +311,33 @@ function findLocalOnlyFiles(modules) {
       return [];
     }
     return dependents.length === 1 && COMPONENT_OR_HOOK_IMPORTER.test(dependents[0])
-      ? [
-          `${module.source}: ${dependents[0]} 하나만 씁니다. 그 파일의 지역 컴포넌트·훅이나 네임스페이스 조각으로 옮기세요.`,
-        ]
+      ? [{ source: module.source, importer: dependents[0] }]
       : [];
   });
+}
+
+/**
+ * 한 곳만 쓰는데 따로 둔 파일(경고). 이유를 적어 둔 파일(`allowed`)은 뺀다.
+ * 한 곳만 쓰는 조각은 쓰는 파일 안에 둔다(docs/architecture/ui.md#네임스페이스지역-컴포넌트)
+ */
+function findLocalOnlyFiles(modules, allowed = ALLOWED_LOCAL_ONLY_FILES) {
+  return listLocalOnlyFiles(modules)
+    .filter(({ source }) => !(source in allowed))
+    .map(
+      ({ source, importer }) =>
+        `${source}: ${importer} 하나만 씁니다. 그 파일의 지역 컴포넌트·훅이나 네임스페이스 조각으로 옮기세요.`,
+    );
+}
+
+/** 이유를 적어 둔 파일이 더는 한 곳만 쓰는 파일이 아니면(쓰는 곳이 늘었거나 자체 테스트가 생겼거나 사라졌으면) 지우게 한다 */
+function findStaleLocalOnlyAllowances(modules, allowed = ALLOWED_LOCAL_ONLY_FILES) {
+  const localOnly = new Set(listLocalOnlyFiles(modules).map(({ source }) => source));
+  return Object.keys(allowed)
+    .filter((path) => !localOnly.has(path))
+    .map(
+      (path) =>
+        `${path}: 이제 컴포넌트·훅 하나만 쓰는 파일이 아닙니다. scripts/feature-graph.cjs의 ALLOWED_LOCAL_ONLY_FILES에서 지우세요.`,
+    );
 }
 
 function formatViolation({ rule, from, to }, comments) {
@@ -317,7 +345,7 @@ function formatViolation({ rule, from, to }, comments) {
   return `  ${rule.severity} ${rule.name}: ${from} → ${to}${comment == null ? '' : `\n    ${comment}`}`;
 }
 
-/** dependency-cruiser 리포터. 규칙 위반과 feature 그래프 위반을 함께 내고 하나라도 있으면 실패한다. 지역 파일 경고는 실패시키지 않는다 */
+/** dependency-cruiser 리포터. 규칙 위반과 feature 그래프 위반을 함께 내고 하나라도 있으면 실패한다. 지역 파일 경고는 실패시키지 않고, 낡은 예외만 실패시킨다 */
 function report(result) {
   const { modules, summary } = result;
   // 리포터 등록 때 dependency-cruiser가 빈 결과로 한 번 불러 모양을 확인한다
@@ -329,14 +357,16 @@ function report(result) {
   );
   const violations = summary.violations.filter(({ rule }) => rule.severity !== 'ignore');
   const graphErrors = checkFeatureGraph(modules, process.cwd());
+  const staleAllowances = findStaleLocalOnlyAllowances(modules);
   const warnings = findLocalOnlyFiles(modules).map(
     (warning) => `  warn local-only-file: ${warning}`,
   );
   const lines = [
     ...violations.map((violation) => formatViolation(violation, comments)),
     ...graphErrors.map((error) => `  error feature-graph: ${error}`),
+    ...staleAllowances.map((error) => `  error local-only-file: ${error}`),
   ];
-  const total = violations.length + graphErrors.length;
+  const total = violations.length + graphErrors.length + staleAllowances.length;
   const stats = `${summary.totalCruised} modules, ${summary.totalDependenciesCruised} dependencies cruised`;
   const warningOutput = warnings.length === 0 ? '' : `${warnings.join('\n')}\n\n`;
   return total === 0
@@ -351,3 +381,4 @@ module.exports = report;
 module.exports.FEATURE_LAYERS = FEATURE_LAYERS;
 module.exports.FEATURE_PATTERN = FEATURE_PATTERN;
 module.exports.findLocalOnlyFiles = findLocalOnlyFiles;
+module.exports.findStaleLocalOnlyAllowances = findStaleLocalOnlyAllowances;

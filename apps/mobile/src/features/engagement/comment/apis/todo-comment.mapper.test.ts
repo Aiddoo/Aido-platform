@@ -4,11 +4,14 @@ import {
   todoCommentThreadsResponseSchema,
 } from '@aido/api/contracts/todo-comment/v2';
 
-import { todoCommentSchema, todoCommentThreadPageSchema } from '../domains/todo-comment.model';
+import { todoCommentThreadPageSchema } from '../domains/todo-comment-thread.model';
+import { todoCommentSchema } from '../domains/todo-comment.model';
 import { writtenTodoCommentMutationResponseSchema } from '../schemas/todo-comment-response.schema';
 import {
   toRepliesQuery,
   toThreadsQuery,
+  toTodoCommentChainSubmission,
+  toTrimmedContents,
   toWrittenTodoComment,
   toTodoCommentThreadPage,
 } from './todo-comment.mapper';
@@ -181,5 +184,108 @@ describe('todo-comment 요청 값', () => {
     // Then
     expect(around).toEqual({ size: 10, aroundReplyId: HEAD_ID });
     expect(plain).toEqual({ size: 10 });
+  });
+});
+
+describe('toTrimmedContents', () => {
+  it('보낼 글은 앞뒤 공백을 지운다', () => {
+    // Given
+    const items = [{ content: '  하나 ' }, { content: '둘\n' }];
+
+    // When
+    const contents = toTrimmedContents(items);
+
+    // Then
+    expect(contents).toEqual(['하나', '둘']);
+  });
+
+  it('칸이 하나도 없으면 null을 반환한다', () => {
+    // When
+    const contents = toTrimmedContents([]);
+
+    // Then
+    expect(contents).toBeNull();
+  });
+});
+
+describe('toTodoCommentChainSubmission', () => {
+  function createIdSequence() {
+    let count = 0;
+
+    return () => {
+      count += 1;
+      return `id-${count}`;
+    };
+  }
+
+  it('같은 글을 다시 보내면 처음 발급한 멱등 키를 다시 쓴다', () => {
+    // Given
+    const createClientRequestId = createIdSequence();
+    const first = toTodoCommentChainSubmission({
+      previousSubmission: null,
+      todoId: 1,
+      parentId: null,
+      contents: ['안녕'],
+      createClientRequestId,
+    });
+
+    // When
+    const retried = toTodoCommentChainSubmission({
+      previousSubmission: first,
+      todoId: 1,
+      parentId: null,
+      contents: ['안녕'],
+      createClientRequestId,
+    });
+
+    // Then
+    expect(retried).toBe(first);
+  });
+
+  it('글이 바뀌면 새 멱등 키를 발급한다', () => {
+    // Given
+    const createClientRequestId = createIdSequence();
+    const first = toTodoCommentChainSubmission({
+      previousSubmission: null,
+      todoId: 1,
+      parentId: null,
+      contents: ['안녕'],
+      createClientRequestId,
+    });
+
+    // When
+    const changed = toTodoCommentChainSubmission({
+      previousSubmission: first,
+      todoId: 1,
+      parentId: null,
+      contents: ['바뀐 글'],
+      createClientRequestId,
+    });
+
+    // Then
+    expect(changed.request.items[0]?.clientRequestId).toBe('id-2');
+  });
+
+  it('이어 쓴 글마다 서로 다른 멱등 키를 발급하고 답할 글을 그대로 싣는다', () => {
+    // Given
+    const createClientRequestId = createIdSequence();
+
+    // When
+    const submission = toTodoCommentChainSubmission({
+      previousSubmission: null,
+      todoId: 1,
+      parentId: 'comment-9',
+      contents: ['하나', '둘'],
+      createClientRequestId,
+    });
+
+    // Then
+    expect(submission.request).toEqual({
+      parentId: 'comment-9',
+      items: [
+        { clientRequestId: 'id-1', content: '하나' },
+        { clientRequestId: 'id-2', content: '둘' },
+      ],
+    });
   });
 });

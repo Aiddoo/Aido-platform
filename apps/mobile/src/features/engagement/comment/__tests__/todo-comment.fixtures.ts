@@ -1,11 +1,10 @@
 import { defineFixture } from '@src/testing/fixture';
 
 import {
-  type TodoComment,
   type TodoCommentThread,
-  todoCommentSchema,
   todoCommentThreadSchema,
-} from '../domains/todo-comment.model';
+} from '../domains/todo-comment-thread.model';
+import { type TodoComment, todoCommentSchema } from '../domains/todo-comment.model';
 
 export const TODO_ID = 42;
 

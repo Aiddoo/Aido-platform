@@ -134,7 +134,7 @@ const modelAndFolderRules = [
     severity: 'error',
     from: {
       path: DOMAIN_MODEL,
-      pathNot: [TEST, pendingFeatures(['device/widget', 'engagement/comment'])],
+      pathNot: [TEST, pendingFeatures(['device/widget'])],
     },
     to: { path: '/schemas/' },
   },
@@ -328,7 +328,6 @@ module.exports = {
           TEST,
           pendingFeatures([
             'app-config/whats-new',
-            'engagement/comment',
             'notes/memo',
             'notification',
             'social/friend',
@@ -395,7 +394,7 @@ module.exports = {
           WIDGET_HEADLESS_ENTRY,
           ROOT_LAYOUT,
           PENDING_INFRA_ROUTES,
-          pendingFeatures(['engagement/comment', 'weather']),
+          pendingFeatures(['weather']),
         ],
       },
       to: {

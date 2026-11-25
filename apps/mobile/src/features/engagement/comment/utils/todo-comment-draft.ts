@@ -2,17 +2,17 @@ import { toEpochMs } from '@src/shared/date/instant';
 import { createDraftKey } from '@src/shared/draft/draft.model';
 import { match } from 'ts-pattern';
 
+import type { TodoCommentComposer } from '../domains/todo-comment-composer.model';
 import { todoCommentDraftSchema } from '../schemas/todo-comment-draft.schema';
-import type { TodoCommentComposerMode } from '../schemas/todo-comment-form.schema';
 
 interface CreateTodoCommentDraftKeyInput {
   userId: string;
   todoId: number;
-  mode: TodoCommentComposerMode;
+  mode: TodoCommentComposer;
 }
 
 /** 초안은 새 댓글·답글은 할 일마다, 수정은 수정하는 글마다 나눈다 */
-function getDraftTarget(todoId: number, mode: TodoCommentComposerMode) {
+function getDraftTarget(todoId: number, mode: TodoCommentComposer) {
   return match(mode)
     .with({ type: 'edit' }, ({ target }) => [todoId, 'edit', target.id] as const)
     .with({ type: 'reply' }, () => [todoId, 'reply'] as const)
@@ -34,7 +34,7 @@ export function createTodoCommentDraftKey({
   });
 }
 
-export function getTodoCommentDraftSourceUpdatedAt(mode: TodoCommentComposerMode) {
+export function getTodoCommentDraftSourceUpdatedAt(mode: TodoCommentComposer) {
   return match(mode)
     .with({ type: 'edit' }, ({ target }) => toEpochMs(target.editedAt ?? target.createdAt))
     .otherwise(() => undefined);

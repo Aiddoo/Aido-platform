@@ -15,6 +15,7 @@ import { expoVendorIdGateway } from '@src/shared/infra/application/expo-vendor-i
 import { createExpoCalendarTodoImportSource } from '@src/shared/infra/calendar/expo-calendar-todo-import-source';
 import { expoClipboardGateway } from '@src/shared/infra/clipboard/expo-clipboard-gateway';
 import { DEVICE_MODEL_NAME } from '@src/shared/infra/device/device-info';
+import { expoDeviceTraits } from '@src/shared/infra/device/expo-device-traits';
 import { createEnvironmentErrorReporter } from '@src/shared/infra/error-reporter/create-environment-error-reporter';
 import { expoLocalFileSystem } from '@src/shared/infra/file-system/expo-local-file-system';
 import { expoHapticsGateway } from '@src/shared/infra/haptics/expo-haptics-gateway';
@@ -122,6 +123,7 @@ export function createDevicePorts(): DevicePorts {
     networkStatus: createExpoNetworkStatusGateway(logger),
     viewCapture: viewShotViewCaptureGateway,
     screenOrientation: expoScreenOrientationGateway,
+    deviceTraits: expoDeviceTraits,
     deviceLocation: expoLocationGateway,
     todoImportSource: createExpoCalendarTodoImportSource(logger),
     applicationMetadata: expoNativeApplicationMetadataGateway,

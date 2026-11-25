@@ -5,8 +5,9 @@ import { infiniteQueryOptions } from '@tanstack/react-query';
 
 import { toRepliesQuery, toThreadsQuery } from '../apis/todo-comment.mapper';
 import { TODO_COMMENT_QUERY_TIMING } from '../constants/todo-comment.constants';
-import { TodoCommentPolicy } from '../domains/todo-comment.model';
 import {
+  flattenReplyPages,
+  flattenThreadPages,
   getNextTodoCommentPageParam,
   getPreviousTodoCommentPageParam,
   INITIAL_TODO_COMMENT_PAGE_PARAM,
@@ -31,13 +32,13 @@ interface TodoCommentRepliesQueryInput {
 
 function selectTodoCommentThreads(data: TodoCommentThreadPages) {
   return {
-    threads: TodoCommentPolicy.flattenThreads(data.pages),
+    threads: flattenThreadPages(data),
     anchor: data.pages[0]?.anchor ?? null,
   };
 }
 
 function selectTodoCommentReplies(data: TodoCommentReplyPages) {
-  return TodoCommentPolicy.flattenReplies(data.pages);
+  return flattenReplyPages(data);
 }
 
 export function useGetTodoCommentThreadsInfiniteQueryOptions({

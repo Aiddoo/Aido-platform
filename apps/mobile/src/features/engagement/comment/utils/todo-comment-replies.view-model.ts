@@ -1,6 +1,9 @@
 import { match, P } from 'ts-pattern';
 
-import { TodoCommentPolicy, type TodoCommentThread } from '../domains/todo-comment.model';
+import {
+  type TodoCommentThread,
+  TodoCommentThreadPolicy,
+} from '../domains/todo-comment-thread.model';
 
 /** 사용자가 직접 펼쳤는지(user), 답글을 올려 앱이 펼쳤는지(auto) */
 export interface ThreadExpansion {
@@ -15,7 +18,7 @@ const COLLAPSED_VISIBLE_REPLY_COUNT = 1;
 
 /** 사용자가 직접 펼친 묶음은 답글을 올려도 그 상태를 지킨다. 그래야 사용자가 연 "답글 숨기기"가 사라지지 않는다 */
 export function expandThread(
-  current: ThreadExpansion | undefined,
+  current: ThreadExpansion | null,
   source: ThreadExpansion['source'],
 ): ThreadExpansion {
   if (current?.isExpanded === true && current.source === 'user') {
@@ -38,7 +41,7 @@ export function getReplyFooter(
 ): ReplyFooter {
   return match({
     hasNextPage,
-    hiddenCount: TodoCommentPolicy.getHiddenReplyCount(thread, loadedCount),
+    hiddenCount: TodoCommentThreadPolicy.getHiddenReplyCount(thread, loadedCount),
     source: expansion.source,
     loadedCount,
   })

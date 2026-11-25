@@ -9,7 +9,7 @@
 - `form`은 화면 → 같은 파일의 지역 단계 컴포넌트로 한 번만 내려간다. 기능 컴포넌트는 `form`·`control`을 받지 않고 `value`·`onChange`·`errorMessage`만 받는다([ui](./ui.md#컴포넌트-계약)).
 - 기능이 주는 것은 스키마(`schemas/{name}-form.schema.ts`), mapper(`to{X}Request(values)`·`to{X}FormValues(model)`), mutation 옵션, 오류 판별과 칸 매핑(`domains/{feature}.error.ts`), 입력 부품이다. 화면은 이것을 잇기만 한다.
 - 값을 잇기만 하는 감싸는 훅(`useWatch` + `setValue`를 감싼 `useImportRange(form)` 같은 것)과 `FormProvider`·`useFormContext`를 만들지 않는다. RHF·Zod·`zodResolver`를 그대로 쓴다.
-  - 예외는 할 일 댓글 세션 하나다(`TodoCommentFormProvider`·`useTodoCommentForm`). 가상 목록 깊은 곳의 댓글·답글 행 메뉴, 작성 바, 뒤로 가기 확인이 화면 하나의 작성기를 함께 읽고 바꿔, props로 내리면 목록 여러 층을 거치는 드릴링이 된다. 세션(`todo-comment-session.tsx`)이 폼을 소유하고 이 Context로만 나눈다.
+  - 예외는 할 일 댓글 세션 하나다(`TodoCommentFormProvider`·`useTodoCommentForm`). 가상 목록 깊은 곳의 댓글·답글 행 메뉴, 작성 바, 뒤로 가기 확인이 화면 하나의 작성기를 함께 읽고 바꿔, props로 내리면 목록 여러 층을 거치는 드릴링이 된다. 세션(`todo-comment-pane.tsx`의 `TodoCommentSession`)이 폼을 소유하고 이 Context로만 나눈다.
 - 생성과 수정은 스키마와 입력 부품만 공유하고 제출은 각자 소유한다. 공통 부품에 `mode`·`onSubmit` 분기를 넘기지 않는다.
 
 ```tsx

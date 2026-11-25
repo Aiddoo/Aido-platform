@@ -1,4 +1,5 @@
 import type { AppStoreListingGateway } from '@src/core/ports/app-store-listing-gateway';
+import type { DeviceTraits } from '@src/core/ports/device-traits';
 import type { IdGenerator } from '@src/core/ports/id-generator';
 import type { NativeApplicationMetadataGateway } from '@src/core/ports/native-application-metadata-gateway';
 import type { NetworkStatusGateway } from '@src/core/ports/network-status-gateway';
@@ -82,6 +83,7 @@ export interface DIContainer extends SharedDependencies {
   networkStatus: NetworkStatusGateway;
   viewCapture: ViewCaptureGateway;
   screenOrientation: ScreenOrientationGateway;
+  deviceTraits: DeviceTraits;
   idGenerator: IdGenerator;
   speechRecognizer: SpeechRecognizer;
   pushNotification: PushNotificationGateway;
@@ -243,6 +245,9 @@ export function useViewCapture() {
 }
 export function useScreenOrientation() {
   return useDI().screenOrientation;
+}
+export function useDeviceTraits() {
+  return useDI().deviceTraits;
 }
 export function useIdGenerator() {
   return useDI().idGenerator;

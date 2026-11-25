@@ -1,4 +1,5 @@
 import { TODO_COMMENT_SORT, type TodoCommentSort } from '@aido/api/vocabulary';
+import { useDeviceTraits } from '@src/bootstrap/providers/di-context';
 import { useMyPendingCoachmark } from '@src/features/device/coachmark/hooks/use-my-pending-coachmark';
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { invalidateTodoDetails } from '@src/features/planning/todo/queries/todo-cache';
@@ -8,6 +9,7 @@ import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useIsAnimationActive } from '@src/shared/hooks/use-is-animation-active';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
+import { useKeyboardBottomGap } from '@src/shared/providers/keyboard-bottom-gap-provider';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import {
   ArrowRightIcon,
@@ -28,25 +30,23 @@ import {
 import { useAppToast } from '@src/shared/ui';
 import { formatCompactCount } from '@src/shared/utils/number-format';
 import {
+  useInfiniteQuery,
   useMutation,
   useQuery,
   useQueryClient,
   useSuspenseInfiniteQuery,
 } from '@tanstack/react-query';
 import { noop, range } from 'es-toolkit';
+import { useIsFocused } from 'expo-router';
 import { Menu, type MenuKey, PressableFeedback, Separator, Spinner } from 'heroui-native';
-import {
-  type ComponentProps,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from 'react';
+import { type ComponentProps, type Ref, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { type ScrollViewProps, StyleSheet } from 'react-native';
+import { KeyboardChatScrollView } from 'react-native-keyboard-controller';
+import type Reanimated from 'react-native-reanimated';
 import Animated, {
   cancelAnimation,
   useAnimatedStyle,
+  useDerivedValue,
   useSharedValue,
   withDelay,
   withRepeat,
@@ -55,21 +55,22 @@ import Animated, {
 } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-import { TODO_COMMENT_HIGHLIGHT_DURATION_MS } from '../constants/todo-comment.constants';
 import {
-  TodoCommentPolicy,
   type TodoCommentThread,
   type TodoCommentThreadAnchor,
-} from '../domains/todo-comment.model';
+  TodoCommentThreadPolicy,
+} from '../domains/todo-comment-thread.model';
 import { useTodoCommentParams, useTodoCommentSort } from '../hooks/use-todo-comment-params';
-import { invalidateTodoComments } from '../queries/todo-comment-cache';
+import { ensureTodoCommentReplies, invalidateTodoComments } from '../queries/todo-comment-cache';
 import { usePrefetchTodoCommentThreadsMutationOptions } from '../queries/todo-comment.mutations';
-import { useGetTodoCommentThreadsInfiniteQueryOptions } from '../queries/todo-comment.queries';
+import {
+  useGetTodoCommentRepliesInfiniteQueryOptions,
+  useGetTodoCommentThreadsInfiniteQueryOptions,
+} from '../queries/todo-comment.queries';
+import { getReplyFooter } from '../utils/todo-comment-replies.view-model';
+import { useThreadExpansion } from './todo-comment-expansion';
 import { TodoCommentItem } from './todo-comment-item';
-import { TodoCommentKeyboardScrollView } from './todo-comment-keyboard-scroll-view';
-import { TodoCommentReplies } from './todo-comment-replies';
 import { useTodoCommentReveal } from './todo-comment-reveal';
-import { TodoCommentRailRow } from './todo-comment-thread-rail';
 import { TodoDetailSummary } from './todo-detail-summary';
 
 const SORT_MENU_WIDTH = 208;
@@ -79,10 +80,6 @@ const HINT_HEART_SIZE = 20;
 const HINT_PULSE = { delayMs: 1_200, peakScale: 1.28 } as const;
 
 const styles = StyleSheet.create({ fallbackScrollView: { flex: 1 } });
-
-function getThreadKey(thread: TodoCommentThread) {
-  return thread.comment.id;
-}
 
 type ThreadListProps = ComponentProps<typeof InfiniteList<TodoCommentThread>>;
 
@@ -103,15 +100,12 @@ type TodoCommentThreadListProps = Omit<
   | 'extraData'
 >;
 
-function renderThreadListScrollView(props: ScrollViewProps) {
-  return <TodoCommentKeyboardScrollView {...props} />;
-}
-
 /**
  * 할 일 상세의 댓글 묶음 목록. 바깥 스크롤은 키보드를 따라가는 하나뿐이고 묶음 행만 가상화한다.
  * 알림으로 연 댓글은 그 위치가 든 페이지를 받아 그 묶음으로 옮기고 잠깐 강조한다.
  */
-export function TodoCommentThreadList(listProps: TodoCommentThreadListProps) {
+export function TodoCommentThreadList(props: TodoCommentThreadListProps) {
+  const { t } = useTranslation('todoComment');
   const [todoId] = useTodoId();
   const [{ sort, comment }] = useTodoCommentParams();
   const queryClient = useQueryClient();
@@ -124,33 +118,26 @@ export function TodoCommentThreadList(listProps: TodoCommentThreadListProps) {
     }),
   );
   const { threads, anchor } = threadsQuery.data;
-  const [isRefreshing, handleRefresh] = useRefresh(
-    useCallback(
-      () =>
-        Promise.all([
-          invalidateTodoDetails(queryClient, { todoId }),
-          invalidateTodoComments(queryClient, { todoId }),
-        ]),
-      [queryClient, todoId],
-    ),
+  const [isRefreshing, handleRefresh] = useRefresh(() =>
+    Promise.all([
+      invalidateTodoDetails(queryClient, { todoId }),
+      invalidateTodoComments(queryClient, { todoId }),
+    ]),
   );
-  const isHighlightActive = useScrollToAnchor({ threads, anchor });
+  useScrollToAnchor({ threads, anchor });
   useScrollToTopOnSortChange(sort);
-  const renderItem = useCallback(
-    ({ item }: { item: TodoCommentThread }) => (
-      <ThreadRow thread={item} anchor={anchor} isHighlightActive={isHighlightActive} />
-    ),
-    [anchor, isHighlightActive],
+  // 강조는 행이 자기 댓글 것만 구독해, 켜지고 꺼져도 이 함수와 목록은 그대로다
+  const renderItem = ({ item }: { item: TodoCommentThread }) => (
+    <TodoCommentThreadList.Item thread={item} anchor={anchor} />
   );
 
   return (
     <InfiniteList
-      {...listProps}
+      {...props}
       ref={listRef}
       // 알림으로 연 댓글이 바뀌면 새 위치로 처음부터 그린다. 정렬은 미리 받은 목록이라 다시 마운트하지 않는다(FlashList가 다시 재는 동안 행이 빈다)
-      key={`${todoId}:${comment ?? ''}`}
+      key={[todoId, comment].join(':')}
       data={threads}
-      extraData={isHighlightActive ? anchor : null}
       keyExtractor={getThreadKey}
       renderItem={renderItem}
       renderScrollComponent={renderThreadListScrollView}
@@ -160,7 +147,8 @@ export function TodoCommentThreadList(listProps: TodoCommentThreadListProps) {
           <TodoCommentThreadList.Header />
           {threads.length > 0 && <DoubleTapHint className="mx-4 mt-3 mb-1" />}
           {threadsQuery.hasPreviousPage && (
-            <LoadPrevious
+            <TodoCommentItem.More
+              label={t('list.loadPrevious')}
               isLoading={threadsQuery.isFetchingPreviousPage}
               onPress={() => {
                 threadsQuery.fetchPreviousPage().catch(noop);
@@ -300,12 +288,159 @@ TodoCommentThreadList.SortBar = function SortBar({
   );
 };
 
+interface TodoCommentThreadListItemProps {
+  thread: TodoCommentThread;
+  anchor: TodoCommentThreadAnchor | null;
+}
+
+/** 한 묶음: 댓글과 그 답글. 목록이 행을 재활용해도 메뉴·좋아요 상태가 다른 댓글로 넘어가지 않게 댓글마다 key로 새로 만든다. 연결선은 댓글 아바타 아래에서 마지막 답글(또는 더 보기)까지 이어진다 */
+TodoCommentThreadList.Item = function Item({ thread, anchor }: TodoCommentThreadListItemProps) {
+  const hasReplies = TodoCommentThreadPolicy.hasRepliesToShow(thread);
+
+  return (
+    <VStack pb={8} testID={`todo-comment-thread-${thread.comment.id}`}>
+      <TodoCommentItem key={thread.comment.id} comment={thread.comment} hasReplies={hasReplies} />
+      {hasReplies && (
+        <TodoCommentThreadList.Replies key={thread.comment.id} thread={thread} anchor={anchor} />
+      )}
+    </VStack>
+  );
+};
+
+/**
+ * 한 묶음의 답글. 접혀 있으면 서버가 고른 대표 답글 하나와 "답글 N개 더 보기"를, 펼치면 그 자리에서 답글 페이지를
+ * 이어 붙인다. 위 행은 움직이지 않고 아래로만 늘어난다.
+ */
+TodoCommentThreadList.Replies = function Replies({
+  thread,
+  anchor,
+}: TodoCommentThreadListItemProps) {
+  const { t } = useTranslation('todoComment');
+  const { resolvedLanguage } = useLanguage();
+  const { todoId } = thread.comment;
+  const { trackEvent } = useTrack();
+  const anchoredReplyId = TodoCommentThreadPolicy.findAnchoredReplyId(thread, anchor);
+  // 알림으로 연 답글은 사용자가 보려고 고른 것이라 직접 펼친 것으로 본다
+  const [expansion, setExpansion] = useThreadExpansion(thread.comment.id, {
+    isExpanded: anchoredReplyId != null,
+    source: 'user',
+  });
+  const queryClient = useQueryClient();
+  const repliesOptions = useGetTodoCommentRepliesInfiniteQueryOptions({
+    todoId,
+    commentId: thread.comment.id,
+    aroundReplyId: anchoredReplyId,
+    isEnabled: expansion.isExpanded,
+  });
+  const repliesQuery = useInfiniteQuery(repliesOptions);
+  const replies = repliesQuery.data;
+
+  const formatCount = (count: number) => ({
+    count,
+    formatted: formatCompactCount(count, resolvedLanguage),
+  });
+  // 펼친 뒤 실제로 불러온 답글 수를 페이지가 도착한 다음에 보낸다
+  const trackLoadedCount = (loadedCount: number) =>
+    trackEvent('todo_comment_replies_expanded', { todo_id: todoId, loaded_count: loadedCount });
+
+  if (!expansion.isExpanded) {
+    const preview = thread.previewReply;
+    const hiddenCount = TodoCommentThreadPolicy.getCollapsedHiddenReplyCount(thread);
+
+    return (
+      <VStack>
+        {preview != null && (
+          <TodoCommentItem key={preview.id} comment={preview} isLast={hiddenCount === 0} />
+        )}
+        {hiddenCount > 0 && (
+          <TodoCommentItem.More
+            isReply
+            label={t(
+              preview == null ? 'replies.view' : 'replies.viewMore',
+              formatCount(hiddenCount),
+            )}
+            onPress={() => {
+              setExpansion({ isExpanded: true, source: 'user' });
+              ensureTodoCommentReplies(queryClient, repliesOptions)
+                .then((loadedReplies) => trackLoadedCount(loadedReplies.length))
+                .catch(noop);
+            }}
+          />
+        )}
+      </VStack>
+    );
+  }
+
+  if (replies == null) {
+    return repliesQuery.isError ? (
+      <TodoCommentItem.More
+        isReply
+        label={t('replies.retry')}
+        onPress={() => {
+          repliesQuery.refetch().catch(noop);
+        }}
+      />
+    ) : (
+      <TodoCommentItem.Loading isReply />
+    );
+  }
+
+  const { hasNextPage, hasPreviousPage, isFetchingNextPage } = repliesQuery;
+  const viewMoreLabel = t(
+    'replies.viewMore',
+    formatCount(TodoCommentThreadPolicy.getHiddenReplyCount(thread, replies.length)),
+  );
+  const footer = getReplyFooter(thread, { loadedCount: replies.length, hasNextPage, expansion });
+  const lastReplyId = footer === 'none' && !isFetchingNextPage ? replies.at(-1)?.id : null;
+
+  return (
+    <VStack>
+      {hasPreviousPage && (
+        <TodoCommentItem.More
+          isReply
+          isConnectedBelow
+          label={viewMoreLabel}
+          onPress={() => {
+            repliesQuery.fetchPreviousPage().catch(noop);
+          }}
+        />
+      )}
+      {replies.map((reply) => (
+        <TodoCommentItem key={reply.id} comment={reply} isLast={reply.id === lastReplyId} />
+      ))}
+      {isFetchingNextPage ? (
+        <TodoCommentItem.Loading isReply />
+      ) : (
+        match(footer)
+          .with('viewMore', () => (
+            <TodoCommentItem.More
+              isReply
+              label={viewMoreLabel}
+              onPress={() => {
+                repliesQuery
+                  .fetchNextPage()
+                  .then((result) => trackLoadedCount(result.data?.length ?? replies.length))
+                  .catch(noop);
+              }}
+            />
+          ))
+          .with('hide', () => (
+            <TodoCommentItem.More
+              isReply
+              label={t('replies.hide')}
+              onPress={() => setExpansion({ isExpanded: false, source: 'user' })}
+            />
+          ))
+          .with('none', () => null)
+          .exhaustive()
+      )}
+    </VStack>
+  );
+};
+
 TodoCommentThreadList.Loading = function Loading() {
   return (
-    <TodoCommentKeyboardScrollView
-      style={styles.fallbackScrollView}
-      showsVerticalScrollIndicator={false}
-    >
+    <KeyboardScrollView style={styles.fallbackScrollView} showsVerticalScrollIndicator={false}>
       {/* oxlint-disable-next-line aido/spacing-scale -- 할 일 상세 머리 세로 여백. 규격 단계 사이 18px을 쓴다 */}
       <Box px={16} py={18}>
         <TodoDetailSummary.Loading />
@@ -314,12 +449,10 @@ TodoCommentThreadList.Loading = function Loading() {
       <TodoCommentThreadList.Toolbar />
       <VStack testID="todo-comment-thread-list-loading">
         {range(LOADING_ROW_COUNT).map((index) => (
-          <TodoCommentRailRow key={index} kind={{ type: 'comment', hasReplies: false }}>
-            <TodoCommentItem.Loading />
-          </TodoCommentRailRow>
+          <TodoCommentItem.Loading key={index} />
         ))}
       </VStack>
-    </TodoCommentKeyboardScrollView>
+    </KeyboardScrollView>
   );
 };
 
@@ -327,15 +460,12 @@ TodoCommentThreadList.Error = function ErrorFallback({ reset }: QueryErrorFallba
   const { t } = useTranslation('todoComment');
 
   return (
-    <TodoCommentKeyboardScrollView
-      style={styles.fallbackScrollView}
-      showsVerticalScrollIndicator={false}
-    >
+    <KeyboardScrollView style={styles.fallbackScrollView} showsVerticalScrollIndicator={false}>
       <TodoCommentThreadList.Header />
       <HStack flex={1} justify="center" align="center" py={32}>
         <QueryErrorFallback title={t('list.loadFailed')} reset={reset} />
       </HStack>
-    </TodoCommentKeyboardScrollView>
+    </KeyboardScrollView>
   );
 };
 
@@ -367,56 +497,6 @@ function CommentCount() {
         </Text>
       )}
     </HStack>
-  );
-}
-
-/** 한 묶음: 댓글과 그 답글. 목록이 행을 재활용해도 메뉴·좋아요 상태가 다른 댓글로 넘어가지 않게 댓글마다 key로 새로 만든다. 연결선은 댓글 아바타 아래에서 마지막 답글(또는 더 보기)까지 이어진다 */
-function ThreadRow({
-  thread,
-  anchor,
-  isHighlightActive,
-}: {
-  thread: TodoCommentThread;
-  anchor: TodoCommentThreadAnchor | null;
-  isHighlightActive: boolean;
-}) {
-  const hasReplies = TodoCommentPolicy.hasRepliesToShow(thread);
-  const isAnchoredComment =
-    isHighlightActive && anchor?.threadCommentId === thread.comment.id && anchor.replyId == null;
-
-  return (
-    <VStack pb={8} testID={`todo-comment-thread-${thread.comment.id}`}>
-      <TodoCommentRailRow kind={{ type: 'comment', hasReplies }} isHighlighted={isAnchoredComment}>
-        <TodoCommentItem key={thread.comment.id} comment={thread.comment} />
-      </TodoCommentRailRow>
-      {hasReplies && (
-        <TodoCommentReplies
-          key={thread.comment.id}
-          thread={thread}
-          anchor={anchor}
-          isHighlightActive={isHighlightActive}
-        />
-      )}
-    </VStack>
-  );
-}
-
-function LoadPrevious({ isLoading, onPress }: { isLoading: boolean; onPress: () => void }) {
-  const { t } = useTranslation('todoComment');
-
-  return (
-    <PressableFeedback
-      className="min-h-11 flex-row items-center justify-center gap-2"
-      isDisabled={isLoading}
-      accessibilityRole="button"
-      accessibilityState={{ busy: isLoading }}
-      onPress={onPress}
-    >
-      {isLoading && <Spinner size="sm" />}
-      <Text size="e1" shade={7} weight="medium">
-        {t('list.loadPrevious')}
-      </Text>
-    </PressableFeedback>
   );
 }
 
@@ -481,6 +561,61 @@ function PulsingHeart() {
   );
 }
 
+interface KeyboardScrollViewProps extends Omit<
+  ComponentProps<typeof KeyboardChatScrollView>,
+  | 'ref'
+  | 'automaticallyAdjustContentInsets'
+  | 'contentInsetAdjustmentBehavior'
+  | 'keyboardDismissMode'
+  | 'keyboardShouldPersistTaps'
+  | 'freeze'
+  | 'extraContentPadding'
+  | 'blankSpace'
+> {
+  ref?: Ref<Reanimated.ScrollView>;
+}
+
+/** 목록과 받기 전·실패 화면이 함께 쓰는 스크롤. 키보드를 따라 올라가고 작성기가 커진 만큼 끝을 더 올린다 */
+function KeyboardScrollView({
+  keyboardLiftBehavior = 'whenAtEnd',
+  onLayout,
+  onContentSizeChange,
+  ...props
+}: KeyboardScrollViewProps) {
+  const keyboardBottomGap = useKeyboardBottomGap();
+  const { hasKeyboardInsetAnimation } = useDeviceTraits();
+  const { extraContentPadding } = useTodoCommentReveal();
+  // 대화를 push한 동안 아래에 남은 개요가 위 화면의 키보드에 반응하면 돌아왔을 때 스크롤 위치가 밀린다.
+  const isScreenFocused = useIsFocused();
+  const viewportHeight = useSharedValue(0);
+  const contentHeight = useSharedValue(0);
+  // 내용이 짧으면 아래 빈자리가 키보드를 받아 내, 첫 댓글을 쓸 때 할 일이 화면 밖으로 밀리지 않는다.
+  const blankSpace = useDerivedValue(() => Math.max(0, viewportHeight.get() - contentHeight.get()));
+
+  return (
+    <KeyboardChatScrollView
+      {...props}
+      onLayout={(event) => {
+        viewportHeight.set(event.nativeEvent.layout.height);
+        onLayout?.(event);
+      }}
+      onContentSizeChange={(width, height) => {
+        contentHeight.set(height);
+        onContentSizeChange?.(width, height);
+      }}
+      blankSpace={blankSpace}
+      automaticallyAdjustContentInsets={false}
+      contentInsetAdjustmentBehavior="never"
+      keyboardDismissMode={getKeyboardDismissMode(hasKeyboardInsetAnimation)}
+      keyboardShouldPersistTaps="handled"
+      keyboardLiftBehavior={keyboardLiftBehavior}
+      offset={keyboardBottomGap}
+      extraContentPadding={extraContentPadding}
+      freeze={!isScreenFocused}
+    />
+  );
+}
+
 /** 새 정렬의 첫 페이지를 먼저 받아 두고 바꿔 목록이 skeleton으로 깜박이지 않게 한다 */
 function useSortChange() {
   const [todoId] = useTodoId();
@@ -513,20 +648,16 @@ function useScrollToTopOnSortChange(sort: TodoCommentSort) {
   }, [listRef, sort]);
 }
 
-/**
- * 알림으로 연 묶음으로 한 번만 옮기고, 그 행의 강조도 그 한 번의 시간 동안만 켠다. 그 글이 사라졌으면 알리고 목록 맨 위를 보인다.
- * 행이 재활용되어 다시 그려져도 강조와 올림이 되풀이되지 않게 켜짐 여부를 목록이 소유한다
- */
+/** 알림으로 연 묶음으로 한 번만 옮기고 그 글을 잠깐 강조한다. 그 글이 사라졌으면 알리고 목록 맨 위를 보인다 */
 function useScrollToAnchor({
   threads,
   anchor,
 }: {
   threads: readonly TodoCommentThread[];
   anchor: TodoCommentThreadAnchor | null;
-}): boolean {
+}) {
   const [{ comment }] = useTodoCommentParams();
-  const { listRef } = useTodoCommentReveal();
-  const [isHighlightActive, setIsHighlightActive] = useState(false);
+  const { listRef, highlight, clearHighlight } = useTodoCommentReveal();
   const toast = useAppToast();
   const { t } = useTranslation('todoComment');
   const handledCommentRef = useRef<string | null>(null);
@@ -538,31 +669,40 @@ function useScrollToAnchor({
     handledCommentRef.current = comment;
 
     if (anchor == null) {
+      // 앞서 연 위치의 강조가 남아 있으면 남은 시간을 기다리지 않고 끈다
+      clearHighlight();
       toast.warning(t('toasts.anchorMissing'));
 
       return;
     }
 
-    // oxlint-disable-next-line react/set-state-in-effect -- URL로 들어온 댓글을 처음 맞을 때 한 번만 강조를 켠다
-    setIsHighlightActive(true);
+    highlight(anchor.replyId ?? anchor.threadCommentId);
     const index = threads.findIndex((thread) => thread.comment.id === anchor.threadCommentId);
     if (index >= 0) {
       listRef.current
         ?.scrollToIndex({ index, viewPosition: ANCHOR_VIEW_POSITION, animated: true })
         .catch(noop);
     }
-  }, [anchor, comment, listRef, t, threads, toast]);
+  }, [anchor, clearHighlight, comment, highlight, listRef, t, threads, toast]);
+}
 
-  useEffect(() => {
-    if (!isHighlightActive) {
-      return;
-    }
-    const timer = setTimeout(() => setIsHighlightActive(false), TODO_COMMENT_HIGHLIGHT_DURATION_MS);
+function getThreadKey(thread: TodoCommentThread) {
+  return thread.comment.id;
+}
 
-    return () => clearTimeout(timer);
-  }, [isHighlightActive]);
+function renderThreadListScrollView(props: ScrollViewProps) {
+  return <KeyboardScrollView {...props} />;
+}
 
-  return isHighlightActive;
+/** iOS는 목록을 끄는 손가락을 키보드가 따라 내려간다. Android는 제스처 영역이 맡고, 인셋 애니메이션이 없는 기기는 끌기 시작하면 닫는다 */
+function getKeyboardDismissMode(
+  hasKeyboardInsetAnimation: boolean,
+): 'interactive' | 'on-drag' | 'none' {
+  if (process.env.EXPO_OS === 'ios') {
+    return 'interactive';
+  }
+
+  return hasKeyboardInsetAnimation ? 'none' : 'on-drag';
 }
 
 function toSort(key: MenuKey | undefined): TodoCommentSort | null {

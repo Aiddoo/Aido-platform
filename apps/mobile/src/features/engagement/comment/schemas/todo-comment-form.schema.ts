@@ -2,20 +2,18 @@ import { todoCommentContentSchema } from '@aido/api/contracts/todo-comment/v1';
 import { TODO_COMMENT_LIMITS } from '@aido/api/vocabulary';
 import { z } from 'zod';
 
+import {
+  type TodoCommentComposer,
+  todoCommentComposerSchema,
+} from '../domains/todo-comment-composer.model';
 import type { TodoComment } from '../domains/todo-comment.model';
 
-// 고른 댓글은 서버가 준 값을 그대로 들고 있어 다시 읽지 않는다. 입력과 출력의 타입을 같게 둔다
-const todoCommentTargetSchema = z.custom<TodoComment>();
-
-const todoCommentComposerModeSchema = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('new') }),
-  z.object({ type: z.literal('reply'), target: todoCommentTargetSchema }),
-  z.object({ type: z.literal('edit'), target: todoCommentTargetSchema }),
-]);
-export type TodoCommentComposerMode = z.infer<typeof todoCommentComposerModeSchema>;
-
 export const todoCommentFormSchema = z.object({
-  mode: todoCommentComposerModeSchema,
+  // 모델 스키마로 검사만 하고 값은 그대로 둔다. 시각 칸의 brand가 출력 타입에만 붙어, 스키마를 그대로 넣으면 폼이 읽는 값(입력 타입)을
+  // Policy에 넘길 수 없고 고른 댓글이 검사할 때마다 사본으로 바뀐다
+  mode: z.custom<TodoCommentComposer>(
+    (value) => todoCommentComposerSchema.safeParse(value).success,
+  ),
   items: z
     .array(z.object({ content: todoCommentContentSchema }))
     .min(1)
@@ -35,5 +33,8 @@ export function toReplyFormValues(target: TodoComment): TodoCommentFormValues {
 }
 
 export function toEditFormValues(target: TodoComment): TodoCommentFormValues {
-  return { mode: { type: 'edit', target }, items: [{ content: target.content ?? '' }] };
+  return {
+    mode: { type: 'edit', target },
+    items: target.content == null ? EMPTY_ITEMS : [{ content: target.content }],
+  };
 }

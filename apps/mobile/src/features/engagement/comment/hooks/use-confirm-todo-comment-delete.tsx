@@ -5,11 +5,11 @@ import { useMutation } from '@tanstack/react-query';
 import { createContext, type PropsWithChildren, use } from 'react';
 import { match } from 'ts-pattern';
 
+import { TodoCommentComposerPolicy } from '../domains/todo-comment-composer.model';
 import { isTodoCommentUnavailableError } from '../domains/todo-comment.error';
 import { type TodoComment, TodoCommentPolicy } from '../domains/todo-comment.model';
 import { useDeleteTodoCommentMutationOptions } from '../queries/todo-comment.mutations';
 import { EMPTY_TODO_COMMENT_FORM_VALUES } from '../schemas/todo-comment-form.schema';
-import { findComposerTarget } from '../utils/todo-comment-form.view-model';
 import { useTodoCommentForm } from './use-todo-comment-form';
 
 type ConfirmTodoCommentDelete = (comment: TodoComment) => Promise<void>;
@@ -47,7 +47,7 @@ export function TodoCommentDeleteProvider({ children }: PropsWithChildren) {
       cancelLabel: t('common:actions.cancel'),
       onConfirm: async () => {
         // 답글이나 수정 대상으로 고른 글을 지우면 작성기가 지운 글에 보내지 않게 비운다
-        if (findComposerTarget(getValues('mode'))?.id === comment.id) {
+        if (TodoCommentComposerPolicy.findTarget(getValues('mode'))?.id === comment.id) {
           reset(EMPTY_TODO_COMMENT_FORM_VALUES);
         }
         try {

@@ -1224,12 +1224,6 @@
       }
     },
     {
-      "files": ["src/features/engagement/comment/hooks/use-todo-comment-params.ts"],
-      "rules": {
-        "aido/no-router-push": "off"
-      }
-    },
-    {
       // 원시 setParams는 params 훅에서만 꺼낸다. 펼친 피드의 할 일 선택은 칸 크기와 함께 이름 있는 setter를 만든다
       "files": ["src/**/*.{ts,tsx}", "app/**/*.{ts,tsx}"],
       "excludeFiles": [
@@ -1398,7 +1392,6 @@
       "files": [
         "src/features/billing/subscription/**",
         "src/features/device/widget/**",
-        "src/features/engagement/comment/**",
         "src/features/planning/todo/**",
         "src/features/social/invite/**",
         "src/features/social/moderation/**",

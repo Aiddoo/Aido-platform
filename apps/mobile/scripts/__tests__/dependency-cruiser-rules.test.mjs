@@ -5,7 +5,7 @@ import test from 'node:test';
 
 const require = createRequire(import.meta.url);
 const { forbidden } = require('../../.dependency-cruiser.cjs');
-const { findLocalOnlyFiles } = require('../feature-graph.cjs');
+const { findLocalOnlyFiles, findStaleLocalOnlyAllowances } = require('../feature-graph.cjs');
 
 function toPatterns(value) {
   return [value ?? []].flat().map((pattern) => new RegExp(pattern));
@@ -336,5 +336,36 @@ test('컴포넌트·훅 하나만 쓰고 자체 테스트가 없는 기능 파�
   assert.deepEqual(
     warnings.map((warning) => warning.split(':')[0]),
     ['src/features/social/friend/components/friend-badge.tsx'],
+  );
+});
+
+test('이유를 적어 둔 파일은 한 곳만 써도 경고하지 않고, 더는 해당하지 않으면 지우라고 알린다', () => {
+  // Given
+  const importer = 'src/features/social/friend/components/friend-list.tsx';
+  const kept = 'src/features/social/friend/components/friend-burst.tsx';
+  const shared = 'src/features/social/friend/components/friend-chart.tsx';
+  const removed = 'src/features/social/friend/components/friend-gone.tsx';
+  const modules = [
+    { source: kept, dependents: [importer] },
+    {
+      source: shared,
+      dependents: [importer, 'src/features/social/friend/components/friend-search.tsx'],
+    },
+  ];
+  const allowed = {
+    [kept]: '스스로 완결된 그리기 부품',
+    [shared]: '낡은 이유',
+    [removed]: '낡은 이유',
+  };
+
+  // When
+  const warnings = findLocalOnlyFiles(modules, allowed);
+  const stale = findStaleLocalOnlyAllowances(modules, allowed);
+
+  // Then
+  assert.deepEqual(warnings, []);
+  assert.deepEqual(
+    stale.map((error) => error.split(':')[0]),
+    [shared, removed],
   );
 });

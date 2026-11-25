@@ -7,6 +7,7 @@ import type { AppStoreListingGateway } from '@src/core/ports/app-store-listing-g
 import type { AppStoreReviewGateway } from '@src/core/ports/app-store-review-gateway';
 import type { ClipboardGateway } from '@src/core/ports/clipboard-gateway';
 import type { DeviceIdStore } from '@src/core/ports/device-id-store';
+import type { DeviceTraits } from '@src/core/ports/device-traits';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import type { ExternalLinkGateway } from '@src/core/ports/external-link-gateway';
 import type { HapticsGateway } from '@src/core/ports/haptics-gateway';
@@ -159,6 +160,7 @@ export interface AppContainerPorts {
   networkStatus: NetworkStatusGateway;
   viewCapture: ViewCaptureGateway;
   screenOrientation: ScreenOrientationGateway;
+  deviceTraits: DeviceTraits;
   deviceLocation: LocationGateway;
   todoImportSource: TodoImportSource;
   applicationMetadata: NativeApplicationMetadataGateway;
@@ -300,6 +302,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     networkStatus: ports.networkStatus,
     viewCapture: ports.viewCapture,
     screenOrientation: ports.screenOrientation,
+    deviceTraits: ports.deviceTraits,
     idGenerator: ports.idGenerator,
     speechRecognizer: ports.speechRecognizer,
     pushNotification,

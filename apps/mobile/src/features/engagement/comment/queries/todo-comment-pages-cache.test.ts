@@ -3,13 +3,16 @@ import {
   createTodoCommentReply,
   createTodoCommentThread,
 } from '../__tests__/todo-comment.fixtures';
-import type { TodoComment, TodoCommentThread } from '../domains/todo-comment.model';
+import type { TodoCommentThread } from '../domains/todo-comment-thread.model';
+import type { TodoComment } from '../domains/todo-comment.model';
 import {
   addRepliesToThreadPages,
   appendRepliesToReplyPages,
   findCommentInReplyPages,
   findCommentInThreadPages,
   findThreadPlacement,
+  flattenReplyPages,
+  flattenThreadPages,
   getNextTodoCommentPageParam,
   getPreviousTodoCommentPageParam,
   patchCommentInThreadPages,
@@ -61,6 +64,31 @@ describe('todo-comment-pages-cache', () => {
 
     // Then
     expect(params).toEqual([undefined, 'prev']);
+  });
+
+  it('여러 페이지에 걸친 같은 묶음은 한 번만 보인다', () => {
+    // Given
+    const thread = createTodoCommentThread();
+
+    // When
+    const threads = flattenThreadPages(threadPages([thread], [thread]));
+
+    // Then
+    expect(threads).toHaveLength(1);
+  });
+
+  it('먼저 붙인 새 답글은 남은 페이지를 받으면 작성 순 자리로 옮겨 간다', () => {
+    // Given
+    const head = createTodoComment();
+    const older = createTodoCommentReply(head, { id: 'older' });
+    const posted = createTodoCommentReply(head, { id: 'posted' });
+    const first = createTodoCommentReply(head, { id: 'first' });
+
+    // When
+    const replies = flattenReplyPages(replyPages(false, [first, posted], [older, posted]));
+
+    // Then
+    expect(replies.map((reply) => reply.id)).toEqual(['first', 'older', 'posted']);
   });
 
   it('댓글 하나만 바꾸고 나머지 묶음은 그대로 둔다', () => {
@@ -124,6 +152,21 @@ describe('todo-comment-pages-cache', () => {
     // Then
     expect(next?.pages[0]?.items).toEqual([second]);
     expect(findCommentInReplyPages(next, 'r2')).toBe(second);
+  });
+
+  it('펼친 답글 목록에 없는 답글을 지우면 내용이 같은 목록을 돌려준다', () => {
+    // Given
+    const head = createTodoComment();
+    const data = replyPages(false, [
+      createTodoCommentReply(head, { id: 'reply-1' }),
+      createTodoCommentReply(head, { id: 'reply-2' }),
+    ]);
+
+    // When
+    const next = removeCommentFromReplyPages(data, 'reply-unknown');
+
+    // Then
+    expect(next).toEqual(data);
   });
 
   it('방금 쓴 답글은 남은 페이지가 있어도 마지막 페이지 끝에 붙는다', () => {

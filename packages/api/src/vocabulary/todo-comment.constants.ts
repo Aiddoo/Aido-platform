@@ -1,4 +1,4 @@
-/** 스레드 깊이에는 상한이 없다. 대화 조회는 평탄한 커서 페이지로 크기를 제한한다. */
+/** 깊이는 댓글·답글 두 단이다. 답글에 단 답글도 같은 묶음 끝에 붙고, 조회는 커서 페이지로 크기를 제한한다. */
 export const TODO_COMMENT_LIMITS = {
   CONTENT_MAX_LENGTH: 500,
   DEFAULT_PAGE_SIZE: 30,

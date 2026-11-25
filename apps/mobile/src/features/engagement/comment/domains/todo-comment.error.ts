@@ -18,13 +18,9 @@ export function isWarnedTodoCommentError(error: unknown): boolean {
   return isTodoCommentUnavailableError(error) || isTodoCommentRateLimitedError(error);
 }
 
-/** 같은 글을 다시 보내도 같은 결과인 4xx다 */
+/** 서버가 거절해 같은 글을 다시 보내도 같은 결과다. 4xx만 ApiError로 오고 5xx·연결 실패는 던져진 다른 오류다 */
 export function isTodoCommentRejectedError(error: unknown): error is ApiError {
-  return (
-    isApiError(error) &&
-    HttpStatus.BAD_REQUEST <= error.status &&
-    error.status < HttpStatus.INTERNAL_SERVER_ERROR
-  );
+  return isApiError(error);
 }
 
 /** 로그에 남길 서버 응답 코드. 서버 오류가 아니면 없다 */
