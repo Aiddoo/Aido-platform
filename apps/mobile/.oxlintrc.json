@@ -1352,19 +1352,7 @@
     },
     {
       // 래칫
-      "files": [
-        "app/**",
-        "src/bootstrap/**",
-        "src/features/billing/subscription/**",
-        "src/features/device/app-icon/**",
-        "src/features/identity/auth/**",
-        "src/features/notification/**",
-        "src/features/planning/todo/**",
-        "src/features/social/friend/**",
-        "src/features/social/nudge/**",
-        "src/features/voice/**",
-        "src/features/weather/**"
-      ],
+      "files": ["app/**", "src/features/social/nudge/**"],
       "rules": {
         "aido/error-boundary-fallback": "off"
       }
@@ -1478,36 +1466,6 @@
       ],
       "rules": {
         "aido/component-outer-spacing": "off"
-      }
-    },
-    {
-      // 래칫
-      "files": [
-        "app/**",
-        "src/shared/**",
-        "src/features/app-config/whats-new/**",
-        "src/features/assistant/suggestion/**",
-        "src/features/billing/subscription/**",
-        "src/features/engagement/comment/**",
-        "src/features/identity/auth/**",
-        "src/features/identity/user/**",
-        "src/features/insights/achievement/**",
-        "src/features/insights/report/**",
-        "src/features/notes/memo/**",
-        "src/features/notification/**",
-        "src/features/planning/category/**",
-        "src/features/planning/todo/**",
-        "src/features/planning/todo-import/**",
-        "src/features/social/friend/**",
-        "src/features/social/invite/**",
-        "src/features/social/moderation/**",
-        "src/features/social/nudge/**",
-        "src/features/support/inquiry/**",
-        "src/features/voice/**",
-        "src/features/weather/**"
-      ],
-      "rules": {
-        "aido/no-module-router": "off"
       }
     },
     // 규칙이 처음 나오는 블록이 켜는 자리이고 뒤따르는 같은 규칙의 off 블록은 허용 경로다.

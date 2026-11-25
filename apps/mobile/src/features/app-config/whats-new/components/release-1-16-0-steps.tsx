@@ -43,7 +43,7 @@ const INTRO_CAT_SIZE = 132;
 const BUBBLE_ICON_SIZE = 18;
 
 type Release1160Step = (typeof RELEASE_1_16_0_STEPS)[number];
-type Release1160StepMap = Record<Release1160Step, object>;
+type Release1160StepMap = Record<Release1160Step, Record<string, never>>;
 
 const CHAPTER_START_STEP = {
   suggestion: 'suggestionRequest',
@@ -67,7 +67,7 @@ export function Release1160Steps() {
   const flow = useWhatsNewFlow({ release: RELEASE_1_16_0, source });
   const stepper = useStepper<Release1160StepMap>({
     id: 'whats-new-1.16.0',
-    initial: { step: 'intro', context: {} },
+    initial: { step: 'intro' },
     onStepChange: ({ step }) => flow.trackStepViewed({ step, index: getStepPosition(step) }),
   });
   const { step, history } = stepper;
@@ -76,7 +76,7 @@ export function Release1160Steps() {
   const goNext = () => {
     const next = findNextStep(step);
     if (next != null) {
-      history.push(next, {});
+      history.push(next);
     }
   };
   // 페이저 없이 현재 단계만 그리고, 옆으로 밀면 단계를 넘긴다. 움직이는 동안 React는 다시 그려지지 않는다
@@ -117,7 +117,7 @@ export function Release1160Steps() {
                 media={
                   <IntroMedia
                     analysisPeriod={analysisPeriod}
-                    onSelect={(chapter) => history.push(CHAPTER_START_STEP[chapter], {})}
+                    onSelect={(chapter) => history.push(CHAPTER_START_STEP[chapter])}
                   />
                 }
                 title={t('v1_16_0.intro.title')}

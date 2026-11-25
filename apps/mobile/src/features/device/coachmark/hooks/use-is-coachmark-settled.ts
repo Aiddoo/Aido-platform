@@ -1,5 +1,6 @@
+import { useAppWindow } from '@src/shared/hooks/use-app-window';
 import { type ComponentRef, type RefObject, useEffect, useEffectEvent, useState } from 'react';
-import { Keyboard, useWindowDimensions, type View } from 'react-native';
+import { Keyboard, type View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 /** 화면·시트·키보드가 움직이거나 탭이 바뀌는 동안에는 말풍선이 대상 자리를 잘못 재므로 이만큼 뒤에 연다 */
@@ -28,7 +29,7 @@ export function useIsCoachmarkSettled({
 }: UseIsCoachmarkSettledOptions) {
   const [keyboardMoveCount, setKeyboardMoveCount] = useState(0);
   const [isSettled, setIsSettled] = useState(false);
-  const { height: windowHeight } = useWindowDimensions();
+  const { height: windowHeight } = useAppWindow();
   // 탭 화면의 아래 안전 영역에는 떠 있는 탭 막대가 들어 있어 막대에 가린 대상도 화면 밖으로 본다
   const safeAreaInsets = useSafeAreaInsets();
 

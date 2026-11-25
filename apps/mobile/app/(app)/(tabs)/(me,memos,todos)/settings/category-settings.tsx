@@ -9,6 +9,7 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useView } from '@src/shared/hooks/use-view';
 import { useTranslation } from '@src/shared/i18n';
 import {
+  nativeIcon,
   QueryErrorBoundary,
   ReadableContent,
   SegmentTabTrigger,
@@ -16,15 +17,16 @@ import {
   StyledSafeAreaView,
   ViewTabs,
 } from '@src/shared/ui';
-import { Stack, router } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { Tabs } from 'heroui-native';
 import { Suspense } from 'react';
 import { match } from 'ts-pattern';
 
-const ADD_ICON = process.env.EXPO_OS === 'ios' ? 'plus' : Add;
+const ADD_ICON = nativeIcon({ ios: 'plus', android: Add });
 
 export default function TodoCategorySettingsScreen() {
   const { t } = useTranslation('settings');
+  const router = useRouter();
   const push = useSingleTap(router.push);
   const [view, setView] = useView('view', categorySettingsViewSchema);
   const gate = useEntitlementGate('TODO_CATEGORY', { surface: 'category_create' });

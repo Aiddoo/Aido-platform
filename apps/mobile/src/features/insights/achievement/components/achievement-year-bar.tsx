@@ -2,7 +2,7 @@ import { getIsoWeekYear } from '@src/shared/date/date-key';
 import { formatYearLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowLeftIcon,
@@ -105,9 +105,4 @@ AchievementYearBar.Step = function Step({
       onPress={handlePress}
     />
   );
-};
-
-/** 연도를 받지 못하면 배지·기록 경계가 다시 시도를 보이므로 막대는 자리를 비운다 */
-AchievementYearBar.Error = function ErrorFallback() {
-  return null;
 };

@@ -3,11 +3,12 @@ import { EmailLoginForm } from '@src/features/identity/auth/components/email-log
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { H3, ReadableContent, Spacing, TextButton, Box, Mascot } from '@src/shared/ui';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function EmailLoginScreen() {
   const { t } = useTranslation('auth');
+  const router = useRouter();
   const push = useSingleTap(router.push);
   const { right: rightInset } = useSafeAreaInsets();
 

@@ -66,7 +66,7 @@ export function ChangePasswordForm({ stepTitles }: ChangePasswordFormProps) {
       const fieldError = findPasswordFieldError(error);
       if (fieldError != null) {
         form.setError('currentPassword', fieldError);
-        stepper.history.go(-stepper.index);
+        stepper.history.backTo('currentPassword');
       }
     }
   });

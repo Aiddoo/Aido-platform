@@ -7,9 +7,9 @@ import {
   unreadCountResponseSchema,
 } from '@aido/api/contracts/notification/v1';
 import type { ErrorCodeType } from '@aido/api/errors';
-import { ApiError } from '@src/core/errors/api-error';
 import type { PushPermissionResponse } from '@src/core/ports/push-notification-gateway';
 import { fromEpochMs } from '@src/shared/date/instant';
+import { createApiError } from '@src/testing/api-error';
 import { defineFixture } from '@src/testing/fixture';
 
 import { notificationSchema } from '../domains/notification.model';
@@ -107,11 +107,10 @@ export const createNotification = defineFixture(notificationSchema, {
 export function createNotificationApiError(
   overrides?: Partial<{ code: ErrorCodeType; message: string; status: number }>,
 ) {
-  return new ApiError(
-    overrides?.code ?? 'NOTIFICATION_1001',
-    overrides?.message ?? '알림을 찾을 수 없어요',
-    overrides?.status ?? 400,
-  );
+  return createApiError(overrides?.code ?? 'NOTIFICATION_1001', {
+    message: overrides?.message ?? '알림을 찾을 수 없어요',
+    status: overrides?.status ?? 400,
+  });
 }
 
 export const createPushNotification = defineFixture(pushNotificationSchema, {

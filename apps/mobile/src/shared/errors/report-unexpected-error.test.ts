@@ -1,6 +1,5 @@
 import { ErrorCode } from '@aido/api/errors';
-import { ApiError } from '@src/core/errors/api-error';
-import { createErrorReporterStub } from '@src/testing/core';
+import { createErrorReporterStub, createApiError } from '@src/testing/core';
 
 import { NetworkError, ParseError, ServerError } from './infra-error';
 import { reportUnexpectedError } from './report-unexpected-error';
@@ -32,7 +31,7 @@ describe('reportUnexpectedError', () => {
   it.each<[string, unknown, number]>([
     ['응답 계약 위반', new ParseError('invalid'), 1],
     ['Error가 아닌 값', 'native failure', 1],
-    ['서버가 코드로 거절한 4xx', new ApiError(ErrorCode.TODO_0801, '없음', 404), 0],
+    ['서버가 코드로 거절한 4xx', createApiError(ErrorCode.TODO_0801, { message: '없음' }), 0],
     ['연결 끊김', new NetworkError(), 0],
   ])('%s는 이슈 %i건이다', (_case, error, expectedCount) => {
     // Given

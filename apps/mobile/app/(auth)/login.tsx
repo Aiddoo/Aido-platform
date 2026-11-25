@@ -17,10 +17,11 @@ import {
   TextButton,
   VStack,
 } from '@src/shared/ui';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
 
 export default function LoginScreen() {
+  const router = useRouter();
   const push = useSingleTap(router.push);
   const { t } = useTranslation(['auth', 'invite']);
 

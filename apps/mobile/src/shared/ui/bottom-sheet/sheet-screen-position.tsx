@@ -1,6 +1,7 @@
+import { useAppWindow } from '@src/shared/hooks/use-app-window';
 import { useBottomSheetAnimation } from 'heroui-native';
 import { type ComponentRef, createContext, type ReactNode, type RefObject, use } from 'react';
-import { useWindowDimensions, type View } from 'react-native';
+import { type View } from 'react-native';
 
 import { getSheetScreenPosition, type MeasuredPosition } from './get-sheet-screen-position';
 
@@ -22,7 +23,7 @@ export function SheetScreenPositionProvider({
   children,
 }: SheetScreenPositionProviderProps) {
   const { animatedPosition } = useBottomSheetAnimation();
-  const { width: windowWidth } = useWindowDimensions();
+  const { width: windowWidth } = useAppWindow();
 
   const toScreenPosition: ToScreenPosition = (position, onConverted) => {
     originRef.current?.measure((_x, _y, width, height, pageX, pageY) => {

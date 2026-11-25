@@ -1,7 +1,7 @@
 import { ErrorCode, type ErrorCodeType } from '@aido/api/errors';
-import { ApiError } from '@src/core/errors/api-error';
 import { BusinessError } from '@src/shared/errors';
 import { ServerError } from '@src/shared/errors/infra-error';
+import { createApiError } from '@src/testing/core';
 
 import {
   INVITE_ERROR_CODE,
@@ -23,7 +23,7 @@ describe('toRedeemFailureReason', () => {
     ['FOLLOW_0901', 'unknown'],
   ])('서버 오류 %s면 %s를 반환한다', (code, expected) => {
     // When
-    const result = toRedeemFailureReason(new ApiError(code, 'message', 400));
+    const result = toRedeemFailureReason(createApiError(code, { message: 'message', status: 400 }));
 
     // Then
     expect(result).toBe(expected);
@@ -49,13 +49,17 @@ describe('toRedeemFailureReason', () => {
 describe('isInviteCodeFieldError', () => {
   it.each([
     ['형식이 틀린 코드', new BusinessError(INVITE_ERROR_CODE.INVALID_CODE), true],
-    ['없는 코드(2101)', new ApiError(ErrorCode.INVITE_2101, 'x', 404), true],
-    ['바뀐 링크(2102)', new ApiError(ErrorCode.INVITE_2102, 'x', 410), true],
-    ['내 코드(2103)', new ApiError(ErrorCode.INVITE_2103, 'x', 400), true],
-    ['이미 다른 초대 수락(2104)', new ApiError(ErrorCode.INVITE_2104, 'x', 409), true],
-    ['초대 꺼짐(2105)', new ApiError(ErrorCode.INVITE_2105, 'x', 403), false],
-    ['친구 한도(2106)', new ApiError(ErrorCode.INVITE_2106, 'x', 409), false],
-    ['요청 과다(429)', new ApiError(ErrorCode.SYS_0001, 'x', 429), false],
+    ['없는 코드(2101)', createApiError(ErrorCode.INVITE_2101, { message: 'x' }), true],
+    ['바뀐 링크(2102)', createApiError(ErrorCode.INVITE_2102, { message: 'x' }), true],
+    ['내 코드(2103)', createApiError(ErrorCode.INVITE_2103, { message: 'x' }), true],
+    ['이미 다른 초대 수락(2104)', createApiError(ErrorCode.INVITE_2104, { message: 'x' }), true],
+    ['초대 꺼짐(2105)', createApiError(ErrorCode.INVITE_2105, { message: 'x' }), false],
+    [
+      '친구 한도(2106)',
+      createApiError(ErrorCode.INVITE_2106, { message: 'x', status: 409 }),
+      false,
+    ],
+    ['요청 과다(429)', createApiError(ErrorCode.SYS_0001, { message: 'x', status: 429 }), false],
     ['서버 장애', new ServerError(503), false],
   ])('%s는 코드 칸 오류인지: %s', (_case, error, expected) => {
     // When

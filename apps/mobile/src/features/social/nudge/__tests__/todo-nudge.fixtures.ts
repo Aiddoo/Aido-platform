@@ -1,6 +1,6 @@
 import { createNudgeResponseSchema, nudgeCooldownInfoSchema } from '@aido/api/contracts/nudge/v1';
 import type { ErrorCodeType } from '@aido/api/errors';
-import { ApiError } from '@src/core/errors/api-error';
+import { createApiError } from '@src/testing/api-error';
 import { defineFixture } from '@src/testing/fixture';
 
 export const createNudgeCooldownInfoDto = defineFixture(nudgeCooldownInfoSchema, {
@@ -25,9 +25,8 @@ export const createSendNudgeResponseDto = defineFixture(createNudgeResponseSchem
 export function createNudgeApiError(
   overrides?: Partial<{ code: ErrorCodeType; message: string; status: number }>,
 ) {
-  return new ApiError(
-    overrides?.code ?? 'NUDGE_1101',
-    overrides?.message ?? '일일 콕 찌르기 횟수를 초과했어요',
-    overrides?.status ?? 400,
-  );
+  return createApiError(overrides?.code ?? 'NUDGE_1101', {
+    message: overrides?.message ?? '일일 콕 찌르기 횟수를 초과했어요',
+    status: overrides?.status ?? 400,
+  });
 }

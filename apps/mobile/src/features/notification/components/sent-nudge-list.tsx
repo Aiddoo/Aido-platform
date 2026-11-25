@@ -19,7 +19,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
-import { type Href, router } from 'expo-router';
+import { type Href, useRouter } from 'expo-router';
 import { Separator } from 'heroui-native';
 import { match } from 'ts-pattern';
 
@@ -95,6 +95,7 @@ SentNudgeList.Item = function Item({
 }) {
   const { t } = useTranslation('todo');
   const detailHref: Href = { pathname: '/nudges/[nudgeId]', params: { nudgeId: nudge.id } };
+  const router = useRouter();
   const openDetail = useSingleTap(() => router.navigate(detailHref));
   const status = match(NudgeInteractionPolicy.getNudgeInteractionStatus(nudge))
     .with('UNAVAILABLE', () => t('interaction.unavailable'))

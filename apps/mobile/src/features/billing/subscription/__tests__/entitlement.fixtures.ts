@@ -12,7 +12,8 @@ import {
   type Plan,
   type PlanFeature,
 } from '@aido/api/vocabulary';
-import { ApiError } from '@src/core/errors/api-error';
+import type { ApiError } from '@src/core/errors/api-error';
+import { createApiError } from '@src/testing/api-error';
 import { match } from 'ts-pattern';
 
 import { toEntitlementSnapshot } from '../apis/entitlement.mapper';
@@ -177,5 +178,5 @@ export function createLimitApiError(
   details?: Record<string, unknown>,
   status = 429,
 ): ApiError {
-  return new ApiError(code, '한도 오류', status, details);
+  return createApiError(code, { message: '한도 오류', status, details });
 }

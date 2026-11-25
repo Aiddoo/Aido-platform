@@ -2,7 +2,7 @@ import type { FriendTodoMenuAction } from '@src/features/planning/todo/component
 import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import type { FriendUser } from '@src/features/social/friend/domains/friend.model';
 import type { DateKey } from '@src/shared/date/date-key';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 
 import { TodoNudgePolicy } from '../domains/todo-nudge.model';

@@ -1,7 +1,12 @@
 import { ErrorCode } from '@aido/api/errors';
-import { ApiError, NetworkError, ParseError } from '@src/shared/errors';
+import { NetworkError, ParseError } from '@src/shared/errors';
 import { QueryErrorBoundary } from '@src/shared/ui';
-import { createErrorReporterStub, createTestDi, createTestQueryClient } from '@src/testing/core';
+import {
+  createErrorReporterStub,
+  createTestDi,
+  createTestQueryClient,
+  createApiError,
+} from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { act, screen } from '@testing-library/react-native';
@@ -44,7 +49,7 @@ describe('QueryErrorReport', () => {
 
   it.each<[string, unknown, number]>([
     ['예상하지 못한 실패', new ParseError('invalid'), 1],
-    ['서버가 코드로 거절한 실패', new ApiError(ErrorCode.TODO_0801, '없음', 404), 0],
+    ['서버가 코드로 거절한 실패', createApiError(ErrorCode.TODO_0801, { message: '없음' }), 0],
     ['연결 끊김', new NetworkError(), 0],
   ])('경계 밖 인라인 조회의 %s는 조회 캐시 이름으로 %i건 보고한다', async (_case, error, count) => {
     // Given

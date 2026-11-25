@@ -10,7 +10,7 @@ import {
 } from '@src/features/planning/category/queries/todo-category-cache';
 import { useTrack } from '@src/shared/analytics';
 import { getIsoWeekYear, type DateKey } from '@src/shared/date/date-key';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { t } from '@src/shared/i18n';
 import { isLastMutation } from '@src/shared/query/is-last-mutation';
 import { useAppToast } from '@src/shared/ui';

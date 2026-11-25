@@ -1,5 +1,5 @@
-import { ErrorCode, HttpStatus } from '@aido/api/errors';
-import { ApiError } from '@src/core/errors/api-error';
+import { ErrorCode } from '@aido/api/errors';
+import type { ApiError } from '@src/core/errors/api-error';
 import '@src/shared/i18n/init';
 import { fail, ok } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http-client';
@@ -19,6 +19,7 @@ import {
   createTestQueryClient,
   createTestDi,
   deliverQueryNotifications,
+  createApiError,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { act, screen, waitFor } from '@testing-library/react-native';
@@ -97,7 +98,7 @@ describe('SuggestionEntry', () => {
     // When
     await renderFeedEntry(
       { isPremiumCached: true },
-      new ApiError(ErrorCode.AI_1309, '프리미엄 전용', HttpStatus.FORBIDDEN),
+      createApiError(ErrorCode.AI_1309, { message: '프리미엄 전용' }),
     );
 
     // Then
@@ -109,7 +110,7 @@ describe('SuggestionEntry', () => {
     const entitlements = createPendingResponse(ok(createEntitlementSnapshotDto({ tier: 'FREE' })));
     const { httpClient, queryClient } = await renderFeedEntry(
       { isPremiumCached: true, getEntitlements: () => entitlements.response },
-      new ApiError(ErrorCode.AI_1309, '프리미엄 전용', HttpStatus.FORBIDDEN),
+      createApiError(ErrorCode.AI_1309, { message: '프리미엄 전용' }),
     );
     await waitFor(() =>
       expect(httpClient.get).toHaveBeenCalledWith('v1/entitlements', expect.anything()),
@@ -132,7 +133,7 @@ describe('SuggestionEntry', () => {
         isPremiumCached: true,
         getEntitlements: async () => ok(createEntitlementSnapshotDto({ tier: 'PREMIUM' })),
       },
-      new ApiError(ErrorCode.AI_1309, '프리미엄 전용', HttpStatus.FORBIDDEN),
+      createApiError(ErrorCode.AI_1309, { message: '프리미엄 전용' }),
     );
 
     // Then

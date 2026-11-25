@@ -3,7 +3,13 @@ import { ActivityReport } from '@src/features/insights/report/components/activit
 import { reportParamsSchema } from '@src/features/insights/report/schemas/report-params.schema';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useRouteParamsOrRedirect } from '@src/shared/hooks/use-route-params-or-redirect';
-import { QueryErrorBoundary, ReadableContent, SafeAreaScrollView, Spacing } from '@src/shared/ui';
+import {
+  QueryErrorBoundary,
+  QueryErrorFallback,
+  ReadableContent,
+  SafeAreaScrollView,
+  Spacing,
+} from '@src/shared/ui';
 import { Suspense } from 'react';
 
 export default function ReportDetailRoute() {
@@ -30,7 +36,7 @@ function ReportDetailScreen() {
           </Suspense>
         </QueryErrorBoundary>
 
-        <QueryErrorBoundary fallback={SuggestionsPreview.Error}>
+        <QueryErrorBoundary fallback={QueryErrorFallback.Hidden}>
           <Suspense fallback={<SuggestionsPreview.Loading className="mt-3" />}>
             <SuggestionsPreview className="mt-3" />
           </Suspense>

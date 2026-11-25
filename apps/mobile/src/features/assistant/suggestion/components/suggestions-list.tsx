@@ -21,7 +21,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useMutation, usePrefetchQuery, useQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { router, useIsFocused } from 'expo-router';
+import { useRouter, useIsFocused } from 'expo-router';
 
 import { isSuggestionsPremiumRequiredError } from '../domains/suggestion.error';
 import type { AiSuggestion } from '../domains/suggestion.model';
@@ -52,6 +52,7 @@ export function SuggestionsList() {
   });
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const dismissSuggestionMutation = useMutation(useActOnSuggestionMutationOptions());
+  const router = useRouter();
   const push = useSingleTap(router.push);
 
   if (list.suggestions.length === 0) {
@@ -168,6 +169,7 @@ SuggestionsList.Item = function Item({
 
 /** 무료는 실제 제안 화면과 같은 영수증에 예시 제안을 그린다. 줄의 버튼과 아래 버튼은 모두 결제 화면으로 간다 */
 SuggestionsList.Free = function Free() {
+  const router = useRouter();
   const push = useSingleTap(router.push);
   const { t } = useTranslation('ai');
   const { trackEvent } = useTrack();

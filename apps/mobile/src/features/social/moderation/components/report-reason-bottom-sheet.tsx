@@ -18,7 +18,7 @@ import {
 import { useAppToast } from '@src/shared/ui';
 import { formatCount } from '@src/shared/utils/number-format';
 import { useMutation } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { RadioGroup } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { type Control, Controller, useForm, useFormState, useWatch } from 'react-hook-form';
@@ -67,6 +67,7 @@ export function ReportReasonBottomSheet({
     mode: 'onChange',
   });
 
+  const router = useRouter();
   // 실패는 여기서 받지 않는다. RHF가 실패로 알아야 isSubmitSuccessful이 꺼진 채 남아 다시 보낼 수 있다
   const saveReport = form.handleSubmit(async (values) => {
     await reportContent.mutateAsync({ target, form: values });

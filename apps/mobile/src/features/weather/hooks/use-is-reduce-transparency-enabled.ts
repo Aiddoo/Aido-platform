@@ -1,5 +1,5 @@
+import { ACCESSIBILITY_LOG_EVENT } from '@src/shared/constants/accessibility-log-events';
 import { getErrorMessage } from '@src/shared/errors';
-import { ACCESSIBILITY_LOG_EVENT } from '@src/shared/hooks/accessibility-log-events';
 import { logger } from '@src/shared/infra/logger/global-logger';
 import { createAccessibilitySettingStore } from '@src/shared/stores/accessibility-setting-store';
 import { useSyncExternalStore } from 'react';

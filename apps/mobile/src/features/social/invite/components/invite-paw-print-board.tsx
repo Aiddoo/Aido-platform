@@ -27,7 +27,7 @@ import { cn } from '@src/shared/utils/cn';
 import { formatCount } from '@src/shared/utils/number-format';
 import { useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { useEffect, useId, useState } from 'react';
 import { StyleSheet } from 'react-native';
@@ -513,6 +513,7 @@ function InviteProgressMessage() {
 function KeepPremiumButton() {
   const { t } = useTranslation('invite');
   const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
+  const router = useRouter();
   const navigate = useSingleTap(router.navigate);
 
   if (PremiumAccessPolicy.isStoreSubscribed(me.premiumAccess)) {

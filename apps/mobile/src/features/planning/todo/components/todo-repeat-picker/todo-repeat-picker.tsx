@@ -6,7 +6,7 @@ import { hasSameDaysOfWeek } from '@src/shared/date/day-of-week';
 import { formatYearAwareDateKeyLabel } from '@src/shared/date/format/date-format';
 import { formatDaysOfWeek, getDayOfWeekLabel } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import { Button, HStack, SheetHeaderLayout, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';

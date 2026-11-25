@@ -15,7 +15,7 @@ import {
 } from '@src/shared/ui';
 import { useAppToast } from '@src/shared/ui';
 import { onlineManager, useMutation } from '@tanstack/react-query';
-import { router, useNavigation } from 'expo-router';
+import { useRouter, useNavigation } from 'expo-router';
 import type { InputOTPRef } from 'heroui-native';
 import { type PropsWithChildren, useRef } from 'react';
 import { Controller, type FieldError, useForm, useFormState, useWatch } from 'react-hook-form';
@@ -88,6 +88,7 @@ export function InviteCodeEntryForm({ children }: PropsWithChildren) {
   const invalidIndexes =
     errorMessage == null ? [] : invalidCharacters.map((invalidCharacter) => invalidCharacter.index);
 
+  const router = useRouter();
   const submitInviteCode = () =>
     form.handleSubmit(
       async ({ inviteCode }) => {

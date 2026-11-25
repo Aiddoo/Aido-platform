@@ -1,5 +1,5 @@
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 
 import type { VoiceCaptureEntry } from '../constants/voice.events';
 import { useRecognitionLanguage } from './use-recognition-language';
@@ -19,6 +19,7 @@ export function useStartVoiceNote() {
     mode: 'note',
   });
   const [locale] = useRecognitionLanguage();
+  const router = useRouter();
   const push = useSingleTap(router.push);
 
   return async ({

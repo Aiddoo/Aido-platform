@@ -1,6 +1,5 @@
-import { ErrorCode, HttpStatus } from '@aido/api/errors';
+import { ErrorCode } from '@aido/api/errors';
 import '@src/shared/i18n/init';
-import { ApiError } from '@src/core/errors/api-error';
 import { fail, ok } from '@src/core/errors/result';
 import { createTodoDetails } from '@src/features/planning/todo/__tests__/todo.fixtures';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
@@ -12,6 +11,7 @@ import {
   createPendingResponse,
   createTestQueryClient,
   createTestDi,
+  createApiError,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { onlineManager, useMutation } from '@tanstack/react-query';
@@ -291,11 +291,7 @@ describe('todo-category.mutations', () => {
     it('이름 고치기가 실패하면 그 이름만 되돌리고 그사이 늘어난 할 일 수는 지킨다', async () => {
       // Given
       const { httpClient, queryClient, cached, update } = await renderMutations();
-      const rejection = new ApiError(
-        ErrorCode.SYS_0003,
-        '이름을 바꾸지 못했어요',
-        HttpStatus.CONFLICT,
-      );
+      const rejection = createApiError(ErrorCode.SYS_0003, { message: '이름을 바꾸지 못했어요' });
       const pendingUpdate = createPendingResponse(fail(rejection));
       httpClient.patch.mockReturnValue(pendingUpdate.response);
       const result = update(1, { name: '새 이름' });

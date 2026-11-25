@@ -27,7 +27,7 @@ import {
   WordWrapText,
 } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { router, Stack } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 import { Spinner } from 'heroui-native';
 import { Suspense, useEffect, useRef } from 'react';
 import { match, P } from 'ts-pattern';
@@ -70,6 +70,7 @@ TodoImportScreen.Loading = function Loading() {
 /** 다른 계정의 가져오기, 30일이 지나 지워진 기록, 잘못된 링크는 다시 시도해도 같아 새로 가져오게 한다 */
 TodoImportScreen.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation('todoImport');
+  const router = useRouter();
   const replace = useSingleTap(router.replace);
 
   if (!isTodoImportNotFoundError(error)) {
@@ -164,6 +165,7 @@ function TodoImportStatus() {
 
 function StartAgainButton() {
   const { t } = useTranslation('todoImport');
+  const router = useRouter();
   const replace = useSingleTap(router.replace);
 
   return (

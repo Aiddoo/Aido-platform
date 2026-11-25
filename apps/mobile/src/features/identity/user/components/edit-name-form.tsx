@@ -4,7 +4,7 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, FormStepLayout, Input, KeyboardAdaptiveButton } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { router, useNavigation } from 'expo-router';
+import { useRouter, useNavigation } from 'expo-router';
 import { Controller, useForm, useFormState } from 'react-hook-form';
 import { match, P } from 'ts-pattern';
 
@@ -19,6 +19,7 @@ interface EditNameFormProps {
 export function EditNameForm({ title }: EditNameFormProps) {
   const { t } = useTranslation('user');
   const navigation = useNavigation();
+  const router = useRouter();
   const goBack = useSingleTap(router.back);
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const updateProfile = useMutation(useUpdateProfileMutationOptions());

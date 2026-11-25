@@ -1,12 +1,13 @@
 import { Canvas, Group } from '@shopify/react-native-skia';
 import { SECOND_MS } from '@src/shared/constants/time-units';
+import { useAppWindow } from '@src/shared/hooks/use-app-window';
 import { useIsAnimationActive } from '@src/shared/hooks/use-is-animation-active';
 import { useLayoutSize } from '@src/shared/hooks/use-layout-size';
 import { DEVICE_TOTAL_MEMORY_BYTES } from '@src/shared/infra/device/device-info';
 import { Box } from '@src/shared/ui';
 import { isEqual } from 'es-toolkit';
 import { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, useWindowDimensions } from 'react-native';
+import { StyleSheet } from 'react-native';
 import {
   cancelAnimation,
   Easing,
@@ -84,7 +85,7 @@ export function WeatherSceneCanvas({
   heroLeft,
   heroWidth,
 }: WeatherSceneCanvasProps) {
-  const window = useWindowDimensions();
+  const window = useAppWindow();
   const [layoutSize, handleLayout] = useLayoutSize();
   const { width, height } = layoutSize ?? window;
   const { theme } = useUniwind();

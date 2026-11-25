@@ -1,7 +1,6 @@
 import { ErrorCode, HttpStatus } from '@aido/api/errors';
 import { AI_DATA_SHARING_CONSENT } from '@aido/api/vocabulary';
 import '@src/shared/i18n/init';
-import { ApiError } from '@src/core/errors/api-error';
 import { fail, ok } from '@src/core/errors/result';
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
 import { type EntitlementSnapshot } from '@src/features/billing/subscription/domains/entitlement.model';
@@ -22,12 +21,13 @@ import {
   createTestQueryClient,
   createVoiceNoteStorageFake,
   deliverQueryNotifications,
+  createApiError,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { Suspense } from 'react';
-import { Keyboard } from 'react-native';
+import { KeyboardController } from 'react-native-keyboard-controller';
 
 import { createMemo } from '../__tests__/memo.fixtures';
 import { createParseMemoResponseDto } from '../__tests__/parsed-memo.fixtures';
@@ -54,7 +54,7 @@ const AGREED_CONSENT_DTO = {
   aiDataSharingConsentVersion: AI_DATA_SHARING_CONSENT.VERSION,
 };
 const PARSE_MEMO_URL = 'v1/ai/parse-memo';
-const CONSENT_REQUIRED_ERROR = new ApiError(ErrorCode.AI_1311, '동의 필요', HttpStatus.FORBIDDEN);
+const CONSENT_REQUIRED_ERROR = createApiError(ErrorCode.AI_1311, { message: '동의 필요' });
 
 function createAgreedConsent() {
   return createConsent({
@@ -315,7 +315,7 @@ describe('MemoEditor', () => {
     // Given
     const { httpClient, onLeave } = await renderEditor('stack');
     httpClient.post.mockResolvedValue(
-      fail(new ApiError(ErrorCode.MEMO_2001, '메모 없음', HttpStatus.NOT_FOUND)),
+      fail(createApiError(ErrorCode.MEMO_2001, { message: '메모 없음' })),
     );
     await waitFor(() =>
       expect(httpClient.get).toHaveBeenCalledWith('v1/todo-categories', expect.anything()),
@@ -371,7 +371,9 @@ describe('MemoEditor', () => {
       // Given
       const { httpClient } = await renderEditor('stack');
       httpClient.patch.mockResolvedValue(
-        fail(new ApiError(ErrorCode.MEMO_2001, '거절', HttpStatus.BAD_REQUEST)),
+        fail(
+          createApiError(ErrorCode.MEMO_2001, { message: '거절', status: HttpStatus.BAD_REQUEST }),
+        ),
       );
       await editContent('고친 메모');
       await waitFor(() =>
@@ -445,7 +447,9 @@ describe('MemoEditor', () => {
     // Given
     const { httpClient, onLeave } = await renderEditor('stack');
     httpClient.patch.mockResolvedValue(
-      fail(new ApiError(ErrorCode.MEMO_2001, '거절', HttpStatus.BAD_REQUEST)),
+      fail(
+        createApiError(ErrorCode.MEMO_2001, { message: '거절', status: HttpStatus.BAD_REQUEST }),
+      ),
     );
     await editContent('고친 메모');
 
@@ -479,7 +483,7 @@ describe('MemoEditor', () => {
     let dismissKeyboard: jest.SpyInstance;
 
     beforeEach(() => {
-      dismissKeyboard = jest.spyOn(Keyboard, 'dismiss');
+      dismissKeyboard = jest.spyOn(KeyboardController, 'dismiss');
     });
 
     afterEach(() => {
@@ -527,7 +531,9 @@ describe('MemoEditor', () => {
       // Given
       const { httpClient, onLeave } = await renderEditor('pane');
       httpClient.patch.mockResolvedValue(
-        fail(new ApiError(ErrorCode.MEMO_2001, '거절', HttpStatus.BAD_REQUEST)),
+        fail(
+          createApiError(ErrorCode.MEMO_2001, { message: '거절', status: HttpStatus.BAD_REQUEST }),
+        ),
       );
       await editContent('고친 메모');
 

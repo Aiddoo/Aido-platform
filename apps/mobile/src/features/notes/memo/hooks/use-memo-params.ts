@@ -2,7 +2,7 @@ import { useOpenDetailWhenCompact } from '@src/shared/hooks/use-open-detail-when
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { usePaneSizeClass } from '@src/shared/ui';
 import { noop } from 'es-toolkit';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useCallback } from 'react';
 import { match, P } from 'ts-pattern';
 
@@ -20,6 +20,7 @@ export function useSelectedMemoId() {
   const [{ memoId: selectedMemoId }, setParams] = useRouteParams(selectedMemoParamsSchema);
   const paneSizeClass = usePaneSizeClass();
 
+  const router = useRouter();
   const setSelectedMemoId = useCallback(
     (memoId: number | undefined) => {
       match({ paneSizeClass, memoId })
@@ -31,7 +32,7 @@ export function useSelectedMemoId() {
         .with({ paneSizeClass: P.union('medium', 'expanded') }, () => setParams({ memoId }))
         .exhaustive();
     },
-    [paneSizeClass, setParams],
+    [paneSizeClass, router, setParams],
   );
 
   return [selectedMemoId, setSelectedMemoId] as const;
@@ -41,6 +42,7 @@ export function useSelectedMemoId() {
 export function useMemoDetailHandoff() {
   const [{ memoId: selectedMemoId }, setParams] = useRouteParams(selectedMemoParamsSchema);
 
+  const router = useRouter();
   useOpenDetailWhenCompact(selectedMemoId, (memoId) => {
     setParams({ memoId: undefined });
     router.push({ pathname: '/memo/[memoId]', params: { memoId } });

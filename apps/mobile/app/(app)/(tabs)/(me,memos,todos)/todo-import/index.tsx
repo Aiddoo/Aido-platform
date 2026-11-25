@@ -72,7 +72,7 @@ import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useOpenAppSettings } from '@src/shared/hooks/use-open-app-settings';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useStepper } from '@src/shared/hooks/use-stepper';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import { IS_IOS_APP_ON_MAC } from '@src/shared/infra/device/device-info';
 import {
@@ -103,7 +103,13 @@ import {
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, usePrefetchQuery, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
-import { type NavigationAction, router, Stack, useNavigation, usePreventRemove } from 'expo-router';
+import {
+  type NavigationAction,
+  useRouter,
+  Stack,
+  useNavigation,
+  usePreventRemove,
+} from 'expo-router';
 import { type ReactNode, Suspense, useDeferredValue, useState } from 'react';
 import { type UseFormReturn, useForm, useFormState, useWatch } from 'react-hook-form';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
@@ -198,6 +204,7 @@ function TodoImportSetup() {
   );
   const handleStepBack = useSingleTap(() => stepper.history.back());
 
+  const router = useRouter();
   // 시작을 기다리는 사이 떠났으면 보던 화면 위로 끌고 가지 않는다. 진행 중인 가져오기는 메뉴 행이 알린다
   const leaveToImport = (importId: string) => {
     if (!navigation.isFocused()) {
@@ -214,12 +221,6 @@ function TodoImportSetup() {
       count={TODO_IMPORT_STEPS.length - firstStepOrder}
     />
   );
-  const goBackToCategories = () => {
-    const index = stepper.historySteps.findIndex((entry) => entry.step === 'categories');
-    if (0 <= index && index < stepper.index) {
-      stepper.history.go(index - stepper.index);
-    }
-  };
 
   return (
     <VStack flex={1}>
@@ -268,7 +269,7 @@ function TodoImportSetup() {
             form={form}
             progress={progress}
             onStarted={leaveToImport}
-            onTargetsRejected={goBackToCategories}
+            onTargetsRejected={() => stepper.history.backTo('categories')}
           />
         )}
       />
@@ -462,7 +463,8 @@ function CalendarsStep({ form, progress, onNext }: StepProps & { onNext: () => v
         />
       </SettingsListGroup>
       <Spacing size={12} />
-      <QueryErrorBoundary fallback={ImportEndDateChips.Error}>
+      {/* 기간 안내를 읽지 못해도 서버가 시작할 때 기간을 다시 확인해 칩만 숨긴다 */}
+      <QueryErrorBoundary fallback={QueryErrorFallback.Hidden}>
         <Suspense fallback={<ImportEndDateChips.Loading />}>
           <ImportEndDateChips
             startDate={range.startDate}
@@ -590,7 +592,8 @@ function CategoriesStep({ form, progress, onNext }: StepProps & { onNext: () => 
       footer={
         <VStack className="gap-2 pt-3">
           <StyledSafeAreaView edges={['left', 'right']} className="px-4">
-            <QueryErrorBoundary fallback={ImportPlacementSummary.Error}>
+            {/* 넣을 곳 카드·캘린더 줄이 같은 조회의 오류와 다시 시도를 보여 요약 자리는 비운다 */}
+            <QueryErrorBoundary fallback={QueryErrorFallback.Hidden}>
               <Suspense fallback={<ImportPlacementSummary.Loading />}>
                 <ImportPlacementSummary
                   collections={collections}

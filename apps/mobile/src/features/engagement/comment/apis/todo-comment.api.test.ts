@@ -1,6 +1,5 @@
-import { ApiError } from '@src/core/errors/api-error';
 import { fail } from '@src/core/errors/result';
-import { createHttpClientStub } from '@src/testing/core';
+import { createHttpClientStub, createApiError } from '@src/testing/core';
 
 import { TodoCommentApi } from './todo-comment.api';
 
@@ -105,7 +104,7 @@ describe('TodoCommentApi', () => {
     // Given
     const httpClient = createHttpClientStub();
     const service = new TodoCommentApi(httpClient);
-    const apiError = new ApiError('TODO_0833', '삭제된 댓글', 409);
+    const apiError = createApiError('TODO_0833', { message: '삭제된 댓글' });
     httpClient.put.mockResolvedValue(fail(apiError));
 
     // When

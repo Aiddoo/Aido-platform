@@ -2,7 +2,7 @@ import { EntitlementPolicy } from '@src/features/billing/subscription/domains/en
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import { formatYearAwareDateKeyLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import { WordWrapText } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';

@@ -1,5 +1,6 @@
 import { fail, ok } from '@src/core/errors/result';
-import { ApiError, NetworkError, ParseError, ServerError, TimeoutError } from '@src/shared/errors';
+import { NetworkError, ParseError, ServerError, TimeoutError } from '@src/shared/errors';
+import { createApiError } from '@src/testing/core';
 
 import { SubscriptionFailurePolicy, toOfferingsAvailability } from './subscription-failure.model';
 import { SubscriptionErrors } from './subscription.error';
@@ -15,7 +16,11 @@ describe('SubscriptionFailurePolicy', () => {
       ['스토어에 연결하지 못하면', SubscriptionErrors.network('10'), 'network'],
       ['서버가 5xx로 답하면', new ServerError(503), 'server'],
       ['서버 응답이 계약과 다르면', new ParseError(), 'server'],
-      ['서버가 예상하지 못한 4xx로 답하면', new ApiError('SYS_0001', 'message', 400), 'server'],
+      [
+        '서버가 예상하지 못한 4xx로 답하면',
+        createApiError('SYS_0001', { message: 'message', status: 400 }),
+        'server',
+      ],
       ['무엇인지 모르는 값이 던져지면', 'unexpected', 'server'],
       ['스토어 SDK를 쓸 수 없으면', SubscriptionErrors.storeUnavailable(), 'store'],
       ['스토어가 잠시 응답하지 못하면', SubscriptionErrors.storeProblem('2'), 'store'],

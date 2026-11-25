@@ -1,6 +1,6 @@
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useTranslation } from '@src/shared/i18n';
-import { QueryErrorBoundary, SettingsListGroup } from '@src/shared/ui';
+import { QueryErrorBoundary, QueryErrorFallback, SettingsListGroup } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { Suspense } from 'react';
 
@@ -10,7 +10,7 @@ import { toPlanTypeLabelKey } from '../utils/plan-type-label.view-model';
 /** 구독 관리 행의 현재 요금제. 스토어 구독이면 요금제, 아니면 지금 등급이다. 못 읽으면 값 없이 둔다 */
 export function PlanTypeValue() {
   return (
-    <QueryErrorBoundary fallback={() => null}>
+    <QueryErrorBoundary fallback={QueryErrorFallback.Hidden}>
       <Suspense fallback={null}>
         <PlanType />
       </Suspense>

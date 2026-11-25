@@ -2,7 +2,7 @@ import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/
 import { CategoryHeaderPill } from '@src/features/planning/category/components/category-header-pill';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,

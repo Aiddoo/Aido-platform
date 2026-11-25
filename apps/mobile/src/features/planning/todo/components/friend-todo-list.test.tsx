@@ -1,6 +1,5 @@
 import '@src/shared/i18n/init';
-import { ErrorCode, HttpStatus } from '@aido/api/errors';
-import { ApiError } from '@src/core/errors/api-error';
+import { ErrorCode } from '@aido/api/errors';
 import { fail, ok } from '@src/core/errors/result';
 import { createPreferenceDto } from '@src/features/identity/preference/__tests__/preference.fixtures';
 import { QueryErrorBoundary } from '@src/shared/ui';
@@ -10,6 +9,7 @@ import {
   createRouteParamsFake,
   createTestDi,
   createTestQueryClient,
+  createApiError,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
@@ -37,7 +37,7 @@ describe('FriendTodoList', () => {
     httpClient.get.mockImplementation(async (path: string) =>
       path === 'v1/auth/preference'
         ? ok(createPreferenceDto())
-        : fail(new ApiError(ErrorCode.FOLLOW_0906, '친구가 아니에요', HttpStatus.FORBIDDEN)),
+        : fail(createApiError(ErrorCode.FOLLOW_0906, { message: '친구가 아니에요' })),
     );
     const errorReporter = createErrorReporterStub();
 

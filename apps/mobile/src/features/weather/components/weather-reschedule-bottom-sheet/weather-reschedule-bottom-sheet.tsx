@@ -3,11 +3,12 @@ import { useGetPreferenceQueryOptions } from '@src/features/identity/preference/
 import { useGetTodosByDateQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import { useAppTheme } from '@src/shared/providers/theme-provider';
 import {
   QueryErrorBoundary,
+  QueryErrorFallback,
   Result,
   RouteBottomSheet,
   Spacing,
@@ -172,7 +173,7 @@ function RescheduleFooter({
   return (
     <VStack gap={8}>
       {/* 출처 표기는 보조 정보라 불러오지 못하면 시트를 막지 않고 자리를 비운다. */}
-      <QueryErrorBoundary fallback={() => null}>
+      <QueryErrorBoundary fallback={QueryErrorFallback.Hidden}>
         <Suspense fallback={<WeatherAttribution.Loading />}>
           <WeatherAttribution background={resolvedTheme} />
         </Suspense>

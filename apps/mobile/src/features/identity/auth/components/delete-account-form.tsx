@@ -1,13 +1,13 @@
 import { ACCOUNT_DELETION } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ANIMATION } from '@src/shared/constants/animation';
+import { useDismissKeyboard } from '@src/shared/hooks/use-dismiss-keyboard';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { Box, FormStepLayout, KeyboardAdaptiveButton, useConfirmDialog } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { Controller, useForm, useFormState } from 'react-hook-form';
-import { Keyboard } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { findPasswordFieldError, PASSWORD_MISMATCH_FIELD_ERROR } from '../domains/auth.error';
@@ -21,6 +21,7 @@ interface DeleteAccountFormProps {
 }
 
 export function DeleteAccountForm({ title, footer }: DeleteAccountFormProps) {
+  const dismissKeyboard = useDismissKeyboard();
   const { t } = useTranslation(['auth', 'common']);
   const deleteAccountMutation = useMutation(useDeleteAccountMutationOptions());
   const confirmDialog = useConfirmDialog();
@@ -32,7 +33,7 @@ export function DeleteAccountForm({ title, footer }: DeleteAccountFormProps) {
   const { isValid } = useFormState({ control: form.control });
 
   const handleDeletePress = form.handleSubmit(async ({ password }) => {
-    Keyboard.dismiss();
+    dismissKeyboard();
     await confirmDialog.openAsync({
       title: t('deleteAccount.dialogTitle'),
       description: t('deleteAccount.dialogMessage', { days: ACCOUNT_DELETION.GRACE_PERIOD_DAYS }),

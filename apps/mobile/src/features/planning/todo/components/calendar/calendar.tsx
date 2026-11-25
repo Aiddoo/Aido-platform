@@ -10,7 +10,7 @@ import {
 } from '@src/shared/date/date-key';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useLayoutSize } from '@src/shared/hooks/use-layout-size';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import { useStoredValue } from '@src/shared/storage/use-stored-value';
 import { Box, HStack, usePaneColumns, VStack, QueryErrorFallback } from '@src/shared/ui';

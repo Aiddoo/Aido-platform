@@ -1,7 +1,7 @@
 import type { Href, NativeStackNavigationOptions } from 'expo-router';
 import { match } from 'ts-pattern';
 
-/** 시트 route는 아래 화면을 그대로 두고, 등장·퇴장 애니메이션은 gorhom 시트가 맡는다. */
+/** 시트 route는 아래 화면을 그대로 두고, 등장·퇴장 애니메이션은 heroui `BottomSheet`가 맡는다. */
 export const SHEET_ROUTE_SCREEN_OPTIONS = {
   presentation: 'transparentModal',
   animation: 'none',

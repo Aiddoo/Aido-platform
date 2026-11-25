@@ -1,4 +1,6 @@
 import { renderRouteHook } from '@src/testing/render-route-hook';
+import { act } from '@testing-library/react-native';
+import { router } from 'expo-router';
 import { z } from 'zod';
 
 import { useView } from './use-view';
@@ -41,6 +43,29 @@ describe('useView', () => {
 
     // Then
     expect(route.url()).toBe('/friends?isEditing=true&view=receiver');
+    expect(route.hook()[0]).toBe('receiver');
+  });
+
+  it('다른 화면이 위에 열린 뒤 부른 setView는 그 화면이 아니라 훅을 부른 화면에 쓴다', async () => {
+    // Given
+    const route = await renderRouteHook(() => useView('view', viewSchema), {
+      url: '/friends',
+      routes: ['other'],
+    });
+    const [, setView] = route.hook();
+    await act(async () => router.push('/other'));
+
+    // When
+    await act(async () => setView('receiver'));
+
+    // Then
+    expect(route.url()).toBe('/other');
+
+    // When
+    await act(async () => router.back());
+
+    // Then
+    expect(route.url()).toBe('/friends?view=receiver');
     expect(route.hook()[0]).toBe('receiver');
   });
 });

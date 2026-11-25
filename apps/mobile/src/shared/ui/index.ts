@@ -181,6 +181,7 @@ export { ScrollFade } from './scroll-fade/scroll-fade';
 export { SettingsListGroup, SettingsScreenLayout } from './settings-list-group/settings-list-group';
 export { Spacing } from './spacing/spacing';
 export { STACK_BACK_ICON } from './stack-header/stack-back-icon';
+export { nativeIcon } from './stack-header/native-icon';
 export { STACK_CLOSE_ICON } from './stack-header/stack-close-icon';
 export { StackHeaderTitle } from './stack-header/stack-header-title';
 export { STACK_MENU_ICON, STACK_MORE_ICON } from './stack-header/stack-more-icon';

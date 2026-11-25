@@ -7,8 +7,8 @@ import {
   resetPasswordResponseSchema,
 } from '@aido/api/contracts/auth/v1';
 import type { ErrorCodeType } from '@aido/api/errors';
-import { ApiError } from '@src/core/errors/api-error';
 import type { AppleSignInResult } from '@src/core/ports/social-auth-gateway';
+import { createApiError } from '@src/testing/api-error';
 import { defineFixture } from '@src/testing/fixture';
 
 import { authTokensEnvelopeSchema, registerEnvelopeSchema } from '../schemas/auth-response.schema';
@@ -72,11 +72,10 @@ export const createLinkedAccountsDto = defineFixture(linkedAccountsResponseSchem
 export function createAuthApiError(
   overrides?: Partial<{ code: ErrorCodeType; message: string; status: number }>,
 ) {
-  return new ApiError(
-    overrides?.code ?? 'AUTH_0101',
-    overrides?.message ?? '인증 오류',
-    overrides?.status ?? 401,
-  );
+  return createApiError(overrides?.code ?? 'AUTH_0101', {
+    message: overrides?.message ?? '인증 오류',
+    status: overrides?.status ?? 401,
+  });
 }
 
 export function createAppleSignInSuccess(): AppleSignInResult {

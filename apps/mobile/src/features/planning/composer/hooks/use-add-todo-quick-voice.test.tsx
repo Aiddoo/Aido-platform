@@ -1,6 +1,5 @@
-import { ErrorCode, HttpStatus } from '@aido/api/errors';
+import { ErrorCode } from '@aido/api/errors';
 import { AI_DATA_SHARING_CONSENT, PLAN_CATALOG } from '@aido/api/vocabulary';
-import { ApiError } from '@src/core/errors/api-error';
 import { fail, ok } from '@src/core/errors/result';
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
 import '@src/shared/i18n/init';
@@ -23,6 +22,7 @@ import {
   createVoiceNoteStorageFake,
   createTestQueryClient,
   createTestDi,
+  createApiError,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
@@ -254,7 +254,7 @@ describe('useAddTodoQuickVoice', () => {
     const user = userEvent.setup();
     const { httpClient, speechRecognizer } = await renderQuickVoice();
     httpClient.post.mockResolvedValueOnce(
-      fail(new ApiError(ErrorCode.AI_1301, '실패', HttpStatus.SERVICE_UNAVAILABLE)),
+      fail(createApiError(ErrorCode.AI_1301, { message: '실패' })),
     );
     httpClient.post.mockResolvedValueOnce(ok(createQuickPlanDto([WORKOUT_ACTION])));
     await speak(speechRecognizer);
@@ -274,7 +274,7 @@ describe('useAddTodoQuickVoice', () => {
     const user = userEvent.setup();
     const { httpClient, speechRecognizer } = await renderQuickVoice();
     httpClient.post.mockResolvedValueOnce(
-      fail(new ApiError(ErrorCode.AI_1318, '다른 내용', HttpStatus.UNPROCESSABLE_ENTITY)),
+      fail(createApiError(ErrorCode.AI_1318, { message: '다른 내용' })),
     );
     httpClient.post.mockResolvedValueOnce(ok(createQuickPlanDto([WORKOUT_ACTION])));
     await speak(speechRecognizer);
@@ -466,7 +466,7 @@ describe('useAddTodoQuickVoice', () => {
         },
       });
       httpClient.post.mockResolvedValueOnce(
-        fail(new ApiError(ErrorCode.AI_1311, '동의 필요', HttpStatus.FORBIDDEN)),
+        fail(createApiError(ErrorCode.AI_1311, { message: '동의 필요' })),
       );
       await user.press(screen.getByRole('button', { name: 'start' }));
       await waitFor(() => expect(speechRecognizer.start).toHaveBeenCalled());
@@ -486,7 +486,7 @@ describe('useAddTodoQuickVoice', () => {
       expect(screen.getByTestId('consent-required')).toHaveTextContent('true');
       expect(screen.queryByTestId('ai-consent-sheet')).toBeNull();
       httpClient.post.mockResolvedValueOnce(
-        fail(new ApiError(ErrorCode.AI_1311, '동의 필요', HttpStatus.FORBIDDEN)),
+        fail(createApiError(ErrorCode.AI_1311, { message: '동의 필요' })),
       );
       httpClient.post.mockResolvedValueOnce(ok(createQuickPlanDto([WORKOUT_ACTION])));
       httpClient.patch.mockResolvedValue(

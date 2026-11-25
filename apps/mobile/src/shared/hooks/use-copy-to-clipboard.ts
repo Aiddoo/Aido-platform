@@ -10,15 +10,12 @@ interface CopyOptions {
 }
 
 /** 클립보드에 복사하고 결과를 토스트로 알린다. 실패는 로그 키의 기능 이름으로 보고하고 던지지 않는다 */
-export function useCopyToClipboard() {
+export function useCopyToClipboard(): (text: string, options: CopyOptions) => Promise<void> {
   const clipboard = useClipboard();
   const logger = useLogger();
   const toast = useAppToast();
 
-  const copy = async (
-    text: string,
-    { successMessage, successDescription, failureMessage, failureLogEvent }: CopyOptions,
-  ) => {
+  return async (text, { successMessage, successDescription, failureMessage, failureLogEvent }) => {
     try {
       await clipboard.copy(text);
       toast.success(successMessage, { description: successDescription });
@@ -28,6 +25,4 @@ export function useCopyToClipboard() {
       toast.error(failureMessage);
     }
   };
-
-  return { copy };
 }

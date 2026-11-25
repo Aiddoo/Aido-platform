@@ -2,10 +2,10 @@ import { useTrack } from '@src/shared/analytics';
 import { formatYearAwareDateKeyLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import { Text, VStack } from '@src/shared/ui';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Chip, PressableFeedback } from 'heroui-native';
 
 import { WhatsNewPolicy } from '../domains/whats-new.model';
@@ -25,6 +25,7 @@ export function ReleaseRow({ release }: ReleaseRowProps) {
   const { trackEvent } = useTrack();
   const todayKey = useTodayKey();
   const dateFormatContext = useDateFormatContext();
+  const router = useRouter();
   const push = useSingleTap(router.push);
   // 새 기능 표시는 서버 캠페인이 가리키는 출시를 아직 보지 않았을 때만이다
   const isNew = useUnseenCampaignReleaseId() === release.id;

@@ -1,4 +1,5 @@
 export { createAnalyticsStub } from './ports/analytics.stub';
+export { createApiError } from './api-error';
 export { createAppIconGatewayStub } from './ports/app-icon-gateway.stub';
 export {
   type AppLifecycleGatewayStub,

@@ -19,7 +19,7 @@ import {
 } from '@src/shared/ui';
 import { useAppToast } from '@src/shared/ui';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
-import { type Href, router } from 'expo-router';
+import { type Href, useRouter } from 'expo-router';
 
 import { INVITEE_PREMIUM_DAYS } from '../constants/invite.constants';
 import type { InviteCode } from '../domains/invite-code.model';
@@ -57,6 +57,7 @@ InviteCardActions.Guest = function Guest({
 }) {
   const { t } = useTranslation('invite');
   const storage = useStoredValueStorage(pendingRedemptionStoredValue);
+  const router = useRouter();
   const continueAsGuest = useSingleTap((pathname: '/sign-up' | '/login') => {
     writeStoredValue(storage, pendingRedemptionStoredValue, {
       inviteCode,

@@ -14,7 +14,7 @@ import {
 } from '@src/shared/ui';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 
 import { isInviteDisabledError } from '../domains/invite.error';
 import { useGetInvitedFriendSummaryInfiniteQueryOptions } from '../queries/invite.queries';
@@ -30,6 +30,7 @@ export function InvitedFriendSummary() {
   const { data: invitedFriendSummary } = useSuspenseInfiniteQuery(
     useGetInvitedFriendSummaryInfiniteQueryOptions(),
   );
+  const router = useRouter();
   const openInvitedFriends = useSingleTap(() =>
     router.push({
       pathname: '/friends/invite/invitees',

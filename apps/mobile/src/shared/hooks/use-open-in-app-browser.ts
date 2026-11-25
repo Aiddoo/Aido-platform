@@ -2,7 +2,7 @@ import { useExternalLink, useLogger } from '@src/shared/di/shared-di-context';
 import { getErrorMessage } from '@src/shared/errors';
 import { useRef } from 'react';
 
-import { OPEN_URL_LOG_EVENT } from './open-url-log-events';
+import { OPEN_URL_LOG_EVENT } from '../constants/open-url-log-events';
 import { useSingleTap } from './use-single-tap';
 
 /** 연타와 브라우저가 떠 있는 동안의 호출은 무시한다 (iOS는 두 번째 호출이 실패하고 Android는 탭이 쌓인다) */

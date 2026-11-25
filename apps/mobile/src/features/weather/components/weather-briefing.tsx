@@ -17,7 +17,7 @@ import { useFontScaleRatio } from '@src/shared/hooks/use-font-scale-ratio';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import {
@@ -36,7 +36,7 @@ import {
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useQuery, useSuspenseQueries } from '@tanstack/react-query';
 import { mapValues } from 'es-toolkit';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Chip, PressableFeedback, Separator } from 'heroui-native';
 import { type ComponentProps, Fragment } from 'react';
 import { match } from 'ts-pattern';
@@ -226,6 +226,7 @@ WeatherBriefing.Item = function Item({
   const translate = useTranslateBriefingCopy();
   const dateFormat = useDateFormatContext();
   const todayKey = useTodayKey();
+  const router = useRouter();
   const push = useSingleTap(router.push);
   const toggleTodo = useMutation(useToggleTodoMutationOptions());
   const isChipStacked = useFontScale().fontScale === 'xlarge';
@@ -435,6 +436,7 @@ WeatherBriefing.SuggestTodoButton = function SuggestTodoButton({
   const translate = useTranslateBriefingCopy();
   const todayKey = useTodayKey();
   const { timezone } = useDateFormatContext();
+  const router = useRouter();
   const push = useSingleTap(router.push);
   const { trackEvent } = useTrack();
 
@@ -500,6 +502,7 @@ WeatherBriefing.Empty = function Empty() {
 
 function useOpenReschedule(action: RescheduleAction) {
   const { trackEvent } = useTrack();
+  const router = useRouter();
   const push = useSingleTap(router.push);
   return () => {
     trackEvent('weather_reschedule_opened', {

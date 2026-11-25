@@ -1,13 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useLogger } from '@src/bootstrap/providers/di-context';
-import { getErrorMessage } from '@src/shared/errors';
 import { useAndroidBackHandler } from '@src/shared/hooks/use-android-back-handler';
+import { useDismissKeyboard } from '@src/shared/hooks/use-dismiss-keyboard';
 import { useFocusEffect } from 'expo-router';
 import { type PropsWithChildren, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
-import { KeyboardController } from 'react-native-keyboard-controller';
 
-import { TODO_COMMENT_LOG_EVENT } from '../constants/todo-comment-log-events';
 import { TodoCommentDeleteProvider } from '../hooks/use-confirm-todo-comment-delete';
 import { useTodoCommentBack } from '../hooks/use-todo-comment-back';
 import { TodoCommentFormProvider } from '../hooks/use-todo-comment-form';
@@ -46,7 +43,7 @@ export function TodoCommentSession({ onExit, children }: TodoCommentSessionProps
 }
 
 function BackAndKeyboardEffects({ onExit }: Pick<TodoCommentSessionProps, 'onExit'>) {
-  const logger = useLogger();
+  const dismissKeyboard = useDismissKeyboard();
 
   useAndroidTodoCommentBackHandler({ onExit });
 
@@ -55,13 +52,9 @@ function BackAndKeyboardEffects({ onExit }: Pick<TodoCommentSessionProps, 'onExi
   useFocusEffect(
     useCallback(
       () => () => {
-        KeyboardController.dismiss().catch((error) =>
-          logger.warn(TODO_COMMENT_LOG_EVENT.KEYBOARD_DISMISS_FAILED, {
-            error: getErrorMessage(error),
-          }),
-        );
+        dismissKeyboard();
       },
-      [logger],
+      [dismissKeyboard],
     ),
   );
 

@@ -1,5 +1,5 @@
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 
 import { type AchievementYears, AchievementYearsPolicy } from '../domains/achievement-years.model';
 import { achievementListParamsSchema } from '../schemas/achievement-params.schema';

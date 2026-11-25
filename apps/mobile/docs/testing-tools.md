@@ -18,6 +18,7 @@
 - **stub 기본값**은 정상 기기와 빈 데이터다(알림 허용, 클립보드 비어 있음, 요금제·구독 없음, 로그인 창 닫음). 값이 있어야 하는 메서드(`HttpClient`, `JsonFetcher`, 좌표)는 정하지 않고 부르면 `createXStub: get 응답을 정하지 않았습니다`처럼 이름을 대며 실패한다. 어긋난 기본값은 테스트가 반환된 `jest.fn`을 바꿔 준다. 포트를 넓히면 stub도 같은 커밋에서 넓힌다.
 - 상태를 보는 stub: `createNetworkStatusGatewayStub`(`emit(isOnline)`, `getListenerCount()`), `createAppLifecycleGatewayStub(initial)`(`emit(state)`), `createPurchasesGatewayStub`(`isConfigured()`, `getListenerCount()`), `createPushNotificationGatewayStub(overrides)`(수신·응답을 `emit*`로 흘림), `createMemoryObservableSyncStorage`(남은 구독 수), `createMemorySyncStorage`(`keys`·`clear` 포함), `createMemoryTokenStore(tokens)`, `createIdGeneratorStub`(호출마다 다른 id).
 - SDK를 `jest.mock`하는 `shared/infra` 어댑터 테스트는 `core.ts` 대신 도구 파일을 직접 import한다. 앱 전체가 가로챈 SDK보다 먼저 읽히지 않게 하기 위해서다.
+- 서버가 코드로 거절한 실패는 `createApiError(code, { message, status, details, retryAfterMs })`(`api-error.ts`, `core.ts`)로 만들고 `new ApiError(`를 테스트에 직접 쓰지 않는다. 문구·상태를 주지 않으면 서버 카탈로그(`Errors[code]`)의 값이고, 기능 fixture의 `create{Feature}ApiError`는 기능 기본 코드를 정해 이것을 부른다.
 - 기타: 끝나는 시점·실패를 테스트가 정하는 Promise는 내장 `Promise.withResolvers<T>()`를 쓴다(앱 코드는 lint가 막는다). 그 위의 `createPendingResponse(value)`(정한 값으로 끝나는 HTTP 응답, 두 번 누름·늦은 응답), `createStalledBodyResponse(status)`(헤더 뒤 본문이 멈춘 응답), `observeSettlement(promise)`(끝나지 않는 대기를 시간 초과 대신 `pending`으로 단언), `respondByPath({ path: 응답 })`(HTTP stub 하나가 URL마다 다른 응답), `createWidgetBridgeStub()`, `createRouteParamsFake(initial)`(공용 expo-router mock의 URL을 움직임), `stubWindowDimensions(width)`, `OverlayStateContext.Provider`(시트 활성 여부를 값으로 준다).
 - fake timer가 켜진 테스트에서 마이크로태스크를 비울 때는 `await Promise.resolve()` 대신 `await jest.advanceTimersByTimeAsync(0)`를 쓴다.
 
@@ -82,6 +83,8 @@ expect(screen.getByRole('textbox', { name: '문의 내용' })).toHaveDisplayValu
 `jest.setup.ts`가 `expo-router`를 `src/testing/mocks/expo-router.tsx`로 바꾸고 `beforeEach`의 `resetExpoRouterMock()`이 기본값으로 되돌린다. 테스트 파일에서 `jest.mock('expo-router', …)`를 새로 쓰지 않는다.
 
 - 제공: `router`(`push`, `replace`, `back`, `navigate`, `setParams`, `canGoBack`), `useLocalSearchParams`, `useIsFocused`, `useRouter`, `useNavigation`, `Redirect`, `Stack.Screen`, `Stack.Toolbar`.
+- 화면이 하나뿐이고 focus돼 있어 `useNavigation()`은 렌더마다 같은 객체이고 그 `setParams`는 `router.setParams`로 간다. route 값 setter(`useView`·`useRouteParams`)는 화면의 `navigation.setParams`를 쓰지만 테스트는 `router.setParams`·`createRouteParamsFake`로 본다. 다른 화면이 focus된 뒤의 쓰기는 진짜 라우터(`renderRouteHook`)로 본다.
+- `useNavigationContainerRef`는 준비되지 않은 컨테이너를 돌려준다. 루트 상태를 읽는 코드(`toSelectedTabPath`)는 테스트가 `getRootState`를 정한다.
 - `Stack.Toolbar.Button`은 접근성 이름이 있는 버튼으로 그려진다(`getByLabelText`).
 - 여기에 없는 export(`useFocusEffect` 등)는 `undefined`다. 쓰는 화면을 테스트하려면 먼저 이 파일에 더한다.
 - 이동은 호출을 확인한다. 실제 내비게이션은 기기에서 확인한다.

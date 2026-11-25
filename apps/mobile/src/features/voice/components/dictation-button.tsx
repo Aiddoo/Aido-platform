@@ -1,3 +1,4 @@
+import { useDismissKeyboard } from '@src/shared/hooks/use-dismiss-keyboard';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useOnScreenBlur } from '@src/shared/hooks/use-on-screen-blur';
 import { useTranslation } from '@src/shared/i18n';
@@ -5,7 +6,6 @@ import { MicIcon, PauseIcon } from '@src/shared/ui';
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { useRef } from 'react';
-import { Keyboard } from 'react-native';
 
 import { useDictation } from '../hooks/use-dictation';
 
@@ -18,6 +18,7 @@ interface DictationButtonProps extends Omit<
 }
 
 export function DictationButton({ value, onChange, ...pressableProps }: DictationButtonProps) {
+  const dismissKeyboard = useDismissKeyboard();
   const { t } = useTranslation('voice');
   const fontScaledSize = useFontScaledSize();
   const baseTextRef = useRef('');
@@ -35,7 +36,7 @@ export function DictationButton({ value, onChange, ...pressableProps }: Dictatio
       stop();
       return;
     }
-    Keyboard.dismiss();
+    dismissKeyboard();
     baseTextRef.current = value.trim().length > 0 ? `${value.trim()} ` : '';
     start();
   };

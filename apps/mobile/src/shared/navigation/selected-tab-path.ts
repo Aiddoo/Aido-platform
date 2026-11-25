@@ -55,9 +55,14 @@ export function toSelectedTabPath(path: string): string {
   return isTabScreen ? `${tab.groupPath}${path}` : path;
 }
 
-/** 위에 쌓인 route부터 내려가 탭 묶음을 찾는다. 탭 밖 route가 맨 위여도 그 아래 탭 묶음이 고른 탭이다 */
+/**
+ * focus된 route부터 아래로 내려가 탭 묶음을 찾는다. 탭 밖 route가 맨 위여도 그 아래 탭 묶음이 고른 탭이다.
+ * focus 위에 남은 route(index 밖)는 보이지 않는 화면이라 보지 않는다
+ */
 function findSelectedTab(state: NavigatorState | undefined, groupPath = ''): SelectedTab | null {
-  for (const route of (state?.routes ?? []).toReversed()) {
+  const routes = state?.routes ?? [];
+  const focusedIndex = state?.index ?? routes.length - 1;
+  for (const route of routes.slice(0, focusedIndex + 1).toReversed()) {
     if (route.name === TABS_ROUTE_NAME) {
       const tab = route.state?.routes[route.state.index ?? 0];
       return tab == null

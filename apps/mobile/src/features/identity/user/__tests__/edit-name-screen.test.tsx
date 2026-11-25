@@ -1,4 +1,3 @@
-import { ApiError } from '@src/core/errors/api-error';
 import '@src/shared/i18n/init';
 import { fail, ok } from '@src/core/errors/result';
 import { NetworkError } from '@src/shared/errors/infra-error';
@@ -10,6 +9,7 @@ import {
   createTestQueryClient,
   createTestDi,
   deliverQueryNotifications,
+  createApiError,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
@@ -69,7 +69,7 @@ describe('이름 수정 화면', () => {
   it('서버가 거절하면 한 번 알리고 입력값을 둔 채 화면에 머물며 이름은 원래대로 둔다', async () => {
     // Given
     httpClient.patch.mockResolvedValue(
-      fail(new ApiError('SYS_0001', '이름을 바꿀 수 없어요', 400)),
+      fail(createApiError('SYS_0001', { message: '이름을 바꿀 수 없어요', status: 400 })),
     );
     const { queryClient, haptics, analytics } = await renderEditName(httpClient);
     await typeName('새이름');

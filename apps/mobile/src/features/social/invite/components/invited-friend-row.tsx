@@ -8,7 +8,7 @@ import { formatYearAwareDateLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -21,7 +21,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { match, P } from 'ts-pattern';
 
@@ -199,6 +199,7 @@ function InvitedFriendWaitingAction({ friend }: { friend: InvitedFriend }) {
 /** 친구 독촉 콕 시트를 route로 연다. 보내고 나면 기존 콕 캐시가 쿨다운을 다시 읽어 칩으로 바뀐다 */
 function InvitedFriendNudgeButton({ friend }: { friend: InvitedFriend }) {
   const { t } = useTranslation('invite');
+  const router = useRouter();
   const push = useSingleTap(router.push);
   const displayName = friend.name ?? friend.userTag;
 

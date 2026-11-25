@@ -20,21 +20,23 @@ import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
   LineTabTrigger,
+  nativeIcon,
   QueryErrorBoundary,
   StyledSafeAreaView,
   ViewTabs,
 } from '@src/shared/ui';
-import { Stack, router } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { Tabs } from 'heroui-native';
 import { Suspense } from 'react';
 import { match } from 'ts-pattern';
 
-const SEARCH_ICON = process.env.EXPO_OS === 'ios' ? 'magnifyingglass' : Search;
+const SEARCH_ICON = nativeIcon({ ios: 'magnifyingglass', android: Search });
 /** iOS는 글자 버튼(편집/완료), Android 툴바는 글자를 그리지 않아 아이콘을 쓴다. */
-const EDIT_ICON = process.env.EXPO_OS === 'ios' ? undefined : Edit;
-const DONE_ICON = process.env.EXPO_OS === 'ios' ? undefined : Check;
+const EDIT_ICON = nativeIcon({ ios: undefined, android: Edit });
+const DONE_ICON = nativeIcon({ ios: undefined, android: Check });
 
 export default function FriendsScreen() {
+  const router = useRouter();
   const push = useSingleTap(router.push);
 
   const { t } = useTranslation(['friend', 'common']);

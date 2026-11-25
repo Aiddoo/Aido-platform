@@ -1,14 +1,16 @@
 import type { ErrorCodeType } from '@aido/api/errors';
-import { ApiError } from '@src/core/errors/api-error';
 import { ParseError, ServerError } from '@src/shared/errors/infra-error';
+import { createApiError } from '@src/testing/core';
 
 import { isLocationNotRegisteredError, isWeatherProviderUnavailableError } from './weather.error';
 
 describe('isLocationNotRegisteredError', () => {
   it('서버에 위치가 없다는 WEATHER_1902만 위치 등록 안내로 분류한다', () => {
     // Given
-    const notRegistered = new ApiError('WEATHER_1902', '위치 정보가 등록되지 않았어요', 404);
-    const other = new ApiError('SYS_0001', '오류', 400);
+    const notRegistered = createApiError('WEATHER_1902', {
+      message: '위치 정보가 등록되지 않았어요',
+    });
+    const other = createApiError('SYS_0001', { message: '오류', status: 400 });
 
     // When
     const isRegistrationMissing = isLocationNotRegisteredError(notRegistered);

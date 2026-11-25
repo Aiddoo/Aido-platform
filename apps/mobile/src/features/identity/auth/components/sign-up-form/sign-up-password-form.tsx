@@ -1,10 +1,10 @@
 import { ANIMATION } from '@src/shared/constants/animation';
+import { useDismissKeyboard } from '@src/shared/hooks/use-dismiss-keyboard';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { KeyboardAdaptiveButton, VStack, FormStepLayout, Box, Spacing } from '@src/shared/ui';
 import { useCallback, useState } from 'react';
 import { Controller, type UseFormReturn, useFormState, useWatch } from 'react-hook-form';
-import { Keyboard } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
@@ -27,6 +27,7 @@ interface SignUpPasswordFormProps {
 }
 
 export function SignUpPasswordForm({ form, step, onNextStep, onSubmit }: SignUpPasswordFormProps) {
+  const dismissKeyboard = useDismissKeyboard();
   const { t } = useTranslation('auth');
   const { control } = form;
   const formState = useFormState({ control, name: ['password', 'passwordConfirm'] });
@@ -57,7 +58,7 @@ export function SignUpPasswordForm({ form, step, onNextStep, onSubmit }: SignUpP
     match(step)
       .with('password', onNextStep)
       .with('passwordConfirm', () => {
-        Keyboard.dismiss();
+        dismissKeyboard();
         setIsTermsOpen(true);
       })
       .exhaustive();

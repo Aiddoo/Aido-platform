@@ -10,11 +10,12 @@ import {
   SettingsListGroup,
   SettingsScreenLayout,
 } from '@src/shared/ui';
-import { router, Stack } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 import { Suspense, useState } from 'react';
 
 export default function ProfileScreen() {
   const [isImageSheetOpen, setIsImageSheetOpen] = useState(false);
+  const router = useRouter();
   const push = useSingleTap(router.push);
   const { t } = useTranslation('settings');
 

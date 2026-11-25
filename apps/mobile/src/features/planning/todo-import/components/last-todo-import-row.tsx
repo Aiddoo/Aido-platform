@@ -3,12 +3,12 @@ import { formatYearAwareDateLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import { useStoredValue } from '@src/shared/storage/use-stored-value';
-import { QueryErrorBoundary, SettingsListGroup } from '@src/shared/ui';
+import { QueryErrorBoundary, QueryErrorFallback, SettingsListGroup } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { type ComponentProps, Suspense, useEffect, useEffectEvent } from 'react';
 
 import { TodoImportPolicy } from '../domains/todo-import.model';
@@ -29,8 +29,9 @@ export function LastTodoImportRow(props: LastTodoImportRowProps) {
     return null;
   }
 
+  // 지난 가져오기를 읽지 못해도 새로 가져오는 데는 지장이 없어 줄을 숨긴다
   return (
-    <QueryErrorBoundary fallback={LastTodoImportRow.Error} resetKeys={[lastImportId]}>
+    <QueryErrorBoundary fallback={QueryErrorFallback.Hidden} resetKeys={[lastImportId]}>
       {/* 기한이 지난 가져오기는 줄이 그려지지 않아, 스켈레톤을 보였다 걷으면 아래 글이 들썩인다 */}
       <Suspense fallback={null}>
         <LastTodoImportRow.Undoable
@@ -55,6 +56,7 @@ LastTodoImportRow.Undoable = function Undoable({ importId, onExpired, ...props }
   const now = useMinuteNow();
   const todayKey = useTodayKey();
   const dateFormatContext = useDateFormatContext();
+  const router = useRouter();
   const push = useSingleTap(router.push);
   const { data: todoImport } = useSuspenseQuery(useGetTodoImportQueryOptions({ importId }));
   // 처리 중인 가져오기는 끝나는 것을 기다리는 조회가 같은 기억을 쓰므로 끝난 뒤에만 지운다
@@ -86,9 +88,4 @@ LastTodoImportRow.Undoable = function Undoable({ importId, onExpired, ...props }
       />
     </SettingsListGroup>
   );
-};
-
-/** 지난 가져오기를 읽지 못해도 새로 가져오는 데는 지장이 없어 줄을 숨긴다 */
-LastTodoImportRow.Error = function ErrorFallback() {
-  return null;
 };

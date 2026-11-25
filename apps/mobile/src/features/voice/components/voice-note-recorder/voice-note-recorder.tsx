@@ -8,6 +8,7 @@ import { useSuspenseMyAccountId } from '@src/features/identity/user/hooks/use-su
 import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
 import { getErrorMessage } from '@src/shared/errors/to-error';
 import { useAndroidBackHandler } from '@src/shared/hooks/use-android-back-handler';
+import { useAppWindow } from '@src/shared/hooks/use-app-window';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useIsOnline } from '@src/shared/hooks/use-is-online';
 import { useOnScreenBlur } from '@src/shared/hooks/use-on-screen-blur';
@@ -32,10 +33,9 @@ import {
 import { useAppToast } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useQuery } from '@tanstack/react-query';
-import { Stack, router } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { type ComponentProps, useEffect, useEffectEvent, useLayoutEffect, useRef } from 'react';
-import { useWindowDimensions } from 'react-native';
 import { match, P } from 'ts-pattern';
 
 import { VOICE_LOG_EVENT } from '../../constants/voice-log-events';
@@ -69,6 +69,7 @@ export function VoiceNoteRecorder() {
   const [locale] = useRecognitionLanguage();
   const [{ draftId: seedDraftId, entry }] = useRouteParams(voiceNoteRecordParamsSchema);
 
+  const router = useRouter();
   const recording = useVoiceNoteRecording({
     accountId,
     locale,
@@ -350,7 +351,7 @@ VoiceNoteRecorder.StoppedControls = function StoppedControls({
 VoiceNoteRecorder.Loading = function Loading() {
   const isOnline = useIsOnline();
   const isCompact = useWindowSizeClass() === 'compact';
-  const { height: windowHeight } = useWindowDimensions();
+  const { height: windowHeight } = useAppWindow();
   const { size: ringSize } = getRecordingRingLayout(windowHeight);
 
   return match(isOnline)
@@ -462,6 +463,7 @@ function useRecordClose({ state, hasText, discard, finish }: RecordCloseOptions)
   const logger = useLogger();
   const confirmDialog = useConfirmDialog();
 
+  const router = useRouter();
   const handleClose = async () => {
     if (VoiceCapturePolicy.isWrappingUp(state)) {
       return;

@@ -1,4 +1,4 @@
-import { ApiError } from '@src/core/errors/api-error';
+import { createApiError } from '@src/testing/core';
 
 import { PlanRequestPolicy } from './plan-request.model';
 
@@ -52,7 +52,7 @@ describe('PlanRequestPolicy', () => {
 
     it('내용이 다르다는 AI_1318 뒤에는 다음에 누를 때 새 키를 만든다', () => {
       // Given
-      const error = new ApiError('AI_1318', '오류', 422);
+      const error = createApiError('AI_1318', { message: '오류' });
 
       // When
       const next = PlanRequestPolicy.findRequestToRetry(previous, error);
@@ -63,7 +63,7 @@ describe('PlanRequestPolicy', () => {
 
     it('처리 중(AI_1314)·네트워크 오류 뒤에는 같은 키를 다시 쓴다', () => {
       // Given
-      const error = new ApiError('AI_1314', '처리 중', 409);
+      const error = createApiError('AI_1314', { message: '처리 중' });
 
       // When
       const next = PlanRequestPolicy.findRequestToRetry(previous, error);

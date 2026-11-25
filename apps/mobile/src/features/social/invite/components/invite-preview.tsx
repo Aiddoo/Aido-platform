@@ -18,7 +18,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import { match } from 'ts-pattern';
@@ -110,6 +110,7 @@ InvitePreview.Empty = function Empty() {
 
 function EnterCodeButton() {
   const { t } = useTranslation('invite');
+  const router = useRouter();
   const replace = useSingleTap(router.replace);
 
   return (

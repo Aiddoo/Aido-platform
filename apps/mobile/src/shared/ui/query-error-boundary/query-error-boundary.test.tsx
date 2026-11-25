@@ -1,7 +1,7 @@
 import { ErrorCode } from '@aido/api/errors';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
-import { ApiError, NetworkError, ServerError } from '@src/shared/errors';
-import { createErrorReporterStub, createTestDi } from '@src/testing/core';
+import { NetworkError, ServerError } from '@src/shared/errors';
+import { createErrorReporterStub, createTestDi, createApiError } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { fireEvent } from '@testing-library/react-native';
 import { router } from 'expo-router';
@@ -66,7 +66,7 @@ describe('QueryErrorBoundary 관측', () => {
   it('일시 401(auth-transition)은 에러 이벤트 대신 warning 메시지로 즉시 남긴다', async () => {
     // Given
     // 콜드 스타트 컨테인먼트: 카드가 떠도 Sentry가 무음이면 원인 추적이 불가능하다
-    const error = new ApiError(ErrorCode.AUTH_0101, '인증 정보가 올바르지 않아요', 401);
+    const error = createApiError(ErrorCode.AUTH_0101, { message: '인증 정보가 올바르지 않아요' });
 
     // When
     await renderWithBoundary(error);
@@ -82,7 +82,9 @@ describe('QueryErrorBoundary 관측', () => {
 
   it('fallback이 안내하는 404 상태(위치 미등록)는 예외 이슈 없이 breadcrumb만 남긴다', async () => {
     // Given
-    const error = new ApiError(ErrorCode.WEATHER_1902, '위치 정보가 등록되지 않았어요', 404);
+    const error = createApiError(ErrorCode.WEATHER_1902, {
+      message: '위치 정보가 등록되지 않았어요',
+    });
 
     // When
     await renderWithBoundary(error);
@@ -95,9 +97,12 @@ describe('QueryErrorBoundary 관측', () => {
   });
 
   it.each([
-    ['기능 꺼짐 403(INVITE_2105)', new ApiError(ErrorCode.INVITE_2105, '꺼짐', 403)],
-    ['끊긴 친구의 할 일 403(FOLLOW_0906)', new ApiError(ErrorCode.FOLLOW_0906, '볼 수 없음', 403)],
-    ['권한 없음 403', new ApiError(ErrorCode.AUTH_0108, '권한 없음', 403)],
+    ['기능 꺼짐 403(INVITE_2105)', createApiError(ErrorCode.INVITE_2105, { message: '꺼짐' })],
+    [
+      '끊긴 친구의 할 일 403(FOLLOW_0906)',
+      createApiError(ErrorCode.FOLLOW_0906, { message: '볼 수 없음' }),
+    ],
+    ['권한 없음 403', createApiError(ErrorCode.AUTH_0108, { message: '권한 없음' })],
   ])('%s는 다시 해도 같은 상태라 이슈 없이 breadcrumb만 남긴다', async (_case, error) => {
     // When
     await renderWithBoundary(error);

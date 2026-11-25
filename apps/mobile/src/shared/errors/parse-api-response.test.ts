@@ -1,5 +1,5 @@
-import { ApiError } from '@src/core/errors/api-error';
 import { fail, ok } from '@src/core/errors/result';
+import { createApiError } from '@src/testing/core';
 import { z } from 'zod';
 
 import { ParseError } from './infra-error';
@@ -25,7 +25,7 @@ describe('parseApiResponse', () => {
 
   it('4xx 결과는 파싱하지 않고 그대로 돌려준다', () => {
     // Given
-    const response = fail(new ApiError('SYS_0001', '실패', 400));
+    const response = fail(createApiError('SYS_0001', { message: '실패', status: 400 }));
 
     // When
     const result = parseApiResponse(response, schema, toCount, '[Test] Invalid response');

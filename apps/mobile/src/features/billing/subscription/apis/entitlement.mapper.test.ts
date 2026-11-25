@@ -1,8 +1,8 @@
 import { entitlementSnapshotSchema } from '@aido/api/contracts/entitlement/v1';
 import { ErrorCode } from '@aido/api/errors';
 import { PLAN_FEATURE_KEYS } from '@aido/api/vocabulary';
-import { ApiError } from '@src/core/errors/api-error';
 import { toInstant } from '@src/shared/date/instant';
+import { createApiError } from '@src/testing/core';
 
 import {
   createEntitlementSnapshotDto,
@@ -108,7 +108,7 @@ describe('parseLimitedFeature', () => {
 
   it('한도가 아닌 오류는 null이다', () => {
     // Given
-    const error = new ApiError(ErrorCode.AI_1302, '실패', 422);
+    const error = createApiError(ErrorCode.AI_1302, { message: '실패' });
 
     // When
     const limited = parseLimitedFeature(error);

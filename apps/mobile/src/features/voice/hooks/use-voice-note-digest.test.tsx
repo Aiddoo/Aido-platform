@@ -1,6 +1,5 @@
 import '@src/shared/i18n/init';
 import { AI_DATA_SHARING_CONSENT } from '@aido/api/vocabulary';
-import { ApiError } from '@src/core/errors/api-error';
 import { fail, ok } from '@src/core/errors/result';
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
 import { ENTITLEMENT_QUERY_KEYS } from '@src/features/billing/subscription/queries/entitlement-query-keys';
@@ -16,6 +15,7 @@ import {
   createTestDi,
   createTestQueryClient,
   createVoiceNoteStorageFake,
+  createApiError,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { onlineManager } from '@tanstack/react-query';
@@ -118,14 +118,18 @@ describe('useVoiceNoteDigest', () => {
   it('동의 안내에서 나중에를 누르면 동의가 필요하다고 보이고 다시 정리하면 안내를 다시 띄워 이어 간다', async () => {
     // Given
     const { httpClient, di } = await renderDigest();
-    httpClient.post.mockResolvedValueOnce(fail(new ApiError('AI_1311', '동의 필요', 403)));
+    httpClient.post.mockResolvedValueOnce(
+      fail(createApiError('AI_1311', { message: '동의 필요' })),
+    );
     // 동의를 답할 때까지 끝나지 않는 핸들러라 기다리지 않는다
     fireEvent.press(screen.getByTestId('digest')).catch(() => undefined);
     await screen.findByTestId('ai-consent-sheet');
     fireEvent.press(screen.getByTestId('ai-consent-later')).catch(() => undefined);
     await waitFor(() => expect(screen.queryByTestId('ai-consent-sheet')).toBeNull());
     expect(screen.getByTestId('failure')).toHaveTextContent('consent-required:false');
-    httpClient.post.mockResolvedValueOnce(fail(new ApiError('AI_1311', '동의 필요', 403)));
+    httpClient.post.mockResolvedValueOnce(
+      fail(createApiError('AI_1311', { message: '동의 필요' })),
+    );
     httpClient.post.mockResolvedValueOnce(ok(createVoiceNoteDigestDto()));
     httpClient.patch.mockResolvedValue(ok(AGREED_CONSENT_DTO));
 

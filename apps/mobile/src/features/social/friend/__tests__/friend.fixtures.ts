@@ -7,7 +7,7 @@ import {
   sentRequestsResponseSchema,
 } from '@aido/api/contracts/follow/v1';
 import type { ErrorCodeType } from '@aido/api/errors';
-import { ApiError } from '@src/core/errors/api-error';
+import { createApiError } from '@src/testing/api-error';
 import { defineFixture } from '@src/testing/fixture';
 
 import { friendUserSchema, searchedUserSchema } from '../domains/friend.model';
@@ -143,11 +143,10 @@ export const createSearchUsersDto = defineFixture(searchUsersResponseSchema, {
 export function createFriendApiError(
   overrides?: Partial<{ code: ErrorCodeType; message: string; status: number }>,
 ) {
-  return new ApiError(
-    overrides?.code ?? 'FOLLOW_0901',
-    overrides?.message ?? '자기 자신에게 친구 요청을 보낼 수 없어요',
-    overrides?.status ?? 400,
-  );
+  return createApiError(overrides?.code ?? 'FOLLOW_0901', {
+    message: overrides?.message ?? '자기 자신에게 친구 요청을 보낼 수 없어요',
+    status: overrides?.status ?? 400,
+  });
 }
 
 const friendUser = defineFixture(friendUserSchema, {

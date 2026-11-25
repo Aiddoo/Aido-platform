@@ -20,6 +20,7 @@ export function ModalBottomSheet({
 }: ModalBottomSheetProps) {
   useEffect(() => {
     if (isOpen) {
+      // 키보드 시트가 열린 동안은 keyboard-controller를 꺼 두어(setEnabled) 그 키보드 상태를 믿을 수 없다. 시트 부품은 RN으로 내린다
       Keyboard.dismiss();
     }
   }, [isOpen]);

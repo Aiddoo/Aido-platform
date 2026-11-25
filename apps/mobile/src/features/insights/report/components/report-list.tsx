@@ -7,7 +7,7 @@ import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context'
 import { useLocaleContext } from '@src/shared/hooks/use-locale-context';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -33,7 +33,7 @@ import {
   useSuspenseQuery,
 } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
-import { type Href, Link, router } from 'expo-router';
+import { type Href, Link, useRouter } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { type ReactNode, Suspense, useState } from 'react';
 import { match } from 'ts-pattern';
@@ -132,6 +132,7 @@ interface ReportListLatestProps {
 
 ReportList.Latest = function Latest({ report, href, trend, testID }: ReportListLatestProps) {
   const { t } = useTranslation('ai');
+  const router = useRouter();
   // Item과 같은 이유로 Link와 같은 navigate를 쓴다
   const navigate = useSingleTap(router.navigate);
   const dateFormatContext = useDateFormatContext();
@@ -191,6 +192,7 @@ interface ReportListItemProps {
 
 ReportList.Item = function Item({ report, href, isLast = false }: ReportListItemProps) {
   const { t } = useTranslation('ai');
+  const router = useRouter();
   // Link가 navigate로 열어 같은 상세는 한 번만 쌓인다. 안쪽 버튼·메뉴도 같은 동사여야 겹쳐 쌓이지 않는다
   const navigate = useSingleTap(router.navigate);
   const dateFormatContext = useDateFormatContext();
@@ -275,6 +277,7 @@ ReportList.Item = function Item({ report, href, isLast = false }: ReportListItem
 ReportList.Free = function Free() {
   const { t } = useTranslation('ai');
   const { trackEvent } = useTrack();
+  const router = useRouter();
   const push = useSingleTap(router.push);
   const { language } = useLocaleContext();
   const [reportType] = useReportType();

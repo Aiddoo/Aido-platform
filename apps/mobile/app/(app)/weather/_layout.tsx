@@ -11,16 +11,17 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { useAppTheme } from '@src/shared/providers/theme-provider';
 import {
+  nativeIcon,
   SHEET_ROUTE_SCREEN_OPTIONS,
   useStackBackToolbar,
   useStackScreenOptions,
 } from '@src/shared/ui';
 import { useIsFetching, useQueryClient } from '@tanstack/react-query';
-import { router, Stack } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 import { useResolveClassNames } from 'uniwind';
 
-const ALERT_SETTINGS_ICON = process.env.EXPO_OS === 'ios' ? 'bell' : Notifications;
-const REFRESH_ICON = process.env.EXPO_OS === 'ios' ? 'arrow.clockwise' : Refresh;
+const ALERT_SETTINGS_ICON = nativeIcon({ ios: 'bell', android: Notifications });
+const REFRESH_ICON = nativeIcon({ ios: 'arrow.clockwise', android: Refresh });
 
 // 헤더 색·새로고침 버튼이 위치·리포트 조회를 보므로 레이아웃이 읽는다. 화면의 Stack.Toolbar로 옮기면 화면이 그려지기
 // 전 헤더가 비어 깜박일 수 있어 기기에서 확인하기 전까지 여기 둔다
@@ -36,6 +37,7 @@ export default function WeatherLayout() {
     fallbackHref: '/feed',
     buttonContainerColor: headerButtonContainerColor,
   });
+  const router = useRouter();
   const push = useSingleTap(router.push);
   const queryClient = useQueryClient();
   const isRefreshing = useIsFetching(getWeatherReportsFilters()) > 0;

@@ -18,7 +18,7 @@ import {
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { router, useIsFocused } from 'expo-router';
+import { useRouter, useIsFocused } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { type ComponentProps, type ComponentRef, type ReactNode, Suspense, useRef } from 'react';
 import type { View } from 'react-native';
@@ -35,6 +35,7 @@ interface SuggestionEntryProps {
 
 export function SuggestionEntry({ shouldShowHint = true }: SuggestionEntryProps) {
   const { t } = useTranslation(['todo', 'ai']);
+  const router = useRouter();
   const push = useSingleTap(router.push);
   const { data: canUseSuggestions } = useSuspenseQuery({
     ...useGetEntitlementsQueryOptions(),
@@ -71,6 +72,7 @@ SuggestionEntry.Loading = function Loading() {
 
 SuggestionEntry.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['todo', 'ai']);
+  const router = useRouter();
   const push = useSingleTap(router.push);
 
   // 한도 스냅샷이 늦어 프리미엄으로 보였지만 서버는 거절했다. 다시 시도 대신 결제 화면으로 보낸다
@@ -88,6 +90,7 @@ SuggestionEntry.Error = function ErrorFallback({ error, reset }: QueryErrorFallb
 
 function PremiumSuggestionEntry({ shouldShowHint }: { shouldShowHint: boolean }) {
   const { t } = useTranslation(['todo', 'ai']);
+  const router = useRouter();
   const push = useSingleTap(router.push);
   const dateFormatContext = useDateFormatContext();
   // 분석 중 polling이 다른 탭·화면에 가려진 동안 돌지 않게 구독을 끊는다

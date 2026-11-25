@@ -1,9 +1,9 @@
+import { useAppWindow } from '@src/shared/hooks/use-app-window';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { cn } from '@src/shared/utils/cn';
 import { Popover, usePopover } from 'heroui-native';
 import { type ComponentProps, type ReactNode, useLayoutEffect, useRef } from 'react';
-import { useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { match } from 'ts-pattern';
 
@@ -154,7 +154,7 @@ export function HintPopoverContent({
 }: HintPopoverContentProps) {
   const { t } = useTranslation('common');
   const fontScaledSize = useFontScaledSize();
-  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const { width: windowWidth, height: windowHeight } = useAppWindow();
   const {
     top: topInset,
     bottom: bottomInset,

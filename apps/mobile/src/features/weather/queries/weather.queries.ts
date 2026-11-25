@@ -12,7 +12,7 @@ import { getNowInstant } from '@src/shared/date/clock';
 import { addDaysToDateKey } from '@src/shared/date/date-key';
 import { fromEpochMs, type Instant, toEpochMs } from '@src/shared/date/instant';
 import { getErrorMessage, toError, unwrap } from '@src/shared/errors';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { shouldRetryQuery } from '@src/shared/query/query-retry';
 import {
   type Query,

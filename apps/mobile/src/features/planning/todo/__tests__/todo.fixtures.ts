@@ -5,8 +5,8 @@ import {
   todoListResponseSchema,
   todoSchema as todoDtoSchema,
 } from '@aido/api/contracts/todo/v1';
-import { ErrorCode, type ErrorCodeType, Errors } from '@aido/api/errors';
-import { ApiError } from '@src/core/errors/api-error';
+import { ErrorCode, type ErrorCodeType } from '@aido/api/errors';
+import { createApiError } from '@src/testing/api-error';
 import { createDateKey } from '@src/testing/date-key';
 import { defineFixture } from '@src/testing/fixture';
 
@@ -67,13 +67,12 @@ export const createTodoItemResponseDto = defineFixture(todoItemResponseSchema, {
   updatedAt: '2026-03-08T00:00:00.000Z',
 });
 
-/** 상태를 주지 않으면 서버 카탈로그가 그 코드에 붙이는 상태다 */
 export function createTodoApiError({
   code = ErrorCode.TODO_0801,
   message = '할일을 찾을 수 없어요',
-  status = Errors[code].httpStatus,
+  status,
 }: Partial<{ code: ErrorCodeType; message: string; status: number }> = {}) {
-  return new ApiError(code, message, status);
+  return createApiError(code, { message, status });
 }
 
 export const createTodoDetails = defineFixture(todoDetailsSchema, {

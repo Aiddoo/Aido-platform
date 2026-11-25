@@ -2,6 +2,7 @@ import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { selectPageItems } from '@src/shared/domains/cursor-page.model';
 import { getUserFacingMessage } from '@src/shared/errors';
+import { useAppWindow } from '@src/shared/hooks/use-app-window';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -23,7 +24,6 @@ import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { clamp } from 'es-toolkit';
 import { Skeleton } from 'heroui-native';
 import { Suspense, type ComponentProps } from 'react';
-import { useWindowDimensions } from 'react-native';
 
 import {
   NudgeThanksPreviewPolicy,
@@ -86,7 +86,7 @@ NudgeThanksBottomSheet.Recipients = function Recipients({ onClose }: { onClose: 
   const { t } = useTranslation(['todo', 'common']);
   const fontScaledSize = useFontScaledSize();
   const [todoId] = useTodoId();
-  const { height } = useWindowDimensions();
+  const { height } = useAppWindow();
   const thanksPreviewQuery = useSuspenseInfiniteQuery(
     useGetNudgeThanksPreviewInfiniteQueryOptions({ todoId }),
   );

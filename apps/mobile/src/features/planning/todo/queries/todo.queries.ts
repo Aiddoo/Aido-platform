@@ -5,7 +5,7 @@ import { PERSISTED_QUERY_OPTIONS } from '@src/shared/constants/query-persistence
 import { MINUTE_MS } from '@src/shared/constants/time-units';
 import { readDeviceLocalDateState } from '@src/shared/date/clock';
 import { addDaysToDateKey, type DateKey } from '@src/shared/date/date-key';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { queryOptions } from '@tanstack/react-query';
 import { keyBy, take } from 'es-toolkit';
 

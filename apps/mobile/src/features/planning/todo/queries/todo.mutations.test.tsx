@@ -2,8 +2,7 @@
  * @jest-environment <rootDir>/jest.time-zone-environment.cjs
  * @time-zone Asia/Seoul
  */
-import { ErrorCode, HttpStatus } from '@aido/api/errors';
-import { ApiError } from '@src/core/errors/api-error';
+import { ErrorCode } from '@aido/api/errors';
 import { fail, ok } from '@src/core/errors/result';
 import { createStoreReviewRepository } from '@src/features/device/store-review/repositories/store-review.repository';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
@@ -16,6 +15,7 @@ import {
   createMemoryObservableSyncStorage,
   createPendingResponse,
   createTestDi,
+  createApiError,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreenHook } from '@src/testing/render';
@@ -281,9 +281,12 @@ describe('useUpdateTodoScheduleMutationOptions', () => {
       const httpClient = createHttpClientStub();
       httpClient.patch.mockResolvedValue(
         fail(
-          new ApiError(ErrorCode.TODO_0842, '서버 문구', HttpStatus.FORBIDDEN, {
-            limit: 7,
-            activeCount: 7,
+          createApiError(ErrorCode.TODO_0842, {
+            message: '서버 문구',
+            details: {
+              limit: 7,
+              activeCount: 7,
+            },
           }),
         ),
       );

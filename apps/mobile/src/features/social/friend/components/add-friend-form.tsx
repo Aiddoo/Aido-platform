@@ -5,7 +5,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { FormScrollView, Input, KeyboardAdaptiveButton, StyledSafeAreaView } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import type { PropsWithChildren } from 'react';
 import { Controller, useForm, useFormState } from 'react-hook-form';
 
@@ -23,6 +23,7 @@ interface AddFriendFormProps extends PropsWithChildren {
 
 /** 태그 입력과 키보드 위 요청 버튼. 입력 위에 놓는 제목과 안내는 화면이 children으로 넘긴다 */
 export function AddFriendForm({ children, onFriendLimitInvite }: AddFriendFormProps) {
+  const router = useRouter();
   const goBack = useSingleTap(router.back);
   const { t } = useTranslation('friend');
   const sendRequest = useMutation(useSendRequestByTagMutationOptions({ onFriendLimitInvite }));

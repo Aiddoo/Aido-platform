@@ -12,7 +12,7 @@ import type { TimeOfDay } from '@src/shared/date/time-of-day';
 import { toHHmm } from '@src/shared/date/zoned';
 import { getErrorMessage } from '@src/shared/errors';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
 import { useStoredValueStorage } from '@src/shared/storage/use-stored-value';

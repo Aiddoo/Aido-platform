@@ -4,8 +4,8 @@ import {
   todoCategorySchema as todoCategoryDtoSchema,
   todoCategoryWithCountSchema as todoCategoryWithCountDtoSchema,
 } from '@aido/api/contracts/todo-category/v1';
-import { ErrorCode, type ErrorCodeType, Errors } from '@aido/api/errors';
-import { ApiError } from '@src/core/errors/api-error';
+import { ErrorCode, type ErrorCodeType } from '@aido/api/errors';
+import { createApiError } from '@src/testing/api-error';
 import { defineFixture } from '@src/testing/fixture';
 
 import { todoCategoryDeletionPreviewSchema } from '../domains/todo-category-deletion.model';
@@ -61,11 +61,10 @@ export const createTodoCategoryListDto = defineFixture(todoCategoryListResponseS
   ],
 });
 
-/** 상태를 주지 않으면 서버 카탈로그가 그 코드에 붙이는 상태다 */
 export function createTodoCategoryApiError({
   code = ErrorCode.TODO_CATEGORY_0851,
   message = '카테고리를 찾을 수 없어요',
-  status = Errors[code].httpStatus,
+  status,
 }: Partial<{ code: ErrorCodeType; message: string; status: number }> = {}) {
-  return new ApiError(code, message, status);
+  return createApiError(code, { message, status });
 }

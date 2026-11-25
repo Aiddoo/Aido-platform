@@ -4,11 +4,11 @@ import { useTrack, useTrackView } from '@src/shared/analytics';
 import { useLocaleContext } from '@src/shared/hooks/use-locale-context';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import { Button, QueryErrorFallback, type QueryErrorFallbackProps } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 
 import { sampleReportParamsSchema } from '../schemas/report-params.schema';
 import { createSampleReport } from '../utils/sample-report.view-model';
@@ -34,6 +34,7 @@ export function SampleActivityReport() {
 SampleActivityReport.SubscribeButton = function SubscribeButton() {
   const { t } = useTranslation('ai');
   const { trackEvent } = useTrack();
+  const router = useRouter();
   const push = useSingleTap(router.push);
   const gateParams = {
     feature: getPremiumGateAnalyticsFeature('AI_REPORT'),

@@ -3,7 +3,7 @@ import { getNowInstant } from '@src/shared/date/clock';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { noop } from 'es-toolkit';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useSyncExternalStore } from 'react';
 
 import { shouldShowReentry } from '../domains/whats-new.model';
@@ -20,6 +20,7 @@ export function useWhatsNewFeed({ isStable, isOnboardingSettled }: WhatsNewFeedI
   const { identity, release, shouldAutoOpen } = useWhatsNewAutoOpen({ isOnboardingSettled });
   const repository = useWhatsNewRepository();
   const now = useMinuteNow();
+  const router = useRouter();
   const push = useSingleTap(router.push);
 
   const reentryOpenedAt = useSyncExternalStore(

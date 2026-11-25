@@ -3,15 +3,13 @@ import CheckBox from '@expo/material-symbols/check_box.xml';
 import Delete from '@expo/material-symbols/delete.xml';
 import Keep from '@expo/material-symbols/keep.xml';
 import SmartToy from '@expo/material-symbols/smart_toy.xml';
+import { nativeIcon } from '@src/shared/ui';
 
-const IS_IOS = process.env.EXPO_OS === 'ios';
-
-/** 메모 화면 네이티브 헤더 버튼 아이콘. iOS는 SF Symbol, Android는 Material Symbol을 쓴다. */
 export const MEMO_TOOLBAR_ICON = {
-  pin: IS_IOS ? 'pin' : Keep,
-  pinned: IS_IOS ? 'pin.fill' : Keep,
-  save: IS_IOS ? 'checkmark' : Check,
-  ai: IS_IOS ? 'sparkles' : SmartToy,
-  convertToTodo: IS_IOS ? 'checkmark.square' : CheckBox,
-  delete: IS_IOS ? 'trash' : Delete,
+  pin: nativeIcon({ ios: 'pin', android: Keep }),
+  pinned: nativeIcon({ ios: 'pin.fill', android: Keep }),
+  save: nativeIcon({ ios: 'checkmark', android: Check }),
+  ai: nativeIcon({ ios: 'sparkles', android: SmartToy }),
+  convertToTodo: nativeIcon({ ios: 'checkmark.square', android: CheckBox }),
+  delete: nativeIcon({ ios: 'trash', android: Delete }),
 } as const;

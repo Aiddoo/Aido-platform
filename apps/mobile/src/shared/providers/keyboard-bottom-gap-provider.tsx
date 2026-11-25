@@ -1,3 +1,4 @@
+import { useAppWindow } from '@src/shared/hooks/use-app-window';
 import { Box } from '@src/shared/ui';
 import { getDistanceToWindowBottom } from '@src/shared/utils/get-distance-to-window-bottom';
 import {
@@ -9,13 +10,13 @@ import {
   useRef,
   useState,
 } from 'react';
-import { type LayoutChangeEvent, useWindowDimensions, type View } from 'react-native';
+import { type LayoutChangeEvent, type View } from 'react-native';
 
 const KeyboardBottomGapContext = createContext(0);
 
 /** `KeyboardStickyView`/`KeyboardChatScrollView`는 키보드 높이 전체만큼 움직여, 화면 끝까지 닿지 않는 pane은 이 거리를 빼야 과하게 뜨지 않는다 */
 export function KeyboardBottomGapProvider({ children }: PropsWithChildren) {
-  const { height: windowHeight } = useWindowDimensions();
+  const { height: windowHeight } = useAppWindow();
   const containerRef = useRef<ComponentRef<typeof View>>(null);
   const [keyboardBottomGap, setKeyboardBottomGap] = useState(0);
 

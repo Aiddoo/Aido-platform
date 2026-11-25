@@ -6,7 +6,7 @@ import { formatYearAwareDateLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -24,7 +24,7 @@ import {
   useConfirmDialog,
 } from '@src/shared/ui';
 import { range } from 'es-toolkit';
-import { Link, router } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { ScrollView, StyleSheet } from 'react-native';
 
@@ -42,6 +42,7 @@ export function VoiceNoteDraftList({ limit }: VoiceNoteDraftListProps) {
   const { t } = useTranslation('voiceNote');
   const accountId = useSuspenseMyAccountId();
   const [notes] = useVoiceNotes(accountId);
+  const router = useRouter();
   const push = useSingleTap(router.push);
 
   if (notes.length === 0) {
@@ -100,6 +101,7 @@ VoiceNoteDraftList.Item = function Item({ note }: { note: VoiceNote }) {
   const fontScaledSize = useFontScaledSize();
   const dateFormatContext = useDateFormatContext();
   const todayKey = useTodayKey();
+  const router = useRouter();
   // Link가 navigate로 열어 같은 초안은 한 번만 쌓인다. 메뉴의 열기도 같은 동사여야 겹쳐 쌓이지 않는다
   const navigate = useSingleTap(router.navigate);
   const deleteDraft = useDeleteVoiceNoteDraft(note);

@@ -4,7 +4,7 @@ import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context'
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowRightIcon,
@@ -23,7 +23,7 @@ import {
 import { formatPercent } from '@src/shared/utils/number-format';
 import { useQueryClient, useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
-import { Link, router } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import type { ComponentProps, ReactElement } from 'react';
 
@@ -87,6 +87,7 @@ export function WeeklyAchievementList({ header }: WeeklyAchievementListProps) {
 
 WeeklyAchievementList.Item = function Item({ achievement }: { achievement: WeeklyAchievement }) {
   const { t } = useTranslation('achievement');
+  const router = useRouter();
   // Link가 navigate로 열어 같은 인증서는 한 번만 쌓인다. 메뉴의 열기도 같은 동사여야 겹쳐 쌓이지 않는다
   const navigate = useSingleTap(router.navigate);
   const { trackEvent } = useTrack();

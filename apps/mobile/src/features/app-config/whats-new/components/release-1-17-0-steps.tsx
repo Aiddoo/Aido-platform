@@ -43,7 +43,7 @@ const INTRO_CAT_SIZE = 132;
 const BUBBLE_ICON_SIZE = 18;
 
 type Release1170Step = (typeof RELEASE_1_17_0_STEPS)[number];
-type Release1170StepMap = Record<Release1170Step, object>;
+type Release1170StepMap = Record<Release1170Step, Record<string, never>>;
 
 function getStepPosition(step: Release1170Step): number {
   return RELEASE_1_17_0_STEPS.indexOf(step);
@@ -59,7 +59,7 @@ export function Release1170Steps() {
   const flow = useWhatsNewFlow({ release: RELEASE_1_17_0, source });
   const stepper = useStepper<Release1170StepMap>({
     id: 'whats-new-1.17.0',
-    initial: { step: 'intro', context: {} },
+    initial: { step: 'intro' },
     onStepChange: ({ step }) => flow.trackStepViewed({ step, index: getStepPosition(step) }),
   });
   const { step, history } = stepper;
@@ -68,7 +68,7 @@ export function Release1170Steps() {
   const goNext = () => {
     const next = findNextStep(step);
     if (next != null) {
-      history.push(next, {});
+      history.push(next);
     }
   };
   // 페이저 없이 현재 단계만 그리고, 옆으로 밀면 단계를 넘긴다. 움직이는 동안 React는 다시 그려지지 않는다

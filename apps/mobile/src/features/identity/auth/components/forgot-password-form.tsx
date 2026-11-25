@@ -7,7 +7,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { Input, KeyboardAdaptiveButton, VStack, FormStepLayout, Box } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import {
   Controller,
   useController,
@@ -71,6 +71,7 @@ export function ForgotPasswordForm({ stepTitles }: ForgotPasswordFormProps) {
   });
   const newPasswordConfirm = useController({ control: form.control, name: 'newPasswordConfirm' });
   const { isSubmitting, errors } = useFormState({ control: form.control });
+  const router = useRouter();
   const replace = useSingleTap(router.replace);
 
   const requestCode = async () => {
@@ -91,12 +92,9 @@ export function ForgotPasswordForm({ stepTitles }: ForgotPasswordFormProps) {
     } catch (error) {
       // 문구는 mutation의 meta.errorFeedback이 카탈로그로 보인다
       const fieldError = findVerificationCodeFieldError(error);
-      const codeStepIndex = stepper.historySteps.findIndex(
-        (entry) => entry.step === 'verificationCode',
-      );
-      if (fieldError != null && 0 <= codeStepIndex) {
+      if (fieldError != null) {
         form.setError('code', fieldError);
-        stepper.history.go(codeStepIndex - stepper.index);
+        stepper.history.backTo('verificationCode');
       }
     }
   });

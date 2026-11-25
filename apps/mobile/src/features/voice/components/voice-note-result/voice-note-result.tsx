@@ -4,7 +4,7 @@ import { useTrack } from '@src/shared/analytics';
 import { formatYearAwareDateLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useOnScreenBlur } from '@src/shared/hooks/use-on-screen-blur';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useView } from '@src/shared/hooks/use-view';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';

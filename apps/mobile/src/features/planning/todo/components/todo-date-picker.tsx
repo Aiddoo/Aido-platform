@@ -1,6 +1,6 @@
 import { addDaysToDateKey, getDayOfWeek, type DateKey } from '@src/shared/date/date-key';
 import { getWeekdayLabels } from '@src/shared/date/format/date-labels';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, ListRow, SheetHeaderLayout, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';

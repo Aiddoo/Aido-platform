@@ -5,7 +5,7 @@ import { type Stepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useForm } from 'react-hook-form';
 
 import { toRegisterRequest } from '../../apis/auth.mapper';
@@ -64,17 +64,11 @@ export function SignUpForm({ stepper }: SignUpFormProps) {
   const { t } = useTranslation('auth');
   const haptics = useHaptics();
   const toast = useAppToast();
+  const router = useRouter();
   const goToLogin = useSingleTap(() => router.replace('/(auth)/email-login'));
   const register = useMutation(useRegisterMutationOptions());
   const verify = useMutation(useVerifyEmailMutationOptions());
   const resend = useMutation(useResendVerificationMutationOptions());
-
-  const goBackTo = (step: SignUpStep) => {
-    const index = stepper.historySteps.findIndex((entry) => entry.step === step);
-    if (0 <= index && index !== stepper.index) {
-      stepper.history.go(index - stepper.index);
-    }
-  };
 
   const findInvalidStep = async () => {
     await form.trigger(FIELD_STEPS);
@@ -116,7 +110,7 @@ export function SignUpForm({ stepper }: SignUpFormProps) {
   const submitRegister = async () => {
     const invalidStep = await findInvalidStep();
     if (invalidStep != null) {
-      goBackTo(invalidStep);
+      stepper.history.backTo(invalidStep);
       return false;
     }
     return submitValidRegister();

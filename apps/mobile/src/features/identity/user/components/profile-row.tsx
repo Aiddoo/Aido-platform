@@ -37,7 +37,7 @@ export function ProfileRow({ tierChip }: ProfileRowProps) {
   const isSelected = useIsMyPageMenuItemSelected('/settings/profile');
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const { t } = useTranslation('user');
-  const { copy } = useCopyToClipboard();
+  const copy = useCopyToClipboard();
 
   const handleCopyUserTag = () =>
     copy(user.userTag, {

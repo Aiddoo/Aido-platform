@@ -35,7 +35,7 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
-import { Link, router } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { Menu, Popover, PressableFeedback, Skeleton } from 'heroui-native';
 import { type ReactNode, useState } from 'react';
 import Animated, {
@@ -242,6 +242,7 @@ FriendList.Link = function FriendLink({
   children,
 }: FriendListLinkProps) {
   const { t } = useTranslation(['friend', 'todo', 'moderation']);
+  const router = useRouter();
   // Link가 navigate로 열어 같은 화면은 한 번만 쌓인다. 메뉴도 같은 동사여야 겹쳐 쌓이지 않는다
   const navigate = useSingleTap(router.navigate);
   const push = useSingleTap(router.push);
@@ -302,6 +303,7 @@ FriendList.Link = function FriendLink({
 function FriendModerationMenu({ userId, displayName }: BlockTarget) {
   const { t } = useTranslation('moderation');
   const fontScaledSize = useFontScaledSize();
+  const router = useRouter();
   const push = useSingleTap(router.push);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -369,6 +371,7 @@ FriendList.Error = UserList.Error;
 
 FriendList.Empty = function Empty({ onInvite, inviteWelcomeDays }: FriendListProps) {
   const { t } = useTranslation(['friend', 'invite']);
+  const router = useRouter();
   const push = useSingleTap(router.push);
 
   // 초대를 쓸 수 있으면 링크로 데려오는 길을 먼저, 태그 찾기를 다음으로 보여 준다

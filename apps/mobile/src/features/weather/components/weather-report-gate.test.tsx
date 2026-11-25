@@ -1,4 +1,4 @@
-import { ApiError } from '@src/core/errors/api-error';
+import type { ApiError } from '@src/core/errors/api-error';
 import type { Result } from '@src/core/errors/result';
 import { QueryErrorBoundary } from '@src/shared/ui';
 import {
@@ -6,6 +6,7 @@ import {
   createHttpClientStub,
   createLocationGatewayStub,
   createTestDi,
+  createApiError,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -45,7 +46,9 @@ async function renderGate(response: Result<unknown, ApiError>) {
 describe('WeatherReportGate', () => {
   it('서버에 위치가 없으면(WEATHER_1902) 경계로 던지지 않고 위치 안내를 그린다', async () => {
     // Given
-    const notRegistered = new ApiError('WEATHER_1902', '위치 정보가 등록되지 않았어요', 404);
+    const notRegistered = createApiError('WEATHER_1902', {
+      message: '위치 정보가 등록되지 않았어요',
+    });
 
     // When
     const { errorReporter } = await renderGate({ ok: false, error: notRegistered });
@@ -61,7 +64,7 @@ describe('WeatherReportGate', () => {
 
   it('위치 미등록이 아닌 실패는 그대로 리포트 경계가 맡는다', async () => {
     // Given
-    const unavailable = new ApiError('WEATHER_1901', '날씨 정보를 가져올 수 없어요', 503);
+    const unavailable = createApiError('WEATHER_1901', { message: '날씨 정보를 가져올 수 없어요' });
 
     // When
     await renderGate({ ok: false, error: unavailable });

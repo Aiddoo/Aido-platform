@@ -26,7 +26,7 @@ import {
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { groupBy, noop, range } from 'es-toolkit';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { useState } from 'react';
 import type { AccessibilityActionEvent } from 'react-native';
@@ -129,6 +129,7 @@ interface CategoryAddPillProps {
 
 function CategoryAddPill({ category, date }: CategoryAddPillProps) {
   const fontScaledSize = useFontScaledSize();
+  const router = useRouter();
   const push = useSingleTap(router.push);
 
   return (
@@ -227,6 +228,7 @@ TodoList.Item = function Item({
   const drag = useReorderableDrag();
   const isActive = useIsActive();
   const selectTodo = useSingleTap(onOpenDetail);
+  const router = useRouter();
   const push = useSingleTap(router.push);
   const toggleTodo = useMutation(useToggleTodoMutationOptions());
   const toggleSubTodo = useMutation(useToggleSubTodoMutationOptions());

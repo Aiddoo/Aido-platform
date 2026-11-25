@@ -1,4 +1,4 @@
-import { ApiError } from '@src/core/errors/api-error';
+import { createApiError } from '@src/testing/core';
 
 import { BusinessError } from './business-error';
 import { NetworkError, ParseError } from './infra-error';
@@ -7,7 +7,10 @@ import { getUserFacingMessage } from './user-facing-message';
 describe('getUserFacingMessage — 토스트에 그대로 보여 줄 오류 문구', () => {
   it('서버 BusinessError 메시지는 그대로 쓴다', () => {
     // Given
-    const error = new ApiError('INQUIRY_1501', '문의 내용을 확인해 주세요', 400);
+    const error = createApiError('INQUIRY_1501', {
+      message: '문의 내용을 확인해 주세요',
+      status: 400,
+    });
 
     // When
     const message = getUserFacingMessage(error);

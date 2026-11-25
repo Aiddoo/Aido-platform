@@ -11,7 +11,7 @@ import {
   StyledSafeAreaView,
 } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
 import { Controller, useForm, useFormState } from 'react-hook-form';
 
@@ -28,6 +28,7 @@ interface EmailLoginFormProps {
 export function EmailLoginForm({ children, footer }: EmailLoginFormProps) {
   const { t } = useTranslation('auth');
   const emailLogin = useMutation(useEmailLoginMutationOptions());
+  const router = useRouter();
   const push = useSingleTap(router.push);
   const [viewportSize, handleViewportLayout] = useLayoutSize();
   const form = useForm({

@@ -2,7 +2,7 @@ import { UserList } from '@src/features/identity/user/components/user-list';
 import { formatYearAwareDateLabel } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Button,

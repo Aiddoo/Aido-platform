@@ -1,7 +1,11 @@
 import '@src/shared/i18n/init';
-import { ApiError } from '@src/core/errors/api-error';
 import { NetworkError, ParseError } from '@src/shared/errors';
-import { createErrorReporterStub, createHapticsGatewayStub, createTestDi } from '@src/testing/core';
+import {
+  createErrorReporterStub,
+  createHapticsGatewayStub,
+  createTestDi,
+  createApiError,
+} from '@src/testing/core';
 import { renderScreenHook } from '@src/testing/render';
 import { mutationOptions, useMutation } from '@tanstack/react-query';
 import { act, screen } from '@testing-library/react-native';
@@ -39,7 +43,7 @@ describe('useMutationErrorFeedback', () => {
 
   it.each<[string, unknown, number]>([
     ['예상하지 못한 실패', new ParseError(), 1],
-    ['서버가 코드로 거절한 실패', new ApiError('AI_1303', '한도', 403), 0],
+    ['서버가 코드로 거절한 실패', createApiError('AI_1303', { message: '한도', status: 403 }), 0],
     ['연결 끊김', new NetworkError(), 0],
   ])(
     'errorFeedback이 false여도 %s는 기능 제목 토스트·햅틱 한 번과 보고 %i건이다',

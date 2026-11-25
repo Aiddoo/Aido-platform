@@ -43,7 +43,8 @@ export interface StepperState<Contexts extends StepperContexts> {
 export type StepperAction<Contexts extends StepperContexts> =
   | { type: 'push'; entry: StepEntry<Contexts> }
   | { type: 'replace'; entry: StepEntry<Contexts> }
-  | { type: 'go'; delta: number };
+  | { type: 'go'; delta: number }
+  | { type: 'backTo'; step: StepName<Contexts> };
 
 export function createStepperState<Contexts extends StepperContexts>(
   initial: StepInput<Contexts>,
@@ -101,6 +102,17 @@ function go<Contexts extends StepperContexts>(
   return { entries: state.entries, cursor };
 }
 
+// 기록에 없는 단계면 그대로다
+function backTo<Contexts extends StepperContexts>(
+  state: StepperState<Contexts>,
+  step: StepName<Contexts>,
+): StepperState<Contexts> {
+  const cursor = state.entries.findLastIndex(
+    (entry, index) => index < state.cursor && entry.step === step,
+  );
+  return cursor < 0 ? state : { entries: state.entries, cursor };
+}
+
 export function stepperReducer<Contexts extends StepperContexts>(
   state: StepperState<Contexts>,
   action: StepperAction<Contexts>,
@@ -109,5 +121,6 @@ export function stepperReducer<Contexts extends StepperContexts>(
     .with({ type: 'push' }, ({ entry }) => push(state, entry))
     .with({ type: 'replace' }, ({ entry }) => replace(state, entry))
     .with({ type: 'go' }, ({ delta }) => go(state, delta))
+    .with({ type: 'backTo' }, ({ step }) => backTo(state, step))
     .exhaustive();
 }

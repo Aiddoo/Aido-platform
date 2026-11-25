@@ -4,7 +4,7 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { STACK_MENU_ICON, STACK_MORE_ICON } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
-import { router, Stack } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 
 import { NudgeInteractionPolicy } from '../domains/nudge-interaction.model';
 import { useNudgeId } from '../hooks/use-nudge-id';
@@ -14,6 +14,7 @@ import { useGetNudgeInteractionQueryOptions } from '../queries/todo-nudge.querie
 export function NudgeModerationToolbar() {
   const [nudgeId] = useNudgeId();
   const { t } = useTranslation('moderation');
+  const router = useRouter();
   const push = useSingleTap(router.push);
   const [{ data: nudge }, { data: me }] = useSuspenseQueries({
     queries: [useGetNudgeInteractionQueryOptions({ nudgeId }), useGetMeQueryOptions()],

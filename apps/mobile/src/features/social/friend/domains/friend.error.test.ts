@@ -1,12 +1,15 @@
 import { ErrorCode } from '@aido/api/errors';
-import { ApiError } from '@src/shared/errors';
+import { createApiError } from '@src/testing/core';
 
 import { findFriendLimit } from './friend.error';
 
 describe('findFriendLimit', () => {
   it('서버가 친구 한도 details를 실어 보내면 그 인원을 반환한다', () => {
     // Given
-    const error = new ApiError(ErrorCode.FOLLOW_0909, '친구 한도', 403, { current: 7, limit: 7 });
+    const error = createApiError(ErrorCode.FOLLOW_0909, {
+      message: '친구 한도',
+      details: { current: 7, limit: 7 },
+    });
 
     // When
     const limit = findFriendLimit(error);
@@ -17,7 +20,10 @@ describe('findFriendLimit', () => {
 
   it('details가 한도 모양이 아니면 null을 반환한다', () => {
     // Given
-    const error = new ApiError(ErrorCode.FOLLOW_0909, '친구 한도', 403, { limit: 'many' });
+    const error = createApiError(ErrorCode.FOLLOW_0909, {
+      message: '친구 한도',
+      details: { limit: 'many' },
+    });
 
     // When
     const limit = findFriendLimit(error);
@@ -28,7 +34,7 @@ describe('findFriendLimit', () => {
 
   it('details가 없는 서버 오류는 null을 반환한다', () => {
     // Given
-    const error = new ApiError(ErrorCode.FOLLOW_0909, '친구 한도', 403);
+    const error = createApiError(ErrorCode.FOLLOW_0909, { message: '친구 한도' });
 
     // When
     const limit = findFriendLimit(error);

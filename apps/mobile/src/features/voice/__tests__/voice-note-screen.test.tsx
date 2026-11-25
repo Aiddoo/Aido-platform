@@ -1,4 +1,3 @@
-import { ApiError } from '@src/core/errors/api-error';
 import { fail, ok } from '@src/core/errors/result';
 import '@src/shared/i18n/init';
 import { createEntitlementSnapshot } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
@@ -24,6 +23,7 @@ import {
   createTestQueryClient,
   createVoiceNoteStorageFake,
   stubWindowDimensions,
+  createApiError,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
@@ -161,7 +161,7 @@ describe('VoiceNoteScreen', () => {
       const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       const { httpClient } = await renderVoiceNote({});
       httpClient.post.mockResolvedValue(
-        fail(new ApiError('AI_1301', '실패', 503, { charged: false })),
+        fail(createApiError('AI_1301', { message: '실패', details: { charged: false } })),
       );
 
       // When
@@ -194,7 +194,7 @@ describe('VoiceNoteScreen', () => {
       // Given
       const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
       const { httpClient } = await renderVoiceNote({});
-      httpClient.post.mockResolvedValue(fail(new ApiError('AI_1312', '너무 김', 422)));
+      httpClient.post.mockResolvedValue(fail(createApiError('AI_1312', { message: '너무 김' })));
 
       // When
       await user.press(await screen.findByRole('button', { name: '정리하기' }));
@@ -458,7 +458,9 @@ describe('VoiceNoteScreen', () => {
         digest: createVoiceNoteDigest({ keyPoints: [] }),
         planDraft: emptyPlanDraft,
       });
-      httpClient.post.mockResolvedValue(fail(new ApiError('AI_1318', '키 충돌', 409)));
+      httpClient.post.mockResolvedValue(
+        fail(createApiError('AI_1318', { message: '키 충돌', status: 409 })),
+      );
 
       // When
       await user.press(await screen.findByRole('button', { name: '메모로 저장' }));

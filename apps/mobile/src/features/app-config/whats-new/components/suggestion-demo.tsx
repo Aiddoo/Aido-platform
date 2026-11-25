@@ -8,7 +8,7 @@ import { ANIMATION } from '@src/shared/constants/animation';
 import { addDaysToDateKey } from '@src/shared/date/date-key';
 import { toZonedInstant } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Button, ScallopedContainer } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';

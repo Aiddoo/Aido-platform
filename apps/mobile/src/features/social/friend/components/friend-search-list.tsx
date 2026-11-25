@@ -17,7 +17,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useInfiniteQuery, useMutation } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import type { ReactNode } from 'react';
 import { ScrollView, type ScrollViewProps } from 'react-native';
@@ -196,6 +196,7 @@ FriendSearchList.Empty = function Empty({ query }: { query: string }) {
 
 FriendSearchList.Prompt = function Prompt() {
   const { t } = useTranslation('friend');
+  const router = useRouter();
   const openAddFriend = useSingleTap(() => router.navigate('/friends/add'));
   return (
     <SearchScroll>

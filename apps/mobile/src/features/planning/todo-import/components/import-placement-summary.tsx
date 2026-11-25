@@ -66,8 +66,3 @@ export function ImportPlacementSummary({
 ImportPlacementSummary.Loading = function Loading() {
   return <TextSkeleton size="b4" className="w-48 self-center" />;
 };
-
-/** 넣을 곳 카드·캘린더 줄이 같은 조회의 오류와 다시 시도를 보여 요약 자리는 비운다 */
-ImportPlacementSummary.Error = function ErrorFallback() {
-  return null;
-};

@@ -5,7 +5,7 @@ import { formatDateKeyRange, formatIsoWeekLabel } from '@src/shared/date/format/
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import { CapturableView } from '@src/shared/infra/view-capture/capturable-view';
 import {

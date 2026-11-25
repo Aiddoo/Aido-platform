@@ -1,6 +1,7 @@
+import { useAppWindow } from '@src/shared/hooks/use-app-window';
 import { BottomSheet as HeroBottomSheet } from 'heroui-native';
 import { type ComponentRef, type ReactNode, useLayoutEffect, useRef } from 'react';
-import { ScrollView, type ScrollViewInstance, useWindowDimensions, type View } from 'react-native';
+import { ScrollView, type ScrollViewInstance, type View } from 'react-native';
 import { useKeyboardContext } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -110,7 +111,7 @@ export function KeyboardBottomSheet({
 /** 내용이 안쪽 스크롤을 직접 둘 때(빠른 말하기 자막) 넘지 않을 높이. 시트 위 간격·손잡이·위아래 여백·safe area를 뺀다 */
 export function useKeyboardSheetBodyMaxHeight(): number {
   const insets = useSafeAreaInsets();
-  const { height: windowHeight } = useWindowDimensions();
+  const { height: windowHeight } = useAppWindow();
   const contentPaddingTop =
     process.env.EXPO_OS === 'android' ? ANDROID_GRABBER_INSET : SHEET_CONTENT_PADDING;
 

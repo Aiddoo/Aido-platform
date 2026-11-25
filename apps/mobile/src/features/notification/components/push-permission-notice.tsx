@@ -7,7 +7,7 @@ import { getNowInstant } from '@src/shared/date/clock';
 import { toHHmm } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import { useStoredValue } from '@src/shared/storage/use-stored-value';
 import { Button, InlineAlert } from '@src/shared/ui';

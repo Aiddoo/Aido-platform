@@ -16,7 +16,7 @@ import {
 import { formatCount } from '@src/shared/utils/number-format';
 import { useMutation } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
-import { router, useNavigation } from 'expo-router';
+import { useRouter, useNavigation } from 'expo-router';
 import { RadioGroup } from 'heroui-native';
 import { Controller, useForm, useFormState } from 'react-hook-form';
 
@@ -33,6 +33,7 @@ export function InquiryForm({ title }: InquiryFormProps) {
   const { t } = useTranslation('inquiry');
   const { locale } = useDateFormatContext();
   const navigation = useNavigation();
+  const router = useRouter();
   const goBack = useSingleTap(router.back);
 
   const createInquiry = useMutation(useCreateInquiryMutationOptions());

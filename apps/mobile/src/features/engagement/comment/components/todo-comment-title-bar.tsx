@@ -20,7 +20,7 @@ import {
   MenuContent,
 } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
-import { Stack, router } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { Menu } from 'heroui-native';
 import { useState } from 'react';
 
@@ -52,6 +52,7 @@ TodoCommentTitleBar.StackHeader = function StackHeader() {
   const moderation = useTodoModerationActions({ todoId });
   const { backAction, interceptBack } = useTodoCommentBack();
 
+  const router = useRouter();
   const handleBackPress = useSingleTap(() => {
     if (interceptBack()) {
       return;
@@ -109,6 +110,7 @@ function TodoActionsButton() {
   const fontScaledSize = useFontScaledSize();
   const [todoId] = useTodoId();
   const [date] = useFeedDateKey();
+  const router = useRouter();
   const push = useSingleTap(router.push);
   const { data: detail } = useQuery(useGetTodoDetailsQueryOptions({ todoId }));
 

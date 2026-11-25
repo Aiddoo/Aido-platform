@@ -5,7 +5,7 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text, TextSkeleton } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { match } from 'ts-pattern';
 
@@ -126,6 +126,7 @@ WeatherForecastBadge.Loading = function Loading() {
 };
 
 function useOpenBadgeWeather() {
+  const router = useRouter();
   const push = useSingleTap(router.push);
 
   return () => push(toWeatherHref({ entry: 'feed_badge', openedAt: toEpochMs(getNowInstant()) }));

@@ -3,7 +3,7 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { useQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 
 import { TodoReportPolicy } from '../domains/user-report.model';
 
@@ -13,6 +13,7 @@ import { TodoReportPolicy } from '../domains/user-report.model';
  */
 export function useTodoModerationActions({ todoId }: { todoId: number }) {
   const { t } = useTranslation('moderation');
+  const router = useRouter();
   const push = useSingleTap(router.push);
   const { data: detail } = useQuery(useGetTodoDetailsQueryOptions({ todoId }));
 

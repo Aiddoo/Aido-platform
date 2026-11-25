@@ -2,7 +2,7 @@ import { useOpenDetailWhenCompact } from '@src/shared/hooks/use-open-detail-when
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { usePaneSizeClass } from '@src/shared/ui';
 import { noop } from 'es-toolkit';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useCallback } from 'react';
 import { match, P } from 'ts-pattern';
 
@@ -13,6 +13,7 @@ export function useFeedSelectedTodoId() {
   const [{ todoId: selectedTodoId }, setParams] = useRouteParams(feedParamsSchema);
   const paneSizeClass = usePaneSizeClass();
 
+  const router = useRouter();
   const setSelectedTodoId = useCallback(
     (todoId: number | undefined) => {
       match({ paneSizeClass, todoId })
@@ -28,7 +29,7 @@ export function useFeedSelectedTodoId() {
         })
         .exhaustive();
     },
-    [paneSizeClass, selectedTodoId, setParams],
+    [paneSizeClass, router, selectedTodoId, setParams],
   );
 
   return [selectedTodoId, setSelectedTodoId] as const;
@@ -38,6 +39,7 @@ export function useFeedSelectedTodoId() {
 export function useFeedTodoDetailHandoff() {
   const [{ todoId: selectedTodoId, sort, comment }, setParams] = useRouteParams(feedParamsSchema);
 
+  const router = useRouter();
   useOpenDetailWhenCompact(selectedTodoId, (todoId) => {
     setParams(CLEARED_TODO_SELECTION);
     router.push({ pathname: '/todo/[todoId]', params: { todoId, sort, comment } });

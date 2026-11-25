@@ -41,6 +41,7 @@ import {
   Button,
   DashedDivider,
   QueryErrorBoundary,
+  QueryErrorFallback,
   type QueryErrorFallbackProps,
   ReadableContent,
   ScallopedContainer,
@@ -51,7 +52,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { usePrefetchQuery, useQuery, useSuspenseQueries } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { type PropsWithChildren, type ReactNode, Suspense } from 'react';
 import { ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
@@ -67,11 +68,11 @@ function SubscriptionScreen() {
   const { currentLocalDateKey } = useLocalDate();
   const stepper = useStepper<CheckoutStepContexts>({
     id: 'premium-checkout',
-    initial: { step: 'status', context: {} },
+    initial: { step: 'status' },
     onStepChange: ({ step }) => trackEvent('checkout_step_viewed', { step }),
   });
   // 링크로 바로 열어 돌아갈 화면이 없으면 이용 중 화면으로 바꾼다
-  const finishWelcome = useGoBack({ onFallback: () => stepper.history.replace('status', {}) });
+  const finishWelcome = useGoBack({ onFallback: () => stepper.history.replace('status') });
 
   return (
     <stepper.Render
@@ -226,6 +227,7 @@ SubscriptionScreen.Receipt = function Receipt() {
   const { primaryAction } = useSubscriptionReceipt();
   const openSubscriptionManagement = useOpenSubscriptionManagement();
   const isOnline = useIsOnline();
+  const router = useRouter();
   const push = useSingleTap(router.push);
   const [pathname] = useCheckoutRoute();
 
@@ -437,7 +439,7 @@ function TrialReminderToggle({ reminderDateKey }: { reminderDateKey: DateKey }) 
 
   return (
     // 권한·알림 설정을 못 읽어도 요금제와 결제는 그대로 보이게 이 칸만 숨긴다
-    <QueryErrorBoundary fallback={() => null}>
+    <QueryErrorBoundary fallback={QueryErrorFallback.Hidden}>
       <Suspense fallback={<SettingsListGroup.Toggle.Loading hasDescription />}>
         <PushPermissionToggle
           source="paywall"

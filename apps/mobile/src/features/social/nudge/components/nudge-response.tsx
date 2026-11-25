@@ -17,7 +17,7 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import type { ComponentProps } from 'react';
 import { Suspense } from 'react';
 import { match, P } from 'ts-pattern';
@@ -35,6 +35,7 @@ export function NudgeResponse() {
   const [{ data: nudge }, { data: me }] = useSuspenseQueries({
     queries: [useGetNudgeInteractionQueryOptions({ nudgeId }), useGetMeQueryOptions()],
   });
+  const router = useRouter();
   const openThanksSheet = useSingleTap(() =>
     router.push({ pathname: '/todo/[todoId]/thanks', params: { todoId: nudge.todoId } }),
   );

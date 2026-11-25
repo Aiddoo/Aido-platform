@@ -1,7 +1,7 @@
 import { toEpochMs } from '@src/shared/date/instant';
 import { toDateKey } from '@src/shared/date/zoned';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';

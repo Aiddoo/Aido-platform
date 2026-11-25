@@ -1,6 +1,7 @@
 import ShareIcon from '@expo/material-symbols/share.xml';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useTranslation } from '@src/shared/i18n';
+import { nativeIcon } from '@src/shared/ui';
 import { useMutation, useQueries } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 
@@ -8,7 +9,7 @@ import { useCreateInviteShareContent } from '../hooks/use-create-invite-share-co
 import { useShareInviteMutationOptions } from '../queries/invite.mutations';
 import { useGetInviteQueryOptions } from '../queries/invite.queries';
 
-const SHARE_ICON = process.env.EXPO_OS === 'ios' ? 'square.and.arrow.up' : ShareIcon;
+const SHARE_ICON = nativeIcon({ ios: 'square.and.arrow.up', android: ShareIcon });
 
 /** 툴바 공유 버튼. 요약이 오기 전에는 숨긴다(레일·가로 바로 OS가 옮긴다) */
 export function InviteShareToolbar() {

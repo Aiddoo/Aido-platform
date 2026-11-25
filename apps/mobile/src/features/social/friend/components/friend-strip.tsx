@@ -30,7 +30,7 @@ import {
   useSuspenseQuery,
 } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { PressableFeedback, Separator, Skeleton } from 'heroui-native';
 import { memo, type ReactNode, type RefObject, useEffect, useRef, useState } from 'react';
 import { I18nManager } from 'react-native';
@@ -279,6 +279,7 @@ FriendStrip.Empty = function Empty({
   const { t } = useTranslation('friend');
   const fontScaledSize = useFontScaledSize();
   const { trackEvent } = useTrack();
+  const router = useRouter();
   const push = useSingleTap(router.push);
   const isInviteAvailable = onInvite != null;
   const layoutKey = useAdaptivePaneLayoutKey();
@@ -344,6 +345,7 @@ function ListEnd({
 }) {
   const { t } = useTranslation('friend');
   const fontScaledSize = useFontScaledSize();
+  const router = useRouter();
   const push = useSingleTap(router.push);
 
   if (isFetchNextPageError) {

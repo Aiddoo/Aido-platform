@@ -19,7 +19,7 @@ import {
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { Fragment, type ReactNode } from 'react';
 import Animated, { FadeIn } from 'react-native-reanimated';
@@ -128,6 +128,7 @@ interface CategoryListItemProps {
 
 CategoryList.EditItem = function EditItem({ category }: CategoryListItemProps) {
   const { t } = useTranslation('common');
+  const router = useRouter();
   const push = useSingleTap(router.push);
   const queryClient = useQueryClient();
   const deletionPreviewOptions = useGetTodoCategoryDeletionPreviewQueryOptions({

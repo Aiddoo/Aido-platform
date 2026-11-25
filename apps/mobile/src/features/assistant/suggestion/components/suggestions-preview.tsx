@@ -9,7 +9,6 @@ import {
   Button,
   DashedDivider,
   HStack,
-  type QueryErrorFallbackProps,
   ScallopedContainer,
   Spacing,
   Text,
@@ -19,7 +18,7 @@ import {
 } from '@src/shared/ui';
 import { usePrefetchQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { range, take } from 'es-toolkit';
-import { router, useIsFocused } from 'expo-router';
+import { useRouter, useIsFocused } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 
 import type { AiSuggestionList } from '../domains/suggestion-analysis.model';
@@ -35,6 +34,7 @@ interface SuggestionsPreviewProps {
 
 export function SuggestionsPreview({ className }: SuggestionsPreviewProps) {
   const { t } = useTranslation('ai');
+  const router = useRouter();
   const push = useSingleTap(router.push);
   // 분석 중 polling이 다른 탭에서 돌지 않게 가려지면 구독을 끊는다. useSuspenseQueries는 subscribed를 받지 않아 따로 읽는다
   usePrefetchQuery(useGetPreferenceQueryOptions());
@@ -89,6 +89,7 @@ SuggestionsPreview.Item = function Item({
 }: SuggestionsPreviewItemProps) {
   const { t } = useTranslation('ai');
   const dateFormatContext = useDateFormatContext();
+  const router = useRouter();
   const push = useSingleTap(router.push);
   const { repeat, timeLabel } = getSuggestionSchedule(suggestion, {
     timeFormat,
@@ -164,8 +165,4 @@ SuggestionsPreview.Loading = function Loading({ className }: SuggestionsPreviewP
       </ScallopedContainer>
     </VStack>
   );
-};
-
-SuggestionsPreview.Error = function ErrorFallback(_props: QueryErrorFallbackProps) {
-  return null;
 };

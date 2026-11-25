@@ -7,7 +7,7 @@ import { formatDateKeyRange } from '@src/shared/date/format/date-labels';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import {
   AiFilledIcon,
@@ -26,7 +26,7 @@ import {
 import { formatPercent } from '@src/shared/utils/number-format';
 import { useSuspenseQueries } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { useState } from 'react';
 import { match, P } from 'ts-pattern';
@@ -376,6 +376,7 @@ ActivityReport.Loading = function Loading() {
 
 /** 지워졌거나 볼 수 없는 리포트는 목록으로 보내고, 그 밖의 실패는 다시 시도를 준다. 예전 알림·딥링크가 지운 리포트를 열 때 보인다 */
 ActivityReport.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
+  const router = useRouter();
   const { t } = useTranslation('ai');
 
   if (!isReportUnavailableError(error)) {

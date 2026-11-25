@@ -1,7 +1,7 @@
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { getNowInstant } from '@src/shared/date/clock';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
 import { useStoredValueStorage } from '@src/shared/storage/use-stored-value';
@@ -9,7 +9,7 @@ import { useOpenSheet } from '@src/shared/ui';
 import { useAppToast } from '@src/shared/ui';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { type ComponentProps, useMemo } from 'react';
 import { match } from 'ts-pattern';
 
@@ -67,6 +67,7 @@ export function useEntitlementGate(
   const { t } = useTranslation('subscription');
   const formatRefillSentence = useFormatRefillSentence();
 
+  const router = useRouter();
   return useMemo(() => {
     const open = (
       target: EntitlementFeature,
@@ -222,5 +223,6 @@ export function useEntitlementGate(
     todayKey,
     t,
     formatRefillSentence,
+    router,
   ]);
 }

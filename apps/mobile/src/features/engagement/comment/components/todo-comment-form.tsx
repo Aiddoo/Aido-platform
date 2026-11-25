@@ -3,7 +3,8 @@ import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.q
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
-import { getErrorMessage } from '@src/shared/errors';
+import { useAppWindow } from '@src/shared/hooks/use-app-window';
+import { useDismissKeyboard } from '@src/shared/hooks/use-dismiss-keyboard';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
@@ -24,8 +25,8 @@ import { noop } from 'es-toolkit';
 import { CloseButton } from 'heroui-native';
 import { type ComponentProps, useEffect, useRef, useState } from 'react';
 import { Controller, useFieldArray, useFormState, useWatch } from 'react-hook-form';
-import { ScrollView, useWindowDimensions } from 'react-native';
-import { KeyboardController, KeyboardEvents } from 'react-native-keyboard-controller';
+import { ScrollView } from 'react-native';
+import { KeyboardEvents } from 'react-native-keyboard-controller';
 import { match } from 'ts-pattern';
 
 import { TODO_COMMENT_LOG_EVENT } from '../constants/todo-comment-log-events';
@@ -82,7 +83,7 @@ type TodoCommentFormProps = Omit<
 export function TodoCommentForm({ style, ...scrollViewProps }: TodoCommentFormProps) {
   const [todoId] = useTodoId();
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
-  const { height: viewportHeight } = useWindowDimensions();
+  const { height: viewportHeight } = useAppWindow();
   const { control, setFocus, getValues, reset } = useTodoCommentForm();
   const mode = useWatch({ control, name: 'mode' });
   const { fields, append, remove, replace } = useFieldArray({ control, name: 'items' });
@@ -200,6 +201,7 @@ export function TodoCommentForm({ style, ...scrollViewProps }: TodoCommentFormPr
 function useTodoCommentSubmit({ userId }: { userId: string }) {
   const [todoId] = useTodoId();
   const logger = useLogger();
+  const dismissKeyboard = useDismissKeyboard();
   const draftService = useDraftService();
   const idGenerator = useIdGenerator();
   const expandThread = useExpandThread();
@@ -211,11 +213,7 @@ function useTodoCommentSubmit({ userId }: { userId: string }) {
   const finish = (mode: TodoCommentComposerMode) => {
     draftService.remove(createTodoCommentDraftKey({ userId, todoId, mode }));
     reset(EMPTY_TODO_COMMENT_FORM_VALUES);
-    KeyboardController.dismiss().catch((error) =>
-      logger.warn(TODO_COMMENT_LOG_EVENT.KEYBOARD_DISMISS_FAILED, {
-        error: getErrorMessage(error),
-      }),
-    );
+    dismissKeyboard();
   };
 
   return () =>
@@ -323,7 +321,7 @@ function TargetBanner({
 }) {
   const { t } = useTranslation('todoComment');
   const fontScaledSize = useFontScaledSize();
-  const logger = useLogger();
+  const dismissKeyboard = useDismissKeyboard();
   const { reset } = useTodoCommentForm();
 
   if (mode.type === 'new') {
@@ -356,11 +354,7 @@ function TargetBanner({
         aria-label={t('actions.closeComposer')}
         onPress={() => {
           reset(EMPTY_TODO_COMMENT_FORM_VALUES);
-          KeyboardController.dismiss().catch((error) =>
-            logger.warn(TODO_COMMENT_LOG_EVENT.KEYBOARD_DISMISS_FAILED, {
-              error: getErrorMessage(error),
-            }),
-          );
+          dismissKeyboard();
         }}
       >
         <CloseIcon

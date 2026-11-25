@@ -4,7 +4,7 @@ import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { Button, HStack, InlineAlert } from '@src/shared/ui';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { type ComponentProps, useSyncExternalStore } from 'react';
 
 import {
@@ -38,6 +38,7 @@ export function TodoImportFailureAlert(props: TodoImportFailureAlertProps) {
   const uploadSession = useTodoImportUploadSession();
   const snapshot = useSyncExternalStore(uploadSession.subscribe, uploadSession.getSnapshot);
   const gate = useEntitlementGate('CALENDAR_IMPORT', { surface: 'todo_import' });
+  const router = useRouter();
   const replace = useSingleTap(router.replace);
 
   if (snapshot.stage !== 'failed' || snapshot.importId !== importId) {

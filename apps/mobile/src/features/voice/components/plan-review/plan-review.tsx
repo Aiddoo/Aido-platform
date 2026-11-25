@@ -7,7 +7,7 @@ import { TodoRow } from '@src/features/planning/todo/components/todo-row';
 import { isPrivateVisibility } from '@src/features/planning/todo/domains/todo.model';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import {
   AiFilledIcon,
@@ -18,6 +18,7 @@ import {
   HStack,
   InfoIcon,
   QueryErrorBoundary,
+  QueryErrorFallback,
   Result,
   ScrollFade,
   Text,
@@ -432,7 +433,7 @@ PlanReview.TodoRow = function PlanTodoRow({
 
   const handlePress = () =>
     openKeyboardSheet(({ isOpen, onOpenChange }) => (
-      <QueryErrorBoundary fallback={() => null}>
+      <QueryErrorBoundary fallback={QueryErrorFallback.Hidden}>
         {/* 카테고리와 설정을 읽은 뒤에야 시트가 올라온다. 닫힌 시트라 밀릴 화면이 없고 조회는 이 화면에서 이미 받아 둔 캐시다 */}
         <Suspense fallback={null}>
           <PlanTodoEditBottomSheet

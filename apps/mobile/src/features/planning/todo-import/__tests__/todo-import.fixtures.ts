@@ -1,6 +1,6 @@
 import { todoImportSchema as todoImportDtoSchema } from '@aido/api/contracts/todo-import/v1';
-import { type ErrorCodeType, Errors } from '@aido/api/errors';
-import { ApiError } from '@src/core/errors/api-error';
+import type { ErrorCodeType } from '@aido/api/errors';
+import { createApiError } from '@src/testing/api-error';
 import { defineFixture } from '@src/testing/fixture';
 import type { z } from 'zod';
 
@@ -75,17 +75,14 @@ export const createTodoImportSelection = defineFixture(todoImportSelectionSchema
   ],
 });
 
-/** 상태를 주지 않으면 서버 카탈로그가 그 코드에 붙이는 상태다 */
 export function createTodoImportApiError({
   code,
-  details = null,
-  status = Errors[code].httpStatus,
-  retryAfterMs = null,
+  ...overrides
 }: {
   code: ErrorCodeType;
   details?: Record<string, unknown> | null;
   status?: number;
   retryAfterMs?: number | null;
 }) {
-  return new ApiError(code, Errors[code].message, status, details, { retryAfterMs });
+  return createApiError(code, overrides);
 }

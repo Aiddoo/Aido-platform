@@ -6,7 +6,7 @@ import {
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage } from '@src/shared/errors';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigation } from 'expo-router';
 import { useCallback, useEffect, useRef } from 'react';

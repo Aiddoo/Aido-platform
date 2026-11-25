@@ -1,6 +1,5 @@
 import '@src/shared/i18n/init';
 import { ErrorCode } from '@aido/api/errors';
-import { ApiError } from '@src/core/errors/api-error';
 import { fail, ok } from '@src/core/errors/result';
 import { createEntitlementSnapshotDto } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
 import { NetworkError } from '@src/shared/errors/infra-error';
@@ -11,6 +10,7 @@ import {
   createPendingResponse,
   createTestDi,
   respondByPath,
+  createApiError,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
@@ -168,7 +168,12 @@ describe('친구 추가 화면', () => {
     // Given
     const setup = createAddFriendDi();
     setup.httpClient.post.mockResolvedValue(
-      fail(new ApiError(ErrorCode.FOLLOW_0909, '친구 한도', 403, { current: 7, limit: 7 })),
+      fail(
+        createApiError(ErrorCode.FOLLOW_0909, {
+          message: '친구 한도',
+          details: { current: 7, limit: 7 },
+        }),
+      ),
     );
     await renderAddFriend(setup);
     await typeTag(USER_TAG);

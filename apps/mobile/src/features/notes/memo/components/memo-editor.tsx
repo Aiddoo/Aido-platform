@@ -20,11 +20,12 @@ import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
 import { isConnectivityError } from '@src/shared/errors';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useDismissKeyboard } from '@src/shared/hooks/use-dismiss-keyboard';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useGoBack } from '@src/shared/hooks/use-go-back';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import {
   AiFilledIcon,
@@ -61,7 +62,7 @@ import {
   useSuspenseQueries,
   useSuspenseQuery,
 } from '@tanstack/react-query';
-import { Stack, router, useNavigation } from 'expo-router';
+import { Stack, useRouter, useNavigation } from 'expo-router';
 import { Menu, Separator, Spinner } from 'heroui-native';
 import { type ComponentType, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
@@ -71,7 +72,6 @@ import {
   useForm,
   useFormState,
 } from 'react-hook-form';
-import { Keyboard } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
@@ -116,6 +116,7 @@ interface MemoEditorProps {
 }
 
 export function MemoEditor({ toolbar: Toolbar, onLeave }: MemoEditorProps) {
+  const router = useRouter();
   const navigate = useSingleTap(router.navigate);
   const [memoId] = useMemoId();
 
@@ -596,6 +597,7 @@ interface MemoSaveOptions extends Pick<MemoEditorProps, 'onLeave'> {
 
 /** 고친 글자를 저장하고 andThen대로 이어 간다. 저장한 메모를 돌려주고, 저장하지 못하면 null이다 */
 function useMemoSave({ memo, form, canSave, discardDraft, onFinish, onLeave }: MemoSaveOptions) {
+  const dismissKeyboard = useDismissKeyboard();
   const updateMemo = useMutation(useUpdateMemoMutationOptions({ memoId: memo.id }));
 
   const isSavingChangesRef = useRef(false);
@@ -646,7 +648,7 @@ function useMemoSave({ memo, form, canSave, discardDraft, onFinish, onLeave }: M
           form.reset({ content: savedMemo.content }, SAVED_VALUES_RESET_OPTIONS);
           discardDraft();
           onFinish();
-          Keyboard.dismiss();
+          dismissKeyboard();
         })
         .with('leave', () => {
           discardDraft();
@@ -698,6 +700,7 @@ function useMemoAiParse({
   const { t } = useTranslation('errors');
   const haptics = useHaptics();
   const toast = useAppToast();
+  const router = useRouter();
   const push = useSingleTap(router.push);
   const navigation = useNavigation();
   const draftService = useDraftService();

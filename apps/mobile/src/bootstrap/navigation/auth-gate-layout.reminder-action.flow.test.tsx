@@ -1,4 +1,4 @@
-import { ErrorCode, HttpStatus } from '@aido/api/errors';
+import { ErrorCode } from '@aido/api/errors';
 import { fail, ok, type Result } from '@src/core/errors/result';
 import type { PushNotificationResponse } from '@src/core/ports/push-notification-gateway';
 import { createAuthSessionStoreStub } from '@src/features/identity/auth/__tests__/create-auth-session-store-stub';
@@ -11,12 +11,14 @@ import {
   createTodoDto,
 } from '@src/features/planning/todo/__tests__/todo.fixtures';
 import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
-import { ApiError, NetworkError } from '@src/shared/errors';
+import type { ApiError } from '@src/shared/errors';
+import { NetworkError } from '@src/shared/errors';
 import {
   createHttpClientStub,
   createPushNotificationGatewayStub,
   createTestDi,
   stubWindowDimensions,
+  createApiError,
 } from '@src/testing/core';
 import { renderAppRoute } from '@src/testing/render-route-hook';
 import * as ExpoLinking from 'expo-linking';
@@ -330,14 +332,7 @@ describe('리마인드 알림 버튼', () => {
   it('이미 끝낸 할 일에 다시 알림을 누르면 오류 대신 끝냈다고만 알린다', async () => {
     // Given
     const { route, gateway, haptics, analytics } = await setup({
-      snooze: async () =>
-        fail(
-          new ApiError(
-            ErrorCode.NOTIFICATION_1007,
-            '이미 완료한 할 일입니다.',
-            HttpStatus.CONFLICT,
-          ),
-        ),
+      snooze: async () => fail(createApiError(ErrorCode.NOTIFICATION_1007)),
     });
 
     // When

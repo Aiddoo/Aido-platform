@@ -1,5 +1,4 @@
 import '@src/shared/i18n/init';
-import { ApiError } from '@src/core/errors/api-error';
 import { fail, ok } from '@src/core/errors/result';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
@@ -11,6 +10,7 @@ import {
   createPendingResponse,
   createTestDi,
   createTestQueryClient,
+  createApiError,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
@@ -143,7 +143,9 @@ describe('메모 만들기 화면', () => {
     {
       reason: '서버가 거절해',
       respond: (httpClient: ReturnType<typeof createHttpClientStub>) =>
-        httpClient.post.mockResolvedValue(fail(new ApiError('SYS_0001', '요청이 잘못됐어요', 400))),
+        httpClient.post.mockResolvedValue(
+          fail(createApiError('SYS_0001', { message: '요청이 잘못됐어요', status: 400 })),
+        ),
     },
   ])('$reason 저장하지 못하면 한 번 알리고 글을 둔 채 화면에 머문다', async ({ respond }) => {
     // Given
@@ -195,7 +197,7 @@ describe('메모 만들기 화면', () => {
     // Given
     const setup = createMemoScreenDi();
     setup.httpClient.post.mockResolvedValue(
-      fail(new ApiError('SYS_0001', '요청이 잘못됐어요', 400)),
+      fail(createApiError('SYS_0001', { message: '요청이 잘못됐어요', status: 400 })),
     );
     await renderMemoCreate(setup);
     await typeContent('새 메모');

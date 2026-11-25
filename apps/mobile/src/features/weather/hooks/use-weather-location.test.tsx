@@ -1,5 +1,4 @@
 import { updateWeatherLocationSchema } from '@aido/api/contracts/weather/v2';
-import { ApiError } from '@src/core/errors/api-error';
 import {
   type LocationCoordinates,
   LocationUnavailableError,
@@ -13,6 +12,7 @@ import {
   createAppLoggerStub,
   createTestQueryClient,
   createTestDi,
+  createApiError,
 } from '@src/testing/core';
 import { renderScreenHook } from '@src/testing/render';
 import { useQuery } from '@tanstack/react-query';
@@ -252,7 +252,7 @@ describe('useGetWeatherLocationQueryOptions', () => {
       httpClient.get
         .mockResolvedValueOnce({
           ok: false,
-          error: new ApiError('WEATHER_1902', '위치 정보가 등록되지 않았어요', 404),
+          error: createApiError('WEATHER_1902', { message: '위치 정보가 등록되지 않았어요' }),
         })
         .mockResolvedValueOnce({ ok: true, value: createSeoulReportDto() });
 
@@ -270,11 +270,13 @@ describe('useGetWeatherLocationQueryOptions', () => {
       const { renderHook, httpClient } = setup(gateway);
       const { result } = await renderHook(() => useWeatherLocation());
       await waitFor(() => expect(result.current.status).toBe('ready'));
-      const notRegistered = new ApiError('WEATHER_1902', '위치 정보가 등록되지 않았어요', 404);
+      const notRegistered = createApiError('WEATHER_1902', {
+        message: '위치 정보가 등록되지 않았어요',
+      });
       httpClient.get.mockResolvedValue({ ok: false, error: notRegistered });
       httpClient.put.mockResolvedValue({
         ok: false,
-        error: new ApiError('SYS_0001', '오류', 400),
+        error: createApiError('SYS_0001', { message: '오류', status: 400 }),
       });
 
       // When

@@ -11,7 +11,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 
 import { useNudgeId } from '../hooks/use-nudge-id';
@@ -22,6 +22,7 @@ export function NudgeTodoButton() {
   const { t } = useTranslation('todo');
   const fontScaledSize = useFontScaledSize();
   const { data: nudge } = useSuspenseQuery(useGetNudgeInteractionQueryOptions({ nudgeId }));
+  const router = useRouter();
   const openTodo = useSingleTap(() =>
     router.navigate({ pathname: '/todo/[todoId]', params: { todoId: nudge.todoId } }),
   );

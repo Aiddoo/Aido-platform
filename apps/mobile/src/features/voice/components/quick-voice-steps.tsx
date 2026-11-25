@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
+import { useAppWindow } from '@src/shared/hooks/use-app-window';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
@@ -21,7 +22,6 @@ import { clamp } from 'es-toolkit';
 import { CloseButton, Skeleton } from 'heroui-native';
 import { type ReactNode, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { useWindowDimensions } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -376,7 +376,7 @@ interface CaptureLayoutProps {
 
 /** 듣기·정리 단계의 시트. 높이를 고정해야 긴 자막이 시트를 키워 조작을 화면 밖으로 밀지 않는다(QA: 93초 발화) */
 function CaptureLayout({ center, right, onClose, testID, children }: CaptureLayoutProps) {
-  const { height: windowHeight } = useWindowDimensions();
+  const { height: windowHeight } = useAppWindow();
   const bodyMaxHeight = useKeyboardSheetBodyMaxHeight();
   const height = clamp(
     windowHeight * LISTENING_PANEL_HEIGHT.windowRatio,

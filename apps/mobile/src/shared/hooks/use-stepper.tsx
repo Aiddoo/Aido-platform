@@ -44,6 +44,8 @@ interface StepperHistory<Contexts extends StepperContexts> {
   ) => void;
   back: () => void;
   go: (delta: number) => void;
+  /** 기록에서 지금보다 앞에 있는 그 단계로 돌아간다. 없으면 그대로다 */
+  backTo: (step: StepName<Contexts>) => void;
 }
 
 interface StepRenderProps<
@@ -150,6 +152,7 @@ function createHistory<Contexts extends StepperContexts>(
       }),
     back: () => store.dispatch({ type: 'go', delta: -1 }),
     go: (delta) => store.dispatch({ type: 'go', delta }),
+    backTo: (step) => store.dispatch({ type: 'backTo', step }),
   };
 }
 

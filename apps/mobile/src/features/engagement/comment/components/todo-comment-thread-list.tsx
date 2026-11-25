@@ -34,7 +34,6 @@ import {
   useSuspenseInfiniteQuery,
 } from '@tanstack/react-query';
 import { noop, range } from 'es-toolkit';
-import { useNavigation } from 'expo-router';
 import { Menu, type MenuKey, PressableFeedback, Separator, Spinner } from 'heroui-native';
 import {
   type ComponentProps,
@@ -485,19 +484,13 @@ function PulsingHeart() {
 /** 새 정렬의 첫 페이지를 먼저 받아 두고 바꿔 목록이 skeleton으로 깜박이지 않게 한다 */
 function useSortChange() {
   const [todoId] = useTodoId();
-  const navigation = useNavigation();
   // useIsFetching은 지금 정렬 목록의 배경 재조회에도 켜져 정렬 버튼이 꺼진다. 고른 정렬을 받는 동안만 켠다
   const prefetch = useMutation(usePrefetchTodoCommentThreadsMutationOptions({ todoId }));
 
   // mutate의 onSettled는 화면이 내려간 뒤에는 불리지 않는다
   const prefetchThenCommit = (sort: TodoCommentSort, commit: () => void) =>
     prefetch.mutate(sort, {
-      onSettled: () => {
-        // router.setParams는 지금 보이는 화면에 걸린다. 받는 동안 떠났으면 그 화면의 params를 바꾸지 않는다
-        if (navigation.isFocused()) {
-          commit();
-        }
-      },
+      onSettled: commit,
     });
 
   return { isPending: prefetch.isPending, prefetchThenCommit };

@@ -1,4 +1,5 @@
 import { ANIMATION } from '@src/shared/constants/animation';
+import { useDismissKeyboard } from '@src/shared/hooks/use-dismiss-keyboard';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { KeyboardAdaptiveButton, VStack, FormStepLayout, Box, Spacing } from '@src/shared/ui';
@@ -6,7 +7,6 @@ import type { ComponentRef } from 'react';
 import { useCallback, useRef } from 'react';
 import { type ControllerFieldState } from 'react-hook-form';
 import type { TextInput } from 'react-native';
-import { Keyboard } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
@@ -47,6 +47,7 @@ export function NewPasswordStep({
   nextLabel,
   submitLabel,
 }: NewPasswordStepProps) {
+  const dismissKeyboard = useDismissKeyboard();
   const { t } = useTranslation('auth');
   const newPasswordInputRef = useRef<ComponentRef<typeof TextInput>>(null);
   const newPasswordConfirmInputRef = useRef<ComponentRef<typeof TextInput>>(null);
@@ -83,7 +84,7 @@ export function NewPasswordStep({
     match(step)
       .with('newPassword', onNextStep)
       .with('newPasswordConfirm', () => {
-        Keyboard.dismiss();
+        dismissKeyboard();
         return onSubmit();
       })
       .exhaustive();

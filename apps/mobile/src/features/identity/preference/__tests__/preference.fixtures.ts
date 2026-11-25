@@ -1,6 +1,6 @@
 import { preferenceResponseSchema } from '@aido/api/contracts/user-preference/v1';
 import type { ErrorCodeType } from '@aido/api/errors';
-import { ApiError } from '@src/core/errors/api-error';
+import { createApiError } from '@src/testing/api-error';
 import { defineFixture } from '@src/testing/fixture';
 
 import { preferenceSchema } from '../domains/preference.model';
@@ -30,9 +30,8 @@ export const createPreference = defineFixture(preferenceSchema, PREFERENCE);
 export function createPreferenceApiError(
   overrides?: Partial<{ code: ErrorCodeType; message: string; status: number }>,
 ) {
-  return new ApiError(
-    overrides?.code ?? 'PREFERENCE_1702',
-    overrides?.message ?? '알림 시간이 올바르지 않아요',
-    overrides?.status ?? 400,
-  );
+  return createApiError(overrides?.code ?? 'PREFERENCE_1702', {
+    message: overrides?.message ?? '알림 시간이 올바르지 않아요',
+    status: overrides?.status ?? 400,
+  });
 }

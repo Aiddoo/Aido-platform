@@ -84,3 +84,8 @@ QueryErrorFallback.Inline = function Inline({
     </HStack>
   );
 };
+
+/** 실패하면 아무것도 그리지 않는 값 조각(설정 줄 끝 값·개수 배지)의 fallback. 오류 보고는 경계가 한다 */
+QueryErrorFallback.Hidden = function Hidden() {
+  return null;
+};

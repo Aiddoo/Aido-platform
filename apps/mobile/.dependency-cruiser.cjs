@@ -60,7 +60,7 @@ const SDK_MODULES = [
 
 // 지금 시각·기기 시간대를 읽는 모듈. 모델과 mapper는 시각을 인자로 받는다
 const CLOCK =
-  '^src/shared/date/clock\\.ts$|^src/shared/hooks/use-(?:now|minute-now|today)\\.ts$|^src/shared/infra/localization/device-timezone\\.ts$';
+  '^src/shared/date/clock\\.ts$|^src/shared/hooks/use-(?:now|minute-now|today-key)\\.ts$|^src/shared/infra/localization/device-timezone\\.ts$';
 
 function featureFolders(folders) {
   return `^src/features/.+/(?:${folders.join('|')})/`;

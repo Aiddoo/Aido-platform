@@ -6,7 +6,7 @@ import { useTrack } from '@src/shared/analytics';
 import { getNowInstant } from '@src/shared/date/clock';
 import { getErrorMessage } from '@src/shared/errors';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import { useMutationErrorFeedback } from '@src/shared/query/use-mutation-error-feedback';
 import { Button } from '@src/shared/ui';

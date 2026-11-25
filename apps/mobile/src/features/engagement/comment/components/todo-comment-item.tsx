@@ -32,7 +32,7 @@ import {
 import { cn } from '@src/shared/utils/cn';
 import { useMutation } from '@tanstack/react-query';
 import { compact } from 'es-toolkit';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Menu, PressableFeedback, Separator, Skeleton } from 'heroui-native';
 import { type ComponentRef, type ReactNode, type RefObject, useRef, useState } from 'react';
 import { type View } from 'react-native';
@@ -417,8 +417,9 @@ interface ActionMenuProps {
 function ActionMenu({ comment, rowRef, isOpen, onOpenChange }: ActionMenuProps) {
   const { t } = useTranslation(['todoComment', 'moderation']);
   const fontScaledSize = useFontScaledSize();
+  const router = useRouter();
   const push = useSingleTap(router.push);
-  const { copy } = useCopyToClipboard();
+  const copy = useCopyToClipboard();
   const confirmDelete = useConfirmTodoCommentDelete();
   const { reset } = useTodoCommentForm();
   const { reveal } = useTodoCommentReveal();

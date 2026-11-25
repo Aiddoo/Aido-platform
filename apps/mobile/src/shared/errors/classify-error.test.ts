@@ -1,6 +1,6 @@
 import { ErrorCode } from '@aido/api/errors';
-import { ApiError } from '@src/core/errors/api-error';
 import { ClipboardCopyError } from '@src/core/ports/clipboard-gateway';
+import { createApiError } from '@src/testing/core';
 import { ZodError } from 'zod';
 
 import { BusinessError } from './business-error';
@@ -12,21 +12,31 @@ describe('classifyError', () => {
   it.each<[string, unknown, ErrorKind, 'event' | 'breadcrumb']>([
     [
       '400 ApiError',
-      new ApiError(ErrorCode.SYS_0002, '잘못된 요청', 400),
+      createApiError(ErrorCode.SYS_0002, { message: '잘못된 요청' }),
       'expected',
       'breadcrumb',
     ],
     [
       '403 ApiError(기능 꺼짐)',
-      new ApiError(ErrorCode.INVITE_2105, '꺼짐', 403),
+      createApiError(ErrorCode.INVITE_2105, { message: '꺼짐' }),
       'expected',
       'breadcrumb',
     ],
-    ['404 ApiError', new ApiError(ErrorCode.TODO_0801, '없음', 404), 'expected', 'breadcrumb'],
-    ['429 ApiError', new ApiError(ErrorCode.SYS_0001, '잠시 후', 429), 'expected', 'breadcrumb'],
+    [
+      '404 ApiError',
+      createApiError(ErrorCode.TODO_0801, { message: '없음' }),
+      'expected',
+      'breadcrumb',
+    ],
+    [
+      '429 ApiError',
+      createApiError(ErrorCode.SYS_0001, { message: '잠시 후', status: 429 }),
+      'expected',
+      'breadcrumb',
+    ],
     [
       '401 ApiError',
-      new ApiError(ErrorCode.AUTH_0101, '다시 로그인', 401),
+      createApiError(ErrorCode.AUTH_0101, { message: '다시 로그인' }),
       'auth-expired',
       'breadcrumb',
     ],

@@ -1,7 +1,7 @@
 import { formatDateLabel, formatYearAwareDateLabel } from '@src/shared/date/format/date-format';
 import { type Instant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { match } from 'ts-pattern';
 
 import type { toReceiptDateLabel } from '../utils/subscription-receipt.view-model';

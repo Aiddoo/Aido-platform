@@ -1,4 +1,5 @@
 import { Canvas, LinearGradient, Mask, Rect, vec } from '@shopify/react-native-skia';
+import { useAppWindow } from '@src/shared/hooks/use-app-window';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { IOS_MAJOR_VERSION } from '@src/shared/infra/device/device-info';
@@ -6,7 +7,7 @@ import { Box, StyledSafeAreaView } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { useHeaderHeight } from 'expo-router/react-navigation';
 import { type PropsWithChildren } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUniwind } from 'uniwind';
 
@@ -92,7 +93,7 @@ interface TopFadeProps {
 /** 배경과 같은 하늘·스크림 레이어를 창 크기로 그리고 위쪽만 남겨 이음매가 보이지 않게 한다 */
 function TopFade({ solidHeight, height }: TopFadeProps) {
   const scene = useWeatherScene();
-  const window = useWindowDimensions();
+  const window = useAppWindow();
   const { theme } = useUniwind();
 
   return (

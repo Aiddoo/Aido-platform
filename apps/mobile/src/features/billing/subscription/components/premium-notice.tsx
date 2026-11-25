@@ -3,7 +3,7 @@ import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.q
 import { formatYearAwareDateLabel } from '@src/shared/date/format/date-format';
 import type { PlanType } from '@src/shared/domains/plan-type.model';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import { InlineAlert, SurfaceCard, Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';

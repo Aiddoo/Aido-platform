@@ -1,4 +1,5 @@
-import { ApiError, NetworkError, ParseError, ServerError, TimeoutError } from '@src/shared/errors';
+import { NetworkError, ParseError, ServerError, TimeoutError } from '@src/shared/errors';
+import { createApiError } from '@src/testing/core';
 
 import { getSubscriptionDiagnosticCode, SubscriptionErrors } from './subscription.error';
 
@@ -14,7 +15,11 @@ describe('getSubscriptionDiagnosticCode', () => {
       SubscriptionErrors.storeUnavailable(),
       'SUBSCRIPTION_STORE_UNAVAILABLE',
     ],
-    ['서버 오류 코드는 그대로 쓴다', new ApiError('SYS_0001', 'message', 400), 'SYS_0001'],
+    [
+      '서버 오류 코드는 그대로 쓴다',
+      createApiError('SYS_0001', { message: 'message', status: 400 }),
+      'SYS_0001',
+    ],
     ['네트워크 오류', new NetworkError(), 'NETWORK'],
     ['시간 초과', new TimeoutError(), 'TIMEOUT'],
     ['5xx는 상태 코드를 붙인다', new ServerError(502), 'SERVER_502'],

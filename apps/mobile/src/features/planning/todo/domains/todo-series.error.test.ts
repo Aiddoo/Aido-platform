@@ -1,5 +1,5 @@
 import { ErrorCode, type ErrorCodeType, HttpStatus } from '@aido/api/errors';
-import { ApiError } from '@src/core/errors/api-error';
+import { createApiError } from '@src/testing/core';
 
 import {
   findTodoSeriesFailure,
@@ -27,7 +27,7 @@ describe('findTodoSeriesFailure', () => {
     expected: TodoSeriesFailure | null;
   }[])('$code $details 거절은 $expected다', ({ code, details, expected }) => {
     // Given
-    const error = new ApiError(code, '거절', 400, details);
+    const error = createApiError(code, { message: '거절', status: 400, details });
 
     // When
     const failure = findTodoSeriesFailure(error);
@@ -48,8 +48,11 @@ describe('findTodoSeriesFailure', () => {
 describe('shouldReopenRepeatPicker', () => {
   it('시작일을 거절당하면 시작일을 다시 고르게 반복 시트를 연다', () => {
     // Given
-    const error = new ApiError(ErrorCode.TODO_0845, '거절', HttpStatus.BAD_REQUEST, {
-      field: 'startDate',
+    const error = createApiError(ErrorCode.TODO_0845, {
+      message: '거절',
+      details: {
+        field: 'startDate',
+      },
     });
 
     // When
@@ -61,10 +64,13 @@ describe('shouldReopenRepeatPicker', () => {
 
   it('대상 카테고리가 가득 차거나 상한에 닿으면 반복 시트를 열지 않고 입력을 그대로 둔다', () => {
     // Given
-    const categoryFull = new ApiError(ErrorCode.TODO_0811, '가득 참', HttpStatus.FORBIDDEN);
-    const limit = new ApiError(ErrorCode.TODO_0842, '상한', HttpStatus.FORBIDDEN, {
-      limit: 100,
-      activeCount: 100,
+    const categoryFull = createApiError(ErrorCode.TODO_0811, { message: '가득 참' });
+    const limit = createApiError(ErrorCode.TODO_0842, {
+      message: '상한',
+      details: {
+        limit: 100,
+        activeCount: 100,
+      },
     });
 
     // When
@@ -99,9 +105,13 @@ describe('shouldRefreshTodos', () => {
 describe('findTodoSeriesLimit', () => {
   it('서버 오류 상세의 한도를 그대로 쓴다', () => {
     // Given
-    const error = new ApiError(ErrorCode.TODO_0842, '거절', HttpStatus.BAD_REQUEST, {
-      limit: 12,
-      activeCount: 12,
+    const error = createApiError(ErrorCode.TODO_0842, {
+      message: '거절',
+      status: HttpStatus.BAD_REQUEST,
+      details: {
+        limit: 12,
+        activeCount: 12,
+      },
     });
 
     // When
@@ -113,7 +123,7 @@ describe('findTodoSeriesLimit', () => {
 
   it('한도를 쓰지 않는 실패는 한도가 없다', () => {
     // Given
-    const error = new ApiError(ErrorCode.TODO_0841, '없음', HttpStatus.NOT_FOUND);
+    const error = createApiError(ErrorCode.TODO_0841, { message: '없음' });
 
     // When
     const limit = findTodoSeriesLimit(error);

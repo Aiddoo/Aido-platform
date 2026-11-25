@@ -54,6 +54,7 @@ import {
   AdaptivePane,
   Box,
   QueryErrorBoundary,
+  QueryErrorFallback,
   SafeAreaScrollView,
   Spacing,
   StyledSafeAreaView,
@@ -232,7 +233,7 @@ function MyFeed({ onScrollBeginDrag, shouldShowHint, shouldShowSuggestionHint }:
         )}
 
         {/* 조회해야 보일지 아는 안내 카드라 로딩·실패 때 자리를 잡지 않는다. 대부분 안 보여 자리를 잡으면 아래가 밀린다 */}
-        <QueryErrorBoundary fallback={() => null}>
+        <QueryErrorBoundary fallback={QueryErrorFallback.Hidden}>
           <Suspense fallback={null}>
             <PushPermissionNotice className="mx-4 mb-3" />
           </Suspense>

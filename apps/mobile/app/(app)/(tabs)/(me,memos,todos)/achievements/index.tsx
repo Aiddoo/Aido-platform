@@ -7,11 +7,12 @@ import {
   useGetWeeklyAchievementsInfiniteQueryOptions,
 } from '@src/features/insights/achievement/queries/achievement.queries';
 import { getIsoWeekYear } from '@src/shared/date/date-key';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
   QueryErrorBoundary,
+  QueryErrorFallback,
   type QueryErrorFallbackProps,
   Spacing,
   StyledSafeAreaView,
@@ -64,7 +65,8 @@ function AchievementOverview() {
     <>
       <Spacing size={16} />
 
-      <QueryErrorBoundary fallback={AchievementYearBar.Error}>
+      {/* 연도를 받지 못하면 배지·기록 경계가 다시 시도를 보이므로 막대는 자리를 비운다 */}
+      <QueryErrorBoundary fallback={QueryErrorFallback.Hidden}>
         {/* 기록이 올해뿐이면 숨는 막대라 받는 동안 자리를 비우지 않고, 숨을 때 간격도 사라지게 아래 12를 자기 className으로 가진다 */}
         <Suspense fallback={null}>
           <AchievementYearBar className="mb-3" />

@@ -6,7 +6,7 @@ import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/categor
 import type { DateKey } from '@src/shared/date/date-key';
 import { formatHHmmTime } from '@src/shared/date/format/date-format';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ActionButton,
@@ -15,10 +15,11 @@ import {
   ClockIcon,
   EyeIcon,
   EyeOffIcon,
+  type OpenSheetOptions,
   QueryErrorBoundary,
+  QueryErrorFallback,
   RepeatIcon,
   SheetChipRow,
-  type OpenSheetOptions,
   useOpenSheet,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -93,7 +94,7 @@ export function TodoScheduleChips({
       )}
       <VisibilityChip value={value} onChange={() => onChange(withVisibilityToggled(value))} />
       {/* 루트 overlay에 그려지므로 칩 조회 실패가 앱 경계까지 올라가지 않게 칩만 숨긴다 */}
-      <QueryErrorBoundary fallback={() => null}>
+      <QueryErrorBoundary fallback={QueryErrorFallback.Hidden}>
         <Suspense fallback={<ActionButton.Loading />}>
           <CategoryChip
             value={value}

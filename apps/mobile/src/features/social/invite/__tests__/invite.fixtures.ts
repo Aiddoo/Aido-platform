@@ -5,7 +5,7 @@ import {
   redeemInviteResponseSchema,
 } from '@aido/api/contracts/invite/v1';
 import type { ErrorCodeType } from '@aido/api/errors';
-import { ApiError } from '@src/core/errors/api-error';
+import { createApiError } from '@src/testing/api-error';
 import { defineFixture } from '@src/testing/fixture';
 
 import { redemptionResultSchema } from '../domains/invite-redemption.model';
@@ -27,7 +27,7 @@ export function createInviteApiError({
   code = 'INVITE_2101',
   status = 404,
 }: { code?: ErrorCodeType; status?: number } = {}) {
-  return new ApiError(code, '초대 코드를 찾을 수 없어요', status);
+  return createApiError(code, { message: '초대 코드를 찾을 수 없어요', status });
 }
 
 export const INVALID_DTO = { invalid: 'data' };

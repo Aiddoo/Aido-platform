@@ -25,9 +25,17 @@ export const useFocusEffect = jest.fn();
 export const useNavigation = jest.fn();
 /** 네이티브 내비게이터가 없어 막을 제거 동작이 오지 않는다. 막기를 푸는 함수만 돌려준다 */
 export const usePreventRemove = jest.fn();
+/** 루트 레이아웃이 묶는 내비게이션 컨테이너. 테스트가 루트 상태를 정한다 */
+export const useNavigationContainerRef = jest.fn();
 
+/** 화면이 하나뿐이고 focus돼 있어 그 화면의 setParams는 focus route에 쓰는 `router.setParams`와 같다 */
 function createNavigation() {
-  return { isFocused: () => true, getParent: () => undefined, addListener: () => () => undefined };
+  return {
+    isFocused: () => true,
+    getParent: () => undefined,
+    addListener: () => () => undefined,
+    setParams: (params: object) => router.setParams(params),
+  };
 }
 
 function useRunFocusEffect(effect: () => void | (() => void)) {
@@ -54,8 +62,13 @@ export function resetExpoRouterMock() {
   usePathname.mockReset().mockReturnValue('/');
   useSegments.mockReset().mockReturnValue([]);
   useFocusEffect.mockReset().mockImplementation(useRunFocusEffect);
-  useNavigation.mockReset().mockImplementation(createNavigation);
+  // 실제 화면의 navigation처럼 렌더마다 같은 객체다
+  useNavigation.mockReset().mockReturnValue(createNavigation());
   usePreventRemove.mockReset().mockReturnValue(() => undefined);
+  useNavigationContainerRef.mockReset().mockReturnValue({
+    isReady: () => false,
+    getRootState: () => ({ routes: [] }),
+  });
 }
 
 resetExpoRouterMock();

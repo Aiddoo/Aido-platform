@@ -1,5 +1,5 @@
-import { ApiError } from '@src/core/errors/api-error';
 import { isCodedError } from '@src/core/errors/result';
+import { createApiError } from '@src/testing/core';
 
 import { BusinessError } from './business-error';
 
@@ -19,7 +19,7 @@ describe('isCodedError', () => {
 
   it('서버 ApiError도 코드로 판별한다', () => {
     // Given
-    const error = new ApiError('INVITE_2101', 'message', 404);
+    const error = createApiError('INVITE_2101', { message: 'message' });
 
     // When
     const result = isCodedError(error, 'INVITE_2101');

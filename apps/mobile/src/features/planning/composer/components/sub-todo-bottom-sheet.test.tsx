@@ -1,5 +1,4 @@
-import { ErrorCode, HttpStatus } from '@aido/api/errors';
-import { ApiError } from '@src/core/errors/api-error';
+import { ErrorCode } from '@aido/api/errors';
 import { fail, ok } from '@src/core/errors/result';
 import {
   createParentTodo,
@@ -17,6 +16,7 @@ import {
   createTestQueryClient,
   createTestDi,
   deliverQueryNotifications,
+  createApiError,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
@@ -221,13 +221,7 @@ describe('AddSubTodoBottomSheet', () => {
     const viewingDate = createDateKey('2026-03-09');
     const httpClient = createHttpClientStub();
     httpClient.post.mockResolvedValue(
-      fail(
-        new ApiError(
-          ErrorCode.SYS_0001,
-          '잠시 후 다시 시도해주세요',
-          HttpStatus.INTERNAL_SERVER_ERROR,
-        ),
-      ),
+      fail(createApiError(ErrorCode.SYS_0001, { message: '잠시 후 다시 시도해주세요' })),
     );
     const todo = createParentTodo({ startDate: viewingDate, endDate: viewingDate });
     const queryClient = createTestQueryClient({

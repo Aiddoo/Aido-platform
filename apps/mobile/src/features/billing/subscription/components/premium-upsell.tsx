@@ -13,10 +13,11 @@ import {
   HStack,
   Meter,
   QueryErrorBoundary,
+  QueryErrorFallback,
+  SurfaceCard,
   Text,
   TextButton,
   VStack,
-  SurfaceCard,
 } from '@src/shared/ui';
 import { formatCount } from '@src/shared/utils/number-format';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -56,8 +57,9 @@ export function PremiumUpsell({ feature, title, description }: PremiumUpsellProp
         )}
       </VStack>
 
+      {/* 숫자를 못 읽어도 제목과 버튼만으로 안내는 끝나 자리를 비운다 */}
       {description == null && (
-        <QueryErrorBoundary fallback={PremiumUpsell.Error}>
+        <QueryErrorBoundary fallback={QueryErrorFallback.Hidden}>
           <Suspense fallback={<PremiumUpsell.Loading />}>
             <PremiumUpsell.Unlock feature={feature} />
           </Suspense>
@@ -145,11 +147,6 @@ PremiumUpsell.Loading = function Loading() {
       <Skeleton className="h-16 rounded-2xl" />
     </VStack>
   );
-};
-
-/** 숫자를 못 읽어도 제목과 버튼만으로 안내는 끝나 자리를 비운다 */
-PremiumUpsell.Error = function ErrorFallback() {
-  return null;
 };
 
 /** 기간마다 다시 생기는 한도를 다 썼을 때만 막대와 다시 생기는 날을 보여 준다 */

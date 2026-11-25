@@ -11,7 +11,7 @@ import { useTrack } from '@src/shared/analytics';
 import { getNowInstant } from '@src/shared/date/clock';
 import { useGoBack } from '@src/shared/hooks/use-go-back';
 import { useTranslation } from '@src/shared/i18n';
-import { STACK_MORE_ICON, useConfirmDialog } from '@src/shared/ui';
+import { nativeIcon, STACK_MORE_ICON, useConfirmDialog } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 
@@ -22,9 +22,9 @@ import { useVoiceNoteDraftId } from '../hooks/use-voice-note-params';
 import { useApplyActionPlanMutationOptions } from '../queries/voice.mutations';
 
 const VOICE_NOTE_TOOLBAR_ICON = {
-  saveMemo: process.env.EXPO_OS === 'ios' ? 'note.text.badge.plus' : NoteAdd,
-  memoSaved: process.env.EXPO_OS === 'ios' ? 'checkmark' : Check,
-  delete: process.env.EXPO_OS === 'ios' ? 'trash' : Delete,
+  saveMemo: nativeIcon({ ios: 'note.text.badge.plus', android: NoteAdd }),
+  memoSaved: nativeIcon({ ios: 'checkmark', android: Check }),
+  delete: nativeIcon({ ios: 'trash', android: Delete }),
 } as const;
 
 /** 메모만 저장할 때 넘기는 값. 메모는 카테고리를 쓰지 않아 저장 요청에 실리지 않는다 */

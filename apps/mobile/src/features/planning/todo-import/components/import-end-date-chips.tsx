@@ -2,7 +2,7 @@ import { EntitlementPolicy } from '@src/features/billing/subscription/domains/en
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
 import type { DateKey } from '@src/shared/date/date-key';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import { ActionButton, HStack, LockIcon, VStack } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -107,9 +107,4 @@ ImportEndDateChips.Loading = function Loading() {
       <ActionButton.Loading className="w-20" />
     </HStack>
   );
-};
-
-/** 기간 안내를 읽지 못해도 서버가 시작할 때 기간을 다시 확인해 칩만 숨긴다 */
-ImportEndDateChips.Error = function ErrorFallback() {
-  return null;
 };

@@ -5,7 +5,7 @@ import { formatDateKeyRange, formatIsoWeekLabel } from '@src/shared/date/format/
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import { CapturableView } from '@src/shared/infra/view-capture/capturable-view';
 import {
@@ -30,7 +30,7 @@ import {
   useSuspenseQuery,
 } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
-import { router, useIsFocused } from 'expo-router';
+import { useRouter, useIsFocused } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { useRef } from 'react';
 
@@ -208,6 +208,7 @@ export function AchievementSummary() {
 AchievementSummary.Empty = function Empty() {
   const { t } = useTranslation('achievement');
   const { trackEvent } = useTrack();
+  const router = useRouter();
   const push = useSingleTap(router.push);
 
   return (

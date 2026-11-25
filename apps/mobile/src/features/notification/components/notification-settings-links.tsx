@@ -12,7 +12,7 @@ import {
   WeatherDuoIcon,
 } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import type { ComponentProps } from 'react';
 
 import { useGetPushPermissionQueryOptions } from '../queries/push-permission.queries';
@@ -23,6 +23,7 @@ type SettingsSectionProps = Omit<ComponentProps<typeof SettingsListGroup>, 'chil
 /** 섹션 이름(`label`) 같은 바깥 구성은 화면이 원본 SettingsListGroup props로 넘긴다 */
 export function NotificationSettingsLinks(props: SettingsSectionProps) {
   const { t } = useTranslation('notification');
+  const router = useRouter();
   const push = useSingleTap(router.push);
   const dateFormatContext = useDateFormatContext();
 

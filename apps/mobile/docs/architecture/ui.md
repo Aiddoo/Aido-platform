@@ -117,16 +117,17 @@ route 파일이 화면을 조립한다. 제목, 경계, 문구, `Spacing`, `matc
 
 ## 사용성 (구조보다 먼저)
 
-| 상황                 | 기대                            | 쓰는 것                                                                                              |
-| -------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| 입력칸을 누름        | 칸·오류 문구가 키보드 위에 보임 | 화면 폼 `FormStepLayout`·`FormScrollView`, 시트 `KeyboardBottomSheet`, 편집기 `KeyboardAvoidingView` |
-| 저장 버튼            | 키보드에 가리지 않음            | `KeyboardAdaptiveButton`, 시트 `footer`                                                              |
-| 키보드가 열린 채 탭  | 첫 탭에 동작                    | `keyboardShouldPersistTaps="handled"`, 입력을 이어 가는 칩 줄·시트·댓글은 `"always"`                 |
-| 키보드 위치          | 실제 키보드와 같이 움직임       | `react-native-keyboard-controller`. `Keyboard.addListener` 타이밍으로 흉내 내지 않는다               |
-| 다음·완료 키, 입력값 | 다음 칸·제출, 맞는 키보드       | `returnKeyType`, `onSubmitEditing`, `setFocus`, `keyboardType`, `textContentType`                    |
-| 검증·저장 실패       | 틀린 칸 포커스, 글자 유지       | `Controller`의 `field.ref`, `isPending`, 초안                                                        |
-| 뒤로 가기            | 작성 중 글자를 잃지 않음        | 초안 또는 확인 다이얼로그                                                                            |
-| 큰 글꼴·작은 화면    | 주 버튼에 닿음, 짧은 라벨 한 줄 | 스크롤 틀, 고정 높이 컨트롤, `numberOfLines`                                                         |
+| 상황                 | 기대                                    | 쓰는 것                                                                                              |
+| -------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| 입력칸을 누름        | 칸·오류 문구가 키보드 위에 보임         | 화면 폼 `FormStepLayout`·`FormScrollView`, 시트 `KeyboardBottomSheet`, 편집기 `KeyboardAvoidingView` |
+| 저장 버튼            | 키보드에 가리지 않음                    | `KeyboardAdaptiveButton`, 시트 `footer`                                                              |
+| 키보드가 열린 채 탭  | 첫 탭에 동작                            | `keyboardShouldPersistTaps="handled"`, 입력을 이어 가는 칩 줄·시트·댓글은 `"always"`                 |
+| 키보드 위치          | 실제 키보드와 같이 움직임               | `react-native-keyboard-controller`. `Keyboard.addListener` 타이밍으로 흉내 내지 않는다               |
+| 키보드 내리기        | 화면·시트가 바뀌어도 키보드가 남지 않음 | `useDismissKeyboard()`(keyboard-controller, 실패는 로그). 시트가 열리고 닫힐 때는 시트 부품이 내린다 |
+| 다음·완료 키, 입력값 | 다음 칸·제출, 맞는 키보드               | `returnKeyType`, `onSubmitEditing`, `setFocus`, `keyboardType`, `textContentType`                    |
+| 검증·저장 실패       | 틀린 칸 포커스, 글자 유지               | `Controller`의 `field.ref`, `isPending`, 초안                                                        |
+| 뒤로 가기            | 작성 중 글자를 잃지 않음                | 초안 또는 확인 다이얼로그                                                                            |
+| 큰 글꼴·작은 화면    | 주 버튼에 닿음, 짧은 라벨 한 줄         | 스크롤 틀, 고정 높이 컨트롤, `numberOfLines`                                                         |
 
 구조를 고치다 사용성이 나빠지면 구조를 양보한다.
 

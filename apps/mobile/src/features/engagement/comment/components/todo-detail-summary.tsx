@@ -19,7 +19,7 @@ import { TodoNudgeButton } from '@src/features/social/nudge/components/todo-nudg
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import {
@@ -35,7 +35,7 @@ import {
 } from '@src/shared/ui';
 import { formatCompactCount } from '@src/shared/utils/number-format';
 import { useMutation, useQuery, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { type ReactNode, Suspense } from 'react';
 
@@ -255,6 +255,7 @@ TodoDetailSummary.Metrics = function Metrics() {
 TodoDetailSummary.Thanks = function Thanks() {
   const [todoId] = useTodoId();
   const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
+  const router = useRouter();
   const push = useSingleTap(router.push);
 
   if (!detail.permissions.canThank) {

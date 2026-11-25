@@ -3,7 +3,7 @@ import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/categor
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Result, Text } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { match } from 'ts-pattern';
 
@@ -25,6 +25,7 @@ export function AddTodoRequestEntry() {
     null,
   );
 
+  const router = useRouter();
   useEffect(() => {
     if (!isRequested || categoryId == null) {
       return;
@@ -42,7 +43,7 @@ export function AddTodoRequestEntry() {
       });
     });
     return () => cancelAnimationFrame(frameId);
-  }, [action, isRequested, categoryId, selectedDateKey, setAction]);
+  }, [action, isRequested, categoryId, router, selectedDateKey, setAction]);
 
   const createEntryStatus = !isRequested
     ? ('idle' as const)

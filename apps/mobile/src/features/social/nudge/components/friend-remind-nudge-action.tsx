@@ -6,7 +6,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { HStack, PawIcon, Result, Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useQuery } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 
 import { NudgeCooldownPolicy } from '../domains/todo-nudge.model';
 import { useGetRemindNudgeCooldownQueryOptions } from '../queries/todo-nudge.queries';
@@ -18,6 +18,7 @@ export function FriendRemindNudgeAction({ friend }: { friend: FriendUser }) {
   const { data: cooldownInfo } = useQuery(
     useGetRemindNudgeCooldownQueryOptions({ userId: friend.id }),
   );
+  const router = useRouter();
   const push = useSingleTap(router.push);
   const now = useNow({ until: cooldownInfo?.cooldownEndsAt ?? null });
   const canNudge =

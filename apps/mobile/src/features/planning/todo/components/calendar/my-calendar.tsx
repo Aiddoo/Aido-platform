@@ -1,4 +1,4 @@
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useStoredValue } from '@src/shared/storage/use-stored-value';
 import { Box } from '@src/shared/ui';
 import type { ComponentProps } from 'react';

@@ -17,7 +17,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorFallback, type QueryErrorFallbackProps, Result } from '@src/shared/ui';
 import { useAppToast } from '@src/shared/ui';
 import { useSuspenseQueries } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 
@@ -31,6 +31,7 @@ export function MemoPlanReview() {
   const { t } = useTranslation('memo');
   const { timezone } = useDateFormatContext();
   const goBack = useGoBack({ fallbackHref: '/memo' });
+  const router = useRouter();
   const dismiss = useSingleTap(router.dismiss);
   const navigate = useSingleTap(router.navigate);
   const toast = useAppToast();

@@ -16,15 +16,16 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   AdaptivePane,
-  usePaneSizeClass,
   Box,
   H3,
   HINT_OFFSET,
   HStack,
   QueryErrorBoundary,
+  QueryErrorFallback,
   type QueryErrorFallbackProps,
   Spacing,
   StyledSafeAreaView,
+  usePaneSizeClass,
 } from '@src/shared/ui';
 import { Suspense } from 'react';
 import { match, P } from 'ts-pattern';
@@ -100,7 +101,7 @@ export default function MemoScreen() {
 /** 초안이 없는 사용자가 대부분이라 로딩·실패 때 자리를 잡지 않는다. 자리를 잡으면 아래 메모가 위로 밀린다 */
 function VoiceNoteDrafts() {
   return (
-    <QueryErrorBoundary fallback={() => null}>
+    <QueryErrorBoundary fallback={QueryErrorFallback.Hidden}>
       <Suspense fallback={null}>
         <VoiceNoteDraftList limit={VOICE_NOTE_PREVIEW_COUNT} />
       </Suspense>

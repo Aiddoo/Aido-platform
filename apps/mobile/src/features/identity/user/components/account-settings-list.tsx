@@ -2,7 +2,7 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { KeyDuoIcon, NameDuoIcon, SettingsListGroup } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import type { ComponentProps } from 'react';
 
 import { UserPolicy } from '../domains/user.model';
@@ -11,6 +11,7 @@ import { useGetMeQueryOptions } from '../queries/user.queries';
 type SettingsSectionProps = Omit<ComponentProps<typeof SettingsListGroup>, 'children'>;
 
 export function AccountSettingsList(props: SettingsSectionProps) {
+  const router = useRouter();
   const push = useSingleTap(router.push);
   const { t } = useTranslation('settings');
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());

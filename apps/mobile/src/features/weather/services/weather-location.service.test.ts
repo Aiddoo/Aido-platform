@@ -1,11 +1,13 @@
 import type { LocationGateway } from '@src/core/ports/location-gateway';
-import { ApiError, fail, NetworkError, ok, type Result } from '@src/shared/errors';
+import type { ApiError } from '@src/shared/errors';
+import { fail, NetworkError, ok, type Result } from '@src/shared/errors';
 import { readStoredValue, writeStoredValue } from '@src/shared/storage/define-stored-value';
 import {
   createAppLoggerStub,
   createHttpClientStub,
   createLocationGatewayStub,
   createMemorySyncStorage,
+  createApiError,
 } from '@src/testing/core';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 
@@ -117,7 +119,7 @@ describe('WeatherLocationService.resolveLocation', () => {
   it('서버가 등록을 거절하면 장소 이름을 받아도 거절을 돌려주고 경고를 남긴다', async () => {
     // Given
     const { place, registration, logger, onUnexpectedFailure, resolveLocation } = setup();
-    const rejected = new ApiError('SYS_0001', '오류', 400);
+    const rejected = createApiError('SYS_0001', { message: '오류', status: 400 });
 
     // When
     const resolving = resolveLocation();

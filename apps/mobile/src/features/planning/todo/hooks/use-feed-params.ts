@@ -1,6 +1,6 @@
 import type { DateKey } from '@src/shared/date/date-key';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
-import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { useCallback } from 'react';
 
 import { CLEARED_TODO_SELECTION, feedParamsSchema } from '../schemas/feed-params.schema';
