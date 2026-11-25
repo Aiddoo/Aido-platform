@@ -15,14 +15,14 @@
             ▼
  KyHttpClient.#request ── readErrorEnvelope(@aido/api/common에서 error만)
    2xx 봉투 아님·JSON 아님 ─────────────► throw ParseError
-   4xx ─► Result.err(ApiError { code: 아는 코드|SYS_0001, message, status, details, requestId })
+   4xx ─► fail(ApiError { code: 아는 코드|SYS_0001, message, status, details, requestId })
    5xx ─► throw ServerError { status, serverCode: 아는 코드|null, details, requestId, request }
    시간 초과(헤더·본문 각각 요청 timeout, ky `.json()`) ─► throw TimeoutError
    ky NetworkError / expo `fetch failed:` ─► throw NetworkError
    그 밖(요청 경로의 TypeError 등 코드 버그) ─► 그대로 throw
             ▼
  {Entity}Api: parseApiResponse(응답 스키마 + mapper toModel) 실패 ─► throw ParseError
- Device Service·Policy: Result.err(BusinessError(코드))
+ Device Service: fail(BusinessError(코드))
             ▼  queryFn·mutationFn이 unwrap()
  ├─ 조회: shouldRetryQuery(일시 장애 6회 · ParseError·코드 있는 오류 0회 · 그 밖 3회)
  │    useSuspenseQuery ─► QueryErrorBoundary: kind별 보고 + 기능 fallback + 진단 문의 초안
@@ -86,7 +86,7 @@ classifyError(error): { kind: 'expected' | 'auth-expired' | 'connectivity' | 'un
 - 판별은 `ErrorCode`로 한다(`error.hasCode(ErrorCode.TODO_0801)`). 상태로 판별하는 것은 코드가 없는 경우(검증·없는 route·throttler 429)뿐이고 `HttpStatus`를 쓴다. 5xx는 `serverCode`로 판별한다.
 - `details`는 공유 스키마(`quotaErrorDetailsSchema` 등)로 `safeParse`한다. 운영에는 `PUBLIC_ERROR_DETAILS`에 등록한 코드만 실리므로 새로 읽는 코드는 계약에 먼저 등록한다.
 - lint가 `*.error.ts` 밖의 `isApiError`·`isCodedError` import, `.hasCode`, 오류 값의 `.status`·`.statusCode`·`.details`·`.serverCode`를 막는다(`aido/no-error-field-access`, [가드레일](./architecture/guardrails.md)). 공용 분류(`shared/errors`, 재시도, 경계)만 예외다.
-- 앱이 판단한 거절은 Device Service·Policy가 `err(new BusinessError(코드))`로 돌려준다. 문구는 `errors` 카탈로그의 코드 키(ko·en)로 `getUserFacingMessage`가 고른다. 하위 클래스가 필요하면 `SubscriptionError`처럼 확장한다. `SubscriptionError`의 `SUBSCRIPTION_*` 8코드는 예외로 `errors` 카탈로그에 없다. 결제·복원은 `errorFeedback: false`이고 화면 문구(제목·설명·문의)를 `subscription-failure.view-model`이 고르기 때문이다.
+- 앱이 판단한 거절은 Device Service가 `fail(new BusinessError(코드))`(`core/errors/result.ts`)로 돌려준다. Api는 서버 응답만 돌려주고 `BusinessError`를 만들지 않으며, Policy는 의미 값만 돌려준다. 문구는 `errors` 카탈로그의 코드 키(ko·en)로 `getUserFacingMessage`가 고른다. 하위 클래스가 필요하면 `SubscriptionError`처럼 확장한다. `SubscriptionError`의 `SUBSCRIPTION_*` 8코드는 예외로 `errors` 카탈로그에 없다. 결제·복원은 `errorFeedback: false`이고 화면 문구(제목·설명·문의)를 `subscription-failure.view-model`이 고르기 때문이다.
 
 ## mutation 오류 피드백
 
@@ -137,7 +137,7 @@ showMutationError(error, {
 
 - 독립된 데이터 블록마다 `QueryErrorBoundary → Suspense → 블록`을 둬 부분 실패를 허용한다. 식별자가 바뀌면 `resetKeys`로 이전 실패를 푼다. mutation은 경계로 가지 않는다(`throwOnError` 미사용).
 - 안쪽 경계가 바깥 경계의 조회를 함께 그리면 `resetScope="parent"`로 다시 시도 범위를 바깥과 함께 쓴다. 범위가 갈리면 바깥 다시 시도 뒤에도 안쪽이 그 조회를 다시 받지 않는다([QueryErrorBoundary 문서](../src/shared/ui/query-error-boundary/query-error-boundary.md#안쪽-경계가-바깥-경계의-조회를-함께-그릴-때)).
-- 기능 fallback은 `fallback={X.Error}`로 잇고 버튼 자리에 `QueryErrorActions`(다시 시도 + 문의하기)를 둔다. 한 칸 안의 실패는 `QueryErrorFallback.Inline`이다.
+- 기능 fallback은 `fallback={X.Error}`로 잇고 버튼 자리에 `QueryErrorActions`(다시 시도 + 문의하기)를 둔다. 한 칸 안의 실패는 `QueryErrorFallback.Inline`, 실패하면 비우는 값 조각은 `QueryErrorFallback.Hidden`이다. 화살표·`() => null` fallback은 쓰지 않는다([스크린](./architecture/ui.md#스크린)).
 - 문의하기는 경계가 받은 오류의 진단 코드·오류 코드·요청 ID(`getErrorDiagnosis`, 4xx·5xx 모두)를 본문 첫 줄에 담아 문의 화면을 연다. 사용자·기기 식별자와 오류 문구는 넣지 않는다. route 시트 안에서는 `onInquiry`가 받은 `href`로 `sheet.close({ type: 'replace', href })`한다([QueryErrorBoundary 문서](../src/shared/ui/query-error-boundary/query-error-boundary.md)).
 - **경계 밖 조회.** 인라인 `useQuery`의 `isError` 화면과 데이터가 있는 재조회 실패는 경계로 가지 않는다. 앱 `QueryCache`의 `onError`(`query-error-report-cache.ts`)가 받아 `QueryErrorReport`가 `feature: query_cache`로 보고한다. 데이터 없이 실패한 `useSuspenseQuery`와 붙은 observer의 `throwOnError`(함수면 그 결과)가 경계로 보내는 조회는 건너뛰고(TanStack `defaultThrowOnError`와 같은 조건), 같은 오류 객체가 두 길로 와도 `captureError`가 한 번만 보낸다. 기능이 조회 실패를 다시 보고하지 않는다.
 - **프리미엄 전용 거절.** 캐시의 한도 스냅샷이 늦어 프리미엄으로 물은 조회를 서버가 프리미엄 전용으로 거절하면, queryFn이 `*.error.ts` 판별 뒤 billing의 `invalidateEntitlements(client)`(`QueryFunctionContext.client`)를 기다린 다음 오류를 던진다. 기다리지 않으면 경계가 화면을 내리며 마지막 observer가 빠져 다시 받기가 취소되고 스냅샷이 되돌아간다(TanStack 조회 취소). 4xx는 재시도하지 않고 스냅샷 변경은 제안을 다시 묻지 않아 한 번으로 끝난다(AI 반복 제안 `suggestion.queries.ts`).

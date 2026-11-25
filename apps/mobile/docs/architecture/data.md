@@ -1,6 +1,6 @@
 # 데이터
 
-서버·OS·기기 저장소와 값을 주고받는 층의 규칙이다. 층 표와 의존 방향은 [structure](./structure.md), 모델·Policy·mapper는 [model](./model.md), 상태 원천과 params는 [state-and-routing](./state-and-routing.md), 오류 분류는 [error-handling](../error-handling.md)이 원본이다. 아직 이 모양이 아닌 코드는 [1.15.2 다음 버전 후보](../../../../docs/releases/1.15.2/README.md#다음-버전-후보)에 있다.
+서버·OS·기기 저장소와 값을 주고받는 층의 규칙이다. 층 표와 의존 방향은 [structure](./structure.md), 모델·Policy·mapper는 [model](./model.md), 상태 원천과 params는 [state-and-routing](./state-and-routing.md), 폼은 [forms](./forms.md), 오류 분류는 [error-handling](../error-handling.md)이 원본이다. 아직 이 모양이 아닌 코드는 [다음 버전 후보 이슈(#1785)](https://github.com/Aiddoo/Aido-platform/issues/1785)에 있다.
 
 ## Server API
 
@@ -22,7 +22,7 @@ export class MemoApi {
 ```
 
 - 서버 모듈 하나에 `{Entity}Api` 하나다(`apis/{entity}.api.ts`, DI 훅 `use{Entity}Api`). `HttpClient`만 받고 응답 진단이 필요할 때만 `AppLogger`를 더한다. 저장소·OS 포트·다른 Api는 받지 않는다.
-- 메서드는 `Promise<Result<T, ApiError>>`다. 4xx는 `Result.err`, 5xx·네트워크·파싱은 throw다. 분류는 `KyHttpClient` 한 곳이 한다([error-handling](../error-handling.md#분류는-kyhttpclient-한-곳)).
+- 메서드는 `Promise<Result<T, ApiError>>`다. 4xx는 `fail(ApiError)`, 5xx·네트워크·파싱은 throw다. 분류는 `KyHttpClient` 한 곳이 한다([error-handling](../error-handling.md#분류는-kyhttpclient-한-곳)).
 - 응답은 `parseApiResponse(응답, 계약 스키마, mapper, 메시지)`로 검증하고 모델로 바꾼다. `HttpClient`의 성공 값은 `unknown`이고 generic으로 단정하지 않는다. 요청 바디는 mapper `to{X}Request`가 만든다([model](./model.md#mapper)). GET은 `signal`을 받아 `HttpClient`까지 넘긴다.
 - class, 화살표 필드, `#` 비공개다. 생성자는 의존만 받고 기본값을 두지 않는다. 추적·Sentry 보고를 하지 않는다. 부르는 곳은 query·mutation 옵션과 Device Service뿐이고, 컴포넌트는 `HttpClient`·`Result`를 다루지 않는다.
 
@@ -37,7 +37,7 @@ export class MemoApi {
 
 ## Repository와 Store
 
-- Repository(`repositories/{name}.repository.ts`)는 저장 값 정의로 안 되는 것만 남는다. SecureStore 비동기(pending-revocation, push-registration), 파일(voice-recording), 접두사 열거·옛 키 정리와 이주(whats-new, coachmark, activation, voice-note-draft, draft), 옛 기기 기록 이주(marketing-push-prompt), 옛 저장 모양 읽기(store-review), Android 헤드리스 위젯(widget-navigation, android-widget-snapshot)이다.
+- Repository(`repositories/{name}.repository.ts`)는 저장 값 정의로 안 되는 것만 남는다. SecureStore 비동기(pending-revocation, push-registration), 파일(voice-recording), 접두사 열거·옛 키 정리와 이주(whats-new, coachmark, voice-note-draft, draft), 옛 기기 기록 이주(marketing-push-prompt), 옛 저장 모양 읽기(store-review), Android 헤드리스 위젯(widget-navigation, android-widget-snapshot)이다.
 - `create{Name}Repository(storage)`가 화살표 속성 객체를 돌려준다. 메서드는 `find*`(→ `T | null`), `save`, `remove`, `update(scope, transition)`, `subscribe`(→ 해제 함수)다. 저장 포트, storage 스키마, `AppLogger`만 쓴다. 판정은 Policy가 하고 시각은 인자(`at`)로 받는다. 키 문자열과 파서를 밖으로 내보내지 않는다.
 - 읽지 못함은 비어 있음이 아니다 — 정리 작업은 저장소를 읽은 경우에만 지운다. 암호화 저장소를 열지 못한 실행은 어느 초안도 가리키지 않는 녹음을 지우지 않고(`VoiceNoteStorageService`), 오프라인이라 보내지 못한 탈퇴는 결과 모르는 탈퇴로 남기지 않으며 결과를 모르던 탈퇴도 계정이 살아 있다는 증거가 오면 잊는다([auth](../auth.md)).
 - Store(`stores/{name}.store.ts`)는 메모리 상태 기계다. `create{Name}Store()`가 `getSnapshot`·`subscribe`·이름 있는 동작을 돌려준다(알림 진입, 인증 세션, 온보딩 가드). 포트·영속을 모르고, DI가 만들며, React는 `useSyncExternalStore`로 읽는다. 모듈 전역에 두지 않는다.
@@ -70,15 +70,16 @@ const storage = useStoredValueStorage(upsellDismissalStoredValue); // 핸들러�
 
 ## 흐름: mapper → 캐시 → select → view-model
 
-| 하는 일                             | 둘 곳                | 이유                                                                      |
-| ----------------------------------- | -------------------- | ------------------------------------------------------------------------- |
-| DTO·OS 값 → 모델                    | mapper(`queryFn` 안) | 요청당 한 번 돌고 결과가 캐시된다. 서버가 바뀌면 여기만 고친다            |
-| 거르기·정렬·개수·묶기·평탄화·고르기 | Query `select`       | 데이터나 `select`가 바뀔 때만 돈다. 고른 조각이 같으면 다시 그리지 않는다 |
-| 라벨 키·문자열·색 토큰              | view-model           | 렌더 중 싼 순수 계산이다                                                  |
-| 업무 판정                           | Policy               | 테스트 단위다                                                             |
+| 하는 일                                          | 둘 곳                | 이유                                                                      |
+| ------------------------------------------------ | -------------------- | ------------------------------------------------------------------------- |
+| DTO·OS 값 → 모델, 바깥 값 파싱                   | mapper(`queryFn` 안) | 요청당 한 번 돌고 결과가 캐시된다. 서버가 바뀌면 여기만 고친다            |
+| 쿼리 데이터의 거르기·정렬·개수·범위·묶기·고르기  | Query `select`       | 데이터나 `select`가 바뀔 때만 돈다. 고른 조각이 같으면 다시 그리지 않는다 |
+| 쿼리 밖 값(폼 값)의 표시용 묶기, 라벨 키·색 토큰 | view-model           | 렌더 중 싼 순수 계산이다                                                  |
+| 업무 판정                                        | Policy               | 테스트 단위다                                                             |
 
-- 목록 옵션은 `useGet{X}QueryOptions({ filters, orderBy, limit })`이고 모델이 `Filter{X}`·`OrderBy{X}` 타입을 둔다. 클라이언트 필터는 키에 넣지 않고 `select`로 같은 캐시를 나눠 쓴다. 서버 파라미터만 키에 넣는다.
-- 옵션 훅 안의 인라인 `select`는 React Compiler가 메모한다. `select`로 오류를 던지거나 DTO를 바꾸지 않는다.
+- **키에는 서버 인자만 넣는다.** 클라이언트 필터·정렬·`limit`·날짜 범위는 키에 넣지 않고 `select`로 같은 캐시를 나눠 쓴다. 범위를 키에 넣으면 같은 데이터를 범위마다 따로 받고 따로 영속한다. `queryFn`이 쓰는 값(시간대 포함)은 모두 키에 있다.
+- **`select`는 캐시를 쪼개지 않는다.** 캐시 항목은 `queryKey`로만 정해지고 `select`는 관찰자마다 그 위에서 돌며 결과는 구조 공유된다. 화면마다 다른 `select`는 TanStack Query가 권하는 방식이다([Render Optimizations](https://tanstack.com/query/v5/docs/framework/react/guides/render-optimizations#select)).
+- `select` 함수는 `queries/{entity}.queries.ts`의 이름 있는 모듈 함수(`select{X}`, 여럿이면 객체 `{X}Select`)다. 옵션 훅이 `filters`·`orderBy`·`limit`(모델의 `Filter{X}`·`OrderBy{X}`)을 받아 안에서 쓰거나, 컴포넌트가 `{ ...useGetXQueryOptions(), select: selectX }`로 고른다. `select`로 오류를 던지거나 DTO를 바꾸지 않는다.
 - 무한 목록 도구는 `shared/domains/cursor-page.model.ts` 하나다: `cursorPageSchema(item, cursor)`(`{ items, nextCursor }`), `getNextCursor(page)`(`getNextPageParam`), `selectPageItems(data)`(`select`), `mapInfiniteItems(data, fn)`(캐시 패치).
   - 쪽 모델은 `cursorPageSchema(item, cursor).extend({ totalCount })`처럼 만든다. 서버의 `hasNext`·`hasMore`와 "마지막 항목 id가 커서"는 mapper가 `nextCursor`로 접고 마지막 쪽이면 `null`이다. 계약은 그대로 둔다.
   - 첫 쪽은 `initialPageParam: undefined`, 다음 쪽은 `getNextPageParam: getNextCursor`다. 위아래로 잇는 댓글 목록만 `pagination`과 자기 page param을 쓴다([todo-comments](../todo-comments.md)).
@@ -103,9 +104,11 @@ export const NOTIFICATION_QUERY_KEYS = {
 - 키 팩토리는 `queries/{feature}-query-keys.ts`, mutation 키는 `queries/{feature}-mutation-keys.ts`다. 쿼리 옵션·cache helper와 함께 바뀌어 같은 폴더에 둔다. `aido/query-key-location`이 그 밖의 `queryKey: [`를 막는다.
 - 루트는 기능 이름 하나다(`['notification']`). 한 루트가 다른 기능 루트의 접두사가 되지 않는다(`bootstrap/query/query-key-roots.test.ts`). mutation 키 루트는 `[feature, 'mutation']`이다.
 - 모든 잎은 `queryOptions<T>({ queryKey }).queryKey`로 데이터 타입을 붙여 `getQueryData`·`setQueryData`가 제네릭 없이 타입을 안다. 인자는 이름 있는 객체 하나이고 잎은 루트와 같지 않다. 그룹(`lists()`)은 무효화에 쓸 때만 만든다.
-- 기기 OS 상태(푸시 권한, 위치) 쿼리는 `['device', …]` 루트에 둔다. 기능 무효화에 휩쓸려 OS를 다시 묻지 않는다.
+- OS에 묻는 값(권한, 위치, 캘린더 목록) 쿼리는 `['device', …]` 루트에 둔다. 기능 무효화에 휩쓸려 OS를 다시 묻지 않는다. 앱 아이콘은 기능 루트 `['app-icon']`이다([권한](../permissions.md)).
 - 키를 컴포넌트에서 만들거나 하드코딩하지 않는다. 키 자리에 기대는 구조 분해(`const [, , params] = queryKey`)를 쓰지 않는다.
-- 조회 옵션은 `useGet{X}QueryOptions`·`useGet{X}InfiniteQueryOptions` 훅이고 `queryFn`은 `unwrap(await api.getX(…, signal))`이다. 화면은 `useSuspenseQuery(useGetXQueryOptions(…))`를 직접 부른다. 서로 독립인 조회는 `useSuspenseQueries`나 블록별 경계로 나눠 워터폴을 만들지 않는다.
+- 조회 옵션은 `useGet{X}QueryOptions`·`useGet{X}InfiniteQueryOptions` 훅이고 `queryFn`은 `unwrap(await api.getX(…, signal))`이다. 화면은 `useSuspenseQuery(useGetXQueryOptions(…))`를 직접 부른다. 서로 독립인 조회는 `useSuspenseQueries`나 블록별 경계로 나눠 워터폴을 만들지 않는다. 안쪽 블록이 멈춘 뒤에야 시작될 조회는 바깥에서 같은 옵션으로 `usePrefetchQuery`를 불러 함께 시작한다(`memo-list.tsx`의 내 정보, 날씨 `ForecastCards`의 할 일 점). 이유를 주석 한 줄로 남긴다.
+- 폴링 간격·`staleTime`·재시도 지연은 `queries/{entity}.queries.ts`(세션은 `services/{name}.session.ts`)의 지역 표다. 모델은 의미 값만 준다. 폴링 쿼리는 `subscribed: isFocused`로 가려진 화면에서 멈춘다.
+- 영속하는 무한 목록은 `maxPages`를 둔다. 없으면 복원 뒤 모든 페이지를 차례로 다시 받는다. `useQueries`의 `combine`은 배열·plain 객체를 돌려준다(`Map`은 구조 공유가 안 돼 매번 다시 그린다).
 
 ## 무효화
 
@@ -145,11 +148,11 @@ export function useUpdateTodoCategoryMutationOptions() {
 ```
 
 - `use{Verb}{X}MutationOptions()`가 `mutationOptions`를 돌려주고 화면은 `useMutation`을 직접 부른다. 변수 타입에 이름을 붙이면 `*Variables`다. 화면 이동은 호출부가 한다.
-- `mutationFn`은 Api 결과를 반드시 `unwrap`한다. `Result.err`를 그대로 돌려주면 React Query가 성공으로 본다.
+- `mutationFn`은 Api 결과를 반드시 `unwrap`한다. `fail` 결과를 그대로 돌려주면 React Query가 성공으로 본다.
 - 오류 피드백은 mutation마다 둔 `meta.errorFeedback` 하나다(`aido/mutation-error-feedback`, 펼친 옵션은 이어받는다). 값마다 전역이 하는 일, `isHandledByFeature`·`false`를 쓰는 곳, 기능 `onError`가 맡는 것은 [error-handling](../error-handling.md#mutation-오류-피드백)이 원본이다.
 - 서버가 확정한 결과는 mutation `onSuccess`·`onError`에서 추적하고 온 UI는 변수 `source`로 받는다. Api·Service·Repository·Store·mapper·모델·cache는 추적하지 않는다([observability](../observability.md)).
-- 저장 뒤 바로 떠나는 변경은 `onSettled`에서 Promise를 돌려주지 않는다. 돌려주면 `mutateAsync`가 재조회까지 기다린다. 화면에 남는 행 버튼(친구 수락·거절)은 무효화를 기다려 행이 사라질 때까지 버튼을 끈다.
-- 멈췄다가 나중에 실행되면 안 되는 쓰기는 `networkMode: 'always'`에 이유 주석을 단다.
+- 무효화는 늘 `onSettled`에 두고, 기다릴지는 반환으로 정한다. 저장 뒤 바로 떠나는 변경은 Promise를 돌려주지 않는다(돌려주면 `mutateAsync`가 재조회까지 기다린다). 결과가 화면에 남는 행 버튼(친구 수락·거절)은 무효화 Promise를 돌려줘 `isPending`이 행이 사라질 때까지 이어진다.
+- 멈췄다가 나중에 실행되면 안 되는 쓰기와 그 쓰기 앞에서 기다리는 조회(`fetchQuery`)는 `networkMode: 'always'`에 이유 주석을 단다. 기본 `'online'`이면 오프라인에서 실패하지 않고 멈췄다가 연결되면 사용자 모르게 실행된다.
 
 **낙관적 갱신.** 여러 화면이 같은 값을 보이면 캐시로, 그 버튼 하나만 보이면 `useMutation`의 `variables`로 그린다. 되돌릴 수 없는 삭제는 미리 빼지 않는다. 같은 캐시의 변경은 함께 진행된다고 보고 이 순서를 지킨다.
 
@@ -160,32 +163,6 @@ export function useUpdateTodoCategoryMutationOptions() {
 5. `onSettled`: 실패했거나 응답이 바뀐 값을 다 담지 못하면 마지막 변경일 때만 다시 받는다. 응답이 필요한 정리(`settleTodoEdit`)도 여기서 `data`로 한다.
 
 - 할 일 목록은 `features/planning/todo/queries/todo-cache.ts`의 `beginTodoWrite`·`updateCachedTodo`·`settleTodoWrite`로만 고친다. 날짜는 할 일의 시작일이 아니라 보고 있는 목록의 날짜다. 임시 id는 음수(`createOptimisticId`)이고 `isOptimistic*` Policy로 막는다. 임시 행의 버튼·끌기는 끄고 route는 양수 id만 받는다.
-
-## 폼
-
-```tsx
-// 수정: 다시 받은 서버 값이 비교 기준이고 고치던 칸은 남는다. 생성은 values 대신 defaultValues다
-const form = useForm({
-  resolver: zodResolver(todoCategoryFormSchema),
-  values: toTodoCategoryFormValues(category),
-  resetOptions: SERVER_VALUES_RESET_OPTIONS,
-  mode: 'onChange',
-});
-```
-
-- `useForm`은 제네릭 없이 `zodResolver(schema)`에서 타입을 추론하고 이름은 `form`이다. 생성은 `defaultValues`, 서버 값을 고치는 수정 폼은 `values` + `resetOptions: SERVER_VALUES_RESET_OPTIONS`(`shared/constants`)로 다시 받은 값과 맞춘다(고치지 않은 칸은 새 값, 고치던 칸·`isDirty`·칸 오류는 그대로). RHF 7.91은 `keepDirtyValues`만 주면 마운트와 다시 받을 때마다 `isDirty`와 칸 오류를 지우므로 이 상수를 쓴다. `form.reset`도 `resetOptions`를 합치니 저장한 값으로 다시 시작할 때는 `form.reset(values, SAVED_VALUES_RESET_OPTIONS)`다. 코드로 바꾼 칸(칩·받아쓰기·초안)은 `setValue(…, { shouldDirty: true })`로 고친 칸이 되게 하고, 버튼·완료 키가 `isValid`를 보면 `shouldValidate: true`도 준다. `reset`을 부르는 effect를 쓰지 않는다. 처음 값은 스키마 `.default()`가 아니라 `defaultValues`에 두고 값 없는 칸은 `null`이다.
-- 스키마는 `schemas/{name}-form.schema.ts` 하나다. 계약의 요청 스키마에서 `pick`·`omit`·`extend`로 유도하고 공백 정리는 `trimmed(contract.shape.title)`, 한도는 vocabulary다. 저장 가능 여부를 함수로 또 만들지 않는다.
-- 변환은 mapper다. 폼 값 → 요청은 `to{X}Request(values)`, 모델 → 폼 값은 `to{X}FormValues(model)`다.
-- 입력은 `Controller`·`useController`로 잇고 `field.ref`를 넘겨 검증 실패 칸에 포커스한다. 하위는 `useWatch`·`useFormState({ name })`로 자기 값만 구독한다. 렌더 중 `getValues()`는 React Compiler가 캐시해 갱신되지 않으므로 핸들러에서만 쓴다.
-- 폼은 제출하는 컴포넌트가 소유하고 자식에 props `form`(읽기만 하면 `control`)으로 넘긴다. `FormProvider`·`useFormContext`는 쓰지 않는다. 공용 입력 부품은 `value`·`onChange`를 받는 제어 컴포넌트다(`todo-schedule-chips.tsx`).
-  - 예외는 할 일 댓글 세션 하나다(`TodoCommentFormProvider`·`useTodoCommentForm`). 가상 목록 깊은 곳의 댓글·답글 행 메뉴, 작성 바, 뒤로 가기 확인이 화면 하나의 작성기를 함께 읽고 바꿔, props로 내리면 목록 여러 층을 거치는 드릴링이 된다. 세션(`todo-comment-session.tsx`)이 폼을 소유하고 이 Context로만 나눈다.
-- 버튼은 `formState.isValid`·`isSubmitting`·`isSubmitSuccessful`과 mutation `isPending`·`isSuccess`로만 정한다. `safeParse`로 버튼 상태를 따로 계산하지 않는다. 단계 폼의 다음 버튼은 폼 전체가 아니라 그 단계 칸만 본다. `getFieldState(name, formState)`의 `isDirty && !invalid`로 정한다(`useFormState({ name })`로 구독). 단계 버튼이 바로 따르게 `mode: 'onChange'`로 검사하고, 오류 문구는 칸을 벗어난 뒤(`isTouched`)나 그 칸에 적은 뒤(`isDirty`)에만 보인다.
-- 저장하면 닫히는 폼(시트·화면)은 닫히는 동안에도 값이 남아 `isSubmitting`이 꺼지면 버튼이 다시 켜진다. 그동안 버튼과 완료 키를 `isSubmitting || isSubmitSuccessful`로 막는다. `isSubmitSuccessful`이 실패에 켜지지 않게 실패는 `handleSubmit` 안에서 받지 않고 호출부 `.catch`에서 받는다(할 일·카테고리 추가). `mutate`로 보내는 폼은 mutation `isSuccess`로 막는다(계획 검토). 같은 프레임의 두 번째 탭은 `isSubmitting`이 다음 렌더에야 켜져 `useSingleTap`으로 막는다. 이름은 `handleSubmit` 결과가 `save{X}`(`saveTodo`·`saveCategory`), 그것을 감싼 `useSingleTap`이 `handleSavePress`다.
-- 서버 4xx 중 칸에 속한 오류는 `form.setError`로 그 칸에 보인다. 코드와 칸의 매핑은 `domains/{feature}.error.ts`에 둔다. 실패해도 입력값을 지우지 않는다.
-- 생성과 수정은 스키마와 입력 부품만 공유하고 제출은 각자 소유한다. 공통 부품에 `mode`·`onSubmit` 분기를 넘기지 않는다.
-- 확인할 동작: 성공하면 닫힘·갱신·초안 삭제·이벤트 한 번, 4xx·연결 끊김이면 입력값·초안 유지와 안내 한 번, 두 번 눌러도 요청 한 번, 검증 실패나 바뀐 값 없음이면 요청 없음.
-- **초안.** `useDraftStorage(draftKey)`가 첫 렌더에 동기로 읽어 생성 폼은 `defaultValues`에 넣고, 수정 폼은 그리기 전(`useLayoutEffect`) 고친 글자로 넣는다(`setValue(…, { shouldDirty: true })`, 메모 편집). 칸 목록(`useFieldArray`)은 그 훅의 `replace`로 넣는다. RN의 RHF는 칸 구독을 `useEffect`로 걸어 먼저 도는 effect의 `setValue`를 첫 마운트에 놓친다(댓글 작성기). `useFormDraftAutosave(form.subscribe, …)`가 렌더 없이 디바운스 저장하고, 언마운트 때 대기 저장을 flush하며, 제출 성공·취소 때 대기 저장까지 취소한 뒤 지운다.
-- 초안 키는 `utils/{feature}-draft.ts`의 순수 함수가 `createDraftKey`로 만들고 사용자 id가 들어간다. 저장소는 암호화 MMKV이고 `DRAFT_TTL_MS`가 지난 초안과 원본보다 오래된 편집 초안은 버린다. 비밀번호·인증 코드는 초안으로 저장하지 않고, 긴 본문을 URL·Query 캐시에 넣지 않는다.
 
 ## 메모리와 수명
 

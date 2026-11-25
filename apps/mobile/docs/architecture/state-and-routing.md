@@ -1,13 +1,13 @@
 # 상태와 라우팅
 
-값마다 원천을 하나로 정하고, URL 값은 튜플 훅으로 읽고 쓰고, 화면 이동은 Expo Router 권장 방식으로 한다. 저장 값·쿼리·폼의 상세는 [data](./data.md), 공용 훅은 [hooks](./hooks.md), 시트·메뉴 부품은 [ui-catalog](./ui-catalog.md)에 있다.
+값마다 원천을 하나로 정하고, URL 값은 튜플 훅으로 읽고 쓰고, 화면 이동은 Expo Router 권장 방식으로 한다. 저장 값·쿼리의 상세는 [data](./data.md), 폼은 [forms](./forms.md), 공용 훅은 [hooks](./hooks.md), 시트·메뉴 부품은 [ui-catalog](./ui-catalog.md)에 있다.
 
 ## 상태 원천
 
 | 상태                                           | 도구                                                                | 판단 기준                                                            |
 | ---------------------------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------- |
 | 서버 데이터                                    | TanStack Query `queryOptions`·`mutationOptions`, `useSuspenseQuery` | 서버가 진실이다. 앱이 다시 계산하거나 복사하지 않는다                |
-| 기기 비동기 값(OS 권한, 위치, 앱 아이콘)       | TanStack Query, 키 루트 `['device', …]`                             | 비동기로 다시 읽어야 한다. 기능 무효화에 휩쓸리지 않게 루트를 나눈다 |
+| 기기 비동기 값(OS 권한, 위치, 캘린더 목록)     | TanStack Query, 키 루트 `['device', …]`([권한](../permissions.md))  | 비동기로 다시 읽어야 한다. 기능 무효화에 휩쓸리지 않게 루트를 나눈다 |
 | URL 보기 상태(선택 항목, 탭, 날짜, 친구, 필터) | params 튜플(`useView`, `useRouteParams`)                            | 딥링크·뒤로 가기로 복원돼야 한다. `useState` 사본을 두지 않는다      |
 | 기기 저장 값(설정, 안내를 본 기록)             | `defineStoredValue` + `useStoredValue`                              | 앱을 다시 켜도 남아야 한다. 키·파서는 정의 밖에 두지 않는다          |
 | 작성 중 초안                                   | `shared/draft`(암호화 저장소, 사용자 범위)                          | 긴 본문을 URL·Query 캐시에 넣지 않는다                               |
@@ -16,7 +16,8 @@
 | 잠깐 쓰는 UI 값(열림, 측정값)                  | `useState`·`useReducer`                                             | 나머지 전부                                                          |
 
 - 원천은 하나다. 같은 값을 두 저장소에 복사하지 않고, 계산할 수 있는 값은 상태로 두지 않는다.
-- 앱이 만드는 Context는 DI와 UI 내부 구현(시트, 폼, 레이아웃 측정)에만 쓴다. 나머지는 props → 컴포넌트 prop → Query 캐시 → route 훅 → 외부 저장소 순서로 고른다.
+- 앱이 만드는 Context는 DI, 루트에 한 번 끼우는 앱 설정(`shared/providers`의 테마·언어·글꼴·로컬 날짜), UI 내부 구현(시트, 오버레이, 입력 포커스, 레이아웃 측정)과 아래 두 예외에만 쓴다. 나머지는 props → 컴포넌트 prop → Query 캐시 → route 훅 → 외부 저장소 순서로 고른다.
+  - 할 일 댓글 세션: 작성기(`useTodoCommentForm`), 펼친 묶음, 대상 행 위치 맞춤, 삭제 확인을 가상 목록 깊은 행과 작성 바가 함께 쓴다([todo-comments](../todo-comments.md#상태와-소유자)).
   - route 상태를 감싼 Context·store는 두지 않는다. 예외는 마이 메뉴 칸의 `MyPageMenuNavigationProvider` 하나다. 경로 원천은 router이고, 이 Context는 메뉴 칸의 행(`MyPageMenuItem` 15개와 프로필·새 기능·초대 줄)이 함께 쓰는 이동(연타 가드 하나, 넓은 화면의 상세 걷기)과 경로를 칸에서 한 번 받아 선택이 바뀐 행만 다시 그리게 하는 store(`createEventChannel`)를 내린다. 넓은 화면에서 상세 칸이 깊어질 때마다 메뉴 행이 모두 다시 그려지지 않게 하는 것이 이유이고 `use-my-page-menu-navigation.test.tsx`가 지킨다.
 
 라이브러리가 주는 상태를 다시 만들지 않고, 그 훅을 한 번 더 감싸지도 않는다.
@@ -35,7 +36,7 @@
 
 - 초대 수락 결과는 다음 화면에 `queryFn: skipToken` 쿼리로 넘긴다(`useGetRedemptionResultQueryOptions`). 보상·친구 결과를 URL로 넘기면 딥링크로 위조할 수 있다.
 - 차단·신고 확인 문구의 이름은 route query(`name`)로 받는다. 표시용이고 판정은 경로의 id로만 한다.
-- 가입·비밀번호 재설정 단계는 URL로 복원되면 안 돼 `useStepper`가 갖는다([hooks](./hooks.md)). 친구 검색어는 입력 중인 값이라 지역 상태다.
+- 단계 흐름(가입, 비밀번호 찾기·바꾸기, 캘린더 가져오기, 결제, 새 기능 소개)의 단계는 URL로 복원되면 안 돼 `useStepper`가 갖는다([hooks](./hooks.md#usestepper)). 친구 검색어는 입력 중인 값이라 지역 상태다.
 
 ## params 튜플
 
@@ -45,12 +46,12 @@ const [{ year, week }] = useRouteParams(achievementParamsSchema); // 여러 값(
 const [todoId] = useTodoId(); // 읽기 전용도 튜플
 ```
 
-- 공용 `useRouteParams(schema)`(`shared/hooks/use-route-params.ts`)와 `useView(key, schema)`(`shared/hooks/use-view.ts`)가 `expo-router`의 `useLocalSearchParams`·`router.setParams`를 감싼다. 반환이 nuqs 같은 튜플이라 원천을 `useState`나 저장 값으로 바꿔도 훅 반환만 고친다.
+- route 값은 공용 `useRouteParams(schema)`(`shared/hooks/use-route-params.ts`)와 `useView(key, schema)`(`shared/hooks/use-view.ts`)로만 읽고 쓴다. 둘이 `expo-router`의 params를 감싸고, 읽기와 쓰기 모두 그 훅을 부른 화면의 params다. 그래서 비동기 뒤에 setter를 불러도 지금 focus된 다른 화면에 쓰지 않아 호출부가 `isFocused()`를 확인하지 않는다. 반환이 nuqs 같은 튜플이라 원천을 `useState`나 저장 값으로 바꿔도 훅 반환만 고친다.
 - 값 하나는 `[value, setValue]`, 여러 값은 `[{ a, b }, setValues]`, 읽기 전용은 `[value]`다. 이름은 값을 드러낸다(`[selectedMemoId, setSelectedMemoId]`). 쓰지 않는 요소는 `_`를 붙인다.
 - 스키마는 `schemas/{name}-params.schema.ts`의 `{name}ParamsSchema`, 탭·보기 값은 `{name}ViewSchema`다. 훅 파일에 `z.object`를 두지 않는다.
 - 쓰는 필드는 URL 문자열과 값을 오가는 `z.codec`이다(`routeIdSchema`). `.transform`은 `z.encode`에서 터지고 `z.coerce`는 숫자로 남아 조용히 지워지므로 읽기 전용 필드에만 쓴다. 없거나 잘못된 값의 기본값은 `.catch`다.
 - 값을 지우면 `undefined`를 넘긴다. boolean은 끌 때 `undefined`라 `?isEditing=false`가 남지 않는다.
-- 한 파일만 읽으면 그 자리에서 `useRouteParams`·`useView`를 부른다. 여러 파일이 읽으면 `hooks/use-{name}-params.ts`의 이름 있는 훅 하나로 뺀다. 탭은 `ViewTabs`에 `schema`·`value`·`onValueChange`로 넘긴다.
+- 한 파일만 읽으면 그 자리에서 `useRouteParams`·`useView`를 부르거나 그 파일의 지역 훅으로 둔다. 여러 파일이 같은 스키마를 읽으면 `hooks/use-{name}-params.ts`의 이름 있는 튜플 훅 하나로 뺀다(같은 스키마를 파일마다 따로 읽지 않는다). 탭은 `ViewTabs`에 `schema`·`value`·`onValueChange`로 넘긴다.
 - **검증은 route 파일이 한다.** `useRouteParamsOrRedirect(schema, { fallbackHref })`가 틀린 주소를 `<Redirect>`로 돌려주고 route는 그것만 그린다. route는 `params`를 읽지 않고, 안쪽 화면(같은 파일의 지역 컴포넌트)이 같은 스키마의 튜플 훅으로 좁혀진 값을 읽어 `resetKeys`·`key`도 정한다. 리다이렉트를 직접 만들지 않는다.
 
 ```tsx
@@ -65,7 +66,7 @@ export default function MemoDetailRoute() {
 }
 ```
 
-- **원시 `setParams`를 내보내지 않는다.** 연관 값을 지우는 세터를 이름 있게 내보낸다(`useTodoCommentSort`는 `comment`를 함께 지운다). 호출부가 지우기를 잊을 수 없다. `router.setParams`와 `useRouteParams`의 원시 setter는 params 훅(`hooks/use-*-params.ts`) 밖에서 쓰지 않는다(`no-restricted-properties`, `aido/route-setter-location`). 예외는 칸 크기로 이동 방식을 고르는 `useFeedSelectedTodoId` 하나다.
+- **원시 `setParams`를 내보내지 않는다.** 연관 값을 지우는 세터를 이름 있게 내보낸다(`useTodoCommentSort`는 `comment`를 함께 지운다). 호출부가 지우기를 잊을 수 없다. `router.setParams`와 `useRouteParams`의 원시 setter는 params 훅(`hooks/use-*-params.ts`) 밖에서 쓰지 않는다(`no-restricted-properties`, `aido/route-setter-location`). 예외는 칸 크기로 이동과 칸 바꾸기를 고르는 `use-feed-selected-todo-id.ts`(`useFeedSelectedTodoId`·`useFeedTodoDetailHandoff`) 하나다.
 - **목록 행은 route 훅을 부르지 않는다.** 부모가 한 번 읽어 `isSelected`를 넘긴다. 가상 목록이 행 수만큼 URL을 파싱하지 않게 한다. 짧은 고정 목록은 행이 읽어도 된다.
 - **레이아웃은 자식 params를 구독하지 않는다.** 레이아웃은 내비게이터와 Provider만 둔다. 루트에서 URL을 봐야 하는 훅은 `null`을 그리는 형제 컴포넌트에 둔다: `AuthGateLayout`의 `RouteWatchers`(`useScreenTracking`, `useWidgetAppEntry`, `useAppEntrySegmentSync`)와 `NotificationProvider`의 `ForegroundPushPresentation`. 스플래시 판단이 쓰는 "앱 입구인가"는 `useAppEntrySegmentSync`가 푸시 진입 슬롯에 적고 레이아웃은 슬롯만 읽는다. 내 정보·창 크기를 구독하는 루트 훅도 같은 이유로 `WindowWatchers`(`useOrientationLock`)·`SessionWatchers`(`useSyncUserIdentity`, `useClaimDeviceDataForUser`)·`AppEntryWatchers`(`useInstallReferrerCapture`, `usePushNotificationResponse`)에, 앱 화면 묶음 레이아웃의 할 일 이벤트 훅은 `TodoEventWatchers`(`useRecordTodoCreated`, `useRecordTodoCompletion`, `useOfferMarketingPushAfterCompletion`)에 둔다. `setParams`·내 정보 변경·창 크기 변경이 레이아웃을 다시 그리지 않는 것은 `auth-gate-layout.test.tsx`가 지킨다.
 - 화면 훅에서 `useGlobalSearchParams`를 쓰지 않는다. 보이지 않는 화면도 URL이 바뀔 때마다 다시 그려진다. 위의 `null` 자식이 지금 화면의 params를 볼 때는 `useFocusedRouteParams`(`shared/navigation`)다. 전역 params는 상위 route params까지 합쳐, anchor와 함께 연 상세·초대 환영의 경로 값(`todoId`·`friendId`)이 피드로 돌아와도 남는다(`auth-gate-layout.widget-entry.flow.test.tsx`).
@@ -90,6 +91,8 @@ Expo Router 권장 방식을 따른다. 라우터 교체는 route 전체를 바�
 - 리소스는 폴더 route다. 세그먼트는 kebab-case, 동적 세그먼트는 `[{entity}Id]`다(`/todo/[todoId]`). `[id]`는 쓰지 않는다.
 - 같은 화면의 보기 상태는 camelCase query param이다(`/feed?friendId=…&date=…`, `/memo?memoId=…`). 피드는 `/feed` 한 화면이고 친구 전환은 세터라 pane이 다시 마운트되지 않고 history가 쌓이지 않는다.
 - 이동은 호출부에서 typed routes `router.push({ pathname, params })`로 쓴다. 컴파일 때 `pathname`과 동적 세그먼트를 검사하므로 href 래퍼를 만들지 않고 경로 문자열을 잇지 않는다.
+- 컴포넌트·훅의 `router`는 `useRouter()`나 공용 이동 훅(`useGoBack`, `useSingleTap`으로 감싼 이동)에서 얻는다. 모듈 `router`(`import { router } from 'expo-router'`)는 React 밖(`+native-intent`, 앱 트리 밖 콜백)에서만 쓴다.
+- Expo Router의 비공개 API(`router.linkTo`, `__internal__popToNavigator`)는 `shared/navigation` 한 곳에서만 쓰고, 그 API가 없어질 때의 공개 대체 경로를 테스트로 묶는다(`open-entry-href.test.tsx`).
 - 저장·AI·조회를 기다린 뒤 이동하면 그 사이 떠났는지 먼저 본다. 화면은 `navigation.isFocused()`, 화면 안에서 바뀌는 조각(pane의 메모 편집기)은 마운트 여부도 본다. 떠났으면 지금 보는 화면 위로 끌고 가지 않는다. 메모 AI 정리 결과는 mutation이 초안에 남겨, 그 메모에서 다시 누르면 차감 없이 바로 결과 화면으로 간다.
 - 목적지를 계산하는 곳은 하나다. 알림은 `features/notification/utils/notification-destination.view-model.ts`, 위젯은 `findWidgetEntry`(`features/device/widget/utils/widget-navigation-link.view-model.ts`, 명령 유효성은 `WidgetNavigationPolicy`)다.
 - 켜진 앱에 앱 밖에서 들어온 이동(누른 푸시, 인증 뒤 여는 위젯 목적지)은 `openEntryHref(href)`(`shared/navigation/open-entry-href.ts`)로 OS가 같은 URL을 연 것처럼 연다. Stack에 그 화면이 있으면 그리로 돌아가고 없으면 쌓는다. `router.navigate`는 탭 위 화면(할 일 상세·시트·결제 모달)에서 탭 화면을 열면 탭 묶음을 하나 더 쌓는다.
@@ -123,7 +126,7 @@ app/(app)/(tabs)/
   (me,memos,todos)/…        알림함·친구·배지·리포트·설정·캘린더 가져오기·새 기능 목록. 세 탭 Stack에 모두 있다
 ```
 
-- 그룹 이름은 URL에 들어가지 않는다. 그래서 `/friends/invite`·`/settings/…` 같은 공개 경로와 `screen_view` 이름이 1.15.1과 같다. 탭 그룹 이름은 탭의 영어 이름(To-dos·Memos·Me)이다.
+- 그룹 이름은 URL에 들어가지 않는다. 그래서 `/friends/invite`·`/settings/…` 같은 공개 경로와 `screen_view` 이름이 탭 구조와 상관없이 같다. 탭 그룹 이름은 탭의 영어 이름(To-dos·Memos·Me)이다.
 - 탭 첫 화면은 그 탭 그룹에만 둔다. 다른 탭에서 `/feed`·`/memo`·`/mypage`로 가면 그 탭으로 바뀐다(친구 목록 → 친구 피드).
 - 넓은 화면(iPad·폴더블·Duo 펼침)은 마이 탭에서만 화면마다 왼쪽 메뉴 칸을 둔다([adaptive-pane](../../src/shared/ui/adaptive-pane/adaptive-pane.md#내-정보-메뉴-전체-폭-헤더--화면마다-메뉴-칸)). 할 일·메모 탭에서 연 같은 화면은 메뉴 칸 없이 그 탭 안 전체 폭에 일반 push로 쌓인다.
 - 보고 있는 탭을 다시 누르면 iOS NativeTabs가 그 탭 Stack을 첫 화면으로 되돌린다(`disablePopToTop` 기본값, iOS 전용). 탭마다 기록은 따로라 다른 탭에 갔다 오면 쌓아 둔 화면이 그대로다.
@@ -137,7 +140,7 @@ app/(app)/(tabs)/
 | 꺼진 앱으로 들어온 딥링크·푸시·위젯·초대 링크(콜드)                | 마이 탭. 아래에 내 정보 메뉴가 깔려 뒤로 가면 메뉴다                                     | 탭 첫 화면은 그 탭. 탭 위 화면(`/todo/[todoId]`·`/memo/[memoId]`)은 아래에 할 일 탭이 깔린다 |
 | 탭 위 화면(결제 모달·시트·상세·초대 카드)에서 떠남(`dismissToTab`) | 그 화면을 닫고 아래 보던 탭. 탭 묶음은 한 겹이다                                         | 그 탭                                                                                        |
 
-- 새 탭 그룹을 더할 때는 `(me)`보다 글자 순으로 앞서지 않는 이름을 쓴다. 앞서면 콜드 링크가 그 탭에 열린다. `src/bootstrap/navigation/tab-stack-routing.test.tsx`가 1.15.1 공개 경로와 함께 쓰는 화면 파일마다 이 표를 확인한다.
+- 새 탭 그룹을 더할 때는 `(me)`보다 글자 순으로 앞서지 않는 이름을 쓴다. 앞서면 콜드 링크가 그 탭에 열린다. `src/bootstrap/navigation/tab-stack-routing.test.tsx`가 출시한 공개 경로와 함께 쓰는 화면 파일마다 이 표를 확인한다.
 - 알림함은 세 탭의 종에서 열어 함께 쓰는 화면이다. 행이 여는 탭 화면은 같은 탭에 쌓이고 뒤로 가면 알림함이다. 넓은 화면의 마이 탭에서는 메뉴 칸 옆 첫 상세로 열려 뒤로 가기 없이 메뉴로 떠난다.
 - 탭 위 화면의 되돌리기 fallback(`useGoBack`·`Redirect`의 `/feed`·`/memo`)은 돌아갈 화면이 없을 때만 쓴다. (app)·탭 anchor로 탭 위 화면 아래에는 늘 탭 묶음이 있어 실제로 닿지 않아 그대로 둔다.
 - 앱 밖 링크를 다른 탭에 꼭 열어야 하면 보내는 쪽 href에 그룹을 적는다(`/(app)/(tabs)/(todos)/…`). 그룹이 적힌 경로는 고른 탭과 견주지 않아 그대로 열린다. 지금은 그런 화면이 없다.
@@ -145,7 +148,7 @@ app/(app)/(tabs)/
 
 **함께 쓰는 화면 더하기.** `app/(app)/(tabs)/(me,memos,todos)/` 아래에 route 파일 하나를 만든다. 레이아웃·링크 표·테스트는 고치지 않는다.
 
-- 제목은 화면이 `<Stack.Screen options={{ title: t('…') }} />`로 정한다. 레이아웃에 화면 목록을 두지 않는다. 제목을 정하지 않은 화면은 빈 제목이다. `Stack.Title`은 `headerTitleStyle`을 비워 앱 글꼴 단계·색을 덮으므로 쓰지 않는다.
+- 제목은 화면이 `<Stack.Screen options={{ title: t('…') }} />`로 정한다. 레이아웃에 화면 목록을 두지 않는다. 제목을 정하지 않은 화면은 빈 제목이다. `Stack.Title`은 `style`로 `headerTitleStyle`을 통째로 바꾸므로, 쓸 때는 `style`에 스택 공통 옵션(`useStackScreenOptions`)과 같은 글꼴·크기·색을 넘긴다.
 - 마이 탭 메뉴에서 열 항목이면 `MyPageMenuPane`에 줄을 더한다.
 - 한 탭에서만 여는 화면은 그 탭 그룹 폴더(`(todos)`·`(memos)`·`(me)`)에 둔다.
 
@@ -188,7 +191,7 @@ app/(app)/(tabs)/
 - 내 할 일 행은 상세로 가는 행이 아니라 Link를 붙이지 않는다. 길게 누르기는 끌어서 순서 바꾸기, 탭은 하위 할 일 펼치기이고 상세는 댓글 버튼으로 연다.
 - 탭으로 여는 길은 두 가지다. ① 열 때 함께 할 일(읽음·추적·고르기)이 있거나 탭이 상황마다 다른 행은 행 `onPress`(`useSingleTap`)가 열고 Link의 `onPress`는 `event.preventDefault()`다(알림 `NotificationListRow.Link`, 메모 카드, 친구 할 일). ② 그 밖은 Link가 `navigate`로 연다(친구, 음성 메모, 성취, 리포트). `navigate`는 맨 위가 같은 화면이면 새로 쌓지 않아 연타에도 한 번이고, 행 안 버튼·`Link.MenuAction`도 같은 동사(`useSingleTap(router.navigate)`)로 연다. 어느 쪽이든 미리보기를 눌러 가는 이동은 Link가 맡는다. expo-router 58은 미리보기 탭 콜백을 공개하지 않아 이 길은 행 `onPress`를 거치지 않는다.
 - 그래서 알림 행은 읽은 알림이고 게이트(프리미엄 안내 등)가 없을 때만 Link다. 안 읽은 알림을 미리보기로 열면 읽음이 빠지고, 게이트가 있으면 미리보기로 건너뛴다. 남는 빈틈은 미리보기로 연 읽은 알림의 `notification_center_opened` 추적뿐이다.
-- `Link.Preview`·`Link.Menu`는 iOS에서만 그려진다. 메뉴에만 있는 동작(메모 카드 고정·삭제, 음성 메모 삭제)은 행의 `accessibilityActions`로 플랫폼과 상관없이 스크린리더에 두고, Android 손가락 길은 1.15.1과 같이 상세 화면의 ⋯ 메뉴·툴바다(새 길게 누르기 메뉴를 만들지 않는다). 전부터 길게 누르기로 하던 동작(받은 응원 신고, 댓글 메뉴)은 행 `onLongPress`로 남기고 `accessibilityActions`도 함께 둔다.
+- `Link.Preview`·`Link.Menu`는 iOS에서만 그려진다. 메뉴에만 있는 동작(메모 카드 고정·삭제, 음성 메모 삭제)은 행의 `accessibilityActions`로 플랫폼과 상관없이 스크린리더에 두고, Android 손가락 길은 상세 화면의 ⋯ 메뉴·툴바다(새 길게 누르기 메뉴를 만들지 않는다). 길게 누르기로 하는 동작(받은 응원 신고, 댓글 메뉴)은 행 `onLongPress`로 남기고 `accessibilityActions`도 함께 둔다.
 - 두 번 탭, Preview, Menu는 RNTL을 통과한 뒤 기기에서 확인한다([testing](../testing.md)). Jest의 `expo-router` 목은 `Link`를 행 `onPress` → Link `onPress` → 막지 않았으면 `router.navigate` 순서로 흉내 낸다. `Link.Preview`(`testID="link-preview"`)·`Link.Menu`·`Link.MenuAction`(`menuitem` 버튼)은 실제처럼 iOS에서만 그린다.
 
 ### 검색

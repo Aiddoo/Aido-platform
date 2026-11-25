@@ -22,7 +22,7 @@ GA로 무엇을 보고 어떤 결정을 내리는지, 퍼널·지표 정의를 �
 
 - AI 제안·리포트 이벤트: `ai_suggestions_viewed`(`state`, `suggestion_count`), `ai_suggestion_analysis_requested`(`source`), `ai_suggestion_acted`(`action`, `source`), `ai_report_chart_tapped`(`chart`: 리포트 상세 `daily_completions`·`completion_hours`, 목록 최근 카드 `completion_trend`, 리포트 없이 할 일 기록만 그린 `this_week_record`). 값은 각 `constants/*.events.ts`가 원본이다.
 - 무료 예시 리포트(`/reports/sample`)는 차트를 눌러도 `ai_report_chart_tapped`·기능 귀속 성공을 보내지 않는다. 연 횟수는 `screen_view`(`/reports/sample`)로 센다. 같은 화면의 결제 안내는 `premium_gate_shown`·`premium_gate_cta_tapped`의 `surface=report_sample`이고, 목록 안내(`report_list`)를 거쳐 열려 한 사용자가 두 번 노출될 수 있어 게이트 퍼널은 이벤트 수가 아니라 사용자로 본다.
-- 기능 발견(`feature_card_cta` → `feature_action_success`)의 `feature` 값은 [feature-key](../src/shared/analytics/feature-key.ts)가 원본이다. 1.16.0 소개(캠페인 `feature-discovery-1.16.0`)는 `ai_suggestion`(제안을 반복 할 일로 만듦)과 `ai_report`(리포트 상세 차트를 처음 누름)를 성공으로 센다. 이번 주 기록(`this_week_record`)은 리포트가 아니라 할 일 기록이라 1.16.0 출시 전에 성공에서 뺐다.
+- 기능 발견(`feature_card_cta` → `feature_action_success`)의 `feature` 값은 [feature-key](../src/shared/analytics/feature-key.ts)가 원본이다. 1.16.0 소개(캠페인 `feature-discovery-1.16.0`)는 `ai_suggestion`(제안을 반복 할 일로 만듦)과 `ai_report`(리포트 상세 차트를 처음 누름)를 성공으로 센다. 이번 주 기록(`this_week_record`)은 리포트가 아니라 할 일 기록이라 성공으로 세지 않는다.
 - 보내는 곳은 `git grep -n "'<이벤트 이름>'" -- apps/mobile/src`로 찾는다. 전송은 `track()`·`useTrack().trackEvent()` → `createFirebaseAnalytics` → `logEvent`이고, 자동 화면 수집은 꺼 두고(`firebase.json`) `useScreenTracking`이 route 템플릿으로 `screen_view`를 보낸다.
 - 숫자 엔터티 id(`todo_id`·`memo_id` 등)는 개인정보는 아니지만 고카디널리티라 커스텀 측정기준으로 등록하지 않는다([GA 콘솔 설정](./analytics-ga-console.md#b-커스텀-측정기준)).
 

@@ -1,36 +1,42 @@
 # 모델
 
-모델은 앱의 업무 규칙이고, mapper는 바깥 값을 모델로 바꾸는 유일한 곳이다. 업무 규칙이 바뀌면 모델만, 서버 필드가 바뀌면 mapper만 고친다. 기준 파일은 `features/notes/memo/domains/memo.model.ts`와 `apis/memo.mapper.ts`다. 폴더 골격은 [structure](./structure.md), Api·쿼리·폼은 [data](./data.md)에 있다.
+모델은 앱의 업무 규칙이고, mapper는 바깥 값을 모델로 바꾸는 유일한 곳이다. 업무 규칙이 바뀌면 모델만, 서버 필드가 바뀌면 mapper만 고친다. 기준 파일은 `features/notes/memo/domains/memo.model.ts`와 `apis/memo.mapper.ts`다. 폴더 골격은 [structure](./structure.md), Api·쿼리는 [data](./data.md), 폼은 [forms](./forms.md)에 있다.
 
 ## 모델과 Policy
 
 `domains/{entity}.model.ts` 하나에 한 엔티티의 모양과 업무 규칙을 모은다.
 
 - **모양.** Zod 클라이언트 모델 `xSchema`와 `type X = z.infer<typeof xSchema>`다. 서버 응답 모양이 아니라 앱이 쓰는 모양이다. 목록 인터페이스의 타입(`FilterX = (x: X) => boolean`, `OrderByX`)도 여기에 둔다.
-- **규칙은 이름 있는 모듈 `function`이다.** 이름은 `can`·`should`·`is`·`has`(긍정형), `get`, `calculate`, `find`(없으면 `null`), `with`(불변 갱신), `filterBy`·`orderBy`로 시작한다. 정렬은 es-toolkit `orderBy`·`take`로 한다(원본을 바꾸지 않고, Hermes에 `toSorted`가 없다).
-- **Policy는 모듈 함수를 모은 객체다.** `export const XPolicy = { fnA, fnB } as const`. 인라인 함수, 별칭, 메서드, `this`, class를 쓰지 않는다(`aido/policy-facade`, `aido/no-this-outside-class`). 그래서 콜백으로 넘겨도 안전하다(`notifications.filter(NotificationPolicy.isUnread)`).
-- **Policy 멤버의 첫 인자는 모델 전체다.** 값 하나만 필요해도 `notification: Notification`으로 받고 `Pick`·`Partial`·객체 리터럴로 좁히지 않는다. 목록 규칙은 `readonly X[]`를 받는다. 모델 일부(폼 값, 검색어, route id, `select` 결과)만 가진 곳의 규칙은 Policy 밖 export 함수다.
-- **한 파일, 한 엔티티, 한 Policy.** 두 엔티티가 섞이면 파일을 나눈다(`push-notification.model.ts`, `push-notification-response.model.ts`). 모델을 만드는 `create*` 함수는 Policy에 넣지 않는다. 규칙 없는 모델에는 빈 Policy를 만들지 않는다.
+- **원시 인자 순수 함수.** 모델이 아닌 값(날짜 key, 수, 문자열)만 받는 규칙은 모듈 `function`으로 export하고 따로 테스트한다. 인자 이름이 단위를 말한다(`calculateRangeEndDate(startDate, days)`). 규칙 이름은 `can`·`should`·`is`·`has`(긍정형), `get`, `calculate`, `find`(없으면 `null`), `with`(불변 갱신), `filterBy`·`orderBy`로 시작하고 새 값을 만드는 것은 `create*`다. 정렬은 es-toolkit `orderBy`·`take`로 한다(원본을 바꾸지 않고, Hermes에 `toSorted`가 없다).
+- **Policy는 메서드 객체다.** `export const XPolicy = { method(x: X, …) { … } }`. 메서드는 순수 함수를 조합하고 다른 메서드는 `this.other(x)`로 부른다. 다른 메서드를 부르는 메서드는 반환 타입을 적는다(서로 부르면 추론이 순환한다). 화살표 속성, 별칭, 펼침, class를 쓰지 않는다.
+- **메서드는 호출로만 쓴다.** 값으로 넘기면 `this`가 끊긴다. 콜백은 화살표로 감싼다(`notifications.filter((notification) => NotificationPolicy.isUnread(notification))`).
+- **Policy 메서드의 첫 인자는 모델 전체다.** 값 하나만 필요해도 `notification: Notification`으로 받고 `Pick`·`Partial`·객체 리터럴로 좁히지 않는다. 목록 규칙은 `readonly X[]`를 받는다. 모델 일부(폼 값, 검색어, route id, `select` 결과)만 가진 곳의 규칙은 원시 인자 순수 함수다.
+- **모델을 받는 규칙의 입구는 Policy 하나다.** 모델을 첫 인자로 받는 함수를 낱개로 export하지 않는다. Policy 밖 export는 스키마, 타입, `create*`, 원시 인자 순수 함수뿐이다.
+- **한 파일, 한 엔티티, 한 Policy.** 두 엔티티가 섞이면 파일을 나눈다(`push-notification.model.ts`, `push-notification-response.model.ts`). `create*`는 Policy에 넣지 않는다. 규칙 없는 모델에는 빈 Policy를 만들지 않는다.
   - 예외는 `social/nudge/domains/nudge-interaction.model.ts` 하나다. 콕 응답(`NudgeInteractionPolicy`)·감사 미리보기(`NudgeThanksPreviewPolicy`)는 한 감사 흐름에서 함께 바뀌어 한 파일에 둔다. 할 일을 감사할 수 있는지는 서버 상세 `permissions.canThank`다.
 - **업무 규칙 표**는 모델 파일 안 비공개 상수이고 `satisfies Record<Union, …>`를 건다. 서버가 종류를 더하면 빌드가 깨진다.
-- **인자는 도메인 단위 이름이다.** `monthlyAmount`·`dueDateKey`처럼 무엇의 어떤 단위인지 이름에 넣는다. 모델 파일 이름에 상태 접두사(`pending-`·`current-`)를 붙이지 않는다(엔티티 이름이다).
+- **인자는 도메인 단위 이름이다.** `monthlyAmount`·`dueDateKey`처럼 무엇의 어떤 단위인지 이름에 넣는다. 모델 파일 이름에 상태 접두사(`pending-`·`current-`)를 붙이지 않는다(엔티티 이름이다). 파일·타입·Policy는 같은 엔티티 이름이다(`todo-import-collection.model.ts` → `TodoImportCollection`·`TodoImportCollectionPolicy`).
 - **시각은 인자다.** 지금·오늘·시간대를 받고 `Date.now()`·`new Date()`·기기 시간대를 읽지 않는다(`aido/no-clock-read`, `domain-model-clock`). 기간 규칙은 `shouldShow*(record, now)`이고 상수 이름에 단위를 넣는다(`PUSH_PROMPT_SNOOZE_DAYS`).
-- **import는 zod, `@aido/api/vocabulary`·`common`·`errors`, 순수 `shared/date`, 다른 모델뿐이다.** 계약(`@aido/api` 루트·`contracts/*`), i18n, `shared/ui`, `react-native`, React, `constants/`를 import하지 않는다(`domain-model-contract`, `domain-model-presentation`, `domain-model-constants`).
+- **import는 zod, `@aido/api/vocabulary`·`common`·`errors`, 순수 `shared/date`, `shared/constants/time-units`, 다른 모델뿐이다.** 계약(`@aido/api` 루트·`contracts/*`), `core/ports`, `schemas/`, `constants/`, i18n, `shared/ui`, `react-native`, React, TanStack을 import하지 않는다(`domain-model-contract`, `domain-model-presentation`, `domain-model-constants`).
 - **Zod는 최신 문법만 쓴다.** `z.int()`, `z.iso.*`, `z.email()`·`z.url()`, `z.enum(튜플)`, `z.discriminatedUnion`, `z.codec`, `.brand<'X'>()`. `z.nativeEnum`, `z.string().email()`, `.passthrough()`는 쓰지 않는다.
 
-Policy는 의미 값(등급, 단계, 종류)을 돌려준다. 그 값을 문구·색으로 그리는 일은 아래 자리가 맡는다.
+Policy는 의미 값(등급, 단계, 종류, 한도 일수)을 돌려준다. 그 값을 문구·색으로 그리거나 요청 주기로 바꾸는 일은 아래 자리가 맡는다.
 
-| 모델에 넣지 않는 것                 | 둘 곳                                                                         |
-| ----------------------------------- | ----------------------------------------------------------------------------- |
-| 문구·i18n 키, 포맷, 색 토큰, 아이콘 | `utils/{name}.view-model.ts`, 컴포넌트의 `satisfies Record<…>` 맵이나 `match` |
-| 좌표·도형                           | `utils/{name}.geometry.ts`                                                    |
-| 표시 방식(배너·조용히, 칸 배치)     | `utils/`의 UI 판단, 창 배치는 `shared/ui/adaptive-pane/window-layout.ts`      |
-| 폼 값·초안·저장 모양                | `schemas/*-form`·`-draft`·`-storage.schema.ts`                                |
-| 서버가 계산한 값의 재계산           | 하지 않는다([서버·앱 책임](../../../../docs/conventions/ownership.md))        |
-| 다른 기능 Policy의 재수출·위임      | 쓰는 곳이 그 Policy를 직접 부른다                                             |
+| 모델에 넣지 않는 것                        | 둘 곳                                                                                           |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| 문구·i18n 키, 포맷, 색 토큰, 아이콘        | `utils/{name}.view-model.ts`(`get{X}LabelKey`·`format{X}`), 컴포넌트의 `satisfies Record<…>` 맵 |
+| 좌표·도형                                  | `utils/{name}.geometry.ts`                                                                      |
+| 표시 방식(배너·조용히, 칸 배치, 노출 시간) | `utils/`의 UI 판단, 창 배치는 `shared/ui/adaptive-pane/window-layout.ts`                        |
+| 폴링 간격·`staleTime`·재시도 지연          | `queries/{entity}.queries.ts`, 세션은 `services/{name}.session.ts`의 지역 표                    |
+| 쿼리 데이터 거르기·묶기                    | `queries/`의 `select{X}`([data](./data.md#흐름-mapper--캐시--select--view-model))               |
+| 폼 값·초안·저장 모양                       | `schemas/*-form`·`-draft`·`-storage.schema.ts`                                                  |
+| 서버가 계산한 값의 재계산                  | 하지 않는다([서버·앱 책임](../../../../docs/conventions/ownership.md))                          |
+| 다른 기능 Policy의 재수출·위임             | 쓰는 곳이 그 Policy를 직접 부른다                                                               |
+
+view-model은 모델 → 라벨 키·포맷·색 토큰만 한다. 판정은 Policy, 파싱은 mapper, 쿼리 데이터 묶기는 `select`다. 할 일이 그것뿐이면 view-model 파일을 두지 않는다.
 
 ```ts
-// features/notification/domains/notification.model.ts
+// 목표 모양: features/notification/domains/notification.model.ts
 import { notificationTypeSchema } from '@aido/api/common';
 import { dateKeySchema } from '@src/shared/date/date-key';
 import { instantSchema } from '@src/shared/date/instant';
@@ -73,15 +79,20 @@ const IS_AI_FEATURE_TYPE = {
   // 종류마다 한 줄
 } as const satisfies Record<NotificationType, boolean>;
 
-function isAiFeature(notification: Notification) {
-  return IS_AI_FEATURE_TYPE[notification.type];
-}
+export const NotificationPolicy = {
+  isAiFeature(notification: Notification) {
+    return IS_AI_FEATURE_TYPE[notification.type];
+  },
 
-function isUnread(notification: Notification) {
-  return !notification.isRead;
-}
+  isUnread(notification: Notification) {
+    return !notification.isRead;
+  },
 
-export const NotificationPolicy = { isAiFeature, isUnread } as const;
+  // 다른 메서드를 부르면 반환 타입을 적는다
+  isUnreadAiFeature(notification: Notification): boolean {
+    return this.isUnread(notification) && this.isAiFeature(notification);
+  },
+};
 ```
 
 ## Mapper
@@ -156,15 +167,15 @@ export function toNotificationTarget(
 
 바깥에서 오는 값은 경계 한 곳에서 한 방식으로 읽는다.
 
-| 입력                       | 방식                                                              | 실패할 때                        |
-| -------------------------- | ----------------------------------------------------------------- | -------------------------------- |
-| 서버 응답                  | `parseApiResponse`(strict, `shared/errors/parse-api-response.ts`) | throw → 경계 + Sentry            |
-| 앞으로 서버가 더할 열거    | 계약 `.catch(UNKNOWN)` + 로그                                     | 그 칸만 대체                     |
-| 푸시 data·딥링크·위젯 명령 | mapper `parse{X}(unknown): X \| null`                             | `null` → 안전한 기본 이동 + 로그 |
-| route params               | route 파일 `useRouteParamsOrRedirect`, 안쪽은 같은 스키마의 튜플  | 화면 단위로 되돌림               |
-| 기기 저장 값               | `defineStoredValue`(`.catch`, `migrate`)                          | `fallback`                       |
-| 폼                         | `zodResolver` 하나                                                | 칸 오류                          |
-| 빌드 설정                  | `parse`                                                           | 시작할 때 throw                  |
+| 입력                                     | 방식                                                              | 실패할 때                        |
+| ---------------------------------------- | ----------------------------------------------------------------- | -------------------------------- |
+| 서버 응답                                | `parseApiResponse`(strict, `shared/errors/parse-api-response.ts`) | throw → 경계 + Sentry            |
+| 앞으로 서버가 더할 열거                  | 계약 `.catch(UNKNOWN)` + 로그                                     | 그 칸만 대체                     |
+| 푸시 data·딥링크·위젯 명령·설치 referrer | mapper `parse{X}(unknown): X \| null` 하나                        | `null` → 안전한 기본 이동 + 로그 |
+| route params                             | route 파일 `useRouteParamsOrRedirect`, 안쪽은 같은 스키마의 튜플  | 화면 단위로 되돌림               |
+| 기기 저장 값                             | `defineStoredValue`(`.catch`, `migrate`)                          | `fallback`                       |
+| 폼                                       | `zodResolver` 하나                                                | 칸 오류                          |
+| 빌드 설정                                | `parse`                                                           | 시작할 때 throw                  |
 
 ## null·undefined
 

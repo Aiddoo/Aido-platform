@@ -11,25 +11,27 @@ Expo SDK 58 · React Native 0.88 · React 19(Compiler) · Expo Router · TanStac
 
 ## 무엇을 할 때 무엇을 읽나
 
-| 작업                                                                       | 문서                                                                                                                                                      |
-| -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 기능 위치, 폴더 골격, 층·의존, DI                                          | [architecture/structure.md](docs/architecture/structure.md), 지금 걸린 lint 규칙 [guardrails.md](docs/architecture/guardrails.md)                         |
-| 새 기능·화면·엔티티 추가 절차                                              | 스킬 `mobile-feature`([.agents/skills/mobile-feature/SKILL.md](../../.agents/skills/mobile-feature/SKILL.md))                                             |
-| 모델·Policy, mapper, 스키마, 서버와 공유, 파싱·null·호환                   | [architecture/model.md](docs/architecture/model.md)                                                                                                       |
-| Api·service·repository·store, 저장 값, 쿼리 키·select·무효화, mutation, 폼 | [architecture/data.md](docs/architecture/data.md)                                                                                                         |
-| 상태 원천, params 튜플, 라우팅·Link·시트                                   | [architecture/state-and-routing.md](docs/architecture/state-and-routing.md)                                                                               |
-| 훅 규칙과 공용 훅 목록, `useStepper`                                       | [architecture/hooks.md](docs/architecture/hooks.md)                                                                                                       |
-| 컴포넌트·스크린 패턴, 배치, CLS, 목록, 모션·Skia, 기기                     | [architecture/ui.md](docs/architecture/ui.md)                                                                                                             |
-| 어떤 UI 부품을 쓰나(heroui-native·shared/ui)                               | [architecture/ui-catalog.md](docs/architecture/ui-catalog.md), heroui-native API는 [heroui-native 스킬](.agents/skills/heroui-native/SKILL.md)            |
-| 아직 목표 모양이 아닌 코드                                                 | [다음 버전 후보 이슈(#1785)](https://github.com/Aiddoo/Aido-platform/issues/1785)                                                                         |
-| 디자인 기준(Aido가 덮어쓰는 것, 안내 노출 규칙)                            | [DESIGN.md](DESIGN.md) → [design.md](docs/design.md)                                                                                                      |
-| 테스트                                                                     | [testing.md](docs/testing.md), 공용 도구·fixture·Jest 설정 [testing-tools.md](docs/testing-tools.md)                                                      |
-| 분석·로그·Sentry                                                           | [observability.md](docs/observability.md), 퍼널·지표 [analytics-measurement-plan.md](docs/analytics-measurement-plan.md)                                  |
-| 날짜·시간대·언어·문구                                                      | [dates-and-i18n.md](docs/dates-and-i18n.md)                                                                                                               |
-| 오류 처리                                                                  | [error-handling.md](docs/error-handling.md)                                                                                                               |
-| 푸시 · 위젯 · 인증 · 댓글                                                  | [push-notifications.md](docs/push-notifications.md) · [widgets.md](docs/widgets.md) · [auth.md](docs/auth.md) · [todo-comments.md](docs/todo-comments.md) |
-| 빌드·배포·EAS·스토어·환경 변수                                             | [build-and-release.md](docs/build-and-release.md), 새 기능 소개 [whats-new-release.md](docs/whats-new-release.md)                                         |
-| 문서·rules·스킬 고치기                                                     | [문서 규칙](../../docs/conventions/docs.md)                                                                                                               |
+| 작업                                                                   | 문서                                                                                                                                                      |
+| ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 기능 위치, 폴더 골격, 층·의존, DI                                      | [architecture/structure.md](docs/architecture/structure.md), 지금 걸린 lint 규칙 [guardrails.md](docs/architecture/guardrails.md)                         |
+| 새 기능·화면·엔티티 추가 절차                                          | 스킬 `mobile-feature`([.agents/skills/mobile-feature/SKILL.md](../../.agents/skills/mobile-feature/SKILL.md))                                             |
+| 모델·Policy, mapper, 스키마, 서버와 공유, 파싱·null·호환               | [architecture/model.md](docs/architecture/model.md)                                                                                                       |
+| Api·service·repository·store, 저장 값, 쿼리 키·select·무효화, mutation | [architecture/data.md](docs/architecture/data.md)                                                                                                         |
+| 폼(누가 갖나, 칸 잇기, 제출, 초안)                                     | [architecture/forms.md](docs/architecture/forms.md)                                                                                                       |
+| 상태 원천, params 튜플, 라우팅·Link·시트                               | [architecture/state-and-routing.md](docs/architecture/state-and-routing.md)                                                                               |
+| 훅 규칙과 공용 훅 목록, `useStepper`                                   | [architecture/hooks.md](docs/architecture/hooks.md)                                                                                                       |
+| 컴포넌트·스크린 패턴, 배치, CLS, 목록, 모션·Skia, 기기                 | [architecture/ui.md](docs/architecture/ui.md)                                                                                                             |
+| 어떤 UI 부품을 쓰나(heroui-native·shared/ui)                           | [architecture/ui-catalog.md](docs/architecture/ui-catalog.md), heroui-native API는 [heroui-native 스킬](.agents/skills/heroui-native/SKILL.md)            |
+| 아직 목표 모양이 아닌 코드                                             | [다음 버전 후보 이슈(#1785)](https://github.com/Aiddoo/Aido-platform/issues/1785)                                                                         |
+| 디자인 기준(Aido가 덮어쓰는 것, 안내 노출 규칙)                        | [DESIGN.md](DESIGN.md) → [design.md](docs/design.md)                                                                                                      |
+| 테스트                                                                 | [testing.md](docs/testing.md), 공용 도구·fixture·Jest 설정 [testing-tools.md](docs/testing-tools.md)                                                      |
+| 분석·로그·Sentry                                                       | [observability.md](docs/observability.md), 퍼널·지표 [analytics-measurement-plan.md](docs/analytics-measurement-plan.md)                                  |
+| 날짜·시간대·언어·문구                                                  | [dates-and-i18n.md](docs/dates-and-i18n.md)                                                                                                               |
+| 오류 처리                                                              | [error-handling.md](docs/error-handling.md)                                                                                                               |
+| 푸시 · 위젯 · 인증 · 댓글                                              | [push-notifications.md](docs/push-notifications.md) · [widgets.md](docs/widgets.md) · [auth.md](docs/auth.md) · [todo-comments.md](docs/todo-comments.md) |
+| OS 권한(알림·위치·마이크·캘린더)                                       | [permissions.md](docs/permissions.md)                                                                                                                     |
+| 빌드·배포·EAS·스토어·환경 변수                                         | [build-and-release.md](docs/build-and-release.md), 새 기능 소개 [whats-new-release.md](docs/whats-new-release.md)                                         |
+| 문서·rules·스킬 고치기                                                 | [문서 규칙](../../docs/conventions/docs.md)                                                                                                               |
 
 ## 꼭 지키는 규칙
 
@@ -37,17 +39,17 @@ Expo SDK 58 · React Native 0.88 · React 19(Compiler) · Expo Router · TanStac
 
 - **사용성이 먼저다.** 입력칸과 저장 버튼은 키보드 위에 보이고, 키보드가 열린 채 첫 탭에 눌리고, 저장이 실패해도 글자가 남는다. 구조를 고치다 나빠지면 구조를 양보한다([ui](docs/architecture/ui.md#사용성-구조보다-먼저)).
 - **같은 일은 한 가지 방법으로, 변경점은 한 곳이다.** 공용 부품·훅·도구가 있으면 그것을 쓰고, 없으면 만들기 전에 [ui-catalog](docs/architecture/ui-catalog.md)·[hooks](docs/architecture/hooks.md)를 확인한다. 라이브러리가 주는 것을 다시 만들지 않는다.
-- **모델은 업무 규칙만 담는다.** 문구 키·색·배치·표시 방식은 view-model·컴포넌트로 보낸다. 모델은 계약을 import하지 않고 mapper가 바꾼다. Policy 첫 인자는 모델 전체다(`domain-model-contract`, `aido/policy-facade`, [model](docs/architecture/model.md#모델과-policy)).
-- **데이터는 쓰는 컴포넌트가 조회한다.** 화면 id는 route 튜플 훅(`const [todoId] = useTodoId()`)으로 읽고, 컴포넌트는 바깥 여백을 모른다. 원본을 확장하면 `Omit<ComponentProps<typeof X>, …>`로 원본 Props를 유지한다(`aido/no-route-id-props`, [ui](docs/architecture/ui.md#컴포넌트-계약)).
-- **스크린은 위에서 아래로 읽힌다.** 경계·`Suspense`·`Spacing`·화면 문구를 스크린에 나열한다. 위치만 말하는 이름(`*Section`, `*Detail`, `*Content`, `*Panel`)을 만들지 않는다(`aido/component-name`, [ui](docs/architecture/ui.md#스크린)).
-- **부모 없이 의미 없는 조각은 `Parent.Part` 네임스페이스로 둔다.** 반복 고정 UI는 역할이 드러나는 컴포넌트로 추상화하고 항목마다 한 줄씩 쓴다(설정 배열 map 금지, [ui](docs/architecture/ui.md#네임스페이스반복-ui추출)).
-- **상태 원천은 하나다.** 서버는 Query, URL은 params 튜플, 기기 값은 `useStoredValue`, 폼은 RHF다. 라이브러리가 주는 `isPending`·`error`를 다시 만들지 않는다([state-and-routing](docs/architecture/state-and-routing.md#상태-원천)).
+- **모델은 업무 규칙만 담는다.** 문구 키·색·배치·표시 방식은 view-model·컴포넌트, 폴링·재시도 주기는 `queries/`로 보낸다. 모델은 계약을 import하지 않고 mapper가 바꾼다. Policy는 메서드 객체(`this`로 조합)이고 첫 인자는 모델 전체이며, 모델을 받는 규칙의 입구는 Policy 하나다(`domain-model-contract`, [model](docs/architecture/model.md#모델과-policy)).
+- **데이터는 쓰는 컴포넌트가 조회한다.** 화면 id는 route 튜플 훅(`const [todoId] = useTodoId()`)으로 읽고, 컴포넌트는 바깥 여백을 모르며 `form`·`stepper`를 받지 않는다. 입력은 `value`/`onChange`, 원본 확장은 `interface XProps extends Omit<ComponentProps<typeof X>, …>` + `...props`다([ui](docs/architecture/ui.md#컴포넌트-계약)).
+- **스크린이 조립한다.** route 파일이 단계·경계·`Spacing`·화면 문구·폼을 위에서 아래로 나열하고, 조회·규칙·오류 판별·시트 열기는 기능 컴포넌트가 갖는다. fallback은 `X.Error`이고 화살표로 감싸지 않는다. 위치만 말하는 이름(`*Section`, `*Detail`, `*Content`, `*Panel`)을 만들지 않는다(`aido/component-name`, [ui](docs/architecture/ui.md#스크린)).
+- **한 곳만 쓰는 것은 쓰는 파일 안에 둔다.** 부모 없이 의미 없는 조각은 `Parent.Part`, 반복 고정 UI는 역할이 드러나는 지역 컴포넌트로 항목마다 한 줄씩 쓴다(설정 배열 map 금지). 큰 글자·작은 화면을 이유로 적은 주석은 코드와 함께 옮긴다([ui](docs/architecture/ui.md#네임스페이스지역-컴포넌트)).
+- **상태 원천은 하나다.** 서버는 Query, URL은 params 튜플, 기기 값은 `useStoredValue`, 폼은 화면 맨 위의 RHF다(감싸는 훅·`FormProvider` 없음, [forms](docs/architecture/forms.md)). 라이브러리가 주는 `isPending`·`error`를 다시 만들지 않는다([state-and-routing](docs/architecture/state-and-routing.md#상태-원천)).
 - **캐시는 cache helper만 만진다.** mutation은 `onSuccess`에서 응답을 쓰고 `onSettled`에서 무효화한다. 오류 피드백은 `meta.errorFeedback` 하나로 한다(`aido/query-client-location`, `aido/mutation-error-feedback`, [data](docs/architecture/data.md#무효화), [오류 처리](docs/error-handling.md#mutation-오류-피드백)).
 - **SDK는 `shared/infra`에서만 import한다.** 기능은 `di-context` 훅으로 포트·Api·서비스를 꺼낸다. 테스트는 포트 stub으로 하고 `jest.mock`은 어댑터 테스트에만 쓴다(`sdk-outside-infra`, `aido/no-jest-module-mock`, [structure](docs/architecture/structure.md#di포트수명)).
 - **타입은 단언하지 않고 유도한다.** `as`(`as const` 제외)·`any`·`!`·`@ts-*`를 쓰지 않는다. 유니온은 `match().exhaustive()`, 표는 `satisfies Record<…>`다. null·undefined는 [nullish](../../docs/conventions/nullish.md#6-클라이언트-모바일) 표를 따른다.
 - **메모리와 프레임.** 구독·타이머·Skia 네이티브 객체는 만든 곳에서 정리한다. 애니메이션은 화면 밖·앱 뒤·모션 줄이기에서 멈춘다([data](docs/architecture/data.md#메모리와-수명), [ui](docs/architecture/ui.md#모션과-skia)).
 - **문구는 ko·en 카탈로그에 함께 넣는다.** 해요체이고 앱 이름은 "아이두"/"Aido"다. 앱은 옛 서버·옛 앱 분기를 두지 않는다([날짜·언어](docs/dates-and-i18n.md#문구-톤과-용어), [호환](../../docs/conventions/compatibility.md)).
-- **테스트는 중요한 로직만 쓴다.** 대상은 모델·Policy, 비자명한 mapper, 캐시·롤백, 핵심 흐름, 버그 재현이다. 표시·배치 테스트는 쓰지 않는다([testing](docs/testing.md#도구와-범위)).
+- **테스트는 중요한 로직만 쓴다.** 대상은 모델·Policy, 비자명한 mapper, 캐시·롤백, 핵심 흐름, 버그 재현이다. 표시·배치 테스트는 쓰지 않는다. 화면 구조를 옮기기 전에 그 화면의 흐름 테스트를 먼저 붙인다([testing](docs/testing.md#도구와-범위)).
 
 ## 디자인
 

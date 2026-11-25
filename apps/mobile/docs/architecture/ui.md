@@ -1,22 +1,38 @@
 # UI: 컴포넌트와 스크린
 
-부품 고르기는 [ui-catalog](./ui-catalog.md), 색·글꼴·톤은 [design](../design.md)과 [DESIGN.md](../../DESIGN.md), route·시트 띄우기는 [state-and-routing](./state-and-routing.md), 공용 훅은 [hooks](./hooks.md), 쿼리·`select`는 [data](./data.md)를 본다.
+부품 고르기는 [ui-catalog](./ui-catalog.md), 색·글꼴·톤은 [design](../design.md)과 [DESIGN.md](../../DESIGN.md), route·시트 띄우기는 [state-and-routing](./state-and-routing.md), 공용 훅은 [hooks](./hooks.md), 쿼리·`select`는 [data](./data.md), 폼은 [forms](./forms.md)를 본다.
 
-## 기준 컴포넌트
+## 컴포넌트 계약
 
-기능 컴포넌트는 아래 세 모양(래퍼, route id 조각, 목록)을 따른다. 예시의 `MemoSummary`·`useSelectedCategoryId`·`useGetCategoriesQueryOptions`·`MemoActionButtonProps`는 모양을 보이려고 지은 이름이라 코드에 없다. 실제 쓰임은 `UserAvatar`(래퍼), `AmountDueToday`(route 튜플 `useSelectedPlanId`), `CategoryPickForm`(`filters` → `useGetTodoCategoriesQueryOptions({ filters })`의 `select`), `MemoList.Item`, `NotificationList`를 본다.
+기능 컴포넌트는 자기 데이터를 조회하고 그리고 동작한다. 조회, mutation 옵션, 오류 판별, 시트 열기는 기능 컴포넌트·훅이 갖고 화면은 그것을 나열한다. 레이아웃은 모른다.
 
-**래퍼: 역할이 있는 래퍼만 만들고 원본 Props를 지킨다.**
-
+- **데이터는 쓰는 컴포넌트가 조회한다.** 화면이 조회해 내리면 경계를 블록 단위로 나눌 수 없다. 지역 부속에 좁힌 값을 넘기는 것은 괜찮다(`MemoList.Item`의 `memo`).
+- **화면 id는 route 튜플 훅에서 읽는다**(`const [todoId] = useTodoId()`). id·search param을 Props로 내리지 않는다. 예외는 목록 행의 id다(댓글 기능은 `aido/no-route-id-props`).
+- **바깥 여백을 모른다.** 루트에 margin·`self-*`·위치·safe area를 두지 않는다. 자기 모양(`rounded-2xl bg-gray-1`)과 안쪽 여백만 컴포넌트 몫이고, 바깥 간격은 화면의 `Spacing`이나 화면이 원본 `className`으로 넘긴 값이다(`<UnreadNotificationCard className="mx-4 my-2" />`).
+- **입력은 `value`/`onChange`다.** 값은 모델 값이다. 누르면 시트를 열어 고르게 하는 입력도 고른 값을 `onChange`로 준다. heroui 원본을 넓힌 부품만 원본 이름을 따른다: shared `Input`·`TextArea`는 `value`/`onChange`, `Checkbox`·`Switch`·`ControlField`는 `isSelected`/`onSelectedChange`, `RadioGroup`·`Tabs`는 `value`/`onValueChange`, 시트·다이얼로그는 `isOpen`/`onOpenChange`, 비활성은 `isDisabled`다. `disabled`·`selected`·`onToggle`을 새로 만들지 않는다.
+- **목록은 `filters`·`orderBy`·`limit`를 받는다.** 타입은 모델의 `Filter{X}`·`OrderBy{X}`이고 거르기·정렬은 쿼리 `select`가 한다([data](./data.md#흐름-mapper--캐시--select--view-model)). 거르기·정렬을 바꿀 곳이 생긴 목록만 연다(`CategoryPickForm`의 `filters`). 쓰는 화면이 하나인 목록은 인자 없이 자기 조회를 부른다(`CategoryList`, `SuggestionsList`).
+- **받지 않는 것.** 폼(`form`·`control`, [forms](./forms.md)), 단계(`stepper`), 내비게이션 객체, 화면 하나만 쓰는 boolean 모드. 자리는 같고 구현이 갈리면 `mode` 대신 컴포넌트를 prop으로 넘긴다(`toolbar={MemoEditor.StackToolbar}`).
+- **원본을 확장하면 원본 Props를 지킨다.** `interface XProps extends Omit<ComponentProps<typeof X>, …>`로 적고 남은 Props는 `...props`로 원본에 넘긴다. 직접 구현하는 prop만 `Omit`하고 `className`·`style`·`testID`·접근성 prop·`hitSlop`은 남긴다. Props는 `interface`이고 더할 것 없는 별칭만 `type`이다. `ReturnType<typeof useX>`로 만들지 않는다.
+- 레이아웃 원시(`Box`·`HStack`·`VStack`·`Flex`)를 감쌀 때는 `ComponentProps<typeof Box>`를 펼치지 않고 쓰는 prop(`children`, `className`, 필요한 접근성 prop)만 적는다.
 - 래퍼는 자기 일(단위·포맷·도메인 문구·저장)이 있을 때만 만든다. 없으면 원본을 쓴다.
-- `interface MemoActionButtonProps extends Omit<ComponentProps<typeof PressableFeedback>, 'children'>`처럼 직접 구현하는 prop만 `Omit`한다. `className`·`style`·`testID`·접근성 prop·`hitSlop`은 남긴다.
-- 레이아웃 원시(`Box`·`HStack`·`VStack`·`Flex`)를 감쌀 때는 `ComponentProps<typeof Box>`를 펼치지 않고 쓰는 prop(`children`, `className`, 필요한 접근성 prop)만 적는다. 여백·배경은 부르는 쪽이 정한다.
-- 제어 prop은 원본 이름이다: shared `Input`·`TextArea`는 `value`/`onChange`, `Checkbox`·`Switch`·`ControlField`는 `isSelected`/`onSelectedChange`, `RadioGroup`·`Tabs`는 `value`/`onValueChange`, 시트·다이얼로그는 `isOpen`/`onOpenChange`, 비활성은 `isDisabled`다. `disabled`·`selected`·`onToggle`을 새로 만들지 않는다.
-- Props는 인터페이스로 적는다. `ReturnType<typeof useX>`로 만들지 않는다.
-
-**route id 조각: id는 route 튜플에서 읽고, `== null`이면 빈 조각, 좁힌 id는 `.Contents`가 조회한다.**
 
 ```tsx
+// features/identity/user/components/user-avatar.tsx
+interface UserAvatarProps extends Omit<ComponentProps<typeof Avatar>, 'children'> {
+  profileImage: string | null;
+}
+
+export function UserAvatar({ profileImage, ...props }: UserAvatarProps) {
+  return (
+    <Avatar {...props}>
+      <Avatar.Image source={getProfileIconSource(profileImage)} />
+    </Avatar>
+  );
+}
+```
+
+```tsx
+// 목표 모양: route id가 없으면 빈 조각, 좁힌 id는 .Contents가 조회한다
 export function MemoSummary() {
   const [selectedMemoId] = useSelectedMemoId();
 
@@ -26,52 +42,21 @@ export function MemoSummary() {
 
   return <MemoSummary.Contents memoId={selectedMemoId} />;
 }
-
-MemoSummary.Contents = function Contents({ memoId }: { memoId: number }) {
-  const { t } = useTranslation('memo');
-
-  const { data: memo } = useSuspenseQuery(useGetMemoQueryOptions({ memoId }));
-
-  return (
-    <VStack gap={8}>
-      <Row label={t('summary.todos')} value={memo.todoCount} />
-      <Row label={t('summary.done')} value={memo.doneCount} />
-    </VStack>
-  );
-};
 ```
 
-**목록: `filters`·`orderBy`·`limit`를 받고, 행은 부모가 만든 값을 받는다.**
-
-```tsx
-export function CategoryList({ filters, orderBy = 'position', limit }: CategoryListProps) {
-  const [selectedId, setSelectedId] = useSelectedCategoryId();
-
-  const { data: categories } = useSuspenseQuery(
-    useGetCategoriesQueryOptions({ filters, orderBy, limit }),
-  );
-
-  return categories.map((category) => (
-    <CategoryList.Item
-      key={category.id}
-      category={category}
-      isSelected={category.id === selectedId}
-      onSelect={setSelectedId}
-    />
-  ));
-}
-```
-
-- 인터페이스는 실제로 쓰는 곳이 있을 때만 둔다. 거르기·정렬은 쿼리 `select`가 하고 타입은 모델의 `FilterX`·`OrderByX`다.
-- 쓰는 화면이 하나이고 거르기·정렬을 바꿀 곳이 없는 목록은 인터페이스 없이 자기 조회를 부른다: 제안(`SuggestionsList`, 서버가 정한 목록 전부)·리포트(`ReportList`, 종류는 URL 튜플 `useReportType`, 개수는 서버 기본 페이지 10). 두 번째 화면이 다른 모양을 원할 때 `filters`·`limit`를 연다.
 - 행은 route 훅을 부르지 않는다. 부모가 한 번 읽어 `isSelected` 같은 파생 값과 같은 핸들러를 넘긴다.
-- 원본을 넘기기만 하는 `X.Item = (props) => <UserList.Item {...props} />`을 만들지 않는다. 같은 fallback은 `X.Error = UserList.Error`로 잇는다.
+- 행의 현재 값은 값만 그리는 컴포넌트가 자기 경계로 읽는다(`FriendCountValue`, 실패하면 `QueryErrorFallback.Hidden`, 로딩은 `Suspense fallback={null}`).
+- 배타 상태는 `match(…).exhaustive()`, 단순 표시는 `&&`다. 저장 진행은 mutation `isPending`을 `Button`의 `isLoading`에 넘긴다.
+- 메모는 React Compiler가 한다. `useMemo`·`useCallback`·`memo`는 이유가 있을 때만 둔다(가상 목록·캘린더 칸의 `memo`). 이유 없는 직접 메모는 그 파일을 고칠 때 지운다.
+- 색은 토큰 클래스만 쓴다. 조건부 className은 `cn`, 변형이 둘 이상이면 `tv`(`*.variants.ts`)다. 템플릿 리터럴·삼항으로 문자열을 잇지 않는다(`aido/no-classname-concat`). 인라인 `style`은 동적 값(잰 크기, 애니메이션 스타일, 계산한 inset)에만 쓴다.
 
-## 네임스페이스·반복 UI·추출
+## 네임스페이스·지역 컴포넌트
 
-- 부모 없이 의미 없는 조각은 **무엇이든** 부모 파일 아래 `Parent.Part`로 둔다. `.Loading`·`.Error`·`.Empty`·`.Item`·`.Contents`만이 아니다: `PlanSummary.Quota`, `DailyForecast.TemperatureBar`, `TodoCommentThreadList.SortBar`, `VoiceNoteRecorder.Controls`. 부모를 지우면 함께 지워지고, 이름이 부모와의 결합을 알린다.
-- 형태는 `X.Part = function Part() {}`다(`Object.assign` 금지). 부속에 또 `.Loading`을 달면 TS가 `X.Part.Loading`을 모르므로 그 부속만 함수 선언을 대입한다(`SettingsListGroup.Item`, `ListRow.Texts`). 쓰지 않는 부속은 만들지 않고, `.Loading`이 있으면 `.Error`도 짝으로 둔다. 예외로 route 시트는 `RouteBottomSheet`가 오류·문의를 그리므로 `.Error`를 두지 않는다. `.Contents`는 null을 좁혀 받는 조각에만 쓴다.
-- 같은 모양으로 반복되는 **고정** UI는 역할이 드러나는 지역 컴포넌트로 추상화한다. 이름은 자유다(`Fact`, `Row`, `Message`, `Stat`). 항목마다 **한 줄씩** 쓰고 설정 배열을 `.map`하지 않는다. "이 항목만 강조·숨김" 같은 기획 수정이 그 한 줄에서 끝난다. `.map`·`FlashList`는 서버 데이터 목록에만 쓴다([목록](#레이아웃-시프트워터폴목록)). 화면 등록 설정(`app/(app)/_layout.tsx`의 `SHEET_ROUTES.map`)은 UI가 아니라 예외다.
+- 부모 없이 의미 없는 조각은 **무엇이든** 부모 파일 아래 `Parent.Part`로 둔다(`PlanSummary.Quota`, `DailyForecast.TemperatureBar`, `TodoCommentThreadList.SortBar`). 부모를 지우면 함께 지워지고, 이름이 부모와의 결합을 알린다.
+- 같은 뜻은 같은 조각 이름이다: `.Loading`·`.Error`·`.Empty`·`.Item`(행), `.Link`(행을 감싼 Link), `.Contents`(id를 좁혀 받는 조각). `Row`·`Cell`·`Entry`·`PaneLoading`·`ItemLink`와 객체 묶음 네임스페이스를 쓰지 않는다. 행마다 로딩은 `X.Item.Loading`이다.
+- 형태는 `X.Part = function Part() {}`다(`Object.assign` 금지). 부속에 또 `.Loading`을 달면 TS가 `X.Part.Loading`을 모르므로 그 부속만 함수 선언을 대입한다(`SettingsListGroup.Item`, `ListRow.Texts`). 쓰지 않는 부속은 만들지 않는다.
+- **스스로 조회하면 `.Loading`·`.Error`를 짝으로 둔다.** 부모 경계 하나에 묶여 함께 그려지는 조각(날씨 리포트 칸)은 그 부모의 조각이고 자기 짝을 두지 않는다. route 시트는 `RouteBottomSheet`가 오류·문의를 그리므로 `.Error`를 두지 않는다. 원본을 넘기기만 하는 `X.Item = (props) => <UserList.Item {...props} />`을 만들지 않고, 같은 fallback은 `X.Error = UserList.Error`로 잇는다.
+- 같은 모양으로 반복되는 **고정** UI는 역할이 드러나는 지역 컴포넌트로 추상화하고(`Fact`, `Stat`) 항목마다 **한 줄씩** 쓴다. 설정 배열을 `.map`하지 않는다. "이 항목만 강조·숨김" 같은 기획 수정이 그 한 줄에서 끝난다. `.map`·`FlashList`는 서버 데이터 목록에만 쓴다([목록](#레이아웃-시프트워터폴목록)). 화면 등록 설정(`app/(app)/_layout.tsx`의 `SHEET_ROUTES.map`)은 UI가 아니라 예외다. 본보기는 `plan-comparison-table.tsx`의 비교 줄이다.
 
 ```tsx
 // Before: 항목 하나를 고치려면 배열·조건·map을 함께 읽는다
@@ -86,54 +71,41 @@ const facts = compact([t('daily.precipitation', …), wind == null ? null : t('d
 </HStack>
 ```
 
-- **추출은 추상화가 아니다.** JSX를 다른 파일로 옮기기만 하면 변경 이유는 줄지 않고 읽는 사람만 오간다. 파일이 길다고 나누지 않고, 책임이 여럿이면 같은 파일 안에서 지역 컴포넌트·지역 훅·네임스페이스로 나눈다.
-- 둘 곳: 한 곳만 쓰면 그 파일 아래 지역 컴포넌트, 부모 없이 의미 없으면 `Parent.Part`, 같은 기능 두 곳 이상이면 `components/`의 독립 파일, 두 기능 이상이고 도메인 뜻이 없으면 `shared/ui`([새 부품](./ui-catalog.md#새-부품-추가))다.
+- **한 곳만 쓰는 컴포넌트·훅은 쓰는 파일 안에 둔다.** 파일을 따로 두는 경우와 route 파일의 지역 조각은 [structure의 공개 면](./structure.md#공개-면)이다. 두 기능 이상이 쓰고 도메인 뜻이 없으면 `shared/ui`다([새 부품](./ui-catalog.md#새-부품-추가)).
+- **추출은 추상화가 아니다.** JSX를 다른 파일로 옮기기만 하면 변경 이유는 줄지 않고 읽는 사람만 오간다. 파일이 길다고 나누지 않고, 책임이 여럿이면 같은 파일 안에서 지역 컴포넌트·지역 훅·네임스페이스로 나눈다. 역할 없이 한 줄을 감싼 조각은 쓰는 곳에 인라인한다.
 - **위치 이름 금지.** `*Section`, `*Detail`, `*Content`, `*Panel`, `*Area`, `*Info`, `*Body`, `*Frame`, `*Wrapper`, `*Inner`, 단독 `*Header`·`*Footer`(`*Inner` 밖은 `aido/component-name`). 원본 이름을 접미사로 쓰는 확장(`HintPopoverContent`, `MenuContent`)과 부모 아래 부속(`TodoCommentThreadList.Header`)은 이름이 역할을 말하므로 쓴다.
-
-## 컴포넌트 계약
-
-- **데이터는 쓰는 컴포넌트가 조회한다.** 화면이 조회해 내리면 경계를 블록 단위로 나눌 수 없다. 지역 부속에 좁힌 값을 넘기는 것은 괜찮다(`MemoList.Item`의 `memo`).
-- **화면 id는 route 튜플 훅에서 읽는다**(`const [todoId] = useTodoId()`). id·search param을 Props로 내리지 않는다. 예외는 목록 행의 id다.
-- **바깥 여백을 모른다.** 루트에 margin·폭·위치를 두지 않는다. 자기 모양(`rounded-2xl bg-gray-1`)과 안쪽 여백만 컴포넌트 몫이고, 바깥 간격은 스크린의 `Spacing`이다.
-- 행의 현재 값은 값만 그리는 컴포넌트가 자기 경계(`fallback={null}`)로 읽는다(`FriendCountValue`). 자리는 같고 구현이 갈리면 `mode` 대신 컴포넌트를 prop으로 넘긴다(`toolbar={MemoEditor.StackToolbar}`).
-- 배타 상태는 `match(…).exhaustive()`, 단순 표시는 `&&`다. 저장 진행은 mutation `isPending`을 `Button`의 `isLoading`에 넘긴다. 변환은 es-toolkit(`groupBy`, `partition`, `sumBy`)으로 view-model 순수 함수에 둔다.
-- 메모는 React Compiler가 한다. `useMemo`·`useCallback`·`memo`는 이유가 있을 때만 둔다(가상 목록·캘린더 칸의 `memo`). 이유 없는 직접 메모는 그 파일을 고칠 때 지운다.
-- 색은 토큰 클래스만 쓴다. 조건부 className은 `cn`, 변형이 둘 이상이면 `tv`(`*.variants.ts`)다. 템플릿 리터럴·삼항으로 문자열을 잇지 않는다(`aido/no-classname-concat`). 인라인 `style`은 동적 값(잰 크기, 애니메이션 스타일, 계산한 inset)에만 쓴다.
+- **글꼴·화면 크기 주석은 함께 옮긴다.** 큰 글자·작은 화면·폴더블·iPad·Mac을 이유로 적은 주석은 코드로 알 수 없는 이유라 지우지 않는다. 컴포넌트를 옮기면 주석과 그 줄의 className·상수(`min-h-0 shrink`, `flex-wrap`, 고정 칸 크기)를 함께 옮긴다.
 
 ## 스크린
 
-```tsx
-export default function NotificationsScreen() {
-  const [direction] = useNotificationDirection();
+route 파일이 화면을 조립한다. 제목, 경계, 문구, `Spacing`, `match(view)`, 단계(`<stepper.Render>`, [useStepper](./hooks.md#usestepper)), 폼([forms](./forms.md))이 위에서 아래로 보인다.
 
-  return (
-    <StyledSafeAreaView className="flex-1 bg-white" edges={['left', 'right']}>
-      {match(direction)
-        .with('received', () => (
-          <QueryErrorBoundary fallback={NotificationList.Error}>
-            <Suspense fallback={<NotificationList.Loading />}>
-              <NotificationList />
-            </Suspense>
-          </QueryErrorBoundary>
-        ))
-        .with('sent', () => (
-          <QueryErrorBoundary fallback={SentNudgeList.Error}>
-            <Suspense fallback={<SentNudgeList.Loading />}>
-              <SentNudgeList />
-            </Suspense>
-          </QueryErrorBoundary>
-        ))
-        .exhaustive()}
-    </StyledSafeAreaView>
-  );
-}
+```tsx
+// app/(app)/(tabs)/(me,memos,todos)/notifications/index.tsx 발췌
+<Stack.Screen options={{ title: t('titles.notifications') }} />
+
+{match(visibleDirection)
+  .with('received', () => (
+    <Tabs.Content value={category} className="flex-1">
+      <QueryErrorBoundary resetKeys={[category]} fallback={NotificationList.Error}>
+        <Suspense fallback={<NotificationList.Loading />}>
+          <NotificationList />
+        </Suspense>
+      </QueryErrorBoundary>
+    </Tabs.Content>
+  ))
+  .with('sent', () => (/* SentNudgeList를 같은 모양으로 */))
+  .exhaustive()}
 ```
 
-- 위에서 아래로 읽힌다. 순서·간격·화면 문구·경계가 스크린 파일에 보이고, 줄이 길어도 쪼개지 않는다. 화면·구역 제목과 안내 문구도 스크린에 적는다.
-- 블록마다 `QueryErrorBoundary` → `Suspense fallback={<X.Loading />}` → `<X />`를 나열한다. fallback은 `fallback={X.Error}`이고 화살표로 감싸지 않는다(닫기 핸들러가 필요한 시트 안 경계만 `(props) => <X.Error {...props} onInquiry={…} />`).
-- 상태별 화면은 `match(view).with(…).exhaustive()`로 스크린에서 고른다. 넘기기용 래퍼(`Content → Header → Section`), 재수출한 화면, JSX 상수(`const waveform = …`)를 만들지 않는다.
-- 한 쿼리를 두 경계에서 읽지 않는다(한 오류는 한 곳). 로딩·오류·빈·데이터 4상태를 그린다. route 파일은 params 검증과 경계만 맡는다([state-and-routing](./state-and-routing.md#params-튜플)).
-- 스스로 숨는 블록은 간격도 함께 사라진다. 조건을 스크린이 알면 `{isAvailable && (…)}` 안에 `Spacing`과 블록을 함께 두고, 조회해야 아는 카드만 `className`으로 바깥 여백을 받는다.
+- **화면이 갖는 것.** 단계·경계·제목·화면 문구·`Spacing`·`match(view)`와 폼(`useForm`, 칸 연결, `handleSubmit`, `setError`). 그 화면만 쓰는 지역 훅·지역 컴포넌트(`useView`, 진행 점, 단계 화면, 제목 줄)는 같은 route 파일 아래에 둔다. 파일이 길어도 다른 파일로 옮기지 않는다.
+- **화면이 하지 않는 것.** 조회 값 가공, 규칙 계산, 요청 만들기, 오류 판별, 시트 열기. 이것은 기능 컴포넌트·훅·모델이 준다.
+- params가 있는 route는 맨 위 컴포넌트가 검증과 redirect만 하고, 같은 파일의 화면 컴포넌트가 조립한다([params 튜플](./state-and-routing.md#params-튜플)).
+- 블록마다 `QueryErrorBoundary` → `Suspense fallback={<X.Loading />}` → `<X />`를 화면에 나열한다. 경계를 기능 컴포넌트·훅 안에 숨기지 않는다(값만 그리는 조각은 예외, [위](#컴포넌트-계약)).
+- **fallback은 `fallback={X.Error}`다.** 실패하면 비우는 값 조각은 `fallback={QueryErrorFallback.Hidden}`이다. 인라인 화살표, `() => null`, `null`만 돌려주는 `.Error`를 쓰지 않는다. 예외는 시트를 닫아야 하는 시트 안 경계의 `(props) => <X.Error {...props} onInquiry={…} />`뿐이다.
+- 상태별 화면은 `match(view).with(…).exhaustive()`로 화면에서 고른다. 넘기기용 래퍼(`Content → Header → Section`), 재수출한 화면, JSX 상수(`const progress = <Steps.Dots … />`)를 만들지 않고 지역 컴포넌트로 둔다.
+- 한 쿼리를 두 경계에서 읽지 않는다(한 오류는 한 곳). 로딩·오류·빈·데이터 4상태를 그린다.
+- 스스로 숨는 블록은 간격도 함께 사라진다. 조건을 화면이 알면 `{isAvailable && (…)}` 안에 `Spacing`과 블록을 함께 두고, 조회해야 아는 카드만 화면이 `className`으로 바깥 여백을 넘긴다.
 - 여러 탭에서 여는 화면(친구·설정류)은 탭마다 함께 쓰는 그룹에 파일 하나로 두고 제목은 화면이 정한다. 어느 탭에 열리는지와 더하는 법은 [탭과 함께 쓰는 화면](./state-and-routing.md#탭과-함께-쓰는-화면)이다.
 
 ## 코드 배치
@@ -141,7 +113,7 @@ export default function NotificationsScreen() {
 1. **컴포넌트 몸체.** `t`·DI → route params → 쿼리·prefetch → 지역 상태·ref → mutation·동작 훅 → 파생 값 → effect → 조기 반환 → 핸들러 → JSX. 그룹 사이에 빈 줄 하나, 그룹 안에는 두지 않는다. 데이터 의존으로 순서를 바꾸면 주석을 단다.
 2. **스크린 JSX.** 형제 구역은 빈 줄로 나눈다. 세로 간격은 `<Spacing>`만 쓰고 위아래에 빈 줄을 둔다. 블록에 `mb`·`pb`를 주지 않는다(스스로 숨는 카드는 예외).
 3. **여백 표기.** 레이아웃 prop(`p`, `gap`)과 `className` 여백을 한 태그에, 형제끼리 섞지 않는다(`aido/spacing-props-with-classname`, `aido/one-spacing-notation`).
-4. **파일 순서.** 상수·타입 → 기본 export → 네임스페이스 부속 → `.Loading` → `.Error` → `.Empty` → 지역 컴포넌트 → 지역 훅 → 순수 helper.
+4. **파일 순서.** 상수·타입 → 기본 export → 네임스페이스 부속 → `.Loading` → `.Error` → `.Empty` → 지역 컴포넌트 → 지역 훅 → 순수 helper. route 파일도 같아 화면 컴포넌트 아래에 단계 화면·지역 훅이 온다.
 
 ## 사용성 (구조보다 먼저)
 
@@ -161,8 +133,8 @@ export default function NotificationsScreen() {
 ## 레이아웃 시프트·워터폴·목록
 
 - `X.Loading`은 받은 뒤와 같은 슬롯·높이다. 글자는 `TextSkeleton size`, 행 글자는 `ListRow.Texts.Loading`이고, 데이터로 생기는 줄(설명·하위 항목)은 그리지 않는다.
-- 받은 뒤 나타나는 버튼·배너는 자리를 먼저 비운다. 대부분 안 보이는 블록만 `fallback={null}`이고 이유를 주석으로 남긴다. 남의 높이를 매직 넘버로 복제하지 않는다(재야 하면 `useLayoutSize()`). 이미지는 `AspectRatio`, 오류 문구는 `preserveErrorSpace`다. 데이터가 있으면 재조회 중에 fallback으로 바꾸지 않는다. 부품을 바꾸면 전후를 겹쳐 비교하고 다르면 바꾸지 않는다.
-- **워터폴.** 한 컴포넌트의 독립 조회는 `useSuspenseQueries({ queries: [a, b] })`로 함께 건다. `useSuspenseQuery`를 차례로 부르면 둘째는 첫 응답 뒤에 나간다. 훅 안에 Suspense 조회를 숨기지 않는다.
+- 받은 뒤 나타나는 버튼·배너는 자리를 먼저 비운다. 대부분 안 보이는 블록만 `Suspense fallback={null}`이고 이유를 주석으로 남긴다. 남의 높이를 매직 넘버로 복제하지 않는다(재야 하면 `useLayoutSize()`). 이미지는 `AspectRatio`, 오류 문구는 `preserveErrorSpace`다. 데이터가 있으면 재조회 중에 fallback으로 바꾸지 않는다. 부품을 바꾸면 전후를 겹쳐 비교하고 다르면 바꾸지 않는다.
+- **워터폴.** 한 컴포넌트의 독립 조회는 `useSuspenseQueries({ queries: [a, b] })`로 함께 건다. `useSuspenseQuery`를 차례로 부르면 둘째는 첫 응답 뒤에 나간다. 안쪽 블록이 멈춘 뒤에야 시작될 조회는 바깥에서 `usePrefetchQuery`로 함께 시작한다([data](./data.md#쿼리-키)). Suspense로 멈추는 훅은 이름이 `useSuspense{X}`다(멈춤을 이름에서 숨기지 않는다).
 - **목록.** 서버 커서 목록은 `InfiniteList`(FlashList v2: 하단 로딩·재시도·중복 호출 방지·당겨서 새로고침), 길이가 정해지지 않은 서버 목록은 `FlashList`, 상수로 개수가 묶인 서버 목록은 `.map`, 고정 개수 스켈레톤은 `range(n).map`이다. 길이 제한 없는 `.map`은 쓰지 않는다.
 - 날짜 구역 나누기는 쿼리 `select`다. 머리말·꼬리말(카드·정렬 바)은 `ListHeaderComponent`·`ListFooterComponent`에 직접 적는다(목록 밖으로 옮기면 스크롤과 첫 위치가 바뀐다). 긴 안내 글은 `WordWrapText`, 가상 목록 행은 `lineBreakStrategyIOS="hangul-word"`다.
 
@@ -194,6 +166,6 @@ export default function NotificationsScreen() {
 
 ## 확인
 
-- 화면 PR마다 Maestro Before/After를 찍는다: 라이트·다크 × 글꼴 최소·기본·최대 × ko·en × 작은 iPhone·iPad·폴더블. 로딩 중과 완료 후를 같은 자리에서 찍어 위치를 비교한다.
+- 화면을 건드린 PR마다 Maestro Before/After를 찍는다: 글꼴 최소·최대 × 작은 iPhone·접은 Duo·펼친 Duo·iPad × ko·en(라이트·다크는 색을 바꿨을 때). 로딩 중과 완료 후를 같은 자리에서 찍어 위치·잘림·줄바꿈을 비교한다.
 - 주요 흐름, 실패와 재시도, 키보드, 뒤로 가기는 직접 해 보고 한 것과 못 한 것을 나눠 보고한다. 누름 동작은 기기에서도 확인한다.
 - 모션·Skia는 날씨(비·눈·번개·밤하늘)와 음성 시각화를 iPhone·저사양 Android에서 30초 돌려 프레임 드롭률을 Before/After로 센다. 20번 열고 닫은 뒤 메모리가 돌아오는지, 앱을 뒤로 보내면 프레임 콜백이 0인지 본다.

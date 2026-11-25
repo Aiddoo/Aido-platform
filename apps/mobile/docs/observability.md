@@ -60,10 +60,10 @@
 
 - `useScreenTracking`(`AuthGateLayout`의 null 자식 `RouteWatchers`에서 호출)이 `screen_view.screen_name`에 실제 경로가 아닌 route 템플릿(`toScreenName(useSegments())`, 예 `/invite/[inviteCode]`)을 보낸다. 초대 코드·사용자 id가 남지 않는다. 그룹(`(app)`)과 `index`는 뺀다. 같은 템플릿의 다른 대상(`/todo/1` → `/todo/2`)도 경로가 바뀌면 한 번 더 센다. 상세·시트에서 돌아오면 아래 화면을 다시 센다(Expo Router·React Navigation의 표준 방식이고 이력도 이어진다). Sentry 내비게이션 breadcrumb도 같은 이름을 쓴다.
 - `screen_view`는 레이아웃 효과에서 보내 같은 이동에서 새 화면이 마운트하며 보내는 이벤트(`weather_opened`, `useTrackView`)보다 먼저 나간다. Firebase가 이벤트에 붙이는 화면 이름(`firebase_screen`)이 앞 화면이 되지 않는다. 순서는 `auth-gate-layout.test.tsx`가 지킨다.
-- 스플래시 뒤로 지나가는 입구 `/`·`/loading`·`/auth/[provider]`는 세지 않는다(1.15.2부터). 목록은 앱 경로를 아는 bootstrap(`RouteWatchers`의 `ENTRY_REDIRECT_SCREENS`)이 넘긴다. 건너뛴 화면은 앞 화면으로 기억하지 않아 `/feed` → `/` → `/feed` 왕복은 다시 세지 않는다. 콜드 스타트는 첫 화면 한 번, 로그인·로그아웃은 도착한 화면 한 번이다(`auth-gate-layout.test.tsx`).
-- 인증 가드가 막은 route(`(auth)`·`(app)`·`loading`) 안의 화면은 세지 않는다(1.15.2부터). 가드가 바뀌면 Expo Router가 그 route를 Redirect로 바꿔 묶음 navigator가 먼저 내려가고, 옮기기 전까지 묶음 첫 화면(가입 뒤 `/login`, 상세에서 로그아웃 뒤 `/feed`)에 focus가 머문다. 가드 값은 `AuthGateLayout`의 `routeGuards` 하나를 `Stack.Protected`와 tracker가 함께 읽는다. 가입 뒤는 `/sign-up` → `/feed`, 상세에서 로그아웃하면 `/todo/[todoId]` → `/login`이다.
+- 스플래시 뒤로 지나가는 입구 `/`·`/loading`·`/auth/[provider]`는 세지 않는다. 목록은 앱 경로를 아는 bootstrap(`RouteWatchers`의 `ENTRY_REDIRECT_SCREENS`)이 넘긴다. 건너뛴 화면은 앞 화면으로 기억하지 않아 `/feed` → `/` → `/feed` 왕복은 다시 세지 않는다. 콜드 스타트는 첫 화면 한 번, 로그인·로그아웃은 도착한 화면 한 번이다(`auth-gate-layout.test.tsx`).
+- 인증 가드가 막은 route(`(auth)`·`(app)`·`loading`) 안의 화면은 세지 않는다. 가드가 바뀌면 Expo Router가 그 route를 Redirect로 바꿔 묶음 navigator가 먼저 내려가고, 옮기기 전까지 묶음 첫 화면(가입 뒤 `/login`, 상세에서 로그아웃 뒤 `/feed`)에 focus가 머문다. 가드 값은 `AuthGateLayout`의 `routeGuards` 하나를 `Stack.Protected`와 tracker가 함께 읽는다. 가입 뒤는 `/sign-up` → `/feed`, 상세에서 로그아웃하면 `/todo/[todoId]` → `/login`이다.
 - URL로 바뀌는 탭 전환은 `ViewTabs`가 `view_tab_changed { screen_name, view }`를 보낸다(같은 탭을 다시 누르면 보내지 않는다). 조회 오류 화면의 다시 시도는 `error_fallback_retry_tapped { screen_name }`이다. `screen_name`은 모두 `useScreenName()`이다.
-- 넓은 화면(iPad·폴더블)에서 목록 옆 칸에 상세를 고르면 같은 전역 tracker가 좁은 화면의 상세 route 이름(`/todo/[todoId]`·`/memo/[memoId]`)으로 한 번 센다(1.15.2부터). 표는 bootstrap(`RouteWatchers`의 `PANE_DETAIL_SCREENS`: 목록 화면, 칸 query, 상세 템플릿)이 넘기고 query 이름은 기능 params 스키마의 키로 타입 검사한다. 다른 상세를 고르면 다시 세고, 칸을 닫거나 날짜 같은 query만 바뀌면 목록을 다시 세지 않는다. 칸에 상세를 연 채 접혀 상세 화면으로 넘기면 같은 보기라 다시 세지 않고, 거기서 뒤로 가면 목록을 센다(`auth-gate-layout.test.tsx`). 칸 query는 화면이 읽는 값과 같은 지금 화면의 params(`useFocusedRouteParams`)로 본다. 전역 params는 상위 route params를 합쳐 상세 링크로 연 앱(`/todo/3`)이 피드로 돌아와도 `todoId`가 남는다.
+- 넓은 화면(iPad·폴더블)에서 목록 옆 칸에 상세를 고르면 같은 전역 tracker가 좁은 화면의 상세 route 이름(`/todo/[todoId]`·`/memo/[memoId]`)으로 한 번 센다. 표는 bootstrap(`RouteWatchers`의 `PANE_DETAIL_SCREENS`: 목록 화면, 칸 query, 상세 템플릿)이 넘기고 query 이름은 기능 params 스키마의 키로 타입 검사한다. 다른 상세를 고르면 다시 세고, 칸을 닫거나 날짜 같은 query만 바뀌면 목록을 다시 세지 않는다. 칸에 상세를 연 채 접혀 상세 화면으로 넘기면 같은 보기라 다시 세지 않고, 거기서 뒤로 가면 목록을 센다(`auth-gate-layout.test.tsx`). 칸 query는 화면이 읽는 값과 같은 지금 화면의 params(`useFocusedRouteParams`)로 본다. 전역 params는 상위 route params를 합쳐 상세 링크로 연 앱(`/todo/3`)이 피드로 돌아와도 `todoId`가 남는다.
 - 경로 보기에 URL에서 나오는 맥락(진입점 등)이 더 필요하면 화면에 새 `*_opened` 마운트 이벤트를 만들지 않는다. 전역 tracker가 같은 효과에서 `trackScreenView(name, params)`로 붙이도록 bootstrap 표(`ENTRY_REDIRECT_SCREENS`·`PANE_DETAIL_SCREENS`와 같은 자리)에 화면별 params 순수 함수를 둔다. 받은 데이터에서 나오는 맥락은 경로 보기가 아니라 내용 노출이라 `useTrackView`가 맡는다. 지금 이 길로 옮긴 이벤트는 없다.
 
 ### 측정 규칙
@@ -78,7 +78,7 @@
 
 ### 푸시 권한 퍼널
 
-`source`는 `PushPermissionPromptSource`(`onboarding`·`todo_time`·`feed_card`·`settings`·`paywall`, 초대 환영 시트는 `invite_welcome`), `step`은 `PUSH_PERMISSION_STEP`(`ASK`·`REQUEST_SYSTEM`·`OPEN_SETTINGS`·`ENABLE_IN_APP`)이다. `shown`은 안내가 보일 때 마운트·단계마다 한 번이고(`useTrackView`, key는 `step`) 앱 안 다이얼로그는 `step=ASK`다. 피드 카드는 할 일 시각이 지나 숨었다 다음 할 일로 다시 보여도 같은 단계면 다시 세지 않는다(1.15.2부터, `push-permission-notice.test.tsx`). 단계 실행은 `usePushPermissionAction({ source }).runStep(step)` 하나이고, 권한 mutation이 `source`를 변수로 받아 `onSuccess`에서 한 번 추적한다(`requested`·`settings_opened`). 흐름은 [푸시 알림](./push-notifications.md)에 있다.
+`source`는 `PushPermissionPromptSource`(`onboarding`·`todo_time`·`feed_card`·`settings`·`paywall`, 초대 환영 시트는 `invite_welcome`), `step`은 `PUSH_PERMISSION_STEP`(`ASK`·`REQUEST_SYSTEM`·`OPEN_SETTINGS`·`ENABLE_IN_APP`)이다. `shown`은 안내가 보일 때 마운트·단계마다 한 번이고(`useTrackView`, key는 `step`) 앱 안 다이얼로그는 `step=ASK`다. 피드 카드는 할 일 시각이 지나 숨었다 다음 할 일로 다시 보여도 같은 단계면 다시 세지 않는다(`push-permission-notice.test.tsx`). 단계 실행은 `usePushPermissionAction({ source }).runStep(step)` 하나이고, 권한 mutation이 `source`를 변수로 받아 `onSuccess`에서 한 번 추적한다(`requested`·`settings_opened`). 흐름은 [푸시 알림](./push-notifications.md)에 있다.
 
 ## Sentry
 
@@ -95,7 +95,7 @@ errorReporter.captureMessage(ERROR_REPORT_MESSAGES.SESSION_EXPIRED, {
 });
 ```
 
-**Sentry 보고 자리는 정해져 있다.** mutation은 `meta.errorFeedback`을 읽는 앱 `MutationCache`의 캐시 단계 `onError`, 경계가 받는 조회는 `QueryErrorBoundary`, 경계 밖 조회(인라인 `useQuery`·데이터가 있는 재조회)는 앱 `QueryCache`의 `onError`(`feature: query_cache`), 그 밖은 훅(`useReportUnexpectedError` 등)이다. `useSuspenseQuery`가 데이터 없이 실패하거나 `throwOnError`가 경계로 보내면 `QueryCache`는 건너뛰고, 같은 오류 객체가 두 길로 와도 `captureError`가 한 번만 보낸다. 서비스는 삼킨 실패만 `logger.warn`하고 `captureException`을 부르지 않는다. mutation 실패의 햅틱·토스트·보고 규칙은 [오류 처리](./error-handling.md#mutation-오류-피드백)가 원본이다.
+**Sentry 보고 자리는 정해져 있다.** mutation은 `meta.errorFeedback`을 읽는 앱 `MutationCache`의 캐시 단계 `onError`, 경계가 받는 조회는 `QueryErrorBoundary`, 경계 밖 조회(인라인 `useQuery`·데이터가 있는 재조회)는 앱 `QueryCache`의 `onError`(`feature: query_cache`), 그 밖은 훅(`useReportUnexpectedError` 등)이다. `useSuspenseQuery`가 데이터 없이 실패하거나 `throwOnError`가 경계로 보내면 `QueryCache`는 건너뛰고, 같은 오류 객체가 두 길로 와도 `captureError`가 한 번만 보낸다. 서비스는 삼킨 실패만 `logger.warn`하고 `captureException`을 부르지 않는다. 기능·훅·쿼리 옵션도 `errorReporter.captureException`을 직접 부르지 않고 `reportUnexpectedError`·`logger.error` 두 입구([AppLogger](#applogger))를 쓴다. 직접 부르는 곳은 DI 밖에서 도는 루트 오류 경계(`app/_layout.tsx`)와 조립(`create-composition-root.ts`)뿐이다. mutation 실패의 햅틱·토스트·보고 규칙은 [오류 처리](./error-handling.md#mutation-오류-피드백)가 원본이다.
 
 ### Breadcrumb: `addBreadcrumb`
 
@@ -107,7 +107,7 @@ errorReporter.captureMessage(ERROR_REPORT_MESSAGES.SESSION_EXPIRED, {
 ### User·Replay·Trace
 
 - `useSyncUserIdentity`가 로그인하면 `setUserId(id)`, 비인증이면 `setUserId(null)`을 부른다. 내부 계정 id만 싣는다. `sendDefaultPii: false`다. RN SDK 8은 이 값으로 IP 추론·라우트 URL·딥링크 수집을 가르므로 그대로 둔다.
-- Session Replay(`shared/infra/observability/error-reporting.ts`): `replaysSessionSampleRate` 0, `replaysOnErrorSampleRate` 0.2, `mobileReplayIntegration`의 `maskAllText`·`maskAllImages`·`maskAllVectors` 모두 `true`. 마스킹을 끄지 않는다(할 일·전사가 보인다). 무료 할당은 월 50개인데 30일 541개가 한도에 걸려 버려졌다. 그래서 `beforeErrorSampling`(`replay-error-sampling.ts`)이 앱이 잡지 못한 오류(`mechanism.handled === false`)와 강제 종료(`level: fatal`)만 녹화하게 한다(1.15.3부터). `captureException`·`logger.error`·경계로 보고한 오류는 녹화하지 않는다. 메시지 이벤트(`captureMessage`)는 SDK가 원래 녹화하지 않는다.
+- Session Replay(`shared/infra/observability/error-reporting.ts`): `replaysSessionSampleRate` 0, `replaysOnErrorSampleRate` 0.2, `mobileReplayIntegration`의 `maskAllText`·`maskAllImages`·`maskAllVectors` 모두 `true`. 마스킹을 끄지 않는다(할 일·전사가 보인다). 무료 할당(월 50개) 안에 들도록 `beforeErrorSampling`(`replay-error-sampling.ts`)이 앱이 잡지 못한 오류(`mechanism.handled === false`)와 강제 종료(`level: fatal`)만 녹화하게 한다. `captureException`·`logger.error`·경계로 보고한 오류는 녹화하지 않는다. 메시지 이벤트(`captureMessage`)는 SDK가 원래 녹화하지 않는다.
 - `tracePropagationTargets`는 `ENV.API_URL`의 출처 하나다(`trace-propagation-targets.ts`). 외부 주소에는 `sentry-trace`·`baggage`를 붙이지 않는다. `tracesSampleRate`는 두지 않아 앱 span을 보내지 않고 표본 여부는 서버가 정한다.
 
 ### Severity
@@ -169,7 +169,7 @@ Sentry로 나가는 모든 오류(`AppLogger.error`, `ErrorReporter.captureExcep
 - `.catch(() => undefined)`·`.catch(noop)`·빈 `catch`로 끝내지 않는다. `logger.warn(KEY, { error: getErrorMessage(error) })`로 남긴다.
 - `mutateAsync`의 실패는 전역 `meta.errorFeedback`이 알리고 기록한다. 그래서 호출부 `.catch(noop)`은 흐름만 잇는 용도로 쓸 수 있다. `errorFeedback: false`이거나 `isHandledByFeature`로 뺀 오류는 호출부나 기능이 직접 보이고 기록한다.
 - 기다리지 않는 Promise는 내부에서 실패를 처리하는 함수이거나 호출부 `.catch`에서 기록한다.
-- 예측 가능한 4xx는 이벤트가 아니다. `Result.err()`로 UI가 처리하고 HTTP 실패는 `addBreadcrumb({ category: 'http' })`로만 남긴다. breadcrumb의 `requestId`는 요청마다 보내는 `X-Request-Id`(`shared/infra/http/request-headers.ts`)이고 서버 로그 `reqId`·서버 Sentry `request_id`와 같다.
+- 예측 가능한 4xx는 이벤트가 아니다. `fail` 결과로 UI가 처리하고 HTTP 실패는 `addBreadcrumb({ category: 'http' })`로만 남긴다. breadcrumb의 `requestId`는 요청마다 보내는 `X-Request-Id`(`shared/infra/http/request-headers.ts`)이고 서버 로그 `reqId`·서버 Sentry `request_id`와 같다.
 
 ## 개인정보
 
@@ -186,10 +186,10 @@ Sentry로 나가는 모든 오류(`AppLogger.error`, `ErrorReporter.captureExcep
 
 | 시나리오             | 방법                                                | 기대                                                                                     |
 | -------------------- | --------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| 일부러 500           | QA 서버에서 목록 API가 500을 내게 한다              | 이슈 1건. `request_id`가 서버 `reqId`와 같다. 토스트와 재시도                            |
+| 일부러 500           | 개발서버 목록 API가 500을 내게 한다                 | 이슈 1건. `request_id`가 서버 `reqId`와 같다. 토스트와 재시도                            |
 | 일부러 4xx(404, 409) | 지운 할 일 열기, 중복 요청                          | 이슈 없음. 다른 이슈의 breadcrumb에만 `error`·`http`                                     |
 | 비행기 모드·타임아웃 | 네트워크를 끊고 새로 고침                           | 이슈 없음                                                                                |
 | 응답 파싱 실패       | 서버 응답 필드를 일부러 어긋나게 한다               | 이슈 1건(`ParseError`, message에 어긋난 칸), `feature` 태그. 따로 남기는 로그는 없다     |
-| 렌더 오류            | 개발용 화면에서 렌더 중 throw                       | 이슈 1건, `feature=error_boundary`. 중복 없음                                            |
+| 렌더 오류            | 렌더 중 throw를 넣은 개발 DSN 빌드(커밋하지 않는다) | 이슈 1건, `feature=error_boundary`. 중복 없음                                            |
 | 루트 렌더 오류       | 루트 Provider 안에서 throw한 뒤 "다시 시도"         | 이슈 1건, `feature=root_error_boundary`. 로그인·피드·초안이 남는다                       |
 | 개인정보             | 메모·음성·댓글을 쓰고 위 오류를 낸 직후 이슈를 연다 | 이벤트 JSON에 본문·글자·토큰·이메일이 없고 사용자는 내부 id뿐. 로그아웃 뒤엔 사용자 없음 |

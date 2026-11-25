@@ -16,7 +16,7 @@
 - 시간대 이름은 `timezone`(`currentTimezone`, `DateFormatContext.timezone`)이다. `timeZone`은 그 키를 요구하는 API(`Intl.DateTimeFormat` 옵션, expo-localization `Calendar`, 피커 `timeZoneName`)와 이미 저장된 `aido_device_timezone_v1` 값에만 쓴다.
 - 모델·캐시·전송은 문자열 brand다. 문자열은 같은 값이면 같은 참조라 재조회에도 구조 공유가 유지된다. 순간의 사전순 비교(`a < b`)는 오프셋이 다르면 틀리므로 쓰지 않는다.
 - 날짜 key 계산(`addDaysToDateKey`·`getMonthStartDateKey`·`toDateKey(instant, timezone)` 등)은 `DateKey`만 받고 돌려준다. 계산 결과는 `isDateKey`(스키마와 같은 규칙)로 좁혀 칸마다 Zod를 거치지 않고, 0000~9999년을 벗어나면 던진다. 테스트 리터럴은 `src/testing/date-key.ts`의 `createDateKey('2026-11-12')`로 만든다.
-- `Date`는 `shared/date/native-date.ts`를 지나는 네이티브 피커·달력·파일 수정 시각 경계에서만 만든다. 앱 모델에 `Date`를 두지 않는다.
+- `Date`는 `shared/date/native-date.ts`를 지나는 네이티브 피커·달력·파일 수정 시각 경계에서만 만든다. 앱 모델과 Provider·store의 공개 상태에 `Date`를 두지 않는다.
 - Hermes에는 Temporal이 없고 폴리필도 쓰지 않는다([Temporal spike](#temporal-spike)). 날짜 key 산술은 `date-key.ts`의 순수 계산(Hinnant의 civil 날짜 ↔ 일수 변환), 순간 직렬화는 `Date#toISOString`, 시간대 변환(`zoned.ts`)은 캐시한 `Intl.DateTimeFormat`이다. 테스트는 서버와 같은 Node 26 네이티브 Temporal을 정답으로 비교한다(`src/testing/temporal-oracle.ts`). `dayjs`·`temporal-polyfill` import는 depcruise(`date-library-dayjs`·`date-library-temporal`)가 막는다.
 - 같은 계산의 서버↔앱 이름은 [공통 기준의 표](../../../docs/conventions/dates.md#1-값의-종류)에 있다. 날짜 + 벽시계 → 순간은 `toZonedInstant({ date, time, timezone })` 하나이고 겹치는 시각은 앞쪽, 없는 시각은 전환 뒤 순간이다(Temporal `compatible`). 순간 직렬화는 `Date#toISOString`이라 서버 `toIsoString`(ms 3자리 내림)과 바이트 단위로 같다.
 - 표시는 캐시된 `Intl.DateTimeFormat` 하나다. 새 포매터를 만들지 않는다.
@@ -32,11 +32,11 @@ shared/date/
 
 ### Temporal spike
 
-1.15.2 [10/32]에서 같은 검사 1,143개를 Node 26 네이티브 Temporal과 Hermes iOS의 `temporal-polyfill` 1.0.8로 돌려 비교했다(측정 표는 그 PR에 있다).
+폴리필을 쓰지 않는 근거는 같은 검사 1,143개를 Node 26 네이티브 Temporal과 Hermes iOS의 `temporal-polyfill` 1.0.8로 돌린 비교다.
 
 - **버린 이유.** 폴리필은 시간대 이름을 대문자로 바꿔 넘겨, Hermes iOS가 프로세스에서 처음 보는 이름 15개(`Asia/Kolkata`, `US/Eastern`, `Etc/UTC` 등)를 `RangeError`로 거부한다. `Temporal`만 묶어도 `hermesc -O` 바이트코드가 159,974B(순수 계산 `date-key`는 9,717B)이고 앱 시작 경로에서 12–22ms가 든다.
-- **결정.** 폴리필을 쓰지 않는다. 날짜 key 산술은 순수 계산, 순간 직렬화는 `Date#toISOString`, 시간대 변환은 Intl이다. 서버와 같은지는 Node 26 Temporal을 정답으로 테스트한다(1900~2200년 날짜 key 36,646개 × 8개 연산, 서머타임 날 벽시계 320개). Intl 벽시계 변환의 서머타임 틈·겹침은 서버 규칙으로 고쳤다. 출력 글자는 49만 개 조합(7개 시간대 × ko·en)에서 바이트 단위로 같다.
-- **Android.** 개발 빌드 APK가 없어 기기에서 돌리지 못했다. 날짜 key 산술은 Intl을 쓰지 않아 플랫폼과 무관하다. 출시 전에 Android Hermes에서 아래를 확인한다.
+- **결정.** 폴리필을 쓰지 않는다. 날짜 key 산술은 순수 계산, 순간 직렬화는 `Date#toISOString`, 시간대 변환은 Intl이다. 서버와 같은지는 Node 26 Temporal을 정답으로 테스트한다(1900~2200년 날짜 key 36,646개 × 8개 연산, 서머타임 날 벽시계 320개). Intl 벽시계 변환의 서머타임 틈·겹침은 서버 규칙을 따른다. 출력 글자는 49만 개 조합(7개 시간대 × ko·en)에서 바이트 단위로 같다.
+- **Android.** 날짜 key 산술은 Intl을 쓰지 않아 플랫폼과 무관하다. 출시 전에 Android Hermes에서 아래를 확인한다.
   1. `toDateKey`·`toHHmm`·`toZonedInstant`가 Node 결과와 같다: 서울·뉴욕·런던·산티아고·`Asia/Kolkata`, 2026 서머타임 날 전후 매시와 02:30.
   2. 화면 글자가 iOS와 같다: `formatDateLabel` 10종(`monthDayYear`·`day` 포함)·`formatClockTime`·상대 시간을 ko·en으로, 특히 오전/오후 앞 공백과 `dayNumber`·`dottedMonthDay`의 en-US 파트.
   3. 시간 피커(`openAndroidTimePicker`·설정 알림 시각)가 고른 시와 분을 그대로 돌려준다(`timeZoneName="UTC"`, 서머타임 시작일과 피커를 연 채 기기 시간대를 바꾼 뒤 포함).
@@ -45,7 +45,9 @@ shared/date/
 
 ### 오늘과 시계
 
-- 시간대는 기기 달력(`expo-localization`)에서만 온다. 앱의 오늘 key와 자정 전환은 `LocalDateProvider`가 소유하고(자정 timer, foreground, `useCalendars()` 변화에서 다시 평가) 컴포넌트는 `useTodayKey()`(`DateKey`)로 읽는다. 다시 평가할 때마다 시간대는 `getDeviceTimezone()`으로 새로 읽는다. Android의 `useCalendars()`는 설정 변경(configuration change) 때만 바뀌어 시간대만 바꾸면 그대로라 신호로만 쓴다. Provider 밖(위젯 경계)은 같은 `readDeviceLocalDateState()`를 쓴다. 렌더 중 `new Date()`를 기준 상태로 만들지 않는다.
+- **시간대는 앱이 지어내지 않는다.** 기기 달력(`expo-localization`)에서 읽은 IANA 이름 → 마지막으로 읽은 값(기기 저장) → 서비스 기본 시간대(`@aido/api/vocabulary`의 `SERVICE_DEFAULT_TIMEZONE`) 순서로 정한다. 기기가 준 값이 UTC와 같은 시간대(`UTC`·`Etc/UTC`·`GMT` 등)이거나 `Intl`이 모르는 이름이면 읽지 못한 것으로 본다(서버도 같은 규칙으로 읽는다).
+- **계산에 쓴 시간대를 그대로 서버에 보낸다.** 앱이 "오늘"과 표시에 쓴 값이 요청 헤더(`X-Timezone`)와 푸시 기기 보고에 가고, 둘은 같은 함수 하나로 그 값을 얻는다.
+- 앱의 오늘 key와 자정 전환은 `LocalDateProvider`가 소유하고(자정 timer, foreground, `useCalendars()` 변화에서 다시 평가) 컴포넌트는 `useTodayKey()`(`DateKey`)로 읽는다. 다시 평가할 때마다 시간대를 위 순서로 새로 정한다. Android의 `useCalendars()`는 설정 변경(configuration change) 때만 바뀌어 시간대만 바꾸면 그대로라 신호로만 쓴다. Provider 밖(위젯 경계)은 같은 `readDeviceLocalDateState()`를 쓴다. 오늘 key를 읽는 길은 이 둘뿐이고 렌더 중 `new Date()`를 기준 상태로 만들지 않는다.
 - 지금 시각은 둘이다. 분 단위로 여러 화면이 함께 보는 지금(상대 시간 "5분 전", 날짜·마감 판단)은 `useMinuteNow()`로 앱 하나의 분 시계(`minute-clock-store`, 분 경계와 앱 복귀에 갱신)를 구독한다. 화면마다 다른 간격이나 마감까지 다시 읽는 지금(쿨다운 초, 녹음 경과, 갱신 시각)은 `useNow({ tickMs?, until? })`다. 새 지금 시계 훅을 만들지 않는다.
 - 한 실행 안에서 길이만 재는 값(녹음·인식 세션 경과, 프레임·대기 시간)은 `Date.now()` ms를 그대로 쓴다. 저장하거나 모델이 비교하는 시각(푸시 응답을 받은 때, 앱이 앞에 온 때)은 `getNowInstant()`의 `Instant`이고 차이는 `diffMs`다.
 - 앱 달력·위젯의 주는 `getCalendarWeek`(일요일 시작), 주간 성취·리포트는 서버와 같은 ISO 주(`getIsoWeekOfMonth`)다. 한 화면에서 두 주 규칙을 섞지 않는다. 주차는 두 체계 모두 주의 가운데 날(수·목요일)이 속한 달의 몇째 주이고 라벨은 체계마다 하나(`formatCalendarWeekLabel`·`formatIsoWeekLabel`, 위젯 제목도 `formatCalendarWeekLabel`)이고 둘 다 오늘 key를 받아 다른 해의 주에 연도를 붙인다([주차 규칙](../../../docs/conventions/dates.md#2-오늘과-시간대의-출처)). 하루 길이 상수는 `shared/constants/time-units.ts`의 `DAY_MS`다.
