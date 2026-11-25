@@ -1,4 +1,7 @@
-import { nudgeInteractionResponseSchema } from '@aido/api/contracts/nudge/v1';
+import {
+  nudgeInteractionResponseSchema,
+  nudgeThanksPreviewResponseSchema,
+} from '@aido/api/contracts/nudge/v1';
 import { defineFixture } from '@src/testing/fixture';
 
 import { nudgeInteractionSchema } from '../domains/nudge-interaction.model';
@@ -46,6 +49,27 @@ export const createNudgeInteraction = defineFixture(nudgeInteractionSchema, {
   createdAt: '2026-03-01T00:00:00.000Z',
   isAvailable: true,
 });
+
+/** 고마움을 전할 친구가 없고 전한 적도 없는 감사 현황. 친구는 `createNudgeThanksRecipientDtos`로 채운다 */
+export const createNudgeThanksPreviewDto = defineFixture(nudgeThanksPreviewResponseSchema, {
+  todoId: 1,
+  throughNudgeId: null,
+  recipients: [],
+  totalRecipients: 0,
+  nextCursor: null,
+  hasNext: false,
+  thankedRecipientCount: 0,
+  lastThankedAt: null,
+});
+
+export function createNudgeThanksRecipientDtos(count: number) {
+  return Array.from({ length: count }, (_, index) => ({
+    id: `clz7x5p8k001${index}qz0z8z8z8z8z`,
+    userTag: `THANK00${index}`,
+    name: `고마운친구${index}`,
+    profileImage: null,
+  }));
+}
 
 export const createNudgeThanksPreview = defineFixture(nudgeThanksPreviewSchema, {
   todoId: 1,

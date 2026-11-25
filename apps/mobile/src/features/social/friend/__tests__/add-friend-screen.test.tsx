@@ -13,7 +13,7 @@ import {
   createApiError,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
 import AddFriendScreen from '../../../../../app/(app)/(tabs)/(me,memos,todos)/friends/add';
@@ -142,6 +142,78 @@ describe('친구 추가 화면', () => {
     },
   );
 
+  it('서버가 안내 문구 없이 거절하면 친구 요청 실패를 한 번 알린다', async () => {
+    // Given
+    const setup = createAddFriendDi();
+    setup.httpClient.post.mockResolvedValue(
+      fail(createFriendApiError({ code: ErrorCode.FOLLOW_0905, message: '' })),
+    );
+    await renderAddFriend(setup);
+    await typeTag(USER_TAG);
+    await waitFor(() => expect(screen.getByTestId('friend-tag-submit')).toBeEnabled());
+
+    // When
+    await fireEvent.press(screen.getByTestId('friend-tag-submit'));
+
+    // Then
+    expect(await screen.findAllByText('친구 요청에 실패했어요')).not.toHaveLength(0);
+    expect(setup.haptics.notify).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('friend-tag-input')).toHaveDisplayValue(USER_TAG);
+    expect(router.back).not.toHaveBeenCalled();
+  });
+
+  it('같은 프레임에 요청 버튼을 두 번 누르면 요청이 두 번 나간다', async () => {
+    // Given
+    const setup = createAddFriendDi();
+    const pending = createPendingResponse(ok(createSendFriendRequestDto()));
+    setup.httpClient.post.mockReturnValue(pending.response);
+    await renderAddFriend(setup);
+    await typeTag(USER_TAG);
+    await waitFor(() => expect(screen.getByTestId('friend-tag-submit')).toBeEnabled());
+    const submitButton = screen.getByTestId('friend-tag-submit');
+
+    // When
+    await act(async () => {
+      // 누름은 응답이 와야 끝나 기다리지 않고, 다시 그리기 전에 두 번 닿게 한 act 안에서 누른다
+      fireEvent.press(submitButton).catch(() => undefined);
+      fireEvent.press(submitButton).catch(() => undefined);
+    });
+    await act(async () => {
+      pending.settle();
+    });
+
+    // Then
+    await waitFor(() => expect(router.back).toHaveBeenCalled());
+    expect(setup.httpClient.post).toHaveBeenCalledTimes(2);
+  });
+
+  it('친구 한도에 걸렸는데 초대를 쓸 수 없으면 초대 길 없이 한도만 알리고 화면에 머문다', async () => {
+    // Given
+    const setup = createAddFriendDi({ isInviteAvailable: false });
+    setup.httpClient.post.mockResolvedValue(
+      fail(
+        createApiError(ErrorCode.FOLLOW_0909, {
+          message: '친구 한도',
+          details: { current: 7, limit: 7 },
+        }),
+      ),
+    );
+    await renderAddFriend(setup);
+    await typeTag(USER_TAG);
+    await waitFor(() => expect(screen.getByTestId('friend-tag-submit')).toBeEnabled());
+
+    // When
+    await fireEvent.press(screen.getByTestId('friend-tag-submit'));
+
+    // Then
+    expect(await screen.findAllByText('친구를 더 추가할 수 없어요')).not.toHaveLength(0);
+    expect(screen.queryByText('친구 초대하고 1명 더 추가하기')).toBeNull();
+    expect(setup.haptics.notify).toHaveBeenCalledWith('error');
+    expect(screen.getByTestId('friend-tag-input')).toHaveDisplayValue(USER_TAG);
+    expect(router.back).not.toHaveBeenCalled();
+    expect(countEvents(setup.analytics, 'friend_request_sent')).toBe(0);
+  });
+
   it('보내는 동안 요청 버튼을 다시 눌러도 요청은 한 번이다', async () => {
     // Given
     const setup = createAddFriendDi();
@@ -150,14 +222,17 @@ describe('친구 추가 화면', () => {
     await renderAddFriend(setup);
     await typeTag(USER_TAG);
     await waitFor(() => expect(screen.getByTestId('friend-tag-submit')).toBeEnabled());
-    // 응답이 오기 전에는 누름이 끝나지 않을 수 있어 기다리지 않고 둔다
-    const firstPress = fireEvent.press(screen.getByTestId('friend-tag-submit'));
+    await act(async () => {
+      // 누름은 응답이 와야 끝나 기다리지 않는다
+      fireEvent.press(screen.getByTestId('friend-tag-submit')).catch(() => undefined);
+    });
     await waitFor(() => expect(screen.getByTestId('friend-tag-submit')).toBeDisabled());
 
     // When
     await fireEvent.press(screen.getByTestId('friend-tag-submit'));
-    pending.settle();
-    await firstPress;
+    await act(async () => {
+      pending.settle();
+    });
 
     // Then
     await waitFor(() => expect(router.back).toHaveBeenCalledTimes(1));

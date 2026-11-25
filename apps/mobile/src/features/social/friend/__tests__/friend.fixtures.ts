@@ -1,4 +1,5 @@
 import {
+  acceptFriendRequestResponseSchema,
   friendsListResponseSchema,
   receivedRequestsResponseSchema,
   reorderFriendResponseSchema,
@@ -75,6 +76,18 @@ export const createSentRequestsDto = defineFixture(sentRequestsResponseSchema, {
   ],
   totalCount: 1,
   hasMore: false,
+});
+
+export const createAcceptFriendRequestDto = defineFixture(acceptFriendRequestResponseSchema, {
+  message: '친구 요청을 수락했습니다.',
+  friend: {
+    id: 'clz7x5p8k0008qz0z8z8z8z8z',
+    userTag: 'IJKL9012',
+    name: '김철수',
+    profileImage: null,
+    followId: 'clz7x5p8k0012qz0z8z8z8z8z',
+    friendsSince: '2026-03-03T00:00:00.000Z',
+  },
 });
 
 export const createReorderFriendDto = defineFixture(reorderFriendResponseSchema, {

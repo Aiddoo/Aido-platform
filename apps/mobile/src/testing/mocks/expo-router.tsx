@@ -1,6 +1,6 @@
 import { Children, cloneElement, isValidElement, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 
 export const router = {
   push: jest.fn(),
@@ -205,8 +205,21 @@ function StackScreen({ options }: { options?: { title?: string; headerTitle?: ()
   return options?.headerTitle?.() ?? <Text>{options?.title}</Text>;
 }
 
-function StackSearchBar() {
-  return null;
+/** 네이티브 헤더 검색창 대신 같은 이벤트 모양(`nativeEvent.text`)을 내는 검색 입력칸을 그린다 */
+function StackSearchBar({
+  placeholder,
+  onChangeText,
+}: {
+  placeholder?: string;
+  onChangeText?: (event: { nativeEvent: { text: string } }) => void;
+}) {
+  return (
+    <TextInput
+      accessibilityRole="search"
+      placeholder={placeholder}
+      onChangeText={(text) => onChangeText?.({ nativeEvent: { text } })}
+    />
+  );
 }
 
 export const Stack = { Toolbar, Screen: StackScreen, SearchBar: StackSearchBar };

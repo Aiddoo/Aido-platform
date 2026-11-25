@@ -1,8 +1,11 @@
 import '@src/shared/i18n/init';
+import type { ErrorCodeType } from '@aido/api/errors';
 import { fail, ok } from '@src/core/errors/result';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import {
   createAnalyticsStub,
+  createApiError,
+  createRouteParamsFake,
   createErrorReporterStub,
   createHapticsGatewayStub,
   createHttpClientStub,
@@ -249,6 +252,92 @@ describe('초대 코드 입력 화면', () => {
     expect(router.replace).not.toHaveBeenCalled();
   });
 
+  it.each([
+    { code: 'INVITE_2102', reason: '링크가 바뀐 코드' },
+    { code: 'INVITE_2103', reason: '내 코드' },
+    { code: 'INVITE_2104', reason: '이미 다른 초대를 받은 계정' },
+  ] satisfies ReadonlyArray<{ code: ErrorCodeType; reason: string }>)(
+    '$reason($code)라고 거절되면 서버 문구를 코드 칸에 한 번 보이고 머문다',
+    async ({ code }) => {
+      // Given
+      const error = createApiError(code, { status: 400 });
+      const httpClient = createHttpClientStub();
+      httpClient.get.mockResolvedValue(fail(error));
+      const { haptics } = await renderInviteCodeEntry(httpClient);
+      await enterCode(CODE);
+
+      // When
+      await fireEvent.press(screen.getByRole('button', { name: '확인' }));
+
+      // Then
+      expect(await screen.findByTestId('invite-code-error')).toHaveTextContent(error.message);
+      expect(screen.getAllByText(error.message)).toHaveLength(1);
+      expect(haptics.notify).not.toHaveBeenCalledWith('error');
+      expect(router.replace).not.toHaveBeenCalled();
+    },
+  );
+
+  it('초대가 꺼져 있으면 코드 칸이 아니라 토스트로 한 번 알리고 코드를 둔다', async () => {
+    // Given
+    const error = createApiError('INVITE_2105', { status: 403 });
+    const httpClient = createHttpClientStub();
+    httpClient.get.mockResolvedValue(fail(error));
+    const { haptics } = await renderInviteCodeEntry(httpClient);
+    await enterCode(CODE);
+
+    // When
+    await fireEvent.press(screen.getByRole('button', { name: '확인' }));
+
+    // Then
+    expect(await screen.findAllByText(error.message)).toHaveLength(1);
+    expect(haptics.notify).toHaveBeenCalledWith('error');
+    expect(screen.queryByTestId('invite-code-error')).toBeNull();
+    expect(screen.getByLabelText('초대 코드')).toHaveDisplayValue(CODE);
+    expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  it('시스템 링크로 연 코드 입력은 착지할 때 한 번 남기고 확인해도 다시 남기지 않는다', async () => {
+    // Given
+    createRouteParamsFake({ source: 'app_scheme', openedAt: '1000' });
+    const httpClient = createHttpClientStub();
+    httpClient.get.mockResolvedValue(ok(createInvitePreviewDto()));
+    const { analytics } = await renderInviteCodeEntry(httpClient);
+    await enterCode(CODE);
+
+    // When
+    await fireEvent.press(screen.getByRole('button', { name: '확인' }));
+
+    // Then
+    await waitFor(() => expect(router.replace).toHaveBeenCalledTimes(1));
+    expect(
+      analytics.trackEvent.mock.calls.filter(([name]) => name === 'invite_link_opened'),
+    ).toEqual([['invite_link_opened', { source: 'app_scheme' }]]);
+  });
+
+  it('같은 프레임에 확인을 두 번 누르면 조회가 두 번 나간다', async () => {
+    // Given
+    const httpClient = createHttpClientStub();
+    const pending = createPendingResponse(ok(createInvitePreviewDto()));
+    httpClient.get.mockReturnValue(pending.response);
+    await renderInviteCodeEntry(httpClient);
+    await enterCode(CODE);
+    const submit = screen.getByRole('button', { name: '확인' });
+
+    // When
+    await act(async () => {
+      // 누름은 응답이 와야 끝나 기다리지 않고, 다시 그리기 전에 두 번 닿게 한 act 안에서 누른다
+      fireEvent.press(submit).catch(() => undefined);
+      fireEvent.press(submit).catch(() => undefined);
+    });
+    await act(async () => {
+      pending.settle();
+    });
+
+    // Then
+    await waitFor(() => expect(router.replace).toHaveBeenCalled());
+    expect(httpClient.get).toHaveBeenCalledTimes(2);
+  });
+
   it('덜 채운 코드는 완료 키를 눌러도 조회하지 않는다', async () => {
     // Given
     const httpClient = createHttpClientStub();
@@ -277,13 +366,16 @@ describe('초대 코드 입력 화면', () => {
     httpClient.get.mockReturnValue(pending.response);
     const { analytics } = await renderInviteCodeEntry(httpClient);
     await enterCode(CODE);
-    // 응답이 오기 전에는 누름이 끝나지 않을 수 있어 기다리지 않고 둔다
-    const pressing = fireEvent.press(screen.getByRole('button', { name: '확인' }));
+    await act(async () => {
+      // 누름은 응답이 와야 끝나 기다리지 않는다
+      fireEvent.press(screen.getByRole('button', { name: '확인' })).catch(() => undefined);
+    });
 
     // When
     isFocused = false;
-    pending.settle();
-    await pressing;
+    await act(async () => {
+      pending.settle();
+    });
 
     // Then
     await waitFor(() => expect(screen.getByRole('button', { name: '확인' })).toBeEnabled());
