@@ -20,8 +20,31 @@ pnpm --filter mobile store:screens reset all     # 끝나면 데모 계정 삭�
   `android`(Medium_Phone_API_36.1), `fold`(7.6" Fold-in 접힘·펼침), `flip`(6.7" 플립, 기본 목록 밖).
 - 결과: `~/Desktop/Aido-Screens-<앱 버전>/<기기>/<일반|프리미엄>/<라이트|다크>[/en]/NN_화면명.png`와 같은 폴더의
   `README.md`(날짜, 앱 버전, 빌드, 폴더별 장수, AI 생성 여부). `SCREENS_OUT`으로 바꿀 수 있다.
+- `--font-scales xsmall,medium,xlarge`: 앱 글자 크기 단계(`xsmall`·`small`·`medium`·`large`·`xlarge`)마다 같은 화면을 찍는다.
+  로그인 직후 `subflows/font-scale.yaml`이 `settings/font-size` 화면을 열어 단계 줄(`아주 작게|Extra small` 등 문구)을 눌러 고른다.
+  결과는 `<기기>/<계정>/<테마>[/en]/font-<단계>/`에 쌓이고 안 주면 위 폴더 구조 그대로다. 앱 데이터를 지우고 시작하는
+  01(로그아웃) 흐름은 글자 크기를 바꿀 수 없어 이 옵션에서는 뺀다(`--exclude-tags logged-out`).
+- `--out <폴더>`: 결과 루트(`SCREENS_OUT`보다 우선). `--dry-run`: 기기·Maestro·seed를 건드리지 않고 조합과 경로만 출력한다.
 - 한 flow만 직접 돌리려면 `capture.sh`가 내보내는 `MAESTRO_SHOT_*` 변수를 같은 이름으로 shell에 올린 뒤
   `maestro test --include-tags premium 30-ai.yaml`.
+
+## 리팩터링 전후 비교
+
+같은 조합을 전후로 두 번 찍어 같은 이름의 PNG를 나란히 본다(이미지 비교 도구는 쓰지 않는다).
+
+```sh
+# 리팩터링 전 빌드를 설치한 뒤
+pnpm --filter mobile store:screens:capture -- --skip-seed --devices iphone17pro,iphonese --themes light \
+  --font-scales xsmall,medium,xlarge --out ~/Desktop/Aido-Screens-before --build "<전 빌드>"
+# 리팩터링 후 빌드로 바꿔 같은 인자로
+pnpm --filter mobile store:screens:capture -- ... --out ~/Desktop/Aido-Screens-after
+```
+
+1. 두 실행의 기기·계정·테마·글자 크기 인자와 데모 데이터(`seed` 한 번 뒤 `--skip-seed`)를 같게 한다. 날짜 때문에 같은 날 이어서 돌린다.
+2. `before/`·`after/`의 같은 상대 경로(`<기기>/<계정>/<테마>/font-<단계>/NN_화면명.png`)를 Finder 빠른 보기나 미리보기에서 나란히 열어
+   글자가 잘리거나 겹치는지 본다. 가장 큰 `xlarge`, 가장 작은 `xsmall`을 먼저 본다.
+3. 폴더에 같은 이름의 파일이 이미 있으면 덮어쓰므로 전후는 다른 `--out`을 쓴다. 실행에 실패한 흐름은 장수가 줄어 결과 `README.md`
+   표에서 드러난다.
 
 ## 준비
 
@@ -108,6 +131,8 @@ seed 언어당 약 5~8분(가입 API 분당 5회 제한 + AI job 대기 최대 5
 `invitees-see-all`, `invitees-tab-waiting`, `mypage-invite-card`, `whats-new-open`, `friends-empty-invite`,
 `report-this-week-record`(무료 리포트 목록), `report-summary`·`report-daily-chart`·`report-hour-chart`(리포트 상세), `suggestions-status`(제안 상태 카드).
 30-ai는 이 id와 개발 빌드 오류 창 제목을 `../scripts/selectors.js`에서 읽고, 차트 worklet 오류를 `subflows/assert-no-dev-error.yaml`로 잡는다.
+
+글자 크기 단계 줄(`font-size` 화면의 `RadioGroup` 항목)도 testID가 없어 문구로 누른다(`subflows/font-scale.yaml`).
 
 testID가 없어 문구(ko|en 정규식)로 누르는 곳. 추가하면 언어와 무관해진다(앱 코드는 이 작업에서 고치지 않았다):
 

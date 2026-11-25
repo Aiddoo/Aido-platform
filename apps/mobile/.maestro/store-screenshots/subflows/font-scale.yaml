@@ -1,0 +1,20 @@
+appId: com.aido.mobile
+name: 설정 화면에서 앱 글자 크기를 고른다
+# 사용: runFlow { file: subflows/font-scale.yaml }. MAESTRO_SHOT_FONT_LABEL(ko|en 줄 이름)이 비어 있으면 아무것도 하지 않는다
+env:
+  FONT_LABEL: ${MAESTRO_SHOT_FONT_LABEL || ''}
+---
+- runFlow:
+    when:
+      true: ${FONT_LABEL !== ''}
+    commands:
+      - runFlow:
+          file: open.yaml
+          env:
+            ROUTE: settings/font-size
+      - extendedWaitUntil:
+          visible: ${FONT_LABEL}
+          timeout: 10000
+      - tapOn: ${FONT_LABEL}
+      - waitForAnimationToEnd:
+          timeout: 3000
