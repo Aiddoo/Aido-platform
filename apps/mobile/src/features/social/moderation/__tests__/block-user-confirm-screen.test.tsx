@@ -15,7 +15,7 @@ import {
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
-import { router } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 
 import BlockUserConfirmRoute from '../../../../../app/(app)/users/[userId]/block';
 import { BLOCKED_USER_ID, createBlockUserResponseDto } from './moderation.fixtures';
@@ -56,6 +56,34 @@ describe('BlockUserConfirmRoute', () => {
     expect(await screen.findByText(`${USER_NAME}님을 차단했어요`)).toBeOnTheScreen();
     expect(haptics.notify).toHaveBeenCalledWith('success');
     expect(countEvents(analytics, 'user_blocked')).toBe(1);
+  });
+
+  it('차단하는 사이 확인 창을 떠났으면 차단이 끝나도 아래 화면을 닫지 않는다', async () => {
+    // Given
+    let isFocused = true;
+    jest.mocked(useNavigation).mockImplementation(() => ({
+      isFocused: () => isFocused,
+      getParent: () => undefined,
+      addListener: () => () => undefined,
+    }));
+    const { httpClient } = await renderBlockUserConfirm();
+    const pending = createPendingResponse(ok(createBlockUserResponseDto()));
+    httpClient.post.mockReturnValue(pending.response);
+    await act(async () => {
+      // 누름은 차단이 끝나야 풀려 기다리지 않는다
+      fireEvent.press(screen.getByTestId('block-user-confirm')).catch(() => undefined);
+    });
+
+    // When
+    isFocused = false;
+    await act(async () => {
+      pending.settle();
+    });
+
+    // Then
+    expect(await screen.findByText(`${USER_NAME}님을 차단했어요`)).toBeOnTheScreen();
+    expect(httpClient.post).toHaveBeenCalledTimes(1);
+    expect(router.back).not.toHaveBeenCalled();
   });
 
   it('처음 열 때 서버에서 아무것도 받지 않는다', async () => {
@@ -120,7 +148,7 @@ describe('BlockUserConfirmRoute', () => {
     expect(httpClient.post).toHaveBeenCalledTimes(1);
   });
 
-  it('같은 프레임에 차단을 두 번 누르면 요청이 두 번 나간다', async () => {
+  it('같은 프레임에 차단을 두 번 누르면 요청이 한 번 나간다', async () => {
     // Given
     const { httpClient } = await renderBlockUserConfirm();
     const pending = createPendingResponse(ok(createBlockUserResponseDto()));
@@ -139,6 +167,6 @@ describe('BlockUserConfirmRoute', () => {
 
     // Then
     await waitFor(() => expect(router.back).toHaveBeenCalledTimes(1));
-    expect(httpClient.post).toHaveBeenCalledTimes(2);
+    expect(httpClient.post).toHaveBeenCalledTimes(1);
   });
 });

@@ -278,7 +278,7 @@ describe('초대 카드 화면', () => {
     expect(httpClient.post).toHaveBeenCalledTimes(1);
   });
 
-  it('같은 프레임에 수락을 두 번 누르면 수락 요청이 두 번 나간다', async () => {
+  it('같은 프레임에 수락을 두 번 누르면 수락 요청이 한 번 나간다', async () => {
     // Given
     const pending = createPendingResponse(ok(createRedeemResponseDto()));
     const { httpClient } = await renderCard({ redeem: () => pending.response });
@@ -296,7 +296,7 @@ describe('초대 카드 화면', () => {
 
     // Then
     await waitFor(() => expect(router.dismissTo).toHaveBeenCalled());
-    expect(httpClient.post).toHaveBeenCalledTimes(2);
+    expect(httpClient.post).toHaveBeenCalledTimes(1);
   });
 
   it('시스템이 연 링크는 카드가 다시 그려져도 초대 링크 열림을 한 번만 남긴다', async () => {

@@ -1,7 +1,6 @@
 import { useHaptics, useTodoNudgeApi } from '@src/bootstrap/providers/di-context';
 import { emitNotificationsChanged } from '@src/core/events/notifications-changed';
 import { isLimitedFeatureError } from '@src/features/billing/subscription/domains/entitlement.error';
-import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { invalidateEntitlements } from '@src/features/billing/subscription/queries/entitlement-cache';
 import { invalidateTodoDetails } from '@src/features/planning/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
@@ -109,8 +108,8 @@ export function useSendTodoNudgeMutationOptions() {
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
-  const gate = useEntitlementGate('NUDGE', { surface: 'todo_nudge' });
 
+  // 한도에 막힌 실패는 부른 시트가 한도 안내를 띄운다
   return mutationOptions({
     mutationKey: TODO_NUDGE_MUTATION_KEYS.sendTodoNudge(),
     networkMode: 'always',
@@ -121,11 +120,6 @@ export function useSendTodoNudgeMutationOptions() {
       invalidateEntitlements(queryClient);
       toast.success(t('todo:toast.nudgeSent'));
       trackEvent('nudge_sent');
-    },
-    onError: (error) => {
-      if (gate.promptIfBlockedError(error)) {
-        haptics.notify('error');
-      }
     },
     // 할 일 상세의 콕 버튼은 서버가 계산한 permissions.canNudge를 따른다
     onSettled: (_data, _error, { todoId }) => invalidateTodoDetails(queryClient, { todoId }),

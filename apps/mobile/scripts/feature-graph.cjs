@@ -273,8 +273,6 @@ const LOCAL_ONLY_PENDING_FEATURES = new Set([
   'app-config/whats-new',
   'device/coachmark',
   'insights/report',
-  'social/invite',
-  'social/moderation',
   'voice',
 ]);
 

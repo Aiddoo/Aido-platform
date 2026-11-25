@@ -1,6 +1,6 @@
 import { ErrorCode } from '@aido/api/errors';
 import { isCodedError } from '@src/core/errors/result';
-import { isApiError } from '@src/shared/errors';
+import { getUserFacingMessage, isApiError } from '@src/shared/errors';
 import { match } from 'ts-pattern';
 
 export const INVITE_ERROR_CODE = {
@@ -23,6 +23,18 @@ export function isInviteCodeFieldError(error: unknown) {
     isCodedError(error, INVITE_ERROR_CODE.INVALID_CODE) ||
     (isApiError(error) && INVITE_CODE_FIELD_ERROR_CODES.some((code) => error.hasCode(code)))
   );
+}
+
+/** 서버가 거절한 코드의 칸 오류 type. 형식 오류(Zod 이슈)와 문구 출처가 달라 서버 문구를 싣는다 */
+export const INVITE_CODE_SERVER_ERROR_TYPE = 'server';
+
+/** 코드 칸(inviteCode)에 보일 서버 거절. 연결·서버 장애처럼 칸에 속하지 않으면 null이다 */
+export function findInviteCodeFieldError(error: unknown) {
+  if (!isInviteCodeFieldError(error)) {
+    return null;
+  }
+
+  return { type: INVITE_CODE_SERVER_ERROR_TYPE, message: getUserFacingMessage(error) ?? undefined };
 }
 
 /** 이유를 아는 수락 거절(아래 표). 연결·서버 장애·모르는 코드는 빼고 이유를 분석에 남긴다 */

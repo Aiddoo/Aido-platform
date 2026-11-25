@@ -19,14 +19,12 @@ import { InvitedFriendRow } from './invited-friend-row';
 interface InvitedFriendListProps {
   /** 이 상태의 친구만 보여 준다. 없으면 전체다 */
   status?: RedemptionStatus;
-  ListEmptyComponent?: ReactElement;
+  /** 보기마다 안내가 달라 화면이 고른 `InvitedFriendList.Empty`를 넘긴다 */
+  ListEmptyComponent: ReactElement;
 }
 
 /** 내가 초대한 친구 전체. 늘어날 수 있어 친구 목록과 같은 무한 스크롤 FlashList를 쓴다 */
-export function InvitedFriendList({
-  status,
-  ListEmptyComponent = <InvitedFriendList.Empty />,
-}: InvitedFriendListProps) {
+export function InvitedFriendList({ status, ListEmptyComponent }: InvitedFriendListProps) {
   const queryClient = useQueryClient();
   const {
     data: invitedFriends,

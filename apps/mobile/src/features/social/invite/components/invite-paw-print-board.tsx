@@ -25,6 +25,7 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatCount } from '@src/shared/utils/number-format';
+import { tv } from '@src/shared/utils/tv';
 import { useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { useRouter } from 'expo-router';
@@ -57,11 +58,6 @@ import {
   type PawPrintBoard,
   type PawPrintCell,
 } from '../utils/invite-paw-print-board.geometry';
-import {
-  fishBoneVariants,
-  pawPrintIconVariants,
-  pawPrintVariants,
-} from './invite-paw-print-board.variants';
 
 const NEW_PAW_PRINT_STAGGER_MS = 160;
 /** 기다리는 발자국이 흔들리기까지 쉬는 시간과 한 번 꺾는 데 걸리는 시간 */
@@ -69,6 +65,48 @@ const WAITING_WIGGLE_REST_MS = 1700;
 const WAITING_WIGGLE_STEP_MS = 190;
 /** 기다리는 발자국이 차례로 꺾이는 각도 */
 const WAITING_WIGGLE_DEGREES = [-7, 6, -3] as const;
+
+const pawPrintVariants = tv({
+  base: 'size-full items-center justify-center rounded-full',
+  variants: {
+    state: {
+      stamped: '-rotate-6 bg-main',
+      waiting: 'border-[1.5px] border-dashed border-main bg-main/10',
+      empty: 'border border-gray-3 bg-white dark:border-gray-2 dark:bg-gray-1',
+      milestone: 'border border-fish bg-fish/10',
+    },
+    isNext: {
+      true: '',
+    },
+  },
+  compoundVariants: [
+    { state: 'empty', isNext: true, className: 'border-[1.5px] border-main/50 bg-highlight' },
+  ],
+});
+
+const pawPrintIconVariants = tv({
+  variants: {
+    state: {
+      stamped: 'text-white dark:text-gray-1',
+      waiting: 'text-main opacity-40',
+      empty: 'text-gray-4 dark:text-gray-3',
+      milestone: 'text-fish',
+    },
+    isNext: {
+      true: '',
+    },
+  },
+  compoundVariants: [{ state: 'empty', isNext: true, className: 'text-main/50' }],
+});
+
+const fishBoneVariants = tv({
+  variants: {
+    isFilled: {
+      true: 'text-main',
+      false: 'text-gray-4 dark:text-gray-3',
+    },
+  },
+});
 
 /**
  * 고양이 발자국 판. 친구가 사용을 시작할 때마다 발자국이 하나씩 찍힌다.

@@ -1,6 +1,8 @@
 import { NUDGE_LIMITS } from '@aido/api/vocabulary';
 import aidoBannerImage from '@assets/images/aido_banner.webp';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useHaptics } from '@src/bootstrap/providers/di-context';
+import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -16,14 +18,15 @@ import {
   Image,
 } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
+import { noop } from 'es-toolkit';
 import type { ComponentProps } from 'react';
-import { Controller, useForm, useFormState } from 'react-hook-form';
+import { Controller, FormState, useForm } from 'react-hook-form';
 
 import {
   useSendRemindNudgeMutationOptions,
   useSendTodoNudgeMutationOptions,
 } from '../queries/todo-nudge.mutations';
-import { type NudgeFormValues, nudgeFormSchema } from '../schemas/nudge-form.schema';
+import { nudgeFormSchema } from '../schemas/nudge-form.schema';
 import { remindNudgeParamsSchema } from '../schemas/nudge-params.schema';
 
 export interface NudgeReceiver {
@@ -38,13 +41,16 @@ export interface NudgeTargetTodo {
 
 type SheetProps = Omit<ComponentProps<typeof KeyboardBottomSheet>, 'children'>;
 
+interface NudgeBottomSheetProps extends SheetProps {
+  receiver: NudgeReceiver;
+  todo: NudgeTargetTodo;
+}
+
 /** 특정 할 일에 응원 메시지를 보내는 시트 */
-export function NudgeBottomSheet({
-  receiver,
-  todo,
-  ...sheetProps
-}: SheetProps & { receiver: NudgeReceiver; todo: NudgeTargetTodo }) {
+export function NudgeBottomSheet({ receiver, todo, ...sheetProps }: NudgeBottomSheetProps) {
   const { t } = useTranslation('todo');
+  const haptics = useHaptics();
+  const gate = useEntitlementGate('NUDGE', { surface: 'todo_nudge' });
   const sendNudge = useMutation(useSendTodoNudgeMutationOptions());
 
   return (
@@ -56,15 +62,22 @@ export function NudgeBottomSheet({
       onSend={(message) =>
         sendNudge.mutateAsync({ receiverId: receiver.id, todoId: todo.id, message })
       }
+      onSendFailed={(error) => {
+        // 한도에 막힌 실패는 전역 토스트 대신 한도 안내를 띄운다. 그 밖의 안내는 mutation의 meta.errorFeedback이 한다
+        if (gate.promptIfBlockedError(error)) {
+          haptics.notify('error');
+        }
+      }}
     />
   );
 }
 
+interface RemindNudgeBottomSheetProps extends SheetProps {
+  receiver: NudgeReceiver;
+}
+
 /** 오늘 할 일이 없는 친구에게 독촉 메시지를 보내는 시트 */
-export function RemindNudgeBottomSheet({
-  receiver,
-  ...sheetProps
-}: SheetProps & { receiver: NudgeReceiver }) {
+export function RemindNudgeBottomSheet({ receiver, ...sheetProps }: RemindNudgeBottomSheetProps) {
   const { t } = useTranslation('todo');
   const sendRemindNudge = useMutation(useSendRemindNudgeMutationOptions());
 
@@ -75,6 +88,8 @@ export function RemindNudgeBottomSheet({
       caption={t('nudge.remindTitle')}
       placeholder={t('nudge.remindPlaceholder')}
       onSend={(message) => sendRemindNudge.mutateAsync({ receiverId: receiver.id, message })}
+      // 쿨다운 거절을 포함한 실패 안내는 mutation의 meta.errorFeedback이 한 번 한다
+      onSendFailed={noop}
     />
   );
 }
@@ -98,6 +113,8 @@ interface NudgeMessageSheetProps extends SheetProps {
   caption: string;
   placeholder: string;
   onSend: (message: string | undefined) => Promise<unknown>;
+  /** 보내지 못했을 때. 시트와 적은 글은 그대로 남는다 */
+  onSendFailed: (error: unknown) => void;
 }
 
 function NudgeMessageSheet({
@@ -105,6 +122,7 @@ function NudgeMessageSheet({
   caption,
   placeholder,
   onSend,
+  onSendFailed,
   onOpenChange,
   ...sheetProps
 }: NudgeMessageSheetProps) {
@@ -114,42 +132,39 @@ function NudgeMessageSheet({
     defaultValues: { message: '' },
     mode: 'onChange',
   });
-  const { isSubmitting, isValid } = useFormState({ control: form.control });
 
-  const handleOpenChange = (open: boolean) => {
-    if (!open) {
-      form.reset();
-    }
-    onOpenChange(open);
-  };
-
-  const handleSubmitNudge = async ({ message }: NudgeFormValues) => {
-    try {
-      await onSend(message);
-      handleOpenChange(false);
-    } catch {
-      // 실패 안내와 보고는 mutation의 meta.errorFeedback이 맡는다
-    }
-  };
-
+  // 시트는 닫히면 인스턴스가 사라져 적은 글을 따로 비우지 않는다
+  const saveNudge = form.handleSubmit(async ({ message }) => {
+    await onSend(message);
+    onOpenChange(false);
+  });
   // isSubmitting은 다음 렌더에야 켜져 같은 프레임의 두 번째 탭이 콕을 한 번 더 보낸다
-  const submitNudge = useSingleTap(() => form.handleSubmit(handleSubmitNudge)());
+  const handleSavePress = useSingleTap(() => {
+    saveNudge().catch(onSendFailed);
+  });
 
   return (
     <KeyboardBottomSheet
       {...sheetProps}
-      onOpenChange={handleOpenChange}
+      onOpenChange={onOpenChange}
       footer={
-        <Button
-          color="primary"
-          size="large"
-          display="block"
-          onPress={submitNudge}
-          isDisabled={!isValid}
-          isLoading={isSubmitting}
-        >
-          {t('nudge.send')}
-        </Button>
+        <FormState
+          control={form.control}
+          render={({ isSubmitting, isSubmitSuccessful, isValid }) => (
+            <Button
+              color="primary"
+              size="large"
+              display="block"
+              onPress={handleSavePress}
+              testID="nudge-send"
+              isDisabled={!isValid}
+              // 보내면 시트가 내려가는 동안에도 적은 글이 남는다. 그동안 다시 보내지 않는다
+              isLoading={isSubmitting || isSubmitSuccessful}
+            >
+              {t('nudge.send')}
+            </Button>
+          )}
+        />
       }
     >
       <VStack gap={16}>

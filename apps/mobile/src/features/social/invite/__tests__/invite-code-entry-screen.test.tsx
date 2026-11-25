@@ -314,7 +314,7 @@ describe('초대 코드 입력 화면', () => {
     ).toEqual([['invite_link_opened', { source: 'app_scheme' }]]);
   });
 
-  it('같은 프레임에 확인을 두 번 누르면 조회가 두 번 나간다', async () => {
+  it('같은 프레임에 확인을 두 번 누르면 조회가 한 번 나간다', async () => {
     // Given
     const httpClient = createHttpClientStub();
     const pending = createPendingResponse(ok(createInvitePreviewDto()));
@@ -335,7 +335,7 @@ describe('초대 코드 입력 화면', () => {
 
     // Then
     await waitFor(() => expect(router.replace).toHaveBeenCalled());
-    expect(httpClient.get).toHaveBeenCalledTimes(2);
+    expect(httpClient.get).toHaveBeenCalledTimes(1);
   });
 
   it('덜 채운 코드는 완료 키를 눌러도 조회하지 않는다', async () => {

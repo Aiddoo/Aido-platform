@@ -190,7 +190,7 @@ describe('NudgeDetailRoute', () => {
     expect(httpClient.put).toHaveBeenCalledTimes(1);
   });
 
-  it('같은 프레임에 답장을 두 번 누르면 요청이 두 번 나간다', async () => {
+  it('같은 프레임에 답장을 두 번 누르면 요청이 한 번 나간다', async () => {
     // Given
     const { httpClient } = await renderNudgeDetail({
       get: { [INTERACTION_PATH]: ok(createReceivedNudgeDto()) },
@@ -211,7 +211,7 @@ describe('NudgeDetailRoute', () => {
 
     // Then
     expect(await screen.findByText('친구에게 답장을 전했어요')).toBeOnTheScreen();
-    expect(httpClient.put).toHaveBeenCalledTimes(2);
+    expect(httpClient.put).toHaveBeenCalledTimes(1);
   });
 
   it('완료한 할 일에 고마움을 전할 친구가 있으면 수를 알리고 누르면 감사 시트를 연다', async () => {

@@ -105,8 +105,9 @@ InviteCardActions.Redeem = function Redeem({ inviteCode }: { inviteCode: InviteC
   const inviterName = preview.inviter.name ?? t('card.unnamedInviter');
   const isRewardExpected = UserPolicy.isInviteRewardExpected(me, now);
 
-  // 이동은 호출부 콜백에 둔다. 재조회를 기다리는 사이 화면을 떠났으면 콜백이 불리지 않아 끌려가지 않는다
-  const handleRedeem = () => {
+  // 이동은 호출부 콜백에 둔다. 재조회를 기다리는 사이 화면을 떠났으면 콜백이 불리지 않아 끌려가지 않는다.
+  // isPending은 다음 렌더에야 켜져 같은 프레임의 두 번째 탭이 수락을 한 번 더 보낸다
+  const handleRedeem = useSingleTap(() => {
     redeem.mutate(inviteCode, {
       onSuccess: (result) => {
         const friendId = result.inviter.userId;
@@ -138,7 +139,7 @@ InviteCardActions.Redeem = function Redeem({ inviteCode }: { inviteCode: InviteC
         }
       },
     });
-  };
+  });
 
   return (
     <StyledSafeAreaView edges={['left', 'right', 'bottom']}>

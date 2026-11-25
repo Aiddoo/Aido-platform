@@ -11,6 +11,7 @@ import { Skeleton } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import { ScrollView, type ScrollViewProps } from 'react-native';
 
+import { formatUserHashtag } from '../utils/user-tag.view-model';
 import { UserAvatar } from './user-avatar';
 
 export const USER_LIST_CONTENT_STYLE = { flexGrow: 1 };
@@ -27,15 +28,20 @@ export function UserList({ children, ...props }: ScrollViewProps) {
 interface UserListItemProps extends Omit<ListRowProps, 'left' | 'contents'> {
   displayName: string;
   subtitle?: string;
+  /** 이름 아래 줄을 사용자 태그로 채운다. 해시태그 모양은 이 행이 맞춘다 */
+  userTag?: string;
   profileImage: string | null;
 }
 
 UserList.Item = function Item({
   displayName,
-  subtitle,
+  subtitle: subtitleText,
+  userTag,
   profileImage,
   ...props
 }: UserListItemProps) {
+  const subtitle = userTag == null ? subtitleText : formatUserHashtag(userTag);
+
   return (
     <ListRow
       left={<UserAvatar alt={displayName} className="size-10" profileImage={profileImage} />}

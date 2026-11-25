@@ -1,6 +1,13 @@
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useGetTodoDetailsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
 import { useTranslation } from '@src/shared/i18n';
+import {
+  BottomSheet,
+  QueryErrorActions,
+  type QueryErrorFallbackProps,
+  Result,
+  useSheetRoute,
+} from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 
 import { createTodoReportTarget } from '../domains/user-report.model';
@@ -19,3 +26,23 @@ export function TodoReportBottomSheet() {
     />
   );
 }
+
+/** 주인을 읽지 못하면 시트 안에 다시 시도·문의를 두고, 문의는 시트를 닫은 뒤 연다 */
+TodoReportBottomSheet.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
+  const { t } = useTranslation('common');
+  const sheet = useSheetRoute('/feed');
+
+  return (
+    <BottomSheet isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
+      <Result
+        title={t('errorBoundary.title')}
+        button={
+          <QueryErrorActions
+            onRetry={reset}
+            onInquiry={(href) => sheet.close({ type: 'dismiss-to', href })}
+          />
+        }
+      />
+    </BottomSheet>
+  );
+};

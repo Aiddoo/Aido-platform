@@ -100,7 +100,7 @@ describe('TodoThanksSheetRoute', () => {
     expect(httpClient.put).not.toHaveBeenCalled();
   });
 
-  it('같은 프레임에 보내기를 두 번 누르면 요청이 두 번 나간다', async () => {
+  it('같은 프레임에 보내기를 두 번 누르면 요청이 한 번 나간다', async () => {
     // Given
     const { httpClient } = await renderThanksSheet(ok(createPreviewWithRecipients(1)));
     const pending = createPendingResponse(ok({ sentCount: 1 }));
@@ -119,7 +119,7 @@ describe('TodoThanksSheetRoute', () => {
 
     // Then
     expect(await screen.findByText('친구에게 고마운 마음을 전했어요')).toBeOnTheScreen();
-    expect(httpClient.put).toHaveBeenCalledTimes(2);
+    expect(httpClient.put).toHaveBeenCalledTimes(1);
   });
 
   it('사라진 콕이면 서버 안내를 보이고 닫기로 시트를 닫는다', async () => {

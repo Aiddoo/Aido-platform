@@ -8,7 +8,6 @@ import {
   H4,
   HStack,
   IconButton,
-  Text,
   TextSkeleton,
   VStack,
   SettingsListGroup,
@@ -24,8 +23,8 @@ import {
   useMyPageMenuNavigate,
 } from '../hooks/use-my-page-menu-navigation';
 import { useGetMeQueryOptions } from '../queries/user.queries';
-import { formatUserHashtag } from '../utils/user-tag.view-model';
 import { UserAvatar } from './user-avatar';
+import { UserHashtag } from './user-hashtag';
 
 interface ProfileRowProps {
   /** 구독 기능을 모르도록 route가 조립해 넘긴다. 같은 경계 안이라 함께 로딩하고 함께 실패한다 */
@@ -70,9 +69,7 @@ export function ProfileRow({ tierChip }: ProfileRowProps) {
           </HStack>
 
           <HStack align="center" gap={2}>
-            <Text size="b4" shade={6}>
-              {formatUserHashtag(user.userTag)}
-            </Text>
+            <UserHashtag userTag={user.userTag} size="b4" shade={6} />
             <IconButton
               accessibilityLabel={t('profile.copyTag')}
               icon={

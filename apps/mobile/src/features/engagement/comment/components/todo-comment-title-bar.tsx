@@ -1,7 +1,7 @@
+import { TodoDetailsPolicy } from '@src/features/planning/todo/domains/todo-details.model';
 import { useFeedDateKey } from '@src/features/planning/todo/hooks/use-feed-params';
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useGetTodoDetailsQueryOptions } from '@src/features/planning/todo/queries/todo.queries';
-import { useTodoModerationActions } from '@src/features/social/moderation/hooks/use-todo-moderation-actions';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -20,6 +20,7 @@ import {
   MenuContent,
 } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
+import { noop } from 'es-toolkit';
 import { Stack, useRouter } from 'expo-router';
 import { Menu } from 'heroui-native';
 import { useState } from 'react';
@@ -173,4 +174,30 @@ function TodoModerationMenu() {
       </MenuContent>
     </Menu>
   );
+}
+
+/**
+ * 친구 할 일 상세의 신고·차단. 내 할 일이거나 상세를 아직 못 불러왔으면 쓸 수 없다.
+ * 할 일 상세 캐시를 함께 읽어 주인 이름을 차단 확인 문구에 넣는다.
+ */
+function useTodoModerationActions({ todoId }: { todoId: number }) {
+  const { t } = useTranslation('moderation');
+  const router = useRouter();
+  const push = useSingleTap(router.push);
+  const { data: detail } = useQuery(useGetTodoDetailsQueryOptions({ todoId }));
+
+  if (detail == null || !TodoDetailsPolicy.canReport(detail)) {
+    return { isAvailable: false, report: noop, block: noop } as const;
+  }
+
+  const owner = { userId: detail.owner.id, displayName: detail.owner.name ?? t('fallbackName') };
+  return {
+    isAvailable: true,
+    report: () => push({ pathname: '/todo/[todoId]/report', params: { todoId } }),
+    block: () =>
+      push({
+        pathname: '/users/[userId]/block',
+        params: { userId: owner.userId, name: owner.displayName },
+      }),
+  } as const;
 }

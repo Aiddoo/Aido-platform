@@ -3,7 +3,6 @@ import {
   USER_LIST_CONTENT_STYLE,
   UserList,
 } from '@src/features/identity/user/components/user-list';
-import { formatUserHashtag } from '@src/features/identity/user/utils/user-tag.view-model';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -25,6 +24,7 @@ import { ScrollView, type ScrollViewProps } from 'react-native';
 import { match } from 'ts-pattern';
 
 import { type SearchedUser, SearchedUserPolicy } from '../domains/searched-user.model';
+import { useFriendLimitPrompt } from '../hooks/use-friend-limit-prompt';
 import { useFriendSearchTracking } from '../hooks/use-friend-search-tracking';
 import {
   useCancelRequestMutationOptions,
@@ -106,7 +106,7 @@ FriendSearchList.Item = function Item({
   return (
     <UserList.Item
       displayName={user.name ?? t('fallbackName')}
-      subtitle={formatUserHashtag(user.userTag)}
+      userTag={user.userTag}
       profileImage={user.profileImage}
       right={
         <FriendSearchList.Action
@@ -129,7 +129,12 @@ FriendSearchList.Action = function Action({
 }) {
   const { t } = useTranslation('friend');
   const fontScaledSize = useFontScaledSize();
-  const sendRequest = useMutation(useSendRequestByTagMutationOptions({ onFriendLimitInvite }));
+  const promptFriendLimit = useFriendLimitPrompt({ onFriendLimitInvite });
+  // 한도 안내는 mutation 단계에 걸어, 검색어를 바꿔 이 행이 내려간 뒤에 실패해도 뜬다
+  const sendRequest = useMutation({
+    ...useSendRequestByTagMutationOptions(),
+    onError: promptFriendLimit,
+  });
   const cancelRequest = useMutation(useCancelRequestMutationOptions());
   const isProcessing = sendRequest.isPending || cancelRequest.isPending;
 

@@ -21,7 +21,6 @@ const KNOWN_BAILOUTS = [
   'src/shared/providers/local-date-provider.tsx',
   // 매개변수 기본값에 둔 멤버 접근·JSX·함수
   'src/features/device/widget/components/widgets.android.tsx',
-  'src/features/social/invite/components/invited-friend-list.tsx',
   'src/features/voice/hooks/use-start-voice-note.ts',
   'src/shared/ui/bottom-sheet/use-sheet-route.ts',
   'src/shared/ui/inline-alert/inline-alert.tsx',

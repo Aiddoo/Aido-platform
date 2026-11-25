@@ -14,7 +14,7 @@ import {
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
-import { router } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 
 import AddFriendScreen from '../../../../../app/(app)/(tabs)/(me,memos,todos)/friends/add';
 import { createFriendApiError, createSendFriendRequestDto } from './friend.fixtures';
@@ -162,7 +162,69 @@ describe('친구 추가 화면', () => {
     expect(router.back).not.toHaveBeenCalled();
   });
 
-  it('같은 프레임에 요청 버튼을 두 번 누르면 요청이 두 번 나간다', async () => {
+  it('보내는 사이 화면을 떠났으면 요청이 끝나도 이전 화면을 한 번 더 닫지 않는다', async () => {
+    // Given
+    let isFocused = true;
+    jest.mocked(useNavigation).mockImplementation(() => ({
+      isFocused: () => isFocused,
+      getParent: () => undefined,
+      addListener: () => () => undefined,
+    }));
+    const setup = createAddFriendDi();
+    const pending = createPendingResponse(ok(createSendFriendRequestDto()));
+    setup.httpClient.post.mockReturnValue(pending.response);
+    await renderAddFriend(setup);
+    await typeTag(USER_TAG);
+    await waitFor(() => expect(screen.getByTestId('friend-tag-submit')).toBeEnabled());
+    await act(async () => {
+      // 누름은 응답이 와야 끝나 기다리지 않는다
+      fireEvent.press(screen.getByTestId('friend-tag-submit')).catch(() => undefined);
+    });
+
+    // When
+    isFocused = false;
+    await act(async () => {
+      pending.settle();
+    });
+
+    // Then
+    expect(await screen.findAllByText('친구 요청을 보냈어요')).not.toHaveLength(0);
+    expect(setup.httpClient.post).toHaveBeenCalledTimes(1);
+    expect(router.back).not.toHaveBeenCalled();
+  });
+
+  it('떠난 사이 요청이 끝나면 폼을 비워 같은 태그를 다시 보내지 않는다', async () => {
+    // Given
+    let isFocused = true;
+    jest.mocked(useNavigation).mockImplementation(() => ({
+      isFocused: () => isFocused,
+      getParent: () => undefined,
+      addListener: () => () => undefined,
+    }));
+    const setup = createAddFriendDi();
+    const pending = createPendingResponse(ok(createSendFriendRequestDto()));
+    setup.httpClient.post.mockReturnValue(pending.response);
+    await renderAddFriend(setup);
+    await typeTag(USER_TAG);
+    await waitFor(() => expect(screen.getByTestId('friend-tag-submit')).toBeEnabled());
+    await act(async () => {
+      // 누름은 응답이 와야 끝나 기다리지 않는다
+      fireEvent.press(screen.getByTestId('friend-tag-submit')).catch(() => undefined);
+    });
+    isFocused = false;
+
+    // When
+    await act(async () => {
+      pending.settle();
+    });
+
+    // Then
+    await waitFor(() => expect(screen.getByTestId('friend-tag-input')).toHaveDisplayValue(''));
+    expect(screen.getByTestId('friend-tag-submit')).toBeDisabled();
+    expect(setup.httpClient.post).toHaveBeenCalledTimes(1);
+  });
+
+  it('같은 프레임에 요청 버튼을 두 번 누르면 요청이 한 번 나간다', async () => {
     // Given
     const setup = createAddFriendDi();
     const pending = createPendingResponse(ok(createSendFriendRequestDto()));
@@ -184,7 +246,7 @@ describe('친구 추가 화면', () => {
 
     // Then
     await waitFor(() => expect(router.back).toHaveBeenCalled());
-    expect(setup.httpClient.post).toHaveBeenCalledTimes(2);
+    expect(setup.httpClient.post).toHaveBeenCalledTimes(1);
   });
 
   it('친구 한도에 걸렸는데 초대를 쓸 수 없으면 초대 길 없이 한도만 알리고 화면에 머문다', async () => {

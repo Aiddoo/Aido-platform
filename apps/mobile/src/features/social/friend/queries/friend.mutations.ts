@@ -1,13 +1,7 @@
-import { INVITE_QUALIFICATION } from '@aido/api/vocabulary';
-import { useFriendApi, useHaptics } from '@src/bootstrap/providers/di-context';
+import { useFriendApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { isLimitedFeatureError } from '@src/features/billing/subscription/domains/entitlement.error';
-import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
-import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
-import {
-  getCachedEntitlements,
-  invalidateEntitlements,
-} from '@src/features/billing/subscription/queries/entitlement-cache';
+import { invalidateEntitlements } from '@src/features/billing/subscription/queries/entitlement-cache';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { t } from '@src/shared/i18n';
@@ -15,7 +9,6 @@ import { isLastMutation } from '@src/shared/query/is-last-mutation';
 import { useAppToast } from '@src/shared/ui';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { findFriendLimit, getFriendLimit } from '../domains/friend.error';
 import type { ReorderFriendInput } from '../schemas/friend-request.schema';
 import {
   cancelFriendList,
@@ -176,16 +169,12 @@ export function useReorderFriendMutationOptions() {
   });
 }
 
-/** `onFriendLimitInvite`는 친구 한도 안내에 덧붙일 "초대로 자리 늘리기" 길이다. 초대를 쓸 수 없으면 넘기지 않는다 */
-export function useSendRequestByTagMutationOptions({
-  onFriendLimitInvite,
-}: { onFriendLimitInvite?: () => void } = {}) {
-  const haptics = useHaptics();
+/** 한도(FOLLOW_0909)에 막힌 실패는 부른 쪽이 `useFriendLimitPrompt`로 한도 안내를 띄운다 */
+export function useSendRequestByTagMutationOptions() {
   const friendApi = useFriendApi();
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
-  const gate = useEntitlementGate('FRIEND', { surface: 'friend_request' });
 
   return mutationOptions({
     mutationKey: FRIEND_MUTATION_KEYS.sendRequestByTag(),
@@ -215,32 +204,6 @@ export function useSendRequestByTagMutationOptions({
         invalidateReceivedFriendRequests(queryClient);
         invalidateFriendList(queryClient);
         invalidateEntitlements(queryClient);
-      }
-    },
-    onError: (error) => {
-      if (isLimitedFeatureError(error)) {
-        haptics.notify('error');
-        const snapshot = getCachedEntitlements(queryClient);
-        const knownLimit =
-          snapshot == null ? null : EntitlementPolicy.findLimit(snapshot, 'FRIEND');
-        gate.promptIfBlockedError(
-          error,
-          onFriendLimitInvite == null
-            ? {}
-            : {
-                description: t('invite:entry.friendLimitDescription', {
-                  limit: getFriendLimit({
-                    serverLimit: findFriendLimit(error),
-                    knownLimit,
-                  }),
-                  activeDays: INVITE_QUALIFICATION.MIN_ACTIVE_DAYS,
-                }),
-                alternativeAction: {
-                  label: t('invite:entry.growFriendLimit'),
-                  onPress: onFriendLimitInvite,
-                },
-              },
-        );
       }
     },
     meta: {

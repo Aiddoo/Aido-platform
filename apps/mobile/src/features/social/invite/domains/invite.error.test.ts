@@ -4,6 +4,8 @@ import { ServerError } from '@src/shared/errors/infra-error';
 import { createApiError } from '@src/testing/core';
 
 import {
+  findInviteCodeFieldError,
+  INVITE_CODE_SERVER_ERROR_TYPE,
   INVITE_ERROR_CODE,
   isInviteCodeFieldError,
   isTerminalRedeemFailure,
@@ -69,6 +71,43 @@ describe('isInviteCodeFieldError', () => {
 
     // Then
     expect(result).toBe(expected);
+  });
+});
+
+describe('findInviteCodeFieldError', () => {
+  it.each([
+    ErrorCode.INVITE_2101,
+    ErrorCode.INVITE_2102,
+    ErrorCode.INVITE_2103,
+    ErrorCode.INVITE_2104,
+  ])('코드 칸에 붙는 거절(%s)은 서버 문구를 실은 칸 오류다', (code) => {
+    // When
+    const result = findInviteCodeFieldError(createApiError(code, { message: '서버 안내' }));
+
+    // Then
+    expect(result).toEqual({ type: INVITE_CODE_SERVER_ERROR_TYPE, message: '서버 안내' });
+  });
+
+  it.each([
+    ['초대 꺼짐(2105)', createApiError(ErrorCode.INVITE_2105, { message: 'x' })],
+    ['친구 한도(2106)', createApiError(ErrorCode.INVITE_2106, { message: 'x', status: 409 })],
+    ['서버 장애', new ServerError(503)],
+  ])('%s는 칸 오류가 아니다', (_case, error) => {
+    // When
+    const result = findInviteCodeFieldError(error);
+
+    // Then
+    expect(result).toBeNull();
+  });
+
+  it('서버 문구가 비었으면 문구 없이 칸 오류만 돌려줘 칸이 기본 안내를 고르게 한다', () => {
+    // When
+    const result = findInviteCodeFieldError(
+      createApiError(ErrorCode.INVITE_2101, { message: '  ' }),
+    );
+
+    // Then
+    expect(result).toEqual({ type: INVITE_CODE_SERVER_ERROR_TYPE, message: undefined });
   });
 });
 

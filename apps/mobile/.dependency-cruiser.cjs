@@ -167,16 +167,7 @@ const modelAndFolderRules = [
     severity: 'error',
     from: {
       path: featureFolders(['queries']),
-      pathNot: [
-        TEST,
-        pendingFeatures([
-          'assistant/suggestion',
-          'planning/todo',
-          'social/friend',
-          'social/nudge',
-          'voice',
-        ]),
-      ],
+      pathNot: [TEST, pendingFeatures(['assistant/suggestion', 'planning/todo', 'voice'])],
     },
     to: {
       path: featureFolders(['hooks', 'utils', 'services']),
@@ -317,16 +308,7 @@ module.exports = {
       severity: 'error',
       from: {
         path: FEATURE,
-        pathNot: [
-          TEST,
-          pendingFeatures([
-            'app-config/whats-new',
-            'notes/memo',
-            'social/friend',
-            'social/invite',
-            'voice',
-          ]),
-        ],
+        pathNot: [TEST, pendingFeatures(['app-config/whats-new', 'notes/memo', 'voice'])],
       },
       to: { path: '^src/features/.+/utils/', pathNot: ['^src/features/$1/', ANALYTICS_UTILS] },
     },

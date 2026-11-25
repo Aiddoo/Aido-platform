@@ -1358,20 +1358,14 @@
       }
     },
     {
-      // 시트를 닫거나 시트 props를 이어야 하는 시트 fallback은 인라인 함수로 둔다
+      // 시트를 닫거나 시트 props를 이어야 하는 시트 fallback과, 시트 슬롯 안에서 시트를 닫아야 하는 줄(할 일 감사 요약)은 인라인 함수로 둔다
       "files": [
         "src/shared/ui/route-bottom-sheet/route-bottom-sheet.tsx",
         "src/features/planning/todo-import/hooks/use-open-category-target-sheet.tsx",
         "src/features/social/invite/components/invite-welcome-bottom-sheet.tsx",
-        "src/features/social/nudge/components/nudge-thanks-bottom-sheet.tsx"
+        "src/features/social/nudge/components/nudge-thanks-bottom-sheet.tsx",
+        "src/features/social/nudge/components/todo-thanks-summary.tsx"
       ],
-      "rules": {
-        "aido/error-boundary-fallback": "off"
-      }
-    },
-    {
-      // 래칫
-      "files": ["src/features/social/nudge/**"],
       "rules": {
         "aido/error-boundary-fallback": "off"
       }
@@ -1389,8 +1383,7 @@
         "src/bootstrap/**",
         "src/features/assistant/suggestion/**",
         "src/features/device/activation/**",
-        "src/features/insights/achievement/**",
-        "src/features/social/nudge/**"
+        "src/features/insights/achievement/**"
       ],
       "rules": {
         "aido/no-inline-query-options": "off"

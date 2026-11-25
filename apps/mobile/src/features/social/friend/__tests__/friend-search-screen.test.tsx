@@ -7,6 +7,7 @@ import {
   createAnalyticsStub,
   createApiError,
   createHttpClientStub,
+  createPendingResponse,
   createTestDi,
   respondByPath,
 } from '@src/testing/core';
@@ -192,5 +193,39 @@ describe('친구 찾기 화면', () => {
     expect(
       analytics.trackEvent.mock.calls.filter(([name]) => name === 'invite_entry_tapped'),
     ).toEqual([['invite_entry_tapped', { entry: 'friend_limit_dialog' }]]);
+  });
+
+  it('요청을 보낸 뒤 그 행이 사라져도 친구 한도에 걸리면 한도를 안내한다', async () => {
+    // Given
+    const httpClient = createSearchServer({ isInviteAvailable: true });
+    const pending = createPendingResponse(
+      fail(
+        createApiError(ErrorCode.FOLLOW_0909, {
+          message: '친구 한도',
+          details: { current: 7, limit: 7 },
+        }),
+      ),
+    );
+    httpClient.post.mockReturnValue(pending.response);
+    await renderSearch(httpClient);
+    await typeQuery('홍길동');
+    await waitForDebounce();
+    const [addButton] = await screen.findAllByRole('button', { name: '추가' });
+    if (addButton == null) {
+      throw new Error('추가 버튼이 없습니다');
+    }
+    await fireEvent.press(addButton);
+    // 검색어를 지워 결과 행이 내려간다
+    await typeQuery('');
+    expect(screen.queryByRole('button', { name: '추가' })).toBeNull();
+
+    // When
+    await act(async () => {
+      pending.settle();
+    });
+
+    // Then
+    expect(await screen.findByText('친구 초대하고 1명 더 추가하기')).toBeOnTheScreen();
+    expect(httpClient.post).toHaveBeenCalledTimes(1);
   });
 });

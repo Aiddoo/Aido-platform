@@ -12,6 +12,7 @@ import {
   createTestDi,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 
@@ -159,5 +160,27 @@ describe('RemindNudgeSheetRoute', () => {
       undefined,
     );
     expect(screen.queryByPlaceholderText(PLACEHOLDER)).toBeNull();
+  });
+
+  describe('시트가 내려가는 동안', () => {
+    setupFakeTimersPerTest({ advanceTimers: true });
+
+    it('보낸 뒤 시트가 내려가는 동안 다시 눌러도 요청은 한 번이다', async () => {
+      // Given
+      const { httpClient } = await renderRemindNudgeSheet();
+      httpClient.post.mockResolvedValue(ok(createSendRemindNudgeResponseDto()));
+      await typeMessage('같이 하자');
+      await fireEvent.press(screen.getByRole('button', { name: SEND }));
+      await waitFor(() => expect(router.back).toHaveBeenCalledTimes(1));
+      // 연타 가드(600ms)를 넘긴 뒤의 누름이다
+      await act(() => jest.advanceTimersByTimeAsync(700));
+
+      // When
+      await fireEvent.press(screen.getByTestId('nudge-send'));
+      await act(() => jest.advanceTimersByTimeAsync(0));
+
+      // Then
+      expect(httpClient.post).toHaveBeenCalledTimes(1);
+    });
   });
 });

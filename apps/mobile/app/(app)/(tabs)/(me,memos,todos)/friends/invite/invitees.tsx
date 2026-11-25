@@ -38,7 +38,9 @@ export default function InvitedFriendsScreen() {
           <QueryErrorBoundary resetKeys={[view]} fallback={InvitedFriendList.Error}>
             <Suspense fallback={<InvitedFriendList.Loading />}>
               {match(view)
-                .with('all', () => <InvitedFriendList />)
+                .with('all', () => (
+                  <InvitedFriendList ListEmptyComponent={<InvitedFriendList.Empty />} />
+                ))
                 .with('waiting', () => (
                   <InvitedFriendList
                     status={REDEMPTION_STATUS.JOINED}

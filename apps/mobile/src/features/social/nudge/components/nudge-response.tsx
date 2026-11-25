@@ -80,7 +80,10 @@ function ReplyActions({ selectedKind }: { selectedKind: NudgeReplyKind | null })
   const { t } = useTranslation('todo');
   const reply = useMutation(useReplyToNudgeMutationOptions());
 
-  const sendReply = (replyKind: NudgeReplyKind) => reply.mutate({ nudgeId, input: { replyKind } });
+  // isPending은 다음 렌더에야 켜져 같은 프레임의 두 번째 탭이 답장을 한 번 더 보낸다
+  const sendReply = useSingleTap((replyKind: NudgeReplyKind) =>
+    reply.mutate({ nudgeId, input: { replyKind } }),
+  );
 
   return (
     <VStack gap={12}>

@@ -1,6 +1,6 @@
 import { INVITE_QUALIFICATION, REDEMPTION_REJECTION_REASON } from '@aido/api/vocabulary';
 import { UserAvatar } from '@src/features/identity/user/components/user-avatar';
-import { formatUserHashtag } from '@src/features/identity/user/utils/user-tag.view-model';
+import { UserHashtag } from '@src/features/identity/user/components/user-hashtag';
 import { useGetFriendInfiniteQueryOptions } from '@src/features/social/friend/queries/friend.queries';
 import { NudgePawButton } from '@src/features/social/nudge/components/nudge-paw-button';
 import { useGetRemindNudgeCooldownQueryOptions } from '@src/features/social/nudge/queries/todo-nudge.queries';
@@ -20,6 +20,7 @@ import {
   Text,
   VStack,
 } from '@src/shared/ui';
+import { tv } from '@src/shared/utils/tv';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Skeleton } from 'heroui-native';
@@ -27,7 +28,16 @@ import { match, P } from 'ts-pattern';
 
 import { InvitedFriendPolicy } from '../domains/invited-friend.model';
 import type { InvitedFriend } from '../domains/invited-friend.model';
-import { invitedFriendChipVariants } from './invited-friend-row.variants';
+
+const invitedFriendChipVariants = tv({
+  base: 'min-h-7 flex-row items-center gap-1 rounded-full',
+  variants: {
+    state: {
+      stamped: 'bg-main/10 pr-2.5 pl-1',
+      waiting: 'border-[1.5px] border-dashed border-main px-2',
+    },
+  },
+});
 
 interface InvitedFriendRowProps extends Omit<ListRowProps, 'left' | 'contents' | 'right'> {
   friend: InvitedFriend;
@@ -50,9 +60,12 @@ export function InvitedFriendRow({ friend, ...props }: InvitedFriendRowProps) {
             <Text size="b2" weight="semibold" numberOfLines={1} className="shrink">
               {displayName}
             </Text>
-            <Text size="b4" shade={6} className="tracking-[0.3px] tabular-nums">
-              {formatUserHashtag(friend.userTag)}
-            </Text>
+            <UserHashtag
+              userTag={friend.userTag}
+              size="b4"
+              shade={6}
+              className="tracking-[0.3px] tabular-nums"
+            />
           </HStack>
 
           <Text

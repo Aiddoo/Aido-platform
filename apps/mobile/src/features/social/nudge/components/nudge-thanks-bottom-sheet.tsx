@@ -3,6 +3,7 @@ import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
 import { getUserFacingMessage } from '@src/shared/errors';
 import { useAppWindow } from '@src/shared/hooks/use-app-window';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { selectPageItems } from '@src/shared/query/cursor-page';
 import {
@@ -92,6 +93,10 @@ NudgeThanksBottomSheet.Recipients = function Recipients({ onClose }: { onClose: 
     useGetNudgeThanksPreviewInfiniteQueryOptions({ todoId }),
   );
   const sendThanks = useMutation(useSendNudgeThanksMutationOptions());
+  // isPending은 다음 렌더에야 켜져 같은 프레임의 두 번째 탭이 고마움을 한 번 더 보낸다
+  const sendThanksThrough = useSingleTap((throughNudgeId: number) =>
+    sendThanks.mutate({ todoId, input: { throughNudgeId } }),
+  );
   const preview = thanksPreviewQuery.data.pages[0];
   const recipients = selectPageItems(thanksPreviewQuery.data);
 
@@ -153,7 +158,7 @@ NudgeThanksBottomSheet.Recipients = function Recipients({ onClose }: { onClose: 
         isLoading={sendThanks.isPending}
         onPress={() => {
           if (preview.throughNudgeId != null) {
-            sendThanks.mutate({ todoId, input: { throughNudgeId: preview.throughNudgeId } });
+            sendThanksThrough(preview.throughNudgeId);
           }
         }}
       >
