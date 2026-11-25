@@ -20,7 +20,6 @@ import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
   LineTabTrigger,
-  nativeIcon,
   QueryErrorBoundary,
   StyledSafeAreaView,
   ViewTabs,
@@ -30,10 +29,10 @@ import { Tabs } from 'heroui-native';
 import { Suspense } from 'react';
 import { match } from 'ts-pattern';
 
-const SEARCH_ICON = nativeIcon({ ios: 'magnifyingglass', android: Search });
+const SEARCH_ICON = process.env.EXPO_OS === 'ios' ? 'magnifyingglass' : Search;
 /** iOS는 글자 버튼(편집/완료), Android 툴바는 글자를 그리지 않아 아이콘을 쓴다. */
-const EDIT_ICON = nativeIcon({ ios: undefined, android: Edit });
-const DONE_ICON = nativeIcon({ ios: undefined, android: Check });
+const EDIT_ICON = process.env.EXPO_OS === 'ios' ? undefined : Edit;
+const DONE_ICON = process.env.EXPO_OS === 'ios' ? undefined : Check;
 
 export default function FriendsScreen() {
   const router = useRouter();

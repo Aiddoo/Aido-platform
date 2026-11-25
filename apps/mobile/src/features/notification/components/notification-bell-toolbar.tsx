@@ -2,7 +2,6 @@ import NotificationsUnreadFill from '@assets/icons/material/notifications_unread
 import Notifications from '@expo/material-symbols/notifications.xml';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { nativeIcon } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import { Stack, useRouter } from 'expo-router';
 import { match } from 'ts-pattern';
@@ -12,8 +11,9 @@ import { NotificationBadgePolicy } from '../domains/notification-badge.model';
 import { useGetUnreadCountQueryOptions } from '../queries/notification.queries';
 
 // 읽지 않은 알림은 종을 채워 main으로 칠한다. 채운 기호에 점 자리가 뚫려 있어 같은 색이어도 점이 보인다
-const BELL_ICON = nativeIcon({ ios: 'bell', android: Notifications });
-const UNREAD_BELL_ICON = nativeIcon({ ios: 'bell.badge.fill', android: NotificationsUnreadFill });
+const BELL_ICON = process.env.EXPO_OS === 'ios' ? 'bell' : Notifications;
+const UNREAD_BELL_ICON =
+  process.env.EXPO_OS === 'ios' ? 'bell.badge.fill' : NotificationsUnreadFill;
 
 /** Stack 화면의 오른쪽 네이티브 헤더 버튼. 화면 컴포넌트 안에서 렌더해 그 화면 헤더에 붙인다. */
 export function NotificationBellToolbar() {

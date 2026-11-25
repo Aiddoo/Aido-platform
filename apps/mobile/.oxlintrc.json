@@ -512,7 +512,7 @@
           {
             "object": "Platform",
             "property": "OS",
-            "message": "Platform.OS 대신 process.env.EXPO_OS를 씁니다. 번들에서 안 쓰는 플랫폼 코드가 빠집니다."
+            "message": "Platform.OS는 운영 빌드에서만 글자로 바뀌어, 개발 빌드에서도 바뀌는 process.env.EXPO_OS 하나로 씁니다."
           },
           {
             "object": "router",
@@ -576,7 +576,7 @@
           {
             "object": "Platform",
             "property": "OS",
-            "message": "Platform.OS 대신 process.env.EXPO_OS를 씁니다. 번들에서 안 쓰는 플랫폼 코드가 빠집니다."
+            "message": "Platform.OS는 운영 빌드에서만 글자로 바뀌어, 개발 빌드에서도 바뀌는 process.env.EXPO_OS 하나로 씁니다."
           },
           {
             "object": "router",
@@ -649,7 +649,7 @@
           {
             "object": "Platform",
             "property": "OS",
-            "message": "Platform.OS 대신 process.env.EXPO_OS를 씁니다. 번들에서 안 쓰는 플랫폼 코드가 빠집니다."
+            "message": "Platform.OS는 운영 빌드에서만 글자로 바뀌어, 개발 빌드에서도 바뀌는 process.env.EXPO_OS 하나로 씁니다."
           },
           {
             "object": "router",
@@ -708,7 +708,7 @@
           {
             "object": "Platform",
             "property": "OS",
-            "message": "Platform.OS 대신 process.env.EXPO_OS를 씁니다. 번들에서 안 쓰는 플랫폼 코드가 빠집니다."
+            "message": "Platform.OS는 운영 빌드에서만 글자로 바뀌어, 개발 빌드에서도 바뀌는 process.env.EXPO_OS 하나로 씁니다."
           },
           {
             "object": "Alert",
@@ -767,7 +767,7 @@
           {
             "object": "Platform",
             "property": "OS",
-            "message": "Platform.OS 대신 process.env.EXPO_OS를 씁니다. 번들에서 안 쓰는 플랫폼 코드가 빠집니다."
+            "message": "Platform.OS는 운영 빌드에서만 글자로 바뀌어, 개발 빌드에서도 바뀌는 process.env.EXPO_OS 하나로 씁니다."
           },
           {
             "object": "Alert",
@@ -831,7 +831,7 @@
           {
             "object": "Platform",
             "property": "OS",
-            "message": "Platform.OS 대신 process.env.EXPO_OS를 씁니다. 번들에서 안 쓰는 플랫폼 코드가 빠집니다."
+            "message": "Platform.OS는 운영 빌드에서만 글자로 바뀌어, 개발 빌드에서도 바뀌는 process.env.EXPO_OS 하나로 씁니다."
           },
           {
             "object": "Alert",

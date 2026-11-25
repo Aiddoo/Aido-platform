@@ -9,7 +9,6 @@ import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useView } from '@src/shared/hooks/use-view';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  nativeIcon,
   QueryErrorBoundary,
   ReadableContent,
   SegmentTabTrigger,
@@ -22,7 +21,7 @@ import { Tabs } from 'heroui-native';
 import { Suspense } from 'react';
 import { match } from 'ts-pattern';
 
-const ADD_ICON = nativeIcon({ ios: 'plus', android: Add });
+const ADD_ICON = process.env.EXPO_OS === 'ios' ? 'plus' : Add;
 
 export default function TodoCategorySettingsScreen() {
   const { t } = useTranslation('settings');

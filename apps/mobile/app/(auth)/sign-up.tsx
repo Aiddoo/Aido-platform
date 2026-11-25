@@ -7,11 +7,11 @@ import { useTrack } from '@src/shared/analytics';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, nativeIcon, ReadableContent } from '@src/shared/ui';
+import { Box, ReadableContent } from '@src/shared/ui';
 import { useRouter, Stack } from 'expo-router';
 
 /** iOS는 글자 버튼, Android 툴바는 글자를 그리지 않아 아이콘을 쓴다 */
-const INVITE_CODE_ICON = nativeIcon({ ios: undefined, android: ConfirmationNumber });
+const INVITE_CODE_ICON = process.env.EXPO_OS === 'ios' ? undefined : ConfirmationNumber;
 
 const SIGN_UP_STEP_TITLE_KEYS = {
   name: 'auth:signUp.title',

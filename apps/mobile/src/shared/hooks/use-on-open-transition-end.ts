@@ -1,15 +1,8 @@
-import { useNavigation } from 'expo-router';
+import { type NativeStackNavigationProp, useNavigation } from 'expo-router';
+import type { ParamListBase } from 'expo-router/react-navigation';
 import { useEffect, useEffectEvent } from 'react';
 
-/** 내비게이션 타입이 네이티브 스택의 transitionEnd를 드러내지 않아 쓰는 이벤트만 적는다 */
-interface TransitionNavigation {
-  addListener(
-    event: 'transitionEnd',
-    callback: (event: { data: { closing: boolean } }) => void,
-  ): () => void;
-  getParent(): TransitionNavigation | undefined;
-  isFocused(): boolean;
-}
+type StackNavigation = NativeStackNavigationProp<ParamListBase>;
 
 interface UseOnOpenTransitionEndOptions {
   /** 묶음 Stack의 첫 화면은 묶음이 열리는 전환이 부모 Stack에서 끝난다 */
@@ -24,11 +17,11 @@ export function useOnOpenTransitionEnd(
   onOpened: () => void,
   { isStackRoot = false }: UseOnOpenTransitionEndOptions = {},
 ): void {
-  const navigation = useNavigation<TransitionNavigation>();
+  const navigation = useNavigation<StackNavigation>();
   const notifyOpened = useEffectEvent(onOpened);
 
   useEffect(() => {
-    const target = isStackRoot ? navigation.getParent() : navigation;
+    const target = isStackRoot ? navigation.getParent<StackNavigation | undefined>() : navigation;
     return target?.addListener('transitionEnd', (event) => {
       if (!event.data.closing && navigation.isFocused()) {
         notifyOpened();
