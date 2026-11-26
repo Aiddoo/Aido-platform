@@ -19,8 +19,7 @@
     "eslint/no-void": "error",
     "react/rules-of-hooks": "error",
     "react/exhaustive-deps": "error",
-    // 루트 AGENTS 공통 규칙(중첩 삼항 금지, `#` 비공개만, 생성자 파라미터 프로퍼티 금지)을 앱에도 건다
-    "eslint/no-nested-ternary": "error",
+    // 루트 AGENTS 공통 규칙(`#` 비공개만, 생성자 파라미터 프로퍼티 금지)을 앱에도 건다. 중첩 삼항 금지는 루트가 건다
     "aido/no-member-accessibility": "error",
     "typescript/parameter-properties": ["error", { "prefer": "class-property" }]
   },

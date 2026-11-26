@@ -19,6 +19,7 @@
       }
     ],
     "eslint/curly": ["error", "all"],
+    "eslint/no-nested-ternary": "error",
     "eslint/no-unused-vars": "error",
     "eslint/prefer-const": "error",
     "import/no-cycle": "error",
