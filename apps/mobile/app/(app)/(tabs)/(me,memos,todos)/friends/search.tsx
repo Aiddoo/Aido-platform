@@ -13,27 +13,27 @@ import { match } from 'ts-pattern';
 const SEARCH_DEBOUNCE_MS = 300;
 
 // iPad(iPadOS 26.6에서 확인)·Mac은 UISearchController가 뜰 때 UIKit이 막힌 화면 단위 포커스 API를 불러 앱이 죽는다(Apple 포럼 841090). 네이티브 빌드 없이 피하려 JS 입력칸을 쓴다
-const SEARCH_INPUT = IS_IPAD || IS_IOS_APP_ON_MAC ? 'field' : 'header-bar';
+const SEARCH_INPUT_KIND = IS_IPAD || IS_IOS_APP_ON_MAC ? 'field' : 'header-bar';
 
 export default function SearchFriendScreen() {
   const { t } = useTranslation('friend');
   const [query, setQuery] = useState('');
   const [settledQuery, setSettledQuery] = useState('');
-  const [settle] = useState(() => debounce(setSettledQuery, SEARCH_DEBOUNCE_MS));
-  const onFriendLimitInvite = useFriendLimitInvite();
+  const [setSettledQueryDebounced] = useState(() => debounce(setSettledQuery, SEARCH_DEBOUNCE_MS));
+  const openFriendLimitInvite = useFriendLimitInvite();
 
-  useEffect(() => () => settle.cancel(), [settle]);
+  useEffect(() => () => setSettledQueryDebounced.cancel(), [setSettledQueryDebounced]);
 
   const changeQuery = (text: string) => {
     setQuery(text);
-    settle(text);
+    setSettledQueryDebounced(text);
   };
 
   return (
     <>
       <Stack.Screen options={{ title: t('search.title') }} />
 
-      {match(SEARCH_INPUT)
+      {match(SEARCH_INPUT_KIND)
         .with('header-bar', () => <FriendSearchBar onChangeText={changeQuery} />)
         .with('field', () => (
           <>
@@ -54,7 +54,7 @@ export default function SearchFriendScreen() {
           query={query}
           settledQuery={settledQuery}
           renderAction={(user) => (
-            <FriendSearchList.Action user={user} onFriendLimitInvite={onFriendLimitInvite} />
+            <FriendSearchList.Action user={user} onFriendLimitInvite={openFriendLimitInvite} />
           )}
         />
       </QueryErrorBoundary>

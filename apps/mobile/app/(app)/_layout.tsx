@@ -170,7 +170,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   }
 
   // 실패한 Suspense 조회는 리셋 없이 다시 마운트하면 재요청 없이 같은 오류를 다시 던진다
-  const handleRetry = () => {
+  const handleRetryPress = () => {
     resetQueryErrors();
     retry();
   };
@@ -182,7 +182,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
         description={t('appError.description')}
         button={
           <HStack gap={8}>
-            <Result.Button isDisabled={logout.isPending} onPress={handleRetry}>
+            <Result.Button isDisabled={logout.isPending} onPress={handleRetryPress}>
               {t('actions.retry')}
             </Result.Button>
             <Result.Button
