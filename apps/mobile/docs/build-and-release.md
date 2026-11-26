@@ -1,6 +1,6 @@
 # 빌드와 배포
 
-EAS 빌드·로컬 빌드, 환경 변수, 스토어 제출, 배포 순서를 다룬다. 명령은 `apps/mobile`에서 실행한다. 새 기능 소개(Steps·캠페인·이미지)는 [whats-new-release.md](./whats-new-release.md), 릴리스별 변경은 [releases/](./releases/)에 있다.
+EAS 빌드·로컬 빌드, 환경 변수, 스토어 제출, 배포 순서를 다룬다. 명령은 `apps/mobile`에서 실행한다. 새 기능 소개(Steps·캠페인·이미지)는 [whats-new-release.md](./whats-new-release.md), 릴리스별 변경은 [docs/releases/](../../../docs/releases/)에 있다.
 
 ## 배포 순서
 

@@ -1,6 +1,6 @@
 """README의 아키텍처 그림 원본. 구성이 바뀔 때만 고쳐서 다시 만든다(그림은 바이너리라 만들 때마다 저장소가 커진다).
 
-    uvx --with diagrams python docs/architecture/render.py   # 필요: brew install graphviz librsvg webp
+    uvx --with diagrams python docs/diagrams/render.py   # 필요: brew install graphviz librsvg webp
 
 화살표는 부르는 쪽에서 불리는 쪽으로 긋는다. 계정 번호·IP·자원 ID·서비스 규모 숫자는 넣지 않는다.
 로고 원본은 icons/의 SVG다(Simple Icons CC0, Google은 devicon, OpenAI·Gemini는 svgl).

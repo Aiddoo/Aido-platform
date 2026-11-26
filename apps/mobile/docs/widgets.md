@@ -123,7 +123,7 @@ pnpm --filter @aido/mobile exec jest --runInBand src/features/device/widget src/
 pnpm lint && pnpm format:check && pnpm typecheck
 ```
 
-실제 native QA는 [릴리스 문서](./releases/)의 최신 증거를 기준으로 한다. 종료 process + retained recents task는 force-stop/fresh task와 따로 확인하고 실제 launcher tap 뒤 Activity·목적 화면·뒤로가기를 본다. 세 크기·라이트/다크·긴 문구·빈 상태·계정 전환·오프라인·생성 반복을 확인한다. OEM launcher, 실물 기기 push, 실제 결제 영수증을 에뮬레이터 검증으로 대체해 통과했다고 주장하지 않는다. 관측은 `ErrorReporter`의 `feature: 'widget'` 이벤트와 `category: 'widget'` breadcrumb다.
+실제 native QA는 [릴리스 문서](../../../docs/releases/)의 최신 증거를 기준으로 한다. 종료 process + retained recents task는 force-stop/fresh task와 따로 확인하고 실제 launcher tap 뒤 Activity·목적 화면·뒤로가기를 본다. 세 크기·라이트/다크·긴 문구·빈 상태·계정 전환·오프라인·생성 반복을 확인한다. OEM launcher, 실물 기기 push, 실제 결제 영수증을 에뮬레이터 검증으로 대체해 통과했다고 주장하지 않는다. 관측은 `ErrorReporter`의 `feature: 'widget'` 이벤트와 `category: 'widget'` breadcrumb다.
 
 ## 공식 근거
 

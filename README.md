@@ -2,7 +2,7 @@
 
 말하거나 적으면 AI가 할 일로 정리하고, 친구와 함께 끝까지 해내도록 돕는 AI 기반 소셜 할 일 관리 앱(아이두)이다. 이 저장소는 NestJS API 서버, Expo 모바일 앱, 둘이 함께 쓰는 REST 계약(`@aido/api`)을 하나의 pnpm + Turborepo 모노레포로 관리한다.
 
-![Aido 서비스 구성](docs/architecture/system.webp)
+![Aido 서비스 구성](docs/diagrams/system.webp)
 
 그림은 세 줄로 읽는다. 화살표는 부르는 쪽에서 불리는 쪽으로 가고, 점선은 기기로 가는 푸시다.
 
@@ -236,7 +236,7 @@ flowchart LR
 
 ### 운영 인프라
 
-![운영 인프라와 보안 경계](docs/architecture/infra.webp)
+![운영 인프라와 보안 경계](docs/diagrams/infra.webp)
 
 서버 한 대와 DB 하나다. 밖에서 닿는 문은 Nginx뿐이고 나머지는 서버 안이나 보안 그룹 안에서만 열린다.
 
@@ -254,7 +254,7 @@ flowchart LR
 
 ### 무중단 배포 (Blue-Green)
 
-<img src="docs/architecture/blue-green.webp" alt="Blue-Green 배포" width="440" />
+<img src="docs/diagrams/blue-green.webp" alt="Blue-Green 배포" width="440" />
 
 API 컨테이너 자리가 둘이다(blue `8080`, green `8081`). 새 버전을 쉬는 슬롯에 띄워 준비된 것을 확인한 뒤에 Nginx가 가리키는 슬롯을 바꾼다.
 
@@ -284,7 +284,7 @@ sequenceDiagram
 
 ### 늘릴 때
 
-<img src="docs/architecture/scale-up.webp" alt="늘린 뒤의 구성" width="560" />
+<img src="docs/diagrams/scale-up.webp" alt="늘린 뒤의 구성" width="560" />
 
 지금은 API와 worker가 한 프로세스이고 캐시는 프로세스 메모리다. 늘릴 때 바꾸는 것은 설정과 인프라이고 업무 코드는 그대로다.
 
