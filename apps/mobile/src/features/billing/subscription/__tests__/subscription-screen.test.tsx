@@ -21,6 +21,7 @@ import {
   createRouteParamsFake,
   createTestDi,
   createTestQueryClient,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { onlineManager } from '@tanstack/react-query';
@@ -242,15 +243,10 @@ describe('SubscriptionScreen', () => {
 
     // Then
     expect(await screen.findByRole('button', { name: '월간으로 시작하기' })).toBeTruthy();
-    const selectedEvents = analytics.trackEvent.mock.calls.filter(
-      ([eventName]) => eventName === 'paywall_plan_selected',
-    );
-    expect(selectedEvents).toEqual([
-      ['paywall_plan_selected', { plan_type: 'monthly', is_trial: false }],
+    expect(getTrackedEvents(analytics, 'paywall_plan_selected')).toEqual([
+      { plan_type: 'monthly', is_trial: false },
     ]);
-    expect(
-      analytics.trackEvent.mock.calls.filter(([eventName]) => eventName === 'paywall_viewed'),
-    ).toHaveLength(1);
+    expect(getTrackedEvents(analytics, 'paywall_viewed')).toHaveLength(1);
   });
 
   it('링크가 월간 요금제를 미리 골랐으면 월간이 골라진 채로 열린다', async () => {

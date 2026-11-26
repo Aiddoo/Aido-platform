@@ -7,6 +7,7 @@ import {
   createAppLoggerStub,
   createSpeechRecognizerStub,
   createTestDi,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
@@ -1178,9 +1179,6 @@ describe('useVoiceCaptureSession', () => {
 
     setupFakeTimersPerTest();
 
-    const countEvents = (analytics: ReturnType<typeof createAnalyticsStub>, name: string) =>
-      analytics.trackEvent.mock.calls.filter(([event]) => event === name).length;
-
     const flushPromises = () => act(async () => jest.advanceTimersByTimeAsync(0));
 
     const beginListening = async (options?: Parameters<typeof renderSession>[0]) => {
@@ -1222,7 +1220,7 @@ describe('useVoiceCaptureSession', () => {
 
         // Then
         expect(onCaptured).toHaveBeenCalledTimes(1);
-        expect(countEvents(analytics, 'voice_capture_finished')).toBe(1);
+        expect(getTrackedEvents(analytics, 'voice_capture_finished')).toHaveLength(1);
       });
 
       it('침묵으로 곧 끝내려던 참에 일시정지하면 알아서 끝내지 않는다', async () => {
@@ -1256,7 +1254,7 @@ describe('useVoiceCaptureSession', () => {
         expect(screen.getByTestId('status')).toHaveTextContent('idle');
         expect(speechRecognizer.abort).toHaveBeenCalledTimes(1);
         expect(onCaptured).not.toHaveBeenCalled();
-        expect(countEvents(analytics, 'voice_capture_finished')).toBe(1);
+        expect(getTrackedEvents(analytics, 'voice_capture_finished')).toHaveLength(1);
         expect(analytics.trackEvent).toHaveBeenCalledWith('voice_capture_finished', {
           mode: 'quick',
           outcome: 'cancelled',
@@ -1289,7 +1287,7 @@ describe('useVoiceCaptureSession', () => {
 
         // Then
         expect(speechRecognizer.abort).not.toHaveBeenCalled();
-        expect(countEvents(analytics, 'voice_capture_finished')).toBe(0);
+        expect(getTrackedEvents(analytics, 'voice_capture_finished')).toHaveLength(0);
       });
 
       it('끝내는 중에 취소하면 남은 끝내기 타이머가 글자를 넘기거나 결과를 또 남기지 않는다', async () => {
@@ -1304,7 +1302,7 @@ describe('useVoiceCaptureSession', () => {
 
         // Then
         expect(onCaptured).not.toHaveBeenCalled();
-        expect(countEvents(analytics, 'voice_capture_finished')).toBe(1);
+        expect(getTrackedEvents(analytics, 'voice_capture_finished')).toHaveLength(1);
       });
 
       it('취소한 뒤 다시 시작하면 앞 구간의 end를 기다리지 않고 인식기를 바로 연다', async () => {
@@ -1333,7 +1331,7 @@ describe('useVoiceCaptureSession', () => {
 
       // Then
       expect(speechRecognizer.start).toHaveBeenCalledTimes(1);
-      expect(countEvents(analytics, 'voice_capture_started')).toBe(1);
+      expect(getTrackedEvents(analytics, 'voice_capture_started')).toHaveLength(1);
     });
 
     describe('화면이 내려갈 때', () => {
@@ -1350,7 +1348,7 @@ describe('useVoiceCaptureSession', () => {
         // Then
         expect(speechRecognizer.abort).toHaveBeenCalledTimes(1);
         expect(onCaptured).not.toHaveBeenCalled();
-        expect(countEvents(analytics, 'voice_capture_finished')).toBe(0);
+        expect(getTrackedEvents(analytics, 'voice_capture_finished')).toHaveLength(0);
       });
 
       it('이어 듣기를 기다리는 중에 내려가면 인식기를 다시 열지 않는다', async () => {
@@ -1410,7 +1408,7 @@ describe('useVoiceCaptureSession', () => {
         // Then
         expect(speechRecognizer.stop).not.toHaveBeenCalled();
         expect(screen.getByTestId('status')).toHaveTextContent('listening');
-        expect(countEvents(analytics, 'voice_capture_locale_changed')).toBe(0);
+        expect(getTrackedEvents(analytics, 'voice_capture_locale_changed')).toHaveLength(0);
 
         // When
         await act(async () => speechRecognizer.emit({ type: 'end' }));
@@ -1433,7 +1431,7 @@ describe('useVoiceCaptureSession', () => {
 
         // Then
         expect(speechRecognizer.stop).toHaveBeenCalledTimes(1);
-        expect(countEvents(analytics, 'voice_capture_locale_changed')).toBe(1);
+        expect(getTrackedEvents(analytics, 'voice_capture_locale_changed')).toHaveLength(1);
 
         // When
         await user.press(screen.getByRole('button', { name: 'resume' }));
@@ -1505,9 +1503,6 @@ describe('useVoiceCaptureSession', () => {
 
     setupFakeTimersPerTest();
 
-    const countEvents = (analytics: ReturnType<typeof createAnalyticsStub>, name: string) =>
-      analytics.trackEvent.mock.calls.filter(([event]) => event === name).length;
-
     const flushPromises = () => act(async () => jest.advanceTimersByTimeAsync(0));
 
     it('같은 언어로 바꾸기를 확인이 끝나기 전에 두 번 눌러도 구간을 한 번만 닫고 바뀐 언어도 한 번만 남긴다', async () => {
@@ -1528,7 +1523,7 @@ describe('useVoiceCaptureSession', () => {
 
       // Then
       expect(speechRecognizer.stop).toHaveBeenCalledTimes(1);
-      expect(countEvents(analytics, 'voice_capture_locale_changed')).toBe(1);
+      expect(getTrackedEvents(analytics, 'voice_capture_locale_changed')).toHaveLength(1);
 
       // When
       await act(async () => speechRecognizer.emit({ type: 'end' }));
@@ -1564,7 +1559,7 @@ describe('useVoiceCaptureSession', () => {
 
       // Then
       expect(screen.getByTestId('status')).toHaveTextContent('listening');
-      expect(countEvents(analytics, 'voice_capture_started')).toBe(1);
+      expect(getTrackedEvents(analytics, 'voice_capture_started')).toHaveLength(1);
     });
 
     it('다시 시작한 듣기의 기능 확인이 실패하면 앞 듣기의 옵션으로 이어 듣지 않고 다시 확인한다', async () => {
@@ -1674,7 +1669,7 @@ describe('useVoiceCaptureSession', () => {
 
       // Then
       expect(screen.getByTestId('status')).toHaveTextContent('preparing');
-      expect(countEvents(analytics, 'voice_capture_failed')).toBe(0);
+      expect(getTrackedEvents(analytics, 'voice_capture_failed')).toHaveLength(0);
     });
 
     it('취소 직후 다시 시작해 기능을 확인하는 사이 앞 구간의 늦은 시작 신호가 와도 옵션 없이 듣는 중이 되지 않는다', async () => {
@@ -1721,7 +1716,7 @@ describe('useVoiceCaptureSession', () => {
       await flushPromises();
 
       // Then
-      expect(countEvents(analytics, 'voice_capture_failed')).toBe(1);
+      expect(getTrackedEvents(analytics, 'voice_capture_failed')).toHaveLength(1);
     });
   });
 });

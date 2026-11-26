@@ -12,6 +12,7 @@ import {
   createTestDi,
   createTestQueryClient,
   setupFakeTimersPerTest,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { act, screen, userEvent, waitFor } from '@testing-library/react-native';
@@ -74,9 +75,7 @@ describe('TodoCategoryCreateSheetScreen', () => {
       name: '운동',
       color: CATEGORY_COLORS[2],
     });
-    expect(
-      analytics.trackEvent.mock.calls.filter(([name]) => name === 'category_created'),
-    ).toHaveLength(1);
+    expect(getTrackedEvents(analytics, 'category_created')).toHaveLength(1);
   });
 
   it('이름을 비운 채 확인하면 요청 없이 이름 칸에 안내가 보인다', async () => {

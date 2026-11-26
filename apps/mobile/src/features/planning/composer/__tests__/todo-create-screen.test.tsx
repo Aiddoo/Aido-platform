@@ -19,6 +19,7 @@ import {
   createTestDi,
   respondByPath,
   setupFakeTimersPerTest,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen, userEvent, waitFor } from '@testing-library/react-native';
@@ -63,10 +64,6 @@ async function renderCreateRoute() {
   return { httpClient, pushNotification, analytics };
 }
 
-function countEvents(analytics: ReturnType<typeof createAnalyticsStub>, eventName: string) {
-  return analytics.trackEvent.mock.calls.filter(([name]) => name === eventName).length;
-}
-
 async function typeTitle(title: string) {
   await fireEvent.changeText(screen.getByPlaceholderText(PLACEHOLDER), title);
 }
@@ -104,7 +101,7 @@ describe('TodoCreateSheetScreen', () => {
       isAllDay: true,
       visibility: 'PUBLIC',
     });
-    expect(countEvents(analytics, 'todo_created')).toBe(1);
+    expect(getTrackedEvents(analytics, 'todo_created')).toHaveLength(1);
   });
 
   it('제목이 비어 있으면 저장 버튼이 꺼지고 요청을 보내지 않는다', async () => {

@@ -12,6 +12,7 @@ import {
   createTestDi,
   respondByPath,
   setupFakeTimersPerTest,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
@@ -150,9 +151,9 @@ describe('ActivationChecklist', () => {
 
     // Then
     expect(router.push).toHaveBeenCalledWith('/friends/invite');
-    expect(
-      analytics.trackEvent.mock.calls.filter(([name]) => name === 'invite_entry_tapped'),
-    ).toEqual([['invite_entry_tapped', { entry: 'activation_checklist' }]]);
+    expect(getTrackedEvents(analytics, 'invite_entry_tapped')).toEqual([
+      { entry: 'activation_checklist' },
+    ]);
   });
 
   it('초대가 꺼져 있으면 초대 단계를 두지 않는다', async () => {

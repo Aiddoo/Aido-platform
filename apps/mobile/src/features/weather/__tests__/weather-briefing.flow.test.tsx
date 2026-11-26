@@ -6,6 +6,7 @@ import type { Todo as TodoDto } from '@aido/api/contracts/todo/v1';
 import type { WeatherReportResponse } from '@aido/api/contracts/weather/v2';
 import type { WeatherRescheduleReason } from '@aido/api/vocabulary';
 import { ok } from '@src/shared/errors';
+import { getTrackedEvents } from '@src/testing/core';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
@@ -18,7 +19,6 @@ import {
 import {
   createTodayTodoDto,
   createWeatherHttpClient,
-  getTrackedEvents,
   renderWeatherScreen,
   WEATHER_NOW,
 } from './weather.test-utils';

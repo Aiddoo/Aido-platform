@@ -26,6 +26,7 @@ import {
   createTestDi,
   silenceConsole,
   stubWindowDimensions,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
@@ -960,10 +961,7 @@ describe('FeedScreen', () => {
       return {
         ...feed,
         records,
-        getShownCoachmarks: () =>
-          analytics.trackEvent.mock.calls
-            .filter(([eventName]) => eventName === 'coachmark_shown')
-            .map(([, params]) => params),
+        getShownCoachmarks: () => getTrackedEvents(analytics, 'coachmark_shown'),
       };
     }
 

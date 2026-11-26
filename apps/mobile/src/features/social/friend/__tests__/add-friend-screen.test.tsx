@@ -11,6 +11,7 @@ import {
   createTestDi,
   respondByPath,
   createApiError,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { pressTwiceInSameFrame } from '@src/testing/press';
 import { renderScreen } from '@src/testing/render';
@@ -48,10 +49,6 @@ async function typeTag(userTag: string) {
   await fireEvent.changeText(screen.getByTestId('friend-tag-input'), userTag);
 }
 
-function countEvents(analytics: ReturnType<typeof createAnalyticsStub>, eventName: string) {
-  return analytics.trackEvent.mock.calls.filter(([name]) => name === eventName).length;
-}
-
 describe('AddFriendScreen', () => {
   it('소문자로 쓴 태그를 대문자로 맞춰 요청하고 보냈다고 알린 뒤 돌아간다', async () => {
     // Given
@@ -69,7 +66,7 @@ describe('AddFriendScreen', () => {
     expect(setup.httpClient.post).toHaveBeenCalledTimes(1);
     expect(setup.httpClient.post).toHaveBeenCalledWith(`v1/follows/${USER_TAG}`);
     expect(await screen.findAllByText('친구 요청을 보냈어요')).not.toHaveLength(0);
-    expect(countEvents(setup.analytics, 'friend_request_sent')).toBe(1);
+    expect(getTrackedEvents(setup.analytics, 'friend_request_sent')).toHaveLength(1);
   });
 
   it('돌아갈 화면이 없으면 요청을 보낸 뒤 친구 화면으로 간다', async () => {
@@ -158,7 +155,7 @@ describe('AddFriendScreen', () => {
       expect(setup.haptics.notify).toHaveBeenCalledWith('error');
       expect(screen.getByTestId('friend-tag-input')).toHaveDisplayValue(USER_TAG);
       expect(router.back).not.toHaveBeenCalled();
-      expect(countEvents(setup.analytics, 'friend_request_sent')).toBe(0);
+      expect(getTrackedEvents(setup.analytics, 'friend_request_sent')).toHaveLength(0);
     },
   );
 
@@ -289,7 +286,7 @@ describe('AddFriendScreen', () => {
     expect(setup.haptics.notify).toHaveBeenCalledWith('error');
     expect(screen.getByTestId('friend-tag-input')).toHaveDisplayValue(USER_TAG);
     expect(router.back).not.toHaveBeenCalled();
-    expect(countEvents(setup.analytics, 'friend_request_sent')).toBe(0);
+    expect(getTrackedEvents(setup.analytics, 'friend_request_sent')).toHaveLength(0);
   });
 
   it('보내는 동안 요청 버튼을 다시 눌러도 요청은 한 번이다', async () => {

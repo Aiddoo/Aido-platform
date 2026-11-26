@@ -6,6 +6,7 @@ import {
   createJsonFetcherStub,
   createNativeApplicationMetadataGatewayStub,
   createTestDi,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { onlineManager } from '@tanstack/react-query';
@@ -51,10 +52,6 @@ async function renderCheck({
   });
 
   return { listing, errorReporter, analytics, unmount: view.unmount };
-}
-
-function countStoreOpenedEvents(analytics: ReturnType<typeof createAnalyticsStub>) {
-  return analytics.trackEvent.mock.calls.filter(([name]) => name === 'app_update_store_opened');
 }
 
 describe('AppVersionCheck', () => {
@@ -156,8 +153,8 @@ describe('AppVersionCheck', () => {
     // Then
     await waitFor(() => expect(listing.openListing).toHaveBeenCalledTimes(1));
     await waitFor(() =>
-      expect(countStoreOpenedEvents(analytics)).toEqual([
-        ['app_update_store_opened', { source: 'settings' }],
+      expect(getTrackedEvents(analytics, 'app_update_store_opened')).toEqual([
+        { source: 'settings' },
       ]),
     );
   });
@@ -177,7 +174,7 @@ describe('AppVersionCheck', () => {
     // Then
     expect(await screen.findAllByText(notice)).not.toHaveLength(0);
     expect(listing.openListing).not.toHaveBeenCalled();
-    expect(countStoreOpenedEvents(analytics)).toEqual([]);
+    expect(getTrackedEvents(analytics, 'app_update_store_opened')).toEqual([]);
   });
 
   it('스토어가 열리는 사이 화면이 내려가도 스토어 열기를 남긴다', async () => {
@@ -199,7 +196,7 @@ describe('AppVersionCheck', () => {
     });
 
     // Then
-    expect(countStoreOpenedEvents(analytics)).toHaveLength(1);
+    expect(getTrackedEvents(analytics, 'app_update_store_opened')).toHaveLength(1);
   });
 
   it('이미 최신이면 스토어를 열지 않고 최신이라고 알린다', async () => {

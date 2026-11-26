@@ -18,6 +18,7 @@ import {
   createSocialShareGatewayStub,
   createSystemShareGatewayStub,
   createTestDi,
+  getTrackedEvents,
   respondByPath,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
@@ -76,10 +77,6 @@ async function renderMyInvite(httpClient = createMyInviteServer()) {
   return { httpClient, analytics, socialShare, systemShare, clipboard };
 }
 
-function countEvents(analytics: ReturnType<typeof createAnalyticsStub>, eventName: string) {
-  return analytics.trackEvent.mock.calls.filter(([name]) => name === eventName);
-}
-
 describe('MyInviteScreen', () => {
   it('처음 열면 초대·내 정보·초대한 친구를 한 번씩만 받는다', async () => {
     // When
@@ -112,9 +109,7 @@ describe('MyInviteScreen', () => {
       }),
     );
     await waitFor(() =>
-      expect(countEvents(analytics, 'invite_link_shared')).toEqual([
-        ['invite_link_shared', { channel: 'kakao' }],
-      ]),
+      expect(getTrackedEvents(analytics, 'invite_link_shared')).toEqual([{ channel: 'kakao' }]),
     );
   });
 
@@ -133,9 +128,7 @@ describe('MyInviteScreen', () => {
       dialogTitle: '초대 링크 보내기',
     });
     await waitFor(() =>
-      expect(countEvents(analytics, 'invite_link_shared')).toEqual([
-        ['invite_link_shared', { channel: 'system' }],
-      ]),
+      expect(getTrackedEvents(analytics, 'invite_link_shared')).toEqual([{ channel: 'system' }]),
     );
   });
 
@@ -149,7 +142,7 @@ describe('MyInviteScreen', () => {
 
     // Then
     await waitFor(() => expect(setup.systemShare.share).toHaveBeenCalledTimes(1));
-    expect(countEvents(setup.analytics, 'invite_link_shared')).toEqual([]);
+    expect(getTrackedEvents(setup.analytics, 'invite_link_shared')).toEqual([]);
   });
 
   it('링크를 복사하면 내 링크를 클립보드에 넣고 복사했다고 알리며 공유를 한 번 남긴다', async () => {
@@ -162,9 +155,7 @@ describe('MyInviteScreen', () => {
     // Then
     await waitFor(() => expect(clipboard.copy).toHaveBeenCalledWith(MY_INVITE.link));
     expect(await screen.findByText('링크를 복사했어요')).toBeOnTheScreen();
-    expect(countEvents(analytics, 'invite_link_shared')).toEqual([
-      ['invite_link_shared', { channel: 'copy_link' }],
-    ]);
+    expect(getTrackedEvents(analytics, 'invite_link_shared')).toEqual([{ channel: 'copy_link' }]);
   });
 
   it('코드 옆 복사 버튼도 같은 링크를 복사한다', async () => {

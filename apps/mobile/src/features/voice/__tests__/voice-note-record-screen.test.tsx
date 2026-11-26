@@ -17,6 +17,7 @@ import {
   createVoiceNoteStorageFake,
   createTestQueryClient,
   createTestDi,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
@@ -71,10 +72,6 @@ async function renderRecordScreen(snapshot = createEntitlementSnapshot()) {
   await act(async () => speechRecognizer.emit({ type: 'start' }));
 
   return { speechRecognizer, di, files, analytics };
-}
-
-function countEvents(analytics: ReturnType<typeof createAnalyticsStub>, name: string) {
-  return analytics.trackEvent.mock.calls.filter(([eventName]) => eventName === name).length;
 }
 
 const say = (speechRecognizer: ReturnType<typeof createSpeechRecognizerStub>, transcript: string) =>
@@ -420,9 +417,9 @@ describe('VoiceNoteRecordScreen', () => {
         await waitFor(() => expect(router.replace).toHaveBeenCalledTimes(1));
 
         // Then
-        expect(countEvents(analytics, 'voice_capture_started')).toBe(1);
-        expect(countEvents(analytics, 'voice_capture_resumed')).toBe(1);
-        expect(countEvents(analytics, 'voice_capture_finished')).toBe(1);
+        expect(getTrackedEvents(analytics, 'voice_capture_started')).toHaveLength(1);
+        expect(getTrackedEvents(analytics, 'voice_capture_resumed')).toHaveLength(1);
+        expect(getTrackedEvents(analytics, 'voice_capture_finished')).toHaveLength(1);
         expect(analytics.trackEvent).toHaveBeenCalledWith(
           'voice_capture_finished',
           expect.objectContaining({ mode: 'note', outcome: 'completed', pause_count: 1 }),

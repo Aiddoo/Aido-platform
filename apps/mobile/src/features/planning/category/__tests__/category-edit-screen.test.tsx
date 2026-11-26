@@ -7,6 +7,7 @@ import {
   createTestDi,
   createTestQueryClient,
   setupFakeTimersPerTest,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { act, screen, userEvent, waitFor } from '@testing-library/react-native';
@@ -69,9 +70,7 @@ describe('TodoCategoryEditSheetRoute', () => {
       name: '헬스',
       color: CATEGORY_COLORS[4],
     });
-    expect(
-      analytics.trackEvent.mock.calls.filter(([name]) => name === 'category_updated'),
-    ).toHaveLength(1);
+    expect(getTrackedEvents(analytics, 'category_updated')).toHaveLength(1);
   });
 
   it('바꾸지 않고 확인하면 요청을 보내지 않는다', async () => {

@@ -11,6 +11,7 @@ import {
   createHttpClientStub,
   createTestDi,
   createTestQueryClient,
+  getTrackedEvents,
   respondByPath,
   setupFakeTimersPerTest,
 } from '@src/testing/core';
@@ -54,15 +55,15 @@ async function renderWhatsNew(params: Record<string, string>) {
     withOverlay: true,
   });
 
-  const countEvents = (eventName: string) =>
-    analytics.trackEvent.mock.calls.filter(([name]) => name === eventName);
-
   return {
     ...view,
     httpClient,
-    countEvents,
+    analytics,
     getViewedSteps: () =>
-      countEvents('whats_new_step_viewed').map(([, params]) => [params?.step, params?.index]),
+      getTrackedEvents(analytics, 'whats_new_step_viewed').map((params) => [
+        params?.step,
+        params?.index,
+      ]),
   };
 }
 
@@ -96,15 +97,15 @@ describe('WhatsNewScreen', () => {
       '%s에서 열면 이 계정·캠페인을 본 것으로 남기고 캠페인 노출을 한 번 남긴다',
       async (source) => {
         // When
-        const { di, countEvents } = await renderWhatsNew({
+        const { di, analytics } = await renderWhatsNew({
           releaseId: RELEASE_1_17_0.id,
           source,
         });
 
         // Then
         expect(di.whatsNewRepository.hasSeen(CAMPAIGN_IDENTITY)).toBe(true);
-        expect(countEvents('feature_hub_impression')).toEqual([
-          ['feature_hub_impression', { campaign_id: RELEASE_1_17_0.campaignId, source }],
+        expect(getTrackedEvents(analytics, 'feature_hub_impression')).toEqual([
+          { campaign_id: RELEASE_1_17_0.campaignId, source },
         ]);
       },
     );
@@ -173,7 +174,7 @@ describe('WhatsNewScreen', () => {
 
     it('마무리에서 나중에 하기를 누르면 완료를 한 번 남기고 닫으며 닫힘은 남기지 않는다', async () => {
       // Given
-      const { countEvents, unmount, di } = await renderWhatsNew({
+      const { analytics, unmount, di } = await renderWhatsNew({
         releaseId: RELEASE_1_17_0.id,
         source: 'auto',
       });
@@ -185,16 +186,16 @@ describe('WhatsNewScreen', () => {
 
       // Then
       expect(router.back).toHaveBeenCalledTimes(1);
-      expect(countEvents('whats_new_completed')).toEqual([
-        ['whats_new_completed', { release_id: RELEASE_1_17_0.id, source: 'auto' }],
+      expect(getTrackedEvents(analytics, 'whats_new_completed')).toEqual([
+        { release_id: RELEASE_1_17_0.id, source: 'auto' },
       ]);
-      expect(countEvents('feature_hub_dismissed')).toEqual([]);
+      expect(getTrackedEvents(analytics, 'feature_hub_dismissed')).toEqual([]);
       expect(di.whatsNewRepository.hasSeen(CAMPAIGN_IDENTITY)).toBe(true);
     });
 
     it('헤더의 닫기로 닫으면 화면이 내려갈 때 닫힘을 한 번 남기고 완료는 남기지 않는다', async () => {
       // Given
-      const { countEvents, unmount } = await renderWhatsNew({
+      const { analytics, unmount } = await renderWhatsNew({
         releaseId: RELEASE_1_17_0.id,
         source: 'auto',
       });
@@ -206,15 +207,15 @@ describe('WhatsNewScreen', () => {
 
       // Then
       expect(router.back).toHaveBeenCalledTimes(1);
-      expect(countEvents('feature_hub_dismissed')).toEqual([
-        ['feature_hub_dismissed', { campaign_id: RELEASE_1_17_0.campaignId, source: 'auto' }],
+      expect(getTrackedEvents(analytics, 'feature_hub_dismissed')).toEqual([
+        { campaign_id: RELEASE_1_17_0.campaignId, source: 'auto' },
       ]);
-      expect(countEvents('whats_new_completed')).toEqual([]);
+      expect(getTrackedEvents(analytics, 'whats_new_completed')).toEqual([]);
     });
 
     it('마무리의 일정 가져오기 카드는 흐름을 닫고 그 화면을 열며 누름을 한 번씩 남긴다', async () => {
       // Given
-      const { countEvents, unmount } = await renderWhatsNew({
+      const { analytics, unmount } = await renderWhatsNew({
         releaseId: RELEASE_1_17_0.id,
         source: 'auto',
       });
@@ -226,20 +227,13 @@ describe('WhatsNewScreen', () => {
 
       // Then
       expect(router.dismissTo).toHaveBeenCalledWith('/todo-import', undefined);
-      expect(countEvents('whats_new_cta_pressed')).toEqual([
-        ['whats_new_cta_pressed', { release_id: RELEASE_1_17_0.id, step: 'finish' }],
+      expect(getTrackedEvents(analytics, 'whats_new_cta_pressed')).toEqual([
+        { release_id: RELEASE_1_17_0.id, step: 'finish' },
       ]);
-      expect(countEvents('feature_card_cta')).toEqual([
-        [
-          'feature_card_cta',
-          {
-            campaign_id: RELEASE_1_17_0.campaignId,
-            feature: 'calendar_import',
-            source: 'auto',
-          },
-        ],
+      expect(getTrackedEvents(analytics, 'feature_card_cta')).toEqual([
+        { campaign_id: RELEASE_1_17_0.campaignId, feature: 'calendar_import', source: 'auto' },
       ]);
-      expect(countEvents('feature_hub_dismissed')).toEqual([]);
+      expect(getTrackedEvents(analytics, 'feature_hub_dismissed')).toEqual([]);
     });
 
     it('예시 장면을 눌러 보아도 서버에 쓰지 않고 요금제만 읽는다', async () => {
@@ -275,7 +269,7 @@ describe('WhatsNewScreen', () => {
   describe('1.16.0 소개', () => {
     it('캠페인이 없는 출시라 본 기록과 캠페인 지표 없이 단계를 차례로 넘긴다', async () => {
       // Given
-      const { getViewedSteps, countEvents, di } = await renderWhatsNew({
+      const { getViewedSteps, analytics, di } = await renderWhatsNew({
         releaseId: RELEASE_1_16_0.id,
         source: 'mypage',
       });
@@ -293,7 +287,7 @@ describe('WhatsNewScreen', () => {
         ['freeRecord', 5],
         ['finish', 6],
       ]);
-      expect(countEvents('feature_hub_impression')).toEqual([]);
+      expect(getTrackedEvents(analytics, 'feature_hub_impression')).toEqual([]);
       expect(di.whatsNewRepository.hasSeen(CAMPAIGN_IDENTITY)).toBe(false);
     });
 

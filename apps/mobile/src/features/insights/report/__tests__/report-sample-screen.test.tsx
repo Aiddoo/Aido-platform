@@ -4,11 +4,11 @@
  */
 import '@src/shared/i18n/init';
 import { countGetRequests } from '@src/features/planning/todo/__tests__/todo.test-utils';
-import { getTrackedEvents } from '@src/features/weather/__tests__/weather.test-utils';
 import {
   createAnalyticsStub,
   createRouteParamsFake,
   createTestDi,
+  getTrackedEvents,
   setupFakeTimersPerTest,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';

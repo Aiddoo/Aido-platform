@@ -19,6 +19,7 @@ import {
   createTestQueryClient,
   deliverQueryNotifications,
   respondByPath,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
@@ -97,10 +98,6 @@ function findApplyPosts(httpClient: ReturnType<typeof createHttpClientStub>) {
   return httpClient.post.mock.calls.filter(([path]) => path === 'v1/action-plans/apply');
 }
 
-function countEvents(analytics: ReturnType<typeof createAnalyticsStub>, name: string) {
-  return analytics.trackEvent.mock.calls.filter(([eventName]) => eventName === name).length;
-}
-
 describe('AiReviewRoute', () => {
   // 저장 뒤 토스트와 초안 자동 저장 타이머가 테스트 밖에 남지 않게 한다
   setupFakeTimersPerTest({ advanceTimers: true });
@@ -127,8 +124,8 @@ describe('AiReviewRoute', () => {
       });
       expect(router.dismiss).toHaveBeenCalledTimes(1);
       expect(di.draftService.restore(draftKey).status).not.toBe('restored');
-      expect(countEvents(analytics, 'voice_plan_applied')).toBe(1);
-      expect(countEvents(analytics, 'memo_converted_to_todos')).toBe(1);
+      expect(getTrackedEvents(analytics, 'voice_plan_applied')).toHaveLength(1);
+      expect(getTrackedEvents(analytics, 'memo_converted_to_todos')).toHaveLength(1);
     });
 
     it('체크를 끈 카드는 보내지 않고 건너뛴 수로 남긴다', async () => {
@@ -260,7 +257,7 @@ describe('AiReviewRoute', () => {
       await act(() => jest.advanceTimersByTimeAsync(1_000));
 
       // Then
-      expect(countEvents(analytics, 'voice_plan_applied')).toBe(1);
+      expect(getTrackedEvents(analytics, 'voice_plan_applied')).toHaveLength(1);
       expect(findApplyPosts(httpClient)).toHaveLength(1);
     });
   });

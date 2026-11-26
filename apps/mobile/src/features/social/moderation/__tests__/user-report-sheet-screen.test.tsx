@@ -14,6 +14,7 @@ import {
   createPendingResponse,
   createRouteParamsFake,
   createTestDi,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { pressTwiceInSameFrame } from '@src/testing/press';
 import { renderScreen } from '@src/testing/render';
@@ -47,10 +48,6 @@ async function renderUserReportSheet(params: Record<string, string>) {
   return { httpClient, analytics, haptics };
 }
 
-function countEvents(analytics: ReturnType<typeof createAnalyticsStub>, eventName: string) {
-  return analytics.trackEvent.mock.calls.filter(([name]) => name === eventName);
-}
-
 function getPostedBody(httpClient: ReturnType<typeof createHttpClientStub>) {
   const [call] = httpClient.post.mock.calls;
   return call?.[1];
@@ -78,8 +75,8 @@ describe('UserReportSheetRoute', () => {
     });
     expect(getPostedBody(httpClient)).not.toHaveProperty('targetId');
     expect(await screen.findByText('신고했어요')).toBeOnTheScreen();
-    expect(countEvents(analytics, 'content_reported')).toEqual([
-      ['content_reported', { target_type: 'PROFILE', reason: 'HARASSMENT' }],
+    expect(getTrackedEvents(analytics, 'content_reported')).toEqual([
+      { target_type: 'PROFILE', reason: 'HARASSMENT' },
     ]);
   });
 
@@ -100,8 +97,8 @@ describe('UserReportSheetRoute', () => {
       targetId: '7',
       reason: 'SPAM',
     });
-    expect(countEvents(analytics, 'content_reported')).toEqual([
-      ['content_reported', { target_type: 'NUDGE_MESSAGE', reason: 'SPAM' }],
+    expect(getTrackedEvents(analytics, 'content_reported')).toEqual([
+      { target_type: 'NUDGE_MESSAGE', reason: 'SPAM' },
     ]);
   });
 
@@ -158,7 +155,7 @@ describe('UserReportSheetRoute', () => {
     expect(screen.getByTestId('report-detail-input')).toHaveDisplayValue('광고 계정이에요');
     expect(screen.getByTestId('report-submit')).toBeEnabled();
     expect(router.back).not.toHaveBeenCalled();
-    expect(countEvents(analytics, 'content_reported')).toHaveLength(0);
+    expect(getTrackedEvents(analytics, 'content_reported')).toHaveLength(0);
   });
 
   it('신고할 대상이 사라졌으면 알리고 시트를 닫는다', async () => {

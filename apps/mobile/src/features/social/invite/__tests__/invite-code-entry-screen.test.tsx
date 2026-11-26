@@ -12,6 +12,7 @@ import {
   createPendingResponse,
   createTestQueryClient,
   createTestDi,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { pressTwiceInSameFrame } from '@src/testing/press';
 import { renderScreen } from '@src/testing/render';
@@ -205,9 +206,7 @@ describe('InviteCodeEntryScreen', () => {
 
     // Then
     await waitFor(() => expect(router.replace).toHaveBeenCalledTimes(1));
-    expect(
-      analytics.trackEvent.mock.calls.filter(([name]) => name === 'invite_link_opened'),
-    ).toEqual([['invite_link_opened', { source: 'code_entry' }]]);
+    expect(getTrackedEvents(analytics, 'invite_link_opened')).toEqual([{ source: 'code_entry' }]);
   });
 
   it('서버가 없는 코드라고 하면 코드 칸에 한 번만 알리고 고치면 알림을 지운다', async () => {
@@ -311,9 +310,7 @@ describe('InviteCodeEntryScreen', () => {
 
     // Then
     await waitFor(() => expect(router.replace).toHaveBeenCalledTimes(1));
-    expect(
-      analytics.trackEvent.mock.calls.filter(([name]) => name === 'invite_link_opened'),
-    ).toEqual([['invite_link_opened', { source: 'app_scheme' }]]);
+    expect(getTrackedEvents(analytics, 'invite_link_opened')).toEqual([{ source: 'app_scheme' }]);
   });
 
   it('같은 프레임에 확인을 두 번 누르면 조회가 한 번 나간다', async () => {

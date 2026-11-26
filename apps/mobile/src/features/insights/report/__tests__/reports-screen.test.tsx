@@ -10,12 +10,12 @@ import {
   createWeeklyAchievementListDto,
 } from '@src/features/insights/achievement/__tests__/achievement.fixtures';
 import { countGetRequests } from '@src/features/planning/todo/__tests__/todo.test-utils';
-import { getTrackedEvents } from '@src/features/weather/__tests__/weather.test-utils';
 import { ServerError } from '@src/shared/errors';
 import {
   createAnalyticsStub,
   createRouteParamsFake,
   createTestDi,
+  getTrackedEvents,
   setupFakeTimersPerTest,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';

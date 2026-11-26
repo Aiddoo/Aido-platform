@@ -18,6 +18,7 @@ import {
   createRouteParamsFake,
   createTestDi,
   stubWindowDimensions,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
@@ -77,10 +78,6 @@ async function renderFriendFeed(httpClient: ReturnType<typeof createFriendServer
   return { analytics };
 }
 
-function countEvents(analytics: ReturnType<typeof createAnalyticsStub>, eventName: string) {
-  return analytics.trackEvent.mock.calls.filter(([name]) => name === eventName).length;
-}
-
 describe('친구 피드의 콕', () => {
   setupFakeTimersPerTest({ now: TODAY_NOON });
 
@@ -108,7 +105,7 @@ describe('친구 피드의 콕', () => {
       todoId: FRIEND_TODO_ID,
       message: '힘내!',
     });
-    expect(countEvents(analytics, 'nudge_sent')).toBe(1);
+    expect(getTrackedEvents(analytics, 'nudge_sent')).toHaveLength(1);
   });
 
   it('오늘 할 일이 없는 친구에게 독촉 콕을 누르면 그 친구의 독촉 시트를 연다', async () => {

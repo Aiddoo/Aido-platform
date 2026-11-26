@@ -1,5 +1,4 @@
 import { memoSchema as memoDtoSchema } from '@aido/api/contracts/memo/v1';
-import type { createAnalyticsStub } from '@src/testing/core';
 import { defineFixture } from '@src/testing/fixture';
 
 export const MEMO_ID = 5;
@@ -30,8 +29,4 @@ export function createMemoListDto(
     items,
     pagination: { nextCursor, hasNext: nextCursor != null, size: 20 },
   };
-}
-
-export function countEvents(analytics: ReturnType<typeof createAnalyticsStub>, eventName: string) {
-  return analytics.trackEvent.mock.calls.filter(([name]) => name === eventName).length;
 }

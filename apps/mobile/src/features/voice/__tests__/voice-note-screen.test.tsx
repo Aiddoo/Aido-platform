@@ -26,6 +26,7 @@ import {
   createVoiceNoteStorageFake,
   stubWindowDimensions,
   createApiError,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
@@ -130,10 +131,6 @@ async function renderVoiceNote(
   );
 
   return { httpClient, di, unmount, queryClient, analytics };
-}
-
-function countEvents(analytics: ReturnType<typeof createAnalyticsStub>, name: string) {
-  return analytics.trackEvent.mock.calls.filter(([eventName]) => eventName === name).length;
 }
 
 function findPosts(httpClient: ReturnType<typeof createHttpClientStub>, path: string) {
@@ -573,7 +570,7 @@ describe('VoiceNoteRoute', () => {
       expect(saved?.digest?.keyPoints).toHaveLength(1);
       expect(saved?.planDraft?.form.actions.map((action) => action.title)).toEqual(['시안 만들기']);
       expect(saved?.digestRequest).toBeNull();
-      expect(countEvents(analytics, 'voice_plan_generated')).toBe(1);
+      expect(getTrackedEvents(analytics, 'voice_plan_generated')).toHaveLength(1);
       expect(analytics.trackEvent).toHaveBeenCalledWith(
         'voice_plan_generated',
         expect.objectContaining({ source: 'voice_note', todo_count: 1, charged: true }),
@@ -632,7 +629,7 @@ describe('VoiceNoteRoute', () => {
         ],
       });
       expect(di.voiceNoteDraftRepository.find(ACCOUNT_ID, DRAFT_ID)?.appliedAt).not.toBeNull();
-      expect(countEvents(analytics, 'voice_plan_applied')).toBe(1);
+      expect(getTrackedEvents(analytics, 'voice_plan_applied')).toHaveLength(1);
       expect(analytics.trackEvent).toHaveBeenCalledWith('voice_plan_applied', {
         source: 'voice_note',
         todo_count: 3,
@@ -720,7 +717,7 @@ describe('VoiceNoteRoute', () => {
       await act(() => jest.advanceTimersByTimeAsync(1_000));
 
       // Then
-      expect(countEvents(analytics, 'voice_plan_applied')).toBe(1);
+      expect(getTrackedEvents(analytics, 'voice_plan_applied')).toHaveLength(1);
       expect(getApplyKeys(httpClient)).toHaveLength(1);
     });
 

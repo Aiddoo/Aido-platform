@@ -22,6 +22,7 @@ import {
   createTestQueryClient,
   createVoiceNoteStorageFake,
   deliverQueryNotifications,
+  getTrackedEvents,
   type SpeechRecognizerStub,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
@@ -124,10 +125,6 @@ async function speak(speechRecognizer: SpeechRecognizerStub, transcript = '운�
   );
   await fireEvent.press(screen.getByTestId('quick-voice-finish'));
   await act(async () => speechRecognizer.emit({ type: 'end' }));
-}
-
-function countEvents(analytics: ReturnType<typeof createAnalyticsStub>, name: string) {
-  return analytics.trackEvent.mock.calls.filter(([eventName]) => eventName === name).length;
 }
 
 function findPosts(httpClient: ReturnType<typeof createTodoServer>, path: string) {
@@ -256,7 +253,7 @@ describe('TodoCreateBottomSheet 빠른 말하기', () => {
       await act(() => jest.advanceTimersByTimeAsync(1_000));
 
       // Then
-      expect(countEvents(analytics, 'voice_plan_applied')).toBe(1);
+      expect(getTrackedEvents(analytics, 'voice_plan_applied')).toHaveLength(1);
       expect(findPosts(httpClient, 'v1/action-plans/apply')).toHaveLength(1);
     });
   });
@@ -271,13 +268,15 @@ describe('TodoCreateBottomSheet 빠른 말하기', () => {
       // When
       await speak(speechRecognizer);
       await fireEvent.press(await screen.findByTestId('plan-review-apply'));
-      await waitFor(() => expect(countEvents(analytics, 'voice_plan_applied')).toBe(1));
+      await waitFor(() =>
+        expect(getTrackedEvents(analytics, 'voice_plan_applied')).toHaveLength(1),
+      );
 
       // Then
-      expect(countEvents(analytics, 'voice_capture_started')).toBe(1);
-      expect(countEvents(analytics, 'voice_capture_finished')).toBe(1);
-      expect(countEvents(analytics, 'voice_plan_generated')).toBe(1);
-      expect(countEvents(analytics, 'voice_plan_failed')).toBe(0);
+      expect(getTrackedEvents(analytics, 'voice_capture_started')).toHaveLength(1);
+      expect(getTrackedEvents(analytics, 'voice_capture_finished')).toHaveLength(1);
+      expect(getTrackedEvents(analytics, 'voice_plan_generated')).toHaveLength(1);
+      expect(getTrackedEvents(analytics, 'voice_plan_failed')).toHaveLength(0);
       expect(analytics.trackEvent).toHaveBeenCalledWith('voice_plan_applied', {
         source: 'quick_voice',
         todo_count: 1,
@@ -311,7 +310,7 @@ describe('TodoCreateBottomSheet 빠른 말하기', () => {
       // Then
       await waitFor(() => expect(speechRecognizer.start).toHaveBeenCalledTimes(2));
       expect(await screen.findByTestId('quick-voice-listening')).toBeOnTheScreen();
-      expect(countEvents(analytics, 'voice_capture_started')).toBe(2);
+      expect(getTrackedEvents(analytics, 'voice_capture_started')).toHaveLength(2);
       expect(findPosts(httpClient, 'v1/action-plans/apply')).toHaveLength(0);
     });
 
@@ -358,8 +357,8 @@ describe('TodoCreateBottomSheet 빠른 말하기', () => {
         /들은 내용은 남겨뒀어요/,
       );
       expect(screen.getByPlaceholderText(PLACEHOLDER)).toHaveDisplayValue('우유 사기');
-      expect(countEvents(analytics, 'voice_plan_failed')).toBe(1);
-      expect(countEvents(analytics, 'voice_plan_generated')).toBe(0);
+      expect(getTrackedEvents(analytics, 'voice_plan_failed')).toHaveLength(1);
+      expect(getTrackedEvents(analytics, 'voice_plan_generated')).toHaveLength(0);
     });
 
     it('이번 달 횟수를 다 썼다고 거절되면 한도 안내를 띄우고 들은 글자를 남긴다', async () => {
@@ -375,7 +374,7 @@ describe('TodoCreateBottomSheet 빠른 말하기', () => {
       // Then
       expect(await screen.findByText('이번 달 AI 할 일 만들기를 다 썼어요')).toBeOnTheScreen();
       expect(screen.getByPlaceholderText(PLACEHOLDER)).toHaveDisplayValue('우유 사기');
-      expect(countEvents(analytics, 'voice_plan_failed')).toBe(1);
+      expect(getTrackedEvents(analytics, 'voice_plan_failed')).toHaveLength(1);
     });
 
     it('동의가 필요하다고 거절돼 나중에를 누르면 동의가 필요하다고 알리고 들은 글자를 남긴다', async () => {

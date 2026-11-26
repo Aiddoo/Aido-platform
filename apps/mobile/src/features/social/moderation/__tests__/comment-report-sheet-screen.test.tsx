@@ -15,6 +15,7 @@ import {
   createRouteParamsFake,
   createTestDi,
   createTestQueryClient,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
@@ -96,9 +97,9 @@ describe('CommentReportSheetRoute', () => {
       detail: '도배해요',
     });
     expect(countGetRequests(httpClient)).toEqual({});
-    expect(analytics.trackEvent.mock.calls.filter(([name]) => name === 'content_reported')).toEqual(
-      [['content_reported', { target_type: 'COMMENT', reason: 'OTHER' }]],
-    );
+    expect(getTrackedEvents(analytics, 'content_reported')).toEqual([
+      { target_type: 'COMMENT', reason: 'OTHER' },
+    ]);
   });
 
   it('받아 둔 댓글에 없으면 작성자를 몰라 신고 시트 없이 피드로 돌아간다', async () => {

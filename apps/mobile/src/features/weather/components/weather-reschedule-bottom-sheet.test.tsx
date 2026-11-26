@@ -12,6 +12,7 @@ import {
   createMemoryObservableSyncStorage,
   createRouteParamsFake,
   createTestDi,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
@@ -28,7 +29,6 @@ import {
 import {
   createTodayTodoDto,
   createWeatherHttpClient,
-  getTrackedEvents,
   WEATHER_NOW,
 } from '../__tests__/weather.test-utils';
 import { WeatherRescheduleBottomSheet } from './weather-reschedule-bottom-sheet';

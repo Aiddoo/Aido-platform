@@ -38,6 +38,7 @@ import {
   setupFakeTimersPerTest,
   silenceConsole,
   type SpeechRecognizerStub,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { renderRoutes } from '@src/testing/render-route-hook';
 import { focusManager, onlineManager, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -392,9 +393,9 @@ describe('AppProviders', () => {
 
     // Then
     const { analytics } = getOnlyDevice(createdDevices);
-    expect(
-      analytics.trackEvent.mock.calls.filter(([eventName]) => eventName === 'invite_link_opened'),
-    ).toEqual([['invite_link_opened', { source: 'universal_link' }]]);
+    expect(getTrackedEvents(analytics, 'invite_link_opened')).toEqual([
+      { source: 'universal_link' },
+    ]);
     await second.view.unmount();
   });
 

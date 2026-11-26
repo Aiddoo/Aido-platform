@@ -10,6 +10,7 @@ import {
   createHttpClientStub,
   createPendingResponse,
   createTestDi,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { pressTwiceInSameFrame } from '@src/testing/press';
 import { renderScreen } from '@src/testing/render';
@@ -43,10 +44,6 @@ async function typeMessage(message: string) {
   await fireEvent.changeText(await screen.findByPlaceholderText(PLACEHOLDER), message);
 }
 
-function countEvents(analytics: ReturnType<typeof createAnalyticsStub>, eventName: string) {
-  return analytics.trackEvent.mock.calls.filter(([name]) => name === eventName).length;
-}
-
 describe('RemindNudgeSheetRoute', () => {
   it('적은 메시지를 다듬어 그 친구에게 보내고 시트를 닫으며 한 번 남긴다', async () => {
     // Given
@@ -64,7 +61,7 @@ describe('RemindNudgeSheetRoute', () => {
       receiverId: FRIEND_ID,
       message: '같이 하자',
     });
-    expect(countEvents(analytics, 'remind_nudge_sent')).toBe(1);
+    expect(getTrackedEvents(analytics, 'remind_nudge_sent')).toHaveLength(1);
   });
 
   it('공백뿐인 메시지는 message 칸 없이 보낸다', async () => {
@@ -125,7 +122,7 @@ describe('RemindNudgeSheetRoute', () => {
     expect(haptics.notify).toHaveBeenCalledWith('error');
     expect(screen.getByPlaceholderText(PLACEHOLDER)).toHaveDisplayValue('같이 하자');
     expect(router.back).not.toHaveBeenCalled();
-    expect(countEvents(analytics, 'remind_nudge_sent')).toBe(0);
+    expect(getTrackedEvents(analytics, 'remind_nudge_sent')).toHaveLength(0);
   });
 
   it('같은 프레임에 보내기를 두 번 누르면 요청이 한 번 나간다', async () => {

@@ -9,6 +9,7 @@ import {
   createJsonFetcherStub,
   createTestDi,
   createTestQueryClient,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
@@ -81,9 +82,9 @@ describe('WhatsNewReleasesScreen', () => {
 
     // Then
     expect(router.push).toHaveBeenCalledWith(RELEASE_1_15_0.cta.href);
-    expect(
-      analytics.trackEvent.mock.calls.filter(([name]) => name === 'whats_new_cta_pressed'),
-    ).toEqual([['whats_new_cta_pressed', { release_id: RELEASE_1_15_0.id, step: 'list' }]]);
+    expect(getTrackedEvents(analytics, 'whats_new_cta_pressed')).toEqual([
+      { release_id: RELEASE_1_15_0.id, step: 'list' },
+    ]);
   });
 
   it('서버가 켠 캠페인의 출시를 아직 보지 않았으면 그 줄에만 새 기능 표시를 단다', async () => {

@@ -7,6 +7,7 @@ import {
   createExternalLinkGatewayStub,
   createSpeechRecognizerStub,
   createTestDi,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
@@ -49,8 +50,7 @@ async function renderProbe(
       }),
     },
   );
-  const getPermissionEvents = () =>
-    analytics.trackEvent.mock.calls.filter(([name]) => name === 'voice_permission_requested');
+  const getPermissionEvents = () => getTrackedEvents(analytics, 'voice_permission_requested');
 
   return { speechRecognizer, externalLink, onResult, getPermissionEvents };
 }
@@ -182,8 +182,8 @@ describe('useEnsureMicrophonePermission', () => {
     // Then
     await waitFor(() => expect(onResult).toHaveBeenCalledTimes(2));
     expect(getPermissionEvents()).toEqual([
-      ['voice_permission_requested', { mode: 'quick', status: 'granted' }],
-      ['voice_permission_requested', { mode: 'quick', status: 'granted' }],
+      { mode: 'quick', status: 'granted' },
+      { mode: 'quick', status: 'granted' },
     ]);
   });
 

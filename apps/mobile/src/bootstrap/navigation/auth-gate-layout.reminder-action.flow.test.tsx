@@ -26,6 +26,7 @@ import {
   createTestQueryClient,
   stubWindowDimensions,
   createApiError,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { renderAppRoute } from '@src/testing/render-route-hook';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
@@ -419,18 +420,19 @@ describe('리마인드 알림 버튼', () => {
           todo: createTodoDto({ id: TODO_ID, title: '저녁 운동', completed: true }),
         }),
     });
-    const countEvents = (eventName: string) =>
-      jest.mocked(analytics.trackEvent).mock.calls.filter(([name]) => name === eventName).length;
+    const trackedAnalytics = jest.mocked(analytics);
 
     // When
     await act(async () => gateway.emitResponse(createReminderResponse('complete')));
-    await waitFor(() => expect(countEvents('todo_reminder_action_tapped')).toBe(1));
+    await waitFor(() =>
+      expect(getTrackedEvents(trackedAnalytics, 'todo_reminder_action_tapped')).toHaveLength(1),
+    );
     await act(async () => gateway.emitResponse(createReminderResponse('complete')));
 
     // Then
     expect(route.getPathname()).toBe(`/todo/${TODO_ID}`);
-    expect(countEvents('push_notification_opened')).toBe(1);
-    expect(countEvents('todo_reminder_action_tapped')).toBe(1);
+    expect(getTrackedEvents(trackedAnalytics, 'push_notification_opened')).toHaveLength(1);
+    expect(getTrackedEvents(trackedAnalytics, 'todo_reminder_action_tapped')).toHaveLength(1);
     expect(httpClient.patch.mock.calls.filter(([url]) => url === COMPLETE_PATH)).toHaveLength(1);
     expect(httpClient.post.mock.calls.filter(([url]) => url.endsWith('/opened'))).toHaveLength(1);
   });

@@ -18,6 +18,7 @@ import {
   createRouteParamsFake,
   createTestDi,
   createVoiceNoteStorageFake,
+  getTrackedEvents,
   respondByPath,
   stubWindowDimensions,
 } from '@src/testing/core';
@@ -29,7 +30,7 @@ import { View } from 'react-native';
 
 import MemoScreen from '../../../../../app/(app)/(tabs)/(memos)/memo/index';
 import { MEMO_QUERY_KEYS } from '../queries/memo-query-keys';
-import { countEvents, createMemoDto, createMemoListDto, MEMO_ID } from './memo.test-utils';
+import { createMemoDto, createMemoListDto, MEMO_ID } from './memo.test-utils';
 
 const PHONE_WIDTH = 390;
 const FOLD_WIDTH = 900;
@@ -336,7 +337,7 @@ describe('MemoScreen', () => {
           isPinned: true,
         }),
       );
-      expect(countEvents(analytics, 'memo_pin_toggled')).toBe(1);
+      expect(getTrackedEvents(analytics, 'memo_pin_toggled')).toHaveLength(1);
     });
 
     it('카드 메뉴로 지우면 확인 뒤 지우고 다시 받은 목록에서 빠진다', async () => {
@@ -364,7 +365,7 @@ describe('MemoScreen', () => {
       await waitFor(() => expect(screen.queryByText('장보기')).toBeNull());
       expect(screen.getByText('빨래')).toBeTruthy();
       expect(httpClient.delete).toHaveBeenCalledTimes(1);
-      expect(countEvents(analytics, 'memo_deleted')).toBe(1);
+      expect(getTrackedEvents(analytics, 'memo_deleted')).toHaveLength(1);
     });
 
     it('지우지 못하면 다이얼로그와 카드를 남긴다', async () => {
@@ -382,7 +383,7 @@ describe('MemoScreen', () => {
       await waitFor(() => expect(httpClient.delete).toHaveBeenCalledTimes(1));
       expect(screen.getByText('메모를 삭제할까요?')).toBeTruthy();
       expect(screen.getByText('장보기')).toBeTruthy();
-      expect(countEvents(analytics, 'memo_deleted')).toBe(0);
+      expect(getTrackedEvents(analytics, 'memo_deleted')).toHaveLength(0);
     });
   });
 

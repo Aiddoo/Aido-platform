@@ -9,12 +9,12 @@ import type { ApiError } from '@src/core/errors/api-error';
 import { fail, ok, type Result } from '@src/core/errors/result';
 import { createLimitApiError } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
 import { countGetRequests } from '@src/features/planning/todo/__tests__/todo.test-utils';
-import { getTrackedEvents } from '@src/features/weather/__tests__/weather.test-utils';
 import {
   createAnalyticsStub,
   createHapticsGatewayStub,
   createRouteParamsFake,
   createTestDi,
+  getTrackedEvents,
   setupFakeTimersPerTest,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';

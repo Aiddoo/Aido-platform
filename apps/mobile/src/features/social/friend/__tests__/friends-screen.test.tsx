@@ -14,6 +14,7 @@ import {
   createHttpClientStub,
   createRouteParamsFake,
   createTestDi,
+  getTrackedEvents,
   respondByPath,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
@@ -116,10 +117,6 @@ async function renderFriends({
   return { httpClient, analytics };
 }
 
-function countEvents(analytics: ReturnType<typeof createAnalyticsStub>, eventName: string) {
-  return analytics.trackEvent.mock.calls.filter(([name]) => name === eventName).length;
-}
-
 /** 가상 목록은 잰 높이와 스크롤 위치로 끝을 판단한다. 목록 높이만큼 내용이 있고 끝까지 내렸다고 알린다 */
 async function scrollToListEnd() {
   const [scroll] = findHostsWithProp('refreshControl');
@@ -205,7 +202,7 @@ describe('FriendsScreen', () => {
     expect(httpClient.delete).toHaveBeenCalledTimes(1);
     expect(httpClient.delete).toHaveBeenCalledWith(`v1/follows/${HONG?.id}`);
     expect(screen.getByText('총 1명')).toBeOnTheScreen();
-    expect(countEvents(analytics, 'friend_removed')).toBe(1);
+    expect(getTrackedEvents(analytics, 'friend_removed')).toHaveLength(1);
   });
 
   it('삭제 요청이 실패하면 그 친구를 원래 자리에 되돌린다', async () => {
@@ -230,7 +227,7 @@ describe('FriendsScreen', () => {
     expect(await screen.findAllByText(new NetworkError().message)).not.toHaveLength(0);
     expect(screen.getByText('홍길동')).toBeOnTheScreen();
     expect(screen.getByText('총 2명')).toBeOnTheScreen();
-    expect(countEvents(analytics, 'friend_removed')).toBe(0);
+    expect(getTrackedEvents(analytics, 'friend_removed')).toHaveLength(0);
     await fireEvent.press(screen.getByRole('button', { name: '취소' }));
   });
 
@@ -274,7 +271,7 @@ describe('FriendsScreen', () => {
     expect(httpClient.patch).toHaveBeenCalledWith(`v1/follows/${RECEIVED_REQUEST?.id}/accept`);
     expect(await screen.findAllByText('친구 요청을 수락했어요')).not.toHaveLength(0);
     expect(screen.getByText('아직 받은 요청이 없어요')).toBeOnTheScreen();
-    expect(countEvents(analytics, 'friend_request_accepted')).toBe(1);
+    expect(getTrackedEvents(analytics, 'friend_request_accepted')).toHaveLength(1);
   });
 
   it('받은 요청을 거절하면 거절 요청을 보내고 알린 뒤 목록에서 뺀다', async () => {
@@ -290,7 +287,7 @@ describe('FriendsScreen', () => {
     expect(httpClient.patch).toHaveBeenCalledTimes(1);
     expect(httpClient.patch).toHaveBeenCalledWith(`v1/follows/${RECEIVED_REQUEST?.id}/reject`);
     expect(await screen.findAllByText('친구 요청을 거절했어요')).not.toHaveLength(0);
-    expect(countEvents(analytics, 'friend_request_rejected')).toBe(1);
+    expect(getTrackedEvents(analytics, 'friend_request_rejected')).toHaveLength(1);
   });
 
   it('보낸 요청을 취소하면 취소 요청을 보내고 목록에서 뺀다', async () => {
@@ -306,7 +303,7 @@ describe('FriendsScreen', () => {
     expect(httpClient.delete).toHaveBeenCalledTimes(1);
     expect(httpClient.delete).toHaveBeenCalledWith(`v1/follows/${SENT_REQUEST?.id}`);
     expect(screen.getByText('아직 보낸 요청이 없어요')).toBeOnTheScreen();
-    expect(countEvents(analytics, 'friend_request_cancelled')).toBe(1);
+    expect(getTrackedEvents(analytics, 'friend_request_cancelled')).toHaveLength(1);
   });
 
   it('친구 탭을 떠나면 편집을 함께 끈다', async () => {

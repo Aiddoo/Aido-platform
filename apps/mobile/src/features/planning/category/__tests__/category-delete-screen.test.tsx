@@ -6,6 +6,7 @@ import {
   createHttpClientStub,
   createTestDi,
   createTestQueryClient,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { screen, userEvent, waitFor } from '@testing-library/react-native';
@@ -77,11 +78,7 @@ describe('TodoCategoryDeleteSheetRoute', () => {
     expect(httpClient.delete).toHaveBeenCalledWith('v1/todo-categories/3', {
       params: { todoHandling: 'move', moveToCategoryId: STUDY.id },
     });
-    await waitFor(() =>
-      expect(
-        analytics.trackEvent.mock.calls.filter(([name]) => name === 'category_deleted'),
-      ).toHaveLength(1),
-    );
+    await waitFor(() => expect(getTrackedEvents(analytics, 'category_deleted')).toHaveLength(1));
   });
 
   it('함께 지우기를 고르면 옮길 곳 없이 할 일까지 지운다', async () => {

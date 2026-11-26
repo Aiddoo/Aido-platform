@@ -12,6 +12,7 @@ import {
   createRouteParamsFake,
   createTestDi,
   createTestQueryClient,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
@@ -62,9 +63,9 @@ describe('TodoReportSheetRoute', () => {
       targetId: String(TODO_ID),
       reason: 'INAPPROPRIATE',
     });
-    expect(analytics.trackEvent.mock.calls.filter(([name]) => name === 'content_reported')).toEqual(
-      [['content_reported', { target_type: 'TODO', reason: 'INAPPROPRIATE' }]],
-    );
+    expect(getTrackedEvents(analytics, 'content_reported')).toEqual([
+      { target_type: 'TODO', reason: 'INAPPROPRIATE' },
+    ]);
   });
 
   it('캐시에 있는 할 일 상세로 열어 서버에 다시 묻지 않는다', async () => {

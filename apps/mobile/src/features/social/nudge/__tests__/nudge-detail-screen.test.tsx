@@ -11,6 +11,7 @@ import {
   createPendingResponse,
   createTestDi,
   respondByPath,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { pressTwiceInSameFrame } from '@src/testing/press';
 import { renderScreen } from '@src/testing/render';
@@ -89,10 +90,6 @@ async function renderNudgeDetail({
   return { httpClient, analytics };
 }
 
-function countEvents(analytics: ReturnType<typeof createAnalyticsStub>, eventName: string) {
-  return analytics.trackEvent.mock.calls.filter(([name]) => name === eventName).length;
-}
-
 describe('NudgeDetailRoute', () => {
   it('끝나지 않은 할 일에 받은 콕을 처음 열면 콕과 내 정보를 한 번씩만 받는다', async () => {
     // When
@@ -166,7 +163,7 @@ describe('NudgeDetailRoute', () => {
       expect(httpClient.put).toHaveBeenCalledWith(`v1/nudges/${NUDGE_ID}/reply`, { replyKind });
       // 응답을 상세 캐시에 쓴 알림은 답장 완료 문구와 다른 묶음으로 올 수 있어 기다린다
       await waitFor(() => expect(screen.getByRole('button', { name: label })).toBeSelected());
-      expect(countEvents(analytics, 'nudge_replied')).toBe(1);
+      expect(getTrackedEvents(analytics, 'nudge_replied')).toHaveLength(1);
     },
   );
 

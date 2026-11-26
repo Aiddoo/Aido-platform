@@ -8,6 +8,7 @@ import {
   createHttpClientStub,
   createPendingResponse,
   createTestDi,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
@@ -155,9 +156,9 @@ describe('InquiryScreen', () => {
       content: CONTENT,
     });
     expect(await screen.findAllByText('문의를 접수했어요')).not.toHaveLength(0);
-    expect(
-      analytics.trackEvent.mock.calls.filter(([name]) => name === 'support_inquiry_submitted'),
-    ).toEqual([['support_inquiry_submitted', { category: INQUIRY_CATEGORY.FEATURE_REQUEST }]]);
+    expect(getTrackedEvents(analytics, 'support_inquiry_submitted')).toEqual([
+      { category: INQUIRY_CATEGORY.FEATURE_REQUEST },
+    ]);
   });
 
   it('서버가 거절하면 한 번 알리고 입력값을 지킨 채 화면에 머문다', async () => {

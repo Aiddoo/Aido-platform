@@ -11,13 +11,13 @@ import {
 import { ok } from '@src/core/errors/result';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { findHostsWithProp } from '@src/features/planning/todo/__tests__/todo.test-utils';
-import { getTrackedEvents } from '@src/features/weather/__tests__/weather.test-utils';
 import {
   createAnalyticsStub,
   createHttpClientStub,
   createRouteParamsFake,
   createSystemShareGatewayStub,
   createTestDi,
+  getTrackedEvents,
   setupFakeTimersPerTest,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';

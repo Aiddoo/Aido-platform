@@ -2,7 +2,6 @@ import type { Todo as TodoDto } from '@aido/api/contracts/todo/v1';
 import { updateWeatherLocationSchema } from '@aido/api/contracts/weather/v2';
 import type { ApiError } from '@src/core/errors/api-error';
 import type { Result } from '@src/core/errors/result';
-import type { Analytics } from '@src/core/ports/analytics';
 import type { HttpClient } from '@src/core/ports/http-client';
 import type { LocationGateway } from '@src/core/ports/location-gateway';
 import { createTodoDto } from '@src/features/planning/todo/__tests__/todo.fixtures';
@@ -76,13 +75,6 @@ export function createWeatherHttpClient(responses: WeatherResponses = {}) {
   }));
   respondWeather(httpClient, responses);
   return httpClient;
-}
-
-/** 그 이름으로 남긴 분석 이벤트의 값. 사용자 동작 한 번에 한 번만 남는지 본다 */
-export function getTrackedEvents(analytics: jest.Mocked<Analytics>, eventName: string) {
-  return analytics.trackEvent.mock.calls
-    .filter(([name]) => name === eventName)
-    .map(([, params]) => params);
 }
 
 interface TodayTodoOptions {

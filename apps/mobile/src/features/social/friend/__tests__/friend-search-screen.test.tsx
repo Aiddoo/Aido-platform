@@ -10,6 +10,7 @@ import {
   createPendingResponse,
   createTestDi,
   respondByPath,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
@@ -60,10 +61,6 @@ async function waitForDebounce() {
   await act(() => jest.advanceTimersByTimeAsync(SEARCH_DEBOUNCE_MS));
 }
 
-function countEvents(analytics: ReturnType<typeof createAnalyticsStub>, eventName: string) {
-  return analytics.trackEvent.mock.calls.filter(([name]) => name === eventName).length;
-}
-
 describe('SearchFriendScreen', () => {
   setupFakeTimersPerTest();
 
@@ -86,7 +83,7 @@ describe('SearchFriendScreen', () => {
       SEARCH_PATH,
       expect.objectContaining({ params: { q: '홍길동', cursor: undefined, limit: undefined } }),
     );
-    expect(countEvents(analytics, 'friend_search_submitted')).toBe(1);
+    expect(getTrackedEvents(analytics, 'friend_search_submitted')).toHaveLength(1);
   });
 
   it.each(['홍', '  홍  ', ''])(
@@ -102,7 +99,7 @@ describe('SearchFriendScreen', () => {
       // Then
       expect(screen.getByText('이름이나 해시태그로 친구를 찾아보세요')).toBeOnTheScreen();
       expect(countGetRequests(httpClient)[SEARCH_PATH]).toBeUndefined();
-      expect(countEvents(analytics, 'friend_search_submitted')).toBe(0);
+      expect(getTrackedEvents(analytics, 'friend_search_submitted')).toHaveLength(0);
     },
   );
 
@@ -143,7 +140,7 @@ describe('SearchFriendScreen', () => {
     );
     expect(httpClient.post).toHaveBeenCalledTimes(1);
     expect(httpClient.post).toHaveBeenCalledWith(`v1/follows/${ADDABLE?.userTag}`);
-    expect(countEvents(analytics, 'friend_request_sent')).toBe(1);
+    expect(getTrackedEvents(analytics, 'friend_request_sent')).toHaveLength(1);
   });
 
   it('요청 대기 중인 사람의 요청 취소를 누르면 그 사람에게 보낸 요청을 거둔다', async () => {
@@ -161,7 +158,7 @@ describe('SearchFriendScreen', () => {
     await waitFor(() => expect(screen.queryByRole('button', { name: '요청 취소' })).toBeNull());
     expect(httpClient.delete).toHaveBeenCalledTimes(1);
     expect(httpClient.delete).toHaveBeenCalledWith(`v1/follows/${PENDING?.id}`);
-    expect(countEvents(analytics, 'friend_request_cancelled')).toBe(1);
+    expect(getTrackedEvents(analytics, 'friend_request_cancelled')).toHaveLength(1);
   });
 
   it('친구 한도에 걸리면 초대로 자리를 늘리는 길을 안내하고 누르면 내 초대 화면을 연다', async () => {
@@ -189,10 +186,10 @@ describe('SearchFriendScreen', () => {
 
     // Then
     await waitFor(() => expect(router.push).toHaveBeenCalledWith('/friends/invite'));
-    expect(countEvents(analytics, 'friend_request_sent')).toBe(0);
-    expect(
-      analytics.trackEvent.mock.calls.filter(([name]) => name === 'invite_entry_tapped'),
-    ).toEqual([['invite_entry_tapped', { entry: 'friend_limit_dialog' }]]);
+    expect(getTrackedEvents(analytics, 'friend_request_sent')).toHaveLength(0);
+    expect(getTrackedEvents(analytics, 'invite_entry_tapped')).toEqual([
+      { entry: 'friend_limit_dialog' },
+    ]);
   });
 
   it('요청을 보낸 뒤 그 행이 사라져도 친구 한도에 걸리면 한도를 안내한다', async () => {

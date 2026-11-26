@@ -5,7 +5,6 @@
 import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
-import { getTrackedEvents } from '@src/features/weather/__tests__/weather.test-utils';
 import { ServerError } from '@src/shared/errors';
 import {
   createAnalyticsStub,
@@ -13,6 +12,7 @@ import {
   createRouteParamsFake,
   createSystemShareGatewayStub,
   createTestDi,
+  getTrackedEvents,
   respondByPath,
   setupFakeTimersPerTest,
 } from '@src/testing/core';

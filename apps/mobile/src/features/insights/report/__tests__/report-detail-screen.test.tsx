@@ -6,12 +6,12 @@ import '@src/shared/i18n/init';
 import { ErrorCode } from '@aido/api/errors';
 import { fail } from '@src/core/errors/result';
 import { countGetRequests } from '@src/features/planning/todo/__tests__/todo.test-utils';
-import { getTrackedEvents } from '@src/features/weather/__tests__/weather.test-utils';
 import {
   createAnalyticsStub,
   createApiError,
   createRouteParamsFake,
   createTestDi,
+  getTrackedEvents,
   setupFakeTimersPerTest,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';

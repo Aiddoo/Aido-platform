@@ -19,6 +19,7 @@ import {
   createTestQueryClient,
   respondByPath,
   setupFakeTimersPerTest,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { pressTwiceInSameFrame } from '@src/testing/press';
@@ -69,10 +70,6 @@ async function renderEditRoute(todo: Todo) {
   await screen.findByRole('button', { name: '기본' });
 
   return { httpClient, analytics };
-}
-
-function countEvents(analytics: ReturnType<typeof createAnalyticsStub>, eventName: string) {
-  return analytics.trackEvent.mock.calls.filter(([name]) => name === eventName).length;
 }
 
 async function editTitle(title: string) {
@@ -193,15 +190,15 @@ describe('TodoEditSheetRoute', () => {
     await userEvent.press(await screen.findByRole('button', { name: '이 할 일과 이후 할 일' }));
 
     // Then
-    await waitFor(() => expect(countEvents(analytics, 'todo_series_edited')).toBe(1));
+    await waitFor(() => expect(getTrackedEvents(analytics, 'todo_series_edited')).toHaveLength(1));
     await act(() => jest.advanceTimersByTimeAsync(1_000));
     expect(httpClient.patch).toHaveBeenCalledTimes(1);
     expect(httpClient.patch).toHaveBeenCalledWith('v1/todos/5', {
       title: '물 두 잔 마시기',
       scope: 'THIS_AND_FOLLOWING',
     });
-    expect(countEvents(analytics, 'todo_edited')).toBe(1);
-    expect(countEvents(analytics, 'todo_series_edited')).toBe(1);
+    expect(getTrackedEvents(analytics, 'todo_edited')).toHaveLength(1);
+    expect(getTrackedEvents(analytics, 'todo_series_edited')).toHaveLength(1);
   });
 
   it('반복 할 일의 범위를 묻다 뒤로 가면 보내지 않고 고친 제목이 남는다', async () => {
@@ -245,7 +242,7 @@ describe('TodoEditSheetRoute', () => {
     await save();
 
     // Then
-    await waitFor(() => expect(countEvents(analytics, 'todo_series_edited')).toBe(1));
+    await waitFor(() => expect(getTrackedEvents(analytics, 'todo_series_edited')).toHaveLength(1));
     await act(() => jest.advanceTimersByTimeAsync(1_000));
     expect(httpClient.patch).toHaveBeenCalledTimes(1);
     expect(screen.queryByText('반복 할 일 수정')).toBeNull();
@@ -253,6 +250,6 @@ describe('TodoEditSheetRoute', () => {
       startDate: '2026-10-28',
       scope: 'THIS_ONLY',
     });
-    expect(countEvents(analytics, 'todo_series_edited')).toBe(1);
+    expect(getTrackedEvents(analytics, 'todo_series_edited')).toHaveLength(1);
   });
 });

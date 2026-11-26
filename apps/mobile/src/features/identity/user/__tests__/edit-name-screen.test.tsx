@@ -10,6 +10,7 @@ import {
   createTestDi,
   deliverQueryNotifications,
   createApiError,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
@@ -177,9 +178,7 @@ describe('EditNameScreen', () => {
     // Then
     await waitFor(() => expect(router.back).toHaveBeenCalledTimes(1));
     expect(queryClient.getQueryData(USER_QUERY_KEYS.me())?.name).toBe('새이름');
-    expect(
-      analytics.trackEvent.mock.calls.filter(([eventName]) => eventName === 'profile_edited'),
-    ).toEqual([['profile_edited', { field: 'name' }]]);
+    expect(getTrackedEvents(analytics, 'profile_edited')).toEqual([{ field: 'name' }]);
   });
 
   it('저장하는 동안 화면을 떠났으면 저장이 끝나도 또 뒤로 가지 않는다', async () => {

@@ -11,6 +11,7 @@ import {
   createTestDi,
   createTestQueryClient,
   createApiError,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
@@ -57,10 +58,6 @@ async function pressToolbar(label: '저장' | '뒤로 가기') {
   });
 }
 
-function countEvents(analytics: ReturnType<typeof createAnalyticsStub>, eventName: string) {
-  return analytics.trackEvent.mock.calls.filter(([name]) => name === eventName).length;
-}
-
 describe('MemoCreateScreen', () => {
   it('저장 버튼을 빠르게 두 번 눌러도 메모는 한 번만 만든다', async () => {
     // Given
@@ -104,7 +101,7 @@ describe('MemoCreateScreen', () => {
     );
     expect(setup.di.draftService.restore(DRAFT_KEY).status).not.toBe('restored');
     expect(setup.di.queryClient.getQueryState(MEMO_QUERY_KEYS.list())?.isInvalidated).toBe(true);
-    expect(countEvents(setup.analytics, 'memo_created')).toBe(1);
+    expect(getTrackedEvents(setup.analytics, 'memo_created')).toHaveLength(1);
   });
 
   it('저장하지 않고 떠난 초안이 있으면 그 글로 이어 쓴다', async () => {
@@ -162,7 +159,7 @@ describe('MemoCreateScreen', () => {
     expect(setup.haptics.notify).toHaveBeenCalledTimes(1);
     expect(screen.getByDisplayValue('새 메모')).toBeOnTheScreen();
     expect(router.back).not.toHaveBeenCalled();
-    expect(countEvents(setup.analytics, 'memo_created')).toBe(0);
+    expect(getTrackedEvents(setup.analytics, 'memo_created')).toHaveLength(0);
   });
 
   it('글자 수 한도를 넘기면 저장 버튼을 끄고 보내지 않는다', async () => {

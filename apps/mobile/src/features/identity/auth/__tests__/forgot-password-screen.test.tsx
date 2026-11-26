@@ -9,6 +9,7 @@ import {
   createPendingResponse,
   createTestDi,
   respondByPath,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
@@ -42,10 +43,7 @@ async function renderForgotPassword(httpClient: ReturnType<typeof createHttpClie
     di: createTestDi({ ports: { httpClient, analytics } }),
   });
   return {
-    viewedSteps: () =>
-      analytics.trackEvent.mock.calls.flatMap(([name, properties]) =>
-        name === 'auth_password_reset_step_viewed' ? [properties] : [],
-      ),
+    viewedSteps: () => getTrackedEvents(analytics, 'auth_password_reset_step_viewed'),
   };
 }
 

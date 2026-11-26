@@ -11,7 +11,7 @@ import { createTodoApiError } from '@src/features/planning/todo/__tests__/todo.f
 import { countGetRequests } from '@src/features/planning/todo/__tests__/todo.test-utils';
 import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
 import { fail, ok } from '@src/shared/errors';
-import { createAnalyticsStub, createTestDi } from '@src/testing/core';
+import { createAnalyticsStub, createTestDi, getTrackedEvents } from '@src/testing/core';
 import { renderAppRoute } from '@src/testing/render-route-hook';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
@@ -28,7 +28,6 @@ import {
 import {
   createTodayTodoDto,
   createWeatherHttpClient,
-  getTrackedEvents,
   REPORT_PATH,
   respondWeather,
   TODOS_PATH,

@@ -8,6 +8,7 @@ import {
   createErrorReporterStub,
   createTestDi,
   createTestQueryClient,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen, userEvent, waitFor } from '@testing-library/react-native';
@@ -46,10 +47,7 @@ async function renderAppIconScreen({
 
   return {
     gateway,
-    changedIcons: () =>
-      analytics.trackEvent.mock.calls.flatMap(([name, params]) =>
-        name === 'settings_changed' ? [params] : [],
-      ),
+    changedIcons: () => getTrackedEvents(analytics, 'settings_changed'),
   };
 }
 

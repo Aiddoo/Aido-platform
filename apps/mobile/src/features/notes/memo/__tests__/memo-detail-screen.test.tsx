@@ -30,6 +30,7 @@ import {
   createTestQueryClient,
   createVoiceNoteStorageFake,
   deliverQueryNotifications,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen, userEvent, waitFor, within } from '@testing-library/react-native';
@@ -44,7 +45,7 @@ import { MEMO_QUERY_KEYS } from '../queries/memo-query-keys';
 import { createMemoDraftKey } from '../utils/memo-draft';
 import { createMemoPlanDraftKey } from '../utils/memo-plan-draft';
 import { createMemo } from './memo.fixtures';
-import { ACCOUNT_ID, countEvents, createMemoDto, MEMO_ID, SAVED_MEMO_DTO } from './memo.test-utils';
+import { ACCOUNT_ID, createMemoDto, MEMO_ID, SAVED_MEMO_DTO } from './memo.test-utils';
 import { createParseMemoResponseDto } from './parsed-memo.fixtures';
 
 const AGREED_CONSENT_DTO = {
@@ -226,7 +227,7 @@ describe('MemoDetailRoute', () => {
         content: '고친 메모',
       });
       expect(screen.getByDisplayValue('고친 메모', { normalizer: (text) => text })).toBeTruthy();
-      expect(countEvents(analytics, 'memo_updated')).toBe(1);
+      expect(getTrackedEvents(analytics, 'memo_updated')).toHaveLength(1);
       expect(router.back).not.toHaveBeenCalled();
     });
 
@@ -293,7 +294,7 @@ describe('MemoDetailRoute', () => {
       // 목록을 다시 받기 전에도 카드가 새 글을 보인다
       expect(await screen.findByText('고친 메모')).toBeTruthy();
       expect(screen.queryByText('처음 메모')).toBeNull();
-      expect(countEvents(analytics, 'memo_updated')).toBe(1);
+      expect(getTrackedEvents(analytics, 'memo_updated')).toHaveLength(1);
     });
 
     it('고친 글이 없으면 저장 요청 없이 떠난다', async () => {
@@ -324,7 +325,7 @@ describe('MemoDetailRoute', () => {
       expect(httpClient.patch).toHaveBeenCalledTimes(1);
       expect(router.back).not.toHaveBeenCalled();
       expect(screen.getByDisplayValue('고친 메모')).toBeTruthy();
-      expect(countEvents(analytics, 'memo_updated')).toBe(0);
+      expect(getTrackedEvents(analytics, 'memo_updated')).toHaveLength(0);
     });
 
     it('연결 문제로 못 보내면 뒤로 가기는 떠나고 글은 초안에 남는다', async () => {
@@ -675,7 +676,7 @@ describe('MemoDetailRoute', () => {
       // Then
       await waitFor(() => expect(screen.queryByLabelText('저장')).toBeNull());
       expect(httpClient.patch).toHaveBeenCalledTimes(1);
-      expect(countEvents(analytics, 'memo_updated')).toBe(1);
+      expect(getTrackedEvents(analytics, 'memo_updated')).toHaveLength(1);
     });
 
     it('뒤로 가기를 같은 프레임에 두 번 눌러도 한 번 보내고 한 번 떠난다', async () => {
@@ -768,7 +769,7 @@ describe('MemoDetailRoute', () => {
       // Then
       expect(await screen.findByLabelText('메모 고정 해제')).toBeTruthy();
       expect(httpClient.patch).toHaveBeenCalledWith(`v1/memos/${MEMO_ID}/pin`, { isPinned: true });
-      expect(countEvents(analytics, 'memo_pin_toggled')).toBe(1);
+      expect(getTrackedEvents(analytics, 'memo_pin_toggled')).toHaveLength(1);
     });
   });
 
@@ -797,7 +798,7 @@ describe('MemoDetailRoute', () => {
       expect(httpClient.delete).toHaveBeenCalledTimes(1);
       expect(httpClient.delete).toHaveBeenCalledWith(`v1/memos/${MEMO_ID}`);
       expect(queryClient.getQueryState(MEMO_QUERY_KEYS.list())?.isInvalidated).toBe(true);
-      expect(countEvents(analytics, 'memo_deleted')).toBe(1);
+      expect(getTrackedEvents(analytics, 'memo_deleted')).toHaveLength(1);
       expect(httpClient.patch).not.toHaveBeenCalled();
       await screen.unmount();
       expect(di.draftService.restore(DRAFT_KEY).status).not.toBe('restored');
@@ -819,7 +820,7 @@ describe('MemoDetailRoute', () => {
         queryClient.getQueryData(MEMO_QUERY_KEYS.list())?.pages[0]?.items.map(({ id }) => id),
       ).toEqual([MEMO_ID]);
       expect(router.back).not.toHaveBeenCalled();
-      expect(countEvents(analytics, 'memo_deleted')).toBe(0);
+      expect(getTrackedEvents(analytics, 'memo_deleted')).toHaveLength(0);
     });
 
     it('취소하면 보내지 않고 남는다', async () => {
@@ -959,7 +960,7 @@ describe('MemoDetailRoute', () => {
             },
           ],
         });
-        expect(countEvents(analytics, 'memo_converted_to_todo')).toBe(1);
+        expect(getTrackedEvents(analytics, 'memo_converted_to_todo')).toHaveLength(1);
         expect(router.back).toHaveBeenCalledTimes(1);
         await waitFor(() => expect(screen.queryByTestId('memo-convert-sheet')).toBeNull());
       });
@@ -1057,8 +1058,8 @@ describe('MemoDetailRoute', () => {
       );
       expect(getParseRequests(httpClient)).toHaveLength(1);
       expect(getParseRequests(httpClient)[0]?.[1]).toEqual({ content: '처음 메모', categoryId: 1 });
-      expect(countEvents(analytics, 'ai_parse_used')).toBe(1);
-      expect(countEvents(analytics, 'voice_plan_generated')).toBe(1);
+      expect(getTrackedEvents(analytics, 'ai_parse_used')).toHaveLength(1);
+      expect(getTrackedEvents(analytics, 'voice_plan_generated')).toHaveLength(1);
     });
 
     it('고친 글이 있으면 먼저 저장한 뒤 저장한 글로 정리한다', async () => {
@@ -1091,8 +1092,8 @@ describe('MemoDetailRoute', () => {
       await waitFor(() => expect(haptics.notify).toHaveBeenCalledWith('error'));
       expect(haptics.notify).toHaveBeenCalledTimes(1);
       expect(router.push).not.toHaveBeenCalled();
-      expect(countEvents(analytics, 'ai_parse_used')).toBe(1);
-      expect(countEvents(analytics, 'voice_plan_failed')).toBe(1);
+      expect(getTrackedEvents(analytics, 'ai_parse_used')).toHaveLength(1);
+      expect(getTrackedEvents(analytics, 'voice_plan_failed')).toHaveLength(1);
       expect(analytics.trackEvent).toHaveBeenCalledWith('voice_plan_failed', {
         source: 'memo',
         cause: expect.any(String),

@@ -17,6 +17,7 @@ import {
   createLocationGatewayStub,
   createTestDi,
   createTestQueryClient,
+  getTrackedEvents,
   respondByPath,
 } from '@src/testing/core';
 import { renderAppRoute } from '@src/testing/render-route-hook';
@@ -39,7 +40,6 @@ import {
 import {
   createSeoulLocationStub,
   createWeatherHttpClient,
-  getTrackedEvents,
   renderWeatherScreen,
   REPORT_PATH,
   respondWeather,
@@ -131,11 +131,9 @@ describe('WeatherScreen', () => {
 
     // Then
     await waitFor(() =>
-      expect(
-        analytics.trackEvent.mock.calls.filter(([eventName]) => eventName === 'weather_opened'),
-      ).toEqual([
-        ['weather_opened', { entry: 'notification' }],
-        ['weather_opened', { entry: 'notification' }],
+      expect(getTrackedEvents(analytics, 'weather_opened')).toEqual([
+        { entry: 'notification' },
+        { entry: 'notification' },
       ]),
     );
   });

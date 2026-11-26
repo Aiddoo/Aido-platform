@@ -68,4 +68,5 @@ export { createVoiceNoteStorageFake } from './fakes/voice-note-storage.fake';
 export { createTestQueryClient, deliverQueryNotifications } from './query-client';
 export { runKyAfterResponseHook } from './ky-after-response-hook';
 export { setupFakeTimersPerTest } from './timers';
+export { getTrackedEvents } from './tracked-events';
 export { stubWindowDimensions } from './window-dimensions';

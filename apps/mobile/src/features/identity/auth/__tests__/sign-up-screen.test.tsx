@@ -8,6 +8,7 @@ import {
   createPendingResponse,
   createTestDi,
   respondByPath,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
@@ -58,10 +59,7 @@ async function renderSignUp(httpClient: ReturnType<typeof createHttpClientStub>)
   return {
     authSessionStore,
     tokenStore,
-    viewedSteps: () =>
-      analytics.trackEvent.mock.calls.flatMap(([name, properties]) =>
-        name === 'auth_signup_step_viewed' ? [properties] : [],
-      ),
+    viewedSteps: () => getTrackedEvents(analytics, 'auth_signup_step_viewed'),
   };
 }
 

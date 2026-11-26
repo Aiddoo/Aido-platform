@@ -7,6 +7,7 @@ import {
   createHapticsGatewayStub,
   createHttpClientStub,
   createTestDi,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
@@ -90,9 +91,7 @@ describe('BlockedUsersScreen', () => {
     expect(httpClient.delete).toHaveBeenCalledTimes(1);
     expect(httpClient.delete).toHaveBeenCalledWith(`v1/blocks/${BLOCKED_USER_ID}`);
     expect(await screen.findByText('차단을 해제했어요')).toBeOnTheScreen();
-    expect(
-      analytics.trackEvent.mock.calls.filter(([name]) => name === 'user_unblocked'),
-    ).toHaveLength(1);
+    expect(getTrackedEvents(analytics, 'user_unblocked')).toHaveLength(1);
   });
 
   it('해제하지 못하면 한 번 알리고 그 사람을 목록에 남긴다', async () => {

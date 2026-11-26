@@ -15,6 +15,7 @@ import {
   createPendingResponse,
   createRouteParamsFake,
   createTestDi,
+  getTrackedEvents,
   respondByPath,
 } from '@src/testing/core';
 import { pressTwiceInSameFrame } from '@src/testing/press';
@@ -77,10 +78,6 @@ async function renderCard({
   const rendered = await renderScreen(<InviteCardScreen />, { di, withLocalDate: true });
 
   return { httpClient, analytics, syncStorage, di, rendered };
-}
-
-function findEvents(analytics: ReturnType<typeof createAnalyticsStub>, eventName: string) {
-  return analytics.trackEvent.mock.calls.filter(([name]) => name === eventName);
 }
 
 describe('InviteCardScreen', () => {
@@ -155,8 +152,8 @@ describe('InviteCardScreen', () => {
     expect(
       di.queryClient.getQueryData(INVITE_QUERY_KEYS.redemption({ inviterId: INVITER_ID })),
     ).toEqual(expect.objectContaining({ outcome: 'REDEEMED' }));
-    expect(findEvents(analytics, 'invite_redeemed')).toEqual([
-      ['invite_redeemed', { outcome: 'REDEEMED', friendship: 'FRIENDS' }],
+    expect(getTrackedEvents(analytics, 'invite_redeemed')).toEqual([
+      { outcome: 'REDEEMED', friendship: 'FRIENDS' },
     ]);
   });
 
@@ -204,9 +201,7 @@ describe('InviteCardScreen', () => {
     await waitFor(() =>
       expect(router.dismissTo).toHaveBeenCalledWith('/friends/invite', { withAnchor: true }),
     );
-    expect(findEvents(analytics, 'invite_redeem_failed')).toEqual([
-      ['invite_redeem_failed', { reason: 'self' }],
-    ]);
+    expect(getTrackedEvents(analytics, 'invite_redeem_failed')).toEqual([{ reason: 'self' }]);
   });
 
   it.each([
@@ -227,9 +222,7 @@ describe('InviteCardScreen', () => {
       expect(await screen.findAllByText(error.message)).toHaveLength(1);
       expect(router.dismissTo).not.toHaveBeenCalled();
       expect(screen.getByTestId('invite-card-redeem')).toBeEnabled();
-      expect(findEvents(analytics, 'invite_redeem_failed')).toEqual([
-        ['invite_redeem_failed', { reason }],
-      ]);
+      expect(getTrackedEvents(analytics, 'invite_redeem_failed')).toEqual([{ reason }]);
     },
   );
 
@@ -308,9 +301,7 @@ describe('InviteCardScreen', () => {
     await screen.findByTestId('invite-card-redeem');
 
     // Then
-    expect(findEvents(analytics, 'invite_link_opened')).toEqual([
-      ['invite_link_opened', { source: 'kakao' }],
-    ]);
+    expect(getTrackedEvents(analytics, 'invite_link_opened')).toEqual([{ source: 'kakao' }]);
   });
 
   it('앱 안 코드 입력에서 넘어온 카드는 초대 링크 열림을 다시 남기지 않는다', async () => {
@@ -321,6 +312,6 @@ describe('InviteCardScreen', () => {
     await screen.findByTestId('invite-card-redeem');
 
     // Then
-    expect(findEvents(analytics, 'invite_link_opened')).toEqual([]);
+    expect(getTrackedEvents(analytics, 'invite_link_opened')).toEqual([]);
   });
 });

@@ -8,6 +8,7 @@ import {
   createHttpClientStub,
   createPendingResponse,
   createTestDi,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { pressTwiceInSameFrame } from '@src/testing/press';
 import { renderScreen } from '@src/testing/render';
@@ -47,10 +48,6 @@ async function renderThanksSheet(preview: Result<unknown, ApiError>) {
   return { httpClient, analytics };
 }
 
-function countEvents(analytics: ReturnType<typeof createAnalyticsStub>, eventName: string) {
-  return analytics.trackEvent.mock.calls.filter(([name]) => name === eventName).length;
-}
-
 describe('TodoThanksSheetRoute', () => {
   it('응원해준 친구를 보이고 미리보기 시점까지의 콕으로 고마움을 전한 뒤 완료로 닫는다', async () => {
     // Given
@@ -67,7 +64,7 @@ describe('TodoThanksSheetRoute', () => {
     expect(httpClient.put).toHaveBeenCalledTimes(1);
     expect(httpClient.put).toHaveBeenCalledWith(THANKS_PATH, { throughNudgeId: THROUGH_NUDGE_ID });
     expect(analytics.trackEvent).toHaveBeenCalledWith('nudge_thanks_sent', { recipient_count: 2 });
-    expect(countEvents(analytics, 'nudge_thanks_sent')).toBe(1);
+    expect(getTrackedEvents(analytics, 'nudge_thanks_sent')).toHaveLength(1);
 
     // When
     await fireEvent.press(screen.getByRole('button', { name: '완료' }));
@@ -86,7 +83,7 @@ describe('TodoThanksSheetRoute', () => {
 
     // Then
     expect(await screen.findByText('이미 고마운 마음을 전했어요')).toBeOnTheScreen();
-    expect(countEvents(analytics, 'nudge_thanks_sent')).toBe(0);
+    expect(getTrackedEvents(analytics, 'nudge_thanks_sent')).toHaveLength(0);
   });
 
   it('고마움을 전할 친구가 없으면 보내기 없이 알린다', async () => {

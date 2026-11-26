@@ -12,6 +12,7 @@ import {
   createPendingResponse,
   createRouteParamsFake,
   createTestDi,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { pressTwiceInSameFrame } from '@src/testing/press';
 import { renderScreen } from '@src/testing/render';
@@ -37,10 +38,6 @@ async function renderBlockUserConfirm() {
   return { httpClient, analytics, haptics };
 }
 
-function countEvents(analytics: ReturnType<typeof createAnalyticsStub>, eventName: string) {
-  return analytics.trackEvent.mock.calls.filter(([name]) => name === eventName).length;
-}
-
 describe('BlockUserConfirmRoute', () => {
   it('차단하면 그 사람을 한 번 차단하고 알린 뒤 확인 창을 닫는다', async () => {
     // Given
@@ -56,7 +53,7 @@ describe('BlockUserConfirmRoute', () => {
     expect(httpClient.post).toHaveBeenCalledWith(`v1/blocks/${BLOCKED_USER_ID}`);
     expect(await screen.findByText(`${USER_NAME}님을 차단했어요`)).toBeOnTheScreen();
     expect(haptics.notify).toHaveBeenCalledWith('success');
-    expect(countEvents(analytics, 'user_blocked')).toBe(1);
+    expect(getTrackedEvents(analytics, 'user_blocked')).toHaveLength(1);
   });
 
   it('차단하는 사이 확인 창을 떠났으면 차단이 끝나도 아래 화면을 닫지 않는다', async () => {
@@ -122,7 +119,7 @@ describe('BlockUserConfirmRoute', () => {
     expect(screen.getByText(`${USER_NAME}님을 차단할까요?`)).toBeOnTheScreen();
     expect(screen.getByTestId('block-user-confirm')).toBeEnabled();
     expect(router.back).not.toHaveBeenCalled();
-    expect(countEvents(analytics, 'user_blocked')).toBe(0);
+    expect(getTrackedEvents(analytics, 'user_blocked')).toHaveLength(0);
   });
 
   it('차단하는 동안 다시 눌러도 요청은 한 번이다', async () => {
