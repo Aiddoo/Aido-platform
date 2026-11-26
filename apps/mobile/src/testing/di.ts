@@ -5,7 +5,6 @@ import {
 import type { DIContainer } from '@src/bootstrap/providers/di-context';
 import { createQueryCacheStorage } from '@src/bootstrap/query/query-cache-persistence';
 import type { HttpClient } from '@src/core/ports/http-client';
-import type { RefreshTokensRequest } from '@src/core/ports/token-refresher';
 import { createSessionEpoch, withSessionEpoch } from '@src/core/session/session-epoch';
 import { createInviteLinkOpenedStore } from '@src/features/social/invite/stores/invite-link-opened.store';
 import type { QueryClient } from '@tanstack/react-query';
@@ -16,7 +15,6 @@ import { createMemoryKeyValueStorage } from './fakes/memory-key-value-storage.fa
 import { createMemoryObservableSyncStorage } from './fakes/memory-observable-sync-storage.fake';
 import { createMemorySyncStorage } from './fakes/memory-sync-storage.fake';
 import { createMemoryTokenStore } from './fakes/memory-token-store.fake';
-import { mockMethod } from './mock-method';
 import { createAnalyticsStub } from './ports/analytics.stub';
 import { createAppIconGatewayStub } from './ports/app-icon-gateway.stub';
 import { createAppLifecycleGatewayStub } from './ports/app-lifecycle-gateway.stub';
@@ -31,6 +29,7 @@ import {
   createInstallationIdGatewayStub,
   createVendorIdGatewayStub,
 } from './ports/device-identity-gateway.stub';
+import { createDeviceTraitsStub } from './ports/device-traits.stub';
 import { createErrorReporterStub } from './ports/error-reporter.stub';
 import {
   createExternalLinkGatewayStub,
@@ -51,6 +50,7 @@ import { createSocialShareGatewayStub } from './ports/social-share-gateway.stub'
 import { createSpeechRecognizerStub } from './ports/speech-recognizer.stub';
 import { createSystemShareGatewayStub } from './ports/system-share-gateway.stub';
 import { createTodoImportSourceStub } from './ports/todo-import-source.stub';
+import { createRefreshTokensRequestStub } from './ports/token-refresher.stub';
 import { createViewCaptureGatewayStub } from './ports/view-capture-gateway.stub';
 import { createWidgetBridgeStub } from './ports/widget-bridge.stub';
 import { createTestQueryClient } from './query-client';
@@ -102,9 +102,7 @@ export function createTestPorts({
   pushNotification = createPushNotificationGatewayStub(),
   storage = createMemoryKeyValueStorage(),
   jsonFetcher = createJsonFetcherStub(),
-  requestRefresh = mockMethod<RefreshTokensRequest>(async () => {
-    throw new Error('createTestPorts: requestRefresh를 정하지 않았습니다');
-  }),
+  requestRefresh = createRefreshTokensRequestStub(),
   socialAuth = createSocialAuthGatewayStub(),
   socialShare = createSocialShareGatewayStub(),
   systemShare = createSystemShareGatewayStub(),
@@ -132,11 +130,7 @@ export function createTestPorts({
   draftStorage = createMemorySyncStorage(),
   queryCacheStorage = createQueryCacheStorage(createMemorySyncStorage()),
   queryClient = createTestQueryClient(),
-  deviceTraits = {
-    hasKeyboardInsetAnimation: true,
-    isLowMemoryDevice: false,
-    hasSystemScrollEdgeEffect: false,
-  },
+  deviceTraits = createDeviceTraitsStub(),
   platform = 'ios',
   deviceModel = null,
   getTimezone = () => 'Asia/Seoul',
