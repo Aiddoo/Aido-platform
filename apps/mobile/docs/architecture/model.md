@@ -36,7 +36,7 @@ Policy는 의미 값(등급, 단계, 종류, 한도 일수)을 돌려준다. 그
 
 쿼리 데이터를 거르고 묶는 일은 `queries/`의 `select`가 한다. 묶는 기준이 업무 규칙이면(어느 카테고리를 어떤 순서로, 빈 묶음을 둘지) 그 규칙은 Policy에 두고 `select`가 부른다(`TodoListPolicy.groupByCategory`).
 
-view-model은 모델 → 라벨 키·포맷·색 토큰만 한다. 판정은 Policy, 파싱은 mapper, 쿼리 데이터 묶기는 `select`다. 할 일이 그것뿐이면 view-model 파일을 두지 않는다.
+view-model은 모델 → 라벨 키·포맷·색 토큰만 한다. 판정은 Policy, 파싱은 mapper, 쿼리 데이터 묶기는 `select`다. 내보내는 함수는 `get{X}`(표시 값·목적지)·`get{X}LabelKey`·`format{X}`(글자)이고 `to*`는 mapper의 동사라 쓰지 않는다. 할 일이 그것뿐이면 view-model 파일을 두지 않는다.
 
 ```ts
 // 목표 모양: features/notification/domains/notification.model.ts

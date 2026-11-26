@@ -28,7 +28,7 @@ PushRegistrationService (features/notification/services) → PushDeviceApi (apis
 | `stores/push-onboarding-guard.store.ts`                                                              | 앱 화면 묶음이 그린 알림 화면 guard 값. 피드가 열 차례를 이 값으로 읽고 DI가 소유한다                                                                              |
 | `apis/notification.mapper.ts`                                                                        | `toNotificationTarget`: 서버 `navigation` → 앱 `NotificationTarget`. 알림함 항목도 같은 길이다                                                                     |
 | `domains/push-notification.model.ts`·`push-notification-response.model.ts`                           | 받은 푸시(`{ notificationId, type, target, … }`)와 누른 응답, 각자의 Policy                                                                                        |
-| `utils/notification-destination.view-model.ts`                                                       | `toNotificationDestination(target, { windowSizeClass, accountId })`: target → 앱 경로·외부 링크                                                                    |
+| `utils/notification-destination.view-model.ts`                                                       | `getNotificationDestination(target, { windowSizeClass, accountId })`: target → 앱 경로·외부 링크                                                                   |
 | `hooks/use-notification-destination.ts`                                                              | `useResolveNotificationDestination`(창 크기·보는 사람으로 정함)·`useOpenNotificationDestination({ openRoute })`(연다)                                              |
 | `shared/navigation/open-entry-href.ts`                                                               | `openEntryHref(href)`: 켜진 앱에서 누른 푸시를 OS 링크처럼 보던 탭에 연다(Stack에 있으면 돌아가고 없으면 쌓는다)                                                   |
 
@@ -145,11 +145,11 @@ Expo Router 권장대로 루트 레이아웃의 관찰 훅 하나가 `getLastNot
 
 ### 목적지 대조
 
-서버가 푸시·알림함 행에 싣는 `navigation`이 유일한 목적지 입력이다. 앱은 옛 type·action·context·routing 필드를 읽지 않는다(서버가 호환용으로 함께 싣는 옛 필드는 출시된 구 앱의 몫이다). 서버를 되돌릴 수 있는 바닥은 [호환](../../../docs/conventions/compatibility.md#2-외부-계약-바꾸지-않는다)에 있다. 길은 하나다: `navigation` →(mapper `toNotificationTarget`) `NotificationTarget` →(`toNotificationDestination`) 경로·외부 링크·이동 없음.
+서버가 푸시·알림함 행에 싣는 `navigation`이 유일한 목적지 입력이다. 앱은 옛 type·action·context·routing 필드를 읽지 않는다(서버가 호환용으로 함께 싣는 옛 필드는 출시된 구 앱의 몫이다). 서버를 되돌릴 수 있는 바닥은 [호환](../../../docs/conventions/compatibility.md#2-외부-계약-바꾸지-않는다)에 있다. 길은 하나다: `navigation` →(mapper `toNotificationTarget`) `NotificationTarget` →(`getNotificationDestination`) 경로·외부 링크·이동 없음.
 
 `packages/api/test-fixtures/notification-navigation.cases.json`(`dist`에 들어가지 않음)을 서버 spec과 앱 test가 함께 읽는다. 앱은 navigation이 있는 줄마다 접힌 화면이 여는 곳을 적어 두고(`utils/notification-destination.view-model.test.ts`, 접는 쪽은 `apis/notification.mapper.test.ts`), 서버가 줄을 더하면 앱 테스트가 먼저 깨진다. 할 일이 아닌 목적지는 medium·expanded와 보는 사람 없음·주인·다른 사람 조합에서도 같은지, 할 일 목적지는 펼친 화면의 목록 pane(주인·날짜)을 따로 확인한다.
 
-**새 navigation kind 더하기.** 서버 계약(`notificationNavigationSchema`)에 kind가 더해지면 앱 모델 `notificationTargetSchema`(앱이 쓰는 칸만)와 mapper `toNotificationTarget`, 목적지 `toNotificationDestination`(그룹 없는 경로)에 한 줄씩 더한다. 빠뜨리면 `match().exhaustive()`가 빌드를 막는다(계약 union이 넓어져 mapper가 먼저 깨진다). 열리는 탭은 [열리는 자리](#열리는-자리)가 정해 kind마다 적지 않는다. 테스트는 대조표 줄의 목적지(`COMPACT_DESTINATIONS`)와 콜드·웜 자리(`auth-gate-layout.push-entry.flow.test.tsx`의 `LANDINGS`, 타입이 kind마다 요구한다)를 적는다.
+**새 navigation kind 더하기.** 서버 계약(`notificationNavigationSchema`)에 kind가 더해지면 앱 모델 `notificationTargetSchema`(앱이 쓰는 칸만)와 mapper `toNotificationTarget`, 목적지 `getNotificationDestination`(그룹 없는 경로)에 한 줄씩 더한다. 빠뜨리면 `match().exhaustive()`가 빌드를 막는다(계약 union이 넓어져 mapper가 먼저 깨진다). 열리는 탭은 [열리는 자리](#열리는-자리)가 정해 kind마다 적지 않는다. 테스트는 대조표 줄의 목적지(`COMPACT_DESTINATIONS`)와 콜드·웜 자리(`auth-gate-layout.push-entry.flow.test.tsx`의 `LANDINGS`, 타입이 kind마다 요구한다)를 적는다.
 
 ### 콜드 스타트 순서
 
