@@ -120,7 +120,7 @@
 
 ## 이미 있는 예외
 
-끊지 못한 양방향 쌍 하나(`planning/category <-> planning/todo`)만 `scripts/feature-graph.cjs`의 `ALLOWED_FEATURE_CYCLES`에 이유와 함께 남았다. 새 쌍은 막고, 쌍이 사라지면 목록에서 지우라고 실패한다. 새 항목은 이유와 함께 직접 적는다. 엄격한 없음 비교는 그 줄 위 `// oxlint-disable-next-line aido/no-strict-nullish -- <이유>`로만 끄고, 쓰지 않는 지시문은 Oxlint가 실패시킨다.
+끊지 못한 양방향 쌍 하나(`planning/category <-> planning/todo`)만 `scripts/feature-graph.cjs`의 `ALLOWED_FEATURE_CYCLES`에 이유와 함께 남았다. 새 쌍은 막고, 쌍이 사라지면 목록에서 지우라고 실패한다. 세 기능 이상이 도는 고리는 예외 없이 막는다. 새 항목은 이유와 함께 직접 적는다. 엄격한 없음 비교는 그 줄 위 `// oxlint-disable-next-line aido/no-strict-nullish -- <이유>`로만 끄고, 쓰지 않는 지시문은 Oxlint가 실패시킨다.
 
 - 기능 폴더 단위의 예외는 없다. 아직 위반이 남은 자리는 설정이 말한다: `apps/mobile/.oxlintrc.json`의 "래칫" off 블록(`shared`·`bootstrap`의 몇 파일), `apps/mobile/.dependency-cruiser.cjs`의 `PENDING_INFRA_ROUTES`. 그 자리를 고치면 그 줄을 지우고, 새 폴더는 처음부터 켜진다.
 
