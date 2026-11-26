@@ -21,7 +21,7 @@ Node 26(EAS 모바일 빌드 24) · NestJS 12 ESM · Drizzle ORM 1.0 RC · Postg
 apps/api        NestJS 서버 (문서: apps/api/docs)
 apps/mobile     Expo 앱
 packages/api    REST 계약·오류 코드·공용 어휘 (@aido/api)
-tooling/*       공유 설정(vitest·typescript), migration CLI
+tooling/*       공유 설정(vitest·typescript·test-config), Oxlint 관례 플러그인, migration CLI
 docs/           앱·서버 공통 규칙(conventions), 릴리스 기록(releases)
 ```
 
