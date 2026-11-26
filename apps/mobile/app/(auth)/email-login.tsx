@@ -21,6 +21,7 @@ import {
   TextButton,
 } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
+import { noop } from 'es-toolkit';
 import { useNavigation, useRouter } from 'expo-router';
 import { Controller, FormState, useForm } from 'react-hook-form';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -39,7 +40,8 @@ export default function EmailLoginScreen() {
     mode: 'onTouched',
   });
 
-  // 인증 화면에는 스키마가 다듬은 주소를 넘겨야 해 실패를 제출 안에서 받는다
+  // 인증 화면에는 스키마가 다듬은 주소를 넘겨야 해 실패를 제출 안에서 받는다.
+  // 받은 실패는 다시 던진다. RHF가 실패로 알아야 isSubmitSuccessful이 꺼진 채 남아 다시 누를 수 있다
   const submitEmailLogin = form.handleSubmit(async ({ email, password }) => {
     try {
       await emailLogin.mutateAsync({ email, password });
@@ -48,11 +50,12 @@ export default function EmailLoginScreen() {
       if (isEmailNotVerifiedError(error) && navigation.isFocused()) {
         push({ pathname: '/(auth)/verify-email', params: { email } });
       }
+      throw error;
     }
   });
   // 같은 프레임의 두 번째 탭은 isSubmitting이 다음 렌더에야 켜져 여기서 막는다
   const handleLoginPress = useSingleTap(() => {
-    submitEmailLogin();
+    submitEmailLogin().catch(noop);
   });
 
   return (
@@ -73,12 +76,13 @@ export default function EmailLoginScreen() {
           footer={
             <FormState
               control={form.control}
-              render={({ isSubmitting }) => (
+              render={({ isSubmitting, isSubmitSuccessful }) => (
                 <KeyboardAdaptiveButton
                   testID="email-login-submit"
                   color="primary"
                   onPress={handleLoginPress}
-                  isLoading={isSubmitting || emailLogin.isPending}
+                  // 로그인하면 인증 화면이 빠지는 동안에도 같은 값이 남는다. 그동안 다시 보내지 않는다
+                  isLoading={isSubmitting || isSubmitSuccessful || emailLogin.isPending}
                 >
                   {t('emailLogin.submit')}
                 </KeyboardAdaptiveButton>
@@ -133,7 +137,7 @@ export default function EmailLoginScreen() {
               render={({
                 field: { ref, onChange, onBlur, value },
                 fieldState: { error },
-                formState: { isSubmitting },
+                formState: { isSubmitting, isSubmitSuccessful },
               }) => (
                 <PasswordInput
                   testID="email-login-password"
@@ -149,7 +153,7 @@ export default function EmailLoginScreen() {
                   isInvalid={error != null}
                   errorMessage={resolveValidationMessage(error, { default: 'password.required' })}
                   onSubmitEditing={() => {
-                    if (!isSubmitting) {
+                    if (!isSubmitting && !isSubmitSuccessful) {
                       handleLoginPress();
                     }
                   }}

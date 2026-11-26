@@ -8,6 +8,7 @@ import {
   createTestDi,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router, useNavigation } from 'expo-router';
 import { TextInput } from 'react-native';
@@ -218,5 +219,27 @@ describe('EmailLoginRoute', () => {
     // Then
     await waitFor(() => expect(screen.getByTestId('email-login-submit')).toBeEnabled());
     expect(router.push).not.toHaveBeenCalled();
+  });
+
+  describe('로그인 뒤 떠나는 동안', () => {
+    setupFakeTimersPerTest();
+
+    it('로그인해 화면이 바뀌는 동안 다시 눌러도 로그인 요청은 한 번이다', async () => {
+      // Given
+      httpClient.post.mockResolvedValue(ok(createAuthTokensDto()));
+      const { authSessionStore } = await renderEmailLogin(httpClient);
+      await typeCredentials(EMAIL, PASSWORD);
+      await fireEvent.press(screen.getByTestId('email-login-submit'));
+      // 연타 가드(600ms)가 지난 뒤다. 인증 화면 묶음이 빠지는 전환이 끝나야 내려가 버튼이 아직 보인다
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+      expect(authSessionStore.getSnapshot().status).toBe('authenticated');
+
+      // When
+      await fireEvent.press(screen.getByTestId('email-login-submit'));
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+
+      // Then
+      expect(httpClient.post).toHaveBeenCalledTimes(1);
+    });
   });
 });
