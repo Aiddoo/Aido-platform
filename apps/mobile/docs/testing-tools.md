@@ -13,6 +13,11 @@
 | `di.ts`                                                                   | `createTestPorts`, `createTestDi({ ports, seeds })` → `TestDi`(운영 조립 + `queryClient`)                                                                                        |
 | `render-route-hook.tsx`                                                   | `renderRouteHook`(진짜 Expo Router 위에서 훅을 돌린다), `renderAppRoute(routes, { url, di })`(route 파일 표를 앱 Provider 위에 올린다), `renderRoutes`(Provider 없이 route 표만) |
 | `query-client.ts`, `timers.ts`, `mock-method.ts`, `fixture.ts`, `core.ts` | `createTestQueryClient`·`deliverQueryNotifications`, `setupFakeTimersPerTest`, `mockMethod`, `defineFixture`, 가벼운 공용 export(`render.tsx` 제외)                              |
+| `tracked-events.ts`                                                       | `getTrackedEvents(analytics, name)`: 그 이름으로 남긴 분석 값 목록(남긴 순서). 이름은 `AppEventMap` 키만 받는다                                                                  |
+| `view-measure.ts`, `initial-url.ts`, `idle-callback.ts`                   | `setupViewMeasurePerTest({ measure, measureInWindow })`(`moveTo`로 바꿈), `stubInitialUrl(url)`, `setupIdleCallbackPerTest(create?)`. 모두 테스트가 끝나면 되돌린다              |
+| `date-key.ts`, `temporal-oracle.ts`                                       | `createDateKey('2026-11-24')`(없는 날이면 던진다), `temporalOracle`(Node 네이티브 Temporal로 날짜 계산의 정답을 낸다)                                                            |
+| `window-dimensions.ts`, `window-layout.fixtures.ts`                       | `stubWindowDimensions(width)`, `createAppWindow`·`createPaneArea`·`DEVICE_WINDOW`·`IPAD_SIDEBAR_WIDTH`·`IPHONE_DUO_RAIL_WIDTH`(창·칸 배치 모델 fixture와 기기 창 크기)           |
+| `device-widget-bridge.ts`, `ky-after-response-hook.ts`                    | `createDeviceWidgetBridge()`(운영 조립의 플랫폼 위젯 브리지), `runKyAfterResponseHook(hook, request, response)`(실제 ky로 afterResponse 훅 한 번)                                |
 
 - 도구는 `function` 선언이고 `jest.Mocked<포트>`를 돌려준다. 메서드는 `mockMethod<Port['method']>(구현)`으로 포트에서 타입을 가져와, 포트가 바뀌면 기본값도 컴파일되지 않게 한다. 같은 일을 하는 도구를 따로 만들지 않는다. feature 전용 도구는 이유가 있을 때만 그 feature의 `__tests__`에 둔다.
 - **stub 기본값**은 정상 기기와 빈 데이터다(알림 허용, 클립보드 비어 있음, 요금제·구독 없음, 로그인 창 닫음). 값이 있어야 하는 메서드(`HttpClient`, `JsonFetcher`, 좌표)는 정하지 않고 부르면 `createXStub: get 응답을 정하지 않았습니다`처럼 이름을 대며 실패한다. 어긋난 기본값은 테스트가 반환된 `jest.fn`을 바꿔 준다. 포트를 넓히면 stub도 같은 커밋에서 넓힌다.
@@ -20,6 +25,9 @@
 - SDK를 `jest.mock`하는 `shared/infra` 어댑터 테스트는 `core.ts` 대신 도구 파일을 직접 import한다. 앱 전체가 가로챈 SDK보다 먼저 읽히지 않게 하기 위해서다.
 - 서버가 코드로 거절한 실패는 `createApiError(code, { message, status, details, retryAfterMs })`(`api-error.ts`, `core.ts`)로 만들고 `new ApiError(`를 테스트에 직접 쓰지 않는다. 문구·상태를 주지 않으면 서버 카탈로그(`Errors[code]`)의 값이고, 기능 fixture의 `create{Feature}ApiError`는 기능 기본 코드를 정해 이것을 부른다.
 - 기타: 끝나는 시점·실패를 테스트가 정하는 Promise는 내장 `Promise.withResolvers<T>()`를 쓴다(앱 코드는 lint가 막는다). 그 위의 `createPendingResponse(value)`(정한 값으로 끝나는 HTTP 응답, 두 번 누름·늦은 응답), `createStalledBodyResponse(status)`(헤더 뒤 본문이 멈춘 응답), `observeSettlement(promise)`(끝나지 않는 대기를 시간 초과 대신 `pending`으로 단언), `respondByPath({ path: 응답 })`(HTTP stub 하나가 URL마다 다른 응답), `createWidgetBridgeStub()`, `createRouteParamsFake(initial)`(공용 expo-router mock의 URL을 움직임), `stubWindowDimensions(width)`, `OverlayStateContext.Provider`(시트 활성 여부를 값으로 준다).
+- 분석 단언: `analytics.trackEvent.mock.calls`를 이름으로 거르지 않고 `getTrackedEvents`를 쓴다. 몇 번 남았는지는 `toHaveLength`, 값은 `toEqual([{ … }])`다. 이름 앞머리로 거르는 것, 전체 호출 순서, 개인정보가 남지 않았는지(`JSON.stringify`)만 `mock.calls`를 직접 본다.
+- RN의 `View.prototype.measure`·`measureInWindow`는 이미 `jest.fn`이라 `restoreMocks`가 구현을 되돌리지 못한다. `jest.spyOn(View.prototype, …)`을 쓰지 않고 `setupViewMeasurePerTest`를 쓴다. `global.fetch`를 바꾸는 어댑터 테스트는 원래 값을 `afterEach`에서 되돌린다.
+- `createTestPorts`의 기본값은 모두 `ports/`의 stub이다(`createDeviceTraitsStub(overrides)`, `createRefreshTokensRequestStub()` 포함).
 - 콘솔 로그: React가 경계에 잡힌 렌더 오류를 `console.error`로 다시 찍는 것처럼 예상한 로그는 `silenceConsole('error')`(`core.ts`)로 삼킨다. 조건 함수를 주면 그 로그만 삼키고 나머지는 그대로 찍는다. 테스트에서 `console`을 직접 `jest.spyOn(…).mockImplementation`하지 않는다.
 - 같은 프레임 두 번 누르기: `await pressTwiceInSameFrame(element)`(`press.ts`, `core.ts`가 아니라 직접 import). 렌더 전에 한 act 안에서 두 번 눌러 `isPending`이 아직 꺼진 순간을 만든다. 누름 사이에 렌더·마이크로태스크가 끼는 테스트는 도구를 쓰지 않는다.
 - fake timer가 켜진 테스트에서 마이크로태스크를 비울 때는 `await Promise.resolve()` 대신 `await jest.advanceTimersByTimeAsync(0)`를 쓴다.
