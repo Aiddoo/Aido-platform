@@ -9,7 +9,7 @@ import { invalidateMe } from '@src/features/identity/user/queries/user-cache';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { debounce } from 'es-toolkit';
-import { type PropsWithChildren, useEffect } from 'react';
+import { type PropsWithChildren, useEffect, useState } from 'react';
 
 import { usePurchasesSession, useSubscriptionService } from './di-context';
 
@@ -20,9 +20,12 @@ export function PurchasesProvider({ children }: PropsWithChildren) {
   const queryClient = useQueryClient();
   const isAuthenticated = status === 'authenticated';
 
-  const syncServerAfterWebhook = debounce(() => {
-    invalidateMe(queryClient);
-  }, WEBHOOK_SYNC_DELAY_MS);
+  // 렌더마다 새로 만들면 아래 effect가 구독을 다시 걸며 기다리던 다시 받기를 취소한다. 한 번 만들어 수명을 고정한다
+  const [syncServerAfterWebhook] = useState(() =>
+    debounce(() => {
+      invalidateMe(queryClient);
+    }, WEBHOOK_SYNC_DELAY_MS),
+  );
 
   // 프리미엄 의존 쿼리는 내 정보가 실제로 바뀌었을 때만 따라 갱신한다(스토어 이벤트가 없는 보상 기간 포함)
   useEffect(() => watchPremiumEntitlementChanges(queryClient), [queryClient]);
