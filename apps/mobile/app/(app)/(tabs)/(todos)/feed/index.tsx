@@ -82,7 +82,7 @@ export default function FeedScreen() {
 
   const openMyInvite = useOpenMyInvite();
   const shouldShowCoachmarks = useShouldShowCoachmarks();
-  const isFriendHintAhead = useIsFriendHintAhead({ hasScrolledFeed });
+  const shouldFriendHintGoFirst = useShouldFriendHintGoFirst({ hasScrolledFeed });
 
   // 펼친 화면에서 고른 할 일이 있는 채로 접히면 그 할 일과 댓글 위치를 상세 화면으로 넘긴다
   useFeedTodoDetailHandoff();
@@ -127,7 +127,7 @@ export default function FeedScreen() {
                 <MyFeed
                   onScrollBeginDrag={() => setHasScrolledFeed(true)}
                   shouldShowHint={shouldShowCoachmarks}
-                  shouldShowSuggestionHint={shouldShowCoachmarks && !isFriendHintAhead}
+                  shouldShowSuggestionHint={shouldShowCoachmarks && !shouldFriendHintGoFirst}
                 />
               ))
               .exhaustive()}
@@ -289,9 +289,8 @@ FriendFeed.Contents = function Contents({ view }: { view: FriendFeedView }) {
       {/* 친구인지 확인한 뒤에만 친구의 달력을 받는다. 그 전에는 빈 달력이 같은 자리를 잡는다 */}
       {match(view)
         .with({ status: 'ready' }, () => <FriendCalendar />)
-        .otherwise(() => (
-          <Calendar />
-        ))}
+        .with({ status: P.union('loading', 'error') }, () => <Calendar />)
+        .exhaustive()}
 
       <Spacing size={8} />
 
@@ -365,11 +364,11 @@ function FriendTodosPrefetch({ friendId }: { friendId: string }) {
 
 // <Redirect>는 피드 탭 첫 화면을 replace해 화면이 다시 마운트된다. 같은 화면에서 친구 선택만 지운다
 function ReturnToMyFeed() {
-  const [, selectFriend] = useFeedFriendId();
+  const [, setFriendId] = useFeedFriendId();
 
   useEffect(() => {
-    selectFriend(undefined);
-  }, [selectFriend]);
+    setFriendId(undefined);
+  }, [setFriendId]);
 
   return null;
 }
@@ -385,7 +384,7 @@ function useShouldShowCoachmarks(): boolean {
 }
 
 /** 말풍선은 한 번에 하나다. 친구가 없어 친구 줄 안내가 남았으면 그 안내를 닫거나 피드를 내린 뒤에 AI 개편 안내를 연다 */
-function useIsFriendHintAhead({ hasScrolledFeed }: { hasScrolledFeed: boolean }): boolean {
+function useShouldFriendHintGoFirst({ hasScrolledFeed }: { hasScrolledFeed: boolean }): boolean {
   const [isFriendHintPending] = useMyPendingCoachmark('friend-strip');
   const { data: friends } = useInfiniteQuery(useGetFriendsInfiniteQueryOptions());
 
