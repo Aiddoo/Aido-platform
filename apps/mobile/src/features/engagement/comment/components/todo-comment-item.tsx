@@ -108,10 +108,7 @@ const HIGHLIGHT_FADE_OUT_MS = ANIMATION.durationMs.emphasis;
 /** 알림으로 연 묶음으로 목록이 먼저 옮겨 간 뒤 강조한 행을 작성 바 위로 올린다 */
 const HIGHLIGHT_REVEAL_DELAY_MS = 450;
 
-/**
- * 연결선은 글자 크기에 따라 바뀌지 않는 아바타 열에만 맞춘다. 세로선은 행의 위·아래 끝에 붙어 행이 길어지면 함께 늘어난다.
- * start/end로 두어 RTL에서도 같은 쪽에 그린다.
- */
+/** 연결선은 글자 크기에 따라 바뀌지 않는 아바타 열에만 맞추고, start/end로 두어 RTL에서도 같은 쪽에 그린다 */
 const COMMENT_AVATAR = TODO_COMMENT_AUTHOR_AVATAR_SIZE.md;
 const REPLY_AVATAR = TODO_COMMENT_AUTHOR_AVATAR_SIZE.sm;
 const RAIL_START = ROW_PADDING_X + COMMENT_AVATAR / 2 - RAIL_WIDTH / 2;
@@ -156,10 +153,7 @@ interface TodoCommentItemProps {
   isLast?: boolean;
 }
 
-/**
- * 댓글·답글 한 줄과 그 연결선. 깊이는 댓글·답글 두 단이라 글이 답글인지로 들여쓰기와 선을 정한다.
- * 아바타 열은 글자 크기와 상관없이 고정이고, 본문은 두 번 탭하면 하트, 길게 누르면 ⋯ 메뉴다.
- */
+/** 깊이는 댓글·답글 두 단이라 글이 답글인지로 들여쓰기와 선을 정한다. 아바타 열은 글자 크기와 상관없이 고정이다 */
 export function TodoCommentItem({
   comment,
   hasReplies = false,
@@ -211,7 +205,6 @@ interface TodoCommentItemMoreProps extends Omit<
   isConnectedBelow?: boolean;
 }
 
-/** 더 받거나 접는 누름 줄. 이전 댓글 보기와 답글 더 보기·숨기기·다시 보기가 함께 쓴다 */
 TodoCommentItem.More = function More({
   label,
   isReply = false,
@@ -284,10 +277,7 @@ interface TodoCommentRailRowProps extends PropsWithChildren {
   commentId?: string;
 }
 
-/**
- * 한 줄의 바깥 여백과 연결선. 댓글은 아바타 아래로 세로선을, 답글·더 보기 줄은 위에서 아바타 높이까지 곡선을 그린다.
- * 강조는 이 줄만 구독해, 켜지고 꺼질 때 안의 본문·메뉴는 다시 그려지지 않는다
- */
+/** 강조는 이 줄만 구독해, 켜지고 꺼질 때 안의 본문·메뉴는 다시 그려지지 않는다 */
 function TodoCommentRailRow({ kind, commentId, children }: TodoCommentRailRowProps) {
   const paddingStart = kind.type === 'comment' ? ROW_PADDING_X : TODO_COMMENT_REPLY_INSET;
   const rowRef = useRef<ComponentRef<typeof View>>(null);
@@ -419,10 +409,7 @@ function ActiveComment({ comment, rowRef }: ActiveCommentProps) {
   );
 }
 
-/**
- * 이름·#태그·작성자 표시·시간은 한 줄에 놓다가 모자라면 줄바꿈하고, ⋯는 첫 줄 끝에 둔다.
- * 폭을 재서 나누지 않아 첫 화면 뒤에 줄 수가 바뀌며 밀리지 않는다.
- */
+/** 모자라면 줄바꿈에 맡기고 폭을 재서 나누지 않아 첫 화면 뒤에 줄 수가 바뀌며 밀리지 않는다 */
 function AuthorLine({ comment, menu }: { comment: TodoComment; menu: ReactNode }) {
   const { t } = useTranslation('todoComment');
   const now = useMinuteNow();
@@ -752,10 +739,7 @@ interface CommentBodyGestureOptions {
   onLongPress: () => void;
 }
 
-/**
- * 본문 두 번 탭은 하트, 길게 누르기는 메뉴다. 둘은 서로 배타적이고 한 번 탭은 아무 동작도 하지 않는다.
- * 애니메이션은 shared value로 UI 스레드에서만 돌고, 좋아요 요청과 진동만 JS로 넘긴다.
- */
+/** 애니메이션은 shared value로 UI 스레드에서만 돌고, 좋아요 요청과 진동만 JS로 넘긴다 */
 function useCommentBodyGesture({
   burst,
   likeButtonScale,

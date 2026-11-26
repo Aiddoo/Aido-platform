@@ -132,8 +132,7 @@ export function useApplyActionPlanMutationOptions({
         description: t(`voicePlan:failure.${cause}.description`),
       });
     },
-    // 응답을 놓친 실패도 서버에는 저장됐을 수 있고, 거절(내 카테고리가 아님)은 카테고리를 다시 받아야 한다.
-    // 저장 완료가 다시 받기를 기다리지 않게 돌려주지 않는다
+    // 응답을 놓친 실패도 서버에는 저장됐을 수 있다. 저장 완료가 다시 받기를 기다리지 않게 돌려주지 않는다
     onSettled: () => {
       settleTodoBatchWrite(queryClient);
     },

@@ -19,8 +19,7 @@ const planActionFormSchema = planReviewFormSchema.shape.actions.element;
 
 export const planTodoEditFormSchema = z.object({ todo: selectablePlannedTodoSchema });
 
-// 저장 시간대가 없는 옛 ISO 초안은 지금 기기 시간대로 읽는다. 자정 반올림 추측은 날짜 선택기 값에서 더 자주 틀린다.
-// 초안 보관 기간(30일)이 지난 2026-12-11 이후 옮기는 코드와 함께 지운다(compatibility.md)
+// 저장 시간대가 없는 옛 ISO 초안은 기기 시간대로 읽는다. 보관 기간(30일)이 지난 2026-12-11 이후 함께 지운다
 export function restoreDraftDateKey(value: unknown, timezone: string) {
   const instant = z.iso.datetime().safeParse(value);
   return instant.success ? toDateKey(toInstant(instant.data), timezone) : value;

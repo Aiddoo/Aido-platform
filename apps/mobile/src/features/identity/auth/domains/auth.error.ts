@@ -37,10 +37,7 @@ export function isPasswordMismatchError(error: unknown) {
   return isApiError(error) && error.hasCode(ErrorCode.USER_0602);
 }
 
-/**
- * 탈퇴 요청이 서버에 닿았을 수 있는데 응답을 받지 못했다. 시간 초과와 온라인에서의 연결 오류(보낸 뒤 끊겼을 수 있다)다.
- * 오프라인에서 난 연결 오류는 요청이 기기를 떠나지 않았다
- */
+/** 시간 초과와 온라인 연결 오류는 탈퇴 요청이 서버에 닿았을 수 있다. 오프라인 연결 오류는 요청이 기기를 떠나지 않았다 */
 export function isAccountDeletionUnanswered(error: unknown, { wasOnline }: { wasOnline: boolean }) {
   return error instanceof TimeoutError || (wasOnline && error instanceof NetworkError);
 }
@@ -77,11 +74,7 @@ export function findResendCooldown(error: unknown): number | null {
   return details.success ? details.data.remainingSeconds : null;
 }
 
-/**
- * 로그아웃을 위해 남긴 refresh 토큰을 쓰지 못했을 때. 요청 과다(429)·서버 장애(5xx)는 기록을 두고 다음 복귀 때 다시
- * 시도하고, 그 밖의 거절(만료·재사용·없는 토큰)은 세션이 이미 끝난 것이다. refresh는 봉투를 읽지 않는 원시 응답이라
- * 코드 대신 상태로 가른다
- */
+/** 429·5xx는 다음 복귀 때 다시 시도하고 그 밖의 거절은 세션이 이미 끝난 것이다. refresh는 원시 응답이라 상태로 가른다 */
 export function getPendingRefreshFailure(status: number): 'retry' | 'ended' {
   return status === HttpStatus.TOO_MANY_REQUESTS || status >= HttpStatus.INTERNAL_SERVER_ERROR
     ? 'retry'

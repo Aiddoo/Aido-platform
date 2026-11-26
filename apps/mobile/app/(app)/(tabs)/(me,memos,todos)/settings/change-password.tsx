@@ -53,8 +53,7 @@ export default function ChangePasswordScreen() {
     mode: 'onChange',
   });
 
-  // 바꾸는 동안 밀어서 떠났으면 지금 화면이 이전 화면이라 또 닫지 않는다.
-  // 남은 폼을 다시 보내면 옛 현재 비밀번호라 거절되므로 비우고 첫 단계로 돌린다
+  // 바꾸는 동안 떠났으면 또 닫지 않고, 남은 폼은 옛 현재 비밀번호라 거절되므로 비우고 첫 단계로 돌린다
   const leaveAfterChange = () => {
     if (navigation.isFocused()) {
       goBack();

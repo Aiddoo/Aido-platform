@@ -20,7 +20,6 @@ interface TodoDatePickerProps {
   value: DateKey;
   onChange: (dateKey: DateKey) => void;
   onCancel: () => void;
-  /** 고른 날짜를 저장하는 동안 확인을 막는다 */
   isConfirmDisabled?: boolean;
 }
 

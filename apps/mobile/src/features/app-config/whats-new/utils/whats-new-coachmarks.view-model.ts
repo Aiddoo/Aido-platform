@@ -7,10 +7,7 @@ interface ShouldShowCoachmarksInput {
   shouldAutoOpenWhatsNew: boolean;
 }
 
-/**
- * 첫 피드는 알림 화면 → 새로운 기능 → 말풍선 순서다. 앞 화면을 열지 아직 모르거나 열 차례면 말풍선은 기다린다.
- * 새로운 기능이 떠 있는 동안은 피드가 포커스를 잃어 말풍선이 열리지 않고, 닫고 돌아오면 자리를 다시 잰 뒤 연다
- */
+/** 첫 피드는 알림 화면 → 새로운 기능 → 말풍선 순서다. 앞 화면을 열지 아직 모르거나 열 차례면 말풍선은 기다린다 */
 export function shouldShowCoachmarks({
   isOnboardingSettled,
   isCampaignConfigLoading,

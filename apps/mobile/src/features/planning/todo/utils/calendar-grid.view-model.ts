@@ -14,10 +14,7 @@ import {
 } from '../domains/daily-completion.model';
 import type { CalendarViewMode } from '../schemas/calendar-view-mode-storage.schema';
 
-/**
- * 고른 날의 달과 앞 달·다음 달(이웃)의 1일. 주 보기도 같은 달로 받아 달을 넘겨도 키가 같다.
- * 주 보기의 앞뒤 주는 고른 날이 든 달 칸이나 그 이웃 달 칸 안에 있다
- */
+/** 주 보기도 같은 달로 받아 달을 넘겨도 키가 같다 */
 export function getCalendarMonths(
   dateKey: DateKey,
 ): Record<'selected' | 'previous' | 'next', DateKey> {

@@ -45,10 +45,7 @@ interface CoachmarkPopoverProps
   description: string;
   isEnabled?: boolean;
   isForced?: boolean;
-  /**
-   * false면 먼저 뜰 화면(알림 화면·새로운 기능)이 남아 자동으로 열지 않는다. true가 되면 자리를 처음부터 다시 재므로
-   * 그 화면이 곧 덮어 포커스를 잃으면 열리지 않는다. 사용자가 연 안내(`isForced`)는 기다리지 않는다
-   */
+  /** false면 먼저 뜰 화면(알림 화면·새로운 기능)이 남아 자동으로 열지 않는다. 사용자가 연 안내(`isForced`)는 기다리지 않는다 */
   shouldAutoOpen?: boolean;
   onDismiss?: () => void;
   /** 대상이 지금 눌리지 않을 때. `Popover.Trigger`가 대상의 비활성을 덮어써 여기로 받는다 */

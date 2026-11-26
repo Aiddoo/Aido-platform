@@ -45,7 +45,6 @@ export function TodoCommentTitleBar() {
   );
 }
 
-/** `/todo/[todoId]` 전체 화면의 네이티브 헤더 */
 TodoCommentTitleBar.StackHeader = function StackHeader() {
   const screenOptions = useStackScreenOptions();
   const { t } = useTranslation(['common', 'moderation', 'todo', 'todoComment']);
@@ -135,7 +134,6 @@ function TodoActionsButton() {
   );
 }
 
-/** 펼친 피드 pane의 ⋯. 친구 할 일에서만 신고·차단을 보인다 */
 function TodoModerationMenu() {
   const { t } = useTranslation('moderation');
   const fontScaledSize = useFontScaledSize();
@@ -176,10 +174,7 @@ function TodoModerationMenu() {
   );
 }
 
-/**
- * 친구 할 일 상세의 신고·차단. 내 할 일이거나 상세를 아직 못 불러왔으면 쓸 수 없다.
- * 할 일 상세 캐시를 함께 읽어 주인 이름을 차단 확인 문구에 넣는다.
- */
+/** 할 일 상세 캐시를 함께 읽어 주인 이름을 차단 확인 문구에 넣는다 */
 function useTodoModerationActions({ todoId }: { todoId: number }) {
   const { t } = useTranslation('moderation');
   const router = useRouter();

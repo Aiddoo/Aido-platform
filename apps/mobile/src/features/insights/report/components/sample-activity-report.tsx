@@ -30,7 +30,6 @@ export function SampleActivityReport() {
   );
 }
 
-/** 예시 아래의 결제 버튼. 보이면 premium_gate_shown, 누르면 premium_gate_cta_tapped를 남기고 페이월을 연다 */
 SampleActivityReport.SubscribeButton = function SubscribeButton() {
   const { t } = useTranslation('ai');
   const { trackEvent } = useTrack();

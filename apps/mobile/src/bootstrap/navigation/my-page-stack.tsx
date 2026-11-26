@@ -13,10 +13,7 @@ import { I18nManager } from 'react-native';
 import { ReservedRegionsProvider, useReservedRegions } from 'react-native-reserved-regions';
 import { SafeAreaInsetsContext, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-/**
- * 마이 탭 Stack. 넓은 화면도 네이티브 헤더를 전체 폭으로 둔다. iPadOS 세로에서 떠 있는 탭 바가 헤더 가운데에 놓여, 오른쪽 칸에서 시작하는 헤더는 뒤로 가기가 탭 바 밑에 가려진다.
- * 그래서 메뉴는 헤더 위가 아니라 화면마다 본문 왼쪽 칸에 그린다
- */
+/** iPadOS 세로에서 떠 있는 탭 바가 오른쪽 칸 헤더의 뒤로 가기를 가려 헤더는 전체 폭, 메뉴는 본문 왼쪽 칸에 그린다 */
 export function MyPageStack({ menu, children }: { menu: ReactNode; children?: ReactNode }) {
   const isCompact = usePaneSizeClass() === 'compact';
   const screenOptions = useStackScreenOptions({ hasContentBackground: true });
@@ -72,7 +69,6 @@ function useMyPageDetailOptions(): MyPageDetailOptionsGetter {
   };
 }
 
-/** 그 route가 든 Stack의 route key들. 루트 상태 나무를 내려가며 찾는다 */
 function findStackRouteKeys(
   state: StackStateNode,
   routeKey: string | undefined,

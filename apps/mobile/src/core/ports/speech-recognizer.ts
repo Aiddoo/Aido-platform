@@ -4,11 +4,7 @@ import type { OsPermission, OsPermissionStatus } from './os-permission';
 
 export type SpeechLocale = (typeof SPEECH_LOCALES)[number];
 
-/**
- * - `dictation`: 한 번 말하면 끝나는 받아쓰기(할 일·하위 할 일 입력)
- * - `quick`: 이어서 말하는 빠른 말하기
- * - `note`: 긴 녹음. 기기 안 인식·문장부호·녹음 파일 저장을 쓴다
- */
+/** `dictation`은 한 번 말하면 끝나고, `note`는 긴 녹음이라 기기 안 인식·문장부호·녹음 파일 저장을 쓴다 */
 export type SpeechMode = 'dictation' | 'quick' | 'note';
 
 export type SpeechErrorCode = (typeof SPEECH_ERROR_CODES)[number];

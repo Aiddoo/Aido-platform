@@ -25,10 +25,7 @@ export function getErrorReportTags(error: unknown): ErrorReportTags {
 /** 호출부가 더 붙이는 태그. 기기 작업의 이름(`method`)과 클라이언트가 판단한 사유(`errorCode`)다 */
 type UnexpectedErrorTags = Pick<ErrorReporterContext, 'method' | 'errorCode'>;
 
-/**
- * 예상하지 못한 오류만 요청 태그와 함께 Sentry 이슈로 보낸다. 예상한 오류·연결 문제는 보내지 않는다.
- * mutation·조회 전역 보고, `useReportUnexpectedError`, 경계, 시작·기기 작업 실패가 같은 이 함수를 쓴다
- */
+/** 예상하지 못한 오류만 Sentry 이슈로 보내고, 예상한 오류·연결 문제는 보내지 않는다 */
 export function reportUnexpectedError(
   errorReporter: Pick<ErrorReporter, 'captureException'>,
   error: unknown,

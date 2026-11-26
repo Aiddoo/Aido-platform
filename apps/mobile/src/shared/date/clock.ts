@@ -18,10 +18,7 @@ export function getNowInstant(): Instant {
   return fromEpochMs(Date.now());
 }
 
-/**
- * 그 순간의 오늘 key·시간대·UTC 오프셋. LocalDateProvider와 React 밖(위젯·서비스·조회 시점의 판단)이 같은 앱 시간대
- * 규칙으로 읽는 길 하나다. React 안의 오늘은 useTodayKey다
- */
+/** LocalDateProvider와 React 밖(위젯·서비스)이 같은 앱 시간대 규칙으로 읽는 길 하나다. React 안의 오늘은 useTodayKey다 */
 export function readLocalDateState({
   now = getNowInstant(),
   timezone = getAppTimezone(),

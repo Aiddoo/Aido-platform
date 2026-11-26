@@ -48,10 +48,7 @@ export function defineStoredValue({
   return { ...options, area };
 }
 
-/**
- * 원문이 JSON인 값의 스키마. 문자열 값은 원문 그대로 남으므로 받지 않는다.
- * 정수는 `String(n)`과 같은 원문이다
- */
+/** 문자열 값은 원문 그대로 남으므로 받지 않는다. 정수는 `String(n)`과 같은 원문이다 */
 export function storedJsonSchema<TSchema extends z.ZodType<object | number | boolean>>(
   schema: TSchema,
 ) {
@@ -159,10 +156,7 @@ export function resolveStoredValueKey<TValue, TScope>(
   return resolveKey(definition.key, scope);
 }
 
-/**
- * `useSyncExternalStore`에 넘길 구독·스냅숏과 세터. `key`는 `resolveStoredValueKey`로 만든다.
- * 원문이 같으면 다시 읽지 않고 같은 값(참조)을 돌려준다. 키가 null이면 fallback이고 구독·쓰기를 하지 않는다
- */
+/** 원문이 같으면 같은 값(참조)을 돌려준다. 키가 null이면 fallback이고 구독·쓰기를 하지 않는다 */
 export function createStoredValueSource<TValue, TScope>(
   storage: ObservableSyncStorage,
   definition: StoredValueDefinition<TValue, TScope>,

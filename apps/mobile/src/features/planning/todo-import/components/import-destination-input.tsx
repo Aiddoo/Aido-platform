@@ -102,10 +102,7 @@ interface CardProps extends Omit<
   errorMessage: string | null;
 }
 
-/**
- * 눌러서 바꾸는 넣을 곳 카드. 둘째 줄은 더 넣을 수 있는 수이고, 모자라면 몇 개를 건너뛰는지 경고로 알린다.
- * 넘쳐도 막지 않는다(서버가 가까운 날짜부터 넣는다)
- */
+/** 넘쳐도 막지 않고 몇 개를 건너뛰는지 경고로 알린다(서버가 가까운 날짜부터 넣는다) */
 ImportDestinationInput.Card = function Card({
   appearance,
   placement,

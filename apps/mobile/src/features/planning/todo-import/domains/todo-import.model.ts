@@ -49,16 +49,10 @@ export const todoImportSchema = z.object({
 });
 export type TodoImport = z.infer<typeof todoImportSchema>;
 
-/**
- * 이 기기가 그 가져오기를 올리는 상태. sending: 보내는 중이거나 이어 보낼 상태를 갖고 있다, paused: 멈췄다,
- * failed: 서버가 받지 않았다, elsewhere: 보내지도 이어 보낼 상태를 갖고 있지도 않다(다른 기기에서 시작했다)
- */
+/** sending: 보내는 중·이어 보낼 상태 있음, paused: 멈춤, failed: 서버가 거절, elsewhere: 다른 기기에서 시작했다 */
 export type TodoImportDeviceUpload = 'sending' | 'paused' | 'failed' | 'elsewhere';
 
-/**
- * 가져오기가 지금 어디까지 왔는지. processing: 올리거나 만드는 중, finished: 다 만들었다(되돌리는 중·되돌린 뒤 포함),
- * failed: 만들다 멈췄다, undoFailed: 되돌리다 멈췄다, stopped: 만들기 전에 멈췄다(취소·방치)
- */
+/** finished는 되돌리는 중·뒤를 포함하고, failed·undoFailed는 만들다·되돌리다, stopped는 만들기 전에(취소·방치) 멈췄다 */
 export type TodoImportStage = 'processing' | 'finished' | 'failed' | 'undoFailed' | 'stopped';
 
 /** 다시 가져와도 아무것도 만들지 않은 가져오기가 앞의 되돌릴 수 있는 가져오기를 가리지 않을 만큼 남긴다 */
@@ -94,10 +88,7 @@ export const TodoImportPolicy = {
       .exhaustive();
   },
 
-  /**
-   * 되돌릴 수 있는지는 서버가 정한다. 완료·실패이고 남은 할 일이 있으며 7일 안일 때만 기한이 온다.
-   * 앱은 지금이 그 기한 전인지만 본다
-   */
+  /** 서버가 완료·실패이고 남은 할 일이 있으며 7일 안일 때만 기한을 줘 앱은 지금이 그 기한 전인지만 본다 */
   canUndo(todoImport: TodoImport, now: Instant): boolean {
     return todoImport.undoableUntil != null && !hasInstantPassed(todoImport.undoableUntil, now);
   },

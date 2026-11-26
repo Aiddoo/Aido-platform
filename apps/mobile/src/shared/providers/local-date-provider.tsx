@@ -33,10 +33,7 @@ interface LocalDateProviderProps extends PropsWithChildren {
   refreshTimezone?: () => string;
 }
 
-/**
- * 자정 타이머는 활성 상태에서만 유지하고, 복귀 시 날짜를 먼저 재확인해 JS가 정지된 동안 지난 자정도 즉시 회복한다.
- * 시간대는 복귀·자정·달력 변경 신호마다 새로 읽는다. Android는 시간대만 바꾸면 달력 변경 신호가 오지 않는다
- */
+/** 복귀 시 날짜를 먼저 재확인해 JS가 멈춘 동안 지난 자정도 회복한다. Android는 시간대만 바꾸면 달력 변경 신호가 오지 않는다 */
 export function LocalDateProvider({
   children,
   useDeviceCalendar = useSystemCalendar,

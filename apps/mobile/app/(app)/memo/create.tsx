@@ -71,8 +71,7 @@ function MemoCreate() {
     }
   };
 
-  // mutate 콜백은 화면이 내려가면 불리지 않는다. 저장이 끝났는데 초안이 남지 않게 기다린 뒤에 지운다.
-  // 실패는 여기서 받지 않는다. RHF가 실패로 알아야 isSubmitSuccessful이 꺼진 채 남아 다시 보낼 수 있다
+  // mutate 콜백은 화면이 내려가면 불리지 않아 기다린 뒤 초안을 지운다. 실패는 RHF가 알아야 다시 보낼 수 있다
   const saveMemo = form.handleSubmit(async ({ content }) => {
     await createMemo.mutateAsync({ content });
     discardDraft();

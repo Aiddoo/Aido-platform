@@ -88,11 +88,9 @@ interface VoiceNoteRecordingControls {
   resume: () => void;
   changeLocale: (locale: SpeechLocale) => Promise<void>;
   mark: () => void;
-  /** 듣기를 그만두고 초안과 녹음을 지운다 */
   discard: () => void;
 }
 
-/** 말로 메모 녹음. 들은 문장과 녹음 조각을 기기 초안에 남기고, 끝내면 초안 id를 넘긴다 */
 export function useVoiceNoteRecording({
   accountId,
   locale,
@@ -240,10 +238,7 @@ interface UseRecordingIntakeOptions {
   onRecordingSaved: () => void;
 }
 
-/**
- * 녹음 조각을 받는 세션의 수명. 이 훅이 만들고, 붙어 있는 동안은 화면의 인식기 구독이 파일을 넘긴다.
- * 놓을 때 아직 오지 않은 파일이 있으면 세션이 스스로 듣다가(최대 30초) 끝낸다
- */
+/** 놓을 때 아직 오지 않은 파일이 있으면 세션이 스스로 듣다가(최대 30초) 끝낸다 */
 function useRecordingIntake({ accountId, draftId, onRecordingSaved }: UseRecordingIntakeOptions) {
   const speechRecognizer = useSpeechRecognizer();
   const storage = useVoiceNoteStorageService();
@@ -264,8 +259,7 @@ function useRecordingIntake({ accountId, draftId, onRecordingSaved }: UseRecordi
   );
 
   useEffect(() => {
-    // StrictMode·Fast Refresh로 effect가 다시 돌면 앞 정리가 건 늦은 파일 듣기가 남아 있다. 같은 인식기를 화면이 다시
-    // 들으므로 거둬, 같은 파일을 두 번 받아 옮기지 않는다
+    // StrictMode·Fast Refresh로 effect가 다시 돌면 남은 늦은 파일 듣기를 거둬 같은 파일을 두 번 받아 옮기지 않는다
     intake.reclaim(speechRecognizer.subscribe);
 
     return () => intake.listenForLate(speechRecognizer.subscribe);
@@ -296,7 +290,6 @@ interface VoiceNoteCaptionsView {
   getSentencesAt: (nowMs: number) => VoiceNoteSentence[];
 }
 
-/** 녹음 화면에 그리는 자막과 중요 표시 */
 function useVoiceNoteCaptions({
   seedNote,
   getElapsedMs,
@@ -351,7 +344,6 @@ interface UsePersistDraftOptions {
   getElapsedMs: () => number;
 }
 
-/** 들은 문장과 받은 녹음 조각을 기기 초안으로 쓴다. 넘겼거나 지운 초안과 문장이 없는 초안은 쓰지 않는다 */
 function usePersistDraft({
   accountId,
   baseNote,
@@ -391,7 +383,6 @@ interface UseNoteSpeechEventsOptions {
   intake: VoiceRecordingIntakeSession;
 }
 
-/** 인식기 이벤트를 자막과 녹음 조각 받기로 잇는다. 구간이 시작한 경과 시각을 그 구간의 글자와 파일에 붙인다 */
 function useNoteSpeechEvents({ getElapsedMs, captions, intake }: UseNoteSpeechEventsOptions) {
   const currentSegmentStartRef = useRef(0);
 
@@ -468,7 +459,6 @@ interface UseStartRecordingOptions {
   isAbandoned: () => boolean;
 }
 
-/** 기기 인식 모델을 받을지 물은 뒤 녹음 폴더를 정해 듣기 시작한다 */
 function useStartRecording({
   accountId,
   entry,

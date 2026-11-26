@@ -11,10 +11,7 @@ export type LanguageMode = (typeof LANGUAGE_MODES)[number];
 
 export type ResolvedLanguage = SupportedLocale;
 
-/**
- * 언어 모드를 실제 표시 언어로 해석한다.
- * 'system'은 기기 언어가 한국어일 때만 ko, 그 외 모든 언어는 en으로 해석한다.
- */
+/** 'system'은 기기 언어가 한국어일 때만 ko, 그 외 모든 언어는 en으로 해석한다 */
 export function resolveLanguage(
   mode: LanguageMode,
   deviceLanguage?: string | null,

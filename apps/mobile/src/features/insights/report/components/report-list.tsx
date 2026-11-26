@@ -282,7 +282,6 @@ ReportList.Item = function Item({ report, href, isLast = false }: ReportListItem
   );
 };
 
-/** 무료는 실제 이번 주 기록 아래에 프리미엄 목록과 같은 모양의 예시 리포트를 보인다 */
 ReportList.Free = function Free({ thisWeekRecord }: { thisWeekRecord: ReactNode }) {
   const { t } = useTranslation('ai');
   const { trackEvent } = useTrack();
@@ -544,7 +543,6 @@ interface ThisWeekRecordProps {
   access: 'free' | 'premium';
 }
 
-/** 리포트가 없을 때도 보이는 이번 주(월요일 시작) 할 일 기록 */
 export function ThisWeekRecord({ access }: ThisWeekRecordProps) {
   const { t } = useTranslation('ai');
   const { trackEvent } = useTrack();
@@ -579,7 +577,6 @@ export function ThisWeekRecord({ access }: ThisWeekRecordProps) {
   );
 }
 
-/** 제목 옆 ⓘ. 막대가 무엇이고 누르면 무엇이 보이는지, AI 분석은 어디서 받는지 알린다 */
 ThisWeekRecord.GuideTooltip = function GuideTooltip({ description }: { description: string }) {
   const { t } = useTranslation('ai');
   const fontScaledSize = useFontScaledSize();

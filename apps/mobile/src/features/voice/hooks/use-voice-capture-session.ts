@@ -204,7 +204,6 @@ interface VoiceCaptureParts {
   onFailed?: (transcript: VoiceTranscript) => void;
 }
 
-/** 듣기가 멈추거나 끝나면 침묵·`end` 대기 타이머와 파형을 놓는다 */
 function clearCaptureTimers({ silence, recognizer, level }: VoiceCaptureParts) {
   silence.clear();
   recognizer.cancelEndWaits();
@@ -248,7 +247,6 @@ function pauseCapture(parts: VoiceCaptureParts, cause: VoicePauseCause) {
   telemetry.paused(cause);
 }
 
-/** 듣기를 그만두고 처음으로 돌아간다. 열려 있던 세션이면 인식기를 끊고 결과를 남긴다 */
 function resetCapture(parts: VoiceCaptureParts, outcome: 'cancelled' | 'upgraded') {
   const { machine, recognizer, telemetry } = parts;
   const previous = machine.getState();
@@ -342,7 +340,6 @@ function useRecognizerEvents(parts: VoiceCaptureParts) {
     }
   };
 
-  /** 말이 멈춘 채 시간이 지났다. 그 사이 다시 말했거나 멈췄으면 끝내지 않는다 */
   const finishIfStillSilent = (silentMs: number) => {
     if (VoiceCapturePolicy.shouldAutoFinish(machine.getState(), silentMs, AUTO_FINISH_SILENCE_MS)) {
       finishCapture(parts);
@@ -476,7 +473,6 @@ function useReleaseOnUnmount(release: () => void) {
   useEffect(() => () => releaseOnUnmount(), []);
 }
 
-/** 앱이 백그라운드로 넘어갈 때마다 가장 최근 `onBackground`를 부른다 */
 function usePauseOnBackground(onBackground: () => void) {
   const appLifecycle = useAppLifecycle();
   const handleBackground = useEffectEvent(onBackground);
@@ -499,7 +495,6 @@ interface UseCaptureLimitOptions {
   onLimitReached?: () => void;
 }
 
-/** 한 번에 들을 수 있는 길이에 닿으면 끝낸다. 한도 알림을 받는 화면이면 멈추고 알려 고르게 한다 */
 function useCaptureLimit({
   parts,
   isListening,
@@ -605,7 +600,6 @@ interface UseStartCaptureOptions {
   isUnmountedRef: RefObject<boolean>;
 }
 
-/** 듣기를 연다. 기능을 확인해 시작 옵션을 정한 뒤 인식기를 열고, 이어 듣기는 정해 둔 옵션으로 다시 연다 */
 function useStartCapture({ parts, mode, isUnmountedRef }: UseStartCaptureOptions): StartCapture {
   const speechRecognizer = useSpeechRecognizer();
   const { machine, recognizer, telemetry, haptics } = parts;

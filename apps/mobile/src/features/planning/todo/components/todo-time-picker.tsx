@@ -40,7 +40,6 @@ interface TodoTimePickerProps {
   value: TodoTimeValue;
   onChange: (value: TodoTimeValue) => void;
   onCancel: () => void;
-  /** 고른 시간을 저장하는 동안 확인을 막는다 */
   isConfirmDisabled?: boolean;
 }
 

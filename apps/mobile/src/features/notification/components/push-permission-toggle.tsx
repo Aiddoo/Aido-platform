@@ -18,10 +18,7 @@ interface PushPermissionToggleProps extends Omit<
   descriptions: Record<'on' | 'off', string>;
 }
 
-/**
- * 푸시를 받을 수 있게 켜는 토글. 지금 상태에서 필요한 한 단계(권한 묻기·기기 설정·앱 알림 켜기)를 고른다.
- * 끄기는 알림 설정 한 곳에서만 해서, 받을 수 있으면 켜진 채 잠긴다
- */
+/** 끄기는 알림 설정 한 곳에서만 해서, 받을 수 있으면 켜진 채 잠긴다 */
 export function PushPermissionToggle({
   source,
   descriptions,

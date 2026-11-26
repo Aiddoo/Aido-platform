@@ -40,10 +40,7 @@ export function invalidateTodoCategories(queryClient: QueryClient) {
   return queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
 }
 
-/**
- * 이름·색 고치기 응답을 쓴다. 겹친 고치기는 응답 순서가 서버가 처리한 순서와 다를 수 있어, 앞서 끝난 응답은 낡음만
- * 표시하고 마지막 고치기가 겹쳤으면 응답 대신 다시 받는다. 그동안은 마지막에 고친 낙관적 값이 보인다. 쓰기 콜백 안에서 부른다
- */
+/** 응답 순서는 서버 처리 순서와 다를 수 있어 앞선 응답은 낡음만 표시하고, 마지막 고치기가 겹쳤으면 응답 대신 다시 받는다 */
 export function settleTodoCategoryChange(
   queryClient: QueryClient,
   { saved, startedWithOthers }: { saved: TodoCategory; startedWithOthers: boolean },

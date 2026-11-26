@@ -48,17 +48,13 @@ interface TodoCommentRevealValue {
   showAboveComposer: (target: RefObject<ComponentRef<typeof View> | null>) => void;
   /** 알림·링크로 연 댓글을 잠깐 강조한다. 행이 재활용되어 다시 그려져도 되풀이되지 않게 행보다 오래 사는 세션이 켜고 끈다 */
   highlight: (commentId: string) => void;
-  /** 남은 시간을 기다리지 않고 강조를 끈다 */
   clearHighlight: () => void;
   highlightedComment: ReturnType<typeof createHighlightedCommentStore>;
 }
 
 const TodoCommentRevealContext = createContext<TodoCommentRevealValue | null>(null);
 
-/**
- * 답글 달기·수정을 누른 행이 키보드 위 작성 바에 가리지 않게 목록을 그만큼만 올리고, 알림으로 연 댓글을 강조한다.
- * 키보드가 다 올라온 뒤 실제 화면 위치로 재므로 글자 크기·행 높이와 무관하다.
- */
+/** 키보드가 다 올라온 뒤 실제 화면 위치로 재므로 글자 크기·행 높이와 무관하다 */
 export function TodoCommentRevealProvider({ children }: PropsWithChildren) {
   const listRef = useRef<FlashListRef<TodoCommentThread>>(null);
   const composerRef = useRef<ComponentRef<typeof View>>(null);

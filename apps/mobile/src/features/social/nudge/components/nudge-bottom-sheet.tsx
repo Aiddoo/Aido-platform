@@ -46,7 +46,6 @@ interface NudgeBottomSheetProps extends SheetProps {
   todo: NudgeTargetTodo;
 }
 
-/** 특정 할 일에 응원 메시지를 보내는 시트 */
 export function NudgeBottomSheet({ receiver, todo, ...sheetProps }: NudgeBottomSheetProps) {
   const { t } = useTranslation('todo');
   const haptics = useHaptics();
@@ -76,7 +75,6 @@ interface RemindNudgeBottomSheetProps extends SheetProps {
   receiver: NudgeReceiver;
 }
 
-/** 오늘 할 일이 없는 친구에게 독촉 메시지를 보내는 시트 */
 export function RemindNudgeBottomSheet({ receiver, ...sheetProps }: RemindNudgeBottomSheetProps) {
   const { t } = useTranslation('todo');
   const sendRemindNudge = useMutation(useSendRemindNudgeMutationOptions());
@@ -94,7 +92,6 @@ export function RemindNudgeBottomSheet({ receiver, ...sheetProps }: RemindNudgeB
   );
 }
 
-/** route(`/users/[userId]/nudge`)로 띄운 독촉 콕 시트. 받는 사람은 route에서 읽는다 */
 RemindNudgeBottomSheet.Route = function Route() {
   const [{ userId, name }] = useRouteParams(remindNudgeParamsSchema);
   const sheet = useSheetRoute('/feed');

@@ -41,10 +41,7 @@ import {
 import { usePushNotificationEntry } from './use-push-notification-entry';
 import { useRunTodoReminderAction } from './use-run-todo-reminder-action';
 
-/**
- * 눌린 푸시의 입구 하나. OS 응답은 여기서만 구독해 슬롯(DI store)에 넣고, 아래 단계는 슬롯의 칸만 읽어
- * 응답 하나를 한 번씩 처리한다: 수신 거부 보내기, 소유를 확인해 목적지 정하기, 연 뒤 기록하기
- */
+/** OS 응답은 여기서만 구독해 슬롯(DI store)에 넣고, 아래 단계는 슬롯의 칸만 읽어 응답 하나를 한 번씩 처리한다 */
 export function usePushNotificationResponse(): void {
   const { pending, ready, optOut } = usePushNotificationEntrySlots();
 

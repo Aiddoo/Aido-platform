@@ -331,7 +331,6 @@ interface WeatherBriefingChipProps extends Omit<
   tone: BriefingRowTone;
 }
 
-/** 할 일 시각의 날씨를 아이콘과 강수 확률·기온 한 값으로 줄여 보여 준다. */
 WeatherBriefing.Chip = function BriefingChip({
   condition,
   isDaylight,
@@ -501,7 +500,6 @@ function useOpenReschedule(action: RescheduleAction) {
   };
 }
 
-/** 값 안에 넣은 문구까지 번역해 한 문장으로 만든다. */
 function useTranslateBriefingCopy() {
   const { t } = useTranslation('weather');
   const translate = (copy: BriefingCopy): string => {

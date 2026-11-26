@@ -16,10 +16,7 @@ interface TodoScheduleRequest {
   isAllDay: boolean;
 }
 
-/**
- * 받은 할 일(지금 영향받는 할 일) 가운데 선택이 남은 것만 옮긴다. 목록에서 뺀 할 일은 칸이 내려가며 선택이
- * 지워져(shouldUnregister) 여기서 걸러지지 않아도 실리지 않는다
- */
+/** 목록에서 뺀 할 일은 칸이 내려가며 선택이 지워져(shouldUnregister) 여기서 걸러지지 않아도 실리지 않는다 */
 export function toScheduleChanges(
   { selections }: WeatherRescheduleFormValues,
   todoIds: readonly number[],
@@ -57,10 +54,7 @@ export function toMovedScheduleRequest(
   };
 }
 
-/**
- * 되돌리기: 옮기기 전 날짜·시각·종일 여부를 그대로 다시 저장한다. 시각은 날씨 목록이 보인 것과 같게 읽어
- * (`toWeatherBriefingTodo`), 서버가 벽시계를 비운 할 일도 그 순간의 기기 시각으로 되돌린다
- */
+/** 시각은 날씨 목록이 보인 것과 같게 읽어(`toWeatherBriefingTodo`) 서버가 벽시계를 비운 할 일도 기기 시각으로 되돌린다 */
 export function toOriginalScheduleRequest(todo: Todo, timezone: string): TodoScheduleRequest {
   return {
     startDate: todo.startDate,

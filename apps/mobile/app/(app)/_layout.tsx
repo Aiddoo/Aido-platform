@@ -150,9 +150,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   const { reset: resetQueryErrors } = useQueryErrorResetBoundary();
   const { t } = useTranslation();
 
-  // 세션이 끝난 뒤 도착한 401만 조용히 로그인으로 넘긴다. 세션이 살아있는데 401이 여기까지
-  // 새어왔다면 컨테인먼트 구멍이므로, null 빈 화면 대신 재시도 UI를 보여준다. 401은 예상한 오류라
-  // 보고기가 이슈가 아닌 breadcrumb로만 남긴다.
+  // 세션이 끝난 뒤 도착한 401만 조용히 로그인으로 넘기고, 세션이 살아있는데 새어 온 401은 재시도 UI를 보인다
   const isAuthTransition =
     status !== 'authenticated' && classifyError(error).kind === 'auth-expired';
 

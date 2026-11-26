@@ -52,8 +52,7 @@ export const TodoImportPlanPolicy = {
     return plan.singleTarget ?? defaultTarget;
   },
 
-  // 캘린더마다 넣을 곳. 한 곳에 넣으면 모두 그곳이고, 나눠 넣어도 고르지 않은 캘린더는 그곳이다.
-  // 넣을 곳이 없으면(defaultTarget도 null) 그 캘린더를 뺀다
+  // 나눠 넣어도 고르지 않은 캘린더는 기본 넣을 곳이고, 넣을 곳이 없으면(defaultTarget도 null) 그 캘린더를 뺀다
   getAssignedTargets(
     plan: TodoImportPlan,
     defaultTarget: TodoImportTarget | null,

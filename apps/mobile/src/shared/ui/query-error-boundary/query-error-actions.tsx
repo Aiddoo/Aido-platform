@@ -80,10 +80,7 @@ QueryErrorActions.Inquiry = function Inquiry({
   );
 };
 
-/**
- * 오류 화면에서 여는 문의. 오류 신고 분류를 고르고, 경계가 받은 오류의 진단 값(진단 코드·오류 코드·요청 ID)을
- * 본문 첫 줄에 담아 되묻는 일을 줄인다. 경계 밖에서는 진단 코드만 담는다
- */
+/** 경계가 받은 오류의 진단 값을 본문 첫 줄에 담아 되묻는 일을 줄인다. 경계 밖에서는 진단 코드만 담는다 */
 function useBugReportInquiryHref(): () => Href {
   const error = use(ErrorBoundaryContext)?.error ?? null;
 
@@ -108,10 +105,7 @@ function openInquiry(href: Href) {
   openEntryHref(href);
 }
 
-/**
- * 오류 화면의 문의 본문 첫 줄. 서버 로그·Sentry를 찾을 값(진단 코드·오류 코드·요청 ID)만 담고
- * 사용자·기기 식별자와 오류 문구는 넣지 않는다. 구독 문의 초안과 같은 「제목 + (값)」 모양이다
- */
+/** 서버 로그·Sentry를 찾을 값만 담고 사용자·기기 식별자와 오류 문구는 넣지 않는다 */
 function toErrorInquiryDraft({
   diagnosis: { code, requestId },
   diagnosticCode,

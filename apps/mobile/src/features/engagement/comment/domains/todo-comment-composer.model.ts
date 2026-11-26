@@ -18,7 +18,6 @@ export function getTrimmedContent(content: string): string {
   return content.trim();
 }
 
-/** 입력 칸에 보낼 글이 없다. 공백만 있어도 비었다고 본다 */
 export function isBlankContent(content: string): boolean {
   return getTrimmedContent(content).length === 0;
 }

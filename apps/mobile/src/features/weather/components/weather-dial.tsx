@@ -137,7 +137,6 @@ interface WeatherPressureGaugeProps {
   highLabel: string;
 }
 
-/** 아래가 트인 기압 눈금판 */
 export function WeatherPressureGauge({
   size,
   gauge,

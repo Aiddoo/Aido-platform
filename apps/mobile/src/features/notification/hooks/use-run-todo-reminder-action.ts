@@ -37,10 +37,7 @@ type TodoReminderActionResult =
   | { outcome: 'failed'; notice: 'network' | 'timeout' | null }
   | { outcome: Exclude<TodoReminderActionOutcome, 'succeeded' | 'failed'> };
 
-/**
- * 리마인드 알림 버튼(완료·10분 뒤 다시)으로 할 일을 바꾸고 결과를 알린다. 이미 끝낸 할 일은 부드럽게 알리고,
- * 지운 할 일은 할 일 화면의 볼 수 없음 안내가, 그 밖의 실패는 상세 조회의 화면 오류나 변경의 전역 오류 피드백이 알린다
- */
+/** 이미 끝낸 할 일은 부드럽게 알리고, 지운 할 일은 할 일 화면의 볼 수 없음 안내가, 그 밖은 화면·전역 오류 피드백이 알린다 */
 export function useRunTodoReminderAction(): (request: TodoReminderActionRequest) => Promise<void> {
   const { t } = useTranslation(['notification', 'common']);
   const queryClient = useQueryClient();
@@ -163,10 +160,7 @@ export function useRunTodoReminderAction(): (request: TodoReminderActionRequest)
   };
 }
 
-/**
- * 리마인드 알림의 [완료]. 할 일 완료와 같은 변경이고, 지운 할 일은 방금 연 할 일 화면이
- * 볼 수 없음 안내 하나로 보여 전역 토스트를 더하지 않는다
- */
+/** 지운 할 일은 방금 연 할 일 화면이 볼 수 없음 안내 하나로 보여 전역 토스트를 더하지 않는다 */
 function useCompleteRemindedTodoMutationOptions() {
   const toggleTodoOptions = useToggleTodoWithReviewMutationOptions();
   const errorFeedback = toggleTodoOptions.meta?.errorFeedback;

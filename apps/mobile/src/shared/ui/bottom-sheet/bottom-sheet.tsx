@@ -20,7 +20,6 @@ interface BottomSheetProps {
   hasFixedHeader?: boolean;
 }
 
-/** HeroUI 네이티브 시트(TrueSheet)를 `isOpen`으로 다룬다. 내용이 시트 최대 높이보다 길면 시트 안에서 스크롤한다 */
 export function BottomSheet({
   isOpen,
   onOpenChange,

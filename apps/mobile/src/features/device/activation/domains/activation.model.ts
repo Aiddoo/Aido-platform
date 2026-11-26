@@ -37,7 +37,6 @@ export function calculateDaysSinceSignup(signedUpAt: Instant, now: Instant): num
 }
 
 export const ActivationPolicy = {
-  /** 가입 7일 안이고 아직 활성화하지 않았으면 체크리스트를 보인다 */
   shouldOfferChecklist(
     progress: ActivationProgress,
     { signedUpAt, now }: ChecklistWindowContext,
@@ -68,7 +67,6 @@ export const ActivationPolicy = {
     return steps.hasCreatedTodo && steps.hasCompletedTodo;
   },
 
-  /** 처음 만든 순간만 남긴다 */
   withTodoCreated(progress: ActivationProgress, at: Instant): ActivationProgress {
     return progress.todoCreatedAt == null ? { ...progress, todoCreatedAt: at } : progress;
   },

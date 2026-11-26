@@ -58,10 +58,7 @@ const CONSENT_RESULT_KEYS = {
   },
 } as const;
 
-/**
- * 정보통신망법 50조: 광고성 정보 동의·철회 결과를 전송자·처리 일시와 함께 알린다.
- * 설정 토글과 푸시의 수신 거부 버튼이 같은 문구를 쓰도록 동의를 저장하는 mutation 곁 한 곳에서 띄운다. 일시는 서버가 처리한 값이다
- */
+/** 정보통신망법 50조: 광고성 정보 동의·철회 결과를 전송자·처리 일시(서버가 처리한 값)와 함께 알린다 */
 export function useConsentResultToast() {
   const toast = useAppToast();
   const dateFormatContext = useDateFormatContext();

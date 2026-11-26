@@ -10,10 +10,7 @@ export { i18n };
 
 export const t = i18n.t.bind(i18n);
 
-/**
- * 런타임에 결정되는 키(에러 코드 등)를 조회한다.
- * 키가 없으면 defaultValue를 반환하며, 타입 검증 대상이 아니다.
- */
+/** 런타임에 정해지는 키(에러 코드 등)라 타입 검증 대상이 아니고, 키가 없으면 defaultValue다 */
 export function tDynamic(
   namespace: Namespace,
   key: string,

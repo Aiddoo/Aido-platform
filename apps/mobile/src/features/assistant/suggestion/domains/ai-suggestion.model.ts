@@ -19,10 +19,7 @@ export const aiSuggestionSchema = z.object({
 export type AiSuggestion = z.infer<typeof aiSuggestionSchema>;
 
 export const AiSuggestionPolicy = {
-  /**
-   * 수락하면 서버가 고른 요일마다 반복하는 할 일을 만든다.
-   * 제안은 끝나는 날을 정하지 않아 일정 줄이 주기만 그리도록 끝없이 반복한다
-   */
+  /** 제안은 끝나는 날을 정하지 않아 일정 줄이 주기만 그리도록 끝없이 반복한다 */
   getTodoRepeat(suggestion: AiSuggestion): TodoRepeat {
     return {
       frequency: 'WEEKLY',

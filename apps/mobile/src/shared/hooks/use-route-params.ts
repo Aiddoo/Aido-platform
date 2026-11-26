@@ -17,10 +17,7 @@ function encodeRouteParams<TSchema extends z.ZodObject>(
   );
 }
 
-/**
- * 쓰는 필드의 URL 형식은 문자열이고 `.transform` 대신 `z.codec`이어야 한다.
- * 쓰기는 이 훅을 부른 화면의 params다. 비동기 뒤에 불러도 그 사이 focus된 다른 화면에 쓰지 않는다
- */
+/** 쓰는 필드는 `.transform` 대신 `z.codec`이어야 한다. 쓰기는 부른 화면의 params라 비동기 뒤에도 다른 화면에 쓰지 않는다 */
 export function useRouteParams<TSchema extends z.ZodObject>(schema: TSchema) {
   const params = schema.parse(useLocalSearchParams());
   // 기본 타입은 route 목록이 없어 setParams가 값을 받지 않는다. 화면 navigation의 기본 모양으로 받는다

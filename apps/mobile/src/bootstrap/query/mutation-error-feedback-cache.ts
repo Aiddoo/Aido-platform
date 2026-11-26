@@ -24,10 +24,7 @@ function findMutationErrorFeedback(
   return feedback;
 }
 
-/**
- * 앱의 mutation 캐시. 캐시 단계 `onError`는 기능 `onError`·`onSettled`보다 먼저 돌아,
- * `onSettled`가 기다리는 재조회(오프라인이면 멈춘다)에 묶이지 않고 실패를 바로 알린다
- */
+/** 캐시 단계 `onError`는 기능 `onSettled`보다 먼저 돌아 재조회(오프라인이면 멈춘다)에 묶이지 않고 실패를 바로 알린다 */
 export function createAppMutationCache(): MutationCache {
   const cache: MutationCache = new MutationCache({
     onError: (error, _variables, _onMutateResult, mutation) => {

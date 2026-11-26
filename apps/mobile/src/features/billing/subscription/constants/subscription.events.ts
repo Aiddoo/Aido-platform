@@ -37,10 +37,7 @@ export type LimitReachedTrigger = 'precheck' | 'server';
 
 declare module '@src/shared/analytics/event-map' {
   interface AppEventMap {
-    /**
-     * 퍼널 단계일 뿐 매출 집계에 쓰지 않는다(원본은 RevenueCat `purchase`). 대시보드 이력 때문에 이름을 유지한다.
-     * 아래 결제 이벤트의 `is_trial`은 스토어가 그 요금제에 무료 체험을 줄 수 있다고 한 것이다(실제 체험 여부는 서버 /me)
-     */
+    /** 매출 집계에 쓰지 않고(원본은 RevenueCat `purchase`) 대시보드 이력 때문에 이름을 유지한다. `is_trial`은 스토어가 체험을 줄 수 있다는 뜻이다 */
     subscription_started: {
       product_id: SubscriptionPlan['identifier'];
       plan_type: PlanType;

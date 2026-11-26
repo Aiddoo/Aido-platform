@@ -60,10 +60,7 @@ export class WeatherLocationService {
     this.#logger = logger;
   }
 
-  /**
-   * 안내에서 '계속'을 누른 뒤에만 부른다. 처음 묻는 권한 창은 설명 없이 띄우지 않는다.
-   * 창을 띄우지 못하면 로그만 남기고 null이다. 화면은 위치를 다시 읽어 안내를 그대로 보인다
-   */
+  /** 안내에서 '계속'을 누른 뒤에만 부른다. 처음 묻는 권한 창은 설명 없이 띄우지 않는다 */
   requestPermission = async (): Promise<OsPermission | null> => {
     try {
       const permission = await this.#gateway.requestPermission();
@@ -129,10 +126,7 @@ export class WeatherLocationService {
     });
   };
 
-  /**
-   * 허용한 적 있는 사용자(직전 위치가 있거나 기기가 허용을 기억함)의 권한이 정해지지 않은 상태로 읽히면
-   * 한 번 더 확인한다. 직전 위치는 쿼리 캐시가 비면 사라지므로 기기에 남긴 허용 여부도 본다.
-   */
+  /** 허용한 적 있는 사용자의 권한이 정해지지 않은 상태로 읽히면 한 번 더 확인한다. 직전 위치는 캐시가 비면 사라져 기기 허용 여부도 본다 */
   #readPermission = async (
     previousLocated: Extract<LocationReading, { status: 'located' }> | null,
   ): Promise<OsPermission> => {

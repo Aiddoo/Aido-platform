@@ -10,10 +10,7 @@ import type { PushAskMoment, PushPermissionStep } from '../domains/push-permissi
 /** 진입 대기로 스플래시를 잡아 두는 상한. 판정이 어떻게 끝나든 스플래시에 갇히지 않게 한다 */
 export const NOTIFICATION_ENTRY_HOLD_MAX_MS = 3 * SECOND_MS;
 
-/**
- * 알림 [완료]가 할 일 상세를 기다리는 상한. 요청 하나의 제한 시간(10초)만큼 기다리고, 오프라인에 멈춘 조회에 합류했으면
- * 이 시간에 끝내 나중에 연결돼도 완료를 보내지 않는다
- */
+/** 요청 하나의 제한 시간만큼 기다리고, 오프라인에 멈춘 조회에 합류했으면 이 시간에 끝내 나중에 완료를 보내지 않는다 */
 export const TODO_REMINDER_DETAILS_WAIT_MS = 10 * SECOND_MS;
 
 /** 페이로드에 수신자 ID가 없어 읽음의 403·404가 다른 계정 알림을 막는 유일한 방어다(Release 측정 전 초깃값) */

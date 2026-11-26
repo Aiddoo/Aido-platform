@@ -66,10 +66,7 @@ export function isViewingNotificationDestination(
   );
 }
 
-/**
- * 탭 위 루트 Stack에 쌓이는 상세 화면의 경로. 탭(`(tabs)`)이나 안쪽 Stack(`weather`)의 화면은
- * 미리보기가 그 navigator에 화면을 미리 넣어 탭에 params가 남을 수 있다. 없으면 null이다
- */
+/** 탭·안쪽 Stack 화면은 미리보기가 그 navigator에 화면을 넣어 탭에 params가 남을 수 있어 루트 Stack 상세만 준다. 없으면 null */
 export function findRootStackDetailHref(destination: NotificationDestination): Href | null {
   if (destination.kind !== 'route') {
     return null;

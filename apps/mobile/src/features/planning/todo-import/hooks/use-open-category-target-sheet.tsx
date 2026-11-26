@@ -86,10 +86,7 @@ type OpenCategoryTargetSheetOptions = Omit<
   'isOpen' | 'onOpenChange' | 'close' | 'onLocked'
 >;
 
-/**
- * 넣을 곳을 고르는 시트를 연다. 고르면 `onChoose`가 불리고 시트는 내려간 뒤에 지워진다.
- * 새 카테고리 이름·색은 같은 시트 안에서 받아, 내려가는 시트 위에 다른 시트를 띄워 얼지 않게 한다
- */
+/** 새 카테고리 이름·색은 같은 시트 안에서 받아, 내려가는 시트 위에 다른 시트를 띄워 얼지 않게 한다 */
 export function useOpenCategoryTargetSheet(): (options: OpenCategoryTargetSheetOptions) => void {
   const openKeyboardSheet = useOpenKeyboardSheet();
 
@@ -102,8 +99,7 @@ export function useOpenCategoryTargetSheet(): (options: OpenCategoryTargetSheetO
   return (options) => {
     let isLockedPressed = false;
     openKeyboardSheet(({ isOpen, onOpenChange, close }) => {
-      // 잠긴 새 카테고리를 누르면 시트를 먼저 내리고 다 내려간 뒤 안내를 띄워, 토스트가 시트 뒤에 가리거나
-      // 내려가는 시트 위에 안내 시트가 겹치지 않는다
+      // 시트가 다 내려간 뒤 안내를 띄워 토스트가 시트 뒤에 가리거나 내려가는 시트 위에 안내 시트가 겹치지 않는다
       const handleOpenChange = (nextIsOpen: boolean) => {
         onOpenChange(nextIsOpen);
         if (!nextIsOpen && isLockedPressed) {
@@ -138,10 +134,7 @@ export function useOpenCategoryTargetSheet(): (options: OpenCategoryTargetSheetO
   };
 }
 
-/**
- * 넣을 아이두 카테고리를 고르는 시트. 줄을 누르면 바로 골라지고 닫힌다. 새 카테고리는 같은 시트 안에서 이름·색을
- * 정해 시트를 겹쳐 띄우지 않는다. 카테고리·요금제는 여는 단계가 이미 받아 둔 캐시를 읽는다
- */
+/** 카테고리·요금제는 여는 단계가 이미 받아 둔 캐시를 읽는다 */
 function CategoryTargetSheet({
   isOpen,
   onOpenChange,
@@ -315,10 +308,7 @@ interface ChoicesProps {
   onChoose: (target: TodoImportTarget) => void;
 }
 
-/**
- * 내 아이두 카테고리 라디오 목록. 고른 줄은 지금 넣을 곳 그대로이고, 새로 만들 카테고리면 맨 위에 둔다.
- * 남은 자리는 고른 뒤 넣을 곳 카드가 서버 값으로 알린다. 줄마다 묻지 않는다
- */
+/** 남은 자리는 고른 뒤 넣을 곳 카드가 서버 값으로 알려 줄마다 묻지 않는다 */
 CategoryTargetSheet.Choices = function Choices({ categories, current, onChoose }: ChoicesProps) {
   const { t } = useTranslation('todoImport');
   const [query, setQuery] = useState('');
@@ -403,10 +393,7 @@ interface NewCategoryOptionProps {
   onLocked: () => void;
 }
 
-/**
- * "새 카테고리 만들기" 줄. 누르면 늘 무언가 보인다: 이름·색 입력, 같은 이름의 카테고리 고르기, 또는 왜 더 만들 수
- * 없는지 알리는 안내
- */
+/** 누르면 늘 무언가 보인다: 이름·색 입력, 같은 이름의 카테고리 고르기, 또는 왜 더 만들 수 없는지 알리는 안내 */
 CategoryTargetSheet.NewCategoryOption = function NewCategoryOption({
   newCategoryName,
   sameNameCategoryId,

@@ -69,7 +69,6 @@ import { type ComponentProps, Fragment, Suspense, useEffect, useState } from 're
 import { ScrollViewContainer } from 'react-native-reorderable-list';
 import { match, P } from 'ts-pattern';
 
-/** 친구 피드가 친구를 읽는 단계. 세 단계 모두 같은 뼈대에 그린다. 더는 친구가 아니면 내 피드로 돌아간다 */
 type FriendFeedView = Exclude<RouteFriend, { status: 'missing' }>;
 
 export default function FeedScreen() {
@@ -251,7 +250,6 @@ function MyFeed({ onScrollBeginDrag, shouldShowHint, shouldShowSuggestionHint }:
   );
 }
 
-/** route의 친구를 친구 목록에서 확인해 피드를 그린다. 더는 친구가 아니면 내 피드로 돌아간다 */
 function FriendFeed() {
   const routeFriend = useSuspenseRouteFriend();
 
@@ -394,10 +392,7 @@ function useIsFriendHintAhead({ hasScrolledFeed }: { hasScrolledFeed: boolean })
   return isFriendHintPending && !hasScrolledFeed && (friends?.items.length ?? 0) === 0;
 }
 
-/**
- * 내 피드에서만 도는 첫 화면 조율이다. 앱이 앞에 안정적으로 떠 있으면(로그인, 알림 이동 없음)
- * 알림 켜기 화면을 열고, 그 화면이 정해진 뒤 새로운 기능 안내를 연다. 닫은 안내는 다시 보기 카드로 남는다
- */
+/** 앱이 앞에 안정적으로 떠 있으면(로그인, 알림 이동 없음) 알림 켜기 화면을 열고, 그 화면이 정해진 뒤 새로운 기능 안내를 연다 */
 function useFirstFeedGuides() {
   const authStatus = useAuthStatus();
   const hasPendingNavigation = useHasPendingPushNotificationEntry();

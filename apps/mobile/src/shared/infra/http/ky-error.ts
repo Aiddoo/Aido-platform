@@ -93,10 +93,7 @@ function toServerError(error: HTTPError): ServerError {
   });
 }
 
-/**
- * ky가 던진 실패 중 재시도 대상인 전송 실패(시간 초과, 5xx, 네트워크)를 앱 오류로 바꾼다.
- * 4xx와 그 밖의 오류(요청 경로의 코드 버그인 TypeError 포함)는 호출자가 정하도록 null이다.
- */
+/** 4xx와 그 밖의 오류(요청 경로의 코드 버그인 TypeError 포함)는 호출자가 정하도록 null이다 */
 export function toTransportError(error: unknown): TimeoutError | ServerError | NetworkError | null {
   if (error instanceof KyTimeoutError) {
     return new TimeoutError();

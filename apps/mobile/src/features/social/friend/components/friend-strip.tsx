@@ -61,10 +61,7 @@ interface FriendStripProps {
   empty: ReactNode;
 }
 
-/**
- * 피드 위에서 나와 친구를 골라 그 사람의 피드로 바꾸는 가로 친구 줄.
- * "나"는 왼쪽에 고정하고, 친구는 서버 순서(친구 목록 편집에서 정한 순서)대로 커서 페이지를 이어 붙인다.
- */
+/** 친구는 서버 순서(친구 목록 편집에서 정한 순서)대로 커서 페이지를 이어 붙인다 */
 export function FriendStrip({ empty }: FriendStripProps) {
   const { t } = useTranslation('friend');
   const listRef = useRef<FlashListRef<FriendUser>>(null);
@@ -268,10 +265,7 @@ interface FriendStripEmptyProps {
   shouldShowHint?: boolean;
 }
 
-/**
- * 친구가 없으면 "나" 옆에서 초대(초대를 못 쓰면 친구 찾기)로 이끈다. 칸 높이는 친구가 있을 때와 같다.
- * 말풍선은 첫 탭이 칸에 닿도록 통과시키고, 닫으면 계정마다 저장돼 다시 보이지 않는다.
- */
+/** 말풍선은 첫 탭이 칸에 닿도록 통과시키고, 닫으면 계정마다 저장돼 다시 보이지 않는다 */
 FriendStrip.Empty = function Empty({
   onInvite,
   isHintDismissed,
@@ -334,7 +328,6 @@ FriendStrip.Empty = function Empty({
   );
 };
 
-/** 목록 끝 칸: 더 불러오는 중이면 스켈레톤, 실패하면 그 자리에서 다시 시도, 다 불렀으면 친구 찾기 */
 function ListEnd({
   hasNextPage,
   isFetchNextPageError,
@@ -402,10 +395,7 @@ function ListEnd({
   );
 }
 
-/**
- * 고른 친구가 잘려 있으면 보이게 옮긴다. 딥링크로 아직 안 불러온 친구를 고르면 친구 피드가 페이지를 이어 불러오고,
- * 같은 캐시라 여기서 그 친구가 나타나는 순간 옮긴다.
- */
+/** 딥링크로 아직 안 불러온 친구를 고르면 친구 피드가 페이지를 이어 불러오고, 같은 캐시라 나타나는 순간 옮긴다 */
 function SelectedFriendReveal({
   listRef,
   friends,
@@ -554,10 +544,7 @@ function Divider() {
   );
 }
 
-/**
- * 줄은 iPhone Duo 세로 레일 밑까지 밀리고 내용만 레일을 피한다. 앞쪽 "나" 칸과 목록 끝 여백에 그쪽 inset을 더한다.
- * 스타일의 left·right는 RTL에서 앞뒤로 바뀌므로 inset도 앞뒤로 바꿔 읽는다
- */
+/** 줄은 iPhone Duo 세로 레일 밑까지 밀리고 내용만 레일을 피한다. left·right는 RTL에서 바뀌어 inset도 바꿔 읽는다 */
 function useStripEdgeInsets() {
   const insets = useSafeAreaInsets();
 

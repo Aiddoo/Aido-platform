@@ -48,11 +48,7 @@ export type PurchasePackageResult =
   | { type: 'purchased'; status: PurchaseStatus }
   | { type: 'package-not-found' };
 
-/**
- * - `network`: 기기 연결 때문에 스토어에 닿지 못했다
- * - `store-setup`: 앱·스토어 설정이 맞지 않아 다시 해도 같다
- * - `store-problem`: 스토어가 잠시 응답하지 못했다
- */
+/** `store-setup`은 앱·스토어 설정이 맞지 않아 다시 해도 같고, `store-problem`은 스토어가 잠시 응답하지 못한 것이다 */
 export type PurchaseFailureKind =
   | 'network'
   | 'cancelled'
@@ -79,10 +75,7 @@ export class PurchasesGatewayError extends AppError {
   }
 }
 
-/**
- * `missing-api-key`: 이 빌드에는 결제 키가 없어 초기화하지 않았다.
- * 어댑터 교체와 외부 재사용을 위해 열어 둔 포트 타입 @public
- */
+/** `missing-api-key`는 이 빌드에 결제 키가 없어 초기화하지 않은 것이다. 외부 재사용을 위해 열어 둔 포트 타입 @public */
 export type PurchasesConfigureResult = 'configured' | 'missing-api-key';
 
 export interface PurchasesGateway {

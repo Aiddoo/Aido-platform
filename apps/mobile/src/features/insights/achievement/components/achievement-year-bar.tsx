@@ -22,10 +22,7 @@ import { useGetAchievementYearsQueryOptions } from '../queries/achievement.queri
 
 const ARROW_SIZE = 20;
 
-/**
- * 배지·기록이 어느 해의 것인지 보이고 기록 있는 앞뒤 해로 옮긴다. 고를 해가 없고 올해를 보면 숨는다.
- * 해가 바뀐 직후 지난해 53주를 보일 때도 연도가 보여 새해 기록이 아님을 안다
- */
+/** 해가 바뀐 직후 지난해 53주를 보일 때도 연도가 보여 새해 기록이 아님을 안다 */
 export function AchievementYearBar({
   className,
 }: Pick<ComponentProps<typeof HStack>, 'className'>) {

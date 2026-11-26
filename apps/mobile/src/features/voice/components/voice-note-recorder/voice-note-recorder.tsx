@@ -525,7 +525,6 @@ interface RecordFinishOptions {
   finish: () => void;
 }
 
-/** 끝내기. 아직 들은 글자가 없으면 그래도 끝낼지 묻는다 */
 function useRecordFinish({ state, finish }: RecordFinishOptions) {
   const { t } = useTranslation('voiceNote');
   const logger = useLogger();

@@ -159,7 +159,6 @@ FriendList.Item = function Item({ friend, isEditing, onDelete }: FriendListItemP
   const { t } = useTranslation(['common', 'friend']);
   const displayName = friend.name ?? t('friend:fallbackName');
 
-  // 행 모양을 편집과 상관없이 고정해 편집을 켜고 끌 때 손잡이·내용·삭제 버튼이 미끄러지고 사라지게 둔다.
   // 끌기는 바깥 행이, 평소 누름은 안쪽 Link가 받는다. 편집 중이 아니면 바깥은 Link를 스크린리더에서 가리지 않는다
   return (
     <PressableFeedback
@@ -234,11 +233,7 @@ interface FriendListLinkProps {
   children: ReactNode;
 }
 
-/**
- * 누르면 그 친구의 피드로 간다. 피드는 다른 탭이라 미리보기는 붙이지 않고(state-and-routing Link 규칙)
- * 길게 누르면 메뉴만 연다(iOS). 다른 플랫폼은 행의 ⋯ 메뉴가 같은 동작을 맡는다.
- * 편집 중에는 누름을 받지 않아 바깥 행이 길게 눌러 끌기를 받고, 끌기와 겹치는 메뉴도 붙이지 않는다
- */
+/** 피드는 다른 탭이라 미리보기는 붙이지 않는다(state-and-routing Link 규칙). 편집 중에는 끌기와 겹치는 메뉴를 붙이지 않는다 */
 FriendList.Link = function FriendLink({
   friendId,
   displayName,
@@ -303,7 +298,6 @@ FriendList.Link = function FriendLink({
   );
 };
 
-/** 친구 행의 ⋯ 메뉴. 편집 중이 아닐 때 프로필을 신고하거나 친구를 차단한다 */
 function FriendModerationMenu({ userId, displayName }: BlockTarget) {
   const { t } = useTranslation('moderation');
   const fontScaledSize = useFontScaledSize();
@@ -378,7 +372,6 @@ FriendList.Empty = function Empty({ onInvite, inviteWelcomeDays }: FriendListPro
   const router = useRouter();
   const push = useSingleTap(router.push);
 
-  // 초대를 쓸 수 있으면 링크로 데려오는 길을 먼저, 태그 찾기를 다음으로 보여 준다
   if (onInvite != null) {
     return (
       <UserList.Empty
@@ -437,10 +430,7 @@ function EditModeGuideTooltip() {
   );
 }
 
-/**
- * 끊은 친구 행은 낙관적 갱신으로 바로 빠진다. 행이 띄운 다이얼로그는 행과 함께 내려가므로 행보다 오래 사는
- * 목록이 띄워, 요청하는 동안 진행 중으로 남고 실패하면 행이 돌아온 뒤에도 남는다
- */
+/** 행이 띄운 다이얼로그는 낙관적으로 빠지는 행과 함께 내려가므로 행보다 오래 사는 목록이 띄운다 */
 function useConfirmRemoveFriend() {
   const { t } = useTranslation(['common', 'friend']);
   const confirmDialog = useConfirmDialog();

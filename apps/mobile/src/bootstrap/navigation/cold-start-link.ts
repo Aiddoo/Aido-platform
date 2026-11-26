@@ -38,10 +38,7 @@ export function toColdStartAppPath(url: string, appScheme: string): AppPath | nu
   return path;
 }
 
-/**
- * 콜드 스타트 때 인증 판정이 끝나기 전에는 보호된 route가 `/`로 돌려보내 처음 연 주소를 잃는다.
- * `+native-intent`는 Provider 밖에서 도니 DI로 받을 수 없어 첫 화면이 가져갈 때까지 여기 둔다.
- */
+/** 인증 판정 전에는 보호된 route가 `/`로 돌려보내 주소를 잃고, `+native-intent`는 Provider 밖이라 DI로 받을 수 없다 */
 let pendingPath: AppPath | null = null;
 
 export function rememberColdStartLink(url: string, appScheme: string): void {

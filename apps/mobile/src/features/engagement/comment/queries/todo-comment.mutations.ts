@@ -67,10 +67,7 @@ interface SetTodoCommentLikeVariables {
   via: TodoCommentLikeVia;
 }
 
-/**
- * 서버가 id와 순서를 정하므로 낙관적 행은 넣지 않는다.
- * 답글은 그 묶음 끝에 붙이고, 새 댓글은 정렬 자리를 몰라 묶음 목록만 다시 받는다.
- */
+/** 서버가 id와 순서를 정하므로 낙관적 행은 넣지 않고, 새 댓글은 정렬 자리를 몰라 묶음 목록만 다시 받는다 */
 export function useCreateTodoCommentChainMutationOptions({ todoId }: { todoId: number }) {
   const todoCommentApi = useTodoCommentApi();
   const queryClient = useQueryClient();

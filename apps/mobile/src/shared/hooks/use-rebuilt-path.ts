@@ -10,10 +10,7 @@ interface DrawnInput<T> {
   input: T;
 }
 
-/**
- * read가 읽은 값(`===`)이나 draw가 바뀔 때만 경로를 다시 그린다. 빌더 하나를 되쓰고 앞 경로는 바로 놓는다.
- * Skia usePathValue는 콜백 안 shared value를 입력으로 찾지 못하고 앞 경로를 놓지 않는다
- */
+/** Skia usePathValue는 콜백 안 shared value를 입력으로 찾지 못하고 앞 경로를 놓지 않는다 */
 export function useRebuiltPath<T>(
   read: () => T,
   draw: (builder: SkPathBuilder, input: T) => void,

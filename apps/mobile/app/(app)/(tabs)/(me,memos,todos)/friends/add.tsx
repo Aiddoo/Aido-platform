@@ -41,16 +41,14 @@ export default function AddFriendScreen() {
 
   const saveFriendRequest = form.handleSubmit(async ({ userTag }) => {
     await sendRequest.mutateAsync(userTag);
-    // 보내는 사이 밀어서 떠났으면 지금 보이는 이전 화면을 한 번 더 닫지 않고,
-    // 돌아왔을 때 보낸 태그로 같은 요청을 또 보내지 않게 폼을 비운다
+    // 보내는 사이 떠났으면 이전 화면을 또 닫지 않고, 같은 요청을 또 보내지 않게 폼을 비운다
     if (!navigation.isFocused()) {
       form.reset();
       return;
     }
     goBack();
   });
-  // 같은 프레임의 두 번째 탭은 isSubmitting이 다음 렌더에야 켜져 여기서 막는다.
-  // 실패 안내는 mutation의 meta.errorFeedback이, 한도 안내는 여기서 한 번 하고 태그는 그대로 둔다
+  // 같은 프레임의 두 번째 탭은 isSubmitting이 다음 렌더에야 켜져 여기서 막는다. 한도 안내는 여기서 한 번 한다
   const handleSavePress = useSingleTap(() => {
     saveFriendRequest().catch(promptFriendLimit);
   });

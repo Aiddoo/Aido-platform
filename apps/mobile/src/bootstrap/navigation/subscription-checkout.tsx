@@ -65,10 +65,7 @@ type CheckoutStepContexts = {
   welcome: { plan: SubscriptionPlan; purchasedOn: DateKey; hadRewardOnly: boolean };
 };
 
-/**
- * 마이 탭 구독 관리(`/settings/subscription`)와 업셀 모달(`/paywall`)이 같은 결제 흐름을 그린다. 경계·바깥 safe area는 두 route가 적는다.
- * 결제가 끝나면 서버 반영과 상관없이 방금 산 요금제로 시작 화면을 보여 준다. 뒤로 가기로 결제 화면에 돌아가지 않는다
- */
+/** 결제가 끝나면 서버 반영과 상관없이 방금 산 요금제로 시작 화면을 보여 주고, 뒤로 가기로 결제 화면에 돌아가지 않는다 */
 export function SubscriptionCheckout() {
   const { trackEvent } = useTrack();
   const todayKey = useTodayKey();
@@ -108,8 +105,7 @@ SubscriptionCheckout.Status = function Status({ onPurchased }: PurchaseFlowProps
   const receipt = useSuspenseSubscriptionReceipt();
   const [{ view }] = useSubscriptionParams();
 
-  // 보상 기간만 있으면 끝나기 전에 구독을 이어 붙일 수 있게 요금제를 보여 준다.
-  // 영수증은 서버 값으로만 그려 스토어가 실패해도 이용 중인 사람(관리자 포함)은 영수증을 본다.
+  // 보상 기간만 있으면 요금제를 보여 주고, 영수증은 서버 값으로만 그려 스토어가 실패해도 이용 중인 사람은 본다
   return match({
     hasFullAccess: EntitlementPolicy.hasFullAccess(entitlements),
     canSubscribe: receipt.primaryAction === 'subscribe',

@@ -83,7 +83,6 @@ export function useToggleSubTodoMutationOptions() {
 interface DeleteSubTodoVariables {
   todoId: number;
   subTodoId: number;
-  /** 바꾼 목록의 날짜. 여러 날 할 일은 시작일이 아니라 보고 있는 날짜 목록을 고친다 */
   date: DateKey;
 }
 
@@ -148,7 +147,6 @@ export function useDeleteSubTodoMutationOptions() {
 interface ReorderSubTodosVariables {
   todoId: number;
   subTodoIds: number[];
-  /** 바꾼 목록의 날짜. 여러 날 할 일은 시작일이 아니라 보고 있는 날짜 목록을 고친다 */
   date: DateKey;
 }
 
@@ -212,7 +210,6 @@ export function useReorderSubTodosMutationOptions() {
 interface AddSubTodoVariables {
   todoId: number;
   title: string;
-  /** 바꾼 목록의 날짜. 여러 날 할 일은 시작일이 아니라 보고 있는 날짜 목록을 고친다 */
   date: DateKey;
 }
 
@@ -294,7 +291,6 @@ interface UpdateSubTodoVariables {
   todoId: number;
   subTodoId: number;
   title: string;
-  /** 바꾼 목록의 날짜. 여러 날 할 일은 시작일이 아니라 보고 있는 날짜 목록을 고친다 */
   date: DateKey;
 }
 

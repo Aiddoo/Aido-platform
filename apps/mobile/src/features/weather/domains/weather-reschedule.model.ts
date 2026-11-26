@@ -36,11 +36,7 @@ interface WeatherRescheduleSource {
   linkedReason: WeatherRescheduleReason;
 }
 
-/**
- * 지금 서버 브리핑이 영향받는다고 본 할 일로 옮기기를 만든다. 링크의 이유가 달라졌거나 낡아도 지금 브리핑을 따르고,
- * 링크가 가리킨 할 일이 아직 영향받으면 그것만, 아니면 브리핑의 전체를 담는다. 시트를 연 사이 끝낸 할 일은 뺀다.
- * 서버가 판단하지 못했으면 앱이 다시 판단하지 않고 비운다.
- */
+/** 링크의 이유가 달라졌거나 낡아도 지금 브리핑을 따른다. 서버가 판단하지 못했으면 앱이 다시 판단하지 않고 비운다 */
 export function createWeatherReschedule({
   reportBriefing,
   forecastTodos,

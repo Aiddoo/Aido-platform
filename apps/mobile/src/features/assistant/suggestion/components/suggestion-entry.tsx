@@ -74,7 +74,6 @@ export function SuggestionEntry({ shouldShowHint = true }: SuggestionEntryProps)
 
 type SuggestionEntryContentsProps = Omit<InfoCardProps, 'label' | 'isPremiumOnly'>;
 
-/** 프리미엄 입구의 한 줄. 지금 제안 상태를 읽어 그리고, 안내 말풍선이 넘긴 누름 props를 카드에 잇는다 */
 SuggestionEntry.Contents = function Contents({ onPress, ...props }: SuggestionEntryContentsProps) {
   const { t } = useTranslation(['todo', 'ai']);
   const router = useRouter();

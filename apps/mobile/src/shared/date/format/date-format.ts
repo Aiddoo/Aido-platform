@@ -217,10 +217,7 @@ export interface RelativeTimeLabels {
   daysAgo: (count: number) => string;
 }
 
-/**
- * 경과 시간을 표시한다. 하루 안은 분·시간("방금 전", "5분 전", "3시간 전"), 그 뒤는 context 시간대의 달력 날짜로
- * 센 일수("어제", "2일 전")이고, 7일부터는 year-aware 날짜("1월 5일", 다른 해면 "2025년 1월 5일")다.
- */
+/** 하루 뒤부터는 context 시간대의 달력 날짜로 센 일수("어제", "2일 전")이고, 7일부터는 year-aware 날짜다 */
 export function formatRelativeTimeWith(
   date: Instant,
   now: Instant,

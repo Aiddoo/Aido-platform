@@ -13,7 +13,6 @@ type UseGoBackOptions =
       onFallback?: () => void;
     };
 
-/** 이전 화면으로 돌아간다. 연타로 두 번 돌아가지 않는다 */
 export function useGoBack({ fallbackHref, onFallback }: UseGoBackOptions = {}): () => void {
   const router = useRouter();
   return useSingleTap(() => {

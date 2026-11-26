@@ -12,8 +12,7 @@ interface TodoImportPlacementsInput {
   plan: TodoImportPlan;
 }
 
-// 고른 넣을 곳마다 서버 한도를 한 번씩 읽어 몇 개가 들어가고 몇 개를 건너뛰는지 센다. 고르지 않은 카테고리는 묻지 않고,
-// 넣을 곳 카드·캘린더 줄·요약이 같은 키를 읽어 요청은 한 번이다
+// 고르지 않은 카테고리는 묻지 않고, 넣을 곳 카드·캘린더 줄·요약이 같은 키를 읽어 요청은 한 번이다
 export function useSuspenseTodoImportPlacements({
   plan,
 }: TodoImportPlacementsInput): TodoImportPlacement[] {

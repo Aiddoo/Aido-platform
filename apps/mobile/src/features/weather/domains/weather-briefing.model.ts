@@ -91,10 +91,7 @@ const wetTimingSchema = z.discriminatedUnion('day', [
   z.object({ day: z.literal('tomorrow'), dayPart: z.enum(WEATHER_DAY_PARTS).nullable() }),
 ]);
 
-/**
- * 브리핑 카드 한 장: 서버 머리글을 오늘 목록의 할 일과 묶은 것. 앱은 무엇을 알릴지 다시 판단하지 않고
- * 목록에 기대는 표시만 고른다
- */
+/** 서버 머리글을 오늘 목록의 할 일과 묶는다. 앱은 무엇을 알릴지 다시 판단하지 않고 목록에 기대는 표시만 고른다 */
 const weatherBriefingSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('rainy'), todos: z.array(weatherAffectedTodoSchema) }),
   z.object({
@@ -273,10 +270,7 @@ function getAffectedTodos(briefing: WeatherBriefing): readonly WeatherAffectedTo
 }
 
 export const WeatherBriefingPolicy = {
-  /**
-   * 옮기기를 권할 할 일과 이유. 비·뇌우는 비를, 더위는 더위를 피해 옮긴다. 눈은 옮길 시각을 권하지 않고,
-   * 완료한 할 일은 옮기지 않아 모두 끝냈으면 권하지 않는다
-   */
+  /** 비·뇌우는 비를, 더위는 더위를 피해 옮긴다. 눈은 옮길 시각을 권하지 않고, 완료한 할 일은 옮기지 않는다 */
   findRescheduleSuggestion(briefing: WeatherBriefing): RescheduleSuggestion | null {
     const suggestion = match(briefing)
       .returnType<RescheduleSuggestion | null>()

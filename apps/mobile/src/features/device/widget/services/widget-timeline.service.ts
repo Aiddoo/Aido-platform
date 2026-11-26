@@ -12,7 +12,6 @@ interface WidgetTimelinePorts {
   appScheme: string;
 }
 
-/** iOS 위젯(expo-widgets)에 지금·다음 자정·그다음 자정 timeline을 쓴다 */
 export class WidgetTimelineService implements WidgetBridge {
   readonly #ports: WidgetTimelinePorts;
 

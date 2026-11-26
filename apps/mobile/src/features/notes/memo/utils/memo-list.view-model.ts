@@ -26,10 +26,7 @@ export function getEnteringMemoIds(
 
 export type MemoListChange = 'same' | 'appended' | 'reordered';
 
-/**
- * 목록이 어떻게 바뀌었는지. 순서가 같으면(내용 수정) same, 앞 목록 뒤에 붙기만 했으면(다음 쪽) appended,
- * 그 밖(만들기·고정·삭제·다른 기기 변경)은 reordered다. 카드가 새 자리로 움직이는 것은 reordered뿐이다
- */
+/** same은 내용 수정, appended는 다음 쪽, 그 밖(만들기·고정·삭제·다른 기기 변경)은 reordered다 */
 export function getMemoListChange(
   previousIds: readonly number[],
   nextIds: readonly number[],

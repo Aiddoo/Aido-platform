@@ -35,8 +35,7 @@ import { isValidSearchQuery } from '../schemas/friend-request.schema';
 
 const SEARCH_CONTENT_STYLE = { ...USER_LIST_CONTENT_STYLE, paddingHorizontal: 16 };
 
-// iPhone·Android는 검색창이 네이티브 헤더라 목록이 헤더 밑에 깔린다. 모든 상태가 같은 inset을 받아야 가려지지 않는다.
-// 검색 중에는 키보드가 떠 있으므로 첫 탭이 키보드를 내리는 데 먹히지 않게 하고, 끌면 내리고, 가운데 안내가 키보드에 가려지지 않게 한다
+// 네이티브 헤더 밑에 깔린 목록이 가려지지 않게 모든 상태가 같은 inset을 받고, 검색 중 첫 탭이 키보드를 내리는 데 먹히지 않게 한다
 const SEARCH_SCROLL_PROPS = {
   contentInsetAdjustmentBehavior: 'automatic',
   keyboardShouldPersistTaps: 'handled',

@@ -48,7 +48,6 @@ export const SuggestionListSelect = {
     count: list.suggestions.length,
   }),
 
-  /** 리포트 상세 아래 미리보기는 앞의 두 제안만 보인다 */
   preview: (list: AiSuggestionList) => take(list.suggestions, PREVIEW_SUGGESTION_COUNT),
 };
 

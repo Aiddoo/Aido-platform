@@ -120,10 +120,7 @@ export function CalendarChoiceDemo() {
   );
 }
 
-/**
- * 실제 카테고리 단계와 같은 넣을 곳 카드다. 가져올 일정이 아이두 카테고리 한 곳으로 들어가고, 잠시 뒤 넣을 곳이 다른
- * 카테고리로 바뀐다. 넣을 곳을 눌러 직접 바꿔 볼 수도 있다
- */
+/** 실제 카테고리 단계와 같은 넣을 곳 카드다 */
 export function ImportDestinationDemo() {
   const { t } = useTranslation('whatsNew');
   const collections = useDemoCollections().filter((collection) =>
@@ -325,7 +322,6 @@ interface DemoTodoRowProps extends Omit<
   onSelectedChange: (isSelected: boolean) => void;
 }
 
-/** 할 일 목록 줄을 저장 없이 예시 값으로 그린다 */
 function DemoTodoRow({ todo, isSelected, onSelectedChange, ...rowProps }: DemoTodoRowProps) {
   const dateFormatContext = useDateFormatContext();
   // 예시라 설정을 받기까지 기다리지 않고 기본 표기로 먼저 보인다

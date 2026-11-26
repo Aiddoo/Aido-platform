@@ -13,10 +13,7 @@ interface SettleOverlappingWriteOptions {
   writeResponse: () => void;
 }
 
-/**
- * 겹친 쓰기의 응답을 캐시에 반영한다. 응답이 오는 순서는 서버가 처리한 순서와 다를 수 있어 앞서 끝난 응답은 낡음만
- * 표시하고, 마지막 변경이 겹쳤으면(시작할 때 다른 변경이 있었거나 낡음 표시가 남음) 응답 대신 다시 받는다. `onSuccess`에서 부른다
- */
+/** 응답 순서는 서버 처리 순서와 다를 수 있어 앞서 끝난 응답은 낡음만 표시하고, 마지막 변경이 겹쳤으면 다시 받는다 */
 export function settleOverlappingWrite(
   queryClient: QueryClient,
   { mutationKey, queryKey, startedWithOthers, writeResponse }: SettleOverlappingWriteOptions,

@@ -41,7 +41,6 @@ interface MemoConvertBottomSheetProps extends Pick<
   onUnavailable: () => void;
 }
 
-/** 메모를 할 일 하나로 옮긴다. 제목은 메모 내용으로 채워 두고, 입력칸과 칩은 할 일 작성과 같다 */
 export function MemoConvertBottomSheet({
   memo,
   isOpen,

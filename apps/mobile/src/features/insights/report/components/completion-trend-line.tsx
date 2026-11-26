@@ -53,10 +53,7 @@ import {
 
 // 차트와 .Loading이 같은 비율을 써야 받은 뒤 자리가 움직이지 않는다
 const COMPLETION_TREND_ASPECT_RATIO = 3;
-/**
- * 추세선의 고정 좌표계. 왼쪽은 기준선 라벨("100%"), 위는 고른 주 값 라벨 자리다.
- * 폭이 가장 좁은 SE의 큰 글꼴에서도 라벨이 들어가는 값이고, 폭에 비례해 늘어난다
- */
+/** 폭이 가장 좁은 SE의 큰 글꼴에서도 라벨이 들어가는 고정 좌표계이고, 폭에 비례해 늘어난다 */
 const COMPLETION_TREND_VIEW = {
   width: 240,
   height: 240 / COMPLETION_TREND_ASPECT_RATIO,
@@ -87,7 +84,6 @@ interface CompletionTrendLineProps {
   testID?: string;
 }
 
-/** 주별 완료율 추세. 일별·시간대 막대처럼 누르거나 가로로 밀어 그 주 값을 본다 */
 export function CompletionTrendLine({
   values,
   labels,
@@ -358,10 +354,7 @@ function toPercent(viewLength: number, axis: 'width' | 'height'): `${number}%` {
   return `${(viewLength / COMPLETION_TREND_VIEW[axis]) * 100}%`;
 }
 
-/**
- * 고른 점 위 값 라벨의 자리. 글자 폭을 재지 않고 가운데를 맞추려고 점을 가운데에 둔 상자를 만든다.
- * 첫 점은 왼쪽 기준선 라벨과, 끝 점은 오른쪽 끝과 겹치지 않게 그쪽 끝에 붙인다
- */
+/** 글자 폭을 재지 않고 가운데를 맞추려고 점을 가운데에 둔 상자를 만든다. 첫·끝 점은 겹치지 않게 그쪽 끝에 붙인다 */
 function toValueLabelPosition(
   point: TrendPoint,
   { isFirst, isLast }: { isFirst: boolean; isLast: boolean },

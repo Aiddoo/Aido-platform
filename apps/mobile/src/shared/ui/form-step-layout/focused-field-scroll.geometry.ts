@@ -129,7 +129,6 @@ export function getCaretTargetScroll(input: FocusedFieldScrollInput): number {
   );
 }
 
-/** 키보드가 움직인 비율만큼 fromScroll에서 targetScroll로 옮긴 스크롤 위치 */
 export function getKeyboardTransitionScroll(
   { fromHeight, toHeight, fromScroll }: KeyboardScrollTransition,
   keyboardHeight: number,

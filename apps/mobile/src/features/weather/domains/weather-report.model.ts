@@ -166,10 +166,7 @@ function createPrecipitationWindow(
 }
 
 export const WeatherReportPolicy = {
-  /**
-   * 예보 위치의 시간대. 일별 예보의 날짜와 화면의 시각이 이 시간대를 따른다. 런타임이 모르는 이름이면(null)
-   * 서비스 기본 시간대로 읽는다. 포매터의 안전망(`getFormatter`)이 고르던 값과 같다
-   */
+  /** 예보 위치의 시간대. 런타임이 모르는 이름이면(null) 서비스 기본 시간대로 읽는다 */
   getTimezone(report: WeatherReport) {
     return report.location.timezone ?? SERVICE_DEFAULT_TIMEZONE;
   },
@@ -295,10 +292,7 @@ export const WeatherReportPolicy = {
     return ForecastDayPolicy.findNextFullMoon(report.daily, this.getTodayKey(report, now));
   },
 
-  /**
-   * 오늘 할 일과 날씨를 겹쳐 안내해도 되는가. 6시간 넘게 낡은 리포트이거나 예보 위치의 벽시계가 기기와 다르면
-   * 할 일 시각(기기 시간대)과 예보를 맞출 수 없어 안내하지 않는다
-   */
+  /** 6시간 넘게 낡은 리포트이거나 예보 위치의 벽시계가 기기와 다르면 할 일 시각과 예보를 맞출 수 없어 안내하지 않는다 */
   canBriefTodos(report: WeatherReport, now: Instant, deviceTimezone: string): boolean {
     return (
       !this.isNowcastExpired(report, now) &&

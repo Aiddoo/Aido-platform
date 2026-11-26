@@ -215,7 +215,6 @@ export function addRepliesToThreadPages(
   }));
 }
 
-/** 방금 쓴 답글은 마지막 페이지 끝에 붙여 바로 보인다. 남은 페이지를 받으면 flattenReplyPages가 작성 순 자리로 옮긴다 */
 export function appendRepliesToReplyPages(
   data: TodoCommentReplyPages | undefined,
   replies: readonly TodoComment[],
@@ -254,10 +253,7 @@ export function findReplyPlacement(
   return data == null ? null : findPlacement(data, (reply) => reply.id === commentId);
 }
 
-/**
- * 지운 댓글 하나만 지금 캐시에 되돌린다. 묶음이 남아 있으면 지운 댓글을 다시 세우거나 답글 수를 되돌리고,
- * 통째로 빠졌으면 지우기 전 묶음을 원래 자리에 넣는다. 같은 묶음의 다른 변경은 남는다
- */
+/** 같은 묶음의 다른 변경이 남게 지운 댓글 하나만 되돌리고, 묶음이 통째로 빠졌으면 지우기 전 묶음을 원래 자리에 넣는다 */
 export function restoreCommentInThreadPages(
   data: TodoCommentThreadPages | undefined,
   removed: TodoComment,

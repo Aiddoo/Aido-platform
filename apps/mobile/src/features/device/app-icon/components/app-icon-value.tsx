@@ -13,7 +13,6 @@ import { Suspense } from 'react';
 
 import { useGetCurrentAppIconQueryOptions } from '../queries/app-icon.queries';
 
-/** 앱 아이콘 행의 현재 값. 바꿀 수 없는 무료 사용자에게는 프리미엄 기능이라는 칩을 보인다 */
 export function AppIconValue() {
   return (
     <QueryErrorBoundary fallback={QueryErrorFallback.Hidden}>

@@ -30,10 +30,7 @@ type TodoImportFailureAlertProps = Omit<
   'status' | 'title' | 'description' | 'action'
 >;
 
-/**
- * 서버가 일정을 받지 않아 멈춘 이유와 무엇을 바꿔 다시 설정할지. 확정할 때 바뀐 요금제·카테고리 한도면
- * 한도 안내도 열 수 있다. 이유는 이 기기에서 보낸 가져오기만 알아서 아니면 그리지 않는다
- */
+/** 멈춘 이유는 이 기기에서 보낸 가져오기만 알아서 아니면 그리지 않는다 */
 export function TodoImportFailureAlert(props: TodoImportFailureAlertProps) {
   const { t } = useTranslation('todoImport');
   const [importId] = useTodoImportId();
@@ -52,8 +49,7 @@ export function TodoImportFailureAlert(props: TodoImportFailureAlertProps) {
   const failure = getTodoImportUploadFailure(rejection);
   const isLimitFailure = failure === 'PLAN_LIMIT' || failure === 'CATEGORY_LIMIT';
 
-  // 이 기기의 업로드는 끝났지만 서버에는 아직 업로드 중으로 남아 있을 수 있다. 진행 중으로 알던 값을 낡게 해
-  // 설정 화면이 이 가져오기로 되돌려 보내지 않는다
+  // 서버에는 아직 업로드 중으로 남아 있을 수 있어 진행 중으로 알던 값을 낡게 해 설정 화면이 되돌려 보내지 않는다
   const handleSetUpAgainPress = () => {
     invalidateActiveTodoImport(queryClient);
     replace('/todo-import');

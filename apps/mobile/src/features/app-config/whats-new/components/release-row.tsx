@@ -16,10 +16,7 @@ interface ReleaseRowProps {
   release: ReleaseEntry;
 }
 
-/**
- * 기능이 주인공이고 버전·날짜는 조용히 아래에 둔다. 소개가 남은 출시는 소개를 열고,
- * 소개를 뺀 지난 출시는 바로 해 보기 화면으로 간다. 둘 다 없으면 누를 수 없다
- */
+/** 기능이 주인공이고 버전·날짜는 조용히 아래에 둔다 */
 export function ReleaseRow({ release }: ReleaseRowProps) {
   const { t } = useTranslation('whatsNew');
   const { trackEvent } = useTrack();

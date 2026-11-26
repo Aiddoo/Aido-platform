@@ -56,8 +56,7 @@ export function CategoryCreateBottomSheet(props: CategoryCreateBottomSheetProps)
       onError: (error) => gate.promptIfBlockedError(error, { onSubscribe: sheet.exit }),
     });
   });
-  // 훅이라 조기 반환보다 앞에 둔다. 완료 키는 버튼이 꺼져도 들어와 여기서도 막는다.
-  // 실패 안내는 mutation의 meta.errorFeedback과 위 업셀이 맡는다
+  // 훅이라 조기 반환보다 앞에 둔다. 완료 키는 버튼이 꺼져도 들어와 여기서도 막는다
   const handleSavePress = useSingleTap((isSubmitLocked: boolean) => {
     if (isSubmitLocked) {
       return;

@@ -99,8 +99,7 @@ export function createNewCategoryTarget(
   };
 }
 
-// 처음 넣을 곳. 새 할 일의 처음 카테고리와 같고, 만드는 중인 카테고리는 아직 id가 없어 고르지 않는다.
-// 카테고리가 하나도 없을 때만 새 카테고리다
+// 만드는 중인 카테고리는 아직 id가 없어 고르지 않고, 카테고리가 하나도 없을 때만 새 카테고리다
 export function createDefaultTarget(
   categories: readonly TodoCategory[],
   newCategoryDefaults: NewCategoryDefaults,

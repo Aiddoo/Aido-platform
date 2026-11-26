@@ -14,7 +14,6 @@ type PreferenceQueryOptions = QueryExecuteOptions<
   ReturnType<typeof PREFERENCE_QUERY_KEYS.current>
 >;
 
-/** 받은 설정이 있으면 그대로, 없으면 받는다 */
 export function ensurePreference(queryClient: QueryClient, options: PreferenceQueryOptions) {
   return queryClient.query({ ...options, staleTime: 'static' });
 }

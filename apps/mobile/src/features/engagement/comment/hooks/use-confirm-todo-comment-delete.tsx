@@ -16,10 +16,7 @@ type ConfirmTodoCommentDelete = (comment: TodoComment) => Promise<void>;
 
 const TodoCommentDeleteContext = createContext<ConfirmTodoCommentDelete | null>(null);
 
-/**
- * 지운 댓글 행은 낙관적 갱신으로 바로 빠지거나 묘비로 바뀌어 메뉴가 내려간다. 행이 띄운 다이얼로그는 행과 함께
- * 사라지므로 행보다 오래 사는 세션이 띄워, 요청하는 동안 진행 중으로 남고 실패하면 행이 돌아온 뒤에도 남는다
- */
+/** 지운 행은 낙관적 갱신으로 바로 빠져 행이 띄운 다이얼로그도 사라지므로 행보다 오래 사는 세션이 띄운다 */
 export function TodoCommentDeleteProvider({ children }: PropsWithChildren) {
   const { t } = useTranslation(['todoComment', 'common']);
   const [todoId] = useTodoId();

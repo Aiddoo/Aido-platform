@@ -30,10 +30,7 @@ const TodoCommentExpansionContext = createContext<ReturnType<
   typeof createThreadExpansionStore
 > | null>(null);
 
-/**
- * 펼친 묶음. 묶음 행과 작성 바(게시하면 그 묶음을 펼친다)가 같이 쓰므로 화면이 소유한다.
- * 알림으로 연 묶음처럼 처음부터 펼칠 묶음은 사용처가 기본값으로 정하고, 사용자가 바꾸면 그 값을 따른다.
- */
+/** 묶음 행과 작성 바(게시하면 그 묶음을 펼친다)가 같이 쓰므로 화면이 소유한다 */
 export function TodoCommentExpansionProvider({ children }: PropsWithChildren) {
   const [store] = useState(createThreadExpansionStore);
 

@@ -70,10 +70,7 @@ import { createContext, type PropsWithChildren, use } from 'react';
 
 import type { QueryCacheStorage } from '../query/query-cache-persistence';
 
-/**
- * 화면이 `use{X}`로 꺼내는 것만 둔다. 조립에만 쓰는 포트는 `AppContainerPorts`에 있다.
- * 순서는 `createAppContainer`의 반환·아래 훅과 같다: 포트, 기능 층 표(1 → 4), 기능마다 빈 줄
- */
+/** 화면이 `use{X}`로 꺼내는 것만 두고, 순서는 `createAppContainer`의 반환·아래 훅과 같다 */
 export interface DIContainer extends SharedDependencies {
   todoImportSource: TodoImportSource;
   applicationMetadata: NativeApplicationMetadataGateway;
@@ -98,7 +95,6 @@ export interface DIContainer extends SharedDependencies {
   authApi: AuthApi;
   authSessionStore: AuthSessionStore;
   signInService: SignInService;
-  /** 세션이 끝난 뒤 기기에 남은 계정 데이터를 정리한다 */
   sessionCleanupService: SessionCleanupService;
   /** 오프라인 로그아웃 뒤 온라인이 되면 서버 세션과 푸시 기기를 푼다 */
   sessionRevocationService: SessionRevocationService;
@@ -168,7 +164,6 @@ export interface DIContainer extends SharedDependencies {
 
   notificationApi: NotificationApi;
   notificationBadgeService: NotificationBadgeService;
-  /** 눌린 푸시 응답 슬롯 */
   pushNotificationEntryStore: PushNotificationEntryStore;
   /** 앱 화면 묶음이 그린 알림 화면 guard 값 */
   pushOnboardingGuardStore: PushOnboardingGuardStore;

@@ -42,8 +42,7 @@ export function getProgressView(
     snapshot.stage === 'starting' ||
     ('importId' in snapshot && snapshot.importId === todoImport.id);
   const localSnapshot: TodoImportUploadSnapshot = isThisImport ? snapshot : { stage: 'idle' };
-  // 업로드 중에만 이 기기의 멈춤·다른 기기 안내를 보인다. 오프라인이면 이 기기의 업로드도 아직 이어지지
-  // 않아 다른 기기로 오해하지 않게, 멈춘 이유 대신 오프라인 안내만 보인다
+  // 오프라인이면 이 기기의 업로드도 아직 이어지지 않아 다른 기기로 오해하지 않게 오프라인 안내만 보인다
   const isUploadingOnline = isOnline && TodoImportPolicy.canCancel(todoImport);
   const pauseReason =
     isUploadingOnline && localSnapshot.stage === 'paused' ? localSnapshot.reason : null;
@@ -109,8 +108,7 @@ export function getProgressView(
     .exhaustive();
 }
 
-// 서버가 받지 않아 이 기기의 업로드가 끝났어도 서버에는 업로드 중으로 남아 있다(failed).
-// 꺼진 채 다시 연 앱은 기기 상태가 비어 있어도 저장해 둔 업로드가 있으면 이 기기가 이어 보낸다(sending)
+// 거절돼 끝났어도 서버에는 업로드 중으로 남고(failed), 다시 연 앱은 저장해 둔 업로드가 있으면 이어 보낸다(sending)
 function toDeviceUpload(
   snapshot: TodoImportUploadSnapshot,
   hasStoredSession: boolean,

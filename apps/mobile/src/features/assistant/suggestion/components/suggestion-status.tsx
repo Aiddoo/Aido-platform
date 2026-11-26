@@ -294,10 +294,7 @@ SuggestionStatus.NextAnalysis = function NextAnalysis({
   );
 };
 
-/**
- * 버튼·스피너 자리. 대기 → 분석 중 → 결과는 폴링으로 제자리에서 바뀌어 비어 있어도 같은 높이를 잡는다.
- * 제안 줄이 이어지는 상태(HasSuggestions·무료 예시)는 목록이 아래를 채워 두지 않는다
- */
+/** 대기 → 분석 중 → 결과는 폴링으로 제자리에서 바뀌어 비어 있어도 같은 높이를 잡는다 */
 SuggestionStatus.ActionRow = function ActionRow({ children }: { children?: ReactNode }) {
   return (
     <>

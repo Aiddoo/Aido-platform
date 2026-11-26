@@ -22,7 +22,6 @@ type SuggestionCategoryBottomSheetProps = Omit<
   'fallbackHref' | 'loading' | 'children'
 >;
 
-/** 제안을 받아들일 카테고리를 고르는 시트. 대상은 `/suggestions/[suggestionId]/category` route에서 읽는다. */
 export function SuggestionCategoryBottomSheet(props: SuggestionCategoryBottomSheetProps) {
   return (
     <RouteBottomSheet

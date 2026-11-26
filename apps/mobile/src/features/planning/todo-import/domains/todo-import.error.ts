@@ -62,10 +62,7 @@ export function toRejectedTargetErrors(
   );
 }
 
-/**
- * 시작이 실패한 이유. alreadyActive: 이미 처리 중인 가져오기가 있다, planLimit: 요금제 한도에 막혔다,
- * targetsRejected: 서버가 넣을 곳을 받지 않았다, other: 그 밖(mutation이 알린다)
- */
+/** alreadyActive: 이미 처리 중, planLimit: 요금제 한도, targetsRejected: 서버가 넣을 곳을 거절, other: 그 밖(mutation이 알린다) */
 export type TodoImportStartFailure =
   | { kind: 'alreadyActive'; importId: string }
   | { kind: 'planLimit' }
@@ -149,10 +146,7 @@ export type TodoImportUploadFailure =
   | 'CATEGORY_NOT_FOUND'
   | 'REJECTED';
 
-/**
- * 올리거나 확정하다 서버가 받지 않은 이유. 세션이 남긴 거절로 고른다.
- * 카테고리 자리 부족(CAPACITY)은 서버가 더는 거절하지 않고 건너뛰지만, 오면 일반 거절로 본다
- */
+/** 카테고리 자리 부족(CAPACITY)은 서버가 더는 거절하지 않고 건너뛰지만, 오면 일반 거절로 본다 */
 export function getTodoImportUploadFailure(error: unknown): TodoImportUploadFailure {
   if (!isApiError(error)) {
     return 'REJECTED';

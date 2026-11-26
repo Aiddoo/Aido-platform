@@ -6,7 +6,6 @@ import { z } from 'zod';
 import { WIDGET_TOP_TODOS_LIMIT } from '../constants/widget.constants';
 import { widgetSnapshotDaySchema, widgetSnapshotSchema } from '../domains/widget-snapshot.model';
 
-// Persist only display data; isolated widget runtimes cannot access auth or i18n.
 // 출시한 위젯이 읽는 저장 모양이다. 칸을 지우거나 이름을 바꾸지 않고, optional은 옛 앱이 쓴 값을 읽으려고 둔다
 export const widgetDayStorageSchema = widgetSnapshotDaySchema.extend({
   totalTodos: z.int().min(0),

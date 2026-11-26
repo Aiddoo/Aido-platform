@@ -15,10 +15,7 @@ import Animated, {
 
 import { Box } from '../box/box';
 
-/**
- * `stamp`: 크게 떠 있다가(1.7배, -20°) 쿵 찍히며 제자리(1배, -6°)로 온다.
- * `rise`: 살짝 작게(0.9배) 있다가 부드럽게 제 크기로 떠오른다(결제 완료 왕관).
- */
+/** `stamp`는 크게 떠 있다가 쿵 찍히고, `rise`는 살짝 작게 있다가 부드럽게 떠오른다(결제 완료 왕관) */
 const STAMP_MOTIONS = {
   stamp: {
     spring: { duration: 400, dampingRatio: 0.55 },
@@ -34,7 +31,6 @@ const STAMP_MOTIONS = {
   },
 } as const;
 type StampMotion = keyof typeof STAMP_MOTIONS;
-/** 찍힌 뒤 delayMs 만에 테두리가 퍼지기 시작해 durationMs 동안 커지며 사라진다 */
 const STAMP_BURST = {
   delayMs: 120,
   durationMs: 480,

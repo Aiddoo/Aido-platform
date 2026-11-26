@@ -104,10 +104,7 @@ export function useGetInvitedFriendsInfiniteQueryOptions({ status }: InviteesFil
   });
 }
 
-/**
- * 내 초대 화면 요약. 전체 목록과 같은 쿼리를 읽어 기다리는 친구를 먼저, 최근 가입 순으로 앞 몇 명만 고른다.
- * 받은 페이지 안에서만 고르므로 첫 페이지 밖의 기다리는 친구는 전체 보기에서 본다.
- */
+/** 받은 페이지 안에서만 고르므로 첫 페이지 밖의 기다리는 친구는 전체 보기에서 본다 */
 function selectInvitedFriendSummary(
   invitedFriendPages: InfiniteData<InvitedFriendPage, string | undefined>,
 ) {
@@ -141,7 +138,6 @@ function selectInvitedFriendTotalCount(
   return invitedFriendPages.pages[0]?.totalCount ?? 0;
 }
 
-/** 전체 탭 숫자. 전체 목록 첫 페이지의 totalCount만 읽는다 */
 export function useGetInvitedFriendCountInfiniteQueryOptions() {
   return infiniteQueryOptions({
     ...useGetInvitedFriendsInfiniteQueryOptions({}),
@@ -149,8 +145,7 @@ export function useGetInvitedFriendCountInfiniteQueryOptions() {
   });
 }
 
-// 수락 응답은 다시 조회할 API가 없어 수락 mutation이 넣어 둔 값만 읽는다(skipToken이라 fetch하지 않는다).
-// 라우트 param으로 넘기면 결과 전체를 URL에 직렬화해야 하고 딥링크로 결과를 꾸며 열 수 있어 캐시로 넘긴다
+// 수락 응답은 다시 조회할 API가 없고, param으로 넘기면 딥링크로 결과를 꾸며 열 수 있어 캐시로 넘긴다
 const REDEMPTION_RESULT_GC_TIME_MS = 10 * MINUTE_MS;
 
 /** inviterId가 null이면(형식이 틀린 링크) 넣어 둔 값이 없어 늘 비어 있다 */

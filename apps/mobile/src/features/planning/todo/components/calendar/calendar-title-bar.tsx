@@ -118,10 +118,7 @@ export function CalendarTitleBar() {
   );
 }
 
-/**
- * 보이는 제목이 아니라 이 언어·보기에서 가장 긴 제목으로 정해, 주·달을 넘겨도 한 줄·두 줄이 바뀌지 않는다.
- * 재기 전에는 마지막으로 정한 배치를 그린다
- */
+/** 보이는 제목이 아니라 이 언어·보기에서 가장 긴 제목으로 정해, 주·달을 넘겨도 한 줄·두 줄이 바뀌지 않는다 */
 function useCalendarTitleBarLayout() {
   const [viewMode] = useStoredValue(calendarViewModeStoredValue);
   const { i18n } = useTranslation();
@@ -163,8 +160,7 @@ function useCalendarTitleBarLayout() {
   };
   const handleLayoutInputChange = useEffectEvent(decideLayout);
 
-  // onLayout은 그린 뒤에 와 한 프레임 다른 배치가 보이므로 그리기 전에 동기로 잰다(New Architecture).
-  // 언어는 탭·오늘 글자가 바뀐 뒤 값인 i18n 언어를 본다
+  // onLayout은 그린 뒤에 와 한 프레임 다른 배치가 보이므로 그리기 전에 동기로 잰다(New Architecture)
   useLayoutEffect(() => {
     handleLayoutInputChange();
   }, [viewMode, i18n.language, fontScale]);
@@ -207,8 +203,7 @@ function CalendarTitleSamples({ ref }: { ref: Ref<ComponentRef<typeof Box>> }) {
     const monthDateKey = addMonthsToDateKey(monthStartDateKey, index);
     return match(viewMode)
       .with('week', () =>
-        // 다른 해의 주에 붙는 연도는 뺀다. 넣으면 한국어 iPad 세로·Duo 칸(288pt)도 두 줄 배치가 된다.
-        // 한 줄 배치에서 연도가 붙은 주가 넘치면 버튼 줄은 그대로 두고 제목만 감긴다
+        // 다른 해의 주에 붙는 연도는 뺀다. 넣으면 한국어 iPad 세로·Duo 칸(288pt)도 두 줄 배치가 된다
         formatWeekHeaderLabel(
           { monthDateKey, weekOfMonth: LAST_WEEK_OF_MONTH, hasYear: false },
           dateFormatContext,

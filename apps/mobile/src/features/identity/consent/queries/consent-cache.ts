@@ -25,7 +25,6 @@ export function getCachedConsent(queryClient: QueryClient) {
   return queryClient.getQueryData(CONSENT_QUERY_KEYS.detail());
 }
 
-/** 받은 동의 상태가 있으면 그대로, 없으면 받는다 */
 export function ensureConsent(queryClient: QueryClient, options: ConsentQueryOptions) {
   return queryClient.query({ ...options, staleTime: 'static' });
 }

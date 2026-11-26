@@ -41,8 +41,7 @@ export const TodoListPolicy = {
     return list.todos.find((todo) => todo.id === todoId) ?? null;
   },
 
-  // 하나뿐인 날도 그 하나를 끝내면 다 끝낸 날이다. 여러 날 할 일은 시작일 목록만 낙관적으로 바뀌어 끝낸 것은 완료로 본다.
-  // 아직 불러오지 않은 날(undefined)은 다 끝낸 날이 아니다
+  // 여러 날 할 일은 시작일 목록만 낙관적으로 바뀌어 끝낸 것은 완료로 보고, 아직 불러오지 않은 날(undefined)은 아니다
   isLastOpenTodo(list: TodoListResult | undefined, completedTodoId: number): boolean {
     return (
       list != null &&

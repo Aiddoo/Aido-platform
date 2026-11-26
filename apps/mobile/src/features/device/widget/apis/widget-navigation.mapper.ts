@@ -4,7 +4,6 @@ import { match } from 'ts-pattern';
 import type { WidgetNavigationDestination } from '../domains/widget-navigation.model';
 import { widgetNavigationUriSchema } from '../schemas/widget-navigation-payload.schema';
 
-/** 위젯 URI를 목적지로 읽는다. 허용하지 않거나 깨진 URI는 null이다 */
 export function parseWidgetNavigation(uri: string | null): WidgetNavigationDestination | null {
   if (!uri) {
     return null;

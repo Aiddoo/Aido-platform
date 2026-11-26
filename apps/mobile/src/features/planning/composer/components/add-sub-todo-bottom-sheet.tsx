@@ -52,8 +52,7 @@ function AddSubTodoForm({ todo, onClose }: { todo: Todo; onClose: () => void }) 
     onClose();
   });
 
-  // isPending은 다음 렌더에야 켜져 같은 프레임의 두 번째 탭·완료 키가 하나 더 만든다.
-  // 실패 안내와 보고는 mutation의 meta.errorFeedback이 맡고 적은 제목은 그대로 둔다
+  // isPending은 다음 렌더에야 켜져 같은 프레임의 두 번째 탭·완료 키가 하나 더 만든다
   const handleSavePress = useSingleTap(() => {
     saveSubTodo().catch(noop);
   });

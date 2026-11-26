@@ -10,7 +10,6 @@ import { ACHIEVEMENT_MUTATION_KEYS } from './achievement-mutation-keys';
 
 type ShareOutcome = 'shared' | 'unsupported' | 'capture-failed';
 
-/** 배지 상장을 그림으로 찍어 시스템 공유 시트로 보낸다. 변수는 찍을 상장 뷰다 */
 export function useShareCertificateMutationOptions() {
   const systemShare = useSystemShare();
   const viewCapture = useViewCapture();

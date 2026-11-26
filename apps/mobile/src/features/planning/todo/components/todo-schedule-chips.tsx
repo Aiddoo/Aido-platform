@@ -57,7 +57,6 @@ interface TodoScheduleChipsProps {
   onPickerCloseStart?: () => void;
 }
 
-/** 할 일 작성·수정·메모 옮기기·음성 계획 고치기가 함께 쓰는 일정 칩 줄. 칩마다 고르기 시트를 띄우고 고른 값으로 onChange를 부른다 */
 export function TodoScheduleChips({
   value,
   onChange,

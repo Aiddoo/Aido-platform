@@ -102,7 +102,6 @@ const ENTERING_TIMING = {
   easing: Easing.out(Easing.cubic),
   reduceMotion: ReduceMotion.System,
 };
-/** 만들기·고정·삭제로 순서가 바뀔 때만 카드가 새 자리로 미끄러진다(원래 카드마다 걸던 LinearTransition 자리) */
 const MEMO_REORDER_LAYOUT_ANIMATION = {
   duration: ANIMATION.durationMs.slow,
   update: { type: LayoutAnimation.Types.easeOut },
@@ -111,10 +110,7 @@ const TITLE_LINE_COUNT_WITH_BODY = 2;
 const TITLE_LINE_COUNT_ALONE = 4;
 const BODY_LINE_COUNT = 3;
 
-/**
- * 메모 카드 masonry. FlashList가 칸을 재사용하고 칸 자리만 바꾸므로 탭 전환·칸 수·폭이 바뀌어도 카드가 미끄러져 오지 않는다.
- * 새로 생긴 메모만 그 자리에서 짧게 나타난다
- */
+/** FlashList가 칸을 재사용하고 칸 자리만 바꾸므로 탭 전환·칸 수·폭이 바뀌어도 카드가 미끄러져 오지 않는다 */
 export function MemoList() {
   const queryClient = useQueryClient();
   const meQueryOptions = useGetMeQueryOptions();
@@ -165,7 +161,6 @@ export function MemoList() {
           keyExtractor={(memo) => String(memo.id)}
           extraData={{ selectedMemoId, columnCount, enteringMemoIds, paneSizeClass }}
           renderItem={({ item }) => (
-            // 카드 사이 간격을 칸 패딩으로 나눠 가진다
             <Box className="px-1.5 pb-3">
               <MemoList.Item
                 memo={item}
@@ -219,7 +214,6 @@ export function MemoList() {
   );
 }
 
-/** 목록 위에 함께 스크롤되는 말로 남긴 메모 초안 아래, 초안이 있을 때만 저장된 메모 제목을 둔다 */
 MemoList.Header = function Header({ isSavedTitleShown }: { isSavedTitleShown: boolean }) {
   const { t } = useTranslation('memo');
 
@@ -288,16 +282,14 @@ MemoList.Item = function Item({
     appearance.set(withTiming(1, ENTERING_TIMING));
   });
 
-  // 칸은 다른 메모에 다시 쓰인다. 메모가 바뀔 때만 그 메모 기준으로 정해 이전 메모의 움직임이 남지 않게 한다.
-  // 그리기 전에 정해 재사용 칸이 새 메모를 한 프레임 다 보인 채 그리지 않는다. 나타나기 시작한 뒤 isEntering이 꺼져도 끊지 않는다
+  // 칸은 다른 메모에 다시 쓰여 메모가 바뀔 때만, 그리기 전에 정해 재사용 칸이 새 메모를 한 프레임 다 보이지 않게 한다
   useLayoutEffect(() => {
     appear();
   }, [memo.id]);
 
   return (
     <Animated.View style={appearanceStyle}>
-      {/* Link.Preview의 네이티브 감싸개는 크기가 없어 iOS가 그 안쪽을 접근성 트리에 싣지 않는다.
-          누르는 요소를 감싸개 밖에 둬야 VoiceOver와 E2E가 카드를 찾는다 */}
+      {/* Link.Preview 감싸개는 크기가 없어 iOS가 안쪽을 접근성 트리에 싣지 않아 누르는 요소를 밖에 둔다 */}
       <PressableFeedback
         onPress={() => selectMemo(memo.id)}
         // 고정·삭제는 iOS에서 길게 눌러 메뉴로, 스크린리더는 플랫폼과 상관없이 동작 메뉴로 카드에서 바로 한다
@@ -377,10 +369,7 @@ interface MemoListLinkProps extends PropsWithChildren {
   onOpen: () => void;
 }
 
-/**
- * 카드를 길게 눌러 메모를 미리보고 열기·고정·삭제를 고른다(iOS). 탭은 카드의 고르기가 맡아 Link의 이동은 막고,
- * 미리보기를 눌러 가는 이동만 Link가 맡는다
- */
+/** 탭은 카드의 고르기가 맡아 Link의 이동은 막고, 미리보기를 눌러 가는 이동만 Link가 맡는다 */
 MemoList.Link = function MemoCardLink({
   memo,
   isLinked,
@@ -506,10 +495,7 @@ MemoList.Empty = function Empty() {
   );
 };
 
-/**
- * 목록과 함께 스크롤되는 말로 남긴 메모 초안. 초안이 없는 사용자가 대부분이라 로딩·실패 때 자리를 잡지 않는다.
- * 자리를 잡으면 아래 메모가 위로 밀린다. 목록의 머리말이라 목록·로딩·실패가 함께 그린다
- */
+/** 초안이 없는 사용자가 대부분이라 로딩·실패 때 자리를 잡지 않는다. 자리를 잡으면 아래 메모가 위로 밀린다 */
 function VoiceNoteDrafts() {
   return (
     <QueryErrorBoundary fallback={QueryErrorFallback.Hidden}>
@@ -575,10 +561,7 @@ function useDisplayedMemos(
   return displayedMemos;
 }
 
-/**
- * 지난 그림 뒤 새로 생긴 메모 id를 고르고, 카드가 나타나기 시작하면 지운다.
- * 처음 그림은 아는 메모로만 시작해 탭 전환·다시 마운트·칸 수 변경에는 아무것도 나타나지 않는다
- */
+/** 처음 그림은 아는 메모로만 시작해 탭 전환·다시 마운트·칸 수 변경에는 아무것도 나타나지 않는다 */
 function useEnteringMemoIds(memos: readonly Memo[]) {
   const memoIdsKey = memos.map(({ id }) => id).join(',');
   const [tracked, setTracked] = useState(() => ({

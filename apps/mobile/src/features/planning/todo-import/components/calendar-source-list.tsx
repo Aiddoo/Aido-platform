@@ -227,8 +227,7 @@ CalendarSourceList.Empty = function Empty() {
   );
 };
 
-// 캘린더가 어디서 왔는지 보이는 묶음 이름. 계정 캘린더는 계정 이름이고, 공휴일·생일·구독 캘린더는 계정과 상관없이
-// 따로 모은 묶음 이름이다
+// 계정 캘린더는 계정 이름이고, 공휴일·생일·구독 캘린더는 계정과 상관없이 따로 모은 묶음 이름이다
 function useFormatCalendarSource(): (collection: TodoImportCollection) => string {
   const { t } = useTranslation('todoImport');
 

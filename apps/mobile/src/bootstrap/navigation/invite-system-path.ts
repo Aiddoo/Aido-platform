@@ -7,10 +7,7 @@ import { SECOND_MS } from '@src/shared/constants/time-units';
 // 같은 URL이 짧은 사이에 다시 들어오면(초기 URL과 링크 이벤트가 겹칠 때) 같은 열림으로 본다
 const SAME_OPEN_WINDOW_MS = SECOND_MS;
 
-/**
- * 링크가 열린 시각을 정한다. 같은 URL이 잠깐 사이에 다시 들어오면 앞의 시각을 돌려줘
- * 착지 화면이 invite_link_opened를 한 번만 남기게 한다.
- */
+/** 착지 화면이 invite_link_opened를 한 번만 남기게 한다 */
 export function createInviteLinkOpenStamp() {
   let last: { path: string; openedAt: number } | null = null;
 
@@ -24,10 +21,7 @@ export function createInviteLinkOpenStamp() {
   };
 }
 
-/**
- * 시스템이 연 URL 중 초대 링크만 앱 라우트로 바꾼다.
- * 초대가 아니면 null을 돌려주어 OAuth 콜백·위젯·알림 URI를 그대로 통과시킨다.
- */
+/** 초대가 아니면 null을 돌려주어 OAuth 콜백·위젯·알림 URI를 그대로 통과시킨다 */
 export function findInviteSystemPath(
   path: string,
   schemes: InviteLinkSchemes,

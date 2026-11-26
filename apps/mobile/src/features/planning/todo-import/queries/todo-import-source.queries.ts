@@ -42,8 +42,7 @@ export function selectOrderedCollections(
   );
 }
 
-// 캘린더를 계정마다 묶는다. 공휴일·생일·구독처럼 받아 보기만 하는 캘린더는 계정과 상관없이
-// 맨 아래 한 묶음으로 따로 둔다. 내 계정이 먼저이고 묶음 안은 계정·이름 순이다
+// 공휴일·생일·구독처럼 받아 보기만 하는 캘린더는 계정과 상관없이 맨 아래 한 묶음으로 따로 둔다
 export function selectCollectionsByAccount(
   unordered: readonly TodoImportCollection[],
 ): TodoImportCollectionsByAccount {
@@ -81,8 +80,7 @@ export function useGetCalendarPermissionQueryOptions() {
   });
 }
 
-// 캘린더 목록과 고른 기간 안의 가져올 일정 수. 기기 시간대로 센 미리보기이고,
-// 올릴 때는 서버가 정한 가져오기 시간대로 다시 읽는다
+// 기기 시간대로 센 미리보기이고, 올릴 때는 서버가 정한 가져오기 시간대로 다시 읽는다
 export function useGetImportCollectionsQueryOptions({ startDate, endDate }: TodoImportRange) {
   const todoImportSource = useTodoImportSource();
   const { timezone } = useDateFormatContext();
@@ -109,8 +107,7 @@ export function useGetImportCollectionsQueryOptions({ startDate, endDate }: Todo
     },
     select: selectOrderedCollections,
     networkMode: 'always',
-    // 일정이 수천 개일 수 있어 같은 기간을 오가도 다시 읽지 않는다. 설정 앱에서 계정을 더하고 돌아오면
-    // 목록을 보인 채 뒤에서 다시 읽는다
+    // 일정이 수천 개일 수 있어 같은 기간을 오가도 다시 읽지 않고, 설정 앱에서 돌아오면 목록을 보인 채 뒤에서 다시 읽는다
     staleTime: Number.POSITIVE_INFINITY,
     refetchOnWindowFocus: 'always',
   });

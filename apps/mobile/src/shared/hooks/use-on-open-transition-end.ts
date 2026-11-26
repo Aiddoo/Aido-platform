@@ -9,10 +9,7 @@ interface UseOnOpenTransitionEndOptions {
   isStackRoot?: boolean;
 }
 
-/**
- * 화면이 열리는(닫히지 않는) 전환이 끝나면 부른다. 네이티브 입력칸·검색창은 전환이 끝나야 붙어 그 뒤에 포커스를 준다.
- * 위 화면이 닫혀 이 화면이 다시 보일 때도 부르고, 이 화면이 가려져 있으면 부르지 않는다
- */
+/** 네이티브 입력칸·검색창은 전환이 끝나야 붙어 그 뒤에 포커스를 준다. 이 화면이 가려져 있으면 부르지 않는다 */
 export function useOnOpenTransitionEnd(
   onOpened: () => void,
   { isStackRoot = false }: UseOnOpenTransitionEndOptions = {},

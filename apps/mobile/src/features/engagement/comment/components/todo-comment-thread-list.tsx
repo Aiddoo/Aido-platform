@@ -100,10 +100,7 @@ type TodoCommentThreadListProps = Omit<
   | 'extraData'
 >;
 
-/**
- * 할 일 상세의 댓글 묶음 목록. 바깥 스크롤은 키보드를 따라가는 하나뿐이고 묶음 행만 가상화한다.
- * 알림으로 연 댓글은 그 위치가 든 페이지를 받아 그 묶음으로 옮기고 잠깐 강조한다.
- */
+/** 바깥 스크롤은 키보드를 따라가는 하나뿐이고 묶음 행만 가상화한다 */
 export function TodoCommentThreadList(props: TodoCommentThreadListProps) {
   const { t } = useTranslation('todoComment');
   const [todoId] = useTodoId();
@@ -308,10 +305,7 @@ TodoCommentThreadList.Item = function Item({ thread, anchor }: TodoCommentThread
   );
 };
 
-/**
- * 한 묶음의 답글. 접혀 있으면 서버가 고른 대표 답글 하나와 "답글 N개 더 보기"를, 펼치면 그 자리에서 답글 페이지를
- * 이어 붙인다. 위 행은 움직이지 않고 아래로만 늘어난다.
- */
+/** 펼치면 그 자리에서 답글 페이지를 이어 붙여 위 행은 움직이지 않고 아래로만 늘어난다 */
 TodoCommentThreadList.Replies = function Replies({
   thread,
   anchor,
@@ -636,10 +630,7 @@ function useSortChange() {
   return { isPending: prefetch.isPending, prefetchThenCommit };
 }
 
-/**
- * 정렬을 바꾸면 새 순서를 맨 위부터 보인다. 목록을 다시 마운트하지 않아 FlashList가 보던 첫 행의 자리를 지키려 스크롤을 옮기므로,
- * 그 보정(FlashList의 layout effect)이 끝난 같은 커밋에서 맨 위로 올린다
- */
+/** 다시 마운트하지 않아 FlashList가 첫 행 자리를 지키려 스크롤을 옮기므로 그 보정이 끝난 같은 커밋에서 맨 위로 올린다 */
 function useScrollToTopOnSortChange(sort: TodoCommentSort) {
   const { listRef } = useTodoCommentReveal();
   const shownSortRef = useRef(sort);

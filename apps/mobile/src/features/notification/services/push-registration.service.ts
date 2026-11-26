@@ -235,10 +235,7 @@ export class PushRegistrationService {
     return ok(undefined);
   };
 
-  /**
-   * 온라인 로그아웃 없이 세션이 끝났다. 서버는 끝난 세션의 토큰을 지우지 않아 이 기기로 이전 계정의 푸시가 계속 가므로
-   * 기기 id와 토큰으로 푼다. 던지지 않고 화면을 기다리게 하지 않는다
-   */
+  /** 서버는 끝난 세션의 토큰을 지우지 않아 이전 계정의 푸시가 계속 가므로 기기 id와 토큰으로 푼다. 화면을 기다리게 하지 않는다 */
   requestRelease = (): Promise<void> => {
     this.#lastReported = null;
     return this.#updateRegistration((registration) =>

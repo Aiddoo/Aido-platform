@@ -2,10 +2,7 @@ import { usePushNotificationEntryStore } from '@src/bootstrap/providers/di-conte
 import { useAuthStatus } from '@src/features/identity/auth/hooks/use-auth-status';
 import { useSyncExternalStore } from 'react';
 
-/**
- * Index가 목적지로 바로 가면 피드가 focus되지 않아 피드 안내와 화면 기록이 생기지 않는다.
- * 경로는 구독하지 않고 슬롯의 `isAtAppEntry`(`useAppEntrySegmentSync`)를 읽어 루트 레이아웃이 URL마다 다시 그려지지 않는다
- */
+/** Index가 목적지로 바로 가면 피드가 focus되지 않는다. 경로 대신 `isAtAppEntry`를 읽어 루트가 URL마다 다시 그려지지 않는다 */
 export function usePushNotificationEntry() {
   const status = useAuthStatus();
   const store = usePushNotificationEntryStore();

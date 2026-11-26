@@ -23,10 +23,7 @@ export function getRangePresetLabelKey(preset: TodoImportRangePreset) {
   return RANGE_PRESET_LABEL_KEYS[preset];
 }
 
-/**
- * ask: 안내 뒤 묻는다, denied: 방금 거절해 다시 묻지 않고 설정 열기를 보인다,
- * blocked: 시스템이 다시 묻지 않아 다시 들어와도 설정 열기를 보인다
- */
+/** ask: 안내 뒤 묻는다, denied: 방금 거절해 설정 열기를 보인다, blocked: 시스템이 다시 묻지 않아 늘 설정 열기다 */
 export type CalendarPermissionView = 'ask' | 'denied' | 'blocked';
 
 /** 방금 거절했으면 다시 조르지 않는다. 다시 물을 수 있으면 다음에 들어올 때 다시 안내한다 */
@@ -43,8 +40,7 @@ export function getCalendarPermissionView(
   return answered == null ? 'ask' : 'denied';
 }
 
-// 다른 서비스는 이름 글자로만 알린다. Apple·Google·Microsoft 로고·색은 서면 허락 없이 쓸 수 없어 그리지 않는다.
-// 계정 이메일 같은 캘린더 이름 대신 새 카테고리 이름으로도 쓴다
+// Apple·Google·Microsoft 로고·색은 서면 허락 없이 쓸 수 없어 다른 서비스는 이름 글자로만 알린다
 const CALENDAR_SOURCE_LABEL_KEYS = {
   icloud: 'sources.icloud',
   google: 'sources.google',
@@ -80,7 +76,6 @@ function toSourceKey(collection: TodoImportCollection) {
     : `${collection.accountProvider}:${TodoImportCollectionPolicy.getAccountKey(collection)}`;
 }
 
-// 가져올 캘린더를 출처 계정마다 한 줄로 묶는다. 순서는 받은 순서다.
 // 같은 서비스 계정이 둘 이상이면(Google 계정 두 개) 계정 이메일·이름을 붙여 가린다
 export function groupCollectionsBySource(
   collections: readonly TodoImportCollection[],

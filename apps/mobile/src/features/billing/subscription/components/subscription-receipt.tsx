@@ -211,10 +211,7 @@ SubscriptionReceipt.Loading = function Loading() {
   );
 };
 
-/**
- * 서버는 금액을 몰라(국가별 스토어 가격) 스토어 요금제에서 붙인다.
- * 영수증은 스토어 없이 서버 값으로 그려야 해서 실패를 던지지 않고, 못 받으면 날짜·요금제 이름만 보인다
- */
+/** 서버는 금액을 몰라(국가별 스토어 가격) 스토어에서 붙이고, 영수증은 서버 값으로 그려야 해 못 받아도 던지지 않는다 */
 function usePlanPrices({ isEnabled }: { isEnabled: boolean }): Record<PlanType, string | null> {
   const { t } = useTranslation('subscription');
   const { data: availability } = useQuery({

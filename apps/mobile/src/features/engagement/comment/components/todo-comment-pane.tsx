@@ -115,7 +115,6 @@ interface TodoCommentSessionProps extends PropsWithChildren {
   onExit?: () => void;
 }
 
-/** 한 할 일의 작성기(새 댓글·답글·수정) 폼과 펼친 묶음, 키보드 위치·강조, 삭제 확인을 그 아래 조각들이 함께 쓴다 */
 function TodoCommentSession({ onExit, children }: TodoCommentSessionProps) {
   const form = useForm({
     resolver: zodResolver(todoCommentFormSchema),
@@ -142,8 +141,7 @@ function BackAndKeyboardEffects({ onExit }: Pick<TodoCommentSessionProps, 'onExi
 
   useAndroidTodoCommentBackHandler({ onExit });
 
-  // 작성 중에 알림이나 다른 화면이 위에 쌓이면 가려진 작성기가 first responder로 남아 새 화면 위에 키보드가
-  // 떠 있다. 화면이 focus를 잃을 때 키보드를 내린다. 작성 내용은 초안 저장소에 남는다.
+  // 다른 화면이 위에 쌓이면 가려진 작성기가 first responder로 남아 새 화면 위에 키보드가 떠 있다
   useFocusEffect(
     // 콜백이 바뀌면 useFocusEffect가 정리 함수를 다시 돌려 키보드를 내리므로 고정한다
     useCallback(
@@ -158,7 +156,6 @@ function BackAndKeyboardEffects({ onExit }: Pick<TodoCommentSessionProps, 'onExi
 }
 
 interface TodoAvailabilityGuardProps extends PropsWithChildren {
-  /** 지운 할 일과 볼 권한이 없는 할 일에 본문·댓글 대신 보이는 안내 */
   fallback: ReactNode;
 }
 
@@ -188,10 +185,7 @@ function TodoCommentKeyboardGesture({ children }: PropsWithChildren) {
   );
 }
 
-/**
- * 목록 아래 한 번 놓이는 작성 바. 키보드를 UI 스레드에서 따라가고(KeyboardStickyView + useKeyboardHandler),
- * 아래 여백도 키보드 진행률로 바뀌어 JS 리렌더 없이 붙는다.
- */
+/** 키보드를 UI 스레드에서 따라가고 아래 여백도 키보드 진행률로 바뀌어 JS 리렌더 없이 붙는다 */
 function TodoCommentComposerBar() {
   const { t } = useTranslation('todoComment');
   const [todoId] = useTodoId();

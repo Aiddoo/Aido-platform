@@ -25,10 +25,7 @@ interface CalendarPermissionPromptProps {
 const FACT_ICON_SIZE = 12;
 const FACT_BADGE_SIZE = 20;
 
-/**
- * 시스템 캘린더 창 바로 앞의 안내(App Store 5.1.1, Play 눈에 띄는 공개). 그림과 글만 그리고,
- * "계속"·"설정 열기"는 다른 단계처럼 화면 아래 버튼이 맡는다
- */
+/** 시스템 캘린더 창 바로 앞의 안내다(App Store 5.1.1, Play 눈에 띄는 공개) */
 export function CalendarPermissionPrompt({ view }: CalendarPermissionPromptProps) {
   return match(view)
     .with('ask', () => <CalendarPermissionPrompt.Ask />)

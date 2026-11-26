@@ -5,8 +5,7 @@ import { Suspense } from 'react';
 
 import { useGetActiveTodoImportQueryOptions } from '../queries/todo-import.queries';
 
-// 캘린더 일정 가져오기 행의 현재 값. 진행 중인 가져오기가 있을 때만 알리고, 못 읽으면 값 없이 둔다.
-// 어디로 갈지는 도착한 가져오기 화면이 같은 캐시로 정한다
+// 못 읽으면 값 없이 두고, 어디로 갈지는 도착한 가져오기 화면이 같은 캐시로 정한다
 export function ActiveTodoImportValue() {
   return (
     <QueryErrorBoundary fallback={QueryErrorFallback.Hidden}>

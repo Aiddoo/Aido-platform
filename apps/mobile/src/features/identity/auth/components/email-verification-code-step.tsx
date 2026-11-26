@@ -131,7 +131,6 @@ interface VerificationCodeInputProps extends Omit<
   isSeparated?: boolean;
 }
 
-/** 서버 인증 코드 길이만큼 칸을 만드는 인증 코드 입력 */
 function VerificationCodeInput({ isSeparated = false, ...props }: VerificationCodeInputProps) {
   const half = Math.ceil(VERIFICATION_CODE.LENGTH / 2);
 

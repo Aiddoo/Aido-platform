@@ -9,10 +9,7 @@ const pendingStorageCleanupSchema = z.object({
 });
 export type PendingStorageCleanup = z.infer<typeof pendingStorageCleanupSchema>;
 
-/**
- * 암호화 저장소를 열지 못한 실행은 끝난 세션의 조회 캐시·초안을 디스크에서 지울 수 없다.
- * 그래서 기본 저장소에 표시해 두고 다음에 저장소를 열 때 복원 전에 인스턴스째 지운다(`composition-root`)
- */
+/** 암호화 저장소를 열지 못한 실행은 끝난 세션의 조회 캐시·초안을 지울 수 없어 다음에 열 때 복원 전에 지운다 */
 export const pendingStorageCleanupStoredValue = defineStoredValue({
   key: 'aido_session_pending_storage_cleanup_v1',
   schema: storedJsonSchema(pendingStorageCleanupSchema),

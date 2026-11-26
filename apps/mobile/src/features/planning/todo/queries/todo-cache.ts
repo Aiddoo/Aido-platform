@@ -79,10 +79,7 @@ export interface TodoSnapshot {
   index: number;
 }
 
-/**
- * 낙관적 갱신이 고칠 목록(캐시 항목)을 고르는 규칙이라 cache helper에 둔다.
- * 상세 화면은 피드 날짜를 모른다. 오늘이 기간 안이면 오늘 목록을, 아니면 시작일 목록을 먼저 고친다
- */
+/** 상세 화면은 피드 날짜를 몰라 오늘이 기간 안이면 오늘 목록을, 아니면 시작일 목록을 먼저 고친다 */
 export function getOptimisticListDate(todo: Todo, todayKey: DateKey): DateKey {
   return TodoPolicy.isTodoOnDate(todo, todayKey) ? todayKey : todo.startDate;
 }
@@ -123,20 +120,13 @@ type TodoDetailsQueryOptions = QueryExecuteOptions<
   ReturnType<typeof TODO_QUERY_KEYS.detail>
 >;
 
-/**
- * 서버의 지금 상세. 다른 기기가 바꿨을 수 있어 캐시가 신선해도 다시 받고,
- * 같은 상세를 받는 중이면(방금 연 화면) 그 요청을 함께 기다린다
- */
+/** 다른 기기가 바꿨을 수 있어 캐시가 신선해도 다시 받고, 같은 상세를 받는 중이면 그 요청을 함께 기다린다 */
 export function fetchFreshTodoDetails(queryClient: QueryClient, options: TodoDetailsQueryOptions) {
-  // 알림 [완료]가 이 값을 기다린다. 오프라인에 멈추거나 앱 기본 재시도(약 22초)로 늦추지 않고 바로 실패시킨다.
-  // 같은 조회가 이미 진행 중이거나 멈춰 있으면 두 옵션 모두 듣지 않아 부르는 쪽이 오프라인 판정과 제한 시간을 둔다
+  // 알림 [완료]가 이 값을 기다려 오프라인에 멈추거나 앱 기본 재시도(약 22초)로 늦추지 않고 바로 실패시킨다
   return queryClient.query({ ...options, staleTime: 0, networkMode: 'always', retry: false });
 }
 
-/**
- * 캐시에 있는 그 할 일. 보고 있는 날짜 목록 → 상세 → 다른 날짜 목록 순으로 찾는다.
- * 알림으로 연 상세처럼 그날 목록이 없어도 원래 값으로 되돌리고 기간을 안다
- */
+/** 상세까지 찾아 알림으로 연 상세처럼 그날 목록이 없어도 원래 값으로 되돌리고 기간을 안다 */
 export function findCachedTodo(
   queryClient: QueryClient,
   { date, todoId }: { date?: DateKey; todoId: number },
@@ -314,7 +304,6 @@ function todoListsFilter(todoId: number, spans: readonly TodoDateSpan[]): Invali
   };
 }
 
-/** 이 할 일을 보여 주는 목록(내 목록·친구 목록) */
 function listsShowingTodoFilter(queryKey: QueryKey, todoId: number): InvalidateQueryFilters {
   return { queryKey, predicate: (query) => showsTodo(query, todoId) };
 }
@@ -340,7 +329,6 @@ function writesTodo(variables: unknown, todoId: number) {
   return isMatching({ todoId }, variables);
 }
 
-// 쓰기를 시작한 순번. 먼저 시작해 나중에 끝난 쓰기도 그 사이 다른 쓰기가 있었는지 안다.
 // QueryClient 수명을 따르는 모듈 전역 예외다(structure.md 모듈 전역 목록)
 const todoWriteSequences = new WeakMap<QueryClient, number>();
 
@@ -381,10 +369,7 @@ export async function beginTodoWrite(
   return { sequence, startedWithOthers };
 }
 
-/**
- * 쓰기마다 낡음만 표시하고, 겹친 쓰기의 재조회가 뒤 낙관적 값을 덮지 않게 마지막 쓰기만 화면에 붙은 낡은 조회를 다시 받는다.
- * 묶음 밖의 쓰기(`isOutsideWrites`)는 진행 중인 쓰기가 없을 때만 다시 받고, 있으면 그 쓰기의 마지막이 받는다
- */
+/** 겹친 쓰기의 재조회가 뒤 낙관적 값을 덮지 않게 쓰기마다 낡음만 표시하고 마지막 쓰기만 다시 받는다 */
 async function settleTodoQueries(
   queryClient: QueryClient,
   filters: readonly InvalidateQueryFilters[],
@@ -540,10 +525,7 @@ export function settleTodoSeriesWrite(queryClient: QueryClient) {
   ]);
 }
 
-/**
- * 할 일 쓰기 묶음 밖에서 여러 할 일을 만들거나 옮긴 뒤(음성·메모 변환·제안 수락·날씨 옮기기) 바뀐 날짜를 몰라 넓게 맞춘다.
- * 진행 중인 체크가 있으면 낡음만 표시해 그 낙관적 값을 덮지 않고, 그 체크의 마지막 쓰기가 다시 받는다
- */
+/** 바뀐 날짜를 몰라 넓게 맞추고, 진행 중인 체크가 있으면 낡음만 표시해 그 낙관적 값을 덮지 않는다 */
 export function settleTodoBatchWrite(queryClient: QueryClient) {
   return Promise.all([
     settleTodoQueries(queryClient, ALL_MY_TODO_FILTERS, { isOutsideWrites: true }),
@@ -552,10 +534,7 @@ export function settleTodoBatchWrite(queryClient: QueryClient) {
   ]);
 }
 
-/**
- * 지운 할 일의 상세는 다시 받아도 없어 버린다. 보고 있는 상세는 버리면 다시 받다 경계로 내려가므로
- * 화면을 떠날 때까지 두고 다시 받지도 않는다
- */
+/** 보고 있는 상세는 버리면 다시 받다 경계로 내려가므로 화면을 떠날 때까지 두고 다시 받지도 않는다 */
 export function removeTodoPage(queryClient: QueryClient, { todoId }: { todoId: number }) {
   queryClient.removeQueries({ queryKey: TODO_QUERY_KEYS.page({ todoId }), type: 'inactive' });
 }

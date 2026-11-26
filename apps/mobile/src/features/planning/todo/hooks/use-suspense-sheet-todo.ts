@@ -15,10 +15,7 @@ interface SheetTargetOptions {
   onMissing: () => void;
 }
 
-/**
- * 할 일 시트 route(`/todo/[todoId]/…?date=`)의 대상 할 일. 그날 목록에서 찾고,
- * 지워져 사라져도 닫히는 동안은 마지막 값을 보인다. 처음부터 없으면 null이고 onMissing을 부른다
- */
+/** 지워져 사라져도 닫히는 동안은 마지막 값을 보인다. 처음부터 없으면 null이고 onMissing을 부른다 */
 export function useSuspenseSheetTodo({ onMissing }: SheetTargetOptions): Todo | null {
   const [todoId] = useTodoId();
   const [date] = useTodoSheetDateKey();

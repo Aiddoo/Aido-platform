@@ -8,8 +8,7 @@ import {
 } from '../domains/todo-comment-composer.model';
 
 export const todoCommentFormSchema = z.object({
-  // 모델 스키마로 검사만 하고 값은 그대로 둔다. 시각 칸의 brand가 출력 타입에만 붙어, 스키마를 그대로 넣으면 폼이 읽는 값(입력 타입)을
-  // Policy에 넘길 수 없고 고른 댓글이 검사할 때마다 사본으로 바뀐다
+  // 검사만 하고 값은 그대로 둔다. brand가 출력 타입에만 붙어 스키마를 그대로 넣으면 폼 값을 Policy에 넘길 수 없다
   mode: z.custom<TodoCommentComposer>(
     (value) => todoCommentComposerSchema.safeParse(value).success,
   ),

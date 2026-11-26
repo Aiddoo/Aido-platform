@@ -9,10 +9,7 @@ import { RELEASES } from '../constants/releases.constants';
 import { WhatsNewPolicy } from '../domains/whats-new.model';
 import { useGetWhatsNewCampaignQueryOptions } from '../queries/whats-new-campaign.queries';
 
-/**
- * 서버가 켠 캠페인이 가리키는 출시와 이 계정·캠페인의 본 기록. 자동 열기·메뉴 점·목록 표시가 이 조회 하나를 읽는다.
- * 본 기록을 구독해 소개를 보고 돌아오면 바로 바뀐다. 캠페인·계정을 모르면 본 것으로 본다
- */
+/** 자동 열기·메뉴 점·목록 표시가 이 조회 하나를 읽는다. 캠페인·계정을 모르면 본 것으로 본다 */
 export function useWhatsNewCampaign() {
   const repository = useWhatsNewRepository();
   const isAuthenticated = useAuthStatus() === 'authenticated';

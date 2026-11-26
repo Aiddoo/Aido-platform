@@ -27,7 +27,6 @@ const THUMBNAIL_SIZE = 40;
 // 18pt 잠금 배지 안에 맞춘 크기라 아이콘 단계(12~)보다 작다
 const LOCK_BADGE_ICON_SIZE = 10;
 
-/** 홈 화면 아이콘 고르기. 무료 사용자가 기본 밖의 아이콘을 고르면 바꾸기 전에 프리미엄 안내를 띄운다 */
 export function AppIconSelector() {
   const { t } = useTranslation(['appIcon', 'common']);
   const [{ data: currentIcon }, { data: entitlements }] = useSuspenseQueries({

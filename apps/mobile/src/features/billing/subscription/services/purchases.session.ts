@@ -98,11 +98,7 @@ export class PurchasesSession {
     });
   };
 
-  /**
-   * 결제·복원은 그때의 SDK 사용자에게 귀속된다. 로그인·로그아웃이 끝나길 기다려 SDK에 로그인한 계정을 돌려준다.
-   * 마지막으로 요청한 계정의 로그인이 실패·시간 초과였으면 그 계정으로 다시 로그인해 SDK 제한 안에서 기다린 뒤 한 번 더 보고,
-   * 그래도 아니면 앞 계정·익명에 귀속되지 않게 null이다
-   */
+  /** 결제·복원은 그때의 SDK 사용자에게 귀속돼, 요청한 계정에 로그인하지 못하면 앞 계정·익명에 귀속되지 않게 null이다 */
   waitForSignedInUser = async (): Promise<string | null> => {
     await this.#settle();
     const requestedUserId = this.#requestedUserId;
@@ -140,10 +136,7 @@ export class PurchasesSession {
     return this.#configured;
   };
 
-  /**
-   * 만든 Provider가 내려가면 기다리던 로그인·로그아웃을 건너뛰고 SDK를 더 부르지 않는다(루트 "다시 시도"가 만든 새 세션과 겹치지 않게).
-   * 이미 보낸 SDK 호출은 제한 시간 안에 끝나고, 다시 configure하면 처음처럼 쓴다(StrictMode)
-   */
+  /** 루트 "다시 시도"가 만든 새 세션과 겹치지 않게 SDK를 더 부르지 않고, 다시 configure하면 처음처럼 쓴다(StrictMode) */
   dispose = (): void => {
     this.#configured = false;
     this.#latestRequest += 1;
@@ -163,8 +156,7 @@ export class PurchasesSession {
     }
   };
 
-  // 결제 공급자의 분석 연동이 구독 이벤트를 분석 ID로 귀속하므로 configure·logIn 직후마다 다시 설정한다.
-  // 기기 값이라 시간 초과 뒤 늦게 붙어도 다른 계정에 틀린 값이 되지 않는다
+  // 구독 이벤트를 분석 ID로 귀속해 configure·logIn 직후마다 다시 설정한다. 기기 값이라 늦게 붙어도 다른 계정에 틀리지 않는다
   #syncAnalyticsId = async (): Promise<void> => {
     try {
       await withTimeout(async () => {

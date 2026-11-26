@@ -12,10 +12,7 @@ import type { DevicePorts } from './create-device-ports';
 
 interface CompositionRootPorts {
   createDevicePorts: () => DevicePorts;
-  /**
-   * SecureStore의 키로 초안·조회 캐시 저장소를 연다. 실패해도 reject하지 않고 `failure`를 돌려준다.
-   * `discarded`는 저장소를 열지 못한 지난 실행에서 끝난 세션의 값이라 열기 전에 지운다
-   */
+  /** 실패해도 reject하지 않고 `failure`를 돌려준다. `discarded`는 지난 실행에서 끝난 세션의 값이라 열기 전에 지운다 */
   openEncryptedStorage: (
     secureStorage: KeyValueStorage,
     discarded: { queryCache: boolean; drafts: boolean } | null,
@@ -29,10 +26,7 @@ export interface CompositionRoot {
   openPorts(): Promise<AppContainerPorts>;
 }
 
-/**
- * 프로세스 수명 객체를 한 번만 만들고 다시 쓴다. 기기 포트와 QueryClient는 처음 열 때 만들고,
- * 저장소는 연 결과만 기억해 열지 못했으면 다음 `openPorts`(루트 "다시 시도")가 다시 연다
- */
+/** 저장소는 연 결과만 기억해 열지 못했으면 다음 `openPorts`(루트 "다시 시도")가 다시 연다 */
 export function createCompositionRoot({
   createDevicePorts,
   openEncryptedStorage,

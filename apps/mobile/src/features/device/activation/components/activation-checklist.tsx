@@ -98,7 +98,6 @@ interface ActivationChecklistCollapseProps {
   children: ReactNode;
 }
 
-/** 늦게 나타나면 0에서 펼치고, 닫히면 지금 높이에서 0으로 접고 흐리게 한 뒤 알린다. 동작 줄이기 설정이면 바로 바뀐다 */
 function ActivationChecklistCollapse({
   isOpen,
   isRevealedLate,

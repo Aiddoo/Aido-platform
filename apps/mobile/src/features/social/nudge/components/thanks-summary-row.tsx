@@ -56,10 +56,7 @@ interface ThanksSummaryRowProps {
   onOpenThanks: () => void;
 }
 
-/**
- * 두 번 조회해야 보일지 알아 로딩 자리를 잡지 않는다(잡으면 대상이 없을 때 아래가 두 번 움직인다).
- * 완료 저장 중에는 서버가 아직 완료 전이라 묻지 않고 저장 뒤 할 일 무효화로 받는다
- */
+/** 두 번 조회해야 보일지 알아 로딩 자리를 잡지 않는다. 완료 저장 중에는 서버가 아직 완료 전이라 묻지 않는다 */
 export function ThanksSummaryRow(props: ThanksSummaryRowProps) {
   const availability = useQuery(useGetNudgeInteractionAvailabilityQueryOptions());
   const isCompletionSaving =

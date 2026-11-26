@@ -33,7 +33,6 @@ export const WidgetSnapshotPolicy = {
     return snapshot.days[0].state === 'loggedOut';
   },
 
-  /** 렌더 시점의 오늘 key와 같은 day를 고른다. 없으면 날짜가 지난 것으로 보고 stale을 표시한다. */
   getDay<Snapshot extends WidgetSnapshot>(
     snapshot: Snapshot,
     todayLocalDate: DateKey,

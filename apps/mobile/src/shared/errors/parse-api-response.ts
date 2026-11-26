@@ -4,10 +4,7 @@ import { type z, ZodError } from 'zod';
 
 import { ParseError } from './infra-error';
 
-/**
- * 4xx는 그대로 돌려주고, 응답이 계약과 다르면 던지고, 맞으면 앱 모델로 바꾼다.
- * 응답 스키마와 mapper(`toModel`)의 검증 실패는 모두 `ParseError`다. 검증 메시지는 오류 message에 실려 보고된다.
- */
+/** 응답 스키마와 mapper(`toModel`)의 검증 실패는 모두 `ParseError`이고 검증 메시지는 오류 message에 실려 보고된다 */
 export function parseApiResponse<TSchema extends z.ZodType, TModel>(
   result: Result<unknown, ApiError>,
   schema: TSchema,

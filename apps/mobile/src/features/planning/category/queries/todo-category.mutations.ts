@@ -182,7 +182,6 @@ interface DeleteTodoCategoryVariables {
   deletion: TodoCategoryDeletionRequest;
 }
 
-/** 옮기거나 함께 지운 할 일이 있으면 그 결과를, 없으면 삭제만 알린다 */
 function getCategoryDeletedMessage(
   deletionResult: TodoCategoryDeletionResult,
   categories: readonly TodoCategoryWithCount[] | undefined,
@@ -248,8 +247,7 @@ export function useDeleteTodoCategoryMutationOptions() {
         invalidateTodoCategories(queryClient);
         return;
       }
-      // 그 카테고리의 할 일이 옮겨지거나 지워져 어느 날짜(목록·달력의 완료 기록)·상세가 바뀌었는지 모른다.
-      // 카테고리 목록은 응답으로 고쳐 다시 받지 않는다
+      // 할 일이 옮겨지거나 지워져 어느 날짜·상세가 바뀌었는지 모르고, 카테고리 목록은 응답으로 고쳐 다시 받지 않는다
       invalidateCategorizedTodos(queryClient);
       invalidateTodoDependentQueries(queryClient);
       // 카테고리 수가 한도(TODO_CATEGORY)를 돌려받으므로 남은 개수를 다시 받는다

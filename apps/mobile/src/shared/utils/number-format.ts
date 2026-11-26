@@ -6,10 +6,7 @@ import { match } from 'ts-pattern';
 /** 이보다 크면 자릿수가 계속 늘어 옆 요소를 밀어낸다 */
 export const COUNT_BADGE_MAX = 99;
 
-/**
- * 좋아요·답글처럼 아이콘 옆에 붙는 개수를 상한까지만 보여준다.
- * 100부터는 "99+"로 접어, 숫자가 아무리 커져도 폭이 세 글자를 넘지 않는다.
- */
+/** 100부터는 "99+"로 접어, 숫자가 아무리 커져도 폭이 세 글자를 넘지 않는다 */
 export function formatCappedCount(count: number, max: number = COUNT_BADGE_MAX): string {
   return count > max ? `${max}+` : `${count}`;
 }

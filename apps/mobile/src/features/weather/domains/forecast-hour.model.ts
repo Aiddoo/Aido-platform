@@ -28,10 +28,7 @@ export const forecastHourSchema = z.object({
 });
 export type ForecastHour = z.infer<typeof forecastHourSchema>;
 
-/**
- * 이 확률(%) 이상이면 비가 오는 시간으로 본다. 서버 날씨 알림·브리핑과 같은 기준이다.
- * 확률 숫자를 칸에 적는 기준(`LABELED_PRECIPITATION_CHANCE_MIN_PERCENT`, 20%)과는 뜻이 다른 값이다
- */
+/** 이 확률(%) 이상이면 비가 오는 시간으로 본다. 서버 날씨 알림·브리핑과 같은 기준이고 숫자를 적는 기준(20%)과 다르다 */
 const WET_HOUR_CHANCE_PERCENT = WEATHER_BRIEFING_RULES.WET_HOUR_CHANCE;
 /** WHO 기준 자외선 지수 3(보통) 이상부터 차단제를 권한다. */
 const SUNSCREEN_UV_INDEX = 3;
@@ -105,10 +102,7 @@ export function isFrozenPrecipitation(precipitationType: WeatherPrecipitationTyp
   return WEATHER_FROZEN_PRECIPITATION_TYPES.some((frozen) => frozen === precipitationType);
 }
 
-/**
- * 그 시간대의 그 날짜에 시작하는 시간인가. 어느 시간대의 오늘로 거를지는 부르는 쪽이 정한다:
- * 자외선 차단 시간은 예보 위치, 옮기기 시트의 강수 막대는 기기 시간대다
- */
+/** 시간대는 부르는 쪽이 정한다: 자외선 차단 시간은 예보 위치, 옮기기 시트의 강수 막대는 기기 시간대다 */
 export function filterByLocalDate(hour: ForecastHour, dateKey: DateKey, timezone: string): boolean {
   return toDateKey(hour.startsAt, timezone) === dateKey;
 }

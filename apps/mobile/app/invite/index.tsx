@@ -42,8 +42,7 @@ export default function InviteCodeEntryScreen() {
 
   useTrackInviteLinkOpened();
 
-  // 형식이 틀리면 RHF가 코드 칸(field.ref)에 포커스해 키보드를 그대로 두고 바로 고쳐 쓰게 한다.
-  // 확인하지 못한 제출(오프라인 포함)은 mutation이 던진다. RHF가 실패로 알아야 isSubmitSuccessful이 꺼진 채 남아 다시 누를 수 있다
+  // 형식이 틀리면 RHF가 코드 칸에 포커스해 키보드를 그대로 둔다. 확인하지 못한 제출은 던져야 다시 누를 수 있다
   const saveInviteCode = form.handleSubmit(async ({ inviteCode }) => {
     // 미리보기를 미리 받아 두면 초대 카드가 다시 부르지 않고, 없는 코드는 이 화면에서 바로 알린다
     await checkPreview.mutateAsync(inviteCode);

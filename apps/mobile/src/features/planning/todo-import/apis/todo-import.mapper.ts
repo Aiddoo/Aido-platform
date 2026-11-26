@@ -48,7 +48,6 @@ function toTargetKey(target: TodoImportTarget, index: number): string {
     .exhaustive();
 }
 
-// 같은 기존 카테고리나 같은 이름의 새 카테고리를 고른 캘린더는 대상 하나를 함께 가리킨다.
 // 넣을 곳은 카테고리 단계를 넘길 때 singleTarget에 고정돼 기본 넣을 곳 없이(null) 읽는다
 export function toTodoImportSelection(values: TodoImportFormValues): TodoImportSelection {
   const targets = TodoImportPlanPolicy.getAssignedTargets(values, null);

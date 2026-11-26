@@ -8,10 +8,7 @@ import { Redirect } from 'expo-router';
 
 import { findCachedTodoComment } from '../queries/todo-comment-cache';
 
-/**
- * 댓글 ⋯ 메뉴에서 열어 이미 불러온 댓글로 작성자를 정한다.
- * 캐시에 없으면(오래된 링크) 신고할 작성자를 알 수 없어 피드로 돌아간다.
- */
+/** 캐시에 없으면(오래된 링크) 신고할 작성자를 알 수 없어 피드로 돌아간다 */
 export function TodoCommentReportBottomSheet() {
   const { t } = useTranslation('moderation');
   const queryClient = useQueryClient();

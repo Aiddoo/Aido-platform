@@ -68,7 +68,6 @@ export const InvitePolicy = {
     return calculateInvitedCount(invite.qualifiedCount, invite.waitingCount) > 0;
   },
 
-  // 지난번 축하한 뒤로 사용을 시작한 친구가 늘었다
   hasNewPawPrints(invite: Invite, celebratedCount: number): boolean {
     return invite.qualifiedCount > celebratedCount;
   },

@@ -3,7 +3,6 @@ import { cn } from '@src/shared/utils/cn';
 import type { ComponentProps } from 'react';
 
 interface CategoryColorDotProps extends Omit<ComponentProps<typeof Box>, 'children'> {
-  /** 아이두 카테고리 색 */
   color: string;
 }
 

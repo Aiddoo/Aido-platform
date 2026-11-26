@@ -25,7 +25,6 @@ export const TodoCategoriesPolicy = {
     return { ...result, categories: [...result.categories, category] };
   },
 
-  // 만들기 응답의 서버 값으로 임시 행을 바꾼다. 새 카테고리라 할 일 수는 그대로(0)다.
   // 그사이 다시 받아 임시 행이 사라졌으면 서버 행이 없을 때만 끝에 붙인다
   withCategorySaved(
     result: TodoCategoriesResult,

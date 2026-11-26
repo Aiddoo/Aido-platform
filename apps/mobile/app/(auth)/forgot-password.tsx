@@ -137,8 +137,7 @@ function EmailStep({ form, isRequesting, onRequestCode, onNext }: EmailStepProps
   const isValid = email.isDirty && !email.invalid;
   const isSubmitting = isRequesting;
 
-  // 실패 안내와 보고는 mutation의 meta.errorFeedback이 맡는다. 이메일 단계에 머물러 적은 주소를 지킨다.
-  // 같은 프레임의 두 번째 탭은 요청 중 표시가 다음 렌더에야 켜져 여기서 막는다
+  // 실패 안내는 meta.errorFeedback이 맡는다. 같은 프레임의 두 번째 탭은 요청 중 표시가 다음 렌더에야 켜져 여기서 막는다
   const requestCode = useSingleTap(() => {
     const emailValue = form.getValues('email');
     onRequestCode(emailValue)

@@ -7,7 +7,6 @@ import {
   featureQuotaSchema,
 } from './feature-quota.model';
 
-/** 서버가 한도·등급으로 막은 기능 하나 */
 const limitedFeatureSchema = z.object({
   feature: entitlementFeatureSchema,
   /** 서버가 오류와 함께 준 현재 한도. 상세를 싣지 않는 코드는 null이다 */

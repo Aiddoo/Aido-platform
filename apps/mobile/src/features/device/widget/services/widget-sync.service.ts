@@ -61,7 +61,6 @@ export class WidgetSyncService {
     this.#widgetStorage = widgetStorage;
   }
 
-  /** 앱 없이 깨어난 위젯이 남긴 실패를 꺼내고 지운다. 한 번만 돌려준다 */
   takeHeadlessFailure = (): WidgetHeadlessFailure | null => {
     const failure = readStoredValue(this.#widgetStorage, widgetHeadlessFailureStoredValue);
     try {

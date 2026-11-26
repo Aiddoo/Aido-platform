@@ -14,10 +14,7 @@ interface TrackedView<E extends ViewEventName> {
   params: AppEventMap[E];
 }
 
-/**
- * 경로가 바뀌지 않는 보기(시트·카드·단계·받은 내용)를 마운트 안에서 key마다 한 번 센다. null은 아직 보이지 않은 것이다.
- * 다시 그리기·포커스 복귀·숨었다 다시 보이기로는 다시 보내지 않고, 화면이 다시 마운트되면 새 보기로 센다
- */
+/** null은 아직 보이지 않은 것이다. 다시 그리기·포커스 복귀로는 다시 보내지 않고 다시 마운트되면 새 보기로 센다 */
 export function useTrackView<E extends ViewEventName>(
   eventName: E,
   view: TrackedView<E> | null,

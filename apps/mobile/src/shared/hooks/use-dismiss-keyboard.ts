@@ -9,10 +9,7 @@ interface DismissKeyboardOptions {
   animated?: boolean;
 }
 
-/**
- * 키보드를 내리고 입력 포커스를 푼다. RN `Keyboard.dismiss`는 RN `TextInput`만 내려 네이티브 검색창·편집기 키보드가 남을 수 있어
- * 키보드 위치를 맡은 react-native-keyboard-controller로 내린다. 기다리지 않는 동작이라 실패는 로그만 남긴다
- */
+/** RN `Keyboard.dismiss`는 RN `TextInput`만 내려 네이티브 검색창·편집기 키보드가 남을 수 있다. 실패는 로그만 남긴다 */
 export function useDismissKeyboard(): (options?: DismissKeyboardOptions) => void {
   const logger = useLogger();
 

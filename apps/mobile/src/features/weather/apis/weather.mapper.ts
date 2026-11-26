@@ -228,10 +228,7 @@ function collectFallbackPaths(raw: unknown, parsed: unknown, path: string): stri
   return raw !== undefined && raw !== parsed ? [path] : [];
 }
 
-/**
- * 계약의 .catch가 모르는 값을 대체값으로 바꾼 칸의 경로(`hourly[].condition`). 받은 값과 읽은 값이 다른
- * 끝 칸이 대체된 칸이다. 값은 담지 않고 배열 위치는 []로 접는다
- */
+/** 계약의 .catch가 모르는 값을 대체값으로 바꾼 칸의 경로(`hourly[].condition`). 값은 담지 않고 배열 위치는 []로 접는다 */
 export function getFallbackFieldPaths(raw: unknown, parsed: unknown): string[] {
   return uniq(collectFallbackPaths(raw, parsed, ''));
 }

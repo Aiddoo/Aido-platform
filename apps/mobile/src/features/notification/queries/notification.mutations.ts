@@ -24,10 +24,7 @@ import { NOTIFICATION_MUTATION_KEYS } from './notification-mutation-keys';
 
 const PUSH_OPENED_RETRIES = 3;
 
-/**
- * 응답은 읽은 개수만 주어 안 읽은 수를 확정하지 못해 다시 받아야 하는데, 앞 처리 뒤에 다시 받으면
- * 뒤 처리의 낙관적 수가 덮여 앱 아이콘 배지가 깜빡인다. 같은 키의 마지막 처리만 다시 받는다
- */
+/** 앞 처리 뒤에 다시 받으면 뒤 처리의 낙관적 수가 덮여 앱 아이콘 배지가 깜빡여, 같은 키의 마지막 처리만 다시 받는다 */
 function invalidateAfterLastNotificationWrite(queryClient: QueryClient) {
   return isLastMutation(queryClient, NOTIFICATION_MUTATION_KEYS.writes())
     ? invalidateNotifications(queryClient)
@@ -161,10 +158,7 @@ interface SnoozeTodoReminderVariables {
   notificationId: number;
 }
 
-/**
- * 리마인드 알림의 [10분 뒤 다시]. 이미 끝낸 할 일은 오류가 아니라 부르는 쪽이 부드럽게 알리고,
- * 지운 할 일은 방금 연 할 일 화면이 볼 수 없음 안내 하나로 보인다
- */
+/** 이미 끝낸 할 일은 오류가 아니라 부르는 쪽이 부드럽게 알리고, 지운 할 일은 할 일 화면이 볼 수 없음 안내로 보인다 */
 export function useSnoozeTodoReminderMutationOptions() {
   const notificationApi = useNotificationApi();
 

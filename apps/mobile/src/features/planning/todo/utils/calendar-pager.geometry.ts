@@ -14,9 +14,7 @@ interface CalendarPageAtOffsetInput {
   totalPages: number;
 }
 
-/**
- * 스크롤이 멈춘 쪽. 창 폭이 바뀌어 목록을 새 폭으로 다시 만들기 전에는 옛 폭의 쪽이 새 뷰포트 안에 남아 쪽 경계가 맞지 않으므로 null이다
- */
+/** 창 폭이 바뀌어 목록을 새 폭으로 다시 만들기 전에는 옛 폭의 쪽이 새 뷰포트 안에 남아 쪽 경계가 맞지 않으므로 null이다 */
 export function findCalendarPageAtOffset({
   offsetX,
   viewportWidth,

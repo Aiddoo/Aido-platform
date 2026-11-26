@@ -9,7 +9,6 @@ import {
 } from './draft.model';
 import type { DraftRepository } from './draft.repository';
 
-/** 로그아웃·탈퇴 세대(`SignOutEpoch`)를 읽는다 */
 type ReadSignOutEpoch = () => number;
 
 interface DraftSourceOptions {
@@ -50,10 +49,7 @@ export class DraftService {
     });
   };
 
-  /**
-   * 편집을 시작한 로그인에 묶인 저장. 로그아웃·탈퇴로 세대가 오른 뒤에는 쓰지 않아 정리 뒤 화면이 내려가며
-   * 내보내는 저장이 지운 초안을 되살리지 않는다. 세션 만료는 같은 사람이 돌아와 이어 쓰므로 그대로 저장한다
-   */
+  /** 로그아웃·탈퇴로 세대가 오른 뒤에는 쓰지 않아 내려가는 화면의 저장이 지운 초안을 되살리지 않는다 */
   createSessionSave = <TValue>(draftKey: DraftKey<TValue>) => {
     const startedEpoch = this.#readSignOutEpoch();
 

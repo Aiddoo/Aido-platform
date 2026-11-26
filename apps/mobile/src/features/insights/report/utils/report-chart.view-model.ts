@@ -60,10 +60,7 @@ export function formatDailyValueLine(day: DailyValue | null, context: DateFormat
   });
 }
 
-/**
- * 최근 추세가 걸치는 ISO 연도. 주간 성취 목록은 해 하나씩만 주어 1월 초에는 추세 첫 주가 속한 지난해도 읽는다.
- * 같은 해면 두 값이 같아 같은 쿼리를 한 번만 받는다
- */
+/** 주간 성취 목록은 해 하나씩만 주어 1월 초에는 추세 첫 주가 속한 지난해도 읽는다 */
 export function getTrendIsoWeekYears(todayKey: DateKey): { startYear: number; endYear: number } {
   return {
     startYear: getIsoWeekYear(addDaysToDateKey(todayKey, -TREND_WEEK_COUNT * DAYS_PER_WEEK)),

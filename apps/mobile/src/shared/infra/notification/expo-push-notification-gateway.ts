@@ -89,10 +89,7 @@ async function ensureChannel(logger: AppLogger): Promise<void> {
   }
 }
 
-/**
- * 프로세스에 한 번 만든다. 첫 알림을 놓치지 않게 앱이 그려지기 전인 여기서 표시 판단을 SDK에 건다.
- * 화면이 정하기 전과 판단이 실패하면 배너로 보인다
- */
+/** 첫 알림을 놓치지 않게 앱이 그려지기 전인 여기서 표시 판단을 SDK에 건다. 정하기 전과 판단이 실패하면 배너다 */
 export function createExpoPushNotificationGateway(logger: AppLogger): PushNotificationGateway {
   // expo-notifications 58 iOS CategoryManager(actor)는 첫 등록이 기존 목록을 기다리는 사이 다음 등록을 받아(재진입) 둘 다 같은 목록에 자기 것만 더해 쓴다. 겹치면 나중 것만 남는다
   const categoryLock = new Mutex();

@@ -734,8 +734,7 @@ function useStepBackNavigation(stepper: Stepper<TodoImportStepContexts>): StepBa
   const [isLeaving, setIsLeaving] = useState(false);
 
   const isPastFirstStep = 0 < stepper.index;
-  // 휴대폰의 헤더 뒤로 가기·iOS 밀어서 뒤로 가기는 화면을 닫지 않고 앞 단계로 돌아가 고른 값을 지킨다.
-  // 넓은 화면은 메뉴가 상세를 걷어 내며 바꾸므로 막지 않고, 밀어서 닫기만 끈다
+  // 휴대폰의 뒤로 가기는 화면을 닫지 않고 앞 단계로 돌아가 고른 값을 지킨다. 넓은 화면은 밀어서 닫기만 끈다
   const allowRemove = usePreventRemove(
     isCompact && isPastFirstStep && !isLeaving,
     ({ data, repeat }) => {
@@ -762,7 +761,6 @@ function useStepBackNavigation(stepper: Stepper<TodoImportStepContexts>): StepBa
   return { isPastFirstStep, isSwipeBackEnabled: isCompact || !isPastFirstStep, leaveToImport };
 }
 
-// 서버가 넣을 곳을 받지 않은 캘린더의 사유. 고른 캘린더의 칸 오류만 읽는다
 function useTargetErrorMessages(
   form: TodoImportForm,
   collections: readonly TodoImportCollection[],

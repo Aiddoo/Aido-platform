@@ -26,10 +26,7 @@ const QUERY_CACHE_OWNER_KEY = 'aido.query-cache.owner';
 /** 영속 쿼리의 키나 클라이언트 모델의 모양이 바뀌면 올려 이전 캐시를 버린다 */
 const QUERY_CACHE_SCHEMA_VERSION = 7;
 
-/**
- * 영속하지 않는 조회의 이벤트(3초 폴링)에도 영속 조회 전체(약 34KB)를 다시 직렬화해 암호화 저장소에 쓴다.
- * 기본 1초면 폴링 1분에 40번, 5초면 12번이다(query-cache-persistence.test). 앱이 뒤로 가면 미룬 저장을 바로 쓴다
- */
+/** 영속하지 않는 조회의 이벤트(3초 폴링)에도 영속 조회 전체를 다시 쓴다. 기본 1초면 폴링 1분에 40번, 5초면 12번이다 */
 const QUERY_CACHE_PERSIST_THROTTLE_MS = 5 * SECOND_MS;
 
 /** persister가 쓰는 저장소. 캐시는 주인(사용자 id)별 키에 두고, 주인이 없으면 읽지도 쓰지도 않는다 */

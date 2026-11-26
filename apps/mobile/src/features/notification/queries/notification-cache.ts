@@ -35,10 +35,7 @@ function getUnreadNotificationIds(pages: NotificationPages | undefined, notifica
     .map((notification) => notification.id);
 }
 
-/**
- * 목록의 그 알림(없으면 안 읽은 알림 전부)을 읽음으로, 안 읽은 수를 그만큼 줄인다.
- * 낙관적으로 읽음을 쓰지 않았으면(다른 세션) null
- */
+/** 알림이 없으면 안 읽은 알림 전부를 읽음으로 한다. 낙관적으로 읽음을 쓰지 않았으면(다른 세션) null */
 export async function optimisticallyMarkNotificationsRead(
   queryClient: QueryClient,
   notificationId?: number,

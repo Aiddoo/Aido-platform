@@ -87,7 +87,6 @@ interface ActivityReportReceiptProps {
   onFirstChartTap?: (chart: ReportChart) => void;
 }
 
-/** 실제 리포트와 무료 예시가 함께 쓰는 리포트 영수증 */
 ActivityReport.Receipt = function Receipt({
   report,
   timeFormat,

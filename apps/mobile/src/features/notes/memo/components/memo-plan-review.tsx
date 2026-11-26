@@ -32,7 +32,6 @@ import { useRefreshMemos } from '../hooks/use-refresh-memos';
 import { useGetMemoQueryOptions } from '../queries/memo.queries';
 import { createMemoPlanDraftKey } from '../utils/memo-plan-draft';
 
-/** 메모를 나눈 결과의 검토. 기기에 남긴 초안으로 시작하고 저장하면 피드로 간다 */
 export function MemoPlanReview() {
   const { t } = useTranslation('memo');
   const { timezone } = useDateFormatContext();
@@ -94,7 +93,6 @@ interface MemoPlanReviewContentsProps {
   onDraftClear: () => void;
 }
 
-/** 고르는 폼. 고친 값은 저장하기 전까지 기기에 남기고, 저장하면 초안을 지우고 떠난다 */
 MemoPlanReview.Contents = function Contents({
   draft,
   fallbackCategoryId,

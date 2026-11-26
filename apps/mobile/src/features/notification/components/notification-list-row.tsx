@@ -79,10 +79,7 @@ export function NotificationListRow({
   );
 }
 
-/**
- * 화면으로 가는 행을 Link로 감싸 길게 누르면 목적지를 미리본다(iOS, 다른 플랫폼은 행만 그린다).
- * 탭은 행의 onPress(연타 막기·읽음·추적)가 맡고 Link는 미리보기를 눌러 가는 이동만 맡는다
- */
+/** 길게 누르면 목적지를 미리본다(iOS). 탭은 행의 onPress(연타 막기·읽음·추적)가, Link는 미리보기를 눌러 가는 이동만 맡는다 */
 NotificationListRow.Link = function RowLink({ href, children }: NotificationListRowLinkProps) {
   if (href == null) {
     return children;

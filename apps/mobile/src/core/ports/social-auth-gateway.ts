@@ -20,7 +20,6 @@ export type AppleSignInResult =
   | { type: 'unavailable' }
   | { type: 'failed' };
 
-/** 소셜 로그인의 네이티브 화면. 브라우저 세션과 Apple 로그인 창을 연다 */
 export interface SocialAuthGateway {
   openOAuthSession(request: OAuthSessionRequest): Promise<OAuthSessionResult>;
   signInWithApple(): Promise<AppleSignInResult>;

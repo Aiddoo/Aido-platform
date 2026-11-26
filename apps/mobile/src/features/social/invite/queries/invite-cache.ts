@@ -22,7 +22,6 @@ export function setMyInviteInCache(queryClient: QueryClient, myInvite: Invite) {
   queryClient.removeQueries({ queryKey: INVITE_QUERY_KEYS.previews() });
 }
 
-/** 발자국·친구 상태가 바뀌는 알림을 받았을 때 */
 function invalidateInvite(queryClient: QueryClient) {
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: INVITE_QUERY_KEYS.me() }),
@@ -60,7 +59,6 @@ export function invalidateInviteAvailability(queryClient: QueryClient) {
   return queryClient.invalidateQueries({ queryKey: INVITE_QUERY_KEYS.availability() });
 }
 
-/** 친구가 가입했거나 발자국이 찍혔다는 알림을 받으면 초대 요약·목록, 친구 목록, 프리미엄을 함께 새로 고친다 */
 export async function invalidateOnInviteNotification(queryClient: QueryClient) {
   await Promise.all([
     invalidateInvite(queryClient),

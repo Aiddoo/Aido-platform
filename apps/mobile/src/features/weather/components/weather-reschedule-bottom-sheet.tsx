@@ -105,10 +105,7 @@ const NOT_MOVED = new Error('weather reschedule: nothing moved');
 
 type RescheduleForm = UseFormReturn<WeatherRescheduleFormValues>;
 
-/**
- * 시트가 폼을 갖는다. 목록은 할 일마다 옮길 시각 칸을 잇고 footer의 버튼은 그 값을 세어 보낸다.
- * 목록에서 빠진 할 일의 선택은 함께 지운다(shouldUnregister)
- */
+/** 시트가 폼을 갖는다. 목록에서 빠진 할 일의 선택은 함께 지운다(shouldUnregister) */
 export function WeatherRescheduleBottomSheet() {
   const { resolvedTheme } = useAppTheme();
   const form = useForm({
@@ -436,8 +433,7 @@ function RescheduleSubmitButton({ form, onDone }: RescheduleSubmitButtonProps) {
   const todayTodos = todoList.todos;
   // shouldUnregister 폼은 남은 선택이 없으면 selections 자체를 지운다.
   const selections = useWatch({ control: form.control, name: 'selections' }) ?? {};
-  // 선택은 목록이 칸을 이은 할 일에만 남는다(shouldUnregister). 링크의 id로 다시 거르면 링크가 낡아 목록이
-  // 지금 영향받는 할 일로 바뀌었을 때 버튼만 0개가 되므로, 지금 영향받는 할 일의 선택을 그대로 센다
+  // 링크의 id로 다시 거르면 링크가 낡았을 때 버튼만 0개가 되므로 지금 영향받는 할 일의 선택을 그대로 센다
   const affectedTodoIds = reportBriefing == null ? [] : reportBriefing.affectedTodoIds;
   const targetCount = getRescheduleTargets(
     toScheduleChanges({ selections }, affectedTodoIds),

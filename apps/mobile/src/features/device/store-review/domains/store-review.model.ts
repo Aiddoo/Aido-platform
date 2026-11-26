@@ -56,7 +56,6 @@ function hasReachedWindowLimit(state: Pick<StoreReviewState, 'requestedAt'>, now
 }
 
 export const StoreReviewPolicy = {
-  /** 할 일을 끝낸 날들을 차례로 더한다. 같은 날은 한 번만 세고 마지막 날들만 남긴다 */
   withActiveDays(state: StoreReviewState, localDates: readonly DateKey[]): StoreReviewState {
     return {
       ...state,
@@ -64,7 +63,6 @@ export const StoreReviewPolicy = {
     };
   },
 
-  /** 할 일을 하나라도 끝낸 날을 남긴다. 같은 날은 한 번만 센다 */
   withActiveDay(state: StoreReviewState, localDate: DateKey): StoreReviewState {
     return state.activeDays.includes(localDate) ? state : this.withActiveDays(state, [localDate]);
   },
@@ -80,7 +78,6 @@ export const StoreReviewPolicy = {
     };
   },
 
-  /** 지금 OS 리뷰 창을 요청해도 되는지. 끝낸 날, 365일 한도, 120일 쿨다운 순으로 막는다 */
   getEligibility(state: StoreReviewState, now: Instant): StoreReviewEligibility {
     if (!hasEnoughActiveDays(state)) {
       return 'not_engaged';

@@ -3,7 +3,6 @@ import { z } from 'zod';
 
 import { type SubscriptionPlan, subscriptionPlanSchema } from './subscription.model';
 
-/** 스토어가 지금 이 사용자에게 파는 요금제 묶음 */
 export const subscriptionOfferingSchema = z.object({
   identifier: z.string(),
   plans: z.array(subscriptionPlanSchema),

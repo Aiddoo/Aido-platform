@@ -204,7 +204,6 @@ export const EntitlementPolicy = {
     };
   },
 
-  /** 요금제마다 그 기능에서 주는 것(양·무제한·포함·제외) */
   getPlanFeatureComparison(
     snapshot: EntitlementSnapshot,
     feature: EntitlementFeature,

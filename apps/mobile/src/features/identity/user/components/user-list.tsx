@@ -16,7 +16,6 @@ import { UserAvatar } from './user-avatar';
 
 export const USER_LIST_CONTENT_STYLE = { flexGrow: 1 };
 
-/** 사용자 행을 위에서부터 쌓는 스크롤 목록. 행·로딩·비었을 때·오류 조각을 함께 단다 */
 export function UserList({ children, ...props }: ScrollViewProps) {
   return (
     <ScrollView className="flex-1" contentContainerStyle={USER_LIST_CONTENT_STYLE} {...props}>

@@ -27,10 +27,7 @@ export function expandThread(
   return { isExpanded: true, source };
 }
 
-/**
- * 펼친 묶음 아래 줄. 더 받을 답글이 있으면 "더 보기", 사용자가 펼쳤고 숨길 답글이 있으면 "숨기기", 그 밖에는 없다.
- * 답글을 올려 앱이 펼친 묶음은 사용자가 숨기기를 누를 이유가 없어 줄을 그리지 않는다.
- */
+/** 답글을 올려 앱이 펼친 묶음은 사용자가 숨기기를 누를 이유가 없어 줄을 그리지 않는다 */
 export function getReplyFooter(
   thread: TodoCommentThread,
   {

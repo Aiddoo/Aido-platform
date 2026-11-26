@@ -24,8 +24,7 @@ const CLOSE_HIT_SLOP = 14;
 const TITLE_ICON_SIZE = 18;
 /** `Popover.Content`의 기본 간격과 같다 */
 export const HINT_OFFSET = 9;
-// 지나가게 둔 말풍선은 닫기만 누름을 받는다. 홈 표시줄 위로 밀려 위 줄 칩을 덮어도 칩이 눌리고 스크린리더도 가두지 않는다.
-// 테마 배경 층은 이 테마에서 빈 뷰지만 말풍선 전체를 덮어 누름을 먹으므로 뺀다
+// 지나가게 둔 말풍선은 닫기만 누름을 받는다. 테마 배경 층은 빈 뷰지만 말풍선 전체를 덮어 누름을 먹으므로 뺀다
 const PASS_THROUGH_CONTENT_PROPS = {
   pointerEvents: 'box-none',
   background: null,

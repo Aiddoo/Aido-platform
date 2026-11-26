@@ -176,7 +176,6 @@ export function toTodoFormValues(todo: Todo, timezone: string): TodoFormValues {
   };
 }
 
-/** 고친 칸에 반복 범위·규칙·체크리스트를 붙인다 */
 export function toUpdateTodoRequest(
   fields: TodoFieldChanges,
   { scope, repeat, checklist }: TodoSeriesEditOptions,

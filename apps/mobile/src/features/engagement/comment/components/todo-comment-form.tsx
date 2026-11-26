@@ -76,10 +76,7 @@ type TodoCommentFormProps = Omit<
   'children' | 'keyboardShouldPersistTaps' | 'nestedScrollEnabled'
 >;
 
-/**
- * 키보드 위 작성기. 모드(새 댓글·답글·수정)와 입력값은 화면이 소유한 폼에 있고, 이 컴포넌트는 필요한 필드만 구독한다.
- * 이어 쓴 글은 같은 묶음에 차례로 붙는다.
- */
+/** 모드(새 댓글·답글·수정)와 입력값은 화면이 소유한 폼에 있고, 이 컴포넌트는 필요한 필드만 구독한다 */
 export function TodoCommentForm({ style, ...scrollViewProps }: TodoCommentFormProps) {
   const [todoId] = useTodoId();
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
@@ -265,7 +262,6 @@ function useTodoCommentSubmit({ userId }: { userId: string }) {
     })();
 }
 
-/** 작성 중인 글을 모드별 초안으로 저장하고 다시 열면 이어 쓴다 */
 function TodoCommentDraftAutosave({
   userId,
   mode,

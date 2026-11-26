@@ -56,8 +56,7 @@ export function getTimedDates(
 }
 
 export const TodoImportItemPolicy = {
-  // 기간 안에 걸친 일정만 남긴다. 기간 전에 시작해 기간 안까지 이어지는 여러 날 일정은 서버가 기간 밖으로
-  // 거절하므로 첫날을 기간 첫날로 당긴다. 당긴 첫날이 마지막 날이면 하루 일정(끝 날짜 없음)이 된다
+  // 기간 전에 시작해 기간 안까지 이어지는 여러 날 일정은 서버가 기간 밖으로 거절하므로 첫날을 기간 첫날로 당긴다
   filterByRange<TItem extends TodoImportItemPreview>(
     items: readonly TItem[],
     { startDate, endDate }: TodoImportRange,

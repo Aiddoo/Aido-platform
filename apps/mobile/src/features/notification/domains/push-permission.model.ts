@@ -93,10 +93,7 @@ export const PushPermissionPolicy = {
     return !this.isPushDeliverable(permission) && permission.canAskAgain;
   },
 
-  /**
-   * 알림을 묻는 곳은 셋이다. 가입 직후 알림 화면은 한 번, 할 일 시간을 정하면 그 자리에서 시스템 창,
-   * 거절한 뒤에는 알림이 갈 할 일이 있을 때만 꺼짐 안내다. 허용했으면 묻지 않는다
-   */
+  /** 가입 직후 알림 화면은 한 번, 할 일 시간을 정하면 시스템 창, 거절한 뒤에는 알림이 갈 할 일이 있을 때만 꺼짐 안내다 */
   findAskMoment(permission: PushPermission, context: PushAskContext): PushAskMoment | null {
     if (this.isPushDeliverable(permission)) {
       return null;
@@ -142,10 +139,7 @@ export const PushPermissionPolicy = {
       .otherwise(() => 'REQUEST_SYSTEM');
   },
 
-  /**
-   * 알림 설정 값. 앱에서 켰는데 기기에서 거절해 닿지 않으면 그 이유를 따로 보인다.
-   * 아직 묻지 않은 기기는 거절한 것이 아니라 꺼짐으로 둔다
-   */
+  /** 앱에서 켰는데 기기에서 거절해 닿지 않으면 그 이유를 따로 보이고, 아직 묻지 않은 기기는 꺼짐으로 둔다 */
   getSummary(permission: PushPermission, { pushEnabled }: { pushEnabled: boolean }): PushSummary {
     if (this.isPushDeliverable(permission)) {
       return pushEnabled ? 'on' : 'off';

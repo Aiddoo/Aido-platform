@@ -176,11 +176,7 @@ WeatherScreen.Error = function ErrorFallback(props: QueryErrorFallbackProps) {
   );
 };
 
-/**
- * 날씨 화면을 열 때마다 진입점을, 그 열기에서 위치 확인이 처음 끝났을 때 결과를 한 번씩 남긴다.
- * 새로고침·포커스 재확인으로 상태가 다시 바뀌어도 같은 열기에서는 더 세지 않는다. `weather_opened`는 KPI·퍼널이
- * 이름을 써서 경로 보기(`screen_view`)와 따로 남기는 예외다(observability.md)
- */
+/** 상태가 다시 바뀌어도 같은 열기에서는 더 세지 않는다. `weather_opened`는 경로 보기(`screen_view`)와 따로 남기는 예외다 */
 function useWeatherScreenTracking(locationStatus: WeatherLocationStatus['status']): void {
   const [entry] = useWeatherEntry();
   const [openKey] = useWeatherOpenKey();

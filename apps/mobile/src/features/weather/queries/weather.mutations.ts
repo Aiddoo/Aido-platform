@@ -32,10 +32,7 @@ export function useUpdateWeatherLocationMutationOptions() {
   });
 }
 
-/**
- * 할 일마다의 토스트·무효화는 빼고 호출하는 쪽이 한 번만 한다. 오프라인에 멈추면 시트가 닫히지 않아 바로 실패한다.
- * 할 일 쓰기 묶음 키는 남겨 옮기는 동안 끝난 체크가 다시 받아 옮긴 값을 덮지 않게 한다
- */
+/** 오프라인에 멈추면 시트가 닫히지 않아 바로 실패한다. 쓰기 묶음 키는 남겨 끝난 체크가 옮긴 값을 덮지 않게 한다 */
 export function useRescheduleTodoMutationOptions() {
   const { mutationKey, mutationFn: updateTodoSchedule } = useUpdateTodoScheduleMutationOptions();
 

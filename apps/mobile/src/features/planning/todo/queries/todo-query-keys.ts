@@ -11,8 +11,7 @@ export const TODO_QUERY_KEYS = {
   all: ['todo'] as const,
 
   completions: () => [...TODO_QUERY_KEYS.all, 'completion'] as const,
-  // 위젯 요약·존재 여부와 데이터 모양이 달라 낙관적 갱신이 이 묶음만 고르도록 따로 둔다.
-  // 달력·이번 주 기록·위젯·날씨가 달(그 달 1일) 키를 나눠 쓰고 기간은 useQueries의 combine으로 자른다
+  // 위젯 요약·존재 여부와 데이터 모양이 달라 낙관적 갱신이 이 묶음만 고르도록 따로 둔다
   completionMonths: () => [...TODO_QUERY_KEYS.completions(), 'month'] as const,
   completionsByMonth: ({ month }: { month: string }) =>
     queryOptions<DailyCompletionsResult>({

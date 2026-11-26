@@ -92,7 +92,6 @@ const MEMO_MORE_MENU_WIDTH = 220;
 
 interface MemoEditorToolbarProps {
   isEditing: boolean;
-  /** 저장하지 않은 고친 글자가 있고 저장할 수 있다 */
   canSave: boolean;
   isSubmitting: boolean;
   isSaveDisabled: boolean;
@@ -178,7 +177,6 @@ export function MemoEditor({ toolbar: Toolbar, onLeave }: MemoEditorProps) {
     onLeave();
   });
 
-  // 저장 버튼과 뒤로 가기는 handleSubmit으로 보내 저장하는 동안(isSubmitting) 두 버튼을 끈다.
   // isSubmitting은 다음 렌더에야 켜져 같은 프레임의 두 번째 탭이 한 번 더 보낸다
   const handleSavePress = useSingleTap(() => {
     // 실패 안내는 mutation의 meta.errorFeedback이 맡고 글자와 편집 상태는 그대로 둔다
@@ -203,8 +201,7 @@ export function MemoEditor({ toolbar: Toolbar, onLeave }: MemoEditorProps) {
     if (!canSave) {
       return memo;
     }
-    // 저장마다 수정 시각이 바뀌어 먼저 시작한 AI 정리의 결과가 낡은 것이 된다. 메뉴의 두 번째 저장은 시작하지 않는다.
-    // mutation의 isPending은 다음 렌더에야 켜져 같은 프레임의 두 번째 누름을 막지 못한다
+    // 저장마다 수정 시각이 바뀌어 앞선 AI 정리 결과가 낡는다. isPending은 다음 렌더에야 켜져 두 번째 누름을 못 막는다
     if (isSavingChangesRef.current) {
       return null;
     }
@@ -678,10 +675,7 @@ function useIsMemoAiParseDisabled() {
   return defaultCategoryId == null || isEntitlementsLoading || isParsing;
 }
 
-/**
- * 저장·정리(최대 30초)를 기다리는 사이 편집기를 떠났으면 지금 보는 화면 위로 끌고 가지 않는다.
- * 받은 결과는 mutation이 초안에 남겨 이 메모에서 다시 누르면 차감 없이 바로 결과 화면으로 간다
- */
+/** 저장·정리(최대 30초)를 기다리는 사이 편집기를 떠났으면 지금 보는 화면 위로 끌고 가지 않는다 */
 function useOpenMemoPlanReview() {
   const router = useRouter();
   const push = useSingleTap(router.push);
@@ -716,7 +710,6 @@ function useSuspenseStartMemoAiParse({
   const isStartingRef = useRef(false);
 
   // 정리 중 서버가 동의 없음(AI_1311)으로 거절했는데 이번 시도에서 동의를 묻지 않았으면 'consentRevoked'다
-  // 동의 안내를 이미 본 시도에서 다시 거절되면 안내를 또 띄우지 않고 이유만 알린다
   const showConsentRequired = () => {
     haptics.notify('error');
     toast.error(t(ErrorCode.AI_1311));
@@ -807,7 +800,6 @@ function useOpenMemoConvertSheet({
   const openKeyboardSheet = useOpenKeyboardSheet();
   const defaultCategoryId = useMemoDefaultCategoryId();
 
-  // 옮기기는 입력칸의 글자가 아니라 저장된 메모로 하므로 고치던 글자를 먼저 저장한다
   const open = async () => {
     if (defaultCategoryId == null) {
       return;

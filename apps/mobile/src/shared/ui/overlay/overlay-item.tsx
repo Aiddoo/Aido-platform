@@ -31,8 +31,7 @@ export function OverlayItem<T>({
     setIsOpen(false);
   };
 
-  // 부른 컴포넌트 unmount, 다시 열기, resetKey 모두 이 항목이 트리에서 빠지는 일이라 한 곳에서 끝낸다.
-  // close가 먼저 끝냈으면 Promise는 그 값을 유지한다.
+  // unmount·다시 열기·resetKey를 한 곳에서 끝낸다. close가 먼저 끝냈으면 Promise는 그 값을 유지한다
   useEffect(() => () => onResolve(dismissedValue), [onResolve, dismissedValue]);
 
   return <>{render({ isOpen, close, unmount: onUnmount })}</>;

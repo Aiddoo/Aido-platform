@@ -89,9 +89,7 @@ export const TodoImportCollectionPolicy = {
     return CONTAINS_EMAIL_PATTERN.test(collection.title);
   },
 
-  // null은 기본 선택이다. 고른 뒤 기간을 줄여 일정이 사라진 캘린더는 뺀다.
-  // 서버는 한 번에 캘린더 MAX_COLLECTIONS개까지 받아, 기본 선택은 일정이 많은 캘린더부터 그만큼만 고르고
-  // 고른 값도 그 수를 넘기지 않는다. 결과는 받은 목록 순서다
+  // null은 기본 선택이다. 서버는 한 번에 캘린더 MAX_COLLECTIONS개까지 받아 기본 선택·고른 값 모두 그 수를 넘기지 않는다
   getSelectedCollections(
     collections: readonly TodoImportCollection[],
     selectedKeys: readonly string[] | null,

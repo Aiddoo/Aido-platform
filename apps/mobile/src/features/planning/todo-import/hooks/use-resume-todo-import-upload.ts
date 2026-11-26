@@ -11,10 +11,7 @@ import { useEffect, useEffectEvent } from 'react';
 import type { TodoImportResumeTrigger } from '../constants/todo-import.events';
 import { todoImportSessionStoredValue } from '../schemas/todo-import-session-storage.schema';
 
-/**
- * 끊긴 캘린더 업로드를 앱을 열 때·앞으로 돌아올 때·다시 연결될 때 이어 간다. 오프라인이면 기다린다.
- * 백그라운드 작업(최소 15분 간격)은 쓰지 않는다. 확정 뒤의 무거운 일은 서버 잡이 한다
- */
+/** 백그라운드 작업(최소 15분 간격)은 쓰지 않는다. 확정 뒤의 무거운 일은 서버 잡이 한다 */
 export function useResumeTodoImportUpload(): void {
   const { t } = useTranslation('todoImport');
   const uploadSession = useTodoImportUploadSession();

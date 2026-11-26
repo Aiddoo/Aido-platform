@@ -43,10 +43,7 @@ export function getZoneOffsetMs(epochMs: number, timezone: string): number {
   return wallClockAsUtc - (epochMs - (epochMs % MINUTE_MS));
 }
 
-/**
- * 서버 toZonedInstant와 같은 규칙으로 날짜 + 벽시계를 순간으로 바꾼다. 겹치는 시각은 앞쪽, 없는 시각은
- * 전환 뒤로 민다(Temporal "compatible"). Hermes에 Temporal이 없어 Intl 오프셋으로 계산한다
- */
+/** 서버 toZonedInstant와 같이 겹치는 시각은 앞쪽, 없는 시각은 전환 뒤로 민다. Hermes에 Temporal이 없어 Intl로 계산한다 */
 export function toZonedInstant({
   date,
   time,

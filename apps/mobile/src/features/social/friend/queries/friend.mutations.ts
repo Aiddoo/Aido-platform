@@ -42,8 +42,7 @@ export function useAcceptRequestMutationOptions() {
       toast.success(t('friend:toast.requestAccepted'));
       trackEvent('friend_request_accepted');
     },
-    // 친구 수가 한도(FRIEND)를 써 남은 횟수도 다시 받는다. 화면에 머무는 목록이라 행이 사라질 때까지
-    // 버튼을 꺼 둬 다시 눌러 요청이 또 가지 않게 한다
+    // 친구 수가 한도(FRIEND)를 써 남은 횟수도 다시 받고, 행이 사라질 때까지 버튼을 꺼 둬 요청이 또 가지 않게 한다
     onSettled: () =>
       Promise.all([invalidateEntitlements(queryClient), invalidateFriends(queryClient)]),
     meta: { errorFeedback: { feature: 'friend' } },
@@ -127,8 +126,7 @@ export function useRemoveFriendMutationOptions() {
         setFriendListInCache(queryClient, (pages) => withFriendRestored(pages, placement));
       }
     },
-    // 친구 수가 한도(FRIEND)를 돌려받아 남은 횟수를 다시 받는다. 목록은 앞 지우기 뒤에 다시 받으면
-    // 아직 지우는 중인 친구가 돌아오므로 마지막 지우기가 받는다
+    // 목록은 앞 지우기 뒤에 다시 받으면 아직 지우는 중인 친구가 돌아오므로 마지막 지우기가 받는다
     onSettled: () => {
       invalidateEntitlements(queryClient);
       if (isLastMutation(queryClient, FRIEND_MUTATION_KEYS.writes())) {

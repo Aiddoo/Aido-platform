@@ -63,10 +63,7 @@ export const PushNotificationResponsePolicy = {
     return marketingOptOutActionSchema.safeParse(response.actionIdentifier).success;
   },
 
-  /**
-   * 리마인드 알림 버튼을 누른 응답이면 할 일. 할 일을 여는 리마인드 알림의 버튼만 받고,
-   * 다시 알림은 누른 알림 id로 한 번만 예약하므로 서버 기록이 있는 알림만 받는다
-   */
+  /** 다시 알림은 누른 알림 id로 한 번만 예약하므로 서버 기록이 있는 리마인드 알림의 버튼만 받는다 */
   findTodoReminderAction(response: PushNotificationResponse): TodoReminderActionRequest | null {
     const action = todoReminderActionSchema.safeParse(response.actionIdentifier);
     const { notification } = response;
@@ -89,11 +86,7 @@ export const PushNotificationResponsePolicy = {
       .exhaustive();
   },
 
-  /**
-   * 처리가 끝나면 OS 알림 센터에서 그 알림을 지울 응답. 앱이 등록한 버튼(수신 거부·완료·다시 알림)만 지운다.
-   * Android 알림 버튼은 알림을 닫지 않아, 남기면 다른 버튼을 다시 눌러 이미 끝낸 할 일 안내만 받는다.
-   * 본문 탭과 모르는 동작은 OS가 하는 대로 둔다
-   */
+  /** Android 알림 버튼은 알림을 닫지 않아, 남기면 다른 버튼을 다시 눌러 이미 끝낸 할 일 안내만 받는다 */
   shouldDismissNotification(response: PushNotificationResponse): boolean {
     return (
       this.isMarketingOptOut(response) ||

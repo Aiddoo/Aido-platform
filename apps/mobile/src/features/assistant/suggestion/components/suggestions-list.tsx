@@ -46,7 +46,6 @@ interface SuggestionItemProps {
   isLast?: boolean;
 }
 
-/** 제안 영수증에서 상태 머리 아래 이어지는 제안 줄. 제안이 없으면 머리만 남는다 */
 export function SuggestionsList() {
   const { t } = useTranslation('ai');
   const dateFormatContext = useDateFormatContext();
@@ -161,7 +160,6 @@ SuggestionsList.Item = function Item({
   );
 };
 
-/** 무료는 실제 제안 화면과 같은 영수증에 예시 제안을 그린다. 줄의 버튼과 아래 버튼은 모두 결제 화면으로 간다 */
 SuggestionsList.Free = function Free() {
   const router = useRouter();
   const { t } = useTranslation('ai');

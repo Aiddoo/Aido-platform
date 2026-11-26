@@ -43,7 +43,6 @@ interface InvitedFriendRowProps extends Omit<ListRowProps, 'left' | 'contents' |
   friend: InvitedFriend;
 }
 
-/** 초대한 친구 한 줄. 내 초대 요약과 전체 목록이 같은 행을 쓴다 */
 export function InvitedFriendRow({ friend, ...props }: InvitedFriendRowProps) {
   const { t } = useTranslation('invite');
   const dateFormatContext = useDateFormatContext();
@@ -189,10 +188,7 @@ function InvitedFriendPawPrintChip({ friend }: { friend: InvitedFriend }) {
     .exhaustive();
 }
 
-/**
- * 발자국을 기다리는 친구의 끝 칸. 지금 콕 찌를 수 있으면 [콕 찌르기]만, 아니면(친구 목록에 없음·친구 끊김·차단,
- * 독촉 쿨다운, 불러오는 중) 남은 일수 칩을 둔다. 남은 일수는 설명 문구에도 있다
- */
+/** 친구 목록에 없음·친구 끊김·차단, 독촉 쿨다운, 불러오는 중이면 콕 대신 남은 일수 칩을 둔다 */
 function InvitedFriendWaitingAction({ friend }: { friend: InvitedFriend }) {
   const { data: myFriend } = useInfiniteQuery(
     useGetFriendInfiniteQueryOptions({ friendId: friend.userId }),
@@ -209,7 +205,7 @@ function InvitedFriendWaitingAction({ friend }: { friend: InvitedFriend }) {
   );
 }
 
-/** 친구 독촉 콕 시트를 route로 연다. 보내고 나면 기존 콕 캐시가 쿨다운을 다시 읽어 칩으로 바뀐다 */
+/** 보내고 나면 기존 콕 캐시가 쿨다운을 다시 읽어 칩으로 바뀐다 */
 function InvitedFriendNudgeButton({ friend }: { friend: InvitedFriend }) {
   const { t } = useTranslation('invite');
   const router = useRouter();

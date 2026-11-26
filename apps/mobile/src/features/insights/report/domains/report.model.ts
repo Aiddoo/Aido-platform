@@ -68,10 +68,7 @@ type ReportHeadline =
   | { kind: 'declined'; completionRate: number; changePoints: number }
   | { kind: 'unchanged'; completionRate: number };
 
-/**
- * 서버 findPeakHour와 같은 규칙이다. 가장 많이 끝낸 시각, 같으면 이른 시각이고 끝낸 할 일이 없으면 null이다.
- * 실제 리포트는 서버가 준 peakHour를 쓰고, 시각마다 끝낸 수만 가진 예시 리포트가 만들 때 부른다
- */
+/** 서버 findPeakHour와 같은 규칙이다. 가장 많이 끝낸 시각, 같으면 이른 시각이고 끝낸 할 일이 없으면 null이다 */
 export function findPeakHour(
   hourlyCounts: readonly { hour: number; count: number }[],
 ): number | null {

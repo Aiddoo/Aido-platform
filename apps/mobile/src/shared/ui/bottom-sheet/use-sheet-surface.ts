@@ -19,7 +19,6 @@ interface SheetSurface {
   };
 }
 
-/** 모든 시트가 같은 면 색·모서리·손잡이를 쓴다 */
 export function useSheetSurface(): SheetSurface {
   const { backgroundColor } = useResolveClassNames('bg-white dark:bg-gray-1');
   const { backgroundColor: grabberColor } = useResolveClassNames('bg-gray-4');

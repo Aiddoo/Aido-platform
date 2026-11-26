@@ -33,7 +33,6 @@ interface VoiceNotePlanTodosProps {
   className?: string;
 }
 
-/** 정리가 찾은 할 일 카드. 추가했거나 찾지 못했으면 그 사실을 알린다 */
 export function VoiceNotePlanTodos({ onMemoChanged, className }: VoiceNotePlanTodosProps) {
   const { t } = useTranslation(['voiceNote', 'voicePlan']);
   const accountId = useSuspenseMyAccountId();

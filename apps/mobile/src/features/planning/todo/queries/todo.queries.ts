@@ -107,10 +107,7 @@ export function useGetDailyCompletionsQueryOptions({ month }: { month: DateKey }
   });
 }
 
-/**
- * 주·10일 같은 기간의 완료 기록. 그 기간을 덮는 달 키를 달력과 함께 쓰고(두 달에 걸치면 두 달)
- * 기간 밖의 날은 `combine`으로 자른다. `useQueries`·`useSuspenseQueries`에 넘긴다
- */
+/** 기간을 덮는 달 키를 달력과 함께 쓰고(두 달에 걸치면 두 달) 기간 밖의 날은 `combine`으로 자른다 */
 export function useGetDailyCompletionsInRangeQueriesOptions(range: DailyCompletionRange) {
   const todoApi = useTodoApi();
 
@@ -151,7 +148,6 @@ export function useGetFriendDailyCompletionsQueryOptions({
   });
 }
 
-/** 친구의 그날 할 일을 할 일이 가진 카테고리로 묶는다 */
 export function selectTodoCategoryGroups(
   list: TodoListResult,
 ): TodoCategoryGroup<Todo['category']>[] {

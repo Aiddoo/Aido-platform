@@ -32,10 +32,7 @@ const coachmarkSchema = z.object({
 export type Coachmark = z.infer<typeof coachmarkSchema>;
 
 export const CoachmarkPolicy = {
-  /**
-   * 한 번 끝낸 안내는 기간 없이 다시 띄우지 않는다. 끝나는 순간은 종류마다 다르다.
-   * 재정렬·AI 동의 갱신은 보인 순간(claim), 나머지는 쓰거나 닫은 순간(complete)이다
-   */
+  /** 한 번 끝낸 안내는 다시 띄우지 않는다. 재정렬·AI 동의 갱신은 보인 순간(claim), 나머지는 쓰거나 닫은 순간(complete)에 끝난다 */
   shouldShow(coachmark: Coachmark): boolean {
     return coachmark.completedAt == null;
   },

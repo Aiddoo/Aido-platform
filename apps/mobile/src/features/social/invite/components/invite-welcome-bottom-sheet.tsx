@@ -59,7 +59,6 @@ type InviteWelcomeBottomSheetProps = Omit<
   'children' | 'isOpen' | 'onOpenChange'
 >;
 
-/** 초대를 수락한 뒤 누구와 친구가 됐는지, 무엇을 받았는지 보여 주고 첫 할 일로 이끈다 */
 export function InviteWelcomeBottomSheet(props: InviteWelcomeBottomSheetProps) {
   const [{ friendId }] = useRouteParams(inviteWelcomeParamsSchema);
   const sheet = useSheetRoute('/feed');
@@ -264,8 +263,7 @@ function WelcomeNotificationPrompt({ className }: { className?: string }) {
   const isTurnedOn =
     hasAsked && permission != null && PushPermissionPolicy.isPushDeliverable(permission);
 
-  // 권한을 확인하기 전에는 그리지 않아 이미 켠 사용자에게 잠깐 보였다 사라지지 않게 한다.
-  // 시스템 창을 다시 띄울 수 없으면 버튼이 아무 일도 하지 않으므로 보여 주지 않는다
+  // 권한 확인 전에는 그리지 않아 잠깐 보였다 사라지지 않게 하고, 시스템 창을 다시 띄울 수 없으면 버튼이 할 일이 없어 숨긴다
   if (
     !isTurnedOn &&
     (permission == null || !PushPermissionPolicy.canRequestSystemDialog(permission))

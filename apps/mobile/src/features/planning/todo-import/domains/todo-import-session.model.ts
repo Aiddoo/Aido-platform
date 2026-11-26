@@ -2,7 +2,6 @@ import { z } from 'zod';
 
 import { type TodoImportSelection, todoImportSelectionSchema } from './todo-import-selection.model';
 
-// 앱이 꺼지거나 연결이 끊겨도 이어 보내려고 계정 저장소에 남기는 업로드 상태.
 // 일정 제목은 남기지 않고, 이어 보낼 때 캘린더를 다시 읽어 지문이 같으면 끊긴 묶음부터 보낸다
 export const todoImportSessionSchema = z.object({
   // POST 전에 저장해 앱이 죽어도 같은 키로 다시 보낸다(서버가 같은 가져오기를 돌려준다)
