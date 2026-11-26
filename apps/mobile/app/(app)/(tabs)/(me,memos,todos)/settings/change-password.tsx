@@ -12,6 +12,7 @@ import {
 } from '@src/features/identity/auth/schemas/change-password-form.schema';
 import { ANIMATION } from '@src/shared/constants/animation';
 import { useGoBack } from '@src/shared/hooks/use-go-back';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
@@ -196,6 +197,10 @@ function ChangePasswordStep({
       onCurrentPasswordRejected();
     }
   };
+  // 같은 프레임의 두 번째 탭은 isSubmitting이 다음 렌더에야 켜져 여기서 막는다
+  const handleSavePress = useSingleTap(() => {
+    savePassword().catch(handleChangeError);
+  });
 
   return (
     <NewPasswordStep
@@ -219,9 +224,7 @@ function ChangePasswordStep({
       // 바꾸면 화면이 내려가는 동안에도 같은 값이 남는다. 다시 보내면 옛 현재 비밀번호라 거절된다
       isSubmitting={isSubmitting || isSubmitSuccessful || changePassword.isPending}
       onNext={onNext}
-      onSubmit={() => {
-        savePassword().catch(handleChangeError);
-      }}
+      onSubmit={handleSavePress}
       nextLabel={t('changePassword.next')}
       submitLabel={t('changePassword.submit')}
     />

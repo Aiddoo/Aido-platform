@@ -273,6 +273,10 @@ function ResetPasswordStep({ form, step, onNext, onDone, onCodeRejected }: Reset
       onCodeRejected();
     }
   };
+  // 같은 프레임의 두 번째 탭은 isSubmitting이 다음 렌더에야 켜져 여기서 막는다
+  const handleSavePress = useSingleTap(() => {
+    saveNewPassword().catch(handleResetError);
+  });
 
   return (
     <NewPasswordStep
@@ -296,9 +300,7 @@ function ResetPasswordStep({ form, step, onNext, onDone, onCodeRejected }: Reset
       // 재설정하면 로그인으로 바뀌는 동안에도 같은 값이 남는다. 다시 보내면 쓴 코드라 거절된다
       isSubmitting={isSubmitting || isSubmitSuccessful || resetPassword.isPending}
       onNext={onNext}
-      onSubmit={() => {
-        saveNewPassword().catch(handleResetError);
-      }}
+      onSubmit={handleSavePress}
       nextLabel={t('forgotPassword.next')}
       submitLabel={t('forgotPassword.submit')}
     />

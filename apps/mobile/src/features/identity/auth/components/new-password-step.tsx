@@ -1,6 +1,5 @@
 import { ANIMATION } from '@src/shared/constants/animation';
 import { useDismissKeyboard } from '@src/shared/hooks/use-dismiss-keyboard';
-import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { KeyboardAdaptiveButton, VStack, FormStepLayout, Box, Spacing } from '@src/shared/ui';
 import { type ComponentRef, useRef } from 'react';
@@ -33,6 +32,7 @@ interface NewPasswordStepProps {
   newPasswordConfirm: NewPasswordField;
   isSubmitting: boolean;
   onNext: () => void;
+  /** 연타 방지는 제출 함수를 가진 화면이 `useSingleTap`으로 한다 */
   onSubmit: () => void;
   nextLabel: string;
   submitLabel: string;
@@ -73,17 +73,16 @@ export function NewPasswordStep({
     )
     .exhaustive();
 
-  // 같은 프레임의 두 번째 탭은 isSubmitting이 다음 렌더에야 켜져 여기서 막는다
-  const submitOnce = useSingleTap(() => {
+  const submit = () => {
     dismissKeyboard();
     onSubmit();
-  });
+  };
 
   const handleNext = () => {
     if (!isNextEnabled || isSubmitting) {
       return;
     }
-    match(step).with('newPassword', onNext).with('newPasswordConfirm', submitOnce).exhaustive();
+    match(step).with('newPassword', onNext).with('newPasswordConfirm', submit).exhaustive();
   };
 
   return (
