@@ -53,7 +53,9 @@ export default function SearchFriendScreen() {
         <FriendSearchList
           query={query}
           settledQuery={settledQuery}
-          onFriendLimitInvite={onFriendLimitInvite}
+          renderAction={(user) => (
+            <FriendSearchList.Action user={user} onFriendLimitInvite={onFriendLimitInvite} />
+          )}
         />
       </QueryErrorBoundary>
     </>

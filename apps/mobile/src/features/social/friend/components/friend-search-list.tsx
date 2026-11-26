@@ -19,7 +19,7 @@ import {
 import { useInfiniteQuery, useMutation } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Skeleton } from 'heroui-native';
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { ScrollView, type ScrollViewProps } from 'react-native';
 import { match } from 'ts-pattern';
 
@@ -49,15 +49,11 @@ interface FriendSearchListProps {
   query: string;
   /** 입력이 멈춘 뒤 검색에 쓰는 값. 두 값이 다르면 입력 중이다 */
   settledQuery: string;
-  /** 친구 한도 안내에 덧붙일 초대 길. 초대를 쓸 수 없으면 없다 */
-  onFriendLimitInvite?: () => void;
+  /** 행 오른쪽 버튼(`FriendSearchList.Action`). 한도 안내의 초대 길은 위층 기능이라 화면이 버튼에 바로 넘긴다 */
+  renderAction: (user: SearchedUser) => ReactNode;
 }
 
-export function FriendSearchList({
-  query,
-  settledQuery,
-  onFriendLimitInvite,
-}: FriendSearchListProps) {
+export function FriendSearchList({ query, settledQuery, renderAction }: FriendSearchListProps) {
   const normalizedQuery = query.trim();
   const debouncedQuery = settledQuery.trim();
   const isSettled = normalizedQuery === debouncedQuery;
@@ -81,9 +77,7 @@ export function FriendSearchList({
       {...SEARCH_SCROLL_PROPS}
       data={search.data ?? []}
       keyExtractor={(item) => item.id}
-      renderItem={({ item }) => (
-        <FriendSearchList.Item user={item} onFriendLimitInvite={onFriendLimitInvite} />
-      )}
+      renderItem={({ item }) => <FriendSearchList.Item user={item} action={renderAction(item)} />}
       ListEmptyComponent={<FriendSearchList.Empty query={normalizedQuery} />}
       contentContainerStyle={SEARCH_CONTENT_STYLE}
       hasNextPage={search.hasNextPage}
@@ -94,13 +88,7 @@ export function FriendSearchList({
   );
 }
 
-FriendSearchList.Item = function Item({
-  user,
-  onFriendLimitInvite,
-}: {
-  user: SearchedUser;
-  onFriendLimitInvite?: () => void;
-}) {
+FriendSearchList.Item = function Item({ user, action }: { user: SearchedUser; action: ReactNode }) {
   const { t } = useTranslation('friend');
 
   return (
@@ -108,18 +96,12 @@ FriendSearchList.Item = function Item({
       displayName={user.name ?? t('fallbackName')}
       userTag={user.userTag}
       profileImage={user.profileImage}
-      right={
-        <FriendSearchList.Action
-          key={user.id}
-          user={user}
-          onFriendLimitInvite={onFriendLimitInvite}
-        />
-      }
+      // 목록이 행을 재활용해도 처리 중 상태가 다른 사용자로 넘어가지 않게 사용자마다 새로 만든다
+      right={<Fragment key={user.id}>{action}</Fragment>}
     />
   );
 };
 
-/** 목록이 행을 재활용해도 처리 중 상태가 다른 사용자로 넘어가지 않게 사용자마다 새로 만든다 */
 FriendSearchList.Action = function Action({
   user,
   onFriendLimitInvite,
