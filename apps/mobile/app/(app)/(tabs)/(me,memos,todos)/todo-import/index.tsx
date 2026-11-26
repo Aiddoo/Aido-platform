@@ -1,12 +1,13 @@
-import { TODO_IMPORT_LIMITS } from '@aido/api/vocabulary';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { CoachmarkPopover } from '@src/features/device/coachmark/components/coachmark-popover';
 import { useMyAccountId } from '@src/features/identity/user/hooks/use-my-account-id';
 import { toTodoImportSelection } from '@src/features/planning/todo-import/apis/todo-import.mapper';
 import { CalendarPermissionPrompt } from '@src/features/planning/todo-import/components/calendar-permission-prompt';
+import { CalendarSelectionSummary } from '@src/features/planning/todo-import/components/calendar-selection-summary';
 import { CalendarSourceList } from '@src/features/planning/todo-import/components/calendar-source-list';
 import { CategoryMappingList } from '@src/features/planning/todo-import/components/category-mapping-list';
+import { ConfirmCalendarSelectionButton } from '@src/features/planning/todo-import/components/confirm-calendar-selection-button';
 import { ConfirmImportPlanButton } from '@src/features/planning/todo-import/components/confirm-import-plan-button';
 import { ImportDestinationInput } from '@src/features/planning/todo-import/components/import-destination-input';
 import { ImportEndDateChips } from '@src/features/planning/todo-import/components/import-end-date-chips';
@@ -17,10 +18,7 @@ import { ImportSourceList } from '@src/features/planning/todo-import/components/
 import { LastTodoImportRow } from '@src/features/planning/todo-import/components/last-todo-import-row';
 import { MissingCalendarHelp } from '@src/features/planning/todo-import/components/missing-calendar-help';
 import type { TodoImportStep } from '@src/features/planning/todo-import/constants/todo-import.events';
-import {
-  type TodoImportCollection,
-  TodoImportCollectionPolicy,
-} from '@src/features/planning/todo-import/domains/todo-import-collection.model';
+import type { TodoImportCollection } from '@src/features/planning/todo-import/domains/todo-import-collection.model';
 import {
   type TodoImportCategoryMode,
   type TodoImportPlan,
@@ -34,10 +32,7 @@ import {
 } from '@src/features/planning/todo-import/domains/todo-import.error';
 import { useFormatTargetRejection } from '@src/features/planning/todo-import/hooks/use-format-target-rejection';
 import { findCachedActiveTodoImport } from '@src/features/planning/todo-import/queries/todo-import-cache';
-import {
-  useGetCalendarPermissionQueryOptions,
-  useGetImportCollectionsQueryOptions,
-} from '@src/features/planning/todo-import/queries/todo-import-source.queries';
+import { useGetCalendarPermissionQueryOptions } from '@src/features/planning/todo-import/queries/todo-import-source.queries';
 import {
   useRequestCalendarPermissionMutationOptions,
   useStartTodoImportMutationOptions,
@@ -79,7 +74,7 @@ import {
   WordWrapText,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import {
   type NavigationAction,
@@ -304,20 +299,12 @@ function CalendarsStep({ form, progress, onNext }: FormStepProps) {
   // 기간을 바꿔 다시 읽는 동안 앞 목록을 흐리게 두고 스켈레톤으로 바꾸지 않는다
   const listedStartDate = useDeferredValue(range.value.startDate);
   const listedEndDate = useDeferredValue(range.value.endDate);
-  const { data: collections } = useQuery(
-    useGetImportCollectionsQueryOptions({ startDate: listedStartDate, endDate: listedEndDate }),
-  );
 
   const isListStale =
     listedStartDate !== range.value.startDate || listedEndDate !== range.value.endDate;
-  const selected = TodoImportCollectionPolicy.getSelectedCollections(
-    collections ?? [],
-    collectionKeys.value,
-  );
-  const isOverLimit = TodoImportCollectionPolicy.isOverImportLimit(selected);
 
   // 고른 캘린더(일정 수 포함)를 고정해 다음 단계와 시작 요청이 화면에 보인 수 그대로 쓴다
-  const handleNext = () => {
+  const confirmSelection = (selected: TodoImportCollection[]) => {
     form.setValue('collections', selected, { shouldDirty: true });
     onNext();
   };
@@ -332,34 +319,23 @@ function CalendarsStep({ form, progress, onNext }: FormStepProps) {
         <VStack className="gap-2 pt-3">
           {/* 버튼이 왜 꺼졌는지 목록 끝까지 내리지 않아도 버튼 바로 위에서 보인다 */}
           <StyledSafeAreaView edges={['left', 'right']} className="px-4">
-            {isOverLimit ? (
-              <InlineAlert
-                status="danger"
-                title={t('calendars.tooMany', { limit: TODO_IMPORT_LIMITS.MAX_ITEMS_PER_IMPORT })}
-              />
-            ) : (
-              <VStack gap={2}>
-                <Text size="b4" shade={6} align="center" className="tabular-nums">
-                  {t('calendars.selectedCount', {
-                    count: TodoImportCollectionPolicy.calculateItemCount(selected),
-                  })}
-                </Text>
-                {/* 더 고를 수 없어 막힌 캘린더 줄의 이유 */}
-                {TodoImportCollectionPolicy.isAtCollectionLimit(selected) && (
-                  <Text size="b4" shade={6} align="center">
-                    {t('calendars.collectionLimit', { limit: TODO_IMPORT_LIMITS.MAX_COLLECTIONS })}
-                  </Text>
-                )}
-              </VStack>
-            )}
+            <CalendarSelectionSummary
+              startDate={listedStartDate}
+              endDate={listedEndDate}
+              value={collectionKeys.value}
+            />
           </StyledSafeAreaView>
-          <KeyboardAdaptiveButton
+          <ConfirmCalendarSelectionButton
             testID="todo-import-next"
-            isDisabled={selected.length === 0 || isOverLimit || isListStale}
-            onPress={handleNext}
+            startDate={listedStartDate}
+            endDate={listedEndDate}
+            value={collectionKeys.value}
+            // 기간을 바꿔 다시 읽는 동안에는 앞 목록의 수로 넘기지 않는다
+            isDisabled={isListStale}
+            onConfirm={confirmSelection}
           >
             {t('common:actions.continue')}
-          </KeyboardAdaptiveButton>
+          </ConfirmCalendarSelectionButton>
         </VStack>
       }
     >
