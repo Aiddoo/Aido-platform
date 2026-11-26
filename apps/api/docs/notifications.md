@@ -17,7 +17,7 @@
 | `minPriority: 10` 전용 worker      | 대량 마케팅이 리마인더를 밀어내지 않는다                                                                                                                                        |
 | `batchSize` + `burstWhenBatchFull` | 밀린 작업을 폴링 지연 없이 처리                                                                                                                                                 |
 
-Nest 공식 큐 문서의 BullMQ는 Redis가 필요해 쓰지 않는다. pg-boss Nest 래퍼는 데코레이터가 pg-boss에 묶여 교체성을 해치므로 쓰지 않고 `JobQueuePort` + `defineQueue`를 쓴다([작업과 이벤트](jobs-and-events.md)).
+Nest 공식 큐 문서의 BullMQ는 Redis가 필요해 쓰지 않는다. pg-boss Nest 래퍼는 데코레이터가 pg-boss에 묶여 교체성을 해치므로 쓰지 않고 `JobQueuePort` + `defineQueue`를 쓴다([작업과 이벤트](architecture/jobs-and-events.md)).
 
 ## 마케팅 다국어·수신자 현지 시각
 

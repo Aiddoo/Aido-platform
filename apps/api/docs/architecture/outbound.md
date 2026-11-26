@@ -1,10 +1,10 @@
 # 외부 호출
 
-외부 공급자(AI·푸시·메일·날씨·OAuth·결제·Discord)를 부르는 어댑터를 만들거나 바꿀 때 읽는다. 새 어댑터 PR은 아래 체크리스트를 채운다. 포트 교체 기준은 [아키텍처](architecture.md#교체-가능한-포트)에 있다.
+외부 공급자(AI·푸시·메일·날씨·OAuth·결제·Discord)를 부르는 어댑터를 만들거나 바꿀 때 읽는다. 새 어댑터 PR은 아래 체크리스트를 채운다. 포트 교체 기준은 [아키텍처](structure.md#교체-가능한-포트)에 있다.
 
 ## 호출 정책
 
-- 외부 호출은 `OutboundPolicyRegistry.get(spec)`이 주는 `OutboundPolicy.execute((signal) => …, signal)` 안에서 한다(`platform/resilience`, cockatiel: bulkhead → 회로 → timeout). 정책 값은 소유 slice infrastructure의 `<vendor>-outbound.policy.ts` 상수다(사례: [weather-outbound.policy.ts](../src/modules/weather/weather-reports/infrastructure/adapters/weather-outbound.policy.ts), `ai-provider-`·`expo-`·`email-`·`oauth-`·`discord-`·`revenuecat-outbound.policy.ts`).
+- 외부 호출은 `OutboundPolicyRegistry.get(spec)`이 주는 `OutboundPolicy.execute((signal) => …, signal)` 안에서 한다(`platform/resilience`, cockatiel: bulkhead → 회로 → timeout). 정책 값은 소유 slice infrastructure의 `<vendor>-outbound.policy.ts` 상수다(사례: [weather-outbound.policy.ts](../../src/modules/weather/weather-reports/infrastructure/adapters/weather-outbound.policy.ts), `ai-provider-`·`expo-`·`email-`·`oauth-`·`discord-`·`revenuecat-outbound.policy.ts`).
 - HTTP는 `@nestjs/http-client` named client(`retry: false`, `throwOnHttpError: false`)로 보내고 JSON은 `requestVendorJson`(`platform/http/request-vendor-json.ts`)이 `success`·`http_failure`로 나눈다. 마감은 `AbortSignal.timeout`이다.
 - 재시도 층은 한 호출에 하나다. 요청 안에서는 전송 계층 내장(AI SDK `maxRetries`, Expo SDK), 비동기는 pg-boss다. cockatiel `retry`는 쓰지 않는다.
 - 회로를 다는 기준: 호출마다 돈이 들거나, 요청 경로에서 대기가 쌓이거나, 배치가 많은 호출로 퍼질 때. 회로는 전송 실패와 5xx(`isTransportFailure`·`isServerFailureOutcome`)만 센다. 4xx·응답 형식 오류는 그 요청의 문제다. 상태는 프로세스 메모리다.
@@ -22,7 +22,7 @@
 | 응답 검증     | `*.wire.ts` Zod `parse`(외부 원문은 `z.looseObject`). 실패는 공급자 계약 변경으로 분류하고 로그·경보          |
 | 오류 분류     | 공급자 오류를 어댑터 안에서 중립 분류로 번역하고 ts-pattern으로 분기(사례: 푸시 `PushFailureKind`)            |
 | 인증 토큰     | 공급자 토큰(WeatherKit JWT, Apple JWKS)은 만료 전에 갱신·캐시                                                 |
-| 개인정보·로그 | 공급자 이름·상태·짧은 코드만. 본문·키·사용자 원문 금지([관측](observability.md#남기면-안-되는-값))            |
+| 개인정보·로그 | 공급자 이름·상태·짧은 코드만. 본문·키·사용자 원문 금지([관측](../observability.md#남기면-안-되는-값))         |
 | 비용·한도     | `OutboundUsage` 계량, 예산·킬 스위치(AI·메일)                                                                 |
 | 연결          | undici keep-alive 공유, 공급자별 named client                                                                 |
 | 폴백          | 공급자 체인(AI), 오래된 캐시 제공(날씨)                                                                       |

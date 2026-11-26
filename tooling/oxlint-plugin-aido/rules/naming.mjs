@@ -377,7 +377,7 @@ const namespaceFunctionName = {
   },
 };
 
-// 서버 이름은 풀어 쓴다(apps/api/docs/conventions.md#변수상수). camelCase·snake_case 토큰마다 금지 목록과 비교한다.
+// 서버 이름은 풀어 쓴다(apps/api/docs/architecture/conventions.md#변수상수). camelCase·snake_case 토큰마다 금지 목록과 비교한다.
 // 외부가 정한 이름(import·객체 리터럴 키·계약 schema 키)은 보지 않고 우리가 선언하는 이름만 본다
 const DEFAULT_ABBREVIATIONS = {
   acc: 'accumulator',
@@ -486,7 +486,7 @@ const noAbbreviation = {
       if (found != null) {
         context.report({
           node,
-          message: `${name}: 축약어 "${found}" 대신 "${abbreviations[found]}"처럼 풀어 쓴다(conventions.md 변수·상수).`,
+          message: `${name}: 축약어 "${found}" 대신 "${abbreviations[found]}"처럼 풀어 쓴다(architecture/conventions.md 변수·상수).`,
         });
       }
     }

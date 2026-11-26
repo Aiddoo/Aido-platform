@@ -1,6 +1,6 @@
 # 캘린더 가져오기
 
-기기 캘린더 일정을 할 일로 한 번 옮기는 흐름(`planning/todo-imports` slice)을 고치거나 새 출처를 더할 때 읽는다. 업무 용어와 상태 전이 표는 [planning 용어집](glossary/planning.md#todo-imports), 큐 일반 규칙은 [작업과 이벤트](jobs-and-events.md), 기간 권한은 [유료 기능과 권한](entitlements.md)이다.
+기기 캘린더 일정을 할 일로 한 번 옮기는 흐름(`planning/todo-imports` slice)을 고치거나 새 출처를 더할 때 읽는다. 업무 용어와 상태 전이 표는 [planning 용어집](glossary/planning.md#todo-imports), 큐 일반 규칙은 [작업과 이벤트](architecture/jobs-and-events.md), 기간 권한은 [유료 기능과 권한](entitlements.md)이다.
 
 ## 흐름
 

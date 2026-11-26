@@ -150,7 +150,7 @@
 
 ## invite-redemptions
 
-초대 수락 하나가 Root이고, 보상 지급(`RewardGrant`)·보상 이력(`RewardClaim`)은 수락 흐름 안에서 만들고 적용하는 작업 원장 행이다([영속성](../persistence.md#repository와-reader)). 초대 slice는 진행 요약을 `social-invite-redemptions.public`으로만 읽는다.
+초대 수락 하나가 Root이고, 보상 지급(`RewardGrant`)·보상 이력(`RewardClaim`)은 수락 흐름 안에서 만들고 적용하는 작업 원장 행이다([영속성](../architecture/persistence.md#repository와-reader)). 초대 slice는 진행 요약을 `social-invite-redemptions.public`으로만 읽는다.
 
 | 용어           | 코드                                                                                  | 뜻                                                                                                                                                                           |
 | -------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

@@ -1,6 +1,6 @@
 # 이름 사전과 서버 코드 규칙
 
-파일·클래스·메서드·상수 이름을 정하거나 값 목록을 선언할 때 읽는다. 서버·앱 공통 코드 규칙은 [루트 AGENTS](../../../AGENTS.md#공통-코드-규칙)에 있고, 여기에는 서버에만 해당하는 사전과 근거를 둔다.
+파일·클래스·메서드·상수 이름을 정하거나 값 목록을 선언할 때 읽는다. 서버·앱 공통 코드 규칙은 [루트 AGENTS](../../../../AGENTS.md#공통-코드-규칙)에 있고, 여기에는 서버에만 해당하는 사전과 근거를 둔다.
 
 ## 역할별 이름
 
@@ -28,8 +28,8 @@
 | 요청 한도       | `http/inquiries.rate-limits.ts`                                      | `InquiryRateLimits`                                   | `defineRateLimits({ submit: { limitPerMinute } })`는 이 파일에서만(`aido/rate-limit-location`), 라우트는 `@RateLimit(…)`                                                      |
 | 로그·경보·오류  | `memos.log-events.ts`·`weather-reports.alerts.ts`·`memos.errors.ts`  | `MemoLogEvent`·`WeatherReportAlerts`·`memoNotFound()` | 로그 상수는 이벤트 이름 상수와 겹치지 않게                                                                                                                                    |
 
-- 메모 이름은 실제 코드다: [notes/memos](../src/modules/notes/memos), 테스트 [fixture](../test/fixtures/notes/memo.fixture.ts)·[InMemory 저장소](../test/doubles/notes/in-memory-memo.repository.ts)·[계약](../test/contracts/notes/memo-repository.contract.ts).
-- 허용하는 역할 접미사는 루트 [`.ls-lint.yml`](../../../.ls-lint.yml)의 `apps/api/src/modules/*` 목록 하나다. 목록에 없는 다중 점 접미사(`memo.record.ts`)와 접미사 없는 `.ts`는 ls-lint가 막는다. `.policy`는 `<vendor>-outbound.policy.ts`에만 쓴다.
+- 메모 이름은 실제 코드다: [notes/memos](../../src/modules/notes/memos), 테스트 [fixture](../../test/fixtures/notes/memo.fixture.ts)·[InMemory 저장소](../../test/doubles/notes/in-memory-memo.repository.ts)·[계약](../../test/contracts/notes/memo-repository.contract.ts).
+- 허용하는 역할 접미사는 루트 [`.ls-lint.yml`](../../../../.ls-lint.yml)의 `apps/api/src/modules/*` 목록 하나다. 목록에 없는 다중 점 접미사(`memo.record.ts`)와 접미사 없는 `.ts`는 ls-lint가 막는다. `.policy`는 `<vendor>-outbound.policy.ts`에만 쓴다.
 - `.tsx`와 React는 메일 템플릿 폴더(`notification/email-messages/infrastructure/templates`)에만 둔다. 메일은 `<이름>.email.tsx`, 공용 부품은 접미사 없는 `.tsx`, `@nestjs/mail` 메일 클래스는 `.mail.ts`다(ls-lint, dependency-cruiser `react-only-in-email-templates`).
 - 구현은 기술 접두사(`DrizzleMemoRepository`, `InMemoryMemoRepository`)로 짓고 `Impl`을 쓰지 않는다.
 - `Manager`·전달 전용 Facade·`TodoService` 같은 만능 이름으로 역할을 감추지 않는다. 행동 하나가 UseCase 하나다.
@@ -37,9 +37,9 @@
 
 ## slice·Module·공개 면
 
-- slice 폴더는 그 slice Aggregate 이름의 kebab 복수형이다(`Memo` → `memos`, `TodoComment` → `todo-comments`). Aggregate 이름은 [용어집](glossary.md)의 코드 이름이고, DB 테이블 이름이 달라도 Drizzle 상수는 Aggregate를 따른다(`friendship = pgTable("Follow", …)`, 생성 migration 없음).
+- slice 폴더는 그 slice Aggregate 이름의 kebab 복수형이다(`Memo` → `memos`, `TodoComment` → `todo-comments`). Aggregate 이름은 [용어집](../glossary.md)의 코드 이름이고, DB 테이블 이름이 달라도 Drizzle 상수는 Aggregate를 따른다(`friendship = pgTable("Follow", …)`, 생성 migration 없음).
 - Module은 세 종류만 둔다: 기능 `<context>-<slice>.module.ts`, 다른 Context가 쓰는 Port만 내보내고 아무것도 import하지 않는 `<context>-<slice>-queries.module.ts`(좁은 쓰기 포트 포함, UseCase·controller·서비스 없음), 관리자 HTTP `<context>-<slice>-admin.module.ts`. 순환은 포트를 `-queries`로 옮겨 없앤다.
-- 공개 면은 slice당 `<context>-<slice>.public.ts` 하나다. 그 public을 import하면 파일 순환이 될 때만 `-queries` Module·Port·Read Model·조회 조각·id VO·발행 이벤트 계약(zod만 import하는 `domain/<noun>-published-events.constants.ts`)만 다시 내보내는 `<context>-<slice>-queries.public.ts`를 더 둔다(`planning-todos-queries.public.ts`). Context 루트에는 `<context>.module.ts`만 둔다. 이 절의 모양은 [아키텍처 테스트](../test/architecture/slice-shape.spec.ts)가 본다.
+- 공개 면은 slice당 `<context>-<slice>.public.ts` 하나다. 그 public을 import하면 파일 순환이 될 때만 `-queries` Module·Port·Read Model·조회 조각·id VO·발행 이벤트 계약(zod만 import하는 `domain/<noun>-published-events.constants.ts`)만 다시 내보내는 `<context>-<slice>-queries.public.ts`를 더 둔다(`planning-todos-queries.public.ts`). Context 루트에는 `<context>.module.ts`만 둔다. 이 절의 모양은 [아키텍처 테스트](../../test/architecture/slice-shape.spec.ts)가 본다.
 - presentation의 Controller·DTO·응답 매퍼 이름은 HTTP 자원(경로·DTO component id가 계약)을 따르고, domain·application은 Aggregate 이름을 따른다(voice `voice-digests` slice의 `VoiceNoteController`는 `/v1/voice-notes` 자원 이름이다).
 - HTTP 버전은 폴더(`http/v2/`)로만 나눈다. 클래스(`WeatherReportController`)·Swagger 태그·상수 이름에 버전을 넣지 않고, 버전 폴더끼리 import하지 않는다(공용은 버전 밖 `presentation/http/`).
 
@@ -72,7 +72,7 @@
 
 ## 없음의 모양
 
-비교와 `== null` 규칙은 [nullish](../../../docs/conventions/nullish.md)다. 층별 모양은 다음으로 고정한다.
+비교와 `== null` 규칙은 [nullish](../../../../docs/conventions/nullish.md)다. 층별 모양은 다음으로 고정한다.
 
 | 층                                      | 없음                                     |
 | --------------------------------------- | ---------------------------------------- |
@@ -93,7 +93,7 @@
 | 서버·앱 공통 값(한도·enum 튜플·플랜) | `@aido/api/vocabulary`                                |
 | 한 slice의 업무 숫자                 | `domain/<slice>.constants.ts`                         |
 | 인프라 튜닝(TTL·배치·폴링·타임아웃)  | 그 어댑터 옆 `*.constants.ts` 또는 `defineQueue` 정의 |
-| 운영에서 바꾸는 값                   | env([설정](configuration.md))                         |
+| 운영에서 바꾸는 값                   | env([설정](../configuration.md))                      |
 | 잠금·캐시 키                         | `<slice>.lock-keys.ts`, `<noun>.keyspace.ts`          |
 
 ## 공유 값은 한 곳에서 선언한다
@@ -127,9 +127,9 @@
 | 패키지                                              | 판단      | 이유                                                                                 |
 | --------------------------------------------------- | --------- | ------------------------------------------------------------------------------------ |
 | `@nestjs/http-client`                               | 사용      | named client, `retry: false`(재시도 층 하나), 응답은 `*.wire.ts`로 직접 검증         |
-| `@nestjs/i18n`                                      | 사용      | [다국어](i18n.md)                                                                    |
+| `@nestjs/i18n`                                      | 사용      | [다국어](../i18n.md)                                                                 |
 | `@nestjs/mail`                                      | 사용      | 설정만으로 공급자 전환, 언어별 템플릿, `idempotencyKey`                              |
-| `@nestjs/config`                                    | 사용      | namespace 설정([설정](configuration.md))                                             |
+| `@nestjs/config`                                    | 사용      | namespace 설정([설정](../configuration.md))                                          |
 | `@nestjs/drizzle`                                   | 사용      | `DatabaseModule`이 Pool 수명주기를 맡긴다. 트랜잭션은 `@nestjs-cls/transactional`    |
 | `@nestjs/event-emitter`                             | 사용      | 커밋 뒤 in-process 전달([작업과 이벤트](jobs-and-events.md))                         |
 | `@nestjs/outbox`·`@nestjs/cache-manager`            | 쓰지 않음 | pg-boss 트랜잭션 enqueue가 이미 아웃박스, Keyv에 패턴 삭제 없음(`lru-cache` 사용)    |

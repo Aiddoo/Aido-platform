@@ -28,7 +28,7 @@ API 컨테이너 자리는 둘이다: blue(`127.0.0.1:8080`)와 green(`127.0.0.1
 
 - ①~③에서 실패하면 새 컨테이너만 지운다. ④에서 `nginx -t`나 reload가 실패하면 upstream 파일을 옛 슬롯으로 되돌리고 새 컨테이너를 지운다. 어느 쪽이든 살아 있는 API는 건드리지 않는다.
 - ⑤를 두는 이유: `reload`는 비동기라 직후 잠깐은 옛 worker가 새 요청을 옛 슬롯으로 보낸다. 곧바로 옛 API를 내리면 그 요청이 502가 된다(로컬 전환 연습에서 확인).
-- ②~⑥ 동안 두 API가 같이 돌고 둘 다 worker를 돌린다. 작업 꺼내기(`SKIP LOCKED`)와 정기 작업 발행은 DB가 조정해 겹치지 않는다. 그 사이 옛 코드와 새 코드가 같은 DB를 쓰므로 migration은 옛 코드와 호환되어야 한다([영속성](persistence.md#마이그레이션)).
+- ②~⑥ 동안 두 API가 같이 돌고 둘 다 worker를 돌린다. 작업 꺼내기(`SKIP LOCKED`)와 정기 작업 발행은 DB가 조정해 겹치지 않는다. 그 사이 옛 코드와 새 코드가 같은 DB를 쓰므로 migration은 옛 코드와 호환되어야 한다([영속성](architecture/persistence.md#마이그레이션)).
 - 전환 뒤에 배포가 끊겨 옛 컨테이너가 남으면 다음 배포가 시작할 때 Nginx를 upstream 파일에 맞추고 그 슬롯을 치운다. 그때까지 두 컨테이너가 같이 돈다.
 - 겹치는 동안 두 프로세스의 메모리 캐시는 따로다. 그 사이 push token을 다시 등록한 기기는 다른 프로세스의 캐시(최대 5분)가 지날 때까지 알림을 옛 token으로 받을 수 있다.
 - 운영 compose는 `JOB_WORKER_ENABLED`를 `true`로 고정한다. env 파일에서 끄면 두 슬롯이 모두 worker를 끄기 때문이다. API와 worker를 나눌 때 compose에 worker 서비스를 더하며 바꾼다([확장](scaling.md#확장-단계)).
@@ -80,7 +80,7 @@ read -rs t && printf '%s\n' "$t" > ~/apps/deploy-state/ghcr-read-token; unset t
 
 ## DB 전환: API보다 먼저 적용
 
-migrate 이미지(`tooling/database-migrate`)는 Drizzle 마이그레이션 폴더와 DB guard만 가진다. 규칙은 [영속성](persistence.md#마이그레이션)을 따른다.
+migrate 이미지(`tooling/database-migrate`)는 Drizzle 마이그레이션 폴더와 DB guard만 가진다. 규칙은 [영속성](architecture/persistence.md#마이그레이션)을 따른다.
 
 `migrate.mjs`는 API·pg-boss URL을 먼저 검증한 뒤 pg-boss migration, Drizzle migration 순서로 실행한다. 원격 DB는 의도한 배포의 `AIDO_ALLOW_REMOTE_DB=1`일 때만 허용하며, DDL lock_timeout은 5초다. Drizzle은 미적용 마이그레이션을 한 트랜잭션에서 돌려 하나라도 실패하면 모두 되돌아가고 이전 API가 그대로 돈다. migrate 동안에도 이전 API가 트래픽을 받는다.
 
@@ -96,7 +96,7 @@ durable job은 PostgreSQL(pg-boss)만 쓴다. Redis는 `CACHE_TYPE=redis`·`PUSH
 
 job runtime의 기본 graceful 종료 대기는 `JOB_SHUTDOWN_TIMEOUT_MS=90000`이며 production Compose의 `stop_grace_period`는 120초다. 기본 작업 대기 뒤 HTTP·자원 종료 여유를 둔다. 종료 대기를 더 길게 설정한다면 Compose 유예도 함께 늘린다. 제한 시간을 넘는 작업의 완료나 모든 background 작업의 drain까지 보장하는 설정은 아니다. 실제 적용 값과 active 작업 상태는 배포 후 확인한다.
 
-delivery fence·receipt·남는 전달 한계는 [푸시 발송](push-delivery.md#deliveryreceipt)에 있다. 배포 중 리마인더·푸시를 잃지 않는 기준은 [작업과 이벤트](jobs-and-events.md#배포-중-내구성)에 있다.
+delivery fence·receipt·남는 전달 한계는 [푸시 발송](push-delivery.md#deliveryreceipt)에 있다. 배포 중 리마인더·푸시를 잃지 않는 기준은 [작업과 이벤트](architecture/jobs-and-events.md#배포-중-내구성)에 있다.
 
 배포 시각: 03:00~04:30 KST(일간 정리 작업)와 07:00~08:00 KST(아침 리마인더 몰림)를 피한다. 놓친 실행은 `missed`·워터마크가 보완하지만 사용량이 적은 시간을 고른다.
 

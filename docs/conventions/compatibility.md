@@ -12,7 +12,7 @@
 
 | 계약              | 지키는 것                                                                                                                                                                                                                                                                                                                                                                     |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| REST(`/v{n}`)     | 기존 필드의 이름·타입·required/nullable·의미·오류 코드. 새 요청 필드는 additive optional로만 더한다. 새 응답 필드는 서버가 모든 경로에서 늘 보내면 필수로 둘 수 있다(출시 앱 Zod는 모르는 키를 버린다)([REST 계약](../../apps/api/docs/http-contracts.md))                                                                                                                    |
+| REST(`/v{n}`)     | 기존 필드의 이름·타입·required/nullable·의미·오류 코드. 새 요청 필드는 additive optional로만 더한다. 새 응답 필드는 서버가 모든 경로에서 늘 보내면 필수로 둘 수 있다(출시 앱 Zod는 모르는 키를 버린다)([REST 계약](../../apps/api/docs/architecture/http-contracts.md))                                                                                                       |
 | 앱 버전별 동작    | 새 동작이 구 앱을 깨면 `X-App-Version` 헤더로 서버가 분기한다. 헤더가 없는 구 앱은 기존 동작이다                                                                                                                                                                                                                                                                              |
 | 라우트·딥링크     | 공개된 경로와 `aido://` URI. `aido://auth/callback`, `aido://auth/{provider}`는 바꾸지 않는다. 새 경로는 추가만 한다                                                                                                                                                                                                                                                          |
 | 푸시 payload      | 의미 데이터만 보낸다. 서버는 모든 푸시·알림함 행에 `navigation`(kind별 화면·id)을 계산해 싣고, 구 앱 호환을 위해 type·action·context·routing도 함께 싣는다. 최신 앱은 `navigation`만 읽는다(없거나 틀리면 알림함으로 연다). 앱이 경로를 정하므로 라우트를 바꿔도 payload는 그대로다([Push](../../apps/api/docs/push-notifications.md#푸시-navigation))                        |
@@ -79,7 +79,7 @@
 
 코드에 남기는 제거 표시는 `지운다(compatibility.md)` 문구와 이 표의 시점으로 적어 `git grep '지운다(compatibility.md)'` 한 번으로 이 표의 행을 모두 찾는다. 지우지 않는 행(영구·다시 묻게 됨)은 코드에도 남기는 이유를 적는다.
 
-호환 판단은 OpenAPI·released-client fingerprint([E2E](../../apps/api/docs/http-contracts.md#출시-앱-호환-절차))와 push/widget resolver 테스트로 확인한다. 고정된 released fixture를 현재 schema로 재생성하지 않는다.
+호환 판단은 OpenAPI·released-client fingerprint([E2E](../../apps/api/docs/architecture/http-contracts.md#출시-앱-호환-절차))와 push/widget resolver 테스트로 확인한다. 고정된 released fixture를 현재 schema로 재생성하지 않는다.
 
 ## 3. REST 버전
 

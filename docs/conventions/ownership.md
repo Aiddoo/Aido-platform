@@ -29,4 +29,4 @@
 - 공유 순수 규칙: 반복 회차(`repeat-occurrence-cases.json`)와 주차(`week-of-month-cases.json`) 표를 서버 spec과 앱 테스트가 함께 읽는다.
 - 알림 문구: 푸시와 알림함 문장은 서버가 렌더한다([서버 다국어](../../apps/api/docs/i18n.md#문구별-규칙)). 앱 화면 문구는 앱 카탈로그다.
 
-서버 쪽 응답 추가 절차는 [HTTP 계약](../../apps/api/docs/http-contracts.md#출시-앱-호환-절차), 앱 쪽 모델·mapper는 [모델](../../apps/mobile/docs/architecture/model.md)이다.
+서버 쪽 응답 추가 절차는 [HTTP 계약](../../apps/api/docs/architecture/http-contracts.md#출시-앱-호환-절차), 앱 쪽 모델·mapper는 [모델](../../apps/mobile/docs/architecture/model.md)이다.

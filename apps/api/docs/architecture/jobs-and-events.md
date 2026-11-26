@@ -1,6 +1,6 @@
 # 작업과 이벤트 (pg-boss·도메인 이벤트·크론)
 
-큐·스케줄·도메인 이벤트 구독을 만들거나 바꿀 때, 배포 중 작업 유실을 판단할 때 읽는다. 푸시 큐와 작업 key는 [푸시 발송](push-delivery.md#큐와-작업-key)에 있다.
+큐·스케줄·도메인 이벤트 구독을 만들거나 바꿀 때, 배포 중 작업 유실을 판단할 때 읽는다. 푸시 큐와 작업 key는 [푸시 발송](../push-delivery.md#큐와-작업-key)에 있다.
 
 ## 판단: 어떤 방식으로 보내는가
 
@@ -17,8 +17,8 @@
 
 ## 도메인 이벤트 fan-out
 
-- 구독은 `*.event-handler.ts`가 `defineEventSubscription({ name, eventName, delivery, payloadSchema, queue })`로 선언하고(`shared/application/ports/domain-event-publisher.port.ts`), slice module `providers`에 `provideEventSubscriptions(...)`로 넣는다. `EventSubscriptionCatalog`가 조립 때 모은다(이름이 겹치면 부팅 실패). 사례: [InviteeActivityEventHandler](../src/modules/social/invite-redemptions/infrastructure/event-handlers/invitee-activity.event-handler.ts)(`social.invitee-activity` ← `planning.todo.completed`).
-- 이벤트는 `PublishedDomainEvent`(`eventName`·`eventId`·`occurredAt`·`toPayload()`)다. [FanOutDomainEventPublisher](../src/platform/events/fan-out-domain-event.publisher.ts)가 구독 schema로 먼저 `parse`해 계약이 어긋나면 트랜잭션째 실패한다.
+- 구독은 `*.event-handler.ts`가 `defineEventSubscription({ name, eventName, delivery, payloadSchema, queue })`로 선언하고(`shared/application/ports/domain-event-publisher.port.ts`), slice module `providers`에 `provideEventSubscriptions(...)`로 넣는다. `EventSubscriptionCatalog`가 조립 때 모은다(이름이 겹치면 부팅 실패). 사례: [InviteeActivityEventHandler](../../src/modules/social/invite-redemptions/infrastructure/event-handlers/invitee-activity.event-handler.ts)(`social.invitee-activity` ← `planning.todo.completed`).
+- 이벤트는 `PublishedDomainEvent`(`eventName`·`eventId`·`occurredAt`·`toPayload()`)다. [FanOutDomainEventPublisher](../../src/platform/events/fan-out-domain-event.publisher.ts)가 구독 schema로 먼저 `parse`해 계약이 어긋나면 트랜잭션째 실패한다.
 - `durable`은 구독마다 그 큐에 `JobQueuePort.enqueue`를 같은 트랜잭션으로 넣는다. idempotency key는 `<eventId>:<subscription name>`이라 구독 이름을 바꾸면 같은 이벤트가 다시 전달된다. worker는 구독 Context가 `JobQueuePort.work(queue, …)`로 등록한다. pg-boss 테이블이 곧 트랜잭셔널 아웃박스다.
 - `after-commit`은 커밋 뒤 `EventEmitter2.emitAsync(subscription.name, payload)`로 보낸다. 받는 쪽은 그 구독 이름 채널을 `EventEmitter2`로 듣고, 실패는 구독 단위로 로그(`PlatformLogEvent.DOMAIN_EVENT_PUBLISH_FAILED`)만 남긴다.
 - `after-commit` 구독의 `coalesce: { namespace, key(payload) }`로 만든 `<namespace>:<key>`가 같은 전달은 한 Unit of Work에서 처음 하나만 보낸다. `namespace`를 생략하면 구독 이름이라 다른 구독의 일과 합치지 않는다. 이름이 다른 사실을 구독 여럿으로 받아 같은 캐시를 지우면 한 namespace를 함께 써 커밋마다 사용자당 한 번만 지운다(insights 일간 완료 캐시).
@@ -30,7 +30,7 @@
 
 ## 큐 정의
 
-[defineQueue](../src/shared/application/ports/job-queue.port.ts)`({ name, payloadSchema, retry, deadLetter, worker, schedules, backlogWarningSize })`가 큐 하나의 정의다. producer·consumer·Health·스케줄이 같은 정의를 `JobQueuePort`에 넘긴다.
+[defineQueue](../../src/shared/application/ports/job-queue.port.ts)`({ name, payloadSchema, retry, deadLetter, worker, schedules, backlogWarningSize })`가 큐 하나의 정의다. producer·consumer·Health·스케줄이 같은 정의를 `JobQueuePort`에 넘긴다.
 
 ```ts
 export const DOCUMENT_QUEUE = defineQueue({
@@ -66,24 +66,24 @@ await jobQueue.registerSchedules(DOCUMENT_QUEUE); // schedules를 key별로 upse
 | Health            | `JobQueuePort.health()`는 이 프로세스가 정의로 쓴 큐와 그 DLQ(`JobQueueRegistry`)를 본다. 큐를 따로 목록에 적지 않는다                                                                                                                                                                                                                                                                                   |
 | 연결 예산         | 프로세스당 앱 풀 `DATABASE_POOL_MAX` 10 + pg-boss `JOB_POOL_MAX` 3 = 13                                                                                                                                                                                                                                                                                                                                  |
 | `startAfter`      | 포트는 `Temporal.Instant`를 받고 어댑터가 Date로 바꿔 pg-boss에 넘긴다                                                                                                                                                                                                                                                                                                                                   |
-| key당 하나만 실행 | `singleActivePerKey: true` 큐는 enqueue의 `executionKey`가 같은 작업을 프로세스가 여럿이어도 한 번에 하나만 돌린다(대기는 여럿). pg-boss 12 `singleton` 정책 + `singletonKey`로 구현하고 중복 등록은 결정적 id가 막는다. 정책은 큐를 처음 만들 때만 정해져 이미 있는 큐에 켜려면 새 이름(v2)이 필요하다. 사례: [캘린더 가져오기](todo-imports.md#큐)                                                     |
-| 우선순위          | 거래성(리마인더·소셜) `priority: 10`, 마케팅 `0`. 거래성 worker는 `minPriority: 10`([알림 발송 설계](notifications.md#발송-우선순위)). AI 제안 지금 받기도 `priority: 10`이고 전용 worker(`AI_SUGGESTION_ON_DEMAND_WORKER`, 1칸·2초)가 가져간다([AI](ai.md#제안-분석-실행과-지금-받기)). 같은 큐의 두 번째 worker는 `{ ...QUEUE, worker }`로 정의를 하나 더 둔다                                         |
+| key당 하나만 실행 | `singleActivePerKey: true` 큐는 enqueue의 `executionKey`가 같은 작업을 프로세스가 여럿이어도 한 번에 하나만 돌린다(대기는 여럿). pg-boss 12 `singleton` 정책 + `singletonKey`로 구현하고 중복 등록은 결정적 id가 막는다. 정책은 큐를 처음 만들 때만 정해져 이미 있는 큐에 켜려면 새 이름(v2)이 필요하다. 사례: [캘린더 가져오기](../todo-imports.md#큐)                                                  |
+| 우선순위          | 거래성(리마인더·소셜) `priority: 10`, 마케팅 `0`. 거래성 worker는 `minPriority: 10`([알림 발송 설계](../notifications.md#발송-우선순위)). AI 제안 지금 받기도 `priority: 10`이고 전용 worker(`AI_SUGGESTION_ON_DEMAND_WORKER`, 1칸·2초)가 가져간다([AI](../ai.md#제안-분석-실행과-지금-받기)). 같은 큐의 두 번째 worker는 `{ ...QUEUE, worker }`로 정의를 하나 더 둔다                                   |
 
 **연결 예산(알려진 한계)**: 운영 RDS `max_connections`는 79이고 API 프로세스 하나가 앱 풀 최대 10 + pg-boss 풀 최대 3 = 13개를 쓴다. 선언된 worker `localConcurrency` 합은 앱 풀보다 크고 handler의 DB 작업은 모두 HTTP 요청과 같은 앱 풀 10개를 나눠 쓴다. 한꺼번에 몰리면 handler가 연결을 기다리다 `DATABASE_POOL_CONNECTION_TIMEOUT_MS`(5초)에 실패해 재시도되고 HTTP는 503이 된다. 지금은 이 한계를 알고 둔다. worker 동시성이나 프로세스 수를 바꿀 때는 (프로세스 수 × 13)이 79 안에 드는지와 앱 풀 대기를 함께 본다.
 
 - 큐·스케줄은 모두 `defineQueue` + `JobQueuePort` 하나로 만든다. `PgBossJobQueueAdapter`가 등록·소비·스케줄·Health와 시작·종료(`JobQueueLifecycle`)를 맡고, pg-boss를 직접 부르거나 큐 이름 문자열을 따로 적지 않는다.
-- `JOB_WORKER_ENABLED=false`인 프로세스는 작업을 넣기만 한다. `work`·`registerSchedules`가 아무것도 등록하지 않고 pg-boss의 정기 작업 발행과 큐 유지보수도 끈다. 이렇게 띄운 프로세스가 있으면 worker를 켠 프로세스가 반드시 하나는 돌아야 한다([확장](scaling.md#인스턴스를-2대-이상으로-늘릴-때)).
-- E2E 앱은 `JobQueuePort`를 [InMemoryJobQueue](../test/doubles/platform/in-memory-job-queue.ts)로 바꾼다.
+- `JOB_WORKER_ENABLED=false`인 프로세스는 작업을 넣기만 한다. `work`·`registerSchedules`가 아무것도 등록하지 않고 pg-boss의 정기 작업 발행과 큐 유지보수도 끈다. 이렇게 띄운 프로세스가 있으면 worker를 켠 프로세스가 반드시 하나는 돌아야 한다([확장](../scaling.md#인스턴스를-2대-이상으로-늘릴-때)).
+- E2E 앱은 `JobQueuePort`를 [InMemoryJobQueue](../../test/doubles/platform/in-memory-job-queue.ts)로 바꾼다.
 
 **바꾸지 않는 운영 계약**
 
 - 큐 이름 `*.v1`과 스케줄 key. 바꾸면 쌓인 작업과 스케줄을 잃는다.
 - 결정적 job id의 key 문자열(`deterministicJobId(queue, key)`). 날짜가 들어간 key(`invite-qualify-reminder:<수락>:<발송 시각>`)도 바이트 단위로 같아야 `cancel()`이 지운다.
-- payload schema의 칸을 빼거나 필수로 바꾸는 변경은 배포가 겹치는 동안 양쪽을 본다. 새 producer가 낸 작업을 옛 worker가 받아야 하고(옛 schema가 필수로 읽는 칸은 계속 싣는다), 옛 producer가 낸 작업을 새 worker가 받아야 한다(새 schema가 필수로 읽는 칸을 옛 producer가 이미 싣는다). 쌓인 옛 작업은 대기 보관(`retentionSeconds`)이 지나면 없다. 남겨야 하는 칸은 [호환](../../../docs/conventions/compatibility.md)에 적는다.
+- payload schema의 칸을 빼거나 필수로 바꾸는 변경은 배포가 겹치는 동안 양쪽을 본다. 새 producer가 낸 작업을 옛 worker가 받아야 하고(옛 schema가 필수로 읽는 칸은 계속 싣는다), 옛 producer가 낸 작업을 새 worker가 받아야 한다(새 schema가 필수로 읽는 칸을 옛 producer가 이미 싣는다). 쌓인 옛 작업은 대기 보관(`retentionSeconds`)이 지나면 없다. 남겨야 하는 칸은 [호환](../../../../docs/conventions/compatibility.md)에 적는다.
 
 ## 크론 주기와 `missed` 정책
 
-`defineQueue` 스케줄은 `missed`가 필수다. `skip`은 배포로 내려간 사이의 실행을 버리고, `once`는 놓친 실행 중 마지막 하나를 보낸다. 재시도를 다 쓴 실패·늦거나 계속 실패하는 스케줄·DLQ 유입·worker 정지는 [작업 실패 경보](observability.md#작업-실패-경보)가 알린다.
+`defineQueue` 스케줄은 `missed`가 필수다. `skip`은 배포로 내려간 사이의 실행을 버리고, `once`는 놓친 실행 중 마지막 하나를 보낸다. 재시도를 다 쓴 실패·늦거나 계속 실패하는 스케줄·DLQ 유입·worker 정지는 [작업 실패 경보](../observability.md#작업-실패-경보)가 알린다.
 
 | 스케줄 key                                     | 큐                                            | 주기                              | `missed`·보완                         |
 | ---------------------------------------------- | --------------------------------------------- | --------------------------------- | ------------------------------------- |
@@ -136,7 +136,7 @@ for (const minute of minutesToSweep({ lastCompletedAt, now: clock.now(), maxCatc
 
 ## 작업 실패 경보와 스케줄 감시
 
-작업이 조용히 멈추는 것을 사람이 알 수 있어야 한다. 신호·판정·중복 제거의 상세는 [관측](observability.md#작업-실패-경보)에 있다.
+작업이 조용히 멈추는 것을 사람이 알 수 있어야 한다. 신호·판정·중복 제거의 상세는 [관측](../observability.md#작업-실패-경보)에 있다.
 
 - 재시도를 다 쓴 마지막 실패(DLQ로 가는 실패)만 경보를 올린다. 중간 재시도 실패는 `jobs.attempt.failed` 로그로만 남긴다. 같은 경보 key는 dedup으로 묶여 장애 하나가 경보 폭주가 되지 않는다.
 - 스케줄 감시 작업(`schedule-watchdog.v1`, 15분)이 pg-boss에 등록된 스케줄을 보고 예정 시각이 지났는데 실행되지 않음, 실패만 있음, DLQ 유입을 경보로 올린다. 새 스케줄은 `defineQueue`에 넣으면 감시 대상이 된다.
@@ -144,7 +144,7 @@ for (const minute of minutesToSweep({ lastCompletedAt, now: clock.now(), maxCatc
 
 ## 배포 중 내구성
 
-배포는 Blue-Green이라 새 API가 healthy가 된 뒤 옛 API를 내린다([배포](deployment.md#배포-흐름-blue-green)). 그 사이 두 프로세스가 같이 worker를 돌리고, 호스트 재부팅 때는 API와 worker가 잠깐 멈춘다.
+배포는 Blue-Green이라 새 API가 healthy가 된 뒤 옛 API를 내린다([배포](../deployment.md#배포-흐름-blue-green)). 그 사이 두 프로세스가 같이 worker를 돌리고, 호스트 재부팅 때는 API와 worker가 잠깐 멈춘다.
 
 | 대상                               | 보장                                                                                                                         |
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
@@ -154,7 +154,7 @@ for (const minute of minutesToSweep({ lastCompletedAt, now: clock.now(), maxCatc
 | 푸시 발송                          | 커밋 뒤 즉시 발행이 실패하면 outbox 행을 매분 relay가 리스(작업 만료 5분 + 공급자 전송 여유 10분) 뒤 다시 보낸다             |
 | 커밋 뒤 캐시 정리                  | best-effort. 중단되면 TTL까지 오래된 값(캐시만 허용)                                                                         |
 
-검증은 [reminder-sweep-catch-up](../test/integration/notification/reminders/reminder-sweep-catch-up.integration-spec.ts)의 "worker 정지 → 시각 경과 → 재시작" 시나리오(FixedClock + 실제 pg-boss)다. 배포 시각은 [배포](deployment.md#job과-종료)에 있다.
+검증은 [reminder-sweep-catch-up](../../test/integration/notification/reminders/reminder-sweep-catch-up.integration-spec.ts)의 "worker 정지 → 시각 경과 → 재시작" 시나리오(FixedClock + 실제 pg-boss)다. 배포 시각은 [배포](../deployment.md#job과-종료)에 있다.
 
 ## 같은 트랜잭션에서 끝내는 효과
 

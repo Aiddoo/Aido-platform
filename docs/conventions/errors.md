@@ -1,6 +1,6 @@
 # 응답과 오류
 
-서버·모바일·`@aido/api` 공통 기준이다. 성공은 공유 Zod 계약으로, 실패는 `ErrorCode` 하나로 표현한다. 서버 상세는 [REST 계약](../../apps/api/docs/http-contracts.md), 모바일 상세는 [에러 처리](../../apps/mobile/docs/error-handling.md)에 있다.
+서버·모바일·`@aido/api` 공통 기준이다. 성공은 공유 Zod 계약으로, 실패는 `ErrorCode` 하나로 표현한다. 서버 상세는 [REST 계약](../../apps/api/docs/architecture/http-contracts.md), 모바일 상세는 [에러 처리](../../apps/mobile/docs/error-handling.md)에 있다.
 
 ## 1. 계약
 
@@ -17,7 +17,7 @@
 
 ## 2. 서버
 
-- Domain 불변식 위반은 `DomainException`, Application 거부(권한·없음·한도)는 `ApplicationException`에 `ErrorCode`를 담아 던진다. 업무 오류는 slice `<slice>.errors.ts`의 이름 있는 생성 함수로만 만들고(Oxlint `aido/no-inline-coded-exception`), 예상한 DB 제약 충돌은 저장소가 업무 오류로 번역한다([도메인 모델](../../apps/api/docs/domain-modeling.md#오류와-식별자), [영속성](../../apps/api/docs/persistence.md#db-오류-번역)). HTTP 상태·envelope 변환은 [GlobalExceptionFilter](../../apps/api/src/platform/filters/global-exception.filter.ts)만 한다. Controller에서 `HttpException`을 직접 만들거나 응답을 조립하지 않는다.
+- Domain 불변식 위반은 `DomainException`, Application 거부(권한·없음·한도)는 `ApplicationException`에 `ErrorCode`를 담아 던진다. 업무 오류는 slice `<slice>.errors.ts`의 이름 있는 생성 함수로만 만들고(Oxlint `aido/no-inline-coded-exception`), 예상한 DB 제약 충돌은 저장소가 업무 오류로 번역한다([도메인 모델](../../apps/api/docs/architecture/domain-modeling.md#오류와-식별자), [영속성](../../apps/api/docs/architecture/persistence.md#db-오류-번역)). HTTP 상태·envelope 변환은 [GlobalExceptionFilter](../../apps/api/src/platform/filters/global-exception.filter.ts)만 한다. Controller에서 `HttpException`을 직접 만들거나 응답을 조립하지 않는다.
 - 코드마다 `Errors[code].message`는 Swagger와 서버 기본 문구로 쓰는 **합니다체**다(`서버 내부 오류가 발생했습니다.`). endpoint는 던질 수 있는 코드마다 `@ApiErrorResponse({ errorCode })`를 붙인다.
 - `ErrorCode`가 없는 Nest `HttpException`(검증 파이프·없는 route·405·throttler)은 `GlobalExceptionFilter`가 상태로 정한다: 4xx → `SYS_0002`, 429·5xx → `SYS_0001`. 카탈로그에 상태별 공통 코드가 없고 출시 앱은 모르는 코드를 `SYS_0001`로 바꾸므로 이 경우를 위한 새 코드를 만들지 않는다. 앱은 이 경우 HTTP 상태(404·429)로만 분기한다.
 - DB 연결 끊김·풀 대기 초과·문장/잠금/클라이언트 쿼리 시간 초과는 `GlobalExceptionFilter`가 503 `SYS_0005`(잠시 후 다시 시도)로 보낸다. 앱이 모르는 코드여도 출시 앱은 `SYS_0001`처럼 처리한다.

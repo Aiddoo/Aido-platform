@@ -23,7 +23,7 @@
 | 구간 현황      | `DailyCompletionRangeReadModel`                                             | 날짜별 현황·완료일 수·조회 구간. 캐시에 담는 값이고 응답 매퍼가 응답 계약으로 바꾼다                                                                                                                                                                                       |
 | 캐시 세대      | `DailyCompletionCache`, `DailyCompletionCacheKey.generation`                | 사용자별 본인·공개 현황 캐시의 namespace. planning 할 일·회차·카테고리 이벤트가 커밋되면 세대를 바꿔 모두 버린다                                                                                                                                                           |
 
-`DailyCompletion` 테이블은 이 slice와 관계없다. 서버 코드가 읽지도 쓰지도 않는 테이블이라 안 쓰는 테이블 규칙대로 지운다([영속성](../persistence.md#마이그레이션)).
+`DailyCompletion` 테이블은 이 slice와 관계없다. 서버 코드가 읽지도 쓰지도 않는 테이블이라 안 쓰는 테이블 규칙대로 지운다([영속성](../architecture/persistence.md#마이그레이션)).
 
 ## weekly-achievements
 

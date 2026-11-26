@@ -15,10 +15,10 @@ disable-model-invocation: true
 ## 필요할 때 읽을 문서
 
 - [서버 진입점](../../../apps/api/AGENTS.md): 꼭 지키는 서버 규칙과 [완료](../../../apps/api/AGENTS.md#완료) 기준.
-- [구조](../../../apps/api/docs/architecture.md): Context·slice·공개 면·조립.
-- [이름 사전](../../../apps/api/docs/conventions.md)·[도메인 모델](../../../apps/api/docs/domain-modeling.md): 파일 이름과 모델 규약.
-- [HTTP 계약](../../../apps/api/docs/http-contracts.md): route·DTO·응답.
-- [영속성](../../../apps/api/docs/persistence.md): 저장소·잠금·schema.
+- [구조](../../../apps/api/docs/architecture/structure.md): Context·slice·공개 면·조립.
+- [이름 사전](../../../apps/api/docs/architecture/conventions.md)·[도메인 모델](../../../apps/api/docs/architecture/domain-modeling.md): 파일 이름과 모델 규약.
+- [HTTP 계약](../../../apps/api/docs/architecture/http-contracts.md): route·DTO·응답.
+- [영속성](../../../apps/api/docs/architecture/persistence.md): 저장소·잠금·schema.
 - [테스트](../../../apps/api/docs/testing.md): 변경 동작 검증.
 
 끝낼 때는 [서버 완료 기준](../../../apps/api/AGENTS.md#완료)을 따른다.

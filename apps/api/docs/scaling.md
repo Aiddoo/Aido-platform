@@ -1,6 +1,6 @@
 # 캐시·잠금·확장
 
-캐시·잠금·dedup·프로세스 안 저장소를 만들 때, 인스턴스·DB를 늘릴 때 읽는다. 풀 설정은 [영속성](persistence.md#풀-설정), 큐 연결 예산은 [작업과 이벤트](jobs-and-events.md#큐-정의)에 있다.
+캐시·잠금·dedup·프로세스 안 저장소를 만들 때, 인스턴스·DB를 늘릴 때 읽는다. 풀 설정은 [영속성](architecture/persistence.md#풀-설정), 큐 연결 예산은 [작업과 이벤트](architecture/jobs-and-events.md#큐-정의)에 있다.
 
 ## 운영 구성
 

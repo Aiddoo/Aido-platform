@@ -1,6 +1,6 @@
 # 도메인 모델
 
-Entity·VO·Aggregate·도메인 서비스·도메인 오류를 만들거나 바꿀 때 읽는다. 이름은 [이름 사전](conventions.md), 레이어 경계는 [아키텍처](architecture.md)에 있다.
+Entity·VO·Aggregate·도메인 서비스·도메인 오류를 만들거나 바꿀 때 읽는다. 이름은 [이름 사전](conventions.md), 레이어 경계는 [아키텍처](structure.md)에 있다.
 
 ## 원칙
 
@@ -31,14 +31,14 @@ Entity·VO·Aggregate·도메인 서비스·도메인 오류를 만들거나 바
 
 ## 상태 전이
 
-- 전이 메서드는 동사이고, 실제로 바뀌었으면 `true`, 이미 같은 상태면 아무것도 바꾸지 않고 `false`다. UseCase는 `false`면 저장·발송을 건너뛰어 재요청·재시도를 멱등으로 만든다. 사례: [Memo](../src/modules/notes/memos/domain/memo.aggregate.ts)의 `rewrite`·`changePinned`·`moveTo`와 [RewriteMemoUseCase](../src/modules/notes/memos/application/use-cases/rewrite-memo.use-case.ts).
+- 전이 메서드는 동사이고, 실제로 바뀌었으면 `true`, 이미 같은 상태면 아무것도 바꾸지 않고 `false`다. UseCase는 `false`면 저장·발송을 건너뛰어 재요청·재시도를 멱등으로 만든다. 사례: [Memo](../../src/modules/notes/memos/domain/memo.aggregate.ts)의 `rewrite`·`changePinned`·`moveTo`와 [RewriteMemoUseCase](../../src/modules/notes/memos/application/use-cases/rewrite-memo.use-case.ts).
 - 같은 값 수정에서 저장을 건너뛰면 `updatedAt`이 유지된다. 앱이 "값이 같아도 `updatedAt`이 바뀐다"에 기대는 slice만 항상 저장하고 그 이유를 slice에 적는다. 메모는 앱 초안이 원본 시각이 더 새로울 때만 낡았다고 보므로(`apps/mobile/src/shared/draft/draft.model.ts`) 건너뛴다. 여러 행을 미는 집합 update(`shiftSortOrders`)는 옮긴 행의 `updatedAt`을 바꾼다.
 - 시각은 `now: Temporal.Instant` 인자로 받는다. 도메인 안에서 시계를 읽지 않는다.
 
 ## 상태와 행동 이름
 
 - 상태 값은 튜플 한 곳에서 선언한다. 앱이 보는 상태는 `@aido/api/vocabulary`, 서버만 아는 상태는 `domain/<slice>.constants.ts`다. 타입은 튜플에서 유도하고 리터럴 유니온을 손으로 쓰지 않는다.
-- 상태는 Aggregate의 행동 메서드로만 바뀐다. 메서드 이름은 [용어집](glossary.md)의 업무 동사다(`accept`·`complete`·`reopen`·`block`·`expire`). `setStatus`·`update`·`changeStatus` 같은 범용 setter를 두지 않는다. 값 하나를 바꾸는 행동만 `change<Noun>`(`changePinned`)을 쓴다.
+- 상태는 Aggregate의 행동 메서드로만 바뀐다. 메서드 이름은 [용어집](../glossary.md)의 업무 동사다(`accept`·`complete`·`reopen`·`block`·`expire`). `setStatus`·`update`·`changeStatus` 같은 범용 setter를 두지 않는다. 값 하나를 바꾸는 행동만 `change<Noun>`(`changePinned`)을 쓴다.
 - 허용되지 않은 전이(`ACCEPTED`인 요청을 다시 수락)는 두 가지 중 하나로 정하고 slice 안에서 섞지 않는다. 같은 상태로의 재요청은 `false`(멱등), 다른 상태에서의 금지된 전이는 `domain/<slice>.errors.ts`의 이름 있는 오류다.
 - 상태 질문은 `is<State>()`(`isPending()`)·`has<Noun>()`, 행동 가능 여부는 `can<Action>()` 메서드이고 getter로 두지 않는다. 파생 값은 명사 getter(`remainingSeconds`)다. 질문 메서드는 상태를 바꾸지 않는다(Oxlint `aido/aggregate-shape`).
 - 전이 표(상태 → 행동 → 다음 상태)는 용어집의 그 Context 절에 둔다. 코드와 표가 다르면 코드를 고치거나 표를 고치는 PR에서 함께 맞춘다.
@@ -55,17 +55,17 @@ Entity·VO·Aggregate·도메인 서비스·도메인 오류를 만들거나 바
 
 ## 오류와 식별자
 
-- 불변식 위반은 `DomainException(ErrorCode, details)`(`shared/domain/exceptions`), UseCase 거부는 `ApplicationException`(`shared/application`)이다. 세 번째 인자 `{ message?, cause? }`로 응답 문구를 정하거나 감싼 원본 오류를 남긴다. HTTP 변환은 [오류 규칙](../../../docs/conventions/errors.md)대로 `GlobalExceptionFilter`가 한다.
+- 불변식 위반은 `DomainException(ErrorCode, details)`(`shared/domain/exceptions`), UseCase 거부는 `ApplicationException`(`shared/application`)이다. 세 번째 인자 `{ message?, cause? }`로 응답 문구를 정하거나 감싼 원본 오류를 남긴다. HTTP 변환은 [오류 규칙](../../../../docs/conventions/errors.md)대로 `GlobalExceptionFilter`가 한다.
 - 업무 오류는 slice `<slice>.errors.ts`의 이름 있는 생성 함수(`memoNotFound(memoId)`)로 만든다. 같은 코드·details 모양이 한 곳에서 나온다. 거부는 `application/<slice>.errors.ts`, 불변식은 `domain/<slice>.errors.ts`(Domain은 Application을 import하지 못한다)이고, 같은 Context의 slice가 함께 쓰는 불변식은 `<context>/shared/domain/<context>.errors.ts`(`planning.errors.ts`), 공용 식별자는 `shared/domain/exceptions/shared-domain.errors.ts`다. 이 파일 밖에서 `new ApplicationException`·`new DomainException`·`new ErrorCodedException`(별칭 import 포함)을 쓰지 않고 이 클래스들을 잇는 예외 클래스도 만들지 않는다(Oxlint `aido/no-inline-coded-exception`, spec 제외). 오류 클래스(`Error`·`DomainException`·`ApplicationException` 하위, 재시도 판단용 내부 오류 포함)는 `*.errors.ts`에만 선언하고, application·domain에서 `throw new Error(…)`를 바로 쓰지 않는다(Oxlint `aido/error-class-location`).
 - 생성만 하는 Aggregate는 id를 저장·참조·전송할 때만 둔다(캐시 키인 날씨 보고의 칸 `WeatherReportId`). 아무도 읽지 않는 id VO를 만들지 않고 `AggregateRoot<null, Props>`로 `create`가 `null`을 넘긴다(`ParsedDraft`·`ActionPlanDraft`·`AiGeneration`·`VoiceDigest`·`Inquiry`·`DailyCompletion`). id가 없는 Aggregate는 자기 자신과만 같다(`equals`).
 - 여러 Context가 쓰는 `UserId`는 `shared/domain/identifiers/user-id.vo.ts`, Aggregate id(`TodoId`)는 소유 slice `domain/`에 두고 다른 slice·Context는 그 slice `*.public.ts`로 import한다. Props도 다른 Aggregate를 원시값이 아닌 id VO로 참조한다. 사용자당 하나인 Aggregate(`UserPreference`·`LinkedAccounts`·날씨 `UserLocation`)는 값이 그 사용자 id인 자기 id VO(`UserLocationId`)를 두고 사용자는 Props의 `UserId`로 참조한다.
-- 포트 시그니처의 식별자(`*Id`·`*Ids` 인자와 같은 파일 타입의 필드)는 원시값(`number`·`string`)이 아니라 id VO다. `find*`는 `T | null`이고 늘 값이 있으면 다른 동사를 쓴다([MemoRepositoryPort](../src/modules/notes/memos/application/ports/memo.repository.port.ts)의 `MemoId`·`UserId`). 원시값은 presentation·어댑터 경계에서 VO로 바꾼다(Oxlint `aido/port-id-value-object`·`aido/port-return-shape`).
+- 포트 시그니처의 식별자(`*Id`·`*Ids` 인자와 같은 파일 타입의 필드)는 원시값(`number`·`string`)이 아니라 id VO다. `find*`는 `T | null`이고 늘 값이 있으면 다른 동사를 쓴다([MemoRepositoryPort](../../src/modules/notes/memos/application/ports/memo.repository.port.ts)의 `MemoId`·`UserId`). 원시값은 presentation·어댑터 경계에서 VO로 바꾼다(Oxlint `aido/port-id-value-object`·`aido/port-return-shape`).
 - 공급자가 준 id도 VO다. 소유 slice `domain/<noun>-id.vo.ts`에 공급자 이름 없이 두고(메일 `ProviderMessageId`) 어댑터가 값을 풀어 쓴다. 어느 Aggregate도 갖지 않는 전달 봉투 id(도메인 이벤트 `eventId`, 멱등 key 재료)만 `.oxlintrc.json`에서 그 포트 파일에 `technicalIds`로 뺀다.
 - 상태를 바꾸지 않거나 DB에 두지 않는 Root(주간 성취 기록, env의 기능 소개 캠페인, 전달만 하는 문의)도 `AggregateRoot`(`*.aggregate.ts`)이고, 표시 라벨·응답은 presentation 매퍼가 만든다.
 
 ## 기준 구현: notes/memos
 
-기준 구현은 [notes/memos](../src/modules/notes/memos)다. 테스트는 [fixture](../test/fixtures/notes/memo.fixture.ts)·[InMemory 저장소](../test/doubles/notes/in-memory-memo.repository.ts)·[저장소 계약](../test/contracts/notes/memo-repository.contract.ts)이 사례다.
+기준 구현은 [notes/memos](../../src/modules/notes/memos)다. 테스트는 [fixture](../../test/fixtures/notes/memo.fixture.ts)·[InMemory 저장소](../../test/doubles/notes/in-memory-memo.repository.ts)·[저장소 계약](../../test/contracts/notes/memo-repository.contract.ts)이 사례다.
 
 ```ts
 // modules/notes/memos/domain/memo.aggregate.ts (발췌)
@@ -96,13 +96,13 @@ export class Memo extends AggregateRoot<MemoId, MemoProps> {
 }
 ```
 
-| 파일                                                                                                                        | 핵심                                                                                                                                     |
-| --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| [`memo-id.vo.ts`](../src/modules/notes/memos/domain/memo-id.vo.ts)                                                          | `MemoId extends EntityId<number>`, `reconstitute`만(시퀀스 id)                                                                           |
-| [`memo-content.vo.ts`](../src/modules/notes/memos/domain/memo-content.vo.ts)                                                | `create`가 `1 <= length && length <= MEMO_LIMITS.MAX_CONTENT_LENGTH` 검사                                                                |
-| [`memo-creation-request.vo.ts`](../src/modules/notes/memos/domain/memo-creation-request.vo.ts)                              | 값 둘(Idempotency-Key·요청 해시)을 묶는 객체 VO. `create`가 해시를 만들고 Aggregate는 `isSameCreationRequest`로 비교한다                 |
-| [`memo-ordering.domain-service.ts`](../src/modules/notes/memos/domain/memo-ordering.domain-service.ts)                      | `planMoveRelativeTo`·`planMoveToEdge`가 `{ sortOrder, shift }` 계획을 돌려줌                                                             |
-| [`application/memos.lock-keys.ts`](../src/modules/notes/memos/application/memos.lock-keys.ts)                               | `MemoLockKeys.memo`·`sortOrder`(문자열은 voice 계획 저장과 같은 잠금), 있는 메모를 바꾸는 UseCase는 `existingMemo`로 두 키를 함께 잡는다 |
-| [`create-memo.use-case.ts`](../src/modules/notes/memos/application/use-cases/create-memo.use-case.ts)                       | 잠금 → 한도 → 내용 검증 → `nextId` → `Memo.create` → `save` → 로그                                                                       |
-| [`infrastructure/persistence/memo-row.mapper.ts`](../src/modules/notes/memos/infrastructure/persistence/memo-row.mapper.ts) | `toMemo(row)`·`toMemoRow(memo)`                                                                                                          |
-| [`presentation/http/v1/memo-response.mapper.ts`](../src/modules/notes/memos/presentation/http/v1/memo-response.mapper.ts)   | 응답 문구 `MEMO_RESPONSE_MESSAGES`와 `toIsoString` 직렬화                                                                                |
+| 파일                                                                                                                           | 핵심                                                                                                                                     |
+| ------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| [`memo-id.vo.ts`](../../src/modules/notes/memos/domain/memo-id.vo.ts)                                                          | `MemoId extends EntityId<number>`, `reconstitute`만(시퀀스 id)                                                                           |
+| [`memo-content.vo.ts`](../../src/modules/notes/memos/domain/memo-content.vo.ts)                                                | `create`가 `1 <= length && length <= MEMO_LIMITS.MAX_CONTENT_LENGTH` 검사                                                                |
+| [`memo-creation-request.vo.ts`](../../src/modules/notes/memos/domain/memo-creation-request.vo.ts)                              | 값 둘(Idempotency-Key·요청 해시)을 묶는 객체 VO. `create`가 해시를 만들고 Aggregate는 `isSameCreationRequest`로 비교한다                 |
+| [`memo-ordering.domain-service.ts`](../../src/modules/notes/memos/domain/memo-ordering.domain-service.ts)                      | `planMoveRelativeTo`·`planMoveToEdge`가 `{ sortOrder, shift }` 계획을 돌려줌                                                             |
+| [`application/memos.lock-keys.ts`](../../src/modules/notes/memos/application/memos.lock-keys.ts)                               | `MemoLockKeys.memo`·`sortOrder`(문자열은 voice 계획 저장과 같은 잠금), 있는 메모를 바꾸는 UseCase는 `existingMemo`로 두 키를 함께 잡는다 |
+| [`create-memo.use-case.ts`](../../src/modules/notes/memos/application/use-cases/create-memo.use-case.ts)                       | 잠금 → 한도 → 내용 검증 → `nextId` → `Memo.create` → `save` → 로그                                                                       |
+| [`infrastructure/persistence/memo-row.mapper.ts`](../../src/modules/notes/memos/infrastructure/persistence/memo-row.mapper.ts) | `toMemo(row)`·`toMemoRow(memo)`                                                                                                          |
+| [`presentation/http/v1/memo-response.mapper.ts`](../../src/modules/notes/memos/presentation/http/v1/memo-response.mapper.ts)   | 응답 문구 `MEMO_RESPONSE_MESSAGES`와 `toIsoString` 직렬화                                                                                |

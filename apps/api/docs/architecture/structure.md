@@ -1,6 +1,6 @@
 # 서버 구조
 
-Context·slice를 만들 때, 레이어 의존·공개 면·포트·트랜잭션 소유를 정할 때 읽는다. 이름은 [이름 사전](conventions.md), 모델 규약은 [도메인 모델](domain-modeling.md), 새 기능 순서는 [새 기능 추가](new-feature.md), 공통 코드 규칙은 [루트 AGENTS](../../../AGENTS.md#공통-코드-규칙)에 있다.
+Context·slice를 만들 때, 레이어 의존·공개 면·포트·트랜잭션 소유를 정할 때 읽는다. 이름은 [이름 사전](conventions.md), 모델 규약은 [도메인 모델](domain-modeling.md), 새 기능 순서는 [새 기능 추가](../new-feature.md), 공통 코드 규칙은 [루트 AGENTS](../../../../AGENTS.md#공통-코드-규칙)에 있다.
 
 ## 흐름과 레이어
 
@@ -103,13 +103,13 @@ presentation → application → domain        infrastructure → application(po
 | 코드 예외는 `*.errors.ts`의 이름 있는 생성 함수에서만 만든다                                                                                                                                                                                  | oxlint `aido/no-inline-coded-exception`                                                                                                                                                                                                                                                                                                                     |
 | 안 쓰는 파일·export·의존성 0                                                                                                                                                                                                                  | knip(`check:unused`)                                                                                                                                                                                                                                                                                                                                        |
 | 재수출은 [공개 면](#공개-면과-재수출)의 진입 파일만. barrel `index.ts` 금지                                                                                                                                                                   | oxlint `oxc/no-barrel-file` + `aido/no-barrel-file`·`aido/no-re-export`                                                                                                                                                                                                                                                                                     |
-| slice마다 Aggregate Root 하나·폴더 이름·Module과 public 이름·Context 루트·`shared`(Aggregate·UseCase 없음)·`-queries` Module과 public 모양·저장 Aggregate의 `<Aggregate>Id`·application의 구체 Reader 금지·포트 `find`/`list`/`get` 반환 모양 | 아키텍처 테스트 [slice-shape.spec.ts](../test/architecture/slice-shape.spec.ts)                                                                                                                                                                                                                                                                             |
+| slice마다 Aggregate Root 하나·폴더 이름·Module과 public 이름·Context 루트·`shared`(Aggregate·UseCase 없음)·`-queries` Module과 public 모양·저장 Aggregate의 `<Aggregate>Id`·application의 구체 Reader 금지·포트 `find`/`list`/`get` 반환 모양 | 아키텍처 테스트 [slice-shape.spec.ts](../../test/architecture/slice-shape.spec.ts)                                                                                                                                                                                                                                                                          |
 | Aggregate 모양·UseCase `execute` 하나·포트 id VO·`find*`의 `T \| null`·멤버 순서·인자 3개·함수 80줄·파일 400줄·오류 클래스 위치·Read Model 이름·요청 한도 위치                                                                                | oxlint `aido/aggregate-shape`·`aido/use-case-single-execute`·`aido/port-id-value-object`·`aido/port-return-shape`·`aido/member-order`·`aido/max-params`·`max-lines-per-function`·`max-lines`·`aido/error-class-location`·`aido/read-model-suffix`·`aido/rate-limit-location`(모두 error, 예외 옵션은 도메인 이벤트 포트의 `technicalIds: ["eventId"]` 하나) |
 | 타입 검사는 `src`만 읽는다. `#api/*`가 낡은 `dist`로 빠지지 않는다                                                                                                                                                                            | `apps/api/package.json` `imports`의 `"types": ["./src/*.ts", null]`(TypeScript는 `null`에서 멈추고 Node는 `types`를 읽지 않는다)                                                                                                                                                                                                                            |
 
 - 규칙은 모든 Context에 같은 세기로 걸린다.
 - 위반 기준선을 두지 않는다. 아키텍처 테스트는 비어 있는 `REMAINING_VIOLATIONS`와 이유를 적은 `DOCUMENTED_EXCEPTIONS`가 실제 위반과 같아야 통과하고(새 위반도, 고친 뒤 남은 항목도 실패), dependency-cruiser는 기준선 없이 돈다. 새 위반은 목록에 더하지 않고 코드를 고친다.
-- 다른 Context의 테이블을 직접 읽거나 쓰지 않는다. 소유 Context가 public으로 연 조회·쓰기 포트를 쓴다(예: planning `planning-todos-queries.public.ts`의 `TodoScheduleReaderPort`, 댓글 수를 바꾸는 [TodoEngagementCounterPort](../src/modules/planning/todos/application/ports/todo-engagement-counter.port.ts)). 목록을 한 SQL로 골라야 하면 소유 Context가 `infrastructure/persistence/<noun>.query-fragment.ts`의 순수 Drizzle 조건·서브쿼리 함수를 public으로 열고, 다른 Context는 그 함수만 붙인다(identity `undeletedUserCondition`, social `hasNoBlockWith`).
+- 다른 Context의 테이블을 직접 읽거나 쓰지 않는다. 소유 Context가 public으로 연 조회·쓰기 포트를 쓴다(예: planning `planning-todos-queries.public.ts`의 `TodoScheduleReaderPort`, 댓글 수를 바꾸는 [TodoEngagementCounterPort](../../src/modules/planning/todos/application/ports/todo-engagement-counter.port.ts)). 목록을 한 SQL로 골라야 하면 소유 Context가 `infrastructure/persistence/<noun>.query-fragment.ts`의 순수 Drizzle 조건·서브쿼리 함수를 public으로 열고, 다른 Context는 그 함수만 붙인다(identity `undeletedUserCondition`, social `hasNoBlockWith`).
 - 양방향 Module 의존이 필요해 보이면 소유 Context가 좁은 Port를 public으로 열고, 반대 방향은 [이벤트](jobs-and-events.md)로 바꾼다. 다른 Context가 읽는 포트는 아무것도 import하지 않는 `<context>-<slice>-queries.module.ts`에 두어 무거운 Module을 끌어오지 않고 순환을 없앤다. 그 밖의 용도로 Module을 쪼개지 않는다.
 - `-queries` Module은 import 없이 Port만 내보낸다. 같은 트랜잭션에서 써야 하는 좁은 쓰기 포트(access `FeatureGranterPort`)도 Port면 된다. UseCase·controller·서비스는 내보내지 않고 controller를 두지 않는다.
 - 포트가 abstract class라 런타임 import가 생긴다. ESM에서는 순환이 부팅 실패로 드러나므로 앱 부팅 E2E(Health)로 확인한다.
@@ -132,7 +132,7 @@ presentation → application → domain        infrastructure → application(po
 
 - **UseCase**: Nest decorator 없는 순수 클래스, `execute(command)` 하나. 생성자 객체로 의존성을 받아 `readonly #dependencies`에 둔다. 의존성 타입은 `Pick<Port, "…">`로 좁힌다. 반환은 Entity 또는 Read Model이고 응답 문구·계약 타입은 presentation 매퍼가 만든다.
 - **Port**: abstract class가 포트이자 DI 토큰이다. Symbol 토큰·`@Inject(TOKEN)`·interface와 token 짝, 옛 이름을 같은 인스턴스로 잇는 `useExisting` 별칭을 두지 않는다. Symbol 토큰은 업무 포트가 아닌 platform의 라이브러리 client(`DRIZZLE`·`PG_BOSS_CLIENT`·`REDIS_COMMAND_CLIENT`·`THROTTLER_STORAGE`)에만 이유 주석과 함께 둔다.
-- **조립**: [provideUseCase](../src/platform/di/provide-use-case.ts)`(UseCase, { key: PortClass })`가 키 누락·토큰 타입 불일치를 컴파일 오류로 만든다. 로거 자리는 `loggerFor(UseCase)`(Nest `Logger`, 실제 출력은 nestjs-pino)다. 단언은 helper 안 1곳만 이유 주석과 함께 둔다.
+- **조립**: [provideUseCase](../../src/platform/di/provide-use-case.ts)`(UseCase, { key: PortClass })`가 키 누락·토큰 타입 불일치를 컴파일 오류로 만든다. 로거 자리는 `loggerFor(UseCase)`(Nest `Logger`, 실제 출력은 nestjs-pino)다. 단언은 helper 안 1곳만 이유 주석과 함께 둔다.
 
 ```ts
 // modules/notes/memos/notes-memos.providers.ts (발췌)
@@ -164,29 +164,29 @@ UoW: 잠금 → 최신 자격·상태 확인 → 도메인 행동 → 저장 →
 commit → 캐시 정리
 ```
 
-사례: [CreateMemoUseCase](../src/modules/notes/memos/application/use-cases/create-memo.use-case.ts)(정렬 잠금 아래 한도 확인·저장), [CreateTodoUseCase](../src/modules/planning/todos/application/use-cases/create-todo.use-case.ts)(카테고리·정렬 잠금 아래 생성, 커밋 뒤 알림·캐시), [GenerateReportUseCase](../src/modules/ai-assistance/ai-reports/application/use-cases/generate-report.use-case.ts)(AI 호출 전후로 자격 재확인), [ReconcilePushReceiptsUseCase](../src/modules/notification/push-dispatches/application/use-cases/reconcile-push-receipts.use-case.ts)(외부 조회 밖, 기록·토큰 비활성화 한 UoW).
+사례: [CreateMemoUseCase](../../src/modules/notes/memos/application/use-cases/create-memo.use-case.ts)(정렬 잠금 아래 한도 확인·저장), [CreateTodoUseCase](../../src/modules/planning/todos/application/use-cases/create-todo.use-case.ts)(카테고리·정렬 잠금 아래 생성, 커밋 뒤 알림·캐시), [GenerateReportUseCase](../../src/modules/ai-assistance/ai-reports/application/use-cases/generate-report.use-case.ts)(AI 호출 전후로 자격 재확인), [ReconcilePushReceiptsUseCase](../../src/modules/notification/push-dispatches/application/use-cases/reconcile-push-receipts.use-case.ts)(외부 조회 밖, 기록·토큰 비활성화 한 UoW).
 
 ## 교체 가능한 포트
 
-새 어댑터는 "어댑터 파일 + 바인딩 한 줄 + 포트 계약 테스트 통과"로 끝나야 한다. 그 밖이 바뀌면 포트 설계가 틀린 것이다. 공급자 이름은 어댑터 파일·클래스·`*.wire.ts`에만 쓴다. 환경·설정에 따라 어댑터를 고르는 규칙은 [설정](configuration.md#공급자-선택)에 있다.
+새 어댑터는 "어댑터 파일 + 바인딩 한 줄 + 포트 계약 테스트 통과"로 끝나야 한다. 그 밖이 바뀌면 포트 설계가 틀린 것이다. 공급자 이름은 어댑터 파일·클래스·`*.wire.ts`에만 쓴다. 환경·설정에 따라 어댑터를 고르는 규칙은 [설정](../configuration.md#공급자-선택)에 있다.
 
-| 포트                                                         | 지금 어댑터                                         | 고르는 곳                                                                                  |
-| ------------------------------------------------------------ | --------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `PushChannelPort`(채널 Strategy) + `PushChannelRegistryPort` | Expo(`ExpoPushChannelAdapter`), Map 레지스트리      | `notification-push-dispatches.providers.ts`([푸시 발송](push-delivery.md#deliveryreceipt)) |
-| `EmailSenderPort`                                            | `@nestjs/mail`(Resend), Log                         | `EMAIL_PROVIDER`                                                                           |
-| `AdminNotifierPort`                                          | Discord, Log                                        | `ADMIN_NOTIFIER_PROVIDER`                                                                  |
-| `StoreSubscriptionStatusReaderPort` + 번역기                 | RevenueCat                                          | `StoreSubscriptionEvent` 판별 유니온([결제](billing.md#공급자-경계))                       |
-| `WeatherReportProviderPort`·`WeatherForecastProviderPort`    | WeatherKit, KMA                                     | `weather-weather-reports.providers.ts`                                                     |
-| `AiGeneratorPort`                                            | AI SDK(Anthropic·Google·OpenAI 체인)                | `AI_PROVIDER_ORDER`([AI](ai.md))                                                           |
-| `JobQueuePort`                                               | pg-boss                                             | `platform/jobs`                                                                            |
-| `DomainEventPublisherPort`                                   | 구독자별 pg-boss 작업(`FanOutDomainEventPublisher`) | `platform/events`                                                                          |
-| `CacheStorePort` + slice 의미 캐시 Port                      | lru-cache, Redis                                    | `CACHE_TYPE`([확장](scaling.md))                                                           |
-| `MutationLockPort`                                           | PostgreSQL advisory lock                            | `platform/database`                                                                        |
-| `OperationalAlertPort`·`ExceptionReporterPort`               | Sentry(운영), 로그(그 밖)                           | 배포 환경([관측](observability.md#환경별-어댑터))                                          |
-| Repository Port 전부                                         | Drizzle                                             | slice `*.providers.ts` 한 줄                                                               |
+| 포트                                                         | 지금 어댑터                                         | 고르는 곳                                                                                     |
+| ------------------------------------------------------------ | --------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `PushChannelPort`(채널 Strategy) + `PushChannelRegistryPort` | Expo(`ExpoPushChannelAdapter`), Map 레지스트리      | `notification-push-dispatches.providers.ts`([푸시 발송](../push-delivery.md#deliveryreceipt)) |
+| `EmailSenderPort`                                            | `@nestjs/mail`(Resend), Log                         | `EMAIL_PROVIDER`                                                                              |
+| `AdminNotifierPort`                                          | Discord, Log                                        | `ADMIN_NOTIFIER_PROVIDER`                                                                     |
+| `StoreSubscriptionStatusReaderPort` + 번역기                 | RevenueCat                                          | `StoreSubscriptionEvent` 판별 유니온([결제](../billing.md#공급자-경계))                       |
+| `WeatherReportProviderPort`·`WeatherForecastProviderPort`    | WeatherKit, KMA                                     | `weather-weather-reports.providers.ts`                                                        |
+| `AiGeneratorPort`                                            | AI SDK(Anthropic·Google·OpenAI 체인)                | `AI_PROVIDER_ORDER`([AI](../ai.md))                                                           |
+| `JobQueuePort`                                               | pg-boss                                             | `platform/jobs`                                                                               |
+| `DomainEventPublisherPort`                                   | 구독자별 pg-boss 작업(`FanOutDomainEventPublisher`) | `platform/events`                                                                             |
+| `CacheStorePort` + slice 의미 캐시 Port                      | lru-cache, Redis                                    | `CACHE_TYPE`([확장](../scaling.md))                                                           |
+| `MutationLockPort`                                           | PostgreSQL advisory lock                            | `platform/database`                                                                           |
+| `OperationalAlertPort`·`ExceptionReporterPort`               | Sentry(운영), 로그(그 밖)                           | 배포 환경([관측](../observability.md#환경별-어댑터))                                          |
+| Repository Port 전부                                         | Drizzle                                             | slice `*.providers.ts` 한 줄                                                                  |
 
 외부 호출 규칙은 [외부 호출](outbound.md)에 있다.
 
 ## 서버가 계산할 것
 
-값마다 주인(서버·앱·공유 순수 규칙)과 앱이 다시 계산하지 않는 규칙은 [서버·앱 책임](../../../docs/conventions/ownership.md) 한 곳이다. 서버에서는 판단 결과를 `kind`와 사실로 응답 매퍼가 싣고, 응답을 더하는 절차는 [HTTP 계약](http-contracts.md#출시-앱-호환-절차)이다.
+값마다 주인(서버·앱·공유 순수 규칙)과 앱이 다시 계산하지 않는 규칙은 [서버·앱 책임](../../../../docs/conventions/ownership.md) 한 곳이다. 서버에서는 판단 결과를 `kind`와 사실로 응답 매퍼가 싣고, 응답을 더하는 절차는 [HTTP 계약](http-contracts.md#출시-앱-호환-절차)이다.

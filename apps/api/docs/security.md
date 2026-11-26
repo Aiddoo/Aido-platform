@@ -60,7 +60,7 @@ identity가 매일 03:40 KST에 보관 기한이 지난 행을 지운다(`PurgeE
 
 - 테이블마다 500행씩 지우고 문장마다 커밋한다. 한 문장으로 모두 지우지 않는다.
 - 세션을 지우면 FK CASCADE로 그 세션의 푸시 기기·토큰도 지워진다. 그래서 기기·토큰이 남은 만료 세션은 두어, 앱을 열지 않고 알림만 받는 사용자([휴면](todo-series-dormancy.md#휴면))의 알림을 끊지 않는다. 폐기한 세션은 폐기 때 기기를 놓으므로([푸시 발송](push-delivery.md#기기와-토큰)) 해제에 실패해 남은 기기와 함께 지운다.
-- 지울 행을 고르는 칸의 색인과 그 근거는 [정리 작업 색인](persistence.md#정리-작업-색인)이다.
+- 지울 행을 고르는 칸의 색인과 그 근거는 [정리 작업 색인](architecture/persistence.md#정리-작업-색인)이다.
 - 탈퇴 계정 영구 삭제(30일 유예)는 03:00 KST의 다른 작업이다([identity](glossary/identity.md#users)). 실패는 재시도 뒤 작업 실패 경보로 알리고, 결과는 `identity.expired-record-purge.completed` 로그(테이블별 지운 수)다.
 
 ## AI

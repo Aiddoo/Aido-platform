@@ -98,7 +98,7 @@ receipt 갱신은 `TICKET_ACCEPTED`에만 원자적으로 적용한다. 이미 D
 
 ## 큐와 작업 key
 
-큐 규칙(이름·`defineQueue`·멱등)은 [작업과 이벤트](jobs-and-events.md#큐-정의)다. 푸시 큐는 `push-dispatches/infrastructure/jobs/*.queue.ts`(`push-delivery.v1`)와 `notifications/infrastructure/jobs/*.queue.ts`(`notification.v1`, receipt 확인 포함)에 있고, 예약 작업(`push-receipts`·`relay-outbox`)은 DLQ 없이 같은 큐의 예약 정의로 등록한다. 같은 원인 이벤트의 작업은 결정적 job id로 한 번만 저장된다.
+큐 규칙(이름·`defineQueue`·멱등)은 [작업과 이벤트](architecture/jobs-and-events.md#큐-정의)다. 푸시 큐는 `push-dispatches/infrastructure/jobs/*.queue.ts`(`push-delivery.v1`)와 `notifications/infrastructure/jobs/*.queue.ts`(`notification.v1`, receipt 확인 포함)에 있고, 예약 작업(`push-receipts`·`relay-outbox`)은 DLQ 없이 같은 큐의 예약 정의로 등록한다. 같은 원인 이벤트의 작업은 결정적 job id로 한 번만 저장된다.
 
 | 큐                                            | 작업                                                                                                                   | key                                                                                                                                                                                      | 실패                                                              |
 | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
