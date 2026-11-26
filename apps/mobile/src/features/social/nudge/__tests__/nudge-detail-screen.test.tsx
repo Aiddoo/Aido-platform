@@ -12,6 +12,7 @@ import {
   createTestDi,
   respondByPath,
 } from '@src/testing/core';
+import { pressTwiceInSameFrame } from '@src/testing/press';
 import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
@@ -200,11 +201,7 @@ describe('NudgeDetailRoute', () => {
     const starting = await screen.findByRole('button', { name: '시작해볼게' });
 
     // When
-    await act(async () => {
-      // 누름은 응답이 와야 끝날 수 있어 기다리지 않고, 다시 그리기 전에 두 번 닿게 한 act 안에서 누른다
-      fireEvent.press(starting).catch(() => undefined);
-      fireEvent.press(starting).catch(() => undefined);
-    });
+    await pressTwiceInSameFrame(starting);
     await act(async () => {
       pending.settle();
     });

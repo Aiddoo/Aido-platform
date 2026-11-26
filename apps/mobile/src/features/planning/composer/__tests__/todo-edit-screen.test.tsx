@@ -21,6 +21,7 @@ import {
   setupFakeTimersPerTest,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
+import { pressTwiceInSameFrame } from '@src/testing/press';
 import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
@@ -134,10 +135,7 @@ describe('TodoEditSheetRoute', () => {
     const submit = screen.getByRole('button', { name: '저장하기' });
 
     // When
-    await act(async () => {
-      fireEvent.press(submit).catch(() => undefined);
-      fireEvent.press(submit).catch(() => undefined);
-    });
+    await pressTwiceInSameFrame(submit);
     const scopeTitles = await screen.findAllByText('반복 할 일 수정');
     await userEvent.press(screen.getByRole('button', { name: '이 할 일과 이후 할 일' }));
     await act(() => jest.advanceTimersByTimeAsync(1_000));

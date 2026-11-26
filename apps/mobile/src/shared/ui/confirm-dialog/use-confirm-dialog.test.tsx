@@ -1,4 +1,5 @@
 import '@src/shared/i18n/init';
+import { pressTwiceInSameFrame } from '@src/testing/press';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen } from '@testing-library/react-native';
@@ -132,11 +133,7 @@ describe('useConfirmDialog onConfirm', () => {
     const confirm = screen.getByTestId('confirm');
 
     // When
-    await act(async () => {
-      // 다시 그리기 전에 두 번 닿게 한 act 안에서 누른다
-      fireEvent.press(confirm).catch(() => undefined);
-      fireEvent.press(confirm).catch(() => undefined);
-    });
+    await pressTwiceInSameFrame(confirm);
     await act(async () => {
       deferred.resolve();
     });

@@ -20,6 +20,8 @@
 - SDK를 `jest.mock`하는 `shared/infra` 어댑터 테스트는 `core.ts` 대신 도구 파일을 직접 import한다. 앱 전체가 가로챈 SDK보다 먼저 읽히지 않게 하기 위해서다.
 - 서버가 코드로 거절한 실패는 `createApiError(code, { message, status, details, retryAfterMs })`(`api-error.ts`, `core.ts`)로 만들고 `new ApiError(`를 테스트에 직접 쓰지 않는다. 문구·상태를 주지 않으면 서버 카탈로그(`Errors[code]`)의 값이고, 기능 fixture의 `create{Feature}ApiError`는 기능 기본 코드를 정해 이것을 부른다.
 - 기타: 끝나는 시점·실패를 테스트가 정하는 Promise는 내장 `Promise.withResolvers<T>()`를 쓴다(앱 코드는 lint가 막는다). 그 위의 `createPendingResponse(value)`(정한 값으로 끝나는 HTTP 응답, 두 번 누름·늦은 응답), `createStalledBodyResponse(status)`(헤더 뒤 본문이 멈춘 응답), `observeSettlement(promise)`(끝나지 않는 대기를 시간 초과 대신 `pending`으로 단언), `respondByPath({ path: 응답 })`(HTTP stub 하나가 URL마다 다른 응답), `createWidgetBridgeStub()`, `createRouteParamsFake(initial)`(공용 expo-router mock의 URL을 움직임), `stubWindowDimensions(width)`, `OverlayStateContext.Provider`(시트 활성 여부를 값으로 준다).
+- 콘솔 로그: React가 경계에 잡힌 렌더 오류를 `console.error`로 다시 찍는 것처럼 예상한 로그는 `silenceConsole('error')`(`core.ts`)로 삼킨다. 조건 함수를 주면 그 로그만 삼키고 나머지는 그대로 찍는다. 테스트에서 `console`을 직접 `jest.spyOn(…).mockImplementation`하지 않는다.
+- 같은 프레임 두 번 누르기: `await pressTwiceInSameFrame(element)`(`press.ts`, `core.ts`가 아니라 직접 import). 렌더 전에 한 act 안에서 두 번 눌러 `isPending`이 아직 꺼진 순간을 만든다. 누름 사이에 렌더·마이크로태스크가 끼는 테스트는 도구를 쓰지 않는다.
 - fake timer가 켜진 테스트에서 마이크로태스크를 비울 때는 `await Promise.resolve()` 대신 `await jest.advanceTimersByTimeAsync(0)`를 쓴다.
 - 상태는 남고 effect만 다시 도는 경우(StrictMode·Fast Refresh)는 `<Activity mode="visible">`로 그린 뒤 `hidden` → `visible`로 `rerender`해 재현한다(`use-voice-capture-session.test.tsx`). 이 테스트 렌더러는 `<StrictMode>`로 감싸도 effect를 다시 돌리지 않는다.
 

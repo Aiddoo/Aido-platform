@@ -13,6 +13,7 @@ import {
   createTestQueryClient,
   createTestDi,
 } from '@src/testing/core';
+import { pressTwiceInSameFrame } from '@src/testing/press';
 import { renderScreen } from '@src/testing/render';
 import { onlineManager } from '@tanstack/react-query';
 import { act, fireEvent, screen, userEvent, waitFor } from '@testing-library/react-native';
@@ -324,11 +325,7 @@ describe('InviteCodeEntryRoute', () => {
     const submit = screen.getByRole('button', { name: '확인' });
 
     // When
-    await act(async () => {
-      // 누름은 응답이 와야 끝나 기다리지 않고, 다시 그리기 전에 두 번 닿게 한 act 안에서 누른다
-      fireEvent.press(submit).catch(() => undefined);
-      fireEvent.press(submit).catch(() => undefined);
-    });
+    await pressTwiceInSameFrame(submit);
     await act(async () => {
       pending.settle();
     });

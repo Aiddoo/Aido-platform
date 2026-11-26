@@ -1,11 +1,15 @@
 import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
 import { ServerError } from '@src/shared/errors/infra-error';
-import { createPendingResponse, createRouteParamsFake, createTestDi } from '@src/testing/core';
+import {
+  createPendingResponse,
+  createRouteParamsFake,
+  createTestDi,
+  silenceConsole,
+} from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
-import { noop } from 'es-toolkit';
 import { router } from 'expo-router';
 
 import TodoTimeSheetRoute from '../../../../../app/(app)/todo/[todoId]/time';
@@ -71,7 +75,7 @@ describe('TodoTimeSheetRoute', () => {
 
   it('저장이 실패하면 시트를 남겨 다시 저장할 수 있다', async () => {
     // Given
-    jest.spyOn(console, 'error').mockImplementation(noop);
+    silenceConsole('error');
     const { httpClient } = await renderTodoTime();
     httpClient.patch.mockRejectedValueOnce(new ServerError(500));
     await fireEvent.press(screen.getByText('종일'));

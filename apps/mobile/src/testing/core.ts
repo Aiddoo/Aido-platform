@@ -10,6 +10,7 @@ export {
   createAppStoreReviewGatewayStub,
 } from './ports/app-store-gateway.stub';
 export { createClipboardGatewayStub } from './ports/clipboard-gateway.stub';
+export { silenceConsole } from './console';
 export { createVendorIdGatewayStub } from './ports/device-identity-gateway.stub';
 export { createErrorReporterStub } from './ports/error-reporter.stub';
 export {

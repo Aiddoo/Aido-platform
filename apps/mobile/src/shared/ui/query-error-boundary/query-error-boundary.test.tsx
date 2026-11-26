@@ -1,7 +1,12 @@
 import { ErrorCode } from '@aido/api/errors';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import { NetworkError, ServerError } from '@src/shared/errors';
-import { createErrorReporterStub, createTestDi, createApiError } from '@src/testing/core';
+import {
+  createErrorReporterStub,
+  createTestDi,
+  createApiError,
+  silenceConsole,
+} from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { fireEvent } from '@testing-library/react-native';
 import { router } from 'expo-router';
@@ -52,7 +57,7 @@ describe('QueryErrorBoundary 관측', () => {
   beforeEach(() => {
     errorReporter = createErrorReporterStub();
     // React가 잡힌 렌더 에러를 console.error로 중복 출력하는 것 억제
-    jest.spyOn(console, 'error').mockImplementation(() => {});
+    silenceConsole('error');
   });
 
   const renderWithBoundary = (error: Error) =>

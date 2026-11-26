@@ -6,6 +6,7 @@ import {
   createTestDi,
   createTestQueryClient,
   createApiError,
+  silenceConsole,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
@@ -40,7 +41,7 @@ function ThrowingInlineBlock({ error }: { error: unknown }) {
 describe('QueryErrorReport', () => {
   beforeEach(() => {
     // React가 경계에 잡힌 렌더 오류를 console.error로 다시 찍는 것을 막는다
-    jest.spyOn(console, 'error').mockImplementation(() => {});
+    silenceConsole('error');
   });
 
   afterEach(() => {

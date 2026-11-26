@@ -10,8 +10,9 @@ import {
   createTestDi,
   respondByPath,
 } from '@src/testing/core';
+import { pressTwiceInSameFrame } from '@src/testing/press';
 import { renderScreen } from '@src/testing/render';
-import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { KeyboardController } from 'react-native-keyboard-controller';
 
 import DeleteAccountRoute from '../../../../../app/(app)/(tabs)/(me,memos,todos)/settings/delete-account';
@@ -178,11 +179,7 @@ describe('DeleteAccountRoute', () => {
     jest.mocked(KeyboardController.dismiss).mockClear();
 
     // When
-    // 누름은 다이얼로그의 답을 기다리느라 끝나지 않아 기다리지 않는다
-    await act(async () => {
-      fireEvent.press(submit).catch(() => undefined);
-      fireEvent.press(submit).catch(() => undefined);
-    });
+    await pressTwiceInSameFrame(submit);
 
     // Then
     expect(await screen.findAllByText(DIALOG_MESSAGE)).toHaveLength(1);

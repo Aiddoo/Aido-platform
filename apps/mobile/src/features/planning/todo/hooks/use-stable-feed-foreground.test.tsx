@@ -5,6 +5,7 @@ import {
   createAppLifecycleGatewayStub,
   createIncomingLinkGatewayStub,
   createTestDi,
+  silenceConsole,
   type TestDi,
 } from '@src/testing/core';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
@@ -60,7 +61,7 @@ describe('useStableFeedForeground', () => {
       return () => {};
     });
     di = createTestDi({ ports: { incomingLink, appLifecycle } });
-    jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+    silenceConsole('warn');
     Object.defineProperty(globalThis, 'requestIdleCallback', {
       configurable: true,
       value: jest.fn((callback: IdleRequestCallback) => {

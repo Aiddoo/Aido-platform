@@ -11,6 +11,7 @@ import {
   createPendingResponse,
   createTestDi,
 } from '@src/testing/core';
+import { pressTwiceInSameFrame } from '@src/testing/press';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
@@ -136,11 +137,7 @@ describe('RemindNudgeSheetRoute', () => {
     const send = screen.getByRole('button', { name: SEND });
 
     // When
-    await act(async () => {
-      // 누름은 응답이 와야 끝날 수 있어 기다리지 않고, 다시 그리기 전에 두 번 닿게 한 act 안에서 누른다
-      fireEvent.press(send).catch(() => undefined);
-      fireEvent.press(send).catch(() => undefined);
-    });
+    await pressTwiceInSameFrame(send);
     await act(async () => {
       pending.settle();
     });

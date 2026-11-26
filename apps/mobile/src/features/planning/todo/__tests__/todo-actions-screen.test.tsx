@@ -6,6 +6,7 @@ import {
   createPendingResponse,
   createRouteParamsFake,
   createTestDi,
+  silenceConsole,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
@@ -127,7 +128,7 @@ describe('TodoActionsSheetRoute', () => {
 
   it('삭제가 실패하면 목록에 되돌리고 시트를 닫지 않는다', async () => {
     // Given
-    jest.spyOn(console, 'error').mockImplementation(noop);
+    silenceConsole('error');
     const { httpClient, getTodayTitles } = await renderTodoActions();
     httpClient.delete.mockResolvedValue(
       fail(createApiError(ErrorCode.TODO_0801, { message: '할일을 찾을 수 없어요' })),

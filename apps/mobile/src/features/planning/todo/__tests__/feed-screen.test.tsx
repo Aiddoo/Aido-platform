@@ -24,6 +24,7 @@ import {
   createPushNotificationGatewayStub,
   createRouteParamsFake,
   createTestDi,
+  silenceConsole,
   stubWindowDimensions,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
@@ -349,7 +350,7 @@ describe('FeedScreen', () => {
 
     it('완료 요청이 실패하면 체크를 되돌린다', async () => {
       // Given
-      jest.spyOn(console, 'error').mockImplementation(noop);
+      silenceConsole('error');
       const { httpClient } = await renderFeed();
       httpClient.patch.mockResolvedValue(
         fail(createApiError(ErrorCode.TODO_0801, { message: '할일을 찾을 수 없어요' })),
@@ -639,7 +640,7 @@ describe('FeedScreen', () => {
 
     it('친구 목록을 읽지 못하면 달력은 둔 채 오류를 보이고 다시 시도하면 친구의 할 일을 보인다', async () => {
       // Given
-      jest.spyOn(console, 'error').mockImplementation(noop);
+      silenceConsole('error');
       let isServerDown = true;
       await renderFeed({
         params: { friendId: FRIEND_ID },
@@ -1129,7 +1130,7 @@ describe('FeedScreen', () => {
 
     it('목록 조회가 실패하면 오류를 보이고 다시 시도하면 목록을 받는다', async () => {
       // Given
-      jest.spyOn(console, 'error').mockImplementation(noop);
+      silenceConsole('error');
       let isServerDown = true;
       await renderFeed({
         server: {

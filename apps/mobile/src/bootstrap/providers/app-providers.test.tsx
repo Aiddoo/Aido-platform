@@ -36,6 +36,7 @@ import {
   type PurchasesGatewayStub,
   type PushNotificationGatewayStub,
   setupFakeTimersPerTest,
+  silenceConsole,
   type SpeechRecognizerStub,
 } from '@src/testing/core';
 import { renderRoutes } from '@src/testing/render-route-hook';
@@ -271,13 +272,9 @@ describe('AppProviders', () => {
 
   beforeEach(() => {
     // 앱 화면 묶음 레이아웃이 선언한 화면을 다 만들지 않아 expo-router가 화면마다 남기는 경고만 거른다
-    const warn = console.warn;
-    jest.spyOn(console, 'warn').mockImplementation((...warnArguments: unknown[]) => {
-      if (String(warnArguments[0]).startsWith('[Layout children]')) {
-        return;
-      }
-      warn(...warnArguments);
-    });
+    silenceConsole('warn', ([firstMessage]) =>
+      String(firstMessage).startsWith('[Layout children]'),
+    );
   });
 
   it('로그인한 앱을 여러 번 올렸다 내려도 구독이 남지 않고 타이머가 늘지 않으며 내린 뒤 이벤트가 상태를 바꾸지 않는다', async () => {
