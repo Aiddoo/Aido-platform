@@ -1,7 +1,5 @@
 # @aido/vitest-config
 
-> **Version**: 1.1.0 · **Last Updated**: 2026-10-01 · **Owner**: Aido Platform Team
-
 공유 패키지의 Node.js 단위 테스트에 사용하는 Vitest 5 ESM 프리셋입니다. API도 Vitest를 사용하며, Nest 데코레이터 메타데이터와 PostgreSQL 수명주기는 `apps/api/vitest.config.ts`에서 설정합니다.
 
 | 설정         | 값                    | 동작                                 |
