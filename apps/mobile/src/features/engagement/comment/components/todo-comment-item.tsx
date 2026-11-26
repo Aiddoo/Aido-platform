@@ -63,6 +63,7 @@ import Animated, {
 import { scheduleOnRN } from 'react-native-worklets';
 import { match } from 'ts-pattern';
 
+import { toEditFormValues, toReplyFormValues } from '../apis/todo-comment.mapper';
 import { TODO_COMMENT_LOG_EVENT } from '../constants/todo-comment-log-events';
 import { TODO_COMMENT_HIGHLIGHT_DURATION_MS } from '../constants/todo-comment.constants';
 import { type TodoComment, TodoCommentPolicy } from '../domains/todo-comment.model';
@@ -73,7 +74,6 @@ import {
   useTodoCommentReveal,
 } from '../hooks/use-todo-comment-reveal';
 import { useSetTodoCommentLikeMutationOptions } from '../queries/todo-comment.mutations';
-import { toEditFormValues, toReplyFormValues } from '../schemas/todo-comment-form.schema';
 import {
   TODO_COMMENT_AUTHOR_AVATAR_SIZE,
   TodoCommentAuthorAvatar,

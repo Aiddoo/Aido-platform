@@ -1,13 +1,33 @@
 import { type Todo, TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import type { DateKey } from '@src/shared/date/date-key';
-import type { Instant } from '@src/shared/date/instant';
+import { type Instant, toInstant } from '@src/shared/date/instant';
 import { toHHmm } from '@src/shared/date/zoned';
+
+import type { ScheduleChange } from '../domains/weather-reschedule.model';
+import {
+  toSelectionKey,
+  type WeatherRescheduleFormValues,
+} from '../schemas/weather-reschedule-form.schema';
 
 interface TodoScheduleRequest {
   startDate: DateKey;
   endDate: DateKey | null;
   scheduledTime: string | null;
   isAllDay: boolean;
+}
+
+/**
+ * 받은 할 일(지금 영향받는 할 일) 가운데 선택이 남은 것만 옮긴다. 목록에서 뺀 할 일은 칸이 내려가며 선택이
+ * 지워져(shouldUnregister) 여기서 걸러지지 않아도 실리지 않는다
+ */
+export function toScheduleChanges(
+  { selections }: WeatherRescheduleFormValues,
+  todoIds: readonly number[],
+): ScheduleChange[] {
+  return todoIds.flatMap((todoId) => {
+    const selection = selections[toSelectionKey(todoId)];
+    return selection == null ? [] : [{ todoId, startsAt: toInstant(selection) }];
+  });
 }
 
 /** 일괄 변경 결과. 성공한 할 일만 모으고, 실패는 이유만 모아 한 번에 알린다. */

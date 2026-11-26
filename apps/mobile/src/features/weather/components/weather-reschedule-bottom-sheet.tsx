@@ -58,6 +58,7 @@ import {
   toMovedScheduleRequest,
   toOriginalScheduleRequest,
   toRescheduleOutcome,
+  toScheduleChanges,
 } from '../apis/weather-reschedule.mapper';
 import { WEATHER_LOG_EVENT } from '../constants/weather-log-events';
 import {
@@ -85,7 +86,6 @@ import { invalidateWeatherReports } from '../queries/weather-cache';
 import { useRescheduleTodoMutationOptions } from '../queries/weather.mutations';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import {
-  toScheduleChanges,
   toSelectionKey,
   type WeatherRescheduleFormValues,
   weatherRescheduleFormSchema,

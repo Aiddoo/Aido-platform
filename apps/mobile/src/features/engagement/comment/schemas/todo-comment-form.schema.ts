@@ -6,7 +6,6 @@ import {
   type TodoCommentComposer,
   todoCommentComposerSchema,
 } from '../domains/todo-comment-composer.model';
-import type { TodoComment } from '../domains/todo-comment.model';
 
 export const todoCommentFormSchema = z.object({
   // 모델 스키마로 검사만 하고 값은 그대로 둔다. 시각 칸의 brand가 출력 타입에만 붙어, 스키마를 그대로 넣으면 폼이 읽는 값(입력 타입)을
@@ -27,14 +26,3 @@ export const EMPTY_TODO_COMMENT_FORM_VALUES: TodoCommentFormValues = {
   mode: { type: 'new' },
   items: EMPTY_ITEMS,
 };
-
-export function toReplyFormValues(target: TodoComment): TodoCommentFormValues {
-  return { mode: { type: 'reply', target }, items: EMPTY_ITEMS };
-}
-
-export function toEditFormValues(target: TodoComment): TodoCommentFormValues {
-  return {
-    mode: { type: 'edit', target },
-    items: target.content == null ? EMPTY_ITEMS : [{ content: target.content }],
-  };
-}

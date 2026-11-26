@@ -31,6 +31,8 @@ import { match } from 'ts-pattern';
 
 import {
   type TodoCommentChainSubmission,
+  toEditFormValues,
+  toReplyFormValues,
   toTodoCommentChainSubmission,
   toTrimmedContents,
 } from '../apis/todo-comment.mapper';
@@ -55,8 +57,6 @@ import {
 import {
   type TodoCommentFormValues,
   EMPTY_TODO_COMMENT_FORM_VALUES,
-  toReplyFormValues,
-  toEditFormValues,
 } from '../schemas/todo-comment-form.schema';
 import {
   createTodoCommentDraftKey,

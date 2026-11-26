@@ -26,7 +26,10 @@ import type {
   TodoCommentChain,
   TodoCommentLikeResult,
 } from '../domains/todo-comment.model';
-import type { TodoCommentFormValues } from '../schemas/todo-comment-form.schema';
+import {
+  EMPTY_TODO_COMMENT_FORM_VALUES,
+  type TodoCommentFormValues,
+} from '../schemas/todo-comment-form.schema';
 import type { TodoCommentChainInput } from '../schemas/todo-comment-request.schema';
 import type {
   WrittenTodoCommentChainResponse,
@@ -186,5 +189,17 @@ export function toTodoCommentChainSubmission({
   return {
     fingerprint,
     request: { parentId, items: [toItem(firstContent), ...remainingContents.map(toItem)] },
+  };
+}
+
+export function toReplyFormValues(target: TodoComment): TodoCommentFormValues {
+  return { mode: { type: 'reply', target }, items: EMPTY_TODO_COMMENT_FORM_VALUES.items };
+}
+
+export function toEditFormValues(target: TodoComment): TodoCommentFormValues {
+  return {
+    mode: { type: 'edit', target },
+    items:
+      target.content == null ? EMPTY_TODO_COMMENT_FORM_VALUES.items : [{ content: target.content }],
   };
 }
