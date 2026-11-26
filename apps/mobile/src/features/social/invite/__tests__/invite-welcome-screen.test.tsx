@@ -100,7 +100,7 @@ describe('InviteWelcomeSheetRoute', () => {
 
     // Then
     expect(
-      await screen.findByText('이미 아이두를 쓰고 있어서 이번에는 친구만 맺었어요'),
+      await screen.findByText('이미 아이두를 쓰고 있어서 이번에는 친구만 맺었어요.'),
     ).toBeOnTheScreen();
     expect(screen.queryByText(/프리미엄 \d+일을 받았어요/u)).toBeNull();
   });

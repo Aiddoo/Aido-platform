@@ -38,7 +38,7 @@
       "title": "Ready to bring your events in?",
       "description": "You can find this again in Me > What's new",
       "card": "You can also open it from Me > Settings",
-      "later": "Maybe later",
+      "later": "Not now",
       "bubble": "Let me move your events over"
     },
     "demo": {
@@ -104,7 +104,7 @@
       "description": "You can find this again in Me > What's new",
       "suggestion": "AI suggestions",
       "report": "AI reports",
-      "later": "Maybe later",
+      "later": "Not now",
       "bubble": "Let me find what you do often"
     },
     "demo": {

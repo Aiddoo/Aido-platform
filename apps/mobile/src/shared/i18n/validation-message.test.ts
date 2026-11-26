@@ -11,7 +11,7 @@ describe('resolveValidationMessage', () => {
   it.each([
     ['nickname.tooLong', '이름은 20자 이내로 입력해주세요'],
     ['categoryName.tooLong', '카테고리 이름은 50자 이내로 입력해주세요'],
-    ['todoTitle.tooLong', '제목은 200자 이내로 줄여주세요'],
+    ['todoTitle.tooLong', '제목은 200자 이내로 입력해주세요'],
     ['password.tooShort', '비밀번호는 8자 이상이어야 해요'],
     ['inquiryContent.tooLong', '내용은 2000자 이내로 입력해주세요'],
     ['userTag.length', '해시태그는 8자리예요'],

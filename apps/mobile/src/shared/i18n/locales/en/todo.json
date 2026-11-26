@@ -168,7 +168,7 @@
     "stopRepeat": "Stop repeating"
   },
   "list": {
-    "loadError": "Something went wrong while loading your to-dos.",
+    "loadError": "Couldn't load your to-dos",
     "reminderOff": "Notifications off"
   },
   "friendTodo": {
@@ -181,7 +181,7 @@
     "backToMyFeed": "Go to my feed"
   },
   "nudge": {
-    "limitSpentTitle": "You've used up today's nudges",
+    "limitSpentTitle": "You've used all your nudges today",
     "prompt": "Send a friend a <highlight>nudge</highlight> to cheer them on?",
     "hintPrefix": "To share a little support, tap",
     "hintSuffix": "and cheer them on",
@@ -311,10 +311,10 @@
     "encouragementTitle": "Cheering you on, at your own pace!",
     "replyCompletionHint": "Sending a reply doesn't complete your to-do",
     "completedThanksHint": "You did it! Send a little thanks to the friends who cheered you on",
-    "thanksSelectionHint": "Your thanks will go to everyone in this list. Any nudges that arrive later can be thanked separately",
+    "thanksSelectionHint": "Your thanks will go to everyone in this list. Any nudges that arrive later can be thanked separately.",
     "thanksSendCount_one": "Thank {{count}} friend",
     "thanksSendCount_other": "Thank {{count}} friends",
-    "thanksDescription_one": "Send {{count}} friend a little thanks and let them know you’re done",
-    "thanksDescription_other": "Send {{count}} friends a little thanks and let them know you’re done"
+    "thanksDescription_one": "Send {{count}} friend a little thanks and let them know you’re done.",
+    "thanksDescription_other": "Send {{count}} friends a little thanks and let them know you’re done."
   }
 }

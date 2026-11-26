@@ -149,7 +149,7 @@ describe('SuggestionCategorySheetRoute', () => {
 
       // Then
       // 캐시가 아직 프리미엄이라 구독을 권하지 않고 제목을 토스트로 알린다
-      expect(await screen.findByText('AI 반복 제안은 프리미엄 기능이에요')).toBeOnTheScreen();
+      expect(await screen.findByText('AI 제안은 프리미엄 기능이에요')).toBeOnTheScreen();
       expect(haptics.notify.mock.calls).toEqual([['error']]);
     });
 

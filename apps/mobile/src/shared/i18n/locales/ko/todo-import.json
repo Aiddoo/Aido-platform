@@ -40,7 +40,7 @@
       "year": "1년"
     },
     "lockedPreset": "{{label}}, 프리미엄 전용",
-    "freeUntil": "무료 플랜은 오늘부터 {{count}}일 동안의 일정을 가져올 수 있어요 ({{date}}까지).",
+    "freeUntil": "무료는 오늘부터 {{count}}일 동안의 일정을 가져올 수 있어요 ({{date}}까지).",
     "freeUntilPremium": "더 먼 일정은 프리미엄에서 가져와요",
     "freeUntilHint": "프리미엄 안내를 열어요"
   },
@@ -69,7 +69,7 @@
     "missingHelp": {
       "open": "캘린더가 목록에 없나요?",
       "title": "캘린더가 목록에 없나요?",
-      "description": "아이두는 이 기기의 캘린더 앱에 보이는 캘린더만 가져올 수 있어요. 다른 앱에만 있는 캘린더는 이 기기에 계정을 추가해주세요",
+      "description": "아이두는 이 기기의 캘린더 앱에 보이는 캘린더만 가져올 수 있어요. 다른 앱에만 있는 캘린더는 이 기기에 계정을 추가해주세요.",
       "iphone": {
         "openSettings": "iPhone 설정 > 캘린더 > 계정으로 가요",
         "openAppsSettings": "iPhone 설정 > 앱 > 캘린더 > 캘린더 계정으로 가요"
@@ -179,7 +179,7 @@
     "notOnThisDevice": "다른 기기에서 가져오는 중이에요. 그 기기에서 마무리하거나 여기서 멈출 수 있어요",
     "cancel": "가져오기 멈추기",
     "cancelConfirmTitle": "가져오기를 멈출까요?",
-    "cancelConfirmDescription": "아직 할 일로 만들지 않은 일정은 가져오지 않아요"
+    "cancelConfirmDescription": "아직 할 일로 만들지 않은 일정은 가져오지 않아요."
   },
   "failure": {
     "tooManyItems": "한 번에 {{limit}}개까지 가져올 수 있어요. 기간이나 캘린더를 줄여 다시 가져와주세요",
@@ -211,7 +211,7 @@
     "viewTodos": "할 일 보러 가기",
     "undo": "되돌리기",
     "undoConfirmTitle": "가져온 할 일을 되돌릴까요?",
-    "undoConfirmDescription": "아직 완료하지 않은 할 일만 삭제해요",
+    "undoConfirmDescription": "아직 완료하지 않은 할 일만 삭제해요.",
     "failedTitle": "가져오다 멈췄어요",
     "failedDescription_zero": "아직 만든 할 일은 없어요. 다시 가져와주세요",
     "failedDescription": "만든 할 일 {{count}}개는 그대로 있어요. 다시 가져오면 남은 일정만 이어서 만들어요",

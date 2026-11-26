@@ -459,7 +459,7 @@ describe('SignUpRoute', () => {
       );
 
       // When
-      await fireEvent.press(screen.getByText('인증코드 다시 보내기'));
+      await fireEvent.press(screen.getByText('코드 다시 보내기'));
 
       // Then
       expect(await screen.findByText('30초 뒤에 다시 보낼 수 있어요')).toBeTruthy();

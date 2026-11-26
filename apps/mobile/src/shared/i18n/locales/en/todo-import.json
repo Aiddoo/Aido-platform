@@ -74,7 +74,7 @@
     "missingHelp": {
       "open": "Missing a calendar?",
       "title": "Missing a calendar?",
-      "description": "Aido can import only the calendars shown in this device's calendar app. If a calendar lives only in another app, add that account to this device",
+      "description": "Aido can import only the calendars shown in this device's calendar app. If a calendar lives only in another app, add that account to this device.",
       "iphone": {
         "openSettings": "Open iPhone Settings > Calendar > Accounts",
         "openAppsSettings": "Open iPhone Settings > Apps > Calendar > Calendar Accounts"
@@ -156,7 +156,7 @@
       "newDescription": "It starts as '{{name}}'. You can change it",
       "sameName": "'{{name}}' already exists",
       "lockedFree": "The free plan allows up to {{limit}} categories",
-      "locked": "You can't create more categories"
+      "locked": "You can't add more categories"
     },
     "rejected": {
       "capacity": "This category can only take {{count}} of {{expected}}. Choose a shorter range or another category",
@@ -191,7 +191,7 @@
     "notOnThisDevice": "Another device is importing this. Finish it there or stop it here",
     "cancel": "Stop import",
     "cancelConfirmTitle": "Stop this import?",
-    "cancelConfirmDescription": "Events that aren't to-dos yet won't be imported"
+    "cancelConfirmDescription": "Events that aren't to-dos yet won't be imported."
   },
   "failure": {
     "tooManyItems": "You can import up to {{limit}} events at once. Choose a shorter range or fewer calendars and try again",
@@ -225,7 +225,7 @@
     "viewTodos": "See to-dos",
     "undo": "Undo",
     "undoConfirmTitle": "Undo this import?",
-    "undoConfirmDescription": "Only to-dos you haven't completed are removed",
+    "undoConfirmDescription": "Only to-dos you haven't completed are removed.",
     "failedTitle": "The import stopped partway",
     "failedDescription_zero": "No to-dos were created yet. Please import again",
     "failedDescription_one": "The {{count}} to-do already created stays. Import again to add only the rest",

@@ -125,7 +125,7 @@
   },
   "multiDayDelete": {
     "title": "이 할 일을 모두 삭제할까요?",
-    "description": "{{period}} 전체가 삭제돼요",
+    "description": "{{period}} 전체가 삭제돼요.",
     "confirm": "모두 삭제"
   },
   "chip": {
@@ -163,7 +163,7 @@
     "stopRepeat": "반복 끝내기"
   },
   "list": {
-    "loadError": "할 일을 불러오지 못했어요.",
+    "loadError": "할 일을 불러오지 못했어요",
     "reminderOff": "알림 꺼짐"
   },
   "friendTodo": {
@@ -290,7 +290,7 @@
     "thanksSendMore": "더 전하기",
     "thanksQuickActionLabel": "콕 찔러준 친구 {{count}}명에게 고마움 전하기",
     "thanksTitle": "친구에게 고마움을 전해요",
-    "thanksDescription": "응원해준 친구 {{count}}명에게 완료 소식과 고마움을 함께 전해요",
+    "thanksDescription": "응원해준 친구 {{count}}명에게 완료 소식과 고마움을 함께 전해요.",
     "thanksEmpty": "지금은 고마움을 전할 친구가 없어요",
     "thanksEmptyDescription": "이미 고마움을 전했거나 친구 관계가 바뀌었을 수 있어요",
     "thanksSent": "친구에게 고마운 마음을 전했어요",
@@ -299,7 +299,7 @@
     "encouragementTitle": "오늘도 네 속도로, 응원할게!",
     "replyCompletionHint": "답장으로 할 일이 완료되지는 않아요",
     "completedThanksHint": "해냈네요! 응원해준 친구에게 고마움을 전해볼까요?",
-    "thanksSelectionHint": "이 목록의 친구 모두에게 전해요. 이후 받은 콕에는 따로 고마움을 전할 수 있어요",
+    "thanksSelectionHint": "이 목록의 친구 모두에게 전해요. 이후 받은 콕에는 따로 고마움을 전할 수 있어요.",
     "thanksSendCount": "{{count}}명에게 고마움 전하기"
   }
 }

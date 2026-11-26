@@ -108,17 +108,17 @@ describe('useEnsureMicrophonePermission', () => {
     await fireEvent.press(screen.getByText('시작'));
 
     // Then
-    expect(await screen.findByText('설정으로 이동')).toBeTruthy();
+    expect(await screen.findByText('설정 열기')).toBeTruthy();
     expect(speechRecognizer.requestPermission).not.toHaveBeenCalled();
   });
 
-  it('설정으로 이동을 고르면 이 앱의 설정 화면을 열고 듣지 않는다', async () => {
+  it('설정 열기를 고르면 이 앱의 설정 화면을 열고 듣지 않는다', async () => {
     // Given
     const { externalLink, onResult } = await renderBlocked('microphone');
     await fireEvent.press(screen.getByText('시작'));
 
     // When
-    await fireEvent.press(await screen.findByText('설정으로 이동'));
+    await fireEvent.press(await screen.findByText('설정 열기'));
 
     // Then
     await waitFor(() => expect(onResult).toHaveBeenCalledWith(false));
@@ -139,7 +139,7 @@ describe('useEnsureMicrophonePermission', () => {
     // Then
     await waitFor(() => expect(onResult).toHaveBeenCalledWith(false));
     expect(speechRecognizer.requestPermission).toHaveBeenCalledTimes(1);
-    expect(screen.queryByText('설정으로 이동')).toBeNull();
+    expect(screen.queryByText('설정 열기')).toBeNull();
     expect(externalLink.openSettings).not.toHaveBeenCalled();
   });
 

@@ -9,7 +9,7 @@
   },
   "deleteDialog": {
     "title": "{{name}}님을 친구에서 삭제할까요?",
-    "description": "삭제하면 서로의 할 일이 보이지 않아요"
+    "description": "삭제하면 서로의 할 일이 보이지 않아요."
   },
   "tabs": {
     "friends": "친구 목록",

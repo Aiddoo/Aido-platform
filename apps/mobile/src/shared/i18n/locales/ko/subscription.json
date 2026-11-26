@@ -61,7 +61,7 @@
       "description": "무료는 {{free}}개, 프리미엄은 {{premium}}개까지"
     },
     "aiRepeat": {
-      "title": "AI 반복 제안",
+      "title": "AI 제안",
       "description": "반복되는 할 일을 AI가 알아서 제안해드려요"
     },
     "aiReport": {
@@ -170,7 +170,7 @@
       "daysLeft": "남은 기간"
     },
     "footnote": {
-      "returnsToFreePlan": "{{date}}이 지나면 무료 플랜으로 돌아가요",
+      "returnsToFreePlan": "{{date}}이 지나면 무료 요금제로 돌아가요",
       "rewardStartsAfterSubscription": "구독이 끝나면 보상 {{count}}일이 이어서 시작돼요",
       "manageAutoRenewalInStore": "자동 갱신은 스토어 설정에서 바꿀 수 있어요",
       "cancelTrialInStore": "체험이 끝나기 전에 스토어 구독 설정에서 해지하면 결제되지 않아요",
@@ -187,13 +187,13 @@
       "manage": "스토어 구독 관리를 열지 못했어요"
     },
     "description": {
-      "network": "인터넷 연결을 확인하고 다시 시도해주세요",
-      "server": "잠시 뒤 다시 시도해주세요. 계속 안 되면 문의해주세요",
-      "store": "스토어에 연결하지 못했어요. 잠시 뒤 다시 시도해주세요",
-      "purchase": "결제가 됐는데 프리미엄이 보이지 않으면 문의해주세요",
-      "restore": "잠시 뒤 다시 시도해주세요. 계속 안 되면 문의해주세요",
-      "storeSetup": "스토어 연결에 문제가 있어요. 문의를 남겨주세요. 빠르게 확인할게요",
-      "storeTemporary": "스토어가 잠시 응답하지 않아요. 잠시 뒤 다시 시도하거나 문의를 남겨주세요"
+      "network": "인터넷 연결을 확인하고 다시 시도해주세요.",
+      "server": "잠시 뒤 다시 시도해주세요. 계속 안 되면 문의해주세요.",
+      "store": "스토어에 연결하지 못했어요. 잠시 뒤 다시 시도해주세요.",
+      "purchase": "결제가 됐는데 프리미엄이 보이지 않으면 문의해주세요.",
+      "restore": "잠시 뒤 다시 시도해주세요. 계속 안 되면 문의해주세요.",
+      "storeSetup": "스토어 연결에 문제가 있어요. 문의를 남겨주세요. 빠르게 확인할게요.",
+      "storeTemporary": "스토어가 잠시 응답하지 않아요. 잠시 뒤 다시 시도하거나 문의를 남겨주세요."
     },
     "contactSupport": "문의하기"
   },
@@ -216,7 +216,7 @@
     "categoryTitle": "카테고리를 더 만들 수 없어요",
     "aiReportTitle": "AI 리포트는 프리미엄 기능이에요",
     "aiReportDescription": "매주·매월 AI가 분석한 리포트를 받아볼 수 있어요.",
-    "aiSuggestionTitle": "AI 반복 제안은 프리미엄 기능이에요",
+    "aiSuggestionTitle": "AI 제안은 프리미엄 기능이에요",
     "aiSuggestionDescription": "반복되는 할 일을 AI가 알아서 제안해드려요.",
     "reminderTimeTitle": "리마인드 시간 변경은 프리미엄 기능이에요",
     "reminderTimeDescription": "원하는 시간에 리마인드를 받을 수 있어요. 기본 시간 알림은 계속 와요.",
@@ -238,7 +238,7 @@
     "usedUpDay": "오늘 다 썼어요"
   },
   "tier": {
-    "admin": "어드민",
+    "admin": "관리자",
     "premium": "프리미엄",
     "basic": "베이직"
   },
@@ -267,7 +267,7 @@
       "description": "달성률과 날마다 끝낸 할 일을 차트로 보여줘요"
     },
     "aiSuggestion": {
-      "title": "AI 반복 제안",
+      "title": "AI 제안",
       "description": "자주 하는 일을 반복 할 일로 제안해줘요"
     },
     "voiceNote": {
@@ -296,7 +296,7 @@
         "term": "달성률과 자주 끝내는 요일·시간을 정리해줘요."
       },
       "aiSuggestion": {
-        "label": "AI 반복 제안",
+        "label": "AI 제안",
         "term": "자주 하는 일을 찾아 반복 할 일로 제안해줘요."
       },
       "voiceNote": {

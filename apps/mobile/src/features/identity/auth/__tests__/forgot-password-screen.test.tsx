@@ -193,7 +193,7 @@ describe('ForgotPasswordRoute', () => {
     await fillEmailStep();
 
     // When
-    await fireEvent.press(screen.getByText('인증코드 다시 보내기'));
+    await fireEvent.press(screen.getByText('코드 다시 보내기'));
 
     // Then
     expect(await screen.findByText('60초 뒤에 다시 보낼 수 있어요')).toBeTruthy();
@@ -411,7 +411,7 @@ describe('ForgotPasswordRoute', () => {
       await fillEmailStep();
       const resend = createPendingResponse(ok(createForgotPasswordDto()));
       httpClient.post.mockReturnValue(resend.response);
-      await fireEvent.press(screen.getByText('인증코드 다시 보내기'));
+      await fireEvent.press(screen.getByText('코드 다시 보내기'));
 
       // When
       await androidBack.press();

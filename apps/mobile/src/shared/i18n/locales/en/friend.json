@@ -9,7 +9,7 @@
   },
   "deleteDialog": {
     "title": "Remove {{name}} from friends?",
-    "description": "You'll no longer see each other's to-dos"
+    "description": "You'll no longer see each other's to-dos."
   },
   "tabs": {
     "friends": "Friends",

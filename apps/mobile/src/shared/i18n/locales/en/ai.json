@@ -151,7 +151,7 @@
       "subscribeCta": "Subscribe to get suggestions"
     },
     "toasts": {
-      "premiumOnly": "AI repeat suggestions are for Premium subscribers only",
+      "premiumOnly": "AI suggestions are a Premium feature",
       "retryLater": "Please try again later",
       "accepted": "Set to repeat every {{days}}",
       "rejected": "Suggestion cleared"

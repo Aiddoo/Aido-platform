@@ -265,7 +265,7 @@ describe('TodoCreateBottomSheet', () => {
       await fireEvent.changeText(input, '가'.repeat(250));
 
       // Then
-      expect(await screen.findByText('제목은 200자 이내로 줄여주세요')).toBeTruthy();
+      expect(await screen.findByText('제목은 200자 이내로 입력해주세요')).toBeTruthy();
       expect(screen.getByTestId('todo-add-submit')).toBeDisabled();
     });
   });

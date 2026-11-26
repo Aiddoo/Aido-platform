@@ -50,7 +50,7 @@
     "imageSheet": {
       "title": "프로필 이미지 선택",
       "selectedAlt": "선택된 프로필 이미지",
-      "clear": "지우기"
+      "clear": "삭제"
     }
   },
   "editName": {

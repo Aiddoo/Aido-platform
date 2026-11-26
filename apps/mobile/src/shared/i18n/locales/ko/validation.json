@@ -19,7 +19,7 @@
     "pattern": "해시태그는 영문 대문자와 숫자만 사용할 수 있어요"
   },
   "todoTitle": {
-    "tooLong": "제목은 {{count}}자 이내로 줄여주세요"
+    "tooLong": "제목은 {{count}}자 이내로 입력해주세요"
   },
   "categoryName": {
     "required": "카테고리 이름을 입력해주세요",

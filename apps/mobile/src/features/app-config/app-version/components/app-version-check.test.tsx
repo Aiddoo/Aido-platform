@@ -88,7 +88,7 @@ describe('AppVersionCheck', () => {
     await fireEvent.press(screen.getByText('버전 정보'));
 
     // Then
-    expect(await screen.findAllByText('지금은 안내할 새 버전이 없어요.')).not.toHaveLength(0);
+    expect(await screen.findAllByText('지금은 안내할 새 버전이 없어요')).not.toHaveLength(0);
     expect(screen.queryByText(/버전 정보를 확인하지 못했어요/)).toBeNull();
     expect(errorReporter.captureException).not.toHaveBeenCalled();
     expect(listing.openListing).not.toHaveBeenCalled();

@@ -37,7 +37,7 @@ setupFakeTimersPerTest({ now: SUGGESTION_NOW, doNotFake: ['nextTick'] });
 
 const STRETCHING = createSuggestionDto({ id: 1, title: '아침 스트레칭' });
 /** 캐시가 아직 프리미엄인데 서버가 요금제로 막으면 구독을 권하지 않고 이 제목을 토스트로 알린다 */
-const PREMIUM_ONLY_TITLE = 'AI 반복 제안은 프리미엄 기능이에요';
+const PREMIUM_ONLY_TITLE = 'AI 제안은 프리미엄 기능이에요';
 
 async function renderSuggestions(
   httpClient = createSuggestionHttpClient(),
@@ -64,7 +64,7 @@ describe('SuggestionsScreen', () => {
   it.each([
     { state: 'ANALYZING', title: '최근 할 일을 살펴보고 있어요' },
     { state: 'NO_PATTERN_FOUND', title: '아직 반복할 만한 할 일이 없어요' },
-    { state: 'DONE_FOR_TODAY', title: '오늘 제안을 모두 정리했어요' },
+    { state: 'DONE_FOR_TODAY', title: '오늘 제안을 모두 확인했어요' },
     { state: 'NEEDS_AI_CONSENT', title: 'AI 제안을 받으려면 동의가 필요해요' },
     { state: 'NEEDS_MORE_TODOS', title: '아직 살펴볼 할 일이 없어요' },
   ] as const)(
@@ -163,7 +163,7 @@ describe('SuggestionsScreen', () => {
     });
 
     // Then
-    expect(await screen.findByText('오늘 제안을 모두 정리했어요')).toBeOnTheScreen();
+    expect(await screen.findByText('오늘 제안을 모두 확인했어요')).toBeOnTheScreen();
     expect(screen.queryByText('아침 스트레칭')).not.toBeOnTheScreen();
     expect(httpClient.patch).toHaveBeenCalledWith('v1/ai/suggestions/1', { action: 'dismiss' });
     expect(countWriteRequests(httpClient, 'patch', 'v1/ai/suggestions/1')).toBe(1);

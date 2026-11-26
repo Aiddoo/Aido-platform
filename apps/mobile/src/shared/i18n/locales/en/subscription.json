@@ -65,7 +65,7 @@
       "description": "{{free}} on Free, up to {{premium}} with Premium"
     },
     "aiRepeat": {
-      "title": "AI repeat suggestions",
+      "title": "AI suggestions",
       "description": "AI suggests the to-dos you keep repeating"
     },
     "aiReport": {
@@ -195,13 +195,13 @@
       "manage": "Couldn't open subscription settings"
     },
     "description": {
-      "network": "Check your internet connection and try again",
-      "server": "Please try again in a moment. If it keeps happening, contact us",
-      "store": "Couldn't connect to the store. Please try again in a moment",
-      "purchase": "If you were charged but don't see Premium, contact us",
-      "restore": "Please try again in a moment. If it keeps happening, contact us",
-      "storeSetup": "We couldn't reach the store. Send us a message and we'll look into it",
-      "storeTemporary": "The store isn't responding right now. Try again in a moment, or send us a message"
+      "network": "Check your internet connection and try again.",
+      "server": "Please try again in a moment. If it keeps happening, contact us.",
+      "store": "Couldn't connect to the store. Please try again in a moment.",
+      "purchase": "If you were charged but don't see Premium, contact us.",
+      "restore": "Please try again in a moment. If it keeps happening, contact us.",
+      "storeSetup": "We couldn't reach the store. Send us a message and we'll look into it.",
+      "storeTemporary": "The store isn't responding right now. Try again in a moment, or send us a message."
     },
     "contactSupport": "Contact us"
   },
@@ -224,7 +224,7 @@
     "categoryTitle": "You can't add more categories",
     "aiReportTitle": "AI reports are a Premium feature",
     "aiReportDescription": "Get weekly and monthly AI reports.",
-    "aiSuggestionTitle": "AI repeat suggestions are a Premium feature",
+    "aiSuggestionTitle": "AI suggestions are a Premium feature",
     "aiSuggestionDescription": "AI suggests the to-dos you keep repeating.",
     "reminderTimeTitle": "Custom reminder times are a Premium feature",
     "reminderTimeDescription": "Get reminders at the times you choose. You'll still get reminders at your default time.",
@@ -275,7 +275,7 @@
       "description": "See your completion rate and daily progress in charts"
     },
     "aiSuggestion": {
-      "title": "AI repeat suggestions",
+      "title": "AI suggestions",
       "description": "Get suggestions to repeat the to-dos you do often"
     },
     "voiceNote": {
@@ -304,7 +304,7 @@
         "term": "Sums up your completion rate and the days and times you get things done."
       },
       "aiSuggestion": {
-        "label": "AI repeat suggestions",
+        "label": "AI suggestions",
         "term": "Finds what you do often and suggests it as a repeating to-do."
       },
       "voiceNote": {

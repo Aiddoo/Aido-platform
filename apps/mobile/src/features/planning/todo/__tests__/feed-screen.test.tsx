@@ -62,7 +62,7 @@ const FORMER_FRIEND_ID = 'clz7x5p8k0009qz0z8z8z8z8z';
 const FRIEND_TODOS_PATH = `v1/todos/friends/${FRIEND_ID}`;
 const FRIEND_COMPLETIONS_PATH = `v1/daily-completions/friends/${FRIEND_ID}`;
 const FRIEND_COOLDOWN_PATH = `v1/nudges/remind/cooldown/${FRIEND_ID}`;
-const LOAD_ERROR = '할 일을 불러오지 못했어요.';
+const LOAD_ERROR = '할 일을 불러오지 못했어요';
 /** 말풍선은 포커스 뒤 450ms를 기다렸다가 연다 */
 const POPOVER_WAIT = { timeout: 2_000 };
 const ME_ID = createCurrentUserDto().userId;

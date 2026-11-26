@@ -52,7 +52,7 @@
     },
     "loadFailed": {
       "title": "Couldn't load the invite",
-      "description": "Check your connection and try again"
+      "description": "Check your internet connection and try again"
     },
     "enterCode": "Enter code instead"
   },
@@ -74,7 +74,7 @@
     "rotate": {
       "button": "Make a new link",
       "title": "Make a new link?",
-      "description": "Your current link will stop working",
+      "description": "Your current link will stop working.",
       "confirm": "Make a new link"
     },
     "notice": {
@@ -193,12 +193,12 @@
   "welcome": {
     "friendsTitle": "You're now friends with {{name}}",
     "requestedTitle": "Friend request sent to {{name}}",
-    "friendsDescription": "Now you can see and cheer on each other's to-dos",
-    "requestedDescription": "{{name}} has reached their friend limit.\nYou'll be friends once they accept",
-    "alreadyClaimedDescription": "This device already received an invite reward, so you're just friends this time",
-    "existingAccountDescription": "Since you already use Aido, you're friends now without a reward",
-    "requestedAlreadyClaimedDescription": "{{name}} has reached their friend limit. You'll be friends once they accept.\nThis device already received an invite reward, so there's no reward this time",
-    "requestedExistingAccountDescription": "{{name}} has reached their friend limit. You'll be friends once they accept.\nSince you already use Aido, there's no reward this time",
+    "friendsDescription": "Now you can see and cheer on each other's to-dos.",
+    "requestedDescription": "{{name}} has reached their friend limit.\nYou'll be friends once they accept.",
+    "alreadyClaimedDescription": "This device already received an invite reward, so you're just friends this time.",
+    "existingAccountDescription": "Since you already use Aido, you're friends now without a reward.",
+    "requestedAlreadyClaimedDescription": "{{name}} has reached their friend limit. You'll be friends once they accept.\nThis device already received an invite reward, so there's no reward this time.",
+    "requestedExistingAccountDescription": "{{name}} has reached their friend limit. You'll be friends once they accept.\nSince you already use Aido, there's no reward this time.",
     "rewardTitle_one": "You got {{count}} day of Premium",
     "rewardTitle_other": "You got {{count}} days of Premium",
     "rewardDescription_one": "Enjoy all features for {{count}} day",
@@ -212,6 +212,6 @@
     "notificationOn": "Friend updates are on",
     "createFirstTodo": "Make your first to-do",
     "openFriendFeed": "See {{name}}'s to-dos first",
-    "later": "Maybe later"
+    "later": "Not now"
   }
 }
