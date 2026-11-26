@@ -16,7 +16,7 @@ pnpm --filter @aido/mobile test:node                    # store-listing 테스�
 | 스토어      | 로캘             | 필드                                                                                                                |
 | ----------- | ---------------- | ------------------------------------------------------------------------------------------------------------------- |
 | App Store   | `ko`, `en-US`    | `name`(30) `subtitle`(30) `promotional_text`(170) `description`(4000) `keywords`(100) `release_notes`(4000) `*_url` |
-| App Store   | `en-GB`          | `keywords`만. 나머지는 `en-US`를 물려받아요                                                                         |
+| App Store   | `en-GB`          | `keywords`·`release_notes`만. 나머지는 `en-US`를 물려받아요                                                         |
 | Google Play | `ko-KR`, `en-US` | `title`(30) `short_description`(80) `full_description`(4000) `release_notes`(500)                                   |
 
 - `release_notes`는 요약 한 줄 + `../<버전>/release.json`의 항목 그대로예요. 두 스토어 문안이 같아야 해요.
