@@ -33,7 +33,7 @@
 ### 선언과 이름
 
 - 이벤트는 기능의 `constants/{entity}.events.ts`에서 `declare module '@src/shared/analytics/event-map'`으로 `AppEventMap`을 채워 먼저 정의한다. 기능에 속하지 않는 앱 공통 이벤트(`feature_action_success`, `local_day_changed`, `offline_banner_shown`, `view_tab_changed`, `error_fallback_retry_tapped`)만 `shared/analytics/event-map.ts`에 직접 있다. 맨 `string` 이름·파라미터를 쓰지 않는다.
-- 값의 출처가 도메인이면 도메인 타입을 import한다(`invite_redeem_failed.reason` = `RedeemFailureReason`). 이벤트가 도메인 타입을 정의하지 않는다.
+- 값의 출처가 도메인이면 도메인 타입을 import한다(`invite_redeem_failed.reason` = `RedeemFailure`). 이벤트가 도메인 타입을 정의하지 않는다.
 - 컴포넌트는 `useTrack().trackEvent(name, params)`, React 밖은 `track(analytics, name, params)`로 보낸다. `analytics.trackEvent('문자열', …)`를 직접 부르지 않는다. 파사드는 선언한 키만 받아 객체 리터럴로 넘긴 선언 밖 키는 typecheck가 실패한다(변수로 넘기면 초과 속성 검사를 지나므로 params는 호출 자리에서 리터럴로 쓴다).
 - 새 이벤트 이름은 `{entity}_{object?}_{verb}`, 파라미터는 snake_case이고 맨 `string`을 쓰지 않는다(`aido/analytics-event-catalog`). 동사 목록은 그 규칙의 `EVENT_VERBS`(`tooling/oxlint-plugin-aido/rules/observability.mjs`)이고, GA가 보는 기존 이름은 `frozenNames`로 동결해 바꿀 때 별칭 기간을 둔다. 안내는 `{entity}_shown`·`{entity}_dismissed`로 맞춘다. 새 이벤트의 동사는 사용자가 누름이면 `_tapped`, 앱이 보여 줌이면 `_shown`, 앱 밖(푸시·링크·위젯)에서 앱이 열림이면 `_opened`다. 이 기준 밖의 기존 이름(`paywall_viewed`·`weather_opened` 등)은 GA가 보는 이름이라 그대로 둔다.
 - `source`(온 UI)·`surface`(안내가 뜬 자리)의 값은 `shared/analytics/event-vocabulary.ts`의 튜플 한 곳에서 선언하고, 이벤트는 `AnalyticsSource<'settings'>`·`AnalyticsSurface<EntitlementGateSurface>`처럼 그 안에서 고른다(`aido/analytics-event-catalog`의 `vocabularyParams`). 나간 값의 철자는 바꾸지 않고 더하기만 한다. `view_tab_changed.view`도 같은 파일의 목록이고 `ViewTabs`는 그 안의 보기 스키마만 받는다.

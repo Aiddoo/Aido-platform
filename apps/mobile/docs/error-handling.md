@@ -83,6 +83,7 @@ classifyError(error): { kind: 'expected' | 'auth-expired' | 'connectivity' | 'un
 ## 기능 오류: domains/{feature}.error.ts
 
 - 서버 오류와 앱 코드는 `domains/{feature}.error.ts`의 이름 있는 판별 함수(`isLocationNotRegisteredError`)로만 읽는다. 코드 표(`{FEATURE}_ERROR_CODE`), `isXxxError`, `ErrorCode` → 폼 칸 매핑도 이 파일에 둔다. 파일이 없으면 만든다.
+- 오류를 실패 종류 유니온으로 나누면 타입은 `{X}Failure`, 고르는 함수는 `get{X}Failure`(늘 하나를 고른다)·`find{X}Failure`(없으면 `null`)다(`RedeemFailure`, `getVoicePlanFailure`). `Cause`·`Reason`을 붙이지 않는다.
 - 판별은 `ErrorCode`로 한다(`error.hasCode(ErrorCode.TODO_0801)`). 상태로 판별하는 것은 코드가 없는 경우(검증·없는 route·throttler 429)뿐이고 `HttpStatus`를 쓴다. 5xx는 `serverCode`로 판별한다.
 - `details`는 공유 스키마(`quotaErrorDetailsSchema` 등)로 `safeParse`한다. 운영에는 `PUBLIC_ERROR_DETAILS`에 등록한 코드만 실리므로 새로 읽는 코드는 계약에 먼저 등록한다.
 - lint가 `*.error.ts` 밖의 `isApiError`·`isCodedError` import, `.hasCode`, 오류 값의 `.status`·`.statusCode`·`.details`·`.serverCode`를 막는다(`aido/no-error-field-access`, [가드레일](./architecture/guardrails.md)). 공용 분류(`shared/errors`, 재시도, 경계)만 예외다.
