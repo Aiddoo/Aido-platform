@@ -122,8 +122,12 @@ function TodoEditForm({ todo, isOpen, onOpenChange, onClose }: TodoEditFormProps
     resetOptions: SERVER_VALUES_RESET_OPTIONS,
   });
   const updateTodo = useMutation(useUpdateTodoMutationOptions());
-  const reopenRepeatPicker = useReopenTodoRepeatPicker(form);
   const focusTitle = useFocusTodoTitle(form.setFocus);
+  const reopenRepeatPicker = useReopenTodoRepeatPicker({
+    getValues: form.getValues,
+    setValue: form.setValue,
+    focusTitle,
+  });
 
   // 입력 시트 안에서 내용을 갈아 끼우면 키보드가 내려가는 동안 높이가 튀어 떠 있는 시트로 묻는다
   const selectEditScope = async (

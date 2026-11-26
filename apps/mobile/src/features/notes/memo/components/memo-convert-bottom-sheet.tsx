@@ -110,8 +110,12 @@ function MemoConvertForm({
     defaultValues,
   });
   const convertMemo = useMutation(useConvertMemoToTodosMutationOptions());
-  const reopenRepeatPicker = useReopenTodoRepeatPicker(form);
   const focusTitle = useFocusTodoTitle(form.setFocus);
+  const reopenRepeatPicker = useReopenTodoRepeatPicker({
+    getValues: form.getValues,
+    setValue: form.setValue,
+    focusTitle,
+  });
 
   // 실패는 여기서 받지 않는다. RHF가 실패로 알아야 isSubmitSuccessful이 꺼진 채 남아 다시 보낼 수 있다
   const saveTodo = form.handleSubmit(async (values) => {

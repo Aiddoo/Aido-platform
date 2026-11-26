@@ -185,8 +185,12 @@ function TodoCreateForm({
 
   const createTodo = useMutation(useCreateTodoMutationOptions());
   const createRecurringTodo = useMutation(useCreateRecurringTodoMutationOptions());
-  const reopenRepeatPicker = useReopenTodoRepeatPicker(form);
   const focusTitle = useFocusTodoTitle(form.setFocus);
+  const reopenRepeatPicker = useReopenTodoRepeatPicker({
+    getValues: form.getValues,
+    setValue: form.setValue,
+    focusTitle,
+  });
   const [voice, voiceControls] = useAddTodoQuickVoice({
     getTitle: () => form.getValues('title'),
     onTitleChange: (title) =>
@@ -494,9 +498,9 @@ function TitleInput({
             ? resolveValidationMessage(error, { default: 'todoTitle.tooLong' })
             : undefined
         }
-        growsWithContent
+        shouldGrowWithContent
         textSize="b3"
-        preserveErrorSpace={false}
+        shouldPreserveErrorSpace={false}
         className="max-h-28 min-h-12"
         returnKeyType="done"
         submitBehavior="submit"
