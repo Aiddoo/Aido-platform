@@ -1,6 +1,7 @@
 import { EntitlementPolicy } from '@src/features/billing/subscription/domains/entitlement.model';
 import { useEntitlementGate } from '@src/features/billing/subscription/hooks/use-entitlement-gate';
 import { useGetEntitlementsQueryOptions } from '@src/features/billing/subscription/queries/entitlement.queries';
+import { APP_ICONS } from '@src/shared/constants/app-icons';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -18,7 +19,6 @@ import { range } from 'es-toolkit';
 import { RadioGroup, Skeleton } from 'heroui-native';
 import { Fragment } from 'react';
 
-import { APP_ICONS } from '../constants/app-icon.constants';
 import { type AppIconKey, AppIconPolicy } from '../domains/app-icon.model';
 import { useChangeAppIconMutationOptions } from '../queries/app-icon.mutations';
 import { useGetCurrentAppIconQueryOptions } from '../queries/app-icon.queries';

@@ -1,3 +1,4 @@
+import { AppIconInput } from '@src/features/device/app-icon/components/app-icon-input';
 import { LinkedAccountCountValue } from '@src/features/identity/auth/components/linked-account-count-value';
 import { AccountSettingsList } from '@src/features/identity/user/components/account-settings-list';
 import { ProfileAvatarButton } from '@src/features/identity/user/components/profile-avatar-button';
@@ -24,7 +25,7 @@ export default function ProfileScreen() {
       <SettingsScreenLayout>
         <QueryErrorBoundary fallback={ProfileAvatarButton.Error}>
           <Suspense fallback={<ProfileAvatarButton.Loading />}>
-            <ProfileAvatarButton />
+            <ProfileAvatarButton iconInput={AppIconInput} />
           </Suspense>
         </QueryErrorBoundary>
 

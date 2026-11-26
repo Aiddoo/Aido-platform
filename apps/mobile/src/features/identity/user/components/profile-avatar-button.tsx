@@ -1,5 +1,3 @@
-import { AppIconInput } from '@src/features/device/app-icon/components/app-icon-input';
-import type { AppIconKey } from '@src/features/device/app-icon/domains/app-icon.model';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -14,13 +12,25 @@ import {
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback, Skeleton } from 'heroui-native';
-import { useState } from 'react';
+import { type ComponentType, useState } from 'react';
 
 import { useUpdateProfileMutationOptions } from '../queries/user.mutations';
 import { useGetMeQueryOptions } from '../queries/user.queries';
 import { UserAvatar } from './user-avatar';
 
-export function ProfileAvatarButton() {
+interface ProfileIconInputProps {
+  /** 아이콘 키가 아닌 값(프로필 사진 주소 등)이면 아무것도 선택되지 않는다 */
+  value: string | null;
+  onValueChange: (value: string) => void;
+  isDisabled?: boolean;
+}
+
+interface ProfileAvatarButtonProps {
+  /** 사진으로 고를 아이콘 칸. 앱 아이콘 기능이 그리고 `app/`이 넘긴다 */
+  iconInput: ComponentType<ProfileIconInputProps>;
+}
+
+export function ProfileAvatarButton({ iconInput }: ProfileAvatarButtonProps) {
   const { t } = useTranslation('user');
   const fontScaledSize = useFontScaledSize();
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
@@ -55,6 +65,7 @@ export function ProfileAvatarButton() {
       <ProfileAvatarButton.ImageSheet
         isOpen={isImageSheetOpen}
         onOpenChange={setIsImageSheetOpen}
+        iconInput={iconInput}
       />
     </>
   );
@@ -70,17 +81,21 @@ ProfileAvatarButton.Loading = function Loading() {
 
 ProfileAvatarButton.Error = SettingsListGroup.Error;
 
-interface ImageSheetProps {
+interface ImageSheetProps extends ProfileAvatarButtonProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
 }
 
-ProfileAvatarButton.ImageSheet = function ImageSheet({ isOpen, onOpenChange }: ImageSheetProps) {
+ProfileAvatarButton.ImageSheet = function ImageSheet({
+  isOpen,
+  onOpenChange,
+  iconInput: IconInput,
+}: ImageSheetProps) {
   const { t } = useTranslation(['user', 'common']);
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const updateProfileMutation = useMutation(useUpdateProfileMutationOptions());
   // 고르기 전에는 저장된 사진을 보여 준다. 서버 값을 state로 복사하지 않고, 지우기는 따로 저장한다
-  const [chosenIcon, setChosenIcon] = useState<AppIconKey | null>(null);
+  const [chosenIcon, setChosenIcon] = useState<string | null>(null);
   const selectedIcon = chosenIcon ?? user.profileImage;
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -139,7 +154,7 @@ ProfileAvatarButton.ImageSheet = function ImageSheet({ isOpen, onOpenChange }: I
             profileImage={selectedIcon}
           />
         </VStack>
-        <AppIconInput
+        <IconInput
           value={selectedIcon}
           onValueChange={setChosenIcon}
           isDisabled={updateProfileMutation.isPending}

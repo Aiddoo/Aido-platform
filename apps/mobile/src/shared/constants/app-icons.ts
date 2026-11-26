@@ -10,8 +10,7 @@ import tuxedo_cat from '@assets/images/profile-icons/tuxedo-cat.webp';
 import white_cat from '@assets/images/profile-icons/white-cat.webp';
 import type { ImageSourcePropType } from 'react-native';
 
-import type { AppIconKey } from '../domains/app-icon.model';
-
+// 앱 아이콘(device/app-icon)과 프로필 사진(identity/user)이 같은 그림을 함께 쓴다
 const ICON_PREVIEWS = {
   default: { labelKey: 'icons.default', preview: defaultIcon },
   scottish_fold: { labelKey: 'icons.scottishFold', preview: scottish_fold },
@@ -22,6 +21,9 @@ const ICON_PREVIEWS = {
   russian_blue: { labelKey: 'icons.russianBlue', preview: russian_blue },
   cream_cat: { labelKey: 'icons.creamCat', preview: cream_cat },
   tuxedo_cat: { labelKey: 'icons.tuxedoCat', preview: tuxedo_cat },
-} as const satisfies Record<AppIconKey, { labelKey: string; preview: ImageSourcePropType }>;
+} as const satisfies Record<
+  (typeof PROFILE_ICON_KEYS)[number],
+  { labelKey: string; preview: ImageSourcePropType }
+>;
 
 export const APP_ICONS = PROFILE_ICON_KEYS.map((key) => ({ key, ...ICON_PREVIEWS[key] }));

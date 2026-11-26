@@ -262,7 +262,55 @@ function checkFeatureGraph(modules, root) {
       );
     }
   }
+  for (const members of findLongFeatureCycles(edges)) {
+    errors.push(
+      `${members.join(', ')}: 세 feature 이상이 돌아서 서로 import합니다. 공용 값은 shared로 내리거나 슬롯·인자로 받아 한쪽을 끊으세요.`,
+    );
+  }
   return errors;
+}
+
+/**
+ * 세 feature 이상이 도는 고리(강하게 연결된 묶음, Tarjan). 두 feature가 서로 import하는 쌍은 위에서 따로 보고
+ * ALLOWED_FEATURE_CYCLES로 허용하므로 여기서는 셋 이상인 묶음만 낸다
+ */
+function findLongFeatureCycles(edges) {
+  const order = new Map();
+  const lowest = new Map();
+  const stack = [];
+  const onStack = new Set();
+  const groups = [];
+  const visit = (feature) => {
+    order.set(feature, order.size);
+    lowest.set(feature, order.get(feature));
+    stack.push(feature);
+    onStack.add(feature);
+    for (const target of edges.get(feature) ?? []) {
+      if (!order.has(target)) {
+        visit(target);
+        lowest.set(feature, Math.min(lowest.get(feature), lowest.get(target)));
+      } else if (onStack.has(target)) {
+        lowest.set(feature, Math.min(lowest.get(feature), order.get(target)));
+      }
+    }
+    if (lowest.get(feature) !== order.get(feature)) {
+      return;
+    }
+    const group = [];
+    let member = null;
+    while (member !== feature) {
+      member = stack.pop();
+      onStack.delete(member);
+      group.push(member);
+    }
+    groups.push(group.sort());
+  };
+  for (const feature of edges.keys()) {
+    if (!order.has(feature)) {
+      visit(feature);
+    }
+  }
+  return groups.filter((group) => group.length >= 3);
 }
 
 const LOCAL_ONLY_CANDIDATE = /^src\/features\/.+\/(?:components|hooks)\/.+\.tsx?$/u;
@@ -413,4 +461,5 @@ module.exports = report;
 module.exports.FEATURE_LAYERS = FEATURE_LAYERS;
 module.exports.FEATURE_PATTERN = FEATURE_PATTERN;
 module.exports.findLocalOnlyFiles = findLocalOnlyFiles;
+module.exports.findLongFeatureCycles = findLongFeatureCycles;
 module.exports.findStaleLocalOnlyAllowances = findStaleLocalOnlyAllowances;

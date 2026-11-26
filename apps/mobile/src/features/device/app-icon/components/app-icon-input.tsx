@@ -1,9 +1,9 @@
+import { APP_ICONS } from '@src/shared/constants/app-icons';
 import { useTranslation } from '@src/shared/i18n';
 import { Avatar, Grid, GridItem, Text, VStack } from '@src/shared/ui';
 import { RadioGroup } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
-import { APP_ICONS } from '../constants/app-icon.constants';
 import type { AppIconKey } from '../domains/app-icon.model';
 
 interface AppIconInputProps extends Omit<

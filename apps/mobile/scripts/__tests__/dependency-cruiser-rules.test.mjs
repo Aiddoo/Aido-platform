@@ -5,7 +5,11 @@ import test from 'node:test';
 
 const require = createRequire(import.meta.url);
 const { forbidden } = require('../../.dependency-cruiser.cjs');
-const { findLocalOnlyFiles, findStaleLocalOnlyAllowances } = require('../feature-graph.cjs');
+const {
+  findLocalOnlyFiles,
+  findLongFeatureCycles,
+  findStaleLocalOnlyAllowances,
+} = require('../feature-graph.cjs');
 
 function toPatterns(value) {
   return [value ?? []].flat().map((pattern) => new RegExp(pattern));
@@ -398,4 +402,21 @@ test('폴더로 적은 이유는 그 아래 파일만 가리고, 아래에 한 �
     stale.map((error) => error.split(':')[0]),
     ['src/features/social/friend/components/friend-gone/'],
   );
+});
+
+test('세 feature 이상이 도는 고리를 찾고, 두 feature 쌍과 한 방향 의존은 내지 않는다', () => {
+  // Given
+  const edges = new Map([
+    ['identity/user', new Set(['device/app-icon'])],
+    ['device/app-icon', new Set(['billing/subscription'])],
+    ['billing/subscription', new Set(['identity/user'])],
+    ['planning/todo', new Set(['planning/category', 'identity/user'])],
+    ['planning/category', new Set(['planning/todo'])],
+  ]);
+
+  // When
+  const cycles = findLongFeatureCycles(edges);
+
+  // Then
+  assert.deepEqual(cycles, [['billing/subscription', 'device/app-icon', 'identity/user']]);
 });
