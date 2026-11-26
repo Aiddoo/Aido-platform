@@ -11,6 +11,7 @@ import {
   respondByPath,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router, useNavigation } from 'expo-router';
 
@@ -452,6 +453,68 @@ describe('ForgotPasswordRoute', () => {
 
       // Then
       expect(await screen.findAllByText('비밀번호가 재설정되었어요')).toHaveLength(1);
+      expect(router.replace).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('재설정 뒤 떠나는 동안', () => {
+    setupFakeTimersPerTest();
+
+    it('재설정해 로그인으로 바뀌는 동안 다시 눌러도 재설정 요청은 한 번이다', async () => {
+      // Given
+      httpClient.post.mockImplementation(
+        respondByPath({
+          [FORGOT_PATH]: ok(createForgotPasswordDto()),
+          [RESET_PATH]: ok(createResetPasswordDto()),
+        }),
+      );
+      await renderForgotPassword(httpClient);
+      await fillAllSteps();
+      // 잠긴 버튼은 이름 대신 로딩을 보여 이름으로 다시 찾지 못한다. 처음 찾은 버튼을 다시 누른다
+      const submit = screen.getByRole('button', { name: SUBMIT });
+      await fireEvent.press(submit);
+      // 연타 가드(600ms)가 지난 뒤다. 화면은 바꾸는 전환이 끝나야 내려가 버튼이 아직 보인다
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+      expect(router.replace).toHaveBeenCalledTimes(1);
+
+      // When
+      await fireEvent.press(submit);
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+
+      // Then
+      expect(httpClient.post.mock.calls.filter(([path]) => path === RESET_PATH)).toHaveLength(1);
+    });
+
+    it('재설정을 기다리는 사이 떠났다가 끝난 뒤 돌아오면 적은 값이 남고 버튼이 잠겨 있지 않다', async () => {
+      // Given
+      let isFocused = true;
+      jest.mocked(useNavigation).mockImplementation(() => ({
+        isFocused: () => isFocused,
+        getParent: () => undefined,
+        addListener: () => () => undefined,
+      }));
+      const pending = createPendingResponse(ok(createResetPasswordDto()));
+      httpClient.post.mockImplementation(
+        respondByPath({
+          [FORGOT_PATH]: ok(createForgotPasswordDto()),
+          [RESET_PATH]: () => pending.response,
+        }),
+      );
+      await renderForgotPassword(httpClient);
+      await fillAllSteps();
+      await fireEvent.press(screen.getByRole('button', { name: SUBMIT }));
+      isFocused = false;
+
+      // When
+      await act(async () => {
+        pending.settle();
+      });
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+      isFocused = true;
+
+      // Then
+      expect(screen.getByPlaceholderText(CONFIRM_PLACEHOLDER)).toHaveDisplayValue(NEW_PASSWORD);
+      expect(screen.getByRole('button', { name: SUBMIT })).toBeEnabled();
       expect(router.replace).not.toHaveBeenCalled();
     });
   });

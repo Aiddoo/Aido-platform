@@ -73,11 +73,14 @@ export default function ForgotPasswordScreen() {
   const forgotPassword = useMutation(useForgotPasswordMutationOptions());
   const requestCode = (email: string) => forgotPassword.mutateAsync({ email });
 
-  // 재설정을 기다리는 사이 떠났으면 보던 화면을 로그인으로 바꾸지 않는다
+  // 재설정을 기다리는 사이 떠났으면 보던 화면을 로그인으로 바꾸지 않는다.
+  // 돌아와도 버튼이 잠긴 채 남지 않게 적은 값과 단계는 그대로 두고 제출 상태만 푼다
   const leaveToLogin = () => {
     if (navigation.isFocused()) {
       replace('/(auth)/email-login');
+      return;
     }
+    form.reset(form.getValues(), { keepDefaultValues: true });
   };
 
   const renderNewPassword = ({ step }: { step: NewPasswordStepName }) => (
@@ -256,7 +259,7 @@ function ResetPasswordStep({ form, step, onNext, onDone, onCodeRejected }: Reset
     rules: { deps: 'newPasswordConfirm' },
   });
   const newPasswordConfirm = useController({ control: form.control, name: 'newPasswordConfirm' });
-  const { isSubmitting } = useFormState({ control: form.control });
+  const { isSubmitting, isSubmitSuccessful } = useFormState({ control: form.control });
 
   const saveNewPassword = form.handleSubmit(async (input) => {
     await resetPassword.mutateAsync(input);
@@ -291,7 +294,8 @@ function ResetPasswordStep({ form, step, onNext, onDone, onCodeRejected }: Reset
           default: 'password.mismatch',
         }),
       }}
-      isSubmitting={isSubmitting || resetPassword.isPending}
+      // 재설정하면 로그인으로 바뀌는 동안에도 같은 값이 남는다. 다시 보내면 쓴 코드라 거절된다
+      isSubmitting={isSubmitting || isSubmitSuccessful || resetPassword.isPending}
       onNext={onNext}
       onSubmit={() => {
         saveNewPassword().catch(handleResetError);
