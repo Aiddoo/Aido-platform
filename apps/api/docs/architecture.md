@@ -131,7 +131,7 @@ presentation → application → domain        infrastructure → application(po
 ## Application 규약
 
 - **UseCase**: Nest decorator 없는 순수 클래스, `execute(command)` 하나. 생성자 객체로 의존성을 받아 `readonly #dependencies`에 둔다. 의존성 타입은 `Pick<Port, "…">`로 좁힌다. 반환은 Entity 또는 Read Model이고 응답 문구·계약 타입은 presentation 매퍼가 만든다.
-- **Port**: abstract class가 포트이자 DI 토큰이다. Symbol 토큰·`@Inject(TOKEN)`·interface와 token 짝, 옛 이름을 같은 인스턴스로 잇는 `useExisting` 별칭을 두지 않는다. Symbol 토큰은 업무 포트가 아닌 platform의 라이브러리 client(`DRIZZLE`·`PG_BOSS_CLIENT`·`REDIS_COMMAND_CLIENT`)에만 이유 주석과 함께 둔다.
+- **Port**: abstract class가 포트이자 DI 토큰이다. Symbol 토큰·`@Inject(TOKEN)`·interface와 token 짝, 옛 이름을 같은 인스턴스로 잇는 `useExisting` 별칭을 두지 않는다. Symbol 토큰은 업무 포트가 아닌 platform의 라이브러리 client(`DRIZZLE`·`PG_BOSS_CLIENT`·`REDIS_COMMAND_CLIENT`·`THROTTLER_STORAGE`)에만 이유 주석과 함께 둔다.
 - **조립**: [provideUseCase](../src/platform/di/provide-use-case.ts)`(UseCase, { key: PortClass })`가 키 누락·토큰 타입 불일치를 컴파일 오류로 만든다. 로거 자리는 `loggerFor(UseCase)`(Nest `Logger`, 실제 출력은 nestjs-pino)다. 단언은 helper 안 1곳만 이유 주석과 함께 둔다.
 
 ```ts

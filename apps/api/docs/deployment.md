@@ -98,7 +98,7 @@ job runtime의 기본 graceful 종료 대기는 `JOB_SHUTDOWN_TIMEOUT_MS=90000`�
 
 delivery fence·receipt·남는 전달 한계는 [푸시 발송](push-delivery.md#deliveryreceipt)에 있다. 배포 중 리마인더·푸시를 잃지 않는 기준은 [작업과 이벤트](jobs-and-events.md#배포-중-내구성)에 있다.
 
-배포 시각: 03:00~03:40 KST(일간 정리 작업)와 07:00~08:00 KST(아침 리마인더 몰림)를 피한다. 놓친 실행은 `missed`·워터마크가 보완하지만 사용량이 적은 시간을 고른다.
+배포 시각: 03:00~04:30 KST(일간 정리 작업)와 07:00~08:00 KST(아침 리마인더 몰림)를 피한다. 놓친 실행은 `missed`·워터마크가 보완하지만 사용량이 적은 시간을 고른다.
 
 ## 롤백의 범위
 
