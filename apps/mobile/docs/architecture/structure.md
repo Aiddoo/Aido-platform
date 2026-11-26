@@ -80,7 +80,7 @@ features/{area}/{feature}/
 
 - mapper는 `apis/`에만, 엔티티당 하나다. OS 권한과 서버 기기 DTO처럼 엔티티가 다르면 파일을 나눈다.
 - 통과만 하는 repository와 service를 만들지 않는다. 저장 값 정의와 Policy로 충분하다.
-- 쿼리 키는 `queries/`에 둔다. `constants/`는 일반 상수(시간·한도·id, 장면 팔레트 같은 고정 값)·이벤트·로그 키만 두고 `domains/`를 import하지 않는다. 업무 규칙 표는 모델에, 라벨 키는 view-model에, 저장 키는 `*-storage.schema.ts`에 둔다.
+- 쿼리 키는 `queries/`에 둔다. `constants/`는 일반 상수(시간·한도·id, 장면 팔레트 같은 고정 값)·이벤트·로그 키만 두고 `domains/`를 import하지 않는다. 업무 규칙 표는 모델에, 라벨 키는 view-model에, 저장 키는 `*-storage.schema.ts`에 둔다. `constants/`에 두는 것은 여러 파일이 함께 읽는 값(단위 붙은 시간·한도, 이벤트·로그 키, 한 장면의 팔레트)뿐이고, 한 파일만 쓰는 UI 표·데모 값·조회 시간은 쓰는 파일 안의 지역 상수다.
 - 파일 이름은 kebab-case, 접두사는 다루는 엔티티 이름, 접미사는 위 골격의 역할 이름이다(역할 폴더별 접미사는 ls-lint). 기능 이름이 엔티티를 줄인 것이면 엔티티 이름을 쓴다(`social/nudge`의 `todo-nudge-query-keys.ts`). `helpers`·`utils`·`common` 같은 파일 이름을 쓰지 않는다.
 - 캐시 모양만 다루는 순수 함수(무한 목록 페이지 고치기·cursor)는 `queries/{entity}-pages-cache.ts`에 둔다(`todo-comment-pages-cache.ts`, `friend-pages-cache.ts`). `queryClient`는 만지지 않고 `-cache.ts` helper가 부른다.
 - Context Provider와 그것을 읽는 훅은 한 파일 `hooks/use-{name}.tsx`에 둔다(`use-todo-comment-form.tsx`의 `TodoCommentFormProvider`·`useTodoCommentForm`). 폴더 이름은 읽는 쪽(훅)을 따른다.

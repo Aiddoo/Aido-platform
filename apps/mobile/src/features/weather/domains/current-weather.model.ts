@@ -54,6 +54,10 @@ const METERS_PER_KILOMETER = 1000;
 const CLEAR_VISIBILITY_KM = 10;
 const MODERATE_VISIBILITY_KM = 5;
 
+export function calculateVisibilityKilometers(visibilityMeters: number): number {
+  return visibilityMeters / METERS_PER_KILOMETER;
+}
+
 const OVERCAST_CLOUD_COVER_PERCENT = 80;
 const MOSTLY_CLOUDY_CLOUD_COVER_PERCENT = 40;
 
@@ -118,7 +122,7 @@ export const CurrentWeatherPolicy = {
   },
 
   getVisibilityLevel(current: CurrentWeather): VisibilityLevel {
-    const kilometers = current.visibility / METERS_PER_KILOMETER;
+    const kilometers = calculateVisibilityKilometers(current.visibility);
     if (CLEAR_VISIBILITY_KM <= kilometers) {
       return 'clear';
     }

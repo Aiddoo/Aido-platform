@@ -12,6 +12,7 @@ import {
   hashCycle,
   hideSprite,
   PARTICLE_SEED_STRIDE,
+  PARTICLE_GROUND_HEIGHT_RATIO,
   placeSprite,
 } from '../../utils/weather-scene-particles.geometry';
 import { PARTICLE_SAMPLING, PARTICLE_SPRITES, useParticleTexture } from './weather-scene-textures';
@@ -31,7 +32,6 @@ const FALL = { base: 300, depth: 700 } as const;
 const DRIFT = { base: 0.05, wind: 0.2 } as const;
 const SPIN = 4;
 /** 바닥은 화면 높이 97% 지점이고, 먼 알일수록 60pt까지 위에 닿는다. */
-const GROUND = 0.97;
 const FAR_GROUND_LIFT = 60;
 const GRAVITY = 1400;
 /** 첫 번째는 높이, 두 번째는 낮게 튄다(깊이를 곱한 초속 범위). */
@@ -85,7 +85,7 @@ function createHailstones(count: number, wind: number, height: number): Hailston
     const [minRest, maxRest] = REST_SECONDS;
     const depth = minDepth + (seeds[base + 3] ?? 0) * (maxDepth - minDepth);
     const speed = FALL.base + FALL.depth * depth;
-    const floor = height * GROUND - (1 - depth) * FAR_GROUND_LIFT;
+    const floor = height * PARTICLE_GROUND_HEIGHT_RATIO - (1 - depth) * FAR_GROUND_LIFT;
     const fallDuration = (floor + SPAWN_ABOVE) / speed;
     const bounces = BOUNCE_SPEEDS.map(([min, max], bounce) => ({
       velocity: (min + hashCycle(index, bounce, SALT_BOUNCE_SPEED) * (max - min)) * depth,

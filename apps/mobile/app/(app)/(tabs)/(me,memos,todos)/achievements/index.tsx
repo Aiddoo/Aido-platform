@@ -28,11 +28,12 @@ export default function AchievementsScreen() {
   const [selectedYear] = useSelectedAchievementYear();
 
   const todayKey = useTodayKey();
+  const currentYear = getIsoWeekYear(todayKey);
   // 보일 해는 기록 있는 연도를 받아야 정해진다. 대개 고른 해나 올해라 그 목록을 함께 받기 시작해 기다림을 겹친다
   usePrefetchQuery(useGetAchievementYearsQueryOptions());
   usePrefetchInfiniteQuery(
     useGetWeeklyAchievementsInfiniteQueryOptions({
-      year: selectedYear ?? getIsoWeekYear(todayKey),
+      year: selectedYear ?? currentYear,
     }),
   );
 
@@ -42,7 +43,7 @@ export default function AchievementsScreen() {
 
       <StyledSafeAreaView className="flex-1 bg-white" edges={['left', 'right']}>
         <QueryErrorBoundary
-          resetKeys={[selectedYear, getIsoWeekYear(todayKey)]}
+          resetKeys={[selectedYear, currentYear]}
           fallback={WeeklyAchievementListErrorFallback}
         >
           <Suspense fallback={<WeeklyAchievementList.Loading header={<AchievementOverview />} />}>

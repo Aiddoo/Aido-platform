@@ -3,6 +3,9 @@ import { clamp, range, sumBy } from 'es-toolkit';
 
 export const PARTICLE_SEED_STRIDE = 4;
 
+/** 튀는 입자(우박·싸락눈)가 닿는 바닥. 화면 높이에 대한 비율이다 */
+export const PARTICLE_GROUND_HEIGHT_RATIO = 0.97;
+
 const MIXING_INCREMENT = 0x6d2b79f5;
 const CYCLE_HASH_STRIDE = 7919;
 const REFERENCE_SCREEN_AREA = 390 * 844;

@@ -378,7 +378,7 @@ function ReturnToMyFeed() {
 
 /** 첫 피드는 알림 화면 → 새로운 기능 → 말풍선 순서라 앞 화면을 열지 정해진 뒤에만 말풍선을 띄운다 */
 function useShouldShowCoachmarks(): boolean {
-  const isPushOnboardingSettled = usePushOnboardingGuardState() === 'closed';
+  const isPushOnboardingSettled = useIsPushOnboardingSettled();
   const { shouldShowCoachmarks } = useWhatsNewAutoOpen({
     isOnboardingSettled: isPushOnboardingSettled,
   });
@@ -401,10 +401,15 @@ function useIsFriendHintAhead({ hasScrolledFeed }: { hasScrolledFeed: boolean })
 function useFirstFeedGuides() {
   const authStatus = useAuthStatus();
   const hasPendingNavigation = useHasPendingPushNotificationEntry();
-  const isPushOnboardingSettled = usePushOnboardingGuardState() === 'closed';
+  const isPushOnboardingSettled = useIsPushOnboardingSettled();
   const isStable = useStableFeedForeground({ authStatus, hasPendingNavigation });
 
   useOpenPushOnboarding({ isStable });
 
   return useWhatsNewFeed({ isStable, isOnboardingSettled: isPushOnboardingSettled });
+}
+
+/** 알림 켜기 화면을 열지 정해졌고 열지 않는다. 그 뒤에야 다음 자동 화면(새 기능 안내·말풍선)을 연다 */
+function useIsPushOnboardingSettled(): boolean {
+  return usePushOnboardingGuardState() === 'closed';
 }
