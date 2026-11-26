@@ -74,7 +74,7 @@ const VALUE_COLUMN_WIDTH = 80;
 const PREMIUM_BAND_INSET = 6;
 /** 정보 아이콘이 마지막 낱말과 떨어져 혼자 다음 줄로 내려가지 않게 붙인다 */
 const NBSP = '\u00A0';
-/** \uC774\uB984 \uCE78\uC758 \uC704\uC544\uB798 \uC5EC\uBC31(py-3)\uB9CC\uD07C\uB9CC \uB113\uD600 \uC606 \uC904 \uC774\uB984\uACFC \uB204\uB974\uB294 \uC601\uC5ED\uC774 \uACB9\uCE58\uC9C0 \uC54A\uB294\uB2E4. \uD55C \uC904 \uC774\uB984\uC740 44\uC5D0 2~3pt \uBAA8\uC790\uB780\uB2E4 */
+/** 이름 칸의 위아래 여백(py-3)만큼만 넓혀 옆 줄 이름과 누르는 영역이 겹치지 않는다. 한 줄 이름은 44에 2~3pt 모자란다 */
 const TERM_HIT_SLOP = { top: 12, bottom: 12, left: 8, right: 8 };
 
 function useValueColumnWidth() {
