@@ -1,7 +1,7 @@
 import { AiDataSharingSetting } from '@src/features/identity/consent/components/ai-data-sharing-setting';
 import { TermsAgreementList } from '@src/features/identity/consent/components/terms-agreement-list';
 import { useTranslation } from '@src/shared/i18n';
-import { QueryErrorBoundary, SettingsListGroup, SettingsScreenLayout } from '@src/shared/ui';
+import { QueryErrorBoundary, SettingsScreenLayout } from '@src/shared/ui';
 import { Stack } from 'expo-router';
 import { Suspense } from 'react';
 
@@ -13,8 +13,16 @@ export default function TermsSettingsScreen() {
       <Stack.Screen options={{ title: t('titles.terms') }} />
 
       <SettingsScreenLayout>
-        <QueryErrorBoundary fallback={TermsSettingsScreen.Error}>
-          <Suspense fallback={<TermsSettingsScreen.Loading />}>
+        <QueryErrorBoundary fallback={TermsAgreementList.Error}>
+          <Suspense
+            fallback={
+              <>
+                <TermsAgreementList.Loading label={t('sections.agreements')} />
+
+                <AiDataSharingSetting.Loading label={t('sections.dataUse')} />
+              </>
+            }
+          >
             <TermsAgreementList label={t('sections.agreements')} />
 
             <AiDataSharingSetting label={t('sections.dataUse')} />
@@ -24,23 +32,3 @@ export default function TermsSettingsScreen() {
     </>
   );
 }
-
-TermsSettingsScreen.Loading = function Loading() {
-  const { t } = useTranslation('settings');
-
-  return (
-    <>
-      <SettingsListGroup label={t('sections.agreements')}>
-        <SettingsListGroup.Item.Loading descriptionLines={2} />
-        <SettingsListGroup.Separator />
-        <SettingsListGroup.Item.Loading descriptionLines={2} />
-      </SettingsListGroup>
-
-      <SettingsListGroup label={t('sections.dataUse')}>
-        <SettingsListGroup.Toggle.Loading hasDescription />
-      </SettingsListGroup>
-    </>
-  );
-};
-
-TermsSettingsScreen.Error = SettingsListGroup.Error;

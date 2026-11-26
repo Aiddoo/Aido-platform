@@ -95,3 +95,13 @@ export function AiDataSharingSetting(props: SettingsSectionProps) {
     </SettingsListGroup>
   );
 }
+
+AiDataSharingSetting.Loading = function Loading(props: SettingsSectionProps) {
+  return (
+    <SettingsListGroup {...props}>
+      <SettingsListGroup.Toggle.Loading hasDescription />
+    </SettingsListGroup>
+  );
+};
+
+AiDataSharingSetting.Error = SettingsListGroup.Error;
