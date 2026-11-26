@@ -4,10 +4,12 @@ import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user
 import { NetworkError } from '@src/shared/errors';
 import { i18n } from '@src/shared/i18n';
 import {
+  createAnalyticsStub,
   createHttpClientStub,
   createMemoryTokenStore,
   createPendingResponse,
   createTestDi,
+  getTrackedEvents,
   respondByPath,
 } from '@src/testing/core';
 import { pressTwiceInSameFrame } from '@src/testing/press';
@@ -28,11 +30,15 @@ async function renderDeleteAccount(httpClient: ReturnType<typeof createHttpClien
   httpClient.get.mockImplementation(respondByPath({ 'v1/auth/me': ok(createCurrentUserDto()) }));
   const authSessionStore = createAuthSessionStoreStub('authenticated');
   const tokenStore = createMemoryTokenStore(ACCOUNT_A_TOKENS);
+  const analytics = createAnalyticsStub();
   await renderScreen(<DeleteAccountScreen />, {
-    di: createTestDi({ ports: { httpClient, tokenStore }, seeds: { authSessionStore } }),
+    di: createTestDi({
+      ports: { httpClient, tokenStore, analytics },
+      seeds: { authSessionStore },
+    }),
     withOverlay: true,
   });
-  return { authSessionStore, tokenStore };
+  return { authSessionStore, tokenStore, analytics };
 }
 
 /**
@@ -91,7 +97,7 @@ describe('DeleteAccountScreen', () => {
   it('확인하면 적은 비밀번호로 탈퇴를 요청하고 이 기기의 토큰을 지운 뒤 로그아웃한다', async () => {
     // Given
     httpClient.delete.mockResolvedValue(ok(createDeleteAccountDto()));
-    const { authSessionStore, tokenStore } = await renderDeleteAccount(httpClient);
+    const { authSessionStore, tokenStore, analytics } = await renderDeleteAccount(httpClient);
     const { submitting } = await openConfirmDialog(PASSWORD);
 
     // When
@@ -105,6 +111,7 @@ describe('DeleteAccountScreen', () => {
     });
     expect(await screen.findAllByText('계정이 탈퇴 처리되었어요')).toHaveLength(1);
     await expect(tokenStore.getRefreshToken()).resolves.toBeNull();
+    expect(getTrackedEvents(analytics, 'auth_account_deleted')).toHaveLength(1);
   });
 
   it('확인 버튼을 연달아 눌러도 탈퇴 요청은 한 번이다', async () => {

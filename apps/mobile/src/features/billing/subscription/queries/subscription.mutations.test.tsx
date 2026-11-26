@@ -1,5 +1,6 @@
 import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
+import { PurchasesGatewayError } from '@src/core/ports/purchases-gateway';
 import { PREMIUM_ME_EXAMPLES } from '@src/features/identity/user/__tests__/premium-access.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { toUser } from '@src/features/identity/user/apis/user.mapper';
@@ -8,10 +9,12 @@ import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.q
 import { type CurrentUserResponse } from '@src/features/identity/user/schemas/user-response.schema';
 import { i18n } from '@src/shared/i18n';
 import {
+  createAnalyticsStub,
   createHttpClientStub,
   createPurchasesGatewayStub,
   createTestDi,
   createTestQueryClient,
+  getTrackedEvents,
   setupFakeTimersPerTest,
 } from '@src/testing/core';
 import { renderScreenHook } from '@src/testing/render';
@@ -202,13 +205,26 @@ async function renderRestore({
   purchases.restore.mockResolvedValue(
     hasStorePurchase ? STORE_ENTITLEMENT_STATUS : NO_ENTITLEMENT_STATUS,
   );
+  return renderRestoreWith({ previousMe, serverMe, purchases });
+}
+
+async function renderRestoreWith({
+  previousMe,
+  serverMe,
+  purchases,
+}: {
+  previousMe: CurrentUserResponse;
+  serverMe: CurrentUserResponse;
+  purchases: ReturnType<typeof createPurchasesGatewayStub>;
+}) {
+  const analytics = createAnalyticsStub();
   const httpClient = createHttpClientStub();
   httpClient.get.mockResolvedValue(ok(serverMe));
   const queryClient = createTestQueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
   queryClient.setQueryData(USER_QUERY_KEYS.me(), toUser(previousMe));
-  const di = createTestDi({ ports: { httpClient, purchases, queryClient } });
+  const di = createTestDi({ ports: { httpClient, purchases, queryClient, analytics } });
   di.purchasesSession.configure();
   // 결제 Provider처럼 결제 SDK에 로그인해 둔다. 로그인 전 결제는 막힌다
   await di.purchasesSession.logIn('user-1');
@@ -224,6 +240,8 @@ async function renderRestore({
   await act(async () => {
     result.current.mutate();
   });
+
+  return { analytics };
 }
 
 describe('구매 복원', () => {
@@ -260,12 +278,38 @@ describe('구매 복원', () => {
     ],
   ] as const)('%s 알린다', async (_case, previousMe, serverMe, hasStorePurchase, toastKey) => {
     // When
-    await renderRestore({ previousMe, serverMe, hasStorePurchase });
+    const { analytics } = await renderRestore({ previousMe, serverMe, hasStorePurchase });
 
     // Then
     expect(
       await screen.findAllByText(i18n.t(toastKey), {}, { timeout: LONGER_THAN_STORE_SYNC_MS }),
     ).not.toHaveLength(0);
+    // 되찾은 스토어 구매가 있을 때만 복원으로 센다
+    expect(getTrackedEvents(analytics, 'subscription_restored')).toHaveLength(
+      hasStorePurchase ? 1 : 0,
+    );
+    expect(getTrackedEvents(analytics, 'subscription_restore_failed')).toEqual([]);
+  });
+
+  it('스토어 연결이 끊겨 복원하지 못하면 복원 실패를 이유와 함께 한 번 남긴다', async () => {
+    // Given
+    const purchases = createPurchasesGatewayStub();
+    purchases.restore.mockRejectedValue(new PurchasesGatewayError('network', null, 'offline'));
+
+    // When
+    const { analytics } = await renderRestoreWith({
+      previousMe: FREE_ME,
+      serverMe: FREE_ME,
+      purchases,
+    });
+
+    // Then
+    await waitFor(() =>
+      expect(getTrackedEvents(analytics, 'subscription_restore_failed')).toEqual([
+        { reason: 'network' },
+      ]),
+    );
+    expect(getTrackedEvents(analytics, 'subscription_restored')).toEqual([]);
   });
 });
 

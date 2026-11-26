@@ -300,7 +300,7 @@ describe('SubscriptionScreen', () => {
   it('스토어 연결이 끊겨 결제를 마치지 못하면 문의할 수 있는 다이얼로그를 띄운다', async () => {
     // Given
     const user = userEvent.setup();
-    const { purchases } = await renderSubscriptionScreen(FREE, () =>
+    const { purchases, analytics } = await renderSubscriptionScreen(FREE, () =>
       Promise.resolve(MONTHLY_AND_ANNUAL),
     );
     purchases.purchase.mockRejectedValue(new PurchasesGatewayError('network', null, 'offline'));
@@ -313,6 +313,10 @@ describe('SubscriptionScreen', () => {
     expect(
       screen.getByRole('button', { name: i18n.t('subscription:failure.contactSupport') }),
     ).toBeTruthy();
+    expect(getTrackedEvents(analytics, 'purchase_failed')).toEqual([
+      { reason: 'network', plan_type: 'annual', is_trial: false },
+    ]);
+    expect(getTrackedEvents(analytics, 'subscription_started')).toEqual([]);
   });
 
   describe('결제 뒤 시작 화면', () => {
@@ -337,6 +341,9 @@ describe('SubscriptionScreen', () => {
       expect(within(welcome).getByText(/전까지 모든 기능을 무료로 써요$/)).toBeTruthy();
       expect(within(welcome).getByText('연 ₩29,900')).toBeTruthy();
       expect(within(welcome).getByText(/ · 연 ₩29,900$/)).toBeTruthy();
+      expect(getTrackedEvents(analytics, 'subscription_started')).toEqual([
+        { product_id: 'annual', plan_type: 'annual', is_trial: true },
+      ]);
       expect(
         await screen.findAllByText('결제가 반영되기까지 잠시 걸릴 수 있어요'),
       ).not.toHaveLength(0);

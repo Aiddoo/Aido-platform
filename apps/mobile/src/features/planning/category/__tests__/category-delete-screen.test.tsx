@@ -79,6 +79,10 @@ describe('TodoCategoryDeleteSheetRoute', () => {
       params: { todoHandling: 'move', moveToCategoryId: STUDY.id },
     });
     await waitFor(() => expect(getTrackedEvents(analytics, 'category_deleted')).toHaveLength(1));
+    // 옮길 곳 시트를 오가도 삭제 시트를 본 것은 한 번이다
+    expect(getTrackedEvents(analytics, 'category_delete_sheet_viewed')).toEqual([
+      { todo_count_bucket: '10_49', has_series: true },
+    ]);
   });
 
   it('함께 지우기를 고르면 옮길 곳 없이 할 일까지 지운다', async () => {

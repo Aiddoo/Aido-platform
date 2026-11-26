@@ -43,6 +43,7 @@ async function renderForgotPassword(httpClient: ReturnType<typeof createHttpClie
     di: createTestDi({ ports: { httpClient, analytics } }),
   });
   return {
+    analytics,
     viewedSteps: () => getTrackedEvents(analytics, 'auth_password_reset_step_viewed'),
   };
 }
@@ -249,7 +250,7 @@ describe('ForgotPasswordScreen', () => {
         [RESET_PATH]: () => pending.response,
       }),
     );
-    await renderForgotPassword(httpClient);
+    const { analytics } = await renderForgotPassword(httpClient);
     await fillAllSteps();
 
     const submit = screen.getByRole('button', { name: SUBMIT });
@@ -270,6 +271,7 @@ describe('ForgotPasswordScreen', () => {
       ],
     ]);
     expect(await screen.findAllByText('비밀번호가 재설정되었어요')).toHaveLength(1);
+    expect(getTrackedEvents(analytics, 'auth_password_reset_completed')).toHaveLength(1);
   });
 
   it.each<ErrorCodeType>(['VERIFY_0751', 'VERIFY_0752', 'VERIFY_0754'])(

@@ -13,6 +13,7 @@ import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-
 import { createWeatherReportDto } from '@src/features/weather/__tests__/weather-report.fixtures';
 import type { DateKey } from '@src/shared/date/date-key';
 import {
+  createAnalyticsStub,
   createAppStoreReviewGatewayStub,
   createLocationGatewayStub,
   createMemoryObservableSyncStorage,
@@ -97,6 +98,7 @@ export function createReviewReadyApp() {
     nextCursor: null,
   });
   const appStoreReview = createAppStoreReviewGatewayStub();
+  const analytics = createAnalyticsStub();
   const pushOnboardingGuardStore = createPushOnboardingGuardStore();
   pushOnboardingGuardStore.markRendered('pending');
   const di = createTestDi({
@@ -105,6 +107,7 @@ export function createReviewReadyApp() {
       queryClient,
       syncStorage,
       appStoreReview,
+      analytics,
       deviceLocation: createLocationGatewayStub({
         permission: { status: 'granted', canAskAgain: true },
         coordinates: { latitude: 37.5636, longitude: 126.9976 },
@@ -120,6 +123,7 @@ export function createReviewReadyApp() {
   return {
     di,
     appStoreReview,
+    analytics,
     completedTodoRequests: () => httpClient.patch.mock.calls.map(([path, body]) => [path, body]),
     settleReviewWait: () => act(() => jest.advanceTimersByTimeAsync(REVIEW_SETTLE_MS)),
   };

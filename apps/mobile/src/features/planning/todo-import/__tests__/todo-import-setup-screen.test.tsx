@@ -9,10 +9,12 @@ import { createEntitlementSnapshotDto } from '@src/features/billing/subscription
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { createTodoCategoryListDto } from '@src/features/planning/category/__tests__/todo-category.fixtures';
 import {
+  createAnalyticsStub,
   createHttpClientStub,
   createPendingResponse,
   createTestDi,
   createTodoImportSourceStub,
+  getTrackedEvents,
   respondByPath,
   type TestDi,
 } from '@src/testing/core';
@@ -102,11 +104,12 @@ async function renderSetup({
     ],
   });
 
-  const di = createTestDi({ ports: { httpClient, todoImportSource } });
+  const analytics = createAnalyticsStub();
+  const di = createTestDi({ ports: { httpClient, todoImportSource, analytics } });
   await seedQueryCache?.(di.queryClient);
   await renderScreen(<TodoImportSetupScreen />, { di, withLocalDate: true, withOverlay: true });
 
-  return { httpClient, todoImportSource };
+  return { httpClient, todoImportSource, analytics };
 }
 
 function findStartRequests(httpClient: ReturnType<typeof createHttpClientStub>) {
@@ -310,7 +313,7 @@ describe('TodoImportSetupScreen', () => {
   describe('시작', () => {
     it('고른 기간과 옵션으로 시작하고 진행 화면으로 바꾼다', async () => {
       // Given
-      const { httpClient } = await renderSetup();
+      const { httpClient, analytics } = await renderSetup();
       await goToCategories();
       await goToOptions();
       await fireEvent.press(screen.getByRole('switch', { name: /시간도 가져오기/ }));
@@ -347,6 +350,16 @@ describe('TodoImportSetupScreen', () => {
           },
           expect.anything(),
         ],
+      ]);
+      expect(getTrackedEvents(analytics, 'todo_import_created')).toEqual([
+        {
+          range_days: 30,
+          calendar_count: 2,
+          item_bucket: '1_10',
+          time_mode: 'DATE_ONLY',
+          visibility: 'PUBLIC',
+          new_category_count: 0,
+        },
       ]);
     });
 

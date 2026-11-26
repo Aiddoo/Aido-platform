@@ -7,11 +7,13 @@ import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/querie
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import { MINUTE_MS } from '@src/shared/constants/time-units';
 import {
+  createAnalyticsStub,
   createHttpClientStub,
   createPendingResponse,
   createTestQueryClient,
   deliverQueryNotifications,
   createTestDi,
+  getTrackedEvents,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
@@ -368,6 +370,7 @@ async function renderFeed() {
   });
   const renders = { calendar: 0, list: 0 };
   const current: { writes: TodoWrites | null } = { writes: null };
+  const analytics = createAnalyticsStub();
 
   function WritesProbe({ onRender }: { onRender: (writes: TodoWrites) => void }) {
     onRender(useTodoWrites());
@@ -390,7 +393,7 @@ async function renderFeed() {
         }}
       />
     </>,
-    { di: createTestDi({ ports: { httpClient, queryClient } }), withLocalDate: true },
+    { di: createTestDi({ ports: { httpClient, queryClient, analytics } }), withLocalDate: true },
   );
   await act(deliverQueryNotifications);
 
@@ -448,6 +451,7 @@ async function renderFeed() {
   return {
     server,
     queryClient,
+    analytics,
     renders,
     refetched: () => uniq(refetched).sort(),
     tap,
@@ -784,6 +788,36 @@ describe('할 일 쓰기의 되돌리기와 겹친 쓰기', () => {
       expect(refetched()).toContain('list:day');
     },
   );
+
+  it('이후 회차까지 지우면 삭제와 반복 삭제를 범위와 함께 한 번씩 남긴다', async () => {
+    // Given
+    const { tap, settleWrites, analytics } = await renderFeed();
+
+    // When
+    await tap((w) =>
+      w.deleteTodo.mutateAsync({ todoId: 3, date: DAY, scope: 'THIS_AND_FOLLOWING' }),
+    );
+    await settleWrites();
+
+    // Then
+    expect(getTrackedEvents(analytics, 'todo_deleted')).toEqual([{ todo_id: 3 }]);
+    expect(getTrackedEvents(analytics, 'todo_series_deleted')).toEqual([
+      { scope: 'THIS_AND_FOLLOWING' },
+    ]);
+  });
+
+  it('반복을 끝내면 반복 끝내기를 한 번 남긴다', async () => {
+    // Given
+    const { tap, settleWrites, analytics } = await renderFeed();
+
+    // When
+    await tap((w) => w.stopTodoSeries.mutateAsync({ todoId: 1 }));
+    await settleWrites();
+
+    // Then
+    expect(getTrackedEvents(analytics, 'todo_series_stopped')).toHaveLength(1);
+    expect(getTrackedEvents(analytics, 'todo_deleted')).toEqual([]);
+  });
 });
 
 const WEEK = { startDate: createDateKey('2026-03-02'), endDate: createDateKey('2026-03-08') };

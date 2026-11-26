@@ -6,6 +6,7 @@ import '@src/shared/i18n/init';
 import { useRunTodoReminderAction } from '@src/features/notification/hooks/use-run-todo-reminder-action';
 import {
   createRouteParamsFake,
+  getTrackedEvents,
   setupFakeTimersPerTest,
   stubWindowDimensions,
 } from '@src/testing/core';
@@ -50,6 +51,9 @@ describe('오늘의 마지막 할 일을 끝낸 곳마다 리뷰를 묻는가', 
     // Then
     expect(app.completedTodoRequests()).toEqual([['v1/todos/7/complete', { completed: true }]]);
     expect(app.appStoreReview.requestReview).toHaveBeenCalledTimes(1);
+    expect(getTrackedEvents(app.analytics, 'store_review_requested')).toEqual([
+      { moment: 'all_todos_done' },
+    ]);
   });
 
   it('피드에서 끝냈어도 기다리는 사이 키보드가 올라와 있으면 묻지 않는다', async () => {
