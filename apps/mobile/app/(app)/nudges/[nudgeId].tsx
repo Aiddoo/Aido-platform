@@ -3,7 +3,7 @@ import { NudgeResponse } from '@src/features/social/nudge/components/nudge-respo
 import { NudgeSummary } from '@src/features/social/nudge/components/nudge-summary';
 import { NudgeTodoButton } from '@src/features/social/nudge/components/nudge-todo-button';
 import { isNudgeUnavailableError } from '@src/features/social/nudge/domains/todo-nudge.error';
-import { useNudgeId } from '@src/features/social/nudge/hooks/use-nudge-id';
+import { useNudgeId } from '@src/features/social/nudge/hooks/use-nudge-params';
 import { nudgeParamsSchema } from '@src/features/social/nudge/schemas/nudge-params.schema';
 import { useRouteParamsOrRedirect } from '@src/shared/hooks/use-route-params-or-redirect';
 import { useTranslation } from '@src/shared/i18n';

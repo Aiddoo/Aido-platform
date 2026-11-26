@@ -20,7 +20,7 @@ import { Controller, FormState, useForm } from 'react-hook-form';
 
 import { toTodoCategoryFormValues } from '../apis/todo-category.mapper';
 import { type TodoCategory, TodoCategoryPolicy } from '../domains/todo-category.model';
-import { useTodoCategoryId } from '../hooks/use-todo-category-id';
+import { useTodoCategoryId } from '../hooks/use-todo-category-params';
 import { useUpdateTodoCategoryMutationOptions } from '../queries/todo-category.mutations';
 import { useGetTodoCategoriesQueryOptions } from '../queries/todo-category.queries';
 import { todoCategoryFormSchema } from '../schemas/todo-category-form.schema';

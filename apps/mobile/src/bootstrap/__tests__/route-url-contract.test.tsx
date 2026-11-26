@@ -1,6 +1,6 @@
 import { useSubscriptionParams } from '@src/features/billing/subscription/hooks/use-subscription-params';
 import { useTodoCommentSort } from '@src/features/engagement/comment/hooks/use-todo-comment-params';
-import { useReportType } from '@src/features/insights/report/hooks/use-report-type';
+import { useReportType } from '@src/features/insights/report/hooks/use-report-params';
 import { useSelectedMemoId } from '@src/features/notes/memo/hooks/use-memo-params';
 import { useNotificationCategory } from '@src/features/notification/hooks/use-notification-params';
 import { notificationDirectionViewSchema } from '@src/features/notification/schemas/notification-params.schema';
@@ -14,7 +14,7 @@ import {
   useFriendListIsEditing,
   useFriendListView,
 } from '@src/features/social/friend/hooks/use-friend-list-params';
-import { useInvitedFriendsView } from '@src/features/social/invite/hooks/use-invited-friends-view';
+import { useInvitedFriendsView } from '@src/features/social/invite/hooks/use-invite-params';
 import { voiceNoteTabSchema } from '@src/features/voice/schemas/voice-note-params.schema';
 import { useWeatherRescheduleTodoIds } from '@src/features/weather/hooks/use-weather-reschedule-params';
 import { useView } from '@src/shared/hooks/use-view';

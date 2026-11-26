@@ -12,7 +12,7 @@ import {
   getTodoImportUploadFailure,
   type TodoImportUploadFailure,
 } from '../domains/todo-import.error';
-import { useTodoImportId } from '../hooks/use-todo-import-id';
+import { useTodoImportId } from '../hooks/use-todo-import-params';
 import { invalidateActiveTodoImport } from '../queries/todo-import-cache';
 
 const FAILURE_LABEL_KEYS = {

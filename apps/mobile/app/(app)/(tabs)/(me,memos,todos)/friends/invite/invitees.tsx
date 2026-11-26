@@ -1,7 +1,7 @@
 import { REDEMPTION_STATUS } from '@aido/api/vocabulary';
 import { InvitedFriendFilterTabs } from '@src/features/social/invite/components/invited-friend-filter-tabs';
 import { InvitedFriendList } from '@src/features/social/invite/components/invited-friend-list';
-import { useInvitedFriendsView } from '@src/features/social/invite/hooks/use-invited-friends-view';
+import { useInvitedFriendsView } from '@src/features/social/invite/hooks/use-invite-params';
 import {
   useGetInviteQueryOptions,
   useGetInvitedFriendCountInfiniteQueryOptions,

@@ -7,7 +7,7 @@ import { useSuspenseQueries } from '@tanstack/react-query';
 import { useRouter, Stack } from 'expo-router';
 
 import { NudgeInteractionPolicy } from '../domains/nudge-interaction.model';
-import { useNudgeId } from '../hooks/use-nudge-id';
+import { useNudgeId } from '../hooks/use-nudge-params';
 import { useGetNudgeInteractionQueryOptions } from '../queries/todo-nudge.queries';
 import { formatNudgeUserName } from '../utils/nudge-user-name.view-model';
 

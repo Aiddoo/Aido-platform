@@ -6,7 +6,7 @@ import { useMyPendingCoachmark } from '@src/features/device/coachmark/hooks/use-
 import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import { shouldReopenRepeatPicker } from '@src/features/planning/todo/domains/todo-series.error';
-import { useTodoSheetDateKey } from '@src/features/planning/todo/hooks/use-todo-sheet-date-key';
+import { useTodoSheetDateKey } from '@src/features/planning/todo/hooks/use-todo-params';
 import { useCreateRecurringTodoMutationOptions } from '@src/features/planning/todo/queries/todo-series.mutations';
 import { useCreateTodoMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
 import {

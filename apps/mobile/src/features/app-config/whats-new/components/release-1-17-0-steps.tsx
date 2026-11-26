@@ -43,7 +43,7 @@ const INTRO_CAT_SIZE = 132;
 const BUBBLE_ICON_SIZE = 18;
 
 type Release1170Step = (typeof RELEASE_1_17_0_STEPS)[number];
-type Release1170StepMap = Record<Release1170Step, Record<string, never>>;
+type Release1170StepContexts = Record<Release1170Step, Record<string, never>>;
 
 function getStepPosition(step: Release1170Step): number {
   return RELEASE_1_17_0_STEPS.indexOf(step);
@@ -57,7 +57,7 @@ export function Release1170Steps() {
   const [{ source }] = useWhatsNewParams();
   const { t } = useTranslation(['whatsNew', 'todoImport', 'common']);
   const flow = useWhatsNewFlow({ release: RELEASE_1_17_0, source });
-  const stepper = useStepper<Release1170StepMap>({
+  const stepper = useStepper<Release1170StepContexts>({
     id: 'whats-new-1.17.0',
     initial: { step: 'intro' },
     onStepChange: ({ step }) => flow.trackStepViewed({ step, index: getStepPosition(step) }),

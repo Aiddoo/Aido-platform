@@ -39,7 +39,7 @@ import {
   type TodoCategoryDeletionPreview,
 } from '../domains/todo-category-deletion.model';
 import { type TodoCategory, TodoCategoryPolicy } from '../domains/todo-category.model';
-import { useTodoCategoryId } from '../hooks/use-todo-category-id';
+import { useTodoCategoryId } from '../hooks/use-todo-category-params';
 import { useDeleteTodoCategoryMutationOptions } from '../queries/todo-category.mutations';
 import {
   useGetTodoCategoriesQueryOptions,

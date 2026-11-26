@@ -5,7 +5,7 @@ import { TodoImportResult } from '@src/features/planning/todo-import/components/
 import { TodoImportUndoButton } from '@src/features/planning/todo-import/components/todo-import-undo-button';
 import { isTodoImportNotFoundError } from '@src/features/planning/todo-import/domains/todo-import.error';
 import type { TodoImport } from '@src/features/planning/todo-import/domains/todo-import.model';
-import { useTodoImportId } from '@src/features/planning/todo-import/hooks/use-todo-import-id';
+import { useTodoImportId } from '@src/features/planning/todo-import/hooks/use-todo-import-params';
 import { useGetTodoImportQueryOptions } from '@src/features/planning/todo-import/queries/todo-import.queries';
 import { todoImportParamsSchema } from '@src/features/planning/todo-import/schemas/todo-import-params.schema';
 import { toTodoImportCountBucket } from '@src/features/planning/todo-import/utils/todo-import-analytics';

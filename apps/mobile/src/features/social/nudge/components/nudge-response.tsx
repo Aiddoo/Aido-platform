@@ -24,7 +24,7 @@ import { match, P } from 'ts-pattern';
 
 import { NUDGE_REPLY_LABEL_KEYS } from '../constants/nudge-interaction-labels';
 import { NudgeInteractionPolicy } from '../domains/nudge-interaction.model';
-import { useNudgeId } from '../hooks/use-nudge-id';
+import { useNudgeId } from '../hooks/use-nudge-params';
 import { useReplyToNudgeMutationOptions } from '../queries/todo-nudge.mutations';
 import { useGetNudgeInteractionQueryOptions } from '../queries/todo-nudge.queries';
 import { ThanksSummaryRow } from './thanks-summary-row';

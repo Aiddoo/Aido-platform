@@ -49,7 +49,7 @@ import { match } from 'ts-pattern';
 import { SAMPLE_REPORT_COUNT } from '../constants/sample-report.constants';
 import { ReportStatusPolicy } from '../domains/report-status.model';
 import type { AiReport } from '../domains/report.model';
-import { useReportType } from '../hooks/use-report-type';
+import { useReportType } from '../hooks/use-report-params';
 import {
   useGetReportsQueryOptions,
   useGetReportStatusQueryOptions,

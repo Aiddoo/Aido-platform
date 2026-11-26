@@ -3,7 +3,7 @@ import { AiConsentNotice } from '@src/features/identity/consent/components/ai-co
 import { refreshWeeklyAchievements } from '@src/features/insights/achievement/queries/achievement-cache';
 import { ReportList } from '@src/features/insights/report/components/report-list';
 import { ReportStatusBanner } from '@src/features/insights/report/components/report-status-banner';
-import { useReportType } from '@src/features/insights/report/hooks/use-report-type';
+import { useReportType } from '@src/features/insights/report/hooks/use-report-params';
 import { refreshReports } from '@src/features/insights/report/queries/report-cache';
 import { reportListTypeSchema } from '@src/features/insights/report/schemas/report-params.schema';
 import { getReportTypeLabelKey } from '@src/features/insights/report/utils/report-label.view-model';

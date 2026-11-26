@@ -43,7 +43,7 @@ const INTRO_CAT_SIZE = 132;
 const BUBBLE_ICON_SIZE = 18;
 
 type Release1160Step = (typeof RELEASE_1_16_0_STEPS)[number];
-type Release1160StepMap = Record<Release1160Step, Record<string, never>>;
+type Release1160StepContexts = Record<Release1160Step, Record<string, never>>;
 
 const CHAPTER_START_STEP = {
   suggestion: 'suggestionRequest',
@@ -65,7 +65,7 @@ export function Release1160Steps() {
   const { t } = useTranslation(['whatsNew', 'common']);
   const dateFormatContext = useDateFormatContext();
   const flow = useWhatsNewFlow({ release: RELEASE_1_16_0, source });
-  const stepper = useStepper<Release1160StepMap>({
+  const stepper = useStepper<Release1160StepContexts>({
     id: 'whats-new-1.16.0',
     initial: { step: 'intro' },
     onStepChange: ({ step }) => flow.trackStepViewed({ step, index: getStepPosition(step) }),

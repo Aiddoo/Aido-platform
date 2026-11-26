@@ -8,8 +8,7 @@ import { TodoListPolicy } from '../domains/todo-list.model';
 import { type Todo, TodoPolicy } from '../domains/todo.model';
 import { useGetTodosByDateQueryOptions } from '../queries/todo.queries';
 import { subTodoParamsSchema } from '../schemas/todo-params.schema';
-import { useTodoId } from './use-todo-params';
-import { useTodoSheetDateKey } from './use-todo-sheet-date-key';
+import { useTodoId, useTodoSheetDateKey } from './use-todo-params';
 
 interface SheetTargetOptions {
   /** 대상이 그날 목록에 없을 때(지웠거나 다른 날로 옮김, 잘못된 링크) 시트를 닫는다 */
