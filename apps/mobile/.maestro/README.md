@@ -24,33 +24,33 @@
 
 `flows/` 아래 경로다(`app/` 폴더만 앱의 `app/` 경로와 헷갈리지 않게 `flows/`를 붙여 적는다).
 
-| 흐름                                           | 태그(기능 태그 뒤)                               | 지키는 것                                                         |
-| ---------------------------------------------- | ------------------------------------------------ | ----------------------------------------------------------------- |
-| `auth/email-sign-in-opens-feed`                | smoke                                            | 개발 계정 이메일 로그인 → 피드                                    |
-| `todo/create-complete-delete-saves`            | smoke                                            | 추가 → 완료 → 삭제, 단계마다 서버 반영                            |
-| `memo/create-edit-saves`                       | smoke                                            | 메모 저장 → 고쳐 저장 → 목록·서버 반영                            |
-| `subscription/paywall-close-keeps-plan`        | smoke                                            | 페이월을 결제 없이 닫으면 피드, 구독 상태 그대로                  |
-| `todo/create-double-tap-saves-once`            | regression                                       | 저장 연타에도 서버에 할 일 하나                                   |
-| `todo/complete-toggle-matches-server`          | regression                                       | 체크박스가 바로 바뀌고 연타 뒤에도 화면 = 서버                    |
-| `todo/complete-offline-rolls-back`             | regression, android-only                         | 비행기 모드 완료 → 연결 안내 + 되돌림, 서버 그대로 → 연결 뒤 완료 |
-| `todo-import/import-undo-removes-todos`        | regression, ios-only                             | 캘린더 앱에 심은 일정 가져오기 → 할 일 생김 → 되돌리기 → 사라짐   |
-| `todo-import/permission-denied-shows-settings` | regression, ios-only                             | 캘린더 거절이면 설정 열기만, 계속 없음                            |
-| `comment/write-and-like-saves`                 | regression, needs-second-account                 | 친구 할 일에 댓글 → 목록·서버, 친구 댓글 하트 → 바로 켜짐·서버    |
-| `category/delete-moves-todos`                  | regression                                       | 할 일이 든 카테고리 삭제 시 고른 카테고리로 옮김                  |
-| `category/delete-removes-todos`                | regression                                       | 할 일과 함께 삭제                                                 |
-| `friend/add-double-tap-sends-once`             | regression, needs-second-account                 | 친구 추가 연타에도 중복 요청 안내 없이 요청 하나                  |
-| `invite/already-friend-skips-reward`           | regression, needs-second-account                 | 이미 친구면 환영 시트·수락 기록 없이 친구 피드                    |
-| `invite/code-redeem-makes-friends`             | regression, needs-second-account                 | 코드 입력 → 초대 카드 → 수락 → 환영 시트, 친구가 됨               |
-| `notification/inbox-item-opens-once`           | regression, needs-second-account                 | 알림함 친구 요청 → 받은 요청 화면 한 번, 읽음                     |
-| `notification/permission-off-shows-guide`      | regression                                       | 기기 알림 꺼짐 안내 + 켜는 버튼, iOS 거절 뒤 설정 열기            |
-| `notification/push-background-opens-once`      | regression, push, ios-only, needs-second-account | 뒤에 있는 앱에 시뮬레이터 푸시 → 받은 요청 화면 한 번, 읽음       |
-| `notification/push-cold-start-opens-screen`    | regression, push, ios-only, needs-second-account | 꺼진 앱에 시뮬레이터 푸시 → 콜드 스타트로 그 화면, 읽음           |
-| `report/free-shows-sample-and-paywall`         | regression                                       | 무료 리포트: 이번 주 기록 + 예시 → 예시 상세 → 페이월             |
-| `weather/location-allowed-shows-report`        | regression                                       | 위치 허용 + 서울 좌표 → 앱 오류 없이 날씨 요약                    |
-| `weather/location-denied-shows-guide`          | regression                                       | 위치 없음 → 위치 안내(iOS 설정 열기, Android 계속)                |
-| `flows/app/offline-shows-banner-and-reloads`   | regression, android-only                         | 비행기 모드: 오프라인 안내 → 복구 후 다시 불러옴                  |
-| `flows/app/background-keeps-draft`             | regression                                       | 저장 전 메모를 쓰다 홈 → 돌아오면 화면·글 그대로                  |
-| `flows/app/relaunch-keeps-session`             | regression                                       | 앱을 끄고(Android는 killApp도) 다시 열면 피드                     |
+| 흐름                                           | 태그(기능 태그 뒤)                                           | 지키는 것                                                         |
+| ---------------------------------------------- | ------------------------------------------------------------ | ----------------------------------------------------------------- |
+| `auth/email-sign-in-opens-feed`                | smoke                                                        | 개발 계정 이메일 로그인 → 피드                                    |
+| `todo/create-complete-delete-saves`            | smoke                                                        | 추가 → 완료 → 삭제, 단계마다 서버 반영                            |
+| `memo/create-edit-saves`                       | smoke                                                        | 메모 저장 → 고쳐 저장 → 목록·서버 반영                            |
+| `subscription/paywall-close-keeps-plan`        | smoke                                                        | 페이월을 결제 없이 닫으면 피드, 구독 상태 그대로                  |
+| `todo/create-double-tap-saves-once`            | regression                                                   | 저장 연타에도 서버에 할 일 하나                                   |
+| `todo/complete-toggle-matches-server`          | regression                                                   | 체크박스가 바로 바뀌고 연타 뒤에도 화면 = 서버                    |
+| `todo/complete-offline-rolls-back`             | regression, android-only                                     | 비행기 모드 완료 → 연결 안내 + 되돌림, 서버 그대로 → 연결 뒤 완료 |
+| `todo-import/import-undo-removes-todos`        | regression, ios-only                                         | 캘린더 앱에 심은 일정 가져오기 → 할 일 생김 → 되돌리기 → 사라짐   |
+| `todo-import/permission-denied-shows-settings` | regression, ios-only                                         | 캘린더 거절이면 설정 열기만, 계속 없음                            |
+| `comment/write-and-like-saves`                 | regression, needs-second-account                             | 친구 할 일에 댓글 → 목록·서버, 친구 댓글 하트 → 바로 켜짐·서버    |
+| `category/delete-moves-todos`                  | regression                                                   | 할 일이 든 카테고리 삭제 시 고른 카테고리로 옮김                  |
+| `category/delete-removes-todos`                | regression                                                   | 할 일과 함께 삭제                                                 |
+| `friend/add-double-tap-sends-once`             | regression, needs-second-account                             | 친구 추가 연타에도 중복 요청 안내 없이 요청 하나                  |
+| `invite/already-friend-skips-reward`           | regression, needs-second-account                             | 이미 친구면 환영 시트·수락 기록 없이 친구 피드                    |
+| `invite/code-redeem-makes-friends`             | regression, needs-second-account                             | 코드 입력 → 초대 카드 → 수락 → 환영 시트, 친구가 됨               |
+| `notification/inbox-item-opens-once`           | regression, needs-second-account                             | 알림함 친구 요청 → 받은 요청 화면 한 번, 읽음                     |
+| `notification/permission-off-shows-guide`      | regression                                                   | 기기 알림 꺼짐 안내 + 켜는 버튼, iOS 거절 뒤 설정 열기            |
+| `notification/push-background-opens-once`      | regression, push, ios-only, needs-second-account             | 뒤에 있는 앱에 시뮬레이터 푸시 → 받은 요청 화면 한 번, 읽음       |
+| `notification/push-cold-start-opens-screen`    | regression, push, cold-start, ios-only, needs-second-account | 꺼진 앱에 시뮬레이터 푸시 → 콜드 스타트로 그 화면, 읽음           |
+| `report/free-shows-sample-and-paywall`         | regression                                                   | 무료 리포트: 이번 주 기록 + 예시 → 예시 상세 → 페이월             |
+| `weather/location-allowed-shows-report`        | regression                                                   | 위치 허용 + 서울 좌표 → 앱 오류 없이 날씨 요약                    |
+| `weather/location-denied-shows-guide`          | regression                                                   | 위치 없음 → 위치 안내(iOS 설정 열기, Android 계속)                |
+| `flows/app/offline-shows-banner-and-reloads`   | regression, android-only                                     | 비행기 모드: 오프라인 안내 → 복구 후 다시 불러옴                  |
+| `flows/app/background-keeps-draft`             | regression                                                   | 저장 전 메모를 쓰다 홈 → 돌아오면 화면·글 그대로                  |
+| `flows/app/relaunch-keeps-session`             | regression                                                   | 앱을 끄고(Android는 killApp도) 다시 열면 피드                     |
 
 ## 이름과 태그
 
@@ -67,7 +67,7 @@
 
 - `smoke`: 몇 분 안에 끝나는 핵심 경로. 출시 빌드마다 먼저 돈다. `regression`: 지난 버그·정책 경계. 출시 전에 전체로 돈다.
 - 기능 태그(`todo`, `invite`, `app`, …): `pnpm e2e:feature <태그>`로 그 기능만 돈다.
-- `needs-second-account`: `MAESTRO_SECOND_*` 계정이 있어야 한다. `push`: `pnpm e2e`가 연 시뮬레이터 푸시 입구가 있어야 한다.
+- `needs-second-account`: `MAESTRO_SECOND_*` 계정이 있어야 한다. `push`: `pnpm e2e`가 연 시뮬레이터 푸시 입구가 있어야 한다. 친구 요청 알림을 기다리는 흐름 셋(알림함·`push` 둘)은 `accounts reset` 뒤 처음 하나만 통과했다(같은 두 계정의 요청에는 알림이 다시 생기지 않는 것으로 보인다, 2026-11-27). 나머지는 `--include-tags cold-start`처럼 따로 돌린다.
 - `android-only`·`ios-only`: 다른 플랫폼에서는 본문을 건너뛴다(통과로 표시된다). 그 플랫폼은 아래 수동 목록으로 본다.
 
 ## 개발 서버에 붙이기

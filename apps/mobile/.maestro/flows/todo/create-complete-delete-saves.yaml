@@ -28,9 +28,11 @@ onFlowComplete:
       TODO_TITLE: ${output.todoTitle}
 - tapOn:
     id: ${output.ids.todo.submitButton}
-- extendedWaitUntil:
-    visible: ${output.todoTitle}
-    timeout: 10000
+# 접은 Duo처럼 낮은 화면에서는 새 할 일이 화면 아래로 밀려 있어 스크롤해 찾는다
+- scrollUntilVisible:
+    element: ${output.todoTitle}
+    direction: DOWN
+    timeout: 15000
 # Then: 서버에 완료하지 않은 할 일로 저장된다
 - evalScript: ${output.todo = output.main.waitForTodo(output.category.id, output.todoTitle, false)}
 

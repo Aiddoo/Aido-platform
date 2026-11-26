@@ -146,7 +146,8 @@ output.labels = {
   },
   // src/shared/i18n/locales/*/notification.json permission(기기 알림 권한 줄)
   notification: {
-    deviceOffTitle: '기기 알림이 꺼져 있어요|Device notifications are off',
+    // 안내 줄은 접근성 요소 하나로 묶여 라벨이 "제목, 설명, 버튼"이라 부분 일치로 찾는다
+    deviceOffTitle: '.*(기기 알림이 꺼져 있어요|Device notifications are off).*',
     granted: '허용됨|Allowed',
     openSettings: '설정 열기|Open Settings',
   },

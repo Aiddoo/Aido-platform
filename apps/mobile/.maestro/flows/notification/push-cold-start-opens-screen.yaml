@@ -4,6 +4,7 @@ tags:
   - regression
   - notification
   - push
+  - cold-start
   - ios-only
   - needs-second-account
 onFlowStart:

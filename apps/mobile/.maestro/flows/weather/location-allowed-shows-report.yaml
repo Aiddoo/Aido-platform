@@ -6,10 +6,22 @@ tags:
 onFlowStart:
   - runFlow: ../../subflows/app/load-helpers.yaml
   - runFlow: ../../subflows/app/launch-fresh.yaml
-  # launch-fresh는 위치를 거절한다. 허용으로 바꾸는 것은 앱을 끝내지 않는다
-  - setPermissions:
-      permissions:
-        location: allow
+  # launch-fresh는 위치를 거절한다. 허용으로 바꾸는 것은 앱을 끝내지 않는다.
+  # iOS는 위치에 allow를 받지 않고(always·inuse·never) Android는 allow다
+  - runFlow:
+      when:
+        platform: iOS
+      commands:
+        - setPermissions:
+            permissions:
+              location: always
+  - runFlow:
+      when:
+        platform: Android
+      commands:
+        - setPermissions:
+            permissions:
+              location: allow
   - setLocation:
       latitude: 37.5665
       longitude: 126.978
