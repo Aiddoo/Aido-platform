@@ -5,6 +5,7 @@ import {
 } from '@src/bootstrap/providers/di-context';
 import type { HapticsGateway } from '@src/core/ports/haptics-gateway';
 import type { SpeechErrorCode, SpeechLocale } from '@src/core/ports/speech-recognizer';
+import { useIsUnmountedRef } from '@src/shared/hooks/use-is-unmounted-ref';
 import { noop } from 'es-toolkit';
 import { type RefObject, useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { type SharedValue, useSharedValue } from 'react-native-reanimated';
@@ -34,7 +35,6 @@ import {
 } from '../domains/voice-transcript.model';
 import { VoiceRecognizerSession } from '../services/voice-recognizer.session';
 import { toAbandonedCaptureOutcome, toCaptureOutcome } from '../utils/voice-analytics';
-import { useIsUnmountedRef } from './use-is-unmounted-ref';
 import { useSpeechEvent } from './use-speech-event';
 import {
   useVoiceCaptureTelemetry,

@@ -15,6 +15,8 @@ import { useIsAnimationActive } from '@src/shared/hooks/use-is-animation-active'
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useRebuiltPath } from '@src/shared/hooks/use-rebuilt-path';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
+import { useSkiaDensityScale } from '@src/shared/hooks/use-skia-density-scale';
+import { useToggleableFrameCallback } from '@src/shared/hooks/use-toggleable-frame-callback';
 import { Box } from '@src/shared/ui';
 import { range } from 'es-toolkit';
 import { useEffect, useState } from 'react';
@@ -36,8 +38,6 @@ import {
   VOICE_VISUAL,
   VOICE_VISUAL_BARS,
 } from '../constants/voice.constants';
-import { useSkiaDensityScale } from '../hooks/use-skia-density-scale';
-import { useToggleableFrameCallback } from '../hooks/use-toggleable-frame-callback';
 import { followLevel } from '../utils/waveform.geometry';
 
 const VOICE_FRAME_BUDGET = {

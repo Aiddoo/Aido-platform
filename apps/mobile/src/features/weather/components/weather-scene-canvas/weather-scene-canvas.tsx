@@ -4,6 +4,7 @@ import { SECOND_MS } from '@src/shared/constants/time-units';
 import { useAppWindow } from '@src/shared/hooks/use-app-window';
 import { useIsAnimationActive } from '@src/shared/hooks/use-is-animation-active';
 import { useLayoutSize } from '@src/shared/hooks/use-layout-size';
+import { useToggleableFrameCallback } from '@src/shared/hooks/use-toggleable-frame-callback';
 import { Box } from '@src/shared/ui';
 import { isEqual } from 'es-toolkit';
 import { useCallback, useEffect, useState } from 'react';
@@ -11,9 +12,7 @@ import { StyleSheet } from 'react-native';
 import {
   cancelAnimation,
   Easing,
-  type FrameInfo,
   type SharedValue,
-  useFrameCallback,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
@@ -89,21 +88,16 @@ export function WeatherSceneCanvas({
   const { theme } = useUniwind();
   const isAnimating = useIsAnimationActive();
   const time = useSharedValue(STATIC_SCENE_SECONDS);
-  const advanceTime = useCallback(
-    (frame: FrameInfo) => {
+  const { entries, current, finishFade } = useSceneCrossFade(scene);
+
+  useToggleableFrameCallback(
+    (frame) => {
       'worklet';
       const step = Math.min(frame.timeSincePreviousFrame ?? 0, MAX_FRAME_STEP_MS);
       time.set(time.get() + step / SECOND_MS);
     },
-    [time],
+    { isActive: isAnimating },
   );
-  const frameClock = useFrameCallback(advanceTime, false);
-  const { entries, current, finishFade } = useSceneCrossFade(scene);
-
-  useEffect(() => {
-    frameClock.setActive(isAnimating);
-    return () => frameClock.setActive(false);
-  }, [frameClock, isAnimating]);
 
   // Skia Canvas는 onLayout을 받지 않아 감싼 View에서 크기를 잰다.
   return (

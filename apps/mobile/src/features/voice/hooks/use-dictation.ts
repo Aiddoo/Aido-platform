@@ -1,5 +1,6 @@
 import { useSpeechRecognizer } from '@src/bootstrap/providers/di-context';
 import type { SpeechErrorCode } from '@src/core/ports/speech-recognizer';
+import { useIsUnmountedRef } from '@src/shared/hooks/use-is-unmounted-ref';
 import { useLocaleContext } from '@src/shared/hooks/use-locale-context';
 import { useReportUnexpectedError } from '@src/shared/hooks/use-report-unexpected-error';
 import { tDynamic } from '@src/shared/i18n';
@@ -32,7 +33,8 @@ export function useDictation({ onResult, onEnd }: UseDictationOptions) {
   const reportUnexpectedError = useReportUnexpectedError('voice');
   const { speechLocale } = useLocaleContext();
   const [isListening, setIsListening] = useState(false);
-  const isMountedRef = useRef(false);
+  // 내려갈 때 세션을 끊는 effect보다 먼저 불러 정리도 먼저 돈다
+  const isUnmountedRef = useIsUnmountedRef();
   const isSessionOwnerRef = useRef(false);
   const hasFailedRef = useRef(false);
   const isStopRequestedRef = useRef(false);
@@ -84,10 +86,7 @@ export function useDictation({ onResult, onEnd }: UseDictationOptions) {
   });
 
   useEffect(() => {
-    isMountedRef.current = true;
-
     return () => {
-      isMountedRef.current = false;
       if (isSessionOwnerRef.current) {
         isSessionOwnerRef.current = false;
         speechRecognizer.abort();
@@ -98,7 +97,7 @@ export function useDictation({ onResult, onEnd }: UseDictationOptions) {
   const beginListening = async () => {
     const locale = speechLocale;
     const isGranted = await ensureMicrophonePermission('dictation', locale);
-    if (!isGranted || !isMountedRef.current) {
+    if (!isGranted || isUnmountedRef.current) {
       isStartingRef.current = false;
       return;
     }

@@ -3,6 +3,8 @@ import { useIsAppInBackground } from '@src/shared/hooks/use-is-app-in-background
 import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useRebuiltPath } from '@src/shared/hooks/use-rebuilt-path';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
+import { useSkiaDensityScale } from '@src/shared/hooks/use-skia-density-scale';
+import { useToggleableFrameCallback } from '@src/shared/hooks/use-toggleable-frame-callback';
 import { useTranslation } from '@src/shared/i18n';
 import { Box } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -18,8 +20,6 @@ import {
 } from 'react-native-reanimated';
 
 import { WAVEFORM_SPEECH_BAR_LEVEL, WAVEFORM_BAR } from '../../constants/voice-note.constants';
-import { useSkiaDensityScale } from '../../hooks/use-skia-density-scale';
-import { useToggleableFrameCallback } from '../../hooks/use-toggleable-frame-callback';
 import {
   appendLevelFrame,
   appendTimelineBar,

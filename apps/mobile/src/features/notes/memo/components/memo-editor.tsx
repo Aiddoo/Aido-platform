@@ -23,6 +23,7 @@ import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context'
 import { useDismissKeyboard } from '@src/shared/hooks/use-dismiss-keyboard';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useGoBack } from '@src/shared/hooks/use-go-back';
+import { useIsUnmountedRef } from '@src/shared/hooks/use-is-unmounted-ref';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -64,14 +65,7 @@ import {
 import { noop } from 'es-toolkit';
 import { Stack, useRouter, useNavigation } from 'expo-router';
 import { Menu, Separator, Spinner } from 'heroui-native';
-import {
-  type ComponentProps,
-  type ComponentType,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from 'react';
+import { type ComponentProps, type ComponentType, useLayoutEffect, useRef, useState } from 'react';
 import { Controller, FormState, useForm } from 'react-hook-form';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import Animated, { FadeIn } from 'react-native-reanimated';
@@ -693,17 +687,10 @@ function useOpenMemoPlanReview() {
   const push = useSingleTap(router.push);
   const navigation = useNavigation();
   const [memoId] = useMemoId();
-  const isMountedRef = useRef(false);
-
-  useEffect(() => {
-    isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
+  const isUnmountedRef = useIsUnmountedRef();
 
   return () => {
-    if (isMountedRef.current && navigation.isFocused()) {
+    if (!isUnmountedRef.current && navigation.isFocused()) {
       push({ pathname: '/memo/[memoId]/ai-review', params: { memoId } });
     }
   };

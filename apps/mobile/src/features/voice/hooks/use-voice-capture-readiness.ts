@@ -6,12 +6,12 @@ import { useClaimAiConsentRenewal } from '@src/features/device/coachmark/hooks/u
 import { useAiDataSharingConsentGate } from '@src/features/identity/consent/hooks/use-ai-data-sharing-consent-gate';
 import { useTrack } from '@src/shared/analytics';
 import { useDismissKeyboard } from '@src/shared/hooks/use-dismiss-keyboard';
+import { useIsUnmountedRef } from '@src/shared/hooks/use-is-unmounted-ref';
 import { useTranslation } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui';
 
 import type { VoiceCaptureEntry } from '../constants/voice.events';
 import { useEnsureMicrophonePermission } from './use-ensure-microphone-permission';
-import { useIsUnmountedRef } from './use-is-unmounted-ref';
 
 interface UseVoiceCaptureReadinessOptions {
   feature: Extract<EntitlementFeature, 'AI_PARSE' | 'VOICE_NOTE'>;

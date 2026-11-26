@@ -9,6 +9,8 @@ import {
 import { ANIMATION } from '@src/shared/constants/animation';
 import { useIsAnimationActive } from '@src/shared/hooks/use-is-animation-active';
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
+import { useSkiaDensityScale } from '@src/shared/hooks/use-skia-density-scale';
+import { useToggleableFrameCallback } from '@src/shared/hooks/use-toggleable-frame-callback';
 import { SHEET_RADIUS } from '@src/shared/ui';
 import type { LayoutChangeEvent } from 'react-native';
 import Animated, {
@@ -20,8 +22,6 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { VOICE_EDGE_GLOW, VOICE_GRADIENT_COLORS } from '../constants/voice.constants';
-import { useSkiaDensityScale } from '../hooks/use-skia-density-scale';
-import { useToggleableFrameCallback } from '../hooks/use-toggleable-frame-callback';
 import { followLevel } from '../utils/waveform.geometry';
 
 const BLEED = VOICE_EDGE_GLOW.blur * 3;
