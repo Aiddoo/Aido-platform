@@ -34,7 +34,8 @@ output.ids = {
   },
   // src/features/planning/todo/components/todo-list/todo-list.tsx(행·추가),
   // src/features/planning/composer/components/todo-create-bottom-sheet.tsx(추가 시트),
-  // src/features/planning/todo/components/todo-list/todo-actions-bottom-sheet.tsx(더보기)
+  // src/features/planning/todo/components/todo-list/todo-actions-bottom-sheet.tsx(더보기),
+  // app/(app)/todo/[todoId]/index.tsx(상세)
   todo: {
     addButton: (categoryId) => 'todo-add-' + categoryId,
     addSheet: 'todo-add-sheet',
@@ -43,6 +44,15 @@ output.ids = {
     checkbox: (todoId) => 'todo-checkbox-' + todoId,
     moreButton: (todoId) => 'todo-more-' + todoId,
     deleteAction: 'todo-action-delete',
+    detail: 'todo-detail',
+  },
+  // src/features/engagement/comment/components/todo-comment-form.tsx(작성 칸은 이어 쓰기 순서마다 index),
+  // src/features/engagement/comment/components/todo-comment-item.tsx(본문·좋아요)
+  comment: {
+    input: (index) => 'todo-comment-input-' + index,
+    submitButton: 'todo-comment-submit',
+    body: (commentId) => 'todo-comment-body-' + commentId,
+    likeButton: (commentId) => 'todo-comment-like-' + commentId,
   },
   // src/features/planning/category/components/category-list.tsx(삭제 버튼),
   // src/features/planning/category/components/category-delete-bottom-sheet.tsx(삭제 시트),
@@ -119,6 +129,40 @@ output.labels = {
   // src/shared/i18n/locales/*/errors.json FOLLOW_0901(같은 친구 요청을 두 번 보냈을 때의 토스트)
   friend: {
     alreadyRequested: '이미 친구 요청을 보냈어요|Friend request already sent',
+  },
+  // iOS 캘린더 앱(com.apple.mobilecal). 가져오기 흐름이 기기에 일정을 심을 때만 쓴다
+  iosCalendar: {
+    appId: 'com.apple.mobilecal',
+    welcomeContinue: 'Continue|계속',
+    addButton: 'Add|추가',
+    titleField: 'Title|제목',
+  },
+  // app/(app)/(tabs)/(me,memos,todos)/todo-import/index.tsx·[importId].tsx, src/shared/i18n/locales/*/todo-import.json.
+  // 가져오기 화면에는 testID가 없어 단계 제목·버튼 글자로 찾는다(README "앱에 더할 testID")
+  todoImport: {
+    calendarsTitle: '가져올 캘린더를 골라주세요|Choose calendars to import',
+    categoriesTitle: '어디에 넣을까요\\?|Where should they go\\?',
+    optionsTitle: '마지막으로 확인해주세요|One last check',
+    // common.json actions.continue. 캘린더·넣을 곳 단계의 아래 버튼
+    nextButton: '다음|Continue',
+    importButton: '가져오기|Import',
+    completedTitle: '할 일 \\d+개를 가져왔어요|Imported \\d+ to-dos?',
+    undoButton: '되돌리기|Undo',
+    undoConfirmTitle: '가져온 할 일을 되돌릴까요\\?|Undo this import\\?',
+    cancelButton: '취소|Cancel',
+    undoneTitle: '할 일 \\d+개를 되돌렸어요|Removed \\d+ imported to-dos?',
+    permissionDeniedTitle: '캘린더 접근이 꺼져 있어요|Calendar access is off',
+    permissionContinue: '계속|Continue',
+    openSettings: '설정 열기|Open Settings',
+  },
+  // src/features/weather/components/weather-hero.tsx(hero.summary 접근성 라벨 "곳, 지금 기온, 날씨"),
+  // src/features/weather/components/weather-location-prompt.tsx, src/shared/i18n/locales/*/weather.json
+  weather: {
+    heroSummary: '.+, 지금 .+, .+|.+, .+ now, .+',
+    locationAskTitle: '지금 있는 곳 날씨를 보여드릴게요|See your local weather',
+    locationDeniedTitle: '설정에서 위치를 켜주세요|Turn on location in Settings',
+    continueButton: '계속|Continue',
+    openSettings: '설정 열기|Open Settings',
   },
   // src/features/insights/report/components/report-list.tsx(report.card.viewDetail, src/shared/i18n/locales/*/ai.json)
   report: {

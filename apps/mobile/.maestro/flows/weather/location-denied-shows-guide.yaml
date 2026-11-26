@@ -1,0 +1,45 @@
+appId: ${MAESTRO_APP_ID}
+name: 위치 권한 없이 날씨 화면을 열면 앱 오류 없이 위치 안내가 보인다
+tags:
+  - regression
+  - weather
+onFlowStart:
+  - runFlow: ../../subflows/app/load-helpers.yaml
+  # launch-fresh가 알림 말고 모든 권한(위치 포함)을 거절한다
+  - runFlow: ../../subflows/app/launch-fresh.yaml
+---
+# 지키는 것: 위치가 없으면 리포트 대신 권한 안내를 그린다(app/(app)/weather/index.tsx의 needsPermission·denied,
+# src/features/weather/components/weather-location-prompt.tsx). iOS는 거절하면 다시 물을 수 없어 설정 열기(denied),
+# Android는 pm revoke 뒤에도 다시 물을 수 있어 계속(needsPermission)이다
+
+# Given: 위치 권한이 없는 계정으로 로그인했다
+- runFlow:
+    file: ../../subflows/auth/sign-in.yaml
+    env:
+      EMAIL: ${output.config.accounts.main.email}
+      PASSWORD: ${output.config.accounts.main.password}
+
+# When: 날씨 화면을 연다
+- openLink: ${output.config.appScheme}://weather
+
+# Then: 플랫폼마다 위치 안내가 보이고 앱 오류가 없다
+- runFlow:
+    label: iOS는 설정에서 위치를 켜라는 안내다
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible: ${output.labels.weather.locationDeniedTitle}
+          timeout: 20000
+      - assertVisible: ${output.labels.weather.openSettings}
+- runFlow:
+    label: Android는 위치를 묻는 안내다
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible: ${output.labels.weather.locationAskTitle}
+          timeout: 20000
+      - assertVisible: ${output.labels.weather.continueButton}
+- assertNotVisible:
+    id: ${output.ids.app.rootError}

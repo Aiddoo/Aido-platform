@@ -67,6 +67,14 @@ function todayKey() {
   return now.getFullYear() + '-' + month + '-' + day;
 }
 
+// 샌드박스에 crypto가 없어 Math.random으로 v4 모양만 맞춘다. 테스트 데이터 멱등 키라 예측 가능해도 된다
+function randomUuid() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replaceAll(/[xy]/g, (placeholder) => {
+    const nibble = Math.floor(Math.random() * 16);
+    return (placeholder === 'x' ? nibble : 8 + (nibble % 4)).toString(16);
+  });
+}
+
 function signIn(role) {
   const account = output.config.accounts[role];
   if (account == null) {
@@ -83,6 +91,11 @@ function signIn(role) {
   const categories = () => call('GET', '/v1/todo-categories', token).items;
   const todosIn = (categoryId) =>
     call('GET', '/v1/todos?size=200&categoryId=' + categoryId, token).items;
+  // 카테고리를 주지 않으면 모든 카테고리의 할 일이다. 가져오기처럼 넣을 곳을 앱이 정하는 흐름이 쓴다
+  const todosTitled = (title) =>
+    call('GET', '/v1/todos?size=200', token).items.filter((todo) => todo.title === title);
+  const commentsOn = (todoId) =>
+    call('GET', '/v2/todos/' + todoId + '/comments', token).items.map((thread) => thread.comment);
   const memosContaining = (text) =>
     call('GET', '/v1/memos?size=50', token).items.filter((memo) => memo.content.includes(text));
   const inbox = () => call('GET', '/v1/notifications/inbox', token).notifications;
@@ -140,6 +153,36 @@ function signIn(role) {
         '할 일 "' + title + '"이 지워진 것',
       ),
     removeTodo: (todoId) => call('DELETE', '/v1/todos/' + todoId, token, undefined, [404]),
+    waitForTodoTitled: (title) =>
+      poll(() => todosTitled(title)[0] || null, '할 일 "' + title + '"'),
+    waitForTodoTitledGone: (title) =>
+      poll(() => todosTitled(title).length === 0, '할 일 "' + title + '"이 모두 지워진 것'),
+    // 지난 실행이 남긴 같은 접두의 할 일까지 치운다(기기 캘린더 일정은 실행마다 쌓여 다시 가져올 수 있다)
+    removeTodosStartingWith: (prefix) => {
+      const todos = call('GET', '/v1/todos?size=200', token).items;
+      for (const todo of todos.filter((candidate) => candidate.title.startsWith(prefix))) {
+        call('DELETE', '/v1/todos/' + todo.id, token, undefined, [404]);
+      }
+    },
+
+    // 댓글 작성은 글마다 멱등 키(UUID)를 받는다(packages/api/src/contracts/todo-comment/v1/todo-comment.request.ts)
+    createComment: (todoId, content) =>
+      call('POST', '/v1/todos/' + todoId + '/comments', token, {
+        items: [{ clientRequestId: randomUuid(), content: content }],
+      }).comments[0],
+    waitForComment: (todoId, content) =>
+      poll(
+        () => commentsOn(todoId).find((comment) => comment.content === content) || null,
+        '할 일 ' + todoId + '의 댓글 "' + content + '"',
+      ),
+    waitForCommentLike: (todoId, commentId, isLiked) =>
+      poll(
+        () =>
+          commentsOn(todoId).some(
+            (comment) => comment.id === commentId && comment.viewer.isLiked === isLiked,
+          ),
+        '댓글 ' + commentId + '의 내 좋아요가 ' + isLiked + '인 것',
+      ),
 
     waitForMemo: (text) => poll(() => memosContaining(text)[0] || null, '메모 "' + text + '"'),
     removeMemosContaining: (text) => {

@@ -1,0 +1,39 @@
+appId: ${MAESTRO_APP_ID}
+name: 위치 권한을 주고 서울에서 날씨 화면을 열면 앱 오류 없이 날씨 리포트가 보인다
+tags:
+  - regression
+  - weather
+onFlowStart:
+  - runFlow: ../../subflows/app/load-helpers.yaml
+  - runFlow: ../../subflows/app/launch-fresh.yaml
+  # launch-fresh는 위치를 거절한다. 허용으로 바꾸는 것은 앱을 끝내지 않는다
+  - setPermissions:
+      permissions:
+        location: allow
+  - setLocation:
+      latitude: 37.5665
+      longitude: 126.978
+---
+# 지키는 것: 위치를 읽으면 리포트를 받아 맨 위 요약(WeatherHero)이 보인다
+# (app/(app)/weather/index.tsx, src/features/weather/components/weather-hero.tsx의 hero.summary 접근성 라벨)
+# 확인 필요: 개발 서버에 날씨 공급자 키가 없으면 리포트 대신 오류 안내(WeatherScreen.Error)가 뜬다
+
+# Given: 위치 권한을 준 계정으로 로그인했다
+- runFlow:
+    file: ../../subflows/auth/sign-in.yaml
+    env:
+      EMAIL: ${output.config.accounts.main.email}
+      PASSWORD: ${output.config.accounts.main.password}
+
+# When: 날씨 화면을 연다
+- openLink: ${output.config.appScheme}://weather
+
+# Then: 위치 안내 없이 리포트 요약이 보이고 앱 오류가 없다
+- extendedWaitUntil:
+    visible: ${output.labels.weather.heroSummary}
+    timeout: 30000
+- assertNotVisible: ${output.labels.weather.locationAskTitle}
+- assertNotVisible: ${output.labels.weather.locationDeniedTitle}
+- assertNotVisible:
+    id: ${output.ids.app.rootError}
+- assertNotVisible: ${output.labels.system.devErrorOverlay}

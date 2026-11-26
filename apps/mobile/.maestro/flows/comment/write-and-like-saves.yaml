@@ -1,0 +1,64 @@
+appId: ${MAESTRO_APP_ID}
+name: 친구의 할 일 상세에서 댓글을 쓰고 친구 댓글에 하트를 누르면 화면과 서버에 바로 반영된다
+tags:
+  - regression
+  - comment
+  - needs-second-account
+onFlowStart:
+  - runFlow: ../../subflows/app/load-helpers.yaml
+  - evalScript: ${output.main = output.api.signIn('main')}
+  - evalScript: ${output.second = output.api.signIn('second')}
+  - evalScript: ${output.second.removeFriendship(output.main.userId)}
+  - evalScript: ${output.main.removeFriendship(output.second.userId)}
+  - evalScript: ${output.second.sendFriendRequest(output.main.userTag)}
+  - evalScript: ${output.main.acceptFriendRequest(output.second.userId)}
+  - evalScript: ${output.friendCategory = output.second.findDefaultCategory()}
+  # 할 일은 기본 공개(PUBLIC)라 친구가 상세와 댓글을 볼 수 있다
+  - evalScript: ${output.friendTodo = output.second.createTodo(output.friendCategory.id, 'E2E friend todo ' + output.config.runId)}
+  - evalScript: ${output.friendComment = output.second.createComment(output.friendTodo.id, 'E2E friend says ' + output.config.runId)}
+  - evalScript: ${output.myCommentText = 'E2E comment ' + output.config.runId}
+  - runFlow: ../../subflows/app/launch-fresh.yaml
+onFlowComplete:
+  - evalScript: ${output.second && output.friendTodo && output.second.removeTodo(output.friendTodo.id)}
+  - evalScript: ${output.second && output.main && output.second.removeFriendship(output.main.userId)}
+  - evalScript: ${output.second && output.main && output.main.removeFriendship(output.second.userId)}
+---
+# 지키는 것: 댓글 작성은 목록과 서버에 남고, 하트는 누르자마자 켜진 뒤(accessibilityState.selected) 서버에도 남는다
+# (src/features/engagement/comment/components/todo-comment-form.tsx, todo-comment-item.tsx LikeButton)
+
+# Given: 친구가 댓글을 단 친구의 할 일 상세를 연다
+- runFlow:
+    file: ../../subflows/auth/sign-in.yaml
+    env:
+      EMAIL: ${output.main.email}
+      PASSWORD: ${output.main.password}
+- openLink: ${output.config.appScheme}://todo/${output.friendTodo.id}
+- extendedWaitUntil:
+    visible:
+      id: ${output.ids.comment.body(output.friendComment.id)}
+    timeout: 20000
+
+# When: 댓글을 쓴다
+- tapOn:
+    id: ${output.ids.comment.input(0)}
+- inputText: ${output.myCommentText}
+- tapOn:
+    id: ${output.ids.comment.submitButton}
+# Then: 서버에 남고 목록에 보인다
+- evalScript: ${output.myComment = output.main.waitForComment(output.friendTodo.id, output.myCommentText)}
+- extendedWaitUntil:
+    visible:
+      id: ${output.ids.comment.body(output.myComment.id)}
+    timeout: 10000
+
+# When: 친구 댓글의 하트를 누른다
+- hideKeyboard
+- tapOn:
+    id: ${output.ids.comment.likeButton(output.friendComment.id)}
+# Then: 하트가 바로 켜지고 서버에도 내 좋아요가 남는다
+- assertVisible:
+    id: ${output.ids.comment.likeButton(output.friendComment.id)}
+    selected: true
+- evalScript: ${output.main.waitForCommentLike(output.friendTodo.id, output.friendComment.id, true)}
+- assertNotVisible:
+    id: ${output.ids.app.rootError}
