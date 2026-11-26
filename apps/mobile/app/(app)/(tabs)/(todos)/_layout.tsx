@@ -7,7 +7,7 @@ export const unstable_settings = {
   anchor: 'feed/index',
 };
 
-export default function FeedLayout() {
+export default function TodoTabLayout() {
   const screenOptions = useStackScreenOptions({ hasContentBackground: true });
 
   // 할 일 목록·상세 칸은 탭 사이드바를 뺀 폭으로 나눈다

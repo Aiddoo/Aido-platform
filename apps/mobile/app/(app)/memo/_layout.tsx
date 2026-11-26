@@ -2,7 +2,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { useStackBackToolbar, useStackScreenOptions } from '@src/shared/ui';
 import { Stack } from 'expo-router';
 
-export default function MemoLayout() {
+export default function MemoStackLayout() {
   const screenOptions = useStackScreenOptions({ hasContentBackground: true });
   const backToolbar = useStackBackToolbar({ fallbackHref: '/memo' });
   const { t } = useTranslation('memo');
