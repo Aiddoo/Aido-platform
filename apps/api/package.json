@@ -38,7 +38,6 @@
     "test:e2e": "vitest run --project e2e",
     "test:integration": "vitest run --project integration",
     "test:performance": "vitest run --project performance",
-    "test:watch": "vitest --project unit",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

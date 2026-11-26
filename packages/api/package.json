@@ -35,7 +35,6 @@
     "clean": "rm -rf dist *.tsbuildinfo",
     "dev": "tsc --build tsconfig.build.json --watch",
     "test": "vitest run",
-    "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "test:cov": "vitest run --coverage"
   },

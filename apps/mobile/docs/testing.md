@@ -89,9 +89,9 @@ Jest + `jest-expo`(Expo 권장, Vitest로 바꾸지 않는다), React Native Tes
 ```bash
 pnpm --filter @aido/mobile test                       # 전체. PR 전에 한 번
 pnpm --filter @aido/mobile test src/features/notes/memo  # 한 기능
-pnpm --filter @aido/mobile test:changed               # 마지막 커밋 이후 바뀐 파일에 닿는 테스트
-pnpm --filter @aido/mobile test:related src/features/notes/memo/domains/memo.model.ts
-pnpm --filter @aido/mobile test:watch
+pnpm --filter @aido/mobile test --onlyChanged         # 마지막 커밋 이후 바뀐 파일에 닿는 테스트
+pnpm --filter @aido/mobile test --findRelatedTests src/features/notes/memo/domains/memo.model.ts
+pnpm --filter @aido/mobile test --watch
 pnpm --filter @aido/mobile test --seed <seed>         # 실패한 순서 재현
 pnpm --filter @aido/mobile test --runInBand --detectOpenHandles
 ```
