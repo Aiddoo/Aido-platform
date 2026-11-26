@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import { fail, ok } from '@src/core/errors/result';
+import { ok } from '@src/core/errors/result';
 import type { HttpClient } from '@src/core/ports/http-client';
 import { createEntitlementSnapshotDto } from '@src/features/billing/subscription/__tests__/entitlement.fixtures';
 import { createPreferenceDto } from '@src/features/identity/preference/__tests__/preference.fixtures';
@@ -53,9 +53,12 @@ async function spinTo(hour: number, minute: number) {
 async function renderReminderSettings({
   tier,
   saved = ok(createPreferenceDto()),
+  saveError,
 }: {
   tier: 'FREE' | 'PREMIUM';
   saved?: Awaited<ReturnType<HttpClient['patch']>>;
+  /** 연결이 끊기면 HTTP 어댑터는 응답 대신 던진다 */
+  saveError?: Error;
 }) {
   const httpClient = createHttpClientStub();
   httpClient.get.mockImplementation(
@@ -64,7 +67,11 @@ async function renderReminderSettings({
       [PREFERENCE_PATH]: ok(createPreferenceDto()),
     }),
   );
-  httpClient.patch.mockResolvedValue(saved);
+  if (saveError == null) {
+    httpClient.patch.mockResolvedValue(saved);
+  } else {
+    httpClient.patch.mockRejectedValue(saveError);
+  }
   await renderScreen(<ReminderSettingsScreen />, {
     di: createTestDi({ ports: { httpClient } }),
     withLocalDate: true,
@@ -100,7 +107,7 @@ describe('ReminderSettingsScreen', () => {
 
   it('시각을 저장하지 못하면 알리고 원래 시각을 보인다', async () => {
     // Given
-    await renderReminderSettings({ tier: 'PREMIUM', saved: fail(new NetworkError()) });
+    await renderReminderSettings({ tier: 'PREMIUM', saveError: new NetworkError() });
     await fireEvent.press(screen.getByText(MORNING_LABEL));
     const confirm = await screen.findByText('확인');
     await spinTo(9, 30);
@@ -138,9 +145,10 @@ describe('ReminderSettingsScreen', () => {
         'v1/entitlements': ok(createEntitlementSnapshotDto({ tier: 'PREMIUM' })),
         [PREFERENCE_PATH]: async () => {
           preferenceRequestCount += 1;
-          return preferenceRequestCount === 1
-            ? fail(new NetworkError())
-            : ok(createPreferenceDto());
+          if (preferenceRequestCount === 1) {
+            throw new NetworkError();
+          }
+          return ok(createPreferenceDto());
         },
       }),
     );

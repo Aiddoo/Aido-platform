@@ -1,5 +1,5 @@
 import '@src/shared/i18n/init';
-import { fail, ok } from '@src/core/errors/result';
+import { ok } from '@src/core/errors/result';
 import { createPreferenceDto } from '@src/features/identity/preference/__tests__/preference.fixtures';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import {
@@ -58,7 +58,7 @@ describe('NotificationSettingsScreen', () => {
     // Given
     const httpClient = createHttpClientStub();
     httpClient.get.mockResolvedValue(ok(createPreferenceDto()));
-    httpClient.patch.mockResolvedValue(fail(new NetworkError()));
+    httpClient.patch.mockRejectedValue(new NetworkError());
     await renderNotificationSettings(httpClient);
     await screen.findByText('오전 8:00 / 오후 9:00');
 
@@ -79,7 +79,7 @@ describe('NotificationSettingsScreen', () => {
     silenceConsole('error');
     const httpClient = createHttpClientStub();
     httpClient.get
-      .mockResolvedValueOnce(fail(new NetworkError()))
+      .mockRejectedValueOnce(new NetworkError())
       .mockResolvedValue(ok(createPreferenceDto()));
     await renderNotificationSettings(httpClient);
 

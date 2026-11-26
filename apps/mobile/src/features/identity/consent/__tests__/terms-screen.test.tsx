@@ -1,6 +1,6 @@
 import '@src/shared/i18n/init';
 import { AI_DATA_SHARING_CONSENT } from '@aido/api/vocabulary';
-import { fail, ok } from '@src/core/errors/result';
+import { ok } from '@src/core/errors/result';
 import { NetworkError } from '@src/shared/errors/infra-error';
 import {
   createAnalyticsStub,
@@ -106,7 +106,7 @@ describe('TermsSettingsScreen', () => {
     // Given
     const httpClient = createHttpClientStub();
     httpClient.get.mockResolvedValue(ok(createConsentDto()));
-    httpClient.patch.mockResolvedValue(fail(new NetworkError()));
+    httpClient.patch.mockRejectedValue(new NetworkError());
     const { analytics } = await renderTerms(httpClient);
 
     // When
@@ -127,7 +127,7 @@ describe('TermsSettingsScreen', () => {
     silenceConsole('error');
     const httpClient = createHttpClientStub();
     httpClient.get
-      .mockResolvedValueOnce(fail(new NetworkError()))
+      .mockRejectedValueOnce(new NetworkError())
       .mockResolvedValue(ok(createConsentDto()));
     await renderTerms(httpClient);
 
