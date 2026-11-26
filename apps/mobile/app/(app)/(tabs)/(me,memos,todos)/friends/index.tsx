@@ -37,7 +37,7 @@ const DONE_ICON = process.env.EXPO_OS === 'ios' ? undefined : Check;
 
 export default function FriendsScreen() {
   const router = useRouter();
-  const push = useSingleTap(router.push);
+  const pushOnce = useSingleTap(router.push);
 
   const { t } = useTranslation(['friend', 'common']);
   const [view, setView] = useFriendListView();
@@ -52,7 +52,7 @@ export default function FriendsScreen() {
         <Stack.Toolbar.Button
           icon={SEARCH_ICON}
           accessibilityLabel={t('search.title')}
-          onPress={() => push('/friends/search')}
+          onPress={() => pushOnce('/friends/search')}
         >
           {t('search.title')}
         </Stack.Toolbar.Button>

@@ -30,7 +30,7 @@ export default function EmailLoginScreen() {
   const { t } = useTranslation('auth');
   const router = useRouter();
   const navigation = useNavigation();
-  const push = useSingleTap(router.push);
+  const pushOnce = useSingleTap(router.push);
   const { right: rightInset } = useSafeAreaInsets();
   const [viewportSize, handleViewportLayout] = useLayoutSize();
   const emailLogin = useMutation(useEmailLoginMutationOptions());
@@ -47,7 +47,7 @@ export default function EmailLoginScreen() {
     } catch (error) {
       // 그 밖의 실패 안내는 mutation의 meta.errorFeedback이 맡는다. 기다리는 사이 떠났으면 보던 화면 위에 올리지 않는다
       if (isEmailNotVerifiedError(error) && navigation.isFocused()) {
-        push({ pathname: '/(auth)/verify-email', params: { email } });
+        pushOnce({ pathname: '/(auth)/verify-email', params: { email } });
       }
       throw error;
     }
@@ -163,10 +163,10 @@ export default function EmailLoginScreen() {
             <Spacing size={24} />
 
             <AuthLinkRow>
-              <TextButton size="medium" onPress={() => push('/sign-up')}>
+              <TextButton size="medium" onPress={() => pushOnce('/sign-up')}>
                 {t('emailLogin.signUp')}
               </TextButton>
-              <TextButton size="medium" onPress={() => push('/(auth)/forgot-password')}>
+              <TextButton size="medium" onPress={() => pushOnce('/(auth)/forgot-password')}>
                 {t('emailLogin.forgotPassword')}
               </TextButton>
             </AuthLinkRow>

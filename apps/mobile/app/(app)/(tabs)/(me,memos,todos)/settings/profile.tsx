@@ -15,7 +15,7 @@ import { Suspense } from 'react';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const push = useSingleTap(router.push);
+  const pushOnce = useSingleTap(router.push);
   const { t } = useTranslation('settings');
 
   return (
@@ -40,7 +40,7 @@ export default function ProfileScreen() {
             icon={<SettingsListGroup.Icon Icon={LinkDuoIcon} />}
             label={t('titles.linkedAccounts')}
             value={<LinkedAccountCountValue />}
-            onPress={() => push('/settings/linked-accounts')}
+            onPress={() => pushOnce('/settings/linked-accounts')}
           />
         </SettingsListGroup>
       </SettingsScreenLayout>

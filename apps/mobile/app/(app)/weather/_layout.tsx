@@ -36,7 +36,7 @@ export default function WeatherLayout() {
     buttonContainerColor: headerButtonContainerColor,
   });
   const router = useRouter();
-  const push = useSingleTap(router.push);
+  const pushOnce = useSingleTap(router.push);
   const queryClient = useQueryClient();
   const isRefreshing = useIsFetching(getWeatherReportsFilters()) > 0;
   const skyTintColor = useResolvedColor('text-on-sky');
@@ -71,7 +71,7 @@ export default function WeatherLayout() {
           <Stack.Toolbar.Button
             icon={ALERT_SETTINGS_ICON}
             accessibilityLabel={t('titles.settings')}
-            onPress={() => push('/weather/settings')}
+            onPress={() => pushOnce('/weather/settings')}
           >
             {t('titles.settings')}
           </Stack.Toolbar.Button>

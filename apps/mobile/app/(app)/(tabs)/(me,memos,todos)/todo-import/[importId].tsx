@@ -143,7 +143,7 @@ TodoImportScreen.Loading = function Loading() {
 TodoImportScreen.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation('todoImport');
   const router = useRouter();
-  const replace = useSingleTap(router.replace);
+  const replaceOnce = useSingleTap(router.replace);
 
   if (!isTodoImportNotFoundError(error)) {
     return <TodoImportProgress.Error error={error} reset={reset} />;
@@ -155,7 +155,7 @@ TodoImportScreen.Error = function ErrorFallback({ error, reset }: QueryErrorFall
       title={t('result.notFoundTitle')}
       description={t('result.notFoundDescription')}
       button={
-        <Button size="large" onPress={() => replace('/todo-import')}>
+        <Button size="large" onPress={() => replaceOnce('/todo-import')}>
           {t('result.startNew')}
         </Button>
       }
@@ -166,10 +166,10 @@ TodoImportScreen.Error = function ErrorFallback({ error, reset }: QueryErrorFall
 function StartAgainButton() {
   const { t } = useTranslation('todoImport');
   const router = useRouter();
-  const replace = useSingleTap(router.replace);
+  const replaceOnce = useSingleTap(router.replace);
 
   return (
-    <Button size="large" onPress={() => replace('/todo-import')}>
+    <Button size="large" onPress={() => replaceOnce('/todo-import')}>
       {t('result.startAgain')}
     </Button>
   );
