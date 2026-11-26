@@ -20,9 +20,9 @@ import {
   groupCollectionsBySource,
   type TodoImportTargetAppearance,
 } from '../utils/todo-import.view-model';
-import { AidoMark } from './aido-mark';
+import { AidoDestinationMark } from './aido-destination-mark';
 import { CalendarSourceBadge } from './calendar-source-badge';
-import { ColorDot } from './color-dot';
+import { CategoryColorDot } from './category-color-dot';
 
 interface CategoryMappingListProps {
   plan: TodoImportPlan;
@@ -189,8 +189,8 @@ CategoryMappingList.Item = function Item({
         }
         value={
           <HStack align="center" gap={6} className="shrink">
-            <AidoMark />
-            {appearance != null && <ColorDot color={appearance.color} />}
+            <AidoDestinationMark />
+            {appearance != null && <CategoryColorDot color={appearance.color} />}
             <SettingsListGroup.Value numberOfLines={1} className="shrink">
               {targetName}
             </SettingsListGroup.Value>

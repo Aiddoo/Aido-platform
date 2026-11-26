@@ -42,7 +42,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { match, P } from 'ts-pattern';
 
 import { CalendarSourceBadge } from '../components/calendar-source-badge';
-import { ColorDot } from '../components/color-dot';
+import { CategoryColorDot } from '../components/category-color-dot';
 import {
   type TodoImportCollection,
   TodoImportCollectionPolicy,
@@ -365,7 +365,7 @@ CategoryTargetSheet.Choices = function Choices({ categories, current, onChoose }
               value={NEW_CATEGORY_VALUE}
               label={current.name}
               description={t('categories.sheet.pendingNew')}
-              icon={<ColorDot color={current.color} />}
+              icon={<CategoryColorDot color={current.color} />}
             />
           )}
           {visibleCategories.map((category, index) => (
@@ -374,7 +374,7 @@ CategoryTargetSheet.Choices = function Choices({ categories, current, onChoose }
               <SettingsListGroup.Radio
                 value={String(category.id)}
                 label={category.name}
-                icon={<ColorDot color={category.color} />}
+                icon={<CategoryColorDot color={category.color} />}
               />
             </Fragment>
           ))}

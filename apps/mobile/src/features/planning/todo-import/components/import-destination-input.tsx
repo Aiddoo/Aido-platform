@@ -31,8 +31,8 @@ import {
   findTargetAppearance,
   type TodoImportTargetAppearance,
 } from '../utils/todo-import.view-model';
-import { AidoMark } from './aido-mark';
-import { ColorDot } from './color-dot';
+import { AidoDestinationMark } from './aido-destination-mark';
+import { CategoryColorDot } from './category-color-dot';
 
 interface ImportDestinationInputProps extends Omit<CardProps, 'appearance' | 'placement'> {
   plan: TodoImportPlan;
@@ -140,8 +140,8 @@ ImportDestinationInput.Card = function Card({
       <PressableFeedback.Highlight className="rounded-2xl" />
       <VStack gap={4}>
         <HStack align="center" gap={8}>
-          <AidoMark />
-          {appearance != null && <ColorDot color={appearance.color} />}
+          <AidoDestinationMark />
+          {appearance != null && <CategoryColorDot color={appearance.color} />}
           <Text size="b2" weight="semibold" shade={9} numberOfLines={1} className="shrink grow">
             {name}
           </Text>
