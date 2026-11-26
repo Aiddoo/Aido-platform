@@ -32,9 +32,9 @@ output.ids = {
   whatsNew: {
     screen: 'whats-new-screen',
   },
-  // src/features/planning/todo/components/todo-list/todo-list.tsx(행·추가),
+  // src/features/planning/todo/components/todo-list.tsx(행·추가),
   // src/features/planning/composer/components/todo-create-bottom-sheet.tsx(추가 시트),
-  // src/features/planning/todo/components/todo-list/todo-actions-bottom-sheet.tsx(더보기),
+  // src/features/planning/todo/components/todo-actions-bottom-sheet.tsx(더보기),
   // app/(app)/todo/[todoId]/index.tsx(상세)
   todo: {
     addButton: (categoryId) => 'todo-add-' + categoryId,
