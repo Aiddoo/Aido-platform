@@ -104,7 +104,7 @@ VoiceNoteDraftList.Item = function Item({ note }: { note: VoiceNote }) {
   const router = useRouter();
   // Link가 navigate로 열어 같은 초안은 한 번만 쌓인다. 메뉴의 열기도 같은 동사여야 겹쳐 쌓이지 않는다
   const navigate = useSingleTap(router.navigate);
-  const deleteDraft = useDeleteVoiceNoteDraft(note);
+  const deleteDraft = useSuspenseDeleteVoiceNoteDraft(note);
   const title = VoiceNotePolicy.findDigestTitle(note) ?? t('result.defaultTitle');
   const href = { pathname: '/voice-notes/[draftId]', params: { draftId: note.draftId } } as const;
 
@@ -195,7 +195,7 @@ VoiceNoteDraftList.Error = function ErrorFallback({ reset }: QueryErrorFallbackP
 };
 
 /** 상세 툴바의 삭제와 같은 확인을 거쳐 기기에서 초안·녹음을 지운다 */
-function useDeleteVoiceNoteDraft(note: VoiceNote) {
+function useSuspenseDeleteVoiceNoteDraft(note: VoiceNote) {
   const { t } = useTranslation(['voiceNote', 'common']);
   const { trackEvent } = useTrack();
   const accountId = useSuspenseMyAccountId();

@@ -69,7 +69,7 @@ export function VoiceNoteResult({ onMemoChanged, planTodos }: VoiceNoteResultPro
   const accountId = useSuspenseMyAccountId();
   const note = useCurrentVoiceNote(accountId);
   const isCompact = useWindowSizeClass() === 'compact';
-  const { player, canPlay } = useVoiceNoteResultPlayer();
+  const { player, canPlay } = useSuspenseVoiceNoteResultPlayer();
   // 결과 화면에서는 문장이 바뀌지 않아 한 번만 만든다. 자동 저장으로 노트가 바뀔 때마다 다시 계산하지 않는다
   const [levels] = useState(() => createSpeechLevels(note.sentences, note.durationMs));
   const selectedTab = !isCompact && tab === 'todos' ? 'summary' : tab;
@@ -471,7 +471,7 @@ function KeyPointTimeCoachmark({ children }: { children: ReactElement }) {
   );
 }
 
-function useVoiceNoteResultPlayer() {
+function useSuspenseVoiceNoteResultPlayer() {
   const accountId = useSuspenseMyAccountId();
   const note = useCurrentVoiceNote(accountId);
   const recordingRepository = useVoiceRecordingRepository();

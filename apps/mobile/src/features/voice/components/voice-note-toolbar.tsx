@@ -44,7 +44,7 @@ export function VoiceNoteToolbar({ onMemoChanged }: VoiceNoteToolbarProps) {
   const storage = useVoiceNoteStorageService();
   const confirmDialog = useConfirmDialog();
   const closeScreen = useGoBack({ fallbackHref: '/memo' });
-  const { saveMemo, canSaveMemo, isMemoSaved, isSavingMemo } = useVoiceNoteSaveMemo({
+  const { saveMemo, canSaveMemo, isMemoSaved, isSavingMemo } = useSuspenseVoiceNoteSaveMemo({
     onMemoChanged,
   });
   const saveMemoLabel = isMemoSaved ? t('result.memoSaved') : t('result.saveMemo');
@@ -92,7 +92,7 @@ interface UseVoiceNoteSaveMemoOptions {
   onMemoChanged: () => void;
 }
 
-function useVoiceNoteSaveMemo({ onMemoChanged }: UseVoiceNoteSaveMemoOptions) {
+function useSuspenseVoiceNoteSaveMemo({ onMemoChanged }: UseVoiceNoteSaveMemoOptions) {
   const accountId = useSuspenseMyAccountId();
   const [draftId] = useVoiceNoteDraftId();
   const note = useCurrentVoiceNote(accountId);

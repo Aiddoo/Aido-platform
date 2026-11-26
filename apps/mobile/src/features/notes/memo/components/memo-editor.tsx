@@ -297,7 +297,7 @@ MemoEditor.StackToolbar = function StackToolbar({
   const { data: memo } = useSuspenseQuery(useGetMemoQueryOptions({ memoId }));
 
   const pin = useMemoPinAction(memo);
-  const startAiParse = useStartMemoAiParse({ onSaveChanges });
+  const startAiParse = useSuspenseStartMemoAiParse({ onSaveChanges });
   const isAiParseDisabled = useIsMemoAiParseDisabled();
   const isParsing = useIsMemoParsing();
   const convertSheet = useOpenMemoConvertSheet({ onSaveChanges, onConverted, onDeleted });
@@ -601,7 +601,7 @@ function MemoMoreMenu({
 
   const [isOpen, setIsOpen] = useState(false);
 
-  const startAiParse = useStartMemoAiParse({ onSaveChanges });
+  const startAiParse = useSuspenseStartMemoAiParse({ onSaveChanges });
   const isAiParseDisabled = useIsMemoAiParseDisabled();
   const convertSheet = useOpenMemoConvertSheet({ onSaveChanges, onConverted, onDeleted });
   const openDeleteDialog = useOpenMemoDeleteDialog({ memoId, onDeleted });
@@ -710,7 +710,9 @@ function useOpenMemoPlanReview() {
 }
 
 /** 헤더가 JS(pane)든 네이티브(Stack 화면)든 같은 AI 정리 시작을 쓴다. 정리는 저장된 메모로 하므로 고치던 글자를 먼저 저장한다 */
-function useStartMemoAiParse({ onSaveChanges }: Pick<MemoEditorToolbarProps, 'onSaveChanges'>) {
+function useSuspenseStartMemoAiParse({
+  onSaveChanges,
+}: Pick<MemoEditorToolbarProps, 'onSaveChanges'>) {
   const { t } = useTranslation('errors');
   const haptics = useHaptics();
   const toast = useAppToast();
