@@ -3,7 +3,7 @@ import { useKeepScreenAwake } from '@src/shared/infra/keep-awake/use-keep-screen
 import { QueryErrorBoundary, StyledSafeAreaView } from '@src/shared/ui';
 import { Suspense } from 'react';
 
-export default function VoiceNoteRecordRoute() {
+export default function VoiceNoteRecordScreen() {
   useKeepScreenAwake();
 
   return (

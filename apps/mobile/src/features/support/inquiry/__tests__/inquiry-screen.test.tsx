@@ -14,7 +14,7 @@ import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 
-import InquiryRoute from '../../../../../app/(app)/(tabs)/(me,memos,todos)/settings/inquiry';
+import InquiryScreen from '../../../../../app/(app)/(tabs)/(me,memos,todos)/settings/inquiry';
 import { createInquiryApiError, createInquiryResponseDto } from './inquiry.fixtures';
 
 const CONTENT = '앱에서 할 일 추가 시 오류가 발생합니다.';
@@ -23,7 +23,7 @@ const OTHER_CONTENT = '알림이 정해 둔 시간보다 늦게 와요.';
 async function renderInquiry(httpClient: ReturnType<typeof createHttpClientStub>) {
   const analytics = createAnalyticsStub();
   const haptics = createHapticsGatewayStub();
-  await renderScreen(<InquiryRoute />, {
+  await renderScreen(<InquiryScreen />, {
     di: createTestDi({ ports: { httpClient, analytics, haptics } }),
     withLocalDate: true,
     withOverlay: true,
@@ -37,7 +37,7 @@ async function fillContent(content: string) {
   await waitFor(() => expect(screen.getByTestId('inquiry-submit')).toBeEnabled());
 }
 
-describe('InquiryRoute', () => {
+describe('InquiryScreen', () => {
   let httpClient: ReturnType<typeof createHttpClientStub>;
 
   beforeEach(() => {

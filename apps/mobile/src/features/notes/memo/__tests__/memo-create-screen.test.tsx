@@ -17,7 +17,7 @@ import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router, useNavigation } from 'expo-router';
 
-import MemoCreateRoute from '../../../../../app/(app)/memo/create';
+import MemoCreateScreen from '../../../../../app/(app)/memo/create';
 import { MEMO_QUERY_KEYS } from '../queries/memo-query-keys';
 import { createMemoDraftKey } from '../utils/memo-draft';
 import { createMemo, createMemoMutationResponseDto } from './memo.fixtures';
@@ -41,7 +41,7 @@ function createMemoScreenDi() {
 async function renderMemoCreate(
   { di }: ReturnType<typeof createMemoScreenDi> = createMemoScreenDi(),
 ) {
-  await renderScreen(<MemoCreateRoute />, { di, withLocalDate: true });
+  await renderScreen(<MemoCreateScreen />, { di, withLocalDate: true });
 }
 
 async function typeContent(content: string) {
@@ -61,7 +61,7 @@ function countEvents(analytics: ReturnType<typeof createAnalyticsStub>, eventNam
   return analytics.trackEvent.mock.calls.filter(([name]) => name === eventName).length;
 }
 
-describe('MemoCreateRoute', () => {
+describe('MemoCreateScreen', () => {
   it('저장 버튼을 빠르게 두 번 눌러도 메모는 한 번만 만든다', async () => {
     // Given
     const setup = createMemoScreenDi();

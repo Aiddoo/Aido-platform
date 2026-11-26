@@ -38,7 +38,7 @@ import OAuthCallbackScreen from '../../../app/auth/[provider]';
 import RootIndex from '../../../app/index';
 import InviteCardScreen from '../../../app/invite/[inviteCode]';
 import InviteLayout from '../../../app/invite/_layout';
-import InviteCodeEntryRoute from '../../../app/invite/index';
+import InviteCodeEntryScreen from '../../../app/invite/index';
 import { AuthGateLayout } from './auth-gate-layout';
 
 // 실제 라우터로 URL·탭·뒤로 가기 목적지를 검증하므로 jest.setup의 전역 mock을 끈다
@@ -136,7 +136,7 @@ async function setup({
     loading: createScreen('loading'),
     'auth/[provider]': OAuthCallbackScreen,
     'invite/_layout': InviteLayout,
-    'invite/index': InviteCodeEntryRoute,
+    'invite/index': InviteCodeEntryScreen,
     'invite/[inviteCode]': InviteCardScreen,
     '(auth)/_layout': () => <Stack screenOptions={{ animation: 'none' }} />,
     '(auth)/login': () => <AuthScreen name="로그인" />,

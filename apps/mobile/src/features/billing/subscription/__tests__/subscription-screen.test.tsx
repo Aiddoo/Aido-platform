@@ -27,7 +27,7 @@ import { onlineManager } from '@tanstack/react-query';
 import { act, fireEvent, screen, userEvent, waitFor, within } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
-import SubscriptionRoute from '../../../../../app/(app)/(tabs)/(me,memos,todos)/settings/subscription';
+import SubscriptionScreen from '../../../../../app/(app)/(tabs)/(me,memos,todos)/settings/subscription';
 import { ENTITLEMENT_QUERY_KEYS } from '../queries/entitlement-query-keys';
 import { createEntitlementSnapshot, createEntitlementSnapshotDto } from './entitlement.fixtures';
 
@@ -122,7 +122,7 @@ async function renderSubscriptionScreen(
   await renderScreen(
     <LocalDateProvider>
       <OverlayProvider>
-        <SubscriptionRoute />
+        <SubscriptionScreen />
       </OverlayProvider>
     </LocalDateProvider>,
     { di },
@@ -131,7 +131,7 @@ async function renderSubscriptionScreen(
   return { purchases, analytics };
 }
 
-describe('SubscriptionRoute', () => {
+describe('SubscriptionScreen', () => {
   afterEach(async () => {
     onlineManager.setOnline(true);
     await i18n.changeLanguage('ko');

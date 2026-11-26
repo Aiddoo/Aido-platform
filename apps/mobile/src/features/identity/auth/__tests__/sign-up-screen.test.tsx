@@ -14,7 +14,7 @@ import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router, useIsFocused } from 'expo-router';
 
-import SignUpRoute from '../../../../../app/(auth)/sign-up';
+import SignUpScreen from '../../../../../app/(auth)/sign-up';
 import { givenAndroidBack, typeVerificationCode } from './auth-step.test-utils';
 import {
   createAuthApiError,
@@ -48,7 +48,7 @@ async function renderSignUp(httpClient: ReturnType<typeof createHttpClientStub>)
   const analytics = createAnalyticsStub();
   const authSessionStore = createAuthSessionStoreStub('unauthenticated');
   const tokenStore = createMemoryTokenStore();
-  await renderScreen(<SignUpRoute />, {
+  await renderScreen(<SignUpScreen />, {
     di: createTestDi({
       ports: { httpClient, analytics, tokenStore },
       seeds: { authSessionStore },
@@ -106,7 +106,7 @@ async function goToVerificationStep(httpClient: ReturnType<typeof createHttpClie
   await screen.findByText(CODE_SENT_TO);
 }
 
-describe('SignUpRoute', () => {
+describe('SignUpScreen', () => {
   let httpClient: ReturnType<typeof createHttpClientStub>;
 
   beforeEach(() => {

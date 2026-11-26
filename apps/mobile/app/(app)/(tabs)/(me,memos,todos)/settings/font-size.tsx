@@ -6,7 +6,7 @@ import { SettingsListGroup, SettingsScreenLayout, Text } from '@src/shared/ui';
 import { Stack } from 'expo-router';
 import { RadioGroup } from 'heroui-native';
 
-function FontSizeSettingsScreen() {
+export default function FontSizeSettingsScreen() {
   const { fontScale, setFontScale } = useFontScale();
   const { t } = useTranslation('settings');
   const { trackEvent } = useTrack();
@@ -53,5 +53,3 @@ function FontSizeSettingsScreen() {
     </>
   );
 }
-
-export default FontSizeSettingsScreen;

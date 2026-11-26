@@ -48,7 +48,7 @@ export const unstable_settings = {
   anchor: '(tabs)',
 };
 
-function AppLayout() {
+export default function AppLayout() {
   const { backgroundColor } = useResolveClassNames('bg-white');
   const headerOptions = useStackScreenOptions();
   const { t } = useTranslation(['todo', 'ai']);
@@ -142,8 +142,6 @@ function TodoImportWatchers() {
 
   return null;
 }
-
-export default AppLayout;
 
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   const status = useAuthStatus();

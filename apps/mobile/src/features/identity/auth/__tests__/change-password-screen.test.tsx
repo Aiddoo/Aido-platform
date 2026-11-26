@@ -8,7 +8,7 @@ import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router, useNavigation } from 'expo-router';
 
-import ChangePasswordRoute from '../../../../../app/(app)/(tabs)/(me,memos,todos)/settings/change-password';
+import ChangePasswordScreen from '../../../../../app/(app)/(tabs)/(me,memos,todos)/settings/change-password';
 import { givenAndroidBack } from './auth-step.test-utils';
 import { createAuthApiError, createChangePasswordDto } from './auth.fixtures';
 
@@ -23,7 +23,7 @@ const SUBMIT = '비밀번호 변경';
 const DISALLOWED_CHARACTER_NOTICE = '쓸 수 없는 문자가 있어요. 특수문자는 @$!%*#?&만 쓸 수 있어요';
 
 async function renderChangePassword(httpClient: ReturnType<typeof createHttpClientStub>) {
-  await renderScreen(<ChangePasswordRoute />, { di: createTestDi({ ports: { httpClient } }) });
+  await renderScreen(<ChangePasswordScreen />, { di: createTestDi({ ports: { httpClient } }) });
 }
 
 async function pressNext() {
@@ -45,7 +45,7 @@ async function fillAllSteps() {
   await fireEvent.changeText(await screen.findByPlaceholderText(CONFIRM_PLACEHOLDER), NEW_PASSWORD);
 }
 
-describe('ChangePasswordRoute', () => {
+describe('ChangePasswordScreen', () => {
   let httpClient: ReturnType<typeof createHttpClientStub>;
 
   beforeEach(() => {

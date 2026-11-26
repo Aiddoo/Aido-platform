@@ -14,7 +14,7 @@ import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
-import VoiceNoteListRoute from '../../../../app/(app)/voice-notes/index';
+import VoiceNoteListScreen from '../../../../app/(app)/voice-notes/index';
 import { createSpokenVoiceNote, createVoiceNoteDigest } from './voice-note.fixtures';
 
 const ACCOUNT_ID = 'user-1';
@@ -41,7 +41,7 @@ async function renderDraftList(notes: ReturnType<typeof createSpokenVoiceNote>[]
     di.voiceNoteDraftRepository.save(ACCOUNT_ID, note);
   }
 
-  await renderScreen(<VoiceNoteListRoute />, { di, withLocalDate: true, withOverlay: true });
+  await renderScreen(<VoiceNoteListScreen />, { di, withLocalDate: true, withOverlay: true });
 
   return { di, analytics, httpClient };
 }

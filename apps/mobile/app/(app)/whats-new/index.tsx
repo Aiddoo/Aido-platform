@@ -5,7 +5,7 @@ import { useWhatsNewParams } from '@src/features/app-config/whats-new/hooks/use-
 import { ReadableContent, StyledSafeAreaView } from '@src/shared/ui';
 import { match } from 'ts-pattern';
 
-export default function WhatsNewRoute() {
+export default function WhatsNewScreen() {
   const [{ releaseId }] = useWhatsNewParams();
 
   return (

@@ -4,7 +4,7 @@ import { QueryErrorBoundary } from '@src/shared/ui';
 import { Stack } from 'expo-router';
 import { Suspense } from 'react';
 
-export default function VoiceStorageRoute() {
+export default function VoiceStorageScreen() {
   const { t } = useTranslation('settings');
 
   return (

@@ -16,7 +16,7 @@ import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router, useNavigation } from 'expo-router';
 
-import EditNameRoute from '../../../../../app/(app)/(tabs)/(me,memos,todos)/settings/edit-name';
+import EditNameScreen from '../../../../../app/(app)/(tabs)/(me,memos,todos)/settings/edit-name';
 import { USER_QUERY_KEYS } from '../queries/user-query-keys';
 import { createUser } from './user.fixtures';
 import { createUpdateProfileDto } from './user.fixtures';
@@ -31,7 +31,7 @@ async function renderEditName(
   queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ name }));
   const analytics = createAnalyticsStub();
   const haptics = createHapticsGatewayStub();
-  await renderScreen(<EditNameRoute />, {
+  await renderScreen(<EditNameScreen />, {
     di: createTestDi({ ports: { httpClient, analytics, haptics, queryClient } }),
   });
 
@@ -42,7 +42,7 @@ async function typeName(name: string) {
   await fireEvent.changeText(screen.getByTestId('edit-name-input'), name);
 }
 
-describe('EditNameRoute', () => {
+describe('EditNameScreen', () => {
   let httpClient: ReturnType<typeof createHttpClientStub>;
 
   beforeEach(() => {

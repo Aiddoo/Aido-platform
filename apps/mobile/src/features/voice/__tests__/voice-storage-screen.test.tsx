@@ -12,7 +12,7 @@ import {
 import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
-import VoiceStorageRoute from '../../../../app/(app)/(tabs)/(me,memos,todos)/settings/voice-storage';
+import VoiceStorageScreen from '../../../../app/(app)/(tabs)/(me,memos,todos)/settings/voice-storage';
 import { createVoiceNoteDigest, createSpokenVoiceNote } from './voice-note.fixtures';
 
 const ACCOUNT_ID = 'user-1';
@@ -47,7 +47,7 @@ async function renderVoiceStorage({
   await renderScreen(
     <LocalDateProvider>
       <OverlayProvider>
-        <VoiceStorageRoute />
+        <VoiceStorageScreen />
       </OverlayProvider>
     </LocalDateProvider>,
     { di },

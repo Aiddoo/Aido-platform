@@ -29,18 +29,18 @@ import { Suspense } from 'react';
 import { Controller, FormState, useForm } from 'react-hook-form';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 
-export default function MemoCreateRoute() {
+export default function MemoCreateScreen() {
   return (
-    <QueryErrorBoundary fallback={MemoCreateScreen.Error}>
+    <QueryErrorBoundary fallback={MemoCreate.Error}>
       {/* 내 정보는 로그인 때 받아 둔 캐시라 기다릴 일이 거의 없다 */}
       <Suspense fallback={null}>
-        <MemoCreateScreen />
+        <MemoCreate />
       </Suspense>
     </QueryErrorBoundary>
   );
 }
 
-function MemoCreateScreen() {
+function MemoCreate() {
   const { t } = useTranslation('memo');
   const navigation = useNavigation();
   const goBack = useGoBack({ fallbackHref: '/memo' });
@@ -134,7 +134,7 @@ function MemoCreateScreen() {
   );
 }
 
-MemoCreateScreen.Error = QueryErrorFallback;
+MemoCreate.Error = QueryErrorFallback;
 
 interface MemoCreateToolbarProps {
   isValid: boolean;

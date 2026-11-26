@@ -15,7 +15,7 @@ import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { KeyboardController } from 'react-native-keyboard-controller';
 
-import DeleteAccountRoute from '../../../../../app/(app)/(tabs)/(me,memos,todos)/settings/delete-account';
+import DeleteAccountScreen from '../../../../../app/(app)/(tabs)/(me,memos,todos)/settings/delete-account';
 import { ACCOUNT_A_TOKENS } from './auth-session.test-utils';
 import { createAuthApiError, createDeleteAccountDto } from './auth.fixtures';
 import { createAuthSessionStoreStub } from './create-auth-session-store-stub';
@@ -28,7 +28,7 @@ async function renderDeleteAccount(httpClient: ReturnType<typeof createHttpClien
   httpClient.get.mockImplementation(respondByPath({ 'v1/auth/me': ok(createCurrentUserDto()) }));
   const authSessionStore = createAuthSessionStoreStub('authenticated');
   const tokenStore = createMemoryTokenStore(ACCOUNT_A_TOKENS);
-  await renderScreen(<DeleteAccountRoute />, {
+  await renderScreen(<DeleteAccountScreen />, {
     di: createTestDi({ ports: { httpClient, tokenStore }, seeds: { authSessionStore } }),
     withOverlay: true,
   });
@@ -57,7 +57,7 @@ function getDialogConfirmButton() {
   return confirm;
 }
 
-describe('DeleteAccountRoute', () => {
+describe('DeleteAccountScreen', () => {
   let httpClient: ReturnType<typeof createHttpClientStub>;
 
   beforeEach(() => {

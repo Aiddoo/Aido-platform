@@ -34,7 +34,7 @@ type ChangePasswordStepContexts = {
 };
 
 type NewPasswordStepName = 'newPassword' | 'newPasswordConfirm';
-type ChangePasswordFormMethods = UseFormReturn<ChangePasswordFormValues>;
+type ChangePasswordForm = UseFormReturn<ChangePasswordFormValues>;
 
 /** 현재 비밀번호가 틀리면 그 칸으로 돌아가 보이고, 그 밖의 실패는 토스트로 알린다. 입력값은 그대로 둔다 */
 export default function ChangePasswordScreen() {
@@ -93,7 +93,7 @@ export default function ChangePasswordScreen() {
 }
 
 interface CurrentPasswordStepProps {
-  form: ChangePasswordFormMethods;
+  form: ChangePasswordForm;
   onNext: () => void;
 }
 
@@ -157,7 +157,7 @@ function CurrentPasswordStep({ form, onNext }: CurrentPasswordStepProps) {
 }
 
 interface ChangePasswordStepProps {
-  form: ChangePasswordFormMethods;
+  form: ChangePasswordForm;
   /** 새 비밀번호 단계 다음 확인 단계는 새 비밀번호 칸 위에 확인 칸을 더한다 */
   step: NewPasswordStepName;
   onNext: () => void;

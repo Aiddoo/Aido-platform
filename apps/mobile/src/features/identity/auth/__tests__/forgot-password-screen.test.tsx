@@ -15,7 +15,7 @@ import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router, useNavigation } from 'expo-router';
 
-import ForgotPasswordRoute from '../../../../../app/(auth)/forgot-password';
+import ForgotPasswordScreen from '../../../../../app/(auth)/forgot-password';
 import { givenAndroidBack, typeVerificationCode } from './auth-step.test-utils';
 import {
   createAuthApiError,
@@ -38,7 +38,7 @@ const RESET_PATH = 'v1/auth/reset-password';
 
 async function renderForgotPassword(httpClient: ReturnType<typeof createHttpClientStub>) {
   const analytics = createAnalyticsStub();
-  await renderScreen(<ForgotPasswordRoute />, {
+  await renderScreen(<ForgotPasswordScreen />, {
     di: createTestDi({ ports: { httpClient, analytics } }),
   });
   return {
@@ -75,7 +75,7 @@ function getCodeInput() {
   return screen.getByLabelText(/One-time passcode input/);
 }
 
-describe('ForgotPasswordRoute', () => {
+describe('ForgotPasswordScreen', () => {
   let httpClient: ReturnType<typeof createHttpClientStub>;
 
   beforeEach(() => {

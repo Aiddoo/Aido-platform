@@ -21,7 +21,7 @@ import { act, fireEvent, screen, userEvent, waitFor } from '@testing-library/rea
 import { noop } from 'es-toolkit';
 import { router, useNavigation } from 'expo-router';
 
-import InviteCodeEntryRoute from '../../../../../app/invite';
+import InviteCodeEntryScreen from '../../../../../app/invite';
 import { parseInviteCode } from '../domains/invite-code.model';
 import { INVITE_QUERY_KEYS } from '../queries/invite-query-keys';
 import { createInviteApiError, createInvitePreviewDto } from './invite.fixtures';
@@ -31,7 +31,7 @@ const CODE = parseInviteCode('K7M2QX') ?? '';
 async function renderInviteCodeEntry(httpClient: ReturnType<typeof createHttpClientStub>) {
   const analytics = createAnalyticsStub();
   const haptics = createHapticsGatewayStub();
-  await renderScreen(<InviteCodeEntryRoute />, {
+  await renderScreen(<InviteCodeEntryScreen />, {
     di: createTestDi({
       ports: {
         httpClient,
@@ -52,7 +52,7 @@ async function enterCode(code: string) {
   expect(await screen.findByRole('button', { name: '확인' })).toBeEnabled();
 }
 
-describe('InviteCodeEntryRoute', () => {
+describe('InviteCodeEntryScreen', () => {
   afterEach(() => {
     onlineManager.setOnline(true);
   });
@@ -62,7 +62,7 @@ describe('InviteCodeEntryRoute', () => {
     const queryClient = createTestQueryClient();
     onlineManager.setOnline(false);
     const user = userEvent.setup();
-    await renderScreen(<InviteCodeEntryRoute />, {
+    await renderScreen(<InviteCodeEntryScreen />, {
       di: createTestDi({
         ports: {
           analytics: createAnalyticsStub(),
@@ -90,7 +90,7 @@ describe('InviteCodeEntryRoute', () => {
     httpClient.get.mockResolvedValue(ok(createInvitePreviewDto()));
     const queryClient = createTestQueryClient();
     const user = userEvent.setup();
-    await renderScreen(<InviteCodeEntryRoute />, {
+    await renderScreen(<InviteCodeEntryScreen />, {
       di: createTestDi({
         ports: {
           httpClient,
@@ -121,7 +121,7 @@ describe('InviteCodeEntryRoute', () => {
     const httpClient = createHttpClientStub();
     httpClient.get.mockReturnValue(new Promise(noop));
     const user = userEvent.setup();
-    await renderScreen(<InviteCodeEntryRoute />, {
+    await renderScreen(<InviteCodeEntryScreen />, {
       di: createTestDi({
         ports: {
           httpClient,
@@ -145,7 +145,7 @@ describe('InviteCodeEntryRoute', () => {
   it('채운 칸 뒤에 다른 코드를 붙여 넣으면 붙여 넣은 코드로 바꾼다', async () => {
     // Given
     const user = userEvent.setup();
-    await renderScreen(<InviteCodeEntryRoute />, {
+    await renderScreen(<InviteCodeEntryScreen />, {
       di: createTestDi({
         ports: {
           analytics: createAnalyticsStub(),
@@ -168,7 +168,7 @@ describe('InviteCodeEntryRoute', () => {
   it('헷갈리는 글자를 넣으면 제출 전에 바로 알리고 고칠 때까지 확인을 끈다', async () => {
     // Given
     const user = userEvent.setup();
-    await renderScreen(<InviteCodeEntryRoute />, {
+    await renderScreen(<InviteCodeEntryScreen />, {
       di: createTestDi({
         ports: {
           analytics: createAnalyticsStub(),

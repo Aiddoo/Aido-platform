@@ -61,7 +61,7 @@ type SignUpStepContexts = {
 type SignUpStep = keyof SignUpStepContexts;
 type UserInfoStepName = 'name' | 'email';
 type PasswordStepName = 'password' | 'passwordConfirm';
-type SignUpFormMethods = UseFormReturn<SignUpFormValues>;
+type SignUpForm = UseFormReturn<SignUpFormValues>;
 
 /** iOS는 글자 버튼, Android 툴바는 글자를 그리지 않아 아이콘을 쓴다 */
 const INVITE_CODE_ICON = process.env.EXPO_OS === 'ios' ? undefined : ConfirmationNumber;
@@ -188,7 +188,7 @@ const STEP_DESCRIPTION_KEYS = {
 } as const satisfies Record<UserInfoStepName, string>;
 
 interface UserInfoStepProps {
-  form: SignUpFormMethods;
+  form: SignUpForm;
   /** 이름 단계 다음 이메일 단계는 이름 칸 위에 이메일 칸을 더한다 */
   step: UserInfoStepName;
   onNext: () => void;
@@ -299,7 +299,7 @@ function UserInfoStep({ form, step, onNext }: UserInfoStepProps) {
 }
 
 interface PasswordStepProps {
-  form: SignUpFormMethods;
+  form: SignUpForm;
   /** 비밀번호 단계 다음 확인 단계는 비밀번호 칸 위에 확인 칸을 더한다 */
   step: PasswordStepName;
   onNext: () => void;

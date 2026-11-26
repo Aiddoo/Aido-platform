@@ -172,7 +172,7 @@ const planDraftWithThreeTodos = createPlanReviewDraft(
   }),
 );
 
-describe('VoiceNoteScreen', () => {
+describe('VoiceNoteRoute', () => {
   describe('말로 메모 화면', () => {
     // 화면을 떠난 뒤 오는 응답·동의 결과가 토스트를 띄워도 타이머가 테스트 밖에 남지 않게 한다
     setupFakeTimersPerTest({ advanceTimers: true });

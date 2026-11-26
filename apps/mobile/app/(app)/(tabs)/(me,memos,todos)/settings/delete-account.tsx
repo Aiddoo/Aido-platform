@@ -26,18 +26,18 @@ import { Stack } from 'expo-router';
 import { Controller, FormState, useForm } from 'react-hook-form';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
-export default function DeleteAccountRoute() {
+export default function DeleteAccountScreen() {
   const { t } = useTranslation(['auth', 'settings', 'common']);
   const dismissKeyboard = useDismissKeyboard();
   const confirmDialog = useConfirmDialog();
-  const deleteAccountMutation = useMutation(useDeleteAccountMutationOptions());
+  const deleteAccount = useMutation(useDeleteAccountMutationOptions());
   const form = useForm({
     resolver: zodResolver(deleteAccountFormSchema),
     defaultValues: { password: '' },
     mode: 'onChange',
   });
 
-  const confirmDeletion = form.handleSubmit(async ({ password }) => {
+  const saveAccountDeletion = form.handleSubmit(async ({ password }) => {
     dismissKeyboard();
     await confirmDialog.openAsync({
       title: t('deleteAccount.dialogTitle'),
@@ -47,7 +47,7 @@ export default function DeleteAccountRoute() {
       confirmColor: 'danger',
       onConfirm: async () => {
         try {
-          await deleteAccountMutation.mutateAsync({ password });
+          await deleteAccount.mutateAsync({ password });
         } catch (error) {
           // 비밀번호가 틀리면 다시 눌러도 같아 다이얼로그를 닫고 그 칸에 보인다. 그 밖의 실패는 다이얼로그를 남기고 안내는 meta.errorFeedback이 맡는다
           const fieldError = findPasswordFieldError(error);
@@ -64,7 +64,7 @@ export default function DeleteAccountRoute() {
   });
   // 같은 프레임에 두 번 누르면 확인 다이얼로그가 두 개 뜬다
   const handleDeletePress = useSingleTap(() => {
-    confirmDeletion();
+    saveAccountDeletion();
   });
 
   return (
@@ -84,7 +84,7 @@ export default function DeleteAccountRoute() {
                       color="danger"
                       onPress={handleDeletePress}
                       isDisabled={!isValid}
-                      isLoading={deleteAccountMutation.isPending}
+                      isLoading={deleteAccount.isPending}
                     >
                       {t('deleteAccount.submit')}
                     </KeyboardAdaptiveButton>

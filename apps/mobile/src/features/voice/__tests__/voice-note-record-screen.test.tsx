@@ -23,7 +23,7 @@ import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router, useIsFocused } from 'expo-router';
 
-import VoiceNoteRecordRoute from '../../../../app/(app)/voice-notes/record';
+import VoiceNoteRecordScreen from '../../../../app/(app)/voice-notes/record';
 
 const ACCOUNT_ID = 'user-1';
 const RECORDING_DIRECTORY = ['voice-notes', ACCOUNT_ID];
@@ -62,7 +62,7 @@ async function renderRecordScreen(snapshot = createEntitlementSnapshot()) {
   await renderScreen(
     <LocalDateProvider>
       <OverlayProvider>
-        <VoiceNoteRecordRoute />
+        <VoiceNoteRecordScreen />
       </OverlayProvider>
     </LocalDateProvider>,
     { di },

@@ -30,7 +30,7 @@ import { Controller, FormState, useForm } from 'react-hook-form';
 /** 오프라인이라 보내 보지 않은 제출. 안내는 이미 했다 */
 const NOT_CHECKED_OFFLINE = new Error('invite code: not checked while offline');
 
-export default function InviteCodeEntryRoute() {
+export default function InviteCodeEntryScreen() {
   const { t } = useTranslation('invite');
   const [{ openedAt }] = useInviteParams();
   const { trackEvent } = useTrack();

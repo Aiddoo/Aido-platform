@@ -2,7 +2,7 @@ import { VoiceNoteDraftList } from '@src/features/voice/components/voice-note-dr
 import { QueryErrorBoundary, ReadableContent, StyledSafeAreaView } from '@src/shared/ui';
 import { Suspense } from 'react';
 
-export default function VoiceNoteListRoute() {
+export default function VoiceNoteListScreen() {
   return (
     <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-white">
       <ReadableContent flex={1}>

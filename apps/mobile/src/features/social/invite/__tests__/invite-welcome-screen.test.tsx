@@ -12,7 +12,7 @@ import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
-import InviteWelcomeSheetRoute from '../../../../../app/(app)/invite-welcome/[friendId]';
+import InviteWelcomeSheetScreen from '../../../../../app/(app)/invite-welcome/[friendId]';
 import type { RedemptionResult } from '../domains/invite-redemption.model';
 import { INVITE_QUERY_KEYS } from '../queries/invite-query-keys';
 import { createRedemptionResult } from './invite.fixtures';
@@ -36,11 +36,11 @@ async function renderWelcome({
       redemption,
     );
   }
-  await renderScreen(<InviteWelcomeSheetRoute />, { di, withLocalDate: true });
+  await renderScreen(<InviteWelcomeSheetScreen />, { di, withLocalDate: true });
   await layoutSheetRoute();
 }
 
-describe('InviteWelcomeSheetRoute', () => {
+describe('InviteWelcomeSheetScreen', () => {
   it('보상을 받고 친구가 됐으면 받은 일수를 보이고 첫 할 일 만들기로 피드를 연다', async () => {
     // Given
     await renderWelcome();

@@ -479,7 +479,7 @@ function RescheduleSubmitButton({ form, onDone }: RescheduleSubmitButtonProps) {
   };
 
   // 옮기지 못한 제출은 던진다. RHF가 실패로 알아야 isSubmitSuccessful이 꺼진 채 남아 다시 누를 수 있다
-  const moveTodos = form.handleSubmit(async (values) => {
+  const saveReschedule = form.handleSubmit(async (values) => {
     const targets = getRescheduleTargets(toScheduleChanges(values, affectedTodoIds), todayTodos);
     const now = getNowInstant();
     const expired = getExpiredTargets(targets, now);
@@ -527,7 +527,7 @@ function RescheduleSubmitButton({ form, onDone }: RescheduleSubmitButtonProps) {
   });
   // 같은 프레임의 두 번째 탭은 isSubmitting이 다음 렌더에야 켜져 여기서 막는다
   const handleMovePress = useSingleTap(() => {
-    moveTodos().catch((error: unknown) => {
+    saveReschedule().catch((error: unknown) => {
       // 옮기지 못한 제출은 안에서 이미 알렸다. 시트와 고른 시각은 그대로 남긴다
       if (error !== NOT_MOVED) {
         reportUnexpectedError(error);

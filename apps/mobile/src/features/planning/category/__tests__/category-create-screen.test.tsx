@@ -16,7 +16,7 @@ import {
 import { renderScreen } from '@src/testing/render';
 import { act, screen, userEvent, waitFor } from '@testing-library/react-native';
 
-import TodoCategoryCreateSheetRoute from '../../../../../app/(app)/todo-categories/new';
+import TodoCategoryCreateSheetScreen from '../../../../../app/(app)/todo-categories/new';
 import { CATEGORY_COLORS } from '../constants/todo-category.constants';
 import { TODO_CATEGORY_QUERY_KEYS } from '../queries/todo-category-query-keys';
 import {
@@ -43,7 +43,7 @@ async function renderCreateRoute() {
 
   const analytics = createAnalyticsStub();
 
-  await renderScreen(<TodoCategoryCreateSheetRoute />, {
+  await renderScreen(<TodoCategoryCreateSheetScreen />, {
     withLocalDate: true,
     di: createTestDi({ ports: { httpClient, queryClient, analytics } }),
   });
@@ -52,7 +52,7 @@ async function renderCreateRoute() {
   return { httpClient, analytics };
 }
 
-describe('TodoCategoryCreateSheetRoute', () => {
+describe('TodoCategoryCreateSheetScreen', () => {
   setupFakeTimersPerTest();
 
   it('이름을 적고 색을 고른 뒤 확인하면 그 이름과 색으로 한 번 만들고 한 번 남긴다', async () => {

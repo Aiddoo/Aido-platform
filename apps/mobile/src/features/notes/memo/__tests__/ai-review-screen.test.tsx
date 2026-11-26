@@ -101,7 +101,7 @@ function countEvents(analytics: ReturnType<typeof createAnalyticsStub>, name: st
   return analytics.trackEvent.mock.calls.filter(([eventName]) => eventName === name).length;
 }
 
-describe('AiReviewScreen', () => {
+describe('AiReviewRoute', () => {
   // 저장 뒤 토스트와 초안 자동 저장 타이머가 테스트 밖에 남지 않게 한다
   setupFakeTimersPerTest({ advanceTimers: true });
 

@@ -12,7 +12,7 @@ import {
 import { Stack } from 'expo-router';
 import { RadioGroup } from 'heroui-native';
 
-function ThemeSettingsScreen() {
+export default function ThemeSettingsScreen() {
   const { mode, setMode } = useAppTheme();
   const { t } = useTranslation('settings');
   const { trackEvent } = useTrack();
@@ -56,5 +56,3 @@ function ThemeSettingsScreen() {
     </>
   );
 }
-
-export default ThemeSettingsScreen;

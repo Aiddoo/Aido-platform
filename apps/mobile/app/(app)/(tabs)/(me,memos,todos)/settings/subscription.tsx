@@ -4,7 +4,7 @@ import { QueryErrorBoundary, StyledSafeAreaView } from '@src/shared/ui';
 import { Stack } from 'expo-router';
 import { Suspense } from 'react';
 
-export default function SubscriptionRoute() {
+export default function SubscriptionScreen() {
   const { t } = useTranslation('settings');
 
   return (

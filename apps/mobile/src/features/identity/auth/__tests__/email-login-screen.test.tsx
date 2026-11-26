@@ -13,7 +13,7 @@ import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router, useNavigation } from 'expo-router';
 import { TextInput } from 'react-native';
 
-import EmailLoginRoute from '../../../../../app/(auth)/email-login';
+import EmailLoginScreen from '../../../../../app/(auth)/email-login';
 import { createAuthApiError, createAuthTokensDto } from './auth.fixtures';
 import { createAuthSessionStoreStub } from './create-auth-session-store-stub';
 
@@ -23,7 +23,7 @@ const PASSWORD = 'fake-pass1';
 async function renderEmailLogin(httpClient: ReturnType<typeof createHttpClientStub>) {
   const authSessionStore = createAuthSessionStoreStub('unauthenticated');
   const tokenStore = createMemoryTokenStore();
-  await renderScreen(<EmailLoginRoute />, {
+  await renderScreen(<EmailLoginScreen />, {
     di: createTestDi({ ports: { httpClient, tokenStore }, seeds: { authSessionStore } }),
   });
   await screen.findByTestId('email-login-submit');
@@ -35,7 +35,7 @@ async function typeCredentials(email: string, password: string) {
   await fireEvent.changeText(screen.getByTestId('email-login-password'), password);
 }
 
-describe('EmailLoginRoute', () => {
+describe('EmailLoginScreen', () => {
   let httpClient: ReturnType<typeof createHttpClientStub>;
 
   beforeEach(() => {

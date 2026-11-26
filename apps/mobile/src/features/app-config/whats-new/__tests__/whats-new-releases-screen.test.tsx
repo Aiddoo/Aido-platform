@@ -14,7 +14,7 @@ import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
-import WhatsNewReleasesRoute from '../../../../../app/(app)/(tabs)/(me,memos,todos)/whats-new/releases';
+import WhatsNewReleasesScreen from '../../../../../app/(app)/(tabs)/(me,memos,todos)/whats-new/releases';
 import { RELEASE_1_15_0, RELEASE_1_16_0, RELEASE_1_17_0 } from '../constants/releases.constants';
 
 const ACCOUNT_ID = 'user-1';
@@ -48,12 +48,12 @@ async function renderReleases({ hasSeenCampaign = false } = {}) {
       toInstant('2026-11-24T00:00:00.000Z'),
     );
   }
-  await renderScreen(<WhatsNewReleasesRoute />, { di, withLocalDate: true });
+  await renderScreen(<WhatsNewReleasesScreen />, { di, withLocalDate: true });
 
   return { analytics, externalLink, jsonFetcher };
 }
 
-describe('WhatsNewReleasesRoute', () => {
+describe('WhatsNewReleasesScreen', () => {
   beforeEach(() => {
     jest.mocked(router.push).mockClear();
   });

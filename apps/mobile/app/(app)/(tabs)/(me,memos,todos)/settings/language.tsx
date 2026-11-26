@@ -13,7 +13,7 @@ import {
 import { Stack } from 'expo-router';
 import { RadioGroup } from 'heroui-native';
 
-function LanguageSettingsScreen() {
+export default function LanguageSettingsScreen() {
   const { languageMode, setLanguageMode } = useLanguage();
   const { t } = useTranslation('settings');
   const { trackEvent } = useTrack();
@@ -61,5 +61,3 @@ function LanguageSettingsScreen() {
     </>
   );
 }
-
-export default LanguageSettingsScreen;

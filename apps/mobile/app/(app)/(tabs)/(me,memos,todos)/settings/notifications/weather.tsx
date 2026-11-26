@@ -2,7 +2,7 @@ import { WeatherNotificationSettings } from '@src/features/notification/componen
 import { useTranslation } from '@src/shared/i18n';
 import { Stack } from 'expo-router';
 
-export default function WeatherSettingsRoute() {
+export default function WeatherSettingsScreen() {
   const { t } = useTranslation('notification');
 
   return (

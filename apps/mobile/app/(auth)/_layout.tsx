@@ -3,7 +3,7 @@ import { useStackScreenOptions } from '@src/shared/ui';
 import { Stack } from 'expo-router';
 import { useResolveClassNames } from 'uniwind';
 
-function AuthLayout() {
+export default function AuthLayout() {
   const screenOptions = useStackScreenOptions();
   const { backgroundColor } = useResolveClassNames('bg-white');
 
@@ -27,5 +27,3 @@ function AuthLayout() {
     </Stack>
   );
 }
-
-export default AuthLayout;

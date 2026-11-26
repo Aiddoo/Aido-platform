@@ -24,7 +24,7 @@ import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
 
-import TodoCreateSheetRoute from '../../../../../app/(app)/todo/new';
+import TodoCreateSheetScreen from '../../../../../app/(app)/todo/new';
 
 const PLACEHOLDER = '무엇을 하고 싶나요?';
 const TODAY = '2026-10-27';
@@ -51,7 +51,7 @@ async function renderCreateRoute() {
   const analytics = createAnalyticsStub();
   jest.mocked(useLocalSearchParams).mockReturnValue({ date: TODAY });
 
-  await renderScreen(<TodoCreateSheetRoute />, {
+  await renderScreen(<TodoCreateSheetScreen />, {
     withLocalDate: true,
     di: createTestDi({ ports: { httpClient, pushNotification, analytics } }),
   });
@@ -83,7 +83,7 @@ async function openPicker(chipLabel: string) {
   await userEvent.press(await screen.findByRole('button', { name: chipLabel }));
 }
 
-describe('TodoCreateSheetRoute', () => {
+describe('TodoCreateSheetScreen', () => {
   setupFakeTimersPerTest({ now: new Date(2026, 9, 27, 9), advanceTimers: true });
 
   it('제목만 적고 저장하면 고른 날짜의 공개 종일 할 일을 첫 카테고리로 한 번 만들고 한 번 남긴다', async () => {

@@ -103,6 +103,7 @@ route 파일이 화면을 조립한다. 제목, 경계, 문구, `Spacing`, `matc
 - **화면이 갖는 것.** 단계·경계·제목·화면 문구·`Spacing`·`match(view)`와 폼(`useForm`, 칸 연결, `handleSubmit`, `setError`). 그 화면만 쓰는 지역 훅·지역 컴포넌트(`useView`, 진행 점, 단계 화면, 제목 줄)는 같은 route 파일 아래에 둔다. 파일이 길어도 다른 파일로 옮기지 않는다.
 - **화면이 하지 않는 것.** 조회 값 가공, 규칙 계산, 요청 만들기, 오류 판별, 시트 열기. 이것은 기능 컴포넌트·훅·모델이 준다.
 - params가 있는 route는 맨 위 컴포넌트가 검증과 redirect만 하고, 같은 파일의 화면 컴포넌트가 조립한다([params 튜플](./state-and-routing.md#params-튜플)).
+- 기본 export는 `export default function X`다. 이름은 params를 검증하면 `XRoute`(안쪽 화면은 `XScreen`), 검증이 없으면 `XScreen`, 레이아웃은 `XLayout`이고, 화면 테스트의 맨 위 `describe`는 이 이름이다. 폼 타입은 `XForm`(`UseFormReturn<XFormValues>`)이다.
 - 블록마다 `QueryErrorBoundary` → `Suspense fallback={<X.Loading />}` → `<X />`를 화면에 나열한다. 경계를 기능 컴포넌트·훅 안에 숨기지 않는다(값만 그리는 조각은 예외, [위](#컴포넌트-계약)).
 - **fallback은 `fallback={X.Error}`다.** 적지 않은 경계도 막힌다. 기본 안내를 그리면 `X.Error = QueryErrorFallback`이다. 실패하면 비우는 값 조각은 `fallback={QueryErrorFallback.Hidden}`이다. 인라인 화살표, `() => null`, `null`만 돌려주는 `.Error`를 쓰지 않는다. 예외는 시트를 닫아야 하는 시트 안 경계의 `(props) => <X.Error {...props} onInquiry={…} />`뿐이다.
 - 상태별 화면은 `match(view).with(…).exhaustive()`로 화면에서 고른다. 넘기기용 래퍼(`Content → Header → Section`), 재수출한 화면, JSX 상수(`const progress = <Steps.Dots … />`)를 만들지 않고 지역 컴포넌트로 둔다.

@@ -21,7 +21,7 @@ import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Redirect, router, useNavigation, usePreventRemove } from 'expo-router';
 
-import TodoImportSetupRoute from '../../../../../app/(app)/(tabs)/(me,memos,todos)/todo-import';
+import TodoImportSetupScreen from '../../../../../app/(app)/(tabs)/(me,memos,todos)/todo-import';
 import { invalidateActiveTodoImport } from '../queries/todo-import-cache';
 import { TODO_IMPORT_QUERY_KEYS } from '../queries/todo-import-query-keys';
 import {
@@ -104,7 +104,7 @@ async function renderSetup({
 
   const di = createTestDi({ ports: { httpClient, todoImportSource } });
   await seedQueryCache?.(di.queryClient);
-  await renderScreen(<TodoImportSetupRoute />, { di, withLocalDate: true, withOverlay: true });
+  await renderScreen(<TodoImportSetupScreen />, { di, withLocalDate: true, withOverlay: true });
 
   return { httpClient, todoImportSource };
 }
@@ -180,7 +180,7 @@ async function pressImport() {
   await fireEvent.press(screen.getByRole('button', { name: '가져오기' }));
 }
 
-describe('TodoImportSetupRoute', () => {
+describe('TodoImportSetupScreen', () => {
   setupFakeTimersPerTest({ now: NOW, advanceTimers: true });
 
   describe('권한', () => {

@@ -2,7 +2,7 @@ import { useRefreshMemos } from '@src/features/notes/memo/hooks/use-refresh-memo
 import { TodoCreateBottomSheet } from '@src/features/planning/composer/components/todo-create-bottom-sheet';
 import { SheetRouteScreen } from '@src/shared/ui';
 
-export default function TodoCreateSheetRoute() {
+export default function TodoCreateSheetScreen() {
   const refreshMemos = useRefreshMemos();
 
   return (

@@ -19,7 +19,7 @@ import { act, fireEvent, screen } from '@testing-library/react-native';
 import { uniq } from 'es-toolkit';
 import { router, useLocalSearchParams } from 'expo-router';
 
-import WhatsNewRoute from '../../../../../app/(app)/whats-new/index';
+import WhatsNewScreen from '../../../../../app/(app)/whats-new/index';
 import { RELEASE_1_16_0, RELEASE_1_17_0 } from '../constants/releases.constants';
 
 const ACCOUNT_ID = 'user-1';
@@ -40,7 +40,7 @@ async function renderWhatsNew(params: Record<string, string>) {
   });
   queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: ACCOUNT_ID }));
   queryClient.setQueryData(PREFERENCE_QUERY_KEYS.current(), createPreference());
-  const view = await renderScreen(<WhatsNewRoute />, {
+  const view = await renderScreen(<WhatsNewScreen />, {
     di: createTestDi({
       ports: {
         queryClient,
@@ -83,7 +83,7 @@ async function goToFinish(stepCount: number) {
   await act(() => jest.runOnlyPendingTimersAsync());
 }
 
-describe('WhatsNewRoute', () => {
+describe('WhatsNewScreen', () => {
   setupFakeTimersPerTest();
 
   beforeEach(() => {

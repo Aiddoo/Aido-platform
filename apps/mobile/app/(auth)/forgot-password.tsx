@@ -45,7 +45,7 @@ type ForgotPasswordStepContexts = {
 };
 
 type NewPasswordStepName = 'newPassword' | 'newPasswordConfirm';
-type ForgotPasswordFormMethods = UseFormReturn<ForgotPasswordFormValues>;
+type ForgotPasswordForm = UseFormReturn<ForgotPasswordFormValues>;
 
 /** 인증 코드 재발송 쿨다운은 인증 단계가 맡는다 */
 export default function ForgotPasswordScreen() {
@@ -122,7 +122,7 @@ export default function ForgotPasswordScreen() {
 }
 
 interface EmailStepProps {
-  form: ForgotPasswordFormMethods;
+  form: ForgotPasswordForm;
   isRequesting: boolean;
   onRequestCode: (email: string) => Promise<unknown>;
   onNext: (email: string) => void;
@@ -204,7 +204,7 @@ function EmailStep({ form, isRequesting, onRequestCode, onNext }: EmailStepProps
 }
 
 interface VerificationCodeStepProps {
-  form: ForgotPasswordFormMethods;
+  form: ForgotPasswordForm;
   email: string;
   isResending: boolean;
   onResend: () => Promise<unknown>;
@@ -239,7 +239,7 @@ function VerificationCodeStep({
 }
 
 interface ResetPasswordStepProps {
-  form: ForgotPasswordFormMethods;
+  form: ForgotPasswordForm;
   /** 새 비밀번호 단계 다음 확인 단계는 새 비밀번호 칸 위에 확인 칸을 더한다 */
   step: NewPasswordStepName;
   onNext: () => void;

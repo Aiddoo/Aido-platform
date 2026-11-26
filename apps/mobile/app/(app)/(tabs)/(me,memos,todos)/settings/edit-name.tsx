@@ -23,7 +23,7 @@ import { Suspense } from 'react';
 import { Controller, FormState, useForm } from 'react-hook-form';
 import { match, P } from 'ts-pattern';
 
-export default function EditNameRoute() {
+export default function EditNameScreen() {
   const { t } = useTranslation('settings');
 
   return (
