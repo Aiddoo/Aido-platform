@@ -35,6 +35,9 @@ import {
 } from '../queries/todo-category.queries';
 
 const ROW_TRAILING_FADE_IN_MS = 250;
+// Android는 FlashList 칸 안의 entering이 둘째 줄부터 버튼을 줄 밖 자리에 그려, iOS에서만 스며들게 한다
+const ROW_TRAILING_ENTERING =
+  process.env.EXPO_OS === 'android' ? undefined : FadeIn.duration(ROW_TRAILING_FADE_IN_MS);
 
 /** 카드 안에 그리는 행만 둔다. 카드와 제목은 화면이 감싼다 */
 export function CategoryList() {
@@ -110,10 +113,7 @@ function CategoryRow({ category, right }: CategoryRowProps) {
         </VStack>
       }
       right={
-        <Animated.View
-          entering={FadeIn.duration(ROW_TRAILING_FADE_IN_MS)}
-          className="h-9 justify-center"
-        >
+        <Animated.View entering={ROW_TRAILING_ENTERING} className="h-9 justify-center">
           {right}
         </Animated.View>
       }
