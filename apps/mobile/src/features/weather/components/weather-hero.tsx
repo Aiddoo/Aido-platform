@@ -3,6 +3,7 @@ import { formatRelativeTimeLabel } from '@src/shared/date/format/date-labels';
 import { type Instant } from '@src/shared/date/instant';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaleRatio } from '@src/shared/hooks/use-font-scale-ratio';
+import { useIsReduceMotionEnabled } from '@src/shared/hooks/use-is-reduce-motion-enabled';
 import { useMinimumFontScale } from '@src/shared/hooks/use-minimum-font-scale';
 import { useMinuteNow } from '@src/shared/hooks/use-minute-now';
 import { useTranslation } from '@src/shared/i18n';
@@ -83,6 +84,7 @@ export function WeatherHero() {
   const placeStyle = scaleType(PLACE_TYPE, scale);
   const lineStyle = scaleType(LINE_TYPE, scale);
   const unit = useTemperatureUnit();
+  const isReduceMotionEnabled = useIsReduceMotionEnabled();
   // select가 지금 시각으로 오늘 예보를 고르므로 조회보다 먼저 읽는다
   const now = useMinuteNow();
   const { data: weather } = useSuspenseQuery({
@@ -102,7 +104,8 @@ export function WeatherHero() {
     : t('hero.temperature', { count: reading.magnitude });
 
   return (
-    <Animated.View entering={HERO_ENTERING}>
+    // Android는 애니메이션을 끈 기기에서 entering을 건너뛰며 처음 값(opacity 0)에 머물러 지역·기온이 안 보인다
+    <Animated.View entering={isReduceMotionEnabled ? undefined : HERO_ENTERING}>
       <VStack align="center">
         <VStack
           align="center"
