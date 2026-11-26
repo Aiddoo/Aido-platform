@@ -21,8 +21,20 @@ export interface VoiceNoteDigestFailure {
   isFreeOfCharge: boolean;
 }
 
+interface VoiceNoteDigestActions {
+  digest: () => Promise<void>;
+  isPending: boolean;
+  failure: VoiceNoteDigestFailure | null;
+}
+
 /** 멱등 키를 초안에 함께 저장해 떠나거나 앱을 다시 켜고 다시 눌러도 한 번만 차감된다 */
-export function useVoiceNoteDigest({ accountId, draftId }: { accountId: string; draftId: string }) {
+export function useVoiceNoteDigest({
+  accountId,
+  draftId,
+}: {
+  accountId: string;
+  draftId: string;
+}): VoiceNoteDigestActions {
   const drafts = useVoiceNoteDraftRepository();
   const idGenerator = useIdGenerator();
   const gate = useEntitlementGate('VOICE_NOTE', { surface: 'voice_note' });

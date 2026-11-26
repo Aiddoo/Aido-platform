@@ -25,8 +25,14 @@ function getSpeechErrorMessage(code: SpeechErrorCode) {
   return tDynamic('common', `speechErrors.${code}`, tDynamic('common', 'speechErrors.unknown'));
 }
 
+interface DictationActions {
+  isListening: boolean;
+  start: () => Promise<void>;
+  stop: () => void;
+}
+
 /** 인식기 이벤트는 앱 전체에 하나라 이 훅이 시작한 세션만 받고, 화면이 내려가면 듣던 세션을 끊는다 */
-export function useDictation({ onResult, onEnd }: UseDictationOptions) {
+export function useDictation({ onResult, onEnd }: UseDictationOptions): DictationActions {
   const speechRecognizer = useSpeechRecognizer();
   const ensureMicrophonePermission = useEnsureMicrophonePermission();
   const toast = useAppToast();

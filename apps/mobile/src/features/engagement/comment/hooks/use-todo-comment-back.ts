@@ -2,13 +2,21 @@ import { useDismissKeyboard } from '@src/shared/hooks/use-dismiss-keyboard';
 import { useWatch } from 'react-hook-form';
 import { match } from 'ts-pattern';
 
-import { TodoCommentComposerPolicy } from '../domains/todo-comment-composer.model';
+import {
+  type TodoCommentBackAction,
+  TodoCommentComposerPolicy,
+} from '../domains/todo-comment-composer.model';
 import { EMPTY_TODO_COMMENT_FORM_VALUES } from '../schemas/todo-comment-form.schema';
 import { useIsTodoCommentSubmitting } from './use-is-todo-comment-submitting';
 import { useTodoCommentForm } from './use-todo-comment-form';
 
+interface TodoCommentBackActions {
+  backAction: TodoCommentBackAction;
+  interceptBack: () => boolean;
+}
+
 /** Header back과 Android back이 같은 순서로 동작한다. 작성기를 닫았으면 true를 돌려준다 */
-export function useTodoCommentBack() {
+export function useTodoCommentBack(): TodoCommentBackActions {
   const dismissKeyboard = useDismissKeyboard();
   const { control, reset } = useTodoCommentForm();
   const mode = useWatch({ control, name: 'mode' });

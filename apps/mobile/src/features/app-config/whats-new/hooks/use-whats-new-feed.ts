@@ -15,8 +15,17 @@ interface WhatsNewFeedInput {
   isOnboardingSettled: boolean;
 }
 
+interface WhatsNewFeedActions {
+  isReentryVisible: boolean;
+  openFromReentry: () => void;
+  dismissReentry: () => void;
+}
+
 /** 서버가 켠 캠페인을 첫 피드에서 계정마다 한 번 자동으로 열고(새 계정 포함), 피드 카드로 다시 열게 한다 */
-export function useWhatsNewFeed({ isStable, isOnboardingSettled }: WhatsNewFeedInput) {
+export function useWhatsNewFeed({
+  isStable,
+  isOnboardingSettled,
+}: WhatsNewFeedInput): WhatsNewFeedActions {
   const { identity, release, shouldAutoOpen } = useWhatsNewAutoOpen({ isOnboardingSettled });
   const repository = useWhatsNewRepository();
   const now = useMinuteNow();

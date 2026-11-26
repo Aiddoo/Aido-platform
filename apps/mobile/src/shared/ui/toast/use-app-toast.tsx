@@ -30,8 +30,15 @@ function getToastErrorMessage(
   return getUserFacingMessage(input) ?? fallback;
 }
 
+interface AppToastActions {
+  toast: (label: string, options?: ToastOptions) => void;
+  success: (label: string, options?: Omit<ToastOptions, 'variant'>) => void;
+  warning: (label: string, options?: Omit<ToastOptions, 'variant'>) => void;
+  error: (labelOrError: string | Error | undefined, options?: ErrorToastOptions) => void;
+}
+
 /** 가장 위 토스트 면(열린 시트 route, 없으면 앱 루트)에 띄운다 */
-export function useAppToast() {
+export function useAppToast(): AppToastActions {
   // 컴파일러는 `use`만 부르는 함수를 훅으로 보지 않아 건너뛴다. 돌려주는 객체를 고정하려고 켠다
   'use memo';
   const layers = use(ToastLayersContext);

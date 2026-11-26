@@ -1,9 +1,16 @@
 import { useMyPagePaneLayoutStore } from '@src/bootstrap/providers/di-context';
 import { useIsFocused } from 'expo-router';
-import { type ComponentRef, useEffect, useLayoutEffect, useRef } from 'react';
+import { type ComponentRef, type RefObject, useEffect, useLayoutEffect, useRef } from 'react';
 import type { NativeScrollEvent, ScrollView } from 'react-native';
 
-export function useMyPagePaneLayout() {
+interface MyPagePaneLayoutActions {
+  scrollRef: RefObject<ComponentRef<typeof ScrollView> | null>;
+  handleScrollEnd: (event: { nativeEvent: Pick<NativeScrollEvent, 'contentOffset'> }) => void;
+  handleSizeChange: () => void;
+  handleScrollBeginDrag: () => void;
+}
+
+export function useMyPagePaneLayout(): MyPagePaneLayoutActions {
   const myPagePaneLayoutStore = useMyPagePaneLayoutStore();
   const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
   const restoreOffsetRef = useRef<number | null>(null);

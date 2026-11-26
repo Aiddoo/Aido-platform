@@ -24,8 +24,16 @@ interface WhatsNewFlowInput {
   source: WhatsNewSource;
 }
 
+interface WhatsNewFlowActions {
+  close: () => void;
+  complete: () => void;
+  leaveTo: (href: Href) => void;
+  trackCta: (cta: { step: WhatsNewStep; feature: FeatureKey }) => void;
+  trackStepViewed: (view: { step: WhatsNewStep; index: number }) => void;
+}
+
 /** 소개 화면의 본 기록과 이동(닫기·완료·기능으로 떠나기). 추적은 `useWhatsNewTracking`이 한다 */
-export function useWhatsNewFlow({ release, source }: WhatsNewFlowInput) {
+export function useWhatsNewFlow({ release, source }: WhatsNewFlowInput): WhatsNewFlowActions {
   const { campaignId } = release;
   const repository = useWhatsNewRepository();
   const accountId = useMyAccountId();

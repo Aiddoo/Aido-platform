@@ -60,8 +60,13 @@ type ResendVerificationVariables = ResendVerificationInput & {
   source: EmailVerificationSource;
 };
 
+interface AuthSessionActions {
+  signIn: () => void;
+  signOut: () => void;
+}
+
 /** 정리는 전환이 커밋된 뒤 부팅 훅이 맡고, `signIn`은 아직 인증 전이면 지난 계정의 조회 캐시를 먼저 비운다. 로그인·로그아웃·탈퇴 mutation이 세션을 바꾸는 입구다 */
-export function useAuthSession() {
+export function useAuthSession(): AuthSessionActions {
   const store = useAuthSessionStore();
   const sessionCleanupService = useSessionCleanupService();
 

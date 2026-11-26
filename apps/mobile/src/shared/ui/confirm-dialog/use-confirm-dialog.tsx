@@ -2,8 +2,12 @@ import { useOverlay } from '../overlay/use-overlay';
 import { ConfirmDialog } from './confirm-dialog';
 import type { ConfirmDialogOptions } from './confirm-dialog.types';
 
+interface ConfirmDialogActions {
+  openAsync: (options: ConfirmDialogOptions) => Promise<boolean>;
+}
+
 /** 확인 다이얼로그를 띄우고 사용자가 확인했는지 돌려준다. 닫기·취소, 답 없이 사라짐은 false다 */
-export function useConfirmDialog() {
+export function useConfirmDialog(): ConfirmDialogActions {
   const overlay = useOverlay();
 
   return {

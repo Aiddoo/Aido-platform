@@ -1,4 +1,4 @@
-import { TODO_UPDATE_SCOPES } from '@aido/api/vocabulary';
+import { TODO_UPDATE_SCOPES, type TodoUpdateScope } from '@aido/api/vocabulary';
 import type { DateKey } from '@src/shared/date/date-key';
 import { useDismissKeyboard } from '@src/shared/hooks/use-dismiss-keyboard';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -12,8 +12,18 @@ export interface ScopeRequest {
   resolve: (scope: TodoEditScope | null) => void;
 }
 
+interface SelectTodoScopeActions {
+  selectEditScope: (date: DateKey) => Promise<TodoUpdateScope | null>;
+  selectDeleteScope: (
+    date: DateKey,
+    scopes: readonly TodoEditScope[],
+  ) => Promise<TodoEditScope | null>;
+  scopeRequest: ScopeRequest | null;
+  settleScope: (scope: TodoEditScope | null) => void;
+}
+
 /** 새 시트 없이 쓰는 시트 안에서 내용을 갈아 끼워 앞 화면의 입력값이 남는다. 뒤로 가면 null이다 */
-export function useSelectTodoScope() {
+export function useSelectTodoScope(): SelectTodoScopeActions {
   const dismissKeyboard = useDismissKeyboard();
   const [request, setRequest] = useState<ScopeRequest | null>(null);
   const requestRef = useRef(request);

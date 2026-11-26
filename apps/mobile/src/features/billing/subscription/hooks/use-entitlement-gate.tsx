@@ -79,10 +79,20 @@ const GATE_TITLE_KEYS = {
   CALENDAR_IMPORT: 'gate.calendarImportTitle',
 } as const satisfies Record<EntitlementFeature, string>;
 
+interface EntitlementGateActions {
+  /** 안내 없이 지금 막혔는지만 본다. 막힌 채 열린 화면이 내용을 그리지 않을 때 쓴다. 스냅샷을 아직 모르면 false다 */
+  isBlocked: () => boolean;
+  /** 시작하기 전에 확인한다. 막혔으면 안내를 띄우고 true다(멈춘다). 스냅샷을 아직 모르면 서버에 맡긴다 */
+  promptIfBlocked: (options?: EntitlementGatePromptOptions) => boolean;
+  promptLimit: (options?: EntitlementGatePromptOptions) => void;
+  /** 서버가 한도·프리미엄 전용으로 막은 오류면 안내를 띄우고 true다(멈춘다). 그 밖의 오류는 부른 쪽이 처리한다 */
+  promptIfBlockedError: (error: unknown, options?: EntitlementGatePromptOptions) => boolean;
+}
+
 export function useEntitlementGate(
   feature: EntitlementFeature,
   { surface }: { surface: EntitlementGateSurface },
-) {
+): EntitlementGateActions {
   const openSheet = useOpenSheet();
   const toast = useAppToast();
   const { trackEvent } = useTrack();
@@ -208,9 +218,7 @@ export function useEntitlementGate(
   };
 
   return {
-    /** 안내 없이 지금 막혔는지만 본다. 막힌 채 열린 화면이 내용을 그리지 않을 때 쓴다. 스냅샷을 아직 모르면 false다 */
     isBlocked: (): boolean => findBlockedDecision() != null,
-    /** 시작하기 전에 확인한다. 막혔으면 안내를 띄우고 true다(멈춘다). 스냅샷을 아직 모르면 서버에 맡긴다 */
     promptIfBlocked: (options?: EntitlementGatePromptOptions): boolean => {
       const decision = findBlockedDecision();
       if (decision == null) {
@@ -222,7 +230,6 @@ export function useEntitlementGate(
     promptLimit: (options?: EntitlementGatePromptOptions) => {
       open(feature, 'limit-reached', 'precheck', options);
     },
-    /** 서버가 한도·프리미엄 전용으로 막은 오류면 안내를 띄우고 true다(멈춘다). 그 밖의 오류는 부른 쪽이 처리한다 */
     promptIfBlockedError: (error: unknown, options?: EntitlementGatePromptOptions): boolean => {
       const limited = parseLimitedFeature(error);
       if (limited == null) {

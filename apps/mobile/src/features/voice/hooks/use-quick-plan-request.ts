@@ -15,8 +15,18 @@ interface UseQuickPlanRequestOptions {
   onSubscribe: () => void;
 }
 
+interface QuickPlanRequestActions {
+  send: (text: string) => Promise<CapturedPlan>;
+  isConsentRequired: boolean;
+  rememberConsentAsked: (wasAsked: boolean) => void;
+  abort: () => void;
+  forget: () => void;
+}
+
 /** 들은 글자로 계획을 요청한다. 같은 글자의 재시도는 같은 키로 보내고, 동의가 막으면 한 번 묻고 이어서 보낸다 */
-export function useQuickPlanRequest({ onSubscribe }: UseQuickPlanRequestOptions) {
+export function useQuickPlanRequest({
+  onSubscribe,
+}: UseQuickPlanRequestOptions): QuickPlanRequestActions {
   const idGenerator = useIdGenerator();
   const aiConsent = useAiDataSharingConsentGate();
   const gate = useEntitlementGate('AI_PARSE', { surface: 'add_todo_sheet' });
