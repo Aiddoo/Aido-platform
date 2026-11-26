@@ -1,4 +1,4 @@
-appId: com.aido.mobile
+appId: ${MAESTRO_APP_ID}
 name: 화면을 가리는 안내를 닫고 애니메이션이 멈출 때까지 기다린다
 ---
 # 자동으로 뜨는 새 소식 안내는 70번 흐름에서 직접 열어 찍으므로 여기서는 닫는다

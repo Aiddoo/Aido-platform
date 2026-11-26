@@ -1,4 +1,4 @@
-appId: com.aido.mobile
+appId: ${MAESTRO_APP_ID}
 name: 마이페이지·설정·기능 가이드·구독
 tags:
   - free

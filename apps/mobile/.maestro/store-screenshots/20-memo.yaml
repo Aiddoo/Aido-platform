@@ -1,4 +1,4 @@
-appId: com.aido.mobile
+appId: ${MAESTRO_APP_ID}
 name: 메모 목록·상세와 AI 메모 분석
 tags:
   - free

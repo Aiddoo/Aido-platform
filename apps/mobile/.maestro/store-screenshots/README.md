@@ -52,6 +52,9 @@ pnpm --filter mobile store:screens:capture -- ... --out ~/Desktop/Aido-Screens-a
    둔다(스크립트는 키를 읽지도 출력하지도 않는다). 기능 소개(05·72)는 서버 캠페인 설정이 켜져 있어야 보인다.
 2. 앱은 개발 메뉴가 찍히지 않게 **Release 구성 로컬 빌드**를 쓴다(`EXPO_PUBLIC_API_URL=http://localhost:8080`, 스킴 `aido-dev`).
    설치돼 있지 않은 기기에는 `SCREENS_IOS_APP=<.app>`, `SCREENS_ANDROID_APK=<.apk>`로 넣는다. Android는 `adb reverse 8080`을 스크립트가 건다.
+   흐름은 앱 ID를 `MAESTRO_APP_ID`로 읽는다. 기본은 `com.aido.mobile`이고 개발 변형 빌드는 `SCREENS_APP_ID=com.aido.mobile.dev`를 준다.
+   Xcode에 iPhone 17 Pro가 없으면 `SCREENS_IPHONE_PRO="iPhone 18 Pro"`처럼 같은 급 기기를, 영어 데모 데이터가 없으면
+   `SCREENS_IPHONE_PRO_LOCALES=ko`를 준다.
 3. 무료 페이월(79)은 RevenueCat 샌드박스 키가 든 빌드에서만 요금제가 보인다. 없으면 '요금제를 불러오지 못했어요'와 문의하기가 찍힌다.
 4. 호스트 시간대는 Asia/Seoul로 둔다(데모 날짜와 기기 '오늘'을 맞춘다). 날짜는 실행일 기준이라 언제 돌려도 '오늘/이번 주'가 맞다.
 

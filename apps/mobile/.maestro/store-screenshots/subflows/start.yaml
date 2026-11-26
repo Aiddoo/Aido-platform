@@ -1,4 +1,4 @@
-appId: com.aido.mobile
+appId: ${MAESTRO_APP_ID}
 name: 앱 데이터를 비우고 지정한 계정으로 로그인한다
 # 사용: runFlow { file: subflows/start.yaml, env: { QA_EMAIL, QA_PASSWORD } }
 ---

@@ -24,7 +24,9 @@ cd "$HERE"
 
 app_version="$(node -p "require('$HERE/../../package.json').version")"
 OUT_ROOT="${SCREENS_OUT:-$HOME/Desktop/Aido-Screens-$app_version}"
-APP_ID="com.aido.mobile"
+# 개발 변형 빌드(com.aido.mobile.dev)로 찍을 때는 SCREENS_APP_ID로 바꾼다. flow는 MAESTRO_APP_ID로 읽는다
+APP_ID="${SCREENS_APP_ID:-com.aido.mobile}"
+export MAESTRO_APP_ID="$APP_ID"
 QA_SCHEME="${QA_SCHEME:-aido-dev}"
 QA_API_BASE_URL="${QA_API_BASE_URL:-http://localhost:8080}"
 ANDROID_SDK="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
@@ -352,8 +354,10 @@ mkdir -p "$OUT_ROOT"
 for device in ${devices//,/ }; do
   case "$device" in
     iphone17pro)
-      udid="$(ios_udid 'iPhone 17 Pro')"; ios_boot "$udid"
-      run_matrix "$udid" "iPhone 17 Pro" ios "ko,en" ;;
+      # 설치된 Xcode에 iPhone 17 Pro가 없으면 SCREENS_IPHONE_PRO로 같은 급 기기를, 언어는 SCREENS_IPHONE_PRO_LOCALES로 고른다
+      iphone_pro="${SCREENS_IPHONE_PRO:-iPhone 17 Pro}"
+      udid="$(ios_udid "$iphone_pro")"; ios_boot "$udid"
+      run_matrix "$udid" "$iphone_pro" ios "${SCREENS_IPHONE_PRO_LOCALES:-ko,en}" ;;
     iphonese)
       udid="$(ios_udid 'iPhone SE (3rd generation)')"; ios_boot "$udid"
       run_matrix "$udid" "iPhone SE 3" ios "ko" ;;

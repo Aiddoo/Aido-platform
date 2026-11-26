@@ -1,4 +1,4 @@
-appId: com.aido.mobile
+appId: ${MAESTRO_APP_ID}
 name: 로그아웃 상태의 시작·로그인·가입 화면
 tags:
   - free

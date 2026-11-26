@@ -1,4 +1,4 @@
-appId: com.aido.mobile
+appId: ${MAESTRO_APP_ID}
 name: 친구 목록·요청·친구 피드·찾기·콕
 tags:
   - free

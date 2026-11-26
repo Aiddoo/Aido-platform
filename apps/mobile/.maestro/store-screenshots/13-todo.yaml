@@ -1,4 +1,4 @@
-appId: com.aido.mobile
+appId: ${MAESTRO_APP_ID}
 name: 할 일 상세·추가·반복 편집 시트
 tags:
   - free

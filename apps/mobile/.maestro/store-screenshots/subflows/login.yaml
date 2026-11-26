@@ -1,4 +1,4 @@
-appId: com.aido.mobile
+appId: ${MAESTRO_APP_ID}
 name: 첫 진입에서 이메일 로그인 후 홈으로 이동한다
 ---
 # Given: Docker 개발 서버에서 인증된 임시 계정

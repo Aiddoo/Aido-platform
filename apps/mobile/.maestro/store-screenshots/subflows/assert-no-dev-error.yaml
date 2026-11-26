@@ -1,4 +1,4 @@
-appId: com.aido.mobile
+appId: ${MAESTRO_APP_ID}
 name: 개발 빌드의 오류 창이 뜨지 않았는지 본다
 ---
 # 오류 창이 화면을 덮어도 뒤 요소는 보여 id 확인만으로는 놓친다. 창은 기호를 푸느라 1초까지 늦게 떠 잠시 기다린 뒤 본다

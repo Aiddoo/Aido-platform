@@ -1,4 +1,4 @@
-appId: com.aido.mobile
+appId: ${MAESTRO_APP_ID}
 name: 딥링크로 화면을 연다
 # 사용: runFlow { file: subflows/open.yaml, env: { ROUTE: 'settings/profile' } }
 ---
