@@ -173,14 +173,14 @@ sequenceDiagram
 - Domain·Application은 Nest·ORM·SDK·HTTP 계약을 모른다. 다른 Context는 `<context>-<slice>.public.ts`로만 부르고 그 Context 테이블을 직접 읽지 않는다.
 - 포트는 abstract class이자 DI 토큰이다. `provideUseCase`가 조립하고 의존성 키 누락·토큰 타입 불일치는 컴파일 오류다.
 
-| Context                           | slice                                                                                                                                                       |
-| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| identity · access · billing       | `auth`·`users`·`preferences` · `feature-grants`·`quota-charges` · `subscriptions`·`premium-grants`                                                          |
-| planning · notes · engagement     | `todos`·`todo-series`·`categories` · `memos` · `todo-comments`·`todo-comment-likes`                                                                         |
-| social                            | `friendships`·`user-blocks`·`cheers`·`nudges`·`reminder-nudges`·`invites`·`invite-redemptions`·`user-reports`                                               |
-| notification · insights           | `notifications`·`push-devices`·`push-dispatches`·`email-messages`·`reminders`·`retention-assignments` · `daily-completions`·`weekly-achievements`           |
-| ai-assistance · voice · weather   | `ai-generations`·`parsed-drafts`·`action-plan-drafts`·`ai-reports`·`suggestions` · `voice-digests`·`plan-applications` · `weather-reports`·`user-locations` |
-| operations · app-config · support | `broadcast-campaigns`·`admin-notices` · `app-releases`·`feature-discovery-campaigns` · `inquiries`                                                          |
+| Context                           | slice                                                                                                                                                        |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| identity · access · billing       | `users`·`sessions`·`linked-accounts`·`oauth-states`·`verifications`·`user-preferences` · `feature-grants`·`quota-charges` · `subscriptions`·`premium-grants` |
+| planning · notes · engagement     | `todos`·`todo-series`·`todo-categories`·`todo-imports` · `memos` · `todo-comments`·`todo-comment-likes`                                                      |
+| social                            | `friendships`·`user-blocks`·`cheers`·`nudges`·`reminder-nudges`·`invites`·`invite-redemptions`·`user-reports`                                                |
+| notification · insights           | `notifications`·`push-devices`·`push-dispatches`·`email-messages`·`reminders`·`retention-assignments` · `daily-completions`·`weekly-achievements`            |
+| ai-assistance · voice · weather   | `ai-generations`·`parsed-drafts`·`action-plan-drafts`·`ai-reports`·`suggestions` · `voice-digests`·`plan-applications` · `weather-reports`·`user-locations`  |
+| operations · app-config · support | `broadcast-campaigns`·`admin-notices` · `app-releases`·`feature-discovery-campaigns` · `inquiries`                                                           |
 
 ### 트랜잭션 안 작업 enqueue와 도메인 이벤트
 
@@ -356,11 +356,11 @@ flowchart LR
 │   │   └── docs/           #   서버 설계·규칙 문서
 │   └── mobile/             # @aido/mobile — Expo 앱 (src/features/<area>/<feature>)
 ├── packages/api/           # @aido/api — 공유 REST 계약·오류 코드·vocabulary
-├── tooling/                # database-migrate CLI · typescript · vitest 프리셋
+├── tooling/                # database-migrate CLI · oxlint-plugin-aido · typescript·vitest·test-config 프리셋
 ├── turbo/generators/       # 서버 slice 생성기
-├── docs/conventions/       # 앱·서버 공통 규칙 (오류·날짜·호환·null·테스트·문서·Git)
-├── docs/releases/          # 현재 릴리스 기록
-└── scripts/                # CI 정책·문서 검사·배포·에이전트 hook
+├── docs/conventions/       # 앱·서버 공통 규칙 (책임·오류·날짜·호환·null·테스트·스크립트·문서·Git)
+├── docs/releases/          # 릴리스 기록
+└── scripts/                # CI 정책·문서 검사·배포·운영(ops)·에이전트 hook
 ```
 
 ## 시작하기
@@ -398,22 +398,22 @@ pnpm dev                                       # API + Expo Metro
 
 - 실행마다 `aido_test_<run-id>` DB에 마이그레이션을 한 번 적용하고 worker별로 나눈다. 순서를 섞어 순서 의존을 드러내고, 여러 러너가 함께 돌면 `AIDO_TEST_WORKERS`·`AIDO_TEST_DB_WORKERS`로 줄인다.
 - 푸시·메일·AI·날씨는 Fake나 고정 원문으로 격리한다. 유료 AI 평가(`ai:eval`)와 `test:performance`는 CI 밖이다.
-- lefthook: pre-commit은 staged 파일 lint·format·이름 검사와 문서 검사(`pnpm docs:check`), pre-push는 `turbo run typecheck test build` → 통합 → 계약(결과는 원격 캐시로), 전체 E2E는 직접 실행해 PR에 적는다.
+- lefthook: pre-commit은 staged 파일 lint·format·이름 검사와 문서 검사(`pnpm docs:check`), pre-push는 `turbo run typecheck test test:node build` → 통합 → 계약(결과는 원격 캐시로), 전체 E2E는 직접 실행해 PR에 적는다.
 - CI(main을 향한 PR·main push)는 lint·typecheck·build와 함께 단위·통합·계약 테스트를 같은 원격 캐시로 다시 확인하고, 캐시에 없는 작업만 러너에서 한 번에 하나씩 돈다.
 - `main`은 같은 run의 검증이 성공하면 ARM64 이미지를 만들고 Trivy 검사 뒤 GHCR에 올린다. 배포는 Blue-Green이다. migrate가 끝난 뒤 새 API를 쉬는 슬롯에 띄우고 healthy가 되면 Nginx를 넘긴다. 실패하면 살아 있는 API를 건드리지 않고 끝난다.
 
 ## 문서
 
-| 주제                | 문서                                                                                                                                                                                                                                                  |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 작업 진입점         | [AGENTS.md](./AGENTS.md), [apps/api/AGENTS.md](./apps/api/AGENTS.md), [apps/mobile/AGENTS.md](./apps/mobile/AGENTS.md)                                                                                                                                |
-| 새 서버 기능        | [새 기능 추가](./apps/api/docs/new-feature.md), [서버 문서 안내](./apps/api/docs/README.md)                                                                                                                                                           |
-| 서버 구조·모델·이름 | [아키텍처](./apps/api/docs/architecture.md), [도메인 모델](./apps/api/docs/domain-modeling.md), [이름 사전](./apps/api/docs/conventions.md)                                                                                                           |
-| 계약·DB·작업        | [HTTP 계약](./apps/api/docs/http-contracts.md), [영속성](./apps/api/docs/persistence.md), [작업과 이벤트](./apps/api/docs/jobs-and-events.md), [공유 계약 패키지](./packages/api/README.md)                                                           |
-| 권한·설정·관측      | [유료 기능과 권한](./apps/api/docs/entitlements.md), [설정](./apps/api/docs/configuration.md), [관측](./apps/api/docs/observability.md), [보안](./apps/api/docs/security.md), [테스트](./apps/api/docs/testing.md)                                    |
-| 공통 규칙           | [오류](./docs/conventions/errors.md), [날짜·시간](./docs/conventions/dates.md), [하위 호환](./docs/conventions/compatibility.md), [null 비교](./docs/conventions/nullish.md), [문서](./docs/conventions/docs.md), [Git·PR](./docs/conventions/git.md) |
-| 모바일              | [apps/mobile/README.md](./apps/mobile/README.md), [아키텍처](./apps/mobile/docs/architecture/structure.md), [UI](./apps/mobile/docs/architecture/ui.md)                                                                                               |
-| CI·배포             | [CI](./apps/api/docs/ci.md), [서버 배포](./apps/api/docs/deployment.md), [모바일 배포](./apps/mobile/docs/build-and-release.md)                                                                                                                       |
+| 주제                | 문서                                                                                                                                                                                                                                                                                                                                                                                            |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 작업 진입점         | [AGENTS.md](./AGENTS.md), [apps/api/AGENTS.md](./apps/api/AGENTS.md), [apps/mobile/AGENTS.md](./apps/mobile/AGENTS.md)                                                                                                                                                                                                                                                                          |
+| 새 서버 기능        | [새 기능 추가](./apps/api/docs/new-feature.md), [서버 문서 안내](./apps/api/docs/README.md)                                                                                                                                                                                                                                                                                                     |
+| 서버 구조·모델·이름 | [아키텍처](./apps/api/docs/architecture.md), [도메인 모델](./apps/api/docs/domain-modeling.md), [이름 사전](./apps/api/docs/conventions.md)                                                                                                                                                                                                                                                     |
+| 계약·DB·작업        | [HTTP 계약](./apps/api/docs/http-contracts.md), [영속성](./apps/api/docs/persistence.md), [작업과 이벤트](./apps/api/docs/jobs-and-events.md), [공유 계약 패키지](./packages/api/README.md)                                                                                                                                                                                                     |
+| 권한·설정·관측      | [유료 기능과 권한](./apps/api/docs/entitlements.md), [설정](./apps/api/docs/configuration.md), [관측](./apps/api/docs/observability.md), [보안](./apps/api/docs/security.md), [테스트](./apps/api/docs/testing.md)                                                                                                                                                                              |
+| 공통 규칙           | [서버·앱 책임](./docs/conventions/ownership.md), [오류](./docs/conventions/errors.md), [날짜·시간](./docs/conventions/dates.md), [하위 호환](./docs/conventions/compatibility.md), [null 비교](./docs/conventions/nullish.md), [테스트 파일](./docs/conventions/testing.md), [스크립트](./docs/conventions/scripts.md), [문서](./docs/conventions/docs.md), [Git·PR](./docs/conventions/git.md) |
+| 모바일              | [apps/mobile/README.md](./apps/mobile/README.md), [아키텍처](./apps/mobile/docs/architecture/structure.md), [UI](./apps/mobile/docs/architecture/ui.md)                                                                                                                                                                                                                                         |
+| CI·배포             | [CI](./apps/api/docs/ci.md), [서버 배포](./apps/api/docs/deployment.md), [모바일 배포](./apps/mobile/docs/build-and-release.md)                                                                                                                                                                                                                                                                 |
 
 ## 라이선스
 
