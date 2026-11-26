@@ -6,7 +6,7 @@ import { IS_IOS_APP_ON_MAC, IS_IPAD } from '@src/shared/infra/device/device-info
 import { Box, Input, QueryErrorBoundary, Spacing } from '@src/shared/ui';
 import { debounce } from 'es-toolkit';
 import { Stack } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { SearchBarCommands } from 'react-native-screens';
 import { match } from 'ts-pattern';
 
@@ -19,7 +19,7 @@ export default function SearchFriendScreen() {
   const { t } = useTranslation('friend');
   const [query, setQuery] = useState('');
   const [settledQuery, setSettledQuery] = useState('');
-  const settle = useMemo(() => debounce(setSettledQuery, SEARCH_DEBOUNCE_MS), []);
+  const [settle] = useState(() => debounce(setSettledQuery, SEARCH_DEBOUNCE_MS));
   const onFriendLimitInvite = useFriendLimitInvite();
 
   useEffect(() => () => settle.cancel(), [settle]);
