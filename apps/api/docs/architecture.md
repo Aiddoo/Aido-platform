@@ -19,7 +19,7 @@ HTTP → Guard/Interceptor → Controller → UseCase → Domain 행동 + Port
 | `infrastructure` | ORM·pg-boss·cache·SDK I/O, 행 ↔ 도메인 변환, 공급자 wire 검증                       |
 | `presentation`   | HTTP DTO 검증, DTO → Command 변환, 응답 매핑·문구, Swagger                          |
 | slice 루트       | Module, `*.providers.ts`(포트 바인딩 + UseCase 조립), `*.public.ts`, `*.config.ts`  |
-| `platform`       | Nest 실행 기술: database, jobs, events, http, logging, config, cache, lock, di      |
+| `platform`       | Nest 실행 기술: database, jobs, events, http, logging, config, cache, di            |
 | `shared`         | 도메인 베이스 클래스·공용 식별자·시간, 공용 Port·`ApplicationException`·CursorPage  |
 
 녹음 파일은 서버로 오지 않는다. 기기가 글자로 바꾸고 서버는 글자만 받으며 전사를 저장하지 않는다.
@@ -164,7 +164,7 @@ UoW: 잠금 → 최신 자격·상태 확인 → 도메인 행동 → 저장 →
 commit → 캐시 정리
 ```
 
-사례: [CreateMemoUseCase](../src/modules/notes/memos/application/use-cases/create-memo.use-case.ts)(정렬 잠금 아래 한도 확인·저장), [CreateTodoUseCase](../src/modules/planning/todos/application/use-cases/create-todo.use-case.ts)(카테고리·정렬 잠금 아래 생성, 커밋 뒤 알림·캐시), [GenerateReportUseCase](../src/modules/ai-assistance/ai-reports/application/use-cases/generate-report.use-case.ts)(AI 호출 전후로 자격 재확인), [ReconcilePushReceipts](../src/modules/notification/push-dispatches/application/use-cases/reconcile-push-receipts.use-case.ts)(외부 조회 밖, 기록·토큰 비활성화 한 UoW).
+사례: [CreateMemoUseCase](../src/modules/notes/memos/application/use-cases/create-memo.use-case.ts)(정렬 잠금 아래 한도 확인·저장), [CreateTodoUseCase](../src/modules/planning/todos/application/use-cases/create-todo.use-case.ts)(카테고리·정렬 잠금 아래 생성, 커밋 뒤 알림·캐시), [GenerateReportUseCase](../src/modules/ai-assistance/ai-reports/application/use-cases/generate-report.use-case.ts)(AI 호출 전후로 자격 재확인), [ReconcilePushReceiptsUseCase](../src/modules/notification/push-dispatches/application/use-cases/reconcile-push-receipts.use-case.ts)(외부 조회 밖, 기록·토큰 비활성화 한 UoW).
 
 ## 교체 가능한 포트
 

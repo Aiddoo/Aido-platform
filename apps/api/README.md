@@ -27,7 +27,7 @@ src/
 ├── shared/              # Context 공통 순수 규칙·Application 계약
 └── bootstrap.ts         # 운영 진입점
 drizzle/                 # SQL 마이그레이션
-test/                    # fixtures · doubles · contracts · integration · e2e · performance
+test/                    # architecture · contracts · dev-fixtures · doubles · e2e · fixtures · integration · performance · setup
 ```
 
 의존 방향은 HTTP → Presentation → UseCase → Domain/Port ← Infrastructure다. 상세 규칙은 [docs/architecture.md](./docs/architecture.md)에 있다. 새 slice는 루트에서 `pnpm gen:api-slice`로 만든다.
