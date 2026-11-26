@@ -422,6 +422,29 @@ describe('TodoImportSetupScreen', () => {
       );
     });
 
+    it('요금제 기간 한도에 막히면 프리미엄 안내를 띄우고 옵션 단계에 남는다', async () => {
+      // Given
+      const { analytics } = await renderSetup({
+        startImport: async () =>
+          fail(createTodoImportApiError({ code: ErrorCode.TODO_IMPORT_2302, status: 403 })),
+      });
+      await goToCategories();
+      await goToOptions();
+
+      // When
+      await pressImport();
+
+      // Then
+      expect(
+        await screen.findByText('더 먼 일정은 프리미엄으로 가져올 수 있어요'),
+      ).toBeOnTheScreen();
+      expect(getTrackedEvents(analytics, 'limit_reached_shown')).toEqual([
+        { feature: 'calendar_import', surface: 'todo_import', trigger: 'server' },
+      ]);
+      expect(screen.getByText(OPTIONS_TITLE)).toBeOnTheScreen();
+      expect(router.replace).not.toHaveBeenCalled();
+    });
+
     it('가져오기를 두 번 눌러도 시작 요청은 한 번이다', async () => {
       // Given
       const pending = createPendingResponse(ok({ todoImport: createTodoImportDto() }));
