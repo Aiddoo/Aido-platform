@@ -31,7 +31,7 @@ iPadOS 26+에서 NativeTabs(`preferredPlacement="automatic"`) 사이드바는 �
 - 첫 프레임에는 그 pane이 닿는 가장자리의 창 inset만 `initialMetrics`로 준다(`getPaneEdgeInsets`, RTL이면 좌우를 바꾼다). 네이티브 측정 전에 레일 반대쪽 pane이 84pt 들여 그려졌다가 튀는 시프트를 막는다.
 - 컨테이너는 가로 inset을 적용하지 않는다. pane 내용이 스스로 피한다: 스크롤 내용은 `<StyledSafeAreaView edges={['left', 'right']}>`로 감싸고(스크롤바와 배경은 가장자리까지), 고정 헤더·하단 버튼·빈 상태는 그 컨테이너에 `left`/`right`를 둔다. react-native-safe-area-context의 `SafeAreaView`는 가장 가까운 네이티브 provider의 inset을 쓰므로 같은 축의 `SafeAreaView`를 중첩하지 않는다(중복 패딩). JS `SafeAreaInsetsContext`로 바꾼 값은 보지 않는다([칸 안의 safe area](#칸-안의-safe-area)).
 - 목록 칸 내용 폭은 size class별 최소 목록 폭(320/400)이고, 닿는 가장자리의 inset은 칸 바깥쪽에 더한다. 상세 pane은 남은 폭을 채운다. 기기별 고정 폭이 아니라 탭 안 내용 폭 기준이다.
-- 반쯤 접어 세로 접힘선(reserved region `division`)이 생기면 목록 폭을 접힘선의 `frame.x`에 맞추고 접힘선 폭만큼 비운다. `AdaptivePane`이 `ReservedRegionsProvider`로 자기 좌표계를 만들고, 접힘선은 `findVerticalFold`로 찾는다.
+- 반쯤 접어 세로 접힘선(reserved region `division`)이 생기면 목록 폭을 접힘선의 `frame.x`에 맞추고 접힘선 폭만큼 비운다. `AdaptivePane`이 `PaneRegionsProvider`로 자기 좌표계를 만들고, 접힘선은 `findVerticalFold`로 찾는다. Android는 칸이 창 왼쪽 끝에서 시작해 앱 루트 provider의 좌표를 그대로 쓴다(Android의 가림 영역 뷰는 처음 붙을 때 이벤트를 동기로 보내, 화면을 그리는 중에 새로 붙으면 앱이 죽는다).
 - 펼친 화면에서 고른 항목은 URL param으로 상세 pane에 보여 준다. 접히면 항상 렌더링되는 목록 pane에서 `useOpenDetailWhenCompact(selectedId, openDetail)`로 상세 라우트에 넘긴다. 훅은 `useIsFocused`로 앞에 보이는 화면에서만 동작하므로, 뒤에 남아 있는 다른 탭은 push하지 않는다.
 - 목록 밖(푸시·알림함 행)에서 여는 항목도 같은 기준을 따른다. 할 일은 `toTodoDetailRoute(windowSizeClass, …)`가 접힌 화면이면 `/todo/[todoId]`, 펼친 화면이면 `/feed?todoId=`(피드 상세 pane)를 고른다. 알림 `navigation`이 할 일 주인·날짜(`todoOwnerId`·`todoDate`)를 실으면 목록 pane도 그 사람(친구면 `friendId`)의 그 `date` 피드로 연다. 싣지 않은 알림은 내 피드 기본 날짜다.
 - 하단 탭 바 높이를 가정한 여백을 두지 않는다.

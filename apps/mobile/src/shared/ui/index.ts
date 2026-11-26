@@ -2,6 +2,7 @@ export { ActionButton } from './action-button/action-button';
 export { AdaptivePane, useAdaptivePaneLayoutKey } from './adaptive-pane/adaptive-pane';
 export { getPaneEdgeInsets } from './adaptive-pane/get-pane-edge-insets';
 export { PaneArea, usePaneColumns, usePaneSizeClass } from './adaptive-pane/pane-area';
+export { PaneRegionsProvider } from './adaptive-pane/pane-regions-provider';
 export {
   type AppWindow,
   WindowLayoutPolicy,

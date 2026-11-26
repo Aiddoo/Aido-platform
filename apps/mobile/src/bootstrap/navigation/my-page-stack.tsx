@@ -2,6 +2,7 @@ import {
   Box,
   getPaneEdgeInsets,
   HStack,
+  PaneRegionsProvider,
   usePaneColumns,
   usePaneSizeClass,
   useStackScreenOptions,
@@ -10,7 +11,7 @@ import { findVerticalFold } from '@src/shared/utils/find-vertical-fold';
 import { type NativeStackNavigationOptions, Stack, useRootNavigationState } from 'expo-router';
 import type { ReactNode } from 'react';
 import { I18nManager } from 'react-native';
-import { ReservedRegionsProvider, useReservedRegions } from 'react-native-reserved-regions';
+import { useReservedRegions } from 'react-native-reserved-regions';
 import { SafeAreaInsetsContext, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 /** iPadOS 세로에서 떠 있는 탭 바가 오른쪽 칸 헤더의 뒤로 가기를 가려 헤더는 전체 폭, 메뉴는 본문 왼쪽 칸에 그린다 */
@@ -92,9 +93,9 @@ interface MyPageScreenLayoutProps {
 
 function MyPageScreenLayout({ menu, children }: MyPageScreenLayoutProps) {
   return (
-    <ReservedRegionsProvider style={{ flex: 1 }}>
+    <PaneRegionsProvider>
       <MyPageScreenColumns menu={menu}>{children}</MyPageScreenColumns>
-    </ReservedRegionsProvider>
+    </PaneRegionsProvider>
   );
 }
 
