@@ -54,6 +54,8 @@ const PATH_BUILDER_COMMANDS = new Set<string | symbol>([
   'addCircle',
   'addRect',
   'addRRect',
+  'addPath',
+  'transform',
   'build',
   'detach',
 ]);
