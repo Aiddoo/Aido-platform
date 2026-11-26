@@ -10,6 +10,7 @@ import {
   respondByPath,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router, useIsFocused } from 'expo-router';
 
@@ -533,6 +534,27 @@ describe('SignUpRoute', () => {
       // Then
       expect(await screen.findByText(CODE_SENT_TO)).toBeTruthy();
       expect(httpClient.post).toHaveBeenCalledTimes(1);
+    });
+
+    describe('가입 뒤', () => {
+      setupFakeTimersPerTest();
+
+      it('가입하면 인증 단계로 바뀌어 연타 가드가 지난 뒤에도 시작하기를 다시 누를 수 없다', async () => {
+        // Given
+        httpClient.post.mockResolvedValue(ok(createRegisterDto()));
+        await renderSignUp(httpClient);
+        await openTermsSheet();
+        await agreeAll();
+
+        // When
+        await fireEvent.press(screen.getByRole('button', { name: START }));
+        await act(() => jest.advanceTimersByTimeAsync(1_000));
+
+        // Then
+        expect(screen.getByText(CODE_SENT_TO)).toBeTruthy();
+        expect(screen.queryByRole('button', { name: START })).toBeNull();
+        expect(httpClient.post).toHaveBeenCalledTimes(1);
+      });
     });
   });
 });

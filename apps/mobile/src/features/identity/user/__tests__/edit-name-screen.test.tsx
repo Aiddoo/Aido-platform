@@ -12,6 +12,7 @@ import {
   createApiError,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router, useNavigation } from 'expo-router';
 
@@ -289,5 +290,28 @@ describe('EditNameRoute', () => {
 
     // Then
     expect(jest.mocked(useNavigation).mock.calls).toHaveLength(renderCountBeforeTyping);
+  });
+
+  describe('저장 뒤 떠나는 동안', () => {
+    setupFakeTimersPerTest();
+
+    it('저장해 화면이 내려가는 동안 다시 눌러도 이름은 한 번만 보낸다', async () => {
+      // Given
+      httpClient.patch.mockResolvedValue(ok(createUpdateProfileDto({ name: '새이름' })));
+      await renderEditName(httpClient);
+      await typeName('새이름');
+      await waitFor(() => expect(screen.getByTestId('edit-name-submit')).toBeEnabled());
+      await fireEvent.press(screen.getByTestId('edit-name-submit'));
+      // 연타 가드(600ms)가 지난 뒤다. 화면은 뒤로 가는 전환이 끝나야 내려가 버튼이 아직 보인다
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+      expect(router.back).toHaveBeenCalledTimes(1);
+
+      // When
+      await fireEvent.press(screen.getByTestId('edit-name-submit'));
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+
+      // Then
+      expect(httpClient.patch).toHaveBeenCalledTimes(1);
+    });
   });
 });
