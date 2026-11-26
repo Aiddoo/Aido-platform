@@ -93,6 +93,7 @@ import {
 import { type ReactNode, Suspense, useDeferredValue, useState } from 'react';
 import {
   Controller,
+  FormState,
   type UseFormReturn,
   useController,
   useForm,
@@ -219,7 +220,12 @@ function TodoImportSetup() {
           <OptionsStep
             form={form}
             progress={<StepDots step={step} firstStep={firstStep} />}
-            onStarted={leaveToImport}
+            onStarted={(importId) => {
+              // 시작을 기다리는 사이 떠났으면 돌아와 다시 누를 수 있게 고른 값은 두고 제출 상태만 푼다
+              if (!leaveToImport(importId)) {
+                form.reset(form.getValues(), { keepDefaultValues: true });
+              }
+            }}
             onTargetsRejected={() => history.backTo('categories')}
           />
         )}
@@ -660,13 +666,19 @@ function OptionsStep({ form, progress, onStarted, onTargetsRejected }: OptionsSt
               {t('options.disclosure')}
             </WordWrapText>
           </StyledSafeAreaView>
-          <KeyboardAdaptiveButton
-            isLoading={startImport.isPending}
-            isDisabled={accountId == null}
-            onPress={handleImportPress}
-          >
-            {t('options.import')}
-          </KeyboardAdaptiveButton>
+          <FormState
+            control={form.control}
+            render={({ isSubmitSuccessful }) => (
+              <KeyboardAdaptiveButton
+                // 시작하면 진행 화면으로 바뀌는 동안에도 같은 값이 남는다. 그동안 다시 시작하지 않는다
+                isLoading={startImport.isPending || isSubmitSuccessful}
+                isDisabled={accountId == null}
+                onPress={handleImportPress}
+              >
+                {t('options.import')}
+              </KeyboardAdaptiveButton>
+            )}
+          />
         </VStack>
       }
     >
@@ -733,7 +745,8 @@ function FieldTitle({ children }: FieldTitleProps) {
 interface StepBackNavigation {
   isPastFirstStep: boolean;
   isSwipeBackEnabled: boolean;
-  leaveToImport: (importId: string) => void;
+  /** 진행 화면으로 바꿨으면 true, 기다리는 사이 떠나 바꾸지 않았으면 false다 */
+  leaveToImport: (importId: string) => boolean;
 }
 
 function useStepBackNavigation(stepper: Stepper<TodoImportStepContexts>): StepBackNavigation {
@@ -760,11 +773,12 @@ function useStepBackNavigation(stepper: Stepper<TodoImportStepContexts>): StepBa
   // 시작을 기다리는 사이 떠났으면 보던 화면 위로 끌고 가지 않는다. 진행 중인 가져오기는 메뉴 행이 알린다
   const leaveToImport = (importId: string) => {
     if (!navigation.isFocused()) {
-      return;
+      return false;
     }
     setIsLeaving(true);
     allowRemove();
     router.replace({ pathname: '/todo-import/[importId]', params: { importId } });
+    return true;
   };
 
   return { isPastFirstStep, isSwipeBackEnabled: isCompact || !isPastFirstStep, leaveToImport };

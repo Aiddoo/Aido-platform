@@ -19,7 +19,7 @@ import {
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
-import { Redirect, router, usePreventRemove } from 'expo-router';
+import { Redirect, router, useNavigation, usePreventRemove } from 'expo-router';
 
 import TodoImportSetupRoute from '../../../../../app/(app)/(tabs)/(me,memos,todos)/todo-import';
 import { invalidateActiveTodoImport } from '../queries/todo-import-cache';
@@ -427,6 +427,59 @@ describe('TodoImportSetupRoute', () => {
       expect(findStartRequests(httpClient)).toHaveLength(1);
       await act(async () => pending.settle());
       await waitFor(() => expect(router.replace).toHaveBeenCalledTimes(1));
+    });
+
+    it('시작해 진행 화면으로 바뀌는 동안 다시 눌러도 시작 요청은 한 번이다', async () => {
+      // Given
+      const { httpClient } = await renderSetup();
+      await goToCategories();
+      await goToOptions();
+      // 잠긴 버튼은 이름 대신 로딩을 보여 이름으로 다시 찾지 못한다. 처음 찾은 버튼을 다시 누른다
+      const importButton = screen.getByRole('button', { name: '가져오기' });
+      await fireEvent.press(importButton);
+      await waitFor(() => expect(router.replace).toHaveBeenCalledTimes(1));
+      // 연타 가드(600ms)가 지난 뒤다. 화면은 바꾸는 전환이 끝나야 내려가 버튼이 아직 보인다
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+
+      // When
+      await fireEvent.press(importButton);
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+
+      // Then
+      expect(findStartRequests(httpClient)).toHaveLength(1);
+    });
+
+    it('시작을 기다리는 사이 떠났다가 시작된 뒤 돌아오면 가져오기를 다시 누를 수 있다', async () => {
+      // Given
+      let isFocused = true;
+      jest.mocked(useNavigation).mockImplementation(() => ({
+        isFocused: () => isFocused,
+        getParent: () => undefined,
+        addListener: () => () => undefined,
+      }));
+      const pending = createPendingResponse(ok({ todoImport: createTodoImportDto() }));
+      let startCount = 0;
+      const { httpClient } = await renderSetup({
+        startImport: async () => {
+          startCount += 1;
+          return startCount === 1 ? pending.response : ok({ todoImport: createTodoImportDto() });
+        },
+      });
+      await goToCategories();
+      await goToOptions();
+      await pressImport();
+      isFocused = false;
+      await act(async () => pending.settle());
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+      expect(router.replace).not.toHaveBeenCalled();
+      isFocused = true;
+
+      // When
+      await pressImport();
+
+      // Then
+      await waitFor(() => expect(router.replace).toHaveBeenCalledTimes(1));
+      expect(findStartRequests(httpClient)).toHaveLength(2);
     });
   });
 
