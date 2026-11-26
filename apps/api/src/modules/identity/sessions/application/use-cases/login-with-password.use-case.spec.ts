@@ -139,17 +139,15 @@ describe("LoginWithPassword — 이메일 로그인과 계정 보호", () => {
     ]);
   });
 
-  it.each(["missing", "social", "wrong"] as const)(
+  it.each([
+    ["missing", "USER_NOT_FOUND"],
+    ["social", "NO_CREDENTIAL_ACCOUNT"],
+    ["wrong", "INVALID_PASSWORD"],
+  ] as const)(
     "%s 자격 증명 실패의 사유를 저장하고 세션을 발급하지 않는다",
-    async (reason) => {
+    async (reason, expected) => {
       // Given
       const fixture = given({ empty: reason === "missing", socialOnly: reason === "social" });
-      const expected =
-        reason === "missing"
-          ? "USER_NOT_FOUND"
-          : reason === "social"
-            ? "NO_CREDENTIAL_ACCOUNT"
-            : "INVALID_PASSWORD";
 
       // When
       const pending = fixture.useCase.execute({

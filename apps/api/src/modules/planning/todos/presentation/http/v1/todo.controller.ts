@@ -12,6 +12,7 @@ import {
   Query,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
+import { match, P } from "ts-pattern";
 
 import {
   CurrentUser,
@@ -290,14 +291,12 @@ export class TodoController {
         title: dto.title,
         categoryId: dto.categoryId,
         startDate: dto.startDate == null ? undefined : Temporal.PlainDate.from(dto.startDate),
-        endDate:
-          // oxlint-disable-next-line aido/no-strict-nullish -- PATCH라 undefined는 유지, null은 종료일 지우기다
-          dto.endDate === undefined
-            ? undefined
-            : // oxlint-disable-next-line aido/no-strict-nullish -- PATCH라 undefined는 유지, null은 종료일 지우기다
-              dto.endDate === null
-              ? null
-              : Temporal.PlainDate.from(dto.endDate),
+        // PATCH라 undefined는 유지, null은 종료일 지우기다
+        endDate: match(dto.endDate)
+          .with(undefined, () => undefined)
+          .with(null, () => null)
+          .with(P.string, (endDate) => Temporal.PlainDate.from(endDate))
+          .exhaustive(),
         scheduledTime: dto.scheduledTime,
         isAllDay: dto.isAllDay,
         visibility: dto.visibility,

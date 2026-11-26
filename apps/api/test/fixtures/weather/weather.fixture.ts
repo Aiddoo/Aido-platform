@@ -42,9 +42,15 @@ export function createWeatherForecastFixture(
     temperatureMax: 30,
     humidity: 55,
     windSpeed: 4,
-    hourlyForecasts: [0, 9, 17].map((hour) => ({
+    hourlyForecasts: (
+      [
+        [0, 1],
+        [9, 25],
+        [17, 15],
+      ] as const
+    ).map(([hour, temperature]) => ({
       hour,
-      temperature: hour === 9 ? 25 : hour === 0 ? 1 : 15,
+      temperature,
       skyCondition: "CLEAR",
       precipitationProbability: 0,
       precipitationAmount: 0,

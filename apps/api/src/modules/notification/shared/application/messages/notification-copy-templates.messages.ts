@@ -97,11 +97,47 @@ function todoWeatherCopy({
 /** 받는 사람 달력으로 센 남은 일수(0 = 오늘) */
 function remainingDays(context: NotificationCopyContext, days: number): string {
   const phrases = context.parts.remainingDays;
-  return days <= 0
-    ? phrases.today
-    : days === 1
-      ? phrases.tomorrow
-      : context.text(phrases.later, { days });
+  if (days <= 0) {
+    return phrases.today;
+  }
+  if (days === 1) {
+    return phrases.tomorrow;
+  }
+  return context.text(phrases.later, { days });
+}
+
+function trialEndingCancelledTitle(
+  variant: {
+    readonly title: NotificationCopyText;
+    readonly titleToday: NotificationCopyText;
+    readonly titleTomorrow: NotificationCopyText;
+  },
+  days: number,
+): NotificationCopyText {
+  if (days <= 0) {
+    return variant.titleToday;
+  }
+  if (days === 1) {
+    return variant.titleTomorrow;
+  }
+  return variant.title;
+}
+
+function inviteRewardedBody(
+  variant: {
+    readonly bodyBoth: NotificationCopyText;
+    readonly bodyPremium: NotificationCopyText;
+    readonly bodyFriends: NotificationCopyText;
+  },
+  { premiumDays, friendSlots }: { readonly premiumDays: number; readonly friendSlots: number },
+): NotificationCopyText {
+  if (premiumDays > 0 && friendSlots > 0) {
+    return variant.bodyBoth;
+  }
+  if (premiumDays > 0) {
+    return variant.bodyPremium;
+  }
+  return variant.bodyFriends;
 }
 
 const billingFacts = z.object({ days: z.number(), at: instantFact, timezone: z.string() });
@@ -486,12 +522,7 @@ export const SOCIAL_COPY = {
         premium: context.text(variant.premium, { count: premiumDays }),
         friends: context.text(variant.friends, { count: friendSlots }),
       };
-      const body =
-        premiumDays > 0 && friendSlots > 0
-          ? variant.bodyBoth
-          : premiumDays > 0
-            ? variant.bodyPremium
-            : variant.bodyFriends;
+      const body = inviteRewardedBody(variant, { premiumDays, friendSlots });
       return context.copy({ title: variant.title, body }, values);
     },
   }),
@@ -646,12 +677,7 @@ export const SYSTEM_COPY = {
     variants: (catalog) => catalog.system.PREMIUM_TRIAL_ENDING_CANCELLED,
     facts: billingFacts,
     render: (variant, facts, context) => {
-      const title =
-        facts.days <= 0
-          ? variant.titleToday
-          : facts.days === 1
-            ? variant.titleTomorrow
-            : variant.title;
+      const title = trialEndingCancelledTitle(variant, facts.days);
       return context.copy(
         { title, body: variant.body },
         { days: facts.days, date: billingDate(context, facts) },
