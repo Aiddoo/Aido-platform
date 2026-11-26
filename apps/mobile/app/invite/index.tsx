@@ -27,6 +27,9 @@ import { onlineManager, useMutation } from '@tanstack/react-query';
 import { useNavigation, useRouter } from 'expo-router';
 import { Controller, FormState, useForm } from 'react-hook-form';
 
+/** 오프라인이라 보내 보지 않은 제출. 안내는 이미 했다 */
+const NOT_CHECKED_OFFLINE = new Error('invite code: not checked while offline');
+
 export default function InviteCodeEntryRoute() {
   const { t } = useTranslation('invite');
   const [{ openedAt }] = useInviteParams();
@@ -44,17 +47,19 @@ export default function InviteCodeEntryRoute() {
 
   useTrackInviteLinkOpened();
 
-  // 형식이 틀리면 RHF가 코드 칸(field.ref)에 포커스해 키보드를 그대로 두고 바로 고쳐 쓰게 한다
+  // 형식이 틀리면 RHF가 코드 칸(field.ref)에 포커스해 키보드를 그대로 두고 바로 고쳐 쓰게 한다.
+  // 확인하지 못한 제출은 던진다. RHF가 실패로 알아야 isSubmitSuccessful이 꺼진 채 남아 다시 누를 수 있다
   const saveInviteCode = form.handleSubmit(async ({ inviteCode }) => {
     // 오프라인이면 보내 보지 않고 입력한 코드를 둔 채 초대 화면의 연결 안내로 바로 알린다
     if (!onlineManager.isOnline()) {
       toast.warning(t('errors.offline'));
-      return;
+      throw NOT_CHECKED_OFFLINE;
     }
     // 미리보기를 미리 받아 두면 초대 카드가 다시 부르지 않고, 없는 코드는 이 화면에서 바로 알린다
     await checkPreview.mutateAsync(inviteCode);
-    // 조회하는 사이 화면을 떠났으면 지금 보이는 다른 화면을 바꾸지 않는다
+    // 조회하는 사이 화면을 떠났으면 지금 보이는 다른 화면을 바꾸지 않고, 돌아와 다시 확인할 수 있게 코드는 둔 채 폼을 연다
     if (!navigation.isFocused()) {
+      form.reset({ inviteCode });
       return;
     }
     // 시스템 링크로 이 화면에 왔으면 착지할 때 이미 한 번 셌다. 앱 안에서 연 코드 입력만 여기서 센다
@@ -84,12 +89,13 @@ export default function InviteCodeEntryRoute() {
         footer={
           <FormState
             control={form.control}
-            render={({ errors, isSubmitting, isValid }) => (
+            render={({ errors, isSubmitting, isSubmitSuccessful, isValid }) => (
               <KeyboardAdaptiveButton
                 testID="invite-code-submit"
                 onPress={handleSavePress}
                 isDisabled={!isValid}
-                isLoading={isSubmitting}
+                // 확인하면 초대 카드로 바뀌는 동안에도 같은 코드가 남는다. 그동안 다시 확인하지 않는다
+                isLoading={isSubmitting || isSubmitSuccessful}
               >
                 {errors.inviteCode?.type === INVITE_CODE_SERVER_ERROR_TYPE
                   ? t('codeEntry.retry')
@@ -117,7 +123,7 @@ export default function InviteCodeEntryRoute() {
               render={({
                 field: { ref, value, onChange },
                 fieldState: { error },
-                formState: { isSubmitting, submitCount },
+                formState: { isSubmitting, isSubmitSuccessful, submitCount },
               }) => (
                 <InviteCodeInput
                   ref={ref}
@@ -131,7 +137,7 @@ export default function InviteCodeEntryRoute() {
                     // 틀렸을 때 바로 고쳐 쓰도록 제출해도 키보드를 내리지 않는다
                     submitBehavior: 'submit',
                     onSubmitEditing: () => {
-                      if (!isSubmitting) {
+                      if (!isSubmitting && !isSubmitSuccessful) {
                         handleSavePress();
                       }
                     },

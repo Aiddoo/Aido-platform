@@ -15,6 +15,7 @@ import {
 } from '@src/testing/core';
 import { pressTwiceInSameFrame } from '@src/testing/press';
 import { renderScreen } from '@src/testing/render';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { onlineManager } from '@tanstack/react-query';
 import { act, fireEvent, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { noop } from 'es-toolkit';
@@ -378,5 +379,85 @@ describe('InviteCodeEntryRoute', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: '확인' })).toBeEnabled());
     expect(router.replace).not.toHaveBeenCalled();
     expect(analytics.trackEvent).not.toHaveBeenCalledWith('invite_link_opened', expect.anything());
+  });
+
+  describe('확인 뒤 떠나는 동안', () => {
+    setupFakeTimersPerTest();
+
+    it('확인해 초대 카드로 바뀌는 동안 다시 눌러도 조회는 한 번이다', async () => {
+      // Given
+      const httpClient = createHttpClientStub();
+      httpClient.get.mockResolvedValue(ok(createInvitePreviewDto()));
+      await renderInviteCodeEntry(httpClient);
+      await fireEvent.changeText(screen.getByLabelText('초대 코드'), CODE);
+      await waitFor(() => expect(screen.getByTestId('invite-code-submit')).toBeEnabled());
+      await fireEvent.press(screen.getByTestId('invite-code-submit'));
+      // 연타 가드(600ms)가 지난 뒤다. 화면은 바꾸는 전환이 끝나야 내려가 버튼이 아직 보인다
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+      expect(router.replace).toHaveBeenCalledTimes(1);
+
+      // When
+      await fireEvent.press(screen.getByTestId('invite-code-submit'));
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+
+      // Then
+      expect(httpClient.get).toHaveBeenCalledTimes(1);
+      expect(router.replace).toHaveBeenCalledTimes(1);
+    });
+
+    it('확인하는 사이 떠났다가 조회가 끝난 뒤 돌아오면 코드가 남아 있고 다시 확인할 수 있다', async () => {
+      // Given
+      let isFocused = true;
+      jest.mocked(useNavigation).mockImplementation(() => ({
+        isFocused: () => isFocused,
+        getParent: () => undefined,
+        addListener: () => () => undefined,
+      }));
+      const httpClient = createHttpClientStub();
+      const pending = createPendingResponse(ok(createInvitePreviewDto()));
+      httpClient.get
+        .mockReturnValueOnce(pending.response)
+        .mockResolvedValue(ok(createInvitePreviewDto()));
+      await renderInviteCodeEntry(httpClient);
+      await fireEvent.changeText(screen.getByLabelText('초대 코드'), CODE);
+      await waitFor(() => expect(screen.getByTestId('invite-code-submit')).toBeEnabled());
+      await fireEvent.press(screen.getByTestId('invite-code-submit'));
+      isFocused = false;
+      await act(async () => {
+        pending.settle();
+      });
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+      isFocused = true;
+
+      // When
+      await fireEvent.press(screen.getByTestId('invite-code-submit'));
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+
+      // Then
+      expect(screen.getByLabelText('초대 코드')).toHaveDisplayValue(CODE);
+      expect(httpClient.get).toHaveBeenCalledTimes(2);
+      expect(router.replace).toHaveBeenCalledTimes(1);
+    });
+
+    it('오프라인이라 확인하지 못하면 알린 뒤 다시 확인할 수 있다', async () => {
+      // Given
+      onlineManager.setOnline(false);
+      const httpClient = createHttpClientStub();
+      httpClient.get.mockResolvedValue(ok(createInvitePreviewDto()));
+      await renderInviteCodeEntry(httpClient);
+      await fireEvent.changeText(screen.getByLabelText('초대 코드'), CODE);
+      await waitFor(() => expect(screen.getByTestId('invite-code-submit')).toBeEnabled());
+      await fireEvent.press(screen.getByTestId('invite-code-submit'));
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+      onlineManager.setOnline(true);
+
+      // When
+      await fireEvent.press(screen.getByTestId('invite-code-submit'));
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+
+      // Then
+      expect(httpClient.get).toHaveBeenCalledTimes(1);
+      expect(router.replace).toHaveBeenCalledTimes(1);
+    });
   });
 });
