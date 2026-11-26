@@ -1,11 +1,11 @@
 import NotificationsUnreadFill from '@assets/icons/material/notifications_unread_fill.xml';
 import Notifications from '@expo/material-symbols/notifications.xml';
+import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { useQuery } from '@tanstack/react-query';
 import { Stack, useRouter } from 'expo-router';
 import { match } from 'ts-pattern';
-import { useResolveClassNames } from 'uniwind';
 
 import { useGetUnreadCountQueryOptions } from '../queries/notification.queries';
 
@@ -19,8 +19,8 @@ export function NotificationBellToolbar() {
   const router = useRouter();
   const navigate = useSingleTap(router.navigate);
   const { t } = useTranslation('notification');
-  const { color: errorTint } = useResolveClassNames('text-danger');
-  const { color: unreadTint } = useResolveClassNames('text-main');
+  const errorTint = useResolvedColor('text-danger');
+  const unreadTint = useResolvedColor('text-main');
   const {
     data: unreadCount,
     isPending,
