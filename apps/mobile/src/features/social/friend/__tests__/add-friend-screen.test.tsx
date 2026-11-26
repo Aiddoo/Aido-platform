@@ -14,6 +14,7 @@ import {
 } from '@src/testing/core';
 import { pressTwiceInSameFrame } from '@src/testing/press';
 import { renderScreen } from '@src/testing/render';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router, useNavigation } from 'expo-router';
 
@@ -21,6 +22,7 @@ import AddFriendScreen from '../../../../../app/(app)/(tabs)/(me,memos,todos)/fr
 import { createFriendApiError, createSendFriendRequestDto } from './friend.fixtures';
 
 const USER_TAG = 'ABCD1234';
+const OTHER_USER_TAG = 'WXYZ5678';
 
 function createAddFriendDi({ isInviteAvailable = true }: { isInviteAvailable?: boolean } = {}) {
   const httpClient = createHttpClientStub();
@@ -338,5 +340,64 @@ describe('AddFriendScreen', () => {
     expect(router.push).toHaveBeenCalledWith('/friends/invite');
     expect(screen.getByTestId('friend-tag-input')).toHaveDisplayValue(USER_TAG);
     expect(router.back).not.toHaveBeenCalled();
+  });
+
+  describe('요청 뒤 떠나는 동안', () => {
+    setupFakeTimersPerTest();
+
+    it('요청을 보내 화면이 내려가는 동안 다시 눌러도 요청은 한 번이다', async () => {
+      // Given
+      const setup = createAddFriendDi();
+      setup.httpClient.post.mockResolvedValue(ok(createSendFriendRequestDto()));
+      await renderAddFriend(setup);
+      await typeTag(USER_TAG);
+      await waitFor(() => expect(screen.getByTestId('friend-tag-submit')).toBeEnabled());
+      await fireEvent.press(screen.getByTestId('friend-tag-submit'));
+      // 연타 가드(600ms)가 지난 뒤다. 화면은 뒤로 가는 전환이 끝나야 내려가 버튼이 아직 보인다
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+      expect(router.back).toHaveBeenCalledTimes(1);
+
+      // When
+      await fireEvent.press(screen.getByTestId('friend-tag-submit'));
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+
+      // Then
+      expect(setup.httpClient.post).toHaveBeenCalledTimes(1);
+    });
+
+    it('보내는 동안 떠났다가 요청이 끝난 뒤 돌아오면 새로 쓴 태그를 보낼 수 있다', async () => {
+      // Given
+      let isFocused = true;
+      jest.mocked(useNavigation).mockImplementation(() => ({
+        isFocused: () => isFocused,
+        getParent: () => undefined,
+        addListener: () => () => undefined,
+      }));
+      const setup = createAddFriendDi();
+      const pending = createPendingResponse(ok(createSendFriendRequestDto()));
+      setup.httpClient.post
+        .mockReturnValueOnce(pending.response)
+        .mockResolvedValue(ok(createSendFriendRequestDto()));
+      await renderAddFriend(setup);
+      await typeTag(USER_TAG);
+      await waitFor(() => expect(screen.getByTestId('friend-tag-submit')).toBeEnabled());
+      await fireEvent.press(screen.getByTestId('friend-tag-submit'));
+      isFocused = false;
+      await act(async () => {
+        pending.settle();
+      });
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+      isFocused = true;
+
+      // When
+      await typeTag(OTHER_USER_TAG);
+      await act(() => jest.advanceTimersByTimeAsync(0));
+      await fireEvent.press(screen.getByTestId('friend-tag-submit'));
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+
+      // Then
+      expect(setup.httpClient.post).toHaveBeenCalledTimes(2);
+      expect(setup.httpClient.post).toHaveBeenLastCalledWith(`v1/follows/${OTHER_USER_TAG}`);
+    });
   });
 });

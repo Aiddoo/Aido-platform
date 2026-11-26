@@ -65,11 +65,12 @@ export default function AddFriendScreen() {
         footer={
           <FormState
             control={form.control}
-            render={({ isSubmitting, isValid }) => (
+            render={({ isSubmitting, isSubmitSuccessful, isValid }) => (
               <KeyboardAdaptiveButton
                 onPress={handleSavePress}
                 isDisabled={!isValid}
-                isLoading={isSubmitting}
+                // 보내면 화면이 내려가는 동안에도 같은 태그가 남는다. 그동안 다시 보내지 않는다
+                isLoading={isSubmitting || isSubmitSuccessful}
                 testID="friend-tag-submit"
               >
                 {t('add.submit')}
@@ -95,7 +96,7 @@ export default function AddFriendScreen() {
             render={({
               field: { onChange, value, ref },
               fieldState: { error },
-              formState: { isSubmitting, isValid },
+              formState: { isSubmitting, isSubmitSuccessful, isValid },
             }) => (
               <Input
                 ref={ref}
@@ -117,7 +118,7 @@ export default function AddFriendScreen() {
                   byType: { too_small: 'userTag.length', too_big: 'userTag.length' },
                 })}
                 onSubmitEditing={() => {
-                  if (isValid && !isSubmitting) {
+                  if (isValid && !isSubmitting && !isSubmitSuccessful) {
                     handleSavePress();
                   }
                 }}
