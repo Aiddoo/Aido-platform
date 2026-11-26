@@ -31,7 +31,7 @@ import { useTodoImportId } from '../hooks/use-todo-import-id';
 import { useCancelTodoImportMutationOptions } from '../queries/todo-import.mutations';
 import { useGetTodoImportQueryOptions } from '../queries/todo-import.queries';
 import { todoImportSessionStoredValue } from '../schemas/todo-import-session-storage.schema';
-import { type StageStatus, toProgressView } from '../utils/todo-import-progress.view-model';
+import { type StageStatus, getProgressView } from '../utils/todo-import-progress.view-model';
 import { TodoImportFailureAlert } from './todo-import-failure-alert';
 
 // 막대의 접근성 값이 백분율로 읽히게 0~100으로 그린다
@@ -59,7 +59,7 @@ export function TodoImportProgress() {
   const cancelImport = useMutation(useCancelTodoImportMutationOptions({ importId, accountId }));
   const appSettings = useOpenAppSettings();
 
-  const view = toProgressView(todoImport, snapshot, {
+  const view = getProgressView(todoImport, snapshot, {
     hasStoredSession: storedSession?.importId === todoImport.id,
     isOnline,
   });

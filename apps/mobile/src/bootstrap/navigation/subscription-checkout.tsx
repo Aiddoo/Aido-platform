@@ -23,7 +23,7 @@ import {
 } from '@src/features/billing/subscription/queries/entitlement.queries';
 import { useGetOfferingsQueryOptions } from '@src/features/billing/subscription/queries/subscription.queries';
 import type { SubscriptionView } from '@src/features/billing/subscription/schemas/subscription-params.schema';
-import { toSubscriptionLoadFailure } from '@src/features/billing/subscription/utils/subscription-failure.view-model';
+import { getSubscriptionLoadFailure } from '@src/features/billing/subscription/utils/subscription-failure.view-model';
 import {
   selectIsNeverSubscribed,
   useGetMeQueryOptions,
@@ -360,7 +360,7 @@ SubscriptionCheckout.Error = function ErrorFallback({ error, reset }: QueryError
     <StyledSafeAreaView edges={['left', 'right']} className="flex-1">
       <ReadableContent className="flex-1 px-6">
         <SubscriptionResult.Failure
-          failure={toSubscriptionLoadFailure('receipt', error)}
+          failure={getSubscriptionLoadFailure('receipt', error)}
           onRetry={reset}
         />
       </ReadableContent>

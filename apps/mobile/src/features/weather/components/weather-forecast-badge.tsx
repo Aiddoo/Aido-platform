@@ -15,7 +15,7 @@ import { useTemperatureUnit } from '../hooks/use-temperature-unit';
 import { useWeatherLocation } from '../hooks/use-weather-location';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import { toWeatherHref } from '../schemas/weather-entry-params.schema';
-import { formatDegrees, toDisplayTemperature } from '../utils/weather-temperature.view-model';
+import { formatDegrees, getDisplayTemperature } from '../utils/weather-temperature.view-model';
 import { WeatherIcon } from './weather-icon';
 
 // 날씨 카드가 아니라 피드 머리 도구 막대에 있어 앱 기본 비율(useFontScaledSize)로 키운다
@@ -58,7 +58,7 @@ WeatherForecastBadge.Contents = function Contents({
   const fontScaledSize = useFontScaledSize();
   const openWeather = useOpenBadgeWeather();
   const unit = useTemperatureUnit();
-  const temperature = toDisplayTemperature(current.temperature, unit);
+  const temperature = getDisplayTemperature(current.temperature, unit);
 
   return (
     <PressableFeedback

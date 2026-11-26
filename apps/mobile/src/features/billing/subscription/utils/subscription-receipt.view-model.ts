@@ -317,12 +317,12 @@ function toRewardReceipt(
 }
 
 /** 스토어 구독(체험 포함)의 결제일은 늘 연도까지, 보상 기간은 올해가 아닐 때만 연도를 붙인다 */
-export function toReceiptDateLabel(variant: SubscriptionReceiptViewModel['variant']) {
+export function getReceiptDateLabel(variant: SubscriptionReceiptViewModel['variant']) {
   return variant === 'paid' || variant === 'trial' ? ('fullDate' as const) : ('yearAware' as const);
 }
 
 /** 출처·기간·자동 갱신·이어서 받을 보상은 서버 값을 쓰고 여기서는 기기 시간대 기준 남은 일수와 보일 행만 고른다 */
-export function toSubscriptionReceiptViewModel(
+export function getSubscriptionReceiptViewModel(
   user: User,
   context: SubscriptionReceiptContext,
 ): SubscriptionReceiptViewModel {

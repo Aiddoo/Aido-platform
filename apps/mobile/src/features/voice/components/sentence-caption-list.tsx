@@ -9,7 +9,7 @@ import { match } from 'ts-pattern';
 
 import type { VoiceNoteSentence } from '../domains/voice-note.model';
 import { formatMediaTime } from '../utils/media-time.view-model';
-import { toCaptionTextParts } from '../utils/voice-caption.view-model';
+import { getCaptionTextParts } from '../utils/voice-caption.view-model';
 
 const AUTOSCROLL_THRESHOLD = 0.2;
 
@@ -152,7 +152,7 @@ SentenceCaptionList.Card = function Card({
           {time}
         </Text>
         <WordWrapText size="b3" className="flex-1">
-          {toCaptionTextParts(sentence.text, sentence.lowConfidenceWords).map(
+          {getCaptionTextParts(sentence.text, sentence.lowConfidenceWords).map(
             ({ text, isLowConfidence }) => ({
               text,
               isUnderlined: isLowConfidence,

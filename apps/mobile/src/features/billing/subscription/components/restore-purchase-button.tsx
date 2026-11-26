@@ -7,7 +7,7 @@ import type { ComponentProps } from 'react';
 
 import { useOpenSubscriptionInquiry } from '../hooks/use-open-subscription-inquiry';
 import { useRestoreMutationOptions } from '../queries/subscription.mutations';
-import { toSubscriptionActionFailure } from '../utils/subscription-failure.view-model';
+import { getSubscriptionActionFailure } from '../utils/subscription-failure.view-model';
 
 type RestorePurchaseButtonProps = Omit<
   ComponentProps<typeof TextButton>,
@@ -56,7 +56,7 @@ function useOfferRestoreInquiry() {
   const openInquiry = useOpenSubscriptionInquiry();
 
   return (error: unknown) => {
-    const failure = toSubscriptionActionFailure('restore', error);
+    const failure = getSubscriptionActionFailure('restore', error);
     if (failure.type !== 'contactSupport') {
       return;
     }

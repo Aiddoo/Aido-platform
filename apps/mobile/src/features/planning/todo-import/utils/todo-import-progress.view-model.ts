@@ -32,7 +32,7 @@ interface ProgressContext {
   isOnline: boolean;
 }
 
-export function toProgressView(
+export function getProgressView(
   todoImport: TodoImport,
   snapshot: TodoImportUploadSnapshot,
   { hasStoredSession, isOnline }: ProgressContext,

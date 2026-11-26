@@ -49,7 +49,7 @@ import { getWeatherConditionLabelKey } from '../utils/weather-labels.view-model'
 import {
   formatDegrees,
   formatTemperature,
-  toDisplayTemperature,
+  getDisplayTemperature,
 } from '../utils/weather-temperature.view-model';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';
@@ -184,8 +184,8 @@ DailyForecast.Item = memo(function Item({
 }: DailyForecastItemProps) {
   const { t } = useTranslation('weather');
   const unit = useTemperatureUnit();
-  const high = toDisplayTemperature(day.temperatureMax, unit);
-  const low = toDisplayTemperature(day.temperatureMin, unit);
+  const high = getDisplayTemperature(day.temperatureMax, unit);
+  const low = getDisplayTemperature(day.temperatureMin, unit);
   const width = (column: keyof typeof COLUMN_WIDTH) => COLUMN_WIDTH[column] * format.columnScale;
   const description = t('daily.item', {
     day: label,

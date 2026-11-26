@@ -35,9 +35,9 @@ import { getCompassShortLabelKey } from '../utils/weather-labels.view-model';
 import {
   formatDegrees,
   formatTemperature,
-  toDisplayTemperature,
+  getDisplayTemperature,
 } from '../utils/weather-temperature.view-model';
-import { toVisibilityKilometers } from '../utils/weather-visibility.view-model';
+import { getVisibilityKilometers } from '../utils/weather-visibility.view-model';
 import { WeatherCard } from './weather-card';
 import { WeatherCompass, WeatherPressureGauge } from './weather-dial';
 import { WeatherIcon, type WeatherCardGlyph } from './weather-icon';
@@ -154,8 +154,8 @@ export function WeatherDetailGrid() {
   const { current, nextDayPrecipitation } = weather;
   const feelsLike = CurrentWeatherPolicy.getFeelsLikeComparison(current);
   const feelsDifference = Math.abs(
-    toDisplayTemperature(current.apparentTemperature, unit) -
-      toDisplayTemperature(current.temperature, unit),
+    getDisplayTemperature(current.apparentTemperature, unit) -
+      getDisplayTemperature(current.temperature, unit),
   );
   const sunscreen = weather.sunscreenWindow;
   const direction = CurrentWeatherPolicy.findCompassDirection(current);
@@ -277,7 +277,7 @@ export function WeatherDetailGrid() {
             icon="eye"
             title={t('details.visibility')}
             value={t('details.kilometerValue', {
-              value: toVisibilityKilometers(current.visibility),
+              value: getVisibilityKilometers(current.visibility),
             })}
             subtitle={t(VISIBILITY_LEVEL_LABEL_KEYS[visibilityLevel])}
             note={

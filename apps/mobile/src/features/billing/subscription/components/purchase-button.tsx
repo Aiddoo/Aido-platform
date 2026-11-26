@@ -17,7 +17,7 @@ import { useOpenSubscriptionInquiry } from '../hooks/use-open-subscription-inqui
 import { useSelectedPlanId } from '../hooks/use-subscription-params';
 import { usePurchaseMutationOptions } from '../queries/subscription.mutations';
 import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
-import { toSubscriptionActionFailure } from '../utils/subscription-failure.view-model';
+import { getSubscriptionActionFailure } from '../utils/subscription-failure.view-model';
 import {
   getFreeTrialPeriodLabelKey,
   getPlanPriceLabelKey,
@@ -159,7 +159,7 @@ function useOfferPurchaseInquiry() {
   const openInquiry = useOpenSubscriptionInquiry();
 
   return (error: unknown) => {
-    const failure = toSubscriptionActionFailure('purchase', error);
+    const failure = getSubscriptionActionFailure('purchase', error);
     if (failure.type !== 'contactSupport') {
       return;
     }

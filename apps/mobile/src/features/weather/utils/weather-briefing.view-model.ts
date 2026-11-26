@@ -69,7 +69,7 @@ export interface BriefingViewPorts {
   formatChance: (percent: number) => string;
 }
 
-export function toBriefingView(briefing: WeatherBriefing, deps: BriefingViewPorts): BriefingView {
+export function getBriefingView(briefing: WeatherBriefing, deps: BriefingViewPorts): BriefingView {
   const { now, formatClock, formatTodoTime, formatHour, formatTemperature, formatChance } = deps;
   const range = (hours: HourWindow): BriefingCopy => ({
     key: 'briefing.range',

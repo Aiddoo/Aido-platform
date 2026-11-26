@@ -38,7 +38,7 @@ import {
   formatDegrees,
   formatTemperature,
   type TemperatureUnit,
-  toDisplayTemperature,
+  getDisplayTemperature,
 } from '../utils/weather-temperature.view-model';
 import { WeatherCard } from './weather-card';
 import { WeatherIcon } from './weather-icon';
@@ -271,7 +271,7 @@ function HourCell({
   context: TimelineContext;
 }) {
   const time = isNow ? t('hourly.now') : formatInstantHour(hour.startsAt, timeFormat, dateFormat);
-  const temperature = toDisplayTemperature(hour.temperature, unit);
+  const temperature = getDisplayTemperature(hour.temperature, unit);
   const isChanceVisible = LABELED_PRECIPITATION_CHANCE_MIN_PERCENT <= hour.precipitationChance;
 
   return (

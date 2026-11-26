@@ -5,8 +5,8 @@ import { type CurrentUserResponse } from '@src/features/identity/user/schemas/us
 import { type Instant, toInstant } from '@src/shared/date/instant';
 
 import {
-  toReceiptDateLabel,
-  toSubscriptionReceiptViewModel,
+  getReceiptDateLabel,
+  getSubscriptionReceiptViewModel,
 } from './subscription-receipt.view-model';
 
 const SEOUL = 'Asia/Seoul';
@@ -23,10 +23,10 @@ function createReceipt(
   me: CurrentUserResponse,
   { isStoreConfigured = true, now = NOW }: ReceiptOptions = {},
 ) {
-  return toSubscriptionReceiptViewModel(toUser(me), { isStoreConfigured, now, timezone: SEOUL });
+  return getSubscriptionReceiptViewModel(toUser(me), { isStoreConfigured, now, timezone: SEOUL });
 }
 
-describe('toSubscriptionReceiptViewModel', () => {
+describe('getSubscriptionReceiptViewModel', () => {
   describe('무료 체험', () => {
     const TRIAL_ENDS_AT = toInstant('2028-03-26T04:00:00.000Z');
 
@@ -435,7 +435,7 @@ describe('toSubscriptionReceiptViewModel', () => {
   });
 });
 
-describe('toReceiptDateLabel', () => {
+describe('getReceiptDateLabel', () => {
   it.each([
     ['paid', 'fullDate'],
     ['trial', 'fullDate'],
@@ -443,7 +443,7 @@ describe('toReceiptDateLabel', () => {
     ['admin', 'yearAware'],
   ] as const)('%s 영수증 날짜는 %s로 보인다', (variant, expected) => {
     // When
-    const label = toReceiptDateLabel(variant);
+    const label = getReceiptDateLabel(variant);
 
     // Then
     expect(label).toBe(expected);

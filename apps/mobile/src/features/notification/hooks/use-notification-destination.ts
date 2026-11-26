@@ -12,7 +12,7 @@ import { match } from 'ts-pattern';
 import type { NotificationTarget } from '../domains/notification.model';
 import {
   type NotificationDestination,
-  toNotificationDestination,
+  getNotificationDestination,
 } from '../utils/notification-destination.view-model';
 
 /** 알림이 열 곳을 지금 창 크기와 보는 사람에 맞춰 정한다. 알림함 목록과 눌린 푸시가 같은 길을 쓴다 */
@@ -21,7 +21,7 @@ export function useResolveNotificationDestination() {
   const queryClient = useQueryClient();
 
   return (target: NotificationTarget): NotificationDestination =>
-    toNotificationDestination(target, {
+    getNotificationDestination(target, {
       windowSizeClass,
       accountId: getCachedMe(queryClient)?.id,
       openedAt: toEpochMs(getNowInstant()),

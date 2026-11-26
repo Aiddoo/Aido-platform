@@ -6,7 +6,7 @@ import {
   IMPORT_ID,
 } from '../__tests__/todo-import.fixtures';
 import type { TodoImportUploadSnapshot } from '../services/todo-import-upload.session';
-import { toProgressView } from './todo-import-progress.view-model';
+import { getProgressView } from './todo-import-progress.view-model';
 
 const IDLE: TodoImportUploadSnapshot = { stage: 'idle' };
 const UPLOADING: TodoImportUploadSnapshot = {
@@ -26,7 +26,7 @@ const FAILED: TodoImportUploadSnapshot = {
   rejection: createTodoImportApiError({ code: ErrorCode.TODO_IMPORT_2306 }),
 };
 
-describe('toProgressView', () => {
+describe('getProgressView', () => {
   it.each<[string, TodoImportUploadSnapshot, boolean, boolean, boolean]>([
     ['이 기기가 보내는 중이면 멈출 수 없다', UPLOADING, false, true, false],
     ['끊겨 멈췄으면 다시 시도와 멈추기를 보인다', INTERRUPTED, false, true, true],
@@ -40,7 +40,7 @@ describe('toProgressView', () => {
     const todoImport = createTodoImport({ status: 'UPLOADING' });
 
     // When
-    const view = toProgressView(todoImport, snapshot, { hasStoredSession, isOnline });
+    const view = getProgressView(todoImport, snapshot, { hasStoredSession, isOnline });
 
     // Then
     expect(view.canStop).toBe(expectedCanStop);
@@ -55,7 +55,7 @@ describe('toProgressView', () => {
     const todoImport = createTodoImport({ status: 'UPLOADING' });
 
     // When
-    const view = toProgressView(todoImport, snapshot, { hasStoredSession: true, isOnline });
+    const view = getProgressView(todoImport, snapshot, { hasStoredSession: true, isOnline });
 
     // Then
     expect(view.pauseReason).toBe(expectedPauseReason);
@@ -66,7 +66,7 @@ describe('toProgressView', () => {
     const todoImport = createTodoImport({ status: 'RUNNING' });
 
     // When
-    const view = toProgressView(todoImport, FAILED, { hasStoredSession: false, isOnline: true });
+    const view = getProgressView(todoImport, FAILED, { hasStoredSession: false, isOnline: true });
 
     // Then
     expect(view.canStop).toBe(false);

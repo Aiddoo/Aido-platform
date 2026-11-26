@@ -47,7 +47,7 @@ type BenefitQuotaLabel =
   | { type: 'premiumOnly' }
   | { type: 'upgrade'; free: PlanValue; premium: PlanValue };
 
-export function toBenefitQuotaLabel(
+export function getBenefitQuotaLabel(
   snapshot: EntitlementSnapshot,
   feature: EntitlementFeature,
 ): BenefitQuotaLabel {

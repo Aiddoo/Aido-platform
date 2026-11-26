@@ -32,7 +32,7 @@ import { getPremiumBenefitAmounts } from '../utils/plan-benefit.view-model';
 import { getPlanNameLabelKey, getPlanPriceLabelKey } from '../utils/subscription-label.view-model';
 import {
   type SubscriptionReceiptViewModel,
-  toReceiptDateLabel,
+  getReceiptDateLabel,
 } from '../utils/subscription-receipt.view-model';
 import { ReceiptBenefitRow } from './receipt-benefit-row';
 
@@ -46,7 +46,7 @@ export function SubscriptionReceipt() {
   const planPrices = usePlanPrices({
     isEnabled: (variant === 'paid' || variant === 'trial') && receipt.details != null,
   });
-  const formatReceiptDate = useFormatReceiptDate(toReceiptDateLabel(variant));
+  const formatReceiptDate = useFormatReceiptDate(getReceiptDateLabel(variant));
 
   return (
     <ScallopedContainer>

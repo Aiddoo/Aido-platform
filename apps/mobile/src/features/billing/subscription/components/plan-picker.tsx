@@ -36,8 +36,8 @@ import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
 import { formatPlanAmount } from '../utils/plan-price.view-model';
 import { getPremiumGateAnalyticsFeature } from '../utils/subscription-analytics';
 import {
-  toSubscriptionLoadFailure,
-  toSubscriptionStoreUnavailableFailure,
+  getSubscriptionLoadFailure,
+  getSubscriptionStoreUnavailableFailure,
 } from '../utils/subscription-failure.view-model';
 import { getFreeTrialPeriodLabelKey } from '../utils/subscription-label.view-model';
 import { SubscriptionResult } from './subscription-result';
@@ -152,7 +152,7 @@ PlanPicker.Loading = function Loading() {
 PlanPicker.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
   return (
     <SubscriptionResult.Failure
-      failure={toSubscriptionLoadFailure('plans', error)}
+      failure={getSubscriptionLoadFailure('plans', error)}
       onRetry={reset}
     />
   );
@@ -284,7 +284,7 @@ function StoreUnavailableFailure({
 
   return (
     <SubscriptionResult.Failure
-      failure={toSubscriptionStoreUnavailableFailure(unavailable)}
+      failure={getSubscriptionStoreUnavailableFailure(unavailable)}
       onRetry={onRetry}
     />
   );

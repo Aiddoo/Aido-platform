@@ -52,7 +52,7 @@ import {
   type BriefingCopy,
   type BriefingRow,
   type BriefingView,
-  toBriefingView,
+  getBriefingView,
 } from '../utils/weather-briefing.view-model';
 import { formatTemperature } from '../utils/weather-temperature.view-model';
 import { WeatherCard } from './weather-card';
@@ -97,7 +97,7 @@ export function WeatherBriefing() {
   }
 
   const { timeFormat } = preference;
-  const view = toBriefingView(briefing, {
+  const view = getBriefingView(briefing, {
     now,
     formatClock: (date) => formatClockTime(date, timeFormat, dateFormat),
     formatTodoTime: (localTime) => formatHHmmTime(localTime, timeFormat, dateFormat),

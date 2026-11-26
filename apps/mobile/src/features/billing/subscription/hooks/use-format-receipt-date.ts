@@ -4,10 +4,10 @@ import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context'
 import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { match } from 'ts-pattern';
 
-import type { toReceiptDateLabel } from '../utils/subscription-receipt.view-model';
+import type { getReceiptDateLabel } from '../utils/subscription-receipt.view-model';
 
 /** 영수증과 마이 탭 요약이 같은 날짜 표기를 쓴다 */
-export function useFormatReceiptDate(dateLabel: ReturnType<typeof toReceiptDateLabel>) {
+export function useFormatReceiptDate(dateLabel: ReturnType<typeof getReceiptDateLabel>) {
   const dateFormatContext = useDateFormatContext();
   const todayKey = useTodayKey();
 

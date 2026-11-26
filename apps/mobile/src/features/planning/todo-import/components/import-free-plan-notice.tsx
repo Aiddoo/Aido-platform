@@ -10,7 +10,7 @@ import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
 import { findLastAllowedDate } from '../domains/todo-import-range.model';
-import { toUnbreakableLabel } from '../utils/todo-import.view-model';
+import { formatUnbreakableLabel } from '../utils/todo-import.view-model';
 
 interface ImportFreePlanNoticeProps extends Omit<
   ComponentProps<typeof WordWrapText>,
@@ -48,7 +48,7 @@ export function ImportFreePlanNotice({
     {
       text: `${t('range.freeUntil', {
         count: horizonDays,
-        date: toUnbreakableLabel(
+        date: formatUnbreakableLabel(
           formatYearAwareDateKeyLabel(lastAllowedDate, todayKey, dateFormatContext),
         ),
       })} `,

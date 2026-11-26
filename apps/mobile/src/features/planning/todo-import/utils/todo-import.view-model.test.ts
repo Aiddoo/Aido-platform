@@ -4,7 +4,7 @@ import { createTodoImportCollection } from '../__tests__/todo-import.fixtures';
 import {
   getCalendarPermissionView,
   groupCollectionsBySource,
-  toUnbreakableLabel,
+  formatUnbreakableLabel,
 } from './todo-import.view-model';
 
 const GRANTED: OsPermission = { status: 'granted', canAskAgain: true };
@@ -119,10 +119,10 @@ describe('groupCollectionsBySource', () => {
   });
 });
 
-describe('toUnbreakableLabel', () => {
+describe('formatUnbreakableLabel', () => {
   it('빈칸은 줄바꿈 없는 공백으로, 글자 사이는 줄바꿈을 막는 문자로 잇는다', () => {
     // When
-    const label = toUnbreakableLabel('Dec 23');
+    const label = formatUnbreakableLabel('Dec 23');
 
     // Then
     expect(label.replaceAll('\u2060', '')).toBe('Dec\u00A023');

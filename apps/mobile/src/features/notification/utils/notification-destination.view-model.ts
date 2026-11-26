@@ -90,7 +90,7 @@ interface NotificationDestinationContext {
 }
 
 /** 알림을 누르면 열 화면. 목적지는 서버가 고르고 앱은 화면 크기와 보는 사람에 맞춰 경로만 정한다 */
-export function toNotificationDestination(
+export function getNotificationDestination(
   target: NotificationTarget,
   { windowSizeClass, accountId, openedAt }: NotificationDestinationContext,
 ): NotificationDestination {

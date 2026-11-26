@@ -14,7 +14,7 @@ import { type ComponentProps, Suspense, useEffect, useEffectEvent } from 'react'
 import { TodoImportPolicy } from '../domains/todo-import.model';
 import { useGetTodoImportQueryOptions } from '../queries/todo-import.queries';
 import { lastTodoImportIdsStoredValue } from '../schemas/todo-import-last-storage.schema';
-import { toUnbreakableLabel } from '../utils/todo-import.view-model';
+import { formatUnbreakableLabel } from '../utils/todo-import.view-model';
 
 type LastTodoImportRowProps = Omit<ComponentProps<typeof SettingsListGroup>, 'children'>;
 
@@ -81,7 +81,7 @@ LastTodoImportRow.Contents = function Contents({ importId, onExpired, ...props }
         label={t('lastImport.label')}
         description={t('lastImport.description', {
           count: todoImport.counts.created,
-          date: toUnbreakableLabel(
+          date: formatUnbreakableLabel(
             formatYearAwareDateLabel(todoImport.undoableUntil, todayKey, dateFormatContext),
           ),
         })}

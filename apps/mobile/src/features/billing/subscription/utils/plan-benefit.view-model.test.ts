@@ -6,7 +6,7 @@ import {
 } from '../__tests__/entitlement.fixtures';
 import { toFeatureQuota } from '../apis/entitlement.mapper';
 import { EntitlementPolicy } from '../domains/entitlement.model';
-import { getPlanBenefitAmounts, toBenefitQuotaLabel } from './plan-benefit.view-model';
+import { getPlanBenefitAmounts, getBenefitQuotaLabel } from './plan-benefit.view-model';
 
 describe('getPlanBenefitAmounts', () => {
   it('무료 사용자의 친구 수는 초대로 늘어난 서버 한도를 쓰고 프리미엄 양은 서버 요금제 값을 쓴다', () => {
@@ -82,13 +82,13 @@ describe('운영 중 바뀐 요금제 값', () => {
   });
 });
 
-describe('toBenefitQuotaLabel', () => {
+describe('getBenefitQuotaLabel', () => {
   it('무료에 없는 AI 리포트는 프리미엄 전용이다', () => {
     // Given
     const snapshot = createEntitlementSnapshot();
 
     // When
-    const label = toBenefitQuotaLabel(snapshot, 'AI_REPORT');
+    const label = getBenefitQuotaLabel(snapshot, 'AI_REPORT');
 
     // Then
     expect(label).toEqual({ type: 'premiumOnly' });
@@ -102,7 +102,7 @@ describe('toBenefitQuotaLabel', () => {
     );
 
     // When
-    const label = toBenefitQuotaLabel(snapshot, 'AI_PARSE');
+    const label = getBenefitQuotaLabel(snapshot, 'AI_PARSE');
 
     // Then
     expect(label).toEqual({

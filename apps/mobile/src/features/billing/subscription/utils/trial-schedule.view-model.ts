@@ -10,7 +10,7 @@ export type TrialScheduleStep =
   | { kind: 'charge'; dateKey: DateKey; stamp: 'empty' };
 
 /** 체험 일정 도장 줄. 체험이 없으면 null이고, 알림일이 오늘이거나 지났으면 알림 도장을 빼고 둘이다 */
-export function toTrialScheduleSteps(
+export function getTrialScheduleSteps(
   plan: SubscriptionPlan,
   todayKey: DateKey,
 ): TrialScheduleStep[] | null {

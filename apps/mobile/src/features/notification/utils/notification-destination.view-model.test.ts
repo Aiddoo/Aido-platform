@@ -13,7 +13,7 @@ import type { NotificationTarget } from '../domains/notification.model';
 import {
   isViewingNotificationDestination,
   type NotificationDestination,
-  toNotificationDestination,
+  getNotificationDestination,
 } from './notification-destination.view-model';
 
 const COMMENT_ID = 'cmt92zn3n000b7voxx9quc2th';
@@ -203,10 +203,10 @@ function getRouteDestinationPathnames(
   );
 }
 
-describe('toNotificationDestination', () => {
+describe('getNotificationDestination', () => {
   it('접힌 화면은 주인·날짜가 있어도 할 일 상세 화면을 연다', () => {
     // When
-    const destination = toNotificationDestination(todoTarget({ ownerId: FRIEND, dateKey: DATE }), {
+    const destination = getNotificationDestination(todoTarget({ ownerId: FRIEND, dateKey: DATE }), {
       windowSizeClass: 'compact',
       accountId: MY_ACCOUNT_ID,
       openedAt: OPENED_AT,
@@ -221,11 +221,11 @@ describe('toNotificationDestination', () => {
 
   it.each(['medium', 'expanded'] as const)('%s 화면은 할 일을 피드 상세 pane에 고른다', (size) => {
     // When
-    const todo = toNotificationDestination(todoTarget(), {
+    const todo = getNotificationDestination(todoTarget(), {
       windowSizeClass: size,
       openedAt: OPENED_AT,
     });
-    const comment = toNotificationDestination(todoCommentTarget(), {
+    const comment = getNotificationDestination(todoCommentTarget(), {
       windowSizeClass: size,
       openedAt: OPENED_AT,
     });
@@ -266,7 +266,7 @@ describe('toNotificationDestination', () => {
     ['주인·날짜가 없으면 피드의 기본 날짜', todoTarget(), MY_ACCOUNT_ID, { todoId: 42 }],
   ] as const)('펼친 화면 목록 pane: %s', (_case, target, accountId, params) => {
     // When
-    const destination = toNotificationDestination(target, {
+    const destination = getNotificationDestination(target, {
       windowSizeClass: 'medium',
       accountId,
       openedAt: OPENED_AT,
@@ -315,7 +315,7 @@ describe('toNotificationDestination', () => {
       '$name: 접힌 화면은 정한 곳을 연다',
       ({ name, navigation }) => {
         // When
-        const destination = toNotificationDestination(toNotificationTarget(navigation), {
+        const destination = getNotificationDestination(toNotificationTarget(navigation), {
           windowSizeClass: 'compact',
           openedAt: OPENED_AT,
         });
@@ -336,7 +336,7 @@ describe('toNotificationDestination', () => {
         ),
       )('$name: 할 일이 아닌 목적지는 접힌 화면과 같다', ({ name, navigation }) => {
         // When
-        const destination = toNotificationDestination(toNotificationTarget(navigation), context);
+        const destination = getNotificationDestination(toNotificationTarget(navigation), context);
 
         // Then
         expect(destination).toEqual(COMPACT_DESTINATIONS[name]);
@@ -354,7 +354,7 @@ describe('toNotificationDestination', () => {
     )('$name: 서버 navigation의 목적지는 있는 화면이다', ({ navigation }) => {
       // When
       const destinations = WINDOW_SIZE_CLASSES.map((windowSizeClass) =>
-        toNotificationDestination(toNotificationTarget(navigation), {
+        getNotificationDestination(toNotificationTarget(navigation), {
           windowSizeClass,
           openedAt: OPENED_AT,
         }),
@@ -368,7 +368,7 @@ describe('toNotificationDestination', () => {
 
     it('읽지 못한 알림이 여는 알림함은 있는 화면이다', () => {
       // When
-      const destination = toNotificationDestination(
+      const destination = getNotificationDestination(
         { kind: 'NOTIFICATIONS' },
         { windowSizeClass: 'compact', openedAt: OPENED_AT },
       );

@@ -18,7 +18,7 @@ import { useFormatLocalTime, useLocationDateFormat } from '../hooks/use-location
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import {
   type AttributionBackground,
-  toAttributionMark,
+  getAttributionMark,
 } from '../utils/weather-attribution.view-model';
 
 /** Apple 지침: 로고는 1x 크기(높이 14pt) 그대로 그린다. 폭은 언어마다 달라 원본 비율을 따른다. */
@@ -109,7 +109,7 @@ WeatherAttribution.Mark = function Mark({
   const { scale } = useWindowDimensions();
   const [hasLogoFailed, setHasLogoFailed] = useState(false);
   const [aspectRatio, setAspectRatio] = useState(LOGO_DEFAULT_ASPECT_RATIO);
-  const mark = toAttributionMark(attribution, background, scale);
+  const mark = getAttributionMark(attribution, background, scale);
 
   const handleLoad = ({ source }: ImageLoadEventData) => {
     if (source.width > 0 && source.height > 0) {

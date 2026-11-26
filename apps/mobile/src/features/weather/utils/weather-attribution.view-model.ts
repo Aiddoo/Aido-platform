@@ -16,7 +16,7 @@ function toLogoDensity(pixelRatio: number): '1x' | '2x' | '3x' {
 }
 
 /** 어두운 바탕에는 흰 글자 로고(dark)를 쓰고, 로고가 없으면 서비스 이름으로 표기해 출처가 빠지지 않게 한다 */
-export function toAttributionMark(
+export function getAttributionMark(
   attribution: AttributionInfo,
   background: AttributionBackground,
   pixelRatio: number,

@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { shouldFetchReport } from '../domains/location-reading.model';
 import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
 import {
-  toWeatherScene,
+  getWeatherScene,
   type WeatherScene,
   type WeatherSceneInput,
 } from '../utils/weather-scene.view-model';
@@ -28,5 +28,5 @@ export function useWeatherScene(): WeatherScene {
     select: WeatherReportSelect.scene,
     enabled: shouldFetchReport(location.status),
   });
-  return toWeatherScene(sceneInput ?? DEFAULT_SCENE_INPUT);
+  return getWeatherScene(sceneInput ?? DEFAULT_SCENE_INPUT);
 }

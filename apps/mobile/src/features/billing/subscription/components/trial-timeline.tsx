@@ -33,7 +33,7 @@ import { useGetOfferingsQueryOptions } from '../queries/subscription.queries';
 import { getPlanPriceLabelKey } from '../utils/subscription-label.view-model';
 import {
   shouldBuzzOnTrialStamp,
-  toTrialScheduleSteps,
+  getTrialScheduleSteps,
   type TrialStampState,
 } from '../utils/trial-schedule.view-model';
 
@@ -65,7 +65,7 @@ export function TrialTimeline({ reminder: Reminder, className, ...props }: Trial
     availability.status === 'available'
       ? SubscriptionOfferingPolicy.findSelectedPlan(availability.offering, planId)
       : null;
-  const steps = plan == null ? null : toTrialScheduleSteps(plan, todayKey);
+  const steps = plan == null ? null : getTrialScheduleSteps(plan, todayKey);
   const visiblePlanType = steps == null ? null : (plan?.planType ?? null);
 
   // 요금제를 오가며 다시 보여도 페이월을 본 한 번만 센다. 처음 보인 요금제를 남긴다

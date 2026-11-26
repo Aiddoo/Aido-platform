@@ -335,7 +335,7 @@ export function getWeatherSceneSky({ condition, isDaylight }: WeatherSkyInput): 
   return isDaylight ? sky.day : sky.night;
 }
 
-export function toWeatherScene(input: WeatherSceneInput): WeatherScene {
+export function getWeatherScene(input: WeatherSceneInput): WeatherScene {
   const profile = getConditionProfile(input.condition);
   const isDry = profile.precipitation === 'none';
   const wind = Math.max(profile.minWind, normalizeWindSpeed(input.windSpeed));

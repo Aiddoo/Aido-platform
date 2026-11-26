@@ -31,7 +31,7 @@ import { useFormatRefillSentence } from '../hooks/use-format-refill-sentence';
 import { useQuotaStatus } from '../hooks/use-quota-status';
 import { useSuspenseSubscriptionReceipt } from '../hooks/use-suspense-subscription-receipt';
 import { useGetEntitlementsQueryOptions } from '../queries/entitlement.queries';
-import { toDisplayedUsedCount, toPlanSummary } from '../utils/plan-summary.view-model';
+import { getDisplayedUsedCount, getPlanSummary } from '../utils/plan-summary.view-model';
 
 const SUBSCRIPTION_PATHNAME = '/settings/subscription';
 
@@ -51,7 +51,7 @@ export function PlanSummary() {
 PlanSummary.Premium = function Premium() {
   const { t } = useTranslation('subscription');
   const navigate = useMyPageMenuNavigate();
-  const { headline, dateLabel, period, note } = toPlanSummary(useSuspenseSubscriptionReceipt());
+  const { headline, dateLabel, period, note } = getPlanSummary(useSuspenseSubscriptionReceipt());
   const formatDate = useFormatReceiptDate(dateLabel);
 
   return (
@@ -262,7 +262,7 @@ function QuotaRow({ feature, label, hint }: QuotaRowProps) {
           className="tabular-nums"
         >
           {t('upsell.usage', {
-            used: formatCount(toDisplayedUsedCount(used, limit), locale),
+            used: formatCount(getDisplayedUsedCount(used, limit), locale),
             limit: formatCount(limit, locale),
           })}
         </Text>

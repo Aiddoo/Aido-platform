@@ -4,7 +4,7 @@ import { match, P } from 'ts-pattern';
 
 import {
   type SubscriptionReceiptViewModel,
-  toReceiptDateLabel,
+  getReceiptDateLabel,
 } from './subscription-receipt.view-model';
 
 type PlanSummaryHeadline =
@@ -25,7 +25,7 @@ type PlanSummaryNote =
 
 interface PlanSummary {
   headline: PlanSummaryHeadline;
-  dateLabel: ReturnType<typeof toReceiptDateLabel>;
+  dateLabel: ReturnType<typeof getReceiptDateLabel>;
   period: PlanSummaryPeriod | null;
   note: PlanSummaryNote | null;
 }
@@ -75,7 +75,7 @@ function findPeriod(receipt: SubscriptionReceiptViewModel): PlanSummaryPeriod | 
 }
 
 /** 마이 탭 요금제 요약. 새 규칙 없이 영수증 view-model 결과에서 제목·다음 날짜·보상 안내만 고른다 */
-export function toPlanSummary(receipt: SubscriptionReceiptViewModel): PlanSummary {
+export function getPlanSummary(receipt: SubscriptionReceiptViewModel): PlanSummary {
   return {
     headline: match(receipt.variant)
       .returnType<PlanSummaryHeadline>()
@@ -84,7 +84,7 @@ export function toPlanSummary(receipt: SubscriptionReceiptViewModel): PlanSummar
       .with('reward', () => ({ type: 'reward' }))
       .with('admin', () => ({ type: 'admin' }))
       .exhaustive(),
-    dateLabel: toReceiptDateLabel(receipt.variant),
+    dateLabel: getReceiptDateLabel(receipt.variant),
     period: findPeriod(receipt),
     note: match(receipt.footnote)
       .returnType<PlanSummaryNote | null>()
@@ -94,6 +94,6 @@ export function toPlanSummary(receipt: SubscriptionReceiptViewModel): PlanSummar
 }
 
 /** 서버가 한도보다 많이 센 기록이 와도 한도를 넘는 숫자는 보여 주지 않는다 */
-export function toDisplayedUsedCount(used: number, limit: number): number {
+export function getDisplayedUsedCount(used: number, limit: number): number {
   return Math.min(used, limit);
 }

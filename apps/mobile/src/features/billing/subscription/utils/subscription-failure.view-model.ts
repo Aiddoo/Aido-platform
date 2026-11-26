@@ -70,7 +70,7 @@ function toSupportFailure(
 }
 
 /** 영수증·요금제를 불러오지 못하면 늘 다시 시도와 문의를 함께 보여 준다 */
-export function toSubscriptionLoadFailure(
+export function getSubscriptionLoadFailure(
   target: SubscriptionLoadTarget,
   error: unknown,
 ): SubscriptionSupportFailure {
@@ -78,7 +78,7 @@ export function toSubscriptionLoadFailure(
 }
 
 /** 결제·복원이 실패했을 때 조용히 넘길지, 승인 대기를 알릴지, 문의로 안내할지 정한다 */
-export function toSubscriptionActionFailure(
+export function getSubscriptionActionFailure(
   target: SubscriptionActionTarget,
   error: unknown,
 ): SubscriptionActionFailure {
@@ -92,7 +92,7 @@ export function toSubscriptionActionFailure(
     .exhaustive();
 }
 
-export function toSubscriptionStoreUnavailableFailure({
+export function getSubscriptionStoreUnavailableFailure({
   kind,
   diagnosticCode,
 }: StoreUnavailable): SubscriptionSupportFailure {

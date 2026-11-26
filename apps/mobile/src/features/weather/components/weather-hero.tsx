@@ -24,8 +24,8 @@ import { getWeatherConditionLabelKey } from '../utils/weather-labels.view-model'
 import {
   type TemperatureReading,
   formatTemperature,
-  toDisplayTemperature,
-  toTemperatureReading,
+  getDisplayTemperature,
+  getTemperatureReading,
 } from '../utils/weather-temperature.view-model';
 import { WeatherIcon } from './weather-icon';
 
@@ -95,7 +95,7 @@ export function WeatherHero() {
   const countryCode = readyLocation?.countryCode ?? null;
   const isLastKnown = readyLocation?.isLastKnown === true;
   const title = place?.city ?? t(isLastKnown ? 'hero.lastLocation' : 'hero.currentLocation');
-  const reading = toTemperatureReading(toDisplayTemperature(weather.current.temperature, unit));
+  const reading = getTemperatureReading(getDisplayTemperature(weather.current.temperature, unit));
   const condition = t(getWeatherConditionLabelKey(weather.current.condition));
   const temperature = reading.isBelowZero
     ? t('hero.temperatureBelowZero', { count: reading.magnitude })

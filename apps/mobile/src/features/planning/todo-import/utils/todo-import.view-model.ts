@@ -130,6 +130,6 @@ const NO_BREAK_SPACE = '\u00A0';
 const WORD_JOINER = '\u2060';
 
 /** 문장 안 날짜("12월 23일", "Dec 23")가 숫자와 글자 사이에서 다음 줄로 갈라지지 않게 잇는다 */
-export function toUnbreakableLabel(label: string): string {
+export function formatUnbreakableLabel(label: string): string {
   return Array.from(label.replaceAll(' ', NO_BREAK_SPACE)).join(WORD_JOINER);
 }
