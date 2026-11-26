@@ -296,30 +296,32 @@ MemoList.Item = function Item({
 
   return (
     <Animated.View style={appearanceStyle}>
-      <MemoList.Link
-        memo={memo}
-        isLinked={isLinked}
-        actions={cardActions}
-        onOpen={() => selectMemo(memo.id)}
+      {/* Link.Preview의 네이티브 감싸개는 크기가 없어 iOS가 그 안쪽을 접근성 트리에 싣지 않는다.
+          누르는 요소를 감싸개 밖에 둬야 VoiceOver와 E2E가 카드를 찾는다 */}
+      <PressableFeedback
+        onPress={() => selectMemo(memo.id)}
+        // 고정·삭제는 iOS에서 길게 눌러 메뉴로, 스크린리더는 플랫폼과 상관없이 동작 메뉴로 카드에서 바로 한다
+        accessibilityActions={[
+          {
+            name: 'togglePin',
+            label: t(memo.isPinned ? 'memo:detail.unpin' : 'memo:detail.pin'),
+          },
+          { name: 'delete', label: t('common:actions.delete') },
+        ]}
+        onAccessibilityAction={(event) =>
+          match(event.nativeEvent.actionName)
+            .with('togglePin', () => cardActions.togglePin())
+            .with('delete', () => cardActions.openDeleteDialog())
+            .otherwise(noop)
+        }
+        className="rounded-2xl"
+        testID={`memo-item-${memo.id}`}
       >
-        <PressableFeedback
-          onPress={() => selectMemo(memo.id)}
-          // 고정·삭제는 iOS에서 길게 눌러 메뉴로, 스크린리더는 플랫폼과 상관없이 동작 메뉴로 카드에서 바로 한다
-          accessibilityActions={[
-            {
-              name: 'togglePin',
-              label: t(memo.isPinned ? 'memo:detail.unpin' : 'memo:detail.pin'),
-            },
-            { name: 'delete', label: t('common:actions.delete') },
-          ]}
-          onAccessibilityAction={(event) =>
-            match(event.nativeEvent.actionName)
-              .with('togglePin', () => cardActions.togglePin())
-              .with('delete', () => cardActions.openDeleteDialog())
-              .otherwise(noop)
-          }
-          className="rounded-2xl"
-          testID={`memo-item-${memo.id}`}
+        <MemoList.Link
+          memo={memo}
+          isLinked={isLinked}
+          actions={cardActions}
+          onOpen={() => selectMemo(memo.id)}
         >
           <VStack
             gap={8}
@@ -362,8 +364,8 @@ MemoList.Item = function Item({
               {formatYearAwareDateLabel(memo.createdAt, todayKey, dateFormatContext)}
             </Text>
           </VStack>
-        </PressableFeedback>
-      </MemoList.Link>
+        </MemoList.Link>
+      </PressableFeedback>
     </Animated.View>
   );
 };
