@@ -25,6 +25,7 @@ import {
   type QueryErrorFallbackProps,
   Result,
   Spacing,
+  StyledSafeAreaView,
   SurfaceCard,
   Text,
   TextSkeleton,
@@ -152,59 +153,62 @@ export function MemoList() {
 
   return (
     <>
-      <FlashList
-        ref={listRef}
-        data={memos}
-        masonry
-        // 원래 손 masonry처럼 왼쪽부터 번갈아 채운다. 켜면 짧은 열부터 채워 순서가 바뀐다
-        optimizeItemArrangement={false}
-        numColumns={columnCount}
-        keyExtractor={(memo) => String(memo.id)}
-        extraData={{ selectedMemoId, columnCount, enteringMemoIds, paneSizeClass }}
-        renderItem={({ item }) => (
-          // 카드 사이 간격을 칸 패딩으로 나눠 가진다
-          <Box className="px-1.5 pb-3">
-            <MemoList.Item
-              memo={item}
-              isSelected={selectedMemoId === item.id}
-              isEntering={enteringMemoIds.has(item.id)}
-              isLinked={paneSizeClass === 'compact'}
-              onSelect={setSelectedMemoId}
-              onEntered={markEntered}
-            />
-          </Box>
-        )}
-        ListHeaderComponent={<MemoList.Header isSavedTitleShown={isSavedTitleShown} />}
-        ListHeaderComponentStyle={EDGE_ITEM_STYLE}
-        ListEmptyComponent={isEmptyShown ? <MemoList.Empty /> : null}
-        ListEmptyComponentStyle={[EDGE_ITEM_STYLE, { flex: 1 }]}
-        ListFooterComponent={
-          hasNextPage ? (
-            <VStack pt={MORE_BUTTON_TOP_GAP}>
-              <MemoList.More
-                onPress={() => fetchNextPage({ cancelRefetch: false })}
-                isLoading={isFetchingNextPage}
-                isDisabled={isFetching}
-                hasError={isFetchNextPageError}
+      {/* 진행 위젯은 스스로 좌우 safe area를 받아 목록 칸의 형제로 둔다. 감싸면 inset만큼 한 번 더 밀린다 */}
+      <StyledSafeAreaView edges={['left', 'right']} className="flex-1">
+        <FlashList
+          ref={listRef}
+          data={memos}
+          masonry
+          // 원래 손 masonry처럼 왼쪽부터 번갈아 채운다. 켜면 짧은 열부터 채워 순서가 바뀐다
+          optimizeItemArrangement={false}
+          numColumns={columnCount}
+          keyExtractor={(memo) => String(memo.id)}
+          extraData={{ selectedMemoId, columnCount, enteringMemoIds, paneSizeClass }}
+          renderItem={({ item }) => (
+            // 카드 사이 간격을 칸 패딩으로 나눠 가진다
+            <Box className="px-1.5 pb-3">
+              <MemoList.Item
+                memo={item}
+                isSelected={selectedMemoId === item.id}
+                isEntering={enteringMemoIds.has(item.id)}
+                isLinked={paneSizeClass === 'compact'}
+                onSelect={setSelectedMemoId}
+                onEntered={markEntered}
               />
-            </VStack>
-          ) : null
-        }
-        ListFooterComponentStyle={EDGE_ITEM_STYLE}
-        // 아래 safe area를 빼지 않은 칸이라 iOS가 탭 막대·홈 인디케이터만큼 끝을 띄우고 카드는 유리 밑으로 스크롤된다
-        contentInsetAdjustmentBehavior="automatic"
-        // 빈 안내만 칸을 채운다. 카드가 있을 때도 채우면 짧은 목록이 iOS 자동 inset만큼 끌려 올라간 채 머문다
-        contentContainerStyle={{
-          flexGrow: isEmptyShown ? 1 : 0,
-          paddingHorizontal: HORIZONTAL_PADDING - CELL_INSET,
-          paddingBottom: LIST_BOTTOM_PADDING,
-        }}
-        showsVerticalScrollIndicator={false}
-        scrollEventThrottle={16}
-        onScroll={handleScroll}
-        refreshing={isRefreshing}
-        onRefresh={handleRefresh}
-      />
+            </Box>
+          )}
+          ListHeaderComponent={<MemoList.Header isSavedTitleShown={isSavedTitleShown} />}
+          ListHeaderComponentStyle={EDGE_ITEM_STYLE}
+          ListEmptyComponent={isEmptyShown ? <MemoList.Empty /> : null}
+          ListEmptyComponentStyle={[EDGE_ITEM_STYLE, { flex: 1 }]}
+          ListFooterComponent={
+            hasNextPage ? (
+              <VStack pt={MORE_BUTTON_TOP_GAP}>
+                <MemoList.More
+                  onPress={() => fetchNextPage({ cancelRefetch: false })}
+                  isLoading={isFetchingNextPage}
+                  isDisabled={isFetching}
+                  hasError={isFetchNextPageError}
+                />
+              </VStack>
+            ) : null
+          }
+          ListFooterComponentStyle={EDGE_ITEM_STYLE}
+          // 아래 safe area를 빼지 않은 칸이라 iOS가 탭 막대·홈 인디케이터만큼 끝을 띄우고 카드는 유리 밑으로 스크롤된다
+          contentInsetAdjustmentBehavior="automatic"
+          // 빈 안내만 칸을 채운다. 카드가 있을 때도 채우면 짧은 목록이 iOS 자동 inset만큼 끌려 올라간 채 머문다
+          contentContainerStyle={{
+            flexGrow: isEmptyShown ? 1 : 0,
+            paddingHorizontal: HORIZONTAL_PADDING - CELL_INSET,
+            paddingBottom: LIST_BOTTOM_PADDING,
+          }}
+          showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
+          onScroll={handleScroll}
+          refreshing={isRefreshing}
+          onRefresh={handleRefresh}
+        />
+      </StyledSafeAreaView>
 
       <ScrollProgressWidget
         progress={progress}
@@ -441,22 +445,24 @@ MemoList.Loading = function Loading() {
   const columnCount = getMemoColumnCount(paneSizeClass, Number.POSITIVE_INFINITY);
 
   return (
-    <Box className="flex-1 gap-4 px-4">
-      <VoiceNoteDrafts />
-      <HStack gap={CARD_GAP} align="start">
-        {range(columnCount).map((column) => (
-          <VStack key={column} flex={1} gap={CARD_GAP}>
-            {range(LOADING_ITEMS_PER_COLUMN).map((row) => (
-              <SurfaceCard key={row} className="gap-2">
-                <TextSkeleton size="b3" className="w-full" />
-                <TextSkeleton size="b3" className="w-3/4" />
-                <TextSkeleton size="e1" className="w-1/2" />
-              </SurfaceCard>
-            ))}
-          </VStack>
-        ))}
-      </HStack>
-    </Box>
+    <StyledSafeAreaView edges={['left', 'right']} className="flex-1">
+      <Box className="flex-1 gap-4 px-4">
+        <VoiceNoteDrafts />
+        <HStack gap={CARD_GAP} align="start">
+          {range(columnCount).map((column) => (
+            <VStack key={column} flex={1} gap={CARD_GAP}>
+              {range(LOADING_ITEMS_PER_COLUMN).map((row) => (
+                <SurfaceCard key={row} className="gap-2">
+                  <TextSkeleton size="b3" className="w-full" />
+                  <TextSkeleton size="b3" className="w-3/4" />
+                  <TextSkeleton size="e1" className="w-1/2" />
+                </SurfaceCard>
+              ))}
+            </VStack>
+          ))}
+        </HStack>
+      </Box>
+    </StyledSafeAreaView>
   );
 };
 
@@ -465,12 +471,14 @@ MemoList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['memo', 'common']);
 
   return (
-    <Box className="flex-1 gap-4 px-4">
-      <VoiceNoteDrafts />
-      <HStack flex={1} justify="center" align="center">
-        <QueryErrorFallback title={t('memo:list.loadFailed')} reset={reset} />
-      </HStack>
-    </Box>
+    <StyledSafeAreaView edges={['left', 'right']} className="flex-1">
+      <Box className="flex-1 gap-4 px-4">
+        <VoiceNoteDrafts />
+        <HStack flex={1} justify="center" align="center">
+          <QueryErrorFallback title={t('memo:list.loadFailed')} reset={reset} />
+        </HStack>
+      </Box>
+    </StyledSafeAreaView>
   );
 };
 

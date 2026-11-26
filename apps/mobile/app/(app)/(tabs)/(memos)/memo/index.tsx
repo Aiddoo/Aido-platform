@@ -63,14 +63,12 @@ export default function MemoScreen() {
               <Spacing size={16} />
             </StyledSafeAreaView>
 
-            {/* 말로 남긴 메모 초안은 메모 목록 머리말로 함께 스크롤된다 */}
-            <StyledSafeAreaView edges={['left', 'right']} className="flex-1">
-              <QueryErrorBoundary fallback={MemoList.Error}>
-                <Suspense fallback={<MemoList.Loading />}>
-                  <MemoList />
-                </Suspense>
-              </QueryErrorBoundary>
-            </StyledSafeAreaView>
+            {/* 말로 남긴 메모 초안은 메모 목록 머리말로 함께 스크롤된다. 좌우 safe area는 목록·로딩·실패가 스스로 둔다 */}
+            <QueryErrorBoundary fallback={MemoList.Error}>
+              <Suspense fallback={<MemoList.Loading />}>
+                <MemoList />
+              </Suspense>
+            </QueryErrorBoundary>
           </Box>
         }
         secondary={match(selectedMemoId)
