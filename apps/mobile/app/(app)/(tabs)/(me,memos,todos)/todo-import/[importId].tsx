@@ -4,11 +4,17 @@ import { TodoImportProgress } from '@src/features/planning/todo-import/component
 import { TodoImportResult } from '@src/features/planning/todo-import/components/todo-import-result';
 import { TodoImportUndoButton } from '@src/features/planning/todo-import/components/todo-import-undo-button';
 import { isTodoImportNotFoundError } from '@src/features/planning/todo-import/domains/todo-import.error';
-import type { TodoImport } from '@src/features/planning/todo-import/domains/todo-import.model';
+import {
+  type TodoImport,
+  TodoImportPolicy,
+} from '@src/features/planning/todo-import/domains/todo-import.model';
+import { useSuspenseTodoImport } from '@src/features/planning/todo-import/hooks/use-suspense-todo-import';
 import { useTodoImportId } from '@src/features/planning/todo-import/hooks/use-todo-import-params';
-import { useGetTodoImportQueryOptions } from '@src/features/planning/todo-import/queries/todo-import.queries';
 import { todoImportParamsSchema } from '@src/features/planning/todo-import/schemas/todo-import-params.schema';
-import { toTodoImportCountBucket } from '@src/features/planning/todo-import/utils/todo-import-analytics';
+import {
+  toTodoImportCountBucket,
+  toTodoImportOutcome,
+} from '@src/features/planning/todo-import/utils/todo-import-analytics';
 import { useTrack } from '@src/shared/analytics';
 import { useRouteParamsOrRedirect } from '@src/shared/hooks/use-route-params-or-redirect';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -26,11 +32,10 @@ import {
   VStack,
   WordWrapText,
 } from '@src/shared/ui';
-import { useSuspenseQuery } from '@tanstack/react-query';
 import { useRouter, Stack } from 'expo-router';
 import { Spinner } from 'heroui-native';
 import { Suspense, useEffect, useEffectEvent, useRef } from 'react';
-import { match, P } from 'ts-pattern';
+import { match } from 'ts-pattern';
 
 export default function TodoImportRoute() {
   const route = useRouteParamsOrRedirect(todoImportParamsSchema, { fallbackHref: '/todo-import' });
@@ -51,13 +56,80 @@ function TodoImportScreen() {
         <QueryErrorBoundary fallback={TodoImportScreen.Error} resetKeys={[importId]}>
           {/* 받기 전에는 진행·결과 중 무엇일지 몰라 어느 모양도 미리 그리지 않는다 */}
           <Suspense fallback={<TodoImportScreen.Loading />}>
-            <TodoImportStatus />
+            <TodoImportScreen.Stage />
           </Suspense>
         </QueryErrorBoundary>
       </ReadableContent>
     </SafeAreaScrollView>
   );
 }
+
+TodoImportScreen.Stage = function Stage() {
+  const { t } = useTranslation('todoImport');
+  const todoImport = useSuspenseTodoImport();
+
+  useTrackImportOutcome(todoImport);
+
+  return match(TodoImportPolicy.getStage(todoImport))
+    .with('processing', () => (
+      <>
+        <Stack.Screen options={{ title: t('titles.progress') }} />
+        <TodoImportProgress />
+        <Spacing size={16} />
+        <WordWrapText size="b4" shade={6} align="center">
+          {t('progress.leaveNotice')}
+        </WordWrapText>
+      </>
+    ))
+    .with('finished', () => (
+      <>
+        <Stack.Screen options={{ title: t('titles.result') }} />
+        <TodoImportResult />
+      </>
+    ))
+    .with('undoFailed', () => (
+      <>
+        <Stack.Screen options={{ title: t('titles.result') }} />
+        <Result
+          icon={<ErrorIllustration />}
+          title={t('result.undoFailedTitle')}
+          description={t('result.undoFailedDescription')}
+          button={<TodoImportUndoButton size="large">{t('result.undoAgain')}</TodoImportUndoButton>}
+        />
+      </>
+    ))
+    .with('failed', () => (
+      <>
+        <Stack.Screen options={{ title: t('titles.result') }} />
+        <Result
+          icon={<ErrorIllustration />}
+          title={t('result.failedTitle')}
+          description={t('result.failedDescription', { count: todoImport.counts.created })}
+          button={
+            <VStack gap={8}>
+              <StartAgainButton />
+              <TodoImportUndoButton size="large" variant="weak">
+                {t('result.undo')}
+              </TodoImportUndoButton>
+            </VStack>
+          }
+        />
+      </>
+    ))
+    .with('stopped', () => (
+      <>
+        <Stack.Screen options={{ title: t('titles.result') }} />
+        <TodoImportFailureAlert className="mb-4" />
+        <Result
+          icon={<ErrorIllustration />}
+          title={t('result.canceledTitle')}
+          description={t('result.canceledDescription')}
+          button={<StartAgainButton />}
+        />
+      </>
+    ))
+    .exhaustive();
+};
 
 TodoImportScreen.Loading = function Loading() {
   return (
@@ -91,78 +163,6 @@ TodoImportScreen.Error = function ErrorFallback({ error, reset }: QueryErrorFall
   );
 };
 
-function TodoImportStatus() {
-  const { t } = useTranslation('todoImport');
-  const [importId] = useTodoImportId();
-  const { data: todoImport } = useSuspenseQuery(useGetTodoImportQueryOptions({ importId }));
-
-  useTrackImportOutcome(todoImport);
-
-  return match(todoImport.status)
-    .with(P.union('UPLOADING', 'QUEUED', 'RUNNING'), () => (
-      <>
-        <Stack.Screen options={{ title: t('titles.progress') }} />
-        <TodoImportProgress />
-        <Spacing size={16} />
-        <WordWrapText size="b4" shade={6} align="center">
-          {t('progress.leaveNotice')}
-        </WordWrapText>
-      </>
-    ))
-    .with(P.union('COMPLETED', 'UNDOING', 'UNDONE'), () => (
-      <>
-        <Stack.Screen options={{ title: t('titles.result') }} />
-        <TodoImportResult />
-      </>
-    ))
-    .with('FAILED', () => (
-      <>
-        <Stack.Screen options={{ title: t('titles.result') }} />
-        {match(todoImport.failureReason)
-          .with('UNDO_FAILED', () => (
-            <Result
-              icon={<ErrorIllustration />}
-              title={t('result.undoFailedTitle')}
-              description={t('result.undoFailedDescription')}
-              button={
-                <TodoImportUndoButton size="large">{t('result.undoAgain')}</TodoImportUndoButton>
-              }
-            />
-          ))
-          // 이유를 모르면(null) 만들다 멈춘 것과 같이 안내한다
-          .with(P.union('MATERIALIZATION_FAILED', 'STALLED', null), () => (
-            <Result
-              icon={<ErrorIllustration />}
-              title={t('result.failedTitle')}
-              description={t('result.failedDescription', { count: todoImport.counts.created })}
-              button={
-                <VStack gap={8}>
-                  <StartAgainButton />
-                  <TodoImportUndoButton size="large" variant="weak">
-                    {t('result.undo')}
-                  </TodoImportUndoButton>
-                </VStack>
-              }
-            />
-          ))
-          .exhaustive()}
-      </>
-    ))
-    .with(P.union('CANCELED', 'ABANDONED'), () => (
-      <>
-        <Stack.Screen options={{ title: t('titles.result') }} />
-        <TodoImportFailureAlert className="mb-4" />
-        <Result
-          icon={<ErrorIllustration />}
-          title={t('result.canceledTitle')}
-          description={t('result.canceledDescription')}
-          button={<StartAgainButton />}
-        />
-      </>
-    ))
-    .exhaustive();
-}
-
 function StartAgainButton() {
   const { t } = useTranslation('todoImport');
   const router = useRouter();
@@ -176,13 +176,14 @@ function StartAgainButton() {
 }
 
 /** 이 화면에서 처리 중이던 가져오기가 끝나는 순간만 센다. 결과를 다시 열 때는 세지 않는다 */
-function useTrackImportOutcome({ status, failureReason, counts }: TodoImport) {
+function useTrackImportOutcome(todoImport: TodoImport) {
+  const { status, counts } = todoImport;
   const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
   const accountId = useMyAccountId();
   const previousStatusRef = useRef(status);
 
   const handleStatusChanged = useEffectEvent(() => {
-    match(toImportOutcome(status, failureReason))
+    match(toTodoImportOutcome(todoImport))
       .with('completed', () => {
         trackEvent('todo_import_completed', {
           created_bucket: toTodoImportCountBucket(counts.created),
@@ -207,17 +208,4 @@ function useTrackImportOutcome({ status, failureReason, counts }: TodoImport) {
       handleStatusChanged();
     }
   }, [status]);
-}
-
-function toImportOutcome(status: TodoImport['status'], failureReason: TodoImport['failureReason']) {
-  return (
-    match(status)
-      .with('COMPLETED', () => 'completed' as const)
-      // 되돌리기 실패는 가져오기 실패가 아니라 세지 않는다
-      .with('FAILED', () => (failureReason === 'UNDO_FAILED' ? null : ('server_failed' as const)))
-      .with('CANCELED', () => 'canceled' as const)
-      .with('ABANDONED', () => 'abandoned' as const)
-      .with(P.union('UPLOADING', 'QUEUED', 'RUNNING', 'UNDOING', 'UNDONE'), () => null)
-      .exhaustive()
-  );
 }

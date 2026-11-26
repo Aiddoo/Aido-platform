@@ -12,6 +12,35 @@ const ACTIVE_STATUSES = new Set<string>(['UPLOADING', 'QUEUED', 'RUNNING', 'UNDO
 describe('TodoImportPolicy', () => {
   const NOW = toInstant('2026-11-24T03:00:00.000Z');
 
+  describe('getStage', () => {
+    it.each([
+      { status: 'UPLOADING', failureReason: null, expected: 'processing' },
+      { status: 'QUEUED', failureReason: null, expected: 'processing' },
+      { status: 'RUNNING', failureReason: null, expected: 'processing' },
+      { status: 'COMPLETED', failureReason: null, expected: 'finished' },
+      { status: 'UNDOING', failureReason: null, expected: 'finished' },
+      { status: 'UNDONE', failureReason: null, expected: 'finished' },
+      { status: 'FAILED', failureReason: 'MATERIALIZATION_FAILED', expected: 'failed' },
+      { status: 'FAILED', failureReason: 'STALLED', expected: 'failed' },
+      { status: 'FAILED', failureReason: null, expected: 'failed' },
+      { status: 'FAILED', failureReason: 'UNDO_FAILED', expected: 'undoFailed' },
+      { status: 'CANCELED', failureReason: null, expected: 'stopped' },
+      { status: 'ABANDONED', failureReason: null, expected: 'stopped' },
+    ] as const)(
+      '$status(실패 이유 $failureReason)는 $expected 단계다',
+      ({ status, failureReason, expected }) => {
+        // Given
+        const todoImport = createTodoImport({ status, failureReason });
+
+        // When
+        const stage = TodoImportPolicy.getStage(todoImport);
+
+        // Then
+        expect(stage).toBe(expected);
+      },
+    );
+  });
+
   describe('isTerminal', () => {
     it.each(TODO_IMPORT_STATUSES)('%s는 끝났거나 처리 중 둘 중 하나다', (status) => {
       // Given

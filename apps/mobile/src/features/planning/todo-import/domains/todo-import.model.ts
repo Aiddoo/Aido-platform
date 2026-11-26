@@ -55,6 +55,12 @@ export type TodoImport = z.infer<typeof todoImportSchema>;
  */
 export type TodoImportDeviceUpload = 'sending' | 'paused' | 'failed' | 'elsewhere';
 
+/**
+ * 가져오기가 지금 어디까지 왔는지. processing: 올리거나 만드는 중, finished: 다 만들었다(되돌리는 중·되돌린 뒤 포함),
+ * failed: 만들다 멈췄다, undoFailed: 되돌리다 멈췄다, stopped: 만들기 전에 멈췄다(취소·방치)
+ */
+export type TodoImportStage = 'processing' | 'finished' | 'failed' | 'undoFailed' | 'stopped';
+
 /** 다시 가져와도 아무것도 만들지 않은 가져오기가 앞의 되돌릴 수 있는 가져오기를 가리지 않을 만큼 남긴다 */
 const MAX_REMEMBERED_IMPORT_COUNT = 3;
 
@@ -64,6 +70,23 @@ export function rememberTodoImportId(ids: readonly string[], importId: string): 
 }
 
 export const TodoImportPolicy = {
+  getStage(todoImport: TodoImport): TodoImportStage {
+    return (
+      match(todoImport)
+        .returnType<TodoImportStage>()
+        .with({ status: P.union('UPLOADING', 'QUEUED', 'RUNNING') }, () => 'processing')
+        .with({ status: P.union('COMPLETED', 'UNDOING', 'UNDONE') }, () => 'finished')
+        .with({ status: 'FAILED', failureReason: 'UNDO_FAILED' }, () => 'undoFailed')
+        // 이유를 모르면(null) 만들다 멈춘 것과 같이 본다
+        .with(
+          { status: 'FAILED', failureReason: P.union('MATERIALIZATION_FAILED', 'STALLED', null) },
+          () => 'failed',
+        )
+        .with({ status: P.union('CANCELED', 'ABANDONED') }, () => 'stopped')
+        .exhaustive()
+    );
+  },
+
   isTerminal(todoImport: TodoImport): boolean {
     return match(todoImport.status)
       .with(P.union('COMPLETED', 'FAILED', 'CANCELED', 'ABANDONED', 'UNDONE'), () => true)
