@@ -1,3 +1,4 @@
+import type { DayOfWeek } from '@aido/api/vocabulary';
 import { SuggestionStatus } from '@src/features/assistant/suggestion/components/suggestion-status';
 import { SuggestionsList } from '@src/features/assistant/suggestion/components/suggestions-list';
 import type { AiSuggestion } from '@src/features/assistant/suggestion/domains/ai-suggestion.model';
@@ -16,13 +17,33 @@ import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import Animated, { FadeIn, LinearTransition, ReduceMotion } from 'react-native-reanimated';
 
-import {
-  DEMO_NEXT_ANALYSIS_TIME,
-  DEMO_SCRIPT_MS,
-  DEMO_SUGGESTIONS,
-} from '../constants/release-1-16-0.constants';
+import { DEMO_SCRIPT_MS } from '../constants/release-1-16-0.constants';
 import { useDemoScript } from '../hooks/use-demo-script';
 import { WhatsNewStep } from './whats-new-step';
+
+/** 최근 2주 기록에서 찾았다고 보여 줄 제안이다. 제목은 카탈로그 `v1_16_0.demo.suggestions`에 있다 */
+const DEMO_SUGGESTIONS = [
+  {
+    id: 'workout',
+    daysOfWeek: ['MON', 'WED', 'FRI'],
+    scheduledTime: '07:00',
+    evidence: { recordedCount: 6, completedCount: 5, periodDays: 14 },
+  },
+  {
+    id: 'vitamins',
+    daysOfWeek: ['MON', 'TUE', 'WED', 'THU', 'FRI'],
+    scheduledTime: '08:30',
+    evidence: { recordedCount: 10, completedCount: 9, periodDays: 14 },
+  },
+] as const satisfies readonly {
+  id: string;
+  daysOfWeek: readonly DayOfWeek[];
+  scheduledTime: string;
+  evidence: { recordedCount: number; completedCount: number; periodDays: number };
+}[];
+
+/** 서버가 알려 주는 다음 아침 분석 시각(현지 9시)과 같다 */
+const DEMO_NEXT_ANALYSIS_TIME = '09:00';
 
 type DemoSuggestion = (typeof DEMO_SUGGESTIONS)[number];
 /** 서버에 없는 예시 제안이라 처리 요청에 쓰지 않는 id다. 행은 예시 이름으로 구분한다 */

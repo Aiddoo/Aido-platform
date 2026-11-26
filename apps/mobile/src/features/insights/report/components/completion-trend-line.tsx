@@ -42,16 +42,29 @@ import {
   CHART_PAN_FAIL_OFFSET_Y_PT,
   CHART_REVEAL_EASING,
   CHART_TAP_MAX_DISTANCE_PT,
-  COMPLETION_TREND_ASPECT_RATIO,
-  COMPLETION_TREND_VIEW,
 } from '../constants/report-chart.constants';
 import {
   toCompletionTrend,
   toTrendPointIndex,
   type TrendGuide,
   type TrendPoint,
+  type TrendView,
 } from '../utils/completion-trend.geometry';
 
+// 차트와 .Loading이 같은 비율을 써야 받은 뒤 자리가 움직이지 않는다
+const COMPLETION_TREND_ASPECT_RATIO = 3;
+/**
+ * 추세선의 고정 좌표계. 왼쪽은 기준선 라벨("100%"), 위는 고른 주 값 라벨 자리다.
+ * 폭이 가장 좁은 SE의 큰 글꼴에서도 라벨이 들어가는 값이고, 폭에 비례해 늘어난다
+ */
+const COMPLETION_TREND_VIEW = {
+  width: 240,
+  height: 240 / COMPLETION_TREND_ASPECT_RATIO,
+  insetLeft: 34,
+  insetRight: 10,
+  insetTop: 22,
+  insetBottom: 8,
+} as const satisfies TrendView;
 const ACCESSIBILITY_ACTIONS = [{ name: 'increment' }, { name: 'decrement' }];
 const LINE_WIDTH = 2.5;
 const POINT_RADIUS = 4;

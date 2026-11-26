@@ -32,13 +32,43 @@ import {
 import { scheduleOnRN } from 'react-native-worklets';
 import { useUniwind } from 'uniwind';
 
-import {
-  VOICE_GRADIENT_COLORS,
-  VOICE_LIGHT_ORB,
-  VOICE_VISUAL,
-  VOICE_VISUAL_BARS,
-} from '../constants/voice.constants';
+import { VOICE_GRADIENT_COLORS } from '../constants/voice.constants';
 import { followLevel } from '../utils/waveform.geometry';
+
+const VOICE_VISUAL = {
+  height: 84,
+  orbSize: 72,
+  attackMs: 70,
+  releaseMs: 520,
+  maxFrameMs: 50,
+  settleMs: 400,
+} as const;
+
+const VOICE_VISUAL_BARS = {
+  /** 560pt 시트의 한쪽을 채우는 칸 수 */
+  maxCount: 40,
+  width: 3,
+  step: 6,
+  startOffset: 38,
+  minHeight: 3,
+  heightMargin: 22,
+  falloff: 0.45,
+  intervalMs: 70,
+  followMs: 37,
+  reducedMotionLevel: 0.12,
+  edgeOpacity: 0.35,
+} as const;
+
+const VOICE_LIGHT_ORB = {
+  radius: 22,
+  growRatio: 0.22,
+  /** 하이라이트 중심이 구 중심에서 왼쪽 위로 벗어나는 반지름 비율 */
+  highlightOffsetX: 0.35,
+  highlightOffsetY: 0.4,
+  /** 하이라이트 그라데이션이 퍼지는 반지름 배수와 색 경계 */
+  highlightRadiusRatio: 1.8,
+  gradientStops: [0, 0.55, 1],
+};
 
 const VOICE_FRAME_BUDGET = {
   /** 30fps 아래 */

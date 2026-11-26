@@ -6,6 +6,7 @@ import {
   selectTimeFormat,
   useGetPreferenceQueryOptions,
 } from '@src/features/identity/preference/queries/preference.queries';
+import { CATEGORY_COLORS } from '@src/features/planning/category/constants/todo-category.constants';
 import { CalendarSourceList } from '@src/features/planning/todo-import/components/calendar-source-list';
 import { ImportDestinationInput } from '@src/features/planning/todo-import/components/import-destination-input';
 import { ImportSourceList } from '@src/features/planning/todo-import/components/import-source-list';
@@ -42,14 +43,31 @@ import { Skeleton } from 'heroui-native';
 import { type ComponentProps, type ReactNode, useState } from 'react';
 import Animated, { FadeIn, LinearTransition, ReduceMotion } from 'react-native-reanimated';
 
-import {
-  DEMO_CALENDARS,
-  DEMO_CATEGORIES,
-  DEMO_IMPORTED_TODOS,
-  DEMO_SCRIPT_MS,
-} from '../constants/release-1-17-0.constants';
+import { DEMO_SCRIPT_MS } from '../constants/release-1-17-0.constants';
 import { useDemoScript } from '../hooks/use-demo-script';
 import { WhatsNewStep } from './whats-new-step';
+
+/** 이름은 카탈로그 `v1_17_0.demo.calendars`에 있다. 공휴일은 기본 선택에서 빠진다 */
+const DEMO_CALENDARS = [
+  { id: 'personal', color: CATEGORY_COLORS[6], accountKind: 'cloud', itemCount: 12 },
+  { id: 'school', color: CATEGORY_COLORS[9], accountKind: 'cloud', itemCount: 18 },
+  { id: 'holidays', color: CATEGORY_COLORS[14], accountKind: 'holidays', itemCount: 9 },
+] as const satisfies readonly (Pick<TodoImportCollection, 'color' | 'accountKind' | 'itemCount'> & {
+  id: string;
+})[];
+
+/** 이름은 카탈로그 `v1_17_0.demo.categories`에 있다. 첫 카테고리가 처음 넣을 곳이고 잠시 뒤 둘째로 바뀐다 */
+const DEMO_CATEGORIES = [
+  { id: 1, key: 'daily', color: CATEGORY_COLORS[0], activeCount: 48 },
+  { id: 2, key: 'study', color: CATEGORY_COLORS[9], activeCount: 12 },
+] as const;
+
+/** 제목은 카탈로그 `v1_17_0.demo.todos`에 있다 */
+const DEMO_IMPORTED_TODOS = [
+  { id: 'lecture', localTime: '09:30' },
+  { id: 'groupMeeting', localTime: '15:00' },
+  { id: 'clubDinner', localTime: '19:00' },
+] as const;
 
 type DemoImportedTodoId = (typeof DEMO_IMPORTED_TODOS)[number]['id'];
 
