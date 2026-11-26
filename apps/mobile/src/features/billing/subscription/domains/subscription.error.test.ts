@@ -5,7 +5,7 @@ import {
   findStoreUnavailableKind,
   getSubscriptionDiagnosticCode,
   getStoreUnavailableReport,
-  getSubscriptionFailureCause,
+  getSubscriptionFailure,
   SubscriptionErrors,
 } from './subscription.error';
 
@@ -40,8 +40,8 @@ describe('getSubscriptionDiagnosticCode', () => {
   });
 });
 
-describe('getSubscriptionFailureCause', () => {
-  it.each<[string, unknown, ReturnType<typeof getSubscriptionFailureCause>]>([
+describe('getSubscriptionFailure', () => {
+  it.each<[string, unknown, ReturnType<typeof getSubscriptionFailure>]>([
     ['기기 연결이 끊겨 내 정보를 받지 못하면', new NetworkError(), 'network'],
     ['내 정보 요청이 시간 초과되면', new TimeoutError(), 'network'],
     ['스토어에 연결하지 못하면', SubscriptionErrors.network('10'), 'network'],
@@ -62,7 +62,7 @@ describe('getSubscriptionFailureCause', () => {
     ['복원이 실패하면', SubscriptionErrors.restoreFailed('7'), 'restoreFailed'],
   ])('%s 원인은 %s다', (_case, error, expected) => {
     // When
-    const cause = getSubscriptionFailureCause(error);
+    const cause = getSubscriptionFailure(error);
 
     // Then
     expect(cause).toBe(expected);

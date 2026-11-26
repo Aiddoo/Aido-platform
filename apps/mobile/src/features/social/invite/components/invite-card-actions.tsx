@@ -25,7 +25,7 @@ import { type Href, useRouter } from 'expo-router';
 import type { InviteCode } from '../domains/invite-code.model';
 import { InviteRedemptionPolicy } from '../domains/invite-redemption.model';
 import { InviteRewardPolicy } from '../domains/invite-reward.model';
-import { getRedeemFailureReason } from '../domains/invite.error';
+import { getRedeemFailure } from '../domains/invite.error';
 import type { InviteLinkSource } from '../domains/pending-redemption.model';
 import { useInviteParams } from '../hooks/use-invite-params';
 import { useRedeemInviteMutationOptions } from '../queries/invite.mutations';
@@ -134,7 +134,7 @@ InviteCardActions.Redeem = function Redeem({ inviteCode }: { inviteCode: InviteC
       },
       onError: (error) => {
         // 내 링크를 연 경우에는 내 초대 화면으로 보내 친구에게 보내게 한다
-        if (getRedeemFailureReason(error) === 'self') {
+        if (getRedeemFailure(error) === 'self') {
           leaveInviteCard('/friends/invite');
         }
       },

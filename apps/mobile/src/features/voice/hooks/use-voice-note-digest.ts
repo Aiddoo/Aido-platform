@@ -11,12 +11,12 @@ import { toVoiceNoteDigestInput } from '../apis/voice-plan.mapper';
 import { PlanRequestPolicy, type PreparedPlanRequest } from '../domains/plan-request.model';
 import { createPlanReviewDraft } from '../domains/plan-review-draft.model';
 import { VoiceNotePolicy } from '../domains/voice-note.model';
-import { getVoicePlanFailureCause, type VoicePlanFailureCause } from '../domains/voice.error';
+import { getVoicePlanFailure, type VoicePlanFailure } from '../domains/voice.error';
 import { useCreateVoiceNoteDigestMutationOptions } from '../queries/voice.mutations';
 import type { VoiceNoteDigestInput } from '../schemas/voice-note-digest-request.schema';
 
 export interface VoiceNoteDigestFailure {
-  cause: VoicePlanFailureCause;
+  cause: VoicePlanFailure;
   /** 서버가 차감하지 않았다고 알렸을 때만 true다. 아니면 차감에 대해 말하지 않는다 */
   isFreeOfCharge: boolean;
 }
@@ -93,7 +93,7 @@ export function useVoiceNoteDigest({ accountId, draftId }: { accountId: string; 
           return requestDigest();
         }
       }
-      const cause = getVoicePlanFailureCause(error);
+      const cause = getVoicePlanFailure(error);
       // 정리 실패는 화면이 직접 보여 mutation이 알리지 않으므로 예상하지 못한 실패는 여기서 보고한다
       reportUnexpectedError(error);
       setFailure(cause === 'limit' ? null : { cause, isFreeOfCharge: isFreeOfChargeError(error) });

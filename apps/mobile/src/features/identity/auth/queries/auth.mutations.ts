@@ -20,7 +20,7 @@ import { useRouter } from 'expo-router';
 import { toOAuthProviderSlug } from '../apis/oauth.mapper';
 import { AuthTokensPolicy } from '../domains/auth-tokens.model';
 import {
-  findLoginFailureReason,
+  findLoginFailure,
   isAccountDeletionUnanswered,
   isEmailAlreadyRegisteredError,
   isEmailNotVerifiedError,
@@ -81,7 +81,7 @@ function useTrackLoginFailure() {
   const { trackEvent } = useTrack();
 
   return (method: 'email' | OAuthProviderSlug, error: unknown) => {
-    const reason = findLoginFailureReason(error, method);
+    const reason = findLoginFailure(error, method);
     if (reason != null) {
       trackEvent('auth_login_failed', { method, reason });
     }

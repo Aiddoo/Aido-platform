@@ -89,7 +89,7 @@ export function getPendingRefreshFailure(status: number): 'retry' | 'ended' {
 }
 
 /** 로그인 실패를 추적할 때의 이유. 서버·공급자 코드를 그대로 싣지 않고 몇 갈래로 묶는다 */
-export type LoginFailureReason =
+export type LoginFailure =
   | 'email_not_verified'
   | 'invalid_credentials'
   | 'network'
@@ -97,15 +97,15 @@ export type LoginFailureReason =
   | 'unknown';
 
 /** 사용자가 직접 닫은 소셜 창은 실패가 아니라 null이다. 서버가 거부한 것만 rejected이고, 앱이 판단한 실패(창 열기·코드 없음)는 unknown이다 */
-export function findLoginFailureReason(
+export function findLoginFailure(
   error: unknown,
   method: 'email' | OAuthProviderSlug,
-): LoginFailureReason | null {
+): LoginFailure | null {
   if (isLoginCancelledError(error)) {
     return null;
   }
   return match(error)
-    .returnType<LoginFailureReason>()
+    .returnType<LoginFailure>()
     .when(isEmailNotVerifiedError, () => 'email_not_verified')
     .when(
       (value) => method === 'email' && isPasswordMismatchError(value),

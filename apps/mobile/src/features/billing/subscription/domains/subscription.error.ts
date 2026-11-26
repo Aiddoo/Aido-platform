@@ -79,7 +79,7 @@ export function getSubscriptionDiagnosticCode(error: unknown): string {
 }
 
 /** network는 연결을 확인하면, server는 잠시 뒤 다시 하면 풀린다. store는 스토어에 닿지 못했거나 팔 요금제가 없다 */
-export type SubscriptionFailureCause =
+export type SubscriptionFailure =
   | 'network'
   | 'server'
   | 'store'
@@ -88,12 +88,12 @@ export type SubscriptionFailureCause =
   | 'purchaseFailed'
   | 'restoreFailed';
 
-export function getSubscriptionFailureCause(error: unknown): SubscriptionFailureCause {
+export function getSubscriptionFailure(error: unknown): SubscriptionFailure {
   return match(error)
-    .returnType<SubscriptionFailureCause>()
+    .returnType<SubscriptionFailure>()
     .with(P.instanceOf(SubscriptionError), ({ code }) =>
       match(code)
-        .returnType<SubscriptionFailureCause>()
+        .returnType<SubscriptionFailure>()
         .with(SUBSCRIPTION_ERROR_CODE.NETWORK, () => 'network')
         .with(
           SUBSCRIPTION_ERROR_CODE.STORE_UNAVAILABLE,

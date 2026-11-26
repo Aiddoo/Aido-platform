@@ -2,9 +2,9 @@ import type { ErrorCodeType } from '@aido/api/errors';
 import { NetworkError, ParseError, ServerError, TimeoutError } from '@src/shared/errors';
 import { createApiError } from '@src/testing/core';
 
-import { canRetryPlanFailure, getVoicePlanFailureCause } from './voice.error';
+import { canRetryPlanFailure, getVoicePlanFailure } from './voice.error';
 
-describe('getVoicePlanFailureCause', () => {
+describe('getVoicePlanFailure', () => {
   const serverError = (serverCode: ErrorCodeType | null) =>
     new ServerError(503, { serverCode, details: null, requestId: null, request: null });
 
@@ -65,7 +65,7 @@ describe('getVoicePlanFailureCause', () => {
     },
   ] as const)('$name은 $cause로 안내한다', ({ error, cause }) => {
     // When
-    const result = getVoicePlanFailureCause(error);
+    const result = getVoicePlanFailure(error);
 
     // Then
     expect(result).toBe(cause);

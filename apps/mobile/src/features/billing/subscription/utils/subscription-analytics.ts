@@ -1,5 +1,5 @@
 import { type EntitlementFeature } from '../domains/feature-quota.model';
-import type { SubscriptionFailureCause } from '../domains/subscription.error';
+import type { SubscriptionFailure } from '../domains/subscription.error';
 
 /** 대시보드가 서버 카탈로그 전부터 이 이름으로 집계해 와서 바꾸지 않는다. 새 기능은 snake_case 이름을 더한다 */
 const PREMIUM_GATE_ANALYTICS_FEATURE = {
@@ -36,10 +36,8 @@ const PURCHASE_FAILED_REASONS = {
   restoreFailed: 'store_error',
   purchaseCancelled: null,
   paymentPending: null,
-} as const satisfies Record<SubscriptionFailureCause, PurchaseFailedReason | null>;
+} as const satisfies Record<SubscriptionFailure, PurchaseFailedReason | null>;
 
-export function toPurchaseFailedReason(
-  cause: SubscriptionFailureCause,
-): PurchaseFailedReason | null {
+export function toPurchaseFailedReason(cause: SubscriptionFailure): PurchaseFailedReason | null {
   return PURCHASE_FAILED_REASONS[cause];
 }

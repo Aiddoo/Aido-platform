@@ -2,9 +2,9 @@ import { match } from 'ts-pattern';
 
 import {
   getSubscriptionDiagnosticCode,
-  getSubscriptionFailureCause,
+  getSubscriptionFailure,
   type StoreUnavailable,
-  type SubscriptionFailureCause,
+  type SubscriptionFailure,
 } from '../domains/subscription.error';
 
 export type SubscriptionLoadTarget = 'receipt' | 'plans';
@@ -43,7 +43,7 @@ export type SubscriptionActionFailure =
   | { type: 'paymentPending' }
   | ({ type: 'contactSupport' } & SubscriptionSupportFailure);
 
-function toDescriptionKey(cause: SubscriptionFailureCause): FailureDescriptionKey {
+function toDescriptionKey(cause: SubscriptionFailure): FailureDescriptionKey {
   return match(cause)
     .with('network', () => 'subscription:failure.description.network' as const)
     .with('store', () => 'subscription:failure.description.store' as const)
@@ -64,7 +64,7 @@ function toSupportFailure(
 ): SubscriptionSupportFailure {
   return {
     titleKey: FAILURE_TITLE_KEYS[target],
-    descriptionKey: toDescriptionKey(getSubscriptionFailureCause(error)),
+    descriptionKey: toDescriptionKey(getSubscriptionFailure(error)),
     diagnosticCode: getSubscriptionDiagnosticCode(error),
   };
 }
@@ -82,7 +82,7 @@ export function getSubscriptionActionFailure(
   target: SubscriptionActionTarget,
   error: unknown,
 ): SubscriptionActionFailure {
-  return match(getSubscriptionFailureCause(error))
+  return match(getSubscriptionFailure(error))
     .with('purchaseCancelled', () => ({ type: 'cancelled' as const }))
     .with('paymentPending', () => ({ type: 'paymentPending' as const }))
     .with('network', 'server', 'store', 'purchaseFailed', 'restoreFailed', () => ({

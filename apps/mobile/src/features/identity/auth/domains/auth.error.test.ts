@@ -4,7 +4,7 @@ import { createApiError } from '@src/testing/core';
 
 import {
   AUTH_ERROR_CODE,
-  findLoginFailureReason,
+  findLoginFailure,
   findResendCooldown,
   findVerificationCodeFieldError,
   getPendingRefreshFailure,
@@ -109,7 +109,7 @@ describe('findVerificationCodeFieldError', () => {
   });
 });
 
-describe('findLoginFailureReason', () => {
+describe('findLoginFailure', () => {
   const wrongPassword = createApiError(ErrorCode.USER_0602, { message: 'wrong' });
 
   it.each([
@@ -137,7 +137,7 @@ describe('findLoginFailureReason', () => {
     ['서버 장애', 'unknown', new ServerError(500), 'email'],
   ] as const)('%s는 %s다', (_name, reason, error, method) => {
     // When
-    const result = findLoginFailureReason(error, method);
+    const result = findLoginFailure(error, method);
 
     // Then
     expect(result).toBe(reason);
@@ -145,10 +145,7 @@ describe('findLoginFailureReason', () => {
 
   it('사용자가 직접 닫은 소셜 창은 실패가 아니다', () => {
     // When
-    const result = findLoginFailureReason(
-      new BusinessError(AUTH_ERROR_CODE.LOGIN_CANCELLED),
-      'apple',
-    );
+    const result = findLoginFailure(new BusinessError(AUTH_ERROR_CODE.LOGIN_CANCELLED), 'apple');
 
     // Then
     expect(result).toBeNull();

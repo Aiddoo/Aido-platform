@@ -16,7 +16,7 @@ import type { TodoFormValues } from '@src/features/planning/todo/schemas/todo-fo
 import { PlanRequestPolicy } from '@src/features/voice/domains/plan-request.model';
 import { createPlanReviewDraft } from '@src/features/voice/domains/plan-review-draft.model';
 import {
-  getVoicePlanFailureCause,
+  getVoicePlanFailure,
   isPlanKeyConflictError,
 } from '@src/features/voice/domains/voice.error';
 import { planInProgressRetryOptions } from '@src/features/voice/queries/voice.mutations';
@@ -387,7 +387,7 @@ export function useParseMemoMutationOptions({ memoId }: { memoId: number }) {
 
       // 한도 안내 시트는 정리를 시작한 편집기가 띄운다
       trackEvent('ai_parse_used', { success: false });
-      trackEvent('voice_plan_failed', { source: 'memo', cause: getVoicePlanFailureCause(error) });
+      trackEvent('voice_plan_failed', { source: 'memo', cause: getVoicePlanFailure(error) });
     },
     meta: {
       errorFeedback: {

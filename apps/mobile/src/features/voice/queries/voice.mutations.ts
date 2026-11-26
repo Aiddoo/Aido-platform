@@ -23,7 +23,7 @@ import { PLAN_IN_PROGRESS_RETRY } from '../constants/voice.constants';
 import type { PreparedPlanRequest } from '../domains/plan-request.model';
 import type { PlannedAction } from '../domains/planned-action.model';
 import type { VoicePlanSource } from '../domains/voice-plan.model';
-import { getVoicePlanFailureCause, isPlanInProgressError } from '../domains/voice.error';
+import { getVoicePlanFailure, isPlanInProgressError } from '../domains/voice.error';
 import type { CreateQuickPlanInput } from '../schemas/quick-plan-request.schema';
 import type { VoiceNoteDigestInput } from '../schemas/voice-note-digest-request.schema';
 import { toAnalyticsSource, summarizePlanForAnalytics } from '../utils/voice-analytics';
@@ -122,7 +122,7 @@ export function useApplyActionPlanMutationOptions({
       }
     },
     onError: (error) => {
-      const cause = getVoicePlanFailureCause(error);
+      const cause = getVoicePlanFailure(error);
       if (cause === 'source-memo-missing') {
         onMemoChanged();
       }
@@ -178,7 +178,7 @@ export function useCreateQuickPlanMutationOptions() {
         return;
       }
 
-      const cause = getVoicePlanFailureCause(error);
+      const cause = getVoicePlanFailure(error);
       trackEvent('voice_plan_failed', {
         source: toAnalyticsSource(input.source),
         cause,
@@ -251,7 +251,7 @@ export function useCreateVoiceNoteDigestMutationOptions() {
         return;
       }
 
-      const cause = getVoicePlanFailureCause(error);
+      const cause = getVoicePlanFailure(error);
       trackEvent('voice_plan_failed', { source: toAnalyticsSource('voice-note'), cause });
       haptics.notify('error');
       // 한도 안내 시트는 정리를 요청한 화면이 띄운다

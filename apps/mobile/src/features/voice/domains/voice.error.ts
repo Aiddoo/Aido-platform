@@ -1,7 +1,7 @@
 import { ErrorCode } from '@aido/api/errors';
 import { isApiError, isConnectivityError, ServerError } from '@src/shared/errors';
 
-export type VoicePlanFailureCause =
+export type VoicePlanFailure =
   | 'network'
   | 'consent-required'
   | 'limit'
@@ -34,7 +34,7 @@ function isAiUnavailableServerError(error: unknown) {
   return error instanceof ServerError && error.serverCode === ErrorCode.AI_1301;
 }
 
-export function getVoicePlanFailureCause(error: unknown): VoicePlanFailureCause {
+export function getVoicePlanFailure(error: unknown): VoicePlanFailure {
   if (isConnectivityError(error)) {
     return 'network';
   }
@@ -76,6 +76,6 @@ export function getVoicePlanFailureCause(error: unknown): VoicePlanFailureCause 
 }
 
 /** 같은 글자를 다시 보내도 소용없는 실패인지. 너무 긴 글은 서버가 다시 받아 주지 않는다 */
-export function canRetryPlanFailure(cause: VoicePlanFailureCause) {
+export function canRetryPlanFailure(cause: VoicePlanFailure) {
   return cause !== 'too-long';
 }

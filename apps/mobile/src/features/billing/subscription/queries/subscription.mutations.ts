@@ -16,7 +16,7 @@ import { match } from 'ts-pattern';
 
 import {
   getSubscriptionDiagnosticCode,
-  getSubscriptionFailureCause,
+  getSubscriptionFailure,
 } from '../domains/subscription.error';
 import { type SubscriptionPlan, SubscriptionPolicy } from '../domains/subscription.model';
 import { toPurchaseFailedReason } from '../utils/subscription-analytics';
@@ -102,7 +102,7 @@ export function usePurchaseMutationOptions() {
       }
     },
     onError: (error, plan) =>
-      match(getSubscriptionFailureCause(error))
+      match(getSubscriptionFailure(error))
         // 사용자가 직접 취소했으면 이미 알고 있어 알리지 않고 퍼널에만 남긴다
         .with('purchaseCancelled', () => {
           trackEvent('purchase_cancelled', {
@@ -172,7 +172,7 @@ export function useRestoreMutationOptions() {
     },
     // 문의로 잇는 토스트는 이동을 아는 복원 버튼이 이 onError에 이어 mutation 단계에서 띄운다
     onError: (error) =>
-      match(getSubscriptionFailureCause(error))
+      match(getSubscriptionFailure(error))
         .with('purchaseCancelled', 'paymentPending', noop)
         .with('network', 'server', 'store', 'purchaseFailed', 'restoreFailed', (cause) => {
           haptics.notify('error');

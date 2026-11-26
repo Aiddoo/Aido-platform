@@ -2,7 +2,7 @@ import type { SpeechLocale } from '@src/core/ports/speech-recognizer';
 import type { AnalyticsSource } from '@src/shared/analytics/event-vocabulary';
 
 import type { VoiceCaptureFailureReason } from '../domains/voice-capture.model';
-import type { VoicePlanFailureCause } from '../domains/voice.error';
+import type { VoicePlanFailure } from '../domains/voice.error';
 
 export type VoiceCaptureMode = 'quick' | 'note';
 export type VoiceCaptureEntry = 'add_todo_sheet' | 'memo_tab' | 'quick_voice_upgrade';
@@ -63,7 +63,7 @@ declare module '@src/shared/analytics/event-map' {
     };
     voice_plan_failed: {
       source: AnalyticsSource<VoicePlanAnalyticsSource>;
-      cause: VoicePlanFailureCause;
+      cause: VoicePlanFailure;
     };
     voice_plan_applied: {
       source: AnalyticsSource<VoicePlanAnalyticsSource>;

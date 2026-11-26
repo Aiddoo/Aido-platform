@@ -8,7 +8,7 @@ import {
 } from '@src/shared/storage/define-stored-value';
 
 import { parseInstallReferrerInviteCode } from '../apis/invite.mapper';
-import { getRedeemFailureReason, isTerminalRedeemFailure } from '../domains/invite.error';
+import { getRedeemFailure, isTerminalRedeemFailure } from '../domains/invite.error';
 import type { PendingRedemption } from '../domains/pending-redemption.model';
 import { installReferrerCheckedStoredValue } from '../schemas/install-referrer-checked-storage.schema';
 import { pendingRedemptionStoredValue } from '../schemas/pending-redemption-storage.schema';
@@ -27,7 +27,7 @@ export class PendingRedemptionService {
   clearPendingRedemptionIfTerminal = (inviteCode: string, error: unknown) => {
     if (
       readStoredValue(this.#storage, pendingRedemptionStoredValue)?.inviteCode === inviteCode &&
-      isTerminalRedeemFailure(getRedeemFailureReason(error))
+      isTerminalRedeemFailure(getRedeemFailure(error))
     ) {
       removeStoredValue(this.#storage, pendingRedemptionStoredValue);
     }

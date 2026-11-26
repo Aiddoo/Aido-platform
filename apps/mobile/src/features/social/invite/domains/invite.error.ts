@@ -39,7 +39,7 @@ export function findInviteCodeFieldError(error: unknown) {
 
 /** 이유를 아는 수락 거절(아래 표). 연결·서버 장애·모르는 코드는 빼고 이유를 분석에 남긴다 */
 export function isRedeemRejectedError(error: unknown) {
-  return getRedeemFailureReason(error) !== 'unknown';
+  return getRedeemFailure(error) !== 'unknown';
 }
 
 /** 서버 플래그로 친구 초대가 꺼져 있다(INVITE_2105). 재시도 대신 쓸 수 없음 안내를 보인다 */
@@ -48,7 +48,7 @@ export function isInviteDisabledError(error: unknown) {
 }
 
 /** 초대 수락이 실패한 이유. 분석 이벤트 invite_redeem_failed.reason이 이 값을 그대로 쓴다 */
-export type RedeemFailureReason =
+export type RedeemFailure =
   | 'invalid_code'
   | 'not_found'
   | 'rotated'
@@ -59,7 +59,7 @@ export type RedeemFailureReason =
   | 'blocked'
   | 'unknown';
 
-export function getRedeemFailureReason(error: unknown): RedeemFailureReason {
+export function getRedeemFailure(error: unknown): RedeemFailure {
   if (isCodedError(error, INVITE_ERROR_CODE.INVALID_CODE)) {
     return 'invalid_code';
   }
@@ -79,7 +79,7 @@ export function getRedeemFailureReason(error: unknown): RedeemFailureReason {
 }
 
 /** 다시 열어도 결과가 같은 실패인지. 같으면 이어서 열 초대를 지우고, 잠시 막힌 경우(초대 중지·친구 자리·장애)는 지우지 않는다 */
-export function isTerminalRedeemFailure(reason: RedeemFailureReason) {
+export function isTerminalRedeemFailure(reason: RedeemFailure) {
   return match(reason)
     .with('invalid_code', 'not_found', 'rotated', 'self', 'already_redeemed', 'blocked', () => true)
     .with('disabled', 'friend_limit', 'unknown', () => false)
