@@ -93,7 +93,7 @@ ProfileAvatarButton.ImageSheet = function ImageSheet({
 }: ImageSheetProps) {
   const { t } = useTranslation(['user', 'common']);
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
-  const updateProfileMutation = useMutation(useUpdateProfileMutationOptions());
+  const updateProfile = useMutation(useUpdateProfileMutationOptions());
   // 고르기 전에는 저장된 사진을 보여 준다. 서버 값을 state로 복사하지 않고, 지우기는 따로 저장한다
   const [chosenIcon, setChosenIcon] = useState<string | null>(null);
   const selectedIcon = chosenIcon ?? user.profileImage;
@@ -107,7 +107,7 @@ ProfileAvatarButton.ImageSheet = function ImageSheet({
 
   const handleSave = (profileImage: string | null) => {
     if (profileImage !== user.profileImage) {
-      updateProfileMutation.mutate({ profileImage }, { onSuccess: () => handleOpenChange(false) });
+      updateProfile.mutate({ profileImage }, { onSuccess: () => handleOpenChange(false) });
     } else {
       handleOpenChange(false);
     }
@@ -125,7 +125,7 @@ ProfileAvatarButton.ImageSheet = function ImageSheet({
             color="dark"
             display="block"
             onPress={() => handleSave(null)}
-            isDisabled={updateProfileMutation.isPending}
+            isDisabled={updateProfile.isPending}
             className="flex-1"
           >
             {t('profile.imageSheet.clear')}
@@ -135,7 +135,7 @@ ProfileAvatarButton.ImageSheet = function ImageSheet({
             color="primary"
             display="block"
             onPress={() => handleSave(selectedIcon)}
-            isLoading={updateProfileMutation.isPending}
+            isLoading={updateProfile.isPending}
             className="flex-1"
           >
             {t('common:actions.save')}
@@ -157,7 +157,7 @@ ProfileAvatarButton.ImageSheet = function ImageSheet({
         <IconInput
           value={selectedIcon}
           onValueChange={setChosenIcon}
-          isDisabled={updateProfileMutation.isPending}
+          isDisabled={updateProfile.isPending}
         />
       </VStack>
     </BottomSheet>
