@@ -44,6 +44,7 @@ onFlowComplete:
     id: ${output.ids.todo.checkbox(output.todo.id)}
 # Then: 서버에서도 완료로 바뀐다
 - evalScript: ${output.main.waitForTodo(output.category.id, output.todoTitle, true)}
+- runFlow: ../../subflows/notification/dismiss-marketing-opt-in.yaml
 
 # When: 더보기에서 지운다
 - tapOn:

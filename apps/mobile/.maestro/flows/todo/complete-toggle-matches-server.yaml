@@ -40,6 +40,7 @@ onFlowComplete:
     id: ${output.ids.todo.checkbox(output.todo.id)}
     checked: true
 - evalScript: ${output.main.waitForTodo(output.category.id, output.todoTitle, true)}
+- runFlow: ../../subflows/notification/dismiss-marketing-opt-in.yaml
 
 # When: 다시 누른다
 - tapOn:

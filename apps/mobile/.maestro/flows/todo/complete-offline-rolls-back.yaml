@@ -1,5 +1,6 @@
 appId: ${MAESTRO_APP_ID}
 name: 오프라인에서 체크박스를 누르면 실패 안내와 함께 누르기 전으로 돌아오고 연결 뒤 다시 누르면 완료된다
+# 에뮬레이터가 adb reverse로 로컬 API에 닿으면 비행기 모드에서도 요청이 성공해 이 흐름은 실패한다(2026-11-27 Pixel 6 에뮬레이터)
 tags:
   - regression
   - todo

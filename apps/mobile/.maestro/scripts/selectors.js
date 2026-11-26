@@ -150,6 +150,8 @@ output.labels = {
     deviceOffTitle: '.*(기기 알림이 꺼져 있어요|Device notifications are off).*',
     granted: '허용됨|Allowed',
     openSettings: '설정 열기|Open Settings',
+    // notification.json marketingOptIn.later(완료 뒤 뜨는 마케팅 알림 동의 시트)
+    marketingOptInLater: '나중에|Not now',
   },
   // mutation 실패 토스트. src/shared/errors/infra-error.ts NetworkError → src/shared/i18n/locales/*/common.json infraErrors.network
   app: {

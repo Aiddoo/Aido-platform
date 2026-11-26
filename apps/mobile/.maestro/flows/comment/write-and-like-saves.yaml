@@ -51,8 +51,12 @@ onFlowComplete:
       id: ${output.ids.comment.body(output.myComment.id)}
     timeout: 10000
 
-# When: 친구 댓글의 하트를 누른다
-- hideKeyboard
+# When: 친구 댓글의 하트를 누른다(Android의 hideKeyboard는 키보드가 내려가 있으면 뒤로 가기라 화면을 떠난다)
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - hideKeyboard
 - tapOn:
     id: ${output.ids.comment.likeButton(output.friendComment.id)}
 # Then: 하트가 바로 켜지고 서버에도 내 좋아요가 남는다
