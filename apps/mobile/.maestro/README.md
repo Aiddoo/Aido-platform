@@ -109,6 +109,8 @@ iOS 시뮬레이터는 영어 키보드를 첫 번째로 둔다(`xcrun simctl sp
 알림 안내가 뜨고 새로운 기능 소개가 피드를 덮는다. 로그인 하위 흐름이 부르는 `subflows/app/dismiss-hints.yaml`이 둘 다 닫는다.
 푸시를 받아야 하는 흐름은 `subflows/notification/allow-push.yaml`이 알림 설정에서 시스템 창을 허용한다.
 
+앱 탓이 아닌 실패: `iOS driver not ready in time`은 `MAESTRO_DRIVER_STARTUP_TIMEOUT=300000`으로 다시 돌린다(MCP와 CLI를 한 기기에 함께 쓰지 않는다). 준비 단계의 카테고리 `403`은 계정에 손으로 만든 카테고리가 남아 무료 한도(3개)를 넘은 것이라 `e2e:accounts delete` 뒤 `create`로 새로 만든다. 메모 만들기·고치기 흐름은 iOS에서 메모 카드가 화면 트리에 없어 실패한다(#1785).
+
 ### 시뮬레이터 푸시
 
 `run-e2e.ts`가 `127.0.0.1:8091/push`에 입구를 열고 `MAESTRO_SIMULATOR_PUSH_URL`로 흐름에 알린다. 흐름은 알림함의 실제 알림(id·문구)을
