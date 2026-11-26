@@ -1,5 +1,9 @@
-// 흐름이 개발 서버에 데이터를 준비·확인·정리할 때 쓰는 HTTP 도우미. config.js 다음에 실행한다.
+// 흐름이 개발 서버에 데이터를 준비·확인·정리할 때 쓰는 HTTP 도우미(Maestro runScript, GraalJS). config.js 다음에 실행한다.
 // 흐름은 `output.main = output.api.signIn('main')`으로 세션을 얻고 세션의 메서드를 evalScript 한 줄로 부른다.
+// 이름 규칙: 준비는 create*·send*·accept*·complete*, 정리는 remove*(없으면 넘긴다), 조회는 find*,
+// 참·거짓 확인은 has*·is*, 서버 반영을 기다리면 waitFor*(못 찾으면 무엇을 기다렸는지 말하며 실패한다).
+// Node 도구(accounts.ts)와 store-screenshots/scripts/lib.js도 로그인·로컬 주소 확인을 따로 갖는다. 런타임(Node·GraalJS)과
+// 계정·앱(개발 빌드·Release 캡처)이 달라 한 파일로 모을 수 없다.
 // docs: https://docs.maestro.dev/maestro-flows/javascript/make-http-requests
 //       https://docs.maestro.dev/maestro-flows/javascript/manage-data-and-states
 
@@ -41,7 +45,13 @@ function poll(read, description) {
       return value;
     }
     if (Date.now() > deadline) {
-      throw new Error(description + '을(를) ' + POLL_TIMEOUT_MS + 'ms 안에 확인하지 못했습니다.');
+      throw new Error(
+        '서버에서 ' +
+          description +
+          '을(를) ' +
+          POLL_TIMEOUT_MS +
+          'ms 동안 기다렸지만 보지 못했습니다.',
+      );
     }
     const next = Date.now() + POLL_INTERVAL_MS;
     while (Date.now() < next) {
@@ -83,7 +93,7 @@ function signIn(role) {
     userId: me.userId,
     userTag: me.userTag,
     name: me.name || account.name,
-    subscriptionStatus: () => call('GET', '/v1/auth/me', token).subscriptionStatus,
+    findSubscriptionStatus: () => call('GET', '/v1/auth/me', token).subscriptionStatus,
 
     // 무료 한도(3개)가 기본 카테고리 2개 + 흐름이 만드는 1개라, 지난 실행이 남긴 E2E 카테고리를 먼저 치운다
     removeE2eCategories: () => {
@@ -98,8 +108,8 @@ function signIn(role) {
     createCategory: (label) =>
       call('POST', '/v1/todo-categories', token, { name: E2E_PREFIX + label, color: '#FFB3B3' })
         .category,
-    firstDefaultCategory: () =>
-      categories().find((category) => !category.name.startsWith(E2E_PREFIX)),
+    findDefaultCategory: () =>
+      categories().find((category) => !category.name.startsWith(E2E_PREFIX)) || null,
     hasCategory: (categoryId) => categories().some((category) => category.id === categoryId),
 
     createTodo: (categoryId, title) =>
@@ -110,6 +120,7 @@ function signIn(role) {
       }).todo,
     completeTodo: (todoId) =>
       call('PATCH', '/v1/todos/' + todoId + '/complete', token, { completed: true }),
+    hasTodo: (todoId) => call('GET', '/v1/todos/' + todoId, token, undefined, [404]) != null,
     hasTodoIn: (categoryId, todoId) => todosIn(categoryId).some((todo) => todo.id === todoId),
     waitForTodo: (categoryId, title, isCompleted) =>
       poll(
@@ -117,18 +128,17 @@ function signIn(role) {
           todosIn(categoryId).find(
             (todo) => todo.title === title && todo.completed === isCompleted,
           ) || null,
-        '할 일 "' + title + '"',
+        (isCompleted ? '완료한' : '완료하지 않은') + ' 할 일 "' + title + '"',
       ),
     waitForTodoGone: (categoryId, title) =>
       poll(
         () => !todosIn(categoryId).some((todo) => todo.title === title),
-        '지운 할 일 "' + title + '"',
+        '할 일 "' + title + '"이 지워진 것',
       ),
-    todoExists: (todoId) => call('GET', '/v1/todos/' + todoId, token, undefined, [404]) != null,
-    deleteTodo: (todoId) => call('DELETE', '/v1/todos/' + todoId, token, undefined, [404]),
+    removeTodo: (todoId) => call('DELETE', '/v1/todos/' + todoId, token, undefined, [404]),
 
     waitForMemo: (text) => poll(() => memosContaining(text)[0] || null, '메모 "' + text + '"'),
-    deleteMemosContaining: (text) => {
+    removeMemosContaining: (text) => {
       for (const memo of memosContaining(text)) {
         call('DELETE', '/v1/memos/' + memo.id, token, undefined, [404]);
       }
@@ -144,15 +154,15 @@ function signIn(role) {
     isNotificationRead: (notificationId) =>
       inbox().some((notification) => notification.id === notificationId && notification.isRead),
 
-    inviteCode: () => call('GET', '/v1/invites/me', token).code,
+    findInviteCode: () => call('GET', '/v1/invites/me', token).code,
     hasInvited: (userId) =>
       call('GET', '/v1/invites/me/invitees', token).items.some((item) => item.userId === userId),
     isFriendOf: (userId) =>
       call('GET', '/v1/follows/friends', token).friends.some((friend) => friend.id === userId),
-    requestFriend: (userTag) => call('POST', '/v1/follows/' + userTag, token),
-    acceptFriend: (userId) => call('PATCH', '/v1/follows/' + userId + '/accept', token),
+    sendFriendRequest: (userTag) => call('POST', '/v1/follows/' + userTag, token),
+    acceptFriendRequest: (userId) => call('PATCH', '/v1/follows/' + userId + '/accept', token),
     // 친구 끊기와 보낸 요청 취소가 같은 경로다. 이미 없으면 404라 정리에서 그대로 넘긴다
-    unfollow: (userId) => call('DELETE', '/v1/follows/' + userId, token, undefined, [404]),
+    removeFriendship: (userId) => call('DELETE', '/v1/follows/' + userId, token, undefined, [404]),
   };
 }
 

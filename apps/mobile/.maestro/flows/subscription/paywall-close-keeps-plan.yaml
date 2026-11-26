@@ -6,7 +6,7 @@ tags:
 onFlowStart:
   - runFlow: ../../subflows/app/load-helpers.yaml
   - evalScript: ${output.main = output.api.signIn('main')}
-  - evalScript: ${output.subscriptionBefore = output.main.subscriptionStatus()}
+  - evalScript: ${output.subscriptionBefore = output.main.findSubscriptionStatus()}
   - runFlow: ../../subflows/app/launch-fresh.yaml
 ---
 # Given: 무료 계정으로 로그인했다
@@ -34,5 +34,5 @@ onFlowStart:
 - assertNotVisible:
     id: ${output.ids.subscription.paywall}
 - assertTrue:
-    condition: ${output.main.subscriptionStatus() === output.subscriptionBefore}
+    condition: ${output.main.findSubscriptionStatus() === output.subscriptionBefore}
     label: 구독 상태가 그대로다

@@ -8,13 +8,13 @@ onFlowStart:
   - runFlow: ../../subflows/app/load-helpers.yaml
   - evalScript: ${output.main = output.api.signIn('main')}
   - evalScript: ${output.second = output.api.signIn('second')}
-  - evalScript: ${output.second.unfollow(output.main.userId)}
-  - evalScript: ${output.main.unfollow(output.second.userId)}
-  - evalScript: ${output.second.requestFriend(output.main.userTag)}
+  - evalScript: ${output.second.removeFriendship(output.main.userId)}
+  - evalScript: ${output.main.removeFriendship(output.second.userId)}
+  - evalScript: ${output.second.sendFriendRequest(output.main.userTag)}
   - evalScript: ${output.notification = output.main.waitForNotification('FOLLOW_NEW')}
   - runFlow: ../../subflows/app/launch-fresh.yaml
 onFlowComplete:
-  - evalScript: ${output.second && output.main && output.second.unfollow(output.main.userId)}
+  - evalScript: ${output.second && output.main && output.second.removeFriendship(output.main.userId)}
 ---
 # Given: 두 번째 계정이 친구 요청을 보내 알림함에 알림이 있다
 - runFlow:

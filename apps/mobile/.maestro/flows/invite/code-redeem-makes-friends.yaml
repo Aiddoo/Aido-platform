@@ -8,13 +8,13 @@ onFlowStart:
   - runFlow: ../../subflows/app/load-helpers.yaml
   - evalScript: ${output.main = output.api.signIn('main')}
   - evalScript: ${output.second = output.api.signIn('second')}
-  - evalScript: ${output.second.unfollow(output.main.userId)}
-  - evalScript: ${output.main.unfollow(output.second.userId)}
-  - evalScript: ${output.inviteCode = output.main.inviteCode()}
+  - evalScript: ${output.second.removeFriendship(output.main.userId)}
+  - evalScript: ${output.main.removeFriendship(output.second.userId)}
+  - evalScript: ${output.inviteCode = output.main.findInviteCode()}
   - runFlow: ../../subflows/app/launch-fresh.yaml
 onFlowComplete:
-  - evalScript: ${output.second && output.main && output.second.unfollow(output.main.userId)}
-  - evalScript: ${output.second && output.main && output.main.unfollow(output.second.userId)}
+  - evalScript: ${output.second && output.main && output.second.removeFriendship(output.main.userId)}
+  - evalScript: ${output.second && output.main && output.main.removeFriendship(output.second.userId)}
 ---
 # Given: 아직 초대를 수락한 적 없는 두 번째 계정으로 로그인했다
 - assertTrue:

@@ -9,10 +9,10 @@ onFlowStart:
   - evalScript: ${output.main.removeE2eCategories()}
   - evalScript: ${output.category = output.main.createCategory('move ' + output.config.runId)}
   - evalScript: ${output.todo = output.main.createTodo(output.category.id, 'E2E move ' + output.config.runId)}
-  - evalScript: ${output.target = output.main.firstDefaultCategory()}
+  - evalScript: ${output.target = output.main.findDefaultCategory()}
   - runFlow: ../../subflows/app/launch-fresh.yaml
 onFlowComplete:
-  - evalScript: ${output.main && output.todo && output.main.deleteTodo(output.todo.id)}
+  - evalScript: ${output.main && output.todo && output.main.removeTodo(output.todo.id)}
   - evalScript: ${output.main && output.main.removeE2eCategories()}
 ---
 # Given: 할 일 하나가 든 테스트 카테고리의 삭제 시트를 연다

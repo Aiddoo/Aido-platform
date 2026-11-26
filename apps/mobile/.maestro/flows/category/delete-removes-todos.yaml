@@ -11,7 +11,7 @@ onFlowStart:
   - evalScript: ${output.todo = output.main.createTodo(output.category.id, 'E2E together ' + output.config.runId)}
   - runFlow: ../../subflows/app/launch-fresh.yaml
 onFlowComplete:
-  - evalScript: ${output.main && output.todo && output.main.deleteTodo(output.todo.id)}
+  - evalScript: ${output.main && output.todo && output.main.removeTodo(output.todo.id)}
   - evalScript: ${output.main && output.main.removeE2eCategories()}
 ---
 # Given: 할 일 하나가 든 테스트 카테고리의 삭제 시트를 연다
@@ -40,5 +40,5 @@ onFlowComplete:
     condition: ${!output.main.hasCategory(output.category.id)}
     label: 서버에서 카테고리가 지워졌다
 - assertTrue:
-    condition: ${!output.main.todoExists(output.todo.id)}
+    condition: ${!output.main.hasTodo(output.todo.id)}
     label: 카테고리의 할 일도 지워졌다

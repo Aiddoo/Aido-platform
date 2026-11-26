@@ -10,7 +10,7 @@ onFlowStart:
   - evalScript: ${output.editedText = 'E2E memo edited ' + output.config.runId}
   - runFlow: ../../subflows/app/launch-fresh.yaml
 onFlowComplete:
-  - evalScript: ${output.main && output.main.deleteMemosContaining('E2E memo')}
+  - evalScript: ${output.main && output.main.removeMemosContaining('E2E memo')}
 ---
 # Given: 로그인했다
 - runFlow:
