@@ -66,11 +66,6 @@ function featureFolders(folders) {
   return `^src/features/.+/(?:${folders.join('|')})/`;
 }
 
-// 래칫: 아직 고치지 않은 feature. 그 feature 층이 위반을 고치면 목록에서 지운다(docs/architecture/guardrails.md)
-function pendingFeatures(features) {
-  return `^src/features/(?:${features.join('|')})/`;
-}
-
 // 분석 helper(utils/*-analytics.ts)는 mutation 콜백과 다른 feature가 부르는 추적 입구다(docs/observability.md)
 const ANALYTICS_UTILS = '/utils/[^/]+-analytics\\.ts$';
 // 초안 변환(utils/*-draft.ts)은 저장 요청의 재료라 mutation이 쓴다
@@ -130,10 +125,7 @@ const modelAndFolderRules = [
     comment:
       '도메인 모델은 schemas/를 import하지 않는다. 폼·route·요청 스키마가 모델에서 pick·omit·extend로 유도하고 거꾸로는 가지 않는다.',
     severity: 'error',
-    from: {
-      path: DOMAIN_MODEL,
-      pathNot: [TEST, pendingFeatures([])],
-    },
+    from: { path: DOMAIN_MODEL, pathNot: TEST },
     to: { path: '/schemas/' },
   },
   {
@@ -152,10 +144,7 @@ const modelAndFolderRules = [
     comment:
       'mapper는 바깥 값과 모델만 바꾼다. 기능 utils/(view-model의 라벨 키·포맷)를 import하지 않는다. 표시는 컴포넌트가 view-model로 한다.',
     severity: 'error',
-    from: {
-      path: '[^/]+\\.mapper\\.tsx?$',
-      pathNot: [TEST, pendingFeatures([])],
-    },
+    from: { path: '[^/]+\\.mapper\\.tsx?$', pathNot: TEST },
     to: { path: featureFolders(['utils']) },
   },
   {
@@ -163,10 +152,7 @@ const modelAndFolderRules = [
     comment:
       'queries/(키·옵션·select·cache helper)는 hooks/·utils/·services/를 import하지 않는다(타입은 된다). 서비스는 DI 훅으로 받고, 토스트·이동은 호출부가, 표시 가공은 컴포넌트가 한다. 분석 helper와 초안 변환은 된다.',
     severity: 'error',
-    from: {
-      path: featureFolders(['queries']),
-      pathNot: [TEST, pendingFeatures([])],
-    },
+    from: { path: featureFolders(['queries']), pathNot: TEST },
     to: {
       path: featureFolders(['hooks', 'utils', 'services']),
       pathNot: [ANALYTICS_UTILS, DRAFT_UTILS],

@@ -122,7 +122,7 @@
 
 끊지 못한 양방향 쌍 하나(`planning/category <-> planning/todo`)만 `scripts/feature-graph.cjs`의 `ALLOWED_FEATURE_CYCLES`에 이유와 함께 남았다. 새 쌍은 막고, 쌍이 사라지면 목록에서 지우라고 실패한다. 새 항목은 이유와 함께 직접 적는다. 엄격한 없음 비교는 그 줄 위 `// oxlint-disable-next-line aido/no-strict-nullish -- <이유>`로만 끄고, 쓰지 않는 지시문은 Oxlint가 실패시킨다.
 
-- 앱 구조 규칙은 래칫으로 건다. 위반이 남은 기능 폴더만 끄고 새 폴더는 처음부터 켜진다. 꺼 둔 폴더는 설정이 말한다: `apps/mobile/.oxlintrc.json`의 "래칫" off 블록, `apps/mobile/.dependency-cruiser.cjs`의 `pendingFeatures`, `apps/mobile/scripts/feature-graph.cjs`의 `LOCAL_ONLY_PENDING_FEATURES`. 기능 층이 그 폴더를 고치면 그 줄을 지운다.
+- 기능 폴더 단위의 예외는 없다. 아직 위반이 남은 자리는 설정이 말한다: `apps/mobile/.oxlintrc.json`의 "래칫" off 블록(`shared`·`bootstrap`의 몇 파일), `apps/mobile/.dependency-cruiser.cjs`의 `PENDING_INFRA_ROUTES`. 그 자리를 고치면 그 줄을 지우고, 새 폴더는 처음부터 켜진다.
 
 - `frozenNames`는 baseline이 아니라 동사 목록([observability](../observability.md#선언과-이름)) 밖인 GA 대시보드 이름의 영구 목록이다. 동사 목록을 바꾸면 규칙의 `EVENT_VERBS`와 이 목록을 함께 고친다.
 

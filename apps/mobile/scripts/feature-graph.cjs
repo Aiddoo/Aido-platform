@@ -268,9 +268,6 @@ function checkFeatureGraph(modules, root) {
 const LOCAL_ONLY_CANDIDATE = /^src\/features\/.+\/(?:components|hooks)\/.+\.tsx?$/u;
 // route·bootstrap이 쓰는 파일은 기능의 공개 면이라 따로 둔다. 컴포넌트·훅 하나만 쓰면 그 파일의 지역 조각이다
 const COMPONENT_OR_HOOK_IMPORTER = /^src\/(?:features|shared)\/.+\/(?:components|hooks)\//u;
-// 래칫: 아직 고치지 않은 feature. 그 feature 층이 끝나면 지운다. 남길 파일(Skia 레이어·차트·상태 기계 훅)은 자체 테스트를 둔다
-const LOCAL_ONLY_PENDING_FEATURES = new Set();
-
 // 한 파일만 쓰지만 따로 두는 파일과 이유. 새 파일은 경고하고, 더는 해당하지 않는 파일은 목록에서 지우라고 실패한다.
 // `/`로 끝나는 항목은 그 폴더 아래 전부다. 같은 이유로 따로 두는 파일 묶음(Skia 장면 레이어)을 한 줄로 적는다
 const ALLOWED_LOCAL_ONLY_FILES = {
@@ -329,12 +326,7 @@ const ALLOWED_LOCAL_ONLY_FILES = {
 /** 운영 importer가 컴포넌트·훅 하나뿐이고 자체 테스트가 없는 기능 components/·hooks/ 파일과 그 importer */
 function listLocalOnlyFiles(modules) {
   return modules.flatMap((module) => {
-    const feature = getFeatureName(module.source);
-    if (
-      !LOCAL_ONLY_CANDIDATE.test(module.source) ||
-      TEST_PATH.test(module.source) ||
-      LOCAL_ONLY_PENDING_FEATURES.has(feature)
-    ) {
+    if (!LOCAL_ONLY_CANDIDATE.test(module.source) || TEST_PATH.test(module.source)) {
       return [];
     }
     const dependents = module.dependents ?? [];
