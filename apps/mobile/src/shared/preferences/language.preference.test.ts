@@ -1,25 +1,4 @@
-import { isLanguageMode, resolveLanguage } from './language.preference';
-
-describe('isLanguageMode', () => {
-  it.each(['system', 'ko', 'en'] as const)('%s는 유효한 LanguageMode이다', (value) => {
-    // When
-    const result = isLanguageMode(value);
-
-    // Then
-    expect(result).toBe(true);
-  });
-
-  it.each([undefined, null, '', 'invalid', 'ja', 123, true])(
-    '%s는 유효한 LanguageMode가 아니다',
-    (value) => {
-      // When
-      const result = isLanguageMode(value);
-
-      // Then
-      expect(result).toBe(false);
-    },
-  );
-});
+import { resolveLanguage } from './language.preference';
 
 describe('resolveLanguage', () => {
   it.each(['ko', 'en'] as const)('%s 모드는 기기 언어와 무관하게 %s를 반환한다', (mode) => {

@@ -1,7 +1,5 @@
-import { useTrack } from '@src/shared/analytics';
 import { useTranslation } from '@src/shared/i18n';
-import { isThemeMode } from '@src/shared/preferences/theme-mode.preference';
-import { useAppTheme } from '@src/shared/providers/theme-provider';
+import { useThemeModeSetting } from '@src/shared/preferences/use-theme-mode-setting';
 import {
   DeviceDuoIcon,
   MoonDuoIcon,
@@ -13,17 +11,8 @@ import { Stack } from 'expo-router';
 import { RadioGroup } from 'heroui-native';
 
 export default function ThemeSettingsScreen() {
-  const { mode, setMode } = useAppTheme();
+  const { mode, changeMode } = useThemeModeSetting();
   const { t } = useTranslation('settings');
-  const { trackEvent } = useTrack();
-
-  const handleThemeChange = (value: string) => {
-    if (!isThemeMode(value)) {
-      return;
-    }
-    setMode(value);
-    trackEvent('settings_changed', { setting: 'theme', value });
-  };
 
   return (
     <>
@@ -31,7 +20,7 @@ export default function ThemeSettingsScreen() {
 
       <SettingsScreenLayout>
         <SettingsListGroup label={t('theme.label')}>
-          <RadioGroup value={mode} onValueChange={handleThemeChange} className="gap-0">
+          <RadioGroup value={mode} onValueChange={changeMode} className="gap-0">
             <SettingsListGroup.Radio
               value="system"
               label={t('theme.system')}

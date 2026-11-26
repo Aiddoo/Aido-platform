@@ -1,23 +1,12 @@
-import { useTrack } from '@src/shared/analytics';
 import { useTranslation } from '@src/shared/i18n';
-import { isFontScale } from '@src/shared/preferences/font-scale.preference';
-import { useFontScale } from '@src/shared/providers/font-scale-provider';
+import { useFontScaleSetting } from '@src/shared/preferences/use-font-scale-setting';
 import { SettingsListGroup, SettingsScreenLayout, Text } from '@src/shared/ui';
 import { Stack } from 'expo-router';
 import { RadioGroup } from 'heroui-native';
 
 export default function FontSizeSettingsScreen() {
-  const { fontScale, setFontScale } = useFontScale();
+  const { fontScale, changeFontScale } = useFontScaleSetting();
   const { t } = useTranslation('settings');
-  const { trackEvent } = useTrack();
-
-  const handleChange = (value: string) => {
-    if (!isFontScale(value)) {
-      return;
-    }
-    setFontScale(value);
-    trackEvent('settings_changed', { setting: 'font_scale', value });
-  };
 
   return (
     <>
@@ -37,7 +26,7 @@ export default function FontSizeSettingsScreen() {
         </SettingsListGroup>
 
         <SettingsListGroup label={t('fontSize.label')}>
-          <RadioGroup value={fontScale} onValueChange={handleChange} className="gap-0">
+          <RadioGroup value={fontScale} onValueChange={changeFontScale} className="gap-0">
             <SettingsListGroup.Radio value="xsmall" label={t('fontSize.xsmall')} />
             <SettingsListGroup.Separator />
             <SettingsListGroup.Radio value="small" label={t('fontSize.small')} />
