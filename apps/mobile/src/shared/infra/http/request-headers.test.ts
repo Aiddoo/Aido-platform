@@ -20,7 +20,12 @@ const toRequest = (input: Parameters<typeof fetch>[0]): Request => {
 };
 
 describe('applyPerRequestHeaders', () => {
+  const originalFetch = global.fetch;
   let sent: Request[];
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+  });
 
   beforeEach(() => {
     sent = [];

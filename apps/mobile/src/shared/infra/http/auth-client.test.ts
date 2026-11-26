@@ -91,6 +91,13 @@ async function waitForFetchCalls(count: number) {
   await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(count));
 }
 
+// 테스트마다 global.fetch를 가짜로 바꾼다. 같은 worker의 다음 파일에 남지 않게 되돌린다
+const originalFetch = global.fetch;
+
+afterEach(() => {
+  global.fetch = originalFetch;
+});
+
 describe('createAuthClient: 동시 401', () => {
   const ROTATED = JSON.stringify({ data: { accessToken: 'access-2', refreshToken: 'refresh-2' } });
 
