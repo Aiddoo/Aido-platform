@@ -69,6 +69,8 @@ interface RenderSetupOptions {
   permission?: OsPermission;
   /** 개인 캘린더의 일정 수. 회사 캘린더는 늘 3개다 */
   personalEventCount?: number;
+  /** 개인·회사 말고 더 있는 캘린더 수. 캘린더마다 일정은 하나다 */
+  otherCalendarCount?: number;
   startImport?: () => Promise<StartResponse>;
   /** 화면을 그리기 전에 조회 캐시에 받아 둔 값을 넣는다 */
   seedQueryCache?: (queryClient: TestDi['queryClient']) => void | Promise<void>;
@@ -77,9 +79,17 @@ interface RenderSetupOptions {
 async function renderSetup({
   permission = { status: 'granted', canAskAgain: true },
   personalEventCount = 2,
+  otherCalendarCount = 0,
   startImport = async () => ok({ todoImport: createTodoImportDto() }),
   seedQueryCache,
 }: RenderSetupOptions = {}) {
+  const others = Array.from({ length: otherCalendarCount }, (_, index): ImportCollectionRecord => ({
+    collectionKey: `d${String(index).padStart(63, '0')}`,
+    title: `모임 ${index + 1}`,
+    color: '#339AF0',
+    accountName: 'iCloud',
+    accountKind: 'cloud',
+  }));
   const httpClient = createHttpClientStub();
   httpClient.get.mockImplementation(
     respondByPath({
@@ -97,10 +107,17 @@ async function renderSetup({
   httpClient.post.mockImplementation(respondByPath({ [START_PATH]: startImport }));
   const todoImportSource = createTodoImportSourceStub({
     permission,
-    collections: [PERSONAL, WORK],
+    collections: [PERSONAL, WORK, ...others],
     events: [
       ...createEvents(PERSONAL.collectionKey, personalEventCount, '1'),
       ...createEvents(WORK.collectionKey, 3, '2'),
+      ...others.map(({ collectionKey }, index): ImportEventRecord => ({
+        collectionKey,
+        occurrenceKey: `3${String(index).padStart(63, '0')}`,
+        title: `모임 일정 ${index + 1}`,
+        time: { kind: 'allDay', startDate: '2026-11-25', endDateExclusive: '2026-11-26' },
+        isCanceled: false,
+      })),
     ],
   });
 
@@ -261,6 +278,19 @@ describe('TodoImportSetupScreen', () => {
       // Then
       expect(await screen.findByText(/^한 번에 3,?000개까지 가져올 수 있어요/)).toBeOnTheScreen();
       expect(screen.getByRole('button', { name: '다음' })).toBeDisabled();
+    });
+
+    it('캘린더를 고를 수 있는 수만큼 골랐으면 일정 수 아래에 더 고를 수 없는 이유를 알린다', async () => {
+      // Given
+      const otherCalendarCount = TODO_IMPORT_LIMITS.MAX_COLLECTIONS - 2;
+
+      // When
+      await renderSetup({ otherCalendarCount });
+
+      // Then
+      expect(await screen.findByText('일정 23개를 가져와요')).toBeOnTheScreen();
+      expect(screen.getByText('캘린더는 한 번에 20개까지 고를 수 있어요')).toBeOnTheScreen();
+      expect(screen.getByRole('button', { name: '다음' })).toBeEnabled();
     });
   });
 
