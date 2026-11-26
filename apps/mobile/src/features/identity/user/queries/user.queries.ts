@@ -7,7 +7,7 @@ import { queryOptions } from '@tanstack/react-query';
 import { type User, UserPolicy } from '../domains/user.model';
 import { USER_QUERY_KEYS } from './user-query-keys';
 
-function toMe(user: User, { defaultName }: { defaultName: string }) {
+function selectMe(user: User, { defaultName }: { defaultName: string }) {
   return {
     ...user,
     name: user.name ?? defaultName,
@@ -28,7 +28,7 @@ export function useGetMeQueryOptions() {
   const userApi = useUserApi();
   const { t } = useTranslation('user');
   const defaultName = t('profile.defaultName');
-  const select = (user: User) => toMe(user, { defaultName });
+  const select = (user: User) => selectMe(user, { defaultName });
 
   return queryOptions({
     queryKey: USER_QUERY_KEYS.me(),

@@ -10,8 +10,8 @@ import { queryOptions } from '@tanstack/react-query';
 import { take } from 'es-toolkit';
 
 import { PREVIEW_SUGGESTION_COUNT } from '../constants/suggestion.constants';
+import { type AiSuggestionList, AiSuggestionListPolicy } from '../domains/ai-suggestion-list.model';
 import { SuggestionAnalysisPolicy } from '../domains/suggestion-analysis.model';
-import { type AiSuggestionList, AiSuggestionListPolicy } from '../domains/suggestion-list.model';
 import { isSuggestionsPremiumRequiredError } from '../domains/suggestion.error';
 import { SUGGESTION_QUERY_KEYS } from './suggestion-query-keys';
 

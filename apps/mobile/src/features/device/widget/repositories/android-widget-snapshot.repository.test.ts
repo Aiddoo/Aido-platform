@@ -14,7 +14,7 @@ describe('Android 위젯 스냅샷 저장소', () => {
     const repository = createAndroidWidgetSnapshotRepository(storage);
 
     // When
-    repository.writeSnapshot(snapshot, 'current-user');
+    repository.save(snapshot, 'current-user');
 
     // Then
     expect(storage.get('aido_widget_snapshot_v1')).toBe(JSON.stringify(snapshot));
@@ -24,10 +24,10 @@ describe('Android 위젯 스냅샷 저장소', () => {
   it('로그아웃은 이전 계정 식별자를 지우고 공개 안내만 남긴다', () => {
     // Given
     const repository = createAndroidWidgetSnapshotRepository(createMemorySyncStorage());
-    repository.writeSnapshot(createWidgetSnapshot(), 'previous-user');
+    repository.save(createWidgetSnapshot(), 'previous-user');
 
     // When
-    repository.writeSnapshot(createWidgetSnapshot({ state: 'loggedOut' }), 'previous-user');
+    repository.save(createWidgetSnapshot({ state: 'loggedOut' }), 'previous-user');
 
     // Then
     expect(repository.findSnapshot()?.days[0].state).toBe('loggedOut');
@@ -38,7 +38,7 @@ describe('Android 위젯 스냅샷 저장소', () => {
     // Given
     const storage = createMemorySyncStorage();
     const repository = createAndroidWidgetSnapshotRepository(storage);
-    repository.writeSnapshot(
+    repository.save(
       createWidgetSnapshot({
         topTodos: [{ id: 7, title: '앞 계정', completed: false, categoryColor: '#FFB3B3' }],
       }),
@@ -59,10 +59,7 @@ describe('Android 위젯 스냅샷 저장소', () => {
 
     // When
     const write = () =>
-      createAndroidWidgetSnapshotRepository(ownerWriteFails).writeSnapshot(
-        nextSnapshot,
-        'next-user',
-      );
+      createAndroidWidgetSnapshotRepository(ownerWriteFails).save(nextSnapshot, 'next-user');
 
     // Then
     expect(write).toThrow('process killed');

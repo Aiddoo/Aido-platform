@@ -13,8 +13,8 @@ import type {
 import type { AppleSignInResult } from '@src/core/ports/social-auth-gateway';
 import { toInstant, toNullableInstant } from '@src/shared/date/instant';
 
+import type { AuthTokens } from '../domains/auth-tokens.model';
 import {
-  type AuthTokens,
   type ChangePasswordResult,
   type DeleteAccountResult,
   type ForgotPasswordResult,

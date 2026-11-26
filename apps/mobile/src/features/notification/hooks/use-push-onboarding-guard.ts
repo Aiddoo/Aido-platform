@@ -12,8 +12,11 @@ import { useGetPushPermissionQueryOptions } from '../queries/push-permission.que
 import { pushPermissionDeferredAtStoredValue } from '../schemas/push-permission-deferred-at-storage.schema';
 import type { PushOnboardingGuardState } from '../stores/push-onboarding-guard.store';
 
-/** 앱 화면 묶음의 `Stack.Protected` guard. 판정은 여기 한 곳에서 하고, 그려진 뒤에야 피드가 화면을 열 수 있게 알린다 */
-export function useIsPushOnboardingGuardOpen(): boolean {
+/**
+ * 앱 화면 묶음의 `Stack.Protected` guard 값(열렸는지)을 돌려주고, 그린 값을 store에 남긴다. 판정은 여기 한 곳에서 하고,
+ * 그려진 뒤에야 피드가 화면을 열 수 있게 알린다
+ */
+export function useMarkPushOnboardingGuardRendered(): boolean {
   const guardStore = usePushOnboardingGuardStore();
   const state = usePushOnboardingDueState();
 

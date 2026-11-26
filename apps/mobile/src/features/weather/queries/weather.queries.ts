@@ -302,7 +302,7 @@ function getTimelineTime(item: HourlyTimelineItem): number {
 }
 
 /** 남은 시간별 예보 사이에 그 범위 안의 일출·일몰 칸을 시각 순서로 끼워 넣는다. */
-function toHourlyTimeline(report: WeatherReport, now: Instant): HourlyTimelineItem[] {
+function selectHourlyTimeline(report: WeatherReport, now: Instant): HourlyTimelineItem[] {
   const hours = WeatherReportPolicy.getUpcomingHours(report, now);
   const last = hours.at(-1);
   if (last == null) {
@@ -331,7 +331,7 @@ function toHourlyTimeline(report: WeatherReport, now: Instant): HourlyTimelineIt
 function selectHourly(now: Instant) {
   return (report: WeatherReport) => ({
     timezone: WeatherReportPolicy.getTimezone(report),
-    timeline: toHourlyTimeline(report, now),
+    timeline: selectHourlyTimeline(report, now),
     summary: WeatherReportPolicy.findHourlySummary(report, now),
   });
 }

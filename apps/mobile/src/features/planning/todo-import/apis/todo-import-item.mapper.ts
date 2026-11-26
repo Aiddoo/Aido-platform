@@ -5,7 +5,7 @@ import { instantSchema } from '@src/shared/date/instant';
 import { match } from 'ts-pattern';
 
 import {
-  getAllDayEndDate,
+  findAllDayEndDate,
   getTimedDates,
   normalizeImportTitle,
   type TodoImportItem,
@@ -39,7 +39,7 @@ export function toTodoImportItemPreview(
       }
       return {
         startDate: start.data,
-        endDate: getAllDayEndDate(start.data, endExclusive.data),
+        endDate: findAllDayEndDate(start.data, endExclusive.data),
         localTime: null,
       };
     })

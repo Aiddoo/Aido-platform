@@ -77,7 +77,7 @@ export class SessionRevocationService {
     }
     if (toEpochMs(this.#now()) >= pending.expiresAt) {
       this.#logger.info(AUTH_LOG_EVENT.SESSION_REVOCATION_EXPIRED);
-      await this.#repository.clear();
+      await this.#repository.remove();
       return;
     }
 
@@ -88,7 +88,7 @@ export class SessionRevocationService {
         .with({ type: 'retry' }, ({ status }) =>
           this.#logger.info(AUTH_LOG_EVENT.SESSION_REVOCATION_DEFERRED, { status }),
         )
-        .with({ type: 'ended' }, () => this.#repository.clear())
+        .with({ type: 'ended' }, () => this.#repository.remove())
         .exhaustive();
       return;
     }
@@ -99,7 +99,7 @@ export class SessionRevocationService {
     if (!result.ok) {
       this.#logger.warn(AUTH_LOG_EVENT.SESSION_REVOCATION_REJECTED, { code: result.error.code });
     }
-    await this.#repository.clear();
+    await this.#repository.remove();
   };
 
   #issueAccessToken = async (pending: PendingRevocation): Promise<IssuedAccessToken> => {

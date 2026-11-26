@@ -15,8 +15,8 @@ import {
 } from '../apis/auth.mapper';
 import { findOAuthCode } from '../apis/oauth.mapper';
 import { AUTH_LOG_EVENT } from '../constants/auth-log-events';
+import { type AuthTokens } from '../domains/auth-tokens.model';
 import { AUTH_ERROR_CODE } from '../domains/auth.error';
-import { type AuthTokens } from '../domains/auth.model';
 import {
   type OAuthProviderSlug,
   type OAuthStartMode,

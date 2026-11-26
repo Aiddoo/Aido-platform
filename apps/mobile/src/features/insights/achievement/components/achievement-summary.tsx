@@ -116,7 +116,8 @@ AchievementSummary.Contents = function Contents({
   const dateFormatContext = useDateFormatContext();
   const todayKey = useTodayKey();
   const viewShotRef = useRef<ViewCaptureHandle>(null);
-  const { shareCapture, isSharing } = useShareViewCapture(viewShotRef, {
+  const { shareCapture, isSharing } = useShareViewCapture({
+    viewShotRef,
     onShare: () =>
       trackEvent('badge_share_attempted', {
         badge_type: badgeType,

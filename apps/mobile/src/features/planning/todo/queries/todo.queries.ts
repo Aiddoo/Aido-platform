@@ -79,7 +79,7 @@ function selectCompletionsInRange(
 }
 
 /** 고른 달과 앞뒤 달의 결과를 한 달력으로 합친다. 겹치는 앞뒤 주는 고른 달의 결과로 그린다 */
-export function mergeCalendarCompletions({
+export function selectCalendarCompletions({
   selected,
   previous,
   next,

@@ -22,7 +22,7 @@ import { useRouter, useIsFocused } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 
 import { PREVIEW_SUGGESTION_COUNT } from '../constants/suggestion.constants';
-import { type AiSuggestion, AiSuggestionPolicy } from '../domains/suggestion.model';
+import { type AiSuggestion, AiSuggestionPolicy } from '../domains/ai-suggestion.model';
 import { SuggestionListSelect, useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
 import { formatSuggestionTime } from '../utils/suggestion-schedule.view-model';
 

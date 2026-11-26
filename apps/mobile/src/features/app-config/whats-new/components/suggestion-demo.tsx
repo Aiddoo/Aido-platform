@@ -1,6 +1,6 @@
 import { SuggestionStatus } from '@src/features/assistant/suggestion/components/suggestion-status';
 import { SuggestionsList } from '@src/features/assistant/suggestion/components/suggestions-list';
-import type { AiSuggestion } from '@src/features/assistant/suggestion/domains/suggestion.model';
+import type { AiSuggestion } from '@src/features/assistant/suggestion/domains/ai-suggestion.model';
 import {
   selectTimeFormat,
   useGetPreferenceQueryOptions,

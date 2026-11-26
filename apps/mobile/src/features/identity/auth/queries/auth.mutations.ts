@@ -18,6 +18,7 @@ import { mutationOptions, onlineManager, useQueryClient } from '@tanstack/react-
 import { useRouter } from 'expo-router';
 
 import { toOAuthProviderSlug } from '../apis/oauth.mapper';
+import { AuthTokensPolicy } from '../domains/auth-tokens.model';
 import {
   findLoginFailureReason,
   isAccountDeletionUnanswered,
@@ -26,7 +27,6 @@ import {
   isLoginCancelledError,
   isPasswordMismatchError,
 } from '../domains/auth.error';
-import { AuthTokensPolicy } from '../domains/auth.model';
 import { type OAuthProvider, type OAuthProviderSlug } from '../domains/oauth.model';
 import type {
   ChangePasswordInput,

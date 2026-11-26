@@ -4,7 +4,7 @@ import { toInstant } from '@src/shared/date/instant';
 
 import { createTodoImportItem } from '../__tests__/todo-import.fixtures';
 import {
-  getAllDayEndDate,
+  findAllDayEndDate,
   getTimedDates,
   normalizeImportTitle,
   TodoImportItemPolicy,
@@ -40,14 +40,14 @@ describe('normalizeImportTitle', () => {
   });
 });
 
-describe('getAllDayEndDate', () => {
+describe('findAllDayEndDate', () => {
   it.each([
     ['하루짜리 종일 일정은 끝 날짜가 없다', '2026-11-25', '2026-11-26', null],
     ['사흘짜리는 배타적 끝의 전날이 마지막 날이다', '2026-11-25', '2026-11-28', '2026-11-27'],
     ['연말을 넘는 일정', '2026-12-31', '2027-01-02', '2027-01-01'],
   ])('%s', (_case, startDate, endDateExclusive, expected) => {
     // When
-    const endDate = getAllDayEndDate(
+    const endDate = findAllDayEndDate(
       dateKeySchema.parse(startDate),
       dateKeySchema.parse(endDateExclusive),
     );

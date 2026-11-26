@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
+import { aiSuggestionSchema } from './ai-suggestion.model';
 import { suggestionAnalysisSchema, type SuggestionAnalysis } from './suggestion-analysis.model';
-import { aiSuggestionSchema } from './suggestion.model';
 
 const aiSuggestionListSchema = z.object({
   suggestions: z.array(aiSuggestionSchema),

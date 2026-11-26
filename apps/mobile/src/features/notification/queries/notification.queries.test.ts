@@ -3,7 +3,7 @@ import { createDateKey } from '@src/testing/date-key';
 
 import { createNotificationListResponseDto } from '../__tests__/notification.fixtures';
 import { toNotification } from '../apis/notification.mapper';
-import { getDateSectionKey, toDateSectionedListItems } from './notification.queries';
+import { getDateSectionKey, selectDateSectionedListItems } from './notification.queries';
 
 describe('getDateSectionKey', () => {
   it('이번 주는 달력과 같은 일요일 시작 주다', () => {
@@ -39,7 +39,7 @@ describe('getDateSectionKey', () => {
   });
 });
 
-describe('toDateSectionedListItems', () => {
+describe('selectDateSectionedListItems', () => {
   it('자정이 지나면 같은 캐시 데이터의 오늘 섹션이 어제로 바뀐다', () => {
     // Given
     const dto = createNotificationListResponseDto().notifications[0];
@@ -49,12 +49,12 @@ describe('toDateSectionedListItems', () => {
     const notification = { ...toNotification(dto), createdAt: toInstant('2026-10-04T14:59:00Z') };
 
     // When
-    const before = toDateSectionedListItems(
+    const before = selectDateSectionedListItems(
       [notification],
       createDateKey('2026-10-04'),
       'Asia/Seoul',
     );
-    const after = toDateSectionedListItems(
+    const after = selectDateSectionedListItems(
       [notification],
       createDateKey('2026-10-05'),
       'Asia/Seoul',
@@ -76,7 +76,7 @@ describe('toDateSectionedListItems', () => {
     const second = { ...first, id: 1 };
 
     // When
-    const items = toDateSectionedListItems(
+    const items = selectDateSectionedListItems(
       [first, second],
       createDateKey('2026-10-04'),
       'Asia/Seoul',
@@ -95,7 +95,7 @@ describe('toDateSectionedListItems', () => {
     const notifications: [] = [];
 
     // When
-    const items = toDateSectionedListItems(
+    const items = selectDateSectionedListItems(
       notifications,
       createDateKey('2026-10-04'),
       'Asia/Seoul',

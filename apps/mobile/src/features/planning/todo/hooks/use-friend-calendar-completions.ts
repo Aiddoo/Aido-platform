@@ -2,7 +2,7 @@ import type { DateKey } from '@src/shared/date/date-key';
 import { useQuery } from '@tanstack/react-query';
 
 import {
-  mergeCalendarCompletions,
+  selectCalendarCompletions,
   useGetFriendDailyCompletionsQueryOptions,
 } from '../queries/todo.queries';
 import { getCalendarMonthRanges } from '../utils/calendar-grid.view-model';
@@ -30,7 +30,7 @@ export function useFriendCalendarCompletions({
   });
 
   return {
-    completions: mergeCalendarCompletions({
+    completions: selectCalendarCompletions({
       selected: selectedMonth.data,
       previous: previousMonth,
       next: nextMonth,

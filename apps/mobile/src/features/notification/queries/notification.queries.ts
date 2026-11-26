@@ -73,7 +73,7 @@ export function useGetUnreadCountQueryOptions() {
 /** 받은 알림을 날짜 구역으로 묶는다. 쪽 경계에서 겹쳐 온 같은 알림은 한 번만 둔다 */
 function selectNotificationSections({ todayDateKey, timezone }: DateSectionBasis) {
   return (infinitePages: InfiniteData<NotificationPage, number | undefined>) =>
-    toDateSectionedListItems(
+    selectDateSectionedListItems(
       uniqBy(selectPageItems(infinitePages), (notification) => notification.id),
       todayDateKey,
       timezone,
@@ -84,7 +84,7 @@ function selectNotificationSections({ todayDateKey, timezone }: DateSectionBasis
 export function selectSentNudgeSections({ todayDateKey, timezone }: DateSectionBasis) {
   return <TEntry extends { createdAt: Instant }>(infinitePages: {
     pages: ReadonlyArray<{ items: readonly TEntry[] }>;
-  }) => toDateSectionedListItems(selectPageItems(infinitePages), todayDateKey, timezone);
+  }) => selectDateSectionedListItems(selectPageItems(infinitePages), todayDateKey, timezone);
 }
 
 /** 바뀐 순간의 기기 날짜·벽시계(`HH:mm`). 다가오는 할 일의 "앞으로" 기준이다 */
@@ -116,7 +116,7 @@ export function getDateSectionKey(dateKey: DateKey, todayDateKey: DateKey): Date
   return 'earlier';
 }
 
-export function toDateSectionedListItems<TEntry extends { createdAt: Instant }>(
+export function selectDateSectionedListItems<TEntry extends { createdAt: Instant }>(
   entries: readonly TEntry[],
   todayDateKey: DateKey,
   timezone: string,

@@ -1,6 +1,6 @@
 import { createSuggestionDto } from '../__tests__/suggestion.fixtures';
 import { toAiSuggestion } from '../apis/suggestion.mapper';
-import { AiSuggestionPolicy } from './suggestion.model';
+import { AiSuggestionPolicy } from './ai-suggestion.model';
 
 describe('AiSuggestionPolicy', () => {
   describe('getTodoRepeat', () => {

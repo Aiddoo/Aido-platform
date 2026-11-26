@@ -48,7 +48,8 @@ export function WeeklyAchievementCertificate() {
   const { trackEvent } = useTrack();
   const viewShotRef = useRef<ViewCaptureHandle>(null);
   const badgeType = WeeklyAchievementPolicy.getBadgeType(achievement);
-  const { shareCapture, isSharing } = useShareViewCapture(viewShotRef, {
+  const { shareCapture, isSharing } = useShareViewCapture({
+    viewShotRef,
     onShare: () => trackEvent('badge_share_attempted', { badge_type: badgeType, year, week }),
   });
 

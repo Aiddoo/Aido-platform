@@ -6,9 +6,9 @@ import type {
 import { toInstant } from '@src/shared/date/instant';
 import { pick } from 'es-toolkit';
 
+import type { AiSuggestionList } from '../domains/ai-suggestion-list.model';
+import type { AiSuggestion } from '../domains/ai-suggestion.model';
 import type { SuggestionAnalysis } from '../domains/suggestion-analysis.model';
-import type { AiSuggestionList } from '../domains/suggestion-list.model';
-import type { AiSuggestion } from '../domains/suggestion.model';
 
 export function toAiSuggestion(dto: RecurringSuggestion): AiSuggestion {
   return {

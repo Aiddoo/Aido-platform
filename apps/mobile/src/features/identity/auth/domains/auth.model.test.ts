@@ -1,4 +1,5 @@
-import { AuthTokensPolicy, isVerificationCode } from './auth.model';
+import { AuthTokensPolicy } from './auth-tokens.model';
+import { isVerificationCode } from './auth.model';
 
 describe('isVerificationCode', () => {
   it.each([

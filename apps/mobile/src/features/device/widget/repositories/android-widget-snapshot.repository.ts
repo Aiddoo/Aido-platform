@@ -16,7 +16,7 @@ export const ANDROID_WIDGET_STORAGE_KEYS = {
 export interface AndroidWidgetSnapshotRepository {
   findSnapshot(): StoredWidgetSnapshot | null;
   findUserId(): string | null;
-  writeSnapshot(snapshot: StoredWidgetSnapshot, userId: string | null): void;
+  save(snapshot: StoredWidgetSnapshot, userId: string | null): void;
 }
 
 export function createAndroidWidgetSnapshotRepository(
@@ -33,7 +33,7 @@ export function createAndroidWidgetSnapshotRepository(
       return userId && userId.trim().length > 0 ? userId : null;
     },
     // 사이에서 멈추면 새 계정 목록에 앞 주인이 남아 누른 명령만 다른 계정 것으로 지워진다(앞 계정 목록을 새 주인 것으로 읽지 않는다)
-    writeSnapshot: (snapshot, userId) => {
+    save: (snapshot, userId) => {
       storage.set(ANDROID_WIDGET_STORAGE_KEYS.snapshot, JSON.stringify(snapshot));
       if (WidgetSnapshotPolicy.isLoggedOut(snapshot) || userId == null) {
         storage.remove(ANDROID_WIDGET_STORAGE_KEYS.snapshotUserId);

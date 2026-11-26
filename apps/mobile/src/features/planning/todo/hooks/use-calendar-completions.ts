@@ -2,7 +2,7 @@ import type { DateKey } from '@src/shared/date/date-key';
 import { useQuery } from '@tanstack/react-query';
 
 import {
-  mergeCalendarCompletions,
+  selectCalendarCompletions,
   useGetDailyCompletionsQueryOptions,
 } from '../queries/todo.queries';
 import { getCalendarMonths } from '../utils/calendar-grid.view-model';
@@ -25,7 +25,7 @@ export function useCalendarCompletions({ dateKey }: { dateKey: DateKey }) {
   });
 
   return {
-    completions: mergeCalendarCompletions({
+    completions: selectCalendarCompletions({
       selected: selectedMonth.data,
       previous: previousMonth,
       next: nextMonth,

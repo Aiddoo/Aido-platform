@@ -89,7 +89,7 @@ export class AndroidWidgetService implements WidgetBridge {
         this.#navigationRepository.clearIfCurrent(pendingCommand);
       }
     }
-    this.#snapshotRepository.writeSnapshot(snapshot, userId);
+    this.#snapshotRepository.save(snapshot, userId);
     await Promise.all(
       ANDROID_WIDGET_DEFINITIONS.map(({ name }) =>
         requestWidgetUpdate({ widgetName: name, renderWidget: this.renderStoredWidget }),

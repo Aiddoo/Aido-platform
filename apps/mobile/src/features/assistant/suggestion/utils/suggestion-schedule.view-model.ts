@@ -7,7 +7,7 @@ import {
 } from '@src/shared/date/format/date-format';
 import type { Instant } from '@src/shared/date/instant';
 
-import type { AiSuggestion } from '../domains/suggestion.model';
+import type { AiSuggestion } from '../domains/ai-suggestion.model';
 
 /** 일정 줄의 시각. 시각 없이 반복하는 제안은 null이다 */
 export function formatSuggestionTime(

@@ -30,7 +30,7 @@ import { Spinner } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import { match } from 'ts-pattern';
 
-import { AiSuggestionListPolicy } from '../domains/suggestion-list.model';
+import { AiSuggestionListPolicy } from '../domains/ai-suggestion-list.model';
 import { SUGGESTION_QUERY_KEYS } from '../queries/suggestion-query-keys';
 import { useRequestSuggestionAnalysisMutationOptions } from '../queries/suggestion.mutations';
 import { useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';

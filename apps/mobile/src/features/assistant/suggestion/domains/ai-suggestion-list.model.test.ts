@@ -4,7 +4,7 @@ import {
   createSuggestionListDto,
 } from '../__tests__/suggestion.fixtures';
 import { toAiSuggestionList } from '../apis/suggestion.mapper';
-import { AiSuggestionListPolicy } from './suggestion-list.model';
+import { AiSuggestionListPolicy } from './ai-suggestion-list.model';
 
 describe('AiSuggestionListPolicy', () => {
   describe('getDisplayState', () => {

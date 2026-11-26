@@ -39,7 +39,7 @@ export function normalizeImportTitle(title: string | null, untitledTitle: string
 }
 
 // 종일 일정의 끝은 배타적이다. 하루짜리면 null, 여러 날이면 마지막 날(포함)이다
-export function getAllDayEndDate(startDate: DateKey, endDateExclusive: DateKey): DateKey | null {
+export function findAllDayEndDate(startDate: DateKey, endDateExclusive: DateKey): DateKey | null {
   const lastDate = addDaysToDateKey(endDateExclusive, -1);
   return startDate < lastDate ? lastDate : null;
 }

@@ -26,8 +26,8 @@ import {
 import { useMutation, usePrefetchQuery, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { useRouter, useIsFocused } from 'expo-router';
 
+import { type AiSuggestion, AiSuggestionPolicy } from '../domains/ai-suggestion.model';
 import { isSuggestionsPremiumRequiredError } from '../domains/suggestion.error';
-import { type AiSuggestion, AiSuggestionPolicy } from '../domains/suggestion.model';
 import { usePromptSuggestionLimit } from '../hooks/use-prompt-suggestion-limit';
 import { useActOnSuggestionMutationOptions } from '../queries/suggestion.mutations';
 import { useGetSuggestionsQueryOptions } from '../queries/suggestion.queries';
