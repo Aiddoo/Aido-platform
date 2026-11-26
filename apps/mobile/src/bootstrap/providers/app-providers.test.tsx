@@ -42,8 +42,9 @@ import {
 import { renderRoutes } from '@src/testing/render-route-hook';
 import { focusManager, onlineManager, useMutation, useQueryClient } from '@tanstack/react-query';
 import { act } from '@testing-library/react-native';
+import { noop } from 'es-toolkit';
 import { Stack } from 'expo-router';
-import { StrictMode } from 'react';
+import { Activity, useEffect, useState } from 'react';
 
 import * as AppLayoutRoute from '../../../app/(app)/_layout';
 import RootIndex from '../../../app/index';
@@ -219,16 +220,25 @@ function GroupStack() {
   return <Stack screenOptions={{ headerShown: false, animation: 'none' }} />;
 }
 
-/** 루트 오류 화면의 "다시 시도"처럼 앱 트리를 통째로 올린다. StrictMode라 effect가 두 번 돈다 */
+/**
+ * 루트 오류 화면의 "다시 시도"처럼 앱 트리를 통째로 올린다. 이 테스트 렌더러는 StrictMode의 effect 재실행을 하지 않아,
+ * 같은 일을 하는 Activity로 올린 뒤 effect를 정리했다 다시 건다
+ */
 async function mountApp(root: ReturnType<typeof createTestRoot>['root'], { url = '/' } = {}) {
   const probe = createProbe();
+  const activity: { setMode: (mode: 'visible' | 'hidden') => void } = { setMode: noop };
   function RootLayout() {
+    const [mode, setMode] = useState<'visible' | 'hidden'>('visible');
+    useEffect(() => {
+      activity.setMode = setMode;
+    }, []);
+
     return (
-      <StrictMode>
+      <Activity mode={mode}>
         <AppProviders root={root}>
           <AuthGateLayout />
         </AppProviders>
-      </StrictMode>
+      </Activity>
     );
   }
 
@@ -246,6 +256,10 @@ async function mountApp(root: ReturnType<typeof createTestRoot>['root'], { url =
     },
     { url },
   );
+  await act(() => jest.advanceTimersByTimeAsync(0));
+  await act(async () => activity.setMode('hidden'));
+  await act(() => jest.advanceTimersByTimeAsync(0));
+  await act(async () => activity.setMode('visible'));
   await act(() => jest.advanceTimersByTimeAsync(0));
   return { view, mounted: probe.latest, getPathname: () => view.getPathname() };
 }

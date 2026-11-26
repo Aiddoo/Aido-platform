@@ -1,6 +1,6 @@
 import { createAnalyticsStub, createTestDi } from '@src/testing/core';
 import { renderScreen, renderScreenHook } from '@src/testing/render';
-import { StrictMode } from 'react';
+import { Activity } from 'react';
 
 import type { AnalyticsViewTab } from './event-vocabulary';
 import { useTrackView } from './use-track-view';
@@ -47,21 +47,22 @@ describe('useTrackView', () => {
     );
   });
 
-  it('StrictMode가 효과를 두 번 돌려도 한 번 보낸다', async () => {
+  it('StrictMode처럼 상태는 남고 효과만 다시 돌아도 한 번 보낸다', async () => {
     // Given
     const analytics = createAnalyticsStub();
     function Probe() {
       useTabView('WEEKLY');
       return null;
     }
+    const probe = <Probe />;
+    // 이 테스트 렌더러는 StrictMode의 effect 재실행을 하지 않아, 같은 일을 하는 Activity로 effect를 정리했다 다시 건다
+    const { rerender } = await renderScreen(<Activity mode="visible">{probe}</Activity>, {
+      di: createTestDi({ ports: { analytics } }),
+    });
 
     // When
-    await renderScreen(
-      <StrictMode>
-        <Probe />
-      </StrictMode>,
-      { di: createTestDi({ ports: { analytics } }) },
-    );
+    await rerender(<Activity mode="hidden">{probe}</Activity>);
+    await rerender(<Activity mode="visible">{probe}</Activity>);
 
     // Then
     expect(analytics.trackEvent).toHaveBeenCalledTimes(1);
