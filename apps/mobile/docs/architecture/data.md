@@ -163,7 +163,7 @@ export function useUpdateTodoCategoryMutationOptions() {
 }
 ```
 
-- `use{Verb}{X}MutationOptions()`가 `mutationOptions`를 돌려주고 화면은 `useMutation`을 직접 부른다. 변수 타입에 이름을 붙이면 `*Variables`다. 성공 뒤 이동은 호출부가, 오류 코드별 안내에 딸린 이동은 기능 `onError`가 한다([오류 처리](../error-handling.md#mutation-오류-피드백)).
+- `use{Verb}{X}MutationOptions()`가 `mutationOptions`를 돌려주고 화면은 `useMutation`을 직접 부른다. 받는 변수는 하는 일의 동사 이름이다(`const deleteTodo = useMutation(useDeleteTodoMutationOptions())`, `…Mutation`을 붙이지 않는다). 변수 타입에 이름을 붙이면 `*Variables`다. 성공 뒤 이동은 호출부가, 오류 코드별 안내에 딸린 이동은 기능 `onError`가 한다([오류 처리](../error-handling.md#mutation-오류-피드백)).
 - `mutationFn`은 Api 결과를 반드시 `unwrap`한다. `fail` 결과를 그대로 돌려주면 React Query가 성공으로 본다.
 - 오류 피드백은 mutation마다 둔 `meta.errorFeedback` 하나다(`aido/mutation-error-feedback`, 펼친 옵션은 이어받는다). 값마다 전역이 하는 일, `isHandledByFeature`·`false`를 쓰는 곳, 기능 `onError`가 맡는 것은 [error-handling](../error-handling.md#mutation-오류-피드백)이 원본이다.
 - 서버가 확정한 결과는 mutation `onSuccess`·`onError`에서 추적하고 온 UI는 변수 `source`로 받는다. Api·Service·Repository·Store·mapper·모델·cache는 추적하지 않는다([observability](../observability.md)).

@@ -22,6 +22,7 @@
 | 동작 묶음                 | 이름 있는 객체         | `usePushPermissionAction()` → `{ runStep, isPending }`                            |
 | 세 갈래 이상 상태         | 유니온 값 하나         | `usePushOnboardingGuardState()` → `'open' \| 'closed' \| 'pending'`               |
 
+- 동작 묶음의 반환 타입은 훅 위의 `interface {X}Actions`로 적는다(`PushPermissionActions`, `AppToastActions`). 추론에 맡기면 훅 안이 바뀔 때 받는 쪽 타입이 함께 흔들린다.
 - 튜플이면 저장소(URL·저장 값·`useState`)를 바꿔도 훅 반환만 고친다. 이름은 값을 드러내고(`[selectedMemoId, setSelectedMemoId]`), 쓰지 않는 요소는 `_`를 붙인다.
 - Suspense로 멈추는 훅은 `useSuspense{X}`다(`useSuspenseMyAccountId`). 불리언은 `useIs{X}`·`useHas{X}`다. 반대 뜻 불리언 훅 두 개(`useIsXOpen`·`useIsXClosed`)를 만들지 않는다.
 
