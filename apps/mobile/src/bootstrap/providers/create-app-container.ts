@@ -230,6 +230,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
 
   const whatsNewRepository = createWhatsNewRepository(syncStorage);
   const coachmarkRepository = createCoachmarkRepository(syncStorage);
+  const storeReviewRepository = createStoreReviewRepository(syncStorage);
   const marketingPushPromptRepository = createMarketingPushPromptRepository(syncStorage);
 
   const pendingRedemptionService = new PendingRedemptionService(syncStorage, ports.installReferrer);
@@ -359,7 +360,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
           'upsell-dismissal': {
             clear: (userId) => removeStoredValue(syncStorage, upsellDismissalStoredValue, userId),
           },
-          'store-review': createStoreReviewRepository(syncStorage),
+          'store-review': storeReviewRepository,
           activation: {
             clear: (userId) =>
               removeStoredValue(syncStorage, activationProgressStoredValue, userId),
@@ -414,7 +415,7 @@ export function createAppContainer(ports: AppContainerPorts): DIContainer {
     coachmarkRepository,
 
     storeReviewService: new StoreReviewService(
-      createStoreReviewRepository(syncStorage),
+      storeReviewRepository,
       ports.appStoreReview,
       getNowInstant,
     ),
