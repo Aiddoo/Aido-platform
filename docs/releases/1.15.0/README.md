@@ -4,7 +4,7 @@
 
 | 내용             | 문서                                                                                                                                    |
 | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| 앱 세부          | [1.15.0 클라이언트](../../../apps/mobile/docs/releases/1.15.0-client.md)                                                                |
+| 앱 세부          | [1.15.0 클라이언트](client.md)                                                                                                          |
 | 서버 변경 목록   | [CHANGELOG](../../../apps/api/CHANGELOG.md)                                                                                             |
 | AI 체인·프롬프트 | [AI 문서](../../../apps/api/docs/ai.md)                                                                                                 |
 | 떠 있는 시각     | [서버 설계](../../../apps/api/docs/todo-floating-time.md)                                                                               |
@@ -76,7 +76,7 @@
 
 ### 넓은 화면 두 칸
 
-- **내 정보**: 친구·배지·리포트·설정·새로운 기능 목록을 URL을 바꾸지 않는 마이 탭 안 그룹 `(tabs)/(mypage)`의 Stack에 두어 하위 화면에서도 탭 바가 남는다. 넓은 화면은 `AdaptivePane`으로 왼쪽 메뉴가 그대로 있고 오른쪽 Stack만 바뀐다. 접힌 화면은 push다. 세부는 [클라이언트 문서](../../../apps/mobile/docs/releases/1.15.0-client.md#넓은-화면)에 있다.
+- **내 정보**: 친구·배지·리포트·설정·새로운 기능 목록을 URL을 바꾸지 않는 마이 탭 안 그룹 `(tabs)/(mypage)`의 Stack에 두어 하위 화면에서도 탭 바가 남는다. 넓은 화면은 `AdaptivePane`으로 왼쪽 메뉴가 그대로 있고 오른쪽 Stack만 바뀐다. 접힌 화면은 push다. 세부는 [클라이언트 문서](client.md#넓은-화면)에 있다.
 - **`SplitView`·`ArrangementView`**: 시험했으나 넣지 않았고 다음 버전에 다시 검토한다. 이유는 [AdaptivePane 문서](../../../apps/mobile/src/shared/ui/adaptive-pane/adaptive-pane.md#splitviewarrangementview를-쓰지-않는-이유)에 있다.
 
 ## 한도·정책 (`PLAN_CATALOG`)
@@ -140,7 +140,7 @@
 
 ## 최종 QA에서 고친 것
 
-원인과 커밋은 [클라이언트 문서](../../../apps/mobile/docs/releases/1.15.0-client.md#최종-qa-수정)에 있다.
+원인과 커밋은 [클라이언트 문서](client.md#최종-qa-수정)에 있다.
 
 - 꺼진 앱에서 누른 알림이 목적지를 잃고 할 일 탭으로 가던 문제(main에도 있던 코드)
 - Android에서 듣기 X가 시트까지 닫던 문제
