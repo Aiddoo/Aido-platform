@@ -4,6 +4,7 @@ import { useCreateInquiryMutationOptions } from '@src/features/support/inquiry/q
 import { inquiryFormSchema } from '@src/features/support/inquiry/schemas/inquiry-form.schema';
 import { inquiryParamsSchema } from '@src/features/support/inquiry/schemas/inquiry-params.schema';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
+import { useGoBack } from '@src/shared/hooks/use-go-back';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -21,7 +22,7 @@ import {
 import { formatCount } from '@src/shared/utils/number-format';
 import { useMutation } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
-import { Stack, useNavigation, useRouter } from 'expo-router';
+import { Stack, useNavigation } from 'expo-router';
 import { RadioGroup } from 'heroui-native';
 import { Controller, FormState, useForm } from 'react-hook-form';
 
@@ -30,8 +31,7 @@ export default function InquiryScreen() {
   const { locale } = useDateFormatContext();
   const [initialValues] = useRouteParams(inquiryParamsSchema);
   const navigation = useNavigation();
-  const router = useRouter();
-  const goBack = useSingleTap(router.back);
+  const goBack = useGoBack({ fallbackHref: '/mypage' });
   const createInquiry = useMutation(useCreateInquiryMutationOptions());
   // 칸과 버튼이 그 조각만 구독해 글자를 쳐도 화면은 다시 그려지지 않는다
   const form = useForm({

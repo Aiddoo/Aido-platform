@@ -107,6 +107,21 @@ describe('문의 화면', () => {
     });
   });
 
+  it('돌아갈 화면이 없으면 접수한 뒤 마이페이지로 간다', async () => {
+    // Given
+    jest.mocked(router.canGoBack).mockReturnValue(false);
+    httpClient.post.mockResolvedValue(ok(createInquiryResponseDto()));
+    await renderInquiry(httpClient);
+    await fillContent(CONTENT);
+
+    // When
+    await fireEvent.press(screen.getByTestId('inquiry-submit'));
+
+    // Then
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/mypage'));
+    expect(router.back).not.toHaveBeenCalled();
+  });
+
   it('10자보다 짧은 내용은 칸에 알리고 보내지 않는다', async () => {
     // Given
     await renderInquiry(httpClient);

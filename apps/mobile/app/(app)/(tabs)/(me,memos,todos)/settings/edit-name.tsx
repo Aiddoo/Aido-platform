@@ -4,6 +4,7 @@ import { useUpdateProfileMutationOptions } from '@src/features/identity/user/que
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
 import { updateNameFormSchema } from '@src/features/identity/user/schemas/update-name-form.schema';
 import { SERVER_VALUES_RESET_OPTIONS } from '@src/shared/constants/server-values-reset-options';
+import { useGoBack } from '@src/shared/hooks/use-go-back';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -17,7 +18,7 @@ import {
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
-import { Stack, useNavigation, useRouter } from 'expo-router';
+import { Stack, useNavigation } from 'expo-router';
 import { Suspense } from 'react';
 import { Controller, FormState, useForm } from 'react-hook-form';
 import { match, P } from 'ts-pattern';
@@ -46,8 +47,7 @@ export default function EditNameRoute() {
 function EditName() {
   const { t } = useTranslation('user');
   const navigation = useNavigation();
-  const router = useRouter();
-  const goBack = useSingleTap(router.back);
+  const goBack = useGoBack({ fallbackHref: '/settings/profile' });
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const updateProfile = useMutation(useUpdateProfileMutationOptions());
   // 칸과 버튼이 그 조각만 구독해 글자를 쳐도 여기는 다시 그려지지 않는다

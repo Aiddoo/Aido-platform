@@ -69,6 +69,23 @@ describe('친구 추가 화면', () => {
     expect(countEvents(setup.analytics, 'friend_request_sent')).toBe(1);
   });
 
+  it('돌아갈 화면이 없으면 요청을 보낸 뒤 친구 화면으로 간다', async () => {
+    // Given
+    jest.mocked(router.canGoBack).mockReturnValue(false);
+    const setup = createAddFriendDi();
+    setup.httpClient.post.mockResolvedValue(ok(createSendFriendRequestDto()));
+    await renderAddFriend(setup);
+    await typeTag(USER_TAG);
+    await waitFor(() => expect(screen.getByTestId('friend-tag-submit')).toBeEnabled());
+
+    // When
+    await fireEvent.press(screen.getByTestId('friend-tag-submit'));
+
+    // Then
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/friends'));
+    expect(router.back).not.toHaveBeenCalled();
+  });
+
   it('완료 키로도 요청을 보낸다', async () => {
     // Given
     const setup = createAddFriendDi();

@@ -147,6 +147,22 @@ describe('이름 수정 화면', () => {
     expect(httpClient.patch).toHaveBeenCalledWith('v1/auth/profile', { name: '새이름' });
   });
 
+  it('돌아갈 화면이 없으면 저장한 뒤 프로필 설정으로 간다', async () => {
+    // Given
+    jest.mocked(router.canGoBack).mockReturnValue(false);
+    httpClient.patch.mockResolvedValue(ok(createUpdateProfileDto({ name: '새이름' })));
+    await renderEditName(httpClient);
+    await typeName('새이름');
+    await waitFor(() => expect(screen.getByTestId('edit-name-submit')).toBeEnabled());
+
+    // When
+    await fireEvent.press(screen.getByTestId('edit-name-submit'));
+
+    // Then
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/settings/profile'));
+    expect(router.back).not.toHaveBeenCalled();
+  });
+
   it('저장하면 내 정보의 이름을 바꾸고 이름 수정을 한 번 남긴다', async () => {
     // Given
     httpClient.patch.mockResolvedValue(ok(createUpdateProfileDto({ name: '새이름' })));

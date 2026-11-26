@@ -8,6 +8,7 @@ import {
 } from '@src/features/social/friend/schemas/add-friend-form.schema';
 import { useFriendLimitInvite } from '@src/features/social/invite/hooks/use-friend-limit-invite';
 import { ASCII_CODE_TEXT_INPUT_PROPS } from '@src/shared/constants/text-input-props';
+import { useGoBack } from '@src/shared/hooks/use-go-back';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
@@ -22,14 +23,13 @@ import {
   Text,
 } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
-import { useNavigation, useRouter } from 'expo-router';
+import { useNavigation } from 'expo-router';
 import { Controller, FormState, useForm } from 'react-hook-form';
 
 export default function AddFriendScreen() {
   const { t } = useTranslation('friend');
-  const router = useRouter();
   const navigation = useNavigation();
-  const goBack = useSingleTap(router.back);
+  const goBack = useGoBack({ fallbackHref: '/friends' });
   const onFriendLimitInvite = useFriendLimitInvite();
   const promptFriendLimit = useFriendLimitPrompt({ onFriendLimitInvite });
   const sendRequest = useMutation(useSendRequestByTagMutationOptions());
