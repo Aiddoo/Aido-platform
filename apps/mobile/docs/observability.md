@@ -35,7 +35,7 @@
 - 이벤트는 기능의 `constants/{entity}.events.ts`에서 `declare module '@src/shared/analytics/event-map'`으로 `AppEventMap`을 채워 먼저 정의한다. 기능에 속하지 않는 앱 공통 이벤트(`feature_action_success`, `local_day_changed`, `offline_banner_shown`, `view_tab_changed`, `error_fallback_retry_tapped`)만 `shared/analytics/event-map.ts`에 직접 있다. 맨 `string` 이름·파라미터를 쓰지 않는다.
 - 값의 출처가 도메인이면 도메인 타입을 import한다(`invite_redeem_failed.reason` = `RedeemFailureReason`). 이벤트가 도메인 타입을 정의하지 않는다.
 - 컴포넌트는 `useTrack().trackEvent(name, params)`, React 밖은 `track(analytics, name, params)`로 보낸다. `analytics.trackEvent('문자열', …)`를 직접 부르지 않는다. 파사드는 선언한 키만 받아 객체 리터럴로 넘긴 선언 밖 키는 typecheck가 실패한다(변수로 넘기면 초과 속성 검사를 지나므로 params는 호출 자리에서 리터럴로 쓴다).
-- 새 이벤트 이름은 `{entity}_{object?}_{verb}`, 파라미터는 snake_case이고 맨 `string`을 쓰지 않는다(`aido/analytics-event-catalog`). 동사 목록은 그 규칙의 `EVENT_VERBS`(`tooling/oxlint-plugin-aido/rules/observability.mjs`)이고, GA가 보는 기존 이름은 `frozenNames`로 동결해 바꿀 때 별칭 기간을 둔다. 안내는 `{entity}_shown`·`{entity}_dismissed`로 맞춘다.
+- 새 이벤트 이름은 `{entity}_{object?}_{verb}`, 파라미터는 snake_case이고 맨 `string`을 쓰지 않는다(`aido/analytics-event-catalog`). 동사 목록은 그 규칙의 `EVENT_VERBS`(`tooling/oxlint-plugin-aido/rules/observability.mjs`)이고, GA가 보는 기존 이름은 `frozenNames`로 동결해 바꿀 때 별칭 기간을 둔다. 안내는 `{entity}_shown`·`{entity}_dismissed`로 맞춘다. 새 이벤트의 동사는 사용자가 누름이면 `_tapped`, 앱이 보여 줌이면 `_shown`, 앱 밖(푸시·링크·위젯)에서 앱이 열림이면 `_opened`다. 이 기준 밖의 기존 이름(`paywall_viewed`·`weather_opened` 등)은 GA가 보는 이름이라 그대로 둔다.
 - `source`(온 UI)·`surface`(안내가 뜬 자리)의 값은 `shared/analytics/event-vocabulary.ts`의 튜플 한 곳에서 선언하고, 이벤트는 `AnalyticsSource<'settings'>`·`AnalyticsSurface<EntitlementGateSurface>`처럼 그 안에서 고른다(`aido/analytics-event-catalog`의 `vocabularyParams`). 나간 값의 철자는 바꾸지 않고 더하기만 한다. `view_tab_changed.view`도 같은 파일의 목록이고 `ViewTabs`는 그 안의 보기 스키마만 받는다.
 - 파라미터 예약어의 뜻은 정해져 있다: `source`(온 UI), `method`, `reason`, `result`. 앱 이벤트는 GA 예약 구매 이름(`purchase`·`in_app_purchase`·`refund`)을 쓸 수 없다(`AppReservedPurchaseEventGuard` 컴파일 검사).
 
@@ -57,6 +57,8 @@
 - 화면·훅의 효과 안에서 `trackEvent`를 부르지 않는다. 효과 본문과 그 안의 중첩 함수(구독 콜백·`.then`·cleanup)를 모두 본다(`aido/no-tracking-in-effect`). 예외는 줄 단위로 끄고 이유를 적는다: 노출과 닫힘이 한 수명의 짝인 `feature_hub_impression`·`feature_hub_dismissed`·`coachmark_shown`, 보기가 아닌 디바운스 입력 `friend_search_submitted`, 마운트를 넘어 프로세스 수명 store가 막는 `invite_link_opened`.
 - key는 "무엇을 봤나"다. 같은 화면에서 다른 것을 보면 key가 바뀐다(캐러셀 장 index, 주, 단계). 마운트를 넘어 막아야 하는 것(초대 링크 열림)은 DI store가 맡는다.
 - `weather_opened`는 경로와 URL param(`entry`)만 담아 원칙상 `screen_view`의 맥락이지만, KPI·퍼널·잠재고객이 이 이름을 써서 화면 진입 이벤트로 남기는 예외다. 날씨는 앱 Stack에 하나(`dangerouslySingular`)라 Stack에 남은 날씨를 알림으로 다시 열면 다시 마운트되지 않는다. 그래서 날씨를 여는 링크는 `toWeatherHref`로 연 시각(`openedAt`)을 붙이고, 날씨 화면의 노출(`weather_opened`·`weather_location_registered`·`weather_briefing_shown`·`weather_report_failed`)은 그 열기(`useWeatherOpenKey`)마다 한 번이다. 하위 화면에서 돌아오는 것은 세지 않는다. 1.15.1(화면을 열 때마다 새로 쌓음)과 같은 수다(`weather-screen.test.tsx`).
+- `paywall_viewed`도 맥락을 URL에서 얻는다. 요금제를 받아 실제로 보였을 때 `PlanPicker.Plans`가 결제 화면 params(`view`·`feature`)를 읽어 `useTrackView`로 보내고, key는 `view:feature`라 같은 보기·기능으로 다시 그려져도 한 번이다.
+- `push_permission_prompt_shown`은 대부분 노출(`useTrackView`)이지만, 할 일에 시간을 정할 때 시스템 권한 창을 바로 띄우는 길(`use-ask-push-permission-on-todo-time.ts`)은 보이는 앱 화면이 없어 그 핸들러가 창을 띄우기 직전에 `trackEvent`로 한 번 보낸다.
 
 ### 화면 조회
 

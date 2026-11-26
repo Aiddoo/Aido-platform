@@ -81,9 +81,8 @@ features/{area}/{feature}/
 - mapper는 `apis/`에만, 엔티티당 하나다. OS 권한과 서버 기기 DTO처럼 엔티티가 다르면 파일을 나눈다.
 - 통과만 하는 repository와 service를 만들지 않는다. 저장 값 정의와 Policy로 충분하다.
 - 쿼리 키는 `queries/`에 둔다. `constants/`는 일반 상수(시간·한도·id, 장면 팔레트 같은 고정 값)·이벤트·로그 키만 두고 `domains/`를 import하지 않는다. 업무 규칙 표는 모델에, 라벨 키는 view-model에, 저장 키는 `*-storage.schema.ts`에 둔다. `constants/`에 두는 것은 여러 파일이 함께 읽는 값(단위 붙은 시간·한도, 이벤트·로그 키, 한 장면의 팔레트)뿐이고, 한 파일만 쓰는 UI 표·데모 값·조회 시간은 쓰는 파일 안의 지역 상수다.
-- 파일 이름은 kebab-case, 접두사는 다루는 엔티티 이름, 접미사는 위 골격의 역할 이름이다(역할 폴더별 접미사는 ls-lint). 기능 이름이 엔티티를 줄인 것이면 엔티티 이름을 쓴다(`social/nudge`의 `todo-nudge-query-keys.ts`). `helpers`·`utils`·`common` 같은 파일 이름을 쓰지 않는다.
+- 파일 이름은 kebab-case, 접두사는 다루는 엔티티 이름, 접미사는 위 골격의 역할 이름이다(역할 폴더별 접미사는 ls-lint). 기능 이름이 엔티티를 줄인 것이면 엔티티 이름을 쓴다(`social/nudge`의 `todo-nudge-query-keys.ts`). `helpers`·`utils`·`common` 같은 파일 이름을 쓰지 않는다. Context Provider와 그것을 읽는 훅은 한 파일 `hooks/use-{name}.tsx`다(`use-todo-comment-form.tsx`의 `TodoCommentFormProvider`·`useTodoCommentForm`).
 - 캐시 모양만 다루는 순수 함수(무한 목록 페이지 고치기·cursor)는 `queries/{entity}-pages-cache.ts`에 둔다(`todo-comment-pages-cache.ts`, `friend-pages-cache.ts`). `queryClient`는 만지지 않고 `-cache.ts` helper가 부른다.
-- Context Provider와 그것을 읽는 훅은 한 파일 `hooks/use-{name}.tsx`에 둔다(`use-todo-comment-form.tsx`의 `TodoCommentFormProvider`·`useTodoCommentForm`). 폴더 이름은 읽는 쪽(훅)을 따른다.
 
 ## 층별 역할과 책임
 
@@ -154,7 +153,7 @@ composition-root(프로세스 수명) → DIProvider: createAppContainer(ports)(
 - **SDK는 `shared/infra`에서만 import한다.** 어댑터는 `shared/infra/{영역}/{공급자}-{포트 파일 이름}.ts`이고 포트 하나에 파일 하나다(`expo-clipboard-gateway.ts` → `expoClipboardGateway`). 플랫폼·OS 버전 차이는 어댑터 안에 숨긴다. 어댑터의 상태는 인스턴스 필드나 어댑터 팩토리의 클로저 변수에 두고, `logger`·`errorReporter`는 팩토리 인자로 받는다.
 - **조립은 `createAppContainer(ports)` 한 함수다.** 운영은 기기 어댑터, 테스트는 stub 포트를 넘긴다. 객체만 만들고 SDK import, 구독, 타이머, 전역 값 변경, 저장소 쓰기를 하지 않는다. 연결은 쓰는 Provider·훅의 effect가 맡는다.
 - **컨테이너에는 화면이 꺼내는 것만 둔다.** Api·service를 만드는 데만 쓰는 포트(`KeyValueStorage`, `PurchasesGateway`, HTTP 클라이언트, 토큰 갱신기)는 `AppContainerPorts`에만 있다. mapper·Policy·view-model은 순수 함수라 DI에 넣지 않고 직접 import한다.
-- **꺼내는 입구는 `bootstrap/providers/di-context.tsx` 하나다.** DI 훅은 `use{Entity}Api`, `use{Name}Service`, `use{Name}Repository`, `use{Name}Store`이고 훅 이름은 컨테이너 필드 이름과 같다. 포트는 필드·훅 모두 역할 이름이고 `Gateway`를 붙이지 않는다(`haptics`·`useHaptics`, `purchases`, `socialShare`). 공개·인증 HTTP 짝은 어디서나 `publicHttpClient`·`authHttpClient`이고, 생성자 의존 객체 타입은 `{X}Ports`다. `shared/di/shared-di-context.tsx`는 `shared`만 쓰고 `di-context`가 다시 내보낸다. `DIContainer`·`createAppContainer`의 반환·di-context 훅은 같은 순서다(포트 → 기능 층 표 1→4, 기능마다 빈 줄). 훅이 없는 필드는 시작·세션 정리만 쓰는 저장소(`coachmarkRepository`)뿐이다.
+- **꺼내는 입구는 `bootstrap/providers/di-context.tsx` 하나다.** DI 훅은 `use{Entity}Api`, `use{Name}Service`, `use{Name}Repository`, `use{Name}Store`이고 훅 이름은 컨테이너 필드 이름과 같다. 포트는 필드·훅 모두 역할 이름이고 `Gateway`를 붙이지 않는다(`haptics`·`useHaptics`, `purchases`, `socialShare`). 공개·인증 HTTP 짝은 어디서나 `publicHttpClient`·`authHttpClient`이고, 생성자 의존 객체 타입은 `{X}Ports`다. `shared/di/shared-di-context.tsx`는 `shared`만 쓰고 `di-context`가 그 훅 10개(`useAnalytics`·`useAppLifecycle`·`useDraftService`·`useErrorReporter`·`useExternalLink`·`useFeatureAttribution`·`useHaptics`·`useIncomingLink`·`useLogger`·`useSystemShare`)를 모두 다시 내보낸다. 다시 내보내는 것은 이 훅들뿐이다. `DIContainer`·`createAppContainer`의 반환·di-context 훅은 같은 순서다(포트 → 기능 층 표 1→4, 기능마다 빈 줄). 훅이 없는 필드는 시작·세션 정리만 쓰는 저장소(`coachmarkRepository`)뿐이다.
 - **라이브러리 교체는 어댑터 하나와 `create-device-ports` 한 줄이다.** 어댑터 밖이 바뀌면 포트 설계가 틀린 것이다. 새 포트는 `core/ports` → 어댑터 → `create-device-ports` → `createTestPorts` stub 기본값을 함께 더한다.
 
 | 수명     | 무엇                                                                                                                                                                                                                                  | 만드는 곳                                             |
@@ -165,7 +164,7 @@ composition-root(프로세스 수명) → DIProvider: createAppContainer(ports)(
 - 프로세스 수명 객체를 담는 모듈 수준 값은 `composition-root.ts`에만 둔다. 그 밖의 모듈 전역 상태는 DI store(`pushOnboardingGuardStore`, `myPagePaneLayoutStore`, 프로세스 수명 포트의 `inviteLinkOpenedStore`)나 어댑터 팩토리의 클로저 변수(푸시 게이트웨이의 앞 알림 표시 판단)로 옮긴다. DI보다 먼저 있거나 DI 밖에서 읽어 옮길 수 없는 것만 남기고 늘리지 않는다.
   - `bootstrap/navigation/cold-start-link`: 앱 트리·DI보다 먼저 받은 첫 URL을 Index가 한 번 읽는다
   - `shared/ui/bottom-sheet/keyboard-bottom-sheet`의 열린 시트 수: 키보드 컨트롤러가 네이티브 전역 하나라 수도 그 수명을 따른다
-  - `shared/infra/logger/global-logger`: DI 밖(루트 오류 화면, 접근성 설정 store, 위젯 진입점)이 쓰는 로거. `composition-root`가 한 번 정한다
+  - `shared/infra/logger/global-logger`: DI 밖(루트 오류 화면의 문의 메일 `bootstrap/navigation/open-support-mail.ts`, 접근성 설정 store, 위젯 진입점, 빌드 설정 `shared/config/env.ts`, DI 밖 `createAppQueryClient`가 만드는 캐시의 `bootstrap/query/mutation-error-feedback-cache.ts`·`query-cache-persistence.ts`)이 쓰는 로거. `composition-root`가 한 번 정한다
   - `core/events/*`의 이벤트 채널 리스너와 `event-channel`의 리스너 오류 보고기: `core`는 DI를 모른다. 구독은 해제 함수를 돌려주고 보고기는 `DIProvider`가 마운트 때 건다
   - 접근성 설정 store(`shared/hooks/use-is-reduce-motion-enabled`, `shared/hooks/use-is-reduce-transparency-enabled`): OS 설정 하나를 구독 하나로 나눠 읽는다. 모션 줄이기는 DI 밖(루트 오류 화면)에서도 그리는 `shared/ui`가 읽는다
   - `shared/infra/storage/widget-storage.android`, `shared/infra/app-lifecycle/react-native-app-lifecycle-gateway`: 위젯만 깨어난 헤드리스 프로세스에는 앱 트리·DI가 없다. 그 진입점(`bootstrap/providers/register-widget-task-handler`)과 앱 조립(`bootstrap/providers/create-widget-bridge`)이 같은 저장소로 `AndroidWidgetService`를 만든다
@@ -187,6 +186,7 @@ composition-root(프로세스 수명) → DIProvider: createAppContainer(ports)(
 - `create-device-ports`·`composition-root`, `app/_layout.tsx`의 루트 오류 보고기, `bootstrap/navigation/open-support-mail.ts`(루트 경계의 문의 메일): 조립하는 곳이거나 Provider 밖에서 그려진다
 - 위젯 헤드리스 진입점(`bootstrap/providers/register-widget-task-handler`), `shared/infra/device/device-info.ts`의 시작 상수, DI보다 위의 Provider: 앱 트리·DI가 없거나 DI보다 먼저다
 - `expo-router`(route와 route 경계 훅), `shared/config/env.ts`의 `expo-constants`, 루트 레이아웃의 `expo-splash-screen`: 포트로 숨기지 않는 라이브러리다
+- `react-native`의 `AccessibilityInfo` 알림(`announceForAccessibility*`)을 직접 부르는 2곳(`shared/ui/offline-banner/offline-banner.tsx`, `features/billing/subscription/components/subscription-result.tsx`): 설정 읽기·구독은 `useIsReduceMotionEnabled`·`useIsReduceTransparencyEnabled`가 맡고, 스크린리더에 한 번 읽어 주는 호출만 남는다
 
 ## 공개 면
 
