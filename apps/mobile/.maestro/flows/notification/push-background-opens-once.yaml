@@ -1,0 +1,57 @@
+appId: ${MAESTRO_APP_ID}
+name: 앱이 뒤에 있을 때 친구 요청 푸시를 누르면 받은 요청 화면이 한 번 열리고 읽음이 된다
+tags:
+  - regression
+  - notification
+  - push
+  - ios-only
+  - needs-second-account
+onFlowStart:
+  - runFlow: ../../subflows/app/load-helpers.yaml
+  - evalScript: ${output.main = output.api.signIn('main')}
+  - evalScript: ${output.second = output.api.signIn('second')}
+  - evalScript: ${output.second.removeFriendship(output.main.userId)}
+  - evalScript: ${output.main.removeFriendship(output.second.userId)}
+  - runFlow: ../../subflows/app/launch-fresh.yaml
+onFlowComplete:
+  - evalScript: ${output.second && output.main && output.second.removeFriendship(output.main.userId)}
+---
+# 지키는 것: 웜 진입은 openEntryHref로 목적지(/friends?view=receiver)를 한 번 열고 읽음을 한 번 남긴다
+# (apps/mobile/docs/push-notifications.md "열리는 자리"). APNs 없이 시뮬레이터에 푸시를 넣는 길은 README "시뮬레이터 푸시"
+- runFlow:
+    label: iOS 시뮬레이터에서만 확인한다(Android FCM은 수동 확인)
+    when:
+      platform: iOS
+    commands:
+      # Given: 알림을 허용한 계정에 두 번째 계정이 친구 요청을 보냈다
+      - runFlow:
+          file: ../../subflows/auth/sign-in.yaml
+          env:
+            EMAIL: ${output.main.email}
+            PASSWORD: ${output.main.password}
+      - runFlow: ../../subflows/notification/allow-push.yaml
+      - evalScript: ${output.second.sendFriendRequest(output.main.userTag)}
+      - evalScript: ${output.notification = output.main.waitForNotification('FOLLOW_NEW')}
+
+      # When: 홈으로 나간 뒤 그 알림의 푸시가 오고, 배너를 누른다
+      - pressKey: Home
+      - evalScript: ${output.api.pushToSimulator('friend-request', output.notification)}
+      # 확인 필요: 홈 화면 위 배너가 Maestro 화면 트리에 잡히는지. 안 잡히면 화면 위에서 아래로 쓸어 알림 센터를 열고
+      # (swipe start 50%,0% → end 50%,60%) 같은 글자를 누른다
+      - extendedWaitUntil:
+          visible: ${output.containing(output.notification.title)}
+          timeout: 15000
+      - tapOn: ${output.containing(output.notification.title)}
+
+      # Then: 받은 요청 화면에 머물고(알림함을 거치지 않는다) 서버에서 읽음이 된다
+      - extendedWaitUntil:
+          visible: ${output.containing(output.second.name)}
+          timeout: 20000
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - assertVisible: ${output.containing(output.second.name)}
+      - assertNotVisible:
+          id: ${output.ids.notification.inbox}
+      - assertTrue:
+          condition: ${output.main.isNotificationRead(output.notification.id)}
+          label: 서버에서 알림이 읽음이 됐다

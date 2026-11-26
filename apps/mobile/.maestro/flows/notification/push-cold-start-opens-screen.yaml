@@ -1,0 +1,67 @@
+appId: ${MAESTRO_APP_ID}
+name: 앱이 꺼진 채 친구 요청 푸시를 누르면 앱이 켜지며 받은 요청 화면이 열리고 읽음이 된다
+tags:
+  - regression
+  - notification
+  - push
+  - ios-only
+  - needs-second-account
+onFlowStart:
+  - runFlow: ../../subflows/app/load-helpers.yaml
+  - evalScript: ${output.main = output.api.signIn('main')}
+  - evalScript: ${output.second = output.api.signIn('second')}
+  - evalScript: ${output.second.removeFriendship(output.main.userId)}
+  - evalScript: ${output.main.removeFriendship(output.second.userId)}
+  - runFlow: ../../subflows/app/launch-fresh.yaml
+onFlowComplete:
+  - evalScript: ${output.second && output.main && output.second.removeFriendship(output.main.userId)}
+---
+# 지키는 것: 콜드 스타트는 마지막 응답을 슬롯에 받아 인증 확인 뒤 Index가 목적지로 한 번 보낸다
+# (apps/mobile/docs/push-notifications.md "콜드 스타트 순서"). 시간까지 보려면 Release 로컬 빌드(MAESTRO_METRO_URL 비움)로 돈다
+- runFlow:
+    label: iOS 시뮬레이터에서만 확인한다(Android FCM은 수동 확인)
+    when:
+      platform: iOS
+    commands:
+      # Given: 알림을 허용한 계정에 두 번째 계정이 친구 요청을 보냈고, 앱을 껐다
+      - runFlow:
+          file: ../../subflows/auth/sign-in.yaml
+          env:
+            EMAIL: ${output.main.email}
+            PASSWORD: ${output.main.password}
+      - runFlow: ../../subflows/notification/allow-push.yaml
+      - evalScript: ${output.second.sendFriendRequest(output.main.userTag)}
+      - evalScript: ${output.notification = output.main.waitForNotification('FOLLOW_NEW')}
+      - stopApp
+
+      # When: 그 알림의 푸시가 오고 배너를 누른다
+      - evalScript: ${output.api.pushToSimulator('friend-request', output.notification)}
+      # 확인 필요: 배너가 화면 트리에 안 잡히면 알림 센터를 내려(swipe 50%,0% → 50%,60%) 같은 글자를 누른다
+      - extendedWaitUntil:
+          visible: ${output.containing(output.notification.title)}
+          timeout: 15000
+      - tapOn: ${output.containing(output.notification.title)}
+      # 확인 필요: 개발 빌드는 콜드 스타트에 번들 대신 개발 클라이언트 launcher가 뜰 수 있다. 그때 Metro에 붙여도
+      # 같은 프로세스라 마지막 알림 응답이 남아 있는지 본다. 안 남으면 Release 로컬 빌드로만 돈다
+      - extendedWaitUntil:
+          visible: ${output.labels.system.devLauncher}
+          timeout: 5000
+          optional: true
+      - runFlow:
+          when:
+            visible: ${output.labels.system.devLauncher}
+            true: ${output.config.devClientLink}
+          commands:
+            - openLink: ${output.config.devClientLink}
+
+      # Then: 받은 요청 화면이 열리고 서버에서 읽음이 된다
+      - extendedWaitUntil:
+          visible: ${output.containing(output.second.name)}
+          timeout: 60000
+      - assertNotVisible:
+          id: ${output.ids.auth.emailEntry}
+      - assertNotVisible:
+          id: ${output.ids.notification.inbox}
+      - assertTrue:
+          condition: ${output.main.isNotificationRead(output.notification.id)}
+          label: 서버에서 알림이 읽음이 됐다

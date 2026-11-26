@@ -1,0 +1,64 @@
+appId: ${MAESTRO_APP_ID}
+name: 로그인한 뒤 앱을 끄고 데이터를 지우지 않고 다시 열면 로그인 화면이 아니라 피드다
+tags:
+  - regression
+  - app
+onFlowStart:
+  - runFlow: ../../subflows/app/load-helpers.yaml
+  - runFlow: ../../subflows/app/launch-fresh.yaml
+---
+# 지키는 것: 토큰은 기기 보안 저장소에 남아 앱을 다시 시작해도 세션이 이어진다
+# 개발 빌드는 다시 열면 개발 클라이언트가 먼저 떠서 launch-fresh처럼 Metro 번들에 다시 붙는다
+
+# Given: 로그인했다
+- runFlow:
+    file: ../../subflows/auth/sign-in.yaml
+    env:
+      EMAIL: ${output.config.accounts.main.email}
+      PASSWORD: ${output.config.accounts.main.password}
+
+# When: 앱을 끄고 데이터를 지우지 않고 다시 연다(권한은 launch-fresh와 같게)
+- stopApp
+- launchApp:
+    stopApp: true
+    permissions:
+      notifications: allow
+      all: deny
+- runFlow:
+    when:
+      true: ${output.config.devClientLink}
+    commands:
+      - openLink: ${output.config.devClientLink}
+
+# Then: 로그인 화면 없이 피드가 열린다
+- extendedWaitUntil:
+    visible:
+      id: ${output.ids.feed.screen}
+    timeout: 60000
+- assertNotVisible:
+    id: ${output.ids.auth.emailEntry}
+
+- runFlow:
+    label: Android는 시스템이 프로세스를 끝낸 뒤(killApp)에도 같다
+    when:
+      platform: Android
+    commands:
+      # When: 시스템처럼 프로세스를 끝내고 다시 연다
+      - killApp
+      - launchApp:
+          stopApp: false
+          permissions:
+            notifications: allow
+            all: deny
+      - runFlow:
+          when:
+            true: ${output.config.devClientLink}
+          commands:
+            - openLink: ${output.config.devClientLink}
+      # Then: 피드다
+      - extendedWaitUntil:
+          visible:
+            id: ${output.ids.feed.screen}
+          timeout: 60000
+      - assertNotVisible:
+          id: ${output.ids.auth.emailEntry}

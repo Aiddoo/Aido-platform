@@ -217,4 +217,23 @@ function signIn(role) {
   };
 }
 
-output.api = { signIn: signIn };
+// iOS 시뮬레이터에 서버 푸시와 같은 모양의 알림을 넣는다. 알림함의 실제 알림 id·문구를 실어야 앱의 소유 확인(읽음)이 통과한다.
+// run-e2e.ts가 연 입구가 push/<template>.json을 채워 `xcrun simctl push`로 넘긴다
+function pushToSimulator(template, notification) {
+  if (output.config.simulatorPushUrl === '') {
+    throw new Error('시뮬레이터 푸시 입구가 없습니다. maestro test 대신 pnpm e2e로 돌리세요.');
+  }
+  const response = http.post(output.config.simulatorPushUrl, {
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      template: template,
+      alert: { title: notification.title, body: notification.body },
+      data: { notificationId: notification.id, context: notification.context || {} },
+    }),
+  });
+  if (!response.ok) {
+    throw new Error('시뮬레이터에 ' + template + ' 푸시를 넣지 못했습니다: ' + response.status);
+  }
+}
+
+output.api = { signIn: signIn, pushToSimulator: pushToSimulator };

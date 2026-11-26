@@ -75,11 +75,13 @@ output.ids = {
     item: (memoId) => 'memo-item-' + memoId,
   },
   // app/(app)/onboarding/notifications.tsx, app/(app)/(tabs)/(me,memos,todos)/notifications/index.tsx,
-  // src/features/notification/components/notification-list.tsx(행, 알림 type마다)
+  // src/features/notification/components/notification-list.tsx(행, 알림 type마다),
+  // src/features/notification/components/push-permission-settings.tsx(기기 권한 줄의 값·버튼)
   notification: {
     onboardingScreen: 'push-onboarding-screen',
     inbox: 'notification-inbox',
     item: (type) => 'notification-item-' + type,
+    permissionStatus: 'push-permission-status',
   },
   // app/(app)/(tabs)/(me,memos,todos)/friends/add.tsx
   friend: {
@@ -111,6 +113,10 @@ output.ids = {
   },
 };
 
+// 서버가 준 글자(알림 제목·사람 이름)를 정규식 특수 문자째 그대로, 앞뒤 다른 글자와 함께 찾는다.
+// iOS 알림 배너는 앱 이름·제목·본문이 접근성 라벨 하나로 묶여 부분 일치로 찾는다
+output.containing = (text) => '.*' + text.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&') + '.*';
+
 output.labels = {
   // 네이티브 헤더 툴바 버튼(testID를 받지 않는다). src/shared/i18n/locales/*/common.json actions
   header: {
@@ -120,7 +126,17 @@ output.labels = {
   // iOS 시스템 창. 개발 빌드 오류 창(LogBox)은 화면을 덮어도 뒤 요소가 보여 id 확인만으로는 오류를 놓친다
   system: {
     savePasswordNotNow: '지금 안 함|Not Now',
+    allowNotifications: '허용|Allow',
+    denyNotifications: '허용 안 함|Don.t Allow',
     devErrorOverlay: 'Uncaught Error|Render Error',
+    // 확인 필요: 개발 빌드가 콜드 스타트에 번들 대신 expo-dev-client launcher를 띄울 때의 제목
+    devLauncher: 'Development servers|DEVELOPMENT SERVERS',
+  },
+  // src/shared/i18n/locales/*/notification.json permission(기기 알림 권한 줄)
+  notification: {
+    deviceOffTitle: '기기 알림이 꺼져 있어요|Device notifications are off',
+    granted: '허용됨|Allowed',
+    openSettings: '설정 열기|Open Settings',
   },
   // mutation 실패 토스트. src/shared/errors/infra-error.ts NetworkError → src/shared/i18n/locales/*/common.json infraErrors.network
   app: {
