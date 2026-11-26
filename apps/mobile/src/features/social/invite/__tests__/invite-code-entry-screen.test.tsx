@@ -253,6 +253,42 @@ describe('InviteCodeEntryScreen', () => {
     expect(router.replace).not.toHaveBeenCalled();
   });
 
+  it('오프라인이면 보내 보지 않고 연결 안내를 한 번만 띄우며 진동·보고·추적은 하지 않는다', async () => {
+    // Given
+    onlineManager.setOnline(false);
+    const httpClient = createHttpClientStub();
+    const analytics = createAnalyticsStub();
+    const haptics = createHapticsGatewayStub();
+    const errorReporter = createErrorReporterStub();
+    await renderScreen(<InviteCodeEntryScreen />, {
+      di: createTestDi({
+        ports: {
+          httpClient,
+          analytics,
+          haptics,
+          errorReporter,
+          queryClient: createTestQueryClient(),
+        },
+      }),
+    });
+    await enterCode(CODE);
+
+    // When
+    await fireEvent.press(screen.getByRole('button', { name: '확인' }));
+
+    // Then
+    expect(
+      await screen.findAllByText('인터넷에 연결되면 초대 코드를 확인할 수 있어요'),
+    ).toHaveLength(1);
+    expect(httpClient.get).not.toHaveBeenCalled();
+    expect(haptics.notify).not.toHaveBeenCalled();
+    expect(errorReporter.captureException).not.toHaveBeenCalled();
+    expect(getTrackedEvents(analytics, 'invite_link_opened')).toEqual([]);
+    expect(screen.getByLabelText('초대 코드')).toHaveDisplayValue(CODE);
+    expect(screen.queryByTestId('invite-code-error')).toBeNull();
+    expect(router.replace).not.toHaveBeenCalled();
+  });
+
   it.each([
     { code: 'INVITE_2102', reason: '링크가 바뀐 코드' },
     { code: 'INVITE_2103', reason: '내 코드' },
