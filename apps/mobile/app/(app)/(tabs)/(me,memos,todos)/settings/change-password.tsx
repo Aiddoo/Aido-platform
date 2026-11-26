@@ -181,7 +181,7 @@ function ChangePasswordStep({
     rules: { deps: 'newPasswordConfirm' },
   });
   const newPasswordConfirm = useController({ control: form.control, name: 'newPasswordConfirm' });
-  const { isSubmitting } = useFormState({ control: form.control });
+  const { isSubmitting, isSubmitSuccessful } = useFormState({ control: form.control });
 
   const savePassword = form.handleSubmit(async (input) => {
     await changePassword.mutateAsync(input);
@@ -216,7 +216,8 @@ function ChangePasswordStep({
           default: 'password.mismatch',
         }),
       }}
-      isSubmitting={isSubmitting || changePassword.isPending}
+      // 바꾸면 화면이 내려가는 동안에도 같은 값이 남는다. 다시 보내면 옛 현재 비밀번호라 거절된다
+      isSubmitting={isSubmitting || isSubmitSuccessful || changePassword.isPending}
       onNext={onNext}
       onSubmit={() => {
         savePassword().catch(handleChangeError);

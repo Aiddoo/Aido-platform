@@ -4,6 +4,7 @@ import { NetworkError } from '@src/shared/errors';
 import { i18n } from '@src/shared/i18n';
 import { createHttpClientStub, createPendingResponse, createTestDi } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
+import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router, useNavigation } from 'expo-router';
 
@@ -343,5 +344,29 @@ describe('ChangePasswordRoute', () => {
     // Then
     await waitFor(() => expect(router.back).toHaveBeenCalledTimes(1));
     expect(httpClient.patch).toHaveBeenCalledTimes(1);
+  });
+
+  describe('바꾼 뒤 떠나는 동안', () => {
+    setupFakeTimersPerTest();
+
+    it('바꿔 화면이 내려가는 동안 다시 눌러도 요청은 한 번이다', async () => {
+      // Given
+      httpClient.patch.mockResolvedValue(ok(createChangePasswordDto()));
+      await renderChangePassword(httpClient);
+      await fillAllSteps();
+      // 잠긴 버튼은 이름 대신 로딩을 보여 이름으로 다시 찾지 못한다. 처음 찾은 버튼을 다시 누른다
+      const submit = screen.getByRole('button', { name: SUBMIT });
+      await fireEvent.press(submit);
+      // 연타 가드(600ms)가 지난 뒤다. 화면은 뒤로 가는 전환이 끝나야 내려가 버튼이 아직 보인다
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+      expect(router.back).toHaveBeenCalledTimes(1);
+
+      // When
+      await fireEvent.press(submit);
+      await act(() => jest.advanceTimersByTimeAsync(1_000));
+
+      // Then
+      expect(httpClient.patch).toHaveBeenCalledTimes(1);
+    });
   });
 });
