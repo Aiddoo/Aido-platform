@@ -136,7 +136,7 @@ route 파일이 화면을 조립한다. 제목, 경계, 문구, `Spacing`, `matc
 ## 레이아웃 시프트·워터폴·목록
 
 - `X.Loading`은 받은 뒤와 같은 슬롯·높이다. 글자는 `TextSkeleton size`, 행 글자는 `ListRow.Texts.Loading`이고, 데이터로 생기는 줄(설명·하위 항목)은 그리지 않는다.
-- 받은 뒤 나타나는 버튼·배너는 자리를 먼저 비운다. 대부분 안 보이는 블록만 `Suspense fallback={null}`이고 이유를 주석으로 남긴다. 남의 높이를 매직 넘버로 복제하지 않는다(재야 하면 `useLayoutSize()`). 이미지는 `AspectRatio`, 오류 문구는 `preserveErrorSpace`다. 데이터가 있으면 재조회 중에 fallback으로 바꾸지 않는다. 부품을 바꾸면 전후를 겹쳐 비교하고 다르면 바꾸지 않는다.
+- 받은 뒤 나타나는 버튼·배너는 자리를 먼저 비운다. 대부분 안 보이는 블록만 `Suspense fallback={null}`이고 이유를 주석으로 남긴다. 남의 높이를 매직 넘버로 복제하지 않는다(재야 하면 `useLayoutSize()`). 이미지는 `AspectRatio`, 오류 문구는 `TextArea`의 `shouldPreserveErrorSpace`(기본 `true`)다. 데이터가 있으면 재조회 중에 fallback으로 바꾸지 않는다. 부품을 바꾸면 전후를 겹쳐 비교하고 다르면 바꾸지 않는다.
 - **워터폴.** 한 컴포넌트의 독립 조회는 `useSuspenseQueries({ queries: [a, b] })`로 함께 건다. `useSuspenseQuery`를 차례로 부르면 둘째는 첫 응답 뒤에 나간다. 안쪽 블록이 멈춘 뒤에야 시작될 조회는 바깥에서 `usePrefetchQuery`로 함께 시작한다([data](./data.md#쿼리-키)). Suspense로 멈추는 훅은 이름이 `useSuspense{X}`다(멈춤을 이름에서 숨기지 않는다).
 - **목록.** 서버 커서 목록은 `InfiniteList`(FlashList v2: 하단 로딩·재시도·중복 호출 방지·당겨서 새로고침), 길이가 정해지지 않은 서버 목록은 `FlashList`, 상수로 개수가 묶인 서버 목록은 `.map`, 고정 개수 스켈레톤은 `range(n).map`이다. 길이 제한 없는 `.map`은 쓰지 않는다.
 - 날짜 구역 나누기는 쿼리 `select`다. 머리말·꼬리말(카드·정렬 바)은 `ListHeaderComponent`·`ListFooterComponent`에 직접 적는다(목록 밖으로 옮기면 스크롤과 첫 위치가 바뀐다). 긴 안내 글은 `WordWrapText`, 가상 목록 행은 `lineBreakStrategyIOS="hangul-word"`다.

@@ -33,7 +33,7 @@ iPadOS 26+에서 NativeTabs(`preferredPlacement="automatic"`) 사이드바는 �
 - 목록 칸 내용 폭은 size class별 최소 목록 폭(320/400)이고, 닿는 가장자리의 inset은 칸 바깥쪽에 더한다. 상세 pane은 남은 폭을 채운다. 기기별 고정 폭이 아니라 탭 안 내용 폭 기준이다.
 - 반쯤 접어 세로 접힘선(reserved region `division`)이 생기면 목록 폭을 접힘선의 `frame.x`에 맞추고 접힘선 폭만큼 비운다. `AdaptivePane`이 `ReservedRegionsProvider`로 자기 좌표계를 만들고, 접힘선은 `findVerticalFold`로 찾는다.
 - 펼친 화면에서 고른 항목은 URL param으로 상세 pane에 보여 준다. 접히면 항상 렌더링되는 목록 pane에서 `useOpenDetailWhenCompact(selectedId, openDetail)`로 상세 라우트에 넘긴다. 훅은 `useIsFocused`로 앞에 보이는 화면에서만 동작하므로, 뒤에 남아 있는 다른 탭은 push하지 않는다.
-- 목록 밖(푸시·알림함 행)에서 여는 항목도 같은 기준을 따른다. 할 일은 `toTodoDetailRoute(windowSizeClass, …)`가 접힌 화면이면 `/todo/[todoId]`, 펼친 화면이면 `/feed?todoId=`(피드 상세 pane)를 고른다. 알림이 할 일 주인·날짜(`routing.todoOwnerId`·`todoDate`)를 실으면 목록 pane도 그 사람(친구면 `friendId`)의 그 `date` 피드로 연다. 없는 예전 알림은 내 피드 기본 날짜다.
+- 목록 밖(푸시·알림함 행)에서 여는 항목도 같은 기준을 따른다. 할 일은 `toTodoDetailRoute(windowSizeClass, …)`가 접힌 화면이면 `/todo/[todoId]`, 펼친 화면이면 `/feed?todoId=`(피드 상세 pane)를 고른다. 알림 `navigation`이 할 일 주인·날짜(`todoOwnerId`·`todoDate`)를 실으면 목록 pane도 그 사람(친구면 `friendId`)의 그 `date` 피드로 연다. 싣지 않은 알림은 내 피드 기본 날짜다.
 - 하단 탭 바 높이를 가정한 여백을 두지 않는다.
 - 목록 pane은 size class와 무관하게 같은 트리 슬롯에 둔다. 접기/펼치기에서 다시 마운트되지 않아 스크롤·입력 상태가 유지된다.
 - 창을 끌거나 사이드바를 여닫는 동안 폭이 프레임마다 바뀐다. 폭마다 다시 만들어야 하는 무거운 부품(달력 쪽 목록)은 `useDeferredValue`로 늦춰 다른 그리기를 막지 않는다. 늦춘 동안에는 옛 폭의 부품이 새 폭 안에 남는다. 그래서 그 부품이 보내는 위치(스크롤 끝 쪽)는 잰 폭이 같을 때만 믿고, 다시 만들 때는 옛 부품의 위치가 아니라 상태(고른 날짜)에서 시작한다. inset 패딩은 네이티브가 바로 적용하고 JS가 정하는 칸 폭은 다음 그리기에 따라온다(React Native는 UIKit 사이드바 애니메이션 안에서 배치하지 않는다).

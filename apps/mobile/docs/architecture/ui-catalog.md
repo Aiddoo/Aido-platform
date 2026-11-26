@@ -53,7 +53,7 @@ UI는 heroui-native → `shared/ui` → React Native 순서로 고른다. 같은
 - **`LabelChip`**: heroui `Chip` + 자식 `Text` + soft 색 매핑. 글자 크기는 칩 크기를 따른다(`sm` → `e1`, `md`·`lg` → `b3`). soft 변형만 지원한다. 섹션 머리 알약(`secondary`, `b4`)과 누르는 제안 칩은 `LabelChip`이 아니다. 글자 색은 [design의 주황 두 가지](../design.md#주황-두-가지)를 따른다.
 - **`MenuContent`**: `Menu.Portal` + `Menu.Overlay` + 앱 겉모양을 한 번에 둔 `Menu.Content` 확장이다. 항목은 `MenuActionItem`(위험하면 `variant="danger"`), 고르는 메뉴는 `Menu.Item` + `Menu.ItemIndicator`다.
 - **`Checkbox`**: heroui `Checkbox` 확장. 앱 체크박스 겉모양이고 `isSelected`/`onSelectedChange`를 그대로 쓴다. features에서 heroui `Checkbox`를 직접 import하지 않는다.
-- **`ScrollFade`**: `surface: 'screen' | 'sheet'`. 화면·시트 스크롤의 잘리는 쪽을 흐리게 덮는다(`ScreenScrollShadow`·`SheetScrollShadow`를 대신한다).
+- **`ScrollFade`**: `surface: 'screen' | 'sheet'`. 화면·시트 스크롤의 잘리는 쪽을 흐리게 덮는다.
 - **`Mascot`**: `name`, `size?`, `isCentered`. 고양이 이미지를 직접 import하지 않는다.
 - **`TimeSpinner`**: `value`·`onChange`(`TimeOfDay`), `timeFormat`, `minimum`, `maximum`. iOS 휠이고 Android 시스템 피커는 `openAndroidTimePicker({ value, timeFormat })`(`Promise<TimeOfDay | null>`)다.
 - **`RouteBottomSheet`**: `fallbackHref`, `loading`, `children`·`footer`는 `(sheet) => ReactNode`. 대상이 있는 시트 route의 껍데기 하나(떠나기·경계·문의)이고 대상은 `useSuspenseSheetTodo` 같은 route 훅으로 읽는다. 입력이 있으면 `RouteKeyboardBottomSheet`다.
