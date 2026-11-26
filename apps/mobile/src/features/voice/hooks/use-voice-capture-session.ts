@@ -6,6 +6,7 @@ import {
 import type { HapticsGateway } from '@src/core/ports/haptics-gateway';
 import type { SpeechErrorCode, SpeechLocale } from '@src/core/ports/speech-recognizer';
 import { useIsUnmountedRef } from '@src/shared/hooks/use-is-unmounted-ref';
+import { createTimerSlots } from '@src/shared/utils/create-timer-slots';
 import { noop } from 'es-toolkit';
 import { type RefObject, useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { type SharedValue, useSharedValue } from 'react-native-reanimated';
@@ -770,31 +771,4 @@ function useTimeoutWhile({
 
     return () => clearTimeout(timer);
   }, [isActive, restartKey]);
-}
-
-/** 이름 하나에 타이머 하나. 다시 걸면 앞의 것을 지운다 */
-function createTimerSlots<TKey extends string>() {
-  const slots = new Map<TKey, ReturnType<typeof setTimeout>>();
-
-  const clear = (key: TKey) => {
-    const timer = slots.get(key);
-    if (timer != null) {
-      clearTimeout(timer);
-      slots.delete(key);
-    }
-  };
-
-  return {
-    set: (key: TKey, callback: () => void, delayMs: number) => {
-      clear(key);
-      slots.set(
-        key,
-        setTimeout(() => {
-          slots.delete(key);
-          callback();
-        }, delayMs),
-      );
-    },
-    clear,
-  };
 }

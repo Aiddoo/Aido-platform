@@ -1,4 +1,5 @@
 import type { SpeechRecognizer, SpeechStartOptions } from '@src/core/ports/speech-recognizer';
+import { createTimerSlots } from '@src/shared/utils/create-timer-slots';
 
 import { toSpeechStartOptions } from '../apis/speech-hint.mapper';
 import { COMMON_SPEECH_HINTS } from '../constants/speech-hints.constants';
@@ -26,7 +27,7 @@ type EndWait = 'finalize' | 'deferredStart' | 'stallAbort';
 /** 인식기 명령과 그리지 않는 연결 상태, `end` 대기 타이머를 React 밖에 둔다. 놓은 뒤에도 막지 않아 effect가 다시 돌아 붙은 훅이 이어 쓴다 */
 export class VoiceRecognizerSession {
   readonly #ports: VoiceRecognizerSessionPorts;
-  readonly #endWaits = new Map<EndWait, ReturnType<typeof setTimeout>>();
+  readonly #endWaits = createTimerSlots<EndWait>();
   #link = createVoiceRecognizerLink();
   #startOptions: SpeechStartOptions | null = null;
 
@@ -55,7 +56,7 @@ export class VoiceRecognizerSession {
       this.startDeferred();
       return;
     }
-    this.#wait('deferredStart', this.startDeferred);
+    this.#endWaits.set('deferredStart', this.startDeferred, RECOGNIZER_END_TIMEOUT_MS);
   };
 
   hasDeferredStart = (): boolean => this.#endWaits.has('deferredStart');
@@ -72,7 +73,7 @@ export class VoiceRecognizerSession {
   };
 
   cancelDeferredStart = (): void => {
-    this.#cancel('deferredStart');
+    this.#endWaits.clear('deferredStart');
   };
 
   /** 사용자가 끝내지 않았는데 끝난 구간을 같은 옵션으로 다시 연다. 너무 빨리 끝나기를 되풀이하거나 정한 옵션이 없어 열지 못했으면 false다 */
@@ -96,7 +97,7 @@ export class VoiceRecognizerSession {
   /** 구간을 닫고 `end`를 기다린다. 답이 없는 기기에서는 잠시 뒤 끝난 것으로 보고 `onUnanswered`를 부른다 */
   stopAndAwaitEnd = (onUnanswered: () => void): void => {
     this.stop();
-    this.#wait('finalize', onUnanswered);
+    this.#endWaits.set('finalize', onUnanswered, RECOGNIZER_END_TIMEOUT_MS);
   };
 
   // abort는 바로 끝난 것으로 본다. 다음 시작은 어댑터가 abort 뒤에 차례로 처리한다
@@ -116,8 +117,8 @@ export class VoiceRecognizerSession {
   /** `end`를 받았다. stop의 답을 기다리던 끝내기·abort 타이머는 더 필요 없다. 미뤄 둔 시작은 부른 쪽이 연다 */
   noteEnded = (): void => {
     this.#update({ type: 'ended' });
-    this.#cancel('finalize');
-    this.#cancel('stallAbort');
+    this.#endWaits.clear('finalize');
+    this.#endWaits.clear('stallAbort');
   };
 
   sampleVolume = (level: number, at: number): void => {
@@ -132,18 +133,19 @@ export class VoiceRecognizerSession {
   closeStalledSegment = (now: number): void => {
     this.#update({ type: 'stall-restarted', at: now });
     this.stop();
-    this.#wait('stallAbort', () => {
-      if (this.#ports.isListening()) {
-        this.#ports.speechRecognizer.abort();
-      }
-    });
+    this.#endWaits.set(
+      'stallAbort',
+      () => {
+        if (this.#ports.isListening()) {
+          this.#ports.speechRecognizer.abort();
+        }
+      },
+      RECOGNIZER_END_TIMEOUT_MS,
+    );
   };
 
   cancelEndWaits = (): void => {
-    for (const timer of this.#endWaits.values()) {
-      clearTimeout(timer);
-    }
-    this.#endWaits.clear();
+    this.#endWaits.clearAll();
   };
 
   /** 타이머를 지우고 듣던 구간이 있으면 끊는다. 명령과 이벤트는 막지 않아 다시 붙은 훅이 이어 쓴다 */
@@ -162,24 +164,5 @@ export class VoiceRecognizerSession {
     this.#ports.speechRecognizer.start(
       toSpeechStartOptions(options, COMMON_SPEECH_HINTS[options.locale]),
     );
-  };
-
-  #wait = (name: EndWait, onTimeout: () => void): void => {
-    this.#cancel(name);
-    this.#endWaits.set(
-      name,
-      setTimeout(() => {
-        this.#endWaits.delete(name);
-        onTimeout();
-      }, RECOGNIZER_END_TIMEOUT_MS),
-    );
-  };
-
-  #cancel = (name: EndWait): void => {
-    const timer = this.#endWaits.get(name);
-    if (timer != null) {
-      clearTimeout(timer);
-      this.#endWaits.delete(name);
-    }
   };
 }
