@@ -30,10 +30,10 @@ SplashScreen.preventAutoHideAsync().catch(noop);
 // 루트 경계는 DI 밖에서 그려질 수 있어 같은 규칙(Sentry/console)으로 직접 만든다
 const rootErrorReporter = createEnvironmentErrorReporter();
 /** 문의 글자 버튼 높이(h-8). 위 버튼과 8 떨어져 위아래로 이만큼만 넓혀도 겹치지 않는다 */
-const INQUIRY_BUTTON_HEIGHT = 32;
+const INQUIRY_BUTTON_HEIGHT_PT = 32;
 const INQUIRY_HIT_SLOP = {
-  top: getTouchTargetInset(INQUIRY_BUTTON_HEIGHT),
-  bottom: getTouchTargetInset(INQUIRY_BUTTON_HEIGHT),
+  top: getTouchTargetInset(INQUIRY_BUTTON_HEIGHT_PT),
+  bottom: getTouchTargetInset(INQUIRY_BUTTON_HEIGHT_PT),
 };
 
 function AppBootstrapLayout() {

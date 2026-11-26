@@ -35,7 +35,7 @@ import { Tabs } from 'heroui-native';
 import { Suspense } from 'react';
 import { match } from 'ts-pattern';
 
-const INTRO_MASCOT_SIZE = 64;
+const INTRO_MASCOT_SIZE_PT = 64;
 
 export default function ReportsScreen() {
   const { t } = useTranslation('ai');
@@ -220,7 +220,7 @@ function Intro({ title, description }: IntroProps) {
 Intro.CatTile = function CatTile() {
   return (
     <Box className="h-18 w-24 items-center justify-end overflow-hidden rounded-2xl bg-highlight">
-      <Mascot name="catSuggestion" size={INTRO_MASCOT_SIZE} />
+      <Mascot name="catSuggestion" size={INTRO_MASCOT_SIZE_PT} />
     </Box>
   );
 };
