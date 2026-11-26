@@ -100,7 +100,7 @@ import {
   useWatch,
 } from 'react-hook-form';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
-import { isMatching, match } from 'ts-pattern';
+import { isMatching, match, P } from 'ts-pattern';
 
 type TodoImportStepContexts = Record<TodoImportStep, Record<string, never>>;
 type TodoImportForm = UseFormReturn<TodoImportFormValues>;
@@ -265,20 +265,20 @@ function PermissionStep({ progress, onGranted }: PermissionStepProps) {
     <FormStepLayout
       title={t('permission.title')}
       progress={progress}
-      footer={match(view)
-        .with('ask', () => (
+      footer={match({ view, canOpenSettings: appSettings.canOpen })
+        .with({ view: 'ask' }, () => (
           <KeyboardAdaptiveButton isLoading={request.isPending} onPress={handleContinue}>
             {t('permission.continue')}
           </KeyboardAdaptiveButton>
         ))
-        // 거절한 뒤에는 다시 조르지 않고 설정 열기만 둔다. 설정 화면이 없는 기기는 글로 가는 길만 보인다
-        .with('denied', 'blocked', () =>
-          appSettings.canOpen ? (
-            <KeyboardAdaptiveButton onPress={appSettings.open}>
-              {t('permission.openSettings')}
-            </KeyboardAdaptiveButton>
-          ) : null,
-        )
+        // 거절한 뒤에는 다시 조르지 않고 설정 열기만 둔다
+        .with({ view: P.union('denied', 'blocked'), canOpenSettings: true }, () => (
+          <KeyboardAdaptiveButton onPress={appSettings.open}>
+            {t('permission.openSettings')}
+          </KeyboardAdaptiveButton>
+        ))
+        // 설정 화면이 없는 기기는 글로 가는 길만 보인다
+        .with({ view: P.union('denied', 'blocked'), canOpenSettings: false }, () => null)
         .exhaustive()}
     >
       <CalendarPermissionPrompt view={view} />
