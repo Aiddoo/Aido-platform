@@ -3,7 +3,8 @@
   "globalDependencies": [".nvmrc", "patches/**"],
   "tasks": {
     "transit": {
-      "dependsOn": ["^transit"]
+      "dependsOn": ["^transit"],
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.md", "!docs/**"]
     },
     "build": {
       "dependsOn": ["^build", "transit"],

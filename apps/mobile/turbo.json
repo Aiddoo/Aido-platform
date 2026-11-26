@@ -1,0 +1,36 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "transit": {
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!**/*.md",
+        "!docs/**",
+        "!assets/**",
+        "!store-metadata/**",
+        "!.maestro/**"
+      ]
+    },
+    "typecheck": {
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!**/*.md",
+        "!docs/**",
+        "!assets/**",
+        "!store-metadata/**",
+        "!.maestro/**/*.yaml"
+      ]
+    },
+    "lint:deps": {
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!**/*.md",
+        "!docs/**",
+        "!assets/**",
+        "!store-metadata/**",
+        "!.maestro/**"
+      ]
+    }
+  }
+}

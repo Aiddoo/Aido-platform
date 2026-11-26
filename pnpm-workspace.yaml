@@ -161,7 +161,6 @@ catalogs:
     'jest': '30.5.2'
     'jest-expo': '~58.0.15'
     'react': '19.3.0'
-    'react-dom': '19.3.0'
     'react-native': '0.88.1'
     'react-native-android-widget': '0.26.0'
     'react-native-gesture-handler': '~3.3.0'
@@ -177,6 +176,10 @@ catalogs:
     '@nestjs-cls/transactional-adapter-drizzle-orm': '2.0.2'
     'drizzle-kit': '1.0.0-rc.6'
     'drizzle-orm': '1.0.0-rc.6'
+  react19:
+    '@types/react': '19.3.3'
+    'react': '19.3.0'
+    'react-dom': '19.3.0'
   nest12:
     '@nestjs-cls/transactional': '4.0.2'
     '@nestjs/cli': '12.0.15'
