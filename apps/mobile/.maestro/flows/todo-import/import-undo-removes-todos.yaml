@@ -52,7 +52,7 @@ onFlowComplete:
   - evalScript: ${output.main && output.main.removeTodosStartingWith(output.eventPrefix)}
 ---
 # 지키는 것: 1.17.0 가져오기 4단계(권한을 이미 주면 캘린더부터) → 진행·결과 → 되돌리기가 서버에 그대로 반영된다
-# (app/(app)/(tabs)/(me,memos,todos)/todo-import/index.tsx·[importId].tsx). 화면에 testID가 없어 단계 제목·버튼 글자로 찾는다
+# (app/(app)/(tabs)/(me,memos,todos)/todo-import/index.tsx·[importId].tsx)
 - runFlow:
     label: iOS에서만 확인한다(Android 에뮬레이터는 기기 캘린더에 일정을 심을 방법이 없어 수동 확인)
     when:
@@ -68,32 +68,36 @@ onFlowComplete:
       # When: 가져오기를 열어 기본 기간·기본 캘린더·기본 넣을 곳(첫 카테고리)·기본 옵션으로 가져온다
       - openLink: ${output.config.appScheme}://todo-import
       - extendedWaitUntil:
-          visible: ${output.labels.todoImport.calendarsTitle}
+          visible:
+            id: ${output.ids.todoImport.calendarsStep}
           timeout: 20000
       # 캘린더 목록을 다 읽고 고른 일정이 있어야 버튼이 켜진다
       - extendedWaitUntil:
           visible:
-            text: ${output.labels.todoImport.nextButton}
+            id: ${output.ids.todoImport.next}
             enabled: true
           timeout: 20000
       - tapOn:
-          text: ${output.labels.todoImport.nextButton}
+          id: ${output.ids.todoImport.next}
           enabled: true
       - extendedWaitUntil:
-          visible: ${output.labels.todoImport.categoriesTitle}
+          visible:
+            id: ${output.ids.todoImport.categoriesStep}
           timeout: 10000
       - extendedWaitUntil:
           visible:
-            text: ${output.labels.todoImport.nextButton}
+            id: ${output.ids.todoImport.next}
             enabled: true
           timeout: 20000
       - tapOn:
-          text: ${output.labels.todoImport.nextButton}
+          id: ${output.ids.todoImport.next}
           enabled: true
       - extendedWaitUntil:
-          visible: ${output.labels.todoImport.optionsTitle}
+          visible:
+            id: ${output.ids.todoImport.optionsStep}
           timeout: 10000
-      - tapOn: ${output.labels.todoImport.importButton}
+      - tapOn:
+          id: ${output.ids.todoImport.start}
 
       # Then: 결과 화면이 열리고 서버에 일정 제목의 할 일이 생긴다
       - extendedWaitUntil:
@@ -102,11 +106,12 @@ onFlowComplete:
       - evalScript: ${output.main.waitForTodoTitled(output.eventTitle)}
 
       # When: 결과 화면에서 되돌리기를 누르고 확인한다
-      - tapOn: ${output.labels.todoImport.undoButton}
+      - tapOn:
+          id: ${output.ids.todoImport.undo}
       - extendedWaitUntil:
           visible: ${output.labels.todoImport.undoConfirmTitle}
           timeout: 10000
-      # 확인 창의 버튼도 같은 글자라 취소 버튼 오른쪽의 것을 누른다(src/shared/ui/confirm-dialog/confirm-dialog.tsx)
+      # 확인 창은 testID를 받지 않고 화면의 되돌리기 버튼과 글자가 같아 취소 버튼 오른쪽의 것을 누른다(src/shared/ui/confirm-dialog/confirm-dialog.tsx)
       - tapOn:
           text: ${output.labels.todoImport.undoButton}
           rightOf:

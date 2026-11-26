@@ -30,8 +30,11 @@ onFlowStart:
 
       # Then: 권한 안내와 설정 열기가 보이고 계속 버튼은 없다
       - extendedWaitUntil:
-          visible: ${output.labels.todoImport.permissionDeniedTitle}
+          visible:
+            id: ${output.ids.todoImport.permissionStep}
           timeout: 20000
+      # 묻기 전과 거절한 뒤는 같은 단계라 안내 글자로 가른다
+      - assertVisible: ${output.labels.todoImport.permissionDeniedTitle}
       - assertVisible: ${output.labels.todoImport.openSettings}
       - assertNotVisible: ${output.labels.todoImport.permissionContinue}
       - assertNotVisible:

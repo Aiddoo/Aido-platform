@@ -34,5 +34,12 @@ export function TodoImportUndoButton(props: TodoImportUndoButtonProps) {
       onConfirm: () => undo.mutateAsync(),
     });
 
-  return <Button isLoading={undo.isPending} onPress={handleUndoPress} {...props} />;
+  return (
+    <Button
+      testID="todo-import-undo"
+      isLoading={undo.isPending}
+      onPress={handleUndoPress}
+      {...props}
+    />
+  );
 }

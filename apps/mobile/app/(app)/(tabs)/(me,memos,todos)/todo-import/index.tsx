@@ -263,6 +263,7 @@ function PermissionStep({ progress, onGranted }: PermissionStepProps) {
 
   return (
     <FormStepLayout
+      testID="todo-import-step-permission"
       title={t('permission.title')}
       progress={progress}
       footer={match({ view, canOpenSettings: appSettings.canOpen })
@@ -323,6 +324,7 @@ function CalendarsStep({ form, progress, onNext }: FormStepProps) {
 
   return (
     <FormStepLayout
+      testID="todo-import-step-calendars"
       title={t('calendars.title')}
       progress={progress}
       footer={
@@ -352,6 +354,7 @@ function CalendarsStep({ form, progress, onNext }: FormStepProps) {
             )}
           </StyledSafeAreaView>
           <KeyboardAdaptiveButton
+            testID="todo-import-next"
             isDisabled={selected.length === 0 || isOverLimit || isListStale}
             onPress={handleNext}
           >
@@ -458,6 +461,7 @@ function CategoriesStep({ form, progress, onNext }: FormStepProps) {
 
   return (
     <FormStepLayout
+      testID="todo-import-step-categories"
       title={t('categories.title')}
       progress={progress}
       footer={
@@ -470,7 +474,7 @@ function CategoriesStep({ form, progress, onNext }: FormStepProps) {
               </Suspense>
             </QueryErrorBoundary>
           </StyledSafeAreaView>
-          <ConfirmImportPlanButton plan={plan} onConfirm={confirmPlan}>
+          <ConfirmImportPlanButton testID="todo-import-next" plan={plan} onConfirm={confirmPlan}>
             {t('common:actions.continue')}
           </ConfirmImportPlanButton>
         </VStack>
@@ -653,6 +657,7 @@ function OptionsStep({ form, progress, onStarted, onTargetsRejected }: OptionsSt
 
   return (
     <FormStepLayout
+      testID="todo-import-step-options"
       title={t('options.title')}
       progress={progress}
       footer={
@@ -666,6 +671,7 @@ function OptionsStep({ form, progress, onStarted, onTargetsRejected }: OptionsSt
             control={form.control}
             render={({ isSubmitSuccessful }) => (
               <KeyboardAdaptiveButton
+                testID="todo-import-start"
                 // 시작하면 진행 화면으로 바뀌는 동안에도 같은 값이 남는다. 그동안 다시 시작하지 않는다
                 isLoading={startImport.isPending || isSubmitSuccessful}
                 isDisabled={accountId == null}

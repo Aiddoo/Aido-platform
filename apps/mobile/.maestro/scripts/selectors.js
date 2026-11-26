@@ -111,6 +111,18 @@ output.ids = {
     sampleNotice: 'report-sample-notice',
     sampleSubscribe: 'report-sample-subscribe',
   },
+  // app/(app)/(tabs)/(me,memos,todos)/todo-import/index.tsx(단계 틀·다음·가져오기),
+  // src/features/planning/todo-import/components/todo-import-undo-button.tsx
+  todoImport: {
+    permissionStep: 'todo-import-step-permission',
+    calendarsStep: 'todo-import-step-calendars',
+    categoriesStep: 'todo-import-step-categories',
+    optionsStep: 'todo-import-step-options',
+    // 캘린더·넣을 곳 단계의 아래 버튼
+    next: 'todo-import-next',
+    start: 'todo-import-start',
+    undo: 'todo-import-undo',
+  },
 };
 
 // 서버가 준 글자(알림 제목·사람 이름)를 정규식 특수 문자째 그대로, 앞뒤 다른 글자와 함께 찾는다.
@@ -154,15 +166,10 @@ output.labels = {
     titleField: 'Title|제목',
   },
   // app/(app)/(tabs)/(me,memos,todos)/todo-import/index.tsx·[importId].tsx, src/shared/i18n/locales/*/todo-import.json.
-  // 가져오기 화면에는 testID가 없어 단계 제목·버튼 글자로 찾는다(README "앱에 더할 testID")
+  // 단계·다음·가져오기·되돌리기 버튼은 ids.todoImport로 찾고, 여기는 상태마다 다른 글자와 확인 창(testID 없음)의 글자다
   todoImport: {
-    calendarsTitle: '가져올 캘린더를 골라주세요|Choose calendars to import',
-    categoriesTitle: '어디에 넣을까요\\?|Where should they go\\?',
-    optionsTitle: '마지막으로 확인해주세요|One last check',
-    // common.json actions.continue. 캘린더·넣을 곳 단계의 아래 버튼
-    nextButton: '다음|Continue',
-    importButton: '가져오기|Import',
     completedTitle: '할 일 \\d+개를 가져왔어요|Imported \\d+ to-dos?',
+    // 되돌리기 확인 창의 확인 버튼(src/shared/ui/confirm-dialog/confirm-dialog.tsx)
     undoButton: '되돌리기|Undo',
     undoConfirmTitle: '가져온 할 일을 되돌릴까요\\?|Undo this import\\?',
     cancelButton: '취소|Cancel',
