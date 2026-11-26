@@ -402,6 +402,24 @@ const errorBoundaryFallback = {
   meta: { type: 'suggestion' },
   createOnce(context) {
     return {
+      JSXOpeningElement(node) {
+        if (
+          node.name.type !== 'JSXIdentifier' ||
+          node.name.name !== 'QueryErrorBoundary' ||
+          node.attributes.some(
+            (attribute) =>
+              attribute.type === 'JSXSpreadAttribute' ||
+              (attribute.name.type === 'JSXIdentifier' && attribute.name.name === 'fallback'),
+          )
+        ) {
+          return;
+        }
+        context.report({
+          node,
+          message:
+            'QueryErrorBoundary에 fallback을 적습니다. 조회 컴포넌트의 fallback={X.Error}(기본 안내면 X.Error = QueryErrorFallback), 실패하면 비우는 조각은 fallback={QueryErrorFallback.Hidden}을 겁니다.',
+        });
+      },
       JSXAttribute(node) {
         const element = node.parent;
         if (

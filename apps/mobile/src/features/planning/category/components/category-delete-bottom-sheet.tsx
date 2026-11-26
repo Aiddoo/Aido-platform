@@ -484,7 +484,7 @@ function MoveTargetRow({
 
   const openMoveTargetPicker = async () => {
     const categoryId = await openSheet<number>((close) => (
-      <QueryErrorBoundary>
+      <QueryErrorBoundary fallback={CategoryPickForm.Error}>
         <Suspense fallback={<CategoryPickForm.Loading />}>
           <CategoryPickForm
             defaultValue={moveTargetCategoryId}

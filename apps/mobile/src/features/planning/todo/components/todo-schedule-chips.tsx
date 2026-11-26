@@ -158,7 +158,7 @@ function TimeChip({
   const handlePress = async () => {
     const time = await openSheet<Pick<TodoSchedule, 'scheduledTime' | 'isAllDay'>>(
       (close) => (
-        <QueryErrorBoundary>
+        <QueryErrorBoundary fallback={TodoTimePicker.Error}>
           <Suspense fallback={<TodoTimePicker.Loading />}>
             <TodoTimePicker
               value={{ scheduledTime: value.scheduledTime, isAllDay: value.isAllDay }}
@@ -266,7 +266,7 @@ function CategoryChip({ value, onChange, sheetOptions }: ChipProps<number>) {
   const handlePress = async () => {
     const categoryId = await openSheet<number>(
       (close) => (
-        <QueryErrorBoundary>
+        <QueryErrorBoundary fallback={CategoryPickForm.Error}>
           <Suspense fallback={<CategoryPickForm.Loading />}>
             <CategoryPickForm
               defaultValue={value.categoryId}

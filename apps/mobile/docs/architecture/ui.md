@@ -104,7 +104,7 @@ route 파일이 화면을 조립한다. 제목, 경계, 문구, `Spacing`, `matc
 - **화면이 하지 않는 것.** 조회 값 가공, 규칙 계산, 요청 만들기, 오류 판별, 시트 열기. 이것은 기능 컴포넌트·훅·모델이 준다.
 - params가 있는 route는 맨 위 컴포넌트가 검증과 redirect만 하고, 같은 파일의 화면 컴포넌트가 조립한다([params 튜플](./state-and-routing.md#params-튜플)).
 - 블록마다 `QueryErrorBoundary` → `Suspense fallback={<X.Loading />}` → `<X />`를 화면에 나열한다. 경계를 기능 컴포넌트·훅 안에 숨기지 않는다(값만 그리는 조각은 예외, [위](#컴포넌트-계약)).
-- **fallback은 `fallback={X.Error}`다.** 실패하면 비우는 값 조각은 `fallback={QueryErrorFallback.Hidden}`이다. 인라인 화살표, `() => null`, `null`만 돌려주는 `.Error`를 쓰지 않는다. 예외는 시트를 닫아야 하는 시트 안 경계의 `(props) => <X.Error {...props} onInquiry={…} />`뿐이다.
+- **fallback은 `fallback={X.Error}`다.** 적지 않은 경계도 막힌다. 기본 안내를 그리면 `X.Error = QueryErrorFallback`이다. 실패하면 비우는 값 조각은 `fallback={QueryErrorFallback.Hidden}`이다. 인라인 화살표, `() => null`, `null`만 돌려주는 `.Error`를 쓰지 않는다. 예외는 시트를 닫아야 하는 시트 안 경계의 `(props) => <X.Error {...props} onInquiry={…} />`뿐이다.
 - 상태별 화면은 `match(view).with(…).exhaustive()`로 화면에서 고른다. 넘기기용 래퍼(`Content → Header → Section`), 재수출한 화면, JSX 상수(`const progress = <Steps.Dots … />`)를 만들지 않고 지역 컴포넌트로 둔다.
 - 한 쿼리를 두 경계에서 읽지 않는다(한 오류는 한 곳). 로딩·오류·빈·데이터 4상태를 그린다.
 - 스스로 숨는 블록은 간격도 함께 사라진다. 조건을 화면이 알면 `{isAvailable && (…)}` 안에 `Spacing`과 블록을 함께 두고, 조회해야 아는 카드만 화면이 `className`으로 바깥 여백을 넘긴다.

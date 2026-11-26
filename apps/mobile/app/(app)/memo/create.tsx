@@ -15,7 +15,13 @@ import { useOnOpenTransitionEnd } from '@src/shared/hooks/use-on-open-transition
 import { useResolvedColor } from '@src/shared/hooks/use-resolved-color';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { QueryErrorBoundary, STACK_BACK_ICON, StyledSafeAreaView, TextArea } from '@src/shared/ui';
+import {
+  QueryErrorBoundary,
+  QueryErrorFallback,
+  STACK_BACK_ICON,
+  StyledSafeAreaView,
+  TextArea,
+} from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { Stack, useNavigation } from 'expo-router';
@@ -25,7 +31,7 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 
 export default function MemoCreateRoute() {
   return (
-    <QueryErrorBoundary>
+    <QueryErrorBoundary fallback={MemoCreateScreen.Error}>
       {/* 내 정보는 로그인 때 받아 둔 캐시라 기다릴 일이 거의 없다 */}
       <Suspense fallback={null}>
         <MemoCreateScreen />
@@ -127,6 +133,8 @@ function MemoCreateScreen() {
     </KeyboardAvoidingView>
   );
 }
+
+MemoCreateScreen.Error = QueryErrorFallback;
 
 interface MemoCreateToolbarProps {
   isValid: boolean;

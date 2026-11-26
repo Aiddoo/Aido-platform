@@ -12,6 +12,7 @@ import {
   Input,
   KeyboardAdaptiveButton,
   QueryErrorBoundary,
+  QueryErrorFallback,
   ReadableContent,
 } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
@@ -30,7 +31,7 @@ export default function EditNameRoute() {
 
       <Box className="flex-1 bg-white">
         <ReadableContent flex={1}>
-          <QueryErrorBoundary>
+          <QueryErrorBoundary fallback={EditName.Error}>
             {/* 내 정보는 마이페이지에서 이미 불러와 캐시에서 바로 읽혀 따로 보여 줄 로딩이 없다 */}
             <Suspense fallback={<Box className="flex-1" />}>
               <EditName />
@@ -128,3 +129,5 @@ function EditName() {
     </Box>
   );
 }
+
+EditName.Error = QueryErrorFallback;

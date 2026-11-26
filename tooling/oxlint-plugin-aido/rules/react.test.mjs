@@ -142,11 +142,21 @@ tester.run('error-boundary-fallback', rules['error-boundary-fallback'], {
   valid: [
     '<QueryErrorBoundary fallback={TodoList.Error}><TodoList /></QueryErrorBoundary>;',
     '<QueryErrorBoundary fallback={QueryErrorFallback.Hidden}><PlanTypeValue /></QueryErrorBoundary>;',
-    '<QueryErrorBoundary><TodoList /></QueryErrorBoundary>;',
+    '<QueryErrorBoundary fallback={TodoList.Error} resetKeys={[todoId]}><TodoList /></QueryErrorBoundary>;',
+    '<QueryErrorBoundary {...boundaryProps}><TodoList /></QueryErrorBoundary>;',
+    '<ErrorBoundary><TodoList /></ErrorBoundary>;',
     '<Suspense fallback={<TodoList.Loading />}><TodoList /></Suspense>;',
     '<ErrorBoundary fallback={() => null}><TodoList /></ErrorBoundary>;',
   ],
   invalid: [
+    {
+      code: '<QueryErrorBoundary><TodoList /></QueryErrorBoundary>;',
+      errors: [{ message: /fallback을 적습니다/ }],
+    },
+    {
+      code: '<QueryErrorBoundary resetKeys={[todoId]} resetScope="parent"><TodoList /></QueryErrorBoundary>;',
+      errors: 1,
+    },
     {
       code: '<QueryErrorBoundary fallback={() => null}><Badge /></QueryErrorBoundary>;',
       errors: 1,

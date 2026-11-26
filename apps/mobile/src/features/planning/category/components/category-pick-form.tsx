@@ -1,6 +1,15 @@
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, Button, CheckIcon, ListRow, Text, TextSkeleton, VStack } from '@src/shared/ui';
+import {
+  Box,
+  Button,
+  CheckIcon,
+  ListRow,
+  QueryErrorFallback,
+  Text,
+  TextSkeleton,
+  VStack,
+} from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { PressableFeedback, RadioGroup, Skeleton } from 'heroui-native';
@@ -109,6 +118,8 @@ export function CategoryPickForm({
     </VStack>
   );
 }
+
+CategoryPickForm.Error = QueryErrorFallback;
 
 CategoryPickForm.Loading = function Loading() {
   return (

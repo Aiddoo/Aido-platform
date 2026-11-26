@@ -7,7 +7,7 @@ import { useAndroidBackHandler } from '@src/shared/hooks/use-android-back-handle
 import { useDismissKeyboard } from '@src/shared/hooks/use-dismiss-keyboard';
 import { useTranslation } from '@src/shared/i18n';
 import { useKeyboardBottomGap } from '@src/shared/providers/keyboard-bottom-gap-provider';
-import { Box, QueryErrorBoundary, Text } from '@src/shared/ui';
+import { Box, QueryErrorBoundary, QueryErrorFallback, Text } from '@src/shared/ui';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { useFocusEffect, useIsFocused } from 'expo-router';
 import { Skeleton } from 'heroui-native';
@@ -79,7 +79,7 @@ export function TodoCommentPane({ titleBar, onClose, onExit }: TodoCommentPanePr
       <TodoAvailabilityGuard fallback={<TodoDetailSummary.Unavailable onClose={onClose} />}>
         <TodoCommentKeyboardGesture>
           {/* 본문·댓글·작성 바를 기다리는 경계는 하나다. 여럿이 함께 기다리면 React 19가 서로의 재시도를 번갈아 그려 응답 전까지 렌더가 끝나지 않는다 */}
-          <QueryErrorBoundary resetKeys={[todoId]}>
+          <QueryErrorBoundary resetKeys={[todoId]} fallback={TodoCommentPane.Error}>
             <Suspense fallback={<TodoCommentPane.Loading />}>
               {/* 목록 머리가 본문(상세)을 함께 그린다. 상세 오류는 이 경계의 fallback 머리가 다시 던져 칸 경계가 받고, 다시 시도 범위는 칸과 함께 쓴다 */}
               <QueryErrorBoundary
@@ -98,6 +98,8 @@ export function TodoCommentPane({ titleBar, onClose, onExit }: TodoCommentPanePr
     </TodoCommentSession>
   );
 }
+
+TodoCommentPane.Error = QueryErrorFallback;
 
 TodoCommentPane.Loading = function Loading() {
   return (

@@ -13,6 +13,7 @@ import {
   HStack,
   ListRow,
   openAndroidTimePicker,
+  QueryErrorFallback,
   SheetHeaderLayout,
   Spacing,
   Text,
@@ -155,6 +156,8 @@ export function TodoTimePicker({
     </SheetHeaderLayout>
   );
 }
+
+TodoTimePicker.Error = QueryErrorFallback;
 
 TodoTimePicker.Loading = function Loading() {
   return (
