@@ -38,7 +38,7 @@ import { useGetConsentQueryOptions } from '../queries/consent.queries';
 const ITEM_ICON_SIZE = 16;
 const PRIVACY_LINK_MIN_HEIGHT = 44;
 
-export interface AiConsentCheck {
+interface AiConsentCheck {
   readonly hasAgreed: boolean;
   readonly wasAsked: boolean;
 }

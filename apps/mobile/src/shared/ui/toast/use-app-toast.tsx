@@ -6,7 +6,7 @@ import { AppToast, type AppToastAction, type AppToastVariant } from './app-toast
 import { ToastLayersContext } from './toast-layer';
 import { TOAST_DURATION_MS } from './toast-layers';
 
-export interface ToastOptions {
+interface ToastOptions {
   description?: string;
   variant?: AppToastVariant;
   duration?: number | 'persistent';
@@ -14,7 +14,7 @@ export interface ToastOptions {
   icon?: ReactNode;
 }
 
-export interface ErrorToastOptions extends Omit<ToastOptions, 'variant'> {
+interface ErrorToastOptions extends Omit<ToastOptions, 'variant'> {
   fallback?: string;
 }
 

@@ -55,7 +55,7 @@ type BlockedDecision = 'limit-reached' | 'locked';
 
 type UpsellChoice = 'subscribe' | 'alternative' | 'dismiss';
 
-export type EntitlementGatePromptOptions = Partial<
+type EntitlementGatePromptOptions = Partial<
   Pick<ComponentProps<typeof PremiumUpsell>, 'title' | 'description'> &
     Pick<ComponentProps<typeof PremiumUpsell.Actions>, 'alternativeAction'>
 > & {
