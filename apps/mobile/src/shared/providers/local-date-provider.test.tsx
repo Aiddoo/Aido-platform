@@ -17,7 +17,7 @@ interface FakeDeviceCalendar {
 
 const PROCESS_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-describe('앱 로컬 날짜 Provider', () => {
+describe('LocalDateProvider', () => {
   setupFakeTimersPerTest();
 
   async function setup(

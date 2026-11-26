@@ -61,7 +61,7 @@ function countEvents(analytics: ReturnType<typeof createAnalyticsStub>, eventNam
   return analytics.trackEvent.mock.calls.filter(([name]) => name === eventName).length;
 }
 
-describe('메모 만들기 화면', () => {
+describe('MemoCreateRoute', () => {
   it('저장 버튼을 빠르게 두 번 눌러도 메모는 한 번만 만든다', async () => {
     // Given
     const setup = createMemoScreenDi();

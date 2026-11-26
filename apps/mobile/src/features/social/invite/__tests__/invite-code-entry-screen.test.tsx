@@ -50,7 +50,7 @@ async function enterCode(code: string) {
   expect(await screen.findByRole('button', { name: '확인' })).toBeEnabled();
 }
 
-describe('초대 코드 입력 화면', () => {
+describe('InviteCodeEntryRoute', () => {
   afterEach(() => {
     onlineManager.setOnline(true);
   });

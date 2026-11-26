@@ -41,7 +41,7 @@ async function typeName(name: string) {
   await fireEvent.changeText(screen.getByTestId('edit-name-input'), name);
 }
 
-describe('이름 수정 화면', () => {
+describe('EditNameRoute', () => {
   let httpClient: ReturnType<typeof createHttpClientStub>;
 
   beforeEach(() => {

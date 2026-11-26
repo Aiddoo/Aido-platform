@@ -101,7 +101,7 @@ async function renderInvitees({
   return { httpClient };
 }
 
-describe('초대한 친구 화면', () => {
+describe('InvitedFriendsScreen', () => {
   it('처음 열면 초대 요약과 전체 목록을 한 번씩 받고, 친구 목록은 한 번, 쿨다운은 내 친구인 대기 친구만 묻는다', async () => {
     // When
     const { httpClient } = await renderInvitees();

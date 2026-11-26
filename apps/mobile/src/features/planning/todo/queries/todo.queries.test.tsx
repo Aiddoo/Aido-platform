@@ -64,7 +64,7 @@ function expectedDays(dateRange: DailyCompletionRange) {
   );
 }
 
-describe('완료 기록 조회', () => {
+describe('useGetDailyCompletionsInRangeQueriesOptions', () => {
   it.each(['2026-11-25', '2026-11-30', '2027-07-30'])(
     '오늘이 %s일 때 위젯·달력·이번 주 기록·날씨를 차례로 열어도 달 키 세 개(앞·이번·다음 달)로 한 번씩만 묻고 각자 보던 날만 본다',
     async (today) => {

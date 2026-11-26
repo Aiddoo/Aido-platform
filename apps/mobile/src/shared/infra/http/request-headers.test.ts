@@ -19,7 +19,7 @@ const toRequest = (input: Parameters<typeof fetch>[0]): Request => {
   return input;
 };
 
-describe('요청마다 정하는 헤더 (beforeRequest)', () => {
+describe('applyPerRequestHeaders', () => {
   let sent: Request[];
 
   beforeEach(() => {

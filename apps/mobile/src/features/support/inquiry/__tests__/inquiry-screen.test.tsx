@@ -37,7 +37,7 @@ async function fillContent(content: string) {
   await waitFor(() => expect(screen.getByTestId('inquiry-submit')).toBeEnabled());
 }
 
-describe('문의 화면', () => {
+describe('InquiryRoute', () => {
   let httpClient: ReturnType<typeof createHttpClientStub>;
 
   beforeEach(() => {

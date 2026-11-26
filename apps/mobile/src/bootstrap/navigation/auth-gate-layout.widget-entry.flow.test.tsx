@@ -137,7 +137,7 @@ async function setup({ status, url }: { status: AuthStatus; url: string }) {
   };
 }
 
-describe('위젯으로 들어온 흐름', () => {
+describe('AuthGateLayout', () => {
   beforeEach(() => {
     stubWindowDimensions(390);
     jest.spyOn(Linking, 'getInitialURL').mockResolvedValue(null);

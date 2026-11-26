@@ -21,7 +21,7 @@ async function renderProfileRow(clipboard: ReturnType<typeof createClipboardGate
   );
 }
 
-describe('해시태그 복사', () => {
+describe('ProfileRow', () => {
   it('복사하면 완료를 알린다', async () => {
     // Given
     const clipboard = createClipboardGatewayStub();

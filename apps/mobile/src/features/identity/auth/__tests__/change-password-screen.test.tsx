@@ -44,7 +44,7 @@ async function fillAllSteps() {
   await fireEvent.changeText(await screen.findByPlaceholderText(CONFIRM_PLACEHOLDER), NEW_PASSWORD);
 }
 
-describe('비밀번호 변경 화면', () => {
+describe('ChangePasswordRoute', () => {
   let httpClient: ReturnType<typeof createHttpClientStub>;
 
   beforeEach(() => {

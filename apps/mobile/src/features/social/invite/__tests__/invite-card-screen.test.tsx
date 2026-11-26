@@ -82,7 +82,7 @@ function findEvents(analytics: ReturnType<typeof createAnalyticsStub>, eventName
   return analytics.trackEvent.mock.calls.filter(([name]) => name === eventName);
 }
 
-describe('초대 카드 화면', () => {
+describe('InviteCardScreen', () => {
   it('로그인 전이면 가입하기를 누를 때 초대를 기기에 남기고 가입으로 보낸다', async () => {
     // Given
     const { syncStorage } = await renderCard({ status: 'unauthenticated' });

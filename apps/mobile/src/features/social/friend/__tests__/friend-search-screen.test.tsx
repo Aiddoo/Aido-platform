@@ -64,7 +64,7 @@ function countEvents(analytics: ReturnType<typeof createAnalyticsStub>, eventNam
   return analytics.trackEvent.mock.calls.filter(([name]) => name === eventName).length;
 }
 
-describe('친구 찾기 화면', () => {
+describe('SearchFriendScreen', () => {
   setupFakeTimersPerTest();
 
   it('입력이 멈추고 300ms가 지나면 마지막 검색어로 한 번만 찾고 검색을 한 번 남긴다', async () => {

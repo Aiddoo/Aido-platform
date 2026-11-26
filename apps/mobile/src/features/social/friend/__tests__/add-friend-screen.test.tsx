@@ -49,7 +49,7 @@ function countEvents(analytics: ReturnType<typeof createAnalyticsStub>, eventNam
   return analytics.trackEvent.mock.calls.filter(([name]) => name === eventName).length;
 }
 
-describe('친구 추가 화면', () => {
+describe('AddFriendScreen', () => {
   it('소문자로 쓴 태그를 대문자로 맞춰 요청하고 보냈다고 알린 뒤 돌아간다', async () => {
     // Given
     const setup = createAddFriendDi();

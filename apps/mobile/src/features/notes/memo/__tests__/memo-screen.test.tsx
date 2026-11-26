@@ -131,7 +131,7 @@ function getMemoList() {
   return list;
 }
 
-describe('메모 탭 화면', () => {
+describe('MemoScreen', () => {
   describe('목록', () => {
     it('처음 열면 메모 첫 쪽을 한 번 받아 카드로 보인다', async () => {
       // Given

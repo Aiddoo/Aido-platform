@@ -4,7 +4,7 @@ import { AppIconService } from './app-icon.service';
 
 const createGateway = createAppIconGatewayStub;
 
-describe('앱 아이콘 서비스', () => {
+describe('AppIconService', () => {
   it.each([
     [null, 'default'],
     ['russian_blue', 'russian_blue'],

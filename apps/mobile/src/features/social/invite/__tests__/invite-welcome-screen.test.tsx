@@ -40,7 +40,7 @@ async function renderWelcome({
   await layoutSheetRoute();
 }
 
-describe('초대 환영 시트', () => {
+describe('InviteWelcomeSheetRoute', () => {
   it('보상을 받고 친구가 됐으면 받은 일수를 보이고 첫 할 일 만들기로 피드를 연다', async () => {
     // Given
     await renderWelcome();

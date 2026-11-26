@@ -1,6 +1,6 @@
 import { getProfileIconSource } from './profile-icon.view-model';
 
-describe('프로필 아이콘 이미지 선택', () => {
+describe('getProfileIconSource', () => {
   it.each(['russian_blue', 'cream_cat', 'tuxedo_cat'])(
     '신규 키 %s는 로컬 이미지로 표시한다',
     (key) => {

@@ -34,7 +34,7 @@ async function typeCredentials(email: string, password: string) {
   await fireEvent.changeText(screen.getByTestId('email-login-password'), password);
 }
 
-describe('이메일 로그인 화면', () => {
+describe('EmailLoginRoute', () => {
   let httpClient: ReturnType<typeof createHttpClientStub>;
 
   beforeEach(() => {

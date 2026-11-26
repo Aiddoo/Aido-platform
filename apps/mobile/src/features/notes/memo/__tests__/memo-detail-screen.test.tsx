@@ -207,7 +207,7 @@ async function pressMenu(text: '할 일로 바꾸기' | '삭제') {
   await startPress(await screen.findByRole('menuitem', { name: text }));
 }
 
-describe('메모 상세 화면', () => {
+describe('MemoDetailRoute', () => {
   describe('글 고치기', () => {
     it('저장 버튼은 입력칸에 들어간 뒤에 나타나고, 앞뒤 공백을 뺀 글로 한 번 보내 편집을 끝낸다', async () => {
       // Given

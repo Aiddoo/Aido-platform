@@ -30,7 +30,7 @@ async function renderChange(gateway = createAppIconGatewayStub()) {
   };
 }
 
-describe('앱 아이콘 바꾸기', () => {
+describe('useChangeAppIconMutationOptions', () => {
   it('OS가 확정한 아이콘을 캐시에 쓰고 설정 변경으로 남긴다', async () => {
     // Given
     const gateway = createAppIconGatewayStub();

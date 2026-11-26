@@ -56,7 +56,7 @@ function getDialogConfirmButton() {
   return confirm;
 }
 
-describe('회원 탈퇴 화면', () => {
+describe('DeleteAccountRoute', () => {
   let httpClient: ReturnType<typeof createHttpClientStub>;
 
   beforeEach(() => {

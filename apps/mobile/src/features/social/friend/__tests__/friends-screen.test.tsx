@@ -150,7 +150,7 @@ async function openRemoveDialog(deleteButton: ReturnType<typeof screen.getByTest
   await screen.findByText('홍길동님을 친구에서 삭제할까요?');
 }
 
-describe('친구 화면', () => {
+describe('FriendsScreen', () => {
   it('처음 열면 친구 목록과 초대 가능 여부를 한 번씩만 받는다', async () => {
     // Given
     const httpClient = createFriendServer();

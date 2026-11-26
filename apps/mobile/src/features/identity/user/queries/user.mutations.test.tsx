@@ -31,7 +31,7 @@ async function renderUpdateProfile(httpClient = createHttpClientStub()) {
   };
 }
 
-describe('프로필을 연달아 저장', () => {
+describe('useUpdateProfileMutationOptions', () => {
   it('사진 저장 중에 바꾼 이름의 응답이 먼저 와도 새 사진을 되돌리지 않는다', async () => {
     // Given
     const httpClient = createHttpClientStub();

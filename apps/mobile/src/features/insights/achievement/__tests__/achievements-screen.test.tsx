@@ -115,7 +115,7 @@ async function renderAchievements({
   return { requestedListYears, httpClient, analytics, systemShare };
 }
 
-describe('달성 배지 화면', () => {
+describe('AchievementsScreen', () => {
   it('해가 바뀐 월요일에 새해 기록이 없으면 빈 새해 대신 알림 받은 지난해 53주 배지를 연도와 함께 보인다', async () => {
     // Given
     await renderAchievements({ recordedYears: [2026] });

@@ -382,7 +382,7 @@ async function setup({
   };
 }
 
-describe('푸시 탭 진입', () => {
+describe('AuthGateLayout', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     stubWindowDimensions(390);

@@ -21,7 +21,7 @@ const releasedStoredCommand = {
   createdAt: Date.parse('2026-11-05T00:00:00.000Z'),
 };
 
-describe('위젯 탐색 명령 저장소', () => {
+describe('createWidgetNavigationRepository', () => {
   it('headless 실행이 저장한 명령을 새 앱 인스턴스가 같은 값으로 읽는다', () => {
     // Given
     const storage = createMemoryObservableSyncStorage();

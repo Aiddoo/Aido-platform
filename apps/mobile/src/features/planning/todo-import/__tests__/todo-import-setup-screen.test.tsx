@@ -180,7 +180,7 @@ async function pressImport() {
   await fireEvent.press(screen.getByRole('button', { name: '가져오기' }));
 }
 
-describe('캘린더 가져오기 설정 화면', () => {
+describe('TodoImportSetupRoute', () => {
   setupFakeTimersPerTest({ now: NOW, advanceTimers: true });
 
   describe('권한', () => {

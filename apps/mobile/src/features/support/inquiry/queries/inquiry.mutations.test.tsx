@@ -33,7 +33,7 @@ async function renderSubmit(httpClient: ReturnType<typeof createHttpClientStub>)
   return submit;
 }
 
-describe('문의 접수', () => {
+describe('useCreateInquiryMutationOptions', () => {
   let httpClient: ReturnType<typeof createHttpClientStub>;
 
   beforeEach(() => {

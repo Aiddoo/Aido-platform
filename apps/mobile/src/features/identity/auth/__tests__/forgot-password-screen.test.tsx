@@ -74,7 +74,7 @@ function getCodeInput() {
   return screen.getByLabelText(/One-time passcode input/);
 }
 
-describe('비밀번호 찾기 화면', () => {
+describe('ForgotPasswordRoute', () => {
   let httpClient: ReturnType<typeof createHttpClientStub>;
 
   beforeEach(() => {

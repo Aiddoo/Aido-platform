@@ -131,7 +131,7 @@ async function renderSubscriptionScreen(
   return { purchases, analytics };
 }
 
-describe('구독 화면', () => {
+describe('SubscriptionRoute', () => {
   afterEach(async () => {
     onlineManager.setOnline(true);
     await i18n.changeLanguage('ko');

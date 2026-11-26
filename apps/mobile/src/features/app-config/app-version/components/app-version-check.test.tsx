@@ -57,7 +57,7 @@ function countStoreOpenedEvents(analytics: ReturnType<typeof createAnalyticsStub
   return analytics.trackEvent.mock.calls.filter(([name]) => name === 'app_update_store_opened');
 }
 
-describe('앱 버전 확인', () => {
+describe('AppVersionCheck', () => {
   afterEach(() => {
     onlineManager.setOnline(true);
   });

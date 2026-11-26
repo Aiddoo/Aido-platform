@@ -80,7 +80,7 @@ function countEvents(analytics: ReturnType<typeof createAnalyticsStub>, eventNam
   return analytics.trackEvent.mock.calls.filter(([name]) => name === eventName);
 }
 
-describe('내 초대 화면', () => {
+describe('MyInviteScreen', () => {
   it('처음 열면 초대·내 정보·초대한 친구를 한 번씩만 받는다', async () => {
     // When
     const { httpClient } = await renderMyInvite();

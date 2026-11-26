@@ -105,7 +105,7 @@ async function goToVerificationStep(httpClient: ReturnType<typeof createHttpClie
   await screen.findByText(CODE_SENT_TO);
 }
 
-describe('회원가입 화면', () => {
+describe('SignUpRoute', () => {
   let httpClient: ReturnType<typeof createHttpClientStub>;
 
   beforeEach(() => {

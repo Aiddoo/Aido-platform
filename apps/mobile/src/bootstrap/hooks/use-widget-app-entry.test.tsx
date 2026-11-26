@@ -43,7 +43,7 @@ function widgetOpenedCalls() {
   return analytics.trackEvent.mock.calls.filter(([name]) => name === 'widget_opened');
 }
 
-describe('종료된 앱의 위젯 명령 복원', () => {
+describe('useWidgetAppEntry', () => {
   setupFakeTimersPerTest({ now: new Date('2026-10-05T00:00:00Z') });
 
   let queryClient: QueryClient;
