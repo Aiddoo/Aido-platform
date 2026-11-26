@@ -2,7 +2,7 @@ appId: ${MAESTRO_APP_ID}
 name: 이미 친구인 사람의 초대 링크를 수락하면 보상 없이 그 친구의 피드로 간다
 tags:
   - regression
-  - friends
+  - invite
   - needs-second-account
 onFlowStart:
   - runFlow: ../../subflows/app/load-helpers.yaml

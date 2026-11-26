@@ -1,5 +1,5 @@
 appId: ${MAESTRO_APP_ID}
-name: 할 일을 추가하고 완료한 뒤 지운다
+name: 할 일을 추가하고 완료한 뒤 지우면 단계마다 서버에 반영된다
 tags:
   - smoke
   - todo
@@ -22,10 +22,15 @@ onFlowComplete:
 
 # When: 그 카테고리에 할 일을 추가한다
 - runFlow:
-    file: ../../subflows/todo/create.yaml
+    file: ../../subflows/todo/write-new.yaml
     env:
       CATEGORY_ID: ${output.category.id}
       TODO_TITLE: ${output.todoTitle}
+- tapOn:
+    id: ${output.ids.todo.submitButton}
+- extendedWaitUntil:
+    visible: ${output.todoTitle}
+    timeout: 10000
 # Then: 서버에 완료하지 않은 할 일로 저장된다
 - evalScript: ${output.todo = output.main.waitForTodo(output.category.id, output.todoTitle, false)}
 
@@ -39,9 +44,13 @@ onFlowComplete:
 - evalScript: ${output.main.waitForTodo(output.category.id, output.todoTitle, true)}
 
 # When: 더보기에서 지운다
-- runFlow:
-    file: ../../subflows/todo/delete.yaml
-    env:
-      TODO_ID: ${output.todo.id}
+- tapOn:
+    id: ${output.ids.todo.moreButton(output.todo.id)}
+- tapOn:
+    id: ${output.ids.todo.deleteAction}
+- extendedWaitUntil:
+    notVisible:
+      id: ${output.ids.todo.checkbox(output.todo.id)}
+    timeout: 10000
 # Then: 서버에서도 사라진다
 - evalScript: ${output.main.waitForTodoGone(output.category.id, output.todoTitle)}

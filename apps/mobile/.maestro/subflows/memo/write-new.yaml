@@ -1,0 +1,11 @@
+appId: ${MAESTRO_APP_ID}
+name: 메모 탭에서 새 메모를 열고 글을 쓴다(저장은 부르는 흐름이 한다)
+# env: MEMO_TEXT
+---
+- openLink: ${output.config.appScheme}://memo
+- runFlow: ../app/dismiss-hints.yaml
+- tapOn:
+    id: ${output.ids.memo.createButton}
+- tapOn:
+    id: ${output.ids.memo.createInput}
+- inputText: ${MEMO_TEXT}

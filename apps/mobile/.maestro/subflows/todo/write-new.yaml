@@ -1,5 +1,5 @@
 appId: ${MAESTRO_APP_ID}
-name: 피드의 카테고리에서 할 일을 추가한다
+name: 피드의 카테고리에서 할 일 추가 시트를 열고 제목을 쓴다(저장은 부르는 흐름이 한다)
 # env: CATEGORY_ID, TODO_TITLE
 ---
 - scrollUntilVisible:
@@ -14,8 +14,3 @@ name: 피드의 카테고리에서 할 일을 추가한다
 - tapOn:
     id: ${output.ids.todo.titleInput}
 - inputText: ${TODO_TITLE}
-- tapOn:
-    id: ${output.ids.todo.submitButton}
-- extendedWaitUntil:
-    visible: ${TODO_TITLE}
-    timeout: 10000

@@ -2,7 +2,7 @@ appId: ${MAESTRO_APP_ID}
 name: 초대 코드를 직접 입력해 수락하면 초대한 사람과 친구가 된다
 tags:
   - regression
-  - friends
+  - invite
   - needs-second-account
 onFlowStart:
   - runFlow: ../../subflows/app/load-helpers.yaml

@@ -25,7 +25,7 @@ onFlowStart:
     timeout: 20000
 
 # When: 결제하지 않고 닫는다
-- tapOn: ${output.labels.close}
+- tapOn: ${output.labels.header.close}
 # Then: 피드로 돌아오고 구독 상태가 바뀌지 않는다
 - extendedWaitUntil:
     visible:

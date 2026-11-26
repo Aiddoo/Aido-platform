@@ -2,15 +2,15 @@ appId: ${MAESTRO_APP_ID}
 name: 로그인 직후 뜨는 시스템 창과 처음 쓰는 계정 안내를 닫는다
 ---
 - extendedWaitUntil:
-    visible: ${output.labels.savePasswordNotNow}
+    visible: ${output.labels.system.savePasswordNotNow}
     timeout: 5000
     optional: true
 - runFlow:
     label: iOS 암호 저장 제안이 뜨면 저장하지 않는다(시스템 창이라 앱 testID가 없다)
     when:
-      visible: ${output.labels.savePasswordNotNow}
+      visible: ${output.labels.system.savePasswordNotNow}
     commands:
-      - tapOn: ${output.labels.savePasswordNotNow}
+      - tapOn: ${output.labels.system.savePasswordNotNow}
 - extendedWaitUntil:
     visible:
       id: ${output.ids.notification.onboardingScreen}
@@ -22,7 +22,7 @@ name: 로그인 직후 뜨는 시스템 창과 처음 쓰는 계정 안내를 �
       visible:
         id: ${output.ids.notification.onboardingScreen}
     commands:
-      - tapOn: ${output.ids.common.headerCloseLabel}
+      - tapOn: ${output.labels.header.close}
 - extendedWaitUntil:
     visible:
       id: ${output.ids.whatsNew.screen}
@@ -34,21 +34,21 @@ name: 로그인 직후 뜨는 시스템 창과 처음 쓰는 계정 안내를 �
       visible:
         id: ${output.ids.whatsNew.screen}
     commands:
-      - tapOn: ${output.ids.common.headerCloseLabel}
+      - tapOn: ${output.labels.header.close}
       - extendedWaitUntil:
           notVisible:
             id: ${output.ids.whatsNew.screen}
           timeout: 10000
 - extendedWaitUntil:
     visible:
-      id: ${output.ids.common.hintPopover}
+      id: ${output.ids.hint.popover}
     timeout: 3000
     optional: true
 - runFlow:
     label: 기능 안내 말풍선이 떠 있으면 닫는다
     when:
       visible:
-        id: ${output.ids.common.hintPopover}
+        id: ${output.ids.hint.popover}
     commands:
       - tapOn:
-          id: ${output.ids.common.hintPopoverClose}
+          id: ${output.ids.hint.close}

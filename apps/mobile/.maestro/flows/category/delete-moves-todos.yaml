@@ -1,5 +1,5 @@
 appId: ${MAESTRO_APP_ID}
-name: 할 일이 있는 카테고리를 할 일과 함께 지운다
+name: 할 일이 있는 카테고리를 지우며 옮길 곳을 고르면 할 일이 그 카테고리로 옮겨진다
 tags:
   - regression
   - category
@@ -7,8 +7,9 @@ onFlowStart:
   - runFlow: ../../subflows/app/load-helpers.yaml
   - evalScript: ${output.main = output.api.signIn('main')}
   - evalScript: ${output.main.removeE2eCategories()}
-  - evalScript: ${output.category = output.main.createCategory('together ' + output.config.runId)}
-  - evalScript: ${output.todo = output.main.createTodo(output.category.id, 'E2E together ' + output.config.runId)}
+  - evalScript: ${output.category = output.main.createCategory('move ' + output.config.runId)}
+  - evalScript: ${output.todo = output.main.createTodo(output.category.id, 'E2E move ' + output.config.runId)}
+  - evalScript: ${output.target = output.main.firstDefaultCategory()}
   - runFlow: ../../subflows/app/launch-fresh.yaml
 onFlowComplete:
   - evalScript: ${output.main && output.todo && output.main.deleteTodo(output.todo.id)}
@@ -25,13 +26,19 @@ onFlowComplete:
     env:
       CATEGORY_ID: ${output.category.id}
 
-# When: 할 일도 함께 지우기를 고르고 삭제한다
+# When: 옮기기에서 옮길 카테고리를 고르고 삭제한다
 - tapOn:
-    id: ${output.ids.category.handlingOption('delete')}
+    id: ${output.ids.category.handlingOption('move')}
+- tapOn:
+    id: ${output.ids.category.moveTargetRow}
+- tapOn:
+    id: ${output.ids.category.pickOption(output.target.id)}
+- tapOn:
+    id: ${output.ids.category.pickSubmit}
 - tapOn:
     id: ${output.ids.category.submitButton}
 
-# Then: 카테고리와 그 안의 할 일이 모두 사라진다
+# Then: 목록에서 사라지고 할 일은 고른 카테고리로 옮겨진다
 - extendedWaitUntil:
     notVisible:
       id: ${output.ids.category.deleteButton(output.category.id)}
@@ -40,5 +47,5 @@ onFlowComplete:
     condition: ${!output.main.hasCategory(output.category.id)}
     label: 서버에서 카테고리가 지워졌다
 - assertTrue:
-    condition: ${!output.main.todoExists(output.todo.id)}
-    label: 카테고리의 할 일도 지워졌다
+    condition: ${output.main.hasTodoIn(output.target.id, output.todo.id)}
+    label: 할 일이 고른 카테고리로 옮겨졌다

@@ -1,8 +1,8 @@
 appId: ${MAESTRO_APP_ID}
-name: 오프라인이면 앱 오류 대신 오프라인 안내가 보이고 다시 연결되면 다시 불러온다
+name: 오프라인에서 화면을 열면 앱 오류 대신 오프라인 안내가 보이고 다시 연결하면 다시 불러온다
 tags:
   - regression
-  - network
+  - app
   - android-only
 onFlowStart:
   - runFlow: ../../subflows/app/load-helpers.yaml

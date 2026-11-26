@@ -1,5 +1,5 @@
 appId: ${MAESTRO_APP_ID}
-name: 무료 계정은 리포트 화면에서 이번 주 내 기록과 예시 리포트를 보고 예시 상세에서 페이월에 간다
+name: 무료 계정이 리포트 화면을 열면 이번 주 내 기록과 예시 리포트가 보이고 예시 상세에서 페이월로 간다
 tags:
   - regression
   - report
@@ -31,10 +31,10 @@ onFlowComplete:
     timeout: 20000
 # 막대 차트 worklet 오류는 개발 빌드에서 오류 창이 덮을 뿐 뒤 요소는 그대로 보인다. 창은 1초까지 늦게 떠 기다린 뒤 본다
 - extendedWaitUntil:
-    visible: ${output.labels.devErrorOverlay}
+    visible: ${output.labels.system.devErrorOverlay}
     timeout: 3000
     optional: true
-- assertNotVisible: ${output.labels.devErrorOverlay}
+- assertNotVisible: ${output.labels.system.devErrorOverlay}
 - scrollUntilVisible:
     element:
       id: ${output.ids.report.sampleLatest}
@@ -48,7 +48,7 @@ onFlowComplete:
       id: ${output.ids.report.sampleLatest}
     direction: UP
 - tapOn:
-    text: ${output.labels.viewDetail}
+    text: ${output.labels.report.viewDetail}
     childOf:
       id: ${output.ids.report.sampleLatest}
 # Then: 예시 안내와 실제 리포트와 같은 요약이 보인다
