@@ -61,7 +61,7 @@ export function CategoryMappingList({
     openTargetSheet({
       subject: { kind: 'calendar', collection },
       current,
-      otherTargets: TodoImportPlanPolicy.findOtherTargets(
+      otherTargets: TodoImportPlanPolicy.getOtherTargets(
         plan,
         defaultTarget,
         collection.collectionKey,

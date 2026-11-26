@@ -78,7 +78,7 @@ export const TodoImportPlanPolicy = {
   },
 
   // 새 카테고리를 더 만들 수 있는지 셀 때 다른 캘린더가 가리키는 곳을 함께 센다
-  findOtherTargets(
+  getOtherTargets(
     plan: TodoImportPlan,
     defaultTarget: TodoImportTarget,
     collectionKey: string,

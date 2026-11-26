@@ -121,7 +121,7 @@ describe('TodoImportPlanPolicy', () => {
     });
   });
 
-  describe('findOtherTargets', () => {
+  describe('getOtherTargets', () => {
     it('그 캘린더를 뺀 나머지 캘린더가 가리키는 곳이다', () => {
       // Given
       const plan = createPlan({
@@ -130,7 +130,7 @@ describe('TodoImportPlanPolicy', () => {
       });
 
       // When
-      const otherTargets = TodoImportPlanPolicy.findOtherTargets(plan, DEFAULT_TARGET, 'school');
+      const otherTargets = TodoImportPlanPolicy.getOtherTargets(plan, DEFAULT_TARGET, 'school');
 
       // Then
       expect(otherTargets).toEqual([WORK_TARGET]);

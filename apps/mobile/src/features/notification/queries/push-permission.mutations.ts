@@ -4,7 +4,7 @@ import { useOpenAppSettings } from '@src/shared/hooks/use-open-app-settings';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import type { PushPermissionPromptSource } from '../constants/notification.events';
-import { setCachedPushPermission } from './push-permission-cache';
+import { setPushPermissionInCache } from './push-permission-cache';
 
 interface RequestPushPermissionVariables {
   /** 권한을 물은 UI. 앱 알림을 켠 뒤 이미 허용한 기기를 다시 읽는 길은 비워 두고 추적하지 않는다 */
@@ -55,7 +55,7 @@ export function useRequestPushPermissionMutationOptions() {
     // 권한 창은 기기 안에서 뜨므로 오프라인에서도 멈추지 않는다
     networkMode: 'always',
     onSuccess: (permission, { source }) => {
-      setCachedPushPermission(queryClient, permission);
+      setPushPermissionInCache(queryClient, permission);
       if (source != null) {
         trackEvent('push_permission_requested', { source, status: permission.status });
       }
