@@ -170,7 +170,6 @@ export const EntitlementPolicy = {
     return snapshot.plans[feature][plan].perUse?.maxSeconds ?? null;
   },
 
-  /** 요금제에서 쓸 수 있는 기능인지 */
   canUseOnPlan(snapshot: EntitlementSnapshot, feature: EntitlementFeature, plan: Plan): boolean {
     return snapshot.plans[feature][plan].allowed;
   },

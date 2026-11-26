@@ -211,7 +211,6 @@ export const ForecastHourPolicy = {
     );
   },
 
-  /** 그 순간 뒤에 끝나는 첫 비 오는 시간 */
   findFirstWetEndingAfter(hourly: readonly ForecastHour[], after: Instant): ForecastHour | null {
     return hourly.find((hour) => toEpochMs(after) < getEndsAtMs(hour) && this.isWet(hour)) ?? null;
   },

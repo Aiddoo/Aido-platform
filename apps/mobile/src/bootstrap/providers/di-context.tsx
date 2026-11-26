@@ -111,7 +111,6 @@ export interface DIContainer extends SharedDependencies {
   userApi: UserApi;
   /** 마이 메뉴 칸의 스크롤 위치(칸이 화면마다 다시 그려져도 이어진다) */
   myPagePaneLayoutStore: MyPagePaneLayoutStore;
-  /** 넓은 화면 마이 Stack의 첫 상세 판단 */
 
   entitlementApi: EntitlementApi;
   purchasesSession: PurchasesSession;

@@ -14,7 +14,6 @@ export type TodoCommentComposer = z.infer<typeof todoCommentComposerSchema>;
 
 export type TodoCommentBackAction = 'blocked' | 'closeComposer' | 'native';
 
-/** 보낼 글은 앞뒤 공백을 지운 값이다 */
 export function getTrimmedContent(content: string): string {
   return content.trim();
 }

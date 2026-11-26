@@ -70,7 +70,6 @@ export function CategoryMappingList({
     });
   };
 
-  // 줄마다 넣을 곳의 겉모습과 자리 경고를 붙인다
   const getItemProps = (collection: TodoImportCollection) => {
     const target = TodoImportPlanPolicy.findTarget(plan, defaultTarget, collection.collectionKey);
     const appearance = target == null ? null : findTargetAppearance(target, categories);

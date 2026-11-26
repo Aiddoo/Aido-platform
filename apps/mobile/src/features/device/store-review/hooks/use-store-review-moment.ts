@@ -59,7 +59,6 @@ export function useStoreReviewMoment(): StoreReviewMomentActions {
 
   const requestReviewAt = async (moment: StoreReviewMoment): Promise<void> => {
     const accountId = getCachedMe(queryClient)?.id;
-    // 이미 기다리는 요청이 있으면 두 번 예약하지 않는다
     if (accountId == null || pendingRequestRef.current != null) {
       return;
     }

@@ -32,7 +32,6 @@ Certificate.Ornament = function Ornament() {
   );
 };
 
-/** 상장 느낌의 이중 라운드 테두리. 바깥은 굵고 진하게, 안쪽은 가늘고 옅게 겹쳐 그린다 */
 function CertificateBorder({ children }: { children: ReactNode }) {
   return (
     <Box className="relative">

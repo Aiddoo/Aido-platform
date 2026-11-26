@@ -78,7 +78,6 @@ export const TodoPolicy = {
     return subTodo == null ? null : { subTodo, index };
   },
 
-  // 묶음 id가 있으면 반복에서 생긴 할 일이다
   isRecurringTodo(todo: Todo): boolean {
     return todo.recurrenceGroupId != null;
   },

@@ -33,7 +33,6 @@ function getRewards(result: RedemptionResult) {
   return result.outcome === REDEEM_OUTCOME.REDEEMED ? result.rewards : [];
 }
 
-/** 서버가 돌려준 수락 결과 */
 export const InviteRedemptionPolicy = {
   // 이미 친구였으면 친구 상태가 바뀌지 않아 null이다
   findFriendship(result: RedemptionResult): 'FRIENDS' | 'REQUESTED' | null {

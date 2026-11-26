@@ -21,7 +21,6 @@ export const pendingRedemptionSchema = z.strictObject({
 });
 export type PendingRedemption = z.infer<typeof pendingRedemptionSchema>;
 
-/** 기기에 저장해 둔 수락 대기 초대 */
 export const PendingRedemptionPolicy = {
   isFresh(pending: PendingRedemption, now: Instant): boolean {
     return isWithinInviteRedeemWindow(pending.savedAt, now);

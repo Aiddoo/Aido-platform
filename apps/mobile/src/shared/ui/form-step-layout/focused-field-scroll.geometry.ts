@@ -121,7 +121,6 @@ export function getFocusedFieldTargetScroll(input: FocusedFieldScrollInput): num
   return Math.max(fromScroll + delta, Math.min(fromScroll, 0));
 }
 
-/** 커서 줄만 보이는 스크롤 위치 */
 export function getCaretTargetScroll(input: FocusedFieldScrollInput): number {
   'worklet';
   const contentTop = input.viewport.top - input.fromScroll;

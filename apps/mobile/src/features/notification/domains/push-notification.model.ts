@@ -26,7 +26,6 @@ export function isServerNotificationId(notificationId: number) {
   return notificationId > 0;
 }
 
-/** 기기가 받은 푸시 */
 export const PushNotificationPolicy = {
   hasServerRecord(pushNotification: PushNotification): boolean {
     return isServerNotificationId(pushNotification.notificationId);

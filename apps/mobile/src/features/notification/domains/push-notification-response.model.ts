@@ -37,7 +37,6 @@ export type TodoReminderActionRequest =
   | { type: 'complete'; todoId: number; dateKey: DateKey | null }
   | { type: 'snooze'; todoId: number; notificationId: number };
 
-/** 리마인드 알림 버튼을 누른 결과 */
 export type TodoReminderActionOutcome = 'succeeded' | 'already_completed' | 'not_found' | 'failed';
 
 /** 알림을 누를 때 앱 상태. `cold`는 꺼진 앱이 그 탭으로 켜졌다는 뜻이다 */
@@ -58,7 +57,6 @@ function isExpired(response: PushNotificationResponse, now: Instant) {
   return diffMs(now, response.receivedAt) > PENDING_RESPONSE_LIFETIME_MS;
 }
 
-/** 사용자가 누른 푸시 */
 export const PushNotificationResponsePolicy = {
   /** 공개 수신 거부 버튼을 누른 응답. 인증과 상관없이 따로 처리하고 다음 탭에 밀리지 않게 둔다 */
   isMarketingOptOut(response: PushNotificationResponse): boolean {

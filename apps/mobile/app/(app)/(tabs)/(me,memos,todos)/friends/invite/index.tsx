@@ -78,7 +78,6 @@ export default function MyInviteScreen() {
                 </Text>
               </Box>
 
-              {/* 친구와 내가 각각 무엇을 언제 받는지 이름표와 함께 한 줄씩 나눠 보여 준다 */}
               <InviteCard>
                 <RewardLine
                   label={t('myInvite.rewardInviteeLabel')}

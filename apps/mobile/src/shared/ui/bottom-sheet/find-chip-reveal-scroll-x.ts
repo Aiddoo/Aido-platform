@@ -8,9 +8,7 @@ interface ChipFrame {
 
 interface ChipRevealInput {
   chip: ChipFrame;
-  /** 지금 스크롤 위치 */
   scrollX: number;
-  /** 줄이 보이는 폭 */
   rowWidth: number;
 }
 

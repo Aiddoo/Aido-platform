@@ -21,7 +21,6 @@ const todoChangeSchema = z.object({
 });
 export type TodoChange = z.infer<typeof todoChangeSchema>;
 
-// 반복 회차를 고칠 때 범위를 어떻게 정하는가
 type TodoEditScopeDecision = 'no-scope' | 'this-only' | 'ask' | 'ask-following-only';
 
 // 종일로 바꾸면 남아 있던 시각은 비운다

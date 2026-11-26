@@ -8,7 +8,6 @@ export function isTodoCommentUnavailableError(error: unknown): error is ApiError
   );
 }
 
-/** 너무 자주 보내 잠시 막혔다 */
 export function isTodoCommentRateLimitedError(error: unknown): error is ApiError {
   return isApiError(error) && error.status === HttpStatus.TOO_MANY_REQUESTS;
 }

@@ -301,7 +301,6 @@ export function diffDateKeysInCalendarWeeks(from: DateKey, to: DateKey): number 
   );
 }
 
-/** 주의 첫날부터 7일 */
 export function getWeekDateKeys(weekStartDateKey: DateKey): DateKey[] {
   return range(DAYS_PER_WEEK).map((index) => addDaysToDateKey(weekStartDateKey, index));
 }

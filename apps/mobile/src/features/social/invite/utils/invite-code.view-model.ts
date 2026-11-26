@@ -15,7 +15,6 @@ export interface InvalidCharacterSummary {
   uniqueCount: number;
 }
 
-/** 오류 문구에 나열할 글자를 추린다 */
 export function summarizeInvalidCharacters(
   invalidCharacters: readonly InvalidInviteCodeCharacter[],
 ): InvalidCharacterSummary | null {

@@ -4,7 +4,6 @@ import { type Href, useRouter } from 'expo-router';
 /** 돌아갈 화면이 없을 때(푸시·딥링크로 바로 연 경우) 할 일. 둘 다 없으면 아무것도 하지 않는다 */
 type UseGoBackOptions =
   | {
-      /** 대신 여는 화면 */
       fallbackHref?: Href;
       onFallback?: never;
     }
