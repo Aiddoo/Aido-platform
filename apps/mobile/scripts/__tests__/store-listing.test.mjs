@@ -6,7 +6,7 @@ import {
   checkListings,
   keywordProblems,
   releaseNotesProblems,
-} from './store-listing.mjs';
+} from '../store-listing.mjs';
 
 test('저장소의 스토어 등록 정보가 한도와 규칙을 지킨다', () => {
   assert.deepEqual(checkListings().errors, []);

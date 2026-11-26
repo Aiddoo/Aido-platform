@@ -36,8 +36,7 @@
     "store:art": "node store-metadata/art/render.mjs",
     "store:screens": "node --no-warnings .maestro/store-screenshots/scripts/demo-seed.ts",
     "store:screens:capture": "bash .maestro/store-screenshots/capture.sh",
-    "export": "expo export --platform ios --platform android",
-    "test:store-listing": "node --test scripts/store-listing.test.mjs"
+    "export": "expo export --platform ios --platform android"
   },
   "dependencies": {
     "@aido/api": "workspace:*",
