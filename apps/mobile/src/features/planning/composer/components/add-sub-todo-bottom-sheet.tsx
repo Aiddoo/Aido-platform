@@ -3,6 +3,7 @@ import type { Todo } from '@src/features/planning/todo/domains/todo.model';
 import { useSuspenseSheetTodo } from '@src/features/planning/todo/hooks/use-suspense-sheet-todo';
 import { useTodoSheetDateKey } from '@src/features/planning/todo/hooks/use-todo-sheet-date-key';
 import { useAddSubTodoMutationOptions } from '@src/features/planning/todo/queries/sub-todo.mutations';
+import { subTodoFormSchema } from '@src/features/planning/todo/schemas/sub-todo-form.schema';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { Box, HStack, VStack } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
@@ -11,7 +12,6 @@ import { Separator } from 'heroui-native';
 import { type ComponentProps } from 'react';
 import { Controller, FormState, useForm, Watch } from 'react-hook-form';
 
-import { subTodoFormSchema } from '../schemas/sub-todo-form.schema';
 import { SubTodoBottomSheet, SubTodoDictation, SubTodoTitleInput } from './sub-todo-bottom-sheet';
 import { TodoComposerSubmitButton } from './todo-composer-submit-button';
 

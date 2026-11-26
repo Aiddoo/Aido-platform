@@ -13,11 +13,11 @@ import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { useUpdateProfileMutationOptions } from '@src/features/identity/user/queries/user.mutations';
 import { useGetMeQueryOptions } from '@src/features/identity/user/queries/user.queries';
-import { useCreateTodoMutationOptions } from '@src/features/planning/composer/queries/todo-composer.mutations';
 import {
   createTodoDto,
   createTodoFormValues,
 } from '@src/features/planning/todo/__tests__/todo.fixtures';
+import { useCreateTodoMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
 import { pendingRedemptionStoredValue } from '@src/features/social/invite/schemas/pending-redemption-storage.schema';
 import { toInstant } from '@src/shared/date/instant';
 import { createDraftKey } from '@src/shared/draft/draft.model';

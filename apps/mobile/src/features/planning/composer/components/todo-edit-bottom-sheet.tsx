@@ -6,6 +6,7 @@ import type { TodoUpdateScope } from '@src/features/planning/todo/domains/todo-r
 import { shouldReopenRepeatPicker } from '@src/features/planning/todo/domains/todo-series.error';
 import { type Todo, TodoPolicy } from '@src/features/planning/todo/domains/todo.model';
 import { useSuspenseSheetTodo } from '@src/features/planning/todo/hooks/use-suspense-sheet-todo';
+import { useUpdateTodoMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
 import { todoFormSchema } from '@src/features/planning/todo/schemas/todo-form.schema';
 import { SERVER_VALUES_RESET_OPTIONS } from '@src/shared/constants/server-values-reset-options';
 import type { DateKey } from '@src/shared/date/date-key';
@@ -35,7 +36,6 @@ import { match } from 'ts-pattern';
 import { createTodoChange, TodoChangePolicy } from '../domains/todo-change.model';
 import { useFocusTodoTitle } from '../hooks/use-focus-todo-title';
 import { useReopenTodoRepeatPicker } from '../hooks/use-reopen-todo-repeat-picker';
-import { useUpdateTodoMutationOptions } from '../queries/todo-composer.mutations';
 import {
   setTodoComposerChipFields,
   TODO_COMPOSER_CHIP_FIELDS,

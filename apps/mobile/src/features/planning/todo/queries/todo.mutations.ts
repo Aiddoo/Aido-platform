@@ -1,10 +1,13 @@
-import { useTodoApi } from '@src/bootstrap/providers/di-context';
+import { useHaptics, useTodoApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
 import { emitTodoCompletionChanged } from '@src/core/events/todo-completion-changed';
+import { emitTodoCreated } from '@src/core/events/todo-created';
 import { getCachedMe } from '@src/features/identity/user/queries/user-cache';
 import { invalidateWeeklyAchievements } from '@src/features/insights/achievement/queries/achievement-cache';
+import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo-category.model';
 import {
   changeCachedCategoryTodoCount,
+  getCachedTodoCategories,
   invalidateTodoCategories,
 } from '@src/features/planning/category/queries/todo-category-cache';
 import { useTrack } from '@src/shared/analytics';
@@ -13,27 +16,37 @@ import { useTodayKey } from '@src/shared/hooks/use-today-key';
 import { t } from '@src/shared/i18n';
 import { isLastMutation } from '@src/shared/query/is-last-mutation';
 import { useAppToast } from '@src/shared/ui';
+import { createOptimisticId } from '@src/shared/utils/create-optimistic-id';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { TodoOverviewPolicy } from '../domains/todo-overview.model';
 import type { TodoUpdateScope, TodoEditScope } from '../domains/todo-repeat.model';
+import { createTodoDateSpan, TodoSchedulePolicy } from '../domains/todo-schedule.model';
 import { isTodoSeriesFailure } from '../domains/todo-series.error';
+import { isCategoryTodoLimitError } from '../domains/todo.error';
+import type { TodoFieldChanges } from '../domains/todo.model';
+import type { TodoFormValues } from '../schemas/todo-form.schema';
 import type {
   TodoCategoryMove,
   TodoCompletionChange,
   TodoReorder,
   TodoScheduleChange,
 } from '../schemas/todo-request.schema';
+import type { TodoSeriesEditOptions } from '../schemas/todo-series-request.schema';
+import { toTodoEditedFields } from '../utils/todo-analytics';
 import {
+  appendTodoToList,
   beginTodoWrite,
   findCachedTodo,
   getCachedTodoDateSpan,
   getTodoOverviewFilters,
   getTodoDetailsFilter,
   invalidateTodoDependentQueries,
+  type OptimisticTodo,
   removeTodoFromList,
   removeTodoPage,
   restoreTodo,
+  saveCreatedTodo,
   settleTodoEdit,
   settleTodoReorder,
   settleTodoSeriesWrite,
@@ -354,6 +367,186 @@ export function useUpdateTodoScheduleMutationOptions() {
       }
       // 이후 회차까지 옮기면 바뀐 날짜를 몰라 넓게 맞춘다
       if (scope == null) {
+        settleTodoEdit(queryClient, { before: context?.before ?? null, after: saved });
+      } else {
+        settleTodoSeriesWrite(queryClient);
+      }
+    },
+    meta: {
+      errorFeedback: {
+        feature: 'todo',
+        fallbackKey: 'todo:toast.updateFailedRetry',
+        isHandledByFeature: isTodoSeriesFailure,
+      },
+    },
+  });
+}
+
+interface CreateTodoVariables {
+  values: TodoFormValues;
+}
+
+export function useCreateTodoMutationOptions() {
+  const haptics = useHaptics();
+  const todoApi = useTodoApi();
+  const { trackEvent, trackAttributedFeatureSuccess } = useTrack();
+  const queryClient = useQueryClient();
+  const toast = useAppToast();
+
+  return mutationOptions({
+    // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
+    networkMode: 'always',
+    mutationKey: TODO_MUTATION_KEYS.completionWrites(),
+    mutationFn: async ({ values }: CreateTodoVariables) => {
+      const result = await todoApi.createTodo(values);
+      return unwrap(result);
+    },
+    onMutate: async ({ values }) => {
+      const startDate = values.startDate;
+      const span = TodoSchedulePolicy.getDateSpan(values);
+      const ticket = await beginTodoWrite(queryClient, {
+        date: startDate,
+        isCompletionAffected: true,
+      });
+
+      const category = TodoCategoryPolicy.findCategory(
+        getCachedTodoCategories(queryClient)?.categories,
+        values.categoryId,
+      );
+
+      // 카테고리를 찾지 못하면 낙관적 삽입을 건너뛰고 서버 응답 뒤 invalidate로 맞춘다
+      if (category == null) {
+        return { startDate, span, ticket, optimisticId: undefined };
+      }
+
+      const optimisticTodo: OptimisticTodo = {
+        id: createOptimisticId(),
+        title: values.title,
+        startDate: values.startDate,
+        endDate: values.endDate,
+        category: { id: category.id, name: category.name, color: category.color },
+        completed: false,
+        localTime: TodoSchedulePolicy.findScheduledTime(values),
+        scheduledAt: null,
+        isAllDay: values.isAllDay,
+        visibility: values.visibility,
+        recurrenceGroupId: null,
+        repeat: null,
+        subTodos: [],
+        commentCount: 0,
+        optimistic: true,
+      };
+
+      appendTodoToList(queryClient, { date: startDate }, optimisticTodo);
+      syncDailyCompletionWithList(queryClient, { date: startDate });
+
+      return { startDate, span, ticket, optimisticId: optimisticTodo.id };
+    },
+    onSuccess: (saved, { values }, { startDate, optimisticId }) => {
+      // 응답이 만든 할 일 전체라 목록·존재 여부·카테고리 개수를 응답으로 고치고 다시 받지 않는다
+      if (optimisticId != null) {
+        saveCreatedTodo(queryClient, { date: startDate, optimisticId }, saved);
+        changeCachedCategoryTodoCount(queryClient, { categoryId: saved.category.id, delta: 1 });
+      }
+      setTodoOverviewInCache(queryClient, (overview) =>
+        TodoOverviewPolicy.withTodoCreated(overview),
+      );
+      emitTodoCreated();
+      toast.success(t('todo:toast.todoAdded'));
+      trackEvent('todo_created', {
+        source: 'manual',
+        creation_entry: 'manual',
+        is_recurring: false,
+        has_scheduled_time: TodoSchedulePolicy.findScheduledTime(values) != null,
+        is_all_day: values.isAllDay,
+        visibility: values.visibility,
+      });
+      const accountId = getCachedMe(queryClient)?.id;
+      if (accountId != null) {
+        trackAttributedFeatureSuccess({ accountId, feature: 'todo_creation' });
+      }
+    },
+    onError: (error, _variables, context) => {
+      if (context?.optimisticId != null) {
+        removeTodoFromList(queryClient, { date: context.startDate, todoId: context.optimisticId });
+        syncDailyCompletionWithList(queryClient, { date: context.startDate });
+      }
+
+      if (isCategoryTodoLimitError(error)) {
+        haptics.notify('error');
+        toast.error(t('todo:toast.categoryLimitReached'));
+      }
+    },
+    onSettled: (_saved, error, { values }, context) => {
+      // 카테고리를 몰라 낙관적으로 넣지 못했으면 개수도 서버에 묻는다
+      if (error == null && context?.optimisticId == null) {
+        invalidateTodoCategories(queryClient);
+      }
+      settleTodoWrite(queryClient, {
+        date: values.startDate,
+        span: context?.span ?? createTodoDateSpan(values.startDate, null),
+        isCompletionAffected: true,
+        hasFailed: error != null || context?.optimisticId == null,
+        ticket: context?.ticket,
+      });
+    },
+    meta: {
+      errorFeedback: {
+        feature: 'todo',
+        fallbackKey: 'todo:toast.addFailedRetry',
+        isHandledByFeature: isCategoryTodoLimitError,
+      },
+    },
+  });
+}
+
+interface UpdateTodoVariables {
+  todoId: number;
+  fields: TodoFieldChanges;
+  options?: TodoSeriesEditOptions;
+}
+
+export function useUpdateTodoMutationOptions() {
+  const todoApi = useTodoApi();
+  const { trackEvent } = useTrack();
+  const queryClient = useQueryClient();
+  const showTodoSeriesFailure = useTodoSeriesFailureFeedback();
+  const toast = useAppToast();
+
+  return mutationOptions({
+    // 연결이 없을 때 요청을 쥐고 기다리면 저장 시트가 스피너만 돈다. 바로 실패해 입력값을 지킨다
+    networkMode: 'always',
+    // 저장을 기다리는 시트라 낙관적으로 쓰지 않는다. 다른 체크의 낙관적 값을 재조회로 덮지 않게 같은 키로 센다
+    mutationKey: TODO_MUTATION_KEYS.listWrites(),
+    mutationFn: async ({ todoId, fields, options }: UpdateTodoVariables) => {
+      const result = await todoApi.updateTodo(todoId, fields, options);
+      return unwrap(result);
+    },
+    onMutate: ({ todoId }) => ({ before: findCachedTodo(queryClient, { todoId }) }),
+    onSuccess: (_saved, variables) => {
+      toast.success(t('todo:toast.todoUpdated'));
+      trackEvent('todo_edited', {
+        todo_id: variables.todoId,
+        field: toTodoEditedFields(variables.fields, variables.options),
+      });
+      if (variables.options?.scope != null) {
+        trackEvent('todo_series_edited', { scope: variables.options.scope });
+      }
+      // oxlint-disable-next-line aido/no-strict-nullish -- repeat null만 반복 끝내기다
+      if (variables.options?.repeat === null) {
+        trackEvent('todo_series_stopped');
+      }
+    },
+    onError: (error) => {
+      showTodoSeriesFailure(error);
+    },
+    onSettled: (saved, _error, { options }, context) => {
+      if (saved == null) {
+        return;
+      }
+      // 반복 범위·규칙을 바꾸면 바뀐 회차의 날짜를 몰라 넓게 맞춘다.
+      // oxlint-disable-next-line aido/no-strict-nullish -- repeat null은 반복 끝내기다
+      if (options?.scope == null && options?.repeat === undefined) {
         settleTodoEdit(queryClient, { before: context?.before ?? null, after: saved });
       } else {
         settleTodoSeriesWrite(queryClient);

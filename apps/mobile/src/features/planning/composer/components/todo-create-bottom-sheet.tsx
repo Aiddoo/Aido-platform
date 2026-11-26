@@ -7,6 +7,8 @@ import { TodoCategoryPolicy } from '@src/features/planning/category/domains/todo
 import { useGetTodoCategoriesQueryOptions } from '@src/features/planning/category/queries/todo-category.queries';
 import { shouldReopenRepeatPicker } from '@src/features/planning/todo/domains/todo-series.error';
 import { useTodoSheetDateKey } from '@src/features/planning/todo/hooks/use-todo-sheet-date-key';
+import { useCreateRecurringTodoMutationOptions } from '@src/features/planning/todo/queries/todo-series.mutations';
+import { useCreateTodoMutationOptions } from '@src/features/planning/todo/queries/todo.mutations';
 import {
   type TodoFormValues,
   todoFormSchema,
@@ -58,10 +60,6 @@ import { match, P } from 'ts-pattern';
 import { useAddTodoQuickVoice } from '../hooks/use-add-todo-quick-voice';
 import { useFocusTodoTitle } from '../hooks/use-focus-todo-title';
 import { useReopenTodoRepeatPicker } from '../hooks/use-reopen-todo-repeat-picker';
-import {
-  useCreateRecurringTodoMutationOptions,
-  useCreateTodoMutationOptions,
-} from '../queries/todo-composer.mutations';
 import {
   setTodoComposerChipFields,
   TODO_COMPOSER_CHIP_FIELDS,

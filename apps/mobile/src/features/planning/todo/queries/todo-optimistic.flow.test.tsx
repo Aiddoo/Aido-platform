@@ -2,35 +2,6 @@ import { fail, ok } from '@src/core/errors/result';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/queries/todo-category-query-keys';
 import '@src/shared/i18n/init';
 import {
-  createParentTodo,
-  createSubTodo,
-} from '@src/features/planning/todo/__tests__/sub-todo.fixtures';
-import {
-  createTodoApiError,
-  createTodoDto,
-  createTodoFormValues,
-} from '@src/features/planning/todo/__tests__/todo.fixtures';
-import {
-  type DailyCompletionsResult,
-  getCompletionMonthRange,
-} from '@src/features/planning/todo/domains/daily-completion.model';
-import { SubTodoPolicy } from '@src/features/planning/todo/domains/sub-todo.model';
-import type { TodoDetails } from '@src/features/planning/todo/domains/todo-details.model';
-import type { TodoListResult } from '@src/features/planning/todo/domains/todo-list.model';
-import type { Todo } from '@src/features/planning/todo/domains/todo.model';
-import {
-  useAddSubTodoMutationOptions,
-  useDeleteSubTodoMutationOptions,
-  useReorderSubTodosMutationOptions,
-  useToggleSubTodoMutationOptions,
-  useUpdateSubTodoMutationOptions,
-} from '@src/features/planning/todo/queries/sub-todo.mutations';
-import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
-import {
-  useDeleteTodoMutationOptions,
-  useToggleTodoMutationOptions,
-} from '@src/features/planning/todo/queries/todo.mutations';
-import {
   createHttpClientStub,
   createPendingResponse,
   createTestQueryClient,
@@ -42,7 +13,33 @@ import { renderScreen } from '@src/testing/render';
 import { useMutation } from '@tanstack/react-query';
 import { act } from '@testing-library/react-native';
 
-import { useCreateTodoMutationOptions } from './todo-composer.mutations';
+import { createParentTodo, createSubTodo } from '../__tests__/sub-todo.fixtures';
+import {
+  createTodoApiError,
+  createTodoDto,
+  createTodoFormValues,
+} from '../__tests__/todo.fixtures';
+import {
+  type DailyCompletionsResult,
+  getCompletionMonthRange,
+} from '../domains/daily-completion.model';
+import { SubTodoPolicy } from '../domains/sub-todo.model';
+import type { TodoDetails } from '../domains/todo-details.model';
+import type { TodoListResult } from '../domains/todo-list.model';
+import type { Todo } from '../domains/todo.model';
+import {
+  useAddSubTodoMutationOptions,
+  useDeleteSubTodoMutationOptions,
+  useReorderSubTodosMutationOptions,
+  useToggleSubTodoMutationOptions,
+  useUpdateSubTodoMutationOptions,
+} from './sub-todo.mutations';
+import { TODO_QUERY_KEYS } from './todo-query-keys';
+import {
+  useCreateTodoMutationOptions,
+  useDeleteTodoMutationOptions,
+  useToggleTodoMutationOptions,
+} from './todo.mutations';
 
 const DAY_1 = createDateKey('2026-03-08');
 const DAY_2 = createDateKey('2026-03-09');

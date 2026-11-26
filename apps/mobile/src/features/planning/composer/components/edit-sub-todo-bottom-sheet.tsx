@@ -7,6 +7,7 @@ import {
   useDeleteSubTodoMutationOptions,
   useUpdateSubTodoMutationOptions,
 } from '@src/features/planning/todo/queries/sub-todo.mutations';
+import { subTodoFormSchema } from '@src/features/planning/todo/schemas/sub-todo-form.schema';
 import { SERVER_VALUES_RESET_OPTIONS } from '@src/shared/constants/server-values-reset-options';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -18,7 +19,6 @@ import { Separator } from 'heroui-native';
 import { type ComponentProps } from 'react';
 import { Controller, FormState, useForm, Watch } from 'react-hook-form';
 
-import { subTodoFormSchema } from '../schemas/sub-todo-form.schema';
 import { SubTodoBottomSheet, SubTodoDictation, SubTodoTitleInput } from './sub-todo-bottom-sheet';
 import { TodoComposerSubmitButton } from './todo-composer-submit-button';
 

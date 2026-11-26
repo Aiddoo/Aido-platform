@@ -1,7 +1,6 @@
 import { ErrorCode } from '@aido/api/errors';
 import '@src/shared/i18n/init';
 import type { ApiError } from '@src/core/errors/api-error';
-import { TODO_QUERY_KEYS } from '@src/features/planning/todo/queries/todo-query-keys';
 import {
   createAnalyticsStub,
   createHapticsGatewayStub,
@@ -13,7 +12,8 @@ import { renderScreen } from '@src/testing/render';
 import { useMutation } from '@tanstack/react-query';
 import { act, screen } from '@testing-library/react-native';
 
-import { useUpdateTodoMutationOptions } from './todo-composer.mutations';
+import { TODO_QUERY_KEYS } from './todo-query-keys';
+import { useUpdateTodoMutationOptions } from './todo.mutations';
 
 /** 이후 회차까지 고치는 PATCH가 거절되는 상황. 함께 보낸 칸도 저장되지 않으므로 목록을 건드리지 않는다 */
 async function updateFollowing(error: ApiError) {
