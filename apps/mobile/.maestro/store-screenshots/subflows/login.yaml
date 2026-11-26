@@ -37,6 +37,33 @@ name: 첫 진입에서 이메일 로그인 후 홈으로 이동한다
       visible: '지금 안 함|Not Now'
     commands:
       - tapOn: '지금 안 함|Not Now'
+# 새로 켠 기기에서는 알림 안내와 새로운 기능 소개가 피드를 덮는다. 닫고 나서 홈을 확인한다
+- extendedWaitUntil:
+    visible:
+      id: push-onboarding-screen
+    timeout: 5000
+    optional: true
+- runFlow:
+    when:
+      visible:
+        id: push-onboarding-screen
+    commands:
+      - tapOn: '닫기|Close'
+- extendedWaitUntil:
+    visible:
+      id: whats-new-screen
+    timeout: 8000
+    optional: true
+- runFlow:
+    when:
+      visible:
+        id: whats-new-screen
+    commands:
+      - tapOn: '닫기|Close'
+      - extendedWaitUntil:
+          notVisible:
+            id: whats-new-screen
+          timeout: 10000
 # Then: 할 일 탭이 보이고 날씨 설명이 홈 진입을 막지 않는다
 - extendedWaitUntil:
     visible: 'To-dos|할 일|Register your location to see the weather|위치를 등록하면 날씨를 볼 수 있어요'

@@ -148,7 +148,8 @@ testID가 없어 문구(ko|en 정규식)로 누르는 곳. 추가하면 언어�
 | `memo-ai-review`          | AI 분석 결과 화면                                | 20-memo      |
 | `friends-tab-received`    | 친구 목록 받은 요청 탭                           | 40-friends   |
 | `friend-search-add`       | 친구 찾기 추가(입력은 헤더 검색창 문구로 찾는다) | 40-friends   |
-| `whats-new-close`         | 새 소식 안내 닫기                                | settle       |
+| `whats-new-screen`        | 새로운 기능 소개 화면(헤더의 닫기로 닫는다)      | login·settle |
+| `push-onboarding-screen`  | 가입 직후 알림 안내 화면(헤더의 닫기로 닫는다)   | login        |
 | `subscription-screen`     | 구독 화면 각 pane                                | 70, 80       |
 | `store-review-later`      | 스토어 리뷰 안내 `다음에`                        | settle       |
 
