@@ -200,6 +200,7 @@ function CategoryTargetSheet({
             : { kind: 'EXISTING_CATEGORY', categoryId: sameNameCategory.id },
         );
       })()
+      // 검증 실패는 칸 아래 오류로 보인다
       .catch(noop);
   };
 

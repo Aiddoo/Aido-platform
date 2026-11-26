@@ -26,6 +26,7 @@ export function useFetchNextPage({
     }
     isRequestingRef.current = true;
     fetchNextPage({ cancelRefetch: false })
+      // 실패는 쿼리의 isFetchNextPageError가 화면에 알린다
       .catch(noop)
       .finally(() => {
         isRequestingRef.current = false;

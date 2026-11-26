@@ -143,6 +143,7 @@ function createPushDeviceReporter({
           onReported();
         }
       })
+      // 실패는 mutation의 onError가 로그로 남긴다
       .catch(noop)
       .finally(() => {
         isReporting = false;

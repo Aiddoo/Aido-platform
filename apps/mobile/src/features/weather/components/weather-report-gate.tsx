@@ -140,6 +140,7 @@ function LocationUnavailable({ onRecovered }: LocationUnavailableProps) {
   const handleRetry = async () => {
     if (reading?.status === 'located') {
       const { latitude, longitude } = reading.registered;
+      // 실패 안내는 mutation의 meta.errorFeedback이 맡고 성공·실패와 상관없이 다시 읽도록 알린다
       await updateLocation.mutateAsync({ latitude, longitude }).catch(noop);
     } else if (location.status === 'unavailable') {
       await location.retry();

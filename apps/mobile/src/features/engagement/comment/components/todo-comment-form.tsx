@@ -505,6 +505,7 @@ function SubmitButton({
       isDisabled={!hasContent || !isValid || isSubmitting}
       isLoading={isSubmitting}
       onPress={() => {
+        // 실패 안내는 mutation의 meta.errorFeedback이 맡고 쓰던 글은 그대로 둔다
         onSubmit().catch(noop);
       }}
       accessibilityLabel={mode.type === 'edit' ? t('common:actions.save') : t('form.post')}

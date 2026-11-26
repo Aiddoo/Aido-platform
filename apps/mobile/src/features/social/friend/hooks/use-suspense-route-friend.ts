@@ -53,6 +53,7 @@ function useSuspenseFriendQuery(friendId: string) {
 
   useEffect(() => {
     if (shouldFetchNextPage) {
+      // 실패는 조회 캐시가 보고하고 isFetchNextPageError가 오류 화면을 연다
       fetchNextPage({ cancelRefetch: false }).catch(noop);
     }
   }, [shouldFetchNextPage, fetchNextPage]);

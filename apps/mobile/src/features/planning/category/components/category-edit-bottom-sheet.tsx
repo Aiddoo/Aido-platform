@@ -116,6 +116,7 @@ function CategoryEditForm({ category, onClose, ...props }: CategoryEditFormProps
     await updateCategory.mutateAsync({ id: category.id, input: values }, { onSuccess: onClose });
   });
   const handleSavePress = useSingleTap(() => {
+    // 실패 안내는 mutation의 meta.errorFeedback이 맡는다
     saveCategory().catch(noop);
   });
 

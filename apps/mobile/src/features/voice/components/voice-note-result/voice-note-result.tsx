@@ -251,6 +251,7 @@ VoiceNoteResult.KeyPoints = function KeyPoints({ player, canPlay }: VoiceNoteRes
               trackEvent('voice_note_key_point_played', {
                 position_bucket: getDurationBucket(startMs),
               });
+              // 위치 이동 실패는 플레이어가 로그로 남긴다
               player.playFrom(startMs).catch(noop);
             }
           : undefined
@@ -273,6 +274,7 @@ VoiceNoteResult.Transcript = function Transcript({
     <SentenceCaptionList
       sentences={note.sentences}
       activeSentenceIndex={activeSentenceIndex}
+      // 위치 이동 실패는 플레이어가 로그로 남긴다
       onPressSentence={canPlay ? ({ startMs }) => player.playFrom(startMs).catch(noop) : undefined}
       className="min-h-24 flex-1"
     />
@@ -483,6 +485,7 @@ function useVoiceNoteResultPlayer() {
 
   useOnScreenBlur(() => {
     if (player.getPlayback().isPlaying) {
+      // 화면을 떠나며 멈추는 일이라 실패해도 알릴 곳이 없다. 위치 이동 실패는 플레이어가 로그로 남긴다
       player.togglePlay().catch(noop);
     }
   });

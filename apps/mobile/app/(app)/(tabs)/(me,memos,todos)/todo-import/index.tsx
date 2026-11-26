@@ -252,6 +252,7 @@ function PermissionStep({ progress, onGranted }: PermissionStepProps) {
           onGranted();
         }
       })
+      // 실패 안내는 mutation의 meta.errorFeedback이 맡는다
       .catch(noop);
   };
 

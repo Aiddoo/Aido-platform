@@ -24,6 +24,7 @@ import { Pressable, Text, View } from 'react-native';
 
 initErrorReporting();
 
+// 스플래시를 잡아 두지 못해도(이미 내려갔을 때 등) 앱은 그대로 뜬다
 SplashScreen.preventAutoHideAsync().catch(noop);
 
 // 루트 경계는 DI 밖에서 그려질 수 있어 같은 규칙(Sentry/console)으로 직접 만든다
@@ -56,6 +57,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   const { t } = useTranslation('common');
 
   useEffect(() => {
+    // 이미 내려간 스플래시를 다시 내리려다 실패해도 오류 화면은 그대로 보인다
     SplashScreen.hideAsync().catch(noop);
     rootErrorReporter.captureException(error, { feature: 'root_error_boundary' });
   }, [error]);

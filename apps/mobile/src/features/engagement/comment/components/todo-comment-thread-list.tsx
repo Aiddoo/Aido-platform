@@ -151,6 +151,7 @@ export function TodoCommentThreadList(props: TodoCommentThreadListProps) {
               label={t('list.loadPrevious')}
               isLoading={threadsQuery.isFetchingPreviousPage}
               onPress={() => {
+                // 실패는 조회 캐시가 보고하고 버튼이 그대로 남아 다시 누를 수 있다
                 threadsQuery.fetchPreviousPage().catch(noop);
               }}
             />
@@ -363,6 +364,7 @@ TodoCommentThreadList.Replies = function Replies({
               setExpansion({ isExpanded: true, source: 'user' });
               ensureTodoCommentReplies(queryClient, repliesOptions)
                 .then((loadedReplies) => trackLoadedCount(loadedReplies.length))
+                // 실패는 조회 캐시가 보고하고 답글 줄이 다시 시도 줄로 바뀐다
                 .catch(noop);
             }}
           />
@@ -377,6 +379,7 @@ TodoCommentThreadList.Replies = function Replies({
         isReply
         label={t('replies.retry')}
         onPress={() => {
+          // 실패는 조회 캐시가 보고하고 다시 시도 줄이 그대로 남는다
           repliesQuery.refetch().catch(noop);
         }}
       />
@@ -401,6 +404,7 @@ TodoCommentThreadList.Replies = function Replies({
           isConnectedBelow
           label={viewMoreLabel}
           onPress={() => {
+            // 실패는 조회 캐시가 보고하고 버튼이 그대로 남아 다시 누를 수 있다
             repliesQuery.fetchPreviousPage().catch(noop);
           }}
         />
@@ -420,6 +424,7 @@ TodoCommentThreadList.Replies = function Replies({
                 repliesQuery
                   .fetchNextPage()
                   .then((result) => trackLoadedCount(result.data?.length ?? replies.length))
+                  // 실패는 조회 캐시가 보고하고 버튼이 그대로 남아 다시 누를 수 있다
                   .catch(noop);
               }}
             />
@@ -681,6 +686,7 @@ function useScrollToAnchor({
     if (index >= 0) {
       listRef.current
         ?.scrollToIndex({ index, viewPosition: ANCHOR_VIEW_POSITION, animated: true })
+        // 스크롤하지 못해도 강조는 이미 켰다
         .catch(noop);
     }
   }, [anchor, clearHighlight, comment, highlight, listRef, t, threads, toast]);

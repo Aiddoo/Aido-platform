@@ -208,7 +208,7 @@ export class PushRegistrationService {
   unregister = async (config?: Pick<RequestConfig, 'timeout'>): Promise<Result<void, ApiError>> => {
     const epoch = this.#sessionEpoch.current();
     this.#unregisterCount += 1;
-    // 보고가 해제보다 늦으면 로그아웃한 기기로 푸시가 가므로 먼저 끝내되, 요청 제한만큼만 기다린다
+    // 보고가 해제보다 늦으면 로그아웃한 기기로 푸시가 가므로 먼저 끝내되, 요청 제한만큼만 기다리고 시간이 지나도 해제를 이어 간다
     await withTimeout(
       () => Promise.allSettled(this.#reportsInFlight),
       config?.timeout ?? REPORT_WAIT_TIMEOUT_MS,

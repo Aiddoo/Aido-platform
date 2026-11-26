@@ -110,6 +110,7 @@ export function VoiceNotePlayerBar({
         isDisabled={!isLoaded}
         hitSlop={4}
         onPress={() => {
+          // 위치 이동 실패는 플레이어가 로그로 남기고 재생 상태는 그대로 보인다
           player.togglePlay().catch(noop);
         }}
         className="size-9 min-h-0 min-w-0 rounded-full bg-main"
@@ -140,6 +141,7 @@ export function VoiceNotePlayerBar({
         }}
         accessibilityStepRatio={durationMs > 0 ? ACCESSIBILITY_SEEK_STEP_MS / durationMs : 0}
         onSeek={(ratio) => {
+          // 위치 이동 실패는 플레이어가 로그로 남긴다
           player.seekTo(ratio * durationMs).catch(noop);
         }}
         className="flex-1"
