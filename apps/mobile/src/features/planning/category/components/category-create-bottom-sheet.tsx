@@ -49,7 +49,7 @@ export function CategoryCreateBottomSheet(props: CategoryCreateBottomSheetProps)
   }, [isBlockedOnEntry]);
 
   // 실패는 여기서 받지 않는다. RHF가 실패로 알아야 isSubmitSuccessful이 꺼진 채 남아 다시 보낼 수 있다
-  const saveCategory = form.handleSubmit(async (values) => {
+  const submitCategory = form.handleSubmit(async (values) => {
     await createCategory.mutateAsync(values, {
       onSuccess: () => sheet.close(),
       // 시트 route 안의 Overlay에 띄워 시트 위에 보인다. 구독하러 가면 시트를 바로 떠난다
@@ -61,7 +61,7 @@ export function CategoryCreateBottomSheet(props: CategoryCreateBottomSheetProps)
     if (isSubmitLocked) {
       return;
     }
-    saveCategory().catch(noop);
+    submitCategory().catch(noop);
   });
 
   if (isBlockedOnEntry) {

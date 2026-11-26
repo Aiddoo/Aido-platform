@@ -161,7 +161,7 @@ export function MemoEditor({ toolbar: Toolbar, onLeave }: MemoEditorProps) {
   };
 
   // 저장 버튼은 공백만 고친 글자도 받아 편집을 끝낸다
-  const saveMemo = form.handleSubmit(async () => {
+  const submitMemo = form.handleSubmit(async () => {
     const savedMemo = await saveContent(form.getValues('content'));
     form.reset({ content: savedMemo.content }, SAVED_VALUES_RESET_OPTIONS);
     discardDraft();
@@ -169,7 +169,7 @@ export function MemoEditor({ toolbar: Toolbar, onLeave }: MemoEditorProps) {
     dismissKeyboard();
   });
 
-  const saveMemoAndLeave = form.handleSubmit(async () => {
+  const submitMemoAndLeave = form.handleSubmit(async () => {
     const savedMemo = await saveContent(form.getValues('content'));
     // 앞뒤 공백을 다듬어 저장된 글로 맞춘다. 맞추지 않으면 공백만 다른 글이 초안으로 다시 쓰여 다음에 저장 안 된 변경처럼 열린다
     form.reset({ content: savedMemo.content }, SAVED_VALUES_RESET_OPTIONS);
@@ -180,7 +180,7 @@ export function MemoEditor({ toolbar: Toolbar, onLeave }: MemoEditorProps) {
   // isSubmitting은 다음 렌더에야 켜져 같은 프레임의 두 번째 탭이 한 번 더 보낸다
   const handleSavePress = useSingleTap(() => {
     // 실패 안내는 mutation의 meta.errorFeedback이 맡고 글자와 편집 상태는 그대로 둔다
-    saveMemo().catch(noop);
+    submitMemo().catch(noop);
   });
 
   const handleBackPress = useSingleTap(({ canSave }: { canSave: boolean }) => {
@@ -188,7 +188,7 @@ export function MemoEditor({ toolbar: Toolbar, onLeave }: MemoEditorProps) {
       onLeave();
       return;
     }
-    saveMemoAndLeave().catch((error: unknown) => {
+    submitMemoAndLeave().catch((error: unknown) => {
       // 연결 문제로 못 보낸 글자는 초안에 남으니 화면에 가두지 않는다
       if (isConnectivityError(error)) {
         onLeave();

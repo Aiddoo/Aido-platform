@@ -92,7 +92,7 @@ function PlanReviewScreen({
   }, [form, onValues]);
 
   // 폼을 가진 화면처럼 카드 칸을 Watch로 잇고 고친 카드는 그 자리만 쓰며 저장은 handleSubmit으로 보낸다
-  const savePlan = form.handleSubmit(({ actions }) => planApply.apply(actions));
+  const submitPlan = form.handleSubmit(({ actions }) => planApply.apply(actions));
 
   return (
     <FormState
@@ -116,7 +116,7 @@ function PlanReviewScreen({
               isValid={isValid}
               isApplying={planApply.isPending || planApply.isApplied}
               onApplyPress={() => {
-                savePlan().catch(jest.fn());
+                submitPlan().catch(jest.fn());
               }}
             />
           )}

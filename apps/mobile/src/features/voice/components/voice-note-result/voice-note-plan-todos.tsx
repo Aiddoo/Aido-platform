@@ -148,10 +148,10 @@ VoiceNotePlanTodos.Contents = function Contents({
   const changeAction = (index: number, action: SelectablePlannedAction) =>
     form.setValue(`actions.${index}`, action, { shouldDirty: true, shouldValidate: true });
 
-  const savePlan = form.handleSubmit(({ actions }) => planApply.apply(actions));
+  const submitPlan = form.handleSubmit(({ actions }) => planApply.apply(actions));
   // 저장 중 표시는 다음 렌더에야 켜져 같은 프레임의 두 번째 탭이 같은 계획을 한 번 더 보낸다
   const handleSavePress = useSingleTap(() => {
-    savePlan().catch(reportUnexpectedError);
+    submitPlan().catch(reportUnexpectedError);
   });
 
   return (

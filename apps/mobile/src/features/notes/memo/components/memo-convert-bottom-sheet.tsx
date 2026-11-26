@@ -117,7 +117,7 @@ function MemoConvertForm({
   });
 
   // 실패는 여기서 받지 않는다. RHF가 실패로 알아야 isSubmitSuccessful이 꺼진 채 남아 다시 보낼 수 있다
-  const saveTodo = form.handleSubmit(async (values) => {
+  const submitTodo = form.handleSubmit(async (values) => {
     await convertMemo.mutateAsync({ memoId, values });
     onClose();
     onConverted();
@@ -125,7 +125,7 @@ function MemoConvertForm({
 
   // isSubmitting은 다음 렌더에야 켜져 같은 프레임의 두 번째 탭이 할 일을 하나 더 만든다
   const handleSavePress = useSingleTap(() => {
-    saveTodo().catch((error: unknown) => {
+    submitTodo().catch((error: unknown) => {
       // 없는 메모는 다시 보내도 소용없어 시트를 닫고 떠난다
       if (isMemoUnavailableError(error)) {
         onClose();

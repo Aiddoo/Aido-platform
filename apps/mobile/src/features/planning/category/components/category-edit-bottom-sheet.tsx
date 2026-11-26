@@ -106,7 +106,7 @@ function CategoryEditForm({ category, onClose, ...props }: CategoryEditFormProps
   });
 
   // 실패는 호출부가 받는다. 토스트는 mutation이 한 번 알리고 시트와 입력값은 그대로 둔다
-  const saveCategory = form.handleSubmit(async (values) => {
+  const submitCategory = form.handleSubmit(async (values) => {
     if (!TodoCategoryPolicy.hasChanges(category, values)) {
       onClose();
 
@@ -117,7 +117,7 @@ function CategoryEditForm({ category, onClose, ...props }: CategoryEditFormProps
   });
   const handleSavePress = useSingleTap(() => {
     // 실패 안내는 mutation의 meta.errorFeedback이 맡는다
-    saveCategory().catch(noop);
+    submitCategory().catch(noop);
   });
 
   return (

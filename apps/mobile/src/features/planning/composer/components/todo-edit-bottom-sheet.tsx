@@ -151,7 +151,7 @@ function TodoEditForm({ todo, isOpen, onOpenChange, onClose }: TodoEditFormProps
   };
 
   // 실패는 여기서 받지 않고 호출부가 받는다. 안내는 mutation 토스트가 맡고 시트와 입력값은 그대로 남긴다
-  const saveTodo = form.handleSubmit(async (values) => {
+  const submitTodo = form.handleSubmit(async (values) => {
     const changes = createTodoChange(values, savedValues);
     if (!TodoChangePolicy.hasTodoUpdateChanges(changes)) {
       onClose();
@@ -186,7 +186,7 @@ function TodoEditForm({ todo, isOpen, onOpenChange, onClose }: TodoEditFormProps
 
   // isSubmitting은 다음 렌더에야 켜져 같은 프레임의 두 번째 탭이 범위를 또 묻고 한 번 더 보낸다
   const handleSavePress = useSingleTap(() => {
-    saveTodo().catch((error: unknown) => {
+    submitTodo().catch((error: unknown) => {
       // 루트 overlay에서는 경계로 보내면 앱 전체가 내려간다
       if (shouldReopenRepeatPicker(error)) {
         reopenRepeatPicker().catch(reportUnexpectedError);

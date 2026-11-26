@@ -43,7 +43,7 @@ function AddSubTodoForm({ todo, onClose }: { todo: Todo; onClose: () => void }) 
   });
   const addSubTodo = useMutation(useAddSubTodoMutationOptions());
 
-  const saveSubTodo = form.handleSubmit(async ({ title }) => {
+  const submitSubTodo = form.handleSubmit(async ({ title }) => {
     if (addSubTodo.isPending) {
       return;
     }
@@ -54,7 +54,7 @@ function AddSubTodoForm({ todo, onClose }: { todo: Todo; onClose: () => void }) 
 
   // isPending은 다음 렌더에야 켜져 같은 프레임의 두 번째 탭·완료 키가 하나 더 만든다
   const handleSavePress = useSingleTap(() => {
-    saveSubTodo().catch(noop);
+    submitSubTodo().catch(noop);
   });
 
   // 저장 중에는 아무 일도 하지 않는다. 시트를 닫으면 저장 결과를 볼 수 없다. 빈 제목은 저장 대신 닫는다

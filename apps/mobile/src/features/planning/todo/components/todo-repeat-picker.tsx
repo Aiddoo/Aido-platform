@@ -289,7 +289,7 @@ TodoRepeatPicker.Header = function Header({
   const { t } = useTranslation('todo');
   const { isValid } = useFormState({ control: form.control });
 
-  const saveRepeat = form.handleSubmit((values) => {
+  const submitRepeat = form.handleSubmit((values) => {
     onChange({ startDate: values.startDate, repeat: toTodoRepeat(values) });
   });
 
@@ -297,7 +297,7 @@ TodoRepeatPicker.Header = function Header({
     <PickerTitleBar
       title={t('picker.repeatTitle')}
       onCancel={onCancel}
-      onConfirm={() => saveRepeat()}
+      onConfirm={() => submitRepeat()}
       isConfirmDisabled={!isValid}
     />
   );

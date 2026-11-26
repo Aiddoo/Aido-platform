@@ -463,7 +463,7 @@ function PlanTodoEditBottomSheet({
     defaultValues: { todo },
     mode: 'onChange',
   });
-  const saveTodo = form.handleSubmit((values) => onConfirm(values.todo));
+  const submitTodo = form.handleSubmit((values) => onConfirm(values.todo));
 
   return (
     <KeyboardBottomSheet
@@ -494,7 +494,7 @@ function PlanTodoEditBottomSheet({
             render={({ isValid }) => (
               <Button
                 isDisabled={!isValid}
-                onPress={() => saveTodo()}
+                onPress={() => submitTodo()}
                 testID="plan-todo-edit-confirm"
               >
                 {t('edit.confirm')}
@@ -516,7 +516,7 @@ function PlanTodoEditBottomSheet({
             size="medium"
             renderErrorMessage={false}
             returnKeyType="done"
-            onSubmitEditing={() => saveTodo()}
+            onSubmitEditing={() => submitTodo()}
           />
         )}
       />

@@ -131,13 +131,13 @@ function NudgeMessageSheet({
   });
 
   // 시트는 닫히면 인스턴스가 사라져 적은 글을 따로 비우지 않는다
-  const saveNudge = form.handleSubmit(async ({ message }) => {
+  const submitNudge = form.handleSubmit(async ({ message }) => {
     await onSend(message);
     onOpenChange(false);
   });
   // isSubmitting은 다음 렌더에야 켜져 같은 프레임의 두 번째 탭이 콕을 한 번 더 보낸다
   const handleSavePress = useSingleTap(() => {
-    saveNudge().catch(onSendFailed);
+    submitNudge().catch(onSendFailed);
   });
 
   return (

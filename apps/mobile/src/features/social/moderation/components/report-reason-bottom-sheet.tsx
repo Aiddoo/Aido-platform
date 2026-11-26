@@ -63,7 +63,7 @@ export function ReportReasonBottomSheet({
 
   const router = useRouter();
   // 실패는 여기서 받지 않는다. RHF가 실패로 알아야 isSubmitSuccessful이 꺼진 채 남아 다시 보낼 수 있다
-  const saveReport = form.handleSubmit(async (values) => {
+  const submitReport = form.handleSubmit(async (values) => {
     await reportContent.mutateAsync({ target, form: values });
     sheet.close();
     toast.success(t('report.toast'), {
@@ -81,7 +81,7 @@ export function ReportReasonBottomSheet({
 
   // isSubmitting은 다음 렌더에야 켜지고 신고에는 멱등 키가 없어 같은 프레임의 두 번째 탭이 신고를 한 번 더 보낸다
   const handleSavePress = useSingleTap(() => {
-    saveReport().catch((error: unknown) => {
+    submitReport().catch((error: unknown) => {
       // 실패 안내는 mutation의 meta.errorFeedback이 맡는다. 대상이 사라졌으면 더 신고할 수 없어 닫는다
       if (isReportTargetUnavailableError(error)) {
         sheet.close();
