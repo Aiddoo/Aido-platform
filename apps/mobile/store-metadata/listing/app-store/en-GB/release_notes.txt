@@ -1,13 +1,11 @@
-New
-- Move your calendar events to Aido, the easy way. We heard it's hard to switch when your plans already live in your calendar. So we made a way to turn calendar events into to-dos in one go.
-- Pick calendars and a date range, and your events arrive as to-dos. Keep calendars separate or put everything in one category, and undo within 7 days.
-- Find it in Me > Settings > Import calendar events. It works with the calendars on your device (iCloud, Google, Outlook and others synced to your device). Aido only reads your calendar and never changes or deletes anything in it.
-- For each calendar, create a new category (using the calendar's name and colour) or use one you already have. You can also choose Include times and Share with friends. Sharing starts off.
-- If you leave the app while importing, the server keeps going. When it finishes, you see how many to-dos came in and why any were skipped. Undo removes only the imported to-dos you haven't completed. The same event is never imported twice, and holiday, birthday and subscribed calendars start unchecked.
-- Importing is free. Free covers events up to 30 days ahead, and Premium up to 365 days ahead. The subscription screens now mention this too.
-
 Improvements
-- VoiceOver can read the calendar and range choices and the import progress.
+- Tapping a button twice quickly, or again while a screen is closing after a save, now sends just one request.
+- We've tightened the wording across the app so messages are shorter and clearer.
 
 Bug fixes
-- Fixed Weather asking for location again every time you opened it on Mac.
+- Fixed the Complete action on a notification waiting whilst you were offline and then running later once you reconnected.
+- Fixed reminder times that could be off when the app couldn't read your device's time zone.
+- Fixed notification text showing am/pm times even when you chose the 24-hour format.
+- Fixed voice notes picking up audio from another note, and ‘Keep talking’ not working after a failed start.
+- Fixed a different screen closing if you left while a save was still in progress.
+- Fixed screens opened straight from a link not closing after you saved.
