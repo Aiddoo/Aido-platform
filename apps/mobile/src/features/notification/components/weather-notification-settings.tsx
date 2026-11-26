@@ -84,7 +84,7 @@ export function WeatherNotificationSettings() {
 WeatherNotificationSettings.EnabledToggle = function EnabledToggle() {
   const { t } = useTranslation(['notification', 'auth']);
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
-  const updateMutation = useMutation(useUpdatePreferenceMutationOptions());
+  const updatePreference = useMutation(useUpdatePreferenceMutationOptions());
 
   return (
     <SettingsListGroup.Toggle
@@ -97,13 +97,13 @@ WeatherNotificationSettings.EnabledToggle = function EnabledToggle() {
       }
       isSelected={PreferencePolicy.isWeatherEnabled(preference)}
       onSelectedChange={(enabled) =>
-        updateMutation.mutate({
+        updatePreference.mutate({
           weatherMorningEnabled: enabled,
           weatherEveningEnabled: enabled,
           trackAs: { setting: 'weatherEnabled', value: enabled },
         })
       }
-      isDisabled={!preference.pushEnabled || updateMutation.isPending}
+      isDisabled={!preference.pushEnabled || updatePreference.isPending}
     />
   );
 };

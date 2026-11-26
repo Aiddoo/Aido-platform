@@ -30,7 +30,7 @@ export function useQuickPlanRequest({
   const idGenerator = useIdGenerator();
   const aiConsent = useAiDataSharingConsentGate();
   const gate = useEntitlementGate('AI_PARSE', { surface: 'add_todo_sheet' });
-  const planMutation = useMutation(useCreateQuickPlanMutationOptions());
+  const createQuickPlan = useMutation(useCreateQuickPlanMutationOptions());
   const hasAskedConsentRef = useRef(false);
   const [isConsentRequired, setIsConsentRequired] = useState(false);
   const planRequestRef = useRef<PreparedPlanRequest<CreateQuickPlanInput> | null>(null);
@@ -50,7 +50,7 @@ export function useQuickPlanRequest({
     planAbortRef.current = abortController;
 
     try {
-      const { plan, isCharged } = await planMutation.mutateAsync({
+      const { plan, isCharged } = await createQuickPlan.mutateAsync({
         ...request,
         signal: abortController.signal,
       });

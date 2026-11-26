@@ -296,13 +296,13 @@ interface PendingSuggestionProps {
 function PendingSuggestion({ suggestion, timeFormat, onMake, isLast }: PendingSuggestionProps) {
   const promptSuggestionLimit = usePromptSuggestionLimit();
   // 한도 안내는 mutation 단계에 건다. 호출 단계 콜백은 줄이 내려가면 불리지 않는다
-  const dismissMutation = useMutation({
+  const dismissSuggestion = useMutation({
     ...useActOnSuggestionMutationOptions(),
     onError: promptSuggestionLimit,
   });
   // isPending은 다시 그린 뒤에야 켜져 같은 프레임의 두 번째 누름이 거절을 한 번 더 보낸다
   const handleDismiss = useSingleTap(() =>
-    dismissMutation.mutate({
+    dismissSuggestion.mutate({
       suggestionId: suggestion.id,
       input: { action: 'dismiss' },
       source: 'suggestions_screen',
@@ -315,7 +315,7 @@ function PendingSuggestion({ suggestion, timeFormat, onMake, isLast }: PendingSu
       timeFormat={timeFormat}
       onMake={onMake}
       onDismiss={handleDismiss}
-      isDismissing={dismissMutation.isPending}
+      isDismissing={dismissSuggestion.isPending}
       isLast={isLast}
     />
   );

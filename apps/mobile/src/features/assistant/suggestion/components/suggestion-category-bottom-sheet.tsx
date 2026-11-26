@@ -57,13 +57,13 @@ SuggestionCategoryBottomSheet.AcceptForm = function AcceptForm({
   );
   const promptSuggestionLimit = usePromptSuggestionLimit();
   // 한도 안내는 mutation 단계에 건다. 호출 단계 콜백은 응답 전에 시트가 내려가면 불리지 않는다
-  const actOnSuggestionMutation = useMutation({
+  const actOnSuggestion = useMutation({
     ...useActOnSuggestionMutationOptions(),
     onError: promptSuggestionLimit,
   });
   // isPending은 다시 그린 뒤에야 켜져 같은 프레임의 두 번째 누름이 수락을 한 번 더 보낸다
   const handleSubmit = useSingleTap((acceptedSuggestionId: number, categoryId: number) =>
-    actOnSuggestionMutation.mutate(
+    actOnSuggestion.mutate(
       { suggestionId: acceptedSuggestionId, input: { action: 'accept', categoryId }, source },
       { onSuccess: () => onClose({ type: 'dismiss-to', href: '/feed' }) },
     ),
@@ -84,7 +84,7 @@ SuggestionCategoryBottomSheet.AcceptForm = function AcceptForm({
       defaultValue={defaultCategoryId}
       onSubmit={(categoryId) => handleSubmit(suggestion.id, categoryId)}
       submitLabel={t('suggestions.item.make')}
-      isLoading={actOnSuggestionMutation.isPending}
+      isLoading={actOnSuggestion.isPending}
     />
   );
 };

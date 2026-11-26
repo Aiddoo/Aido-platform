@@ -89,7 +89,7 @@ export function FriendList({ onInvite, inviteWelcomeDays }: FriendListProps) {
     isFetchNextPageError,
     fetchNextPage,
   });
-  const reorderMutation = useMutation(useReorderFriendMutationOptions());
+  const reorderFriend = useMutation(useReorderFriendMutationOptions());
   const confirmRemoveFriend = useConfirmRemoveFriend();
   const [isEditing] = useFriendListIsEditing();
   const queryClient = useQueryClient();
@@ -100,10 +100,10 @@ export function FriendList({ onInvite, inviteWelcomeDays }: FriendListProps) {
   const reorderableList = useReorderableList({
     items: friends,
     updatedAt: dataUpdatedAt,
-    isPending: reorderMutation.isPending,
+    isPending: reorderFriend.isPending,
     getItemId: (friend) => friend.followId,
     onReorder: ({ instruction: { movedId, targetId: targetFollowId, position } }) => {
-      reorderMutation.mutate({
+      reorderFriend.mutate({
         followId: movedId,
         input: { targetFollowId, position },
       });

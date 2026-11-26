@@ -70,9 +70,9 @@ TodoActionsBottomSheet.ActionList = function ActionList({
   const todayKey = useTodayKey();
   const [date] = useTodoSheetDateKey();
   const todo = useSuspenseSheetTodo({ onMissing: onClose });
-  const deleteMutation = useMutation(useDeleteTodoMutationOptions());
-  const updateScheduleMutation = useMutation(useUpdateTodoScheduleMutationOptions());
-  const stopSeriesMutation = useMutation(useStopTodoSeriesMutationOptions());
+  const deleteTodo = useMutation(useDeleteTodoMutationOptions());
+  const updateTodoSchedule = useMutation(useUpdateTodoScheduleMutationOptions());
+  const stopTodoSeries = useMutation(useStopTodoSeriesMutationOptions());
   const scopeSelector = useSelectTodoScope();
   const { selectDeleteScope } = scopeSelector;
   const confirmDialog = useConfirmDialog();
@@ -83,8 +83,7 @@ TodoActionsBottomSheet.ActionList = function ActionList({
   }
 
   // 저장 중에는 같은 요청이 두 번 가거나 저장 중에 지우거나 고치러 들어가지 않게 모든 행을 잠근다
-  const isBusy =
-    deleteMutation.isPending || updateScheduleMutation.isPending || stopSeriesMutation.isPending;
+  const isBusy = deleteTodo.isPending || updateTodoSchedule.isPending || stopTodoSeries.isPending;
   const isTodoToday = TodoPolicy.isTodoStartingOn(todo, todayKey);
 
   const sheetParams = { todoId: todo.id, date };
@@ -92,7 +91,7 @@ TodoActionsBottomSheet.ActionList = function ActionList({
   const handleScheduleToggle = () => {
     const { startDate, endDate } = TodoPolicy.getTodayToggleDates(todo, todayKey);
 
-    updateScheduleMutation.mutate(
+    updateTodoSchedule.mutate(
       {
         todoId: todo.id,
         changedField: 'date',
@@ -117,7 +116,7 @@ TodoActionsBottomSheet.ActionList = function ActionList({
       cancelLabel: t('common:actions.cancel'),
       confirmLabel: t('multiDayDelete.confirm'),
       confirmColor: 'danger',
-      onConfirm: () => deleteMutation.mutateAsync({ todoId: todo.id, date }),
+      onConfirm: () => deleteTodo.mutateAsync({ todoId: todo.id, date }),
     });
     if (isDeleted) {
       onClose();
@@ -130,7 +129,7 @@ TodoActionsBottomSheet.ActionList = function ActionList({
         await deleteMultiDayTodo();
         return;
       }
-      deleteMutation.mutate({ todoId: todo.id, date }, { onSuccess: () => onClose() });
+      deleteTodo.mutate({ todoId: todo.id, date }, { onSuccess: () => onClose() });
 
       return;
     }
@@ -139,11 +138,11 @@ TodoActionsBottomSheet.ActionList = function ActionList({
     if (scope == null) {
       return;
     }
-    deleteMutation.mutate({ todoId: todo.id, date, scope }, { onSuccess: () => onClose() });
+    deleteTodo.mutate({ todoId: todo.id, date, scope }, { onSuccess: () => onClose() });
   };
 
   const handleStopRepeat = () =>
-    stopSeriesMutation.mutate({ todoId: todo.id }, { onSuccess: () => onClose() });
+    stopTodoSeries.mutate({ todoId: todo.id }, { onSuccess: () => onClose() });
 
   return (
     <TodoScopeStep step={scopeSelector}>
@@ -253,7 +252,7 @@ TodoActionsBottomSheet.ActionList = function ActionList({
           icon={
             <TrashIcon width={actionIconSize} height={actionIconSize} colorClassName="text-error" />
           }
-          label={deleteMutation.isPending ? t('actions.deleting') : t('actions.delete')}
+          label={deleteTodo.isPending ? t('actions.deleting') : t('actions.delete')}
           isDanger
           isDisabled={isBusy}
           onPress={handleDelete}
