@@ -1,7 +1,11 @@
 import { ErrorCode } from '@aido/api/errors';
 
-import { createTodoImportApiError } from '../__tests__/todo-import.fixtures';
-import { calculateRemainingCapacity, getTodoImportUploadFailure } from './todo-import.error';
+import { createTodoImportApiError, IMPORT_ID } from '../__tests__/todo-import.fixtures';
+import {
+  calculateRemainingCapacity,
+  getTodoImportStartFailure,
+  getTodoImportUploadFailure,
+} from './todo-import.error';
 
 describe('getTodoImportUploadFailure', () => {
   it.each([
@@ -56,6 +60,75 @@ describe('getTodoImportUploadFailure', () => {
 
     // Then
     expect(failure).toBe(expected);
+  });
+});
+
+describe('getTodoImportStartFailure', () => {
+  const REJECTIONS = [{ targetKey: 'category-2', reason: 'CATEGORY_NOT_FOUND' }];
+
+  it.each([
+    {
+      scenario: '이미 처리 중인 가져오기가 있다',
+      code: ErrorCode.TODO_IMPORT_2301,
+      details: { importId: IMPORT_ID },
+      expected: { kind: 'alreadyActive', importId: IMPORT_ID },
+    },
+    {
+      scenario: '처리 중인 가져오기의 id가 오지 않았다',
+      code: ErrorCode.TODO_IMPORT_2301,
+      details: null,
+      expected: { kind: 'other' },
+    },
+    {
+      scenario: '요금제 기간 한도에 막혔다',
+      code: ErrorCode.TODO_IMPORT_2302,
+      details: null,
+      expected: { kind: 'planLimit' },
+    },
+    {
+      scenario: '새 카테고리 자리가 없다',
+      code: ErrorCode.TODO_CATEGORY_0857,
+      details: null,
+      expected: { kind: 'planLimit' },
+    },
+    {
+      scenario: '서버가 넣을 곳을 받지 않았다',
+      code: ErrorCode.TODO_IMPORT_2303,
+      details: { targets: REJECTIONS },
+      expected: { kind: 'targetsRejected', rejections: REJECTIONS },
+    },
+    {
+      scenario: '거절된 넣을 곳이 오지 않았다',
+      code: ErrorCode.TODO_IMPORT_2303,
+      details: null,
+      expected: { kind: 'other' },
+    },
+    {
+      scenario: '기간·일정이 올바르지 않다',
+      code: ErrorCode.TODO_IMPORT_2306,
+      details: null,
+      expected: { kind: 'other' },
+    },
+  ])('$scenario → $expected.kind', ({ code, details, expected }) => {
+    // Given
+    const error = createTodoImportApiError({ code, details });
+
+    // When
+    const failure = getTodoImportStartFailure(error);
+
+    // Then
+    expect(failure).toEqual(expected);
+  });
+
+  it('서버 오류가 아니면 그 밖의 실패다', () => {
+    // Given
+    const error = new Error('네트워크가 끊겼다');
+
+    // When
+    const failure = getTodoImportStartFailure(error);
+
+    // Then
+    expect(failure).toEqual({ kind: 'other' });
   });
 });
 

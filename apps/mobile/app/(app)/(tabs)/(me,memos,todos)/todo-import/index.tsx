@@ -29,8 +29,7 @@ import {
 import { createDefaultTodoImportRange } from '@src/features/planning/todo-import/domains/todo-import-range.model';
 import type { TodoImportTarget } from '@src/features/planning/todo-import/domains/todo-import-target.model';
 import {
-  findActiveTodoImportId,
-  getRejectedTargets,
+  getTodoImportStartFailure,
   toRejectedTargetErrors,
 } from '@src/features/planning/todo-import/domains/todo-import.error';
 import { useFormatTargetRejection } from '@src/features/planning/todo-import/hooks/use-format-target-rejection';
@@ -624,31 +623,28 @@ function OptionsStep({ form, progress, onStarted, onTargetsRejected }: OptionsSt
     onStarted(todoImport.id);
   });
 
-  // 진행 중인 가져오기 → 요금제 안내 → 넣을 곳 거절 순으로 본다. 그 밖의 실패는 mutation이 알린다
   const handleStartError = (error: unknown) => {
-    const activeImportId = findActiveTodoImportId(error);
-    if (activeImportId != null) {
-      onStarted(activeImportId);
-      return;
-    }
-    if (calendarImportGate.promptIfBlockedError(error)) {
-      return;
-    }
-    const rejections = getRejectedTargets(error);
-    if (rejections.length === 0) {
-      return;
-    }
-    const rejectedTargets = toRejectedTargetErrors(
-      toTodoImportSelection(form.getValues()),
-      rejections,
-    );
-    for (const { collectionKey, rejection } of rejectedTargets) {
-      form.setError(`targets.${collectionKey}`, {
-        type: 'server',
-        message: formatTargetRejection(rejection),
-      });
-    }
-    onTargetsRejected();
+    match(getTodoImportStartFailure(error))
+      .with({ kind: 'alreadyActive' }, ({ importId }) => onStarted(importId))
+      .with({ kind: 'planLimit' }, () => {
+        calendarImportGate.promptIfBlockedError(error);
+      })
+      .with({ kind: 'targetsRejected' }, ({ rejections }) => {
+        const rejectedTargets = toRejectedTargetErrors(
+          toTodoImportSelection(form.getValues()),
+          rejections,
+        );
+        for (const { collectionKey, rejection } of rejectedTargets) {
+          form.setError(`targets.${collectionKey}`, {
+            type: 'server',
+            message: formatTargetRejection(rejection),
+          });
+        }
+        onTargetsRejected();
+      })
+      // 그 밖의 실패는 mutation이 알린다
+      .with({ kind: 'other' }, noop)
+      .exhaustive();
   };
 
   const handleImportPress = useSingleTap(() => {
