@@ -625,7 +625,6 @@ catalogs:
 overrides:
   '@grpc/grpc-js@<1.13.6': ^1.13.6
   '@nestjs/terminus@12.2.0>@prisma/client': '-'
-  glob@>=13.0.0 <13.0.7: ^13.0.7
 
 packageExtensionsChecksum: sha256-mET1OjWRF0wgMCOx62KEb6y40/NHHc7uEP1a4r2v4SY=
 
