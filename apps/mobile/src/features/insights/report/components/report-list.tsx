@@ -22,7 +22,6 @@ import {
   IconButton,
   InfoIcon,
   LabelChip,
-  QueryErrorBoundary,
   QueryErrorFallback,
   type QueryErrorFallbackProps,
   Text,
@@ -43,7 +42,7 @@ import {
 import { range } from 'es-toolkit';
 import { type Href, Link, useRouter } from 'expo-router';
 import { Popover, PressableFeedback, Skeleton } from 'heroui-native';
-import { type ReactNode, Suspense, useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { match } from 'ts-pattern';
 
 import { SAMPLE_REPORT_COUNT } from '../constants/sample-report.constants';
@@ -73,7 +72,14 @@ const LOADING_STAT_COUNT = 3;
 /** 예시 목록 맨 위 최근 리포트 카드는 지난주·지난달이다 */
 const LATEST_SAMPLE_PERIODS_AGO = 1;
 
-export function ReportList() {
+interface ReportListProps {
+  /** 최근 리포트 카드의 추세 칸(`RecentCompletionTrend`). 조회 경계는 화면이 감싸 넘긴다 */
+  trend: ReactNode;
+  /** 리포트가 아직 없을 때 보이는 이번 주 기록 칸(`ThisWeekRecord`). 조회 경계는 화면이 감싸 넘긴다 */
+  thisWeekRecord: ReactNode;
+}
+
+export function ReportList({ trend, thisWeekRecord }: ReportListProps) {
   const { t } = useTranslation('ai');
 
   const [reportType] = useReportType();
@@ -95,7 +101,7 @@ export function ReportList() {
   const [latestReport, ...pastReports] = reports;
 
   if (latestReport == null) {
-    return <ReportList.Empty />;
+    return <ReportList.Empty thisWeekRecord={thisWeekRecord} />;
   }
 
   return (
@@ -103,13 +109,7 @@ export function ReportList() {
       <ReportList.Latest
         report={latestReport}
         href={{ pathname: '/reports/[reportId]', params: { reportId: String(latestReport.id) } }}
-        trend={
-          <QueryErrorBoundary fallback={RecentCompletionTrend.Error}>
-            <Suspense fallback={<RecentCompletionTrend.Loading />}>
-              <RecentCompletionTrend />
-            </Suspense>
-          </QueryErrorBoundary>
-        }
+        trend={trend}
       />
 
       {pastReports.length > 0 && (
@@ -283,7 +283,7 @@ ReportList.Item = function Item({ report, href, isLast = false }: ReportListItem
 };
 
 /** 무료는 실제 이번 주 기록 아래에 프리미엄 목록과 같은 모양의 예시 리포트를 보인다 */
-ReportList.Free = function Free() {
+ReportList.Free = function Free({ thisWeekRecord }: { thisWeekRecord: ReactNode }) {
   const { t } = useTranslation('ai');
   const { trackEvent } = useTrack();
   const router = useRouter();
@@ -306,11 +306,7 @@ ReportList.Free = function Free() {
 
   return (
     <VStack gap={20}>
-      <QueryErrorBoundary fallback={ThisWeekRecord.Error}>
-        <Suspense fallback={<ThisWeekRecord.Loading />}>
-          <ThisWeekRecord access="free" />
-        </Suspense>
-      </QueryErrorBoundary>
+      {thisWeekRecord}
 
       <DashedDivider />
 
@@ -420,7 +416,7 @@ ReportList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   return <QueryErrorFallback reset={reset} />;
 };
 
-ReportList.Empty = function Empty() {
+ReportList.Empty = function Empty({ thisWeekRecord }: { thisWeekRecord: ReactNode }) {
   const { t } = useTranslation('ai');
   const [reportType] = useReportType();
   const { timezone } = useDateFormatContext();
@@ -431,11 +427,7 @@ ReportList.Empty = function Empty() {
 
   return (
     <VStack gap={16}>
-      <QueryErrorBoundary fallback={ThisWeekRecord.Error}>
-        <Suspense fallback={<ThisWeekRecord.Loading />}>
-          <ThisWeekRecord access="premium" />
-        </Suspense>
-      </QueryErrorBoundary>
+      {thisWeekRecord}
 
       {status == null ? (
         <TextSkeleton size="b3" className="mx-auto w-48" />
@@ -450,7 +442,7 @@ ReportList.Empty = function Empty() {
   );
 };
 
-function RecentCompletionTrend() {
+export function RecentCompletionTrend() {
   const { trackEvent } = useTrack();
   const todayKey = useTodayKey();
   const { startYear, endYear } = getTrendIsoWeekYears(todayKey);
@@ -553,7 +545,7 @@ interface ThisWeekRecordProps {
 }
 
 /** 리포트가 없을 때도 보이는 이번 주(월요일 시작) 할 일 기록 */
-function ThisWeekRecord({ access }: ThisWeekRecordProps) {
+export function ThisWeekRecord({ access }: ThisWeekRecordProps) {
   const { t } = useTranslation('ai');
   const { trackEvent } = useTrack();
   const todayKey = useTodayKey();
