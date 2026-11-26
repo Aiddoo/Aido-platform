@@ -18,3 +18,18 @@ export function useTrackInviteLinkOpened() {
     trackEvent('invite_link_opened', { source });
   }, [inviteLinkOpenedStore, openedAt, source, trackEvent]);
 }
+
+/**
+ * 코드 입력이 초대 카드로 넘어갈 때 부를 함수를 준다. 시스템 링크로 이 화면에 왔으면 착지할 때 이미 한 번 세어
+ * 앱 안에서 연 코드 입력만 센다
+ */
+export function useTrackInviteCodeEntryOpened() {
+  const [{ openedAt }] = useInviteParams();
+  const { trackEvent } = useTrack();
+
+  return () => {
+    if (openedAt == null) {
+      trackEvent('invite_link_opened', { source: 'code_entry' });
+    }
+  };
+}

@@ -25,6 +25,18 @@ export function isInviteCodeFieldError(error: unknown) {
   );
 }
 
+/** 오프라인이라 보내 보지 않은 코드 확인. 안내는 확인 mutation이 하고, 폼에는 실패로 남아 다시 누를 수 있다 */
+export class InviteCodeNotCheckedOfflineError extends Error {
+  constructor() {
+    super('invite code: not checked while offline');
+    this.name = 'InviteCodeNotCheckedOfflineError';
+  }
+}
+
+export function isInviteCodeNotCheckedOfflineError(error: unknown) {
+  return error instanceof InviteCodeNotCheckedOfflineError;
+}
+
 /** 서버가 거절한 코드의 칸 오류 type. 형식 오류(Zod 이슈)와 문구 출처가 달라 서버 문구를 싣는다 */
 export const INVITE_CODE_SERVER_ERROR_TYPE = 'server';
 

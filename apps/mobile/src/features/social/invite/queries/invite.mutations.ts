@@ -11,13 +11,15 @@ import { useTrack } from '@src/shared/analytics';
 import { getErrorMessage } from '@src/shared/errors';
 import { t } from '@src/shared/i18n';
 import { useAppToast } from '@src/shared/ui';
-import { mutationOptions, useQueryClient } from '@tanstack/react-query';
+import { mutationOptions, onlineManager, useQueryClient } from '@tanstack/react-query';
 
 import { INVITE_LOG_EVENT } from '../constants/invite-log-events';
 import type { InviteCode } from '../domains/invite-code.model';
 import { InviteRedemptionPolicy } from '../domains/invite-redemption.model';
 import {
+  InviteCodeNotCheckedOfflineError,
   isInviteCodeFieldError,
+  isInviteCodeNotCheckedOfflineError,
   isRedeemRejectedError,
   getRedeemFailure,
 } from '../domains/invite.error';
@@ -34,20 +36,33 @@ import { INVITE_MUTATION_KEYS } from './invite-mutation-keys';
 export function useCheckInvitePreviewMutationOptions() {
   const inviteService = useInviteService();
   const queryClient = useQueryClient();
+  const toast = useAppToast();
 
   return mutationOptions({
     mutationKey: INVITE_MUTATION_KEYS.checkInvitePreview(),
     // 보내는 사이 연결이 끊겨도 멈추지 않고 바로 실패한다. 서버가 거절한 코드는 폼이 코드 칸에, 그 밖은 전역 피드백이 알린다
     networkMode: 'always',
-    mutationFn: async (inviteCode: InviteCode) =>
-      unwrap(await inviteService.getPreview(inviteCode)),
+    mutationFn: async (inviteCode: InviteCode) => {
+      // 오프라인이면 보내 보지 않는다. 실패로 남겨야 폼이 다시 누를 수 있다
+      if (!onlineManager.isOnline()) {
+        throw new InviteCodeNotCheckedOfflineError();
+      }
+      return unwrap(await inviteService.getPreview(inviteCode));
+    },
     onSuccess: (preview, inviteCode) => {
       setInvitePreviewInCache(queryClient, { inviteCode, preview });
+    },
+    // 입력한 코드를 둔 채 초대 화면의 연결 안내로 알린다
+    onError: (error) => {
+      if (isInviteCodeNotCheckedOfflineError(error)) {
+        toast.warning(t('invite:errors.offline'));
+      }
     },
     meta: {
       errorFeedback: {
         feature: 'invite',
-        isHandledByFeature: isInviteCodeFieldError,
+        isHandledByFeature: (error) =>
+          isInviteCodeFieldError(error) || isInviteCodeNotCheckedOfflineError(error),
       },
     },
   });
