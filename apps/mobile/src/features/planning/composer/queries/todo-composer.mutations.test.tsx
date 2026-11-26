@@ -78,7 +78,7 @@ describe('useUpdateTodoMutationOptions', () => {
           },
         }),
         '시작일이 너무 오래전이에요',
-        '지난 날짜가 너무 많아요. 시작일을 더 가까운 날로 골라주세요.',
+        '시작일을 더 가까운 날로 골라주세요.',
       ],
       [
         createApiError(ErrorCode.TODO_0842, {

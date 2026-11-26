@@ -48,7 +48,7 @@
       },
       "too-many-past": {
         "title": "시작일이 너무 오래전이에요",
-        "description": "지난 날짜가 너무 많아요. 시작일을 더 가까운 날로 골라주세요."
+        "description": "시작일을 더 가까운 날로 골라주세요."
       },
       "category-full": {
         "title": "이 카테고리에 할 일을 더 추가할 수 없어요",

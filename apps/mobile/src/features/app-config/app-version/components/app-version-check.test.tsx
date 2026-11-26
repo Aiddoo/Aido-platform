@@ -163,7 +163,7 @@ describe('AppVersionCheck', () => {
   });
 
   it.each([
-    ['이미 최신이면', '1.15.0', '현재 최신 버전을 사용하고 있어요.'],
+    ['이미 최신이면', '1.15.0', '최신 버전을 쓰고 있어요.'],
     ['설치 버전을 판정할 수 없으면', '1.14', /버전 정보를 확인하지 못했어요/],
   ])('%s 스토어를 열지 않고 스토어 열기도 남기지 않는다', async (_case, currentVersion, notice) => {
     // Given
@@ -212,7 +212,7 @@ describe('AppVersionCheck', () => {
     await fireEvent.press(screen.getByText('버전 정보'));
 
     // Then
-    expect(await screen.findByText('현재 최신 버전을 사용하고 있어요.')).toBeTruthy();
+    expect(await screen.findByText('최신 버전을 쓰고 있어요.')).toBeTruthy();
     expect(listing.openListing).not.toHaveBeenCalled();
   });
 });

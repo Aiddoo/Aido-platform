@@ -184,7 +184,7 @@
       "active": "in progress",
       "done": "done"
     },
-    "leaveNotice": "You can leave the app. The import keeps going",
+    "leaveNotice": "The import keeps going if you leave the app",
     "offline": "The import continues when you're back online",
     "paused": "Paused for now. Try again, or reopen the app to continue",
     "pausedPermission": "Paused because calendar access is off. Turn it back on in Settings to continue",
@@ -248,6 +248,6 @@
     "permissionRequestFailed": "Couldn't ask for calendar access. Please try again",
     "rangeAdjusted": "It's past midnight, so the range now starts today",
     "undoWhileImporting": "You can undo once the import in progress finishes",
-    "cancelTooLate": "Aido already started creating your to-dos, so this import can't be stopped"
+    "cancelTooLate": "To-dos are already being created, so this can't be stopped"
   }
 }

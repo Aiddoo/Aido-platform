@@ -88,7 +88,7 @@
   "TODO_0801": "To-do not found",
   "TODO_0810": "The to-do at the target position was not found",
   "TODO_0811": "You can't add more to-dos to this category",
-  "TODO_0812": "You've exceeded the number of repeating to-dos you can create at once",
+  "TODO_0812": "Too many repeating to-dos to create at once",
   "TODO_0813": "These repeating to-dos would go over the category limit",
   "TODO_0821": "You can't add more subtasks",
   "TODO_0822": "Subtask not found",

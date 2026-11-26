@@ -109,7 +109,7 @@
     "no-speech": "We didn't catch that. Please try speaking again.",
     "speech-timeout": "We stopped because we didn't hear anything. Please try again.",
     "aborted": "Dictation canceled",
-    "not-allowed": "Microphone or speech recognition access is needed. Please allow it in Settings.",
+    "not-allowed": "Allow microphone or speech recognition access in Settings",
     "service-not-allowed": "Dictation isn't available right now",
     "busy": "Already listening. Please try again shortly.",
     "audio-capture": "Please check your microphone connection",

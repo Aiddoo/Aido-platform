@@ -50,7 +50,7 @@
       },
       "too-many-past": {
         "title": "That start date is too far back",
-        "description": "There are too many past dates. Pick a more recent start date."
+        "description": "Pick a more recent start date."
       },
       "category-full": {
         "title": "You can't add more to-dos to this category",
