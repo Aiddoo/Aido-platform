@@ -40,8 +40,7 @@ export default function EmailLoginScreen() {
     mode: 'onTouched',
   });
 
-  // 인증 화면에는 스키마가 다듬은 주소를 넘겨야 해 실패를 제출 안에서 받는다.
-  // 받은 실패는 다시 던진다. RHF가 실패로 알아야 isSubmitSuccessful이 꺼진 채 남아 다시 누를 수 있다
+  // 인증 화면에 스키마가 다듬은 주소를 넘기려 실패를 제출 안에서 받고, RHF가 실패로 알아 다시 누를 수 있게 다시 던진다
   const submitEmailLogin = form.handleSubmit(async ({ email, password }) => {
     try {
       await emailLogin.mutateAsync({ email, password });

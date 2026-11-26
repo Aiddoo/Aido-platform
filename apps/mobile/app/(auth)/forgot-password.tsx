@@ -73,8 +73,7 @@ export default function ForgotPasswordScreen() {
   const forgotPassword = useMutation(useForgotPasswordMutationOptions());
   const requestCode = (email: string) => forgotPassword.mutateAsync({ email });
 
-  // 재설정을 기다리는 사이 떠났으면 보던 화면을 로그인으로 바꾸지 않는다.
-  // 돌아와도 버튼이 잠긴 채 남지 않게 적은 값과 단계는 그대로 두고 제출 상태만 푼다
+  // 재설정을 기다리는 사이 떠났으면 보던 화면을 바꾸지 않고, 돌아와 다시 쓸 수 있게 값·단계는 둔 채 제출 상태만 푼다
   const leaveToLogin = () => {
     if (navigation.isFocused()) {
       replace('/(auth)/email-login');
