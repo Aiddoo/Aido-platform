@@ -8,12 +8,13 @@ EAS 빌드·로컬 빌드, 환경 변수, 스토어 제출, 배포 순서를 다
 
 ## 환경과 프로필
 
-| Profile             | APP_ENV     | API URL               | 용도                             | iOS            | Android |
-| ------------------- | ----------- | --------------------- | -------------------------------- | -------------- | ------- |
-| `development`       | development | 자동 감지             | 개발·디버깅(dev client)          | 시뮬레이터용   | APK     |
-| `preview`           | preview     | `https://api.aido.kr` | 내부 테스트·QA                   | 실기기(Ad Hoc) | APK     |
-| `production`        | production  | `https://api.aido.kr` | 스토어 제출(빌드 번호 자동 증가) | App Store용    | AAB     |
-| `production-device` | production  | 위와 같음             | 실기기 Release 검증              | Ad Hoc         | APK     |
+| Profile                 | APP_ENV     | API URL               | 용도                             | iOS            | Android |
+| ----------------------- | ----------- | --------------------- | -------------------------------- | -------------- | ------- |
+| `development`           | development | 자동 감지             | 개발·디버깅(dev client)          | 실기기(Debug)  | APK     |
+| `development-simulator` | development | 자동 감지             | 개발·디버깅(iOS 시뮬레이터)      | 시뮬레이터용   | APK     |
+| `preview`               | preview     | `https://api.aido.kr` | 내부 테스트·QA                   | 실기기(Ad Hoc) | APK     |
+| `production`            | production  | `https://api.aido.kr` | 스토어 제출(빌드 번호 자동 증가) | App Store용    | AAB     |
+| `production-device`     | production  | 위와 같음             | 실기기 Release 검증              | Ad Hoc         | APK     |
 
 - API URL은 `EXPO_PUBLIC_API_URL`이 있으면 그 값이고, 없으면 `app.config.ts`의 환경별 기본값이다. EAS `preview` 환경에는 `EXPO_PUBLIC_API_URL`이 없어 preview 빌드도 운영 API를 부른다.
 - `--profile`을 생략하면 `production`이다. `production-device`는 `production` EAS environment를 명시적으로 상속한다(내부 배포의 기본 environment인 preview로 production 설정이 바뀌지 않게 한다).

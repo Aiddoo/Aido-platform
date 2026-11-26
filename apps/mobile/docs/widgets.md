@@ -27,7 +27,7 @@ iOS는 Expo SDK 58의 `expo-widgets`(`createWidget` + props + `updateTimeline`),
 | components/widgets.android.tsx | 격리된 FlexWidget·TextWidget·SvgWidget renderer                                                                                                                                |
 | hooks                          | `AuthBootProvider`가 소유하는 계정·날짜(오늘·내일)·언어 동기화와 보고                                                                                                          |
 
-플랫폼 조립은 `bootstrap/providers/create-widget-bridge.ios.ts` / `.android.ts`와 noop fallback, `widget-storage.android.ts`와 noop fallback, 위젯만 깨어난 Android 프로세스의 진입점 `bootstrap/providers/register-widget-task-handler.android.ts`(`index.ts`가 등록)와 noop fallback이다. iOS Metro graph에 Android renderer·HeadlessJS·MMKV widget adapter가 들어가지 않도록 platform module로 나눈다. iOS 위젯 번들(`widgets.ios.tsx`)이 부르는 `widget-props.mapper`·`widget-initial-copy.view-model`은 별칭 없이 상대 경로·타입 import만 쓴다.
+플랫폼 조립은 `bootstrap/providers/create-widget-bridge.ios.ts` / `.android.ts`와 noop fallback, `shared/infra/storage/widget-storage.android.ts`와 noop fallback, 위젯만 깨어난 Android 프로세스의 진입점 `bootstrap/providers/register-widget-task-handler.android.ts`(`index.ts`가 등록)와 noop fallback이다. iOS Metro graph에 Android renderer·HeadlessJS·MMKV widget adapter가 들어가지 않도록 platform module로 나눈다. iOS 위젯 번들(`widgets.ios.tsx`)이 부르는 `widget-props.mapper`·`widget-initial-copy.view-model`은 별칭 없이 상대 경로·타입 import만 쓴다.
 
 ## 데이터 흐름과 소유권
 

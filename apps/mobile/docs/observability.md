@@ -103,7 +103,7 @@ errorReporter.captureMessage(ERROR_REPORT_MESSAGES.SESSION_EXPIRED, {
 
 ### Breadcrumb: `addBreadcrumb`
 
-이벤트 직전의 행적이다. `category`는 `BREADCRUMB_CATEGORIES`(`http`·`navigation`·`auth`·`lifecycle`·`ui`·`widget`·`invite`·`network`·`voice`·`error`)로 고정한다.
+이벤트 직전의 행적이다. `category`는 `BREADCRUMB_CATEGORIES`(`http`·`navigation`·`auth`·`lifecycle`·`ui`·`widget`·`invite`·`keyboard`·`network`·`voice`·`error`)로 고정한다.
 
 - DI 밖(HTTP 훅, 전역 코드)은 `shared/infra/logger/global-logger`의 `logger`를 쓴다. `errorReporter`는 DI 포트로만 받는다.
 - `logger.info`·`warn`도 breadcrumb로 남지만 카테고리가 없다. 카테고리가 필요하면 `addBreadcrumb`를 쓴다.

@@ -24,7 +24,7 @@
 
 ```text
 shared/date/
-  instant.ts  date-key.ts  time-of-day.ts  day-of-week.ts
+  instant.ts  date-key.ts  time-of-day.ts  day-of-week.ts  week-start.ts
   zoned.ts       # 시간대 계산(Intl). 순간 ↔ 날짜 key·벽시계
   timezone.ts    # 앱 시간대를 정하는 규칙(서버 parseDeviceReportedTimezone과 읽었는가가 같다)
   clock.ts       # 지금(getNowInstant), 오늘 상태(readLocalDateState), 다음 자정
