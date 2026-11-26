@@ -259,12 +259,12 @@ NightSkyLayer.ShootingStar = function ShootingStar({ width, height, time }: SkyA
     const window = getShootingStarWindow(time.get());
     const [minX, maxX] = SHOOTING_STAR.startX;
     const [minY, maxY] = SHOOTING_STAR.startY;
-    const k = Math.max(0, progress.get());
+    const travelProgress = Math.max(0, progress.get());
     const x = width * (minX + hashToUnit(window * 3 + 1) * (maxX - minX));
     const y = height * (minY + hashToUnit(window * 3 + 2) * (maxY - minY));
     return [
-      { translateX: x + k * SHOOTING_STAR.travel.x },
-      { translateY: y + k * SHOOTING_STAR.travel.y },
+      { translateX: x + travelProgress * SHOOTING_STAR.travel.x },
+      { translateY: y + travelProgress * SHOOTING_STAR.travel.y },
       { rotate: SHOOTING_STAR_ANGLE },
     ];
   });

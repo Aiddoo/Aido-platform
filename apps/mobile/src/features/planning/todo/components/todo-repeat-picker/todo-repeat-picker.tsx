@@ -498,13 +498,13 @@ function RepeatCalendar({
   occurrenceKeys,
   onValueChange,
 }: RepeatCalendarProps) {
-  const { displayMonthKey, weeks, goToPrevMonth, goToNextMonth } = picker;
+  const { displayMonthKey, weeks, goToPreviousMonth, goToNextMonth } = picker;
 
   return (
     <VStack gap={16}>
       <PickerMonthBar
         displayMonthKey={displayMonthKey}
-        onPreviousMonth={goToPrevMonth}
+        onPreviousMonth={goToPreviousMonth}
         onNextMonth={goToNextMonth}
       />
 

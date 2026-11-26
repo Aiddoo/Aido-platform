@@ -25,7 +25,7 @@ import { useAndroidBackHandler } from './use-android-back-handler';
 /** 값이나 지금 단계의 context를 받아 다음 context를 만드는 updater */
 type ContextInput<Contexts extends StepperContexts, Name extends StepName<Contexts>> =
   | Contexts[Name]
-  | ((prev: Contexts[StepName<Contexts>]) => Contexts[Name]);
+  | ((previousContext: Contexts[StepName<Contexts>]) => Contexts[Name]);
 
 /** context가 빈 단계(`Record<string, never>`)는 인자를 생략한다 */
 type ContextArgs<Contexts extends StepperContexts, Name extends StepName<Contexts>> =
@@ -116,8 +116,8 @@ function createStepperStore<Contexts extends StepperContexts>(
 }
 
 function isContextUpdater(
-  input: object | ((prev: object) => object),
-): input is (prev: object) => object {
+  input: object | ((previousContext: object) => object),
+): input is (previousContext: object) => object {
   return typeof input === 'function';
 }
 
@@ -130,7 +130,7 @@ function createStepEntry<Contexts extends StepperContexts, Name extends StepName
 function createStepEntry(
   current: { context: object },
   step: string,
-  input?: object | ((prev: object) => object),
+  input?: object | ((previousContext: object) => object),
 ): { step: string; context: object } {
   const context = input != null && isContextUpdater(input) ? input(current.context) : input;
   return toStepEntry({ step, context });

@@ -40,7 +40,7 @@ export function useScreenTracking({
   const focusedParams = useFocusedRouteParams();
   const analytics = useAnalytics();
   const errorReporter = useErrorReporter();
-  const prevView = useRef<TrackedView | null>(null);
+  const previousViewRef = useRef<TrackedView | null>(null);
   const screenName = toScreenName(segments);
   // 가드가 바뀌면 묶음 navigator가 먼저 내려가 Redirect가 옮기기 전까지 묶음 첫 화면(`/login`·`/feed`)에 focus가 머문다
   const isGuarded = guardedRoutes.has(segments[0] ?? '');
@@ -55,10 +55,10 @@ export function useScreenTracking({
     if (isGuarded || untrackedScreens.has(screenName)) {
       return;
     }
-    const prev = prevView.current;
-    prevView.current = { pathname: viewPathname, screenName: viewScreenName, listPathname };
+    const previousView = previousViewRef.current;
+    previousViewRef.current = { pathname: viewPathname, screenName: viewScreenName, listPathname };
     // 같은 보기(칸의 상세를 접어 상세 화면으로 넘김 포함)와, 칸의 상세를 닫아 줄곧 보이던 목록만 남은 것은 세지 않는다
-    if (viewPathname === prev?.pathname || prev?.listPathname === viewPathname) {
+    if (viewPathname === previousView?.pathname || previousView?.listPathname === viewPathname) {
       return;
     }
 
@@ -66,7 +66,7 @@ export function useScreenTracking({
     errorReporter.addBreadcrumb({
       category: 'navigation',
       message: '화면 이동',
-      data: { from: prev?.screenName ?? null, to: viewScreenName },
+      data: { from: previousView?.screenName ?? null, to: viewScreenName },
     });
   }, [
     isGuarded,

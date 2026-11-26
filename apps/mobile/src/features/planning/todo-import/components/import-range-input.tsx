@@ -110,7 +110,7 @@ function ImportDateSheet({ title, value, onChange, minimum, maximum }: ImportDat
         displayMonthKey={picker.displayMonthKey}
         weeks={picker.weeks}
         selectedDateKey={picker.selectedDateKey}
-        onPreviousMonth={picker.goToPrevMonth}
+        onPreviousMonth={picker.goToPreviousMonth}
         onNextMonth={picker.goToNextMonth}
         onSelect={onChange}
         minimumDateKey={minimum}

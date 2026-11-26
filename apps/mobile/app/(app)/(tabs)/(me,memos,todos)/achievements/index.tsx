@@ -54,6 +54,7 @@ export default function AchievementsScreen() {
   );
 }
 
+// 실패해도 화면이 가진 개요(배지·기록 머리)를 목록 오류 위에 그대로 그리려고 header를 넘긴다
 function WeeklyAchievementListErrorFallback(props: QueryErrorFallbackProps) {
   return <WeeklyAchievementList.Error {...props} header={<AchievementOverview />} />;
 }

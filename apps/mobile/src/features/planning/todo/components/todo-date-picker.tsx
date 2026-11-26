@@ -56,7 +56,7 @@ export function TodoDatePicker({
           displayMonthKey={picker.displayMonthKey}
           weeks={picker.weeks}
           selectedDateKey={picker.selectedDateKey}
-          onPreviousMonth={picker.goToPrevMonth}
+          onPreviousMonth={picker.goToPreviousMonth}
           onNextMonth={picker.goToNextMonth}
           onSelect={picker.selectDate}
         />

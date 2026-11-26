@@ -266,7 +266,7 @@ export function MemoEditor({ toolbar: Toolbar, onLeave }: MemoEditorProps) {
               <TextArea
                 ref={ref}
                 variant="bare"
-                preserveErrorSpace={false}
+                shouldPreserveErrorSpace={false}
                 value={value}
                 onChange={onChange}
                 onFocus={() => setIsEditing(true)}

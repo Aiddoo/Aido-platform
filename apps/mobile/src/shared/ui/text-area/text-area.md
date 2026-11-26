@@ -27,7 +27,7 @@ import { TextArea } from '@src/shared/ui';
 
 // 내용에 맞춰 늘어나는 작성기 입력
 <TextArea
-  growsWithContent
+  shouldGrowWithContent
   className="min-h-11 max-h-28"
   placeholder="댓글을 입력하세요"
 />
@@ -35,21 +35,21 @@ import { TextArea } from '@src/shared/ui';
 
 ## Props
 
-| Prop                 | 타입                                      | 기본값     | 설명                                                                                  |
-| -------------------- | ----------------------------------------- | ---------- | ------------------------------------------------------------------------------------- |
-| `value`              | `string`                                  | -          | 입력값 (필수)                                                                         |
-| `onChange`           | `(value: string) => void`                 | -          | 값 변경 콜백 (필수)                                                                   |
-| `variant`            | `'filled' \| 'line' \| 'plain' \| 'bare'` | `'filled'` | 입력 필드 스타일                                                                      |
-| `label`              | `string`                                  | -          | 라벨 텍스트                                                                           |
-| `isDisabled`         | `boolean`                                 | `false`    | 비활성화 상태                                                                         |
-| `isInvalid`          | `boolean`                                 | `false`    | 에러 상태                                                                             |
-| `errorMessage`       | `string`                                  | -          | 에러 메시지 (하단 좌측)                                                               |
-| `counter`            | `ReactNode`                               | -          | 오류 문구 줄 오른쪽(글자 수). 칸에 함께 있어야 키보드가 올라올 때 같이 보입니다.      |
-| `preserveErrorSpace` | `boolean`                                 | `true`     | 오류가 없어도 안내 문구 높이를 유지합니다.                                            |
-| `textSize`           | `TextSize`                                | -          | 줄 간격과 자간 토큰입니다. 글자 크기는 `variant`가 정합니다.                          |
-| `growsWithContent`   | `boolean`                                 | `false`    | 내용과 입력 표면 padding에 맞춰 자랍니다. `className`의 min/max 높이 안에서 멈춥니다. |
-| `className`          | `string`                                  | -          | 컨테이너 추가 스타일                                                                  |
-| `...TextInputProps`  | -                                         | -          | `TextInput` 기본 props (`multiline`, `textAlignVertical`은 내장)                      |
+| Prop                       | 타입                                      | 기본값     | 설명                                                                                  |
+| -------------------------- | ----------------------------------------- | ---------- | ------------------------------------------------------------------------------------- |
+| `value`                    | `string`                                  | -          | 입력값 (필수)                                                                         |
+| `onChange`                 | `(value: string) => void`                 | -          | 값 변경 콜백 (필수)                                                                   |
+| `variant`                  | `'filled' \| 'line' \| 'plain' \| 'bare'` | `'filled'` | 입력 필드 스타일                                                                      |
+| `label`                    | `string`                                  | -          | 라벨 텍스트                                                                           |
+| `isDisabled`               | `boolean`                                 | `false`    | 비활성화 상태                                                                         |
+| `isInvalid`                | `boolean`                                 | `false`    | 에러 상태                                                                             |
+| `errorMessage`             | `string`                                  | -          | 에러 메시지 (하단 좌측)                                                               |
+| `counter`                  | `ReactNode`                               | -          | 오류 문구 줄 오른쪽(글자 수). 칸에 함께 있어야 키보드가 올라올 때 같이 보입니다.      |
+| `shouldPreserveErrorSpace` | `boolean`                                 | `true`     | 오류가 없어도 안내 문구 높이를 유지합니다.                                            |
+| `textSize`                 | `TextSize`                                | -          | 줄 간격과 자간 토큰입니다. 글자 크기는 `variant`가 정합니다.                          |
+| `shouldGrowWithContent`    | `boolean`                                 | `false`    | 내용과 입력 표면 padding에 맞춰 자랍니다. `className`의 min/max 높이 안에서 멈춥니다. |
+| `className`                | `string`                                  | -          | 컨테이너 추가 스타일                                                                  |
+| `...TextInputProps`        | -                                         | -          | `TextInput` 기본 props (`multiline`, `textAlignVertical`은 내장)                      |
 
 ## 스타일 (variant)
 
@@ -80,20 +80,20 @@ import { TextArea } from '@src/shared/ui';
 ### bare
 
 여백·배경·테두리 없이 남은 높이를 모두 채우는 전체 화면 편집기 스타일입니다. 메모 작성·상세처럼
-화면 자체가 입력 표면일 때 `preserveErrorSpace={false}`와 함께 씁니다.
+화면 자체가 입력 표면일 때 `shouldPreserveErrorSpace={false}`와 함께 씁니다.
 
 ```tsx
-<TextArea variant="bare" preserveErrorSpace={false} value={value} onChange={onChange} />
+<TextArea variant="bare" shouldPreserveErrorSpace={false} value={value} onChange={onChange} />
 ```
 
 ## 내용에 맞춰 높이 확장
 
-`growsWithContent`는 입력 내용과 표면의 세로 padding을 측정해 컨테이너 높이를 조절합니다. 기존 폼의
+`shouldGrowWithContent`는 입력 내용과 표면의 세로 padding을 측정해 컨테이너 높이를 조절합니다. 기존 폼의
 높이 동작을 바꾸지 않도록 opt-in이며, `className`에 최소 높이와 최대 높이를 함께 지정합니다. 최대
 높이를 넘은 내용은 TextInput 내부에서 스크롤합니다. `KeyboardBottomSheet` 안에서는 네이티브 시트가 포커스한 칸을 키보드 위로 스크롤합니다.
 
 ```tsx
-<TextArea growsWithContent className="min-h-11 max-h-28" />
+<TextArea shouldGrowWithContent className="min-h-11 max-h-28" />
 ```
 
 ## 글자 크기
@@ -120,9 +120,9 @@ import { TextArea } from '@src/shared/ui';
 
 ## Input과의 차이점
 
-| 항목                     | Input                | TextArea                             |
-| ------------------------ | -------------------- | ------------------------------------ |
-| 줄 수                    | 단일 행              | 여러 줄 (`multiline` 내장)           |
-| 높이                     | 고정 (`h-12`/`h-14`) | 유동적 (`min-h`, `growsWithContent`) |
-| 크기 variant             | `medium` / `large`   | 없음                                 |
-| leftContent/rightContent | 지원                 | 미지원                               |
+| 항목                     | Input                | TextArea                                  |
+| ------------------------ | -------------------- | ----------------------------------------- |
+| 줄 수                    | 단일 행              | 여러 줄 (`multiline` 내장)                |
+| 높이                     | 고정 (`h-12`/`h-14`) | 유동적 (`min-h`, `shouldGrowWithContent`) |
+| 크기 variant             | `medium` / `large`   | 없음                                      |
+| leftContent/rightContent | 지원                 | 미지원                                    |

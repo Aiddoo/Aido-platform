@@ -121,7 +121,7 @@ function MemoCreateScreen() {
             <TextArea
               ref={ref}
               variant="bare"
-              preserveErrorSpace={false}
+              shouldPreserveErrorSpace={false}
               placeholder={t('create.placeholder')}
               value={value}
               onChange={onChange}

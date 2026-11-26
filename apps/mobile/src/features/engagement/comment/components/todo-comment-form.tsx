@@ -405,12 +405,12 @@ function CommentField({
           isInvalid={error != null}
           variant="plain"
           textSize="b3"
-          preserveErrorSpace={false}
+          shouldPreserveErrorSpace={false}
           errorMessage={resolveValidationMessage(error, {
             default: 'comment.required',
             byType: { too_big: 'comment.tooLong' },
           })}
-          growsWithContent
+          shouldGrowWithContent
           placeholder={match({ isChain: index > 0, type: mode.type })
             .with({ isChain: true }, () => t('form.chainPlaceholder'))
             .with({ type: 'edit' }, () => t('input.editPlaceholder'))
