@@ -165,11 +165,10 @@ onFlowComplete:
 
 ## 앱에 더할 testID
 
-| 화면                           | 파일·컴포넌트                                                              | 제안 이름                                                                              |
-| ------------------------------ | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| 캘린더 가져오기 단계·버튼·결과 | `app/(app)/(tabs)/(me,memos,todos)/todo-import/index.tsx`·`[importId].tsx` | `todo-import-step-<step>`, `todo-import-next`, `todo-import-start`, `todo-import-undo` |
-| 할 일 체크박스 완료 상태(iOS)  | `src/features/planning/todo/components/todo-list.tsx` `TodoRow.Checkbox`   | iOS에서 `checked`가 안 읽히면 `accessibilityState.selected`도 싣기                     |
-| 날씨 요약                      | `src/features/weather/components/weather-hero.tsx`                         | `weather-hero`                                                                         |
+| 화면                          | 파일·컴포넌트                                                            | 제안 이름                                                          |
+| ----------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| 할 일 체크박스 완료 상태(iOS) | `src/features/planning/todo/components/todo-list.tsx` `TodoRow.Checkbox` | iOS에서 `checked`가 안 읽히면 `accessibilityState.selected`도 싣기 |
+| 날씨 요약                     | `src/features/weather/components/weather-hero.tsx`                       | `weather-hero`                                                     |
 
 ## 빌드에 들어가지 않는 이유
 
