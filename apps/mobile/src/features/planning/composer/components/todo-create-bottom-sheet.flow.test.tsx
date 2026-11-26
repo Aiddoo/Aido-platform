@@ -11,6 +11,7 @@ import {
   countGetRequests,
   createTodoServer,
 } from '@src/features/planning/todo/__tests__/todo.test-utils';
+import { createAppliedPlanDto } from '@src/features/voice/__tests__/voice.fixtures';
 import { NetworkError } from '@src/shared/errors';
 import {
   createAnalyticsStub,
@@ -67,13 +68,6 @@ function createQuickPlanDto(actions: unknown[], charged = true) {
     },
     featureQuota: null,
     charged,
-  };
-}
-
-function createAppliedDto(titles: string[]) {
-  return {
-    todos: titles.map((title, index) => createTodoDto({ id: index + 1, title })),
-    memo: null,
   };
 }
 
@@ -140,7 +134,7 @@ describe('TodoCreateBottomSheet 빠른 말하기', () => {
       // Given
       const { httpClient, speechRecognizer } = await renderCreateSheet();
       httpClient.post.mockResolvedValueOnce(ok(createQuickPlanDto([WORKOUT, MEETING])));
-      httpClient.post.mockResolvedValueOnce(ok(createAppliedDto(['운동', '회의'])));
+      httpClient.post.mockResolvedValueOnce(ok(createAppliedPlanDto(['운동', '회의'])));
       await speak(speechRecognizer);
 
       // When
@@ -166,7 +160,7 @@ describe('TodoCreateBottomSheet 빠른 말하기', () => {
       // Given
       const { httpClient, speechRecognizer } = await renderCreateSheet();
       httpClient.post.mockResolvedValueOnce(ok(createQuickPlanDto([WORKOUT, MEETING])));
-      httpClient.post.mockResolvedValueOnce(ok(createAppliedDto(['회의'])));
+      httpClient.post.mockResolvedValueOnce(ok(createAppliedPlanDto(['회의'])));
       await speak(speechRecognizer);
       await fireEvent.press(await screen.findByLabelText('운동 추가하기'));
 
@@ -186,7 +180,7 @@ describe('TodoCreateBottomSheet 빠른 말하기', () => {
       // Given
       const { httpClient, speechRecognizer } = await renderCreateSheet();
       httpClient.post.mockResolvedValueOnce(ok(createQuickPlanDto([WORKOUT])));
-      httpClient.post.mockResolvedValueOnce(ok(createAppliedDto(['아침 운동'])));
+      httpClient.post.mockResolvedValueOnce(ok(createAppliedPlanDto(['아침 운동'])));
       await speak(speechRecognizer);
       await fireEvent.press(await screen.findByText('운동'));
       await fireEvent.changeText(await screen.findByLabelText('할 일 제목'), '아침 운동');
@@ -208,7 +202,7 @@ describe('TodoCreateBottomSheet 빠른 말하기', () => {
       // Given
       const { httpClient, speechRecognizer } = await renderCreateSheet();
       httpClient.post.mockResolvedValueOnce(ok(createQuickPlanDto([WORKOUT, MEETING, GROCERIES])));
-      httpClient.post.mockResolvedValueOnce(ok(createAppliedDto(['운동', '장보기', '회의'])));
+      httpClient.post.mockResolvedValueOnce(ok(createAppliedPlanDto(['운동', '장보기', '회의'])));
       await speak(speechRecognizer);
 
       // When
@@ -231,7 +225,7 @@ describe('TodoCreateBottomSheet 빠른 말하기', () => {
       // Given
       const { httpClient, speechRecognizer, analytics } = await renderCreateSheet();
       httpClient.post.mockResolvedValueOnce(ok(createQuickPlanDto([WORKOUT])));
-      const saved = createPendingResponse(ok(createAppliedDto(['운동'])));
+      const saved = createPendingResponse(ok(createAppliedPlanDto(['운동'])));
       httpClient.post.mockReturnValue(saved.response);
       await speak(speechRecognizer);
       const apply = await screen.findByTestId('plan-review-apply');
@@ -263,7 +257,7 @@ describe('TodoCreateBottomSheet 빠른 말하기', () => {
       // Given
       const { httpClient, speechRecognizer, analytics } = await renderCreateSheet();
       httpClient.post.mockResolvedValueOnce(ok(createQuickPlanDto([WORKOUT])));
-      httpClient.post.mockResolvedValueOnce(ok(createAppliedDto(['운동'])));
+      httpClient.post.mockResolvedValueOnce(ok(createAppliedPlanDto(['운동'])));
 
       // When
       await speak(speechRecognizer);

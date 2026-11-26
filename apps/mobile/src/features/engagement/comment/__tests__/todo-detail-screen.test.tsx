@@ -6,6 +6,7 @@ import type { HttpClient } from '@src/core/ports/http-client';
 import { createPreferenceDto } from '@src/features/identity/preference/__tests__/preference.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import {
+  createTodoDetailsDto,
   createTodoDto,
   createTodoItemResponseDto,
   createTodoListResponseDto,
@@ -90,10 +91,12 @@ const OWNER_PERMISSIONS = { canEdit: true, canComment: true, canNudge: false, ca
 
 function createDetailsDto(overrides: Record<string, unknown> = {}) {
   return {
-    todo: createTodoDto({ id: TODO_ID, userId: USER_ID, title: '운동하기' }),
-    owner: { id: USER_ID, name: '나', userTag: 'TEST2025', profileImage: null },
-    permissions: OWNER_PERMISSIONS,
-    metrics: { viewCount: 3, commentCount: 1 },
+    ...createTodoDetailsDto({
+      todo: createTodoDto({ id: TODO_ID, userId: USER_ID, title: '운동하기' }),
+      owner: { id: USER_ID, name: '나', userTag: 'TEST2025', profileImage: null },
+      permissions: OWNER_PERMISSIONS,
+      metrics: { viewCount: 3, commentCount: 1 },
+    }),
     ...overrides,
   };
 }

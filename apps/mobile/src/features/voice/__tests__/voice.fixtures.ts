@@ -1,4 +1,5 @@
 import { voiceNoteDigestResponseSchema } from '@aido/api/contracts/voice/v1';
+import { createTodoDto } from '@src/features/planning/todo/__tests__/todo.fixtures';
 import { createDateKey } from '@src/testing/date-key';
 import { defineFixture } from '@src/testing/fixture';
 
@@ -55,6 +56,14 @@ export function createPlannedTodo(overrides: Partial<PlannedTodo> = {}): Planned
 
 export function createPlannedMemo(): PlannedMemo {
   return { type: 'create-memo', actionId: 'm1', title: '', content: '내용' };
+}
+
+/** 고른 계획을 적용한 서버 응답. 제목마다 할 일을 차례 id로 하나씩 만들고 메모는 만들지 않는다 */
+export function createAppliedPlanDto(titles: readonly string[]) {
+  return {
+    todos: titles.map((title, index) => createTodoDto({ id: index + 1, title })),
+    memo: null,
+  };
 }
 
 export function createVoicePlan(...actions: VoicePlan['actions']): VoicePlan {

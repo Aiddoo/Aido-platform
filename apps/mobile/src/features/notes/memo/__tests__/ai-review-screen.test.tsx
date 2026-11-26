@@ -4,9 +4,11 @@ import { createEntitlementSnapshotDto } from '@src/features/billing/subscription
 import { createPreferenceDto } from '@src/features/identity/preference/__tests__/preference.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { createTodoCategoryListDto } from '@src/features/planning/category/__tests__/todo-category.fixtures';
-import { createTodoDto } from '@src/features/planning/todo/__tests__/todo.fixtures';
 import { countGetRequests } from '@src/features/planning/todo/__tests__/todo.test-utils';
-import { createPlannedTodo } from '@src/features/voice/__tests__/voice.fixtures';
+import {
+  createAppliedPlanDto,
+  createPlannedTodo,
+} from '@src/features/voice/__tests__/voice.fixtures';
 import { createPlanReviewDraft } from '@src/features/voice/domains/plan-review-draft.model';
 import { type VoicePlan, voicePlanIdSchema } from '@src/features/voice/domains/voice-plan.model';
 import { toEpochMs, toInstant } from '@src/shared/date/instant';
@@ -46,13 +48,6 @@ function createMemoPlan(...actions: VoicePlan['actions']): VoicePlan {
     sourceMemoId: MEMO_ID,
     actions,
     omittedTodoCount: 0,
-  };
-}
-
-function createAppliedDto(titles: string[]) {
-  return {
-    todos: titles.map((title, index) => createTodoDto({ id: index + 1, title })),
-    memo: null,
   };
 }
 
@@ -106,7 +101,7 @@ describe('AiReviewRoute', () => {
     it('고른 카드를 원본 메모와 함께 저장하고 초안을 지운 뒤 피드로 간다', async () => {
       // Given
       const { httpClient, analytics, di, draftKey } = await renderAiReview();
-      httpClient.post.mockResolvedValue(ok(createAppliedDto(['운동', '회의'])));
+      httpClient.post.mockResolvedValue(ok(createAppliedPlanDto(['운동', '회의'])));
 
       // When
       await fireEvent.press(screen.getByTestId('plan-review-apply'));
@@ -131,7 +126,7 @@ describe('AiReviewRoute', () => {
     it('체크를 끈 카드는 보내지 않고 건너뛴 수로 남긴다', async () => {
       // Given
       const { httpClient, analytics } = await renderAiReview();
-      httpClient.post.mockResolvedValue(ok(createAppliedDto(['회의'])));
+      httpClient.post.mockResolvedValue(ok(createAppliedPlanDto(['회의'])));
       await fireEvent.press(screen.getByLabelText('운동 추가하기'));
 
       // When
@@ -185,7 +180,7 @@ describe('AiReviewRoute', () => {
     it('카테고리가 나뉘어 온 카드는 묶어 보인 순서로 보낸다', async () => {
       // Given
       const { httpClient } = await renderAiReview(createMemoPlan(WORKOUT, MEETING, GROCERIES));
-      httpClient.post.mockResolvedValue(ok(createAppliedDto(['운동', '장보기', '회의'])));
+      httpClient.post.mockResolvedValue(ok(createAppliedPlanDto(['운동', '장보기', '회의'])));
 
       // When
       await fireEvent.press(screen.getByTestId('plan-review-apply'));
@@ -236,7 +231,7 @@ describe('AiReviewRoute', () => {
     it('추가를 같은 프레임에 두 번 눌러도 저장 요청과 저장 이벤트는 한 번이다', async () => {
       // Given
       const { httpClient, analytics } = await renderAiReview();
-      const saved = createPendingResponse(ok(createAppliedDto(['운동', '회의'])));
+      const saved = createPendingResponse(ok(createAppliedPlanDto(['운동', '회의'])));
       httpClient.post.mockReturnValue(saved.response);
       const apply = screen.getByTestId('plan-review-apply');
 

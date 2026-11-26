@@ -7,6 +7,7 @@ import {
   weatherReportSchema as weatherReportDtoSchema,
   weatherRescheduleOptionSchema,
 } from '@aido/api/contracts/weather/v2';
+import type { WeatherRescheduleReason } from '@aido/api/vocabulary';
 import { HOUR_MS } from '@src/shared/constants/time-units';
 import { fromEpochMs, toInstant } from '@src/shared/date/instant';
 import { defineFixture } from '@src/testing/fixture';
@@ -85,6 +86,19 @@ export function createRescheduleOptionDto(
   overrides: Parameters<typeof rescheduleOption>[0] = {},
 ) {
   return rescheduleOption({ startsAt, ...overrides });
+}
+
+/** 서버가 그 할 일들이 날씨와 겹친다고 판단한 브리핑. 할 일마다 같은 옮길 시각 후보를 준다 */
+export function createAffectedBriefingDto(
+  todos: readonly { id: number }[],
+  reason: WeatherRescheduleReason,
+  options: ReturnType<typeof createRescheduleOptionDto>[],
+) {
+  return createBriefingDto({
+    reason,
+    affectedTodoIds: todos.map((todo) => todo.id),
+    rescheduleOptions: todos.map((todo) => ({ todoId: todo.id, options })),
+  });
 }
 
 export const createWeatherReportDto = defineFixture(weatherReportDtoSchema, {

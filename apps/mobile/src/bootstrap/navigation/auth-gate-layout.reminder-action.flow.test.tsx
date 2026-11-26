@@ -9,6 +9,7 @@ import { TODO_REMINDER_DETAILS_WAIT_MS } from '@src/features/notification/consta
 import {
   createTodoApiError,
   createTodoDetails,
+  createTodoDetailsDto,
   createTodoDto,
 } from '@src/features/planning/todo/__tests__/todo.fixtures';
 import { useTodoId } from '@src/features/planning/todo/hooks/use-todo-params';
@@ -29,11 +30,11 @@ import {
   getTrackedEvents,
   stubInitialUrl,
 } from '@src/testing/core';
-import { renderAppRoute } from '@src/testing/render-route-hook';
+import { createStackLayoutRoute, renderAppRoute } from '@src/testing/render-route-hook';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { onlineManager, type QueryClient, useQuery } from '@tanstack/react-query';
 import * as ExpoLinking from 'expo-linking';
-import { Stack, Tabs } from 'expo-router';
+import { Tabs } from 'expo-router';
 import { act, screen, waitFor } from 'expo-router/testing-library';
 import type { ReactNode } from 'react';
 import { Text } from 'react-native';
@@ -89,23 +90,13 @@ function TodoDetailsRoute() {
 
 /** 서버가 지금 주는 그 할 일의 상세 */
 function createDetailsDto({ completed }: { completed: boolean }) {
-  return {
+  return createTodoDetailsDto({
     todo: createTodoDto({ id: TODO_ID, title: '저녁 운동', completed }),
-    owner: { id: 'clz7x5p8k0010qz0z8z8z8z8z', name: '나', profileImage: null },
-    permissions: { canEdit: true, canComment: true, canNudge: false, canThank: false },
-    metrics: { viewCount: 0, commentCount: 0 },
-  };
+  });
 }
 
 function createTodoUnavailableError() {
   return createTodoApiError({ code: ErrorCode.TODO_0801, message: '할 일을 찾을 수 없어요' });
-}
-
-function createStackLayout(unstableSettings: { anchor: string }) {
-  return {
-    default: () => <Stack screenOptions={{ headerShown: false, animation: 'none' }} />,
-    unstable_settings: unstableSettings,
-  };
 }
 
 async function setup({
@@ -155,7 +146,7 @@ async function setup({
     index: RootIndex,
     // 콜드 스타트는 알림 진입을 가리는 동안 여기서 기다린다
     loading: () => null,
-    '(app)/_layout': createStackLayout(appSettings),
+    '(app)/_layout': createStackLayoutRoute(appSettings),
     // NativeTabs는 Jest에서 그려지지 않아 같은 탭 라우터를 쓰는 JS Tabs로 대신한다
     '(app)/(tabs)/_layout': {
       default: () => (
@@ -165,7 +156,7 @@ async function setup({
       ),
       unstable_settings: tabsSettings,
     },
-    '(app)/(tabs)/(todos)/_layout': createStackLayout(feedTabSettings),
+    '(app)/(tabs)/(todos)/_layout': createStackLayoutRoute(feedTabSettings),
     '(app)/(tabs)/(todos)/feed/index': () => <Text>Feed</Text>,
     '(app)/todo/[todoId]/index': TodoDetailRoute,
   };

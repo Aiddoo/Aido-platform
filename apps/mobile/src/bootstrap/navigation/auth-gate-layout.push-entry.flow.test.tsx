@@ -23,7 +23,7 @@ import {
   createApiError,
   stubInitialUrl,
 } from '@src/testing/core';
-import { renderAppRoute } from '@src/testing/render-route-hook';
+import { createStackLayoutRoute, renderAppRoute } from '@src/testing/render-route-hook';
 import { userEvent } from '@testing-library/react-native';
 import { noop } from 'es-toolkit';
 import * as ExpoLinking from 'expo-linking';
@@ -236,13 +236,6 @@ function createScreen(testID: string) {
   };
 }
 
-function createStackLayout(unstableSettings: { anchor: string }) {
-  return {
-    default: () => <Stack screenOptions={{ headerShown: false, animation: 'none' }} />,
-    unstable_settings: unstableSettings,
-  };
-}
-
 async function setup({
   status,
   initialUrl = '/',
@@ -327,7 +320,7 @@ async function setup({
     'invite/index': () => <Text>Invite</Text>,
     '(auth)/_layout': () => <Stack screenOptions={{ animation: 'none' }} />,
     '(auth)/login': LoginScreen,
-    '(app)/_layout': createStackLayout(appSettings),
+    '(app)/_layout': createStackLayoutRoute(appSettings),
     // NativeTabs는 Jest에서 그려지지 않아 같은 탭 라우터를 쓰는 JS Tabs로 대신한다
     '(app)/(tabs)/_layout': {
       default: () => (
@@ -339,9 +332,9 @@ async function setup({
       ),
       unstable_settings: tabsSettings,
     },
-    '(app)/(tabs)/(todos)/_layout': createStackLayout(feedTabSettings),
-    '(app)/(tabs)/(memos)/_layout': createStackLayout(memoTabSettings),
-    '(app)/(tabs)/(me)/_layout': createStackLayout(myPageTabSettings),
+    '(app)/(tabs)/(todos)/_layout': createStackLayoutRoute(feedTabSettings),
+    '(app)/(tabs)/(memos)/_layout': createStackLayoutRoute(memoTabSettings),
+    '(app)/(tabs)/(me)/_layout': createStackLayoutRoute(myPageTabSettings),
     '(app)/(tabs)/(todos)/feed/index': FeedScreen,
     '(app)/(tabs)/(memos)/memo/index': createScreen('memo'),
     '(app)/(tabs)/(me)/mypage/index': createScreen('mypage'),

@@ -20,6 +20,7 @@ import { View } from 'react-native';
 
 import WeatherRescheduleSheetRoute from '../../../../app/(app)/weather/reschedule';
 import {
+  createAffectedBriefingDto,
   createBriefingDto,
   createHourlySeries,
   createRescheduleOptionDto,
@@ -51,21 +52,14 @@ const EVENING_OPTIONS = [
 ];
 
 /** 서버가 산책·장보기가 날씨와 겹친다고 판단한 브리핑 */
-function createAffectedBriefingDto(reason: WeatherRescheduleReason) {
-  return createBriefingDto({
-    reason,
-    affectedTodoIds: [WALK.id, GROCERY.id],
-    rescheduleOptions: [
-      { todoId: WALK.id, options: EVENING_OPTIONS },
-      { todoId: GROCERY.id, options: EVENING_OPTIONS },
-    ],
-  });
+function createWalkAndGroceryBriefingDto(reason: WeatherRescheduleReason) {
+  return createAffectedBriefingDto([WALK, GROCERY], reason, EVENING_OPTIONS);
 }
 
 function createRainyReportDto(overrides: Partial<WeatherReportResponse> = {}) {
   return createWeatherReportDto({
     hourly: createHourlySeries('2026-11-02T06:00:00.000Z', [10, 70, 80, 20, 10, 10]),
-    briefing: createAffectedBriefingDto('rain'),
+    briefing: createWalkAndGroceryBriefingDto('rain'),
     headline: {
       kind: 'todoWet',
       hazard: 'rain',
@@ -196,7 +190,7 @@ describe('WeatherRescheduleSheetRoute', () => {
 
     it('링크의 이유가 지금 브리핑과 다르면 지금 브리핑의 이유로 안내한다', async () => {
       // Given
-      const report = createRainyReportDto({ briefing: createAffectedBriefingDto('heat') });
+      const report = createRainyReportDto({ briefing: createWalkAndGroceryBriefingDto('heat') });
 
       // When
       await openSheet({ link: 'todoIds=7,8&reason=rain', report });

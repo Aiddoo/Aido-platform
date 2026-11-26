@@ -4,14 +4,13 @@
  */
 import type { Todo as TodoDto } from '@aido/api/contracts/todo/v1';
 import type { WeatherReportResponse } from '@aido/api/contracts/weather/v2';
-import type { WeatherRescheduleReason } from '@aido/api/vocabulary';
 import { ok } from '@src/shared/errors';
 import { getTrackedEvents } from '@src/testing/core';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import {
-  createBriefingDto,
+  createAffectedBriefingDto,
   createHourlySeries,
   createRescheduleOptionDto,
   createWeatherReportDto,
@@ -44,14 +43,6 @@ const EVENING_OPTIONS = [
   createRescheduleOptionDto('2026-11-02T10:00:00.000Z'),
 ];
 
-function createAffectedBriefingDto(todos: readonly TodoDto[], reason: WeatherRescheduleReason) {
-  return createBriefingDto({
-    reason,
-    affectedTodoIds: todos.map((todo) => todo.id),
-    rescheduleOptions: todos.map((todo) => ({ todoId: todo.id, options: EVENING_OPTIONS })),
-  });
-}
-
 /** 서버가 그 할 일들이 비와 겹친다고 판단한 리포트 */
 function createAffectedReportDto(
   todos: readonly TodoDto[],
@@ -59,7 +50,7 @@ function createAffectedReportDto(
 ) {
   return createWeatherReportDto({
     hourly: createHourlySeries('2026-11-02T06:00:00.000Z', [10, 70, 80, 20, 10, 10]),
-    briefing: createAffectedBriefingDto(todos, 'rain'),
+    briefing: createAffectedBriefingDto(todos, 'rain', EVENING_OPTIONS),
     headline: { kind: 'todoWet', hazard: 'rain', precipitationChance: 70, window: TODO_WINDOW },
     ...overrides,
   });
@@ -283,7 +274,7 @@ describe('WeatherBriefing', () => {
     it('더위와 겹치면 더 선선한 시간으로 옮기기를 권하고 더위를 이유로 시트를 연다', async () => {
       // Given
       const report = createAffectedReportDto([WALK], {
-        briefing: createAffectedBriefingDto([WALK], 'heat'),
+        briefing: createAffectedBriefingDto([WALK], 'heat', EVENING_OPTIONS),
         headline: { kind: 'todoHot', peakApparentTemperature: 34, window: TODO_WINDOW },
       });
       const { route } = await renderBriefing({ report, todos: [WALK] });

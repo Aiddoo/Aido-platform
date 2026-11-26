@@ -120,6 +120,14 @@ export function renderRoutes(routes: Parameters<typeof renderRouter>[0], { url }
   return renderRouter(routes, { initialUrl: url });
 }
 
+/** route 표의 `_layout` 자리에 두는 헤더·전환 없는 Stack. 앱 레이아웃의 `unstable_settings`(첫 화면)는 그대로 쓴다 */
+export function createStackLayoutRoute(unstableSettings: { anchor: string }) {
+  return {
+    default: () => <Stack screenOptions={{ headerShown: false, animation: 'none' }} />,
+    unstable_settings: unstableSettings,
+  };
+}
+
 interface RenderAppRouteOptions extends TestProviderOptions {
   /** 처음 여는 URL */
   url: string;

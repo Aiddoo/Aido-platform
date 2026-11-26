@@ -1,4 +1,5 @@
 import { dailyCompletionsRangeResponseSchema } from '@aido/api/contracts/daily-completion/v1';
+import { todoDetailsResponseSchema } from '@aido/api/contracts/todo-comment/v1';
 import {
   type Todo as TodoDto,
   todoItemResponseSchema,
@@ -79,6 +80,19 @@ export const createTodoDetails = defineFixture(todoDetailsSchema, {
   todo: createParentTodo(),
   owner: { id: 'clz7x5p8k0010qz0z8z8z8z8z', name: '친구', profileImage: null },
   permissions: { canEdit: false, canComment: true, canNudge: true, canThank: false },
+  metrics: { viewCount: 0, commentCount: 0 },
+});
+
+/** 할 일 상세 응답. 기본은 내가 쓴 할 일이라 고치고 댓글을 달 수 있다 */
+export const createTodoDetailsDto = defineFixture(todoDetailsResponseSchema, {
+  todo: TODO_DTO,
+  owner: {
+    id: TODO_DTO.userId,
+    name: '나',
+    userTag: 'TEST2025',
+    profileImage: null,
+  },
+  permissions: { canEdit: true, canComment: true, canNudge: false, canThank: false },
   metrics: { viewCount: 0, commentCount: 0 },
 });
 
