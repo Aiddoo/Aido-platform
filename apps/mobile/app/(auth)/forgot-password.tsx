@@ -52,7 +52,7 @@ export default function ForgotPasswordScreen() {
   const { trackEvent } = useTrack();
   const router = useRouter();
   const navigation = useNavigation();
-  const replace = useSingleTap(router.replace);
+  const replaceOnce = useSingleTap(router.replace);
   const stepper = useStepper<ForgotPasswordStepContexts>({
     id: 'forgot-password',
     initial: { step: 'email' },
@@ -76,7 +76,7 @@ export default function ForgotPasswordScreen() {
   // 재설정을 기다리는 사이 떠났으면 보던 화면을 바꾸지 않고, 돌아와 다시 쓸 수 있게 값·단계는 둔 채 제출 상태만 푼다
   const leaveToLogin = () => {
     if (navigation.isFocused()) {
-      replace('/(auth)/email-login');
+      replaceOnce('/(auth)/email-login');
       return;
     }
     form.reset(form.getValues(), { keepDefaultValues: true });
@@ -133,12 +133,11 @@ function EmailStep({ form, isRequesting, onRequestCode, onNext }: EmailStepProps
   const { control } = form;
   const formState = useFormState({ control, name: 'email' });
 
-  const email = form.getFieldState('email', formState);
-  const isValid = email.isDirty && !email.invalid;
-  const isSubmitting = isRequesting;
+  const emailField = form.getFieldState('email', formState);
+  const isEmailReady = emailField.isDirty && !emailField.invalid;
 
   // 실패 안내는 meta.errorFeedback이 맡는다. 같은 프레임의 두 번째 탭은 요청 중 표시가 다음 렌더에야 켜져 여기서 막는다
-  const requestCode = useSingleTap(() => {
+  const handleNextPress = useSingleTap(() => {
     const emailValue = form.getValues('email');
     onRequestCode(emailValue)
       .then(() => onNext(emailValue))
@@ -151,9 +150,9 @@ function EmailStep({ form, isRequesting, onRequestCode, onNext }: EmailStepProps
         title={t('forgotPassword.emailTitle')}
         footer={
           <KeyboardAdaptiveButton
-            onPress={requestCode}
-            isDisabled={!isValid}
-            isLoading={isSubmitting}
+            onPress={handleNextPress}
+            isDisabled={!isEmailReady}
+            isLoading={isRequesting}
           >
             {t('forgotPassword.next')}
           </KeyboardAdaptiveButton>
@@ -186,8 +185,8 @@ function EmailStep({ form, isRequesting, onRequestCode, onNext }: EmailStepProps
                       byType: { too_big: 'email.tooLong' },
                     })}
                     onSubmitEditing={() => {
-                      if (isValid && !isSubmitting) {
-                        requestCode();
+                      if (isEmailReady && !isRequesting) {
+                        handleNextPress();
                       }
                     }}
                   />
@@ -250,17 +249,20 @@ interface ResetPasswordStepProps {
 function ResetPasswordStep({ form, step, onNext, onDone, onCodeRejected }: ResetPasswordStepProps) {
   const { t } = useTranslation('auth');
   const resetPassword = useMutation(useResetPasswordMutationOptions());
-  const newPassword = useController({
+  const newPasswordField = useController({
     control: form.control,
     name: 'newPassword',
     // 새 비밀번호를 고치면 이미 적은 확인 칸의 일치 여부도 다시 본다
     rules: { deps: 'newPasswordConfirm' },
   });
-  const newPasswordConfirm = useController({ control: form.control, name: 'newPasswordConfirm' });
+  const newPasswordConfirmField = useController({
+    control: form.control,
+    name: 'newPasswordConfirm',
+  });
   const { isSubmitting, isSubmitSuccessful } = useFormState({ control: form.control });
 
-  const saveNewPassword = form.handleSubmit(async (input) => {
-    await resetPassword.mutateAsync(input);
+  const submitNewPassword = form.handleSubmit(async (values) => {
+    await resetPassword.mutateAsync(values);
     onDone();
   });
 
@@ -273,8 +275,8 @@ function ResetPasswordStep({ form, step, onNext, onDone, onCodeRejected }: Reset
     }
   };
   // 같은 프레임의 두 번째 탭은 isSubmitting이 다음 렌더에야 켜져 여기서 막는다
-  const handleSavePress = useSingleTap(() => {
-    saveNewPassword().catch(handleResetError);
+  const handleResetPress = useSingleTap(() => {
+    submitNewPassword().catch(handleResetError);
   });
 
   return (
@@ -282,24 +284,24 @@ function ResetPasswordStep({ form, step, onNext, onDone, onCodeRejected }: Reset
       title={t('forgotPassword.newPasswordTitle')}
       step={step}
       newPassword={{
-        value: newPassword.field.value,
-        onChange: newPassword.field.onChange,
-        isDirty: newPassword.fieldState.isDirty,
-        isInvalid: newPassword.fieldState.invalid,
+        value: newPasswordField.field.value,
+        onChange: newPasswordField.field.onChange,
+        isDirty: newPasswordField.fieldState.isDirty,
+        isInvalid: newPasswordField.fieldState.invalid,
       }}
       newPasswordConfirm={{
-        value: newPasswordConfirm.field.value,
-        onChange: newPasswordConfirm.field.onChange,
-        isDirty: newPasswordConfirm.fieldState.isDirty,
-        isInvalid: newPasswordConfirm.fieldState.invalid,
-        errorMessage: resolveValidationMessage(newPasswordConfirm.fieldState.error, {
+        value: newPasswordConfirmField.field.value,
+        onChange: newPasswordConfirmField.field.onChange,
+        isDirty: newPasswordConfirmField.fieldState.isDirty,
+        isInvalid: newPasswordConfirmField.fieldState.invalid,
+        errorMessage: resolveValidationMessage(newPasswordConfirmField.fieldState.error, {
           default: 'password.mismatch',
         }),
       }}
       // 재설정하면 로그인으로 바뀌는 동안에도 같은 값이 남는다. 다시 보내면 쓴 코드라 거절된다
       isSubmitting={isSubmitting || isSubmitSuccessful || resetPassword.isPending}
       onNext={onNext}
-      onSubmit={handleSavePress}
+      onSubmit={handleResetPress}
       nextLabel={t('forgotPassword.next')}
       submitLabel={t('forgotPassword.submit')}
     />

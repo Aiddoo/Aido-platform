@@ -82,7 +82,7 @@ const FIELD_STEPS = [
   'passwordConfirm',
 ] as const satisfies readonly (SignUpStep & keyof SignUpFormValues)[];
 
-const AGREEMENT_CHANGE = { shouldDirty: true, shouldValidate: true } as const;
+const AGREEMENT_SET_VALUE_OPTIONS = { shouldDirty: true, shouldValidate: true } as const;
 
 export default function SignUpScreen() {
   const { t } = useTranslation(['auth', 'invite']);
@@ -109,21 +109,21 @@ export default function SignUpScreen() {
     // 단계 버튼이 칸의 유효성을 바로 따르도록 입력마다 검사한다. 오류 문구는 칸을 벗어난 뒤에 보인다
     mode: 'onChange',
   });
-  const register = useMutation(useRegisterMutationOptions());
+  const signUp = useMutation(useRegisterMutationOptions());
 
   const isUserInfoStep = stepper.step === 'name' || stepper.step === 'email';
 
-  const saveRegister = form.handleSubmit(async ({ termsAgreed, privacyAgreed, ...values }) => {
+  const submitSignUp = form.handleSubmit(async ({ termsAgreed, privacyAgreed, ...values }) => {
     // 스키마가 이미 막았다. 요청 타입이 true만 받아 여기서 좁힌다
     if (!termsAgreed || !privacyAgreed) {
       return;
     }
-    await register.mutateAsync(toRegisterRequest({ ...values, termsAgreed, privacyAgreed }));
+    await signUp.mutateAsync(toRegisterRequest({ ...values, termsAgreed, privacyAgreed }));
     stepper.history.replace('verification', { email: values.email });
   });
 
   // 단계 버튼이 앞 칸을 이미 막았다. 그 사이 값이 바뀌었으면 틀린 칸의 단계로 돌아간다
-  const submitRegister = async () => {
+  const recheckStepsAndSubmitSignUp = async () => {
     await form.trigger(FIELD_STEPS);
     const invalidStep = FIELD_STEPS.find((step) => form.getFieldState(step).invalid);
     if (invalidStep != null) {
@@ -131,11 +131,11 @@ export default function SignUpScreen() {
       return;
     }
     // 실패 안내는 mutation이 한다. 시트를 열어 둬 바로 다시 누를 수 있다
-    await saveRegister().catch(noop);
+    await submitSignUp().catch(noop);
   };
   // 칸을 다시 검사하는 동안 제출 중 표시가 켜지지 않아, 그 사이 두 번째 탭을 여기서 막는다
-  const handleStartPress = useSingleTap(() => {
-    submitRegister();
+  const handleSignUpPress = useSingleTap(() => {
+    recheckStepsAndSubmitSignUp();
   });
 
   const renderUserInfo = ({ step }: { step: UserInfoStepName }) => (
@@ -151,7 +151,7 @@ export default function SignUpScreen() {
       form={form}
       step={step}
       onNext={() => stepper.history.push('passwordConfirm')}
-      onSubmit={handleStartPress}
+      onSubmit={handleSignUpPress}
     />
   );
 
@@ -182,7 +182,7 @@ export default function SignUpScreen() {
   );
 }
 
-const STEP_DESCRIPTION_KEYS = {
+const USER_INFO_STEP_TITLE_KEYS = {
   name: 'auth:signUp.nameTitle',
   email: 'auth:signUp.emailTitle',
 } as const satisfies Record<UserInfoStepName, string>;
@@ -201,15 +201,15 @@ function UserInfoStep({ form, step, onNext }: UserInfoStepProps) {
 
   useFocusOnStepBack({ step, firstStep: 'name', focus: () => form.setFocus('name') });
 
-  const name = form.getFieldState('name', formState);
-  const email = form.getFieldState('email', formState);
-  const isNameReady = name.isDirty && !name.invalid;
+  const nameField = form.getFieldState('name', formState);
+  const emailField = form.getFieldState('email', formState);
+  const isNameReady = nameField.isDirty && !nameField.invalid;
   const isNextEnabled = match(step)
     .with('name', () => isNameReady)
-    .with('email', () => isNameReady && email.isDirty && !email.invalid)
+    .with('email', () => isNameReady && emailField.isDirty && !emailField.invalid)
     .exhaustive();
 
-  const submitStep = () => {
+  const openNextStep = () => {
     if (isNextEnabled) {
       onNext();
     }
@@ -218,9 +218,9 @@ function UserInfoStep({ form, step, onNext }: UserInfoStepProps) {
   return (
     <Box className="flex-1">
       <FormStepLayout
-        title={t(STEP_DESCRIPTION_KEYS[step])}
+        title={t(USER_INFO_STEP_TITLE_KEYS[step])}
         footer={
-          <KeyboardAdaptiveButton color="dark" onPress={submitStep} isDisabled={!isNextEnabled}>
+          <KeyboardAdaptiveButton color="dark" onPress={openNextStep} isDisabled={!isNextEnabled}>
             {t('auth:signUp.next')}
           </KeyboardAdaptiveButton>
         }
@@ -253,7 +253,7 @@ function UserInfoStep({ form, step, onNext }: UserInfoStepProps) {
                         default: 'email.invalid',
                         byType: { too_big: 'email.tooLong' },
                       })}
-                      onSubmitEditing={submitStep}
+                      onSubmitEditing={openNextStep}
                     />
                     <SuggestedEmailDomainList value={value} onChange={onChange} />
                   </VStack>
@@ -287,7 +287,7 @@ function UserInfoStep({ form, step, onNext }: UserInfoStepProps) {
                     default: 'nickname.required',
                     byType: { too_big: 'nickname.tooLong' },
                   })}
-                  onSubmitEditing={submitStep}
+                  onSubmitEditing={openNextStep}
                 />
               );
             }}
@@ -318,18 +318,18 @@ function PasswordStep({ form, step, onNext, onSubmit }: PasswordStepProps) {
 
   useFocusOnStepBack({ step, firstStep: 'password', focus: () => form.setFocus('password') });
 
-  const password = form.getFieldState('password', formState);
-  const passwordConfirm = form.getFieldState('passwordConfirm', formState);
-  const isPasswordReady = password.isDirty && !password.invalid;
+  const passwordField = form.getFieldState('password', formState);
+  const passwordConfirmField = form.getFieldState('passwordConfirm', formState);
+  const isPasswordReady = passwordField.isDirty && !passwordField.invalid;
   const isNextEnabled = match(step)
     .with('password', () => isPasswordReady)
     .with(
       'passwordConfirm',
-      () => isPasswordReady && passwordConfirm.isDirty && !passwordConfirm.invalid,
+      () => isPasswordReady && passwordConfirmField.isDirty && !passwordConfirmField.invalid,
     )
     .exhaustive();
 
-  const submitStep = () => {
+  const openNextStepOrTerms = () => {
     if (!isNextEnabled) {
       return;
     }
@@ -350,7 +350,7 @@ function PasswordStep({ form, step, onNext, onSubmit }: PasswordStepProps) {
           footer={
             <KeyboardAdaptiveButton
               color="dark"
-              onPress={submitStep}
+              onPress={openNextStepOrTerms}
               isDisabled={!isNextEnabled}
               enabled={!isTermsOpen}
             >
@@ -381,7 +381,7 @@ function PasswordStep({ form, step, onNext, onSubmit }: PasswordStepProps) {
                       errorMessage={resolveValidationMessage(error, {
                         default: 'password.mismatch',
                       })}
-                      onSubmitEditing={submitStep}
+                      onSubmitEditing={openNextStepOrTerms}
                     />
                   );
                 }}
@@ -418,7 +418,7 @@ function PasswordStep({ form, step, onNext, onSubmit }: PasswordStepProps) {
                         byType: { too_small: 'password.tooShort', too_big: 'password.tooLong' },
                       })}
                       renderErrorMessage={false}
-                      onSubmitEditing={submitStep}
+                      onSubmitEditing={openNextStepOrTerms}
                     />
 
                     <PasswordStrengthIndicator password={passwordValue} />
@@ -443,9 +443,13 @@ function PasswordStep({ form, step, onNext, onSubmit }: PasswordStepProps) {
                 onOpenChange={setIsTermsOpen}
                 value={{ termsAgreed, privacyAgreed, isMarketingAgreed }}
                 onChange={(value) => {
-                  form.setValue('termsAgreed', value.termsAgreed, AGREEMENT_CHANGE);
-                  form.setValue('privacyAgreed', value.privacyAgreed, AGREEMENT_CHANGE);
-                  form.setValue('isMarketingAgreed', value.isMarketingAgreed, AGREEMENT_CHANGE);
+                  form.setValue('termsAgreed', value.termsAgreed, AGREEMENT_SET_VALUE_OPTIONS);
+                  form.setValue('privacyAgreed', value.privacyAgreed, AGREEMENT_SET_VALUE_OPTIONS);
+                  form.setValue(
+                    'isMarketingAgreed',
+                    value.isMarketingAgreed,
+                    AGREEMENT_SET_VALUE_OPTIONS,
+                  );
                 }}
                 isSubmitDisabled={!isValid}
                 isSubmitting={isSubmitting}

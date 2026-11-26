@@ -101,10 +101,10 @@ function CurrentPasswordStep({ form, onNext }: CurrentPasswordStepProps) {
   const { t } = useTranslation('auth');
   const { control } = form;
   const formState = useFormState({ control, name: 'currentPassword' });
-  const currentPassword = form.getFieldState('currentPassword', formState);
-  const isValid = currentPassword.isDirty && !currentPassword.invalid;
+  const currentPasswordField = form.getFieldState('currentPassword', formState);
+  const isCurrentPasswordReady = currentPasswordField.isDirty && !currentPasswordField.invalid;
 
-  const handleNext = async () => {
+  const handleNextPress = async () => {
     const isCurrentPasswordValid = await form.trigger(['currentPassword']);
     if (isCurrentPasswordValid) {
       onNext();
@@ -116,7 +116,7 @@ function CurrentPasswordStep({ form, onNext }: CurrentPasswordStepProps) {
       <FormStepLayout
         title={t('changePassword.currentTitle')}
         footer={
-          <KeyboardAdaptiveButton onPress={handleNext} isDisabled={!isValid}>
+          <KeyboardAdaptiveButton onPress={handleNextPress} isDisabled={!isCurrentPasswordReady}>
             {t('changePassword.next')}
           </KeyboardAdaptiveButton>
         }
@@ -143,8 +143,8 @@ function CurrentPasswordStep({ form, onNext }: CurrentPasswordStepProps) {
                   byType: { [PASSWORD_MISMATCH_FIELD_ERROR.type]: 'currentPassword.mismatch' },
                 })}
                 onSubmitEditing={() => {
-                  if (isValid) {
-                    handleNext();
+                  if (isCurrentPasswordReady) {
+                    handleNextPress();
                   }
                 }}
               />
@@ -174,17 +174,20 @@ function ChangePasswordStep({
 }: ChangePasswordStepProps) {
   const { t } = useTranslation('auth');
   const changePassword = useMutation(useChangePasswordMutationOptions());
-  const newPassword = useController({
+  const newPasswordField = useController({
     control: form.control,
     name: 'newPassword',
     // 새 비밀번호를 고치면 이미 적은 확인 칸의 일치 여부도 다시 본다
     rules: { deps: 'newPasswordConfirm' },
   });
-  const newPasswordConfirm = useController({ control: form.control, name: 'newPasswordConfirm' });
+  const newPasswordConfirmField = useController({
+    control: form.control,
+    name: 'newPasswordConfirm',
+  });
   const { isSubmitting, isSubmitSuccessful } = useFormState({ control: form.control });
 
-  const savePassword = form.handleSubmit(async (input) => {
-    await changePassword.mutateAsync(input);
+  const submitPasswordChange = form.handleSubmit(async (values) => {
+    await changePassword.mutateAsync(values);
     onDone();
   });
 
@@ -197,8 +200,8 @@ function ChangePasswordStep({
     }
   };
   // 같은 프레임의 두 번째 탭은 isSubmitting이 다음 렌더에야 켜져 여기서 막는다
-  const handleSavePress = useSingleTap(() => {
-    savePassword().catch(handleChangeError);
+  const handleChangePress = useSingleTap(() => {
+    submitPasswordChange().catch(handleChangeError);
   });
 
   return (
@@ -206,24 +209,24 @@ function ChangePasswordStep({
       title={t('forgotPassword.newPasswordTitle')}
       step={step}
       newPassword={{
-        value: newPassword.field.value,
-        onChange: newPassword.field.onChange,
-        isDirty: newPassword.fieldState.isDirty,
-        isInvalid: newPassword.fieldState.invalid,
+        value: newPasswordField.field.value,
+        onChange: newPasswordField.field.onChange,
+        isDirty: newPasswordField.fieldState.isDirty,
+        isInvalid: newPasswordField.fieldState.invalid,
       }}
       newPasswordConfirm={{
-        value: newPasswordConfirm.field.value,
-        onChange: newPasswordConfirm.field.onChange,
-        isDirty: newPasswordConfirm.fieldState.isDirty,
-        isInvalid: newPasswordConfirm.fieldState.invalid,
-        errorMessage: resolveValidationMessage(newPasswordConfirm.fieldState.error, {
+        value: newPasswordConfirmField.field.value,
+        onChange: newPasswordConfirmField.field.onChange,
+        isDirty: newPasswordConfirmField.fieldState.isDirty,
+        isInvalid: newPasswordConfirmField.fieldState.invalid,
+        errorMessage: resolveValidationMessage(newPasswordConfirmField.fieldState.error, {
           default: 'password.mismatch',
         }),
       }}
       // 바꾸면 화면이 내려가는 동안에도 같은 값이 남는다. 다시 보내면 옛 현재 비밀번호라 거절된다
       isSubmitting={isSubmitting || isSubmitSuccessful || changePassword.isPending}
       onNext={onNext}
-      onSubmit={handleSavePress}
+      onSubmit={handleChangePress}
       nextLabel={t('changePassword.next')}
       submitLabel={t('changePassword.submit')}
     />
