@@ -1,0 +1,57 @@
+appId: ${MAESTRO_APP_ID}
+name: 친구 추가에서 보내기를 연달아 두 번 누르면 요청이 한 번만 가고 오류 안내가 뜨지 않는다
+tags:
+  - regression
+  - friend
+  - needs-second-account
+onFlowStart:
+  - runFlow: ../../subflows/app/load-helpers.yaml
+  - evalScript: ${output.main = output.api.signIn('main')}
+  - evalScript: ${output.second = output.api.signIn('second')}
+  - evalScript: ${output.second.removeFriendship(output.main.userId)}
+  - evalScript: ${output.main.removeFriendship(output.second.userId)}
+  - runFlow: ../../subflows/app/launch-fresh.yaml
+onFlowComplete:
+  - evalScript: ${output.second && output.main && output.main.removeFriendship(output.second.userId)}
+---
+# 지키는 것: 보내기는 useSingleTap(600ms)과 isSubmitSuccessful로, 보내고 화면이 닫히는 동안의 두 번째 탭을 막는다
+# (app/(app)/(tabs)/(me,memos,todos)/friends/add.tsx handleSavePress). 두 번째 요청이 가면 서버가
+# FOLLOW_0901로 거절해 "이미 친구 요청을 보냈어요" 토스트가 뜬다. 서버가 같은 요청을 두 번 저장하지 않아 받은 요청 수는
+# 연타를 가르지 못하고, 요청이 실제로 갔는지만 확인한다
+
+# Given: 아직 친구가 아닌 두 번째 계정의 태그를 친구 추가 화면에 썼다
+- runFlow:
+    file: ../../subflows/auth/sign-in.yaml
+    env:
+      EMAIL: ${output.main.email}
+      PASSWORD: ${output.main.password}
+- openLink: ${output.config.appScheme}://friends/add
+- extendedWaitUntil:
+    visible:
+      id: ${output.ids.friend.tagInput}
+    timeout: 10000
+- tapOn:
+    id: ${output.ids.friend.tagInput}
+- inputText: ${output.second.userTag}
+
+# When: 보내기를 100ms 간격으로 두 번 누른다
+- tapOn:
+    id: ${output.ids.friend.tagSubmit}
+    repeat: 2
+    delay: 100
+    retryTapIfNoChange: false
+
+# Then: 화면이 닫히고 중복 요청 안내가 뜨지 않으며, 두 번째 계정은 요청 하나를 받았다
+- extendedWaitUntil:
+    notVisible:
+      id: ${output.ids.friend.tagInput}
+    timeout: 10000
+# 토스트는 실패 응답 뒤에 떠서 잠시 기다린 뒤 본다
+- extendedWaitUntil:
+    visible: ${output.labels.friend.alreadyRequested}
+    timeout: 3000
+    optional: true
+- assertNotVisible: ${output.labels.friend.alreadyRequested}
+- assertTrue:
+    condition: ${output.second.countReceivedRequestsFrom(output.main.userId) === 1}
+    label: 두 번째 계정이 주 계정의 친구 요청 하나를 받았다

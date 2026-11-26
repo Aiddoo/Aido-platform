@@ -71,6 +71,11 @@ output.ids = {
     inbox: 'notification-inbox',
     item: (type) => 'notification-item-' + type,
   },
+  // app/(app)/(tabs)/(me,memos,todos)/friends/add.tsx
+  friend: {
+    tagInput: 'friend-tag-input',
+    tagSubmit: 'friend-tag-submit',
+  },
   // app/invite/index.tsx, src/features/social/invite/components/invite-card-actions.tsx,
   // src/features/social/invite/components/invite-welcome-bottom-sheet.tsx
   invite: {
@@ -106,6 +111,14 @@ output.labels = {
   system: {
     savePasswordNotNow: '지금 안 함|Not Now',
     devErrorOverlay: 'Uncaught Error|Render Error',
+  },
+  // mutation 실패 토스트. src/shared/errors/infra-error.ts NetworkError → src/shared/i18n/locales/*/common.json infraErrors.network
+  app: {
+    networkError: '인터넷 연결을 확인해주세요|Please check your internet connection',
+  },
+  // src/shared/i18n/locales/*/errors.json FOLLOW_0901(같은 친구 요청을 두 번 보냈을 때의 토스트)
+  friend: {
+    alreadyRequested: '이미 친구 요청을 보냈어요|Friend request already sent',
   },
   // src/features/insights/report/components/report-list.tsx(report.card.viewDetail, src/shared/i18n/locales/*/ai.json)
   report: {

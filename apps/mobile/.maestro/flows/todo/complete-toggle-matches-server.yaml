@@ -1,0 +1,81 @@
+appId: ${MAESTRO_APP_ID}
+name: 체크박스를 누르면 화면이 바로 바뀌고 연달아 눌러도 화면과 서버의 완료 상태가 같다
+tags:
+  - regression
+  - todo
+onFlowStart:
+  - runFlow: ../../subflows/app/load-helpers.yaml
+  - evalScript: ${output.main = output.api.signIn('main')}
+  - evalScript: ${output.main.removeE2eCategories()}
+  - evalScript: ${output.category = output.main.createCategory('toggle ' + output.config.runId)}
+  - evalScript: ${output.todoTitle = 'E2E toggle ' + output.config.runId}
+  - evalScript: ${output.todo = output.main.createTodo(output.category.id, output.todoTitle)}
+  - runFlow: ../../subflows/app/launch-fresh.yaml
+onFlowComplete:
+  - evalScript: ${output.main && output.main.removeE2eCategories()}
+---
+# 지키는 것: 완료는 onMutate에서 캐시를 먼저 바꾸고, 응답까지 체크박스를 끈다(isDisabled={toggleTodo.isPending})
+# (src/features/planning/todo/queries/todo.mutations.ts useToggleTodoMutationOptions,
+#  src/features/planning/todo/components/todo-list/todo-list.tsx TodoRow.Checkbox)
+# 확인 필요: checked는 체크박스의 accessibilityState.checked(heroui-native Checkbox)다. Android는 AccessibilityNodeInfo.isChecked로
+# 잡히고, iOS는 RN이 checkbox 역할에 접근성 값("checked")만 실어 Maestro가 checked를 못 읽을 수 있다. 못 읽으면
+# README "testID 대기"의 체크박스 완료 상태 항목을 앱에 더한 뒤 그 선택자로 바꾼다
+
+# Given: 완료하지 않은 할 일이 피드에 있다
+- runFlow:
+    file: ../../subflows/auth/sign-in.yaml
+    env:
+      EMAIL: ${output.main.email}
+      PASSWORD: ${output.main.password}
+- scrollUntilVisible:
+    element:
+      id: ${output.ids.todo.checkbox(output.todo.id)}
+
+# When: 체크박스를 누른다
+- tapOn:
+    id: ${output.ids.todo.checkbox(output.todo.id)}
+# Then: 화면이 바로 완료로 바뀌고 서버도 곧 완료다
+# 개발 서버가 같은 기기에 있어 응답이 빨라 "응답 전"을 따로 잡지 못한다. 실패 시 되돌림은 complete-offline-rolls-back이 본다
+- assertVisible:
+    id: ${output.ids.todo.checkbox(output.todo.id)}
+    checked: true
+- evalScript: ${output.main.waitForTodo(output.category.id, output.todoTitle, true)}
+
+# When: 다시 누른다
+- tapOn:
+    id: ${output.ids.todo.checkbox(output.todo.id)}
+# Then: 화면과 서버가 미완료로 돌아온다
+- assertVisible:
+    id: ${output.ids.todo.checkbox(output.todo.id)}
+    checked: false
+- evalScript: ${output.main.waitForTodo(output.category.id, output.todoTitle, false)}
+
+# When: 100ms 간격으로 두 번 누른다(응답 전 두 번째 탭은 꺼진 체크박스라 무시되고, 응답 뒤면 다시 바뀐다)
+- tapOn:
+    id: ${output.ids.todo.checkbox(output.todo.id)}
+    repeat: 2
+    delay: 100
+    retryTapIfNoChange: false
+# Then: 모든 요청이 끝나 체크박스가 다시 켜지면 화면의 완료 상태가 서버와 같다
+- extendedWaitUntil:
+    visible:
+      id: ${output.ids.todo.checkbox(output.todo.id)}
+      enabled: true
+    timeout: 10000
+- evalScript: ${output.isCompletedOnServer = output.main.isTodoCompleted(output.todo.id)}
+- runFlow:
+    label: 서버가 완료면 화면도 완료다
+    when:
+      true: ${output.isCompletedOnServer}
+    commands:
+      - assertVisible:
+          id: ${output.ids.todo.checkbox(output.todo.id)}
+          checked: true
+- runFlow:
+    label: 서버가 미완료면 화면도 미완료다
+    when:
+      true: ${!output.isCompletedOnServer}
+    commands:
+      - assertVisible:
+          id: ${output.ids.todo.checkbox(output.todo.id)}
+          checked: false

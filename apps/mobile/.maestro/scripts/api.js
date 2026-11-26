@@ -1,7 +1,7 @@
 // 흐름이 개발 서버에 데이터를 준비·확인·정리할 때 쓰는 HTTP 도우미(Maestro runScript, GraalJS). config.js 다음에 실행한다.
 // 흐름은 `output.main = output.api.signIn('main')`으로 세션을 얻고 세션의 메서드를 evalScript 한 줄로 부른다.
 // 이름 규칙: 준비는 create*·send*·accept*·complete*, 정리는 remove*(없으면 넘긴다), 조회는 find*,
-// 참·거짓 확인은 has*·is*, 서버 반영을 기다리면 waitFor*(못 찾으면 무엇을 기다렸는지 말하며 실패한다).
+// 참·거짓 확인은 has*·is*, 개수는 count*, 서버 반영을 기다리면 waitFor*(못 찾으면 무엇을 기다렸는지 말하며 실패한다).
 // Node 도구(accounts.ts)와 store-screenshots/scripts/lib.js도 로그인·로컬 주소 확인을 따로 갖는다. 런타임(Node·GraalJS)과
 // 계정·앱(개발 빌드·Release 캡처)이 달라 한 파일로 모을 수 없다.
 // docs: https://docs.maestro.dev/maestro-flows/javascript/make-http-requests
@@ -122,6 +122,10 @@ function signIn(role) {
       call('PATCH', '/v1/todos/' + todoId + '/complete', token, { completed: true }),
     hasTodo: (todoId) => call('GET', '/v1/todos/' + todoId, token, undefined, [404]) != null,
     hasTodoIn: (categoryId, todoId) => todosIn(categoryId).some((todo) => todo.id === todoId),
+    isTodoCompleted: (todoId) => call('GET', '/v1/todos/' + todoId, token).completed,
+    // 연타가 같은 할 일을 두 번 만들지 않았는지 본다
+    countTodos: (categoryId, title) =>
+      todosIn(categoryId).filter((todo) => todo.title === title).length,
     waitForTodo: (categoryId, title, isCompleted) =>
       poll(
         () =>
@@ -161,6 +165,10 @@ function signIn(role) {
       call('GET', '/v1/follows/friends', token).friends.some((friend) => friend.id === userId),
     sendFriendRequest: (userTag) => call('POST', '/v1/follows/' + userTag, token),
     acceptFriendRequest: (userId) => call('PATCH', '/v1/follows/' + userId + '/accept', token),
+    countReceivedRequestsFrom: (userId) =>
+      call('GET', '/v1/follows/requests/received?limit=50', token).requests.filter(
+        (request) => request.id === userId,
+      ).length,
     // 친구 끊기와 보낸 요청 취소가 같은 경로다. 이미 없으면 404라 정리에서 그대로 넘긴다
     removeFriendship: (userId) => call('DELETE', '/v1/follows/' + userId, token, undefined, [404]),
   };
