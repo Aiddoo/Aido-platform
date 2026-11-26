@@ -107,8 +107,10 @@ const TODO_IMPORT_STEPS = [
   'options',
 ] as const satisfies readonly TodoImportStep[];
 
-const MODE_ENTERING = FadeIn.duration(ANIMATION.durationMs.slow).reduceMotion(ReduceMotion.System);
-const DOWN_ARROW_SIZE = 20;
+const CATEGORY_MODE_ENTERING = FadeIn.duration(ANIMATION.durationMs.slow).reduceMotion(
+  ReduceMotion.System,
+);
+const DOWN_ARROW_SIZE_PT = 20;
 
 export default function TodoImportSetupScreen() {
   const { t } = useTranslation('todoImport');
@@ -172,7 +174,7 @@ function TodoImportSetup() {
     mode: 'onChange',
   });
   const { isPastFirstStep, isSwipeBackEnabled, leaveToImport } = useStepBackNavigation(stepper);
-  const handleStepBack = useSingleTap(() => stepper.history.back());
+  const handleStepBackPress = useSingleTap(() => stepper.history.back());
 
   return (
     <VStack flex={1}>
@@ -182,7 +184,7 @@ function TodoImportSetup() {
           <Stack.Toolbar.Button
             icon={STACK_BACK_ICON}
             accessibilityLabel={t('actions.back')}
-            onPress={handleStepBack}
+            onPress={handleStepBackPress}
           />
         </Stack.Toolbar>
       )}
@@ -239,16 +241,16 @@ function PermissionStep({ progress, onGranted }: PermissionStepProps) {
 
   const { data: permission } = useSuspenseQuery(useGetCalendarPermissionQueryOptions());
 
-  const request = useMutation(useRequestCalendarPermissionMutationOptions());
+  const permissionRequest = useMutation(useRequestCalendarPermissionMutationOptions());
 
-  const view = getCalendarPermissionView(permission, request.data ?? null);
+  const view = getCalendarPermissionView(permission, permissionRequest.data ?? null);
 
   // 열 때는 상태만 읽고 "계속"을 눌러야 시스템 창을 띄운다
-  const handleContinue = () => {
-    request
+  const handleContinuePress = () => {
+    permissionRequest
       .mutateAsync()
-      .then((answered) => {
-        if (answered.status === 'granted') {
+      .then((answeredPermission) => {
+        if (answeredPermission.status === 'granted') {
           onGranted();
         }
       })
@@ -263,7 +265,10 @@ function PermissionStep({ progress, onGranted }: PermissionStepProps) {
       progress={progress}
       footer={match({ view, canOpenSettings: appSettings.canOpen })
         .with({ view: 'ask' }, () => (
-          <KeyboardAdaptiveButton isLoading={request.isPending} onPress={handleContinue}>
+          <KeyboardAdaptiveButton
+            isLoading={permissionRequest.isPending}
+            onPress={handleContinuePress}
+          >
             {t('permission.continue')}
           </KeyboardAdaptiveButton>
         ))
@@ -282,13 +287,13 @@ function PermissionStep({ progress, onGranted }: PermissionStepProps) {
   );
 }
 
-interface FormStepProps {
+interface CalendarsAndCategoriesStepProps {
   form: TodoImportForm;
   progress: ReactNode;
   onNext: () => void;
 }
 
-function CalendarsStep({ form, progress, onNext }: FormStepProps) {
+function CalendarsStep({ form, progress, onNext }: CalendarsAndCategoriesStepProps) {
   const { t } = useTranslation(['todoImport', 'common']);
 
   const { field: range } = useController({ control: form.control, name: 'range' });
@@ -390,7 +395,7 @@ function CalendarsStep({ form, progress, onNext }: FormStepProps) {
   );
 }
 
-function CategoriesStep({ form, progress, onNext }: FormStepProps) {
+function CategoriesStep({ form, progress, onNext }: CalendarsAndCategoriesStepProps) {
   const { t } = useTranslation(['todoImport', 'common']);
   const fontScaledSize = useFontScaledSize();
 
@@ -400,17 +405,17 @@ function CategoriesStep({ form, progress, onNext }: FormStepProps) {
   });
   const errorMessages = useTargetErrorMessages(form, collections);
 
-  const [isModeSwitched, setIsModeSwitched] = useState(false);
+  const [isCategoryModeSwitched, setIsCategoryModeSwitched] = useState(false);
 
   const plan: TodoImportPlan = { collections, categoryMode, singleTarget, targets };
   const hasRejectedTargets = 0 < Object.keys(errorMessages).length;
   // 처음 그릴 때(앞 단계에서 돌아올 때 포함)는 그대로 두고, 넣는 방법을 바꿀 때만 스며들듯 바뀐다
-  const modeEntering = isModeSwitched ? MODE_ENTERING : undefined;
-  const downArrowSize = fontScaledSize(DOWN_ARROW_SIZE);
+  const categoryModeEntering = isCategoryModeSwitched ? CATEGORY_MODE_ENTERING : undefined;
+  const downArrowSize = fontScaledSize(DOWN_ARROW_SIZE_PT);
 
   // 캘린더마다 고른 값은 한 곳에 넣는 동안에도 폼에 남아 다시 나누면 돌아온다
-  const switchMode = (nextMode: TodoImportCategoryMode) => {
-    setIsModeSwitched(true);
+  const switchCategoryMode = (nextMode: TodoImportCategoryMode) => {
+    setIsCategoryModeSwitched(true);
     form.setValue('categoryMode', nextMode, { shouldDirty: true });
   };
 
@@ -468,7 +473,7 @@ function CategoriesStep({ form, progress, onNext }: FormStepProps) {
 
       {match(TodoImportPlanPolicy.getCategoryMode(plan))
         .with('single', () => (
-          <Animated.View key="single" entering={modeEntering}>
+          <Animated.View key="single" entering={categoryModeEntering}>
             <Spacing size={24} />
 
             <HStack align="center" gap={6}>
@@ -532,7 +537,7 @@ function CategoriesStep({ form, progress, onNext }: FormStepProps) {
                 <TextButton
                   variant="arrow"
                   className="self-start"
-                  onPress={() => switchMode('separate')}
+                  onPress={() => switchCategoryMode('separate')}
                 >
                   {t('categories.splitLink')}
                 </TextButton>
@@ -541,12 +546,12 @@ function CategoriesStep({ form, progress, onNext }: FormStepProps) {
           </Animated.View>
         ))
         .with('separate', () => (
-          <Animated.View key="separate" entering={modeEntering}>
+          <Animated.View key="separate" entering={categoryModeEntering}>
             <Spacing size={24} />
 
             <HStack align="center" justify="between" gap={12} className="flex-wrap">
               <FieldTitle>{t('categories.separate.title')}</FieldTitle>
-              <TextButton onPress={() => switchMode('single')}>
+              <TextButton onPress={() => switchCategoryMode('single')}>
                 {t('categories.separate.joinAll')}
               </TextButton>
             </HStack>
