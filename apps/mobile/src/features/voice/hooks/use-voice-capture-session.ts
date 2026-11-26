@@ -177,6 +177,7 @@ function useVoiceCaptureState(): [VoiceCaptureState, VoiceCaptureMachine] {
   const [state, setState] = useState<VoiceCaptureState>(createVoiceCaptureState);
   const stateRef = useRef(state);
 
+  // 계획 요청 effect의 deps라 정체가 바뀌면 받던 계획을 버리고 다시 요청한다. 컴파일러 메모에 맡기지 않고 고정한다
   const getState = useCallback(() => stateRef.current, []);
   const dispatch = useCallback<VoiceCaptureMachine['dispatch']>((event) => {
     const previous = stateRef.current;

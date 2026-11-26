@@ -60,6 +60,7 @@ function useSceneCrossFade(scene: WeatherScene) {
     setOutgoing(current);
     setCurrent({ id: current.id + 1, scene });
   }
+  // 장면 레이어의 사라짐 effect deps라 정체가 바뀌면 사라지던 애니메이션을 다시 건다. 컴파일러 메모에 맡기지 않고 고정한다
   const finishFade = useCallback((id: number) => {
     setOutgoing((previous) => (previous?.id === id ? null : previous));
   }, []);

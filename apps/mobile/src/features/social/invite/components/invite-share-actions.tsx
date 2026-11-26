@@ -16,7 +16,7 @@ import {
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import { debounce, noop } from 'es-toolkit';
-import { type ComponentProps, type ReactNode, useCallback, useEffect, useState } from 'react';
+import { type ComponentProps, type ReactNode, useEffect, useState } from 'react';
 
 import { useCreateInviteShareContent } from '../hooks/use-create-invite-share-content';
 import { useShareInviteMutationOptions } from '../queries/invite.mutations';
@@ -185,10 +185,10 @@ function useCopiedFeedback() {
 
   useEffect(() => () => hideCopied.cancel(), [hideCopied]);
 
-  const showCopied = useCallback(() => {
+  const showCopied = () => {
     setIsCopied(true);
     hideCopied();
-  }, [hideCopied]);
+  };
 
   return [isCopied, showCopied] as const;
 }
