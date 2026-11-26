@@ -21,14 +21,14 @@ import { Spinner } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { match } from 'ts-pattern';
 
-import { VoiceNotePolicy } from '../../domains/voice-note.model';
-import { canRetryPlanFailure } from '../../domains/voice.error';
-import { useCurrentVoiceNote } from '../../hooks/use-current-voice-note';
-import { useVoiceNoteDigest, type VoiceNoteDigestFailure } from '../../hooks/use-voice-note-digest';
-import { useVoiceNoteDraftId } from '../../hooks/use-voice-note-params';
-import { SentenceCaptionList } from '../sentence-caption-list';
-import { VoiceNoteToolbar } from '../voice-note-toolbar';
+import { VoiceNotePolicy } from '../domains/voice-note.model';
+import { canRetryPlanFailure } from '../domains/voice.error';
+import { useCurrentVoiceNote } from '../hooks/use-current-voice-note';
+import { useVoiceNoteDigest, type VoiceNoteDigestFailure } from '../hooks/use-voice-note-digest';
+import { useVoiceNoteDraftId } from '../hooks/use-voice-note-params';
 import { DigestScanPreview } from './digest-scan-preview';
+import { SentenceCaptionList } from './sentence-caption-list';
+import { VoiceNoteToolbar } from './voice-note-toolbar';
 
 const SCAN_PREVIEW_SENTENCES = 12;
 

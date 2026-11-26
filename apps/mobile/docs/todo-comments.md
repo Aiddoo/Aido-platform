@@ -183,6 +183,6 @@ pane은 `/feed?todoId=42&comment=cm_1`이다. 바꿀 때는 search만 바꾸고,
 ## 검증
 
 - 단위: model/Policy(댓글·묶음·작성기), 비자명한 mapper, `queries/*-cache`(페이지 고치기·펴기·cursor), draft(위치는 Oxlint `aido/todo-comment-test-location`이 검사).
-- 다시 그리는 범위: `todo-comment-expansion.test.tsx`(펼친 묶음만), `todo-comment-reveal.test.tsx`(강조한 댓글만). 화면 흐름은 `__tests__/todo-detail-screen.test.tsx`, 묶음 흐름(알림 위치·펼치기·스크린리더 동작)은 `__tests__/todo-comment-thread.flow.test.tsx`다.
+- 다시 그리는 범위: `hooks/use-todo-comment-expansion.test.tsx`(펼친 묶음만), `hooks/use-todo-comment-reveal.test.tsx`(강조한 댓글만). 화면 흐름은 `__tests__/todo-detail-screen.test.tsx`, 묶음 흐름(알림 위치·펼치기·스크린리더 동작)은 `__tests__/todo-comment-thread.flow.test.tsx`다.
 - native: iOS·Android에서 목록, 펼치기·더 보기·숨기기, 답글 달기(키보드 위 대상 행), 게시 후 위치, 수정·삭제·신고·차단,
   묘비·긴 이름·큰 숫자, 더블탭(동작 줄이기·연타·이미 좋아요), 알림 위치(`?comment=`), pane, 라이트·다크, 글자 크기 xsmall~xlarge, ko·en.

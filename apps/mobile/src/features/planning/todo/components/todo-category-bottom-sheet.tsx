@@ -4,12 +4,12 @@ import { RouteBottomSheet } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 
-import type { TodoUpdateScope } from '../../domains/todo-repeat.model';
-import { TodoPolicy } from '../../domains/todo.model';
-import { useSelectTodoScope } from '../../hooks/use-select-todo-scope';
-import { useSuspenseSheetTodo } from '../../hooks/use-suspense-sheet-todo';
-import { useChangeTodoCategoryMutationOptions } from '../../queries/todo.mutations';
-import { TodoScopeStep } from '../todo-scope-step';
+import type { TodoUpdateScope } from '../domains/todo-repeat.model';
+import { TodoPolicy } from '../domains/todo.model';
+import { useSelectTodoScope } from '../hooks/use-select-todo-scope';
+import { useSuspenseSheetTodo } from '../hooks/use-suspense-sheet-todo';
+import { useChangeTodoCategoryMutationOptions } from '../queries/todo.mutations';
+import { TodoScopeStep } from './todo-scope-step';
 
 type TodoCategoryBottomSheetProps = Omit<
   ComponentProps<typeof RouteBottomSheet>,

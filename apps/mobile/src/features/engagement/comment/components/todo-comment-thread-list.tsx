@@ -60,7 +60,9 @@ import {
   type TodoCommentThreadAnchor,
   TodoCommentThreadPolicy,
 } from '../domains/todo-comment-thread.model';
+import { useThreadExpansion } from '../hooks/use-todo-comment-expansion';
 import { useTodoCommentParams, useTodoCommentSort } from '../hooks/use-todo-comment-params';
+import { useTodoCommentReveal } from '../hooks/use-todo-comment-reveal';
 import { ensureTodoCommentReplies, invalidateTodoComments } from '../queries/todo-comment-cache';
 import { usePrefetchTodoCommentThreadsMutationOptions } from '../queries/todo-comment.mutations';
 import {
@@ -68,9 +70,7 @@ import {
   useGetTodoCommentThreadsInfiniteQueryOptions,
 } from '../queries/todo-comment.queries';
 import { getReplyFooter } from '../utils/todo-comment-replies.view-model';
-import { useThreadExpansion } from './todo-comment-expansion';
 import { TodoCommentItem } from './todo-comment-item';
-import { useTodoCommentReveal } from './todo-comment-reveal';
 import { TodoDetailSummary } from './todo-detail-summary';
 
 const SORT_MENU_WIDTH = 208;

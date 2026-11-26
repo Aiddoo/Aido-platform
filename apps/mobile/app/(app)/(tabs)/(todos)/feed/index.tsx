@@ -21,7 +21,7 @@ import { FriendCalendar } from '@src/features/planning/todo/components/calendar/
 import { MyCalendar } from '@src/features/planning/todo/components/calendar/my-calendar';
 import { RepeatHorizonHint } from '@src/features/planning/todo/components/calendar/repeat-horizon-hint';
 import { FriendTodoList } from '@src/features/planning/todo/components/friend-todo-list';
-import { TodoList } from '@src/features/planning/todo/components/todo-list/todo-list';
+import { TodoList } from '@src/features/planning/todo/components/todo-list';
 import {
   useFeedDateKey,
   useFeedFriendId,

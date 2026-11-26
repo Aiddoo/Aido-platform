@@ -1,4 +1,3 @@
-import { useOpenDetailWhenCompact } from '@src/shared/hooks/use-open-detail-when-compact';
 import { useRouteParams } from '@src/shared/hooks/use-route-params';
 import { usePaneSizeClass } from '@src/shared/ui';
 import { noop } from 'es-toolkit';
@@ -34,13 +33,12 @@ export function useSelectedMemoId() {
   return [selectedMemoId, setSelectedMemoId] as const;
 }
 
-/** 펼친 화면에서 고른 메모가 있는 채로 접히면 그 메모를 상세 화면으로 넘긴다 */
-export function useMemoDetailHandoff() {
+/** 메모 탭 URL의 `memoId` 값만 읽고 쓴다. 칸 크기에 따른 이동은 부르는 훅이 고른다 */
+export function useSelectedMemoIdParam() {
   const [{ memoId: selectedMemoId }, setParams] = useRouteParams(selectedMemoParamsSchema);
+  const setSelectedMemoIdParam = (memoId: number | undefined) => {
+    setParams({ memoId });
+  };
 
-  const router = useRouter();
-  useOpenDetailWhenCompact(selectedMemoId, (memoId) => {
-    setParams({ memoId: undefined });
-    router.push({ pathname: '/memo/[memoId]', params: { memoId } });
-  });
+  return [selectedMemoId, setSelectedMemoIdParam] as const;
 }

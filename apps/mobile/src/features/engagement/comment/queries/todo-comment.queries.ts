@@ -1,10 +1,10 @@
 import { TODO_COMMENT_SORT, type TodoCommentSort } from '@aido/api/vocabulary';
 import { useTodoCommentApi } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/core/errors/result';
+import { MINUTE_MS, SECOND_MS } from '@src/shared/constants/time-units';
 import { infiniteQueryOptions } from '@tanstack/react-query';
 
 import { toRepliesQuery, toThreadsQuery } from '../apis/todo-comment.mapper';
-import { TODO_COMMENT_QUERY_TIMING } from '../constants/todo-comment.constants';
 import {
   flattenReplyPages,
   flattenThreadPages,
@@ -15,6 +15,12 @@ import {
   type TodoCommentThreadPages,
 } from './todo-comment-pages-cache';
 import { TODO_COMMENT_QUERY_KEYS } from './todo-comment-query-keys';
+
+const TODO_COMMENT_QUERY_TIMING = {
+  latestStaleTimeMs: 30 * SECOND_MS,
+  popularStaleTimeMs: 10 * SECOND_MS,
+  gcTimeMs: 30 * MINUTE_MS,
+} as const;
 
 interface TodoCommentThreadsQueryInput {
   todoId: number;

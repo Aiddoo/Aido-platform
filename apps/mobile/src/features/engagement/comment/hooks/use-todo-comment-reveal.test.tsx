@@ -7,7 +7,7 @@ import {
   TodoCommentRevealProvider,
   useIsTodoCommentHighlighted,
   useTodoCommentReveal,
-} from './todo-comment-reveal';
+} from './use-todo-comment-reveal';
 
 interface RowProbeProps {
   commentId: string | null;

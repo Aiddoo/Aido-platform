@@ -7,7 +7,7 @@ import { WeatherAlerts } from '@src/features/weather/components/weather-alerts';
 import { WeatherAttribution } from '@src/features/weather/components/weather-attribution';
 import { WeatherBackground } from '@src/features/weather/components/weather-background';
 import { WeatherBriefing } from '@src/features/weather/components/weather-briefing';
-import { WeatherDetailGrid } from '@src/features/weather/components/weather-detail-grid/weather-detail-grid';
+import { WeatherDetailGrid } from '@src/features/weather/components/weather-detail-grid';
 import { WeatherHero } from '@src/features/weather/components/weather-hero';
 import { WeatherLocationNotice } from '@src/features/weather/components/weather-location-notice';
 import { WeatherLocationPrompt } from '@src/features/weather/components/weather-location-prompt';

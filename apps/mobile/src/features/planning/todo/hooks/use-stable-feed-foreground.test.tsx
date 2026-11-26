@@ -12,7 +12,8 @@ import { act, renderHook, waitFor } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 import { type IKeyboardState, useKeyboardState } from 'react-native-keyboard-controller';
 
-import { isStableFeedForeground, useStableFeedForeground } from './use-stable-feed-foreground';
+import { isStableFeedForeground } from '../utils/feed-foreground.view-model';
+import { useStableFeedForeground } from './use-stable-feed-foreground';
 
 let incomingLink: ReturnType<typeof createIncomingLinkGatewayStub>;
 let appLifecycle: AppLifecycleGatewayStub;

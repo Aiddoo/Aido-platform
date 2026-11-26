@@ -1,94 +1,9 @@
-import { mapInfiniteItems, selectPageItems } from '@src/shared/query/cursor-page';
+import { mapInfiniteItems } from '@src/shared/query/cursor-page';
 import type { InfiniteData, QueryClient } from '@tanstack/react-query';
 
-import type { FriendUser, FriendUserPage } from '../domains/friend.model';
 import type { SearchedUser, SearchedUserPage } from '../domains/searched-user.model';
+import type { FriendPages } from './friend-pages-cache';
 import { FRIEND_QUERY_KEYS } from './friend-query-keys';
-
-type FriendPages = InfiniteData<FriendUserPage, string | undefined>;
-
-/** 지운 친구가 있던 자리. 지우기가 실패하면 그 친구만 이 자리에 되돌린다 */
-export interface FriendPlacement {
-  friend: FriendUser;
-  pageIndex: number;
-  index: number;
-}
-
-export function findFriendPlacement(pages: FriendPages, userId: string): FriendPlacement | null {
-  for (const [pageIndex, page] of pages.pages.entries()) {
-    const index = page.items.findIndex((friend) => friend.id === userId);
-    const friend = page.items[index];
-    if (friend != null) {
-      return { friend, pageIndex, index };
-    }
-  }
-  return null;
-}
-
-function withTotalCountChanged(pages: FriendPages, delta: number): FriendPages {
-  return {
-    ...pages,
-    pages: pages.pages.map((page) => ({
-      ...page,
-      totalCount: Math.max(0, page.totalCount + delta),
-    })),
-  };
-}
-
-/** 다음 커서는 그 쪽 마지막 친구의 followId다. 서버는 지운 친구의 followId로 이으면 빈 쪽을 줘, 빼거나 되돌린 쪽은 받은 마지막 친구로 커서를 다시 맞춘다 */
-function withLastFriendCursor(pages: FriendPages, pageIndex: number): FriendPages {
-  const page = pages.pages[pageIndex];
-  const lastFriend = selectPageItems({ pages: pages.pages.slice(0, pageIndex + 1) }).at(-1);
-  if (page?.nextCursor == null || lastFriend == null) {
-    return pages;
-  }
-  return {
-    ...pages,
-    pages: pages.pages.map((current, index) =>
-      index === pageIndex ? { ...current, nextCursor: lastFriend.followId } : current,
-    ),
-  };
-}
-
-export function withFriendRemoved(pages: FriendPages, userId: string): FriendPages {
-  const placement = findFriendPlacement(pages, userId);
-  if (placement == null) {
-    return pages;
-  }
-  const removed = {
-    ...pages,
-    pages: pages.pages.map((page, pageIndex) =>
-      pageIndex === placement.pageIndex
-        ? { ...page, items: page.items.filter((friend) => friend.id !== userId) }
-        : page,
-    ),
-  };
-  return withTotalCountChanged(withLastFriendCursor(removed, placement.pageIndex), -1);
-}
-
-/** 그 친구 하나만 원래 자리에 되돌린다. 그사이 다른 친구를 지웠어도 그 변경은 남는다 */
-export function withFriendRestored(pages: FriendPages, placement: FriendPlacement): FriendPages {
-  if (findFriendPlacement(pages, placement.friend.id) != null) {
-    return pages;
-  }
-  const pageIndex = Math.min(placement.pageIndex, pages.pages.length - 1);
-  const restored = {
-    ...pages,
-    pages: pages.pages.map((page, index) =>
-      index === pageIndex
-        ? {
-            ...page,
-            items: [
-              ...page.items.slice(0, placement.index),
-              placement.friend,
-              ...page.items.slice(placement.index),
-            ],
-          }
-        : page,
-    ),
-  };
-  return withTotalCountChanged(withLastFriendCursor(restored, pageIndex), 1);
-}
 
 /** 친구 요청 상태가 바뀐 사용자를 모든 검색 결과 캐시에서 함께 갱신한다. */
 export function patchSearchedUser(

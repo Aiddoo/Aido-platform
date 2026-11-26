@@ -1,6 +1,6 @@
 import { useSuspenseMyAccountId } from '@src/features/identity/user/hooks/use-suspense-my-account-id';
 import { useRefreshMemos } from '@src/features/notes/memo/hooks/use-refresh-memos';
-import { VoiceNoteDigest } from '@src/features/voice/components/voice-note-digest/voice-note-digest';
+import { VoiceNoteDigest } from '@src/features/voice/components/voice-note-digest';
 import { VoiceNoteOffline } from '@src/features/voice/components/voice-note-offline';
 import { VoiceNotePlanTodos } from '@src/features/voice/components/voice-note-result/voice-note-plan-todos';
 import { VoiceNoteResult } from '@src/features/voice/components/voice-note-result/voice-note-result';

@@ -8,8 +8,8 @@ import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
 
-import { createParentTodo } from '../../__tests__/sub-todo.fixtures';
-import { TODO_QUERY_KEYS } from '../../queries/todo-query-keys';
+import { createParentTodo } from '../__tests__/sub-todo.fixtures';
+import { TODO_QUERY_KEYS } from '../queries/todo-query-keys';
 import { TodoActionsBottomSheet } from './todo-actions-bottom-sheet';
 
 const DIALOG_TITLE = '이 할 일을 모두 삭제할까요?';

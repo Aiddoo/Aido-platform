@@ -4,10 +4,8 @@ import {
 } from '@src/features/notes/memo/components/memo-create-button';
 import { MemoPaneEditor } from '@src/features/notes/memo/components/memo-editor';
 import { MemoList } from '@src/features/notes/memo/components/memo-list';
-import {
-  useMemoDetailHandoff,
-  useSelectedMemoId,
-} from '@src/features/notes/memo/hooks/use-memo-params';
+import { useMemoDetailHandoff } from '@src/features/notes/memo/hooks/use-memo-detail-handoff';
+import { useSelectedMemoId } from '@src/features/notes/memo/hooks/use-memo-params';
 import { NotificationBellToolbar } from '@src/features/notification/components/notification-bell-toolbar';
 import { VoiceNoteStartButton } from '@src/features/voice/components/voice-note-start-button';
 import { useTranslation } from '@src/shared/i18n';

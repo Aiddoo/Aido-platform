@@ -3,14 +3,14 @@ import { RouteBottomSheet } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 
-import type { TodoUpdateScope } from '../../domains/todo-repeat.model';
-import { findScheduledTime } from '../../domains/todo-schedule.model';
-import { TodoPolicy } from '../../domains/todo.model';
-import { useSelectTodoScope } from '../../hooks/use-select-todo-scope';
-import { useSuspenseSheetTodo } from '../../hooks/use-suspense-sheet-todo';
-import { useUpdateTodoScheduleMutationOptions } from '../../queries/todo.mutations';
-import { TodoScopeStep } from '../todo-scope-step';
-import { TodoTimePicker } from '../todo-time-picker';
+import type { TodoUpdateScope } from '../domains/todo-repeat.model';
+import { findScheduledTime } from '../domains/todo-schedule.model';
+import { TodoPolicy } from '../domains/todo.model';
+import { useSelectTodoScope } from '../hooks/use-select-todo-scope';
+import { useSuspenseSheetTodo } from '../hooks/use-suspense-sheet-todo';
+import { useUpdateTodoScheduleMutationOptions } from '../queries/todo.mutations';
+import { TodoScopeStep } from './todo-scope-step';
+import { TodoTimePicker } from './todo-time-picker';
 
 interface TodoTimeBottomSheetProps extends Omit<
   ComponentProps<typeof RouteBottomSheet>,

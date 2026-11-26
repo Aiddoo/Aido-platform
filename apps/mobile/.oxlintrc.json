@@ -1271,6 +1271,7 @@
         "src/features/engagement/comment/schemas/**",
         "src/features/engagement/comment/utils/**",
         "src/features/engagement/comment/components/**",
+        "src/features/engagement/comment/hooks/use-todo-comment-{expansion,reveal}.test.tsx",
         "src/features/engagement/comment/__tests__/**"
       ],
       "rules": {
@@ -1278,8 +1279,10 @@
       }
     },
     {
+      // 펼친 묶음·강조 Provider 짝은 hooks/에 두고, 다시 그리는 범위를 renderScreen으로 확인한다
       "files": [
         "src/features/engagement/comment/components/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}",
+        "src/features/engagement/comment/hooks/use-todo-comment-{expansion,reveal}.test.tsx",
         "src/features/engagement/comment/__tests__/**/*.{spec,test}.{ts,tsx,js,jsx,mjs,cjs,mts,cts}"
       ],
       "rules": {

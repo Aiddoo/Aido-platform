@@ -68,6 +68,10 @@ import { TODO_COMMENT_HIGHLIGHT_DURATION_MS } from '../constants/todo-comment.co
 import { type TodoComment, TodoCommentPolicy } from '../domains/todo-comment.model';
 import { useConfirmTodoCommentDelete } from '../hooks/use-confirm-todo-comment-delete';
 import { useTodoCommentForm } from '../hooks/use-todo-comment-form';
+import {
+  useIsTodoCommentHighlighted,
+  useTodoCommentReveal,
+} from '../hooks/use-todo-comment-reveal';
 import { useSetTodoCommentLikeMutationOptions } from '../queries/todo-comment.mutations';
 import { toEditFormValues, toReplyFormValues } from '../schemas/todo-comment-form.schema';
 import {
@@ -81,7 +85,6 @@ import {
   type TodoCommentHeartBurstValues,
   useTodoCommentHeartBurstValues,
 } from './todo-comment-heart-burst';
-import { useIsTodoCommentHighlighted, useTodoCommentReveal } from './todo-comment-reveal';
 
 const MENU_TRIGGER_ICON_SIZE = 18;
 

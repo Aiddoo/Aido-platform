@@ -12,7 +12,6 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import type { ReorderFriendInput } from '../schemas/friend-request.schema';
 import {
   cancelFriendList,
-  findFriendPlacement,
   getCachedFriendList,
   invalidateFriendList,
   invalidateFriends,
@@ -21,10 +20,9 @@ import {
   invalidateSentFriendRequests,
   patchSearchedUser,
   setFriendListInCache,
-  withFriendRemoved,
-  withFriendRestored,
 } from './friend-cache';
 import { FRIEND_MUTATION_KEYS } from './friend-mutation-keys';
+import { findFriendPlacement, withFriendRemoved, withFriendRestored } from './friend-pages-cache';
 
 export function useAcceptRequestMutationOptions() {
   const friendApi = useFriendApi();

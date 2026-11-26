@@ -6,7 +6,7 @@ import {
   TodoCommentExpansionProvider,
   useExpandThread,
   useThreadExpansion,
-} from './todo-comment-expansion';
+} from './use-todo-comment-expansion';
 
 const COLLAPSED: ThreadExpansion = { isExpanded: false, source: 'user' };
 

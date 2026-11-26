@@ -46,6 +46,7 @@ import {
   isTodoCommentRejectedError,
 } from '../domains/todo-comment.error';
 import { useIsTodoCommentSubmitting } from '../hooks/use-is-todo-comment-submitting';
+import { useExpandThread } from '../hooks/use-todo-comment-expansion';
 import { useTodoCommentForm } from '../hooks/use-todo-comment-form';
 import {
   useCreateTodoCommentChainMutationOptions,
@@ -64,7 +65,6 @@ import {
 import { getCommentFormMaxHeight } from '../utils/todo-comment-form.geometry';
 import { getFocusedCommentFieldIndexAfterRemoval } from '../utils/todo-comment-form.view-model';
 import { TodoCommentAuthorAvatar } from './todo-comment-author-avatar';
-import { useExpandThread } from './todo-comment-expansion';
 
 const SEND_ICON_SIZE = 18;
 const CLOSE_ICON_SIZE = 16;

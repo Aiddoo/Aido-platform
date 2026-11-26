@@ -15,7 +15,7 @@ import type { ReactNode } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import { match } from 'ts-pattern';
 
-import { UV_METER_COLORS } from '../../constants/weather-colors.constants';
+import { UV_METER_COLORS } from '../constants/weather-colors.constants';
 import {
   type CloudCoverLevel,
   type CompassDirection,
@@ -25,26 +25,23 @@ import {
   type UvLevel,
   type VisibilityLevel,
   type WindLevel,
-} from '../../domains/current-weather.model';
-import { useLocationDateFormat } from '../../hooks/use-location-date-format';
-import { useTemperatureUnit } from '../../hooks/use-temperature-unit';
-import {
-  useGetWeatherReportQueryOptions,
-  WeatherReportSelect,
-} from '../../queries/weather.queries';
-import { toUvMeterPosition } from '../../utils/weather-bar.geometry';
-import { toCompassDial, toPressureGauge } from '../../utils/weather-dial.geometry';
-import { getCompassShortLabelKey } from '../../utils/weather-labels.view-model';
+} from '../domains/current-weather.model';
+import { useLocationDateFormat } from '../hooks/use-location-date-format';
+import { useTemperatureUnit } from '../hooks/use-temperature-unit';
+import { useGetWeatherReportQueryOptions, WeatherReportSelect } from '../queries/weather.queries';
+import { toUvMeterPosition } from '../utils/weather-bar.geometry';
+import { toCompassDial, toPressureGauge } from '../utils/weather-dial.geometry';
+import { getCompassShortLabelKey } from '../utils/weather-labels.view-model';
 import {
   formatDegrees,
   formatTemperature,
   toDisplayTemperature,
-} from '../../utils/weather-temperature.view-model';
-import { toVisibilityKilometers } from '../../utils/weather-visibility.view-model';
-import { WeatherCard } from '../weather-card';
-import { WeatherIcon, type WeatherCardGlyph } from '../weather-icon';
-import { WeatherMeter } from '../weather-meter';
+} from '../utils/weather-temperature.view-model';
+import { toVisibilityKilometers } from '../utils/weather-visibility.view-model';
+import { WeatherCard } from './weather-card';
 import { WeatherCompass, WeatherPressureGauge } from './weather-dial';
+import { WeatherIcon, type WeatherCardGlyph } from './weather-icon';
+import { WeatherMeter } from './weather-meter';
 
 const UV_LEVEL_LABEL_KEYS = {
   low: 'uvLevel.low',

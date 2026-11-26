@@ -281,7 +281,7 @@ const ALLOWED_LOCAL_ONLY_FILES = {
     '하늘 장면(weather-scene-canvas)과 그 레이어(구름·비·눈·번개·밤하늘 등)다. 레이어마다 셰이더·입자·경로 수명을 스스로 갖는 완결된 Skia 그리기 부품이고 Canvas 안에서 도는 코드라, 장면 파일에 합치면 3,000줄이 넘는다',
   'src/features/insights/report/components/completion-trend-line.tsx':
     '리포트 목록의 최근 카드만 쓴다. 주별 완료율을 받은 값만으로 그리는 스스로 완결된 Skia 추세선 차트(경로 수명·밀기·접근성 조절)라 목록 파일에 합치면 900줄이 넘는다',
-  'src/features/weather/components/weather-detail-grid/weather-dial.tsx':
+  'src/features/weather/components/weather-dial.tsx':
     '상세 격자만 쓴다. 나침반·기압계를 받은 값만으로 그리는 스스로 완결된 SVG 다이얼이다',
   'src/features/weather/components/weather-sun-moon/weather-sun-arc.tsx':
     '해와 달 카드만 쓴다. 해의 길과 지금 위치를 받은 값만으로 그리는 스스로 완결된 차트다',
@@ -315,7 +315,7 @@ const ALLOWED_LOCAL_ONLY_FILES = {
     '할 일 작성 시트(planning/composer)의 빠른 말하기 훅이 쓴다. 음성 기능 밖에서 import하는 파일이다',
   'src/features/voice/components/voice-visual.tsx':
     '빠른 말하기 듣기 단계만 쓴다. 셰이더 구슬과 막대를 프레임 콜백으로 그리는 스스로 완결된 Skia 부품이다',
-  'src/features/voice/components/voice-note-digest/digest-scan-preview.tsx':
+  'src/features/voice/components/digest-scan-preview.tsx':
     '정리 중 화면만 쓴다. 훑는 빛줄기를 그리는 스스로 완결된 Skia 부품이다',
   'src/features/voice/components/voice-note-recorder/recognizer-waveform.tsx':
     '녹음 화면만 쓴다. 음량 파형과 중요 표시 깃발을 프레임 콜백으로 그리는 스스로 완결된 Skia 부품이다',

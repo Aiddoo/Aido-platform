@@ -2,7 +2,7 @@ import type { InfiniteData } from '@tanstack/react-query';
 
 import { createFriendUser } from '../__tests__/friend.fixtures';
 import type { FriendUser, FriendUserPage } from '../domains/friend.model';
-import { withFriendRemoved, withFriendRestored } from './friend-cache';
+import { withFriendRemoved, withFriendRestored } from './friend-pages-cache';
 
 function createFriendPages(
   ...pages: FriendUser[][]
