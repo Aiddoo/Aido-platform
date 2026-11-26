@@ -8,12 +8,17 @@ import { useTrackView } from '@src/shared/analytics';
 import { openEntryHref } from '@src/shared/navigation/open-entry-href';
 import * as themeProvider from '@src/shared/providers/theme-provider';
 import type { ScreenName } from '@src/shared/utils/to-screen-name';
-import { createAnalyticsStub, createHttpClientStub, createTestDi } from '@src/testing/core';
+import {
+  createAnalyticsStub,
+  createHttpClientStub,
+  createTestDi,
+  stubInitialUrl,
+} from '@src/testing/core';
 import { renderAppRoute } from '@src/testing/render-route-hook';
 import * as ExpoLinking from 'expo-linking';
 import { router, Stack } from 'expo-router';
 import { act, fireEvent, screen, waitFor } from 'expo-router/testing-library';
-import { Dimensions, Linking, Pressable, Text, View } from 'react-native';
+import { Dimensions, Pressable, Text, View } from 'react-native';
 
 import OAuthCallbackScreen from '../../../app/auth/[provider]';
 import RootIndex from '../../../app/index';
@@ -151,7 +156,7 @@ async function renderAuthRoutes(initialStatus: AuthStatus, initialUrl = '/') {
 describe('root 인증 route 전환', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.spyOn(Linking, 'getInitialURL').mockResolvedValue(null);
+    stubInitialUrl();
     jest.mocked(ExpoLinking.useLinkingURL).mockReturnValue(null);
   });
 
@@ -230,7 +235,7 @@ describe('root 인증 route 전환', () => {
 
   it('위젯의 초기 할 일 링크를 세션 복원과 인증 영역 마운트 뒤 복원한다', async () => {
     // Given
-    jest.spyOn(Linking, 'getInitialURL').mockResolvedValue('aido-dev://todo/8');
+    stubInitialUrl('aido-dev://todo/8');
     jest.mocked(ExpoLinking.useLinkingURL).mockReturnValue('aido-dev://todo/8');
     const { route, errorReporter } = await renderAuthRoutes('loading', '/todo/8');
     expect(route.getPathname()).toBe('/loading');

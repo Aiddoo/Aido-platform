@@ -7,6 +7,7 @@ import {
   createMemoryObservableSyncStorage,
   createTestQueryClient,
   createTestDi,
+  setupIdleCallbackPerTest,
 } from '@src/testing/core';
 import { renderScreenHook } from '@src/testing/render';
 import { act, waitFor } from '@testing-library/react-native';
@@ -64,19 +65,7 @@ async function renderFeed({
 }
 
 describe('useWhatsNewFeed — 첫 피드', () => {
-  beforeEach(() => {
-    Object.defineProperty(globalThis, 'requestIdleCallback', {
-      configurable: true,
-      value: (callback: IdleRequestCallback) => {
-        callback({ didTimeout: false, timeRemaining: () => 10 });
-        return 1;
-      },
-    });
-    Object.defineProperty(globalThis, 'cancelIdleCallback', {
-      configurable: true,
-      value: () => undefined,
-    });
-  });
+  setupIdleCallbackPerTest();
 
   it('출시 전에 가입한 사용자는 다른 안내를 기다리지 않고 바로 한 번만 연다', async () => {
     // Given

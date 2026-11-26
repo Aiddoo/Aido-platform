@@ -27,6 +27,7 @@ import {
   stubWindowDimensions,
   createApiError,
   getTrackedEvents,
+  stubInitialUrl,
 } from '@src/testing/core';
 import { renderAppRoute } from '@src/testing/render-route-hook';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
@@ -35,7 +36,7 @@ import * as ExpoLinking from 'expo-linking';
 import { Stack, Tabs } from 'expo-router';
 import { act, screen, waitFor } from 'expo-router/testing-library';
 import type { ReactNode } from 'react';
-import { Linking, Text } from 'react-native';
+import { Text } from 'react-native';
 
 import { unstable_settings as feedTabSettings } from '../../../app/(app)/(tabs)/(todos)/_layout';
 import { unstable_settings as tabsSettings } from '../../../app/(app)/(tabs)/_layout';
@@ -185,7 +186,7 @@ async function setup({
 describe('리마인드 알림 버튼', () => {
   beforeEach(() => {
     stubWindowDimensions(390);
-    jest.spyOn(Linking, 'getInitialURL').mockResolvedValue(null);
+    stubInitialUrl();
     jest.mocked(ExpoLinking.useLinkingURL).mockReturnValue(null);
   });
 
@@ -451,7 +452,7 @@ describe('리마인드 알림 [완료]를 오프라인에서 누름', () => {
 
   beforeEach(() => {
     stubWindowDimensions(390);
-    jest.spyOn(Linking, 'getInitialURL').mockResolvedValue(null);
+    stubInitialUrl();
     jest.mocked(ExpoLinking.useLinkingURL).mockReturnValue(null);
   });
 

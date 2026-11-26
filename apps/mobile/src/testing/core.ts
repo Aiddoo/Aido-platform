@@ -69,4 +69,7 @@ export { createTestQueryClient, deliverQueryNotifications } from './query-client
 export { runKyAfterResponseHook } from './ky-after-response-hook';
 export { setupFakeTimersPerTest } from './timers';
 export { getTrackedEvents } from './tracked-events';
+export { setupIdleCallbackPerTest } from './idle-callback';
+export { stubInitialUrl } from './initial-url';
+export { setupViewMeasurePerTest } from './view-measure';
 export { stubWindowDimensions } from './window-dimensions';

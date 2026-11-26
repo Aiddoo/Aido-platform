@@ -12,6 +12,8 @@ import {
   createPushNotificationGatewayStub,
   createTestDi,
   createTestQueryClient,
+  setupIdleCallbackPerTest,
+  silenceConsole,
   stubWindowDimensions,
 } from '@src/testing/core';
 import { Stack as TestStack } from '@src/testing/mocks/expo-router';
@@ -186,31 +188,19 @@ async function pressClose() {
   await fireEvent.press(screen.getByLabelText('닫기'));
 }
 
-function getUnhandledNavigationErrors(consoleError: jest.SpyInstance) {
-  return consoleError.mock.calls
-    .map(([message]) => String(message))
-    .filter((message) => message.includes('was not handled by any navigator'));
+function isUnhandledNavigationError(messages: readonly unknown[]) {
+  return String(messages[0]).includes('was not handled by any navigator');
+}
+
+/** 처리되지 않은 이동 경고만 기록해 단언하고, 다른 오류 로그는 그대로 찍는다 */
+function recordUnhandledNavigationErrors() {
+  const consoleError = silenceConsole('error', isUnhandledNavigationError);
+  return () => consoleError.mock.calls.filter(isUnhandledNavigationError);
 }
 
 describe('useOpenPushOnboarding', () => {
   describe('가입 직후 알림 화면 — 실제 라우터', () => {
-    beforeEach(() => {
-      Object.defineProperty(globalThis, 'requestIdleCallback', {
-        configurable: true,
-        value: (callback: IdleRequestCallback) => {
-          callback({ didTimeout: false, timeRemaining: () => 10 });
-          return 1;
-        },
-      });
-      Object.defineProperty(globalThis, 'cancelIdleCallback', {
-        configurable: true,
-        value: () => undefined,
-      });
-    });
-
-    afterEach(() => {
-      jest.restoreAllMocks();
-    });
+    setupIdleCallbackPerTest();
 
     describe.each(WINDOW_WIDTHS)('%s', (_label, width) => {
       beforeEach(() => {
@@ -225,7 +215,7 @@ describe('useOpenPushOnboarding', () => {
         '새 가입자가 피드 위에 열린 알림 화면에서 %s하면, 마이 탭이 아니라 원래 있던 피드로 돌아온다',
         async (_case, answer, requestedStatus) => {
           // Given
-          const consoleError = jest.spyOn(console, 'error');
+          const getUnhandledNavigationErrors = recordUnhandledNavigationErrors();
           const { route } = await renderAppRoutes({
             permission: UNDETERMINED,
             requestedPermission: createPushPermissionResponse({
@@ -244,7 +234,7 @@ describe('useOpenPushOnboarding', () => {
           expect(screen.getByTestId('feed')).toBeTruthy();
           expect(feedMounted).toHaveBeenCalledTimes(1);
           expect(router.canGoBack()).toBe(false);
-          expect(getUnhandledNavigationErrors(consoleError)).toEqual([]);
+          expect(getUnhandledNavigationErrors()).toEqual([]);
         },
       );
     });
@@ -293,7 +283,7 @@ describe('useOpenPushOnboarding', () => {
       '기기 권한이 %s인 사용자는 알림 화면이 열리지 않고, 링크로도 열리지 않으며 경고를 남기지 않는다',
       async (status) => {
         // Given
-        const consoleError = jest.spyOn(console, 'error');
+        const getUnhandledNavigationErrors = recordUnhandledNavigationErrors();
         const { route, queryClient } = await renderAppRoutes({
           permission: createPushPermissionResponse({ status }),
         });
@@ -310,7 +300,7 @@ describe('useOpenPushOnboarding', () => {
         expect(screen.getByTestId('feed')).toBeTruthy();
         expect(screen.queryByText('계속')).toBeNull();
         expect(router.canGoBack()).toBe(false);
-        expect(getUnhandledNavigationErrors(consoleError)).toEqual([]);
+        expect(getUnhandledNavigationErrors()).toEqual([]);
       },
     );
 

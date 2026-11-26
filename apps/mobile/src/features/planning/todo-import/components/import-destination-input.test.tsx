@@ -11,12 +11,12 @@ import {
   createHttpClientStub,
   createTestDi,
   respondByPath,
+  setupViewMeasurePerTest,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen } from '@testing-library/react-native';
 import { noop } from 'es-toolkit';
 import { Suspense } from 'react';
-import { View } from 'react-native';
 
 import { createTodoImportCollection } from '../__tests__/todo-import.fixtures';
 import type { TodoImportPlan } from '../domains/todo-import-plan.model';
@@ -69,18 +69,7 @@ async function renderDestinationWithCoachmark() {
 }
 
 describe('ImportDestinationInput', () => {
-  // RN의 measure는 이미 jest.fn이라 restoreMocks가 구현을 되돌리지 못한다. 쓰고 나면 직접 비운다
-  beforeEach(() => {
-    jest.spyOn(View.prototype, 'measure').mockImplementation((callback) => {
-      if (typeof callback === 'function') {
-        callback(0, 0, 44, 44, 16, 300);
-      }
-    });
-  });
-
-  afterEach(() => {
-    jest.mocked(View.prototype.measure).mockReset();
-  });
+  setupViewMeasurePerTest({ measure: [0, 0, 44, 44, 16, 300] });
 
   // 재현: 부품이 나머지 props 뒤에 onPress를 덮어, 코치마크 트리거가 넣은 누름이 사라지고 안내가 끝나지 않았다
   it('코치마크가 떠 있을 때 넣을 곳을 누르면 시트가 열리고 같은 탭이 안내도 끝낸다', async () => {

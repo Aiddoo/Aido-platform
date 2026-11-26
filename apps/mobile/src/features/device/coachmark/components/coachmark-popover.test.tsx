@@ -8,6 +8,7 @@ import {
   createPendingResponse,
   createTestDi,
   getTrackedEvents,
+  setupViewMeasurePerTest,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
@@ -81,18 +82,7 @@ async function renderCoachmarkOnHiddenTab() {
 }
 
 describe('CoachmarkPopover', () => {
-  // RN의 measure는 이미 jest.fn이라 restoreMocks가 구현을 되돌리지 못한다. 쓰고 나면 직접 비운다
-  beforeEach(() => {
-    jest.spyOn(View.prototype, 'measure').mockImplementation((callback) => {
-      if (typeof callback === 'function') {
-        callback(0, 0, 44, 44, 16, 300);
-      }
-    });
-  });
-
-  afterEach(() => {
-    jest.mocked(View.prototype.measure).mockReset();
-  });
+  const viewMeasure = setupViewMeasurePerTest({ measure: [0, 0, 44, 44, 16, 300] });
 
   it('내 정보를 읽은 뒤에도 대상을 다시 마운트하지 않아 누르던 탭을 잃지 않는다', async () => {
     // Given
@@ -319,16 +309,8 @@ describe('CoachmarkPopover', () => {
       stubWindowDimensions(390, WINDOW_HEIGHT);
     });
 
-    afterEach(() => {
-      jest.mocked(View.prototype.measureInWindow).mockReset();
-    });
-
     async function renderScrollTarget(targetTop: number) {
-      jest.spyOn(View.prototype, 'measureInWindow').mockImplementation((callback) => {
-        if (typeof callback === 'function') {
-          callback(16, targetTop, 358, TARGET_HEIGHT);
-        }
-      });
+      viewMeasure.moveTo({ measureInWindow: [16, targetTop, 358, TARGET_HEIGHT] });
       const httpClient = createHttpClientStub();
       httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
       const analytics = createAnalyticsStub();

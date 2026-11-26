@@ -11,12 +11,12 @@ import {
   createMemoryObservableSyncStorage,
   createTestDi,
   createTestQueryClient,
+  setupViewMeasurePerTest,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { View } from 'react-native';
 
 import { RepeatHorizonHint } from './repeat-horizon-hint';
 
@@ -73,18 +73,7 @@ async function renderHint({
 }
 
 describe('RepeatHorizonHint', () => {
-  beforeEach(() => {
-    jest.spyOn(View.prototype, 'measure').mockImplementation((callback) => {
-      if (typeof callback === 'function') {
-        callback(0, 0, 200, 20, 16, 300);
-      }
-    });
-  });
-
-  // measure는 이미 jest.fn이라 restoreMocks가 되돌리지 못한다
-  afterEach(() => {
-    jest.mocked(View.prototype.measure).mockReset();
-  });
+  setupViewMeasurePerTest({ measure: [0, 0, 200, 20, 16, 300] });
 
   it('반복 할 일이 있으면 설명을 처음 한 번 자동으로 연다', async () => {
     // When

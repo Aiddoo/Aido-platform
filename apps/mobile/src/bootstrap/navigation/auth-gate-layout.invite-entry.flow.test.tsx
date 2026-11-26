@@ -21,13 +21,14 @@ import {
   createMemorySyncStorage,
   createTestDi,
   respondByPath,
+  stubInitialUrl,
   stubWindowDimensions,
 } from '@src/testing/core';
 import { renderAppRoute } from '@src/testing/render-route-hook';
 import * as ExpoLinking from 'expo-linking';
 import { router, Stack, Tabs, useLocalSearchParams } from 'expo-router';
 import { act, fireEvent, screen, waitFor } from 'expo-router/testing-library';
-import { Linking, Pressable, Text } from 'react-native';
+import { Pressable, Text } from 'react-native';
 
 import { unstable_settings as meTabSettings } from '../../../app/(app)/(tabs)/(me)/_layout';
 import { unstable_settings as memosTabSettings } from '../../../app/(app)/(tabs)/(memos)/_layout';
@@ -227,7 +228,7 @@ async function openSystemUrl(url: string) {
 describe('초대 링크로 들어온 흐름', () => {
   beforeEach(() => {
     stubWindowDimensions(390);
-    jest.spyOn(Linking, 'getInitialURL').mockResolvedValue(null);
+    stubInitialUrl();
     jest.mocked(ExpoLinking.useLinkingURL).mockReturnValue(null);
   });
 
@@ -430,7 +431,7 @@ async function closeSheet(sheetUrl: string | null) {
 describe('켜 둔 앱에 들어온 초대 링크', () => {
   beforeEach(() => {
     stubWindowDimensions(390);
-    jest.spyOn(Linking, 'getInitialURL').mockResolvedValue(null);
+    stubInitialUrl();
     jest.mocked(ExpoLinking.useLinkingURL).mockReturnValue(null);
   });
 
@@ -570,7 +571,7 @@ async function leaveWelcome(exit: WelcomeExit) {
 describe('초대 환영 시트에서 떠나는 길', () => {
   beforeEach(() => {
     stubWindowDimensions(390);
-    jest.spyOn(Linking, 'getInitialURL').mockResolvedValue(null);
+    stubInitialUrl();
     jest.mocked(ExpoLinking.useLinkingURL).mockReturnValue(null);
   });
 
@@ -635,7 +636,7 @@ function releasedPendingRaw(source: string, savedDaysAgo: number) {
 describe('출시 앱이 남긴 초대 링크·저장 값', () => {
   beforeEach(() => {
     stubWindowDimensions(390);
-    jest.spyOn(Linking, 'getInitialURL').mockResolvedValue(null);
+    stubInitialUrl();
     jest.mocked(ExpoLinking.useLinkingURL).mockReturnValue(null);
   });
 

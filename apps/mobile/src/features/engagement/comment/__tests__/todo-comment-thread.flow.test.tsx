@@ -4,11 +4,15 @@ import { createPreferenceDto } from '@src/features/identity/preference/__tests__
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
 import { createTodoDto } from '@src/features/planning/todo/__tests__/todo.fixtures';
 import { ServerError } from '@src/shared/errors/infra-error';
-import { createHttpClientStub, createRouteParamsFake, createTestDi } from '@src/testing/core';
+import {
+  createHttpClientStub,
+  createRouteParamsFake,
+  createTestDi,
+  setupViewMeasurePerTest,
+} from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { router } from 'expo-router';
-import { View } from 'react-native';
 
 import TodoDetailRoute from '../../../../../app/(app)/todo/[todoId]';
 
@@ -200,18 +204,8 @@ describe('TodoDetailRoute 댓글 묶음', () => {
   });
 
   describe('정렬 미리 받기 실패', () => {
-    // 정렬 메뉴는 누른 자리를 재야 열린다. 테스트에는 레이아웃이 없어 자리를 준다
-    beforeEach(() => {
-      jest.spyOn(View.prototype, 'measure').mockImplementation((callback) => {
-        if (typeof callback === 'function') {
-          callback(0, 0, 32, 24, 300, 200);
-        }
-      });
-    });
-
-    afterEach(() => {
-      jest.mocked(View.prototype.measure).mockReset();
-    });
+    // 정렬 메뉴는 누른 자리를 재야 열린다
+    setupViewMeasurePerTest({ measure: [0, 0, 32, 24, 300, 200] });
 
     it('서버 장애로 새 정렬을 미리 받지 못하면 정렬을 바꾸고 목록 자리에 실패와 다시 시도를 보이며 작성 바는 남는다', async () => {
       // Given

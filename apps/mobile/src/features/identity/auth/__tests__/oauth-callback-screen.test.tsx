@@ -10,6 +10,7 @@ import {
   createHttpClientStub,
   createPushNotificationGatewayStub,
   createTestDi,
+  stubInitialUrl,
   stubWindowDimensions,
 } from '@src/testing/core';
 import { renderAppRoute } from '@src/testing/render-route-hook';
@@ -17,7 +18,7 @@ import * as ExpoLinking from 'expo-linking';
 import { Stack, Tabs } from 'expo-router';
 import { act, fireEvent, screen, waitFor } from 'expo-router/testing-library';
 import { useEffect } from 'react';
-import { Linking, Pressable, Text } from 'react-native';
+import { Pressable, Text } from 'react-native';
 
 import { unstable_settings as meTabSettings } from '../../../../../app/(app)/(tabs)/(me)/_layout';
 import { unstable_settings as todosTabSettings } from '../../../../../app/(app)/(tabs)/(todos)/_layout';
@@ -171,7 +172,7 @@ describe('OAuthCallbackScreen', () => {
   beforeEach(() => {
     mountedScreens.length = 0;
     stubWindowDimensions(390);
-    jest.spyOn(Linking, 'getInitialURL').mockResolvedValue(null);
+    stubInitialUrl();
     jest.mocked(ExpoLinking.useLinkingURL).mockReturnValue(null);
   });
 

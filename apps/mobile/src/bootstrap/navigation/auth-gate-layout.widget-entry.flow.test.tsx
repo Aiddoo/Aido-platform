@@ -7,13 +7,14 @@ import {
   createHttpClientStub,
   createTestDi,
   respondByPath,
+  stubInitialUrl,
   stubWindowDimensions,
 } from '@src/testing/core';
 import { renderAppRoute } from '@src/testing/render-route-hook';
 import * as ExpoLinking from 'expo-linking';
 import { router, Stack, Tabs, useLocalSearchParams } from 'expo-router';
 import { act, screen, waitFor } from 'expo-router/testing-library';
-import { Linking, Text } from 'react-native';
+import { Text } from 'react-native';
 
 import { unstable_settings as meTabSettings } from '../../../app/(app)/(tabs)/(me)/_layout';
 import { unstable_settings as todosTabSettings } from '../../../app/(app)/(tabs)/(todos)/_layout';
@@ -140,7 +141,7 @@ async function setup({ status, url }: { status: AuthStatus; url: string }) {
 describe('AuthGateLayout', () => {
   beforeEach(() => {
     stubWindowDimensions(390);
-    jest.spyOn(Linking, 'getInitialURL').mockResolvedValue(null);
+    stubInitialUrl();
     jest.mocked(ExpoLinking.useLinkingURL).mockReturnValue(null);
   });
 

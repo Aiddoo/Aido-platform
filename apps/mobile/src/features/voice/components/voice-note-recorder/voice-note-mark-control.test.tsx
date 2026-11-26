@@ -2,11 +2,15 @@ import '@src/shared/i18n/init';
 import { ok } from '@src/core/errors/result';
 import { createCoachmarkStorage } from '@src/features/device/coachmark/__tests__/coachmark.fixtures';
 import { createCurrentUserDto } from '@src/features/identity/user/__tests__/user.fixtures';
-import { createAnalyticsStub, createHttpClientStub, createTestDi } from '@src/testing/core';
+import {
+  createAnalyticsStub,
+  createHttpClientStub,
+  createTestDi,
+  setupViewMeasurePerTest,
+} from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { Suspense } from 'react';
-import { View } from 'react-native';
 
 import { VoiceNoteMarkControl } from './voice-note-mark-control';
 
@@ -48,17 +52,7 @@ async function renderMarkControl({
 }
 
 describe('VoiceNoteMarkControl', () => {
-  beforeEach(() => {
-    jest.spyOn(View.prototype, 'measure').mockImplementation((callback) => {
-      if (typeof callback === 'function') {
-        callback(0, 0, 100, 40, 200, 600);
-      }
-    });
-  });
-
-  afterEach(() => {
-    jest.restoreAllMocks();
-  });
+  setupViewMeasurePerTest({ measure: [0, 0, 100, 40, 200, 600] });
 
   it('듣기가 시작되면 처음 안내를 한 번 연다', async () => {
     // When

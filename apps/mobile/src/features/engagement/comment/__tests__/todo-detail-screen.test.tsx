@@ -26,6 +26,7 @@ import {
   deliverQueryNotifications,
   respondByPath,
   createApiError,
+  setupViewMeasurePerTest,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
@@ -34,7 +35,6 @@ import { onlineManager } from '@tanstack/react-query';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect } from 'react';
-import { View } from 'react-native';
 import { KeyboardController } from 'react-native-keyboard-controller';
 
 import TodoDetailRoute from '../../../../../app/(app)/todo/[todoId]';
@@ -605,18 +605,8 @@ describe('TodoDetailRoute', () => {
   describe('댓글 정렬', () => {
     const POPULAR_COMMENT_ID = 'ckcomment0002';
 
-    // 정렬 메뉴는 누른 자리를 재야 열린다. 테스트에는 레이아웃이 없어 자리를 준다
-    beforeEach(() => {
-      jest.spyOn(View.prototype, 'measure').mockImplementation((callback) => {
-        if (typeof callback === 'function') {
-          callback(0, 0, 32, 24, 300, 200);
-        }
-      });
-    });
-
-    afterEach(() => {
-      jest.mocked(View.prototype.measure).mockReset();
-    });
+    // 정렬 메뉴는 누른 자리를 재야 열린다
+    setupViewMeasurePerTest({ measure: [0, 0, 32, 24, 300, 200] });
 
     function toThreadItem(comment: typeof COMMENT_DTO) {
       return {
@@ -896,18 +886,8 @@ describe('TodoDetailRoute', () => {
   });
 
   describe('댓글 삭제', () => {
-    // ⋯ 메뉴는 누른 칸과 그려진 자리를 재야 열리고 눌린다. 테스트에는 레이아웃이 없어 자리를 준다
-    beforeEach(() => {
-      jest.spyOn(View.prototype, 'measure').mockImplementation((callback) => {
-        if (typeof callback === 'function') {
-          callback(0, 0, 32, 24, 300, 200);
-        }
-      });
-    });
-
-    afterEach(() => {
-      jest.mocked(View.prototype.measure).mockReset();
-    });
+    // ⋯ 메뉴는 누른 칸과 그려진 자리를 재야 열리고 눌린다
+    setupViewMeasurePerTest({ measure: [0, 0, 32, 24, 300, 200] });
 
     async function confirmDeleteWhileRequestIsOpen() {
       const { httpClient } = await renderTodoDetail();

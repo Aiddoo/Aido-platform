@@ -20,13 +20,13 @@ import {
   createVoiceNoteStorageFake,
   getTrackedEvents,
   respondByPath,
+  setupViewMeasurePerTest,
   stubWindowDimensions,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import type { QueryClient } from '@tanstack/react-query';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
-import { View } from 'react-native';
 
 import MemoScreen from '../../../../../app/(app)/(tabs)/(memos)/memo/index';
 import { MEMO_QUERY_KEYS } from '../queries/memo-query-keys';
@@ -447,18 +447,8 @@ describe('MemoScreen', () => {
     });
 
     describe('옆 칸의 ⋯ 메뉴', () => {
-      // 메뉴는 누른 단추의 자리를 잰 뒤에 펼친다. RN의 measure는 이미 jest.fn이라 restoreMocks가 구현을 되돌리지 못해 직접 비운다
-      beforeEach(() => {
-        jest.spyOn(View.prototype, 'measure').mockImplementation((callback) => {
-          if (typeof callback === 'function') {
-            callback(0, 0, 36, 36, 860, 60);
-          }
-        });
-      });
-
-      afterEach(() => {
-        jest.mocked(View.prototype.measure).mockReset();
-      });
+      // 메뉴는 누른 단추의 자리를 잰 뒤에 펼친다
+      setupViewMeasurePerTest({ measure: [0, 0, 36, 36, 860, 60] });
 
       it('메뉴로 메모를 지우면 지우는 요청을 보내고 고른 메모를 풀어 빈 칸으로 돌아간다', async () => {
         // Given

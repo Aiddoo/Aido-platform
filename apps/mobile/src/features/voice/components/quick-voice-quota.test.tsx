@@ -13,12 +13,12 @@ import {
   createAppLoggerStub,
   createTestDi,
   createTestQueryClient,
+  setupViewMeasurePerTest,
 } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { View } from 'react-native';
 
 import { QuickVoiceQuota } from './quick-voice-quota';
 
@@ -29,14 +29,11 @@ beforeEach(() => {
 });
 
 describe('QuickVoiceQuota', () => {
+  setupViewMeasurePerTest({ measure: [0, 0, 200, 20, 16, 300] });
+
   // 앱의 Provider 순서(HeroUI가 DI·Query 바깥)를 재현해야 해 renderScreen 대신 손으로 조립한다
   it('앱처럼 HeroUIProvider가 DI·Query 바깥에 있어도 ⓘ를 누르면 죽지 않고 남은 횟수를 보여 준다', async () => {
     // Given
-    jest.spyOn(View.prototype, 'measure').mockImplementation((callback) => {
-      if (typeof callback === 'function') {
-        callback(0, 0, 200, 20, 16, 300);
-      }
-    });
     const httpClient = createHttpClientStub();
     httpClient.get.mockResolvedValue(ok(createEntitlementSnapshotDto()));
     await render(

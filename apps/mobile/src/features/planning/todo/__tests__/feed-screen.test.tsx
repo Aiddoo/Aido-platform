@@ -27,6 +27,8 @@ import {
   silenceConsole,
   stubWindowDimensions,
   getTrackedEvents,
+  setupIdleCallbackPerTest,
+  setupViewMeasurePerTest,
 } from '@src/testing/core';
 import { createDateKey } from '@src/testing/date-key';
 import { renderScreen } from '@src/testing/render';
@@ -34,7 +36,6 @@ import { setupFakeTimersPerTest } from '@src/testing/timers';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { noop } from 'es-toolkit';
 import { router } from 'expo-router';
-import { View } from 'react-native';
 
 import FeedScreen from '../../../../../app/(app)/(tabs)/(todos)/feed/index';
 import {
@@ -867,25 +868,8 @@ describe('FeedScreen', () => {
   });
 
   describe('새 기능 소개', () => {
-    // Jest 환경에는 한가할 때 부르는 콜백이 없다. 바로 불러 첫 피드가 소개를 여는 데까지 간다
-    beforeEach(() => {
-      Object.defineProperty(globalThis, 'requestIdleCallback', {
-        configurable: true,
-        value: (callback: IdleRequestCallback) => {
-          callback({ didTimeout: false, timeRemaining: () => 10 });
-          return 1;
-        },
-      });
-      Object.defineProperty(globalThis, 'cancelIdleCallback', {
-        configurable: true,
-        value: noop,
-      });
-    });
-
-    afterEach(() => {
-      Reflect.deleteProperty(globalThis, 'requestIdleCallback');
-      Reflect.deleteProperty(globalThis, 'cancelIdleCallback');
-    });
+    // 한가할 때 부르는 콜백을 바로 불러 첫 피드가 소개를 여는 데까지 간다
+    setupIdleCallbackPerTest();
 
     it('서버가 켠 새 기능 소개를 첫 피드에서 한 번 열고, 다시 볼 카드를 남겨 닫을 수 있게 한다', async () => {
       // Given
@@ -929,23 +913,9 @@ describe('FeedScreen', () => {
   });
 
   describe('말풍선', () => {
-    // RN의 measure는 이미 jest.fn이라 restoreMocks가 구현을 되돌리지 못한다. 쓰고 나면 직접 비운다
-    beforeEach(() => {
-      jest.spyOn(View.prototype, 'measure').mockImplementation((callback) => {
-        if (typeof callback === 'function') {
-          callback(0, 0, 44, 44, 16, 300);
-        }
-      });
-      jest.spyOn(View.prototype, 'measureInWindow').mockImplementation((callback) => {
-        if (typeof callback === 'function') {
-          callback(16, 300, 44, 44);
-        }
-      });
-    });
-
-    afterEach(() => {
-      jest.mocked(View.prototype.measure).mockReset();
-      jest.mocked(View.prototype.measureInWindow).mockReset();
+    setupViewMeasurePerTest({
+      measure: [0, 0, 44, 44, 16, 300],
+      measureInWindow: [16, 300, 44, 44],
     });
 
     async function renderFeedWithCoachmarks({

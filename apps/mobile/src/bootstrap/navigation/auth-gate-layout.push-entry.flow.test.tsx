@@ -21,6 +21,7 @@ import {
   createTestDi,
   stubWindowDimensions,
   createApiError,
+  stubInitialUrl,
 } from '@src/testing/core';
 import { renderAppRoute } from '@src/testing/render-route-hook';
 import { userEvent } from '@testing-library/react-native';
@@ -30,7 +31,7 @@ import { router, Stack, Tabs, useFocusEffect } from 'expo-router';
 import { act, screen, waitFor } from 'expo-router/testing-library';
 import * as SplashScreen from 'expo-splash-screen';
 import { type ComponentType, useCallback } from 'react';
-import { Linking, Pressable, Text } from 'react-native';
+import { Pressable, Text } from 'react-native';
 import { match } from 'ts-pattern';
 
 import { unstable_settings as myPageTabSettings } from '../../../app/(app)/(tabs)/(me)/_layout';
@@ -386,7 +387,7 @@ describe('AuthGateLayout', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     stubWindowDimensions(390);
-    jest.spyOn(Linking, 'getInitialURL').mockResolvedValue(null);
+    stubInitialUrl();
     jest.mocked(ExpoLinking.useLinkingURL).mockReturnValue(null);
   });
 

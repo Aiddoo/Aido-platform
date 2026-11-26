@@ -5,6 +5,7 @@ import {
   createAppLifecycleGatewayStub,
   createIncomingLinkGatewayStub,
   createTestDi,
+  setupIdleCallbackPerTest,
   silenceConsole,
   type TestDi,
 } from '@src/testing/core';
@@ -63,18 +64,16 @@ describe('useStableFeedForeground', () => {
     });
     di = createTestDi({ ports: { incomingLink, appLifecycle } });
     silenceConsole('warn');
-    Object.defineProperty(globalThis, 'requestIdleCallback', {
-      configurable: true,
-      value: jest.fn((callback: IdleRequestCallback) => {
-        idleCallbacks.push(() => callback({ didTimeout: false, timeRemaining: () => 10 }));
-        return idleCallbacks.length;
-      }),
-    });
-    Object.defineProperty(globalThis, 'cancelIdleCallback', {
-      configurable: true,
-      value: jest.fn(),
-    });
   });
+
+  // 한가해지는 때를 테스트가 정한다. 받은 콜백은 쌓아 두고 테스트가 하나씩 부른다
+  setupIdleCallbackPerTest(() => ({
+    request: jest.fn((callback: IdleRequestCallback) => {
+      idleCallbacks.push(() => callback({ didTimeout: false, timeRemaining: () => 10 }));
+      return idleCallbacks.length;
+    }),
+    cancel: jest.fn(),
+  }));
 
   it('딥링크 라우팅 상호작용이 끝나면 같은 focus에서도 대기 상태를 해제한다', async () => {
     // Given
