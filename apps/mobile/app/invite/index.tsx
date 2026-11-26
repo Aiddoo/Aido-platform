@@ -43,7 +43,7 @@ export default function InviteCodeEntryScreen() {
   useTrackInviteLinkOpened();
 
   // 형식이 틀리면 RHF가 코드 칸에 포커스해 키보드를 그대로 둔다. 확인하지 못한 제출은 던져야 다시 누를 수 있다
-  const saveInviteCode = form.handleSubmit(async ({ inviteCode }) => {
+  const submitInviteCode = form.handleSubmit(async ({ inviteCode }) => {
     // 미리보기를 미리 받아 두면 초대 카드가 다시 부르지 않고, 없는 코드는 이 화면에서 바로 알린다
     await checkPreview.mutateAsync(inviteCode);
     // 조회하는 사이 화면을 떠났으면 지금 보이는 다른 화면을 바꾸지 않고, 돌아와 다시 확인할 수 있게 코드는 둔 채 폼을 연다
@@ -58,8 +58,8 @@ export default function InviteCodeEntryScreen() {
     });
   });
   // 같은 프레임의 두 번째 탭은 isSubmitting이 다음 렌더에야 켜져 여기서 막는다
-  const handleSavePress = useSingleTap(() => {
-    saveInviteCode().catch((error: unknown) => {
+  const handleConfirmPress = useSingleTap(() => {
+    submitInviteCode().catch((error: unknown) => {
       // 4xx는 같은 화면에서 다시 입력하게 코드 칸에 보인다. 네트워크·서버 장애는 전역 토스트가 알리고 입력한 코드는 둔다
       const fieldError = findInviteCodeFieldError(error);
       if (fieldError != null) {
@@ -78,7 +78,7 @@ export default function InviteCodeEntryScreen() {
             render={({ errors, isSubmitting, isSubmitSuccessful, isValid }) => (
               <KeyboardAdaptiveButton
                 testID="invite-code-submit"
-                onPress={handleSavePress}
+                onPress={handleConfirmPress}
                 isDisabled={!isValid}
                 // 확인하면 초대 카드로 바뀌는 동안에도 같은 코드가 남는다. 그동안 다시 확인하지 않는다
                 isLoading={isSubmitting || isSubmitSuccessful}
@@ -124,7 +124,7 @@ export default function InviteCodeEntryScreen() {
                     submitBehavior: 'submit',
                     onSubmitEditing: () => {
                       if (!isSubmitting && !isSubmitSuccessful) {
-                        handleSavePress();
+                        handleConfirmPress();
                       }
                     },
                     accessibilityLabel: t('codeEntry.inputLabel'),

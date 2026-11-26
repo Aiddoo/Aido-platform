@@ -30,8 +30,10 @@ export default function AddFriendScreen() {
   const { t } = useTranslation('friend');
   const navigation = useNavigation();
   const goBack = useGoBack({ fallbackHref: '/friends' });
-  const onFriendLimitInvite = useFriendLimitInvite();
-  const promptFriendLimit = useFriendLimitPrompt({ onFriendLimitInvite });
+  const openFriendLimitInvite = useFriendLimitInvite();
+  const promptIfFriendLimitError = useFriendLimitPrompt({
+    onFriendLimitInvite: openFriendLimitInvite,
+  });
   const sendRequest = useMutation(useSendRequestByTagMutationOptions());
   const form = useForm({
     resolver: zodResolver(addFriendFormSchema),
@@ -39,7 +41,7 @@ export default function AddFriendScreen() {
     mode: 'onChange',
   });
 
-  const saveFriendRequest = form.handleSubmit(async ({ userTag }) => {
+  const submitFriendRequest = form.handleSubmit(async ({ userTag }) => {
     await sendRequest.mutateAsync(userTag);
     // 보내는 사이 떠났으면 이전 화면을 또 닫지 않고, 같은 요청을 또 보내지 않게 폼을 비운다
     if (!navigation.isFocused()) {
@@ -49,8 +51,8 @@ export default function AddFriendScreen() {
     goBack();
   });
   // 같은 프레임의 두 번째 탭은 isSubmitting이 다음 렌더에야 켜져 여기서 막는다. 한도 안내는 여기서 한 번 한다
-  const handleSavePress = useSingleTap(() => {
-    saveFriendRequest().catch(promptFriendLimit);
+  const handleSendPress = useSingleTap(() => {
+    submitFriendRequest().catch(promptIfFriendLimitError);
   });
 
   return (
@@ -65,7 +67,7 @@ export default function AddFriendScreen() {
             control={form.control}
             render={({ isSubmitting, isSubmitSuccessful, isValid }) => (
               <KeyboardAdaptiveButton
-                onPress={handleSavePress}
+                onPress={handleSendPress}
                 isDisabled={!isValid}
                 // 보내면 화면이 내려가는 동안에도 같은 태그가 남는다. 그동안 다시 보내지 않는다
                 isLoading={isSubmitting || isSubmitSuccessful}
@@ -117,7 +119,7 @@ export default function AddFriendScreen() {
                 })}
                 onSubmitEditing={() => {
                   if (isValid && !isSubmitting && !isSubmitSuccessful) {
-                    handleSavePress();
+                    handleSendPress();
                   }
                 }}
               />

@@ -37,7 +37,7 @@ export default function DeleteAccountScreen() {
     mode: 'onChange',
   });
 
-  const saveAccountDeletion = form.handleSubmit(async ({ password }) => {
+  const submitAccountDeletion = form.handleSubmit(async ({ password }) => {
     dismissKeyboard();
     await confirmDialog.openAsync({
       title: t('deleteAccount.dialogTitle'),
@@ -64,7 +64,7 @@ export default function DeleteAccountScreen() {
   });
   // 같은 프레임에 두 번 누르면 확인 다이얼로그가 두 개 뜬다
   const handleDeletePress = useSingleTap(() => {
-    saveAccountDeletion();
+    submitAccountDeletion();
   });
 
   return (

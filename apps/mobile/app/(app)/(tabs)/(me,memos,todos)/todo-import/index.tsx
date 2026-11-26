@@ -588,7 +588,7 @@ function OptionsStep({ form, progress, onStarted, onTargetsRejected }: OptionsSt
   const startImport = useMutation(useStartTodoImportMutationOptions());
 
   // 실패는 RHF가 실패로 알아 다시 누를 수 있게 handleSubmit 밖 호출부에서 받는다
-  const saveImport = form.handleSubmit(async (values) => {
+  const submitImport = form.handleSubmit(async (values) => {
     if (accountId == null) {
       return;
     }
@@ -628,7 +628,7 @@ function OptionsStep({ form, progress, onStarted, onTargetsRejected }: OptionsSt
   };
 
   const handleImportPress = useSingleTap(() => {
-    saveImport().catch(handleStartError);
+    submitImport().catch(handleStartError);
   });
 
   return (

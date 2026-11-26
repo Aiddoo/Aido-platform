@@ -59,7 +59,7 @@ function EditName() {
     mode: 'onChange',
   });
 
-  const saveName = form.handleSubmit(async ({ name }) => {
+  const submitName = form.handleSubmit(async ({ name }) => {
     await updateProfile.mutateAsync({ name });
     // 저장하는 동안 이미 떠났다면 지금 화면이 이전 화면이므로 또 뒤로 가지 않는다
     if (navigation.isFocused()) {
@@ -68,7 +68,7 @@ function EditName() {
   });
   // 실패하면 토스트는 mutation의 meta.errorFeedback이 한 번 알리고 화면과 입력값은 그대로 둔다
   const handleSavePress = useSingleTap(() => {
-    saveName().catch(noop);
+    submitName().catch(noop);
   });
 
   return (

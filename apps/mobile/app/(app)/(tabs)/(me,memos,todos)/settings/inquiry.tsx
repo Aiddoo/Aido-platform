@@ -41,7 +41,7 @@ export default function InquiryScreen() {
   });
 
   // 실패는 여기서 받지 않는다. RHF가 실패로 알아야 isSubmitSuccessful이 꺼진 채 남아 다시 보낼 수 있다
-  const saveInquiry = form.handleSubmit(async (values) => {
+  const submitInquiry = form.handleSubmit(async (values) => {
     await createInquiry.mutateAsync(values);
     // 떠난 사이 접수됐으면 이전 화면을 또 닫지 않고, 돌아와 같은 글을 또 보내지 않게 내용만 비운다
     if (!navigation.isFocused()) {
@@ -51,8 +51,8 @@ export default function InquiryScreen() {
     goBack();
   });
   // 실패하면 토스트는 mutation의 meta.errorFeedback이 한 번 알리고 화면과 입력값은 그대로 둔다
-  const handleSavePress = useSingleTap(() => {
-    saveInquiry().catch(noop);
+  const handleSendPress = useSingleTap(() => {
+    submitInquiry().catch(noop);
   });
 
   return (
@@ -68,7 +68,7 @@ export default function InquiryScreen() {
                 control={form.control}
                 render={({ isValid, isSubmitting, isSubmitSuccessful }) => (
                   <KeyboardAdaptiveButton
-                    onPress={handleSavePress}
+                    onPress={handleSendPress}
                     isDisabled={!isValid}
                     // 보내면 화면이 내려가는 동안에도 같은 글이 남는다. 그동안 다시 보내지 않는다
                     isLoading={isSubmitting || isSubmitSuccessful}

@@ -41,7 +41,7 @@ export default function EmailLoginScreen() {
   });
 
   // 인증 화면에 스키마가 다듬은 주소를 넘기려 실패를 제출 안에서 받고, RHF가 실패로 알아 다시 누를 수 있게 다시 던진다
-  const saveEmailLogin = form.handleSubmit(async ({ email, password }) => {
+  const submitEmailLogin = form.handleSubmit(async ({ email, password }) => {
     try {
       await emailLogin.mutateAsync({ email, password });
     } catch (error) {
@@ -54,7 +54,7 @@ export default function EmailLoginScreen() {
   });
   // 같은 프레임의 두 번째 탭은 isSubmitting이 다음 렌더에야 켜져 여기서 막는다
   const handleLoginPress = useSingleTap(() => {
-    saveEmailLogin().catch(noop);
+    submitEmailLogin().catch(noop);
   });
 
   return (

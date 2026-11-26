@@ -87,7 +87,7 @@ RHF 7.92의 `Controller`·`Watch`·`FormState` 컴포넌트로 이어 값이 바
 ## 버튼과 제출
 
 - 버튼은 `isValid`·`isSubmitting`·`isSubmitSuccessful`과 mutation `isPending`·`isSuccess`로만 정한다. `safeParse`로 버튼 상태를 따로 계산하지 않는다. 단계 폼의 다음 버튼은 폼 전체가 아니라 그 단계 칸만 본다. `getFieldState(name, formState)`의 `isDirty && !invalid`로 정한다(`useFormState({ name })`로 구독). 단계 버튼이 바로 따르게 `mode: 'onChange'`로 검사하고, 오류 문구는 칸을 벗어난 뒤(`isTouched`)나 그 칸에 적은 뒤(`isDirty`)에만 보인다.
-- 제출은 화면이 `form.handleSubmit`으로 만든 `save{X}`(`saveTodo`·`saveCategory`)이고, 그것을 감싼 `useSingleTap`이 `handleSavePress`다. 같은 프레임의 두 번째 탭은 `isSubmitting`이 다음 렌더에야 켜져 `useSingleTap`으로 막는다.
+- 제출은 화면이 `form.handleSubmit`으로 만든 `submit{X}`(`submitMemo`·`submitEmailLogin`)이고, 저장이 아닌 일(로그인·확인·삭제)도 `save`가 아니라 `submit`이다. 그것을 감싼 `useSingleTap`은 누르는 버튼의 일을 말하는 `handle{X}Press`(`handleSavePress`·`handleLoginPress`)다. 같은 프레임의 두 번째 탭은 `isSubmitting`이 다음 렌더에야 켜져 `useSingleTap`으로 막는다.
 - 저장하면 닫히는 폼(시트·화면)은 닫히는 동안에도 값이 남아 `isSubmitting`이 꺼지면 버튼이 다시 켜진다. 그동안 버튼과 완료 키를 `isSubmitting || isSubmitSuccessful`로 막는다. `isSubmitSuccessful`이 실패에 켜지지 않게 실패는 `handleSubmit` 안에서 받지 않고 호출부 `.catch`에서 받는다(할 일·카테고리 추가). `mutate`로 보내는 폼은 mutation `isSuccess`로 막는다(계획 검토).
 - 저장을 기다린 뒤 떠나면 그 사이 화면을 떠났는지 먼저 본다([경로와 이동](./state-and-routing.md#경로와-이동)).
 - 서버 4xx 중 칸에 속한 오류는 화면이 `form.setError`로 그 칸에 보인다. 코드와 칸의 매핑은 `domains/{feature}.error.ts`에 둔다. 실패해도 입력값을 지우지 않는다.

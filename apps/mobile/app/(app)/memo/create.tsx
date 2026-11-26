@@ -72,7 +72,7 @@ function MemoCreate() {
   };
 
   // mutate 콜백은 화면이 내려가면 불리지 않아 기다린 뒤 초안을 지운다. 실패는 RHF가 알아야 다시 보낼 수 있다
-  const saveMemo = form.handleSubmit(async ({ content }) => {
+  const submitMemo = form.handleSubmit(async ({ content }) => {
     await createMemo.mutateAsync({ content });
     discardDraft();
     leaveIfFocused();
@@ -80,7 +80,7 @@ function MemoCreate() {
 
   // 실패 안내와 보고는 mutation의 meta.errorFeedback이 맡는다
   const handleSavePress = useSingleTap(() => {
-    saveMemo().catch(noop);
+    submitMemo().catch(noop);
   });
 
   const handleBackPress = useSingleTap(({ isValid }: { isValid: boolean }) => {
@@ -89,7 +89,7 @@ function MemoCreate() {
 
       return;
     }
-    saveMemo().catch((error: unknown) => {
+    submitMemo().catch((error: unknown) => {
       // 연결 문제로 못 보낸 글자는 초안에 남으니 화면에 가두지 않는다
       if (isConnectivityError(error)) {
         leaveIfFocused();
