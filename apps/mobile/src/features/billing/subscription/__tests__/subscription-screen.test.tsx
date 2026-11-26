@@ -12,8 +12,6 @@ import { type User } from '@src/features/identity/user/domains/user.model';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { type CurrentUserResponse } from '@src/features/identity/user/schemas/user-response.schema';
 import { i18n } from '@src/shared/i18n';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { OverlayProvider } from '@src/shared/ui';
 import {
   createAnalyticsStub,
   createHttpClientStub,
@@ -120,14 +118,7 @@ async function renderSubscriptionScreen(
   // 결제 Provider처럼 결제 SDK에 로그인해 둔다. 로그인 전 결제는 막힌다
   await di.purchasesSession.logIn('user-1');
 
-  await renderScreen(
-    <LocalDateProvider>
-      <OverlayProvider>
-        <SubscriptionScreen />
-      </OverlayProvider>
-    </LocalDateProvider>,
-    { di },
-  );
+  await renderScreen(<SubscriptionScreen />, { di, withLocalDate: true, withOverlay: true });
 
   return { purchases, analytics };
 }

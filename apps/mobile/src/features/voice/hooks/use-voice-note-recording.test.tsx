@@ -118,12 +118,10 @@ async function renderRecording({
     onEmpty: jest.fn(),
   };
 
-  await renderScreen(
-    <OverlayProvider>
-      <RecordingProbe maxSeconds={maxSeconds} {...handlers} />
-    </OverlayProvider>,
-    { di },
-  );
+  await renderScreen(<RecordingProbe maxSeconds={maxSeconds} {...handlers} />, {
+    di,
+    withOverlay: true,
+  });
 
   return { speechRecognizer, di, analytics, ...handlers };
 }
@@ -369,17 +367,15 @@ describe('useVoiceNoteRecording', () => {
     });
     di.voiceNoteDraftRepository.save(ACCOUNT_ID, seed);
     await renderScreen(
-      <OverlayProvider>
-        <RecordingProbe
-          seedDraftId="seed-1"
-          entry="quick_voice_upgrade"
-          maxSeconds={null}
-          onLimitReached={jest.fn()}
-          onFinished={jest.fn()}
-          onEmpty={jest.fn()}
-        />
-      </OverlayProvider>,
-      { di },
+      <RecordingProbe
+        seedDraftId="seed-1"
+        entry="quick_voice_upgrade"
+        maxSeconds={null}
+        onLimitReached={jest.fn()}
+        onFinished={jest.fn()}
+        onEmpty={jest.fn()}
+      />,
+      { di, withOverlay: true },
     );
 
     // When
@@ -546,16 +542,15 @@ describe('useVoiceNoteRecording', () => {
     // Given
     const speechRecognizer = createSpeechRecognizerStub();
     const { unmount } = await renderScreen(
-      <OverlayProvider>
-        <RecordingProbe
-          maxSeconds={null}
-          onLimitReached={jest.fn()}
-          onFinished={jest.fn()}
-          onEmpty={jest.fn()}
-        />
-      </OverlayProvider>,
+      <RecordingProbe
+        maxSeconds={null}
+        onLimitReached={jest.fn()}
+        onFinished={jest.fn()}
+        onEmpty={jest.fn()}
+      />,
       {
         di: createTestDi({ ports: { speechRecognizer, logger } }),
+        withOverlay: true,
       },
     );
     await start(speechRecognizer);
@@ -688,15 +683,13 @@ describe('useVoiceNoteRecording', () => {
     });
     const onFinished = jest.fn();
     const { unmount } = await renderScreen(
-      <OverlayProvider>
-        <RecordingProbe
-          maxSeconds={null}
-          onLimitReached={jest.fn()}
-          onFinished={onFinished}
-          onEmpty={jest.fn()}
-        />
-      </OverlayProvider>,
-      { di },
+      <RecordingProbe
+        maxSeconds={null}
+        onLimitReached={jest.fn()}
+        onFinished={onFinished}
+        onEmpty={jest.fn()}
+      />,
+      { di, withOverlay: true },
     );
     await start(speechRecognizer);
     await act(async () => speechRecognizer.emit({ type: 'recording-started', uri }));
@@ -798,15 +791,13 @@ describe('useVoiceNoteRecording', () => {
     });
     const onFinished = jest.fn();
     const { unmount } = await renderScreen(
-      <OverlayProvider>
-        <RecordingProbe
-          maxSeconds={null}
-          onLimitReached={jest.fn()}
-          onFinished={onFinished}
-          onEmpty={jest.fn()}
-        />
-      </OverlayProvider>,
-      { di },
+      <RecordingProbe
+        maxSeconds={null}
+        onLimitReached={jest.fn()}
+        onFinished={onFinished}
+        onEmpty={jest.fn()}
+      />,
+      { di, withOverlay: true },
     );
     await start(speechRecognizer);
     await act(async () =>
@@ -839,15 +830,13 @@ describe('useVoiceNoteRecording', () => {
     });
     const onFinished = jest.fn();
     const { unmount } = await renderScreen(
-      <OverlayProvider>
-        <RecordingProbe
-          maxSeconds={null}
-          onLimitReached={jest.fn()}
-          onFinished={onFinished}
-          onEmpty={jest.fn()}
-        />
-      </OverlayProvider>,
-      { di },
+      <RecordingProbe
+        maxSeconds={null}
+        onLimitReached={jest.fn()}
+        onFinished={onFinished}
+        onEmpty={jest.fn()}
+      />,
+      { di, withOverlay: true },
     );
     await start(speechRecognizer);
     await act(async () => speechRecognizer.emit({ type: 'recording-started', uri }));
@@ -886,15 +875,13 @@ describe('useVoiceNoteRecording', () => {
         ports: { speechRecognizer, ...createVoiceNoteStorageFake(files).ports, logger },
       });
       const { unmount } = await renderScreen(
-        <OverlayProvider>
-          <RecordingProbe
-            maxSeconds={null}
-            onLimitReached={jest.fn()}
-            onFinished={jest.fn()}
-            onEmpty={jest.fn()}
-          />
-        </OverlayProvider>,
-        { di },
+        <RecordingProbe
+          maxSeconds={null}
+          onLimitReached={jest.fn()}
+          onFinished={jest.fn()}
+          onEmpty={jest.fn()}
+        />,
+        { di, withOverlay: true },
       );
       await start(speechRecognizer);
       await act(async () => speechRecognizer.emit({ type: 'recording-started', uri }));
@@ -984,15 +971,13 @@ describe('useVoiceNoteRecording', () => {
       ports: { speechRecognizer, ...createVoiceNoteStorageFake().ports, logger },
     });
     const { unmount } = await renderScreen(
-      <OverlayProvider>
-        <RecordingProbe
-          maxSeconds={null}
-          onLimitReached={jest.fn()}
-          onFinished={jest.fn()}
-          onEmpty={jest.fn()}
-        />
-      </OverlayProvider>,
-      { di },
+      <RecordingProbe
+        maxSeconds={null}
+        onLimitReached={jest.fn()}
+        onFinished={jest.fn()}
+        onEmpty={jest.fn()}
+      />,
+      { di, withOverlay: true },
     );
     await start(speechRecognizer);
     await say(speechRecognizer, '앱을 떠나기 전 말.');
@@ -1026,16 +1011,14 @@ describe('useVoiceNoteRecording', () => {
 
     // When
     await renderScreen(
-      <OverlayProvider>
-        <RecordingProbe
-          seedDraftId="restored-1"
-          maxSeconds={null}
-          onLimitReached={jest.fn()}
-          onFinished={jest.fn()}
-          onEmpty={jest.fn()}
-        />
-      </OverlayProvider>,
-      { di },
+      <RecordingProbe
+        seedDraftId="restored-1"
+        maxSeconds={null}
+        onLimitReached={jest.fn()}
+        onFinished={jest.fn()}
+        onEmpty={jest.fn()}
+      />,
+      { di, withOverlay: true },
     );
 
     // Then

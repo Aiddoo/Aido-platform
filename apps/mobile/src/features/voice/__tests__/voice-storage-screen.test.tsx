@@ -1,8 +1,6 @@
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import '@src/shared/i18n/init';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { OverlayProvider } from '@src/shared/ui';
 import {
   createLocalFileSystemFake,
   createTestDi,
@@ -44,14 +42,7 @@ async function renderVoiceStorage({
     files.addFile(OWNER_DIRECTORY, 'failed-0.wav', { sizeBytes: 4_096 });
   }
 
-  await renderScreen(
-    <LocalDateProvider>
-      <OverlayProvider>
-        <VoiceStorageScreen />
-      </OverlayProvider>
-    </LocalDateProvider>,
-    { di },
-  );
+  await renderScreen(<VoiceStorageScreen />, { di, withLocalDate: true, withOverlay: true });
 
   return { di, files };
 }

@@ -1,6 +1,5 @@
 import '@src/shared/i18n/init';
 import { Text } from '@src/shared/ui';
-import { OverlayProvider } from '@src/shared/ui';
 import { createAppLoggerStub, createSpeechRecognizerStub, createTestDi } from '@src/testing/core';
 import { renderScreen } from '@src/testing/render';
 import { act, fireEvent, screen } from '@testing-library/react-native';
@@ -26,12 +25,10 @@ describe('useDictation', () => {
   it('내가 시작한 받아쓰기 결과만 입력에 넣는다', async () => {
     // Given
     const speechRecognizer = createSpeechRecognizerStub();
-    await renderScreen(
-      <OverlayProvider>
-        <DictationProbe />
-      </OverlayProvider>,
-      { di: createTestDi({ ports: { speechRecognizer, logger: createAppLoggerStub() } }) },
-    );
+    await renderScreen(<DictationProbe />, {
+      di: createTestDi({ ports: { speechRecognizer, logger: createAppLoggerStub() } }),
+      withOverlay: true,
+    });
     await act(async () =>
       speechRecognizer.emit({
         type: 'result',
@@ -57,12 +54,10 @@ describe('useDictation', () => {
   it('받아쓰기를 시작한 직후 시작 이벤트 전에 다시 눌러도 인식기를 한 번만 시작한다', async () => {
     // Given
     const speechRecognizer = createSpeechRecognizerStub();
-    await renderScreen(
-      <OverlayProvider>
-        <DictationProbe />
-      </OverlayProvider>,
-      { di: createTestDi({ ports: { speechRecognizer, logger: createAppLoggerStub() } }) },
-    );
+    await renderScreen(<DictationProbe />, {
+      di: createTestDi({ ports: { speechRecognizer, logger: createAppLoggerStub() } }),
+      withOverlay: true,
+    });
     await fireEvent.press(screen.getByTestId('mic'));
 
     // When
@@ -76,12 +71,10 @@ describe('useDictation', () => {
     // Given
     const speechRecognizer = createSpeechRecognizerStub();
     const onEnd = jest.fn();
-    await renderScreen(
-      <OverlayProvider>
-        <DictationProbe onEnd={onEnd} />
-      </OverlayProvider>,
-      { di: createTestDi({ ports: { speechRecognizer, logger: createAppLoggerStub() } }) },
-    );
+    await renderScreen(<DictationProbe onEnd={onEnd} />, {
+      di: createTestDi({ ports: { speechRecognizer, logger: createAppLoggerStub() } }),
+      withOverlay: true,
+    });
     await fireEvent.press(screen.getByTestId('mic'));
     await act(async () => speechRecognizer.emit({ type: 'start' }));
 
@@ -98,12 +91,10 @@ describe('useDictation', () => {
     // Given
     const speechRecognizer = createSpeechRecognizerStub();
     const onEnd = jest.fn();
-    await renderScreen(
-      <OverlayProvider>
-        <DictationProbe onEnd={onEnd} />
-      </OverlayProvider>,
-      { di: createTestDi({ ports: { speechRecognizer, logger: createAppLoggerStub() } }) },
-    );
+    await renderScreen(<DictationProbe onEnd={onEnd} />, {
+      di: createTestDi({ ports: { speechRecognizer, logger: createAppLoggerStub() } }),
+      withOverlay: true,
+    });
     await fireEvent.press(screen.getByTestId('mic'));
     await act(async () => speechRecognizer.emit({ type: 'start' }));
 
@@ -118,12 +109,10 @@ describe('useDictation', () => {
   it('화면이 내려가면 듣던 세션을 끊고 구독을 푼다', async () => {
     // Given
     const speechRecognizer = createSpeechRecognizerStub();
-    const { unmount } = await renderScreen(
-      <OverlayProvider>
-        <DictationProbe />
-      </OverlayProvider>,
-      { di: createTestDi({ ports: { speechRecognizer, logger: createAppLoggerStub() } }) },
-    );
+    const { unmount } = await renderScreen(<DictationProbe />, {
+      di: createTestDi({ ports: { speechRecognizer, logger: createAppLoggerStub() } }),
+      withOverlay: true,
+    });
     await fireEvent.press(screen.getByTestId('mic'));
 
     // When

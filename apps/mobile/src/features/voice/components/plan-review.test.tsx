@@ -5,8 +5,6 @@ import { createPreference } from '@src/features/identity/preference/__tests__/pr
 import { PREFERENCE_QUERY_KEYS } from '@src/features/identity/preference/queries/preference-query-keys';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/queries/todo-category-query-keys';
 import { createTodoDto } from '@src/features/planning/todo/__tests__/todo.fixtures';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { OverlayProvider } from '@src/shared/ui';
 import {
   createHttpClientStub,
   createPendingResponse,
@@ -150,19 +148,19 @@ async function renderPlan(
   );
 
   await renderScreen(
-    <LocalDateProvider>
-      <OverlayProvider>
-        <Suspense fallback={null}>
-          <PlanReviewScreen
-            plan={plan}
-            isCharged={isCharged}
-            onValues={onValues}
-            requestStore={requestStore}
-          />
-        </Suspense>
-      </OverlayProvider>
-    </LocalDateProvider>,
-    { di: createTestDi({ ports: { httpClient, queryClient } }) },
+    <Suspense fallback={null}>
+      <PlanReviewScreen
+        plan={plan}
+        isCharged={isCharged}
+        onValues={onValues}
+        requestStore={requestStore}
+      />
+    </Suspense>,
+    {
+      di: createTestDi({ ports: { httpClient, queryClient } }),
+      withLocalDate: true,
+      withOverlay: true,
+    },
   );
 }
 

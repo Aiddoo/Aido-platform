@@ -1,6 +1,6 @@
 import '@src/shared/i18n/init';
 import type { MissingSpeechPermission, SpeechMode } from '@src/core/ports/speech-recognizer';
-import { Button, OverlayProvider } from '@src/shared/ui';
+import { Button } from '@src/shared/ui';
 import {
   createAnalyticsStub,
   createAppLoggerStub,
@@ -40,16 +40,12 @@ async function renderProbe(
   const externalLink = createExternalLinkGatewayStub();
   const analytics = createAnalyticsStub();
   const onResult = jest.fn();
-  await renderScreen(
-    <OverlayProvider>
-      <PermissionProbe mode={mode} onResult={onResult} />
-    </OverlayProvider>,
-    {
-      di: createTestDi({
-        ports: { speechRecognizer, externalLink, analytics, logger: createAppLoggerStub() },
-      }),
-    },
-  );
+  await renderScreen(<PermissionProbe mode={mode} onResult={onResult} />, {
+    di: createTestDi({
+      ports: { speechRecognizer, externalLink, analytics, logger: createAppLoggerStub() },
+    }),
+    withOverlay: true,
+  });
   const getPermissionEvents = () => getTrackedEvents(analytics, 'voice_permission_requested');
 
   return { speechRecognizer, externalLink, onResult, getPermissionEvents };

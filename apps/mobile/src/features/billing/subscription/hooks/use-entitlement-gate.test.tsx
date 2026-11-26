@@ -5,9 +5,8 @@ import { PLAN_CATALOG } from '@aido/api/vocabulary';
 import { ok } from '@src/core/errors/result';
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { readStoredValue } from '@src/shared/storage/define-stored-value';
-import { Button, OverlayProvider } from '@src/shared/ui';
+import { Button } from '@src/shared/ui';
 import {
   createAnalyticsStub,
   createErrorReporterStub,
@@ -70,11 +69,7 @@ async function renderGate(snapshot: EntitlementSnapshot, { error }: { error?: un
   queryClient.setQueryData(USER_QUERY_KEYS.me(), createUser({ id: ACCOUNT_ID }));
 
   const { unmount } = await renderScreen(
-    <LocalDateProvider>
-      <OverlayProvider>
-        <AiParseGate error={error} onAlternative={onAlternative} />
-      </OverlayProvider>
-    </LocalDateProvider>,
+    <AiParseGate error={error} onAlternative={onAlternative} />,
     {
       di: createTestDi({
         ports: {
@@ -85,6 +80,8 @@ async function renderGate(snapshot: EntitlementSnapshot, { error }: { error?: un
           queryClient,
         },
       }),
+      withLocalDate: true,
+      withOverlay: true,
     },
   );
 

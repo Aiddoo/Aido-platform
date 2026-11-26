@@ -5,8 +5,6 @@ import { createAllSeenCoachmarkStorage } from '@src/features/device/coachmark/__
 import { createUser } from '@src/features/identity/user/__tests__/user.fixtures';
 import { USER_QUERY_KEYS } from '@src/features/identity/user/queries/user-query-keys';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/queries/todo-category-query-keys';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { OverlayProvider } from '@src/shared/ui';
 import {
   createAnalyticsStub,
   createHttpClientStub,
@@ -60,14 +58,7 @@ async function renderRecordScreen(snapshot = createEntitlementSnapshot()) {
       logger,
     },
   });
-  await renderScreen(
-    <LocalDateProvider>
-      <OverlayProvider>
-        <VoiceNoteRecordScreen />
-      </OverlayProvider>
-    </LocalDateProvider>,
-    { di },
-  );
+  await renderScreen(<VoiceNoteRecordScreen />, { di, withLocalDate: true, withOverlay: true });
   await waitFor(() => expect(speechRecognizer.start).toHaveBeenCalled());
   await act(async () => speechRecognizer.emit({ type: 'start' }));
 

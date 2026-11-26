@@ -1,6 +1,5 @@
 import '@src/shared/i18n/init';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { OverlayProvider } from '@src/shared/ui';
 import { renderScreen } from '@src/testing/render';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { noop } from 'es-toolkit';
@@ -51,11 +50,7 @@ function Harness({ onValues }: { onValues: (values: SignUpFormValues) => void })
 
 async function renderSheet() {
   const onValues = jest.fn();
-  await renderScreen(
-    <OverlayProvider>
-      <Harness onValues={onValues} />
-    </OverlayProvider>,
-  );
+  await renderScreen(<Harness onValues={onValues} />, { withOverlay: true });
   return { onValues };
 }
 

@@ -13,8 +13,6 @@ import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/planning/category/querie
 import { createTodoDto } from '@src/features/planning/todo/__tests__/todo.fixtures';
 import { toInstant } from '@src/shared/date/instant';
 import { NetworkError } from '@src/shared/errors';
-import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
-import { OverlayProvider } from '@src/shared/ui';
 import {
   createAnalyticsStub,
   createHttpClientStub,
@@ -121,14 +119,11 @@ async function renderVoiceNote(
     createSpokenVoiceNote({ draftId: DRAFT_ID, ...note }),
   );
 
-  const { unmount } = await renderScreen(
-    <LocalDateProvider>
-      <OverlayProvider>
-        <VoiceNoteRoute />
-      </OverlayProvider>
-    </LocalDateProvider>,
-    { di },
-  );
+  const { unmount } = await renderScreen(<VoiceNoteRoute />, {
+    di,
+    withLocalDate: true,
+    withOverlay: true,
+  });
 
   return { httpClient, di, unmount, queryClient, analytics };
 }
